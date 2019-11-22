@@ -2,6 +2,7 @@
 #include <sys/types.h>
 
 #include "common/mixin/not_copyable.h"
+#include "common/cacheline.h"
 
 class inter_process_mutex : vk::not_copyable {
 public:
@@ -9,6 +10,5 @@ public:
   void unlock() noexcept;
 
 private:
-  pid_t lock_{0};
-  char cache_line_padding_[128 - sizeof(pid_t)];
+  alignas(KDB_CACHELINE_SIZE) pid_t lock_{0};
 };

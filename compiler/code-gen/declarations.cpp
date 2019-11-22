@@ -168,8 +168,7 @@ InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
   interface(interface) {
 }
 
-TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name) :
-  tl_type(tl_type) {
+TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name) {
   int template_suf_start = php_tl_class_name.find("__");
   kphp_assert(template_suf_start != std::string::npos);
   specialization_suffix = php_tl_class_name.substr(template_suf_start);

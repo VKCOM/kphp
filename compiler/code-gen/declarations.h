@@ -76,7 +76,6 @@ private:
 
   std::map<std::string, DeducingInfo> deduced_params;
   IncludesCollector dependencies;
-  vk::tl::type *tl_type{};
   std::string specialization_suffix;
   // Deducing context
   vk::tl::combinator *cur_tl_constructor{};

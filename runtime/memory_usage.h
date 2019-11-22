@@ -111,7 +111,7 @@ private:
 };
 
 template<typename T>
-int estimate_class_instance_memory_usage(const class_instance<T> &value, std::true_type) {
+int estimate_class_instance_memory_usage(const class_instance<T> &, std::true_type) {
   return 0;
 }
 
