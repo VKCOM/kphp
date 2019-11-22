@@ -22,8 +22,10 @@ class Optional;
 
 struct rpc_connection;
 
-class Long;
+template<class LongT>
+class LongNumber;
 
-class ULong;
+using ULong = LongNumber<unsigned long long>;
+using Long  = LongNumber<long long>;
+using UInt  = LongNumber<unsigned int>;
 
-class UInt;
