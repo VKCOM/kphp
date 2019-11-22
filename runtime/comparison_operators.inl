@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from kphp_core.h"
+#endif
+
 namespace {
 
 template<class T, class U>
