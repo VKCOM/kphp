@@ -9,16 +9,31 @@ struct one_of_is_unknown
 
 template<class T, class U>
 using enable_if_one_of_types_is_unknown = typename std::enable_if<one_of_is_unknown<T, U>::value, bool>::type;
-
 template<class T, class U>
 using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>::type;
 
 template<class T1, class T2>
-bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs);
+inline bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs);
+template<class T1, class T2>
+inline bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs);
 
 template<class T1, class T2>
-bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs);
+inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs);
+template<class T1, class T2>
+inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs);
+
+template<class T1, class T2>
+inline bool optional_leq_impl(const Optional<T1> &lhs, const T2 &rhs);
+template<class T1, class T2>
+inline enable_if_t_is_not_optional<T1, bool> optional_leq_impl(const T1 &lhs, const Optional<T2> &rhs);
+
 } // namespace
+
+template<class FunT, class T, class ...Args>
+inline decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args);
+template<class FunT, class T, class ...Args>
+inline decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args);
+
 
 template<class T, class U>
 inline enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
@@ -289,12 +304,10 @@ template<class T, class U>
 inline enable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
   return eq2(lhs, rhs);
 }
-
 template<class T, class U>
 inline disable_if_one_of_types_is_unknown<T, U> equals(const T &, const U &) {
   return false;
 }
-
 template<class T>
 inline disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
@@ -314,7 +327,6 @@ inline bool equals(const array<T> &lhs, const array<T> &rhs) {
 
   return true;
 }
-
 template<class T1, class T2>
 inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
   if (lhs.count() != rhs.count()) {
@@ -329,30 +341,6 @@ inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
   }
 
   return true;
-}
-
-
-inline bool equals(const var &lhs, const var &rhs) {
-  if (lhs.get_type() != rhs.get_type()) {
-    return false;
-  }
-
-  switch (lhs.get_type()) {
-    case var::type::NUL:
-      return true;
-    case var::type::BOOLEAN:
-      return equals(lhs.as_bool(), rhs.as_bool());
-    case var::type::INTEGER:
-      return equals(lhs.as_int(), rhs.as_int());
-    case var::type::FLOAT:
-      return equals(lhs.as_double(), rhs.as_double());
-    case var::type::STRING:
-      return equals(lhs.as_string(), rhs.as_string());
-    case var::type::ARRAY:
-      return equals(lhs.as_array(), rhs.as_array());
-    default:
-      __builtin_unreachable();
-  }
 }
 
 inline bool equals(bool lhs, const var &rhs) {
@@ -390,6 +378,29 @@ inline bool equals(const array<T> &lhs, const var &rhs) {
 template<class T>
 inline bool equals(const var &lhs, const array<T> &rhs) {
   return equals(rhs, lhs);
+}
+
+inline bool equals(const var &lhs, const var &rhs) {
+  if (lhs.get_type() != rhs.get_type()) {
+    return false;
+  }
+
+  switch (lhs.get_type()) {
+    case var::type::NUL:
+      return true;
+    case var::type::BOOLEAN:
+      return equals(lhs.as_bool(), rhs.as_bool());
+    case var::type::INTEGER:
+      return equals(lhs.as_int(), rhs.as_int());
+    case var::type::FLOAT:
+      return equals(lhs.as_double(), rhs.as_double());
+    case var::type::STRING:
+      return equals(lhs.as_string(), rhs.as_string());
+    case var::type::ARRAY:
+      return equals(lhs.as_array(), rhs.as_array());
+    default:
+      __builtin_unreachable();
+  }
 }
 
 template<class T>
@@ -434,27 +445,11 @@ template<class T1, class T2>
 inline std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &lhs, const class_instance<T2> &rhs) {
   return dynamic_cast<void *>(lhs.get()) == dynamic_cast<void *>(rhs.get());
 }
-
 template<class T1, class T2>
 inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &) {
   return false;
 }
 
-namespace {
-
-template<class T1, class T2>
-bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto eq2_lambda = [](const auto &l, const auto &r) { return eq2(r, l); };
-  return call_fun_on_optional_value(eq2_lambda, lhs, rhs);
-}
-
-template<class T1, class T2>
-bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto equals_lambda = [](const auto &l, const auto &r) { return equals(r, l); };
-  return call_fun_on_optional_value(equals_lambda, lhs, rhs);
-}
-
-} // namespace
 
 template<class T1, class T2>
 inline bool equals(const Optional<T1> &lhs, const T2 &rhs) {
@@ -478,4 +473,250 @@ inline bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
 template<class T1, class T2>
 inline bool neq2(const T1 &lhs, const T2 &rhs) {
   return !eq2(lhs, rhs);
+}
+
+inline bool lt(const bool &lhs, const bool &rhs) {
+  return lhs < rhs;
+}
+template<class T1, class T2>
+inline bool lt(const T1 &lhs, const T2 &rhs) {
+  return lhs < rhs;
+}
+
+template<class T2>
+inline bool lt(const bool &lhs, const T2 &rhs) {
+  return lhs < f$boolval(rhs);
+}
+template<class T1>
+inline bool lt(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) < rhs;
+}
+
+template<class T1, class T2>
+inline bool lt(const Optional<T1> &lhs, const T2 &rhs) {
+  return optional_lt_impl(lhs, rhs);
+}
+template<class T1, class T2>
+inline bool lt(const T1 &lhs, const Optional<T2> &rhs) {
+  return optional_lt_impl(lhs, rhs);
+}
+
+template<class T>
+inline bool lt(const Optional<T> &lhs, const Optional<T> &rhs) {
+  return optional_lt_impl(lhs, rhs);
+}
+template<class T1, class T2>
+inline bool lt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
+  return optional_lt_impl(lhs, rhs);
+}
+
+template<class T>
+inline bool lt(const bool &lhs, const Optional<T> &rhs) {
+  return lt(lhs, f$boolval(rhs));
+}
+template<class T>
+inline bool lt(const Optional<T> &lhs, const bool &rhs) {
+  return lt(f$boolval(lhs), rhs);
+}
+
+
+
+template<class T2>
+inline bool gt(const bool &lhs, const T2 &rhs) {
+  return lhs > f$boolval(rhs);
+}
+template<class T1>
+inline bool gt(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) > rhs;
+}
+
+template<class T1, class T2>
+inline bool gt(const Optional<T1> &lhs, const T2 &rhs) {
+  return lt(rhs, lhs);
+}
+template<class T1, class T2>
+inline bool gt(const T1 &lhs, const Optional<T2> &rhs) {
+  return lt(rhs, lhs);
+}
+
+template<class T>
+inline bool gt(const bool &lhs, const Optional<T> &rhs) {
+  return gt(lhs, f$boolval(rhs));
+}
+template<class T>
+inline bool gt(const Optional<T> &lhs, const bool &rhs) {
+  return gt(f$boolval(lhs), rhs);
+}
+
+template<class T1, class T2>
+inline bool gt(const T1 &lhs, const T2 &rhs) {
+  return lhs > rhs;
+}
+inline bool gt(const bool &lhs, const bool &rhs) {
+  return lhs > rhs;
+}
+template<class T1, class T2>
+inline bool gt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
+  return lt(rhs, lhs);
+}
+
+
+
+template<class T2>
+inline bool leq(const bool &lhs, const T2 &rhs) {
+  return lhs <= f$boolval(rhs);
+}
+template<class T1>
+inline bool leq(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) <= rhs;
+}
+
+template<class T1, class T2>
+inline bool leq(const Optional<T1> &lhs, const T2 &rhs) {
+  return optional_leq_impl(lhs, rhs);
+}
+template<class T1, class T2>
+inline bool leq(const T1 &lhs, const Optional<T2> &rhs) {
+  return optional_leq_impl(lhs, rhs);
+}
+
+template<class T>
+inline bool leq(const bool &lhs, const Optional<T> &rhs) {
+  return leq(lhs, f$boolval(rhs));
+}
+template<class T>
+inline bool leq(const Optional<T> &lhs, const bool &rhs) {
+  return leq(f$boolval(lhs), rhs);
+}
+
+inline bool leq(const bool &lhs, const bool &rhs) {
+  return lhs <= rhs;
+}
+template<class T1, class T2>
+inline bool leq(const T1 &lhs, const T2 &rhs) {
+  return lhs <= rhs;
+}
+template<class T>
+inline bool leq(const Optional<T> &lhs, const Optional<T> &rhs) {
+  return optional_leq_impl(lhs, rhs);
+}
+template<class T1, class T2>
+inline bool leq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
+  return optional_leq_impl(lhs, rhs);
+}
+
+
+
+inline bool geq(const bool &lhs, const bool &rhs) {
+  return lhs >= rhs;
+}
+
+template<class T2>
+inline bool geq(const bool &lhs, const T2 &rhs) {
+  return lhs >= f$boolval(rhs);
+}
+template<class T1>
+inline bool geq(const T1 &lhs, const bool &rhs) {
+  return f$boolval(lhs) >= rhs;
+}
+
+template<class T1, class T2>
+inline bool geq(const Optional<T1> &lhs, const T2 &rhs) {
+  return optional_leq_impl(rhs, lhs);
+}
+template<class T1, class T2>
+inline bool geq(const T1 &lhs, const Optional<T2> &rhs) {
+  return optional_leq_impl(rhs, lhs);
+}
+
+template<class T>
+inline bool geq(const bool &lhs, const Optional<T> &rhs) {
+  return geq(lhs, f$boolval(rhs));
+}
+template<class T>
+inline bool geq(const Optional<T> &lhs, const bool &rhs) {
+  return geq(f$boolval(lhs), rhs);
+}
+
+
+template<class T1, class T2>
+inline bool geq(const T1 &lhs, const T2 &rhs) {
+  return lhs >= rhs;
+}
+template<class T>
+inline bool geq(const Optional<T> &lhs, const Optional<T> &rhs) {
+  return optional_leq_impl(rhs, lhs);
+}
+template<class T1, class T2>
+inline bool geq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
+  return optional_leq_impl(rhs, lhs);
+}
+
+
+namespace {
+
+template<class T1, class T2>
+bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto eq2_lambda = [](const auto &l, const auto &r) { return eq2(r, l); };
+  return call_fun_on_optional_value(eq2_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto equals_lambda = [](const auto &l, const auto &r) { return equals(r, l); };
+  return call_fun_on_optional_value(equals_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto lt_lambda = [](const auto &l, const auto &r) { return lt(l, r);};
+  return call_fun_on_optional_value(lt_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs) {
+  auto lt_reversed_args_lambda = [](const auto &l, const auto &r) { return lt(r, l);};
+  return call_fun_on_optional_value(lt_reversed_args_lambda, rhs, lhs);
+}
+
+template<class T1, class T2>
+inline bool optional_leq_impl(const Optional<T1> &lhs, const T2 &rhs) {
+  auto leq_lambda = [](const auto &l, const auto &r) { return leq(l, r);};
+  return call_fun_on_optional_value(leq_lambda, lhs, rhs);
+}
+
+template<class T1, class T2>
+inline enable_if_t_is_not_optional<T1, bool> optional_leq_impl(const T1 &lhs, const Optional<T2> &rhs) {
+  auto leq_reversed_args_lambda = [](const auto &l, const auto &r) { return leq(r, l);};
+  return call_fun_on_optional_value(leq_reversed_args_lambda, rhs, lhs);
+}
+
+} // namespace
+
+template<class FunT, class T, class ...Args>
+decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return fun(opt.val(), std::forward<Args>(args)...);
+    case OptionalState::false_value:
+      return fun(false, std::forward<Args>(args)...);
+    case OptionalState::null_value:
+      return fun(var{}, std::forward<Args>(args)...);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+template<class FunT, class T, class ...Args>
+decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args) {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return fun(std::move(opt.val()), std::forward<Args>(args)...);
+    case OptionalState::false_value:
+      return fun(false, std::forward<Args>(args)...);
+    case OptionalState::null_value:
+      return fun(var{}, std::forward<Args>(args)...);
+    default:
+      __builtin_unreachable();
+  }
 }
