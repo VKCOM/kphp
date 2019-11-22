@@ -300,9 +300,15 @@ foreach ($optional_integers as $optional_integer1) {
 $mixed_values = [5, false, null, 0, -2, 1, "", 0.0, 1.0, "0", "1", [], [false], [""]];
 foreach ($mixed_values as $mixed_value) {
   foreach ($optional_integers as $optional_integer) {
-    test_cmp_operation_optional_int($optional_integer, $mixed_values);
+    test_cmp_operation_optional_int($optional_integer, $mixed_value);
   }
 
-  test_cmp_operation_null_false(false, $mixed_values);
-  test_cmp_operation_null_false(null, $mixed_values);
+  test_cmp_operation_null_false(false, $mixed_value);
+  test_cmp_operation_null_false(null, $mixed_value);
 }
+
+foreach ($optional_integers as $optional_integer) {
+  test_cmp_operation_optional_int($optional_integer, $mixed_values);
+}
+test_cmp_operation_null_false(null, $mixed_values);
+test_cmp_operation_null_false(false, $mixed_values);
