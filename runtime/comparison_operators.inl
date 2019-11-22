@@ -26,11 +26,6 @@ inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>
 inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs);
 
-template<class T1, class T2>
-inline bool optional_leq_impl(const Optional<T1> &lhs, const T2 &rhs);
-template<class T1, class T2>
-inline enable_if_t_is_not_optional<T1, bool> optional_leq_impl(const T1 &lhs, const Optional<T2> &rhs);
-
 } // namespace
 
 template<class FunT, class T, class ...Args>
@@ -523,139 +518,20 @@ inline bool lt(const Optional<T> &lhs, const bool &rhs) {
   return lt(f$boolval(lhs), rhs);
 }
 
-
-
-template<class T2>
-inline bool gt(const bool &lhs, const T2 &rhs) {
-  return lhs > f$boolval(rhs);
-}
-template<class T1>
-inline bool gt(const T1 &lhs, const bool &rhs) {
-  return f$boolval(lhs) > rhs;
-}
-
-template<class T1, class T2>
-inline bool gt(const Optional<T1> &lhs, const T2 &rhs) {
-  return lt(rhs, lhs);
-}
-template<class T1, class T2>
-inline bool gt(const T1 &lhs, const Optional<T2> &rhs) {
-  return lt(rhs, lhs);
-}
-
-template<class T>
-inline bool gt(const bool &lhs, const Optional<T> &rhs) {
-  return gt(lhs, f$boolval(rhs));
-}
-template<class T>
-inline bool gt(const Optional<T> &lhs, const bool &rhs) {
-  return gt(f$boolval(lhs), rhs);
-}
-
 template<class T1, class T2>
 inline bool gt(const T1 &lhs, const T2 &rhs) {
-  return lhs > rhs;
-}
-inline bool gt(const bool &lhs, const bool &rhs) {
-  return lhs > rhs;
-}
-template<class T1, class T2>
-inline bool gt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
   return lt(rhs, lhs);
 }
 
-
-
-template<class T2>
-inline bool leq(const bool &lhs, const T2 &rhs) {
-  return lhs <= f$boolval(rhs);
-}
-template<class T1>
-inline bool leq(const T1 &lhs, const bool &rhs) {
-  return f$boolval(lhs) <= rhs;
-}
-
-template<class T1, class T2>
-inline bool leq(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_leq_impl(lhs, rhs);
-}
-template<class T1, class T2>
-inline bool leq(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_leq_impl(lhs, rhs);
-}
-
-template<class T>
-inline bool leq(const bool &lhs, const Optional<T> &rhs) {
-  return leq(lhs, f$boolval(rhs));
-}
-template<class T>
-inline bool leq(const Optional<T> &lhs, const bool &rhs) {
-  return leq(f$boolval(lhs), rhs);
-}
-
-inline bool leq(const bool &lhs, const bool &rhs) {
-  return lhs <= rhs;
-}
 template<class T1, class T2>
 inline bool leq(const T1 &lhs, const T2 &rhs) {
-  return lhs <= rhs;
+  return !gt(lhs, rhs);
 }
-template<class T>
-inline bool leq(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_leq_impl(lhs, rhs);
-}
-template<class T1, class T2>
-inline bool leq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_leq_impl(lhs, rhs);
-}
-
-
-
-inline bool geq(const bool &lhs, const bool &rhs) {
-  return lhs >= rhs;
-}
-
-template<class T2>
-inline bool geq(const bool &lhs, const T2 &rhs) {
-  return lhs >= f$boolval(rhs);
-}
-template<class T1>
-inline bool geq(const T1 &lhs, const bool &rhs) {
-  return f$boolval(lhs) >= rhs;
-}
-
-template<class T1, class T2>
-inline bool geq(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_leq_impl(rhs, lhs);
-}
-template<class T1, class T2>
-inline bool geq(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_leq_impl(rhs, lhs);
-}
-
-template<class T>
-inline bool geq(const bool &lhs, const Optional<T> &rhs) {
-  return geq(lhs, f$boolval(rhs));
-}
-template<class T>
-inline bool geq(const Optional<T> &lhs, const bool &rhs) {
-  return geq(f$boolval(lhs), rhs);
-}
-
 
 template<class T1, class T2>
 inline bool geq(const T1 &lhs, const T2 &rhs) {
-  return lhs >= rhs;
+  return leq(rhs, lhs);
 }
-template<class T>
-inline bool geq(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_leq_impl(rhs, lhs);
-}
-template<class T1, class T2>
-inline bool geq(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_leq_impl(rhs, lhs);
-}
-
 
 namespace {
 
@@ -681,18 +557,6 @@ template<class T1, class T2>
 inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs) {
   auto lt_reversed_args_lambda = [](const auto &l, const auto &r) { return lt(r, l);};
   return call_fun_on_optional_value(lt_reversed_args_lambda, rhs, lhs);
-}
-
-template<class T1, class T2>
-inline bool optional_leq_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto leq_lambda = [](const auto &l, const auto &r) { return leq(l, r);};
-  return call_fun_on_optional_value(leq_lambda, lhs, rhs);
-}
-
-template<class T1, class T2>
-inline enable_if_t_is_not_optional<T1, bool> optional_leq_impl(const T1 &lhs, const Optional<T2> &rhs) {
-  auto leq_reversed_args_lambda = [](const auto &l, const auto &r) { return leq(r, l);};
-  return call_fun_on_optional_value(leq_reversed_args_lambda, rhs, lhs);
 }
 
 } // namespace
