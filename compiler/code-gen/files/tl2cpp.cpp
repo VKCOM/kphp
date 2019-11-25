@@ -1602,23 +1602,20 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
 
 // сейчас тут проверка следующая: если тип полиморфный, то он нигде не должен использоваться как bare
 // по идее, этой проверки тут БЫТЬ НЕ ДОЛЖНО: она должна быть на уровне генерации tlo; но пока тут
-// более того, она пока что ОТКЛЮЧЕНА: включить, когда починим tree_stats.CounterChangeRequestManualLimit и storage2.UploadBlockSliceLink
 void check_type_expr(vk::tl::expr_base *expr_base) {
-  if (false) {
-    if (auto array = expr_base->as<vk::tl::type_array>()) {
-      for (const auto &arg : array->args) {
-        check_type_expr(arg->type_expr.get());
-      }
-    } else if (auto type_expr = expr_base->as<vk::tl::type_expr>()) {
-      vk::tl::type *type = type_of(type_expr);
-      if (type->is_integer_variable() || type->name == T_TYPE) {
-        return;
-      }
-      kphp_error(!type->is_polymorphic() || !type_expr->is_bare(),
-                 fmt_format("Polymorphic tl type {} can't be used as bare in tl scheme.", type->name));
-      for (const auto &child : type_expr->children) {
-        check_type_expr(child.get());
-      }
+  if (auto array = expr_base->as<vk::tl::type_array>()) {
+    for (const auto &arg : array->args) {
+      check_type_expr(arg->type_expr.get());
+    }
+  } else if (auto type_expr = expr_base->as<vk::tl::type_expr>()) {
+    vk::tl::type *type = type_of(type_expr);
+    if (type->is_integer_variable() || type->name == T_TYPE) {
+      return;
+    }
+    kphp_error(!type->is_polymorphic() || !type_expr->is_bare(),
+               fmt_format("Polymorphic tl type {} can't be used as bare in tl scheme.", type->name));
+    for (const auto &child : type_expr->children) {
+      check_type_expr(child.get());
     }
   }
 }
