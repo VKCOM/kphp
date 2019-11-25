@@ -6,16 +6,6 @@
 
 namespace {
 
-template<class T, class U>
-struct one_of_is_unknown
-  : std::integral_constant<bool, std::is_same<T, Unknown>::value || std::is_same<U, Unknown>::value> {
-};
-
-template<class T, class U>
-using enable_if_one_of_types_is_unknown = typename std::enable_if<one_of_is_unknown<T, U>::value, bool>::type;
-template<class T, class U>
-using disable_if_one_of_types_is_unknown = typename std::enable_if<!one_of_is_unknown<T, U>::value && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>::type;
-
 template<class T1, class T2>
 inline bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>

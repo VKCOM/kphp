@@ -33,12 +33,16 @@ using enable_for_bool_int_double_string_array = std::enable_if_t<
   vk::is_type_in_list<T, bool, int, double, string>::value || is_array<T>::value
 >;
 
-template<typename T>
-struct is_class_instance_inside : std::false_type {
+template<typename>
+struct is_class_instance : std::false_type {
 };
 
-template<typename I>
-struct is_class_instance_inside<class_instance<I>> : std::true_type {
+template<typename T>
+struct is_class_instance<class_instance<T>> : std::true_type {
+};
+
+template<typename T>
+struct is_class_instance_inside : is_class_instance<T> {
 };
 
 template<typename T>
@@ -55,7 +59,17 @@ struct is_class_instance_inside<std::tuple<U>> : is_class_instance_inside<U> {
 
 template<typename U, typename... Ts>
 struct is_class_instance_inside<std::tuple<U, Ts...>> :
-std::integral_constant<bool,
-  is_class_instance_inside<U>::value ||
+  std::integral_constant<bool,
+    is_class_instance_inside<U>::value ||
     is_class_instance_inside<std::tuple<Ts...>>::value> {
 };
+
+template<class T, class U>
+struct one_of_is_unknown : vk::is_type_in_list<Unknown, T, U> {
+};
+
+template<class T, class U>
+using enable_if_one_of_types_is_unknown = std::enable_if_t<one_of_is_unknown<T, U>{}, bool>;
+
+template<class T, class U>
+using disable_if_one_of_types_is_unknown = std::enable_if_t<!one_of_is_unknown<T, U>{} && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>;

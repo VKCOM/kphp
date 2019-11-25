@@ -132,10 +132,3 @@ private:
   class_instance<T> clone_impl(std::false_type /*is empty*/) const;
 };
 
-template<typename>
-struct is_class_instance : std::false_type {
-};
-
-template<typename T>
-struct is_class_instance<class_instance<T>> : std::true_type {
-};
