@@ -2,7 +2,7 @@
 
 Storage::Storage() :
   tag(0) {
-  memset(storage_, 0, sizeof(var));
+  memset(storage_.storage_, 0, sizeof(var));
 }
 
 void Storage::save_void() {

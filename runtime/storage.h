@@ -13,9 +13,45 @@ struct thrown_exception {
   explicit thrown_exception(Exception exception) : exception(std::move(exception)) {}
 };
 
+template<size_t limit>
+union small_obect_ptr {
+  char storage_[limit];
+  void *storage_ptr;
+
+  template <typename T, typename ...Args>
+  std::enable_if_t<sizeof(T) <= limit, T*> emplace(Args&& ...args) {
+    return new (storage_) T(std::forward<Args>(args)...);
+  }
+  template <typename T>
+  std::enable_if_t<sizeof(T) <= limit, T*> get() {
+    return reinterpret_cast<T*>(storage_);
+  }
+  template <typename T>
+  std::enable_if_t<sizeof(T) <= limit> destroy() {
+    get<T>()->~T();
+  }
+
+  template <typename T, typename ...Args>
+  std::enable_if_t<limit < sizeof(T), T*> emplace(Args&& ...args) {
+    storage_ptr = dl::allocate(sizeof(T));
+    return new (storage_ptr) T(std::forward<Args>(args)...);
+  }
+  template <typename T>
+  std::enable_if_t<limit < sizeof(T), T*> get() {
+    return static_cast<T*>(storage_ptr);
+  }
+  template <typename T>
+  std::enable_if_t<limit < sizeof(T)> destroy() {
+    T *mem = get<T>();
+    mem->~T();
+    dl::deallocate(mem, sizeof(T));
+  }
+};
+
 class Storage {
 private:
-  char storage_[sizeof(var)];
+  using storage_ptr = small_obect_ptr<sizeof(var)>;
+  storage_ptr storage_;
 
   template<class X, class Y, class Tag = typename std::is_convertible<X, Y>::type>
   struct load_implementation_helper;
@@ -33,8 +69,8 @@ public:
 
   template<typename T>
   struct loader {
-    using loader_fun = T(*)(char *);
-    static loader_fun get_function(int tag __attribute__((unused)));
+    using loader_fun = T(*)(storage_ptr &);
+    static loader_fun get_function(int tag);
   };
 
   int tag;
@@ -56,7 +92,7 @@ public:
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::false_type> {
-  static Y load(char *storage __attribute__((unused))) {
+  static Y load(storage_ptr &) {
     php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
     return Y();
   }
@@ -64,37 +100,29 @@ struct Storage::load_implementation_helper<X, Y, std::false_type> {
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::true_type> {
-  static Y load(char *storage) {
-    if (sizeof(X) > sizeof(storage_)) {
-      // какие-нибудь длинные tuple'ы (см. save())
-      // тогда в storage лежит указатель на выделенную память
-      storage = static_cast<char *>(*reinterpret_cast<void **>(storage));
-    }
-    X *data = reinterpret_cast <X *> (storage);
-    Y result = *data;
-    data->~X();
-    if (sizeof(X) > sizeof(storage_)) {
-      dl::deallocate(storage, sizeof(X));
-    }
+  static Y load(storage_ptr &storage) {
+    X *data = storage.get<X>();
+    Y result = std::move(*data);
+    storage.destroy<X>();
     return result;
   }
 };
 
 template<>
 struct Storage::load_implementation_helper<void, void, std::true_type> {
-  static void load(char *storage __attribute__((unused))) {}
+  static void load(storage_ptr &) {}
 };
 
 template<typename T>
 struct Storage::load_implementation_helper<T, void, std::false_type> {
-  static void load(char *storage) {
+  static void load(storage_ptr &storage) {
     Storage::load_implementation_helper<T, T>::load(storage);
   }
 };
 
 template<class Y>
 struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type> {
-  static Y load(char *storage __attribute__((unused))) {
+  static Y load(storage_ptr &storage) {
     php_assert (CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
     return Y();
@@ -103,7 +131,7 @@ struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type>
 
 template<>
 struct Storage::load_implementation_helper<thrown_exception, void, std::false_type> {
-  static void load(char *storage __attribute__((unused))) {
+  static void load(storage_ptr &storage) {
     php_assert (CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
   }
@@ -116,21 +144,7 @@ void Storage::save(const T2 &x) {
   if (!CurException.is_null()) {
     save_exception();
   } else {
-    if (sizeof(T1) <= sizeof(storage_)) {
-      #pragma GCC diagnostic push
-      #if __GNUC__ >= 6
-        #pragma GCC diagnostic ignored "-Wplacement-new="
-      #endif
-      new(storage_) T1(x);
-      #pragma GCC diagnostic pop
-    } else {
-      // какие-нибудь длинные tuple'ы, которые не влазят в var
-      // для них выделяем память отдельно, а в storage сохраняем указатель
-      void *mem = dl::allocate(sizeof(T1));
-      new(mem) T1(x);
-      *reinterpret_cast<void **>(storage_) = mem;
-    }
-
+    storage_.emplace<T1>(x);
     tag = tagger<T1>::get_tag();
   }
 }
