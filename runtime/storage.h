@@ -77,8 +77,13 @@ public:
 
   Storage();
 
-  template<class T1, class T2>
-  void save(const T2 &x);
+  /**
+   * enabled_if is used to disable type deduction for save function
+   * It should be called with exacty same type as load,
+   * and it would be too easy to make a bug, if it's deduced automatically
+   */
+  template<class T1>
+  void save(std::enable_if_t<true, T1> x);
 
   void save_void();
 
@@ -139,12 +144,12 @@ struct Storage::load_implementation_helper<thrown_exception, void, std::false_ty
 
 
 
-template<class T1, class T2>
-void Storage::save(const T2 &x) {
+template<class T1>
+void Storage::save(std::enable_if_t<true, T1> x) {
   if (!CurException.is_null()) {
     save_exception();
   } else {
-    storage_.emplace<T1>(x);
+    storage_.emplace<T1>(std::move(x));
     tag = tagger<T1>::get_tag();
   }
 }
