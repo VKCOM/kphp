@@ -12,6 +12,8 @@ public:
   const std::unique_ptr<const vk::tl::tl_scheme> &get_scheme() const { return scheme_; }
   const vk::tl::PhpClasses &get_php_classes() const { return php_classes_; }
 
+  // todo: удалить после vk update tl scheme
+  static bool use_optional_bool;
 private:
   std::unique_ptr<const vk::tl::tl_scheme> scheme_;
   vk::tl::PhpClasses php_classes_;

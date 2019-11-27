@@ -2,10 +2,12 @@
 
 #include "common/tlo-parsing/flat-optimization.h"
 #include "common/tlo-parsing/replace-anonymous-args.h"
+#include "common/wrappers/fmt_format.h"
 
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
+
+bool TlClasses::use_optional_bool = false;
 
 void TlClasses::load_from(const std::string &tlo_schema, bool generate_tl_internals) {
   auto tl_expected_ptr = vk::tl::parse_tlo(tlo_schema.c_str(), true);

@@ -225,6 +225,10 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
 bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
   // Maybe<int|string|array|double> -- с Optional
   // Maybe<class_instance|bool|Optional|var> -- без Optional
+  // todo: удалить после vk update tl scheme
+  if (type->name == "Bool") {
+    return TlClasses::use_optional_bool;
+  }
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->is_integer_variable();
 }
 
@@ -866,17 +870,26 @@ private:
     kphp_assert(arg->is_fields_mask_optional());
     auto type = type_of(arg->type_expr);
     std::string check_target = "tl_object->$" + arg->name;
-    if (is_tl_type_wrapped_to_Optional(type_of(arg->type_expr))) {
+    // todo: удалить после vk update tl scheme
+    if (type->name == "Bool") {
+      if (!TlClasses::use_optional_bool) {
+        return "";
+      }
+      // На данной фазе мы считаем, что false и null -- это отсутствие значения, но в случае с Bool раньше false всегда было присутстсвием
+      return check_target + ".is_null()";
+    }
+    if (is_tl_type_wrapped_to_Optional(type)) {
       // Если оборачивается в Optional под филд маской
       return "!" + check_target + ".has_value()";
+      // todo: поменять на v.is_null() после vk update tl scheme
     } else if (type->id == TL_LONG) {
       // Если это var (mixed)
-      return "equals(" + check_target + ", false)";
+      return fmt_format("equals({0}, false) || {0}.is_null()", check_target);
     } else if (!CUSTOM_IMPL_TYPES.count(type->name)) {
       // Если это class_instance
       return check_target + ".is_null()";
     } else {
-      // Иначе это bool или Optional, которые не оборачиваются в Optional под филд маской,
+      // Иначе это Optional, который не оборачивается в Optional под филд маской, или bool
       // поэтому мы не можем проверить записал ли разработчик значение
       return "";
     }
@@ -1392,6 +1405,12 @@ public:
     W << h_includes;
 
     W << NL;
+
+    // todo: удалить после vk update tl scheme
+    if (name == "common") {
+      W << fmt_format("template<typename T, unsigned int inner_magic>\n"
+                      "using t_Maybe = t_Maybe_impl<T, inner_magic, {}>;\n", TlClasses::use_optional_bool ? "std::true_type" : "std::false_type");
+    }
 
     for (const auto &t : target_types) {
       for (const auto &constructor : t->constructors) {
