@@ -65,7 +65,7 @@ void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
 
 void check_get_global_vars_memory_stats_call() {
   kphp_error_return(G->env().get_enable_global_vars_memory_stats(),
-    "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
+                    "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
 }
 
 void mark_global_vars_for_memory_stats() {
@@ -232,8 +232,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vk::any_of_equal(vertex->type(), op_eq3, op_neq3)) {
     check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
-  if (vk::any_of_equal(vertex->type(), op_eq2, op_neq2)) {
-    check_eq2_neq2(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
+  if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_gt, op_ge, op_spaceship, op_eq2, op_neq2)) {
+    check_comparisons(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
   if (vertex->type() == op_add) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
@@ -446,17 +446,30 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
   }
 }
 
-void FinalCheckPass::check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, Operation op) {
-  auto lhs_type = tinf::get_type(lhs);
-  auto rhs_type = tinf::get_type(rhs);
-
-  // анализируем instance ==/!= что_то
-  if (lhs_type->is_class_ptype() || rhs_type->is_class_ptype()) {
-    auto cmp_type = lhs_type->is_class_ptype() ? rhs_type : lhs_type;
-    // на два равно мы ничего не поддерживаем, даже == null
-    kphp_error(!cmp_type->is_class_ptype(), fmt_format("instance {} instance is unsuppoted (did you mean '{}='?)", OpInfo::desc(op), OpInfo::desc(op)));
-    kphp_error( cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
+void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation op) {
+  if (vk::none_of_equal(tinf::get_type(lhs)->ptype(), tp_Class, tp_array, tp_tuple)) {
+    std::swap(lhs, rhs);
   }
+
+  auto lhs_t = tinf::get_type(lhs);
+  auto rhs_t = tinf::get_type(rhs);
+
+  if (lhs_t->ptype() == tp_Class) {
+    if (vk::any_of_equal(op, op_eq2, op_neq2)) {
+      kphp_error(false, fmt_format("instance {} {} is unsupported", OpInfo::desc(op), colored_type_out(rhs_t)));
+    } else {
+      kphp_error(false, fmt_format("comparison instance with {} is prohibited (operation: {})", colored_type_out(rhs_t), OpInfo::desc(op)));
+    }
+  } else if (lhs_t->ptype() == tp_array) {
+    kphp_error(vk::any_of_equal(rhs_t->get_real_ptype(), tp_array, tp_bool, tp_var),
+               fmt_format("{} is always > than {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+  } else if (lhs_t->ptype() == tp_tuple) {
+    bool can_compare_with_tuple = vk::any_of_equal(op, op_eq2, op_neq2) &&
+                                  rhs_t->ptype() == tp_tuple && lhs_t->get_tuple_max_index() == rhs_t->get_tuple_max_index();
+    kphp_error(can_compare_with_tuple,
+               fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+  }
+
 }
 
 bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalCheckPass> &visit) {

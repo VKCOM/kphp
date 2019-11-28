@@ -24,7 +24,7 @@ function demo1() {
 
 function demo2() {
     $t1 = getTupleOrFalse(10);
-    if ($t1 == false) {             // not === (cause === makes var for now)
+    if (!$t1) {             // not === (cause === makes var for now)
         echo "t1 is false", "\n";
     } else {
         echo "t1 arg = " . $t1[2], "\n";
