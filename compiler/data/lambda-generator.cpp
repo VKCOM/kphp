@@ -113,7 +113,8 @@ LambdaGenerator &LambdaGenerator::generate(FunctionPtr parent_function) {
     m.function->function_in_which_lambda_was_created = parent_function;
   });
 
-  G->register_class(generated_lambda);
+  const bool is_ok = G->register_class(generated_lambda);
+  kphp_assert(is_ok);
   ++G->stats.total_lambdas;
 
   return *this;

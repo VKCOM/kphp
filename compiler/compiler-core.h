@@ -60,7 +60,7 @@ public:
 
   void register_function(FunctionPtr function);
   void register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require = false);
-  void register_class(ClassPtr cur_class);
+  bool register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
 
   FunctionPtr get_function(const string &name);

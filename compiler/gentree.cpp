@@ -1705,9 +1705,10 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     G->register_and_require_function(constructor_method, parsed_os, true);
   }
 
-  G->register_class(cur_class);
-  ++G->stats.total_classes;
-  G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
+  if (G->register_class(cur_class)) {
+    ++G->stats.total_classes;
+    G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
+  }
 
   return {};
 }
