@@ -89,6 +89,10 @@ public:
     return properties(op).type;
   }
 
+  static inline const std::string &desc(Operation op) {
+    return properties(op).description;
+  }
+
   static inline const std::string &str(Operation op) {
     return properties(op).str;
   }

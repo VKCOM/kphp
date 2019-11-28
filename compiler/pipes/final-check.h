@@ -25,7 +25,7 @@ public:
 private:
   void check_op_func_call(VertexAdaptor<op_func_call> call);
   void check_lib_exported_function(FunctionPtr function);
-  void check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, const char *op_str);
-  void check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, const char *op_str);
+  void check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op);
+  void check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, Operation op);
 };
 

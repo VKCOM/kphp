@@ -229,11 +229,11 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");
   }
-  if (vertex->type() == op_eq3 || vertex->type() == op_neq3) {
-    check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type() == op_eq3 ? "===" : "!==");
+  if (vk::any_of_equal(vertex->type(), op_eq3, op_neq3)) {
+    check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
-  if (vertex->type() == op_eq2 || vertex->type() == op_neq2) {
-    check_eq2_neq2(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type() == op_eq2 ? "==" : "!=");
+  if (vk::any_of_equal(vertex->type(), op_eq2, op_neq2)) {
+    check_eq2_neq2(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
   if (vertex->type() == op_add) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
@@ -418,12 +418,12 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
   }
 }
 
-void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, const char *op_str) {
+void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) {
   auto lhs_type = tinf::get_type(lhs);
   auto rhs_type = tinf::get_type(rhs);
 
   // для ===; по идее, эти же проверки нужны и при !==, но что-то слишком много ошибок на сайте
-  if (*op_str == '=') {
+  if (op == op_eq3) {
     if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
         (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
       kphp_warning("Using === with float operand");
@@ -438,15 +438,15 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, const char *op
     auto cmp_type = lhs_type->is_class_ptype() ? rhs_type : lhs_type;
     // пока что отдельной ошибкой ругаемся на ===/!== false: после поддержки null уже так нельзя, но будут писать по инерции
     if (cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag())) {
-      kphp_error(0, fmt_format("$instance {} {} is now prohibited: use if({}$instance)", op_str, colored_type_out(cmp_type), *op_str == '=' ? "!" : ""));
+      kphp_error(0, fmt_format("$instance {} {} is now prohibited: use if({}$instance)", OpInfo::desc(op), colored_type_out(cmp_type), (op == op_eq3) ? "" : "!"));
     } else {
       // а так, инстанс на три равно можно сравнивать только с другим инстансом (будет сравнение ссылок)
-      kphp_error(cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", op_str, colored_type_out(cmp_type)));
+      kphp_error(cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
     }
   }
 }
 
-void FinalCheckPass::check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, const char *op_str) {
+void FinalCheckPass::check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, Operation op) {
   auto lhs_type = tinf::get_type(lhs);
   auto rhs_type = tinf::get_type(rhs);
 
@@ -454,8 +454,8 @@ void FinalCheckPass::check_eq2_neq2(VertexPtr lhs, VertexPtr rhs, const char *op
   if (lhs_type->is_class_ptype() || rhs_type->is_class_ptype()) {
     auto cmp_type = lhs_type->is_class_ptype() ? rhs_type : lhs_type;
     // на два равно мы ничего не поддерживаем, даже == null
-    kphp_error(!cmp_type->is_class_ptype(), fmt_format("instance {} instance is unsuppoted (did you mean '{}='?)", op_str, op_str));
-    kphp_error( cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", op_str, colored_type_out(cmp_type)));
+    kphp_error(!cmp_type->is_class_ptype(), fmt_format("instance {} instance is unsuppoted (did you mean '{}='?)", OpInfo::desc(op), OpInfo::desc(op)));
+    kphp_error( cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
   }
 }
 

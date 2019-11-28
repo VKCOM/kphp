@@ -796,7 +796,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "eq2"
+      "str": "eq2",
+      "description": "=="
     }
   },
   {
@@ -806,7 +807,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "neq2"
+      "str": "neq2",
+      "description": "!="
     }
   },
   {
@@ -816,7 +818,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "equals"
+      "str": "equals",
+      "description": "==="
     }
   },
   {
@@ -826,7 +829,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "!equals"
+      "str": "!equals",
+      "description": "!=="
     }
   },
   {
@@ -836,7 +840,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": "<="
+      "str": "<=",
+      "description": "<="
     }
   },
   {
@@ -846,7 +851,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": ">="
+      "str": ">=",
+      "description": ">="
     }
   },
   {
@@ -856,7 +862,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": "<"
+      "str": "<",
+      "description": "<"
     }
   },
   {
@@ -866,7 +873,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_op",
-      "str": ">"
+      "str": ">",
+      "description": ">"
     }
   },
   {
@@ -876,7 +884,8 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "binary_func_op",
-      "str": "spaceship"
+      "str": "spaceship",
+      "description": "<=>"
     }
   },
   {
