@@ -30,6 +30,7 @@ Zend/tests/bug34879.phpt
 Zend/tests/bug35509.phpt
 Zend/tests/bug36037.phpt
 Zend/tests/bug37046.phpt
+Zend/tests/bug37707.phpt
 Zend/tests/bug38469.phpt
 Zend/tests/bug38623.phpt
 Zend/tests/bug39018.phpt
@@ -49,6 +50,7 @@ Zend/tests/bug45742.phpt
 Zend/tests/bug45910.phpt
 Zend/tests/bug45910_2.phpt
 Zend/tests/bug47596.phpt
+Zend/tests/bug52355.phpt
 Zend/tests/bug53632.phpt
 Zend/tests/bug55135.phpt
 Zend/tests/bug60573.phpt
@@ -64,6 +66,7 @@ Zend/tests/bug68797.phpt
 Zend/tests/bug69420.phpt
 Zend/tests/bug69676.phpt
 Zend/tests/bug69676_2.phpt
+Zend/tests/bug69676_3.phpt
 Zend/tests/bug69754.phpt
 Zend/tests/bug69756.phpt
 Zend/tests/bug69758.phpt
@@ -82,6 +85,7 @@ Zend/tests/bug72395.phpt
 Zend/tests/bug72508.phpt
 Zend/tests/bug72543.phpt
 Zend/tests/bug74810.phpt
+Zend/tests/bug76754.phpt
 Zend/tests/bug78271.phpt
 Zend/tests/class_properties_dynamic.phpt
 Zend/tests/closure_006.phpt
@@ -123,6 +127,7 @@ Zend/tests/nowdoc_017.phpt
 Zend/tests/objects_004.phpt
 Zend/tests/objects_010.phpt
 Zend/tests/objects_011.phpt
+Zend/tests/return_types/032.phpt
 Zend/tests/selfParent_001.phpt
 Zend/tests/selfParent_002.phpt
 Zend/tests/self_mod.phpt
@@ -133,6 +138,7 @@ Zend/tests/str_offset_003.phpt
 Zend/tests/temporary_cleaning_008.phpt
 Zend/tests/ternary_associativity.phpt
 Zend/tests/traits/bug55372.phpt
+Zend/tests/traits/bug74607.phpt
 Zend/tests/traits/bug74607a.phpt
 Zend/tests/traits/bugs/abstract-methods03.phpt
 Zend/tests/traits/bugs/overridding-conflicting-methods.phpt
@@ -150,7 +156,9 @@ Zend/tests/traits/language013.phpt
 Zend/tests/traits/no_static_arg_binding.phpt
 Zend/tests/traits/static_001.phpt
 Zend/tests/traits/static_003.phpt
+Zend/tests/type_declarations/default_boolean_hint_values.phpt
 Zend/tests/type_declarations/parameter_type_variance.phpt
+Zend/tests/type_declarations/parent_is_not_proto.phpt
 Zend/tests/type_declarations/variance/parent_in_class_failure2.phpt
 Zend/tests/unset_cv01.phpt
 Zend/tests/unset_cv03.phpt
@@ -386,6 +394,7 @@ ext/standard/tests/general_functions/header_redirection_011.phpt
 ext/standard/tests/general_functions/header_redirection_012.phpt
 ext/standard/tests/general_functions/header_redirection_013.phpt
 ext/standard/tests/general_functions/header_redirection_014.phpt
+ext/standard/tests/general_functions/isset_basic2.phpt
 ext/standard/tests/general_functions/ob_get_flush_error.phpt
 ext/standard/tests/general_functions/ob_get_length_basic.phpt
 ext/standard/tests/general_functions/php_uname_basic.phpt
