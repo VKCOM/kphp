@@ -1068,8 +1068,8 @@ string f$preg_quote(const string &str, const string &delimiter) {
 }
 
 void regexp::global_init() {
-  pcre_malloc = dl::malloc_replace;
-  pcre_free = dl::free_replace;
+  pcre_malloc = dl::replaceable_malloc;
+  pcre_free = dl::replaceable_free;
 
   extra.flags = PCRE_EXTRA_MATCH_LIMIT | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
   extra.match_limit = PCRE_BACKTRACK_LIMIT;

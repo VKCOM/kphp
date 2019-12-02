@@ -153,80 +153,141 @@ void heap_deallocate(void *mem, size_type size) {
   return get_memory_dealer().heap_resource().deallocate(mem, size);
 }
 
+namespace {
 // guaranteed alignment of dl::allocate
 const size_t MAX_ALIGNMENT = 8;
 
-void *malloc_replace(size_t size) {
+template<bool always_use_script_allocator>
+void *malloc_replace_impl(size_t size) noexcept {
   static_assert(sizeof(size_t) <= MAX_ALIGNMENT, "small alignment");
   const size_type MAX_ALLOC = 0xFFFFFF00;
   php_assert (size <= MAX_ALLOC - MAX_ALIGNMENT);
   const size_t real_allocate = size + MAX_ALIGNMENT;
   void *mem = nullptr;
-  if (replace_malloc_with_script_allocator) {
+  if (always_use_script_allocator || replace_malloc_with_script_allocator) {
     mem = allocate(real_allocate);
   } else {
     mem = heap_allocate(real_allocate);
   }
   if (unlikely(!mem)) {
     php_critical_error ("not enough memory to continue");
+    return mem;
   }
   *static_cast<size_t *>(mem) = real_allocate;
   return static_cast<char *>(mem) + MAX_ALIGNMENT;
 }
 
-void free_replace(void *mem) {
-  if (mem == nullptr) {
-    return;
-  }
-
-  mem = static_cast<char *>(mem) - MAX_ALIGNMENT;
-  if (replace_malloc_with_script_allocator) {
-    deallocate(mem, *static_cast<size_t *>(mem));
-  } else {
-    heap_deallocate(mem, *static_cast<size_t *>(mem));
+template<bool always_use_script_allocator>
+void free_replace_impl(void *mem) {
+  if (mem) {
+    mem = static_cast<char *>(mem) - MAX_ALIGNMENT;
+    if (always_use_script_allocator || replace_malloc_with_script_allocator) {
+      deallocate(mem, *static_cast<size_t *>(mem));
+    } else {
+      heap_deallocate(mem, *static_cast<size_t *>(mem));
+    }
   }
 }
+} // namespace
+
+void *script_allocator_malloc(size_t x) noexcept {
+  return malloc_replace_impl<true>(x);
+}
+
+void *script_allocator_calloc(size_t nmemb, size_t size) noexcept {
+  void *res = script_allocator_malloc(nmemb * size);
+  if (unlikely(res == nullptr)) {
+    return nullptr;
+  }
+  return memset(res, 0, nmemb * size);
+}
+
+void *script_allocator_realloc(void *p, size_t new_size) noexcept {
+  if (p == nullptr) {
+    return script_allocator_malloc(new_size);
+  }
+
+  if (new_size == 0) {
+    script_allocator_free(p);
+    return nullptr;
+  }
+
+  void *real_p = static_cast<char *>(p) - sizeof(size_t);
+  const size_t old_size = *static_cast<size_t *>(real_p);
+
+  // TODO reuse reallocate method
+  void *new_p = script_allocator_malloc(new_size);
+  if (likely(new_p != nullptr)) {
+    memcpy(new_p, p, std::min(new_size, old_size));
+    dl::deallocate(real_p, old_size);
+  }
+  return new_p;
+}
+
+char *script_allocator_strdup(const char *str) noexcept {
+  const size_t len = strlen(str) + 1;
+  char *res = static_cast<char *>(script_allocator_malloc(len));
+  if (unlikely(res == nullptr)) {
+    return nullptr;
+  }
+  memcpy(res, str, len);
+  return res;
+}
+
+void script_allocator_free(void *p) noexcept {
+  return free_replace_impl<true>(p);
+}
+
+
+void *replaceable_malloc(size_t x) noexcept {
+  return malloc_replace_impl<false>(x);
+}
+
+void replaceable_free(void *p) noexcept {
+  return free_replace_impl<false>(p);
+}
+
 } // namespace dl
 
 // replace global operators new and delete for linked C++ code
 void *operator new(std::size_t size) {
-  return dl::malloc_replace(size);
+  return dl::replaceable_malloc(size);
 }
 
 void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
-  return dl::malloc_replace(size);
+  return dl::replaceable_malloc(size);
 }
 
 void *operator new[](std::size_t size) {
-  return dl::malloc_replace(size);
+  return dl::replaceable_malloc(size);
 }
 
 void *operator new[](std::size_t size, const std::nothrow_t &) noexcept {
-  return dl::malloc_replace(size);
+  return dl::replaceable_malloc(size);
 }
 
 void operator delete(void *mem) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 
 void operator delete(void *mem, const std::nothrow_t &) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 
 void operator delete[](void *mem) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 
 void operator delete[](void *mem, const std::nothrow_t &) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 
 #if __cplusplus >= 201402L
 void operator delete(void *mem, size_t) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 
 void operator delete[](void *mem, size_t) noexcept {
-  return dl::free_replace(mem);
+  return dl::replaceable_free(mem);
 }
 #endif

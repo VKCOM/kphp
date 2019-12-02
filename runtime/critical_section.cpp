@@ -15,13 +15,13 @@ namespace dl {
 volatile int in_critical_section = 0;
 volatile long long pending_signals = 0;
 
-void enter_critical_section() {
+void enter_critical_section() noexcept {
   check_stack_overflow();
   php_assert (in_critical_section >= 0);
   in_critical_section++;
 }
 
-void leave_critical_section() {
+void leave_critical_section() noexcept {
   in_critical_section--;
   php_assert (in_critical_section >= 0);
   if (pending_signals && in_critical_section <= 0) {
@@ -33,7 +33,7 @@ void leave_critical_section() {
   }
 }
 
-void init_critical_section() {
+void init_critical_section() noexcept {
   in_critical_section = 0;
   pending_signals = 0;
 }

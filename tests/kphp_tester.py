@@ -170,6 +170,7 @@ class TestRunner:
             ("extension", "bcmath.so"),
             ("extension", "iconv.so"),
             ("extension", "mbstring.so"),
+            ("extension", "curl.so"),
             ("extension", "vkext.so"),
             ("memory_limit", "3072M"),
             ("xdebug.var_display_max_depth", -1),

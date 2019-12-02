@@ -38,8 +38,14 @@ void *heap_allocate(size_type n); // allocate heap memory (persistent between sc
 void *heap_reallocate(void *p, size_type new_size, size_type old_size); // reallocate heap memory
 void heap_deallocate(void *p, size_type n); // deallocate heap memory
 
-void *malloc_replace(size_t x);
-void free_replace(void *p);
+void *script_allocator_malloc(size_t x) noexcept;
+void *script_allocator_calloc(size_t nmemb, size_t size) noexcept;
+void *script_allocator_realloc(void *p, size_t x) noexcept;
+char *script_allocator_strdup(const char *str) noexcept;
+void script_allocator_free(void *p) noexcept;
+
+void *replaceable_malloc(size_t x) noexcept;
+void replaceable_free(void *p) noexcept;
 
 } // namespace dl
 

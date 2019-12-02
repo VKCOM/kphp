@@ -983,14 +983,25 @@ define('UPLOAD_ERR_EXTENSION', 8);
 function mail ($to ::: string, $subject ::: string, $message ::: string, $additional_headers ::: string = "") ::: bool;
 
 function curl_init ($url ::: string = "") ::: int;
-function curl_set_header_function ($id ::: int, callback ($x ::: var, $y ::: var) ::: var) ::: bool;
-function curl_setopt ($id ::: int, $option ::: int, $value ::: var) ::: bool;
-function curl_setopt_array ($id ::: int, $options ::: array) ::: bool;
-function curl_exec ($id ::: int) ::: var;
-function curl_getinfo ($id ::: int, $option ::: int = 0) ::: var;
-function curl_error ($id ::: int) ::: string;
-function curl_errno ($id ::: int) ::: int;
-function curl_close ($id ::: int) ::: void;
+function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: var) ::: bool;
+function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
+function curl_exec ($curl_handle ::: int) ::: var;
+function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: var;
+function curl_error ($curl_handle ::: int) ::: string;
+function curl_errno ($curl_handle ::: int) ::: int;
+function curl_close ($curl_handle ::: int) ::: void;
+
+function curl_multi_init () ::: int;
+function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
+function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
+function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: int) ::: bool;
+function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
+function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
+function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
+function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
+function curl_multi_errno ($multi_handle ::: int) ::: int|false;
+function curl_multi_close ($multi_handle ::: int) ::: void;
+function curl_multi_strerror ($errornum ::: int) ::: string|null;
 
 
 define('CURLINFO_EFFECTIVE_URL', 100000);
@@ -1169,6 +1180,28 @@ define('CURLFTPMETHOD_SINGLECWD', 900002);
 
 define('CURLOPT_RETURNTRANSFER', 1234567);
 define('CURLINFO_HEADER_OUT', 7654321);
+
+define('CURLMOPT_PIPELINING', 1000);
+define('CURLMOPT_MAXCONNECTS', 1001);
+define('CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE', 1002);
+define('CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE', 1003);
+define('CURLMOPT_MAX_HOST_CONNECTIONS', 1004);
+define('CURLMOPT_MAX_PIPELINE_LENGTH', 1005);
+define('CURLMOPT_MAX_TOTAL_CONNECTIONS', 1006);
+
+define('CURLPIPE_NOTHING', 0);
+define('CURLPIPE_HTTP1', 1);
+define('CURLPIPE_MULTIPLEX', 2);
+
+define("CURLM_CALL_MULTI_PERFORM", -1);
+define("CURLM_OK", 0);
+define("CURLM_BAD_HANDLE", 1);
+define("CURLM_BAD_EASY_HANDLE", 2);
+define("CURLM_OUT_OF_MEMORY", 3);
+define("CURLM_INTERNAL_ERROR", 4);
+define("CURLM_BAD_SOCKET", 5);
+define("CURLM_UNKNOWN_OPTION", 6);
+define("CURLM_ADDED_ALREADY", 7);
 
 function get_reference_counter ($v) ::: int;
 function prepare_search_query ($query ::: string) ::: string;

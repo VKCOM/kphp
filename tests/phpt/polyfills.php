@@ -114,4 +114,7 @@ function register_kphp_on_warning_callback($callback) {
   set_error_handler($handler);
 }
 
+define('kphp', 0);
+if (0)
 #endif
+define('kphp', 1);
