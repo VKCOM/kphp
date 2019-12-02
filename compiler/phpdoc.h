@@ -31,6 +31,7 @@ struct php_doc_tag {
     kphp_tl_class,
     kphp_const,
     kphp_noreturn,
+    kphp_runtime_check
   };
 
 public:

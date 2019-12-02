@@ -25,12 +25,13 @@ private:
   int min_argn = -1;
 
 public:
-  // при @kphp-infer hint/check над функцией — все необходимые type rule хранятся в векторе infer_hints
+  // при @kphp-infer hint/check и @kphp-runtime-check над функцией — все необходимые type rule хранятся в векторе infer_hints
   struct InferHint {
     enum infer_mask {
-      check = 0b001,
-      hint = 0b010,
-      cast = 0b100
+      check = 0b0001,
+      hint = 0b0010,
+      cast = 0b0100,
+      runtime_check = 0b1000
     };
 
     InferHint() = delete;   // создать можно только определяя все 3 параметра

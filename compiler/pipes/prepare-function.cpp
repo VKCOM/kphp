@@ -89,6 +89,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_runtime_check: {
+        infer_type |= infer_mask::runtime_check;
+        break;
+      }
+
       case php_doc_tag::kphp_disable_warnings: {
         std::istringstream is(tag.value);
         std::string token;
@@ -184,8 +189,10 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
   }
 
-  if (infer_type) {             // при наличии @kphp-infer парсим все @param'ы
-    bool has_return_php_doc = false;
+  // при наличии @kphp-infer или @kphp-runtime-check парсим все @param'ы
+  if (infer_type) {
+    // для @kphp-runtime-check делаем вид, что @return есть всегда
+    bool has_return_php_doc = infer_type == infer_mask::runtime_check;
 
     for (auto &tag : tags) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
       stage::set_line(tag.line_num);
@@ -242,6 +249,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             kphp_error(cur_func_param->type_help == tp_Unknown,
                        fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
             cur_func_param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
+          }
+          if (infer_type & infer_mask::runtime_check) {
+            f->add_kphp_infer_hint(infer_mask::runtime_check, param_i, doc_parsed.type_expr);
           }
 
           break;
