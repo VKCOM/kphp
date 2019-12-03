@@ -51,6 +51,9 @@ T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const 
                 const T &a7 = T(), const T &a8 = T(), const T &a9 = T(),
                 const T &a10 = T(), const T &a11 = T(), const T &a12 = T());
 
+template<class T, class T1>
+void f$array_merge_into(T &a, const T1 &another_array);
+
 template<class T>
 T f$array_replace(const T &base_array, const T &replacements = T());
 
@@ -692,6 +695,11 @@ T f$array_merge(const T &a1, const T &a2) {
   result.merge_with(a1);
   result.merge_with(a2);
   return result;
+}
+
+template<class T, class T1>
+void f$array_merge_into(T &a, const T1 &another_array) {
+  a.merge_with(another_array);
 }
 
 template<class T>

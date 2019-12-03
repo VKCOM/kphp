@@ -62,6 +62,10 @@ function array_keys_as_ints($a) {
   return $keys;
 }
 
+function array_merge_into(array &$a, array $another_array) {
+  $a = array_merge($a, $another_array);
+}
+
 function instance_cast($instance, $unused) {
     return $instance;
 }

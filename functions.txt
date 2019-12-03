@@ -180,6 +180,7 @@ function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = 
             $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
            $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
                 ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+function array_merge_into (&$a ::: array, $another_array ::: array) ::: void;
 /** @kphp-extern-func-info cpp_template_call */
 function array_replace ($base_array ::: array,
             $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),

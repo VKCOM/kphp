@@ -218,34 +218,41 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->func_id;
   VertexRange function_params = function->get_params();
 
-  //hardcoded hack
-  if (function->name == "array_unshift" || function->name == "array_push") {
-    VertexRange args = call->args();
-    LValue val = as_lvalue(args[0]);
+  if (function->is_extern()) {
+    if (function->name == "array_unshift" || function->name == "array_push") {
+      VertexRange args = call->args();
+      LValue val = as_lvalue(args[0]);
 
-    auto key = new MultiKey(*val.key);
-    key->push_back(Key::any_key());
-    val.key = key;
+      auto key = new MultiKey(*val.key);
+      key->push_back(Key::any_key());
+      val.key = key;
 
-    for (auto i : VertexRange(args.begin() + 1, args.end())) {
-      create_set(val, i);
+      for (auto i : VertexRange(args.begin() + 1, args.end())) {
+        create_set(val, i);
+      }
+    }
+
+    if (function->name == "array_merge_into") {
+      VertexPtr another_array_arg = call->args()[1];
+      LValue dest_array_arg = as_lvalue(call->args()[0]);
+
+      create_set(dest_array_arg, another_array_arg);
+    }
+
+    if (function->name == "wait_queue_push") {
+      VertexRange args = call->args();
+      LValue val = as_lvalue(args[0]);
+
+      auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
+      auto ref = VertexAdaptor<op_type_expr_arg_ref>::create();
+      ref->int_val = 2;
+      auto rule = GenTree::create_type_help_vertex(tp_future_queue, {VertexAdaptor<op_index>::create(ref)});
+      fake_func_call->type_rule = VertexAdaptor<op_common_type_rule>::create(rule);
+      fake_func_call->func_id = call->func_id;
+
+      create_set(val, fake_func_call);
     }
   }
-
-  if (function->name == "wait_queue_push") {
-    VertexRange args = call->args();
-    LValue val = as_lvalue(args[0]);
-
-    auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
-    auto ref = VertexAdaptor<op_type_expr_arg_ref>::create();
-    ref->int_val = 2;
-    auto rule = GenTree::create_type_help_vertex(tp_future_queue, {VertexAdaptor<op_index>::create(ref)});
-    fake_func_call->type_rule = VertexAdaptor<op_common_type_rule>::create(rule);
-    fake_func_call->func_id = call->func_id;
-
-    create_set(val, fake_func_call);
-  }
-
 
   if (function->has_variadic_param) {
     auto id_of_last_param = function_params.size() - 1;
