@@ -57,7 +57,7 @@ public:
 
         auto tmp_var = VertexAdaptor<op_var>::create();
         tmp_var->set_string(gen_unique_name("tmp_for_clone"));
-        tmp_var->extra_type = op_ex_var_superlocal_inplace;
+        tmp_var->extra_type = op_ex_var_superlocal;
 
         assumption_add_for_var(stage::get_function(), tmp_var->get_string(), Assumption::instance(a.klass));
 

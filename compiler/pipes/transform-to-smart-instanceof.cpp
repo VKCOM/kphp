@@ -96,7 +96,7 @@ VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance
 
   auto tmp_var = VertexAdaptor<op_var>::create();
   tmp_var->set_string(gen_unique_name(instance_var->get_string()));
-  tmp_var->extra_type = op_ex_var_superlocal_inplace;
+  tmp_var->extra_type = op_ex_var_superlocal;
   tmp_var->is_const = true;
 
   auto set_instance_cast_to_tmp = VertexAdaptor<op_set>::create(tmp_var, cast_to_derived);

@@ -164,8 +164,7 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
   if (var->var_id) {
     // автогенерённые через CREATE_VERTEX op_var типы, когда один VarData на несколько разных vertex'ов
-    kphp_assert (var->var_id->is_constant() ||
-                 var->var_id->type() == VarData::var_local_inplace_t);
+    kphp_assert (var->var_id->is_constant() || vk::any_of_equal(var->var_id->type(), VarData::var_local_inplace_t, VarData::var_local_t));
     return;
   }
   register_var(var);
