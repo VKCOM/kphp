@@ -35,6 +35,8 @@ Storage *get_storage(int resumable_id) {
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
 
+static inline void update_current_resumable_id(int new_id);
+
 bool Resumable::resume(int resumable_id, Storage *input) {
   if (input) {
     php_assert(check_started_storage(input) || check_forked_storage(input));
@@ -42,14 +44,12 @@ bool Resumable::resume(int resumable_id, Storage *input) {
   int parent_id = runned_resumable_id;
 
   input_ = input;
-  runned_resumable_id = resumable_id;
-  update_output();
+  update_current_resumable_id(resumable_id);
 
   bool res = run();
 
   input_ = nullptr;//must not be used
-  runned_resumable_id = parent_id;
-  update_output();
+  update_current_resumable_id(parent_id);
 
   return res;
 }
@@ -68,6 +68,7 @@ struct forked_resumable_info {
   int queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
   int son;
   const char *name;
+  double running_time;
 };
 
 struct started_resumable_info {
@@ -197,6 +198,22 @@ int register_forked_resumable(Resumable *resumable) {
   return res_id;
 }
 
+static inline void update_current_resumable_id(int new_id) {
+  int old_running_fork = f$get_running_fork_id();
+  runned_resumable_id = new_id;
+  int new_running_fork = f$get_running_fork_id();
+  if (new_running_fork != old_running_fork) {
+    update_precise_now();
+    if (old_running_fork) {
+      get_forked_resumable_info(old_running_fork)->running_time += get_precise_now();
+    }
+    if (new_running_fork) {
+      get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
+    }
+  }
+  Resumable::update_output();
+}
+
 int f$get_running_fork_id() {
   if (runned_resumable_id == 0) {
     return 0;
@@ -209,6 +226,33 @@ int f$get_running_fork_id() {
   }
   php_assert (false);
   return 0;
+}
+
+Optional<array<var>> f$get_fork_stat(int fork_id) {
+  auto info = get_forked_resumable_info(fork_id);
+  if (!info) {
+    return false;
+  }
+  if (info->queue_id == -1 && info->output.tag == 0) {
+    return false;
+  }
+
+  array<var> result;
+  result.set_value(string("id"), fork_id);
+  result.set_value(string("name"), string(info->name));
+  if (info->queue_id < 0) {
+    result.set_value(string("state"), string("finished"));
+  } else if (fork_id == f$get_running_fork_id()){
+    result.set_value(string("state"), string("running"));
+  } else {
+    result.set_value(string("state"), string("blocked"));
+  }
+  double running_time = info->running_time;
+  if (fork_id == f$get_running_fork_id()) {
+    running_time += get_precise_now();
+  }
+  result.set_value(string("work_time"), running_time);
+  return result;
 }
 
 int register_started_resumable(Resumable *resumable) {

@@ -115,6 +115,7 @@ void global_init_resumable_lib();
 void init_resumable_lib();
 
 int f$get_running_fork_id();
+Optional<array<var>> f$get_fork_stat(int fork_id);
 
 /*
  *

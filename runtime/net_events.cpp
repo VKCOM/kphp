@@ -1,5 +1,7 @@
 #include "runtime/net_events.h"
 
+#include "common/precise-time.h"
+
 #include "runtime/allocator.h"
 #include "runtime/rpc.h"
 #include "server/php-queries.h"
@@ -17,16 +19,14 @@ int timeout_convert_to_ms(double timeout) {
 }
 
 
-static double precise_now;
+static double kphp_precise_now;
 
 void update_precise_now() {
-  struct timespec T;
-  php_assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
-  precise_now = (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
+  kphp_precise_now = get_network_time();
 }
 
 double get_precise_now() {
-  return precise_now;
+  return kphp_precise_now;
 }
 
 static bool process_net_event(net_event_t *e) {
@@ -104,7 +104,7 @@ static inline int event_timer_heap_move_down(double wakeup_time, int i) {
 event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra) {
   event_timer *et = static_cast <event_timer *> (dl::allocate(sizeof(event_timer)));
   php_assert (0 <= wakeup_callback_id && wakeup_callback_id < wakeup_callbacks_size);
-  php_assert (precise_now < wakeup_time);
+  php_assert (get_precise_now() < wakeup_time);
 
   et->wakeup_extra = wakeup_extra;
   et->wakeup_time = wakeup_time;
@@ -143,7 +143,7 @@ void remove_event_timer(event_timer *et) {
 
 int remove_expired_event_timers() {
   int expired_events = 0;
-  while (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= precise_now) {
+  while (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= get_precise_now()) {
     event_timer *et = event_timers_heap[1];
     wakeup_callbacks[et->heap_index >> (31 - MAX_WAKEUP_CALLBACKS_EXP)](et);
     expired_events++;
@@ -154,16 +154,16 @@ int remove_expired_event_timers() {
 
 int wait_net(int timeout_ms) {
   bool some_expires = false;//TODO remove assert
-  double begin_time = precise_now;
+  double begin_time = get_precise_now();
   double expire_event_time = 0.0;
 //  fprintf (stderr, "wait_net_begin\n");
   int finished_events = process_net_events();
   if (finished_events) {
     timeout_ms = 0;
   } else {
-    if (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= precise_now + timeout_ms * 0.001) {
+    if (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= get_precise_now() + timeout_ms * 0.001) {
       if (timeout_ms > 0) {
-        timeout_ms = timeout_convert_to_ms(event_timers_heap[1]->wakeup_time - precise_now);
+        timeout_ms = timeout_convert_to_ms(event_timers_heap[1]->wakeup_time - get_precise_now());
       }
       some_expires = true;
       expire_event_time = event_timers_heap[1]->wakeup_time;
@@ -178,7 +178,7 @@ int wait_net(int timeout_ms) {
   finished_events += remove_expired_event_timers();
 
   if (some_expires && !finished_events) {
-    php_warning("Have no finished events, but we must have them. begin_time = %.9lf, expire_event_time = %.9lf, timeout_ms = %d, now = %.9lf", begin_time, expire_event_time, timeout_ms, precise_now);
+    php_warning("Have no finished events, but we must have them. begin_time = %.9lf, expire_event_time = %.9lf, timeout_ms = %d, now = %.9lf", begin_time, expire_event_time, timeout_ms, get_precise_now());
   }
 
 //  fprintf (stderr, "wait_net_end %d\n", finished_events);

@@ -859,16 +859,17 @@ function wait_synchronously ($id :<=: future<Any> | false) ::: bool;
 /** @kphp-extern-func-info resumable */
 function wait_multiple ($id ::: Any) ::: bool;
 function wait_queue_create ($request_ids :<=: array< future<Any> | false > = []) ::: future_queue<^1[*][*]>;
-function wait_queue_push (&$queue_id :<=: future_queue(Any), $request_ids :<=: future<Any> | false) ::: void;
-function wait_queue_empty ($queue_id :<=: future_queue(Any)) ::: bool;
+function wait_queue_push (&$queue_id :<=: future_queue<Any>, $request_ids :<=: future<Any> | false) ::: void;
+function wait_queue_empty ($queue_id :<=: future_queue<Any>) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id :<=: future_queue(Any), $timeout ::: float = -1.0) ::: future<^1[*]> | false;
-function wait_queue_next_synchronously ($queue_id :<=: future_queue(Any)) ::: future<^1[*]> | false;
+function wait_queue_next ($queue_id :<=: future_queue<Any>, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
+function wait_queue_next_synchronously ($queue_id :<=: future_queue<Any>) ::: future<^1[*]> | false;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
 function sched_yield_sleep($timeout ::: float) ::: void;
 function get_running_fork_id() ::: future <void>;
+function get_fork_stat($fork :<=: future<Any>) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 
