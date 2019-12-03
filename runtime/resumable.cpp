@@ -193,6 +193,7 @@ int register_forked_resumable(Resumable *resumable) {
   res->continuation = resumable;
   res->queue_id = 0;
   res->son = 0;
+  res->running_time = 0;
   res->name = resumable ? typeid(*resumable).name() : "(null)";
 
   return res_id;
