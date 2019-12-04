@@ -865,7 +865,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 void compile_runtime_var_check_expresion(VarPtr param, VertexPtr rule, CodeGenerator &W) {
   if (auto lca_rule = rule.try_as<op_type_expr_lca>()) {
-    W << JoinValues(*lca_rule, " | ", join_mode::one_line,
+    W << JoinValues(*lca_rule, " || ", join_mode::one_line,
                     [param](CodeGenerator &W, VertexPtr sub_rule) {
                       compile_runtime_var_check_expresion(param, sub_rule, W);
                     });
