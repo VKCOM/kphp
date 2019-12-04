@@ -1487,9 +1487,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
   int len = raw->total_bytes;
 
-  if (sigterm_on && sigterm_time < precise_now) {
-    return 0;
-  }
+  bool in_sigterm = sigterm_on && sigterm_time < precise_now;
+  c->last_response_time = precise_now;
 
   auto MAX_RPC_QUERY_LEN = 126214400;
   if (len < sizeof(long long) || MAX_RPC_QUERY_LEN < len) {
@@ -1501,12 +1500,15 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
   switch (static_cast<unsigned int>(op)) {
     case TL_KPHP_STOP_LEASE: {
+      if (in_sigterm) {
+        return 0;
+      }
       do_rpc_stop_lease();
       break;
     }
     case TL_KPHP_START_LEASE: {
       // Ответ от rpc-proxy с pid'ом тасок
-      if (!check_tasks_manager_pid(remote_pid)) {
+      if (!check_tasks_manager_pid(remote_pid) || in_sigterm) {
         return 0;
       }
       tl_fetch_init_tcp_raw_message(raw, len);
@@ -1535,6 +1537,9 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       return 0;
     }
     case TL_RPC_INVOKE_REQ: {
+      if (in_sigterm) {
+        return 0;
+      }
       // Пришла задача от тасок
       tl_fetch_init_tcp_raw_message(raw, len);
       auto op_from_tl = tl_fetch_int();
@@ -1579,7 +1584,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     case TL_RPC_REQ_ERROR:
     case TL_RPC_REQ_RESULT: {
       // Ответ или ошибка от движка
-      c->last_response_time = precise_now;
       int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
       assert(result_len >= 0);
 
@@ -1606,7 +1610,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       break;
     }
     case TL_RPC_PONG:
-      c->last_response_time = precise_now;
       break;
   }
   if (event_status) {
