@@ -99,6 +99,7 @@ public:
   bool is_virtual_method = false;
   bool is_overridden_method = false;
   bool is_no_return = false;
+  bool warn_unused_result = false;
 
   ClassPtr class_id;
   ClassPtr context_class;

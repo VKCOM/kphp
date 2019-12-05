@@ -94,6 +94,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_warn_unused_result: {
+        f->warn_unused_result = true;
+        break;
+      }
+
       case php_doc_tag::kphp_disable_warnings: {
         std::istringstream is(tag.value);
         std::string token;

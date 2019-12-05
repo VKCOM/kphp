@@ -20,6 +20,15 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
     }
   }
 
+  if (root->rl_type == val_none) {
+    if (auto call = root.try_as<op_func_call>()) {
+      FunctionPtr f = call->func_id;
+      if (f->warn_unused_result) {
+        kphp_error(false, "Result of function call is unused, but function is marked with @kphp-warn-unused-result");
+      }
+    }
+  }
+
   if (auto return_op = root.try_as<op_return>()) {
     if (is_void_fun(current_function) && return_op->has_expr() && is_void_expr(return_op->expr())) {
       std::vector<VertexPtr> seq;
