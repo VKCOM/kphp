@@ -76,8 +76,16 @@ vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
     if (lines[i][0] == '@') {
       result.emplace_back(php_doc_tag());
       size_t pos = lines[i].find(' ');
-      result.back().name = lines[i].substr(0, pos);
-      result.back().type = php_doc_tag::get_doc_type(result.back().name);
+
+      auto name = lines[i].substr(0, pos);
+      auto type = php_doc_tag::get_doc_type(name);
+      if (vk::string_view{name}.starts_with("@kphp") && type == php_doc_tag::unknown) {
+        kphp_error(0, fmt_format("unrecognized kphp tag: {}", name));
+      }
+
+      result.back().name = std::move(name);
+      result.back().type = type;
+
       if (pos != string::npos) {
         int ltrim_pos = pos + 1;
         while (lines[i][ltrim_pos] == ' ') {
