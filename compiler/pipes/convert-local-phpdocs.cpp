@@ -21,6 +21,8 @@ VertexPtr ConvertLocalPhpdocsPass::visit_phpdoc_and_extract_vars(VertexAdaptor<o
     if (var_it == lookup_vars_list.end()) {
       return VertexPtr{};
     }
+    // структура op_phpdoc_var — это единственный child (op_var) с var_id и type_rule для tinf
+    // (с таким подходом, автоматом прокидывается как usage в cfg и collect edges)
     auto inner_var = VertexAdaptor<op_var>::create().set_location(stage::get_location());
     inner_var->type_rule = VertexAdaptor<op_set_check_type_rule>::create(tag_var.type_expr);
     inner_var->var_id = *var_it;

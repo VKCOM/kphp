@@ -2092,6 +2092,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return get_class(phpdoc_str, ClassType::trait);
     default:
       res = get_expression();
+      // todo упростить при наличии инета
       if (!res) {
         if (cur->type() == tok_semicolon) {
           auto empty = VertexAdaptor<op_empty>::create();

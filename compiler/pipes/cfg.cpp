@@ -224,7 +224,8 @@ private:
 
 enum UsageType : uint8_t {
   usage_write_t,
-  usage_read_t
+  usage_read_t,
+  usage_type_hint_t
 };
 
 struct UsageData {
@@ -257,7 +258,7 @@ struct VarSplitData {
   int n = 0;
 
   IdGen<UsagePtr> usage_gen;
-  IdMap<UsagePtr> parent;
+  IdMap<UsagePtr> parent;       // dsu
 
   VarSplitData() {
     usage_gen.add_id_map(&parent);
@@ -277,7 +278,8 @@ class CFG {
   Node current_start;
 
   IdMap<int> node_was;
-  IdMap<UsagePtr> node_mark;
+  IdMap<UsagePtr> node_mark_dfs;
+  IdMap<int> node_mark_dfs_type_hint;
   IdMap<VarSplitPtr> var_split_data;
 
   std::vector<std::vector<Node>> continue_nodes;
@@ -312,7 +314,8 @@ class CFG {
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
   void compress_usages(std::vector<UsagePtr> &usages);
-  void dfs(Node v, UsagePtr usage);
+  void dfs_uni_rw_usages(Node v, UsagePtr usage);
+  void dfs_apply_type_hint(Node v, UsagePtr usage);
   void process_var(VarPtr v);
   int register_vertices(VertexPtr v, int N);
   void process_function(FunctionPtr func);
@@ -717,9 +720,11 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_phpdoc_var: {
-      // пока не обращаем внимание на /** @var $v type */ — будто их вообще нет
       Node res = new_node();
+      UsagePtr usage = new_usage(usage_type_hint_t, tree_node.as<op_phpdoc_var>()->var());
+      add_usage(res, usage);
       *res_start = *res_finish = res;
+      add_subtree(*res_start, tree_node.as<op_phpdoc_var>()->var(), false);
       break;
     }
     case op_if: {
@@ -1077,25 +1082,52 @@ void CFG::compress_usages(std::vector<UsagePtr> &usages) {
   usages = std::move(res);
 }
 
-void CFG::dfs(Node v, UsagePtr usage) {
-  UsagePtr other_usage = node_mark[v];
+void CFG::dfs_uni_rw_usages(Node v, UsagePtr usage) {
+  UsagePtr other_usage = node_mark_dfs[v];
   if (other_usage) {
     try_uni_usages(usage, other_usage);
     return;
   }
-  node_mark[v] = usage;
+  node_mark_dfs[v] = usage;
 
-  bool return_flag = false;
-  for (UsagePtr another_usage : node_usages[v]) {
+  bool write_usage_found = false;
+  for (auto another_usage : node_usages[v]) {
     if (try_uni_usages(usage, another_usage) && another_usage->type == usage_write_t) {
-      return_flag = true;
+      write_usage_found = true;
     }
   }
-  if (return_flag) {
+  if (write_usage_found) {
     return;
   }
   for (Node i : node_prev[v]) {
-    dfs(i, usage);
+    dfs_uni_rw_usages(i, usage);
+  }
+}
+
+void CFG::dfs_apply_type_hint(Node v, UsagePtr usage) {
+  UsagePtr other_usage = node_mark_dfs[v];
+  if (other_usage && other_usage->type != usage_type_hint_t) {
+    try_uni_usages(usage, other_usage);
+  }
+  if (node_mark_dfs_type_hint[v]) {    // без этого входит в бесконечный цикл, т.к. node_next граф с циклами
+    return;
+  }
+  node_mark_dfs[v] = usage;
+  node_mark_dfs_type_hint[v] = 1;
+
+  bool another_type_hint_found = false;
+  for (UsagePtr another_usage : node_usages[v]) {
+    if (another_usage->type == usage_type_hint_t && get_index(usage) != get_index(another_usage)) {
+      another_type_hint_found = true;
+    } else {
+      try_uni_usages(usage, another_usage);
+    }
+  }
+  if (another_type_hint_found) {
+    return;
+  }
+  for (Node i : node_next[v]) {
+    dfs_apply_type_hint(i, usage);
   }
 }
 
@@ -1139,9 +1171,17 @@ void CFG::process_var(VarPtr var) {
     }
   }
 
-  std::fill(node_mark.begin(), node_mark.end(), UsagePtr());
+  std::fill(node_mark_dfs.begin(), node_mark_dfs.end(), UsagePtr());
+  std::fill(node_mark_dfs_type_hint.begin(), node_mark_dfs_type_hint.end(), 0);
   for (UsagePtr u : var_split->usage_gen) {
-    dfs(u->node, u);
+    if (u->type != usage_type_hint_t) {
+      dfs_uni_rw_usages(u->node, u);
+    }
+  }
+  for (UsagePtr u : var_split->usage_gen) {
+    if (u->type == usage_type_hint_t) {
+      dfs_apply_type_hint(u->node, u);
+    }
   }
 
   //fprintf (stdout, "PROCESS:[%s][%d]\n", var->name.c_str(), var->id);
@@ -1263,7 +1303,8 @@ void CFG::process_function(FunctionPtr function) {
   node_gen.add_id_map(&node_next);
   node_gen.add_id_map(&node_prev);
   node_gen.add_id_map(&node_was);
-  node_gen.add_id_map(&node_mark);
+  node_gen.add_id_map(&node_mark_dfs);
+  node_gen.add_id_map(&node_mark_dfs_type_hint);
   node_gen.add_id_map(&node_usages);
   node_gen.add_id_map(&node_subtrees);
   cur_dfs_mark = 0;
