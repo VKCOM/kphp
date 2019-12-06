@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once "polyfill/fork-php-polyfill.php";
+require_once __DIR__ . "/../dl/polyfill/fork-php-polyfill.php";
 
 function g ($x) {
   switch ($x) {

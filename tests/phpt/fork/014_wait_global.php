@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once "polyfill/fork-php-polyfill.php";
+require_once __DIR__ . "/../dl/polyfill/fork-php-polyfill.php";
 
 $a = array (0 => 1, 1 => 2);
 
