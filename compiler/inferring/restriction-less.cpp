@@ -216,11 +216,15 @@ string RestrictionLess::get_actual_error_message() {
       (as_expr_0->get_expr()->type() == op_instance_prop ||
        (var_0 && var_0->var_id && (var_0->var_id->is_class_instance_var() || var_0->var_id->is_class_static_var()))) &&
       as_var_1 && as_var_1->is_variable()) {
-    return string("Incorrect type of class field: ") + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
+    return "Incorrect type of class field: " + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
   }
 
   if (as_var_0 && as_var_0->is_argument_of_function()) {
-    return string("Incorrect type of the ") + TermStringFormat::add_text_attribute(as_var_0->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_0->get_function_name() + "\n";
+    return "Incorrect type of the " + TermStringFormat::add_text_attribute(as_var_0->get_var_as_argument_name(), TermStringFormat::bold, false) + " at " + as_var_0->get_function_name() + "\n";
+  }
+
+  if (var_0 && var_0->var_id && as_var_1 && !as_type_2 && var_0->str_val == as_var_1->var_->name) {
+    return "Incorrect type of variable " + TermStringFormat::add_text_attribute(var_0->var_id->get_human_readable_name(), TermStringFormat::bold, false) + "\n";
   }
 
   if (as_expr_0 && as_var_1 && as_type_2 && as_type_2->type_->ptype() == tp_var) {
