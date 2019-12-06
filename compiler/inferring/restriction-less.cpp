@@ -228,8 +228,7 @@ string RestrictionLess::get_actual_error_message() {
   }
 
   if (as_expr_0 && as_var_1 && as_type_2 && as_type_2->type_->ptype() == tp_var) {
-    return TermStringFormat::paint("Unexpected conversion to var one of the arguments of the following function:\n", TermStringFormat::red, false) + TermStringFormat::add_text_attribute(as_expr_0
-                                                                                                                                                                                            ->get_location_text(), TermStringFormat::bold, false) + "\n";
+    return TermStringFormat::paint("Unexpected conversion to var one of the arguments of the following function:\n", TermStringFormat::red, false) + TermStringFormat::add_text_attribute(as_expr_0->get_location_text(), TermStringFormat::bold, false) + "\n";
   }
 
   if (as_var_0 && as_var_0->is_return_value_from_function()) {
