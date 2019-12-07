@@ -1,18 +1,13 @@
 #pragma once
 
-#include <set>
+#include <map>
 #include <string>
+#include <stack>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
 
 class TransformToSmartInstanceof final : public FunctionPassBase {
-private:
-  struct NewNameAndLeftDerived {
-    std::string new_name;
-    std::set<ClassPtr> left_derived;
-  };
-
 public:
   std::string get_description() final {
     return "Trasform To Smart Instanceof";
@@ -25,9 +20,8 @@ public:
 private:
   static VertexAdaptor<op_set> generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex);
   static VertexAdaptor<op_instanceof> get_instanceof_from_if(VertexAdaptor<op_if> if_vertex);
-  bool fill_derived_classes(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived_vertex, NewNameAndLeftDerived &state);
-  void add_tmp_var_with_instance_cast(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_if> if_vertex, VertexPtr name_of_derived, VertexPtr &cmd);
+  void add_tmp_var_with_instance_cast(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd);
 
 private:
-  std::map<std::string, NewNameAndLeftDerived> variable_state;
+  std::map<std::string, std::stack<std::string>> new_names_of_var;
 };

@@ -37,13 +37,13 @@ function call_method(I $x) {
           $x->_a();
           if ($x instanceof B) { # just for fun
               $x->_b();
-          } else { # $x is A
+          } else if ($x instanceof A) {
               $x->_a();
           }
-      } else { # $x is B
+      } else if ($x instanceof B) {
           $x->_b();
       }
-  } else { # $x is IB
+  } else if ($x instanceof IB) {
       $x->print_ib();
       if ($x instanceof C) {
           $x->_c();
