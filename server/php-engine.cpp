@@ -786,9 +786,8 @@ static void send_rpc_error_raw(connection *c, long long req_id, int code, const 
   tcp_rpc_conn_send_data(c, all_len, q + 2);
 }
 
-void server_rpc_error(php_worker *worker, int code, const char *str) {
-  connection *c = worker->conn;
-  send_rpc_error_raw(c, worker->req_id, code, str);
+void server_rpc_error(connection *c, long long req_id, int code, const char *str) {
+  send_rpc_error_raw(c, req_id, code, str);
   TCP_RPCS_FUNC(c)->flush_packet(c);
 }
 
@@ -808,7 +807,7 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
       }
     } else if (worker->mode == rpc_worker) {
       if (!rpc_stored) {
-        server_rpc_error(worker, -505, "Nothing stored");
+        server_rpc_error(worker->conn, worker->req_id, -505, "Nothing stored");
       }
     } else if (worker->mode == once_worker) {
       assert (write(1, res->body, (size_t)res->body_len) == res->body_len);
@@ -882,7 +881,7 @@ void php_worker_run(php_worker *worker) {
             http_return(worker->conn, "ERROR", 5);
           } else if (worker->mode == rpc_worker) {
             if (!rpc_stored) {
-              server_rpc_error(worker, -504, php_script_get_error(php_script));
+              server_rpc_error(worker->conn, worker->req_id, -504, php_script_get_error(php_script));
             }
           }
         }
@@ -1553,7 +1552,12 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
       if (!check_tasks_invoker_pid(remote_pid)) {
-        client_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, "Task invoker is invalid");
+        const char *msg = "Task invoker is invalid";
+        if (c->type == &ct_php_engine_rpc_server) {
+          server_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg);
+        } else {
+          client_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg);
+        }
         return 0;
       }
       if (c->type != &ct_php_rpc_client && c->type != &ct_php_engine_rpc_server) {
