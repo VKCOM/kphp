@@ -100,15 +100,27 @@ function test_resumable_string_param($x1) { sched_yield(); var_dump($x1); }
 
 test_int_param("2");
 test_int_param(2);
-check_warnings(["Got unexpected type [string] of the arg #0 (\$x1) at function test_int_param"]);
+test_int_param(null);
+check_warnings([
+  "Got unexpected type [string] of the arg #0 (\$x1) at function test_int_param",
+  "Got unexpected type [NULL] of the arg #0 (\$x1) at function test_int_param"
+]);
 
 test_string_param("2");
 test_string_param(2.01);
-check_warnings(["Got unexpected type [double] of the arg #0 (\$x1) at function test_string_param"]);
+test_string_param(true);
+check_warnings([
+  "Got unexpected type [double] of the arg #0 (\$x1) at function test_string_param",
+  "Got unexpected type [bool(true)] of the arg #0 (\$x1) at function test_string_param"
+]);
 
 test_double_param(["2"]);
+test_double_param(false);
 test_double_param(2.01);
-check_warnings(["Got unexpected type [array] of the arg #0 (\$x1) at function test_double_param"]);
+check_warnings([
+  "Got unexpected type [array] of the arg #0 (\$x1) at function test_double_param",
+  "Got unexpected type [bool(false)] of the arg #0 (\$x1) at function test_double_param"
+]);
 
 test_bool_param(["2"]);
 test_bool_param(true);
