@@ -23,10 +23,10 @@ template<class T>
 array<T> f$array_slice(const array<T> &a, int offset, const var &length_var = var(), bool preserve_keys = false);
 
 template<class T>
-array<T> f$array_splice(array<T> &a, int offset, int length = INT_MAX);
+array<T> f$array_splice(array<T> &a, int offset, int length, const array<Unknown> &);
 
-template<class T, class T1>
-array<T> f$array_splice(array<T> &a, int offset, int length = INT_MAX, const array<T1> &replacement = array<var>());
+template<class T, class T1 = T>
+array<T> f$array_splice(array<T> &a, int offset, int length = INT_MAX, const array<T1> &replacement = array<T1>());
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
 ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &default_value);
@@ -397,7 +397,7 @@ array<T> f$array_slice(const array<T> &a, int offset, const var &length_var, boo
 }
 
 template<class T>
-array<T> f$array_splice(array<T> &a, int offset, int length) {
+array<T> f$array_splice(array<T> &a, int offset, int length, const array<Unknown> &) {
   return f$array_splice(a, offset, length, array<T>());
 }
 
