@@ -1099,16 +1099,10 @@ int var::count() const {
       php_warning("count(): Parameter is null, but an array expected");
       return 0;
     case type::BOOLEAN:
-      php_warning("count(): Parameter is bool, but an array expected");
-      return 1;
     case type::INTEGER:
-      php_warning("count(): Parameter is int, but an array expected");
-      return 1;
     case type::FLOAT:
-      php_warning("count(): Parameter is float, but an array expected");
-      return 1;
     case type::STRING:
-      php_warning("count(): Parameter is string, but an array expected");
+      php_warning("count(): Parameter is %s, but an array expected", get_type_c_str());
       return 1;
     case type::ARRAY:
       return as_array().count();
