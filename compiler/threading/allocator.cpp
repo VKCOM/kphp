@@ -3,12 +3,13 @@
 #include <malloc.h>
 #include <memory.h>
 
+#include "common/asan.h"
 #include "common/container_of.h"
 #include "common/wrappers/likely.h"
 
 #include "compiler/threading/tls.h"
 
-#ifndef __SANITIZE_ADDRESS__
+#if !ASAN_ENABLED
 extern "C" {
 extern decltype(malloc) __libc_malloc;
 extern decltype(free) __libc_free;

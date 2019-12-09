@@ -15,6 +15,7 @@
 #include "auto/TL/constants/common.h"
 #include "auto/TL/constants/kphp.h"
 #include "common/allocators/zmalloc.h"
+#include "common/asan.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
@@ -2598,7 +2599,7 @@ void init_default() {
 int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
   dl_block_all_signals();
-#ifndef __SANITIZE_ADDRESS__
+#if !ASAN_ENABLED
   set_core_dump_rlimit(1LL << 40);
 #endif
   max_special_connections = 1;
