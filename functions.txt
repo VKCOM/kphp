@@ -856,7 +856,7 @@ function typed_rpc_tl_query_result_synchronously ($query_ids :<=: int[]) ::: @tl
 /** @kphp-extern-func-info resumable */
 function wait ($id :<=: future<Any> | false, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result ($id :<=: future(Any) | false, $timeout ::: float = -1.0) ::: ^1[*] | false;
+function wait_result ($id :<=: future(Any) | false, $timeout ::: float = -1.0) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait_result_multi ($resumables :<=: future(Any)[]) ::: (^1[*][*] | false)[];
 function wait_synchronously ($id :<=: future<Any> | false) ::: bool;
