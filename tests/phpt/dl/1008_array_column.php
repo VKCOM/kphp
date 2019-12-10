@@ -133,7 +133,7 @@ function test_class_instances() {
         [new A(2), new A(3)],
         [new A(4), new A(5)]
     ];
-    /** @var A[] */
+    /** @var A[]|false */
     $odd_a = array_column($as, 1);
 
     var_dump(array_map(function ($a) { return $a->x; }, $odd_a));

@@ -48,7 +48,7 @@ function test_reduce_array_of_arrays() {
         return array_merge($carry, $item);
     };
 
-    /** @var Classes\IntHolder[] */
+    /** @var Classes\IntHolder[]|false */
     $res = array_reduce([[new Classes\IntHolder(9)], [new Classes\IntHolder(20)]], $f, false);
 
     var_dump(count($res));

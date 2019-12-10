@@ -51,7 +51,7 @@ function call_method(I $x) {
   }
 }
 
-/** @var IA $x */
+/** @var I $x */
 $x = new A();
 call_method($x);
 

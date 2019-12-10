@@ -50,7 +50,7 @@ function test(IPrintable $c, IPrintable $c_clone) {
     $c->print_me();
     $c_clone->print_me();
 
-    $c->check_refcnt(2);
+    $c->check_refcnt(1);
     $c_clone->check_refcnt(1);
 }
 
