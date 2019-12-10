@@ -32,7 +32,7 @@ function g($x) {
 /**
 * @var $x int
 * @kphp-inline
-* @kphp-return-value-check int
+* @return int
 * @abc
 */
 function ff($x = TIME) {

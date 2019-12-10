@@ -29,7 +29,7 @@ function test(IX $ix) {
         $ix2->x = 12312312;
         var_dump($ix2->x);
         var_dump(instance_cast($ix, A::class)->x);
-    } else {
+    } else if ($ix2 instanceof B) {
         $ix2->y = 12312312;
         var_dump($ix2->y);
         var_dump(instance_cast($ix, B::class)->y);
