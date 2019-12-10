@@ -226,7 +226,7 @@ bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
   // Maybe<int|string|array|double> -- с Optional
   // Maybe<class_instance|bool|Optional|var> -- без Optional
   // todo: удалить после vk update tl scheme
-  if (type->name == "Bool") {
+  if (type->name == "Bool" || type->id == TL_TRUE) {
     return TlClasses::use_optional_bool;
   }
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->is_integer_variable();
@@ -871,7 +871,7 @@ private:
     auto type = type_of(arg->type_expr);
     std::string check_target = "tl_object->$" + arg->name;
     // todo: удалить после vk update tl scheme
-    if (type->name == "Bool") {
+    if (type->name == "Bool" || type->id == TL_TRUE) {
       if (!TlClasses::use_optional_bool) {
         return "";
       }
