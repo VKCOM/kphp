@@ -7,8 +7,6 @@
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
 
-bool TlClasses::use_optional_bool = false;
-
 void TlClasses::load_from(const std::string &tlo_schema, bool generate_tl_internals) {
   auto tl_expected_ptr = vk::tl::parse_tlo(tlo_schema.c_str(), true);
   kphp_error_return(tl_expected_ptr.has_value(),

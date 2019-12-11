@@ -34,21 +34,8 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
   }
 }
 
-// Этот костыль временный и нужен для перевода типизированного RPC с bool на bool|null
-// todo: удалить после vk update tl scheme
-void get_use_optional_bool(ClassPtr class_id) {
-  if (class_id->name == R"(VK\TL\_common\Types\rpcResponseOk)") {
-    if (auto use_optional_bool_field = class_id->members.get_static_field("use_optional_bool")) {
-      if (use_optional_bool_field->var->init_val.try_as<op_true>()) {
-        TlClasses::use_optional_bool = true;
-      }
-    }
-  }
-}
-
 void check_class(ClassPtr class_id) {
   if (class_id->is_tl_class) {
-    get_use_optional_bool(class_id);
     const size_t pos = class_id->name.find(vk::tl::PhpClasses::tl_namespace());
     kphp_error_return(pos != std::string::npos,
                       fmt_format("Bad tl-class '{}' namespace", class_id->name));

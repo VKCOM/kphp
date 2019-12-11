@@ -351,18 +351,11 @@ struct t_Vector {
   }
 };
 
-// TODO удалить это, после того, как tl полностью переедет на null
-template<typename T>
-T construct_maybe_false(std::true_type /* false by default */) { return T{false}; }
-
-template<typename T>
-T construct_maybe_false(std::false_type /* false by default */) { return T{}; }
-
-template<typename T, unsigned int inner_magic, typename UseOptionalBool>
-struct t_Maybe_impl {
+template<typename T, unsigned int inner_magic>
+struct t_Maybe {
   T elem_state;
 
-  explicit t_Maybe_impl(T param_type) :
+  explicit t_Maybe(T param_type) :
     elem_state(std::move(param_type)) {}
 
   void store(const var &v) {
@@ -397,23 +390,23 @@ struct t_Maybe_impl {
     }
   }
 
-  // Dummy -- костыль, без которого не компилится, потому что стандарт плюсов не очень. Текст ошибки:
-  // error: explicit specialization in non-namespace scope
-  template<typename S, typename Dummy = void>
-  struct need_Optional : vk::is_type_in_list<S, int, double, string> {
+  // Оборачиваются в Optional TL типы у которых PhpType:
+  //  1. int, double, string, bool
+  //  2. array<T>
+  // Не оборачиваются:
+  //  1. class_instance<T>
+  //  2. Optional<T>
+  //  3. var (long в тл схеме или mixed в php-doc)
+
+  template<typename S>
+  struct need_Optional : vk::is_type_in_list<S, int, double, string, bool> {
   };
 
-  template<typename S, typename Dummy>
-  struct need_Optional<array<S>, Dummy> : std::true_type {
-  };
-
-  template<typename Dummy>
-  struct need_Optional<bool, Dummy> : UseOptionalBool {
-
+  template<typename S>
+  struct need_Optional<array<S>> : std::true_type {
   };
 
   static constexpr bool inner_needs_Optional = need_Optional<typename T::PhpType>::value;
-  // На текущий момент Optional не нужен если T::PhpType -- class_instance, Optional или var (long (mixed в php-doc))
   using PhpType = typename std::conditional<inner_needs_Optional, Optional<typename T::PhpType>, typename T::PhpType>::type;
 
   // C++11 if constexpr
@@ -441,28 +434,8 @@ struct t_Maybe_impl {
     return v;
   }
 
-  template <typename S>
-  static std::enable_if_t<!is_optional<S>::value, bool>
-  has_maybe_value_impl(const PhpType &v) {
-    return f$boolval(v);
-  }
-
-  template <typename S>
-  static std::enable_if_t<is_optional<S>::value && !std::is_same<typename S::InnerType, bool>::value, bool>
-  has_maybe_value_impl(const PhpType &v) {
-    return v.has_value();
-    // todo: поменять на !v.is_null() после vk update tl scheme
-  }
-
-  template <typename S>
-  static std::enable_if_t<is_optional<S>::value && std::is_same<typename S::InnerType, bool>::value, bool>
-  has_maybe_value_impl(const PhpType &v) {
-    return !v.is_null();
-    // todo: удалить после vk update tl scheme
-  }
-
   static bool has_maybe_value(const PhpType &v) {
-    return has_maybe_value_impl<PhpType>(v);
+    return !v.is_null();
   }
 
   void typed_store(const PhpType &v) {
@@ -480,11 +453,9 @@ struct t_Maybe_impl {
     auto magic = static_cast<unsigned int>(f$fetch_int());
     switch (magic) {
       case TL_RESULT_FALSE: {
-        // Оборачиваются в Optional: array<T>, int, double, string
-        // Не оборачиваются: var, class_instance<T>, Optional<T>
-        // Если UseOptionalBool::value == true, то bool оборачивается в Optional в противном случае - нет
-        using default_is_false = std::integral_constant<bool, !UseOptionalBool::value && !is_class_instance<PhpType>{}>;
-        out = construct_maybe_false<PhpType>(default_is_false{});
+        // Оборачиваются в Optional: array<T>, int, double, string, bool
+        // Не оборачиваются        : var, class_instance<T>, Optional<T>
+        out = PhpType();
         break;
       }
       case TL_RESULT_TRUE: {

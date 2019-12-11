@@ -223,13 +223,9 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
 }
 
 bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
-  // Maybe<int|string|array|double> -- с Optional
-  // Maybe<class_instance|bool|Optional|var> -- без Optional
-  // todo: удалить после vk update tl scheme
-  if (type->name == "Bool" || type->id == TL_TRUE) {
-    return TlClasses::use_optional_bool;
-  }
-  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->is_integer_variable();
+  // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- с Optional
+  // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- без Optional
+  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING, TL_TRUE) || type->name == "Bool" || type->is_integer_variable();
 }
 
 // классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его
@@ -923,27 +919,12 @@ private:
     kphp_assert(arg->is_fields_mask_optional());
     auto type = type_of(arg->type_expr);
     std::string check_target = "tl_object->$" + arg->name;
-    // todo: удалить после vk update tl scheme
-    if (type->name == "Bool" || type->id == TL_TRUE) {
-      if (!TlClasses::use_optional_bool) {
-        return "";
-      }
-      // На данной фазе мы считаем, что false и null -- это отсутствие значения, но в случае с Bool раньше false всегда было присутстсвием
-      return check_target + ".is_null()";
-    }
-    if (is_tl_type_wrapped_to_Optional(type)) {
-      // Если оборачивается в Optional под филд маской
-      return "!" + check_target + ".has_value()";
-      // todo: поменять на v.is_null() после vk update tl scheme
-    } else if (type->id == TL_LONG) {
-      // Если это var (mixed)
-      return fmt_format("equals({0}, false) || {0}.is_null()", check_target);
-    } else if (!CUSTOM_IMPL_TYPES.count(type->name)) {
-      // Если это class_instance
+    if (is_tl_type_wrapped_to_Optional(type) || type->id == TL_LONG || !CUSTOM_IMPL_TYPES.count(type->name)) {
+      // Если это Optional ИЛИ var ИЛИ class_instance<T>
       return check_target + ".is_null()";
     } else {
-      // Иначе это Optional, который не оборачивается в Optional под филд маской, или bool
-      // поэтому мы не можем проверить записал ли разработчик значение
+      // Иначе это Optional, который дополнительно не оборачивается в Optional под филд маской,
+      // поэтому мы не можем отличить записанное значение Maybe false, от отсутстсвия значения
       return "";
     }
   }
@@ -1465,15 +1446,7 @@ public:
     W << ExternInclude("runtime/tl/tl_builtins.h");
     W << ExternInclude("tl/tl_const_vars.h");
     W << h_includes;
-
     W << NL;
-
-    // todo: удалить после vk update tl scheme
-    if (name == "common") {
-      W << fmt_format("template<typename T, unsigned int inner_magic>\n"
-                      "using t_Maybe = t_Maybe_impl<T, inner_magic, {}>;\n", TlClasses::use_optional_bool ? "std::true_type" : "std::false_type");
-    }
-
     for (const auto &t : target_types) {
       for (const auto &constructor : t->constructors) {
         W << TlConstructorDecl(constructor.get());
