@@ -327,7 +327,7 @@ TypeData *TypeData::clone() const {
 }
 
 void TypeData::convert_Unknown_to_Any() {
-  if (ptype_ == tp_Unknown) {
+  if (get_real_ptype() == tp_Unknown) {
     set_ptype(tp_Any);
   }
   if (anykey_value != nullptr) {
