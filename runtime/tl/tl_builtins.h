@@ -491,7 +491,15 @@ struct t_Maybe_impl {
     auto magic = static_cast<unsigned int>(f$fetch_int());
     switch (magic) {
       case TL_RESULT_FALSE: {
-        // просто оставляем default значение (false или null)
+        if (UseOptionalBool::value) {
+          // Оборачиваются в Optional: array<T>, int, double, string, bool
+          // Не оборачиваются: var, class_instance<T>, Optional<T>
+          out = PhpType();
+        } else {
+          // Оборачиваются в Optional: array<T>, int, double, string
+          // Не оборачиваются: bool, var, class_instance<T>, Optional<T>
+          out = PhpType(false);
+        }
         break;
       }
       case TL_RESULT_TRUE: {
