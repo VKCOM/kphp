@@ -1,5 +1,6 @@
 #pragma once
 
+#include "runtime/array_iterator.h"
 #include "runtime/include.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -173,47 +174,11 @@ private:
   inline void destroy() __attribute__ ((always_inline));
 
 public:
+  friend class array_iterator<T>;
+  friend class array_iterator<const T>;
 
-  class const_iterator {
-  private:
-    const array_inner *self{nullptr};
-    const list_hash_entry *entry{nullptr};
-  public:
-    inline const_iterator() = default;
-    inline const_iterator(const array_inner *self, const list_hash_entry *entry) __attribute__ ((always_inline));
-
-    inline const T &get_value() const __attribute__ ((always_inline));
-    inline key_type get_key() const __attribute__ ((always_inline));
-    inline const_iterator &operator++() __attribute__ ((always_inline));
-    inline const_iterator &operator--() __attribute__ ((always_inline));
-    inline bool operator==(const const_iterator &other) const __attribute__ ((always_inline));
-    inline bool operator!=(const const_iterator &other) const __attribute__ ((always_inline));
-
-    template<class T1>
-    friend class array;
-  };
-
-  class iterator {
-  private:
-    array_inner *self{nullptr};
-    list_hash_entry *entry{nullptr};
-  public:
-    inline iterator() = default;
-    inline iterator(array_inner *self, list_hash_entry *entry) __attribute__ ((always_inline));
-
-    inline T &get_value() __attribute__ ((always_inline));
-    inline key_type get_key() const __attribute__ ((always_inline));
-    inline bool is_string_key() const;
-    inline string &get_string_key();
-    inline iterator &operator++() __attribute__ ((always_inline));
-    inline iterator &operator--() __attribute__ ((always_inline));
-    inline bool operator==(const iterator &other) const __attribute__ ((always_inline));
-    inline bool operator!=(const iterator &other) const __attribute__ ((always_inline));
-
-    template<class T1>
-    friend
-    class array;
-  };
+  using iterator = array_iterator<T>;
+  using const_iterator = array_iterator<const T>;
 
   inline array() __attribute__ ((always_inline));
 

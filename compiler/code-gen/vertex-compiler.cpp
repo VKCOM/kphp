@@ -613,11 +613,10 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
   W << BEGIN;
   //save array to 'xs_copy_str'
   W << temp_var << " = " << xs << ";" << NL;
-  W << "for (" << temp_var << "$it" << " = const_begin (" << temp_var << "); " <<
-    temp_var << "$it" << " != const_end (" << temp_var << "); " <<
-    "++" << temp_var << "$it" << ")" <<
+  W << temp_var << "$it = const_begin(" << temp_var << ");" << NL;
+  W << temp_var << "$it$end = const_end(" << temp_var << ");" << NL;
+  W << "for (; " << temp_var << "$it != " << temp_var << "$it$end; ++" << temp_var << "$it) " <<
     BEGIN;
-
 
   //save value
   W << x << " = " << temp_var << "$it" << ".get_value();" << NL;

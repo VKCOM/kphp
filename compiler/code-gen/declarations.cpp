@@ -51,8 +51,10 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   }
   W << ";" << NL;
   if (var->needs_const_iterator_flag) {
-    W << (extern_flag ? "extern " : "") <<
-      "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << "$it;" << NL;
+    for (const auto &name : {"$it", "$it$end"}) {
+      W << (extern_flag ? "extern " : "") <<
+        "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
+    }
   }
 
   if (var->is_builtin_global()) {

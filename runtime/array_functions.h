@@ -2,6 +2,7 @@
 
 #include <climits>
 
+#include "common/type_traits/constexpr_if.h"
 #include "common/type_traits/function_traits.h"
 #include "common/vector-product.h"
 
@@ -144,12 +145,6 @@ array<T> f$array_unique(const array<T> &a);
 template<class T>
 array<int> f$array_count_values(const array<T> &a);
 
-array<array<var>::key_type> f$array_flip(const array<var> &a);
-
-array<array<var>::key_type> f$array_flip(const array<int> &a);
-
-array<array<var>::key_type> f$array_flip(const array<string> &a);
-
 template<class T>
 array<typename array<T>::key_type> f$array_flip(const array<T> &a);
 
@@ -160,26 +155,8 @@ bool f$in_array(const T1 &value, const array<T> &a, bool strict = false);
 template<class T>
 array<T> f$array_fill(int start_index, int num, const T &value);
 
-template<class T>
-array<T> f$array_fill_keys(const array<int> &a, const T &value);
-
-template<class T>
-array<T> f$array_fill_keys(const array<string> &a, const T &value);
-
-template<class T>
-array<T> f$array_fill_keys(const array<var> &a, const T &value);
-
 template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1> &a, const T &value);
-
-template<class T>
-array<T> f$array_combine(const array<int> &keys, const array<T> &values);
-
-template<class T>
-array<T> f$array_combine(const array<string> &keys, const array<T> &values);
-
-template<class T>
-array<T> f$array_combine(const array<var> &keys, const array<T> &values);
+array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
 
 template<class T1, class T>
 array<T> f$array_combine(const array<T1> &keys, const array<T> &values);
@@ -252,14 +229,8 @@ void f$uksort(array<T> &a, const T1 &compare);
 template<class T>
 void f$natsort(array<T> &a);
 
-int f$array_sum(const array<int> &a);
-
-double f$array_sum(const array<double> &a);
-
-double f$array_sum(const array<var> &a);
-
-template<class T>
-double f$array_sum(const array<T> &a);
+template<class T, class ReturnT = std::conditional_t<std::is_same<T, int>{}, int, double>>
+ReturnT f$array_sum(const array<T> &a);
 
 
 template<class T>
@@ -298,7 +269,7 @@ string f$implode(const string &s, const array<T> &a) {
   string_buffer &SB = static_SB;
   SB.clean();
 
-  typename array<T>::const_iterator it = a.begin(), it_end = a.end();
+  auto it = a.begin(), it_end = a.end();
   if (it != it_end) {
     SB << it.get_value();
     ++it;
@@ -314,7 +285,7 @@ string f$implode(const string &s, const array<T> &a) {
 
 template<class T>
 array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_keys) {
-  if (chunk_size <= 0) {
+  if (unlikely(chunk_size <= 0)) {
     php_warning("Parameter chunk_size if function array_chunk must be positive");
     return array<array<T>>();
   }
@@ -328,9 +299,9 @@ array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_k
   }
 
   array<T> res(new_size);
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     if (res.count() == chunk_size) {
-      result.push_back(res);
+      result.emplace_back(std::move(res));
       res = array<T>(new_size);
     }
 
@@ -342,7 +313,7 @@ array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_k
   }
 
   if (res.count()) {
-    result.push_back(res);
+    result.emplace_back(std::move(res));
   }
 
   return result;
@@ -383,7 +354,7 @@ array<T> f$array_slice(const array<T> &a, int offset, const var &length_var, boo
   result_size.is_vector = (!preserve_keys && result_size.string_size == 0) || (preserve_keys && offset == 0 && a.is_vector());
 
   array<T> result(result_size);
-  typename array<T>::const_iterator it = a.middle(offset);
+  auto it = a.middle(offset);
   while (length-- > 0) {
     if (preserve_keys) {
       result.set_value(it);
@@ -433,9 +404,10 @@ array<T> f$array_splice(array<T> &a, int offset, int length, const array<T1> &re
   array<T> result(a.size().cut(length));
   array<T> new_a(a.size().cut(size - length) + replacement.size());
   int i = 0;
-  for (typename array<T>::iterator it = a.begin(); it != a.end(); ++it, i++) {
+  const auto &const_arr = a;
+  for (const auto &it : const_arr) {
     if (i == offset) {
-      for (typename array<T1>::const_iterator it_r = replacement.begin(); it_r != replacement.end(); ++it_r) {
+      for (const auto &it_r : replacement) {
         new_a.push_back(it_r.get_value());
       }
     }
@@ -444,8 +416,9 @@ array<T> f$array_splice(array<T> &a, int offset, int length, const array<T1> &re
     } else {
       result.push_back(it);
     }
+    ++i;
   }
-  a = new_a;
+  a = std::move(new_a);
 
   return result;
 }
@@ -459,7 +432,7 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
   }
 
   constexpr static size_t max_size = 1 << 20;
-  if (mod_size >= 1 << 20) {
+  if (unlikely(mod_size >= 1 << 20)) {
     php_warning("You may only pad up to 1048576 elements at a time: %zu", max_size);
     return {};
   }
@@ -468,9 +441,9 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
   ReturnT result_array;
 
   auto copy_input_to_result = [&] {
-    for (auto it = a.begin(); it != a.end(); ++it) {
+    for (const auto &it : a) {
       var key = it.get_key();
-      auto &value = it.get_value();
+      const auto &value = it.get_value();
 
       if (key.is_int()) {
         result_array.set_value(new_index, value);
@@ -536,22 +509,21 @@ inline void extract_array_column(array<T> &dest, const array<T> &source, const v
 
 template<class T>
 void extract_array_column_instance(array<class_instance<T>> &dest, const array<class_instance<T>> &source, const var &column_key, const var &) {
-  if (!source.has_key(column_key)) {
-    return;
+  if (source.has_key(column_key)) {
+    dest.push_back(source.get_value(column_key));
   }
-  dest.push_back(source.get_value(column_key));
 }
 
 template<class T, class FunT, class ResT = vk::decay_function_arg_t<FunT, 0>>
 Optional<ResT> array_column_helper(const array<T> &a, var column_key, var index_key, FunT &&element_transformer) {
   ResT result;
 
-  if (!column_key.is_string() && !column_key.is_numeric()) {
+  if (unlikely(!column_key.is_string() && !column_key.is_numeric())) {
     php_warning("Parameter column_key must be string or number");
     return false;
   }
 
-  if (!index_key.is_null() && !index_key.is_string() && !index_key.is_numeric()) {
+  if (unlikely(!index_key.is_null() && !index_key.is_string() && !index_key.is_numeric())) {
     php_warning("Parameter index_key must be string or number or null");
     return false;
   }
@@ -564,7 +536,7 @@ Optional<ResT> array_column_helper(const array<T> &a, var column_key, var index_
     index_key.convert_to_int();
   }
 
-  for (auto it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     element_transformer(result, it.get_value(), column_key, index_key);
   }
 
@@ -636,7 +608,7 @@ inline auto f$array_column(const Optional<T> &a, const var &column_key, const va
 template<class T>
 array<T> f$array_filter(const array<T> &a) {
   array<T> result(a.size());
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     if (f$boolval(it.get_value())) {
       result.set_value(it);
     }
@@ -648,12 +620,8 @@ array<T> f$array_filter(const array<T> &a) {
 template<class T, class T1>
 array<T> f$array_filter(const array<T> &a, const T1 &callback) {
   array<T> result(a.size());
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    bool need_set_value;
-
-    need_set_value = f$boolval(callback(it.get_value()));
-
-    if (need_set_value) {
+  for (const auto &it : a) {
+    if (f$boolval(callback(it.get_value()))) {
       result.set_value(it);
     }
   }
@@ -665,7 +633,7 @@ array<T> f$array_filter(const array<T> &a, const T1 &callback) {
 template<class T, class CallbackT, class R = typename std::result_of<std::decay_t<CallbackT>(T)>::type>
 array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
   array<R> result(a.size());
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     result.set_value(it.get_key(), callback(it.get_value()));
   }
 
@@ -673,9 +641,9 @@ array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
 }
 
 template<class R, class T, class CallbackT, class InitialT>
-R f$array_reduce(const array<T> &a, const CallbackT &callback, const InitialT initial) {
-  R result = initial;
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+R f$array_reduce(const array<T> &a, const CallbackT &callback, InitialT initial) {
+  R result(std::move(initial));
+  for (const auto &it : a) {
     result = callback(result, it.get_value());
   }
 
@@ -725,7 +693,7 @@ T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4, const T &a5,
 template<class T>
 T f$array_replace(const T &base_array, const T &replacements) {
   auto result = T::convert_from(base_array);
-  for (auto it = replacements.begin(); it != replacements.end(); ++it) {
+  for (const auto &it : replacements) {
     result.set_value(it);
   }
   return result;
@@ -745,7 +713,7 @@ T f$array_replace(const T &base_array,
 template<class T, class T1>
 array<T> f$array_intersect_key(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
-  for (typename array<T>::const_iterator it = a1.begin(); it != a1.end(); ++it) {
+  for (const auto &it : a1) {
     if (a2.has_key(it.get_key())) {
       result.set_value(it);
     }
@@ -758,11 +726,11 @@ array<T> f$array_intersect(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
 
   array<int> values(array_size(0, a2.count(), false));
-  for (typename array<T1>::const_iterator it = a2.begin(); it != a2.end(); ++it) {
+  for (const auto &it : a2) {
     values.set_value(f$strval(it.get_value()), 1);
   }
 
-  for (typename array<T>::const_iterator it = a1.begin(); it != a1.end(); ++it) {
+  for (const auto &it : a1) {
     if (values.has_key(f$strval(it.get_value()))) {
       result.set_value(it);
     }
@@ -775,7 +743,7 @@ array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
 
   if (!a2.empty()) {
-    for (auto it = a1.begin(); it != a1.end(); ++it) {
+    for (const auto &it : a1) {
       auto key1 = it.get_key();
       if (a2.has_key(key1) && f$strval(a2.get_var(key1)) == f$strval(it.get_value())) {
         result.set_value(it);
@@ -794,7 +762,7 @@ array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2, const 
 template<class T, class T1>
 array<T> f$array_diff_key(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size());
-  for (typename array<T>::const_iterator it = a1.begin(); it != a1.end(); ++it) {
+  for (const auto &it : a1) {
     if (!a2.has_key(it.get_key())) {
       result.set_value(it);
     }
@@ -807,11 +775,11 @@ array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size());
 
   array<int> values(array_size(0, a2.count(), false));
-  for (typename array<T1>::const_iterator it = a2.begin(); it != a2.end(); ++it) {
+  for (const auto &it : a2) {
     values.set_value(f$strval(it.get_value()), 1);
   }
 
-  for (typename array<T>::const_iterator it = a1.begin(); it != a1.end(); ++it) {
+  for (const auto &it : a1) {
     if (!values.has_key(f$strval(it.get_value()))) {
       result.set_value(it);
     }
@@ -831,7 +799,7 @@ array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2) {
     result = a1;
   } else {
     result = array<T>(a1.size());
-    for (auto it = a1.begin(); it != a1.end(); ++it) {
+    for (const auto &it : a1) {
       auto key1 = it.get_key();
       if (!a2.has_key(key1) || f$strval(a2.get_var(key1)) != f$strval(it.get_value())) {
         result.set_value(it);
@@ -850,7 +818,8 @@ template<class T>
 array<T> f$array_reverse(const array<T> &a, bool preserve_keys) {
   array<T> result(a.size());
 
-  for (typename array<T>::const_iterator it = a.end(); it != a.begin();) {
+  const auto first = a.begin();
+  for (auto it = a.end(); it != first;) {
     --it;
 
     if (!preserve_keys) {
@@ -886,10 +855,7 @@ bool f$array_key_exists(const string &string_key, const array<T> &a) {
 
 template<class T>
 bool f$array_key_exists(const var &v, const array<T> &a) {
-  if (!v.is_int() && !v.is_string() && !v.is_null()) {
-    return false;
-  }
-  return a.has_key(v);
+  return (v.is_int() || v.is_string() || v.is_null()) && a.has_key(v);
 }
 
 template<class T1, class T2>
@@ -904,9 +870,8 @@ bool f$array_key_exists(K, const array<T> &) {
 
 template<class T, class T1>
 typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, bool strict) {
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    bool found = strict ? equals(it.get_value(), val) : eq2(it.get_value(), val);
-    if (found) {
+  for (const auto &it : a) {
+    if (strict ? equals(it.get_value(), val) : eq2(it.get_value(), val)) {
       return it.get_key();
     }
   }
@@ -916,12 +881,10 @@ typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, boo
 
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a) {
-  int size = a.count();
-  if (size == 0) {
-    return typename array<T>::key_type();
+  if (int size = a.count()) {
+    return a.middle(rand() % size).get_key();
   }
-
-  return a.middle(rand() % size).get_key();
+  return {};
 }
 
 template<class T>
@@ -934,13 +897,13 @@ var f$array_rand(const array<T> &a, int num) {
   if (num > size) {
     num = size;
   }
-  if (num <= 0) {
+  if (unlikely(num <= 0)) {
     php_warning("Parameter num of array_rand must be positive");
-    return array<typename array<T>::key_type>();
+    return {};
   }
 
   array<typename array<T>::key_type> result(array_size(num, 0, true));
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     if (rand() % (size--) < num) {
       result.push_back(it.get_key());
       --num;
@@ -953,7 +916,7 @@ var f$array_rand(const array<T> &a, int num) {
 template<class T, class F>
 auto transform_to_vector(const array<T> &a, const F &op) {
   array<typename vk::function_traits<F>::ResultType> result(array_size(a.count(), 0, true));
-  for (auto it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     result.push_back(op(it));
   }
   return result;
@@ -988,7 +951,7 @@ array<T> f$array_unique(const array<T> &a) {
   array<int> values(array_size(a.count(), a.count(), false));
   array<T> result(a.size());
 
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     const T &value = it.get_value();
     int &cnt = values[f$strval(value)];
     if (!cnt) {
@@ -1003,29 +966,38 @@ template<class T>
 array<int> f$array_count_values(const array<T> &a) {
   array<int> result(array_size(0, a.count(), false));
 
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (const auto &it : a) {
     ++result[f$strval(it.get_value())];
   }
   return result;
 }
 
-
 template<class T>
-array<typename array<T>::key_type> f$array_flip(const array<T> &a) {//TODO optimize
-  return f$array_flip(array<var>(a));
-}
+array<typename array<T>::key_type> f$array_flip(const array<T> &a) {
+  array<typename array<T>::key_type> result;
 
+  for (const auto &it : a) {
+    const auto &value = it.get_value();
+    if (vk::is_type_in_list<T, int, string>{} || f$is_int(value) || f$is_string(value)) {
+      result.set_value(value, it.get_key());
+    } else {
+      php_warning("Unsupported type of array element \"%s\" in function array_flip", get_type_c_str(value));
+    }
+  }
+
+  return result;
+}
 
 template<class T, class T1>
 bool f$in_array(const T1 &value, const array<T> &a, bool strict) {
   if (!strict) {
-    for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+    for (const auto &it : a) {
       if (eq2(it.get_value(), value)) {
         return true;
       }
     }
   } else {
-    for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
+    for (const auto &it : a) {
       if (equals(it.get_value(), value)) {
         return true;
       }
@@ -1037,12 +1009,12 @@ bool f$in_array(const T1 &value, const array<T> &a, bool strict) {
 
 template<class T>
 array<T> f$array_fill(int start_index, int num, const T &value) {
-  if (num < 0) {
+  if (unlikely(num < 0)) {
     php_warning("Parameter num of array_fill must not be negative");
-    return array<T>();
+    return {};
   }
   if (num == 0) {
-    return array<T>();
+    return {};
   }
   array<T> result(array_size(num, 0, start_index == 0));
 
@@ -1058,94 +1030,20 @@ array<T> f$array_fill(int start_index, int num, const T &value) {
   return result;
 }
 
-template<class T>
-array<T> f$array_fill_keys(const array<int> &a, const T &value) {
-  array<T> result(array_size(a.count(), 0, false));
-  for (array<int>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    result.set_value(it.get_value(), value);
-  }
-
-  return result;
-}
-
-template<class T>
-array<T> f$array_fill_keys(const array<string> &a, const T &value) {
-  array<T> result(array_size(0, a.count(), false));
-  for (array<string>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    result.set_value(it.get_value(), value);
-  }
-
-  return result;
-}
-
-template<class T>
-array<T> f$array_fill_keys(const array<var> &a, const T &value) {
-  array<T> result(array_size(a.count(), a.count(), false));
-  for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    const var &key = it.get_value();
-    if (!key.is_int()) {
-      result.set_value(key.to_string(), value);
-    } else {
-      result.set_value(key.to_int(), value);
-    }
-  }
-
-  return result;
+template<class T1>
+array_size make_size_by_keys(const array<T1> &keys) noexcept {
+  return array_size{std::is_same<T1, string>{} ? 0 : keys.count(), std::is_same<T1, int>{} ? 0 : keys.count(), false};
 }
 
 template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1> &a, const T &value) {
-  return f$array_fill_keys(array<var>(a), value);
-}
-
-
-template<class T>
-array<T> f$array_combine(const array<int> &keys, const array<T> &values) {
-  if (keys.count() != values.count()) {
-    php_warning("Size of arrays keys and values must be the same in function array_combine");
-    return array<T>();
-  }
-
-  array<T> result(array_size(keys.count(), 0, false));
-  typename array<T>::const_iterator it_values = values.begin();
-  for (array<int>::const_iterator it_keys = keys.begin(); it_keys != keys.end(); ++it_keys, ++it_values) {
-    result.set_value(it_keys.get_value(), it_values.get_value());
-  }
-
-  return result;
-}
-
-template<class T>
-array<T> f$array_combine(const array<string> &keys, const array<T> &values) {
-  if (keys.count() != values.count()) {
-    php_warning("Size of arrays keys and values must be the same in function array_combine");
-    return array<T>();
-  }
-
-  array<T> result(array_size(0, keys.count(), false));
-  typename array<T>::const_iterator it_values = values.begin();
-  for (array<string>::const_iterator it_keys = keys.begin(); it_keys != keys.end(); ++it_keys, ++it_values) {
-    result.set_value(it_keys.get_value(), it_values.get_value());
-  }
-
-  return result;
-}
-
-template<class T>
-array<T> f$array_combine(const array<var> &keys, const array<T> &values) {
-  if (keys.count() != values.count()) {
-    php_warning("Size of arrays keys and values must be the same in function array_combine");
-    return array<T>();
-  }
-
-  array<T> result(array_size(keys.count(), keys.count(), false));
-  typename array<T>::const_iterator it_values = values.begin();
-  for (array<var>::const_iterator it_keys = keys.begin(); it_keys != keys.end(); ++it_keys, ++it_values) {
-    const var &key = it_keys.get_value();
-    if (!key.is_int()) {
-      result.set_value(key.to_string(), it_values.get_value());
+array<T> f$array_fill_keys(const array<T1> &keys, const T &value) {
+  array<T> result{make_size_by_keys(keys)};
+  for (const auto &it : keys) {
+    const auto &key = it.get_value();
+    if (vk::is_type_in_list<T1, string, int>{} || f$is_int(key)) {
+      result.set_value(key, value);
     } else {
-      result.set_value(key.to_int(), it_values.get_value());
+      result.set_value(f$strval(key), value);
     }
   }
 
@@ -1154,7 +1052,25 @@ array<T> f$array_combine(const array<var> &keys, const array<T> &values) {
 
 template<class T1, class T>
 array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
-  return f$array_combine(array<var>(keys), values);
+  if (unlikely(keys.count() != values.count())) {
+    php_warning("Size of arrays keys and values must be the same in function array_combine");
+    return {};
+  }
+
+  array<T> result{make_size_by_keys(keys)};
+  auto it_values = values.begin();
+  auto it_keys = keys.begin();
+  const auto it_keys_last = keys.end();
+  for (; it_keys != it_keys_last; ++it_keys, ++it_values) {
+    const auto &key = it_keys.get_value();
+    if (vk::is_type_in_list<T1, string, int>{} || f$is_int(key)) {
+      result.set_value(key, it_values.get_value());
+    } else {
+      result.set_value(f$strval(key), it_values.get_value());
+    }
+  }
+
+  return result;
 }
 
 template<class T1, class T2>
@@ -1222,14 +1138,15 @@ bool f$array_is_vector(array<T> &a) {
 
 
 template<class T>
-void f$shuffle(array<T> &a) {//TODO move into array
+void f$shuffle(array<T> &a) {
   int n = a.count();
   if (n <= 1) {
     return;
   }
 
   array<T> result(array_size(n, 0, true));
-  for (typename array<T>::iterator it = a.begin(); it != a.end(); ++it) {
+  const auto &const_arr = a;
+  for (const auto &it : const_arr) {
     result.push_back(it.get_value());
   }
 
@@ -1237,7 +1154,7 @@ void f$shuffle(array<T> &a) {//TODO move into array
     swap(result[i], result[rand() % (i + 1)]);
   }
 
-  a = result;
+  a = std::move(result);
 }
 
 template<class T>
@@ -1411,34 +1328,29 @@ void f$natsort(array<T> &a) {
   return a.sort(sort_compare_natural<typename array<T>::key_type>(), false);
 }
 
-template<class T>
-double f$array_sum(const array<T> &a) {
-  double result = 0;
-
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    result += f$floatval(it.get_value());
+template<class T, class ReturnT>
+ReturnT f$array_sum(const array<T> &a) {
+  ReturnT result = 0;
+  for (const auto &it : a) {
+    result += vk::constexpr_if(
+      std::is_same<T, int>{},
+      [&it] { return it.get_value(); },
+      [&it] { return f$floatval(it.get_value()); });
   }
-
   return result;
 }
 
 
 template<class T>
 var f$getKeyByPos(const array<T> &a, int pos) {
-  typename array<T>::const_iterator it = a.middle(pos);
-  if (it == a.end()) {
-    return var();
-  }
-  return it.get_key();
+  auto it = a.middle(pos);
+  return it == a.end() ? var{} : it.get_key();
 }
 
 template<class T>
 T f$getValueByPos(const array<T> &a, int pos) {
-  typename array<T>::const_iterator it = a.middle(pos);
-  if (it == a.end()) {
-    return T();
-  }
-  return it.get_value();
+  auto it = a.middle(pos);
+  return it == a.end() ? T{} : it.get_value();
 }
 
 template<class T>
@@ -1483,9 +1395,10 @@ T f$array_last_value(const array<T> &a) {
 template<class T>
 T vk_dot_product_sparse(const array<T> &a, const array<T> &b) {
   T result = T();
-  for (typename array<T>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    if (b.isset(it.get_key())) {
-      result += it.get_value() * b.get_value(it.get_key());
+  for (const auto &it : a) {
+    const auto *b_val = b.find_value(it);
+    if (b_val && !f$is_null(*b_val)) {
+      result += it.get_value() * (*b_val);
     }
   }
   return result;
