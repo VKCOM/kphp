@@ -90,11 +90,13 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     int id_of_call_parameter = GenTree::get_id_arg_ref(arg_ref, extern_function_call);
     kphp_assert(id_of_call_parameter != -1);
 
-    auto call_param = extern_function_call->args()[id_of_call_parameter];
-    assumption = infer_class_of_expr(function_context, call_param);
+    if (id_of_call_parameter < extern_function_call->args().size()) {
+      auto call_param = extern_function_call->args()[id_of_call_parameter];
+      assumption = infer_class_of_expr(function_context, call_param);
 
-    auto extern_func_params = extern_function_call->func_id->get_params();
-    return extern_func_params[id_of_call_parameter]->type_help;
+      auto extern_func_params = extern_function_call->func_id->get_params();
+      return extern_func_params[id_of_call_parameter]->type_help;
+    }
   } else if (auto rule = type_rule.try_as<op_type_expr_type>()) {
     return rule->type_help;
   } else {
