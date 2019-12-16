@@ -44,7 +44,7 @@ private:
 
   template<class I>
   void process_impl(const char *field_name, const class_instance<I> &instance) {
-    add_value(field_name, instance.is_null() ? var{false} : f$instance_to_array(instance));
+    add_value(field_name, instance.is_null() ? var{} : f$instance_to_array(instance));
   }
 
   template<class ...Args>
