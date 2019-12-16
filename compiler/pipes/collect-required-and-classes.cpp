@@ -109,6 +109,8 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
+    stage::set_line(root->location.line);
+
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
       auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);
       if (!full_static_name.empty()) {
