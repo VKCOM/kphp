@@ -52,6 +52,7 @@
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
+#include "server/php-worker-stats.h"
 
 static void turn_sigterm_on();
 
@@ -290,8 +291,9 @@ php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_
   worker->init_time = precise_now;
   worker->finish_time = precise_now + timeout;
 
-  worker->paused = 0;
-  worker->terminate_flag = 0;
+  worker->paused = false;
+  worker->terminate_flag = false;
+  worker->terminate_reason = script_error_t::unclassified_error;
   worker->error_message = "no error";
 
   worker->waiting = 0;
@@ -351,7 +353,7 @@ void php_worker_try_start(php_worker *worker) {
 
     worker->conn->status = conn_wait_net;
 
-    worker->paused = 1;
+    worker->paused = true;
     return;
   }
 
@@ -398,11 +400,12 @@ void php_worker_init_script(php_worker *worker) {
   worker->state = phpq_run;
 }
 
-void php_worker_terminate(php_worker *worker, int flag, const char *error_message) {
-  worker->terminate_flag = 1;
+void php_worker_terminate(php_worker *worker, int flag, script_error_t terminate_reason, const char *error_message) {
+  worker->terminate_flag = true;
+  worker->terminate_reason = terminate_reason;
   worker->error_message = error_message;
   if (flag) {
-    vkprintf (0, "php_worker_terminate\n");
+    vkprintf(0, "php_worker_terminate\n");
     worker->conn = nullptr;
   }
 }
@@ -637,7 +640,8 @@ void php_worker_http_load_post(php_worker *worker, php_query_http_load_post_t *q
   php_script_query_answered(php_script);
 
   if (res.loaded_bytes < 0) {
-    php_worker_terminate(worker, 1, "error during loading big post data"); //TODO we need to close connection. Do we need to pass 1 as second parameter?
+    // TODO we need to close connection. Do we need to pass 1 as second parameter?
+    php_worker_terminate(worker, 1, script_error_t::post_data_loading_error, "error during loading big post data");
   }
 }
 
@@ -674,7 +678,7 @@ void on_net_event(int event_status) {
   }
   assert (active_worker != nullptr);
   if (event_status < 0) {
-    php_worker_terminate(active_worker, 0, "memory limit(?)");
+    php_worker_terminate(active_worker, 0, script_error_t::net_event_error, "memory limit on net event");
     php_worker_wakeup(active_worker);
     return;
   }
@@ -830,7 +834,7 @@ void php_worker_run(php_worker *worker) {
   int f = 1;
   while (f) {
     if (worker->terminate_flag) {
-      php_script_terminate(php_script, worker->error_message, script_error_t::worker_terminate);
+      php_script_terminate(php_script, worker->error_message, worker->terminate_reason);
     }
 
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
@@ -839,7 +843,7 @@ void php_worker_run(php_worker *worker) {
         running_server_status();
         if (worker->waiting) {
           f = 0;
-          worker->paused = 1;
+          worker->paused = true;
           wait_net_server_status();
           worker->conn->status = conn_wait_net;
           vkprintf (2, "php_script_iterate [req_id = %016llx] delayed due to net events\n", worker->req_id);
@@ -854,7 +858,7 @@ void php_worker_run(php_worker *worker) {
       case run_state_t::query: {
         if (worker->waiting) {
           f = 0;
-          worker->paused = 1;
+          worker->paused = true;
           wait_net_server_status();
           worker->conn->status = conn_wait_net;
           vkprintf (2, "query [req_id = %016llx] delayed due to net events\n", worker->req_id);
@@ -869,7 +873,7 @@ void php_worker_run(php_worker *worker) {
       case run_state_t::query_running: {
         vkprintf (2, "paused due to query [req_id = %016llx]\n", worker->req_id);
         f = 0;
-        worker->paused = 1;
+        worker->paused = true;
         wait_net_server_status();
         break;
       }
@@ -973,11 +977,11 @@ double php_worker_get_timeout(php_worker *worker) {
 
 double php_worker_main(php_worker *worker) {
   if (worker->finish_time < precise_now + 0.01) {
-    php_worker_terminate(worker, 0, "timeout");
+    php_worker_terminate(worker, 0, script_error_t::timeout, "timeout");
   }
   php_worker_on_wakeup(worker);
 
-  worker->paused = 0;
+  worker->paused = false;
   do {
     switch (worker->state) {
       case phpq_try_start:
@@ -1257,7 +1261,7 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
 
   auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
-    php_worker_terminate(worker, 1, "http connection close");
+    php_worker_terminate(worker, 1, script_error_t::http_connection_close, "http connection close");
     double timeout = php_worker_main(worker);
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
@@ -1458,7 +1462,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
 
   auto worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
-    php_worker_terminate(worker, 1, "rpc connection close");
+    php_worker_terminate(worker, 1, script_error_t::rpc_connection_close, "rpc connection close");
     double timeout = php_worker_main(worker);
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
@@ -1910,17 +1914,11 @@ void prepare_full_stats() {
   char *s = stats;
   int s_left = 65530;
 
-  int uptime = get_uptime();
-  worker_acc_stats.tot_idle_time = epoll_total_idle_time();
-  worker_acc_stats.tot_idle_percent =
-    uptime > 0 ? epoll_total_idle_time() / uptime * 100 : 0;
-  worker_acc_stats.a_idle_percent = epoll_average_idle_quotient() > 0 ?
-                                    epoll_average_idle_time() / epoll_average_idle_quotient() * 100 : 0;
-  size_t acc_stats_size = sizeof(worker_acc_stats);
-  assert (s_left > acc_stats_size);
-  memcpy(s, &worker_acc_stats, acc_stats_size);
-  s += acc_stats_size;
-  s_left -= (int)acc_stats_size;
+  PhpWorkerStats::get_local().update_idle_time(epoll_total_idle_time(), get_uptime(),
+                                               epoll_average_idle_time(), epoll_average_idle_quotient());
+  const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
+  s += stats_size;
+  s_left -= stats_size;
 
 #define W(args...)  ({\
   int written_tmp___ = snprintf (s, (size_t)s_left, ##args);\

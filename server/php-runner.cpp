@@ -22,6 +22,7 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "server/php-engine-vars.h"
+#include "server/php-worker-stats.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -218,40 +219,8 @@ void PHPScriptBase::finish() {
   state = run_state_t::uncleared;
   error_type = script_error_t::no_error;
   update_net_time();
-  worker_acc_stats.tot_queries++;
-  worker_acc_stats.worked_time += script_time + net_time;
-  worker_acc_stats.net_time += net_time;
-  worker_acc_stats.script_time += script_time;
-  worker_acc_stats.tot_script_queries += queries_cnt;
-  worker_acc_stats.script_max_memory_used =
-    std::max(worker_acc_stats.script_max_memory_used, static_cast<long>(script_mem_stats.max_memory_used));
-  worker_acc_stats.script_max_real_memory_used =
-    std::max(worker_acc_stats.script_max_real_memory_used, static_cast<long>(script_mem_stats.max_real_memory_used));
-  switch (save_error_type) {
-    case script_error_t::memory_limit:
-      ++worker_acc_stats.memory_limit_script_errors_cnt;
-      break;
-    case script_error_t::timeout:
-      ++worker_acc_stats.timeout_script_errors_cnt;
-      break;
-    case script_error_t::exception:
-      ++worker_acc_stats.exception_script_errors_cnt;
-      break;
-    case script_error_t::worker_terminate:
-      ++worker_acc_stats.worker_terminate_script_errors_cnt;
-      break;
-    case script_error_t::stack_overflow:
-      ++worker_acc_stats.stack_overflow_script_errors_cnt;
-      break;
-    case script_error_t::php_assert:
-      ++worker_acc_stats.php_assert_script_errors_cnt;
-      break;
-    case script_error_t::unclassified_error:
-      ++worker_acc_stats.unclassified_script_errors_cnt;
-      break;
-    case script_error_t::no_error:
-      break;
-  }
+  PhpWorkerStats::get_local().add_stats(script_time, net_time, queries_cnt,
+                                        script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used, save_error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);

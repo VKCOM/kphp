@@ -27,7 +27,6 @@ int die_on_fail = 0;
 
 /** stats **/
 double load_time;
-acc_stats_t worker_acc_stats;
 
 /** http **/
 int http_port = -1;

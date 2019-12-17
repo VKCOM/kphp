@@ -43,6 +43,7 @@
 
 #include "runtime/instance_cache.h"
 #include "server/php-engine-vars.h"
+#include "server/php-worker-stats.h"
 
 extern const char *engine_tag;
 
@@ -124,56 +125,6 @@ static long workers_killed{0};
 static long workers_hung{0};
 static long workers_terminated{0};
 static long workers_failed{0};
-
-void acc_stats_update(acc_stats_t *to, const acc_stats_t &from) {
-  to->tot_queries += from.tot_queries;
-  to->worked_time += from.worked_time;
-  to->net_time += from.net_time;
-  to->script_time += from.script_time;
-  to->tot_script_queries += from.tot_script_queries;
-  to->tot_idle_time += from.tot_idle_time;
-  to->tot_idle_percent += from.tot_idle_percent;
-  to->a_idle_percent += from.a_idle_percent;
-  to->script_max_memory_used = std::max(to->script_max_memory_used, from.script_max_memory_used);
-  to->script_max_real_memory_used = std::max(to->script_max_real_memory_used, from.script_max_real_memory_used);
-  to->memory_limit_script_errors_cnt += from.memory_limit_script_errors_cnt;
-  to->timeout_script_errors_cnt += from.timeout_script_errors_cnt;
-  to->exception_script_errors_cnt += from.exception_script_errors_cnt;
-  to->worker_terminate_script_errors_cnt += from.worker_terminate_script_errors_cnt;
-  to->stack_overflow_script_errors_cnt += from.stack_overflow_script_errors_cnt;
-  to->php_assert_script_errors_cnt += from.php_assert_script_errors_cnt;
-  to->unclassified_script_errors_cnt += from.unclassified_script_errors_cnt;
-  to->cnt++;
-}
-
-std::string acc_stats_to_str(const std::string &pid_s, const acc_stats_t &acc) {
-  char buf[1000];
-  std::string res;
-
-  int cnt = acc.cnt;
-  if (cnt == 0) {
-    cnt = 1;
-  }
-
-  sprintf(buf, "tot_queries%s\t%ld\n", pid_s.c_str(), acc.tot_queries);
-  res += buf;
-  sprintf(buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), acc.worked_time);
-  res += buf;
-  sprintf(buf, "net_time%s\t%.3lf\n", pid_s.c_str(), acc.net_time);
-  res += buf;
-  sprintf(buf, "script_time%s\t%.3lf\n", pid_s.c_str(), acc.script_time);
-  res += buf;
-  sprintf(buf, "tot_script_queries%s\t%ld\n", pid_s.c_str(), acc.tot_script_queries);
-  res += buf;
-  sprintf(buf, "tot_idle_time%s\t%.3lf\n", pid_s.c_str(), acc.tot_idle_time);
-  res += buf;
-  sprintf(buf, "tot_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.tot_idle_percent / cnt);
-  res += buf;
-  sprintf(buf, "recent_idle_percent%s\t%.3lf%%\n", pid_s.c_str(), acc.a_idle_percent / cnt);
-  res += buf;
-
-  return res;
-}
 
 struct CpuStatTimestamp {
   double timestamp;
@@ -312,7 +263,7 @@ struct Stats {
   mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc[periods_n];
-  acc_stats_t acc_stats;
+  PhpWorkerStats worker_stats;
 
   Stats() {
     for (int i = 0; i < periods_n; i++) {
@@ -396,7 +347,7 @@ struct Stats {
     }
 
     if (full_flag) {
-      res += acc_stats_to_str(pid_s, acc_stats);
+      res += worker_stats.to_string(pid_s);
     }
 
     return res;
@@ -610,7 +561,7 @@ static int worker_ids[MAX_WORKERS];
 static int worker_ids_n;
 static Stats server_stats;
 static unsigned long long dead_stime, dead_utime;
-static acc_stats_t dead_acc_stats;
+static PhpWorkerStats dead_worker_stats;
 static int me_workers_n;
 static int me_running_workers_n;
 static int me_dying_workers_n;
@@ -669,10 +620,9 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  acc_stats_update(&dead_acc_stats, w->stats->acc_stats);
+  dead_worker_stats.add_from(w->stats->worker_stats);
   // ignore dead workers script memory usage
-  dead_acc_stats.script_max_real_memory_used = 0;
-  dead_acc_stats.script_max_memory_used = 0;
+  dead_worker_stats.reset_memory_usage();
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -858,10 +808,7 @@ void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
 }
 
 void worker_set_stats(worker_info_t *w, const char *data) {
-  auto acc_stats = reinterpret_cast<const acc_stats_t *>(data);
-  w->stats->acc_stats = *acc_stats;
-
-  data += sizeof(acc_stats_t);
+  data += w->stats->worker_stats.read_from(data);
   w->stats->engine_stats = data;
 }
 
@@ -1412,7 +1359,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   int paused_workers_n = 0;
   static char buf[1000];
 
-  acc_stats_t acc_stats;
+  PhpWorkerStats worker_stats;
 
   double min_uptime = 1e9;
   double max_uptime = -1;
@@ -1431,7 +1378,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
       }
 
       if (full_flag) {
-        acc_stats_update(&acc_stats, w->stats->acc_stats);
+        worker_stats.add_from(w->stats->worker_stats);
       }
 
       if (worker_pid == -1 || w->pid == worker_pid) {
@@ -1479,7 +1426,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   header += buf;
 
   if (full_flag) {
-    header += acc_stats_to_str(std::string(), acc_stats);
+    header += worker_stats.to_string();
   }
   if (!full_flag && worker_pid == -2) {
     header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
@@ -1683,21 +1630,21 @@ public:
     cooldown_period_(cooldown_period) {
   }
 
-  void update(double time_point, const acc_stats_t &new_acc_stats) {
-    if (!prev_acc_stats_.tot_queries) {
-      prev_acc_stats_ = new_acc_stats;
+  void update(double time_point, const PhpWorkerStats &new_worker_stats) {
+    if (!prev_worker_stats_.total_queries()) {
+      prev_worker_stats_ = new_worker_stats;
       prev_time_ = time_point;
       return;
     }
 
-    const auto delta_incoming_queries = new_acc_stats.tot_queries - prev_acc_stats_.tot_queries;
+    const auto delta_incoming_queries = new_worker_stats.total_queries() - prev_worker_stats_.total_queries();
     if (delta_incoming_queries > 0) {
       const auto delta_time = time_point - prev_time_;
       incoming_qps_ = static_cast<double>(delta_incoming_queries) / delta_time;
-      const auto delta_outgoing_queries = new_acc_stats.tot_script_queries - prev_acc_stats_.tot_script_queries;
+      const auto delta_outgoing_queries = new_worker_stats.total_script_queries() - prev_worker_stats_.total_script_queries();
       outgoing_qps_ = static_cast<double>(delta_outgoing_queries) / delta_time;
       prev_time_ = time_point;
-      prev_acc_stats_ = new_acc_stats;
+      prev_worker_stats_ = new_worker_stats;
     } else if (time_point - prev_time_ >= cooldown_period_) {
       incoming_qps_ = 0;
       outgoing_qps_ = 0;
@@ -1712,7 +1659,7 @@ private:
   double incoming_qps_{0};
   double outgoing_qps_{0};
   double prev_time_{0};
-  acc_stats_t prev_acc_stats_;
+  PhpWorkerStats prev_worker_stats_;
   const double cooldown_period_{0};
 };
 
@@ -1769,23 +1716,12 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "instance_cache.elements.destroyed", instance_cache_element_stats.elements_destroyed);
   add_histogram_stat_long(stats, "instance_cache.elements.cached", instance_cache_element_stats.elements_cached);
 
-  add_histogram_stat_long(stats, "requests.total_incoming_queries", server_stats.acc_stats.tot_queries);
-  add_histogram_stat_long(stats, "requests.total_outgoing_queries", server_stats.acc_stats.tot_script_queries);
-  add_histogram_stat_double(stats, "requests.script_time", server_stats.acc_stats.script_time);
-  add_histogram_stat_double(stats, "requests.net_time", server_stats.acc_stats.net_time);
+  server_stats.worker_stats.to_stats(stats);
 
   static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
-  qps_calculator.update(my_now, server_stats.acc_stats);
+  qps_calculator.update(my_now, server_stats.worker_stats);
   add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
   add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
-
-  add_histogram_stat_long(stats, "terminated_requests.memory_limit_exceeded", server_stats.acc_stats.memory_limit_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.timeout", server_stats.acc_stats.timeout_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.exception", server_stats.acc_stats.exception_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.worker_terminate", server_stats.acc_stats.worker_terminate_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.stack_overflow", server_stats.acc_stats.stack_overflow_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.php_assert", server_stats.acc_stats.php_assert_script_errors_cnt);
-  add_histogram_stat_long(stats, "terminated_requests.unclassified", server_stats.acc_stats.unclassified_script_errors_cnt);
 
   update_mem_stats();
   unsigned long long max_vms = 0;
@@ -1801,8 +1737,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
     }
   }
 
-  add_histogram_stat_long(stats, "memory.script_usage_max", server_stats.acc_stats.script_max_memory_used);
-  add_histogram_stat_long(stats, "memory.script_real_usage_max", server_stats.acc_stats.script_max_real_memory_used);
   add_histogram_stat_long(stats, "memory.vms_max", max_vms * 1024);
   add_histogram_stat_long(stats, "memory.rss_max", max_rss * 1024);
   add_histogram_stat_long(stats, "memory.shared_max", max_shared * 1024);
@@ -2013,7 +1947,7 @@ static void cron() {
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
 
-  server_stats.acc_stats = dead_acc_stats;
+  server_stats.worker_stats = dead_worker_stats;
   int running_workers = 0;
   std::array<pid_t, MAX_WORKERS> active_workers{0};
   for (int i = 0; i < me_workers_n; i++) {
@@ -2030,7 +1964,7 @@ static void cron() {
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
     running_workers += w->stats->istats.is_running;
-    acc_stats_update(&server_stats.acc_stats, w->stats->acc_stats);
+    server_stats.worker_stats.add_from(w->stats->worker_stats);
   }
   MiscStatTimestamp misc_timestamp{my_now, running_workers};
   server_stats.update(misc_timestamp);

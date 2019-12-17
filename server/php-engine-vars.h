@@ -42,27 +42,6 @@ extern int die_on_fail;
 /** stats **/
 extern double load_time;
 //uptime
-struct acc_stats_t {
-  long tot_queries{0};
-  double worked_time{0};
-  double net_time{0};
-  double script_time{0};
-  long tot_script_queries{0};
-  double tot_idle_time{0};
-  double tot_idle_percent{0};
-  double a_idle_percent{0};
-  long script_max_memory_used{0};
-  long script_max_real_memory_used{0};
-  uint32_t memory_limit_script_errors_cnt{0};
-  uint32_t timeout_script_errors_cnt{0};
-  uint32_t exception_script_errors_cnt{0};
-  uint32_t worker_terminate_script_errors_cnt{0};
-  uint32_t stack_overflow_script_errors_cnt{0};
-  uint32_t php_assert_script_errors_cnt{0};
-  uint32_t unclassified_script_errors_cnt{0};
-  int cnt{0};
-};
-extern acc_stats_t worker_acc_stats;
 
 /** http **/
 extern int http_port;

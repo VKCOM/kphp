@@ -20,15 +20,19 @@ enum class run_state_t {
   query_running,
 };
 
-enum class script_error_t {
-  no_error,
+enum class script_error_t : uint8_t {
+  no_error = 0,
   memory_limit,
   timeout,
   exception,
-  worker_terminate,
   stack_overflow,
   php_assert,
+  http_connection_close,
+  rpc_connection_close,
+  net_event_error,
+  post_data_loading_error,
   unclassified_error,
+  errors_count
 };
 
 enum query_type {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "server/php-query-data.h"
+#include "server/php-runner.h"
 
 enum php_worker_mode_t {
   http_worker,
@@ -21,8 +22,9 @@ struct php_worker {
 
   php_query_data *data;
 
-  int paused;
-  int terminate_flag;
+  bool paused;
+  bool terminate_flag;
+  script_error_t terminate_reason;
   const char *error_message;
 
   //for wait query
