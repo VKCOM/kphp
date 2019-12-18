@@ -3,6 +3,8 @@
 #include <iterator>
 #include <unordered_map>
 
+#include "common/wrappers/field_getter.h"
+
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/naming.h"
@@ -15,7 +17,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
-#include "common/wrappers/field_getter.h"
 
 struct Operand {
   VertexPtr root;
@@ -487,18 +488,8 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     }
   }
-  auto first_arg = args.begin();
-  if (!args.empty() && root->type() == op_constructor_call && (*first_arg)->type() == op_false) {
-    const TypeData *tp = tinf::get_type(root);
-    kphp_assert(tp->ptype() == tp_Class);
-    auto alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
-    W << TypeName(tp) << alloc_function;
-    if (++first_arg != args.end()) {
-      W << ", ";
-    }
-  }
 
-  W << JoinValues(vk::make_iterator_range(first_arg, args.end()), ", ");
+  W << JoinValues(vk::make_iterator_range(args.begin(), args.end()), ", ");
   W << ")";
 }
 
@@ -1697,6 +1688,13 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
         }
       }
       kphp_error_return(false, "unsupported operand for cloning");
+      break;
+    }
+    case op_alloc: {
+      const TypeData *tp = tinf::get_type(root);
+      kphp_assert(tp->ptype() == tp_Class);
+      auto alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
+      W << TypeName(tp) << alloc_function;
       break;
     }
     default:

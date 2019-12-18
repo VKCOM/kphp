@@ -187,7 +187,7 @@ VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
 }
 
 VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
-  args.insert(args.begin(), VertexAdaptor<op_false>::create());
+  args.insert(args.begin(), VertexAdaptor<op_alloc>::create());
   auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
   constructor_call->set_string(name);
   constructor_call->func_id = construct_function;

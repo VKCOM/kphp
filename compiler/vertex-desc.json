@@ -1699,6 +1699,21 @@
     }
   },
   {
+    "name": "op_alloc",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "new"
+    },
+    "extra_fields": {
+      "allocated_class": {
+        "type": "ClassPtr"
+      }
+    }
+  },
+  {
     "name": "op_instanceof",
     "base_name": "meta_op_binary",
     "props": {

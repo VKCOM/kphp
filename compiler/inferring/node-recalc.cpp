@@ -139,10 +139,8 @@ void NodeRecalc::set_lca(VarPtr var) {
 }
 
 void NodeRecalc::set_lca(ClassPtr klass) {
-  TypeData *type = TypeData::get_type(tp_Class)->clone();
-  type->set_class_type(klass);
-  set_lca(type);
-  delete type;
+  kphp_assert(klass);
+  set_lca(klass->type_data);
 }
 
 

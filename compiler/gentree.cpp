@@ -233,7 +233,7 @@ VertexPtr GenTree::get_func_call() {
     if (name == "Memcache") {
       func_call->set_string("McMemcache");
     }
-    return VertexAdaptor<op_arrow>::create(VertexAdaptor<op_false>::create(), call);
+    return VertexAdaptor<op_arrow>::create(VertexAdaptor<op_alloc>::create(), call);
   }
   return call;
 }

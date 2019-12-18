@@ -575,6 +575,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_null_coalesce(expr.as<op_null_coalesce>());
       break;
 
+    case op_alloc:
+      set_lca(expr.as<op_alloc>()->allocated_class);
+      break;
+
     default:
       recalc_ptype<tp_var>();
       break;
