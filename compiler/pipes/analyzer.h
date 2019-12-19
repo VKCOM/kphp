@@ -7,7 +7,6 @@
 
 class CommonAnalyzerPass : public FunctionPassBase {
   void check_set(VertexAdaptor<op_set> to_check);
-  void analyzer_check_array(VertexPtr to_check);
 
 public:
 
@@ -33,13 +32,12 @@ public:
   }
 
   struct LocalT : public FunctionPassBase::LocalT {
-    bool from_seq;
-
-    LocalT() :
-      from_seq() {}
+    bool from_seq{false};
   };
 
   void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr , LocalT *dest_local);
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT * local);
+
+  std::nullptr_t on_finish();
 };

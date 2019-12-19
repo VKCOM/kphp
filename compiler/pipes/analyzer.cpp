@@ -1,20 +1,26 @@
 #include "compiler/pipes/analyzer.h"
 
+#include "common/algorithms/string-algorithms.h"
+
+#include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/utils/string-utils.h"
 
-void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
+namespace {
+
+std::set<std::string> collect_duplicate_keys(VertexPtr to_check) {
   bool have_arrow = false;
   bool have_int_key = false;
   std::set<std::string> used_keys;
+  std::set<std::string> duplicates;
   int id = 0;
   for (auto v : *to_check) {
     if (v->type() == op_double_arrow) {
       have_arrow = true;
       VertexPtr key = v.as<op_double_arrow>()->key();
       have_int_key |= key->type() == op_int_const;
-      string str;
+      std::string str;
       if (key->type() == op_string || key->type() == op_int_const) {
         str = key->get_string();
       } else if (key->type() == op_var) {
@@ -26,20 +32,35 @@ void CommonAnalyzerPass::analyzer_check_array(VertexPtr to_check) {
           }
         }
       }
-      if (!str.empty()) {
-        if (used_keys.find(str) != used_keys.end()) {
-          kphp_warning(fmt_format("Duplicate key '{}' in array", str));
-        }
-        used_keys.insert(str);
+      if (!str.empty() && !used_keys.emplace(str).second) {
+        duplicates.emplace(std::move(str));
       }
     } else {
       if (have_arrow && have_int_key) {
-        return;
+        break;
       }
-      used_keys.insert(std::to_string(id++));
+      used_keys.emplace(std::to_string(id++));
+    }
+  }
+  return duplicates;
+}
+
+void check_var_init_value(const VarPtr &var) {
+  if (auto var_init_const = var->init_val.try_as<op_var>()) {
+    if (auto const_array = var_init_const->var_id->init_val.try_as<op_array>()) {
+      auto duplications = collect_duplicate_keys(const_array);
+      if (!duplications.empty()) {
+        const char *static_prefix = (var->is_function_static_var() || var->is_class_static_var()) ? "static " : "";
+        stage::set_location(const_array->get_location());
+        kphp_warning(fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value",
+                                vk::join(duplications, "', '"), static_prefix, var->get_human_readable_name()));
+      }
     }
   }
 }
+
+}
+
 void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   VertexPtr left = to_check->lhs();
   VertexPtr right = to_check->rhs();
@@ -51,13 +72,17 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
     }
   }
 }
+
 void CommonAnalyzerPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local) {
   dest_local->from_seq = vertex->type() == op_seq;
 }
-VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) {
-  VertexPtr to_check;
+
+VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT *local) {
   if (vertex->type() == op_array) {
-    analyzer_check_array(vertex);
+    auto duplications = collect_duplicate_keys(vertex);
+    if (!duplications.empty()) {
+      kphp_warning(fmt_format("Got array duplicate keys ['{}']", vk::join(duplications, "', '")));
+    }
     return vertex;
   }
   if (vertex->type() == op_var) {
@@ -81,4 +106,14 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT * local) 
     return vertex;
   }
   return vertex;
+}
+
+std::nullptr_t CommonAnalyzerPass::on_finish() {
+  if (current_function->type == FunctionData::func_class_holder) {
+    current_function->class_id->members.for_each([](ClassMemberStaticField &field) { check_var_init_value(field.var); });
+    current_function->class_id->members.for_each([](ClassMemberInstanceField &field) { check_var_init_value(field.var); });
+  }
+
+  std::for_each(current_function->static_var_ids.begin(), current_function->static_var_ids.end(), check_var_init_value);
+  return FunctionPassBase::on_finish();
 }
