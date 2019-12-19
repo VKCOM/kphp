@@ -31,17 +31,20 @@ def blue(text):
 
 
 class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, out_regex):
+    def __init__(self, file_path, test_tmp_dir, tags, out_regexps):
         self.test_tmp_dir = test_tmp_dir
         self.file_path = file_path
         self.tags = tags
-        self.out_regex = out_regex
+        self.out_regexps = out_regexps
 
     def is_ok(self):
         return "ok" in self.tags
 
     def is_kphp_should_fail(self):
         return "kphp_should_fail" in self.tags
+
+    def is_kphp_should_warn(self):
+        return "kphp_should_warn" in self.tags
 
     def is_php5(self):
         return "php5" in self.tags
@@ -148,8 +151,11 @@ class TestRunner:
     def remove_artifacts_dir(self):
         shutil.rmtree(self._artifacts_dir, ignore_errors=True)
 
-    def remove_kphp_runtime_bin(self):
-        os.remove(self._kphp_runtime_bin)
+    def try_remove_kphp_runtime_bin(self):
+        try:
+            os.remove(self._kphp_runtime_bin)
+        except OSError:
+            pass
 
     def run_with_php(self):
         self._clear_working_dir(self._php_tmp_dir)
@@ -359,12 +365,16 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
 
         if not test_acceptable:
             return None
-        out_regex = None
-        second_line = f.readline().decode('utf-8').strip()
-        if len(second_line) > 1 and second_line.startswith("/") and second_line.endswith("/"):
-            out_regex = re.compile(second_line[1:-1])
 
-        return TestFile(file_path, test_tmp_dir, tags, out_regex)
+        out_regexps = []
+        while True:
+            second_line = f.readline().decode('utf-8').strip()
+            if len(second_line) > 1 and second_line.startswith("/") and second_line.endswith("/"):
+                out_regexps.append(re.compile(second_line[1:-1]))
+            else:
+                break
+
+        return TestFile(file_path, test_tmp_dir, tags, out_regexps)
 
 
 def test_files_from_dir(tests_dir):
@@ -453,6 +463,61 @@ class TestResult:
         return self.failed_stage_msg is not None
 
 
+def run_fail_test(test, runner):
+    if runner.compile_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
+
+    if test.out_regexps:
+        if not runner.artifacts.kphp_build_stderr.file:
+            return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
+
+        with open(runner.artifacts.kphp_build_stderr.file) as f:
+            stderr_log = f.read()
+            for index, msg_regex in enumerate(test.out_regexps, start=1):
+                if not msg_regex.search(stderr_log):
+                    return TestResult.failed(test, runner.artifacts, "can't find {}th error pattern".format(index))
+
+    if runner.artifacts.kphp_build_asan_log.file:
+        return TestResult.failed(test, runner.artifacts, "got asan log")
+
+    runner.artifacts.kphp_build_stderr.file = None
+    return TestResult.passed(test, runner.artifacts)
+
+
+def run_warn_test(test, runner):
+    if not runner.compile_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "got kphp build error")
+    if not runner.artifacts.kphp_build_stderr.file:
+        return TestResult.failed(test, runner.artifacts, "kphp build finished without stderr")
+
+    with open(runner.artifacts.kphp_build_stderr.file) as f:
+        stderr_log = f.read()
+        if not re.search("Warning ", stderr_log):
+            return TestResult.failed(test, runner.artifacts, "can't find kphp warnings")
+        for index, msg_regex in enumerate(test.out_regexps, start=1):
+            if not msg_regex.search(stderr_log):
+                return TestResult.failed(test, runner.artifacts, "can't find {}th warning pattern".format(index))
+
+    if runner.artifacts.kphp_build_asan_log.file:
+        return TestResult.failed(test, runner.artifacts, "got asan log")
+
+    runner.artifacts.kphp_build_stderr.file = None
+    return TestResult.passed(test, runner.artifacts)
+
+
+def run_ok_test(test, runner):
+    if not runner.run_with_php():
+        return TestResult.failed(test, runner.artifacts, "got php error")
+    if not runner.compile_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "got kphp build error")
+    if not runner.run_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
+    if not runner.compare_php_and_kphp_stdout():
+        return TestResult.failed(test, runner.artifacts, "got php and kphp diff")
+
+    return TestResult.passed(test, runner.artifacts)
+
+
 def run_test(kphp_path, tests_dir, distcc_hosts, test):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
@@ -461,39 +526,18 @@ def run_test(kphp_path, tests_dir, distcc_hosts, test):
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
-        if runner.compile_with_kphp():
-            return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
+        test_result = run_fail_test(test, runner)
+    elif test.is_kphp_should_warn():
+        test_result = run_warn_test(test, runner)
+    elif test.is_ok():
+        test_result = run_ok_test(test, runner)
+    else:
+        test_result = TestResult.skipped(test)
 
-        if test.out_regex:
-            if not runner.artifacts.kphp_build_stderr.file:
-                return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
+    if runner.artifacts.empty():
+        runner.try_remove_kphp_runtime_bin()
 
-            with open(runner.artifacts.kphp_build_stderr.file) as f:
-                if not test.out_regex.search(f.read()):
-                    return TestResult.failed(test, runner.artifacts, "unexpected kphp build fail")
-
-        if runner.artifacts.kphp_build_asan_log.file:
-            return TestResult.failed(test, runner.artifacts, "got asan log")
-
-        runner.artifacts.kphp_build_stderr.file = None
-        return TestResult.passed(test, runner.artifacts)
-
-    if test.is_ok():
-        if not runner.run_with_php():
-            return TestResult.failed(test, runner.artifacts, "got php error")
-        if not runner.compile_with_kphp():
-            return TestResult.failed(test, runner.artifacts, "got kphp build error")
-        if not runner.run_with_kphp():
-            return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
-        if not runner.compare_php_and_kphp_stdout():
-            return TestResult.failed(test, runner.artifacts, "got php and kphp diff")
-
-        if runner.artifacts.empty():
-            runner.remove_kphp_runtime_bin()
-
-        return TestResult.passed(test, runner.artifacts)
-
-    return TestResult.skipped(test)
+    return test_result
 
 
 def run_all_tests(tests_dir, kphp_path, jobs, test_tags, no_report, passed_list, test_list, distcc_hosts):
