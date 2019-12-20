@@ -108,7 +108,7 @@ public:
   VertexPtr get_conv();
   VertexPtr get_require(bool once);
   template<Operation Op, Operation EmptyOp>
-  VertexPtr get_func_call();
+  VertexAdaptor<Op> get_func_call();
   VertexPtr get_short_array();
   VertexPtr get_string();
   VertexPtr get_string_build();

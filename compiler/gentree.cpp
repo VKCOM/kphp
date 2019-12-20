@@ -193,7 +193,7 @@ VertexPtr GenTree::get_require(bool once) {
 
 
 template<Operation Op, Operation EmptyOp>
-VertexPtr GenTree::get_func_call() {
+VertexAdaptor<Op> GenTree::get_func_call() {
   AutoLocation call_location(this);
   string name{cur->str_val};
   next_cur();
@@ -205,35 +205,11 @@ VertexPtr GenTree::get_func_call() {
   CE (!kphp_error(ok_next, "get argument list failed"));
   CE (expect(tok_clpar, "')'"));
 
-  if (Op == op_isset) {
-    CE (!kphp_error(!next.empty(), "isset function requires at least one argument"));
-    VertexPtr left = VertexAdaptor<op_isset>::create(next[0]);
-    for (size_t i = 1; i < next.size(); i++) {
-      auto right = VertexAdaptor<op_isset>::create(next[i]);
-      auto log_and = VertexAdaptor<op_log_and>::create(left, right);
-      left = log_and;
-    }
-    set_location(left, call_location);
-    return left;
-  }
-
-  VertexPtr call = VertexAdaptor<Op>::create_vararg(next);
+  auto call = VertexAdaptor<Op>::create_vararg(next);
   set_location(call, call_location);
 
-  //hack..
-  if (Op == op_func_call) {
-    auto func_call = call.as<op_func_call>();
-    func_call->set_string(name);
-  }
-  if (Op == op_constructor_call) {
-    auto func_call = call.as<op_constructor_call>();
-    func_call->set_string(name);
-
-    // Hack to be more compatible with php
-    if (name == "Memcache") {
-      func_call->set_string("McMemcache");
-    }
-    return VertexAdaptor<op_arrow>::create(VertexAdaptor<op_alloc>::create(), call);
+  if (call->has_get_string()) {
+    call->set_string(name);
   }
   return call;
 }
@@ -546,11 +522,17 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = get_require(true);
       break;
 
-    case tok_new:
+    case tok_new: {
       next_cur();
       CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      res = get_func_call<op_constructor_call, op_none>();
+      auto func_call = get_func_call<op_constructor_call, op_err>();
+        // Hack to be more compatible with php
+      if (func_call->str_val == "Memcache") {
+        func_call->set_string("McMemcache");
+      }
+      res =  VertexAdaptor<op_arrow>::create(VertexAdaptor<op_alloc>::create(), func_call);
       break;
+    }
     case tok_func_name: {
       cur++;
       if (!test_expect(tok_oppar)) {
@@ -576,9 +558,16 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = get_anonymous_function();
       break;
     }
-    case tok_isset:
-      res = get_func_call<op_isset, op_err>();
+    case tok_isset: {
+      auto temp = get_multi_call<op_isset>(&GenTree::get_expression, true);
+      CE (!kphp_error(temp->size(), "isset function requires at least one argument"));
+      res = VertexPtr{};
+      for (auto right : temp->args()) {
+        res = res ? VertexPtr(VertexAdaptor<op_log_and>::create(res, right)) : right;
+      }
+      res.set_location(temp->location);
       break;
+    }
     case tok_declare:
       // см. GenTree::parse_declare_at_top_of_file
       kphp_error(0, "strict_types declaration must be the very first statement in the script");
