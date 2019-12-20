@@ -478,7 +478,7 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
     return true;
   }
 
-  if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index, op_constructor_call)) {
+  if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index)) {
     if (v->rl_type == val_r) {
       const TypeData *type = tinf::get_type(v);
       if (type->get_real_ptype() == tp_Unknown) {
@@ -491,10 +491,12 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
         if (auto var_vertex = v.try_as<op_var>()) {
           VarPtr var = var_vertex->var_id;
           desc += "variable [$" + var->name + "]" + index_depth;
-        } else if (auto cons = v.try_as<op_constructor_call>()) {
-          desc += "constructor [" + cons->func_id->name + "]" + index_depth;
         } else if (auto call = v.try_as<op_func_call>()) {
-          desc += "function [" + call->func_id->name + "]" + index_depth;
+          if (call->func_id->is_constructor()) {
+            desc += "constructor [" + call->func_id->name + "]" + index_depth;
+          } else {
+            desc += "function [" + call->func_id->name + "]" + index_depth;
+          }
         } else {
           desc += "...";
         }

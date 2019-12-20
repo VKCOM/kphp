@@ -126,10 +126,9 @@ public:
       }
     }
 
-    if (auto constructor = root.try_as<op_constructor_call>()) {
-      bool is_lambda = constructor->func_id && constructor->func_id->is_lambda();
-      if (!is_lambda && likely(!root->type_help)) {     // type_help <=> Memcache | Exception
-        require_class(resolve_uses(current_function, root->get_string(), '/'));
+    if (auto alloc = root.try_as<op_alloc>()) {
+      if (!alloc->allocated_class) {
+        require_class(resolve_uses(current_function, alloc->allocated_class_name, '/'));
       }
     }
 

@@ -14,7 +14,6 @@ bool is_array_suitable_for_hashing(VertexPtr vertex);
 string gen_const_array_name(const VertexAdaptor<op_array> &array);
 
 string resolve_uses(FunctionPtr current_function, string class_name, char delim = '$');
-string resolve_constructor_func_name(FunctionPtr function, VertexAdaptor<op_constructor_call> ctor_call);
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call);
 ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v);
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim = '$');

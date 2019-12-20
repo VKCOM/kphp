@@ -6,7 +6,6 @@
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
-#include "compiler/phpdoc.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/lvalue.h"
@@ -17,6 +16,7 @@
 #include "compiler/inferring/restriction-non-void.h"
 #include "compiler/inferring/rvalue.h"
 #include "compiler/inferring/type-node.h"
+#include "compiler/phpdoc.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/utils/string-utils.h"
 
@@ -278,24 +278,6 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   }
 }
 
-void CollectMainEdgesPass::on_constructor_call(VertexAdaptor<op_constructor_call> call) {
-  FunctionPtr function = call->func_id;
-  VertexRange function_params = function->get_params();
-
-  int ii = 0;
-  for (auto arg : call->args()) {
-
-    create_set(as_lvalue(function, ii), arg);
-
-    auto param = function_params[ii].as<meta_op_func_param>();
-    if (param->var()->ref_flag) {
-      create_set(arg, as_rvalue(function, ii));
-    }
-
-    ii++;
-  }
-}
-
 void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v) {
   have_returns = true;
   if (v->has_expr()) {
@@ -507,9 +489,6 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
     //FIXME: has_variadic_param
     case op_func_call:
       on_func_call(v.as<op_func_call>());
-      break;
-    case op_constructor_call:
-      on_constructor_call(v.as<op_constructor_call>());
       break;
     case op_return:
       on_return(v.as<op_return>());

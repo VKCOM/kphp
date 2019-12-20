@@ -409,10 +409,6 @@
     }
   },
   {
-    "name": "op_constructor_call",
-    "base_name": "op_func_call"
-  },
-  {
     "extras": [
       "string"
     ],
@@ -1710,6 +1706,9 @@
     "extra_fields": {
       "allocated_class": {
         "type": "ClassPtr"
+      },
+      "allocated_class_name": {
+        "type": "std::string"
       }
     }
   },

@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#include "common/algorithms/hashes.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
@@ -11,7 +13,6 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 #include "compiler/utils/string-utils.h"
-#include "common/algorithms/hashes.h"
 
 /**
  * Через этот pass проходят функции вида
@@ -26,26 +27,29 @@ public:
     function_stream(function_stream) {}
 
   VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
-    if (auto call = root.try_as<op_constructor_call>()) {
-      if (call->func_id && call->func_id->is_lambda()) {
-        ClassPtr lambda_class = call->func_id->class_id;
-        FunctionPtr invoke_method = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
-        vector<VertexAdaptor<op_func_param>> uses_of_lambda;
+    if (auto call = root.try_as<op_func_call>()) {
+      if (!call->args().empty()) {
+        if (auto alloc = call->args()[0].try_as<op_alloc>()) {
+          if (auto lambda_class = alloc->allocated_class.try_as<LambdaClassData>()) {
+            FunctionPtr invoke_method = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
+            vector<VertexAdaptor<op_func_param>> uses_of_lambda;
 
-        lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
-          auto new_var_use = VertexAdaptor<op_var>::create();
-          new_var_use->set_string(std::string{f.local_name()});
-          set_location(new_var_use, f.root->location);
-          auto func_param = VertexAdaptor<op_func_param>::create(new_var_use);
-          set_location(func_param, f.root->location);
+            lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
+              auto new_var_use = VertexAdaptor<op_var>::create();
+              new_var_use->set_string(std::string{f.local_name()});
+              set_location(new_var_use, f.root->location);
+              auto func_param = VertexAdaptor<op_func_param>::create(new_var_use);
+              set_location(func_param, f.root->location);
 
-          uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
-        });
+              uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
+            });
 
-        return GenTree::generate_anonymous_class(invoke_method->root, current_function, true, std::move(uses_of_lambda))
-          .require(function_stream)
-          .get_generated_lambda()
-          ->gen_constructor_call_pass_fields_as_args();
+            return GenTree::generate_anonymous_class(invoke_method->root, current_function, true, std::move(uses_of_lambda))
+              .require(function_stream)
+              .get_generated_lambda()
+              ->gen_constructor_call_pass_fields_as_args();
+          }
+        }
       }
     }
 

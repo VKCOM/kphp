@@ -1,12 +1,13 @@
 #include "compiler/pipes/resolve-self-static-parent.h"
 
+#include "common/wrappers/likely.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
-#include "common/wrappers/likely.h"
 
 bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
   if (!FunctionPassBase::on_start(function)) {
@@ -89,12 +90,13 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPass
 
       v->set_string(get_full_static_member_name(current_function, original_name, v->type() == op_func_call));
     }
-  } else if (auto call = v.try_as<op_constructor_call>()) {
+  } else if (auto alloc = v.try_as<op_alloc>()) {
     // заменяем new A на new Classes\A, т.е. зарезолвленное полное имя класса
-    if (!call->func_id) {
-      const std::string &class_name = resolve_uses(current_function, v->get_string(), '\\');
-      v->set_string(class_name);
-      check_access_to_class_from_this_file(G->get_class(class_name));
+    if (!alloc->allocated_class) {
+      alloc->allocated_class_name = resolve_uses(current_function, alloc->allocated_class_name, '\\');
+      alloc->allocated_class = G->get_class(alloc->allocated_class_name);
+      kphp_error_act(alloc->allocated_class, fmt_format("Class {} not found", alloc->allocated_class_name), return v);
+      check_access_to_class_from_this_file(alloc->allocated_class);
     }
   }
 

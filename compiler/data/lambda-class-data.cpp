@@ -23,9 +23,8 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
     }
   }
 
-  if (vk::any_of_equal(v->type(), op_function, op_constructor_call)) {
-    FunctionPtr fun = v->type() == op_function ? v.as<op_function>()->func_id : v.as<op_constructor_call>()->func_id;
-    return fun->class_id.try_as<LambdaClassData>();
+  if (auto function = v.try_as<op_function>()) {
+    return function->func_id->class_id.try_as<LambdaClassData>();
   } else if (vk::any_of_equal(v->type(), op_func_call, op_var)) {
     Assumption a = infer_class_of_expr(stage::get_function(), v);
     if (a.assum_type == assum_instance) {
@@ -170,7 +169,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   return invoke_method_name;
 }
 
-VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
+VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() {
   std::vector<VertexPtr> args;
   members.for_each([&](const ClassMemberInstanceField &field) {
     VertexPtr res = VertexAdaptor<op_var>::create();
@@ -186,11 +185,15 @@ VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
   return gen_constructor_call_with_args(std::move(args));
 }
 
-VertexAdaptor<op_constructor_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
-  args.insert(args.begin(), VertexAdaptor<op_alloc>::create());
-  auto constructor_call = VertexAdaptor<op_constructor_call>::create(std::move(args));
-  constructor_call->set_string(name);
+VertexAdaptor<op_func_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) {
+  auto alloc = VertexAdaptor<op_alloc>::create();
+  alloc->allocated_class_name = name;
+  alloc->allocated_class = LambdaPtr{this};
+  args.insert(args.begin(), alloc);
+  auto constructor_call = VertexAdaptor<op_func_call>::create(std::move(args));
+  constructor_call->str_val = NAME_OF_CONSTRUCT;
   constructor_call->func_id = construct_function;
+  constructor_call->extra_type = op_ex_func_call_arrow;
 
   return constructor_call;
 }

@@ -9,7 +9,7 @@ if (0) {
 }
 
 class Exception {
-    public function __construct($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0);
+    public function __construct($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;
     public function getMessage () ::: string;
     public function getCode () ::: int;
     public function getFile () ::: string;
@@ -35,7 +35,7 @@ interface Memcache {
 
 
 class McMemcache implements Memcache {
-    public function __construct();
+    public function __construct() ::: McMemcache;
 
     public function get ($key) ::: var;
     public function delete ($key ::: string) ::: bool;
@@ -51,7 +51,7 @@ class McMemcache implements Memcache {
 }
 
 class RpcMemcache implements Memcache {
-    public function __construct($fake ::: bool = false);
+    public function __construct($fake ::: bool = false) ::: RpcMemcache;
 
     /** @kphp-extern-func-info can_throw */
     public function get ($key) ::: var;
@@ -76,7 +76,7 @@ class RpcMemcache implements Memcache {
 
 
 class mysqli {
-    private function __construct();
+    private function __construct() ::: \mysqli;
 }
 
 $_SERVER ::: var;

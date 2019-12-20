@@ -27,7 +27,6 @@ private:
   void apply_index(VertexAdaptor<op_index> index, VertexAdaptor<op_func_call> expr);
   void apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call> expr);
   void recalc_func_call(VertexAdaptor<op_func_call> call);
-  void recalc_constructor_call(VertexAdaptor<op_constructor_call> call);
   void recalc_var(VertexAdaptor<op_var> var);
   void recalc_push_back_return(VertexAdaptor<op_push_back_return> pb);
   void recalc_index(VertexAdaptor<op_index> index);
@@ -264,12 +263,6 @@ void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   }
 }
 
-void ExprNodeRecalc::recalc_constructor_call(VertexAdaptor<op_constructor_call> call) {
-  FunctionPtr function = call->func_id;
-  kphp_error (function->class_id, "op_constructor_call has class_id nullptr");
-  set_lca(function->class_id);
-}
-
 void ExprNodeRecalc::recalc_var(VertexAdaptor<op_var> var) {
   set_lca(var->var_id);
 }
@@ -413,9 +406,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
     case op_func_call:
       recalc_func_call(expr.as<op_func_call>());
-      break;
-    case op_constructor_call:
-      recalc_constructor_call(expr.as<op_constructor_call>());
       break;
     case op_common_type_rule:
     case op_gt_type_rule:
@@ -620,15 +610,17 @@ static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
       return "$" + expr.as<op_var>()->var_id->name + print_type(expr);
 
     case op_func_call: {
-      string function_name = expr.as<op_func_call>()->func_id->get_human_readable_name();
+      auto func = expr.as<op_func_call>()->func_id;
+      if (func->is_constructor()) {
+        return "new " + func->class_id->name + "()";
+      }
+      string function_name = func->get_human_readable_name();
       std::smatch matched;
       if (std::regex_match(function_name, matched, std::regex("(.+)( \\(inherited from .+?\\))"))) {
         return matched[1].str() + "(...)" + matched[2].str() + print_type(expr);
       }
       return function_name + "(...)" + print_type(expr);
     }
-    case op_constructor_call:
-      return "new " + expr->get_string() + "()";
 
     case op_instance_prop:
       return "->" + expr->get_string() + print_type(expr);

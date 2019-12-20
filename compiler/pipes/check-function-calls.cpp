@@ -58,7 +58,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   }
 }
 VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v, LocalT*) {
-  if (v->type() == op_func_ptr || v->type() == op_func_call || v->type() == op_constructor_call) {
+  if (v->type() == op_func_ptr || v->type() == op_func_call) {
     check_func_call(v);
   }
   return v;

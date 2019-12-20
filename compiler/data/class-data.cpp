@@ -2,6 +2,9 @@
 
 #include <string>
 
+#include "common/termformat/termformat.h"
+#include "common/wrappers/string_view.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
@@ -11,8 +14,6 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
-#include "common/termformat/termformat.h"
-#include "common/wrappers/string_view.h"
 
 const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
@@ -125,7 +126,7 @@ void ClassData::create_default_constructor(Location location, DataStream<Functio
   func->location = location;
   create_constructor(func);
 
-  G->register_and_require_function(construct_function, os, true);
+  G->require_function(construct_function, os);
 }
 
 void ClassData::create_constructor(VertexAdaptor<op_function> func) {
@@ -140,6 +141,7 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   ctor_function->is_inline = true;
   ctor_function->modifiers = FunctionModifiers::instance_public();
   members.add_instance_method(ctor_function);
+  G->register_function(ctor_function);
 }
 
 ClassPtr ClassData::get_parent_or_interface() const {

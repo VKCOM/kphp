@@ -84,7 +84,7 @@ public:
       kphp_error(instanceof->derived_class, fmt_format("Can't find class: {}", str_repr_of_class));
     }
 
-    if (vk::any_of_equal(root->type(), op_func_call, op_func_ptr, op_constructor_call)) {
+    if (vk::any_of_equal(root->type(), op_func_call, op_func_ptr)) {
       root = try_set_func_id(root);
     }
 
@@ -106,7 +106,7 @@ public:
   void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr dest_vertex, LocalT *) {
     if (auto call = vertex.try_as<op_func_call>()) {
       if (auto alloc = dest_vertex.try_as<op_alloc>()) {
-        alloc->allocated_class = call->func_id->class_id;
+        kphp_assert(alloc->allocated_class);
       }
     }
   }
@@ -353,7 +353,7 @@ private:
   }
 
   VertexPtr set_func_id(VertexPtr call, FunctionPtr func) {
-    kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call || call->type() == op_constructor_call);
+    kphp_assert (call->type() == op_func_ptr || call->type() == op_func_call);
     FunctionPtr &func_id = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
     kphp_assert (func);
     kphp_assert (!func_id || func_id == func);
@@ -502,9 +502,7 @@ private:
     }
 
     const string &name =
-      call->type() == op_constructor_call
-      ? resolve_constructor_func_name(current_function, call.as<op_constructor_call>())
-      : call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow
+        call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow
         ? resolve_instance_func_name(current_function, call.as<op_func_call>())
         : call->get_string();
 
@@ -524,23 +522,29 @@ private:
   }
 
   void print_why_cant_set_func_id_error(VertexPtr call, const std::string &unexisting_func_name) {
-    if (call->type() == op_constructor_call) {
-      ClassPtr klass = G->get_class(call->get_string());
-      if (klass) {
-        const char *type_of_incorrect_class = klass->modifiers.is_abstract() ? "abstract/interface" :
-                                              klass->is_trait() ? "trait" :
-                                              "fully static";
+    if (auto func_call = call.try_as<op_func_call>()) {
+      if (call->extra_type == op_ex_func_call_arrow) {
+        if (call->get_string() == ClassData::NAME_OF_CONSTRUCT && !call.as<op_func_call>()->args().empty()) {
+          if (auto alloc = call.as<op_func_call>()->args()[0].as<op_alloc>()) {
+            ClassPtr klass = G->get_class(alloc->allocated_class_name);
+            if (klass) {
+              const char *type_of_incorrect_class = klass->modifiers.is_abstract() ? "abstract/interface" :
+                                                    klass->is_trait() ? "trait" :
+                                                    "fully static";
 
-        kphp_error(0, fmt_format("Calling 'new {}()', but this class is {}", call->get_string(), type_of_incorrect_class));
-      } else {
-        kphp_error(0, fmt_format("Class {} does not exist", call->get_string()));
+              kphp_error(0, fmt_format("Calling 'new {}()', but this class is {}", klass->name, type_of_incorrect_class));
+            } else {
+              kphp_error(0, fmt_format("Class {} does not exist", call->get_string()));
+            }
+            return;
+          }
+        }
+        Assumption a = infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0]);
+        kphp_error(0, fmt_format("Unknown function ->{}() of {}\n", call->get_string(), a.klass ? a.klass->name.c_str() : "Unknown class"));
+        return;
       }
-    } else if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
-      Assumption a = infer_class_of_expr(current_function, call.as<op_func_call>()->args()[0]);
-      kphp_error(0, fmt_format("Unknown function ->{}() of {}\n", call->get_string(), a.klass ? a.klass->name.c_str() : "Unknown class"));
-    } else {
-      kphp_error(0, fmt_format("Unknown function {}()\n", unexisting_func_name));
     }
+    kphp_error(0, fmt_format("Unknown function {}()\n", unexisting_func_name));
   }
 };
 

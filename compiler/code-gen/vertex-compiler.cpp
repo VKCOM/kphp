@@ -1622,7 +1622,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_function(root.as<op_function>(), W);
       break;
     case op_func_call:
-    case op_constructor_call:
       compile_func_call_fast(root.as<op_func_call>(), W);
       break;
     case op_func_ptr:

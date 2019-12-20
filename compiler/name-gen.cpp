@@ -103,13 +103,6 @@ static std::string _err_instance_access(VertexPtr v, const std::string &desc) {
 }
 
 /*
- * Если 'new A(...)', то на самом деле это вызов A$$__construct(...), если не special case.
- */
-string resolve_constructor_func_name(FunctionPtr function __attribute__ ((unused)), VertexAdaptor<op_constructor_call> ctor_call) {
-  return replace_backslashes(ctor_call->get_string()) + "$$" + ClassData::NAME_OF_CONSTRUCT;
-}
-
-/*
  * На уровне gentree конструкция '...->method(...)' превращается в 'SOMEMETHOD(...,...)'.
  * Вот тут определяем, что за SOMEMETHOD — это из какого-то класса — именно того, что в левой части (= первый параметр).
  * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
@@ -131,11 +124,8 @@ string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_ca
 ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v, VertexPtr lhs) {
   ClassPtr klass;
   switch (lhs->type()) {
-    // (new A)->...
-    case op_constructor_call: {
-      return infer_class_of_expr(function, lhs).klass;
-    }
-
+    case op_alloc:
+      return lhs.as<op_alloc>()->allocated_class;
     // $var->...
     case op_var: {
       Assumption a = infer_class_of_expr(function, lhs);

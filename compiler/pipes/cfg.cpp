@@ -621,8 +621,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = finish;
       break;
     }
-    case op_func_call:
-    case op_constructor_call: {
+    case op_func_call: {
       FunctionPtr func = tree_node.as<op_func_call>()->func_id;
 
       Node start, a, b;

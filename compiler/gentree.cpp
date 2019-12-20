@@ -525,12 +525,16 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_new: {
       next_cur();
       CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      auto func_call = get_func_call<op_constructor_call, op_err>();
-        // Hack to be more compatible with php
+      auto func_call = get_func_call<op_func_call, op_err>();
+      // Hack to be more compatible with php
       if (func_call->str_val == "Memcache") {
         func_call->set_string("McMemcache");
       }
-      res =  VertexAdaptor<op_arrow>::create(VertexAdaptor<op_alloc>::create(), func_call);
+      auto alloc = VertexAdaptor<op_alloc>::create();
+      alloc->allocated_class_name = std::move(func_call->str_val);
+      func_call->str_val = ClassData::NAME_OF_CONSTRUCT;
+      res =  VertexAdaptor<op_arrow>::create(alloc, func_call);
+      res->location = alloc->location = func_call->location;
       break;
     }
     case tok_func_name: {
@@ -1657,6 +1661,11 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->is_immutable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_immutable_class);
   cur_class->location_line_num = line_num;
 
+  bool registered = G->register_class(cur_class);
+  if (registered) {
+    ++G->stats.total_classes;
+  }
+
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
@@ -1668,8 +1677,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
     G->register_and_require_function(constructor_method, parsed_os, true);
   }
 
-  if (G->register_class(cur_class)) {
-    ++G->stats.total_classes;
+  if (registered) {
     G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
   }
 

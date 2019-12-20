@@ -36,7 +36,6 @@ private:
   void add_type_help(VertexPtr v);
   void on_func_param_callback(VertexAdaptor<op_func_call> call, int id);
   void on_func_call(VertexAdaptor<op_func_call> call);
-  void on_constructor_call(VertexAdaptor<op_constructor_call> call);
   void on_return(VertexAdaptor<op_return> v);
   void on_foreach(VertexAdaptor<op_foreach> foreach_op);
   void on_list(VertexAdaptor<op_list> list);

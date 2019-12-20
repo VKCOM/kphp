@@ -192,8 +192,8 @@ std::string debugOperationName(Operation o) {
 
 std::string debugVertexMore(VertexPtr v) {
   switch (v->type()) {
-    case op_constructor_call:
-      return "new " + v->get_string();
+    case op_alloc:
+      return "new " + v.as<op_alloc>()->allocated_class_name;
     case op_func_call:
       return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") + v->get_string() + "()";
     case op_func_name:

@@ -378,13 +378,17 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
     if (i->type() == op_return && i.as<op_return>()->has_expr()) {
       VertexPtr expr = i.as<op_return>()->expr();
 
-      if (expr->type() == op_constructor_call) {
-        ClassPtr klass = G->get_class(expr->get_string());
-        kphp_assert(klass);
-        assumption_add_for_return(f, Assumption::instance(klass));        // return A
-      } else if (expr->type() == op_var && expr->get_string() == "this" && f->modifiers.is_instance()) {
+      if (expr->type() == op_var && expr->get_string() == "this" && f->modifiers.is_instance()) {
         assumption_add_for_return(f, Assumption::instance(f->class_id));  // return this
       } else if (auto call_vertex = expr.try_as<op_func_call>()) {
+        if (call_vertex->str_val == ClassData::NAME_OF_CONSTRUCT && !call_vertex->args().empty()) {
+          if (auto alloc = call_vertex->args()[0].try_as<op_alloc>()) {
+            ClassPtr klass = G->get_class(alloc->allocated_class_name);
+            kphp_assert(klass);
+            assumption_add_for_return(f, Assumption::instance(klass));        // return A
+            return;
+          }
+        }
         if (auto fun = call_vertex->func_id) {
           Assumption return_a = calc_assumption_for_return(fun, call_vertex);
           if (return_a.assum_type != assum_unknown) {
@@ -482,6 +486,10 @@ Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call>
     return Assumption::unknown();
   }
 
+  if (f->is_constructor()) {
+    return Assumption::instance(f->class_id);
+  }
+
   if (f->assumptions_inited_return == 0) {
     if (__sync_bool_compare_and_swap(&f->assumptions_inited_return, 0, 1)) {
       init_assumptions_for_return(f, f->root);
@@ -519,12 +527,6 @@ Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
 
 // —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-
-inline Assumption infer_from_ctor(FunctionPtr f __attribute__ ((unused)),
-                                  VertexAdaptor<op_constructor_call> call) {
-  const std::string &class_name = call->get_string();     // это полное имя класса после new
-  return Assumption::instance(G->get_class(class_name));
-}
 
 
 inline Assumption infer_from_var(FunctionPtr f,
@@ -636,8 +638,6 @@ Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0
     return Assumption::not_instance();
   }
   switch (root->type()) {
-    case op_constructor_call:
-      return infer_from_ctor(f, root.as<op_constructor_call>());
     case op_var:
       return infer_from_var(f, root.as<op_var>(), depth + 1);
     case op_instance_prop:
