@@ -67,12 +67,12 @@ class C$RpcMemcache final : public refcountable_polymorphic_php_classes<C$Memcac
 public:
   class host {
   public:
-    rpc_connection conn;
+    class_instance<C$RpcConnection> conn;
     int host_weight = 0;
     int actor_id = -1;
 
     host() = default;
-    explicit host(const rpc_connection &c): conn(c), host_weight(1) {}
+    explicit host(class_instance<C$RpcConnection> &&c): conn(std::move(c)), host_weight(1) {}
   };
 
   void accept(InstanceMemoryEstimateVisitor &visitor) final {
@@ -88,8 +88,8 @@ public:
     return vk::std_hash(vk::string_view(C$RpcMemcache::get_class()));
   }
 
-  friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &) {
-    return 0;
+  friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &h) {
+    return f$estimate_memory_usage(h.conn);
   }
 
   array<host> hosts{array_size{1, 0, true}};
@@ -109,7 +109,7 @@ var f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
 bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 
-class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this,bool fake = false);
+class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this, bool fake = false);
 bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
 bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
@@ -123,22 +123,22 @@ var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
 
 
 
-var f$rpc_mc_get(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);
+var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 template<class T>
-Optional<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
+Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
-bool f$rpc_mc_set(const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_add(const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_replace(const rpc_connection &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_increment(const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
+var f$rpc_mc_increment(const class_instance<C$RpcConnection> &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_decrement(const rpc_connection &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
+var f$rpc_mc_decrement(const class_instance<C$RpcConnection> &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_delete(const rpc_connection &conn, const string &key, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 
 /*
@@ -237,7 +237,7 @@ public:
 
 
 template<class T>
-Optional<array<var>> f$rpc_mc_multiget(const rpc_connection &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
+Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
   mc_method = "multiget";
   resumable_finished = true;
 

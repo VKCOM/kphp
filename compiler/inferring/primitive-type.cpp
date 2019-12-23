@@ -21,7 +21,6 @@ const char *ptype_name(PrimitiveType id) {
     case tp_UInt:          return "UInt";
     case tp_Long:          return "Long";
     case tp_ULong:         return "ULong";
-    case tp_RPC:           return "RPC";
     case tp_tuple:         return "tuple";
     case tp_future:        return "future";
     case tp_future_queue:  return "future_queue";
@@ -38,12 +37,12 @@ const char *ptype_name(PrimitiveType id) {
 
 bool can_store_false(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Class, tp_RPC, tp_Any);
+  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Class, tp_Any);
 }
 
 bool can_store_null(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_var, tp_Class, tp_RPC, tp_Any);
+  return vk::any_of_equal(tp, tp_var, tp_Class, tp_Any);
 }
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
@@ -76,7 +75,7 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return b;
   }
 
-  if (b >= tp_RPC && a != tp_False) { // instances, future, etc — can mix only with false
+  if (b >= tp_void) { // instances, future, etc — can mix only with false
     return tp_Error;
   }
 

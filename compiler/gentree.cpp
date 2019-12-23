@@ -1582,7 +1582,7 @@ bool GenTree::check_statement_end() {
 }
 
 static inline bool is_class_name_allowed(const vk::string_view &name) {
-  static std::set<vk::string_view> disallowed_names{"rpc_connection", "Long", "ULong", "UInt"};
+  static std::set<vk::string_view> disallowed_names{"Long", "ULong", "UInt"};
 
   return disallowed_names.find(name) == disallowed_names.end();
 }

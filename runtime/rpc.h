@@ -89,38 +89,20 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-struct rpc_connection {
-  bool bool_value;
-  int host_num;
-  int port;
-  int timeout_ms;
-  long long default_actor_id;
-  int connect_timeout;
-  int reconnect_timeout;
+struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection> {
+  int host_num{-1};
+  int port{-1};
+  int timeout_ms{-1};
+  long long default_actor_id{-1};
+  int connect_timeout{-1};
+  int reconnect_timeout{-1};
 
-  rpc_connection();
+  C$RpcConnection(int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
 
-  rpc_connection(bool value);
-  rpc_connection(const Optional<bool> &null);
-
-  rpc_connection(bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
-
-  rpc_connection &operator=(bool value);
-  rpc_connection &operator=(const Optional<bool> &null);
+  void accept(InstanceMemoryEstimateVisitor &) {}
 };
 
-rpc_connection f$new_rpc_connection(const string& host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
-
-bool f$boolval(const rpc_connection &my_rpc);
-
-bool eq2(const rpc_connection &my_rpc, bool value);
-
-bool eq2(bool value, const rpc_connection &my_rpc);
-
-bool equals(bool value, const rpc_connection &my_rpc);
-
-bool equals(const rpc_connection &my_rpc, bool value);
-
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 void f$store_gzip_pack_threshold(int pack_threshold_bytes);
 
@@ -175,10 +157,10 @@ string f$rpc_get_clean();
 
 bool rpc_store(bool is_error = false);
 
-int f$rpc_send(const rpc_connection &conn, double timeout = -1.0);
-int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer = false);
+int f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
+int rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer = false);
 
-int f$rpc_send_noflush(const rpc_connection &conn, double timeout = -1.0);
+int f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
 
 void f$rpc_flush();
 
@@ -220,12 +202,12 @@ double tl_parse_double();
 
 string tl_parse_string();
 
-int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout = -1.0);
+int f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout = -1.0);
 
 int f$rpc_tl_pending_queries_count();
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result);
 
-array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects, double timeout = -1.0, bool ignore_answer = false);
+array<int> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<var> &tl_objects, double timeout = -1.0, bool ignore_answer = false);
 
 array<var> f$rpc_tl_query_result_one(int query_id);
 

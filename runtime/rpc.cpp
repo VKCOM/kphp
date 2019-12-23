@@ -410,33 +410,7 @@ bool f$fetch_end() {
   return true;
 }
 
-rpc_connection::rpc_connection() :
-  bool_value(false),
-  host_num(-1),
-  port(-1),
-  timeout_ms(-1),
-  default_actor_id(-1),
-  connect_timeout(-1),
-  reconnect_timeout(-1) {
-}
-
-rpc_connection::rpc_connection(bool value) :
-  bool_value(value),
-  host_num(-1),
-  port(-1),
-  timeout_ms(-1),
-  default_actor_id(-1),
-  connect_timeout(-1),
-  reconnect_timeout(-1) {
-}
-
-rpc_connection::rpc_connection(const Optional<bool> &null) :
-  rpc_connection(false) {
-  assert(null.value_state() == OptionalState::null_value);
-}
-
-rpc_connection::rpc_connection(bool value, int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout) :
-  bool_value(value),
+C$RpcConnection::C$RpcConnection(int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout) :
   host_num(host_num),
   port(port),
   timeout_ms(timeout_ms),
@@ -445,49 +419,16 @@ rpc_connection::rpc_connection(bool value, int host_num, int port, int timeout_m
   reconnect_timeout(reconnect_timeout) {
 }
 
-rpc_connection &rpc_connection::operator=(bool value) {
-  bool_value = value;
-  return *this;
-}
-
-rpc_connection &rpc_connection::operator=(const Optional<bool> &null) {
-  assert(null.value_state() == OptionalState::null_value);
-  bool_value = false;
-  return *this;
-}
-
-
-rpc_connection f$new_rpc_connection(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   int host_num = rpc_connect_to(host_name.c_str(), port);
   if (host_num < 0) {
-    return rpc_connection();
+    return {};
   }
 
-  return rpc_connection(true, host_num, port, timeout_convert_to_ms(timeout),
-                        store_parse_number<long long>(default_actor_id),
-                        timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
+  return make_instance<C$RpcConnection>(host_num, port, timeout_convert_to_ms(timeout),
+                                        store_parse_number<long long>(default_actor_id),
+                                        timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
 }
-
-bool f$boolval(const rpc_connection &my_rpc) {
-  return my_rpc.bool_value;
-}
-
-bool eq2(const rpc_connection &my_rpc, bool value) {
-  return my_rpc.bool_value == value;
-}
-
-bool eq2(bool value, const rpc_connection &my_rpc) {
-  return value == my_rpc.bool_value;
-}
-
-bool equals(bool value, const rpc_connection &my_rpc) {
-  return equals(value, my_rpc.bool_value);
-}
-
-bool equals(const rpc_connection &my_rpc, bool value) {
-  return equals(my_rpc.bool_value, value);
-}
-
 
 static string_buffer data_buf;
 static const int data_buf_header_size = 2 * sizeof(long long) + 4 * sizeof(int);
@@ -863,28 +804,28 @@ static void process_rpc_timeout(event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra);
 }
 
-int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
-  if (unlikely (conn.host_num < 0)) {
-    php_warning("Wrong rpc_connection specified");
+int rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer) {
+  if (unlikely (conn.is_null() || conn.get()->host_num < 0)) {
+    php_warning("Wrong RpcConnection specified");
     return -1;
   }
 
   if (timeout <= 0 || timeout > MAX_TIMEOUT) {
-    timeout = conn.timeout_ms * 0.001;
+    timeout = conn.get()->timeout_ms * 0.001;
   }
 
   f$store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
   int reserved = data_buf_header_reserved_size;
-  if (conn.default_actor_id) {
+  if (conn.get()->default_actor_id) {
     const char *answer_begin = data_buf.c_str() + data_buf_header_size;
     int x = *(int *)answer_begin;
     if (x != TL_RPC_DEST_ACTOR && x != TL_RPC_DEST_ACTOR_FLAGS) {
       reserved -= (int)(sizeof(int) + sizeof(long long));
       php_assert (reserved >= 0);
       *(int *)(answer_begin - sizeof(int) - sizeof(long long)) = TL_RPC_DEST_ACTOR;
-      *(long long *)(answer_begin - sizeof(long long)) = conn.default_actor_id;
+      *(long long *)(answer_begin - sizeof(long long)) = conn.get()->default_actor_id;
     }
   }
 
@@ -892,7 +833,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
   void *p = dl::allocate(request_size);
   memcpy(p, data_buf.c_str() + reserved, request_size);
 
-  slot_id_t result = rpc_send_query(conn.host_num, (char *)p, (int)request_size, timeout_convert_to_ms(timeout));
+  slot_id_t result = rpc_send_query(conn.get()->host_num, (char *)p, (int)request_size, timeout_convert_to_ms(timeout));
   if (result <= 0) {
     return -1;
   }
@@ -928,7 +869,7 @@ int rpc_send(const rpc_connection &conn, double timeout, bool ignore_answer) {
 
   rpc_request *cur = get_rpc_request(result);
 
-  cur->resumable_id = register_forked_resumable(new rpc_resumable(result, conn.port, conn.default_actor_id));
+  cur->resumable_id = register_forked_resumable(new rpc_resumable(result, conn.get()->port, conn.get()->default_actor_id));
   cur->timer = nullptr;
   if (ignore_answer) {
     int resumable_id = cur->resumable_id;
@@ -956,7 +897,7 @@ void f$rpc_flush() {
   rpc_request_need_timer.clear();
 }
 
-int f$rpc_send(const rpc_connection &conn, double timeout) {
+int f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout) {
   int request_id = rpc_send(conn, timeout);
   if (request_id <= 0) {
     return 0;
@@ -966,7 +907,7 @@ int f$rpc_send(const rpc_connection &conn, double timeout) {
   return request_id;
 }
 
-int f$rpc_send_noflush(const rpc_connection &conn, double timeout) {
+int f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout) {
   int request_id = rpc_send(conn, timeout);
   if (request_id <= 0) {
     return 0;
@@ -1307,7 +1248,7 @@ bool f$set_tl_mode(int mode __attribute__ ((unused))) {
   return true;
 }
 
-int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, int &bytes_sent, bool flush) {
+int rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, int &bytes_sent, bool flush) {
   f$rpc_clean();
 
   class_instance<RpcQuery> rpc_query = store_function(tl_object);
@@ -1341,7 +1282,7 @@ int rpc_tl_query_impl(const rpc_connection &c, const var &tl_object, double time
   return query_id;
 }
 
-int f$rpc_tl_query_one(const rpc_connection &c, const var &tl_object, double timeout) {
+int f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout) {
   int bytes_sent = 0;
   return rpc_tl_query_impl(c, tl_object, timeout, false, false, bytes_sent, true);
 }
@@ -1389,7 +1330,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   return true;
 }
 
-array<int> f$rpc_tl_query(const rpc_connection &c, const array<var> &tl_objects, double timeout, bool ignore_answer) {
+array<int> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<var> &tl_objects, double timeout, bool ignore_answer) {
   array<int> result(tl_objects.size());
   int bytes_sent = 0;
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {

@@ -7,7 +7,7 @@ int f$estimate_memory_usage(const string &value);
 int f$estimate_memory_usage(const var &value);
 
 template<typename T,
-  typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int, double, Unknown, rpc_connection, Long, ULong, UInt>>>
+  typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int, double, Unknown, Long, ULong, UInt>>>
 int f$estimate_memory_usage(const T &);
 
 template<typename T>

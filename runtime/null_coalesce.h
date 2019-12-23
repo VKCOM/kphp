@@ -42,9 +42,9 @@ template<class ReturnType, class ValueType, class FallbackType>
 enable_if_t_is_not_optional<ReturnType, ReturnType>
 null_coalesce(const Optional<ValueType> &value, const FallbackType &fallback) noexcept {
   // keep in mind that ReturnType is not an optional here!
-  // TODO remove is_class_instance and rpc_connection when forbid mix them with false
+  // TODO remove is_class_instance when forbid mix them with false
   using result_can_be_false = std::integral_constant<bool,
-    vk::is_type_in_list<ReturnType, bool, var, rpc_connection>{} ||
+    vk::is_type_in_list<ReturnType, bool, var>{} ||
     is_class_instance<ReturnType>{}
   >;
   using false_cast_immposible = std::integral_constant<bool, std::is_same<ValueType, bool>{} && !result_can_be_false{}>;

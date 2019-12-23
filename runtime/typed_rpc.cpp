@@ -131,7 +131,7 @@ private:
 };
 } // namespace
 
-int typed_rpc_tl_query_impl(const rpc_connection &connection,
+int typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
                             const RpcRequest &req,
                             double timeout,
                             bool ignore_answer,

@@ -132,3 +132,9 @@ private:
   class_instance<T> clone_impl(std::false_type /*is empty*/) const;
 };
 
+template<class T, class ...Args>
+class_instance<T> make_instance(Args &&...args) noexcept {
+  class_instance<T> instance;
+  instance.alloc(std::forward<Args>(args)...);
+  return instance;
+}

@@ -20,7 +20,7 @@ class string_buffer;
 template<typename T>
 class Optional;
 
-struct rpc_connection;
+struct C$RpcConnection;
 
 template<class LongT>
 class LongNumber;

@@ -743,8 +743,12 @@ function fetch_eof () ::: bool;
 function fetch_end () ::: bool;
 function rpc_parse ($data) ::: bool;
 
+class RpcConnection {
+    private function __construct();
+}
+
 /** rpc store **/
-function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: RPC;
+function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection;
 function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
 function store_start_gzip_pack() ::: void;
 function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;
@@ -767,8 +771,8 @@ function store_double ($v ::: float) ::: bool;
 function store_string ($v ::: string) ::: bool;
 function store_many (...$args) ::: bool;
 function store_finish() ::: bool;
-function rpc_send ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
-function rpc_send_noflush ($rpc_conn ::: RPC, $timeout ::: float = -1.0) ::: int;
+function rpc_send ($rpc_conn :<=: \RpcConnection, $timeout ::: float = -1.0) ::: int;
+function rpc_send_noflush ($rpc_conn :<=: \RpcConnection, $timeout ::: float = -1.0) ::: int;
 function rpc_flush () ::: void;
 /** @kphp-extern-func-info resumable */
 function rpc_get ($request_id ::: int) ::: string | false;
@@ -787,26 +791,26 @@ function rpc_wait ($request_id ::: int) ::: bool;
 function rpc_wait_multiple ($request_id ::: int) ::: bool;
 
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_get ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_get ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw resumable */
-function rpc_mc_multiget ($rpc_conn ::: RPC, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: var[] | false;
+function rpc_mc_multiget ($rpc_conn :<=: \RpcConnection, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: var[] | false;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_delete ($rpc_conn ::: RPC, $key ::: string, $timeout ::: float = -1.0) ::: bool;
+function rpc_mc_delete ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_add ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+function rpc_mc_add ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_set ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+function rpc_mc_set ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_replace ($rpc_conn ::: RPC, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
+function rpc_mc_replace ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_decrement ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_increment ($rpc_conn ::: RPC, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
-function rpc_tl_query_one ($rpc_conn ::: RPC, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
-function rpc_tl_query ($rpc_conn ::: RPC, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function rpc_tl_query_one ($rpc_conn :<=: \RpcConnection, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
+function rpc_tl_query ($rpc_conn :<=: \RpcConnection, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
 function rpc_tl_query_result_one ($query_id ::: int) ::: var[];
 /** @kphp-extern-func-info resumable */
@@ -839,9 +843,9 @@ interface RpcResponse {
 }
 
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query_one ($connection ::: RPC, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
+function typed_rpc_tl_query_one ($connection :<=: \RpcConnection, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query ($connection ::: RPC, $query_functions :<=: @tl\RpcFunction[], $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function typed_rpc_tl_query ($connection :<=: \RpcConnection, $query_functions :<=: @tl\RpcFunction[], $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info tl_common_h_dep resumable */
 function typed_rpc_tl_query_result_one ($query_id :<=: int) ::: @tl\RpcResponse;
 /** @kphp-extern-func-info tl_common_h_dep resumable */

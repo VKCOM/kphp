@@ -5,9 +5,9 @@
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
 
-struct rpc_connection;
+struct C$RpcConnection;
 
-int typed_rpc_tl_query_impl(const rpc_connection &connection,
+int typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
                             const RpcRequest &req,
                             double timeout,
                             bool ignore_answer,
@@ -25,7 +25,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
                                                                                   const RpcErrorFactory &error_factory);
 
 template<typename F, typename R = KphpRpcRequest>
-int f$typed_rpc_tl_query_one(const rpc_connection &connection,
+int f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection,
                              const class_instance<F> &query_function,
                              double timeout = -1.0) {
   static_assert(std::is_base_of<C$VK$TL$RpcFunction, F>::value, "Unexpected type");
@@ -36,7 +36,7 @@ int f$typed_rpc_tl_query_one(const rpc_connection &connection,
 }
 
 template<typename F, typename R = KphpRpcRequest>
-array<int> f$typed_rpc_tl_query(const rpc_connection &connection,
+array<int> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &connection,
                                 const array<class_instance<F>> &query_functions,
                                 double timeout = -1.0,
                                 bool ignore_answer = false) {

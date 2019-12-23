@@ -234,10 +234,6 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_ULong);
       }
-      if (cur_tok->str_val == "RPC") {
-        cur_tok++;
-        return GenTree::create_type_help_vertex(tp_RPC);
-      }
       if (cur_tok->str_val == "regexp") {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);

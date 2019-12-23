@@ -623,10 +623,6 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
       res += ">";
       break;
     }
-    case tp_RPC: {
-      res += "rpc_connection";
-      break;
-    }
     case tp_float: {
       res += "double";
       break;
@@ -651,10 +647,6 @@ inline void get_txt_style_type(const TypeData *type, std::string &res) {
     case tp_bool:
       res += "boolean";
       break;
-    case tp_RPC: {
-      res += "rpc_connection";
-      break;
-    }
     default :
       res += ptype_name(tp);
       break;
@@ -781,8 +773,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_LONG;
     case tp_ULong:
       return STRLEN_ULONG;
-    case tp_RPC:
-      return STRLEN_RPC;
     case tp_Class:
       return STRLEN_CLASS;
     case tp_void:

@@ -15,7 +15,6 @@ enum PrimitiveType {
   tp_UInt,
   tp_Long,
   tp_ULong,
-  tp_RPC,
   tp_void,
   tp_tuple,
   tp_future,
