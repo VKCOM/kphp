@@ -8,5 +8,5 @@ public:
     return "Check tl classes";
   }
 
-  bool check_function(FunctionPtr function) final;
+  bool on_start(FunctionPtr function);
 };

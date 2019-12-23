@@ -31,8 +31,6 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
   for (const auto &field : repr.class_fields) {
     auto member = class_id->members.find_by_local_name<ClassMemberInstanceField>(field.field_name);
     kphp_error_return(member, fmt_format("Can't find field '{}' in tl-class '{}'", field.field_name, class_id->name));
-    kphp_error_return(member->phpdoc_str.find(field.php_doc_type) != std::string::npos,
-                      fmt_format("Field '{}' of tl-class '{}' has incorrect php doc", field.field_name, class_id->name));
   }
 }
 
@@ -65,7 +63,11 @@ void check_class(ClassPtr class_id) {
 
 }
 
-bool CheckTlClasses::check_function(FunctionPtr function) {
+bool CheckTlClasses::on_start(FunctionPtr function) {
+  if (!FunctionPassBase::on_start(function)) {
+    return false;
+  }
+
   if (G->env().get_tl_schema_file().empty()) {
     // TODO it should be better
     return false;
