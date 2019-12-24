@@ -134,24 +134,6 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
   return true;
 };
 
-void copy_abstract_methods(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
-  if (!parent_class->modifiers.is_abstract() || !child_class->modifiers.is_abstract()) {
-    return;
-  }
-
-  parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-    if (m.function->modifiers.is_abstract()) {
-      clone_method(m.function, child_class, function_stream);
-    }
-  });
-
-  parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-    if (m.function->modifiers.is_abstract()) {
-      clone_method(m.function, child_class, function_stream);
-    }
-  });
-}
-
 } // namespace
 
 
@@ -268,7 +250,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                     fmt_format("You cannot extends final class: {}", child_class->name));
 
   child_class->parent_class = parent_class;
-  copy_abstract_methods(child_class, parent_class, function_stream);
 
   // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
@@ -301,7 +282,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   }
 }
 
-void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class, DataStream<FunctionPtr> &function_stream) {
+void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {
   kphp_error(interface_class->is_interface(),
              fmt_format("Error implements {} and {}", child_class->name, interface_class->name));
 
@@ -310,8 +291,6 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
   } else {
     child_class->implements.emplace_back(interface_class);
   }
-
-  copy_abstract_methods(child_class, interface_class, function_stream);
 
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
@@ -368,7 +347,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         inherit_child_class_from_parent(klass, dep_class, function_stream);
         break;
       case ClassType::interface:
-        inherit_class_from_interface(klass, dep_class, function_stream);
+        inherit_class_from_interface(klass, dep_class);
         break;
       case ClassType::trait:
         traits.emplace_back(dep_class);

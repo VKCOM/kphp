@@ -112,15 +112,16 @@ VertexAdaptor<op_case> gen_case_calling_methods_on_derived_class(ClassPtr derive
   if (auto method_of_derived = derived->members.get_instance_method(virtual_function->local_name())) {
     concrete_method_of_derived = method_of_derived->function;
   } else {
-    if (virtual_function->class_id == derived->get_parent_or_interface() && virtual_function->modifiers.is_abstract()) {
+    if (auto method_from_ancestor = derived->get_instance_method(virtual_function->local_name())) {
+      concrete_method_of_derived = method_from_ancestor->function;
+    }
+
+    bool is_overridden_by_ancestors = concrete_method_of_derived && !concrete_method_of_derived->modifiers.is_abstract();
+    if (virtual_function->modifiers.is_abstract() && !derived->modifiers.is_abstract() && !is_overridden_by_ancestors) {
       kphp_error(false, fmt_format("You should override abstract method: `{}` in class: `{}`",
                                    virtual_function->get_human_readable_name(),
                                    derived->name));
       return {};
-    }
-
-    if (auto method_from_ancestor = derived->get_instance_method(virtual_function->local_name())) {
-      concrete_method_of_derived = method_from_ancestor->function;
     }
   }
 
