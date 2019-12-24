@@ -74,6 +74,7 @@ public:
 
   static VertexAdaptor<op_var> gen_vertex_this(Location location);
   FunctionPtr gen_holder_function(const std::string &name);
+  FunctionPtr add_magic_method(const char *magic_name, VertexPtr return_value);
   FunctionPtr add_virt_clone();
 
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);

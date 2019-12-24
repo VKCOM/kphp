@@ -78,6 +78,33 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   return res;
 }
 
+FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return_value) {
+  std::string magic_func_name = replace_backslashes(name) + "$$" + magic_name;
+
+  auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
+
+  VertexAdaptor<op_seq> body;
+  if (!modifiers.is_abstract()) {
+    auto wrapped_return_value = VertexAdaptor<op_return>::create(return_value);
+    body = VertexAdaptor<op_seq>::create(wrapped_return_value);
+  } else {
+    body = VertexAdaptor<op_seq>::create();
+  }
+
+  auto virt_magic_func = VertexAdaptor<op_function>::create(param_list, body);
+  auto virt_magic_func_ptr = FunctionData::create_function(magic_func_name, virt_magic_func, FunctionData::func_local);
+  virt_magic_func_ptr->file_id = file_id;
+  virt_magic_func_ptr->update_location_in_body();
+  virt_magic_func_ptr->assumptions_inited_return = 2;
+  virt_magic_func_ptr->assumption_for_return = Assumption::instance(ClassPtr{this});
+  virt_magic_func_ptr->is_inline = true;
+  virt_magic_func_ptr->modifiers = FunctionModifiers::instance_public();
+
+  members.add_instance_method(virt_magic_func_ptr);
+
+  return virt_magic_func_ptr;
+}
+
 /**
  * Generate and add `__virt_clone` method to class (or interface); method is dedicated for cloning interfaces
  *
@@ -88,36 +115,11 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
  * / ** @return InterfaceName * /
  * function __virt_clone();
  *
- * @param os for register new method
- * @param with_body when it's true, generates only empty body it's needed for interfaces
  * @return generated method
  */
 FunctionPtr ClassData::add_virt_clone() {
-  std::string clone_func_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
-
-  auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
-
-  VertexAdaptor<op_seq> body;
-  if (!modifiers.is_abstract()) {
-    auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
-    auto return_clone_this = VertexAdaptor<op_return>::create(clone_this);
-    body = VertexAdaptor<op_seq>::create(return_clone_this);
-  } else {
-    body = VertexAdaptor<op_seq>::create();
-  }
-
-  auto virt_clone_func = VertexAdaptor<op_function>::create(param_list, body);
-  auto virt_clone_func_ptr = FunctionData::create_function(clone_func_name, virt_clone_func, FunctionData::func_local);
-  virt_clone_func_ptr->file_id = file_id;
-  virt_clone_func_ptr->update_location_in_body();
-  virt_clone_func_ptr->assumptions_inited_return = 2;
-  virt_clone_func_ptr->assumption_for_return = Assumption::instance(ClassPtr{this});
-  virt_clone_func_ptr->is_inline = true;
-  virt_clone_func_ptr->modifiers = FunctionModifiers::instance_public();
-
-  members.add_instance_method(virt_clone_func_ptr);
-
-  return virt_clone_func_ptr;
+  auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
+  return add_magic_method(NAME_OF_VIRT_CLONE, clone_this);
 }
 
 void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
