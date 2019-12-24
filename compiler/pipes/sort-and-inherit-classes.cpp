@@ -377,7 +377,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
   }
   clone_members_from_traits(std::move(traits), klass, function_stream);
   if (klass->is_fully_static()) {
-    auto parent = klass->parent_class;
+    auto parent = klass->get_parent_or_interface();
     if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || (parent && !parent->is_fully_static())) {
       klass->create_default_constructor(Location{klass->location_line_num}, function_stream);
     }
