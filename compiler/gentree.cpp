@@ -1715,6 +1715,19 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
   return call_method;
 }
 
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args) {
+  auto alloc = VertexAdaptor<op_alloc>::create();
+  alloc->allocated_class_name = allocated_class->name;
+  alloc->allocated_class = allocated_class;
+  args.insert(args.begin(), alloc);
+  auto constructor_call = VertexAdaptor<op_func_call>::create(std::move(args));
+  constructor_call->str_val = ClassData::NAME_OF_CONSTRUCT;
+  constructor_call->func_id = allocated_class->construct_function;
+  constructor_call->extra_type = op_ex_func_call_arrow;
+
+  return constructor_call;
+}
+
 void GenTree::get_traits_uses() {
   next_cur();
   auto name = cur->str_val;

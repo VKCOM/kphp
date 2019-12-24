@@ -169,7 +169,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   return invoke_method_name;
 }
 
-VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() {
+VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
   std::vector<VertexPtr> args;
   members.for_each([&](const ClassMemberInstanceField &field) {
     VertexPtr res = VertexAdaptor<op_var>::create();
@@ -185,17 +185,8 @@ VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() {
   return gen_constructor_call_with_args(std::move(args));
 }
 
-VertexAdaptor<op_func_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) {
-  auto alloc = VertexAdaptor<op_alloc>::create();
-  alloc->allocated_class_name = name;
-  alloc->allocated_class = LambdaPtr{this};
-  args.insert(args.begin(), alloc);
-  auto constructor_call = VertexAdaptor<op_func_call>::create(std::move(args));
-  constructor_call->str_val = NAME_OF_CONSTRUCT;
-  constructor_call->func_id = construct_function;
-  constructor_call->extra_type = op_ex_func_call_arrow;
-
-  return constructor_call;
+VertexAdaptor<op_func_call> LambdaClassData::gen_constructor_call_with_args(std::vector<VertexPtr> args) const {
+  return GenTree::gen_constructor_call_with_args(get_self(), std::move(args));
 }
 
 

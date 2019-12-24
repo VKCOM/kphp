@@ -141,6 +141,7 @@ public:
                                                   FunctionPtr already_created_function = FunctionPtr{});
 
   static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name);
+  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args);
 
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
   void parse_extends_implements();
