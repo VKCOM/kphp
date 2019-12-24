@@ -221,6 +221,10 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
+  if (are_last_tokens(tok_new, tok_static)) {
+    tokens.back().type_ = tok_func_name;
+  }
+
   if (are_last_tokens(tok_func_name, except_token_tag<tok_oppar>{})) {
     if (vk::any_of_equal(tokens[tokens.size() - 2].str_val, "exit", "die")) {
       Token t = tokens.back();
