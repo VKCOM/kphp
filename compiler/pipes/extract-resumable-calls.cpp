@@ -24,7 +24,7 @@ VertexPtr *ExtractResumableCallsPass::get_resumable_func_for_replacement(VertexP
   } else if (auto set_modify = vertex.try_as<op_set_modify>()) {
     resumable_func_call = &(set_modify->rhs());
 
-    if ((*resumable_func_call)->type() == op_func_call && vertex->type() == op_set) {
+    if ((*resumable_func_call)->type() == op_func_call && vertex->type() == op_set && set_modify->lhs()->type() != op_instance_prop) {
       return {};
     }
   } else if (auto list = vertex.try_as<op_list>()) {
