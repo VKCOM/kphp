@@ -17,4 +17,7 @@ public:
   void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local);
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
+
+private:
+  void raise_cant_save_result_of_resumable_func(FunctionPtr func);
 };
