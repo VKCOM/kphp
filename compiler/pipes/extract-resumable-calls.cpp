@@ -5,80 +5,86 @@
 #include "compiler/name-gen.h"
 
 void ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *&replace) {
-  while (true) {
-    if (!replace) {
-      break;
-    }
-    const Operation op = (*replace)->type();
-    if (vk::any_of_equal(
-      op, op_set_add, op_set_sub, op_set_mul, op_set_div, op_set_mod, op_set_pow,
-      op_set, op_set_and, op_set_or, op_set_xor, op_set_dot, op_set_shr, op_set_shl
-    )) {
-      replace = &((*replace).as<meta_op_binary>()->rhs());
-    } else if (vk::any_of_equal(
-      op, op_conv_int, op_conv_bool, op_conv_int_l, op_conv_float, op_conv_string,
-      op_conv_string_l, op_conv_array_l,  op_conv_var, op_conv_uint,
-      op_conv_long, op_conv_ulong, op_conv_regexp, op_log_not
-    )) {
-      replace = &((*replace).as<meta_op_unary>()->expr());
-    } else {
-      break;
-    }
+  if (auto set_modify = replace->try_as<op_set_modify>()) {
+    replace = &(set_modify->rhs());
+    skip_conv_and_sets(replace);
+  }
+
+  if (OpInfo::type((*replace)->type()) == conv_op || vk::any_of_equal((*replace)->type(), op_conv_int_l, op_conv_string_l, op_conv_array_l, op_log_not)) {
+    replace = &((*replace).as<meta_op_unary>()->expr());
+    skip_conv_and_sets(replace);
   }
 }
-VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractResumableCallsPass::LocalT *local) {
-  if (local->from_seq == false) {
-    return vertex;
-  }
-  VertexPtr *replace = nullptr;
-  VertexAdaptor<op_func_call> func_call;
-  Operation op = vertex->type();
-  if (op == op_return && vertex.as<op_return>()->has_expr()) {
-    replace = &vertex.as<op_return>()->expr();
-  } else if (vk::any_of_equal(
-    op, op_set_add, op_set_sub, op_set_mul, op_set_div, op_set_mod, op_set_pow,
-    op_set, op_set_and, op_set_or, op_set_xor, op_set_dot, op_set_shr, op_set_shl
-  )) {
-    replace = &vertex.as<meta_op_binary>()->rhs();
-    if ((*replace)->type() == op_func_call && op == op_set) {
-      return vertex;
+
+VertexPtr *ExtractResumableCallsPass::get_resumable_func_for_replacement(VertexPtr vertex) {
+  VertexPtr *resumable_func_call = nullptr;
+
+  if (auto return_v = vertex.try_as<op_return>()) {
+    resumable_func_call = return_v->has_expr() ? &return_v->expr() : nullptr;
+  } else if (auto set_modify = vertex.try_as<op_set_modify>()) {
+    resumable_func_call = &(set_modify->rhs());
+
+    if ((*resumable_func_call)->type() == op_func_call && vertex->type() == op_set) {
+      return {};
     }
-  } else if (op == op_list) {
-    replace = &vertex.as<op_list>()->array();
-  } else if (op == op_set_value) {
-    replace = &vertex.as<op_set_value>()->value();
-  } else if (op == op_push_back) {
-    replace = &vertex.as<op_push_back>()->value();
-  } else if (op == op_if) {
-    replace = &vertex.as<op_if>()->cond();
+  } else if (auto list = vertex.try_as<op_list>()) {
+    resumable_func_call = &list->array();
+  } else if (auto set_value = vertex.try_as<op_set_value>()) {
+    resumable_func_call = &set_value->value();
+  } else if (auto push_back = vertex.try_as<op_push_back>()) {
+    resumable_func_call = &push_back->value();
+  } else if (auto if_cond = vertex.try_as<op_if>()) {
+    resumable_func_call = &if_cond->cond();
   }
-  skip_conv_and_sets(replace);
-  if (!replace || !*replace || (*replace)->type() != op_func_call) {
-    return vertex;
+
+  if (!resumable_func_call || !*resumable_func_call) {
+    return {};
   }
-  func_call = (*replace).as<op_func_call>();
-  FunctionPtr func = func_call->func_id;
-  if (!func->is_resumable) {
-    return vertex;
+
+  skip_conv_and_sets(resumable_func_call);
+
+  if ((*resumable_func_call)->type() != op_func_call || !(*resumable_func_call).as<op_func_call>()->func_id->is_resumable) {
+    return {};
   }
+
+  return resumable_func_call;
+}
+
+VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const TypeData *type) {
   auto temp_var = VertexAdaptor<op_var>::create();
   temp_var->str_val = gen_unique_name("resumable_temp_var");
-  VarPtr var = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
-  var->tinf_node.copy_type_from(tinf::get_type(func_call));
-  temp_var->var_id = var;
-  auto set_op = VertexAdaptor<op_set>::create(temp_var, func_call);
+  temp_var->var_id = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
+  temp_var->var_id->tinf_node.copy_type_from(type);
 
-  auto temp_var2 = VertexAdaptor<op_var>::create();
-  temp_var2->str_val = temp_var->str_val;
-  temp_var2->var_id = var;
-  *replace = temp_var2;
-
-  auto seq = VertexAdaptor<op_seq>::create(set_op, vertex);
-  return seq;
+  return temp_var;
 }
+
+VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractResumableCallsPass::LocalT *local) {
+  if (!local->from_seq) {
+    return vertex;
+  }
+
+  auto resumable_func_call = get_resumable_func_for_replacement(vertex);
+  if (!resumable_func_call) {
+    return vertex;
+  }
+  auto func_call = (*resumable_func_call).as<op_func_call>();
+
+  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(func_call));
+  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, func_call);
+
+  auto read_usage_of_temp_var = VertexAdaptor<op_var>::create();
+  read_usage_of_temp_var->str_val = temp_var_with_res_of_func_call->str_val;
+  read_usage_of_temp_var->var_id = temp_var_with_res_of_func_call->var_id;
+  *resumable_func_call = read_usage_of_temp_var;
+
+  return VertexAdaptor<op_seq>::create(set_op, vertex);
+}
+
 void ExtractResumableCallsPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local) {
-  dest_local->from_seq = vertex->type() == op_seq || vertex->type() == op_seq_rval;
+  dest_local->from_seq = vk::any_of_equal(vertex->type(), op_seq, op_seq_rval);
 }
+
 bool ExtractResumableCallsPass::check_function(FunctionPtr function) {
   return default_check_function(function) && !function->is_extern() && function->is_resumable;
 }

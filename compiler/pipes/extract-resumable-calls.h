@@ -4,7 +4,9 @@
 
 class ExtractResumableCallsPass : public FunctionPassBase {
 private:
-  void skip_conv_and_sets(VertexPtr *&replace);
+  static void skip_conv_and_sets(VertexPtr *&replace);
+  static VertexPtr *get_resumable_func_for_replacement(VertexPtr vertex);
+  static VertexAdaptor<op_var> make_temp_resumable_var(const TypeData *type);
 
 public:
   string get_description() {

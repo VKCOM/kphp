@@ -1106,8 +1106,12 @@
     }
   },
   {
+    "name": "op_set_modify",
+    "base_name": "meta_op_binary"
+  },
+  {
     "name": "op_set",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "rl": "rl_set",
       "fixity": "right_opp",
@@ -1118,7 +1122,7 @@
   },
   {
     "name": "op_set_add",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_add",
@@ -1130,7 +1134,7 @@
   },
   {
     "name": "op_set_sub",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_sub",
@@ -1142,7 +1146,7 @@
   },
   {
     "name": "op_set_mul",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_mul",
@@ -1154,7 +1158,7 @@
   },
   {
     "name": "op_set_div",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_div",
@@ -1166,7 +1170,7 @@
   },
   {
     "name": "op_set_mod",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_mod",
@@ -1178,7 +1182,7 @@
   },
   {
     "name": "op_set_pow",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "base_op": "op_pow",
       "cnst": "cnst_nonconst_func",
@@ -1190,7 +1194,7 @@
   },
   {
     "name": "op_set_and",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_and",
@@ -1202,7 +1206,7 @@
   },
   {
     "name": "op_set_or",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_or",
@@ -1214,7 +1218,7 @@
   },
   {
     "name": "op_set_xor",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_xor",
@@ -1226,7 +1230,7 @@
   },
   {
     "name": "op_set_dot",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_concat",
@@ -1238,7 +1242,7 @@
   },
   {
     "name": "op_set_shr",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_shr",
@@ -1250,7 +1254,7 @@
   },
   {
     "name": "op_set_shl",
-    "base_name": "meta_op_binary",
+    "base_name": "op_set_modify",
     "props": {
       "cnst": "cnst_nonconst_func",
       "base_op": "op_shl",
