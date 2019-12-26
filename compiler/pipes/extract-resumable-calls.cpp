@@ -73,10 +73,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractRe
   auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(func_call));
   auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, func_call);
 
-  auto read_usage_of_temp_var = VertexAdaptor<op_var>::create();
-  read_usage_of_temp_var->str_val = temp_var_with_res_of_func_call->str_val;
-  read_usage_of_temp_var->var_id = temp_var_with_res_of_func_call->var_id;
-  *resumable_func_call = read_usage_of_temp_var;
+  *resumable_func_call = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone());
 
   return VertexAdaptor<op_seq>::create(set_op, vertex);
 }
