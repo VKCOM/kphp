@@ -403,6 +403,7 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
     dl::pending_signals |= 1 << sig_num;
     return false;
   }
+  dl::pending_signals = 0;
   return true;
 }
 
