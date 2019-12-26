@@ -1,8 +1,7 @@
 @ok
 <?php
 
-require_once "dl/polyfill/fork-php-polyfill.php";
-require_once "polyfills.php";
+require_once 'polyfills.php';
 
 function return_tuple1() {
   sched_yield();

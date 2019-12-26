@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once __DIR__ . "/../dl/polyfill/fork-php-polyfill.php";
+require_once 'polyfills.php';
 
 function return_exception() {
   sched_yield();

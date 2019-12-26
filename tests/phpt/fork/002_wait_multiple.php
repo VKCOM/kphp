@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once __DIR__."/../dl/polyfill/fork-php-polyfill.php";
+require_once 'polyfills.php';
 
 $f_finished = false;
 

@@ -1,7 +1,7 @@
 @ok
 <?
 
-require_once 'dl/polyfill/fork-php-polyfill.php';
+require_once 'polyfills.php';
 
 $warning_msgs = [];
 
