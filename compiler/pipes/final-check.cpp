@@ -482,30 +482,42 @@ bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalChec
     if (v->rl_type == val_r) {
       const TypeData *type = tinf::get_type(v);
       if (type->get_real_ptype() == tp_Unknown) {
-        string index_depth;
-        while (v->type() == op_index) {
-          v = v.as<op_index>()->array();
-          index_depth += "[.]";
-        }
-        string desc = "Using Unknown type : ";
-        if (auto var_vertex = v.try_as<op_var>()) {
-          VarPtr var = var_vertex->var_id;
-          desc += "variable [$" + var->name + "]" + index_depth;
-        } else if (auto call = v.try_as<op_func_call>()) {
-          if (call->func_id->is_constructor()) {
-            desc += "constructor [" + call->func_id->name + "]" + index_depth;
-          } else {
-            desc += "function [" + call->func_id->name + "]" + index_depth;
-          }
-        } else {
-          desc += "...";
-        }
-
-        kphp_error (0, desc.c_str());
+        raise_error_using_Unknown_type(v);
         return true;
       }
     }
   }
 
   return false;
+}
+
+void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
+  std::string index_depth;
+  while (auto v_index = v.try_as<op_index>()) {
+    v = v_index->array();
+    index_depth += "[*]";
+  }
+
+  if (auto var_vertex = v.try_as<op_var>()) {
+    VarPtr var = var_vertex->var_id;
+    if (index_depth.empty()) {              // Unknown type single var access
+      kphp_error(0, fmt_format("Variable ${} has Unknown type", var->name));
+    } else if (index_depth.size() == 3) {   // 1-depth array[*] access (most common case)
+      bool allowed_as_array = vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_var);
+      // separate error if array is always empty => its elements are Unknown
+      kphp_error(!allowed_as_array, fmt_format("Array ${} is always empty, getting its element has Unknown type", var->name));
+      // all other cases (int or instance access by [*], or tuple access of unexisting element)
+      kphp_error( allowed_as_array, fmt_format("${} is {}, can not get element", var->name, colored_type_out(tinf::get_type(var))));
+    } else {                                // multidimentional array[*]...[*] access
+      kphp_error(0, fmt_format("${}{} has Unknown type", var->name, index_depth));
+    }
+  } else if (auto call = v.try_as<op_func_call>()) {
+    if (index_depth.empty()) {
+      kphp_error(0, fmt_format("Function {}() returns Unknown type", call->func_id->name));
+    } else {
+      kphp_error(0, fmt_format("{}(){} has Unknown type", call->func_id->name, index_depth));
+    }
+  } else {
+    kphp_error(0, "Using Unknown type");
+  }
 }

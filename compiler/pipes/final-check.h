@@ -27,5 +27,6 @@ private:
   void check_lib_exported_function(FunctionPtr function);
   void check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op);
   void check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation op);
+  void raise_error_using_Unknown_type(VertexPtr v);
 };
 
