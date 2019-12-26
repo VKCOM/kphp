@@ -1,12 +1,12 @@
 <?php
 
-require_once "lib_autoload.php";
+require_once 'lib_autoload.php';
 
 echo "[example1] index: global run\n";
 
 echo "[example1] index: require_once 'srcfile.php'\n";
-require_once "srcfile.php";
-require_once "srcfile2.php";
+require_once 'srcfile.php';
+require_once 'srcfile2.php';
 
 /**
  * @kphp-lib-export

@@ -15,8 +15,8 @@
 
 		#include "foo";
 		#include_once "foo";
-		require "foo";
-		require_once "foo";
+		require 'foo';
+		require_once 'foo';
 		// use "foo";
 		
 		#include("foo");

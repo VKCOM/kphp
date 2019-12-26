@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("polyfills.php");
+require_once 'polyfills.php';
 
 
 function same_size_tuples() {

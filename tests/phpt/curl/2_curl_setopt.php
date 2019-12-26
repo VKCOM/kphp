@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once "polyfills.php";
+require_once 'polyfills.php';
 
 function test_long_options() {
   $c = curl_init();

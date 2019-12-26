@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once __DIR__.'/../polyfills.php';
+require_once 'polyfills.php';
 
 function printAllOfArray($a) {
   var_dump(array_first_key($a));

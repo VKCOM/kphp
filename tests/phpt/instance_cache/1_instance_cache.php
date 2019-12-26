@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once "polyfills.php";
+require_once 'polyfills.php';
 
 class X {
   /** @var int */

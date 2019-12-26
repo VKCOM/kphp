@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once "Classes/autoload.php";
+require_once 'Classes/autoload.php';
 
 /**
  * @kphp-template $obj2

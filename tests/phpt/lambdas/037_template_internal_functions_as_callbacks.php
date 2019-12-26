@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("polyfills.php");
+require_once 'polyfills.php';
 
 #ifndef KittenPHP
 function new_Long($x) { return floatval($x); }

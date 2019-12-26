@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once "polyfills.php";
+require_once 'polyfills.php';
 
 function test_empty() {
   var_dump(array_keys_as_strings([]));

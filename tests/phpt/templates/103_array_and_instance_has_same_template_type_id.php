@@ -1,7 +1,7 @@
 @kphp_should_fail
 <?php
 
-require_once "Classes/autoload.php";
+require_once 'Classes/autoload.php';
 
 /**
  * @kphp-template $obj1, $obj2

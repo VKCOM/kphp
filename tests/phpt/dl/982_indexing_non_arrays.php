@@ -1,6 +1,6 @@
 @wa
 <?php
-  require ("982_indexing_non_arrays_arr.php");
+  require '982_indexing_non_arrays_arr.php';
 
 	function php_write ($php_init, $insert)
 	{

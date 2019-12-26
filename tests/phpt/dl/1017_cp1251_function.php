@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once __DIR__.'/../polyfills.php';
+require_once 'polyfills.php';
 
 echo cp1251('привет'), "\n";
 echo strlen(cp1251('привет')), "\n";

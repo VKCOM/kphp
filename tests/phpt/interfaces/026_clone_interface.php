@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("polyfills.php");
+require_once 'polyfills.php';
 
 interface IX {
     public function __clone();

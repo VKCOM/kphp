@@ -56,9 +56,9 @@ test2();
 function test2() {
   global $x;
   try {
-    require_once "949_throw.php";
+    require_once '949_throw.php';
     var_dump ("!");
-    $y = require "949_throw.php";
+    $y = require '949_throw.php';
     var_dump ($y);
   } catch (Exception $e) {
     report_exception ($e, __LINE__);
