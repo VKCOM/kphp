@@ -676,14 +676,6 @@ std::string get_full_type(vk::tl::expr_base *type_expr, const std::string &var_n
   return ans.first;
 }
 
-std::string get_storer_call(const std::unique_ptr<vk::tl::arg> &arg, const std::string &var_num_access, bool typed_mode) {
-  std::string target_expr = get_full_value(arg->type_expr.get(), var_num_access);
-  if (!typed_mode) {
-    return target_expr + fmt_format(".store(tl_arr_get(tl_object, {}, {}, {}))", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name));
-  } else {
-    return target_expr + fmt_format(".typed_store({})", get_tl_object_field_access(arg, field_rw_type::READ));
-  }
-}
 
 std::string get_magic_storing(const vk::tl::type_expr_base *arg_type_expr) {
   if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
@@ -730,8 +722,76 @@ struct TypeExprStore {
     if (!magic_storing.empty()) {
       W << magic_storing << NL;
     }
-    W << get_storer_call(arg, var_num_access, typed_mode) << ";" << NL;
+    std::string target_expr = get_full_value(arg->type_expr.get(), var_num_access);
+    if (!typed_mode) {
+      W << target_expr << fmt_format(".store(tl_arr_get(tl_object, {}, {}, {}))", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name));
+    } else {
+      W << target_expr << fmt_format(".typed_store({})", get_tl_object_field_access(arg, field_rw_type::READ));
+    }
+    W << ";" << NL;
   }
+};
+
+
+enum class CombinatorPart {
+  LEFT,
+  RIGHT
+};
+
+struct CombinatorGen {
+  const vk::tl::combinator *combinator;
+  CombinatorPart part;
+  bool typed_mode;
+  std::string var_num_access;
+
+  explicit CombinatorGen(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :
+    combinator(combinator),
+    part(part),
+    typed_mode(typed_mode) {
+    kphp_error(!(part == CombinatorPart::RIGHT && combinator->is_constructor()), "Storing/fetching of constructor right part is never needed and strange");
+    this->var_num_access = (combinator->is_function() ? "result_fetcher->" : "");
+  }
+
+  void compile(CodeGenerator &W) const {
+    switch (part) {
+      case CombinatorPart::LEFT:
+        compile_left(W);
+        break;
+      case CombinatorPart::RIGHT:
+        kphp_assert(!combinator->is_constructor());
+        compile_right(W);
+        break;
+    }
+  }
+
+  void compile_left(CodeGenerator &W) const {
+    cur_combinator = combinator;
+    // Создаем локальные переменные для хранения филд масок
+    if (combinator->is_constructor()) {
+      auto fields_masks = get_not_optional_fields_masks(combinator);
+      for (const auto &item : fields_masks) {
+        W << "int " << item << "{0}; (void) " << item << ";" << NL;
+      }
+    }
+    gen_before_args_processing(W);
+    for (const auto &arg : combinator->args) {
+      if (arg->is_optional()) {
+        continue;
+      }
+      gen_arg_processing(W, arg);
+    }
+    gen_after_args_processing(W);
+  }
+
+  void compile_right(CodeGenerator &W) const {
+    gen_result_expr_processing(W);
+  }
+
+  virtual void gen_before_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
+  virtual void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tl::arg> &arg) const = 0;
+  virtual void gen_after_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
+
+  virtual void gen_result_expr_processing(CodeGenerator &W) const = 0;
 };
 
 /* Общий код для генерации store(...) для комбинаторов (то есть функций или контсрукторов).
@@ -768,105 +828,88 @@ struct TypeExprStore {
     }
  * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
 */
-struct CombinatorStore {
-  const vk::tl::combinator *combinator;
-  bool typed_mode;
+struct CombinatorStore : CombinatorGen {
+  CombinatorStore(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :
+    CombinatorGen(combinator, part, typed_mode) {}
 
-  inline explicit CombinatorStore(const vk::tl::combinator *combinator, bool typed_mode = false) :
-    combinator(combinator),
-    typed_mode(typed_mode) {}
-
-  inline void compile(CodeGenerator &W) const {
-    cur_combinator = combinator;
-    auto var_num_access = (combinator->is_function() ? "result_fetcher->" : "");
-    // Создаем локальные переменные для хранения филд масок, не являющихся параметрами типа
-    if (combinator->is_constructor()) {
-      auto fields_masks = get_not_optional_fields_masks(combinator);
-      for (const auto &item : fields_masks) {
-        W << "int " << item << "{0}; (void) " << item << ";" << NL;
-      }
-    }
+  void gen_before_args_processing(CodeGenerator &W) const final {
     W << "(void)tl_object;" << NL;
     if (combinator->is_function()) {
       W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
     }
-    for (const auto &arg : combinator->args) {
-      // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
-      // Все такие аргументы хранятся в типе, как поля структуры
-      if (arg->is_optional()) {
-        continue;
-      }
-      // Если поле необязательное и зависит от филд маски
-      if (arg->is_fields_mask_optional()) {
-        // 2 случая:
-        //      1) Зависимость от значения, которым параметризуется тип (имеет смысл только для конструкторов)
-        //      2) Зависимость от значения, которое получаем из явных аргументов
-        W << fmt_format("if ({}{} & (1 << {})) ",
-                        var_num_access,
-                        combinator->get_var_num_arg(arg->exist_var_num)->name,
-                        arg->exist_var_bit) << BEGIN;
-        // полиморфно обрабатываются, так как запоминаем их все либо в локальные переменны либо в поля структуры
-        if (typed_mode) {
-          // Проверяем, что не забыли проставить поле под филд маской
-          std::string value_check = get_value_absence_check_for_optional_arg(arg.get());
-          if (!value_check.empty()) {
-            W << "if (" << value_check << ") " << BEGIN;
-            W << fmt_format(R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
-                            arg->name, combinator->name) << NL;
-            W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
-            W << END << NL;
-          }
+  }
+
+  void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tl::arg> &arg) const final {
+    if (arg->is_fields_mask_optional()) {
+      W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
+                      combinator->get_var_num_arg(arg->exist_var_num)->name,
+                      arg->exist_var_bit) << BEGIN;
+      if (typed_mode) {
+        // Проверяем, что не забыли проставить поле под филд маской
+        std::string value_check = get_value_absence_check_for_optional_arg(arg);
+        if (!value_check.empty()) {
+          W << "if (" << value_check << ") " << BEGIN;
+          W
+            << fmt_format(R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
+                          arg->name, combinator->name) << NL;
+          W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
+          W << END << NL;
         }
-      }
-      if (!arg->is_forwarded_function()) {
-        W << TypeExprStore(arg, var_num_access, typed_mode);
-      }
-      //Обработка восклицательного знака
-      if (arg->is_forwarded_function()) {
-        kphp_assert(combinator->is_function());
-        auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
-        kphp_assert(as_type_var);
-        if (!typed_mode) {
-          W << "auto _cur_arg = "
-            << fmt_format("tl_arr_get(tl_object, {}, {}, {})", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name))
-            << ";" << NL;
-          W << "string target_f_name = " << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}).as_string()", register_tl_const_str("_"), hash_tl_const_str("_"))
-            << ";" << NL;
-          W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
-            << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
-            << "return {};" << NL
-            << END << NL;
-          W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
-          W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
-        } else {
-          W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
-            << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
-            << "return {};" << NL
-            << END << NL;
-          W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
-            << get_tl_object_field_access(arg, field_rw_type::READ) << ".get()->store();" << NL;
-        }
-      } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
-        // Запоминаем филд маску для последующего использования
-        // Может быть либо локальной переменной либо полем структуры
-        if (!typed_mode) {
-          W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}).to_int();",
-                      var_num_access,
-                      combinator->get_var_num_arg(arg->var_num)->name,
-                      register_tl_const_str(arg->name),
-                      arg->idx,
-                      hash_tl_const_str(arg->name)) << NL;
-        } else {
-          W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
-        }
-      }
-      if (arg->is_fields_mask_optional()) {
-        W << END << NL;
       }
     }
+    if (!arg->is_forwarded_function()) {
+      W << TypeExprStore(arg, var_num_access, typed_mode);
+    }
+    //Обработка восклицательного знака
+    if (arg->is_forwarded_function()) {
+      kphp_assert(combinator->is_function());
+      auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
+      kphp_assert(as_type_var);
+      if (!typed_mode) {
+        W << "auto _cur_arg = "
+          << fmt_format("tl_arr_get(tl_object, {}, {}, {})", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name))
+          << ";" << NL;
+        W << "string target_f_name = " << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}).as_string()", register_tl_const_str("_"), hash_tl_const_str("_"))
+          << ";" << NL;
+        W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
+          << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
+          << "return {};" << NL
+          << END << NL;
+        W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
+        W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
+      } else {
+        W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
+          << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
+          << "return {};" << NL
+          << END << NL;
+        W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
+          << get_tl_object_field_access(arg, field_rw_type::READ) << ".get()->store();" << NL;
+      }
+    } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
+      // Запоминаем филд маску для последующего использования
+      // Может быть либо локальной переменной либо полем структуры
+      if (!typed_mode) {
+        W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}).to_int();",
+                        var_num_access,
+                        combinator->get_var_num_arg(arg->var_num)->name,
+                        register_tl_const_str(arg->name),
+                        arg->idx,
+                        hash_tl_const_str(arg->name)) << NL;
+      } else {
+        W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
+      }
+    }
+    if (arg->is_fields_mask_optional()) {
+      W << END << NL;
+    }
   }
+
+  void gen_result_expr_processing(CodeGenerator &W) const final {
+    (void)W;
+  }
+
 private:
-  std::string get_value_absence_check_for_optional_arg(const vk::tl::arg *arg) const {
+  static std::string get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tl::arg> &arg) {
     kphp_assert(arg->is_fields_mask_optional());
     auto type = type_of(arg->type_expr);
     std::string check_target = "tl_object->$" + arg->name;
@@ -896,22 +939,15 @@ private:
   }
 };
 
-std::string get_fetcher_call(const std::unique_ptr<vk::tl::type_expr_base> &type_expr, bool typed_mode = false, const std::string &storage = "") {
-  if (!typed_mode) {
-    return get_full_value(type_expr.get(), "") + ".fetch()";
-  } else {
-    kphp_assert(!storage.empty());
-    return get_full_value(type_expr.get(), "") + ".typed_fetch_to(" + storage + ")";
-  }
-}
-
 // Структура для генерации fetch любого type expression'а
 struct TypeExprFetch {
   const std::unique_ptr<vk::tl::arg> &arg;
+  std::string var_num_access;
   bool typed_mode;
 
-  explicit inline TypeExprFetch(const std::unique_ptr<vk::tl::arg> &arg, bool typed_mode = false) :
+  explicit inline TypeExprFetch(const std::unique_ptr<vk::tl::arg> &arg, std::string var_num_access, bool typed_mode = false) :
     arg(arg),
+    var_num_access(std::move(var_num_access)),
     typed_mode(typed_mode) {}
 
   inline void compile(CodeGenerator &W) const {
@@ -921,11 +957,12 @@ struct TypeExprFetch {
       W << magic_fetching << NL;
     }
     if (!typed_mode) {
-      W << "result.set_value(" << register_tl_const_str(arg->name) << ", " << get_fetcher_call(arg->type_expr) << ", "
+      W << "result.set_value(" << register_tl_const_str(arg->name) << ", "
+        << get_full_value(arg->type_expr.get(), var_num_access) << ".fetch(), "
         << hash_tl_const_str(arg->name)
         << ");" << NL;
     } else {
-      W << get_fetcher_call(arg->type_expr, true, get_tl_object_field_access(arg, field_rw_type::WRITE)) << ";" << NL;
+      W << get_full_value(arg->type_expr.get(), var_num_access) + ".typed_fetch_to(" << get_tl_object_field_access(arg, field_rw_type::WRITE) << ");" << NL;
     }
   }
 };
@@ -953,87 +990,72 @@ struct TypeExprFetch {
     }
  * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
 */
-struct CombinatorFetch {
-  const vk::tl::combinator *combinator;
-  bool typed_mode;
+struct CombinatorFetch : CombinatorGen {
+  CombinatorFetch(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :
+    CombinatorGen(combinator, part, typed_mode) {}
 
-  explicit CombinatorFetch(const vk::tl::combinator *combinator, bool typed_mode = false) :
-    combinator(combinator),
-    typed_mode(typed_mode) {}
-
-  void compile(CodeGenerator &W) const {
-    cur_combinator = combinator;
-    // Создаем локальные переменные для хранения филд масок
-    if (combinator->is_constructor()) {
-      auto fields_masks = get_not_optional_fields_masks(combinator);
-      for (const auto &item : fields_masks) {
-        W << "int " << item << "{0}; (void) " << item << ";" << NL;
-      }
-    }
-    // fetch для функций - fetch возвращаемого значения, в отличии от fetch конструкторов
-    if (combinator->is_function()) {
-      // Если функция возвращает флатящийся тип, то после perform_flat_optimization() вместо него подставляется его внутренность.
-      // Но при фетчинге функции нам всегда нужен мэджик оригинального типа, даже если он флатится.
-      // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
-      if (!combinator->original_result_constructor_id) {
-        const auto &magic_fetching = get_magic_fetching(combinator->result.get(),
-                                                        fmt_format("Incorrect magic in result of function: {}", cur_combinator->name));
-        if (!magic_fetching.empty()) {
-          W << magic_fetching << NL;
-        }
-      } else {
-        W << fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "Incorrect magic in result of function: {}");)",
-                        static_cast<uint32_t>(combinator->original_result_constructor_id), cur_combinator->name)
-          << NL;
-      }
-      if (!typed_mode) {
-        W << "return " << get_fetcher_call(combinator->result) << ";" << NL;
-      } else {
-        if (auto type_var = combinator->result->as<vk::tl::type_var>()) {
-          // multiexclamation оптимизация
-          W << "return " << cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
-        } else {
-          // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
-          W << get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
-            << "result.alloc();" << NL
-            << get_fetcher_call(combinator->result, true, "result->$value") << ";" << NL
-            << "return result;" << NL;
-        }
-      }
-      return;
-    }
+  void gen_before_args_processing(CodeGenerator &W) const final {
     if (!typed_mode) {
       W << "array<var> result;" << NL;
     }
-    for (const auto &arg : combinator->args) {
-      // Если аргумент является параметром типа (обрамлен в {}), пропускаем его
-      // Все такие аргументы хранятся в типе, как поля структуры
-      if (arg->is_optional()) {
-        continue;
-      }
-      // Если поле необязательное и зависит от филд маски
-      if (arg->is_fields_mask_optional()) {
-        W << fmt_format("if ({} & (1 << {})) ",
-                        combinator->get_var_num_arg(arg->exist_var_num)->name,
-                        arg->exist_var_bit) << BEGIN;
-      }
-      W << TypeExprFetch(arg, typed_mode);
-      if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
-        // запоминаем филд маску для дальнейшего использования
-        if (!typed_mode) {
-          W << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << register_tl_const_str(arg->name) << ", "
-            << hash_tl_const_str(arg->name) << ").to_int();" << NL;
-        } else {
-          W << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
-        }
-      }
-      if (arg->is_fields_mask_optional()) {
-        W << END << NL;
+  };
+
+  void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tl::arg> &arg) const final {
+    if (arg->is_fields_mask_optional()) {
+      W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
+                      combinator->get_var_num_arg(arg->exist_var_num)->name,
+                      arg->exist_var_bit) << BEGIN;
+    }
+    W << TypeExprFetch(arg, var_num_access, typed_mode);
+    if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
+      // запоминаем филд маску для дальнейшего использования
+      if (!typed_mode) {
+        W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << register_tl_const_str(arg->name) << ", "
+          << hash_tl_const_str(arg->name) << ").to_int();" << NL;
+      } else {
+        W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << get_tl_object_field_access(arg, field_rw_type::READ) << ";" << NL;
       }
     }
+    if (arg->is_fields_mask_optional()) {
+      W << END << NL;
+    }
+  }
+
+  void gen_after_args_processing(CodeGenerator &W) const final {
     if (!typed_mode) {
       W << "return result;" << NL;
     }
+  };
+
+  void gen_result_expr_processing(CodeGenerator &W) const final {
+    // Если функция возвращает флатящийся тип, то после perform_flat_optimization() вместо него подставляется его внутренность.
+    // Но при фетчинге функции нам всегда нужен мэджик оригинального типа, даже если он флатится.
+    // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
+    if (!combinator->original_result_constructor_id) {
+      const auto &magic_fetching = get_magic_fetching(combinator->result.get(),
+                                                      fmt_format("Incorrect magic in result of function: {}", cur_combinator->name));
+      if (!magic_fetching.empty()) {
+        W << magic_fetching << NL;
+      }
+    } else {
+      W << fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "Incorrect magic in result of function: {}");)",
+                      static_cast<uint32_t>(combinator->original_result_constructor_id), cur_combinator->name)
+        << NL;
+    }
+    if (!typed_mode) {
+      W << "return " << get_full_value(combinator->result.get(), "") << ".fetch();" << NL;
+      return;
+    }
+    if (auto type_var = combinator->result->as<vk::tl::type_var>()) {
+      // multiexclamation оптимизация
+      W << "return " << cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
+      return;
+    }
+    // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
+    W << get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
+      << "result.alloc();" << NL
+      << get_full_value(combinator->result.get(), "") + ".typed_fetch_to(result->$value);" << NL
+      << "return result;" << NL;
   }
 };
 
@@ -1158,24 +1180,24 @@ struct TlConstructorDef {
 
     W << template_decl << NL;
     W << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
-    W << CombinatorStore(constructor);
+    W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
 
     W << template_decl << NL;
     W << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
-    W << CombinatorFetch(constructor);
+    W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
 
     if (needs_typed_fetch_store) {
       std::string php_type = get_php_runtime_type(constructor, false);
       W << template_decl << NL;
       W << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
-      W << CombinatorStore(constructor, true);
+      W << CombinatorStore(constructor, CombinatorPart::LEFT, true);
       W << END << "\n\n";
 
       W << template_decl << NL;
       W << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
-      W << CombinatorFetch(constructor, true);
+      W << CombinatorFetch(constructor, CombinatorPart::LEFT, true);
       W << END << "\n\n";
     }
   }
@@ -1355,23 +1377,22 @@ public:
 
     W << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
     W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
-    W << CombinatorStore(f);
+    W << CombinatorStore(f, CombinatorPart::LEFT, false);
     W << "return std::move(result_fetcher);" << NL;
     W << END << NL << NL;
 
     W << "var " << struct_name << "::fetch() " << BEGIN;
-    W << CombinatorFetch(f);
+    W << CombinatorFetch(f, CombinatorPart::RIGHT, false);
     W << END << NL << NL;
-
     if (needs_typed_fetch_store) {
       W << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
       W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
-      W << CombinatorStore(f, true);
+      W << CombinatorStore(f, CombinatorPart::LEFT, true);
       W << "return std::move(result_fetcher);" << NL;
       W << END << NL << NL;
 
       W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
-      W << CombinatorFetch(f, true);
+      W << CombinatorFetch(f, CombinatorPart::RIGHT, true);
       W << END << NL << NL;
     }
   }
