@@ -749,7 +749,7 @@ struct CombinatorGen {
     part(part),
     typed_mode(typed_mode) {
     kphp_error(!(part == CombinatorPart::RIGHT && combinator->is_constructor()), "Storing/fetching of constructor right part is never needed and strange");
-    this->var_num_access = (combinator->is_function() ? "result_fetcher->" : "");
+    this->var_num_access = (combinator->is_function() && part == CombinatorPart::LEFT ? "tl_func_state->" : "");
   }
 
   void compile(CodeGenerator &W) const {
@@ -811,7 +811,7 @@ struct CombinatorGen {
     }
  * 2) Обработка восклицательных знаков:
     std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
-      auto result_fetcher = make_unique_on_script_memory<f_rpcProxy_diagonalTargets>();
+      auto tl_func_state = make_unique_on_script_memory<f_rpcProxy_diagonalTargets>();
       (void)tl_object;
       f$store_int(0xee090e42);
       t_Int().store(tl_arr_get(tl_object, tl_str$offset, 2, -1913876069));
@@ -823,8 +823,8 @@ struct CombinatorGen {
         return {};
       }
       const auto &storer_kv = tl_storers_ht.get_value(target_f_name);
-      result_fetcher->X.fetcher = storer_kv(_cur_arg);
-      return std::move(result_fetcher);
+      tl_func_state->X.fetcher = storer_kv(_cur_arg);
+      return std::move(tl_func_state);
     }
  * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
 */
@@ -876,13 +876,13 @@ struct CombinatorStore : CombinatorGen {
           << "return {};" << NL
           << END << NL;
         W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
-        W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
+        W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
       } else {
         W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
           << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
           << "return {};" << NL
           << END << NL;
-        W << "result_fetcher->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
+        W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
           << get_tl_object_field_access(arg, field_rw_type::READ) << ".get()->store();" << NL;
       }
     } else if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable()) {
@@ -905,7 +905,16 @@ struct CombinatorStore : CombinatorGen {
   }
 
   void gen_result_expr_processing(CodeGenerator &W) const final {
-    (void)W;
+    kphp_assert(typed_mode);
+    if (!combinator->original_result_constructor_id) {
+      const auto &magic_storing = get_magic_storing(combinator->result.get());
+      if (!magic_storing.empty()) {
+        W << magic_storing << NL;
+      }
+    } else {
+      W << fmt_format("f$store_int({:#010x});", combinator->original_result_constructor_id) << NL;
+    }
+    W << get_full_value(combinator->result.get(), var_num_access) << ".typed_store(tl_object->$value);" << NL;
   }
 
 private:
@@ -1360,6 +1369,14 @@ struct TlFunctionDecl {
       W << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object);" << NL;
       W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> typed_fetch();" << NL;
     }
+    if (f->is_kphp_rpc_server_function()) {
+      if (needs_typed_fetch_store) {
+        W << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object);" << NL;
+        W << "void rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> &tl_object_);" << NL;
+      } else {
+        kphp_warning(fmt_format("TL function {} is marked @kphp, but typed RPC code for it is not found. Automatic serialization in server mode won't work", f->name));
+      }
+    }
     W << END << ";" << NL << NL;
   }
 };
@@ -1376,9 +1393,9 @@ public:
     std::string struct_name = cpp_tl_struct_name("f_", f->name);
 
     W << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
-    W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, false);
-    W << "return std::move(result_fetcher);" << NL;
+    W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
 
     W << "var " << struct_name << "::fetch() " << BEGIN;
@@ -1386,13 +1403,25 @@ public:
     W << END << NL << NL;
     if (needs_typed_fetch_store) {
       W << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
-      W << "auto result_fetcher = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+      W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
       W << CombinatorStore(f, CombinatorPart::LEFT, true);
-      W << "return std::move(result_fetcher);" << NL;
+      W << "return std::move(tl_func_state);" << NL;
       W << END << NL << NL;
 
       W << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
       W << CombinatorFetch(f, CombinatorPart::RIGHT, true);
+      W << END << NL << NL;
+    }
+    if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
+      W << "std::unique_ptr<tl_func_base> " << struct_name << "::rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
+      W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+      W << CombinatorFetch(f, CombinatorPart::LEFT, true);
+      W << "return std::move(tl_func_state);" << NL;
+      W << END << NL << NL;
+      W << "void " << struct_name << "::rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix()
+                                                                                      << "RpcFunctionReturnResult> &tl_object_) " << BEGIN;
+      W << "auto tl_object = tl_object_.template cast_to<" << get_php_runtime_type(f, false) << "_result>().get();" << NL;
+      W << CombinatorStore(f, CombinatorPart::RIGHT, true);
       W << END << NL << NL;
     }
   }

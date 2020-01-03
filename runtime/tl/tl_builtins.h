@@ -9,6 +9,7 @@
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
+#include "runtime/tl/tl_func_base.h"
 
 #define TL_INT 0xa8509bda
 #define TL_LONG 0x22076cba
@@ -34,25 +35,6 @@ const int tl_str_result_hash = string_hash("result", 6);
 
 int tl_parse_save_pos();
 bool tl_parse_restore_pos(int pos);
-
-struct tl_func_base : ManagedThroughDlAllocator {
-  virtual var fetch() = 0;
-  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
-    // все функции, вызывающиеся типизированно, кодогенерированно переопределяют этот метод
-    // а функции, типизированно не вызывающиеся, никогда не будут вызваны
-    // (не стали делать её чистой виртуальной, чтобы для не типизированных не переопределять на "return {};")
-    php_critical_error("This function should be never called, only to be overridden");
-    return {};
-  }
-
-  // каждая плюсовая tl-функция ещё обладает
-  // static std::unique_ptr<tl_func_base> store(const var &tl_object);
-  // static std::unique_ptr<tl_func_base> typed_store(const C$VK$TL$Functions$thisfunction *tl_object);
-  // они не виртуальные, т.к. static, но кодогенерятся в каждой
-  // каждая из них создаёт инстанс себя (fetcher), на котором вызываются fetch()/typed_fetch(), когда ответ получен
-
-  virtual ~tl_func_base() = default;
-};
 
 struct tl_exclamation_fetch_wrapper {
   std::unique_ptr<tl_func_base> fetcher;
