@@ -32,57 +32,8 @@ enum class OptionalState : uint8_t {
 };
 
 template<class T>
-class Optional {
-private:
-  template<class T1>
-  using enable_if_allowed = std::enable_if_t<is_conversion_in_optional_allowed<T, T1>{}>;
-
-  static_assert(!std::is_same<T, var>{}, "Usage Optional<var> is forbidden");
-  static_assert(!is_optional<T>{}, "Usage Optional<Optional> is forbidden");
-
+class OptionalBase {
 public:
-  using InnerType = T;
-
-  Optional() = default;
-
-  Optional(bool value) noexcept :
-    Optional(value, OptionalState::false_value, std::is_same<T, bool>{}) {
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional(T1 &&value) noexcept :
-    Optional(std::forward<T1>(value), OptionalState::has_value, std::is_same<T, bool>{}) {
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional(const Optional<T1> &other) noexcept :
-    Optional(other.val(), other.value_state(), std::is_same<T, bool>{}) {
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional(Optional<T1> &&other) noexcept :
-    Optional(std::move(other.val()), other.value_state(), std::is_same<T, bool>{}) {
-  }
-
-  Optional &operator=(bool x) noexcept {
-    return assign(x, OptionalState::false_value, std::is_same<T, bool>{});
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional &operator=(const Optional<T1> &other) noexcept {
-    return assign(other.val(), other.value_state(), std::is_same<T, bool>{});
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional &operator=(Optional<T1> &&other) noexcept {
-    return assign(std::move(other.val()), other.value_state(), std::is_same<T, bool>{});
-  }
-
-  template<class T1, class = enable_if_allowed<T1>>
-  Optional &operator=(T1 &&value) noexcept {
-    return assign(std::forward<T1>(value), OptionalState::has_value, std::is_same<T, bool>{});
-  }
-
   T &ref() noexcept {
     value_state_ = OptionalState::has_value;
     return value_;
@@ -108,52 +59,123 @@ public:
     return value_state_;
   }
 
-private:
-  Optional(bool value, OptionalState, std::true_type /* bool_inside */) noexcept :
-    value_(value),
-    value_state_(value ? OptionalState::has_value : OptionalState::false_value) {
-  }
-
-  Optional(bool value, OptionalState value_state, std::false_type /* bool_inside */) noexcept :
-    value_state_(value_state) {
-    php_assert(!value);
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  Optional(T1 &&value, OptionalState value_state, std::false_type /* bool_inside */) noexcept :
+protected:
+  template<class T1>
+  OptionalBase(T1 &&value, OptionalState value_state) noexcept :
     value_(std::forward<T1>(value)),
     value_state_(value_state) {
   }
 
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  Optional(T1 && value, OptionalState value_state, std::true_type /* bool_inside */)  = delete;
-
-  Optional &assign(bool value, OptionalState, std::true_type /* bool_inside */) noexcept {
-    value_ = value;
-    value_state_ = value ? OptionalState::has_value : OptionalState::false_value;
-    return *this;
+  explicit OptionalBase(OptionalState value_state) noexcept :
+    value_state_(value_state) {
   }
 
-  Optional &assign(bool value, OptionalState value_state, std::false_type /* bool_inside */) noexcept {
-    php_assert(!value);
-    value_ = T();
-    value_state_ = value_state;
-    return *this;
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  Optional &assign(T1 &&value, OptionalState value_state, std::false_type /* bool_inside */) noexcept {
-    value_ = std::forward<T1>(value);
-    value_state_ = value_state;
-    return *this;
-  }
-
-  template<class T1, class = vk::enable_if_constructible<T, T1>>
-  Optional &assign(T1 &&value, OptionalState value_state, std::true_type /* bool_inside */) = delete;
-
+  OptionalBase() = default;
+  ~OptionalBase() = default;
 
   T value_{};
   OptionalState value_state_{OptionalState::null_value};
+};
+
+template<class T>
+class Optional : public OptionalBase<T> {
+private:
+  template<class T1>
+  using enable_if_allowed = std::enable_if_t<is_conversion_in_optional_allowed<T, T1>{}>;
+
+  static_assert(!std::is_same<T, var>{}, "Usage Optional<var> is forbidden");
+  static_assert(!is_optional<T>{}, "Usage Optional<Optional> is forbidden");
+
+  using Base = OptionalBase<T>;
+
+public:
+  using InnerType = T;
+
+  Optional() = default;
+
+  Optional(bool value) noexcept :
+    Optional(value, OptionalState::false_value) {
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional(T1 &&value) noexcept :
+    Optional(std::forward<T1>(value), OptionalState::has_value) {
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional(const Optional<T1> &other) noexcept :
+    Optional(other.val(), other.value_state()) {
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional(Optional<T1> &&other) noexcept :
+    Optional(std::move(other.val()), other.value_state()) {
+  }
+
+  Optional &operator=(bool x) noexcept {
+    return assign(x, OptionalState::false_value);
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional &operator=(const Optional<T1> &other) noexcept {
+    return assign(other.val(), other.value_state());
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional &operator=(Optional<T1> &&other) noexcept {
+    return assign(std::move(other.val()), other.value_state());
+  }
+
+  template<class T1, class = enable_if_allowed<T1>>
+  Optional &operator=(T1 &&value) noexcept {
+    return assign(std::forward<T1>(value), OptionalState::has_value);
+  }
+
+private:
+  Optional(bool value, OptionalState value_state) noexcept :
+    Base(value_state) {
+    php_assert(!value);
+  }
+
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
+  Optional(T1 &&value, OptionalState value_state) noexcept :
+    Base(std::forward<T1>(value), value_state) {
+  }
+
+  Optional &assign(bool value, OptionalState value_state) noexcept {
+    php_assert(!value);
+    Base::value_ = T();
+    Base::value_state_ = value_state;
+    return *this;
+  }
+
+  template<class T1, class = vk::enable_if_constructible<T, T1>>
+  Optional &assign(T1 &&value, OptionalState value_state) noexcept {
+    Base::value_ = std::forward<T1>(value);
+    Base::value_state_ = value_state;
+    return *this;
+  }
+};
+
+template<>
+class Optional<bool> : public OptionalBase<bool> {
+private:
+  using Base = OptionalBase<bool>;
+
+public:
+  using InnerType = bool;
+
+  Optional() = default;
+
+  Optional(bool value) noexcept:
+    Base(value, value ? OptionalState::has_value : OptionalState::false_value) {
+  }
+
+  Optional &operator=(bool value) noexcept {
+    Base::value_ = value;
+    Base::value_state_ = value ? OptionalState::has_value : OptionalState::false_value;
+    return *this;
+  }
 };
 
 template<class T, class ResT = void>
