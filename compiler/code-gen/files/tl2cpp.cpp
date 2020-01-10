@@ -454,6 +454,7 @@ struct TypeStore {
     typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const {
+    // todo: CHECK_EXCEPTION(return); ??? Нужно ли прерывать сторинг если брошено исключение (сейчас это неконситстентно с фетчингом)
     auto store_params = get_optional_args_for_call(type->constructors[0]);
     store_params.insert(store_params.begin(),
                         typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
@@ -1347,6 +1348,12 @@ struct TlFunctionDecl {
     return !!get_php_class_of_tl_function(f);
   }
 
+  static void check_kphp_function(const vk::tl::combinator *f) {
+    for (const auto &arg : f->args) {
+      kphp_error(!arg->is_forwarded_function(), fmt_format("In TL function {}: Exclamation is not allowed in @kphp TL functions", f->name));
+    }
+  }
+
   explicit TlFunctionDecl(const vk::tl::combinator *f) :
     f(f) {}
 
@@ -1371,6 +1378,7 @@ struct TlFunctionDecl {
     }
     if (f->is_kphp_rpc_server_function()) {
       if (needs_typed_fetch_store) {
+        check_kphp_function(f);
         W << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object);" << NL;
         W << "void rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> &tl_object_);" << NL;
       } else {
@@ -1414,14 +1422,18 @@ public:
     }
     if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
       W << "std::unique_ptr<tl_func_base> " << struct_name << "::rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
+      W << "CurrentProcessingQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
       W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
       W << CombinatorFetch(f, CombinatorPart::LEFT, true);
+      W << "CurrentProcessingQuery::get().reset();" << NL;
       W << "return std::move(tl_func_state);" << NL;
       W << END << NL << NL;
       W << "void " << struct_name << "::rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix()
                                                                                       << "RpcFunctionReturnResult> &tl_object_) " << BEGIN;
+      W << "CurrentProcessingQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
       W << "auto tl_object = tl_object_.template cast_to<" << get_php_runtime_type(f, false) << "_result>().get();" << NL;
       W << CombinatorStore(f, CombinatorPart::RIGHT, true);
+      W << "CurrentProcessingQuery::get().reset();" << NL;
       W << END << NL << NL;
     }
   }
@@ -1769,6 +1781,43 @@ void collect_target_objects() {
   }
 }
 
+void write_rpc_server_functions(CodeGenerator &W) {
+  W << OpenFile("rpc_server_fetch_request.cpp", "tl", false);
+  std::vector<vk::tl::combinator *> kphp_functions;
+  IncludesCollector deps;
+  deps.add_raw_filename_include("tl/common.h"); // чтобы компилилось, если нет ни одной @kphp функции
+  for (const auto &item : tl->functions) {
+    const auto &f = item.second;
+    if (f->is_kphp_rpc_server_function()) {
+      auto klass = get_php_class_of_tl_function(f.get());
+      if (klass) { // Если !klass, то будет варнинг из TLFunctionDecl
+        kphp_functions.emplace_back(f.get());
+        deps.add_class_include(klass);
+        deps.add_raw_filename_include("tl/" + Module::get_module_name(f->name) + ".h");
+      }
+    }
+  }
+  W << deps << NL;
+  W << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
+  W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << "switch(function_magic) " << BEGIN;
+  for (const auto &f : kphp_functions) {
+    W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
+    W << get_php_runtime_type(f, true) << " request;" << NL
+      << "request.alloc();" << NL
+      << "CurrentRpcServerQuery::get().save(" << cpp_tl_struct_name("f_", f->name) << "::rpc_server_typed_fetch(request.get()));" << NL
+      << "return request;" << NL
+      << END << NL;
+  }
+  W << "default: " << BEGIN
+    << "php_warning(\"Unexpected function magic on fetching request in rpc server: 0x%08x\", function_magic);" << NL
+    << "return {};" << NL
+    << END << NL;
+  W << END << NL;
+  W << END << NL;
+  W << CloseFile();
+}
+
 void write_tl_query_handlers(CodeGenerator &W) {
   if (G->env().get_tl_schema_file().empty()) {
     return;
@@ -1787,7 +1836,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << module;
   }
 
-  W << OpenFile("tl_store_funs_table.cpp", "tl", false);
+  W << OpenFile("tl_runtime_bindings.cpp", "tl", false);
   for (const auto &module_name : modules_with_functions) {
     W << Include("tl/" + module_name + ".h");
   }
@@ -1810,7 +1859,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   }
   W << END << NL;
   W << CloseFile();
-
+  write_rpc_server_functions(W);
   // Вынесенные строковые константы
   W << OpenFile("tl_const_vars.h", "tl");
   W << "#pragma once" << NL;

@@ -45,7 +45,7 @@ void CurrentProcessingQuery::raise_fetching_error(const char *format, ...) {
     php_assert(sz > 0);
     va_end(args);
     string msg = string(buff, static_cast<size_t>(sz));
-    php_warning("Fetching error:\n%s\nDeserializing result of function: %s", msg.c_str(), current_tl_function_name_.c_str());
+    php_warning("Fetching error:\n%s\nIn %s deserializing TL object", msg.c_str(), current_tl_function_name_.c_str());
     msg.append(string(" in result of ")).append(current_tl_function_name_);
     THROW_EXCEPTION(new_Exception(string{}, 0, msg, -1));
   }

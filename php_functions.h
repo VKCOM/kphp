@@ -37,6 +37,7 @@
 #include "runtime/tl/rpc_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
+#include "runtime/tl/rpc_server.h"
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/url.h"

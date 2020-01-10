@@ -15,6 +15,7 @@
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
 #include "runtime/tl/rpc_request.h"
+#include "runtime/tl/rpc_server.h"
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/zlib.h"
 #include "server/php-queries.h"
@@ -1522,6 +1523,7 @@ void init_rpc_lib() {
 
   CurrentProcessingQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
+  CurrentRpcServerQuery::get().reset();
   reset_rpc_global_vars();
 
   rpc_parse(nullptr, 0);

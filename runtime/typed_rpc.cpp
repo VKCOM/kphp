@@ -5,6 +5,7 @@
 
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
+#include "runtime/tl/rpc_server.h"
 
 namespace {
 class_instance<C$VK$TL$RpcResponse> fetch_result(std::unique_ptr<RpcRequestResult> result_fetcher, const RpcErrorFactory &error_factory) {
@@ -226,4 +227,5 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
 void free_typed_rpc_lib() {
   CurrentProcessingQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
+  CurrentRpcServerQuery::get().reset();
 }
