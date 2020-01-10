@@ -2,6 +2,7 @@
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/namespace.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
@@ -67,7 +68,15 @@ void IncludesCollector::add_class_include(const ClassPtr &klass) {
 }
 
 void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
-  fwd_declarations_.emplace(klass);
+  forward_declarations_.emplace(klass);
+}
+
+void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var) {
+  std::unordered_set<ClassPtr> all_classes;
+  var->tinf_node.get_type()->get_all_class_types_inside(all_classes);
+  for (auto klass: all_classes) {
+    add_class_forward_declaration(klass);
+  }
 }
 
 void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
@@ -112,8 +121,22 @@ void IncludesCollector::compile(CodeGenerator &W) const {
   for (const auto &class_header : class_headers) {
     W << Include(class_header);
   }
-  for (const auto &klass : fwd_declarations_) {
-    W << ClassForwardDeclaration(klass);
+
+  std::set<vk::string_view> class_forward_declarations;
+  for (const auto &klass : forward_declarations_) {
+    if (!prev_classes_forward_declared_.count(klass) &&
+        !prev_classes_.count(klass) &&
+        !classes_.count(klass)) {
+      class_forward_declarations.emplace(klass->src_name);
+    }
+  }
+
+  if (!class_forward_declarations.empty()) {
+    W << OpenNamespace();
+    for (const auto &class_name : class_forward_declarations) {
+      W << "struct " << class_name << ";" << NL;
+    }
+    W << CloseNamespace();
   }
 
   for (const auto &internal_header : internal_headers_) {
@@ -124,6 +147,9 @@ void IncludesCollector::compile(CodeGenerator &W) const {
 }
 
 void IncludesCollector::start_next_block() {
+  prev_classes_forward_declared_.insert(forward_declarations_.cbegin(), forward_declarations_.cend());
+  forward_declarations_.clear();
+
   prev_classes_.insert(classes_.cbegin(), classes_.cend());
   classes_.clear();
 

@@ -105,15 +105,10 @@ private:
   static void compile_class_method(CodeGenerator &W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
 
   static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type);
-  void compile_includes(CodeGenerator &W) const;
+  IncludesCollector compile_front_includes(CodeGenerator &W) const;
+  void compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const;
   void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
   std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
-};
-
-struct ClassForwardDeclaration {
-  ClassPtr klass;
-  explicit ClassForwardDeclaration(ClassPtr klass);
-  void compile(CodeGenerator &W) const;
 };
 
 struct StaticLibraryRunGlobal {

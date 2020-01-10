@@ -370,11 +370,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(klass->header_name, klass->get_subdir());
   W << "#pragma once" << NL;
 
-  W << OpenNamespace()
-    << "struct " << klass->src_name << ";" << NL
-    << CloseNamespace();
-
-  compile_includes(W);
+  auto front_includes = compile_front_includes(W);
 
   W << OpenNamespace();
 
@@ -400,14 +396,14 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     auto final_keyword = klass->derived_classes.empty() ? " final" : "";
     W << final_keyword << " : public " << klass->parent_class->src_name;
   } else if (klass->is_empty_class()) {
-    W << " final : public refcountable_empty_php_classes ";
+    W << " final : public refcountable_empty_php_classes";
   } else if (interface || !klass->derived_classes.empty()) {
     auto base_name = interface ? interface->src_name.c_str() : "abstract_refcountable_php_interface";
     W << ": public refcountable_polymorphic_php_classes<" << base_name << ">";
   } else {
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
-  W << BEGIN;
+  W << " " << BEGIN;
 
   if (tl_dep_usings) {
     W << *tl_dep_usings << NL;
@@ -442,6 +438,9 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   W << END << ";" << NL;
   W << CloseNamespace();
+
+  compile_back_includes(W, std::move(front_includes));
+
   W << CloseFile();
 }
 
@@ -522,10 +521,10 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   }
 }
 
-void ClassDeclaration::compile_includes(CodeGenerator &W) const {
+IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) const {
   IncludesCollector includes;
   klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
-    includes.add_var_signature_depends(f.var);
+    includes.add_var_signature_forward_declarations(f.var);
   });
 
   includes.add_base_classes_include(klass);
@@ -537,14 +536,19 @@ void ClassDeclaration::compile_includes(CodeGenerator &W) const {
     unsigned long pos = tl_src_name.find('.');
     W << Include("tl/" + (pos == std::string::npos ? "common" : tl_src_name.substr(0, pos)) + ".h");
   }
+
+  return includes;
 }
 
-ClassForwardDeclaration::ClassForwardDeclaration(ClassPtr klass) :
-  klass(klass) {
-}
+void ClassDeclaration::compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const {
+  IncludesCollector includes{std::move(front_includes)};
+  includes.start_next_block();
 
-void ClassForwardDeclaration::compile(CodeGenerator &W) const {
-  W << "struct " << klass->src_name << ";" << NL;
+  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
+    includes.add_var_signature_depends(f.var);
+  });
+
+  W << includes;
 }
 
 StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :

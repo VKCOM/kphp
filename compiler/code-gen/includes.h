@@ -27,8 +27,10 @@ public:
   void add_function_signature_depends(const FunctionPtr &function);
   void add_var_signature_depends(const VarPtr &var);
 
-  void add_class_include(const ClassPtr &klass);
   void add_class_forward_declaration(const ClassPtr &klass);
+  void add_var_signature_forward_declarations(const VarPtr &var);
+
+  void add_class_include(const ClassPtr &klass);
   void add_base_classes_include(const ClassPtr &klass);
   void add_all_class_types(const TypeData &tinf_type);
 
@@ -39,12 +41,12 @@ public:
   void start_next_block();
 
 private:
-
   std::unordered_set<ClassPtr> classes_;
   std::set<std::string> internal_headers_;
   std::set<std::string> lib_headers_;
-  std::set<ClassPtr> fwd_declarations_;
+  std::set<ClassPtr> forward_declarations_;
 
+  std::unordered_set<ClassPtr> prev_classes_forward_declared_;
   std::unordered_set<ClassPtr> prev_classes_;
   std::set<std::string> prev_headers_;
 };
