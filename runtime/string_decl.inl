@@ -56,14 +56,11 @@ private:
   inline bool disjunct(const char *s) const;
   inline void set_size(size_type new_size);
 
-  inline static string_inner &empty_string();
-  inline static string_inner &single_char_str(char c);
-
   inline static char *create(const char *beg, const char *end);
   inline static char *create(size_type req, char c);
   inline static char *create(size_type req, bool b);
 
-  friend struct single_char;
+  friend class string_cache;
 
 public:
   static const size_type max_size = ((size_type)-1 - sizeof(string_inner) - 1) / 4;

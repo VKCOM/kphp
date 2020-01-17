@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/algorithms/simd-int-to-string.h"
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
 #endif
@@ -96,95 +98,25 @@ string_buffer &operator<<(string_buffer &sb, bool x) {
 
 string_buffer &operator<<(string_buffer &sb, int x) {
   sb.reserve_at_least(11);
-
-  if (x < 0) {
-    if (x == INT_MIN) {
-      sb.append("-2147483648", 11);
-      return sb;
-    }
-    x = -x;
-    *sb.buffer_end++ = '-';
-  }
-
-  char *left = sb.buffer_end;
-  do {
-    *sb.buffer_end++ = (char)(x % 10 + '0');
-    x /= 10;
-  } while (x > 0);
-
-  char *right = sb.buffer_end - 1;
-  while (left < right) {
-    char t = *left;
-    *left++ = *right;
-    *right-- = t;
-  }
-
+  sb.buffer_end = simd_int32_to_string(x, sb.buffer_end);
   return sb;
 }
 
 string_buffer &operator<<(string_buffer &sb, unsigned int x) {
   sb.reserve_at_least(10);
-
-  char *left = sb.buffer_end;
-  do {
-    *sb.buffer_end++ = (char)(x % 10 + '0');
-    x /= 10;
-  } while (x > 0);
-
-  char *right = sb.buffer_end - 1;
-  while (left < right) {
-    char t = *left;
-    *left++ = *right;
-    *right-- = t;
-  }
-
+  sb.buffer_end = simd_uint32_to_string(x, sb.buffer_end);
   return sb;
 }
 
 string_buffer &operator<<(string_buffer &sb, long long x) {
   sb.reserve_at_least(20);
-
-  if (x < 0) {
-    if (x == (long long)9223372036854775808ull) {
-      sb.append("-9223372036854775808", 20);
-      return sb;
-    }
-    x = -x;
-    *sb.buffer_end++ = '-';
-  }
-
-  char *left = sb.buffer_end;
-  do {
-    *sb.buffer_end++ = (char)(x % 10 + '0');
-    x /= 10;
-  } while (x > 0);
-
-  char *right = sb.buffer_end - 1;
-  while (left < right) {
-    char t = *left;
-    *left++ = *right;
-    *right-- = t;
-  }
-
+  sb.buffer_end = simd_int64_to_string(x, sb.buffer_end);
   return sb;
 }
 
 string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
   sb.reserve_at_least(20);
-
-  char *left = sb.buffer_end;
-  do {
-    *sb.buffer_end++ = (char)(x % 10 + '0');
-    x /= 10;
-  } while (x > 0);
-
-  char *right = sb.buffer_end - 1;
-  while (left < right) {
-    char t = *left;
-    *left++ = *right;
-    *right-- = t;
-  }
-
+  sb.buffer_end = simd_uint64_to_string(x, sb.buffer_end);
   return sb;
 }
 

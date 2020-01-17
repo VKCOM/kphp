@@ -1,36 +1,14 @@
 #pragma once
 
+#include "common/algorithms/simd-int-to-string.h"
+
+#include "runtime/string_cache.h"
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
 #endif
 
 const string::size_type string::max_size __attribute__ ((weak));
-
-struct single_char {
-private:
-  static constexpr std::size_t TAIL_SIZE = 4u;
-
-public:
-  string::string_inner inner{0, 0, REF_CNT_FOR_CONST};
-  char data[TAIL_SIZE]{'\0'};
-
-  static single_char construct_empty_string() {
-    static_assert(sizeof(single_char) == sizeof(string::string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
-    return single_char{};
-  }
-
-  static std::array<single_char, 256> construct_chars() {
-    static_assert(sizeof(single_char) == sizeof(string::string_inner) + TAIL_SIZE * sizeof(char), "Unexpected padding");
-
-    std::array<single_char, 256> chars;
-    for (std::size_t c = 0; c < chars.size(); ++c) {
-      chars[c].inner.size = 1;
-      chars[c].inner.capacity = 1;
-      chars[c].data[0] = static_cast<char>(c);
-    }
-    return chars;
-  }
-};
 
 bool string::string_inner::is_shared() const {
   return ref_count > 0;
@@ -68,12 +46,6 @@ string::size_type string::string_inner::new_capacity(size_type requested_capacit
 
 
 string::string_inner *string::string_inner::create(size_type requested_capacity, size_type old_capacity) {
-/*
-  if (requested_capacity == 0) {
-    return &empty_string();
-  }
-*/
-
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
   string_inner *p = (string_inner *)dl::allocate(new_size);
@@ -148,23 +120,13 @@ void string::set_size(size_type new_size) {
   inner()->set_length_and_sharable(new_size);
 }
 
-string::string_inner &string::empty_string() {
-  static auto empty_string = single_char::construct_empty_string();
-  return empty_string.inner;
-}
-
-string::string_inner &string::single_char_str(char c) {
-  static auto chars = single_char::construct_chars();
-  return chars[static_cast<std::uint8_t>(c)].inner;
-}
-
 char *string::create(const char *beg, const char *end) {
   const size_type dnew = static_cast<size_type>(end - beg);
   if (dnew == 0) {
-    return empty_string().ref_data();
+    return string_cache::empty_string().inner.ref_data();
   }
   if (dnew == 1) {
-    return single_char_str(*beg).ref_data();
+    return string_cache::cached_char(*beg).inner.ref_data();
   }
 
   string_inner *r = string_inner::create(dnew, 0);
@@ -179,10 +141,10 @@ char *string::create(const char *beg, const char *end) {
 
 char *string::create(size_type n, char c) {
   if (n == 0) {
-    return empty_string().ref_data();
+    return string_cache::empty_string().inner.ref_data();
   }
   if (n == 1) {
-    return single_char_str(c).ref_data();
+    return string_cache::cached_char(c).inner.ref_data();
   }
 
   string_inner *r = string_inner::create(n, 0);
@@ -193,10 +155,6 @@ char *string::create(size_type n, char c) {
 }
 
 char *string::create(size_type n, bool b) {
-  if (n == 0) {
-    return empty_string().ref_data();
-  }
-
   string_inner *r = string_inner::create(n, 0);
 
   if (b) {
@@ -209,7 +167,7 @@ char *string::create(size_type n, bool b) {
 }
 
 string::string() :
-  p(empty_string().ref_data()) {
+  p(string_cache::empty_string().inner.ref_data()) {
 }
 
 string::string(const string &str) :
@@ -218,7 +176,7 @@ string::string(const string &str) :
 
 string::string(string &&str) noexcept :
   p(str.p) {
-  str.p = empty_string().ref_data();
+  str.p = string_cache::empty_string().inner.ref_data();
 }
 
 string::string(const char *s, size_type n) :
@@ -237,50 +195,29 @@ string::string(size_type n, bool b) :
 }
 
 string::string(int i) {
-  static const unsigned int STRING_POOL_SIZE = 10000u;
-  static void *str_pool[STRING_POOL_SIZE];
-
-  static long long last_query_num = -1;
-  if (dl::query_num != last_query_num) {
-    memset(str_pool, 0, sizeof(str_pool[0]) * STRING_POOL_SIZE);
-    last_query_num = dl::query_num;
+  const auto &cached_ints = string_cache::cached_ints();
+  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
+    p = cached_ints[i].inner.ref_data();
+    return;
   }
-
-  if ((unsigned int)i < STRING_POOL_SIZE && str_pool[i] != NULL) {
-    p = (*(string *)&str_pool[i]).inner()->ref_copy();
+  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
+    const auto &positive = cached_ints[-i].inner;
+    p = create(positive.size + 1, true);
+    p[0] = '-';
+    // copy with \0
+    std::memcpy(p + 1, positive.ref_data(), positive.size + 1);
+    inner()->size = positive.size + 1;
     return;
   }
 
-  int neg = 0;
-
-  int x = i;
-  if (i < 0) {
-    if (i == -2147483648) {
-      const char *s = "-2147483648";
-      p = create(s, s + strlen(s));
-      return;
-    }
-    i = -i;
-    neg = 1;
-  }
-
-  char buffer[STRLEN_INT];
-  int cur_pos = STRLEN_INT;
-  do {
-    buffer[--cur_pos] = (char)(i % 10 + '0');
-    i /= 10;
-  } while (i > 0);
-
-  if (neg) {
-    buffer[--cur_pos] = '-';
-  }
-
-  if ((unsigned int)x < STRING_POOL_SIZE) {
-    new(&str_pool[x]) string(buffer + cur_pos, STRLEN_INT - cur_pos);
-    p = (*(string *)&str_pool[x]).inner()->ref_copy();
-  } else {
-    p = create(buffer + cur_pos, buffer + STRLEN_INT);
-  }
+  // Тут нет разницы, выделять нужный размер, или STRLEN_INT (11 байт).
+  // Пусть i == 10000 (а меньше и быть не может, см. выше),
+  // Тогда реальный размер, который выделит аллокатор (с учетом выравнивания до 8)
+  // ( 5 + 1('\0') + 12(sizeof string_inner)) align 8 = 24, но в тоже время
+  // (11 + 1('\0') + 12(sizeof string_inner)) align 8 = 24
+  p = create(STRLEN_INT, true);
+  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p) - p);
+  p[inner()->size] = '\0';
 }
 
 string::string(double f) {
@@ -318,7 +255,7 @@ string::string(double f) {
     p = create(begin, begin + len);
   } else {
     php_warning("Maximum length of float (%d) exceeded", MAX_LEN);
-    p = empty_string().ref_data();
+    p = string_cache::empty_string().inner.ref_data();
   }
 }
 
@@ -335,7 +272,7 @@ string &string::operator=(string &&str) noexcept {
   if (this != &str) {
     destroy();
     p = str.p;
-    str.p = empty_string().ref_data();
+    str.p = string_cache::empty_string().inner.ref_data();
   }
   return *this;
 }
@@ -474,32 +411,22 @@ string &string::append(bool b) {
 }
 
 string &string::append(int i) {
-  dl::size_type cur_pos = size();
-  reserve_at_least(cur_pos + STRLEN_INT);
-
-  if (i < 0) {
-    if (i == INT_MIN) {
-      append("-2147483648", 11);
-      return *this;
-    }
-    i = -i;
-    p[cur_pos++] = '-';
+  const auto &cached_ints = string_cache::cached_ints();
+  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
+    return append(cached_ints[i].inner.ref_data(), cached_ints[i].inner.size);
   }
 
-  dl::size_type left = cur_pos;
-  do {
-    p[cur_pos++] = (char)(i % 10 + '0');
-    i /= 10;
-  } while (i > 0);
-
-  dl::size_type right = cur_pos - 1;
-  while (left < right) {
-    char t = p[left];
-    p[left++] = p[right];
-    p[right--] = t;
+  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
+    const auto &positive = cached_ints[-i].inner;
+    reserve_at_least(size() + positive.size + 1);
+    p[inner()->size++] = '-';
+    append_unsafe(positive.ref_data(), positive.size);
+    return finish_append();
   }
 
-  inner()->set_length_and_sharable(cur_pos);
+  reserve_at_least(size() + STRLEN_INT);
+  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p + size()) - p);
+  p[inner()->size] = '\0';
   return *this;
 }
 
@@ -547,30 +474,18 @@ string &string::append_unsafe(bool b) {
 }
 
 string &string::append_unsafe(int i) {
-  dl::size_type cur_pos = size();
-  if (i < 0) {
-    if (i == INT_MIN) {
-      append_unsafe("-2147483648", 11);
-      return *this;
-    }
-    i = -i;
-    p[cur_pos++] = '-';
+  const auto &cached_ints = string_cache::cached_ints();
+  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
+    return append_unsafe(cached_ints[i].inner.ref_data(), cached_ints[i].inner.size);
   }
 
-  dl::size_type left = cur_pos;
-  do {
-    p[cur_pos++] = (char)(i % 10 + '0');
-    i /= 10;
-  } while (i > 0);
-
-  dl::size_type right = cur_pos - 1;
-  while (left < right) {
-    char t = p[left];
-    p[left++] = p[right];
-    p[right--] = t;
+  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
+    const auto &positive = cached_ints[-i].inner;
+    p[inner()->size++] = '-';
+    return append_unsafe(positive.ref_data(), positive.size);
   }
-  inner()->size = cur_pos;
 
+  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p + size()) - p);
   return *this;
 }
 
