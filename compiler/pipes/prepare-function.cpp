@@ -189,6 +189,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         break;
       }
 
+      case php_doc_tag::kphp_flatten: {
+        f->is_flatten = true;
+        break;
+      }
+
       default:
         break;
     }

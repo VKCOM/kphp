@@ -33,6 +33,7 @@ struct php_doc_tag {
     kphp_noreturn,
     kphp_runtime_check,
     kphp_warn_unused_result,
+    kphp_flatten,
   };
 
 public:

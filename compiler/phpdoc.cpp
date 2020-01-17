@@ -19,6 +19,7 @@ using std::string;
 const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@param",                 param},
   {"@kphp-inline",           kphp_inline},
+  {"@kphp-flatten",          kphp_flatten},
   {"@kphp-infer",            kphp_infer},
   {"@kphp-required",         kphp_required},
   {"@kphp-lib-export",       kphp_lib_export},

@@ -100,6 +100,7 @@ public:
   bool is_overridden_method = false;
   bool is_no_return = false;
   bool warn_unused_result = false;
+  bool is_flatten = false;
 
   ClassPtr class_id;
   ClassPtr context_class;

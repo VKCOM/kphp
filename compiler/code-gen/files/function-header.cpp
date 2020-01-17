@@ -32,6 +32,9 @@ void FunctionH::compile(CodeGenerator &W) const {
   if (function->is_no_return) {
     W << " __attribute__((noreturn))";
   }
+  if (function->is_flatten) {
+    W << " __attribute__((flatten))";
+  }
   W << ";" << NL;
   if (function->is_resumable) {
     W << FunctionForkDeclaration(function, true) << ";" << NL;
