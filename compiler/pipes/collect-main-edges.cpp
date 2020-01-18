@@ -239,6 +239,14 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
       create_set(dest_array_arg, another_array_arg);
     }
 
+    if (function->name == "array_splice" && call->args().size() == 4) {
+      VertexPtr another_array_arg = call->args()[3];
+      LValue dest_array_arg = as_lvalue(call->args()[0]);
+
+      create_set(dest_array_arg, another_array_arg);
+    }
+
+
     if (function->name == "wait_queue_push") {
       VertexRange args = call->args();
       LValue val = as_lvalue(args[0]);
