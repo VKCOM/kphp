@@ -14,8 +14,7 @@ VertexPtr RemoveEmptyFunctionCalls::on_exit_vertex(VertexPtr v, LocalT *) {
       return VertexAdaptor<op_seq>::create(next);
     }
   }
-  if (v->type() == op_if) {
-    auto if_v = v.as<op_if>();
+  if (auto if_v = v.try_as<op_if>()) {
     auto cond = if_v->cond();
     if (cond->type() == op_log_not && cond.as<op_log_not>()->expr()->type() == op_var && !if_v->has_false_cmd()) {
       if (if_v->true_cmd()->type() == op_seq && if_v->true_cmd()->size() == 0) {

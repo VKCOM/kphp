@@ -106,6 +106,12 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
 
     auto builtin = get_builtin_function(name);
     if (builtin.op != op_err && call->size() == builtin.args) {
+      if (builtin.op == op_fork) {
+        if (call->args().size() != 1 || call->args()[0]->type() != op_func_call) {
+          kphp_error(0, "Fork argument must be function call");
+          return root;
+        }
+      }
       return create_vertex(builtin.op, call->args()).set_location(root);
     }
 

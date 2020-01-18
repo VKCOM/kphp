@@ -8,15 +8,19 @@ public:
   struct EdgeInfo {
     FunctionPtr called_f;
     bool inside_try;
+    bool inside_fork;
 
-    EdgeInfo(const FunctionPtr &called_f, bool inside_try) :
+    EdgeInfo(const FunctionPtr &called_f, bool inside_try, bool inside_fork) :
       called_f(called_f),
-      inside_try(inside_try) {}
+      inside_try(inside_try),
+      inside_fork(inside_fork)
+      {}
   };
 
 private:
   std::vector<EdgeInfo> edges;
   int inside_try = 0;
+  int inside_fork = 0;
 
 public:
   string get_description() {

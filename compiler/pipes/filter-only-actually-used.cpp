@@ -31,6 +31,13 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
 void calc_throws_and_body_value_through_call_edges(const std::vector<FunctionAndEdges> &all) {
   IdMap<std::vector<FunctionPtr>> throws_graph(static_cast<int>(all.size()));
   IdMap<std::vector<FunctionPtr>> non_empty_body_graph(static_cast<int>(all.size()));
+  for (const auto &f_and_e : all) {
+    for (const auto &edge : f_and_e.second) {
+      if (edge.inside_fork) {
+        edge.called_f->body_seq = FunctionData::body_value::non_empty;
+      }
+    }
+  }
 
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
