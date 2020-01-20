@@ -790,7 +790,6 @@ tests/lang/bug24652.phpt
 tests/lang/bug24783.phpt
 tests/lang/bug25145.phpt
 tests/lang/bug26696.phpt
-tests/lang/bug27354.phpt
 tests/lang/bug27443.phpt
 tests/lang/bug29893.phpt
 tests/lang/bug30726.phpt
