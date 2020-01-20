@@ -413,6 +413,7 @@ int f$sizeof(const T &v);
 
 
 inline string &append(string &dest, const string &from);
+inline string &append(string &dest, int from);
 
 template<class T>
 inline string &append(Optional<string> &dest, const T &from);
@@ -1262,6 +1263,10 @@ inline int f$get_hash_of_class(const class_instance<T> &klass) {
 }
 
 string &append(string &dest, const string &from) {
+  return dest.append(from);
+}
+
+inline string &append(string &dest, int from) {
   return dest.append(from);
 }
 

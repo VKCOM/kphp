@@ -58,6 +58,7 @@ class LongNumber {
     while ('0' <= s[cur] && s[cur] <= '9') {
       l = l * 10 + (s[cur++] - '0');
     }
+    // TODO: -9223372036854775808 doesn't work here :(
     if (need_warning || cur < len || l % 10 != static_cast<LongT>(s[len - 1] - '0')) {
       php_warning("Wrong conversion from string \"%s\" to %s", s.c_str(), php_class_name);
     }
@@ -243,26 +244,8 @@ inline double f$floatval(Long val) {
 }
 
 inline string f$strval(Long val) {
-  int negative = 0;
-  long long result = val.l;
-  if (result < 0) {
-    negative = 1;
-    result = -result;
-    if (result < 0) {
-      return string("-9223372036854775808", 20);
-    }
-  }
-
-  char buf[20], *end_buf = buf + 20;
-  do {
-    *--end_buf = (char)(result % 10 + '0');
-    result /= 10;
-  } while (result > 0);
-  if (negative) {
-    *--end_buf = '-';
-  }
-
-  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
+  char buf[20];
+  return string{buf, static_cast<dl::size_type>(simd_int64_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, Long x) {
@@ -394,15 +377,8 @@ inline double f$floatval(ULong val) {
 }
 
 inline string f$strval(ULong val) {
-  unsigned long long result = val.l;
-
-  char buf[20], *end_buf = buf + 20;
-  do {
-    *--end_buf = (char)(result % 10 + '0');
-    result /= 10;
-  } while (result > 0);
-
-  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
+  char buf[20];
+  return string{buf, static_cast<dl::size_type>(simd_uint64_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, ULong x) {
@@ -534,15 +510,8 @@ inline double f$floatval(UInt val) {
 }
 
 inline string f$strval(UInt val) {
-  unsigned int result = val.l;
-
-  char buf[20], *end_buf = buf + 20;
-  do {
-    *--end_buf = (char)(result % 10 + '0');
-    result /= 10;
-  } while (result > 0);
-
-  return string(end_buf, (dl::size_type)(buf + 20 - end_buf));
+  char buf[20];
+  return string{buf, static_cast<dl::size_type>(simd_uint32_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, UInt x) {
