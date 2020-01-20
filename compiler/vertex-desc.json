@@ -951,16 +951,6 @@
     }
   },
   {
-    "name": "op_arrow",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_op",
-      "str": "@op_arrow"
-    }
-  },
-  {
     "name": "op_log_xor_let",
     "base_name": "meta_op_binary",
     "props": {

@@ -146,6 +146,8 @@ public:
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
   void parse_extends_implements();
 
+  static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
+
 private:
   std::string get_typehint();
 

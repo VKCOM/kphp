@@ -317,10 +317,10 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
     } else if (tp == tok_arrow) {
       AutoLocation location(this);
       next_cur();
-      VertexPtr i = get_expr_top(true);
-      CE (!kphp_error(i, "Failed to parse right argument of '->'"));
-      auto v = VertexAdaptor<op_arrow>::create(res, i);
-      res = v;
+      VertexPtr rhs = get_expr_top(true);
+      CE (!kphp_error(rhs, "Failed to parse right argument of '->'"));
+      res = process_arrow(res, rhs);
+      if (!res) return {};
       set_location(res, location);
       need = true;
     } else if (tp == tok_oppar) {
@@ -337,7 +337,8 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
 
       call->set_string(ClassData::NAME_OF_INVOKE_METHOD);
 
-      res = VertexAdaptor<op_arrow>::create(res, call);
+      res = process_arrow(res, call);
+      if (!res) return {};
       set_location(res, location);
       need = true;
     }
@@ -471,7 +472,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
 
       next_cur();
       res = get_expression();
-      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_arrow, op_index, op_conv_array) ,
+      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_index, op_conv_array) ,
         fmt_format("It's not allowed using `...` in this place (op: {})", OpInfo::str(res->type()))));
       res = VertexAdaptor<op_varg>::create(res).set_location(res);
       break;
@@ -533,7 +534,8 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       auto alloc = VertexAdaptor<op_alloc>::create();
       alloc->allocated_class_name = std::move(func_call->str_val);
       func_call->str_val = ClassData::NAME_OF_CONSTRUCT;
-      res =  VertexAdaptor<op_arrow>::create(alloc, func_call);
+      res = process_arrow(alloc, func_call);
+      if (!res) return {};
       res->location = alloc->location = func_call->location;
       break;
     }
@@ -1727,6 +1729,32 @@ VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr all
 
   return constructor_call;
 }
+
+VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
+  if (rhs->type() == op_func_name) {
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(lhs);
+    inst_prop->set_string(rhs->get_string());
+
+    return inst_prop;
+  } else if (auto call = rhs.try_as<op_func_call>()) {
+    vector<VertexPtr> new_next;
+    const vector<VertexPtr> &old_next = rhs->get_next();
+
+    new_next.push_back(lhs);
+    new_next.insert(new_next.end(), old_next.begin(), old_next.end());
+
+    auto new_root = create_vertex(call->type(), new_next).as<op_func_call>();
+    new_root->extra_type = op_ex_func_call_arrow;
+    new_root->str_val = call->get_string();
+    new_root->func_id = call->func_id;
+
+    return new_root;
+  } else {
+    kphp_error (false, "Operator '->' expects property or function call as its right operand");
+    return {};
+  }
+}
+
 
 void GenTree::get_traits_uses() {
   next_cur();
