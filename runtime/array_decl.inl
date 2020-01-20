@@ -68,6 +68,16 @@ private:
     inline key_type get_key() const;
   };
 
+  // `max_key` and `string_size` could be also be there
+  // but sometimes, for simplicity, we use them in vector too
+  // to not add extra checks they are left in `array_inner`
+  #pragma pack(push, 4)
+  struct array_inner_fields_for_map {
+    uint64_t modulo_helper_int_buf_size{0};
+    uint64_t modulo_helper_string_buf_size{0};
+  };
+  #pragma pack(pop)
+
   struct array_inner {
     //if key is number, int_key contains this number, there is no string_key.
     //if key is string, int_key contains hash of this string, string_key contains this string.
@@ -109,8 +119,15 @@ private:
     inline const string_hash_entry *get_string_entries() const __attribute__ ((always_inline));
     inline string_hash_entry *get_string_entries() __attribute__ ((always_inline));
 
-    inline static int choose_bucket(const int key, const int buf_size) __attribute__ ((always_inline));
+    inline array_inner_fields_for_map &fields_for_map() __attribute__((always_inline));
+    inline const array_inner_fields_for_map &fields_for_map() const __attribute__((always_inline));
 
+    inline int choose_bucket_int(int key) const __attribute__ ((always_inline));
+    inline int choose_bucket_string(int key) const __attribute__ ((always_inline));
+    inline static int choose_bucket(const int key, const int buf_size, const uint64_t modulo_helper) __attribute__ ((always_inline));
+
+    inline static dl::size_type sizeof_vector(int int_size) __attribute__((always_inline));
+    inline static dl::size_type sizeof_map(int int_size, int string_size) __attribute__((always_inline));
     inline static dl::size_type estimate_size(int &new_int_size, int &new_string_size, bool is_vector);
     inline static array_inner *create(int new_int_size, int new_string_size, bool is_vector);
 
