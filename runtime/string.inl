@@ -1033,11 +1033,11 @@ inline void string::destroy() {
 
 
 bool operator==(const string &lhs, const string &rhs) {
-  return lhs.compare(rhs) == 0;
+  return lhs.size() == rhs.size() && lhs.compare(rhs) == 0;
 }
 
 bool operator!=(const string &lhs, const string &rhs) {
-  return lhs.compare(rhs) != 0;
+  return lhs.size() != rhs.size() || lhs.compare(rhs) != 0;
 }
 
 bool is_ok_float(double v) {
