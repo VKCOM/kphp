@@ -8,8 +8,8 @@ class Y {
 
 /** @kphp-immutable-class */
 class X {
-  /** @var Y | false */
-  public $y = false;
+  /** @var Y | null */
+  public $y = null;
 }
 
 $x = new X;

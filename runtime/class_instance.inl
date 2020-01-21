@@ -5,14 +5,8 @@
 #endif
 
 template<class T>
-class_instance<T> &class_instance<T>::operator=(bool) {
-  o.reset();
-  return *this;
-}
-
-template<class T>
 class_instance<T> &class_instance<T>::operator=(const Optional<bool> &null) noexcept {
-  assert(null.value_state() == OptionalState::null_value);
+  php_assert(null.value_state() == OptionalState::null_value);
   o.reset();
   return *this;
 }

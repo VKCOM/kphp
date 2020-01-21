@@ -94,7 +94,7 @@ public:
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function_.get()->store();
     CurrentProcessingQuery::get().reset();
     if (!CurException.is_null()) {
-      CurException = false;
+      CurException = Optional<bool>{};
       return {};
     }
     return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));

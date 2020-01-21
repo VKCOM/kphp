@@ -81,10 +81,10 @@ $arrr = [
 ];
 
 /**
- * @return A | false
+ * @return A | null
  */
-function getAOrFalse($returnFalse) {
-    return $returnFalse ? false : new A();
+function getAOrNull($returnFalse) {
+    return $returnFalse ? null : new A();
 }
 
 /**
@@ -95,7 +95,7 @@ function getAArrOrFalse($returnFalse) {
 }
 
 /**
- * @param A | false $a
+ * @param A | null $a
  */
 function printAVal($a) {
     if($a) {
@@ -103,12 +103,12 @@ function printAVal($a) {
     }
 }
 
-printAVal(getAOrFalse(true));
-printAVal(getAOrFalse(false));
+printAVal(getAOrNull(true));
+printAVal(getAOrNull(false));
 
-if(0) getAOrFalse(true)->a = 1;
+if(0) getAOrNull(true)->a = 1;
 else {
-    $aa2 = getAOrFalse(false);
+    $aa2 = getAOrNull(false);
     $aa2->a = 3;
     echo $aa2->a, "\n";
 }

@@ -52,7 +52,7 @@ function test_interfaces() {
   var_dump(estimate_memory_usage(new MyClass1()));
   var_dump(estimate_memory_usage(new MyClass2()));
 
-  $ix = [new MyClassEmpty(), new MyClass1(), new MyClass2(), false];
+  $ix = [new MyClassEmpty(), new MyClass1(), new MyClass2(), null];
   var_dump(estimate_memory_usage($ix[0]));
   var_dump(estimate_memory_usage($ix[1]));
   var_dump(estimate_memory_usage($ix[2]));

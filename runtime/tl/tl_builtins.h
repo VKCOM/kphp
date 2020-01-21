@@ -351,6 +351,13 @@ struct t_Vector {
   }
 };
 
+// TODO удалить это, после того, как tl полностью переедет на null
+template<typename T>
+T construct_maybe_false(std::true_type /* false by default */) { return T{false}; }
+
+template<typename T>
+T construct_maybe_false(std::false_type /* false by default */) { return T{}; }
+
 template<typename T, unsigned int inner_magic, typename UseOptionalBool>
 struct t_Maybe_impl {
   T elem_state;
@@ -473,15 +480,11 @@ struct t_Maybe_impl {
     auto magic = static_cast<unsigned int>(f$fetch_int());
     switch (magic) {
       case TL_RESULT_FALSE: {
-        if (UseOptionalBool::value) {
-          // Оборачиваются в Optional: array<T>, int, double, string, bool
-          // Не оборачиваются: var, class_instance<T>, Optional<T>
-          out = PhpType();
-        } else {
-          // Оборачиваются в Optional: array<T>, int, double, string
-          // Не оборачиваются: bool, var, class_instance<T>, Optional<T>
-          out = PhpType(false);
-        }
+        // Оборачиваются в Optional: array<T>, int, double, string
+        // Не оборачиваются: var, class_instance<T>, Optional<T>
+        // Если UseOptionalBool::value == true, то bool оборачивается в Optional в противном случае - нет
+        using default_is_false = std::integral_constant<bool, !UseOptionalBool::value && !is_class_instance<PhpType>{}>;
+        out = construct_maybe_false<PhpType>(default_is_false{});
         break;
       }
       case TL_RESULT_TRUE: {

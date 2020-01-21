@@ -16,7 +16,7 @@ function test_empty_class() {
   var_dump(estimate_memory_usage(tuple(new EmptyClass(), 1.2)));
 
   /** @var EmptyClass */
-  $x = false;
+  $x = null;
   var_dump(estimate_memory_usage($x));
 }
 
@@ -41,7 +41,7 @@ function test_class_with_simple_fields() {
   var_dump(estimate_memory_usage(tuple(new MyClass1(), false)));
 
   /** @var MyClass1 */
-  $x = false;
+  $x = null;
   var_dump(estimate_memory_usage($x));
 }
 

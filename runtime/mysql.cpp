@@ -359,7 +359,7 @@ class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((u
   if (DB_Proxy->connection_id >= 0 || DB_Proxy->connected) {
     return DB_Proxy;
   } else {
-    return false;
+    return {};
   }
 }
 

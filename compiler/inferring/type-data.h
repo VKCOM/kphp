@@ -93,7 +93,6 @@ public:
 
   PrimitiveType ptype() const { return ptype_; }
   PrimitiveType get_real_ptype() const;
-  bool is_class_ptype() const { return ptype_ == tp_Class; }
   flags_t flags() const;
   void set_ptype(PrimitiveType new_ptype);
 

@@ -1,5 +1,6 @@
 #include "compiler/inferring/node-recalc.h"
 
+#include "common/termformat/termformat.h"
 #include "common/wrappers/likely.h"
 
 #include "compiler/data/class-data.h"
@@ -21,13 +22,18 @@ static void print_why_tinf_occured_error(
 
   if (mix_class && mix_class2 && mix_class != mix_class2) {
     kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n",
-                             mix_class->name, mix_class2->name,
+                             TermStringFormat::paint_green(mix_class->name), TermStringFormat::paint_green(mix_class2->name),
                              desc1, desc2));
 
   } else if (mix_class || mix_class2) {
-    kphp_error(0, fmt_format("Type Error: mix class {} with non-class: {} and {}\n",
-                             mix_class ? mix_class->name : mix_class2->name,
-                             desc1, desc2));
+    const auto class_name = TermStringFormat::paint_green(mix_class ? mix_class->name : mix_class2->name);
+    if (errored_type->or_false_flag() || because_of_type->or_false_flag()) {
+      kphp_error(0, fmt_format("Type Error: mix class {} with {}: {} and {}\n",
+                               class_name, TermStringFormat::paint_green("false"),
+                               desc1, desc2));
+    } else {
+      kphp_error(0, fmt_format("Type Error: mix class {} with non-class: {} and {}\n", class_name, desc1, desc2));
+    }
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
     kphp_error(0, fmt_format("Type Error: inconsistent tuples {} and {}\n", desc1, desc2));

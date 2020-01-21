@@ -284,8 +284,8 @@ test_assign_binary_operations_null_false(false, false);
 
 test_cmp_operation_class_instance_null_false(new A, null);
 test_cmp_operation_class_instance_null_false(new A, false);
-test_cmp_operation_class_instance_null_false(false, false);
-test_cmp_operation_class_instance_null_false(false, null);
+test_cmp_operation_class_instance_null_false(null, false);
+test_cmp_operation_class_instance_null_false(null, null);
 
 $optional_integers = [5, false, null, 0, -2];
 foreach ($optional_integers as $optional_integer1) {

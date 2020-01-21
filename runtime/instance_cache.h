@@ -313,7 +313,7 @@ ClassInstanceType instance_cache_fetch(const string &class_name, const string &k
                   class_name.c_str(), base_wrapper->get_class());
     }
   }
-  return false;
+  return {};
 }
 
 } // namespace ic_impl_

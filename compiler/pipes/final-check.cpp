@@ -309,8 +309,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
                    fmt_format("isset({}) will be always true for {}", var->get_human_readable_name(), colored_type_out(type_info)));
-        kphp_error(!type_info->is_class_ptype(),
-                   fmt_format("isset() for instances is currently disallowed (while instances can store both false and null)"));
       }
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
@@ -384,8 +382,6 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(),
                  fmt_format("is_null() will be always false for {}", colored_type_out(arg_type)));
-      kphp_error(!arg_type->is_class_ptype(),
-                 fmt_format("is_null() for instances is currently disallowed (while instances can store both false and null)"));
     }
   }
 
@@ -434,14 +430,14 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
   }
 
   // анализируем instance ===/!== что_то
-  if (lhs_type->is_class_ptype() || rhs_type->is_class_ptype()) {
-    auto cmp_type = lhs_type->is_class_ptype() ? rhs_type : lhs_type;
+  if (vk::all_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
+    auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
     // пока что отдельной ошибкой ругаемся на ===/!== false: после поддержки null уже так нельзя, но будут писать по инерции
     if (cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag())) {
       kphp_error(0, fmt_format("$instance {} {} is now prohibited: use if({}$instance)", OpInfo::desc(op), colored_type_out(cmp_type), (op == op_eq3) ? "" : "!"));
     } else {
       // а так, инстанс на три равно можно сравнивать только с другим инстансом (будет сравнение ссылок)
-      kphp_error(cmp_type->is_class_ptype(), fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
+      kphp_error(cmp_type->ptype() == tp_Class, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
     }
   }
 }

@@ -123,12 +123,13 @@ function test_class_array() {
 }
 
 function test_or_false_or_null_with_class_and_rpc_connection() {
-  $y = 0 ? null : false;
+  $y = 1 ? null : new A(1);
 
   $a = $y ?? new A(1);
   var_dump(!$a);
 
-  $rpc_conn = $y ?? new_rpc_connection("", 0);
+  $x = 1 ? null : new_rpc_connection("", 0);
+  $rpc_conn = $x ?? new_rpc_connection("", 0);
   var_dump(!$rpc_conn);
 }
 

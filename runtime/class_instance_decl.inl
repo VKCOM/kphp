@@ -31,10 +31,8 @@ public:
   class_instance(const class_instance &) = default;
   class_instance(class_instance &&) noexcept = default;
 
-  class_instance(bool) {}
-
   class_instance(const Optional<bool> &null) noexcept {
-    assert(null.value_state() == OptionalState::null_value);
+    php_assert(null.value_state() == OptionalState::null_value);
   }
 
   template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
@@ -70,7 +68,6 @@ public:
   template<class T2>
   class_instance &operator=(T2) = delete;
 
-  inline class_instance &operator=(bool);
   inline class_instance &operator=(const Optional<bool> &null) noexcept;
   inline class_instance clone() const;
   template<class... Args>

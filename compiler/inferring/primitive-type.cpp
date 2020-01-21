@@ -37,7 +37,7 @@ const char *ptype_name(PrimitiveType id) {
 
 bool can_store_false(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Class, tp_Any);
+  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Any);
 }
 
 bool can_store_null(PrimitiveType tp) {

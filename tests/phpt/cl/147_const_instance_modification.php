@@ -7,10 +7,10 @@ class Y {
 
 class X {
   /**
-    * @var Y|false
+    * @var Y|null
     * @kphp-const
     */
-  public $y = false;
+  public $y = null;
 }
 
 $x = new X;

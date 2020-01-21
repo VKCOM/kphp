@@ -143,7 +143,7 @@ function wait_result($id, $timeout = -1.0) {
   global $__forked;
 
   if (!wait($id, $timeout)) {
-    return false;
+    return null;
   }
 
   $result = $__forked[$id - 1];

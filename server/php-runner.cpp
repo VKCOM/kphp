@@ -327,7 +327,7 @@ void PHPScriptBase::run() {
   assert (run_main->run != nullptr);
 
   init_runtime_environment(data, run_mem, mem_size);
-  CurException = false;
+  CurException = Optional<bool>{};
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);

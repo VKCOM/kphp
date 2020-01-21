@@ -445,7 +445,11 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 
   if (rhs->ptype() == tp_Class) {
-    lhs->set_class_type(rhs->class_type());
+    if (lhs->or_false_flag()) {
+      lhs->set_ptype(tp_Error);
+    } else {
+      lhs->set_class_type(rhs->class_type());
+    }
   }
 
   if (!lhs->structured()) {

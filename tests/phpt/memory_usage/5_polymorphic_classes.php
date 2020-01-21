@@ -66,7 +66,7 @@ function test_polymorphic_classes_in_array() {
   var_dump(16 + 16 + 32 + 16 + 32 + 8 + 88);
   return;
 #endif
-  $ix = [new A(), new B1(), new B2(), new C1(), new C2(), false];
+  $ix = [new A(), new B1(), new B2(), new C1(), new C2(), null];
   var_dump(estimate_memory_usage($ix[0]));
   var_dump(estimate_memory_usage($ix[1]));
   var_dump(estimate_memory_usage($ix[2]));

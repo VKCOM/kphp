@@ -13,7 +13,7 @@ class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error(const char *erro
 class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error_from_exception_if_possible() const {
   if (!CurException.is_null()) {
     auto rpc_error = make_error(CurException->message, TL_ERROR_SYNTAX);
-    CurException = false;
+    CurException = Optional<bool>{};
     return rpc_error;
   }
   return {};

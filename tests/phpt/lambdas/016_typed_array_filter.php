@@ -26,7 +26,7 @@ function test_classes() {
 }
 
 function test_classes_default_filtered() {
-    $filtered = array_filter([new Classes\IntHolder(1), new Classes\IntHolder(3), false]);
+    $filtered = array_filter([new Classes\IntHolder(1), new Classes\IntHolder(3), null]);
     var_dump(count($filtered));
 }
 

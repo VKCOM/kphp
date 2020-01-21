@@ -14,8 +14,6 @@ class B {
   public $a1 = null;
   /** @var A|null */
   public $a2 = null;
-  /** @var A|false */
-  public $a3 = false;
 }
 
 function test_array_mixing() {
@@ -32,23 +30,12 @@ function test_class_fields() {
   $b->a1 = new A(5);
   echo $b->a1 ? $b->a1->x : "0", "\n";
   echo $b->a2 ? $b->a2->x : "0", "\n";
-  echo $b->a3 ? $b->a3->x : "0", "\n";
   $b->a2 = new A(6);
   echo $b->a1 ? $b->a1->x : "0", "\n";
   echo $b->a2 ? $b->a2->x : "0", "\n";
-  echo $b->a3 ? $b->a3->x : "0", "\n";
-  $b->a3 = $b->a2;
-  echo $b->a1 ? $b->a1->x : "0", "\n";
-  echo $b->a2 ? $b->a2->x : "0", "\n";
-  echo $b->a3 ? $b->a3->x : "0", "\n";
   $b->a2 = null;
   echo $b->a1 ? $b->a1->x : "0", "\n";
   echo $b->a2 ? $b->a2->x : "0", "\n";
-  echo $b->a3 ? $b->a3->x : "0", "\n";
-  $b->a3 = $b->a2;
-  echo $b->a1 ? $b->a1->x : "0", "\n";
-  echo $b->a2 ? $b->a2->x : "0", "\n";
-  echo $b->a3 ? $b->a3->x : "0", "\n";
 }
 
 /**
@@ -91,14 +78,12 @@ test_class_fields();
 accepts_instance_1(new A(7));
 accepts_instance_1($arr[0]);
 accepts_instance_1($arr[100500]);
-accepts_instance_1(false);
 accepts_instance_1(null);
 
 accepts_instance_2(new A(8));
 accepts_instance_2($arr[0]);
 accepts_instance_2($arr[100500]);
 accepts_instance_2(null);
-accepts_instance_2(false);
 
 accepts_instance_3(new A(8));
 accepts_instance_3($arr[0]);

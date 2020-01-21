@@ -1,5 +1,5 @@
 @kphp_should_fail
-/prohibited/
+/mix class A with false/
 <?php
 
 class A {
@@ -7,4 +7,8 @@ class A {
 }
 
 $a = new A;
-echo $a === false;
+if (0) {
+  $a = false;
+}
+
+echo !!$a;

@@ -13,8 +13,8 @@ class X1 implements IX {
 }
 
 class Y {
-  /** @var IX|false */
-  public $ix = false;
+  /** @var IX|null */
+  public $ix = null;
 }
 
 instance_cache_store("key", new Y);

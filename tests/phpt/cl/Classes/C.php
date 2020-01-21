@@ -10,8 +10,8 @@ class C
   var $aInst;
   /** @var B */
   private $bInst;
-  /** @var C|false */
-  public $nextC = false;
+  /** @var C|null */
+  public $nextC = null;
 
   private static $instances = [];
 

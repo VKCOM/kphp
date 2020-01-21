@@ -5,7 +5,7 @@ require_once('Classes/autoload.php');
 
 class C {
     /** @var Classes\IDo */
-    public $ido = false;
+    public $ido = null;
 
     public function do_it()
     {

@@ -29,10 +29,10 @@ function static_vars() {
   static $dynamic_array = [1];
   $dynamic_array[] = 2;
 
-  static $instance = false;
+  static $instance = null;
   $instance = new A;
 
-  static $empty_instance = false;
+  static $empty_instance = null;
   $empty_instance = new EmptyClass;
 }
 
@@ -69,8 +69,8 @@ function class_static_vars() {
     static public $dynamic_string = "";
     static public $dynamic_array = [];
 
-    static public $instance = false;
-    static public $empty_instance = false;
+    static public $instance = null;
+    static public $empty_instance = null;
   }
 
   ClassWithStaticVars::$null = null;

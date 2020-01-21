@@ -34,7 +34,7 @@ echo $b2 === $a7, "\n";
 echo is_object($a1), "\n";
 echo is_object($a5), "\n";
 
-$a5 = false;
+$a5 = null;
 $a7 = null;
 
 echo $b1 === $b1, "\n";
@@ -65,7 +65,7 @@ echo is_object($arr[0]), "\n";
 echo is_object($arr[100500]), "\n";
 echo isset($arr[100500]), "\n";
 
-$a1 = false;
+$a1 = null;
 echo !$a1, "\n";
 echo !!$a1, "\n";
 

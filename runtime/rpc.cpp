@@ -1194,7 +1194,7 @@ bool try_fetch_rpc_error(array<var> &out_if_error) {
   }
   if (!CurException.is_null()) {
     out_if_error = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
-    CurException = false;
+    CurException = Optional<bool>{};
     return true;
   }
   return false;
@@ -1234,7 +1234,7 @@ array<var> fetch_function(const class_instance<RpcQuery> &rpc_query) {
   CurrentProcessingQuery::get().reset();
   if (!CurException.is_null()) {
     array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
-    CurException = false;
+    CurException = Optional<bool>{};
     return result;
   }
   if (!f$fetch_eof()) {
@@ -1255,7 +1255,7 @@ int rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const var &tl_ob
   class_instance<RpcQuery> rpc_query = store_function(tl_object);
   if (!CurException.is_null()) {
     rpc_query.destroy();
-    CurException = false;
+    CurException = Optional<bool>{};
   }
   if (rpc_query.is_null()) {
     return 0;

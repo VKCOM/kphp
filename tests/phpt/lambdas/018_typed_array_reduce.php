@@ -35,7 +35,7 @@ function test_reduce_with_diff_return_and_carry() {
     };
 
     /** @var Classes\IntHolder */
-    $res = array_reduce([new Classes\IntHolder(9), new Classes\IntHolder(20)], $f, false);
+    $res = array_reduce([new Classes\IntHolder(9), new Classes\IntHolder(20)], $f, null);
 
     var_dump($res->a);
 }

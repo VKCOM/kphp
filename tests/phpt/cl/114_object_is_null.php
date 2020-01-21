@@ -15,14 +15,11 @@ function p($a) {
 $a = (new A)->setA(19);
 echo !$a ? "null" : $a->a, "\n";
 p($a);
-$a = false;
-echo !$a ? "null" : $a->a, "\n";
 $a = null;
 echo !$a ? "null" : $a->a, "\n";
 p($a);
-p(false);
 p(null);
 
-$aArr = array(new A, false, new A, null);
+$aArr = array(new A, null, new A);
 foreach ($aArr as $a2)
   p($a2);

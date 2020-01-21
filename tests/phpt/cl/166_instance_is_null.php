@@ -1,5 +1,4 @@
-@kphp_should_fail
-/currently disallowed/
+@ok
 <?php
 
 class A {

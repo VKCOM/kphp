@@ -175,13 +175,13 @@ protected:
         if (last_wait_error == nullptr) {
           last_wait_error = "Timeout in wait_result";
         }
-        RETURN(false);
+        RETURN(Optional<bool>{});
       }
       Storage *output = get_forked_storage(resumable_id);
 
       if (output->tag == 0) {
         last_wait_error = "Result already was gotten";
-        RETURN(false);
+        RETURN(Optional<bool>{});
       }
 
       RETURN(output->load_as<T>());
