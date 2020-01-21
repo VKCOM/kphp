@@ -9,6 +9,7 @@
 //    3. сохранение tl_func_state в CurrentRpcServerQuery
 
 void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult> &response) {
+  f$rpc_clean();
   std::unique_ptr<tl_func_base> tl_func_state = CurrentRpcServerQuery::get().extract();
   if (!tl_func_state) {
     php_warning("There is no pending rpc server request. Unable to store response.");
