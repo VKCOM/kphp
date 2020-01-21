@@ -81,6 +81,21 @@ function test_mismatch_classes() {
   var_dump(!$y);
 }
 
+function test_update_ttl() {
+  var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 12));
+
+  var_dump(instance_cache_store("key_x_test_update_ttl", new X, 1));
+  var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 3));
+  var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 2));
+
+  var_dump(instance_cache_delete("key_x_test_update_ttl"));
+  var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 3));
+
+  var_dump(instance_cache_store("key_x_test_update_ttl", new X, 2));
+  var_dump(instance_cache_update_ttl("key_x_test_update_ttl"));
+}
+
+
 function test_delete() {
   var_dump(instance_cache_store("key_x3", new X));
   var_dump(instance_cache_store("key_y3", new Y(3, "test_delete", "super optional")));
@@ -206,6 +221,7 @@ function test_memory_limit_exceed() {
 test_empty_fetch();
 test_store_fetch() ;
 test_mismatch_classes();
+test_update_ttl();
 test_delete();
 test_clear();
 test_tree();

@@ -72,7 +72,7 @@ function instance_cast($instance, $unused) {
 
 $instance_cache_storage = [];
 
-function instance_cache_store($key, $value) {
+function instance_cache_store($key, $value, $ttl = 0) {
   global $instance_cache_storage;
   $instance_cache_storage[$key] = $value;
   return true;
@@ -87,6 +87,11 @@ function instance_cache_fetch($type, $key) {
     }
   }
   return false;
+}
+
+function instance_cache_update_ttl($key, $ttl = 0) {
+  global $instance_cache_storage;
+  return isset($instance_cache_storage[$key]);
 }
 
 function instance_cache_fetch_immutable($type, $key) {

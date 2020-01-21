@@ -248,7 +248,7 @@ public:
   }
 
   void memory_limit_warning() const final {
-    php_warning("Memory limit exceeded on cloning instance of class '%s' into cache", get_class());
+    php_warning("Memory limit exceeded on saving instance of class '%s' into cache", get_class());
   }
 
   std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref() const final {
@@ -346,6 +346,8 @@ struct InstanceCacheStats {
 // these function should be called from master
 InstanceCacheStats instance_cache_get_stats();
 // these function should be called from master
+bool instance_cache_is_memory_swap_required();
+// these function should be called from master
 memory_resource::MemoryStats instance_cache_get_memory_stats();
 // these function should be called from master
 bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end);
@@ -374,5 +376,6 @@ ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, con
   return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, false);
 }
 
+bool f$instance_cache_update_ttl(const string &key, int ttl = 0);
 bool f$instance_cache_delete(const string &key);
 bool f$instance_cache_clear();

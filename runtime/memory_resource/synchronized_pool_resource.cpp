@@ -62,6 +62,7 @@ public:
     const size_type aligned_size = details::align_for_chunk(size);
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     if (memory_end_ - memory_current_ < reserved_ + aligned_size) {
+      reset_required_ = true;
       return 0;
     }
     reserved_ += aligned_size;
@@ -72,6 +73,11 @@ public:
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     php_assert(reserved_ >= reserved_before);
     reserved_ -= reserved_before;
+  }
+
+  bool is_reset_required() {
+    std::lock_guard<inter_process_mutex> lock{memory_mutex_};
+    return reset_required_;
   }
 
   MemoryStats get_memory_stats() {
@@ -118,6 +124,7 @@ private:
 
   inter_process_mutex memory_mutex_;
   size_type reserved_{0};
+  bool reset_required_{false};
 
   static constexpr size_type MAX_CHUNK_BLOCK_SIZE_{16u * 1024u};
   std::array<details::synchronized_memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunk_list_;
@@ -226,6 +233,12 @@ void synchronized_pool_resource::forbid_allocations() {
 void synchronized_pool_resource::allow_allocations() {
   php_assert(allocations_forbidden_);
   allocations_forbidden_ = false;
+}
+
+bool synchronized_pool_resource::is_reset_required() {
+  php_assert(impl_);
+  dl::CriticalSectionGuard critical_section;
+  return impl_->is_reset_required();
 }
 
 MemoryStats synchronized_pool_resource::get_memory_stats() {

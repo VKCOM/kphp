@@ -1924,8 +1924,7 @@ int update_mem_stats() {
 }
 
 void check_and_instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
-  const auto instance_cache_memory_stats = instance_cache_get_memory_stats();
-  if (instance_cache_memory_stats.real_memory_used >= 0.9 * instance_cache_memory_stats.memory_limit) {
+  if (instance_cache_is_memory_swap_required()) {
     if (instance_cache_try_swap_memory(active_workers_begin, active_workers_end)) {
       vkprintf(0, "instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;

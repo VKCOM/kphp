@@ -65,12 +65,11 @@ private:
                 std::unique_ptr<InstanceWrapperBase> &&instance,
                 memory_resource::synchronized_pool_resource &mem_resource,
                 InstanceCacheStats &stats) :
-    stored_at(now),
-    expiring_at(ttl > 0 ? now + std::chrono::seconds{ttl} : std::chrono::nanoseconds::max()),
     inserted_by_process(getpid()),
     instance_wrapper(std::move(instance)),
     resource(mem_resource),
     cache_stats(stats) {
+    update_time_points(now, ttl);
     ++cache_stats.elements_created;
   }
 
@@ -104,8 +103,14 @@ public:
     return now > ratio * std::chrono::duration<double>{stored_at} - (ratio - 1) * std::chrono::duration<double>{expiring_at};
   }
 
-  const std::chrono::nanoseconds stored_at{std::chrono::nanoseconds::min()};
-  const std::chrono::nanoseconds expiring_at{std::chrono::nanoseconds::max()};
+  void update_time_points(std::chrono::nanoseconds now, int ttl) {
+    stored_at = std::max(now, stored_at);
+    expiring_at = ttl > 0 ? stored_at + std::chrono::seconds{ttl} : std::chrono::nanoseconds::max();
+    try_return_null_early = true;
+  }
+
+  std::chrono::nanoseconds stored_at{std::chrono::nanoseconds::min()};
+  std::chrono::nanoseconds expiring_at{std::chrono::nanoseconds::max()};
   const pid_t inserted_by_process{0};
   bool try_return_null_early{true};
   std::unique_ptr<InstanceWrapperBase> instance_wrapper;
@@ -294,6 +299,13 @@ private:
 
 class InstanceCache {
 private:
+  static constexpr size_t DEFAULT_MEMORY_LIMIT{256u * 1024u * 1024u};
+  static constexpr double MEMORY_USED_THRESHOLD{0.9};
+  static constexpr double REAL_MEMORY_USED_THRESHOLD{0.9};
+  static constexpr double FRESHNESS_ELEMENT_RATIO{0.8};
+  static constexpr double EARLY_EXPIRATION_ELEMENT_RATIO{0.2};
+  static constexpr std::chrono::seconds DEAD_PROCESSING_WORKER_TIMEOUT{3};
+
   InstanceCache() :
     now_(std::chrono::system_clock::now().time_since_epoch()) {
   }
@@ -312,8 +324,12 @@ public:
 
   void refresh(int user_worker_id) {
     php_assert(!current_);
-    now_ = std::chrono::system_clock::now().time_since_epoch();
+    update_now();
     current_ = data_manager_.acquire_current_memory_data(user_worker_id);
+  }
+
+  void update_now() {
+    now_ = std::chrono::system_clock::now().time_since_epoch();
   }
 
   void free(int user_worker_id) {
@@ -333,7 +349,7 @@ public:
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_);
     const auto memory_stats = current_->memory_resource.get_memory_stats();
-    if (memory_stats.memory_used >= 0.9 * memory_stats.memory_limit) {
+    if (memory_stats.memory_used >= MEMORY_USED_THRESHOLD * memory_stats.memory_limit) {
       instance_wrapper.memory_limit_warning();
       return false;
     }
@@ -342,6 +358,7 @@ public:
     // get element here, because lock enable critical section,
     // and if we get out of script memory in critical section, and it may lead crash
     auto &cached_element_ptr = request_cache_[key];
+    update_now();
     std::unique_lock<inter_process_mutex> shared_data_lock{current_->data->mutex};
     {
       AllocReplacementSection section{current_->memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
@@ -395,12 +412,15 @@ public:
         return nullptr;
       }
 
-      // if left less than 10% of total time, return null for any process,
+      update_now();
+      // if left less than EARLY_EXPIRATION_ELEMENT_RATIO of total time, return null for any process,
       // so that it starts to update data before other processes
-      if (it->second->try_return_null_early && it->second->is_left_less_than(now_, 0.1)) {
+      if (it->second->try_return_null_early &&
+          it->second->is_left_less_than(now_, EARLY_EXPIRATION_ELEMENT_RATIO)) {
         it->second->try_return_null_early = false;
         ++current_->data->stats.elements_missed_earlier;
-        ic_debug("can't fetch '%s' because less than 10%% of total time is left\n", key.c_str());
+        ic_debug("can't fetch '%s' because less than %f of total time is left\n",
+                 key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
         return nullptr;
       }
       element = it->second;
@@ -416,6 +436,28 @@ public:
     return element->instance_wrapper.get();
   }
 
+  bool update_ttl(const string &key, int ttl) {
+    php_assert(current_);
+    ic_debug("update_ttl '%s', new ttl '%d'\n", key.c_str(), ttl);
+    AllocReplacementSection section{current_->memory_resource};
+    std::lock_guard<inter_process_mutex> shared_data_lock{current_->data->mutex};
+    auto it = current_->data->storage.find(key);
+    if (it == current_->data->storage.end()) {
+      return false;
+    }
+
+    detach_expiration_trace(it);
+    update_now();
+    it->second->update_time_points(now_, ttl);
+    if (!attach_expiration_trace(it)) {
+      // graceful recovery is difficult and useless, just remove the element
+      it->second->instance_wrapper->memory_limit_warning();
+      remove_element(it);
+      return false;
+    }
+    return true;
+  }
+
   bool del(const string &key) {
     php_assert(current_);
     ic_debug("delete '%s'\n", key.c_str());
@@ -427,6 +469,7 @@ public:
     if (it == current_->data->storage.end()) {
       return false;
     }
+    detach_expiration_trace(it);
     remove_element(it);
     return true;
   }
@@ -439,6 +482,7 @@ public:
     AllocReplacementSection section{current_->memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
     std::lock_guard<inter_process_mutex> shared_data_lock{current_->data->mutex};
     for (auto it = current_->data->storage.begin(); it != current_->data->storage.end();) {
+      detach_expiration_trace(it);
       it = remove_element(it);
     }
     php_assert(current_->data->storage.empty());
@@ -448,7 +492,7 @@ public:
   // this function should be called only from master
   void purge_expired() {
     php_assert(initial_process_ == getpid());
-    now_ = std::chrono::system_clock::now().time_since_epoch();
+    update_now();
     auto &current_data = data_manager_.get_current_memory_data();
     AllocReplacementSection section{current_data.memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
     std::lock_guard<inter_process_mutex> shared_data_lock{current_data.data->mutex};
@@ -480,6 +524,17 @@ public:
   void rollback_memory_reserve() {
     php_assert(current_);
     current_->memory_resource.rollback_reserve();
+  }
+
+  // this function should be called only from master
+  bool is_memory_swap_required() {
+    php_assert(initial_process_ == getpid());
+    auto &memory_resource = data_manager_.get_current_memory_data().memory_resource;
+    if (memory_resource.is_reset_required()) {
+      return true;
+    }
+    const auto memory_stats = memory_resource.get_memory_stats();
+    return memory_stats.real_memory_used >= REAL_MEMORY_USED_THRESHOLD * memory_stats.memory_limit;
   }
 
   // this function should be called only from master
@@ -518,7 +573,7 @@ private:
     // 1) if it has been recently inserted from other process
     if (it != current_->data->storage.end() &&
         it->second->expiring_at != std::chrono::nanoseconds::max() &&
-        !it->second->is_left_less_than(now_, 0.9) &&
+        !it->second->is_left_less_than(now_, FRESHNESS_ELEMENT_RATIO) &&
         it->second->inserted_by_process != getpid()) {
       ic_debug("skip '%s' because it was recently updated\n", key.c_str());
       ++current_->data->stats.elements_storing_skipped_due_recent_update;
@@ -528,7 +583,7 @@ private:
     auto processing_key_it = current_->data->processing_keys.find(key);
     if (processing_key_it != current_->data->processing_keys.end()) {
       // processing worker may die and doesn't remove key
-      if (now_ - processing_key_it->second < std::chrono::seconds{3}) {
+      if (now_ - processing_key_it->second < DEAD_PROCESSING_WORKER_TIMEOUT) {
         ic_debug("skip '%s' because it is being processed now\n", key.c_str());
         ++current_->data->stats.elements_storing_skipped_due_processing;
         return true;
@@ -545,7 +600,7 @@ private:
     }
     auto it = current_->data->storage.find(key_in_shared_memory);
     if (it == current_->data->storage.end()) {
-      if (!current_->memory_resource.reserve(ElementStorage_::allocator_type::max_value_type_size())) {
+      if (!memory_reserve(ElementStorage_::allocator_type::max_value_type_size())) {
         DeepDestroyFromCacheVisitor{}.process(key_in_shared_memory);
         return {};
       }
@@ -561,9 +616,7 @@ private:
     }
     if (!attach_expiration_trace(it)) {
       // graceful recovery is difficult and useless, just remove the element
-      string key_to_destroy = it->first;
-      current_->data->storage.erase(it);
-      DeepDestroyFromCacheVisitor{}.process(key_to_destroy);
+      remove_element(it);
       return {};
     }
     used_elements_.emplace(it->second);
@@ -579,7 +632,7 @@ private:
       return true;
     }
 
-    if (!current_->memory_resource.reserve(ProcessingKeys_::allocator_type::max_value_type_size())) {
+    if (!memory_reserve(ProcessingKeys_::allocator_type::max_value_type_size())) {
       return false;
     }
     php_assert(current_->data->processing_keys.emplace(key, now_).second);
@@ -606,7 +659,7 @@ private:
     if (it->second->expiring_at == std::chrono::nanoseconds::max()) {
       return true;
     }
-    if (current_->memory_resource.reserve(ExpirationTrace_::allocator_type::max_value_type_size())) {
+    if (memory_reserve(ExpirationTrace_::allocator_type::max_value_type_size())) {
       current_->data->expiration_trace.emplace_hint(current_->data->expiration_trace.end(), it->second->expiring_at, it->first);
       return true;
     }
@@ -614,7 +667,6 @@ private:
   }
 
   ElementStorage_::iterator remove_element(ElementStorage_::iterator it) {
-    detach_expiration_trace(it);
     string removing_key = it->first;
     auto next_it = current_->data->storage.erase(it);
     DeepDestroyFromCacheVisitor{}.process(removing_key);
@@ -638,9 +690,16 @@ private:
   array<vk::not_owner_ptr<ElementHolder>> request_cache_;
 
   pid_t initial_process_{0};
-  dl::size_type total_memory_limit_{128u * 1024u * 1024u};
+  dl::size_type total_memory_limit_{DEFAULT_MEMORY_LIMIT};
   std::chrono::nanoseconds now_{std::chrono::nanoseconds::zero()};
 };
+
+constexpr size_t InstanceCache::DEFAULT_MEMORY_LIMIT;
+constexpr double InstanceCache::MEMORY_USED_THRESHOLD;
+constexpr double InstanceCache::REAL_MEMORY_USED_THRESHOLD;
+constexpr double InstanceCache::FRESHNESS_ELEMENT_RATIO;
+constexpr double InstanceCache::EARLY_EXPIRATION_ELEMENT_RATIO;
+constexpr std::chrono::seconds InstanceCache::DEAD_PROCESSING_WORKER_TIMEOUT;
 
 DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor() :
   Basic(*this) {
@@ -726,6 +785,11 @@ InstanceCacheStats instance_cache_get_stats() {
   return ic_impl_::InstanceCache::get().get_stats();
 }
 
+// these function should be called from master
+bool instance_cache_is_memory_swap_required() {
+  return ic_impl_::InstanceCache::get().is_memory_swap_required();
+}
+
 // should be called only from master
 memory_resource::MemoryStats instance_cache_get_memory_stats() {
   return ic_impl_::InstanceCache::get().get_current_memory_stats();
@@ -739,6 +803,10 @@ bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid
 // should be called only from master
 void instance_cache_purge_expired_elements() {
   ic_impl_::InstanceCache::get().purge_expired();
+}
+
+bool f$instance_cache_update_ttl(const string &key, int ttl) {
+  return ic_impl_::InstanceCache::get().update_ttl(key, ttl);
 }
 
 bool f$instance_cache_delete(const string &key) {

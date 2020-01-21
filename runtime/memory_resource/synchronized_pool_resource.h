@@ -25,6 +25,7 @@ public:
   void forbid_allocations();
   void allow_allocations();
 
+  bool is_reset_required();
   MemoryStats get_memory_stats();
 
 private:
