@@ -1541,7 +1541,7 @@ array<var>::const_iterator var::begin() const {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
-  php_warning("Invalid argument supplied for foreach(), %s \"%s\" is given", get_type_c_str(), to_string().c_str());
+  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
   return array<var>::const_iterator();
 }
 
@@ -1557,7 +1557,7 @@ array<var>::iterator var::begin() {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
-  php_warning("Invalid argument supplied for foreach(), %s \"%s\" is given", get_type_c_str(), to_string().c_str());
+  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
   return array<var>::iterator();
 }
 

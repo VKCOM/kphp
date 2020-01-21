@@ -1474,25 +1474,16 @@ array<var>::const_iterator const_end(const var &x) {
 
 template<class T>
 typename array<T>::iterator end(Optional<array<T>> &x) {
-  if (unlikely(!x.has_value())) {
-    php_warning("Invalid argument supplied for foreach(), false or null is given");
-  }
   return x.val().end();
 }
 
 template<class T>
 typename array<T>::const_iterator end(const Optional<array<T>> &x) {
-  if (unlikely(!x.has_value())) {
-    php_warning("Invalid argument supplied for foreach(), false or null is given");
-  }
   return x.val().end();
 }
 
 template<class T>
 typename array<T>::const_iterator const_end(const Optional<array<T>> &x) {
-  if (unlikely(!x.has_value())) {
-    php_warning("Invalid argument supplied for foreach(), false or null is given");
-  }
   return x.val().end();
 }
 
