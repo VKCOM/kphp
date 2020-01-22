@@ -3,11 +3,17 @@
 #include <cstddef>
 #include <re2/re2.h>
 
+#include "common/containers/final_action.h"
+
 #include "runtime/critical_section.h"
 
 int preg_replace_count_dummy;
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
+// refactor me please :(
+// for i-th match(capturing group)
+// submatch[2 * i]     - start position of match
+// submatch[2 * i + 1] - end position of match
 int regexp::submatch[3 * MAX_SUBPATTERNS];
 pcre_extra regexp::extra;
 
@@ -585,25 +591,27 @@ int regexp::pcre_last_error;
 
 int regexp::exec(const string &subject, int offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
-    dl::enter_critical_section();//OK
-    dl::replace_malloc_with_script_allocator = !use_heap_memory;
-    if (!RE2_regexp->Match(re2::StringPiece(subject.c_str(), (int)subject.size()), offset, (int)subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count)) {
-      dl::replace_malloc_with_script_allocator = false;
-      dl::leave_critical_section();
-      return 0;
+    {
+      dl::CriticalSectionGuard critical_section{};
+      auto bring_back_replace_malloc = vk::finally([] { dl::replace_malloc_with_script_allocator = false; });
+
+      dl::replace_malloc_with_script_allocator = !use_heap_memory;
+      re2::StringPiece text(subject.c_str(), subject.size());
+      bool matched = RE2_regexp->Match(text, offset, subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
+      if (!matched) {
+        return 0;
+      }
     }
-    dl::replace_malloc_with_script_allocator = false;
-    dl::leave_critical_section();
 
     int count = -1;
     for (int i = 0; i < subpatterns_count; i++) {
-      if (RE2_submatch[i].data() == nullptr) {
+      if (RE2_submatch[i].data()) {
+        submatch[i + i]     = static_cast<int>(RE2_submatch[i].data() - subject.c_str());
+        submatch[i + i + 1] = static_cast<int>(submatch[i + i] + RE2_submatch[i].size());
+        count = i;
+      } else {
         submatch[i + i] = -1;
         submatch[i + i + 1] = -1;
-      } else {
-        submatch[i + i] = RE2_submatch[i].data() - subject.c_str();
-        submatch[i + i + 1] = submatch[i + i] + RE2_submatch[i].size();
-        count = i;
       }
     }
     php_assert (count >= 0);
@@ -906,25 +914,11 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
     return false;
   }
 
-  bool no_empty = false;
-  if (flags & PREG_SPLIT_NO_EMPTY) {
-    flags &= ~PREG_SPLIT_NO_EMPTY;
-    no_empty = true;
-  }
+  bool no_empty       = flags & PREG_SPLIT_NO_EMPTY;
+  bool delim_capture  = flags & PREG_SPLIT_DELIM_CAPTURE;
+  bool offset_capture = flags & PREG_SPLIT_OFFSET_CAPTURE;
 
-  bool delim_capture = false;
-  if (flags & PREG_SPLIT_DELIM_CAPTURE) {
-    flags &= ~PREG_SPLIT_DELIM_CAPTURE;
-    delim_capture = true;
-  }
-
-  bool offset_capture = false;
-  if (flags & PREG_SPLIT_OFFSET_CAPTURE) {
-    flags &= ~PREG_SPLIT_OFFSET_CAPTURE;
-    offset_capture = true;
-  }
-
-  if (flags) {
+  if (flags & ~(PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_OFFSET_CAPTURE)) {
     php_warning("Invalid parameter flags specified to preg_split");
   }
 
@@ -961,9 +955,11 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
         result.push_back(match_str);
       }
 
-      last_match = submatch[1];
-
       limit--;
+    }
+
+    if (submatch[1] >= 0) {
+      last_match = submatch[1];
     }
 
     if (delim_capture) {
