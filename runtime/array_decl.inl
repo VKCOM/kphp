@@ -71,12 +71,10 @@ private:
   // `max_key` and `string_size` could be also be there
   // but sometimes, for simplicity, we use them in vector too
   // to not add extra checks they are left in `array_inner`
-  #pragma pack(push, 4)
   struct array_inner_fields_for_map {
     uint64_t modulo_helper_int_buf_size{0};
     uint64_t modulo_helper_string_buf_size{0};
   };
-  #pragma pack(pop)
 
   struct array_inner {
     //if key is number, int_key contains this number, there is no string_key.
