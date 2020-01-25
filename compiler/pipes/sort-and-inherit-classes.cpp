@@ -339,6 +339,15 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
 void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(klass->file_id);
   std::vector<TraitPtr> traits;
+
+  // we have to resolve traits first to see overridden methods before static inheritance
+  for (const auto &dep : klass->get_str_dependents()) {
+    if (dep.type == ClassType::trait) {
+      traits.emplace_back(G->get_class(dep.class_name));
+    }
+  }
+  clone_members_from_traits(std::move(traits), klass, function_stream);
+
   for (const auto &dep : klass->get_str_dependents()) {
     ClassPtr dep_class = G->get_class(dep.class_name);
 
@@ -350,11 +359,9 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         inherit_class_from_interface(klass, dep_class);
         break;
       case ClassType::trait:
-        traits.emplace_back(dep_class);
         break;
     }
   }
-  clone_members_from_traits(std::move(traits), klass, function_stream);
   if (klass->is_fully_static()) {
     auto parent = klass->get_parent_or_interface();
     if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || (parent && !parent->is_fully_static())) {
