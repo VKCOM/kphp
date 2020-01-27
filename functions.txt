@@ -1230,9 +1230,9 @@ function instance_to_array($instance ::: Any) ::: var[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cache_fetch($type ::: string, $key ::: string) ::: instance<^1>;
+function instance_cache_fetch($type ::: string, $key ::: string, $even_if_expired ::: bool = false) ::: instance<^1>;
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cache_fetch_immutable($type ::: string, $key ::: string) ::: instance<^1>;
+function instance_cache_fetch_immutable($type ::: string, $key ::: string, $even_if_expired ::: bool = false) ::: instance<^1>;
 function instance_cache_store($key ::: string, $value ::: Any, $ttl ::: int = 0) ::: bool;
 function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;

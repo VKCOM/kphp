@@ -1715,6 +1715,8 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "instance_cache.elements.created", instance_cache_element_stats.elements_created);
   add_histogram_stat_long(stats, "instance_cache.elements.destroyed", instance_cache_element_stats.elements_destroyed);
   add_histogram_stat_long(stats, "instance_cache.elements.cached", instance_cache_element_stats.elements_cached);
+  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored", instance_cache_element_stats.elements_logically_expired_and_ignored);
+  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched", instance_cache_element_stats.elements_logically_expired_but_fetched);
 
   server_stats.worker_stats.to_stats(stats);
 

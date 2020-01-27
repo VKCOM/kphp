@@ -294,12 +294,12 @@ private:
 };
 
 bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl);
-InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key);
+InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 template<typename ClassInstanceType>
-ClassInstanceType instance_cache_fetch(const string &class_name, const string &key, bool deep_clone) {
+ClassInstanceType instance_cache_fetch(const string &class_name, const string &key, bool deep_clone, bool even_if_expired) {
   static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
-  if (auto base_wrapper = ic_impl_::instance_cache_fetch_wrapper(key)) {
+  if (auto base_wrapper = ic_impl_::instance_cache_fetch_wrapper(key, even_if_expired)) {
     // do not use first parameter (class name) for verifying type,
     // because different classes from separated libs may have same names
     if (auto wrapper = dynamic_cast<ic_impl_::InstanceWrapper<ClassInstanceType> *>(base_wrapper)) {
@@ -339,6 +339,8 @@ struct InstanceCacheStats {
   uint64_t elements_missed_earlier{0};
 
   uint64_t elements_expired{0};
+  uint64_t elements_logically_expired_but_fetched{0};
+  uint64_t elements_logically_expired_and_ignored{0};
   uint64_t elements_created{0};
   uint64_t elements_destroyed{0};
   uint64_t elements_cached{0};
@@ -367,13 +369,13 @@ bool f$instance_cache_store(const string &key, const ClassInstanceType &instance
 }
 
 template<typename ClassInstanceType>
-ClassInstanceType f$instance_cache_fetch(const string &class_name, const string &key) {
-  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, true);
+ClassInstanceType f$instance_cache_fetch(const string &class_name, const string &key, bool even_if_expired = false) {
+  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, true, even_if_expired);
 }
 
 template<typename ClassInstanceType>
-ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, const string &key) {
-  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, false);
+ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, const string &key, bool even_if_expired = false) {
+  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, false, even_if_expired);
 }
 
 bool f$instance_cache_update_ttl(const string &key, int ttl = 0);

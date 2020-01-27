@@ -305,6 +305,7 @@ private:
   static constexpr double FRESHNESS_ELEMENT_RATIO{0.8};
   static constexpr double EARLY_EXPIRATION_ELEMENT_RATIO{0.2};
   static constexpr std::chrono::seconds DEAD_PROCESSING_WORKER_TIMEOUT{3};
+  static constexpr std::chrono::minutes PHYSICAL_REMOVING_DELAY{1};
 
   InstanceCache() :
     now_(std::chrono::system_clock::now().time_since_epoch()) {
@@ -394,7 +395,7 @@ public:
     return false;
   }
 
-  InstanceWrapperBase *fetch(const string &key) {
+  InstanceWrapperBase *fetch(const string &key, bool even_if_expired) {
     php_assert(current_);
     // request_cache_ placed in script memory
     if (auto cached_element_ptr = request_cache_.get_value(key)) {
@@ -402,6 +403,7 @@ public:
       return cached_element_ptr->instance_wrapper.get();
     }
     vk::intrusive_ptr<ElementHolder> element;
+    bool element_logically_expired = false;
     {
       AllocReplacementSection section{current_->memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
       std::lock_guard<inter_process_mutex> shared_data_lock{current_->data->mutex};
@@ -423,16 +425,32 @@ public:
                  key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
         return nullptr;
       }
+      element_logically_expired = it->second->expiring_at <= now_;
+      if (element_logically_expired) {
+        if (even_if_expired) {
+          ++current_->data->stats.elements_logically_expired_but_fetched;
+          ic_debug("fetch logically expired element '%s'\n", key.c_str());
+        } else {
+          ++current_->data->stats.elements_logically_expired_and_ignored;
+          ic_debug("can't fetch '%s' because element was logically expired\n", key.c_str());
+          return nullptr;
+        }
+      } else {
+        ++current_->data->stats.elements_fetched;
+        ic_debug("fetch '%s' from inter process cache\n", key.c_str());
+      }
+
       element = it->second;
-      ++current_->data->stats.elements_fetched;
     }
 
-    ic_debug("fetch '%s' from inter process cache\n", key.c_str());
     // used_elements_ is placed on heap memory
     // keep ptr until the end of request
     used_elements_.emplace(element);
-    // request_cache_ placed in script memory
-    request_cache_.set_value(key, vk::not_owner_ptr<ElementHolder>{element.get()});
+    // do not cache logically expired elements
+    if (!element_logically_expired) {
+      // request_cache_ placed in script memory
+      request_cache_.set_value(key, vk::not_owner_ptr<ElementHolder>{element.get()});
+    }
     return element->instance_wrapper.get();
   }
 
@@ -493,12 +511,13 @@ public:
   void purge_expired() {
     php_assert(initial_process_ == getpid());
     update_now();
+    const auto now_with_delay = now_ - PHYSICAL_REMOVING_DELAY;
     auto &current_data = data_manager_.get_current_memory_data();
     AllocReplacementSection section{current_data.memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
     std::lock_guard<inter_process_mutex> shared_data_lock{current_data.data->mutex};
     ic_debug("purge expired [cached: %zu, in expiration trace: %zu]\n",
              current_data.data->storage.size(), current_data.data->expiration_trace.size());
-    for (auto it = current_data.data->expiration_trace.begin(); it != current_data.data->expiration_trace.end() && it->first <= now_;) {
+    for (auto it = current_data.data->expiration_trace.begin(); it != current_data.data->expiration_trace.end() && it->first <= now_with_delay;) {
       auto storage_it = current_data.data->storage.find(it->second);
       php_assert(storage_it != current_data.data->storage.end());
       php_assert(storage_it->second->expiring_at == it->first);
@@ -700,6 +719,7 @@ constexpr double InstanceCache::REAL_MEMORY_USED_THRESHOLD;
 constexpr double InstanceCache::FRESHNESS_ELEMENT_RATIO;
 constexpr double InstanceCache::EARLY_EXPIRATION_ELEMENT_RATIO;
 constexpr std::chrono::seconds InstanceCache::DEAD_PROCESSING_WORKER_TIMEOUT;
+constexpr std::chrono::minutes InstanceCache::PHYSICAL_REMOVING_DELAY;
 
 DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor() :
   Basic(*this) {
@@ -755,8 +775,8 @@ bool instance_cache_store(const string &key, const InstanceWrapperBase &instance
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
-InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key) {
-  return InstanceCache::get().fetch(key);
+InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
+  return InstanceCache::get().fetch(key, even_if_expired);
 }
 
 } // namespace ic_impl_
