@@ -1,30 +1,13 @@
-#include "common/algorithms/simd-int-to-string.h"
-
 #include "runtime/kphp_core.h"
 
-std::array<string_cache::string_8bytes, 256> string_cache::make_chars() noexcept {
-  std::array<string_8bytes, 256> cached_chars;
-  for (size_t c = 0; c < cached_chars.size(); ++c) {
-    cached_chars[c].inner.size = 1;
-    cached_chars[c].inner.capacity = 1;
-    cached_chars[c].data[0] = static_cast<char>(c);
-  }
-  return cached_chars;
+constexpr auto string_cache::constexpr_make_large_ints() noexcept {
+  return constexpr_make_ints(std::make_index_sequence<cached_int_max() / 10>{});
 }
 
-std::array<string_cache::string_8bytes, 10000> string_cache::make_ints() noexcept {
-  std::array<string_8bytes, 10000> cached_ints;
-  for (size_t c = 0; c < cached_ints.size(); ++c) {
-    char *end = simd_int32_to_string(static_cast<int>(c), cached_ints[c].data);
-    *end = '\0';
-    cached_ints[c].inner.size = static_cast<dl::size_type>(end - cached_ints[c].data);
-    cached_ints[c].inner.capacity = cached_ints[c].inner.size;
-  }
-  return cached_ints;
-}
-
-void global_init_string_cache() noexcept {
-  string_cache::empty_string();
-  string_cache::cached_char(0);
-  string_cache::cached_ints();
+const string::string_inner &string_cache::cached_large_int(int i) noexcept {
+  static_assert(sizeof(string_8bytes) == sizeof(string::string_inner) + string_8bytes::TAIL_SIZE, "unexpected padding");
+  // что бы не напрягать сильно компилятор, генерация чисел от 100 (small_int_max) до 9999 (cached_int_max - 1) находится тут
+  static constexpr auto large_int_cache = constexpr_make_large_ints();
+  php_assert(i < large_int_cache.size());
+  return large_int_cache[i].inner;
 }

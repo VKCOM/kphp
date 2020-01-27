@@ -123,10 +123,10 @@ void string::set_size(size_type new_size) {
 char *string::create(const char *beg, const char *end) {
   const size_type dnew = static_cast<size_type>(end - beg);
   if (dnew == 0) {
-    return string_cache::empty_string().inner.ref_data();
+    return string_cache::empty_string().ref_data();
   }
   if (dnew == 1) {
-    return string_cache::cached_char(*beg).inner.ref_data();
+    return string_cache::cached_char(*beg).ref_data();
   }
 
   string_inner *r = string_inner::create(dnew, 0);
@@ -141,10 +141,10 @@ char *string::create(const char *beg, const char *end) {
 
 char *string::create(size_type n, char c) {
   if (n == 0) {
-    return string_cache::empty_string().inner.ref_data();
+    return string_cache::empty_string().ref_data();
   }
   if (n == 1) {
-    return string_cache::cached_char(c).inner.ref_data();
+    return string_cache::cached_char(c).ref_data();
   }
 
   string_inner *r = string_inner::create(n, 0);
@@ -167,7 +167,7 @@ char *string::create(size_type n, bool b) {
 }
 
 string::string() :
-  p(string_cache::empty_string().inner.ref_data()) {
+  p(string_cache::empty_string().ref_data()) {
 }
 
 string::string(const string &str) :
@@ -176,7 +176,7 @@ string::string(const string &str) :
 
 string::string(string &&str) noexcept :
   p(str.p) {
-  str.p = string_cache::empty_string().inner.ref_data();
+  str.p = string_cache::empty_string().ref_data();
 }
 
 string::string(const char *s, size_type n) :
@@ -195,18 +195,17 @@ string::string(size_type n, bool b) :
 }
 
 string::string(int i) {
-  const auto &cached_ints = string_cache::cached_ints();
-  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
-    p = cached_ints[i].inner.ref_data();
+  if (i >= 0 && i < string_cache::cached_int_max()) {
+    p = string_cache::cached_int(i).ref_data();
     return;
   }
-  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
-    const auto &positive = cached_ints[-i].inner;
-    p = create(positive.size + 1, true);
+  if (i < 0 && i > -string_cache::cached_int_max()) {
+    const auto &cached_int_positive = string_cache::cached_int(-i);
+    p = create(cached_int_positive.size + 1, true);
     p[0] = '-';
     // copy with \0
-    std::memcpy(p + 1, positive.ref_data(), positive.size + 1);
-    inner()->size = positive.size + 1;
+    std::memcpy(p + 1, cached_int_positive.ref_data(), cached_int_positive.size + 1);
+    inner()->size = cached_int_positive.size + 1;
     return;
   }
 
@@ -216,7 +215,8 @@ string::string(int i) {
   // ( 5 + 1('\0') + 12(sizeof string_inner)) align 8 = 24, но в тоже время
   // (11 + 1('\0') + 12(sizeof string_inner)) align 8 = 24
   p = create(STRLEN_INT, true);
-  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p) - p);
+  const char *end = simd_int32_to_string(i, p);
+  inner()->size = static_cast<dl::size_type>(end - p);
   p[inner()->size] = '\0';
 }
 
@@ -255,7 +255,7 @@ string::string(double f) {
     p = create(begin, begin + len);
   } else {
     php_warning("Maximum length of float (%d) exceeded", MAX_LEN);
-    p = string_cache::empty_string().inner.ref_data();
+    p = string_cache::empty_string().ref_data();
   }
 }
 
@@ -272,7 +272,7 @@ string &string::operator=(string &&str) noexcept {
   if (this != &str) {
     destroy();
     p = str.p;
-    str.p = string_cache::empty_string().inner.ref_data();
+    str.p = string_cache::empty_string().ref_data();
   }
   return *this;
 }
@@ -411,21 +411,21 @@ string &string::append(bool b) {
 }
 
 string &string::append(int i) {
-  const auto &cached_ints = string_cache::cached_ints();
-  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
-    return append(cached_ints[i].inner.ref_data(), cached_ints[i].inner.size);
+  if (i >= 0 && i < string_cache::cached_int_max()) {
+    const auto &cached_int = string_cache::cached_int(i);
+    return append(cached_int.ref_data(), cached_int.size);
   }
-
-  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
-    const auto &positive = cached_ints[-i].inner;
-    reserve_at_least(size() + positive.size + 1);
+  if (i < 0 && i > -string_cache::cached_int_max()) {
+    const auto &cached_int_positive = string_cache::cached_int(-i);
+    reserve_at_least(size() + cached_int_positive.size + 1);
     p[inner()->size++] = '-';
-    append_unsafe(positive.ref_data(), positive.size);
+    append_unsafe(cached_int_positive.ref_data(), cached_int_positive.size);
     return finish_append();
   }
 
   reserve_at_least(size() + STRLEN_INT);
-  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p + size()) - p);
+  const char *end = simd_int32_to_string(i, p + size());
+  inner()->size = static_cast<dl::size_type>(end - p);
   p[inner()->size] = '\0';
   return *this;
 }
@@ -474,18 +474,18 @@ string &string::append_unsafe(bool b) {
 }
 
 string &string::append_unsafe(int i) {
-  const auto &cached_ints = string_cache::cached_ints();
-  if (i >= 0 && i < static_cast<int>(cached_ints.size())) {
-    return append_unsafe(cached_ints[i].inner.ref_data(), cached_ints[i].inner.size);
+  if (i >= 0 && i < string_cache::cached_int_max()) {
+    const auto &cached_int = string_cache::cached_int(i);
+    return append_unsafe(cached_int.ref_data(), cached_int.size);
   }
-
-  if (i < 0 && i > -static_cast<int>(cached_ints.size())) {
-    const auto &positive = cached_ints[-i].inner;
+  if (i < 0 && i > -string_cache::cached_int_max()) {
+    const auto &cached_int_positive = string_cache::cached_int(-i);
     p[inner()->size++] = '-';
-    return append_unsafe(positive.ref_data(), positive.size);
+    return append_unsafe(cached_int_positive.ref_data(), cached_int_positive.size);
   }
 
-  inner()->size = static_cast<dl::size_type>(simd_int32_to_string(i, p + size()) - p);
+  const char *end = simd_int32_to_string(i, p + size());
+  inner()->size = static_cast<dl::size_type>(end - p);
   return *this;
 }
 
@@ -911,7 +911,10 @@ int string::get_reference_counter() const {
 }
 
 inline void string::set_reference_counter_to_const() {
-  inner()->ref_count = REF_CNT_FOR_CONST;
+  // some const arrays are placed in read only memory and can't be modified
+  if (inner()->ref_count != REF_CNT_FOR_CONST) {
+    inner()->ref_count = REF_CNT_FOR_CONST;
+  }
 }
 
 inline bool string::is_const_reference_counter() const {

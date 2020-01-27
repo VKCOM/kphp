@@ -2162,7 +2162,6 @@ static void free_runtime_libs() {
 }
 
 void global_init_runtime_libs() {
-  global_init_string_cache();
   global_init_instance_cache_lib();
   global_init_files_lib();
   global_init_interface_lib();
