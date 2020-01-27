@@ -212,6 +212,10 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
     kphp_error_act(!function->can_throw, fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE), return false);
   }
 
+  if (function->should_not_throw && function->can_throw) {
+    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception", function->get_human_readable_name()));
+  }
+
   for (auto &static_var : function->static_var_ids) {
     check_static_var_inited(static_var);
   }

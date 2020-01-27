@@ -81,6 +81,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         continue;
       }
 
+      case php_doc_tag::kphp_should_not_throw: {
+        f->should_not_throw = true;
+        continue;
+      }
+
       case php_doc_tag::kphp_infer: {
         infer_type |= (infer_mask::check | infer_mask::hint);
         if (tag.value.find("cast") != std::string::npos) {

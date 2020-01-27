@@ -24,6 +24,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-required",         kphp_required},
   {"@kphp-lib-export",       kphp_lib_export},
   {"@kphp-sync",             kphp_sync},
+  {"@kphp-should-not-throw", kphp_should_not_throw},
   {"@type",                  var},
   {"@var",                   var},
   {"@return",                returns},

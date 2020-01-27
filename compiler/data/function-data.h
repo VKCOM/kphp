@@ -88,6 +88,7 @@ public:
   bool is_vararg = false;
   bool has_variadic_param = false;
   bool should_be_sync = false;
+  bool should_not_throw = false;
   bool kphp_lib_export = false;
   bool is_template = false;
   bool is_auto_inherited = false;

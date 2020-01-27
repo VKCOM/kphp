@@ -24,6 +24,7 @@ struct php_doc_tag {
     kphp_required,
     kphp_lib_export,
     kphp_sync,
+    kphp_should_not_throw,
     kphp_template,
     kphp_return,
     kphp_memcache_class,
