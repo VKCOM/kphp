@@ -207,6 +207,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       cur_tok++;
       return parse_arg_ref();
 
+    case tok_static:
     case tok_func_name:
       // tok_future не существует, это строка
       if (vk::any_of_equal(cur_tok->str_val, "future", "\\future")) {
