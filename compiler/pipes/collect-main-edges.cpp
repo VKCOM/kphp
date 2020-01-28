@@ -552,7 +552,7 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
     // create_less(cl->type_data, var);
   } else if (a && a->assum_type == assum_instance_array) {     // cl[] <= var <= Optional<cl[]>
     create_less(var, TypeData::create_array_type_data(a->klass->type_data, true));
-    create_less(TypeData::create_array_type_data(a->klass->type_data), var);
+    // create_less(TypeData::create_array_type_data(a->klass->type_data), var);
   }
 }
 
