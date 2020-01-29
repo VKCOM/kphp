@@ -186,7 +186,7 @@ template<class T1, class T2>
 void f$array_reserve_from(array<T1> &a, const array<T2> &base);
 
 template<class T>
-bool f$array_is_vector(array<T> &a);
+bool f$array_is_vector(const array<T> &a);
 
 
 array<var> f$range(const var &from, const var &to, int step = 1);
@@ -1132,7 +1132,7 @@ void f$array_reserve_from(array<T1> &a, const array<T2> &base) {
 }
 
 template<class T>
-bool f$array_is_vector(array<T> &a) {
+bool f$array_is_vector(const array<T> &a) {
   return a.is_vector();
 }
 
