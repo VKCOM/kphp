@@ -21,7 +21,6 @@ private:
 };
 
 std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W);
-bool can_generate_raw_representation(VertexAdaptor<op_array> vertex);
 
 template <typename Container,
   typename = decltype(std::declval<Container>().begin()),

@@ -5,6 +5,7 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"
+#include "compiler/const-manipulations.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
 
@@ -100,7 +101,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
       }
     }
 
-    if (array_len_in_doubles == -1 || !can_generate_raw_representation(vertex)) {
+    if (array_len_in_doubles == -1 || !CanGenerateRawArray::is_raw(vertex)) {
       shifts.push_back(-1);
       continue;
     }
@@ -153,16 +154,3 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
   return shifts;
 }
 
-bool can_generate_raw_representation(VertexAdaptor<op_array> vertex) {
-  for (auto it : vertex->args()) {
-    switch (GenTree::get_actual_value(it)->type()) {
-      case op_int_const:
-      case op_float_const:
-        continue;
-      default:
-        return false;
-    }
-  }
-
-  return true;
-}

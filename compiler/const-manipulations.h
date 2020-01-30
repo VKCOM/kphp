@@ -457,3 +457,35 @@ protected:
   }
 };
 
+struct CanGenerateRawArray final
+  : ConstManipulations<bool> {
+public:
+  static bool is_raw(VertexAdaptor<op_array> v) {
+    static CanGenerateRawArray can_generate_raw;
+    return can_generate_raw.visit(v);
+  }
+
+protected:
+  bool on_trivial(VertexPtr v) override {
+    return vk::any_of_equal(v->type(), op_int_const, op_float_const);
+  }
+
+  bool on_unary(VertexAdaptor<meta_op_unary> v) override {
+    return visit(v->expr());
+  }
+
+  bool on_binary(VertexAdaptor<meta_op_binary> v) override {
+    VertexPtr lhs = GenTree::get_actual_value(v->lhs());
+    VertexPtr rhs = GenTree::get_actual_value(v->rhs());
+    return visit(lhs) && visit(rhs);
+  }
+
+  bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
+    return visit(GenTree::get_actual_value(v->args()[ind]));
+  }
+
+  bool on_array_finish(VertexAdaptor<op_array>) override {
+    return true;
+  }
+};
+
