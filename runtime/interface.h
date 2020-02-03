@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include "common/wrappers/string_view.h"
+
 #include "runtime/kphp_core.h"
 #include "server/php-query-data.h"
 
@@ -147,7 +149,8 @@ int f$get_engine_workers_number();
 
 void arg_add(const char *value);
 
-void ini_set(const char *key, const char *value);
+void ini_set(vk::string_view key, vk::string_view value);
+int ini_set_from_config(const char *config_file_name);
 
 void read_engine_tag(const char *file_name);
 

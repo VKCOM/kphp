@@ -51,8 +51,8 @@
 #include "server/php-queries.h"
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
-#include "server/php-worker.h"
 #include "server/php-worker-stats.h"
+#include "server/php-worker.h"
 
 static void turn_sigterm_on();
 
@@ -2360,6 +2360,18 @@ int main_args_handler(int i) {
       *eq = '=';
       return 0;
     }
+    case 'i': {
+      const char *config_file_name = optarg;
+      if (int failed_line = ini_set_from_config(config_file_name)) {
+        if (failed_line == -1) {
+          kprintf("-i option, can't open ini_get config file: %s\n", config_file_name);
+        } else {
+          kprintf("-i option, can't find '=' (line %d at file %s)\n", failed_line, config_file_name);
+        }
+        return -1;
+      }
+      return 0;
+    }
     case 'l': {
       init_logname(optarg);
       return 0;
@@ -2541,6 +2553,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
+  parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");
   parse_option("http-port", required_argument, 'H', "http port");
   parse_option("rpc-port", required_argument, 'r', "rpc port");
   parse_option("rpc-client", required_argument, 'w', "host and port for client mode (host:port)");

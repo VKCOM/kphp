@@ -3,10 +3,13 @@
 #include <arpa/inet.h>
 #include <cassert>
 #include <clocale>
+#include <fstream>
 #include <functional>
 #include <getopt.h>
 #include <netdb.h>
 #include <unistd.h>
+
+#include "common/algorithms/string-algorithms.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
@@ -1656,7 +1659,7 @@ int f$get_engine_workers_number() {
 static char ini_vars_storage[sizeof(array<string>)];
 static array<string> *ini_vars = nullptr;
 
-void ini_set(const char *key, const char *value) {
+void ini_set(vk::string_view key, vk::string_view value) {
   php_assert (dl::query_num == 0);
 
   if (ini_vars == nullptr) {
@@ -1664,7 +1667,33 @@ void ini_set(const char *key, const char *value) {
     ini_vars = reinterpret_cast <array<string> *> (ini_vars_storage);
   }
 
-  ini_vars->set_value(string(key, (dl::size_type)strlen(key)), string(value, (dl::size_type)strlen(value)));
+  ini_vars->set_value(string(key.data(), static_cast<dl::size_type>(key.size())),
+                      string(value.data(), static_cast<dl::size_type>(value.size())));
+}
+
+int ini_set_from_config(const char *config_file_name) {
+  std::ifstream config(config_file_name);
+  if (!config.is_open()) {
+    return -1;
+  }
+  int line_num = 1;
+  for (std::string line_; std::getline(config, line_); ++line_num) {
+    vk::string_view line = line_;
+    auto comment_pos = line.find('#');
+    if (comment_pos != std::string::npos) {
+      line = line.substr(0, comment_pos);
+    }
+    line = vk::trim(line);
+    if (line.empty()) {
+      continue;
+    }
+    auto pos = line.find('=');
+    if (pos == std::string::npos) {
+      return line_num;
+    }
+    ini_set(line.substr(0, pos), line.substr(pos + 1));
+  }
+  return 0;
 }
 
 Optional<string> f$ini_get(const string &s) {
