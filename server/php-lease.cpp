@@ -4,6 +4,7 @@
 #include "auto/TL/constants/kphp.h"
 #include "common/options.h"
 #include "common/precise-time.h"
+#include "common/tl/parse.h"
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-tcp-rpc-common.h"
@@ -360,4 +361,20 @@ process_id_t get_rpc_main_target_pid() {
     }
   }
   return {};
+}
+
+lease_worker_settings try_fetch_lookup_custom_worker_settings() {
+  tl_fetch_mark();
+  int magic = tl_fetch_int();
+  if (magic != TL_KPHP_PROCESS_LEASE_TASK) {
+    tl_fetch_mark_restore();
+    return {};
+  }
+  lease_worker_settings settings;
+  settings.fields_mask = tl_fetch_int();
+  if (settings.has_timeout()) {
+    settings.php_timeout_ms = tl_fetch_int();
+  }
+  tl_fetch_mark_restore();
+  return settings;
 }

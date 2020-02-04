@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/pid.h"
+#include "tasks/lease-worker-settings.h"
 
 #include "server/php-worker.h"
 
@@ -16,3 +17,5 @@ int get_current_target();
 connection *get_lease_connection();
 process_id_t get_lease_pid();
 process_id_t get_rpc_main_target_pid();
+
+lease_worker_settings try_fetch_lookup_custom_worker_settings();

@@ -1486,6 +1486,18 @@ static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
   return matches_pid(&tasks_manager_pid, &rpc_main_target_pid) != no_pid_match;
 }
 
+static double normalize_script_timeout(double timeout_sec) {
+  if (timeout_sec < 1) {
+    kprintf("Too small script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
+    return 1;
+  }
+  if (timeout_sec > MAX_SCRIPT_TIMEOUT) {
+    kprintf("Too big script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
+    return MAX_SCRIPT_TIMEOUT;
+  }
+  return timeout_sec;
+}
+
 int rpcx_execute(connection *c, int op, raw_message *raw) {
   vkprintf(1, "rpcx_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
@@ -1573,7 +1585,9 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
         }
         c = lease_connection;
       }
-      set_connection_timeout(c, script_timeout);
+      auto custom_settings = try_fetch_lookup_custom_worker_settings();
+      double actual_script_timeout = custom_settings.has_timeout() ? normalize_script_timeout(custom_settings.php_timeout_ms / 1000.0) : script_timeout;
+      set_connection_timeout(c, actual_script_timeout);
 
       char buf[len];
       auto fetched_bytes = tl_fetch_data(buf, len);
@@ -1583,7 +1597,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
                                                        req_id, D->remote_pid.ip, D->remote_pid.port,
                                                        D->remote_pid.pid, D->remote_pid.utime);
 
-      php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, script_timeout, req_id);
+      php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data,
+                                             actual_script_timeout, req_id);
       D->extra = worker;
 
       c->status = conn_wait_net;
@@ -2443,16 +2458,7 @@ int main_args_handler(int i) {
       return 0;
     }
     case 't': {
-      script_timeout = atoi(optarg);
-      if (script_timeout < 1 || script_timeout > MAX_SCRIPT_TIMEOUT) {
-        kprintf("Bad script timeout, schould be [%d..%d]", 1, MAX_SCRIPT_TIMEOUT);
-      }
-      if (script_timeout < 1) {
-        script_timeout = 1;
-      }
-      if (script_timeout > MAX_SCRIPT_TIMEOUT) {
-        script_timeout = MAX_SCRIPT_TIMEOUT;
-      }
+      script_timeout = static_cast<int>(normalize_script_timeout(atoi(optarg)));
       return 0;
     }
     case 'o': {
