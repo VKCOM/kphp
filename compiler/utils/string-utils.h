@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits.h>
 
+#include "common/algorithms/string-algorithms.h"
 #include "common/wrappers/string_view.h"
 
 inline std::string get_full_path(const std::string &file_name) {
@@ -86,23 +87,6 @@ inline std::vector<std::string> split_skipping_delimeters(const std::string &str
   return tokens;
 }
 
-static inline void ltrim(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-    return !std::isspace(ch);
-  }));
-}
-
-static inline void rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-    return !std::isspace(ch);
-  }).base(), s.end());
-}
-
-static inline void trim(std::string &s) {
-  ltrim(s);
-  rtrim(s);
-}
-
 static inline std::string replace_characters(std::string s, char from, char to) {
   std::replace(s.begin(), s.end(), from, to);
   return s;
@@ -116,7 +100,6 @@ static inline std::string replace_non_alphanum(std::string s, char to = '_') {
   }
   return s;
 }
-
 
 static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
