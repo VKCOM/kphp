@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "auto/TL/constants/common.h"
 #include "common/type_traits/constexpr_if.h"
 
 #include "runtime/include.h"
@@ -10,17 +11,6 @@
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_query.h"
 #include "runtime/tl/tl_func_base.h"
-
-#define TL_INT 0xa8509bda
-#define TL_LONG 0x22076cba
-#define TL_DOUBLE 0x2210c154
-#define TL_STRING 0xb5286e24
-#define TL_BOOL_FALSE 0xbc799737
-#define TL_BOOL_TRUE 0x997275b5
-#define TL_VECTOR 0x1cb5c415
-#define TL_TUPLE 0x9770768a
-#define TL_RESULT_FALSE 0x27930a7b
-#define TL_RESULT_TRUE 0x3f9c8ef8
 
 #define tl_undefined_php_type nullptr_t
 
@@ -361,9 +351,9 @@ struct t_Maybe {
   void store(const var &v) {
     const string &name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
     if (name == tl_str_resultFalse) {
-      f$store_int(TL_RESULT_FALSE);
+      f$store_int(TL_MAYBE_FALSE);
     } else if (name == tl_str_resultTrue) {
-      f$store_int(TL_RESULT_TRUE);
+      f$store_int(TL_MAYBE_TRUE);
       store_magic_if_not_bare(inner_magic);
       elem_state.store(tl_arr_get(v, tl_str_result, 1, tl_str_result_hash));
     } else {
@@ -376,10 +366,10 @@ struct t_Maybe {
     CHECK_EXCEPTION(return var());
     auto magic = static_cast<unsigned int>(f$fetch_int());
     switch (magic) {
-      case TL_RESULT_FALSE: {
+      case TL_MAYBE_FALSE: {
         return false;
       }
-      case TL_RESULT_TRUE: {
+      case TL_MAYBE_TRUE: {
         fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
         return elem_state.fetch();
       }
@@ -440,9 +430,9 @@ struct t_Maybe {
 
   void typed_store(const PhpType &v) {
     if (!has_maybe_value(v)) {
-      f$store_int(TL_RESULT_FALSE);
+      f$store_int(TL_MAYBE_FALSE);
     } else {
-      f$store_int(TL_RESULT_TRUE);
+      f$store_int(TL_MAYBE_TRUE);
       store_magic_if_not_bare(inner_magic);
       elem_state.typed_store(get_store_target<T>(v));
     }
@@ -452,13 +442,13 @@ struct t_Maybe {
     CHECK_EXCEPTION(return);
     auto magic = static_cast<unsigned int>(f$fetch_int());
     switch (magic) {
-      case TL_RESULT_FALSE: {
+      case TL_MAYBE_FALSE: {
         // Оборачиваются в Optional: array<T>, int, double, string, bool
         // Не оборачиваются        : var, class_instance<T>, Optional<T>
         out = PhpType();
         break;
       }
-      case TL_RESULT_TRUE: {
+      case TL_MAYBE_TRUE: {
         fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
         elem_state.typed_fetch_to(get_fetch_target<T>(out));
         break;

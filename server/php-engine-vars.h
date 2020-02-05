@@ -100,10 +100,6 @@ extern long long memory_used_to_recreate_script;
 #define RPC_PHP_IMMEDIATE_STATS 0x3d27a21b
 #define RPC_PHP_FULL_STATS 0x1f8ae120
 
-#define TL_KPHP_START_LEASE 0x61344739
-#define TL_KPHP_LEASE_STATS 0x3013ebf4
-#define TL_KPHP_STOP_LEASE 0x183bf49d
-
 #define SPOLL_SEND_STATS 0x32d20000
 #define SPOLL_SEND_IMMEDIATE_STATS 1
 #define SPOLL_SEND_FULL_STATS 2
