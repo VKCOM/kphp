@@ -5,6 +5,7 @@
 #include "common/options.h"
 #include "common/precise-time.h"
 #include "common/tl/parse.h"
+#include "common/tl/store.h"
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-tcp-rpc-common.h"
@@ -112,7 +113,9 @@ static int is_staging;
 FLAG_OPTION_PARSER(OPT_ENGINE_CUSTOM, "staging", is_staging, "kphp sends this info to tasks if running as worker");
 
 static void rpc_send_ready(connection *c) {
-  int q[100], qn = 0;
+  static constexpr int QUERY_INT_BUF_LEN = 1000;
+  static int q[QUERY_INT_BUF_LEN];
+  int qn = 0;
   qn += 2;
   bool use_ready_v2 = (is_staging != 0);
   int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
@@ -128,7 +131,21 @@ static void rpc_send_ready(connection *c) {
     magic = TL_RPC_INVOKE_REQ;
   }
   if (use_ready_v2) {
-    q[qn++] = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
+    int fields_mask = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
+    switch (get_lease_mode(cur_lease_mode)) {
+      case LeaseWorkerMode::QUEUE_TYPES: {
+        fields_mask |= vk::tl::kphp::ready_v2_fields_mask::worker_mode;
+        q[qn++] = fields_mask;
+        int stored_size = vk::tl::store_to_buffer(reinterpret_cast<char *>(q + qn), (QUERY_INT_BUF_LEN - qn) * 4, cur_lease_mode.value());
+        assert(stored_size % 4 == 0);
+        qn += stored_size / 4;
+        break;
+      }
+      case LeaseWorkerMode::ALL_QUEUES: {
+        q[qn++] = fields_mask;
+        break;
+      }
+    }
   }
   q[qn++] = static_cast<int>(inet_sockaddr_address(&c->local_endpoint));
   q[qn++] = static_cast<int>(inet_sockaddr_port(&c->local_endpoint));

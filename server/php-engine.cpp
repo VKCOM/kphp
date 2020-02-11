@@ -44,6 +44,7 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "server/lease-config-parser.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
@@ -2375,7 +2376,7 @@ int main_args_handler(int i) {
       char *key = optarg, *value;
       char *eq = strchr(key, '=');
       if (eq == nullptr) {
-        kprintf ("-D option, can't find '='\n");
+        kprintf("-D option, can't find '='\n");
         return -1;
       }
       value = eq + 1;
@@ -2504,7 +2505,14 @@ int main_args_handler(int i) {
     }
     case 'k': {
       if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
-        kprintf ("error: fail to lock paged memory\n");
+        kprintf("error: fail to lock paged memory\n");
+      }
+      return 0;
+    }
+    case 'S': {
+      const char *lease_config = optarg;
+      if (!LeaseConfigParser::parse_lease_options_config(lease_config)) {
+        return -1;
       }
       return 0;
     }
@@ -2611,6 +2619,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("worker-memory-to-reload", required_argument, 2001, "worker script is reloaded, when <memory> queries processed");
   parse_option("use-madvise-dontneed", no_argument, 2002, "Use madvise MADV_DONTNEED for script memory above limit");
   parse_option("instance-cache-memory-limit", required_argument, 2003, "memory limit for instance_cache");
+  parse_option("tasks-config", required_argument, 'S', "get lease worker settings from config file: mode and actor");
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
   parse_engine_options_long(argc, argv, main_args_handler);

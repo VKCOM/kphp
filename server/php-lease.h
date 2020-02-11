@@ -1,8 +1,10 @@
 #pragma once
 
 #include "common/pid.h"
+#include "common/wrappers/optional.h"
 #include "tasks/lease-worker-settings.h"
 
+#include "server/lease-worker-mode.h"
 #include "server/php-worker.h"
 
 void lease_on_worker_finish(php_worker *worker);
