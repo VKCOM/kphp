@@ -1,6 +1,3 @@
-#ifndef PHP_CLASS_ASSUMPTIONS_H
-#define PHP_CLASS_ASSUMPTIONS_H
-
 #pragma once
 
 #include "common/smart_ptrs/intrusive_ptr.h"
@@ -75,5 +72,3 @@ vk::intrusive_ptr<Assumption> assumption_get_for_var(ClassPtr c, vk::string_view
 vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
 vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
 vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
-
-#endif //PHP_CLASS_ASSUMPTIONS_H
