@@ -1311,6 +1311,32 @@ static void reset_superglobals() {
   dl::leave_critical_section();
 }
 
+// Ссылка на RFC: https://tools.ietf.org/html/rfc2617#section-2
+// Пример хедера:
+//  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+static void parse_http_authorization_header(const string &header_value) {
+  array<string> header_parts = explode(' ', header_value);
+  if (header_parts.count() != 2) {
+    return;
+  }
+  const string &auth_scheme = header_parts[0];
+  const string &auth_credentials = header_parts[1];
+  if (auth_scheme != string("Basic")) {
+    return;
+  }
+  auto decoded_login_pass = f$base64_decode(auth_credentials, true);
+  if (!decoded_login_pass.has_value()) {
+    return;
+  }
+  array<string> auth_data = explode(':', decoded_login_pass.val());
+  if (auth_data.count() != 2) {
+    return;
+  }
+  v$_SERVER.set_value(string("PHP_AUTH_USER"), auth_data[0]);
+  v$_SERVER.set_value(string("PHP_AUTH_PW"), auth_data[1]);
+  v$_SERVER.set_value(string("AUTH_TYPE"), auth_scheme);
+}
+
 static void init_superglobals(const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
                               const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
                               const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
@@ -1391,6 +1417,8 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
         }
       } else if (!strcmp(header_name.c_str(), "host")) {
         v$_SERVER.set_value(string("SERVER_NAME", 11), header_value);
+      } else if (!strcmp(header_name.c_str(), "authorization")) {
+        parse_http_authorization_header(header_value);
       }
 
       if (!strcmp(header_name.c_str(), "content-type")) {
