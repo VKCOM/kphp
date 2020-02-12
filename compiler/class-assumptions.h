@@ -3,50 +3,90 @@
 
 #pragma once
 
+#include "common/smart_ptrs/intrusive_ptr.h"
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
-enum AssumType {
-  assum_unknown,
-  assum_not_instance,
-  assum_instance,
-  assum_instance_array,
+class Assumption : public vk::thread_safe_refcnt<Assumption> {
+public:
+  virtual ~Assumption() = default;
+
+  virtual std::string as_human_readable() const = 0;
+
+  template<class Derived>
+  const Derived* try_as() const {
+    return dynamic_cast<Derived*>(this);
+  }
+
+  template<class Derived>
+  Derived* try_as() {
+    return dynamic_cast<Derived*>(this);
+  }
 };
 
-class Assumption {
-  Assumption(AssumType type, ClassPtr klass) :
-    assum_type(type),
-    klass(klass) {}
+class AssumUnknown : public Assumption {
+  AssumUnknown() = default;
 
 public:
-  Assumption() = default;
 
-  AssumType assum_type = assum_unknown;
+  static vk::intrusive_ptr<Assumption> create() {
+    auto self = new AssumUnknown();
+    return vk::intrusive_ptr<Assumption>(self);
+  }
+
+  std::string as_human_readable() const override;
+};
+
+class AssumNotInstance : public Assumption {
+  AssumNotInstance() = default;
+
+public:
+
+  static vk::intrusive_ptr<Assumption> create() {
+    auto self = new AssumNotInstance();
+    return vk::intrusive_ptr<Assumption>(self);
+  }
+
+  std::string as_human_readable() const override;
+};
+
+class AssumInstance : public Assumption {
+  AssumInstance() = default;
+
+public:
   ClassPtr klass;
 
-  static Assumption not_instance() {
-    return {assum_not_instance, ClassPtr{}};
+  static vk::intrusive_ptr<Assumption> create(ClassPtr klass) {
+    auto self = new AssumInstance();
+    self->klass = klass;
+    return vk::intrusive_ptr<Assumption>(self);
   }
 
-  static Assumption unknown() {
-    return {assum_unknown, {}};
+  std::string as_human_readable() const override;
+};
+
+class AssumInstanceArray : public Assumption {
+  AssumInstanceArray() = default;
+
+public:
+  ClassPtr klass;
+
+  static vk::intrusive_ptr<Assumption> create(ClassPtr klass) {
+    auto self = new AssumInstanceArray();
+    self->klass = klass;
+    return vk::intrusive_ptr<Assumption>(self);
   }
 
-  static Assumption instance(ClassPtr klass) {
-    return {assum_instance, klass};
-  }
-
-  static Assumption array(ClassPtr klass) {
-    return {assum_instance_array, klass};
-  }
+  std::string as_human_readable() const override;
 };
 
 
-void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const Assumption &assumption);
-const Assumption *assumption_get_for_var(FunctionPtr f, vk::string_view var_name);
-const Assumption *assumption_get_for_var(ClassPtr c, vk::string_view var_name);
-Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
-Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
-Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
+void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption);
+vk::intrusive_ptr<Assumption> assumption_get_for_var(FunctionPtr f, vk::string_view var_name);
+vk::intrusive_ptr<Assumption> assumption_get_for_var(ClassPtr c, vk::string_view var_name);
+vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
+vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
+vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
 
 #endif //PHP_CLASS_ASSUMPTIONS_H

@@ -15,7 +15,7 @@ public:
 
   std::string get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
                                                      FunctionPtr function_context,
-                                                     std::map<int, Assumption> *template_type_id_to_ClassPtr = nullptr,
+                                                     std::map<int, vk::intrusive_ptr<Assumption>> *template_type_id_to_ClassPtr = nullptr,
                                                      FunctionPtr *template_of_invoke_method = nullptr) const;
 
   VertexPtr gen_constructor_call_pass_fields_as_args() const;

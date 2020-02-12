@@ -96,7 +96,7 @@ FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return
   virt_magic_func_ptr->file_id = file_id;
   virt_magic_func_ptr->update_location_in_body();
   virt_magic_func_ptr->assumptions_inited_return = 2;
-  virt_magic_func_ptr->assumption_for_return = Assumption::instance(ClassPtr{this});
+  virt_magic_func_ptr->assumption_for_return = AssumInstance::create(ClassPtr{this});
   virt_magic_func_ptr->is_inline = true;
   virt_magic_func_ptr->modifiers = FunctionModifiers::instance_public();
 

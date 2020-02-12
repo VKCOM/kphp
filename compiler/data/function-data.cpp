@@ -60,24 +60,17 @@ void FunctionData::update_location_in_body() {
   update_location(root);
 }
 
-std::string FunctionData::encode_template_arg_name(const Assumption &assumption, int id) {
-  switch (assumption.assum_type) {
-    case assum_not_instance:
-    case assum_unknown:
-      return "$" + std::to_string(id) + "not_instance";
-
-    case assum_instance_array:
-      return "$arr$" + replace_backslashes(assumption.klass->name);
-
-    case assum_instance:
-      return "$" + replace_backslashes(assumption.klass->name);
-      
-    default:
-      __builtin_unreachable();
+std::string FunctionData::encode_template_arg_name(const vk::intrusive_ptr<Assumption> &assumption, int id) {
+  if (auto as_instance = assumption->try_as<AssumInstance>()) {
+    return "$" + replace_backslashes(as_instance->klass->name);
   }
+  if (auto as_array = assumption->try_as<AssumInstanceArray>()) {
+    return "$arr$" + replace_backslashes(as_array->klass->name);
+  }
+  return "$" + std::to_string(id) + "not_instance";
 }
 
-FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
+FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, vk::intrusive_ptr<Assumption>> &template_type_id_to_ClassPtr,
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
   kphp_assert_msg(func->is_template, "function must be template");
@@ -100,7 +93,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     }
     param->template_type_id = -1;
 
-    const Assumption &assumption = id_classPtr_it->second;
+    vk::intrusive_ptr<Assumption> assumption = id_classPtr_it->second;
     new_function->assumptions_for_vars.emplace_back(param->var()->get_string(), assumption);
     new_function->assumptions_inited_args = 2;
   }

@@ -35,8 +35,7 @@ public:
     }
     assert (parts_size > 1);
 
-    const Assumption *a_ref = assumption_get_for_var(function, var->name);
-    Assumption assumption = a_ref ? *a_ref : Assumption::unknown();
+    vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
 
     for (int i = 0; i < parts_size; i++) {
       // name$v1, name$v2 и т.п., но name (0-я копия) как есть
@@ -44,8 +43,8 @@ public:
       VarPtr new_var = G->create_var(new_name, var->type());
       new_var->holder_func = var->holder_func;
 
-      if (i && assumption.assum_type != assum_unknown) {
-        assumption_add_for_var(function, new_name, assumption); // нельзя *a_ref, т.к. vector меняется
+      if (i && a) {
+        assumption_add_for_var(function, new_name, a);
       }
 
       for (auto v : parts[i]) {

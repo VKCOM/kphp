@@ -26,9 +26,9 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
   if (auto function = v.try_as<op_function>()) {
     return function->func_id->class_id.try_as<LambdaClassData>();
   } else if (vk::any_of_equal(v->type(), op_func_call, op_var)) {
-    Assumption a = infer_class_of_expr(stage::get_function(), v);
-    if (a.assum_type == assum_instance) {
-      return a.klass.try_as<LambdaClassData>();
+    auto as_instance = infer_class_of_expr(stage::get_function(), v)->try_as<AssumInstance>();
+    if (as_instance) {
+      return as_instance->klass.try_as<LambdaClassData>();
     }
   }
 
@@ -37,7 +37,7 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
 
 void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
   members.for_each([=](const ClassMemberInstanceField &field) {
-    const Assumption *assumption = nullptr;
+    vk::intrusive_ptr<Assumption> assumption;
     auto local_name = field.local_name();
     if (local_name == LambdaClassData::get_parent_this_name()) {
       if (parent_function->is_lambda()) {
@@ -47,12 +47,12 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
       }
     }
     assumptions_for_vars.emplace_back(std::string{field.local_name()},
-                                      assumption ? *assumption : calc_assumption_for_var(parent_function, local_name));
+                                      assumption ?: calc_assumption_for_var(parent_function, local_name));
   });
 }
 
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_func_call> extern_function_call,
-                                         FunctionPtr function_context, Assumption &assumption) {
+                                         FunctionPtr function_context, vk::intrusive_ptr<Assumption> &assumption) {
   if (auto or_false_rule = type_rule.try_as<op_type_expr_or_false>()) {
     // TODO:
     return infer_type_of_callback_arg(or_false_rule->expr(), extern_function_call, function_context, assumption);
@@ -60,7 +60,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     PrimitiveType result_pt = tp_Unknown;
     for (auto v : lca_rule->args()) {
       PrimitiveType pt = infer_type_of_callback_arg(v, extern_function_call, function_context, assumption);
-      if (assumption.klass) {
+      if (assumption->try_as<AssumInstance>() || assumption->try_as<AssumInstanceArray>()) {
         return pt;
       }
 
@@ -81,8 +81,8 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     return tp_Unknown;
   } else if (auto index_rule = type_rule.try_as<op_index>()) {
     PrimitiveType pt = infer_type_of_callback_arg(index_rule->array(), extern_function_call, function_context, assumption);
-    if (assumption.assum_type == assum_instance_array) {
-      assumption = Assumption::instance(assumption.klass);
+    if (auto as_array = assumption->try_as<AssumInstanceArray>()) {
+      assumption = AssumInstance::create(as_array->klass);
     }
     return pt;
   } else if (auto arg_ref = type_rule.try_as<op_type_expr_arg_ref>()) {
@@ -106,9 +106,9 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
 }
 
 std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
-                                                              FunctionPtr function_context,
-                                                              std::map<int, Assumption> *template_type_id_to_ClassPtr /*= nullptr*/,
-                                                              FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
+                                                                    FunctionPtr function_context,
+                                                                    std::map<int, vk::intrusive_ptr<Assumption>> *template_type_id_to_ClassPtr /*= nullptr*/,
+                                                                    FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
   std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$" + NAME_OF_INVOKE_METHOD;
 
   VertexRange call_params = extern_function_call->args();
@@ -134,7 +134,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   for (int i = 0; i < callback_params.size(); ++i) {
     auto callback_param = callback_params[i];
 
-    Assumption assumption;
+    vk::intrusive_ptr<Assumption> assumption;
     auto lambda_param = template_invoke_params[i + 1].as<op_func_param>();
     if (auto type_rule = callback_param->type_rule) {
       kphp_assert(type_rule->type() == op_common_type_rule);
@@ -148,20 +148,12 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
     }
 
     auto &type_id = lambda_param->template_type_id;
-    switch (assumption.assum_type) {
-      case assum_unknown:
-      case assum_not_instance: {
-        kphp_assert(lambda_param->type_help != tp_Unknown);
-        type_id = -1;
-        break;
-      }
-
-      case assum_instance_array:
-      case assum_instance: {
-        if (type_id > -1) {
-          template_type_id_to_ClassPtr->emplace(type_id, assumption);
-        }
-        break;
+    if (!assumption || assumption->try_as<AssumUnknown>() || assumption->try_as<AssumNotInstance>()) {
+      kphp_assert(lambda_param->type_help != tp_Unknown);
+      type_id = -1;
+    } else if (assumption->try_as<AssumInstance>() || assumption->try_as<AssumInstanceArray>()) {
+      if (type_id > -1) {
+        template_type_id_to_ClassPtr->emplace(type_id, assumption);
       }
     }
   }
