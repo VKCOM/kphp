@@ -187,7 +187,7 @@ void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const v
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
 
-  if (a && !a->try_as<AssumUnknown>() && !a->try_as<AssumNotInstance>()) {
+  if (a && !a->try_as<AssumNotInstance>()) {
     assumption_add_for_var(f, var_name, a);
   }
 }
@@ -407,7 +407,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         }
         if (auto fun = call_vertex->func_id) {
           auto return_a = calc_assumption_for_return(fun, call_vertex);
-          if (return_a && !return_a->try_as<AssumUnknown>()) {
+          if (return_a) {
             assumption_add_for_return(f, return_a);
           }
         }
@@ -500,7 +500,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
         }
       }
     }
-    return AssumUnknown::create();
+    return {};
   }
 
   if (f->is_constructor()) {
@@ -537,9 +537,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::stri
     __sync_synchronize();
   }
 
-  // todo сразу get возвращать
-  const auto &a = assumption_get_for_var(c, var_name);
-  return a ?: AssumUnknown::create();
+  return assumption_get_for_var(c, var_name);
 }
 
 
@@ -564,7 +562,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
   const FunctionPtr ptr = G->get_function(fname);
   if (!ptr) {
     kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
-    return AssumUnknown::create();
+    return {};
   }
 
   // для built-in функций по типу array_pop/array_filter/etc на массиве инстансов
@@ -606,7 +604,7 @@ vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
                                                size_t depth) {
   kphp_assert(array);
   if (array->size() == 0) {
-    return AssumUnknown::create();
+    return {};
   }
 
   ClassPtr klass;
@@ -642,7 +640,7 @@ vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
   do {
     res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val);
     lhs_class = lhs_class->parent_class;
-  } while ((res_assum->try_as<AssumUnknown>() || res_assum->try_as<AssumNotInstance>()) && lhs_class);
+  } while ((!res_assum || res_assum->try_as<AssumNotInstance>()) && lhs_class);
 
   return res_assum;
 }
@@ -695,8 +693,4 @@ std::string AssumInstance::as_human_readable() const {
 
 std::string AssumNotInstance::as_human_readable() const {
   return "primitive";
-}
-
-std::string AssumUnknown::as_human_readable() const {
-  return "unknown";
 }

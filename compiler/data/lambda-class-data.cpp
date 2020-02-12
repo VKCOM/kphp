@@ -148,7 +148,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
     }
 
     auto &type_id = lambda_param->template_type_id;
-    if (!assumption || assumption->try_as<AssumUnknown>() || assumption->try_as<AssumNotInstance>()) {
+    if (!assumption || assumption->try_as<AssumNotInstance>()) {
       kphp_assert(lambda_param->type_help != tp_Unknown);
       type_id = -1;
     } else if (assumption->try_as<AssumInstance>() || assumption->try_as<AssumInstanceArray>()) {

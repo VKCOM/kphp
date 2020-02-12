@@ -25,19 +25,6 @@ public:
   }
 };
 
-class AssumUnknown : public Assumption {
-  AssumUnknown() = default;
-
-public:
-
-  static vk::intrusive_ptr<Assumption> create() {
-    auto self = new AssumUnknown();
-    return vk::intrusive_ptr<Assumption>(self);
-  }
-
-  std::string as_human_readable() const override;
-};
-
 class AssumNotInstance : public Assumption {
   AssumNotInstance() = default;
 
