@@ -1855,6 +1855,7 @@ void GenTree::parse_declare_at_top_of_file() {
   }
 
   expect(tok_clpar, ")");
+  expect(tok_semicolon, ";");
 }
 
 VertexPtr GenTree::get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
