@@ -31,11 +31,12 @@ def blue(text):
 
 
 class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, out_regexps):
+    def __init__(self, file_path, test_tmp_dir, tags, out_regexps = None, run_options = []):
         self.test_tmp_dir = test_tmp_dir
         self.file_path = file_path
         self.tags = tags
         self.out_regexps = out_regexps
+        self.run_options = run_options
 
     def is_ok(self):
         return "ok" in self.tags
@@ -299,6 +300,7 @@ class TestRunner:
         cmd = [self._kphp_runtime_bin, "-o", "--disable-sql"]
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
+        cmd += self._test_file.run_options
         kphp_server_proc = subprocess.Popen(cmd,
                                             cwd=self._kphp_runtime_tmp_dir,
                                             env=env,
@@ -349,12 +351,24 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
         if not test_acceptable:
             return None
 
-        return TestFile(file_path, test_tmp_dir, ["ok"], None)
+        return TestFile(file_path, test_tmp_dir, ["ok"])
 
     with open(file_path, 'rb') as f:
         first_line = f.readline().decode('utf-8')
         if not first_line.startswith("@"):
             return None
+
+        run_options = []
+        run_options_keyword = 'run_options:"'
+        if run_options_keyword in first_line:
+            first_quote = first_line.find(run_options_keyword)
+            second_quote = first_line.find('"', first_quote + len(run_options_keyword))
+
+            run_options = first_line[first_quote + len(run_options_keyword):second_quote]
+            run_options = run_options.replace("$PHP_SOURCE_DIR", os.path.abspath(os.path.dirname(file_path)))
+            run_options = run_options.split()
+
+            first_line = first_line[:first_quote]
 
         tags = first_line[1:].split()
         test_acceptable = True
@@ -374,7 +388,7 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
             else:
                 break
 
-        return TestFile(file_path, test_tmp_dir, tags, out_regexps)
+        return TestFile(file_path, test_tmp_dir, tags, out_regexps, run_options)
 
 
 def test_files_from_dir(tests_dir):
