@@ -85,7 +85,8 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
   stage::set_line(root->location.line);
   if (auto set_op = root.try_as<op_set>()) {
-    if (set_op->lhs()->type() == op_list_ce) {
+    // list(...) = ... или short syntax (PHP 7) [...] = ...
+    if (vk::any_of_equal(set_op->lhs()->type(), op_list_ce, op_array)) {
       return VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
     }
   }
@@ -149,6 +150,14 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
     if (current_function->is_constructor() && !return_vertex->has_expr()) {
       root = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(return_vertex->location));
       set_location(root, return_vertex->location);
+    }
+  }
+
+  // массив "с дырками" [$a, ,$c] может использоваться только как left side list-конструкции [...] = ...
+  // (она заменяется выше на op_list, и поэтому никакой op_array больше не должен содержать дырок)
+  if (auto as_array = root.try_as<op_array>()) {
+    for (auto array_item : *as_array) {
+      kphp_error(array_item->type() != op_lvalue_null, fmt_format("Can not use array with empty elements here"));
     }
   }
 

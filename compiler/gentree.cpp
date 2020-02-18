@@ -164,6 +164,10 @@ bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
     }
   }
 
+  if (EmptyOp == op_lvalue_null && !res->empty() && res->back()->type() == op_lvalue_null) {
+    res->pop_back();
+  }
+
   return true;
 }
 
@@ -219,7 +223,7 @@ VertexPtr GenTree::get_short_array() {
   next_cur();
 
   vector<VertexPtr> next;
-  bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
+  bool ok_next = gen_list<op_lvalue_null>(&next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_next, "get short array failed"));
   CE (expect(tok_clbrk, "']'"));
 
