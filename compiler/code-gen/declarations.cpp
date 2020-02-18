@@ -1,7 +1,7 @@
 #include "compiler/code-gen/declarations.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/files/tl2cpp.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
@@ -214,7 +214,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
   if (auto type_var = dynamic_cast<vk::tl::type_var *>(type_tree)) {
     std::string type_var_name = cur_tl_constructor->get_var_num_arg(type_var->var_num)->name;
     if (!deduced_params.count(type_var_name)) {
-      ClassPtr tl_constructor_php_class = tl_gen::get_php_class_of_tl_constructor_specialization(cur_tl_constructor, specialization_suffix);
+      ClassPtr tl_constructor_php_class = tl2cpp::get_php_class_of_tl_constructor_specialization(cur_tl_constructor, specialization_suffix);
       const TypeData *deduced_type = tl_constructor_php_class->members.get_instance_field(cur_tl_arg->name)->get_inferred_type();
       deduced_params[type_var_name] = DeducingInfo(type_out(deduced_type), recursion_stack);
       std::unordered_set<ClassPtr> classes;
@@ -235,7 +235,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
 
         InnerParamTypeAccess inner_access;
         bool skip_maybe = false;
-        if (tl_gen::is_tl_type_a_php_array(parent_tl_type)) {
+        if (tl2cpp::is_tl_type_a_php_array(parent_tl_type)) {
           inner_access.drop_class_instance = false;
           inner_access.inner_type_name = "ValueType";
         } else if (parent_tl_type->name == "Maybe") {
@@ -243,7 +243,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           kphp_assert(child_type_expr);
           vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
           kphp_assert(child_tl_type);
-          if (tl_gen::is_tl_type_wrapped_to_Optional(child_tl_type)) {
+          if (tl2cpp::is_tl_type_wrapped_to_Optional(child_tl_type)) {
             inner_access.drop_class_instance = false;
             inner_access.inner_type_name = "InnerType";
           } else {
@@ -252,7 +252,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
         } else {
           inner_access.drop_class_instance = true;
           inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name; // корректность такого проверяется в tl2cpp.cpp::check_constructor()
-          auto php_classes = tl_gen::get_all_php_classes_of_tl_type(parent_tl_type);
+          auto php_classes = tl2cpp::get_all_php_classes_of_tl_type(parent_tl_type);
           std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass){ dependencies.add_class_include(klass); });
         }
         if (!skip_maybe) {
@@ -288,10 +288,10 @@ void TlDependentTypesUsings::compile_dependencies(CodeGenerator &W) {
 }
 
 std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl_usings() const {
-  if (tl_gen::is_php_class_a_tl_polymorphic_type(interface)) {
-    vk::tl::type *cur_tl_type = tl_gen::get_tl_type_of_php_class(interface);
+  if (tl2cpp::is_php_class_a_tl_polymorphic_type(interface)) {
+    vk::tl::type *cur_tl_type = tl2cpp::get_tl_type_of_php_class(interface);
 
-    bool needs_tl_usings = tl_gen::is_type_dependent(cur_tl_type, G->get_tl_classes().get_scheme().get());
+    bool needs_tl_usings = tl2cpp::is_type_dependent(cur_tl_type, G->get_tl_classes().get_scheme().get());
     if (needs_tl_usings) {
       return std::make_unique<TlDependentTypesUsings>(cur_tl_type, interface->name);
     }
@@ -353,12 +353,12 @@ void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W)
 }
 
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
-  if (tl_gen::is_php_class_a_tl_constructor(klass) && !tl_gen::is_php_class_a_tl_array_item(klass)) {
+  if (tl2cpp::is_php_class_a_tl_constructor(klass) && !tl2cpp::is_php_class_a_tl_array_item(klass)) {
     const auto &scheme = G->get_tl_classes().get_scheme();
-    vk::tl::combinator *cur_tl_constructor = tl_gen::get_tl_constructor_of_php_class(klass);
+    vk::tl::combinator *cur_tl_constructor = tl2cpp::get_tl_constructor_of_php_class(klass);
     vk::tl::type *cur_tl_type = scheme->get_type_by_magic(cur_tl_constructor->type_id);
 
-    bool needs_tl_usings = tl_gen::is_type_dependent(cur_tl_constructor, scheme.get()) && !cur_tl_type->is_polymorphic();
+    bool needs_tl_usings = tl2cpp::is_type_dependent(cur_tl_constructor, scheme.get()) && !cur_tl_type->is_polymorphic();
     if (needs_tl_usings) {
       return std::make_unique<TlDependentTypesUsings>(cur_tl_type, klass->name);
     }
@@ -428,10 +428,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   }
 
   // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
-  if (tl_gen::is_php_class_a_tl_function(klass)) {
+  if (tl2cpp::is_php_class_a_tl_function(klass)) {
     W << NL;
     W << "std::unique_ptr<tl_func_base> store() const final " << BEGIN;
-    std::string f_tl_cpp_struct_name = tl_gen::cpp_tl_struct_name("f_", tl_gen::get_tl_function_name_of_php_class(klass));
+    std::string f_tl_cpp_struct_name = tl2cpp::cpp_tl_struct_name("f_", tl2cpp::get_tl_function_name_of_php_class(klass));
     W << "return " << f_tl_cpp_struct_name << "::typed_store(this);" << NL;
     W << END << NL;
   }
@@ -531,8 +531,8 @@ IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) con
 
   W << includes;
 
-  if (tl_gen::is_php_class_a_tl_function(klass)) {
-    std::string tl_src_name = tl_gen::get_tl_function_name_of_php_class(klass);  // 'net.pid', 'rpcPing'
+  if (tl2cpp::is_php_class_a_tl_function(klass)) {
+    std::string tl_src_name = tl2cpp::get_tl_function_name_of_php_class(klass);  // 'net.pid', 'rpcPing'
     unsigned long pos = tl_src_name.find('.');
     W << Include("tl/" + (pos == std::string::npos ? "common" : tl_src_name.substr(0, pos)) + ".h");
   }

@@ -9,7 +9,7 @@
 #include "compiler/code-gen/files/global_vars_memory_stats.h"
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/lib-header.h"
-#include "compiler/code-gen/files/tl2cpp.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 #include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/files/vars-cpp.h"
 #include "compiler/code-gen/files/vars-reset.h"
@@ -170,7 +170,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   }
 
   //TODO: use Async for that
-  tl_gen::write_tl_query_handlers(W);
+  tl2cpp::write_tl_query_handlers(W);
   write_lib_version(W);
 }
 
