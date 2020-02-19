@@ -469,6 +469,7 @@ inline int f$memory_get_usage(bool real_usage = false);
 
 inline int f$memory_get_total_usage();
 
+inline void f$memory_perform_defragmentation();
 
 template<class T>
 inline int f$get_reference_counter(const array<T> &v);
@@ -1337,6 +1338,10 @@ int f$memory_get_usage(bool real_usage __attribute__((unused))) {
 
 int f$memory_get_total_usage() {
   return (int)dl::get_script_memory_stats().real_memory_used;
+}
+
+void f$memory_perform_defragmentation() {
+  dl::perform_script_allocator_defragmentation();
 }
 
 

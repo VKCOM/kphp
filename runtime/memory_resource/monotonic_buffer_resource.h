@@ -11,11 +11,13 @@ namespace memory_resource {
 
 class monotonic_buffer {
 protected:
-  void init(void *buffer, size_type buffer_size);
+  void init(void *buffer, size_type buffer_size) noexcept;
 
+  size_type size() const noexcept { return static_cast<size_type>(memory_end_ - memory_current_); }
+  void *current() const noexcept { return memory_current_; }
   const MemoryStats &get_memory_stats() const noexcept { return stats_; }
 
-  void register_allocation(void *mem, size_type size) {
+  void register_allocation(void *mem, size_type size) noexcept {
     if (mem) {
       stats_.memory_used += size;
       stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
@@ -24,17 +26,17 @@ protected:
     }
   }
 
-  void register_deallocation(size_type size) {
+  void register_deallocation(size_type size) noexcept {
     stats_.memory_used -= size;
     stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
   }
 
-  bool check_memory_piece(void *mem, size_type size) const {
+  bool check_memory_piece(void *mem, size_type size) const noexcept {
     return memory_begin_ <= static_cast<char *>(mem) &&
            static_cast<char *>(mem) + size <= memory_current_;
   }
 
-  void critical_dump(void *mem, size_type size) const;
+  void critical_dump(void *mem, size_type size) const noexcept;
 
   MemoryStats stats_;
 
@@ -49,23 +51,25 @@ class monotonic_buffer_resource : protected monotonic_buffer {
 public:
   using monotonic_buffer::init;
   using monotonic_buffer::get_memory_stats;
+  using monotonic_buffer::size;
+  using monotonic_buffer::current;
 
-  void *allocate(size_type size) {
+  void *allocate(size_type size) noexcept {
     void *mem = get_from_pool(size);
     memory_debug("allocate %d, allocated address from pool %p\n", size, mem);
     register_allocation(mem, size);
     return mem;
   }
 
-  void *allocate0(size_type size) {
+  void *allocate0(size_type size) noexcept {
     return memset(allocate(size), 0x00, size);
   }
 
-  void *reallocate(void *mem, size_type new_size, size_type old_size) {
+  void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
     return details::universal_reallocate(*this, mem, new_size, old_size);
   }
 
-  void *try_expand(void *mem, size_type new_size, size_type old_size) {
+  void *try_expand(void *mem, size_type new_size, size_type old_size) noexcept {
     if (static_cast<char *>(mem) + old_size == memory_current_) {
       const auto additional_size = old_size - new_size;
       if (memory_end_ - memory_current_ >= additional_size) {
@@ -77,15 +81,14 @@ public:
     return nullptr;
   }
 
-  void deallocate(void *mem, size_type size) {
+  void deallocate(void *mem, size_type size) noexcept {
     memory_debug("deallocate %d at %p\n", size, mem);
     if (put_memory_back(mem, size)) {
       register_deallocation(size);
     }
   }
 
-protected:
-  bool put_memory_back(void *mem, size_type size) {
+  bool put_memory_back(void *mem, size_type size) noexcept {
     if (unlikely(!check_memory_piece(mem, size))) {
       critical_dump(mem, size);
     }
@@ -97,10 +100,12 @@ protected:
     return expandable;
   }
 
-  void *get_from_pool(size_type size) {
+  void *get_from_pool(size_type size, bool safe = false) noexcept {
     if (unlikely(memory_end_ - memory_current_ < size)) {
-      php_warning("Can't allocate %u bytes", size);
-      raise(SIGUSR2);
+      if (unlikely(!safe)) {
+        php_warning("Can't allocate %u bytes", size);
+        raise(SIGUSR2);
+      }
       return nullptr;
     }
 

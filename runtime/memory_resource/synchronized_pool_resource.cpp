@@ -21,18 +21,18 @@ namespace memory_resource {
 
 class synchronized_pool_resource_impl : monotonic_buffer {
 public:
-  synchronized_pool_resource_impl(char *buffer, size_type buffer_size) {
+  synchronized_pool_resource_impl(char *buffer, size_type buffer_size) noexcept {
     init(buffer, buffer_size);
   }
 
-  void *allocate(size_type size, size_type reserved_before) {
+  void *allocate(size_type size, size_type reserved_before) noexcept {
     void *mem = nullptr;
     const auto aligned_size = details::align_for_chunk(size);
 
     if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
       const auto chunk_id = details::get_chunk_id(aligned_size);
       mem = free_chunk_list_[chunk_id].get_mem();
-    } else if (details::memory_chunk_node *mem_chunk = free_chunk_tree_->extract(aligned_size)) {
+    } else if (details::memory_chunk_tree::tree_node *mem_chunk = free_chunk_tree_->extract(aligned_size)) {
       const size_type chunk_size = details::memory_chunk_tree::get_chunk_size(mem_chunk);
       php_assert(chunk_size >= aligned_size);
       mem = mem_chunk;
@@ -51,14 +51,14 @@ public:
     return mem;
   }
 
-  void deallocate(void *mem, size_type size) {
+  void deallocate(void *mem, size_type size) noexcept {
     const auto aligned_size = details::align_for_chunk(size);
     put_memory_back(mem, aligned_size);
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     register_deallocation(aligned_size);
   }
 
-  size_type reserve(size_type size) {
+  size_type reserve(size_type size) noexcept {
     const size_type aligned_size = details::align_for_chunk(size);
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     if (memory_end_ - memory_current_ < reserved_ + aligned_size) {
@@ -69,25 +69,25 @@ public:
     return aligned_size;
   }
 
-  void rollback_reserve(size_type reserved_before) {
+  void rollback_reserve(size_type reserved_before) noexcept {
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     php_assert(reserved_ >= reserved_before);
     reserved_ -= reserved_before;
   }
 
-  bool is_reset_required() {
+  bool is_reset_required() noexcept {
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     return reset_required_;
   }
 
-  MemoryStats get_memory_stats() {
+  MemoryStats get_memory_stats() noexcept {
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     stats_.reserved = reserved_;
     return stats_;
   }
 
 private:
-  void *get_from_pool(size_type size, size_type reserved_before) {
+  void *get_from_pool(size_type size, size_type reserved_before) noexcept {
     std::lock_guard<inter_process_mutex> lock{memory_mutex_};
     php_assert(reserved_ >= reserved_before);
     reserved_ -= reserved_before;
@@ -100,7 +100,7 @@ private:
     return mem;
   }
 
-  void put_memory_back(void *mem, size_type size) {
+  void put_memory_back(void *mem, size_type size) noexcept {
     {
       std::lock_guard<inter_process_mutex> lock{memory_mutex_};
       if (unlikely(!check_memory_piece(mem, size))) {
@@ -131,7 +131,7 @@ private:
   vk::lock_accessible<details::memory_chunk_tree, inter_process_mutex> free_chunk_tree_;
 };
 
-void synchronized_pool_resource::init(size_type pool_size) {
+void synchronized_pool_resource::init(size_type pool_size) noexcept {
   php_assert(!impl_);
   php_assert(!shared_memory_);
   php_assert(!pool_size_);
@@ -141,7 +141,7 @@ void synchronized_pool_resource::init(size_type pool_size) {
   inplace_init();
 }
 
-void synchronized_pool_resource::inplace_init() {
+void synchronized_pool_resource::inplace_init() noexcept {
   size_t left_space = pool_size_;
   void *impl_place = shared_memory_;
   if (!vk::align(alignof(synchronized_pool_resource_impl), sizeof(synchronized_pool_resource_impl), impl_place, left_space)) {
@@ -158,7 +158,7 @@ void synchronized_pool_resource::inplace_init() {
   impl_ = new(impl_place) synchronized_pool_resource_impl{buffer, static_cast<size_type>(left_space)};
 }
 
-void synchronized_pool_resource::free() {
+void synchronized_pool_resource::free() noexcept {
   php_assert(impl_);
   php_assert(shared_memory_);
   php_assert(pool_size_);
@@ -169,7 +169,7 @@ void synchronized_pool_resource::free() {
   pool_size_ = 0;
 }
 
-void synchronized_pool_resource::hard_reset() {
+void synchronized_pool_resource::hard_reset() noexcept {
   php_assert(impl_);
   php_assert(shared_memory_);
   php_assert(pool_size_);
@@ -177,7 +177,7 @@ void synchronized_pool_resource::hard_reset() {
   inplace_init();
 }
 
-void *synchronized_pool_resource::allocate(size_type size) {
+void *synchronized_pool_resource::allocate(size_type size) noexcept {
   php_assert(impl_);
   php_assert(reserved_ >= size);
   php_assert(!allocations_forbidden_);
@@ -187,7 +187,7 @@ void *synchronized_pool_resource::allocate(size_type size) {
   return result;
 }
 
-void *synchronized_pool_resource::allocate0(size_type size) {
+void *synchronized_pool_resource::allocate0(size_type size) noexcept {
   auto mem = allocate(size);
   if (likely(mem != nullptr)) {
     memset(mem, 0x00, size);
@@ -195,18 +195,18 @@ void *synchronized_pool_resource::allocate0(size_type size) {
   return mem;
 }
 
-void synchronized_pool_resource::deallocate(void *mem, size_type size) {
+void synchronized_pool_resource::deallocate(void *mem, size_type size) noexcept {
   php_assert(impl_);
   dl::CriticalSectionGuard critical_section;
   impl_->deallocate(mem, size);
 }
 
-void *synchronized_pool_resource::reallocate(void *, size_type, size_type) {
+void *synchronized_pool_resource::reallocate(void *, size_type, size_type) noexcept {
   php_critical_error("synchronized_pool_resource::reallocate is not supported");
   return nullptr;
 }
 
-bool synchronized_pool_resource::reserve(size_type size) {
+bool synchronized_pool_resource::reserve(size_type size) noexcept {
   php_assert(impl_);
   php_assert(!reserved_);
   php_assert(!allocations_forbidden_);
@@ -217,7 +217,7 @@ bool synchronized_pool_resource::reserve(size_type size) {
   return false;
 }
 
-void synchronized_pool_resource::rollback_reserve() {
+void synchronized_pool_resource::rollback_reserve() noexcept {
   php_assert(impl_);
   php_assert(reserved_);
   dl::CriticalSectionGuard critical_section;
@@ -225,23 +225,23 @@ void synchronized_pool_resource::rollback_reserve() {
   reserved_ = 0;
 }
 
-void synchronized_pool_resource::forbid_allocations() {
+void synchronized_pool_resource::forbid_allocations() noexcept {
   php_assert(!allocations_forbidden_);
   allocations_forbidden_ = true;
 }
 
-void synchronized_pool_resource::allow_allocations() {
+void synchronized_pool_resource::allow_allocations() noexcept {
   php_assert(allocations_forbidden_);
   allocations_forbidden_ = false;
 }
 
-bool synchronized_pool_resource::is_reset_required() {
+bool synchronized_pool_resource::is_reset_required() noexcept {
   php_assert(impl_);
   dl::CriticalSectionGuard critical_section;
   return impl_->is_reset_required();
 }
 
-MemoryStats synchronized_pool_resource::get_memory_stats() {
+MemoryStats synchronized_pool_resource::get_memory_stats() noexcept {
   php_assert(impl_);
   dl::CriticalSectionGuard critical_section;
   return impl_->get_memory_stats();

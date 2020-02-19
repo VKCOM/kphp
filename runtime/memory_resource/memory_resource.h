@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
-// #define DEBUG_MEMORY;
+// #define DEBUG_MEMORY
 
 inline void memory_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 

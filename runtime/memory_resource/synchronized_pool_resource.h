@@ -10,26 +10,26 @@ class synchronized_pool_resource_impl;
 
 class synchronized_pool_resource : vk::not_copyable {
 public:
-  void init(size_type pool_size);
-  void free();
-  void hard_reset();
+  void init(size_type pool_size) noexcept;
+  void free() noexcept;
+  void hard_reset() noexcept;
 
-  void *allocate(size_type size);
-  void *allocate0(size_type size);
-  void deallocate(void *mem, size_type size);
-  void *reallocate(void *mem, size_type new_size, size_type old_size);
+  void *allocate(size_type size) noexcept;
+  void *allocate0(size_type size) noexcept;
+  void deallocate(void *mem, size_type size) noexcept;
+  void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept;
 
-  bool reserve(size_type size);
-  void rollback_reserve();
+  bool reserve(size_type size) noexcept;
+  void rollback_reserve() noexcept;
 
-  void forbid_allocations();
-  void allow_allocations();
+  void forbid_allocations() noexcept;
+  void allow_allocations() noexcept;
 
-  bool is_reset_required();
-  MemoryStats get_memory_stats();
+  bool is_reset_required() noexcept;
+  MemoryStats get_memory_stats() noexcept;
 
 private:
-  void inplace_init();
+  void inplace_init() noexcept;
 
   synchronized_pool_resource_impl *impl_{nullptr};
   void *shared_memory_{nullptr};

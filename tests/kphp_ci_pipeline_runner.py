@@ -134,8 +134,8 @@ def make_relpath(file_dir, file_path):
 
 def get_modes():
     return {
-        "asan": ("asan", "g=1 asan=1 php tl2php"),
-        "normal": ("normal", "php tl2php")
+        "asan": ("asan", "g=1 asan=1 php tl2php kphp-unittests"),
+        "normal": ("normal", "php tl2php kphp-unittests")
     }
 
 

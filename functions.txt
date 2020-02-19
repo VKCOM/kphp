@@ -147,6 +147,7 @@ function memory_get_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_total_usage() ::: int;
 function memory_get_static_usage() ::: int;
+function memory_perform_defragmentation() ::: void;
 
 function estimate_memory_usage($value ::: Any) ::: int;
 // to enable this function, set KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=1

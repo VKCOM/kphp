@@ -2,7 +2,7 @@
 
 namespace memory_resource {
 
-void monotonic_buffer::init(void *buffer, size_type buffer_size) {
+void monotonic_buffer::init(void *buffer, size_type buffer_size) noexcept {
   memory_begin_ = static_cast<char *>(buffer);
   memory_current_ = memory_begin_;
   memory_end_ = memory_begin_ + buffer_size;
@@ -11,7 +11,7 @@ void monotonic_buffer::init(void *buffer, size_type buffer_size) {
   stats_.memory_limit = buffer_size;
 }
 
-void monotonic_buffer::critical_dump(void *mem, size_type size) const {
+void monotonic_buffer::critical_dump(void *mem, size_type size) const noexcept {
   php_critical_error(
     "Found unexpected memory piece:\n"
     "ptr:                  %p\n"

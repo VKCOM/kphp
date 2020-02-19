@@ -18,28 +18,28 @@ long long query_num = 0;
 volatile bool script_runned = false;
 volatile bool replace_malloc_with_script_allocator = false;
 
-memory_resource::Dealer &get_memory_dealer() {
+memory_resource::Dealer &get_memory_dealer() noexcept {
   static memory_resource::Dealer dealer;
   return dealer;
 }
 
-void set_script_allocator_replacement(memory_resource::synchronized_pool_resource *replacer) {
+void set_script_allocator_replacement(memory_resource::synchronized_pool_resource *replacer) noexcept {
   get_memory_dealer().set_script_resource_replacer(replacer);
 }
 
-void drop_script_allocator_replacement() {
+void drop_script_allocator_replacement() noexcept {
   get_memory_dealer().drop_replacer();
 }
 
-const memory_resource::MemoryStats &get_script_memory_stats() {
+const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
   return get_memory_dealer().script_default_resource().get_memory_stats();
 }
 
-size_type get_heap_memory_used() {
+size_type get_heap_memory_used() noexcept {
   return get_memory_dealer().heap_resource().memory_used();
 }
 
-void global_init_script_allocator() {
+void global_init_script_allocator() noexcept {
   php_assert(get_memory_dealer().heap_script_resource_replacer());
   php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
   php_assert(!replace_malloc_with_script_allocator);
@@ -51,7 +51,7 @@ void global_init_script_allocator() {
   query_num++;
 }
 
-void init_script_allocator(void *buffer, size_type buffer_size) {
+void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
   php_assert(!get_memory_dealer().heap_script_resource_replacer());
   php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
 
@@ -62,7 +62,7 @@ void init_script_allocator(void *buffer, size_type buffer_size) {
   query_num++;
 }
 
-void free_script_allocator() {
+void free_script_allocator() noexcept {
   php_assert(!get_memory_dealer().heap_script_resource_replacer());
   php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
 
@@ -70,7 +70,7 @@ void free_script_allocator() {
   script_runned = false;
 }
 
-void *allocate(size_type size) {
+void *allocate(size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
   if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
@@ -87,7 +87,7 @@ void *allocate(size_type size) {
   return get_memory_dealer().script_default_resource().allocate(size);
 }
 
-void *allocate0(size_type size) {
+void *allocate0(size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
   if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
@@ -104,7 +104,7 @@ void *allocate0(size_type size) {
   return get_memory_dealer().script_default_resource().allocate0(size);
 }
 
-void *reallocate(void *mem, size_type new_size, size_type old_size) {
+void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   php_assert (new_size > old_size);
   CriticalSectionGuard lock;
   if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
@@ -122,7 +122,7 @@ void *reallocate(void *mem, size_type new_size, size_type old_size) {
   return get_memory_dealer().script_default_resource().reallocate(mem, new_size, old_size);
 }
 
-void deallocate(void *mem, size_type size) {
+void deallocate(void *mem, size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
   if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
@@ -137,18 +137,24 @@ void deallocate(void *mem, size_type size) {
   }
 }
 
-void *heap_allocate(size_type size) {
+void perform_script_allocator_defragmentation() noexcept {
+  if (script_runned) {
+    get_memory_dealer().script_default_resource().perform_defragmentation();
+  }
+}
+
+void *heap_allocate(size_type size) noexcept {
   php_assert(!query_num || !replace_malloc_with_script_allocator);
   CriticalSectionGuard lock;
   return get_memory_dealer().heap_resource().allocate(size);
 }
 
-void *heap_reallocate(void *mem, size_type new_size, size_type old_size) {
+void *heap_reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   CriticalSectionGuard lock;
   return get_memory_dealer().heap_resource().reallocate(mem, new_size, old_size);
 }
 
-void heap_deallocate(void *mem, size_type size) {
+void heap_deallocate(void *mem, size_type size) noexcept {
   CriticalSectionGuard lock;
   return get_memory_dealer().heap_resource().deallocate(mem, size);
 }
@@ -178,7 +184,7 @@ void *malloc_replace_impl(size_t size) noexcept {
 }
 
 template<bool always_use_script_allocator>
-void free_replace_impl(void *mem) {
+void free_replace_impl(void *mem) noexcept {
   if (mem) {
     mem = static_cast<char *>(mem) - MAX_ALIGNMENT;
     if (always_use_script_allocator || replace_malloc_with_script_allocator) {

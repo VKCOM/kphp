@@ -4,28 +4,29 @@
 #include <utility>
 
 #include "runtime/memory_resource/memory_resource.h"
+#include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
 #include "runtime/php_assert.h"
 
 namespace memory_resource {
 namespace details {
 
-class memory_chunk_node {
+class memory_chunk_tree::tree_node {
 public:
-  memory_chunk_node *left{nullptr};
-  memory_chunk_node *right{nullptr};
-  memory_chunk_node *parent{nullptr};
+  tree_node *left{nullptr};
+  tree_node *right{nullptr};
+  tree_node *parent{nullptr};
   enum {
     RED,
     BLACK
   } color{RED};
   size_type chunk_size;
-  memory_chunk_node *same_size_chunk_list{nullptr};
+  tree_node *same_size_chunk_list{nullptr};
 
-  explicit memory_chunk_node(size_type size) :
+  explicit tree_node(size_type size) noexcept :
     chunk_size(size) {
   }
 
-  memory_chunk_node *uncle() const {
+  tree_node *uncle() const noexcept {
     if (!parent || !parent->parent) {
       return nullptr;
     }
@@ -33,11 +34,11 @@ public:
     return parent->is_left() ? grandpa->right : grandpa->left;
   }
 
-  bool is_left() const {
+  bool is_left() const noexcept {
     return this == parent->left;
   }
 
-  void replace_self_on_parent(memory_chunk_node *replacer) {
+  void replace_self_on_parent(tree_node *replacer) noexcept {
     if (is_left()) {
       parent->left = replacer;
     } else {
@@ -45,14 +46,14 @@ public:
     }
   }
 
-  memory_chunk_node *sibling() const {
+  tree_node *sibling() const noexcept {
     if (!parent) {
       return nullptr;
     }
     return is_left() ? parent->right : parent->left;
   }
 
-  void move_down(memory_chunk_node *new_parent) {
+  void move_down(tree_node *new_parent) noexcept {
     if (parent) {
       replace_self_on_parent(new_parent);
     }
@@ -60,19 +61,19 @@ public:
     parent = new_parent;
   }
 
-  bool has_red_child() const {
+  bool has_red_child() const noexcept {
     return (left && left->color == RED) || (right && right->color == RED);
   }
 };
 
-void memory_chunk_tree::insert(void *mem, size_type size) {
-  php_assert(sizeof(memory_chunk_node) <= size);
-  memory_chunk_node *newNode = new(mem) memory_chunk_node{size};
+void memory_chunk_tree::insert(void *mem, size_type size) noexcept {
+  php_assert(sizeof(tree_node) <= size);
+  tree_node *newNode = new(mem) tree_node{size};
   if (!root_) {
-    newNode->color = memory_chunk_node::BLACK;
+    newNode->color = tree_node::BLACK;
     root_ = newNode;
   } else {
-    memory_chunk_node *temp = search(size, false);
+    tree_node *temp = search(size, false);
     if (temp->chunk_size == size) {
       newNode->same_size_chunk_list = temp->same_size_chunk_list;
       temp->same_size_chunk_list = newNode;
@@ -90,10 +91,10 @@ void memory_chunk_tree::insert(void *mem, size_type size) {
   }
 }
 
-memory_chunk_node *memory_chunk_tree::extract(size_type size) {
-  if (memory_chunk_node *v = search(size, true)) {
+memory_chunk_tree::tree_node *memory_chunk_tree::extract(size_type size) noexcept {
+  if (tree_node *v = search(size, true)) {
     if (v->same_size_chunk_list) {
-      memory_chunk_node *result = v->same_size_chunk_list;
+      tree_node *result = v->same_size_chunk_list;
       v->same_size_chunk_list = result->same_size_chunk_list;
       return result;
     }
@@ -103,13 +104,52 @@ memory_chunk_node *memory_chunk_tree::extract(size_type size) {
   return nullptr;
 }
 
-size_type memory_chunk_tree::get_chunk_size(memory_chunk_node *node) {
+memory_chunk_tree::tree_node *memory_chunk_tree::extract_smallest() noexcept {
+  tree_node *v = root_;
+  while (v && v->left) {
+    v = v->left;
+  }
+  if (v) {
+    if (v->same_size_chunk_list) {
+      tree_node *result = v->same_size_chunk_list;
+      v->same_size_chunk_list = result->same_size_chunk_list;
+      return result;
+    }
+    detach_node(v);
+  }
+  return v;
+}
+
+size_type memory_chunk_tree::get_chunk_size(tree_node *node) noexcept {
   return node->chunk_size;
 }
 
-memory_chunk_node *memory_chunk_tree::search(size_type size, bool lower_bound) {
-  memory_chunk_node *node = root_;
-  memory_chunk_node *lower_bound_node = nullptr;
+void memory_chunk_tree::flush_to(memory_ordered_chunk_list &mem_list) noexcept {
+  flush_node_to(root_, mem_list);
+  root_ = nullptr;
+}
+
+void memory_chunk_tree::flush_node_to(tree_node *node, memory_ordered_chunk_list &mem_list) noexcept {
+  if (!node) {
+    return;
+  }
+
+  while(node->same_size_chunk_list) {
+    tree_node *next = node->same_size_chunk_list;
+    node->same_size_chunk_list = next->same_size_chunk_list;
+    mem_list.add_memory(next, next->chunk_size);
+  }
+  tree_node *left = node->left;
+  tree_node *right = node->right;
+  mem_list.add_memory(node, node->chunk_size);
+
+  flush_node_to(left, mem_list);
+  flush_node_to(right, mem_list);
+}
+
+memory_chunk_tree::tree_node *memory_chunk_tree::search(size_type size, bool lower_bound) noexcept {
+  tree_node *node = root_;
+  tree_node *lower_bound_node = nullptr;
   while (node && size != node->chunk_size) {
     if (size < node->chunk_size) {
       lower_bound_node = node;
@@ -132,8 +172,8 @@ memory_chunk_node *memory_chunk_tree::search(size_type size, bool lower_bound) {
   return lower_bound ? lower_bound_node : node;
 }
 
-void memory_chunk_tree::left_rotate(memory_chunk_node *node) {
-  memory_chunk_node *new_parent = node->right;
+void memory_chunk_tree::left_rotate(tree_node *node) noexcept {
+  tree_node *new_parent = node->right;
   if (node == root_) {
     root_ = new_parent;
   }
@@ -147,8 +187,8 @@ void memory_chunk_tree::left_rotate(memory_chunk_node *node) {
   new_parent->left = node;
 }
 
-void memory_chunk_tree::right_rotate(memory_chunk_node *node) {
-  memory_chunk_node *new_parent = node->left;
+void memory_chunk_tree::right_rotate(tree_node *node) noexcept {
+  tree_node *new_parent = node->left;
   if (node == root_) {
     root_ = new_parent;
   }
@@ -162,21 +202,21 @@ void memory_chunk_tree::right_rotate(memory_chunk_node *node) {
   new_parent->right = node;
 }
 
-void memory_chunk_tree::fix_red_red(memory_chunk_node *node) {
+void memory_chunk_tree::fix_red_red(tree_node *node) noexcept {
   if (node == root_) {
-    node->color = memory_chunk_node::BLACK;
+    node->color = tree_node::BLACK;
     return;
   }
 
-  memory_chunk_node *parent = node->parent;
-  memory_chunk_node *grandparent = parent->parent;
-  memory_chunk_node *uncle = node->uncle();
+  tree_node *parent = node->parent;
+  tree_node *grandparent = parent->parent;
+  tree_node *uncle = node->uncle();
 
-  if (parent->color != memory_chunk_node::BLACK) {
-    if (uncle && uncle->color == memory_chunk_node::RED) {
-      parent->color = memory_chunk_node::BLACK;
-      uncle->color = memory_chunk_node::BLACK;
-      grandparent->color = memory_chunk_node::RED;
+  if (parent->color != tree_node::BLACK) {
+    if (uncle && uncle->color == tree_node::RED) {
+      parent->color = tree_node::BLACK;
+      uncle->color = tree_node::BLACK;
+      grandparent->color = tree_node::RED;
       fix_red_red(grandparent);
     } else {
       if (parent->is_left()) {
@@ -200,10 +240,10 @@ void memory_chunk_tree::fix_red_red(memory_chunk_node *node) {
   }
 }
 
-memory_chunk_node *memory_chunk_tree::find_replacer(memory_chunk_node *node) {
+memory_chunk_tree::tree_node *memory_chunk_tree::find_replacer(tree_node *node) noexcept {
   if (node->left && node->right) {
     // find node that do not have a left child
-    memory_chunk_node *replacer = node->right;
+    tree_node *replacer = node->right;
     while (replacer->left) {
       replacer = replacer->left;
     }
@@ -212,25 +252,25 @@ memory_chunk_node *memory_chunk_tree::find_replacer(memory_chunk_node *node) {
   return node->left ? node->left : node->right;
 }
 
-void memory_chunk_tree::detach_leaf(memory_chunk_node *detaching_node) {
+void memory_chunk_tree::detach_leaf(tree_node *detaching_node) noexcept {
   if (detaching_node == root_) {
     root_ = nullptr;
     return;
   }
 
-  if (detaching_node->color == memory_chunk_node::BLACK) {
+  if (detaching_node->color == tree_node::BLACK) {
     fix_double_black(detaching_node);
   } else {
     // replacer or detaching_node is red
-    if (memory_chunk_node *sibling = detaching_node->sibling()) {
-      sibling->color = memory_chunk_node::RED;
+    if (tree_node *sibling = detaching_node->sibling()) {
+      sibling->color = tree_node::RED;
     }
   }
 
   detaching_node->replace_self_on_parent(nullptr);
 }
 
-void memory_chunk_tree::detach_node_with_one_child(memory_chunk_node *detaching_node, memory_chunk_node *replacer) {
+void memory_chunk_tree::detach_node_with_one_child(tree_node *detaching_node, tree_node *replacer) noexcept {
   if (detaching_node == root_) {
     php_assert(!replacer->left && !replacer->right);
     php_assert(replacer->parent == detaching_node);
@@ -242,15 +282,15 @@ void memory_chunk_tree::detach_node_with_one_child(memory_chunk_node *detaching_
   // detach detaching_node from tree and move replacer up
   detaching_node->replace_self_on_parent(replacer);
   replacer->parent = detaching_node->parent;
-  if (replacer->color == memory_chunk_node::BLACK && detaching_node->color == memory_chunk_node::BLACK) {
+  if (replacer->color == tree_node::BLACK && detaching_node->color == tree_node::BLACK) {
     fix_double_black(replacer);
   } else {
     // replacer or detaching_node red
-    replacer->color = memory_chunk_node::BLACK;
+    replacer->color = tree_node::BLACK;
   }
 }
 
-void memory_chunk_tree::swap_detaching_node_with_replacer(memory_chunk_node *detaching_node, memory_chunk_node *replacer) {
+void memory_chunk_tree::swap_detaching_node_with_replacer(tree_node *detaching_node, tree_node *replacer) noexcept {
   if (detaching_node->parent) {
     detaching_node->replace_self_on_parent(replacer);
   } else {
@@ -284,8 +324,8 @@ void memory_chunk_tree::swap_detaching_node_with_replacer(memory_chunk_node *det
   std::swap(replacer->color, detaching_node->color);
 }
 
-void memory_chunk_tree::detach_node(memory_chunk_node *detaching_node) {
-  memory_chunk_node *replacer = find_replacer(detaching_node);
+void memory_chunk_tree::detach_node(tree_node *detaching_node) noexcept {
+  tree_node *replacer = find_replacer(detaching_node);
   if (!replacer) {
     detach_leaf(detaching_node);
     return;
@@ -300,16 +340,16 @@ void memory_chunk_tree::detach_node(memory_chunk_node *detaching_node) {
   detach_node(detaching_node);
 }
 
-void memory_chunk_tree::fix_double_black(memory_chunk_node *node) {
+void memory_chunk_tree::fix_double_black(tree_node *node) noexcept {
   if (node == root_) {
     return;
   }
 
-  memory_chunk_node *parent = node->parent;
-  if (memory_chunk_node *sibling = node->sibling()) {
-    if (sibling->color == memory_chunk_node::RED) {
-      parent->color = memory_chunk_node::RED;
-      sibling->color = memory_chunk_node::BLACK;
+  tree_node *parent = node->parent;
+  if (tree_node *sibling = node->sibling()) {
+    if (sibling->color == tree_node::RED) {
+      parent->color = tree_node::RED;
+      sibling->color = tree_node::BLACK;
       if (sibling->is_left()) {
         right_rotate(parent);
       } else {
@@ -321,7 +361,7 @@ void memory_chunk_tree::fix_double_black(memory_chunk_node *node) {
     // sibling is black
     if (sibling->has_red_child()) {
       // at least 1 red children
-      if (sibling->left && sibling->left->color == memory_chunk_node::RED) {
+      if (sibling->left && sibling->left->color == tree_node::RED) {
         if (sibling->is_left()) {
           sibling->left->color = sibling->color;
           sibling->color = parent->color;
@@ -342,16 +382,16 @@ void memory_chunk_tree::fix_double_black(memory_chunk_node *node) {
           left_rotate(parent);
         }
       }
-      parent->color = memory_chunk_node::BLACK;
+      parent->color = tree_node::BLACK;
       return;
     }
 
     // 2 black children
-    sibling->color = memory_chunk_node::RED;
-    if (parent->color == memory_chunk_node::BLACK) {
+    sibling->color = tree_node::RED;
+    if (parent->color == tree_node::BLACK) {
       fix_double_black(parent);
     } else {
-      parent->color = memory_chunk_node::BLACK;
+      parent->color = tree_node::BLACK;
     }
     return;
   }
