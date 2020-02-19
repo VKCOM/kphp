@@ -18,12 +18,16 @@
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
 #include "server/php-engine-vars.h"
+#include "runtime/misc.h"
+#include "runtime/datetime.h"
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";
 
 int php_disable_warnings = 0;
 int php_warning_level = 2;
+
+extern FILE* json_log_file_ptr;
 
 // linker magic: run_scheduler function is declared in separate section.
 // their addresses could be used to check if address is inside run_scheduler
@@ -34,15 +38,20 @@ static bool is_address_inside_run_scheduler(void *address) {
   return &__start_run_scheduler_section <= address && address <= &__stop_run_scheduler_section;
 };
 
-static void print_demangled_adresses(void **buffer, int nptrs, int num_shift) {
+void write_json_error_to_log(int version, const string& msg, int type, const array<string>& cpp_trace, int nptrs, void** buffer);
+
+array<var> f$kphp_error_callback() __attribute__((weak));
+array<var> f$kphp_error_callback() {
+  return {};
+}
+
+static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, backtrace_each_line_callback_t callback) {
   if (php_warning_level == 1) {
     for (int i = 0; i < nptrs; i++) {
       fprintf(stderr, "%p\n", buffer[i]);
     }
   } else if (php_warning_level == 2) {
-    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, [](const char *, const char *trace_str) {
-      fprintf(stderr, "%s", trace_str);
-    });
+    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, callback);
     if (!was_printed) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
@@ -102,6 +111,7 @@ void php_warning(char const *message, ...) {
     return;
   }
 
+  bool in_critical_section = dl::in_critical_section;
   dl::enter_critical_section();//OK
 
   va_list args;
@@ -112,10 +122,13 @@ void php_warning(char const *message, ...) {
   fprintf(stderr, "%s\n", buf);
   va_end (args);
 
-  if (php_warning_level >= 1) {
+  bool need_stacktrace = php_warning_level >= 1;
+  int nptrs = 0;
+  void *buffer[64];
+  array<string> cpp_trace;
+  if (need_stacktrace) {
     fprintf(stderr, "------- Stack Backtrace -------\n");
-    void *buffer[64];
-    int nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
+    nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
     if (php_warning_level == 1) {
       nptrs -= 2;
       if (nptrs < 0) {
@@ -123,15 +136,22 @@ void php_warning(char const *message, ...) {
       }
     }
 
+    auto callback = [&cpp_trace, in_critical_section](const char *, const char *trace_str, const char* json_trace_str) {
+      fprintf(stderr, "%s", trace_str);
+      if (!in_critical_section) {
+        cpp_trace.emplace_back(json_trace_str);
+      }
+    };
+
     int scheduler_id = std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer;
     if (scheduler_id == nptrs) {
-      print_demangled_adresses(buffer, nptrs, 0);
+      print_demangled_adresses(buffer, nptrs, 0, callback);
     } else {
-      print_demangled_adresses(buffer, scheduler_id, 0);
+      print_demangled_adresses(buffer, scheduler_id, 0, callback);
       void *buffer2[64];
       int res_ptrs = get_resumable_stack(buffer2, sizeof(buffer2) / sizeof(buffer2[0]));
-      print_demangled_adresses(buffer2, res_ptrs, scheduler_id);
-      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs);
+      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, callback);
+      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, callback);
     }
 
     fprintf(stderr, "-------------------------------\n\n");
@@ -140,6 +160,11 @@ void php_warning(char const *message, ...) {
   dl::leave_critical_section();
   if (!dl::in_critical_section) {
     OnKphpWarningCallback::get().invoke_callback(string(buf));
+
+    if (need_stacktrace && json_log_file_ptr != nullptr) {
+      auto version = string(engine_tag).to_int();
+      write_json_error_to_log(version, string(buf), 1, cpp_trace, nptrs, buffer);
+    }
   }
   if (die_on_fail) {
     raise(SIGPHPASSERT);
@@ -157,4 +182,42 @@ void php_assert__(const char *msg, const char *file, int line) {
 
 void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
+}
+
+// You must call this function after dashed line (old log separation line)
+void write_json_error_to_log(int version, const string& msg, int type, const array<string>& cpp_trace, int nptrs, void** buffer) {
+  array<string> trace;
+  char buffer_for_ptr[50];
+  for (int i = 0; i < nptrs; i++) {
+    sprintf(buffer_for_ptr, "%p", buffer[i]);
+    trace.emplace_back(string(buffer_for_ptr));
+  }
+
+  array<var> ar;
+  ar.set_value(string("msg"), msg);
+  ar.set_value(string("version"), version);
+  ar.set_value(string("type"), type);
+  ar.set_value(string("trace"), trace);
+  ar.set_value(string("cpp_trace"), cpp_trace);
+  ar.set_value(string("created_at"), f$time());
+
+  // properties from callback
+  auto custom_properties = f$kphp_error_callback();
+  const auto tagsKey = string("tags");
+  ar.set_value(tagsKey, custom_properties.get_value(tagsKey));
+
+  const auto extraInfoKey = string("extra_info");
+  ar.set_value(extraInfoKey, custom_properties.get_value(extraInfoKey));
+
+  auto opt = f$json_encode(ar);
+  if (!opt.has_value()) {
+    // remember this line can break old log format
+    fprintf(stderr, "%s function can't encode json\n", __FUNCTION__);
+    return;
+  }
+
+  auto str = opt.val();
+  fwrite(str.c_str(), sizeof(char), str.size(), json_log_file_ptr);
+  fwrite("\n", sizeof(char), 1, json_log_file_ptr);
+  fflush(json_log_file_ptr);
 }

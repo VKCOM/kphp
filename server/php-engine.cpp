@@ -94,6 +94,9 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
 
 static int db_port = 3306;
 
+bool enable_json = false;
+FILE* json_log_file_ptr = nullptr;
+
 conn_type_t ct_tcp_rpc_client_read_all = [] {
   auto res = get_default_tcp_rpc_client_conn_type();
   res.reader = tcp_server_reader_till_end;
@@ -2079,6 +2082,15 @@ int try_get_http_fd() {
   return server_socket(http_port, settings_addr, backlog, 0);
 }
 
+void open_json_log() {
+  char worker_json_log_file_name[PATH_MAX];
+  sprintf(worker_json_log_file_name, "%s.json", logname);
+  json_log_file_ptr = fopen(worker_json_log_file_name, "ab+");
+  if (json_log_file_ptr == nullptr) {
+    vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+  }
+}
+
 void start_server() {
   int prev_time;
   double next_create_outbound = 0;
@@ -2114,6 +2126,10 @@ void start_server() {
 
     if (logname_pattern != nullptr) {
       reopen_logs();
+    }
+
+    if (enable_json) {
+      open_json_log();
     }
   } else {
     if (logname != nullptr) {
@@ -2387,6 +2403,10 @@ int main_args_handler(int i) {
       }
       return 0;
     }
+    case 'j': {
+      enable_json = true;
+      return 0;
+    }
     case 'l': {
       init_logname(optarg);
       return 0;
@@ -2557,6 +2577,7 @@ void parse_main_args(int argc, char *argv[]) {
   remove_parse_option("clusters-config");
   always_enable_option("maximize-tcp-buffers", NULL);
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
+  parse_option("json-log", no_argument, 'j', "enable json log");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
   parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");

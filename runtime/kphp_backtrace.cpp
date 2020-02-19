@@ -30,7 +30,7 @@ bool get_demangled_backtrace(void **buffer, int nptrs, int num_shift, backtrace_
     }
 
     size_t copy_name_len = offset_begin - mangled_name;
-    char copy_name[1024], trace_str[2048];
+    char copy_name[1024], trace_str[2048], trace_str_for_json[2048];
     memcpy(copy_name, mangled_name + 1, copy_name_len - 1);
     copy_name[copy_name_len - 1] = 0;
 
@@ -40,8 +40,8 @@ bool get_demangled_backtrace(void **buffer, int nptrs, int num_shift, backtrace_
       real_name = copy_name;
     }
     snprintf(trace_str, sizeof(trace_str), "(%d) %.*s : %s+%.*s%s\n", i + num_shift, (int)(mangled_name - strings[i]), strings[i], real_name, (int)(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
-
-    callback(real_name, trace_str);
+    snprintf(trace_str_for_json, sizeof(trace_str_for_json) - 1, "%s+%.*s%s", real_name, static_cast<int>(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
+    callback(real_name, trace_str, trace_str_for_json);
 
     if (status == 0) {
       free(real_name);
