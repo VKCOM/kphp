@@ -533,7 +533,13 @@ bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
 
 template<class T1, class T2>
 bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto equals_lambda = [](const auto &l, const auto &r) { return equals(r, l); };
+  auto equals_lambda = [](const auto &l, const auto &r) {
+    // if (is_null(lhs)) { return is_null(r); }
+    // else return equals(r, l); - parameters are swapped to cope with Optional on right side
+    return std::is_same<decltype(l), const var &>{} ?
+           f$is_null(r) :
+           equals(r, l);
+  };
   return call_fun_on_optional_value(equals_lambda, lhs, rhs);
 }
 

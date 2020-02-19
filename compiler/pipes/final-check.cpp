@@ -433,16 +433,11 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
     }
   }
 
-  // анализируем instance ===/!== что_то
-  if (vk::all_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
+  // инстанс на === можно сравнивать с другим инстансом (будет сравнение ссылок) или null
+  if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
     auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
-    // пока что отдельной ошибкой ругаемся на ===/!== false: после поддержки null уже так нельзя, но будут писать по инерции
-    if (cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag())) {
-      kphp_error(0, fmt_format("$instance {} {} is now prohibited: use if({}$instance)", OpInfo::desc(op), colored_type_out(cmp_type), (op == op_eq3) ? "" : "!"));
-    } else {
-      // а так, инстанс на три равно можно сравнивать только с другим инстансом (будет сравнение ссылок)
-      kphp_error(cmp_type->ptype() == tp_Class, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
-    }
+    bool cmp_type_is_null = cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
+    kphp_error(cmp_type->ptype() == tp_Class || cmp_type_is_null, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
   }
 }
 
