@@ -23,18 +23,24 @@ private:
     char data[TAIL_SIZE]{'\0'};
   };
 
-  template<size_t... Chars>
-  static constexpr auto constexpr_make_chars_impl(std::index_sequence<Chars...>) noexcept {
-    return std::array<string_cache::string_8bytes, sizeof...(Chars)>{
-      {
-        string_cache::string_8bytes(static_cast<char>(Chars))...
-      }};
-  }
+  // у gcc9.2 какие-то сложности с копированием вложенных массивов, он генерирует warnings о том, что строка не null terminated
+  // поэтому make функции не очень работают (хотя для чисел, почему-то работает, хз..)
+  using single_char_storage = std::array<string_cache::string_8bytes, 256>;
+  struct single_char_storage_hack : single_char_storage {
+  private:
+    template<size_t... Chars>
+    constexpr single_char_storage_hack(std::index_sequence<Chars...>) noexcept :
+      single_char_storage{
+        {
+          string_cache::string_8bytes(static_cast<char>(Chars))...
+        }
+      } {}
 
-  static constexpr auto constexpr_make_chars() noexcept {
-    using all_char_seq = std::make_index_sequence<static_cast<size_t>(std::numeric_limits<uint8_t>::max()) + 1>;
-    return constexpr_make_chars_impl(all_char_seq{});
-  }
+  public:
+    constexpr single_char_storage_hack() noexcept :
+      single_char_storage_hack{std::make_index_sequence<std::tuple_size<single_char_storage>{}>{}} {
+    }
+  };
 
   template<size_t Rem, size_t... Digits>
   struct constexpr_number_to_string : constexpr_number_to_string<Rem / 10, Rem % 10, Digits...> {
@@ -83,7 +89,7 @@ public:
   }
 
   static const string::string_inner &cached_char(char c) noexcept {
-    static constexpr auto constexpr_char_cache = constexpr_make_chars();
+    static constexpr single_char_storage_hack constexpr_char_cache;
     return constexpr_char_cache[static_cast<uint8_t>(c)].inner;
   }
 
