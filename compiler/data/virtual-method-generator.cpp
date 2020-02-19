@@ -31,7 +31,10 @@ template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
   stage::set_line(get_location(interface_function->root).line);
   if (!interface_method_in_derived) {
-    kphp_assert(context_class->modifiers.is_abstract());
+    kphp_error(context_class->modifiers.is_abstract(),
+               fmt_format("class: {} must be abstract, method: {} is not overridden",
+                          TermStringFormat::paint_green(context_class->name),
+                          TermStringFormat::paint_green(interface_function->get_human_readable_name())));
     return true;
   }
 
