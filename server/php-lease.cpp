@@ -364,6 +364,9 @@ process_id_t get_rpc_main_target_pid() {
 }
 
 lease_worker_settings try_fetch_lookup_custom_worker_settings() {
+  if (tl_fetch_unread() < 4) {
+    return {};
+  }
   tl_fetch_mark();
   int magic = tl_fetch_int();
   if (magic != TL_KPHP_PROCESS_LEASE_TASK) {
