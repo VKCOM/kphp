@@ -1594,6 +1594,10 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       char buf[len];
       auto fetched_bytes = tl_fetch_data(buf, len);
+      if (fetched_bytes == -1) {
+        client_rpc_error(c, req_id, TL_ERRNUM, TL_ERROR);
+        return 0;
+      }
       assert(fetched_bytes == len);
       auto D = TCP_RPC_DATA(c);
       rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / sizeof(int),
