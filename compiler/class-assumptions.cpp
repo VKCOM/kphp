@@ -57,39 +57,45 @@ std::string assumption_debug(vk::string_view var_name, const vk::intrusive_ptr<A
 }
 
 bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr<Assumption> &rhs) {
+  auto merge_classes_lca = [](ClassPtr dst_class, ClassPtr rhs_class) -> ClassPtr {
+    if (dst_class->is_parent_of(rhs_class)) {
+      return dst_class;
+    }
+    if (rhs_class->is_interface() || dst_class->is_interface()) {
+      if (auto common_interface = rhs_class->get_common_base_or_interface(dst_class)) {
+        return common_interface;
+      }
+    }
+    return ClassPtr{};
+  };
   auto dst_as_instance = dst->try_as<AssumInstance>();
   auto rhs_as_instance = rhs->try_as<AssumInstance>();
+  if (dst_as_instance && rhs_as_instance) {
+    ClassPtr lca_class = merge_classes_lca(dst_as_instance->klass, rhs_as_instance->klass);
+    if (lca_class) {
+      dst_as_instance->klass = lca_class;
+      return true;
+    }
+    return false;
+  }
+
   auto dst_as_array = dst->try_as<AssumInstanceArray>();
   auto rhs_as_array = rhs->try_as<AssumInstanceArray>();
-
-  ClassPtr dst_class = dst_as_instance ? dst_as_instance->klass : dst_as_array ? dst_as_array->klass : ClassPtr{};
-  ClassPtr rhs_class = rhs_as_instance ? rhs_as_instance->klass : rhs_as_array ? rhs_as_array->klass : ClassPtr{};
-
-  if (dst_as_instance && rhs_as_instance) {
-    if (dst_class && dst_class->is_parent_of(rhs_class)) {
-      return true;
-    }
-    if (rhs_class->is_interface() || dst_class->is_interface()) {
-      if (auto common_interface = rhs_class->get_common_base_or_interface(dst_class)) {
-        dst_as_instance->klass = common_interface;
-        return true;
-      }
-    }
-  }
   if (dst_as_array && rhs_as_array) {
-    if (dst_class && dst_class->is_parent_of(rhs_class)) {
+    ClassPtr lca_class = merge_classes_lca(dst_as_array->klass, rhs_as_array->klass);
+    if (lca_class) {
+      dst_as_array->klass = lca_class;
       return true;
     }
-    if (rhs_class->is_interface() || dst_class->is_interface()) {
-      if (auto common_interface = rhs_class->get_common_base_or_interface(dst_class)) {
-        dst_as_array->klass = common_interface;
-        return true;
-      }
-    }
+    return false;
   }
-  if (!dst_class && !rhs_class) {
+
+  auto dst_as_not_instance = dst->try_as<AssumNotInstance>();
+  auto rhs_as_not_instance = rhs->try_as<AssumNotInstance>();
+  if (dst_as_not_instance && rhs_as_not_instance) {
     return true;
   }
+
   return false;
 }
 
