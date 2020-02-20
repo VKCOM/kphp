@@ -156,6 +156,9 @@ std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std:
   kphp_assert(arg->is_fields_mask_optional());
   auto type = tl2cpp::type_of(arg->type_expr);
   std::string check_target = "tl_object->$" + arg->name;
+  if (type->id == TL_TRUE) {
+    return check_target + " == false";
+  }
   if (tl2cpp::is_tl_type_wrapped_to_Optional(type) || type->id == TL_LONG || !tl2cpp::CUSTOM_IMPL_TYPES.count(type->name)) {
     // Если это Optional ИЛИ var ИЛИ class_instance<T>
     return check_target + ".is_null()";

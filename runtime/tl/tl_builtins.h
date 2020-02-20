@@ -343,6 +343,8 @@ struct t_Vector {
 
 template<typename T, unsigned int inner_magic>
 struct t_Maybe {
+  static_assert(!std::is_same<T, t_True>::value, "usage (Maybe True) in TL is forbidden");
+
   T elem_state;
 
   explicit t_Maybe(T param_type) :
