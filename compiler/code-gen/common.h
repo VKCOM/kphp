@@ -75,6 +75,12 @@ struct CloseBlock {
   }
 };
 
+struct SemicolonAndNL {
+  inline void compile(CodeGenerator &W) const {
+    W << ";" << NL;
+  }
+};
+
 struct LockComments {
   inline void compile(CodeGenerator &W) const {
     W.get_writer().lock_comments();

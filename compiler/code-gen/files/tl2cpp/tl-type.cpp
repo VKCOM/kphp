@@ -1,6 +1,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl-type.h"
 
 #include "compiler/code-gen/files/tl2cpp/tl-template-php-type-helpers.h"
+#include "compiler/code-gen/naming.h"
 
 namespace tl2cpp {
 using vk::tl::FLAG_DEFAULT_CONSTRUCTOR;
@@ -191,11 +192,11 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
   if (!constructor_params.empty()) {
     W << "explicit " << struct_name << "(" << vk::join(constructor_params, ", ") << ") : " << vk::join(constructor_inits, ", ") << " {}\n" << NL;
   }
-  W << "void store(const var& tl_object);" << NL;
-  W << "array<var> fetch();" << NL;
+  FunctionSignatureGenerator(W)  << "void store(const var& tl_object)" << SemicolonAndNL();
+  FunctionSignatureGenerator(W)  << "array<var> fetch()" << SemicolonAndNL();
   if (needs_typed_fetch_store) {
-    W << "void typed_store(const PhpType &tl_object);" << NL;
-    W << "void typed_fetch_to(PhpType &tl_object);" << NL;
+    FunctionSignatureGenerator(W)  << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W)  << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
   }
   W << END << ";\n\n";
 }
@@ -210,23 +211,23 @@ void TlTypeDefinition::compile(CodeGenerator &W) const {
   auto full_struct_name = struct_name + template_def;
 
   W << template_decl << NL;
-  W << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
+  FunctionSignatureGenerator(W) << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
   W << TypeStore(t, template_def);
   W << END << "\n\n";
 
   W << template_decl << NL;
-  W << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
+  FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
   W << TypeFetch(t, template_def);
   W << END << "\n\n";
 
   if (needs_typed_fetch_store) {
     W << template_decl << NL;
-    W << "void " << full_struct_name << "::typed_store(const PhpType &tl_object) " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::typed_store(const PhpType &tl_object) " << BEGIN;
     W << TypeStore(t, template_def, true);
     W << END << "\n\n";
 
     W << template_decl << NL;
-    W << "void " << full_struct_name + "::typed_fetch_to(PhpType &tl_object) " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::typed_fetch_to(PhpType &tl_object) " << BEGIN;
     W << TypeFetch(t, template_def, true);
     W << END << "\n\n";
   }

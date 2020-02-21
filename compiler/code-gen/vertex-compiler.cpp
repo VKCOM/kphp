@@ -275,9 +275,9 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     auto &context = W.get_context();
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
-    W << "[&] () -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
-      << " return " << rhs << ";" << NL
-      << END;
+    FunctionSignatureGenerator(W) << "[&] ()"; W << " -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
+                                  << " return " << rhs << ";" << NL
+                                  << END;
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;
@@ -964,7 +964,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << "using ReturnT = " << TypeName(tinf::get_type(func, -1)) << ";" << NL;
 
   //CONSTRUCTOR
-  W << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
+  FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
   if (!func->param_ids.empty()) {
     W << " :" << NL << Indent(+2);
     W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
@@ -983,7 +983,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   W << " " << BEGIN << END << NL;
 
   //RUN FUNCTION
-  W << "bool run() " <<
+  FunctionSignatureGenerator(W) << "bool run() " <<
     BEGIN;
   if (G->env().get_enable_profiler()) {
     W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
@@ -1423,7 +1423,7 @@ void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
     W << "[]";
   }
 
-  W << "(auto &&... args) " << BEGIN;
+  FunctionSignatureGenerator(W) << "(auto &&... args) " << BEGIN;
   {
     W << "return " << FunctionName(root->func_id) << "(";
     if (!name_bound_class.empty()) {

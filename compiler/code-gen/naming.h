@@ -1,5 +1,8 @@
 #pragma once
 
+#include "common/type_traits/list_of_types.h"
+
+#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
@@ -44,6 +47,110 @@ struct TypeName {
     }
     W << s;
   }
+};
+
+class FunctionSignatureGenerator {
+public:
+  explicit FunctionSignatureGenerator(CodeGenerator &W) noexcept
+    : W_(W) {
+  }
+  
+  FunctionSignatureGenerator(const FunctionSignatureGenerator &) = delete;
+  FunctionSignatureGenerator& operator=(const FunctionSignatureGenerator &) = delete;
+
+  template<class T> 
+  FunctionSignatureGenerator &&operator<<(const T &value) && noexcept {
+    if (is_empty_) {
+      if (virtual_) {
+        W_ << "virtual ";
+      }
+      is_empty_ = false;
+    }
+
+    W_ << value;
+    return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&operator<<(const OpenBlock &value) && noexcept {
+    return generate_specifiers(value);
+  }
+
+  FunctionSignatureGenerator &&operator<<(const SemicolonAndNL &value) && noexcept {
+    return generate_specifiers(value);
+  }
+
+  ~FunctionSignatureGenerator() {
+    generate_specifiers("");
+  }
+
+  FunctionSignatureGenerator &&set_is_virtual(bool new_value = true) && noexcept {
+    virtual_ = new_value;
+    return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&set_const_this(bool new_value = true) && noexcept {
+    const_this_ = new_value;
+    return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&set_overridden(bool new_value = true) && noexcept {
+    overridden_ = new_value;
+    return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&set_final(bool new_value = true) && noexcept {
+    final_ = new_value;
+    return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&set_pure_virtual(bool new_value = true) && noexcept {
+    pure_virtual_ = new_value;
+    return std::move(*this);
+  }
+
+private:
+  template<class T>
+  FunctionSignatureGenerator &&generate_specifiers(const T &value) noexcept {
+    if (!specifiers_generated_) {
+      if (const_this_) {
+        W_ << " const ";
+      }
+
+      if (noexcept_) {
+        W_ << " noexcept ";
+      }
+
+      if (final_) {
+        W_ << " final ";
+      }
+
+      if (overridden_) {
+        W_ << " override ";
+      }
+
+      if (pure_virtual_) {
+        W_ << " = 0";
+      }
+
+      specifiers_generated_ = true;
+    }
+
+    W_ << value;
+    return std::move(*this);
+  }
+
+private:
+  bool is_empty_ = true;
+  bool specifiers_generated_ = false;
+
+  CodeGenerator &W_;
+
+  bool virtual_ = false;
+  bool const_this_ = false;
+  const bool noexcept_ = true;
+  bool overridden_ = false;
+  bool final_ = false;
+  bool pure_virtual_ = false;
 };
 
 struct FunctionName {

@@ -1,11 +1,11 @@
 #include "runtime/resumable.h"
 
-Storage::Storage() :
+Storage::Storage() noexcept :
   tag(0) {
   memset(storage_.storage_, 0, sizeof(var));
 }
 
-void Storage::save_void() {
+void Storage::save_void() noexcept {
   if (!CurException.is_null()) {
     save_exception();
   } else {
@@ -13,7 +13,7 @@ void Storage::save_void() {
   }
 }
 
-void Storage::save_exception() {
+void Storage::save_exception() noexcept {
   php_assert (!CurException.is_null());
   Exception exception = std::move(CurException);
   save<thrown_exception>(thrown_exception{exception});

@@ -10,7 +10,7 @@ extern const char *last_wait_error;
 struct thrown_exception {
   Exception exception;
   thrown_exception() = default;
-  explicit thrown_exception(Exception exception) : exception(std::move(exception)) {}
+  explicit thrown_exception(Exception exception) noexcept : exception(std::move(exception)) {}
 };
 
 template<size_t limit>
@@ -19,29 +19,29 @@ union small_obect_ptr {
   void *storage_ptr;
 
   template <typename T, typename ...Args>
-  std::enable_if_t<sizeof(T) <= limit, T*> emplace(Args&& ...args) {
+  std::enable_if_t<sizeof(T) <= limit, T*> emplace(Args&& ...args) noexcept {
     return new (storage_) T(std::forward<Args>(args)...);
   }
   template <typename T>
-  std::enable_if_t<sizeof(T) <= limit, T*> get() {
+  std::enable_if_t<sizeof(T) <= limit, T*> get() noexcept {
     return reinterpret_cast<T*>(storage_);
   }
   template <typename T>
-  std::enable_if_t<sizeof(T) <= limit> destroy() {
+  std::enable_if_t<sizeof(T) <= limit> destroy() noexcept {
     get<T>()->~T();
   }
 
   template <typename T, typename ...Args>
-  std::enable_if_t<limit < sizeof(T), T*> emplace(Args&& ...args) {
+  std::enable_if_t<limit < sizeof(T), T*> emplace(Args&& ...args) noexcept {
     storage_ptr = dl::allocate(sizeof(T));
     return new (storage_ptr) T(std::forward<Args>(args)...);
   }
   template <typename T>
-  std::enable_if_t<limit < sizeof(T), T*> get() {
+  std::enable_if_t<limit < sizeof(T), T*> get() noexcept {
     return static_cast<T*>(storage_ptr);
   }
   template <typename T>
-  std::enable_if_t<limit < sizeof(T)> destroy() {
+  std::enable_if_t<limit < sizeof(T)> destroy() noexcept {
     T *mem = get<T>();
     mem->~T();
     dl::deallocate(mem, sizeof(T));
@@ -56,7 +56,7 @@ private:
   template<class X, class Y, class Tag = typename std::is_convertible<X, Y>::type>
   struct load_implementation_helper;
 
-  void save_exception();
+  void save_exception() noexcept;
 
 public:
 
@@ -64,18 +64,18 @@ public:
 
   template<typename T>
   struct tagger {
-    static int get_tag();
+    static int get_tag() noexcept;
   };
 
   template<typename T>
   struct loader {
     using loader_fun = T(*)(storage_ptr &);
-    static loader_fun get_function(int tag);
+    static loader_fun get_function(int tag) noexcept;
   };
 
   int tag;
 
-  Storage();
+  Storage() noexcept;
 
   /**
    * enabled_if is used to disable type deduction for save function
@@ -83,21 +83,21 @@ public:
    * and it would be too easy to make a bug, if it's deduced automatically
    */
   template<class T1>
-  void save(std::enable_if_t<true, T1> x);
+  void save(std::enable_if_t<true, T1> x) noexcept;
 
-  void save_void();
-
-  template<class X>
-  X load();
+  void save_void() noexcept;
 
   template<class X>
-  X load_as();
+  X load() noexcept;
+
+  template<class X>
+  X load_as() noexcept;
 };
 
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::false_type> {
-  static Y load(storage_ptr &) {
+  static Y load(storage_ptr &) noexcept {
     php_assert(0);      // should be never called in runtime, used just to prevent compilation errors
     return Y();
   }
@@ -105,7 +105,7 @@ struct Storage::load_implementation_helper<X, Y, std::false_type> {
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::true_type> {
-  static Y load(storage_ptr &storage) {
+  static Y load(storage_ptr &storage) noexcept {
     X *data = storage.get<X>();
     Y result = std::move(*data);
     storage.destroy<X>();
@@ -115,19 +115,19 @@ struct Storage::load_implementation_helper<X, Y, std::true_type> {
 
 template<>
 struct Storage::load_implementation_helper<void, void, std::true_type> {
-  static void load(storage_ptr &) {}
+  static void load(storage_ptr &) noexcept {}
 };
 
 template<typename T>
 struct Storage::load_implementation_helper<T, void, std::false_type> {
-  static void load(storage_ptr &storage) {
+  static void load(storage_ptr &storage) noexcept {
     Storage::load_implementation_helper<T, T>::load(storage);
   }
 };
 
 template<class Y>
 struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type> {
-  static Y load(storage_ptr &storage) {
+  static Y load(storage_ptr &storage) noexcept {
     php_assert (CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
     return Y();
@@ -136,7 +136,7 @@ struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type>
 
 template<>
 struct Storage::load_implementation_helper<thrown_exception, void, std::false_type> {
-  static void load(storage_ptr &storage) {
+  static void load(storage_ptr &storage) noexcept {
     php_assert (CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
   }
@@ -145,7 +145,7 @@ struct Storage::load_implementation_helper<thrown_exception, void, std::false_ty
 
 
 template<class T1>
-void Storage::save(std::enable_if_t<true, T1> x) {
+void Storage::save(std::enable_if_t<true, T1> x) noexcept {
   if (!CurException.is_null()) {
     save_exception();
   } else {
@@ -155,7 +155,7 @@ void Storage::save(std::enable_if_t<true, T1> x) {
 }
 
 template<class X>
-X Storage::load() {
+X Storage::load() noexcept {
   php_assert (tag != 0);
   if (tag == tagger<thrown_exception>::get_tag()) {
     tag = 0;
@@ -169,7 +169,7 @@ X Storage::load() {
 
 
 template<class X>
-X Storage::load_as() {
+X Storage::load_as() noexcept {
   php_assert (tag != 0);
 
   int tag_save = tag;

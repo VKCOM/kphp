@@ -102,7 +102,7 @@ struct ClassDeclaration {
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
 private:
   template<class ReturnValueT>
-  static void compile_class_method(CodeGenerator &W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
+  static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
 
   static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type);
   IncludesCollector compile_front_includes(CodeGenerator &W) const;

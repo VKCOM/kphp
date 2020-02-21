@@ -716,7 +716,7 @@ struct rpc_request {
 
 // only for good linkage. Will be never used to load
 template<>
-int Storage::tagger<rpc_request>::get_tag() {
+int Storage::tagger<rpc_request>::get_tag() noexcept {
   return 1960913044;
 }
 

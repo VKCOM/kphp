@@ -43,7 +43,7 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
     }
   }
 
-  W << "void " << GlobalVarsResetFuncName(func, part_i) << " " << BEGIN;
+  FunctionSignatureGenerator(W) << "void " << GlobalVarsResetFuncName(func, part_i) << " " << BEGIN;
   for (auto var : used_vars) {
     if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
@@ -66,7 +66,7 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
 
 void GlobalVarsReset::compile_func(FunctionPtr func, int parts_n, CodeGenerator &W) {
   W << OpenNamespace();
-  W << "void " << GlobalVarsResetFuncName(func) << " " << BEGIN;
+  FunctionSignatureGenerator(W) << "void " << GlobalVarsResetFuncName(func) << " " << BEGIN;
 
   for (int i = 0; i < parts_n; i++) {
     W << "void " << GlobalVarsResetFuncName(func, i) << ";" << NL;

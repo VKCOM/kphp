@@ -4,14 +4,14 @@
 
 class CurrentRpcServerQuery {
 public:
-  static CurrentRpcServerQuery &get() {
+  static CurrentRpcServerQuery &get() noexcept {
     static CurrentRpcServerQuery ctx;
     return ctx;
   }
 
-  void save(std::unique_ptr<tl_func_base> tl_func_state);
-  std::unique_ptr<tl_func_base> extract();
-  void reset();
+  void save(std::unique_ptr<tl_func_base> tl_func_state) noexcept;
+  std::unique_ptr<tl_func_base> extract() noexcept;
+  void reset() noexcept;
 private:
   std::unique_ptr<tl_func_base> query;
   CurrentRpcServerQuery() = default;
@@ -20,5 +20,5 @@ private:
 struct C$VK$TL$RpcFunction;
 struct C$VK$TL$RpcFunctionReturnResult;
 
-class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request();
-void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult> &response);
+class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
+void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult> &response) noexcept;

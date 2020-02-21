@@ -22,23 +22,23 @@ StaticInit::StaticInit(const vector<FunctionPtr> &all_functions) :
 void StaticInit::compile(CodeGenerator &W) const {
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << OpenNamespace(lib->lib_namespace())
-        << "void global_init_lib_scripts();" << NL
-        << CloseNamespace();
+      W << OpenNamespace(lib->lib_namespace());
+      FunctionSignatureGenerator(W) << "void global_init_lib_scripts()" << SemicolonAndNL();
+      W << CloseNamespace();
     }
   }
 
   W << OpenNamespace();
-  W << "void const_vars_init();" << NL << NL;
+  FunctionSignatureGenerator(W)  << "void const_vars_init()" << SemicolonAndNL() << NL;
 
-  W << "void tl_str_const_init();" << NL;
-  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>);" << NL;
+  FunctionSignatureGenerator(W) << "void tl_str_const_init()" << SemicolonAndNL();
+  FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>)" << SemicolonAndNL();
   W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
-  W << "void fill_tl_storers_ht();" << NL << NL;
+  FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   if (G->env().is_static_lib_mode()) {
-    W << "void global_init_lib_scripts() " << BEGIN;
+    FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
-    W << "void global_init_php_scripts() " << BEGIN;
+    FunctionSignatureGenerator(W) << ("void global_init_php_scripts() ") << BEGIN;
     for (LibPtr lib: G->get_libs()) {
       if (lib && !lib->is_raw_php()) {
         W << lib->lib_namespace() << "::global_init_lib_scripts();" << NL;
@@ -61,7 +61,7 @@ struct RunFunction {
   RunFunction(FunctionPtr function) : function(function) {}
 
   void compile(CodeGenerator &W) const {
-    W << "void " << FunctionName(function) << "$run() " << BEGIN
+    FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN
       << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
       << "finish (0);" << NL
       << END;
@@ -83,13 +83,13 @@ GlobalResetFunction::GlobalResetFunction(FunctionPtr function) :
 void GlobalResetFunction::compile(CodeGenerator &W) const {
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << OpenNamespace(lib->lib_namespace())
-        << "void lib_global_vars_reset();" << NL
-        << CloseNamespace();
+      W << OpenNamespace(lib->lib_namespace());
+      FunctionSignatureGenerator(W) << "void lib_global_vars_reset()" << SemicolonAndNL();
+      W << CloseNamespace();
     }
   }
 
-  W << "void " << FunctionName(function) << "$global_reset() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$global_reset() " << BEGIN;
   W << "void " << GlobalVarsResetFuncName(function) << ";" << NL;
   W << GlobalVarsResetFuncName(function) << ";" << NL;
   for (LibPtr lib: G->get_libs()) {
@@ -113,10 +113,10 @@ LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function) :
 
 void LibGlobalVarsReset::compile(CodeGenerator &W) const {
   W << OpenNamespace();
-  W << "void lib_global_vars_reset() " << BEGIN
-    << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
-    << GlobalVarsResetFuncName(main_function) << ";" << NL
-    << END << NL << NL;
+  FunctionSignatureGenerator(W) << "void lib_global_vars_reset() " << BEGIN
+                                << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
+                                << GlobalVarsResetFuncName(main_function) << ";" << NL
+                                << END << NL << NL;
   W << "extern bool v$" << main_function->file_id->get_main_func_run_var_name() << ";" << NL;
   W << CloseNamespace();
 
@@ -144,9 +144,9 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   }
 
   if (!G->env().is_static_lib_mode()) {
-    W << NL
-      << "void global_init_php_scripts();" << NL
-      << "void init_php_scripts();" << NL;
+    W << NL;
+    FunctionSignatureGenerator(W) << "void global_init_php_scripts()" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void init_php_scripts()" << SemicolonAndNL();
   }
 
   W << NL << StaticInit(all_functions) << NL;
@@ -164,7 +164,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     W << GlobalResetFunction(i->main_function) << NL;
   }
 
-  W << "void init_php_scripts() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void init_php_scripts() " << BEGIN;
 
   for (auto i : main_file_ids) {
     W << FunctionName(i->main_function) << "$global_reset();" << NL;

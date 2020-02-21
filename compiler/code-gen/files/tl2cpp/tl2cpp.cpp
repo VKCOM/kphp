@@ -5,6 +5,7 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
+#include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 
 /* При генерации выделены 3 основные сущности, у каждой из которых есть методы store и fetch:
@@ -87,7 +88,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
     }
   }
   W << deps << NL;
-  W << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
+  FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
   W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
@@ -132,14 +133,14 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << NL;
   // Указатель на gen$tl_fetch_wrapper прокидывается в рантайм и вызывается из fetch_function()
   // Это сделано для того, чтобы не тащить в рантайм t_ReqResult и все его зависимости
-  W << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
-    << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
-    << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
-    << END << NL << NL;
+  FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
+                                << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
+                                << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
+                                << END << NL << NL;
   // Хэш таблица, содержащая все тл функции
   // Тоже прокидывается в рантайм
   W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
-  W << "void fill_tl_storers_ht() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
   for (const auto &module_name : modules_with_functions) {
     for (const auto &f : modules[module_name].target_functions) {
       W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
@@ -165,7 +166,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << "string " << cpp_tl_const_str(s) << ";" << NL;
   });
   auto const_string_shifts = compile_raw_data(W, tl_const_vars);
-  W << "void tl_str_const_init() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void tl_str_const_init() " << BEGIN;
   int i = 0;
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
     W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;

@@ -500,7 +500,7 @@ bool KphpEnviroment::init() {
   ss << user_cxx_flags;
   ss << " -iquote" << get_path() << " -iquote" << get_path() << "PHP/";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
-  ss << " -fno-exceptions -fno-strict-aliasing -fno-omit-frame-pointer";
+  ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
   if (!no_pch_) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }

@@ -2,6 +2,7 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl-combinator.h"
 #include "compiler/code-gen/files/tl2cpp/tl-template-php-type-helpers.h"
+#include "compiler/code-gen/naming.h"
 
 namespace tl2cpp {
 const vk::tl::combinator *constructor;
@@ -33,13 +34,13 @@ void TlConstructorDecl::compile(CodeGenerator &W) const {
   }
   W << "struct " << cpp_tl_struct_name("c_", constructor->name) << " " << BEGIN;
   auto params = get_optional_args_for_decl(constructor);
-  W << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
-  W << "static array<var> fetch(" << params << ");" << NL;
+  FunctionSignatureGenerator(W) << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
+  FunctionSignatureGenerator(W) << "static array<var> fetch(" << params << ")" << SemicolonAndNL();
 
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);
-    W << "static void typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
-    W << "static void typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ");" << NL;
+    FunctionSignatureGenerator(W) << "static void typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static void typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
   }
   W << END << ";\n\n";
 }
@@ -53,24 +54,24 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
   auto params = TlConstructorDecl::get_optional_args_for_decl(constructor);
 
   W << template_decl << NL;
-  W << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+  FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
   W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
   W << END << "\n\n";
 
   W << template_decl << NL;
-  W << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+  FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
   W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
   W << END << "\n\n";
 
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);
     W << template_decl << NL;
-    W << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
     W << CombinatorStore(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
 
     W << template_decl << NL;
-    W << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
     W << CombinatorFetch(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
   }

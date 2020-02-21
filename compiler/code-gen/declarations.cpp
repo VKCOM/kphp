@@ -75,7 +75,7 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
-      W << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
       break;
     }
     case gen_out_style::txt: {
@@ -91,8 +91,8 @@ FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_h
 }
 
 void FunctionForkDeclaration::compile(CodeGenerator &W) const {
-  W << "int " << FunctionForkName(function) <<
-    "(" << FunctionParams(function, in_header) << ")";
+  FunctionSignatureGenerator(W) << "int " << FunctionForkName(function) <<
+                                "(" << FunctionParams(function, in_header) << ")";
 }
 
 FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style) :
@@ -430,7 +430,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   // для rpc-функций генерим метод-член класса store(), который перевызывает сторилку из codegen tl2cpp
   if (tl2cpp::is_php_class_a_tl_function(klass)) {
     W << NL;
-    W << "std::unique_ptr<tl_func_base> store() const final " << BEGIN;
+    FunctionSignatureGenerator(W).set_final().set_const_this() << "std::unique_ptr<tl_func_base> store() " << BEGIN;
     std::string f_tl_cpp_struct_name = tl2cpp::cpp_tl_struct_name("f_", tl2cpp::get_tl_function_name_of_php_class(klass));
     W << "return " << f_tl_cpp_struct_name << "::typed_store(this);" << NL;
     W << END << NL;
@@ -445,25 +445,20 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 }
 
 template<class ReturnValueT>
-void ClassDeclaration::compile_class_method(CodeGenerator &W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
-  const char *final_override_kw{" "};
-  if (klass->does_need_codegen(klass->get_parent_or_interface())) {
-    if (klass->derived_classes.empty()) {
-      final_override_kw = " final ";
-    } else {
-      final_override_kw = " override ";
-    }
-  }
+void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
+  bool has_parent = ClassData::does_need_codegen(klass->get_parent_or_interface());
+  bool has_derived = !klass->derived_classes.empty();
+  bool is_overridden = has_parent && has_derived;
+  bool is_final = has_parent && !has_derived;
 
-  if (!klass->derived_classes.empty()) {
-    W << "virtual ";
-  }
-
-  W << method_signature << final_override_kw << BEGIN;
-  {
-    W << "return " << return_value << ";" << NL;
-  }
-  W << END << NL << NL;
+  std::move(W)
+    .set_is_virtual(has_derived)
+    .set_final(is_final)
+    .set_overridden(is_overridden)
+    << method_signature <<
+    BEGIN
+    << "return " << return_value << ";" << NL <<
+    END << NL << NL;
 }
 
 void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
@@ -474,15 +469,15 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
 
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
   auto class_name_as_raw_string = "R\"(" + klass->name + ")\"";
-  compile_class_method(W, klass, "const char *get_class() const", class_name_as_raw_string);
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "const char *get_class()", class_name_as_raw_string);
 }
 
 void ClassDeclaration::compile_get_hash(CodeGenerator &W, ClassPtr klass) {
-  compile_class_method(W, klass, "int get_hash() const", klass->get_hash());
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "int get_hash()", klass->get_hash());
 }
 
 void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type) {
-  compile_class_method(W, klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
+  compile_class_method(FunctionSignatureGenerator(W), klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
@@ -493,8 +488,8 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   }
 
   W << NL;
-  W << "template<class Visitor>" << NL
-    << "void generic_accept(Visitor &&visitor) " << BEGIN;
+  FunctionSignatureGenerator(W) << "template<class Visitor>" << NL
+                                << "void generic_accept(Visitor &&visitor) " << BEGIN;
   for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
     cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
       // will generate visitor("field_name", $field_name);
@@ -559,7 +554,7 @@ void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp:
-      W << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
+      FunctionSignatureGenerator(W) << "void f$" << LibData::run_global_function_name(G->get_global_namespace()) << "()";
       break;
     case gen_out_style::txt:
       W << "function " << LibData::run_global_function_name(G->get_global_namespace()) << "() ::: void";

@@ -5,27 +5,27 @@
 
 class abstract_refcountable_php_interface : public ManagedThroughDlAllocator {
 public:
-  virtual ~abstract_refcountable_php_interface() = default;
-  virtual void add_ref() = 0;
-  virtual void release() = 0;
-  virtual uint32_t get_refcnt() = 0;
-  virtual void set_refcnt(uint32_t new_refcnt) = 0;
+  virtual ~abstract_refcountable_php_interface() noexcept = default;
+  virtual void add_ref() noexcept = 0;
+  virtual void release() noexcept = 0;
+  virtual uint32_t get_refcnt() noexcept = 0;
+  virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 };
 
 template<class Base>
 class refcountable_polymorphic_php_classes : public Base {
 public:
-  void add_ref() final {
+  void add_ref() noexcept final {
     if (refcnt < ExtraRefCnt::for_global_const) {
       ++refcnt;
     }
   }
 
-  uint32_t get_refcnt() final {
+  uint32_t get_refcnt() noexcept final {
     return refcnt;
   }
 
-  void release() final __attribute__((always_inline)) {
+  void release() noexcept final __attribute__((always_inline)) {
     if (refcnt < ExtraRefCnt::for_global_const) {
       --refcnt;
     }
@@ -34,7 +34,7 @@ public:
     }
   }
 
-  void set_refcnt(uint32_t new_refcnt) final {
+  void set_refcnt(uint32_t new_refcnt) noexcept final {
     refcnt = new_refcnt;
   }
 
@@ -45,17 +45,17 @@ private:
 template<class Derived>
 class refcountable_php_classes  : public ManagedThroughDlAllocator {
 public:
-  void add_ref() {
+  void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {
       ++refcnt;
     }
   }
 
-  uint32_t get_refcnt() {
+  uint32_t get_refcnt() noexcept {
     return refcnt;
   }
 
-  void release() __attribute__((always_inline)) {
+  void release() noexcept __attribute__((always_inline)) {
     if (refcnt < ExtraRefCnt::for_global_const) {
       --refcnt;
     }
@@ -71,7 +71,7 @@ public:
     }
   }
 
-  void set_refcnt(uint32_t new_refcnt) {
+  void set_refcnt(uint32_t new_refcnt) noexcept {
     refcnt = new_refcnt;
   }
 
@@ -81,6 +81,6 @@ private:
 
 class refcountable_empty_php_classes {
 public:
-  static void add_ref() {}
-  static void release() {}
+  static void add_ref() noexcept {}
+  static void release() noexcept {}
 };

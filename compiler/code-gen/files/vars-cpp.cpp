@@ -139,8 +139,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
       continue;
     }
 
-    W << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part << "()";
-    W << BEGIN;
+    FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part << "()" << BEGIN;
 
     for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
       VarPtr var = const_raw_string_vars[ii];
@@ -199,7 +198,7 @@ void VarsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("vars.cpp", "", false);
   W << OpenNamespace();
 
-  W << "void const_vars_init() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
 
   const auto longest_dep_mask = std::max_element(
     dep_masks.begin(), dep_masks.end(),

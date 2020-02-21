@@ -5,6 +5,7 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
+#include "compiler/code-gen/naming.h"
 #include "compiler/inferring/public.h"
 #include "runtime/php_assert.h"
 
@@ -54,13 +55,13 @@ void TypeTagger::compile(CodeGenerator &W) const {
     kphp_assert(hash);
     kphp_assert(hashes.insert({hash, type}).second);
     W << "template<>" << NL;
-    W << "int Storage::tagger<" << type << ">::get_tag() " << BEGIN;
+    FunctionSignatureGenerator(W) << "int Storage::tagger<" << type << ">::get_tag() " << BEGIN;
     W << "return " << hash << ";" << NL;
     W << END << NL << NL;
   }
 
   W << "template<typename T>" << NL;
-  W << "typename Storage::loader<T>::loader_fun Storage::loader<T>::get_function(int tag)" << BEGIN;
+  FunctionSignatureGenerator(W) << "typename Storage::loader<T>::loader_fun Storage::loader<T>::get_function(int tag)" << BEGIN;
   W << "switch(tag)" << BEGIN;
   for (const auto &hash_type : hashes) {
     W << "case " << hash_type.first << ":" << " return Storage::load_implementation_helper<" << hash_type.second << ", T>::load;" << NL;
