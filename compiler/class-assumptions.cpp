@@ -25,6 +25,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
@@ -79,24 +80,23 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     return false;
   }
 
-  auto dst_as_array = dst->try_as<AssumInstanceArray>();
-  auto rhs_as_array = rhs->try_as<AssumInstanceArray>();
+  auto dst_as_array = dst->try_as<AssumArray>();
+  auto rhs_as_array = rhs->try_as<AssumArray>();
   if (dst_as_array && rhs_as_array) {
-    ClassPtr lca_class = merge_classes_lca(dst_as_array->klass, rhs_as_array->klass);
-    if (lca_class) {
-      dst_as_array->klass = lca_class;
-      return true;
+    return assumption_merge(dst_as_array->inner, rhs_as_array->inner);
+  }
+
+  auto dst_as_tuple = dst->try_as<AssumTuple>();
+  auto rhs_as_tuple = rhs->try_as<AssumTuple>();
+  if (dst_as_tuple && rhs_as_tuple && dst_as_tuple->subkeys_assumptions.size() == rhs_as_tuple->subkeys_assumptions.size()) {
+    bool ok = true;
+    for (int i = 0; i < dst_as_tuple->subkeys_assumptions.size(); ++i) {
+      ok &= assumption_merge(dst_as_tuple->subkeys_assumptions[i], rhs_as_tuple->subkeys_assumptions[i]);
     }
-    return false;
+    return ok;
   }
 
-  auto dst_as_not_instance = dst->try_as<AssumNotInstance>();
-  auto rhs_as_not_instance = rhs->try_as<AssumNotInstance>();
-  if (dst_as_not_instance && rhs_as_not_instance) {
-    return true;
-  }
-
-  return false;
+  return dst->is_primitive() && rhs->is_primitive();
 }
 
 void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption) {
@@ -149,26 +149,32 @@ void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const vk::intr
 
 /*
  * Распарсив содержимое тега после @param/@return/@var в виде VertexPtr type_expr, пробуем найти там класс
- * Разбираем простые случаи: A|false, A[]; более сложные, когда класс внутри tuple — не интересуют
+ * Разбираем известные случаи: A|null, A[], A[][]|false, tuple(A, B)
  */
-vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const PhpDocTagParseResult &result) {
-  VertexPtr expr = result.type_expr;
-
-  if (auto lca_rule = expr.try_as<op_type_expr_lca>()) {
+vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr) {
+  // из 'A|null', 'A[]|false', 'null|some_class' достаём 'A' / 'A[]' / 'some_class'
+  if (auto lca_rule = type_expr.try_as<op_type_expr_lca>()) {
     VertexRange or_rules = lca_rule->args();
     if (vk::any_of_equal(or_rules[1]->type_help, tp_False, tp_Null)) {
-      expr = or_rules[0];      // из 'A|false', 'A[]|null' достаём 'A' / 'A[]'
+      type_expr = or_rules[0];
     } else if (vk::any_of_equal(or_rules[0]->type_help, tp_False, tp_Null)) {
-      expr = or_rules[1];      // аналогично, только null в начале
+      type_expr = or_rules[1];
     }
   }
 
-  if (expr->type_help == tp_Class) {
-    return AssumInstance::create(expr.as<op_type_expr_class>()->class_ptr);
-  } else if (expr->type_help == tp_array && expr.as<op_type_expr_type>()->args()[0]->type_help == tp_Class) {
-    return AssumInstanceArray::create(expr.as<op_type_expr_type>()->args()[0].as<op_type_expr_class>()->class_ptr);
+  if (type_expr->type_help == tp_Class) {
+    return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr);
   }
-
+  if (type_expr->type_help == tp_array) {
+    return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]));
+  }
+  if (type_expr->type_help == tp_tuple) {
+    decltype(AssumTuple::subkeys_assumptions) sub;
+    for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
+      sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
+    }
+    return AssumTuple::create(sub);
+  }
   return AssumNotInstance::create();
 }
 
@@ -181,7 +187,7 @@ void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const v
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
   if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
     if (parsed.var_name.empty() || var_name == parsed.var_name) {
-      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(parsed));
+      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(parsed.type_expr));
     }
   }
 }
@@ -193,8 +199,19 @@ void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const v
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
 
-  if (a && !a->try_as<AssumNotInstance>()) {
+  if (a && !a->is_primitive()) {
     assumption_add_for_var(f, var_name, a);
+  }
+}
+
+/*
+ * Из list(... $lhs_var ...) = ...rhs... определяем, что присваивается в $lhs_var (возможно, справа tuple/shape)
+ */
+void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr index_key, const VertexPtr &rhs, size_t depth) {
+  auto a = infer_class_of_expr(f, rhs, depth + 1);
+
+  if (a && !a->get_subkey_by_index(index_key)->is_primitive()) {
+    assumption_add_for_var(f, var_name, a->get_subkey_by_index(index_key));
   }
 }
 
@@ -212,8 +229,8 @@ void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor
 static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
   auto a = infer_class_of_expr(f, root->xs(), depth + 1);
 
-  if (auto as_array = a->try_as<AssumInstanceArray>()) {
-    assumption_add_for_var(f, var_name, AssumInstance::create(as_array->klass));
+  if (auto as_array = a->try_as<AssumArray>()) {
+    assumption_add_for_var(f, var_name, as_array->inner);
   }
 }
 
@@ -239,7 +256,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
         // умеем как в /** @var A $v */, так и в /** @var A */ $v ...
         const std::string &var_name = parsed.var_name.empty() ? root.as<op_phpdoc_raw>()->next_var_name : parsed.var_name;
         if (!var_name.empty()) {
-          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(parsed));
+          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(parsed.type_expr));
         }
       }
       return;
@@ -249,6 +266,21 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
       auto set = root.as<op_set>();
       if (set->lhs()->type() == op_var && set->lhs()->get_string() == var_name) {
         analyze_set_to_var(f, var_name, set->rhs(), depth + 1);
+      }
+      return;
+    }
+
+    case op_list: {
+      auto list = root.as<op_list>();
+      VertexRange v_list_items = list->list();
+      for (int int_index = 0; int_index < v_list_items.size(); ++int_index) {
+        auto as_var = v_list_items[int_index].try_as<op_var>();
+        if (as_var && as_var->get_string() == var_name) {
+          // создаём index_key, т.к. в будущем всё равно будем парсить list(key=>$var), он и так будет
+          auto index_key = VertexAdaptor<op_int_const>::create();
+          index_key->str_val = std::to_string(int_index);
+          analyze_set_to_list_var(f, var_name, index_key, list->array(), depth + 1);
+        }
       }
       return;
     }
@@ -295,7 +327,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   if (!f->phpdoc_str.empty()) {
     for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
       if (!parsed.var_name.empty()) {
-        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed));
+        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed.type_expr));
       }
     }
   }
@@ -305,8 +337,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
     if (!param->type_declaration.empty()) {
       auto result = phpdoc_parse_type_and_var_name(param->type_declaration, f);
-      auto a = assumption_create_from_phpdoc(result);
-      if (!a->try_as<AssumNotInstance>()) {
+      auto a = assumption_create_from_phpdoc(result.type_expr);
+      if (!a->is_primitive()) {
         assumption_add_for_var(f, param->var()->get_string(), a);
       }
     }
@@ -356,15 +388,18 @@ bool parse_kphp_return_doc(FunctionPtr f) {
       auto a = assumption_get_for_var(f, template_arg_name);
 
       if (!field_name.empty()) {
-        ClassPtr klass = a->try_as<AssumInstance>() ? a->try_as<AssumInstance>()->klass : a->try_as<AssumInstanceArray>() ? a->try_as<AssumInstanceArray>()->klass : ClassPtr{};
+        ClassPtr klass =
+          a->try_as<AssumInstance>() ? a->try_as<AssumInstance>()->klass :
+          a->try_as<AssumArray>() && a->try_as<AssumArray>()->inner->try_as<AssumInstance>() ? a->try_as<AssumArray>()->inner->try_as<AssumInstance>()->klass :
+          ClassPtr{};
         kphp_error_act(klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
         a = calc_assumption_for_class_var(klass, field_name);
       }
 
       if (a->try_as<AssumInstance>() && return_type_arr_of_arg_type) {
-        assumption_add_for_return(f, AssumInstanceArray::create(a->try_as<AssumInstance>()->klass));
-      } else if (a->try_as<AssumInstanceArray>() && return_type_element_of_arg_type && field_name.empty()) {
-        assumption_add_for_return(f, AssumInstance::create(a->try_as<AssumInstanceArray>()->klass));
+        assumption_add_for_return(f, AssumArray::create(a->try_as<AssumInstance>()->klass));
+      } else if (a->try_as<AssumArray>() && return_type_element_of_arg_type && field_name.empty()) {
+        assumption_add_for_return(f, a->try_as<AssumArray>()->inner);
       } else {
         assumption_add_for_return(f, a);
       }
@@ -387,7 +422,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 
   if (!f->phpdoc_str.empty()) {
     if (auto parsed = phpdoc_find_tag(f->phpdoc_str, php_doc_tag::returns, f)) {
-      assumption_add_for_return(f, assumption_create_from_phpdoc(parsed));
+      assumption_add_for_return(f, assumption_create_from_phpdoc(parsed.type_expr));
       return;
     }
 
@@ -581,8 +616,8 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
       auto arr = index->array();
       if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
         auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
-        if (auto arr_a = expr_a->try_as<AssumInstanceArray>()) {
-          return AssumInstance::create(arr_a->klass);
+        if (auto arr_a = expr_a->try_as<AssumArray>()) {
+          return arr_a->inner;
         }
         return AssumNotInstance::create();
       }
@@ -593,7 +628,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
         if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
           auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
           if (auto inst_a = expr_a->try_as<AssumInstance>()) {
-            return AssumInstanceArray::create(inst_a->klass);
+            return AssumArray::create(inst_a->klass);
           }
           return AssumNotInstance::create();
         }
@@ -630,7 +665,17 @@ vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
     }
   }
 
-  return AssumInstanceArray::create(klass);
+  return AssumArray::create(klass);
+}
+
+vk::intrusive_ptr<Assumption> infer_from_tuple(FunctionPtr f,
+                                               VertexAdaptor<op_tuple> tuple,
+                                               size_t depth) {
+  decltype(AssumTuple::subkeys_assumptions) sub;
+  for (auto sub_expr : *tuple) {
+    sub.emplace_back(infer_class_of_expr(f, sub_expr, depth + 1));
+  }
+  return AssumTuple::create(std::move(sub));
 }
 
 vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
@@ -669,14 +714,14 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
       auto index = root.as<op_index>();
       if (index->has_key()) {
         auto expr_a = infer_class_of_expr(f, index->array(), depth + 1);
-        if (auto arr_a = expr_a->try_as<AssumInstanceArray>()) {
-          return AssumInstance::create(arr_a->klass);
-        }
+        return expr_a ? expr_a->get_subkey_by_index(index) : AssumNotInstance::create();
       }
       return AssumNotInstance::create();
     }
     case op_array:
       return infer_from_array(f, root.as<op_array>(), depth + 1);
+    case op_tuple:
+      return infer_from_tuple(f, root.as<op_tuple>(), depth + 1);
     case op_conv_array:
     case op_conv_array_l:
       return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), depth + 1);
@@ -689,8 +734,12 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
   }
 }
 
-std::string AssumInstanceArray::as_human_readable() const {
-  return klass->name + "[]";
+
+// ——————————————
+
+
+std::string AssumArray::as_human_readable() const {
+  return inner->as_human_readable() + "[]";
 }
 
 std::string AssumInstance::as_human_readable() const {
@@ -699,4 +748,78 @@ std::string AssumInstance::as_human_readable() const {
 
 std::string AssumNotInstance::as_human_readable() const {
   return "primitive";
+}
+
+std::string AssumTuple::as_human_readable() const {
+  std::string r = "tuple(";
+  for (auto a_sub : subkeys_assumptions) {
+    r += a_sub->as_human_readable() + ",";
+  }
+  r[r.size() - 1] = ')';
+  return r;
+}
+
+
+bool AssumArray::is_primitive() const {
+  return inner->is_primitive();
+}
+
+bool AssumInstance::is_primitive() const {
+  return false;
+}
+
+bool AssumNotInstance::is_primitive() const {
+  return true;
+}
+
+bool AssumTuple::is_primitive() const {
+  for (auto it : subkeys_assumptions) {
+    if (!it->is_primitive()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+const TypeData *AssumArray::get_type_data() const {
+  return TypeData::create_array_type_data(inner->get_type_data(), true);
+}
+
+const TypeData *AssumInstance::get_type_data() const {
+  return klass->type_data;
+}
+
+const TypeData *AssumNotInstance::get_type_data() const {
+  return TypeData::get_type(tp_Any);
+}
+
+const TypeData *AssumTuple::get_type_data() const {
+  std::vector<const TypeData *> subkeys_values;
+  std::transform(subkeys_assumptions.begin(), subkeys_assumptions.end(), std::back_inserter(subkeys_values),
+                 [](const vk::intrusive_ptr<Assumption> &a) { return a->get_type_data(); });
+  return TypeData::create_tuple_type_data(subkeys_values, true);
+}
+
+
+vk::intrusive_ptr<Assumption> AssumArray::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
+  return inner;
+}
+
+vk::intrusive_ptr<Assumption> AssumInstance::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
+  return AssumNotInstance::create();
+}
+
+vk::intrusive_ptr<Assumption> AssumNotInstance::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
+  return AssumNotInstance::create();
+}
+
+vk::intrusive_ptr<Assumption> AssumTuple::get_subkey_by_index(VertexPtr index_key) const {
+  if (auto as_int_index = GenTree::get_actual_value(index_key).try_as<op_int_const>()) {
+    int int_index = parse_int_from_string(as_int_index);
+    if (int_index >= 0 && int_index < subkeys_assumptions.size()) {
+      return subkeys_assumptions[int_index];
+    }
+  }
+  return AssumNotInstance::create();
 }

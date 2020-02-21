@@ -5,20 +5,25 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
+class TypeData;
+
 class Assumption : public vk::thread_safe_refcnt<Assumption> {
 public:
   virtual ~Assumption() = default;
 
   virtual std::string as_human_readable() const = 0;
+  virtual bool is_primitive() const = 0;
+  virtual const TypeData *get_type_data() const = 0;
+  virtual vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const = 0;
 
   template<class Derived>
-  const Derived* try_as() const {
-    return dynamic_cast<Derived*>(this);
+  const Derived *try_as() const {
+    return dynamic_cast<Derived *>(this);
   }
 
   template<class Derived>
-  Derived* try_as() {
-    return dynamic_cast<Derived*>(this);
+  Derived *try_as() {
+    return dynamic_cast<Derived *>(this);
   }
 };
 
@@ -33,6 +38,9 @@ public:
   }
 
   std::string as_human_readable() const override;
+  bool is_primitive() const override;
+  const TypeData *get_type_data() const override;
+  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
 class AssumInstance : public Assumption {
@@ -48,21 +56,49 @@ public:
   }
 
   std::string as_human_readable() const override;
+  bool is_primitive() const override;
+  const TypeData *get_type_data() const override;
+  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumInstanceArray : public Assumption {
-  AssumInstanceArray() = default;
+class AssumArray : public Assumption {
+  AssumArray() = default;
 
 public:
-  ClassPtr klass;
+  vk::intrusive_ptr<Assumption> inner;
+
+  static vk::intrusive_ptr<Assumption> create(const vk::intrusive_ptr<Assumption> &inner) {
+    auto self = new AssumArray();
+    self->inner = inner;
+    return vk::intrusive_ptr<Assumption>(self);
+  }
 
   static vk::intrusive_ptr<Assumption> create(ClassPtr klass) {
-    auto self = new AssumInstanceArray();
-    self->klass = klass;
+    return create(AssumInstance::create(klass));
+  }
+
+  std::string as_human_readable() const override;
+  bool is_primitive() const override;
+  const TypeData *get_type_data() const override;
+  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
+};
+
+class AssumTuple : public Assumption {
+  AssumTuple() = default;
+
+public:
+  std::vector<vk::intrusive_ptr<Assumption>> subkeys_assumptions;
+
+  static vk::intrusive_ptr<Assumption> create(const std::vector<vk::intrusive_ptr<Assumption>> &sub) {
+    auto self = new AssumTuple();
+    self->subkeys_assumptions = sub;
     return vk::intrusive_ptr<Assumption>(self);
   }
 
   std::string as_human_readable() const override;
+  bool is_primitive() const override;
+  const TypeData *get_type_data() const override;
+  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
 

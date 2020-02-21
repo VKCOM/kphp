@@ -163,30 +163,30 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
       if (index->has_key()) {
         // $var[$idx]->...
         if (array->type() == op_var) {
-          auto as_array = infer_class_of_expr(function, array)->try_as<AssumInstanceArray>();
-          kphp_error(as_array,
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("${} is not an array of instances or it can't be detected.\n"
                                                         "Add phpdoc to variable or @return tag to function was used to initialize it.",
                                                         array->get_string())));
-          return as_array ? as_array->klass : ClassPtr{};
+          return as_inner_instance ? as_inner_instance->klass : ClassPtr{};
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
-          auto as_array = infer_class_of_expr(function, array)->try_as<AssumInstanceArray>();
-          kphp_error(as_array,
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("{}() does not return array of instances or it can't be detected.\n"
                                                         "Add @return tag to function phpdoc",
                                                         array->get_string())));
-          return as_array ? as_array->klass : ClassPtr{};
+          return as_inner_instance ? as_inner_instance->klass : ClassPtr{};
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
-          auto as_array = infer_class_of_expr(function, array)->try_as<AssumInstanceArray>();
-          kphp_error(as_array,
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("${}->{} is not array of instances or it can't be detected.\n"
                                                         "Add phpdoc to field declaration",
                                                         array.as<op_instance_prop>()->instance()->get_string(), array->get_string())));
-          return as_array ? as_array->klass : ClassPtr{};
+          return as_inner_instance ? as_inner_instance->klass : ClassPtr{};
         }
       }
       break;

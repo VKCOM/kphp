@@ -60,7 +60,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     PrimitiveType result_pt = tp_Unknown;
     for (auto v : lca_rule->args()) {
       PrimitiveType pt = infer_type_of_callback_arg(v, extern_function_call, function_context, assumption);
-      if (assumption->try_as<AssumInstance>() || assumption->try_as<AssumInstanceArray>()) {
+      if (assumption && !assumption->is_primitive()) {
         return pt;
       }
 
@@ -81,8 +81,8 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     return tp_Unknown;
   } else if (auto index_rule = type_rule.try_as<op_index>()) {
     PrimitiveType pt = infer_type_of_callback_arg(index_rule->array(), extern_function_call, function_context, assumption);
-    if (auto as_array = assumption->try_as<AssumInstanceArray>()) {
-      assumption = AssumInstance::create(as_array->klass);
+    if (auto as_array = assumption->try_as<AssumArray>()) {
+      assumption = as_array->inner;
     }
     return pt;
   } else if (auto arg_ref = type_rule.try_as<op_type_expr_arg_ref>()) {
@@ -148,10 +148,10 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
     }
 
     auto &type_id = lambda_param->template_type_id;
-    if (!assumption || assumption->try_as<AssumNotInstance>()) {
+    if (!assumption || assumption->is_primitive()) {
       kphp_assert(lambda_param->type_help != tp_Unknown);
       type_id = -1;
-    } else if (assumption->try_as<AssumInstance>() || assumption->try_as<AssumInstanceArray>()) {
+    } else {
       if (type_id > -1) {
         template_type_id_to_ClassPtr->emplace(type_id, assumption);
       }

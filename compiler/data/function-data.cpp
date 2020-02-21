@@ -61,11 +61,13 @@ void FunctionData::update_location_in_body() {
 }
 
 std::string FunctionData::encode_template_arg_name(const vk::intrusive_ptr<Assumption> &assumption, int id) {
-  if (auto as_instance = assumption->try_as<AssumInstance>()) {
-    return "$" + replace_backslashes(as_instance->klass->name);
-  }
-  if (auto as_array = assumption->try_as<AssumInstanceArray>()) {
-    return "$arr$" + replace_backslashes(as_array->klass->name);
+  if (assumption && !assumption->is_primitive()) {
+    if (auto as_instance = assumption->try_as<AssumInstance>()) {
+      return "$" + replace_backslashes(as_instance->klass->name);
+    }
+    if (auto as_array = assumption->try_as<AssumArray>()) {
+      return "$arr" + encode_template_arg_name(as_array->inner, id);
+    }
   }
   return "$" + std::to_string(id) + "not_instance";
 }

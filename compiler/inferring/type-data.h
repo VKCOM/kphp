@@ -144,8 +144,9 @@ public:
   static void init_static();
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
-  static TypeData *create_for_class(ClassPtr klass);
-  static TypeData *create_array_type_data(const TypeData* element_type, bool optional_flag = false);
+  static const TypeData *create_for_class(ClassPtr klass);
+  static const TypeData *create_array_type_data(const TypeData *element_type, bool optional_flag = false);
+  static const TypeData *create_tuple_type_data(const std::vector<const TypeData *> &subkeys_values, bool optional_flag = false);
   //FIXME:??
   static void inc_generation();
   static generation_t current_generation();

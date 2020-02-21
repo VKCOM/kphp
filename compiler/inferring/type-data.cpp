@@ -51,8 +51,8 @@ inline void TypeData::SubkeysValues::clear() {
 
 /*** TypeData ***/
 
-static std::vector<TypeData *> primitive_types;
-static std::vector<TypeData *> array_types;
+static std::vector<const TypeData *> primitive_types;
+static std::vector<const TypeData *> array_types;
 
 void TypeData::init_static() {
   if (!primitive_types.empty()) {
@@ -870,15 +870,25 @@ size_t TypeData::get_tuple_max_index() const {
   return subkeys_values.size();
 }
 
-TypeData *TypeData::create_for_class(ClassPtr klass) {
-  TypeData *result = new TypeData(tp_Class);
-  result->class_type_ = klass;
-  return result;
+const TypeData *TypeData::create_for_class(ClassPtr klass) {
+  auto *res = new TypeData(tp_Class);
+  res->class_type_ = klass;
+  return res;
 }
 
-TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool optional_flag /* = false */) {
-  TypeData *res = new TypeData(tp_array);
+const TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool optional_flag /* = false */) {
+  auto *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
+  res->set_or_false_flag(optional_flag);
+  res->set_or_null_flag(optional_flag);
+  return res;
+}
+
+const TypeData *TypeData::create_tuple_type_data(const std::vector<const TypeData *> &subkeys_values, bool optional_flag /* = false */) {
+  auto *res = new TypeData(tp_tuple);
+  for (int int_index = 0; int_index < subkeys_values.size(); ++int_index) {
+    res->set_lca_at(MultiKey({Key::int_key(int_index)}), subkeys_values[int_index]);
+  }
   res->set_or_false_flag(optional_flag);
   res->set_or_null_flag(optional_flag);
   return res;

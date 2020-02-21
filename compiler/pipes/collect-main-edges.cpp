@@ -456,12 +456,8 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       }
     }
 
-    RValue rvalue_of_return = as_rvalue(function, -1);
-    if (auto as_instance = function->assumption_for_return->try_as<AssumInstance>()) {
-      create_less(rvalue_of_return, as_instance->klass->type_data);
-    }
-    if (auto as_array = function->assumption_for_return->try_as<AssumInstanceArray>()) {
-      create_less(rvalue_of_return, TypeData::create_array_type_data(as_array->klass->type_data, true));
+    if (function->assumption_for_return && !function->assumption_for_return->is_primitive()) {
+      create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
     }
   }
 }
@@ -538,14 +534,8 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   const vk::intrusive_ptr<Assumption> &a = var->is_class_instance_var()
                                          ? assumption_get_for_var(var->class_id, var->name)
                                          : assumption_get_for_var(current_function, var->name);
-  if (auto as_instance = a->try_as<AssumInstance>()) {                  // var == cl
-    create_less(var, as_instance->klass->type_data);
-    // You could specify php-doc that some var is `Interface class` but always assign to that var only one class.
-    // In this situation we will infer that type of this var is concrete class not Interface
-    // create_less(cl->type_data, var);
-  } else if (auto as_array = a->try_as<AssumInstanceArray>()) {     // cl[] <= var <= Optional<cl[]>
-    create_less(var, TypeData::create_array_type_data(as_array->klass->type_data, true));
-    // create_less(TypeData::create_array_type_data(a->klass->type_data), var);
+  if (a && !a->is_primitive()) {
+    create_less(var, a->get_type_data());
   }
 }
 
