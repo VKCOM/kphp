@@ -45,13 +45,16 @@ string f$urlencode(const string &s);
 template<class T>
 string http_build_query_get_param_array(const string &key, const array<T> &a, const string &arg_separator, int enc_type) {
   string result;
-  int first = 1;
+  bool first = true;
   for (typename array<T>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    if (!first) {
-      result.append(arg_separator);
+    const string &key_value_param = http_build_query_get_param((static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type);
+    if (!key_value_param.empty()) {
+      if (!first) {
+        result.append(arg_separator);
+      }
+      result.append(key_value_param);
+      first = false;
     }
-    first = 0;
-    result.append(http_build_query_get_param((static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type));
   }
   return result;
 }
@@ -59,6 +62,9 @@ string http_build_query_get_param_array(const string &key, const array<T> &a, co
 
 template<class T>
 string http_build_query_get_param(const string &key, const T &a, const string &arg_separator, int enc_type) {
+  if (f$is_null(a)) {
+    return {};
+  }
   if (f$is_array(a)) {
     return http_build_query_get_param_array(key, f$arrayval(a), arg_separator, enc_type);
   } else {
