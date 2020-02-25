@@ -35,6 +35,8 @@ struct php_doc_tag {
     kphp_runtime_check,
     kphp_warn_unused_result,
     kphp_flatten,
+    kphp_serializable,
+    kphp_tag,
   };
 
 public:

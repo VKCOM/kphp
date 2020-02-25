@@ -27,8 +27,8 @@
  */
 static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   bool function_has_kphp_doc = f->phpdoc_str.find("@kphp") != std::string::npos;
-  bool class_has_kphp_doc = (f->modifiers.is_instance() || f->modifiers.is_static()) && f->class_id->phpdoc_str.find("@kphp") != std::string::npos;
-  if (!function_has_kphp_doc && !class_has_kphp_doc) {
+  bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
+  if (!function_has_kphp_doc && !class_has_kphp_infer) {
     return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
   }
 
@@ -51,19 +51,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 
   // phpdoc класса может влиять на phpdoc функции
-  if (class_has_kphp_doc) {
-    for (auto &tag : parse_php_doc(f->class_id->phpdoc_str)) {
-      switch (tag.type) {
-        // @kphp-infer, написанный над классом — будто его написали над каждой функцией
-        case php_doc_tag::kphp_infer: {
-          infer_type |= (infer_mask::check | infer_mask::hint);
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
+  // @kphp-infer, написанный над классом — будто его написали над каждой функцией
+  if (class_has_kphp_infer) {
+    infer_type |= (infer_mask::check | infer_mask::hint);
   }
 
   std::size_t id_of_kphp_template = 0;

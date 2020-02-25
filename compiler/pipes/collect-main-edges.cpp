@@ -380,6 +380,8 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
   // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
   // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
   auto add_type_rule_from_field_phpdoc = [this](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
+    auto klass = field_root->var_id->class_id;
+
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
@@ -387,6 +389,14 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
         field_root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
         add_type_rule(field_root);
       }
+    }
+
+    if (auto kphp_tag_str = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::kphp_tag)) {
+      kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-tag inside non-serializable klass: {}", klass->name));
+      auto kphp_tag = std::stoi(*kphp_tag_str);
+      constexpr int32_t max_tag_value = std::numeric_limits<int8_t>::max();
+      kphp_error_return(kphp_tag < max_tag_value, fmt_format("kphp-tag must be less than: {}", max_tag_value));
+      field_root->var_id->serialization_tag = kphp_tag;
     }
   };
 
