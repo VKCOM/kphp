@@ -2098,6 +2098,8 @@ void open_json_log() {
 void reopen_json_log() {
   if (json_log_file_ptr != nullptr) {
     fclose(json_log_file_ptr);
+  }
+  if (enable_json) {
     open_json_log();
   }
 }
@@ -2120,6 +2122,7 @@ void start_server() {
 
     ksignal(SIGHUP, sighup_handler);
     reopen_logs();
+    reopen_json_log();
   }
   if (master_flag) {
     vkprintf (-1, "master\n");
@@ -2138,10 +2141,7 @@ void start_server() {
     if (logname_pattern != nullptr) {
       reopen_logs();
     }
-
-    if (enable_json) {
-      open_json_log();
-    }
+    reopen_json_log();
   } else {
     if (logname != nullptr) {
       kstdout = dup(1);
@@ -2155,6 +2155,7 @@ void start_server() {
         exit(1);
       }
       reopen_logs();
+      reopen_json_log();
     }
   }
 

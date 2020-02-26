@@ -44,7 +44,7 @@
 #include "runtime/instance_cache.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
-#include "php-engine.h"
+#include "server/php-engine.h"
 
 extern const char *engine_tag;
 
