@@ -44,6 +44,7 @@
 #include "runtime/instance_cache.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
+#include "php-engine.h"
 
 extern const char *engine_tag;
 
@@ -2073,6 +2074,7 @@ void run_master() {
       local_pending_signals &= ~(1ll << SIGUSR1);
 
       reopen_logs();
+      reopen_json_log();
       workers_send_signal(SIGUSR1);
     }
 

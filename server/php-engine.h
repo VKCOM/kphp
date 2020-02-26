@@ -34,3 +34,4 @@ void command_net_write_free(command_t *base_command);
 command_t *create_command_net_writer(const char *data, int data_len, command_t *base, long long extra);
 connection *get_target_connection_force(conn_target_t *S);
 int pnet_query_timeout(conn_query *q);
+void reopen_json_log();

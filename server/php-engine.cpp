@@ -2095,6 +2095,13 @@ void open_json_log() {
   }
 }
 
+void reopen_json_log() {
+  if (json_log_file_ptr != nullptr) {
+    fclose(json_log_file_ptr);
+    open_json_log();
+  }
+}
+
 void start_server() {
   int prev_time;
   double next_create_outbound = 0;
@@ -2261,6 +2268,7 @@ void start_server() {
       pending_signals &= ~(1ll << SIGUSR1);
 
       reopen_logs();
+      reopen_json_log();
     }
 
     if (now != prev_time) {
