@@ -29,6 +29,16 @@ def cyan(text):
     return "\033[36m{}\033[0m".format(text)
 
 
+def get_distributive_name():
+    with open("/etc/issue") as f:
+        version_line = f.readline()
+    if version_line.startswith("Debian GNU/Linux 10 "):
+        return "buster"
+    if version_line.startswith("Debian GNU/Linux 8 "):
+        return "jessie"
+    return "unknown"
+
+
 class TestStatus(Enum):
     FAILED = red("failed")
     PASSED = green("passed")
@@ -134,8 +144,8 @@ def make_relpath(file_dir, file_path):
 
 def get_modes():
     return {
-        "asan": ("asan", "g=1 asan=1 php tl2php kphp-unittests"),
-        "normal": ("normal", "php tl2php kphp-unittests")
+        "asan": ("asan", "ASAN_OPTIONS=detect_leaks=0", "g=1 asan=1 php tl2php kphp-unittests"),
+        "normal": ("normal", "", "php tl2php kphp-unittests")
     }
 
 
@@ -212,7 +222,7 @@ if __name__ == "__main__":
 
     runner_dir = os.path.dirname(os.path.abspath(__file__))
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
-    zend_test_list = make_relpath(runner_dir, "zend-test-list")
+    zend_test_list = make_relpath(runner_dir, "ci/zend-test-list")
     root_engine_path = os.path.join(os.path.join(runner_dir, os.path.pardir), os.path.pardir)
     root_engine_path = os.path.relpath(root_engine_path, os.getcwd())
 
@@ -221,14 +231,16 @@ if __name__ == "__main__":
 
     distcc_options = ""
     if args.use_distcc:
-        distcc_host_list = make_relpath(runner_dir, "distcc-host-list")
+        distcc_hosts = "ci/distcc-host-list.{}".format(get_distributive_name())
+        distcc_host_list = make_relpath(runner_dir, distcc_hosts)
         distcc_options = "--distcc-host-list {}".format(distcc_host_list);
 
-    mode_name, options = get_modes()[args.mode]
+    mode_name, env_vars, options = get_modes()[args.mode]
     runner.add_test_group(
         name="make-kphp",
         description="make kphp and runtime in {} mode".format(mode_name),
-        cmd="make -C {engine_root} -j{{jobs}} {options}".format(
+        cmd="{env_vars} make -C {engine_root} -j{{jobs}} {options}".format(
+            env_vars=env_vars,
             engine_root=root_engine_path,
             options=options
         ),
@@ -271,7 +283,8 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="tl2php",
         description="gen php classes with tests from tl schema in {} mode".format(mode_name),
-        cmd="{tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
+        cmd="{env_vars} {tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
+            env_vars=env_vars,
             tl2php=tl2php_bin,
             combined2_tl=combined2_tl,
             tl_tests_dir=tl_tests_dir,
