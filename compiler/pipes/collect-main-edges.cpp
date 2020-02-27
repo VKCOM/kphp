@@ -377,9 +377,12 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
+  used_serialization_tags_t used_serialization_tags_for_fields{false};
+  fill_reserved_serialization_tags(used_serialization_tags_for_fields, klass);
+
   // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
   // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
-  auto add_type_rule_from_field_phpdoc = [this](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
+  auto add_type_rule_from_field_phpdoc = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
     auto klass = field_root->var_id->class_id;
 
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
@@ -391,12 +394,18 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
       }
     }
 
-    if (auto kphp_tag_str = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::kphp_tag)) {
-      kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-tag inside non-serializable klass: {}", klass->name));
-      auto kphp_tag = std::stoi(*kphp_tag_str);
-      constexpr int32_t max_tag_value = std::numeric_limits<int8_t>::max();
-      kphp_error_return(kphp_tag < max_tag_value, fmt_format("kphp-tag must be less than: {}", max_tag_value));
-      field_root->var_id->serialization_tag = kphp_tag;
+    if (auto kphp_serialized_field_str = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::kphp_serialized_field)) {
+      if (*kphp_serialized_field_str != "none") {
+        kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
+        auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str);
+        kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
+        kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
+        kphp_error_return(field_root->var_id->is_class_instance_var(), fmt_format("kphp-serialized-field is allowed only for instance fields: {}", field_root->str_val));
+        field_root->var_id->serialization_tag = kphp_serialized_field;
+        used_serialization_tags_for_fields[kphp_serialized_field] = true;
+      }
+    } else if (!field_root->var_id->is_class_static_var()) {
+      kphp_error_return(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", field_root->str_val));
     }
   };
 
@@ -563,6 +572,21 @@ template<class CollectionT>
 void CollectMainEdgesPass::call_on_var(const CollectionT &collection) {
   for (const auto &el: collection) {
     on_var(el);
+  }
+}
+
+void CollectMainEdgesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
+  if (auto reserved_ids = phpdoc_find_tag_as_string(klass->phpdoc_str, php_doc_tag::kphp_reserved_fields)) {
+    vk::string_view ids(*reserved_ids);
+    kphp_error_return(ids.size() >= 2 && ids[0] == '[' && ids[ids.size() - 1] == ']', "reserved tags must be wrapped by []");
+    ids = ids.substr(1, ids.size() - 2);
+
+    for (auto id_str : split_skipping_delimeters(ids, ",")) {
+      int id;
+      kphp_error_return(sscanf(id_str.data(), "%d", &id) == 1, "tag expected");
+      kphp_error_return(0 <= id && id < max_serialization_tag_value, fmt_format("kphp-reserved-field({}) must be >=0 and < than {}", id, max_serialization_tag_value + 0));
+      used_serialization_tags_for_fields[id] = true;
+    }
   }
 }
 

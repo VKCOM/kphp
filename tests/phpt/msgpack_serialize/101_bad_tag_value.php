@@ -1,0 +1,21 @@
+@kphp_should_fail
+/kphp-serialized-field\(-10\) must be >=0 and < than 127/
+/kphp-serialized-field\(128\) must be >=0 and < than 127/
+<?php
+
+/** @kphp-serializable */
+class A {
+    /**
+     * @kphp-serialized-field -10
+     * @var int
+     */
+    public $x = 10;
+
+    /**
+     * @kphp-serialized-field 128
+     * @var int
+     */
+    public $y = 10;
+}
+
+$a = new A();

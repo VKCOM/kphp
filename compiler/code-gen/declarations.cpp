@@ -465,6 +465,7 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
   compile_get_class(W, klass);
   compile_get_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
+  compile_serialization_methods(W, klass);
 }
 
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
@@ -514,6 +515,76 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     compile_accept_visitor(W, klass, "DeepDestroyFromCacheVisitor");
     compile_accept_visitor(W, klass, "ShallowMoveFromCacheToScriptVisitor");
   }
+}
+
+void ClassDeclaration::compile_serialization_methods(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->is_serializable) {
+    return;
+  }
+
+  compile_serialize(W, klass);
+  compile_deserialize(W, klass);
+}
+
+void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
+  //template<typename Packer>
+  //void msgpack_pack(Packer &packer) const {
+  //   packer.pack(tag_1);
+  //   packer.pack(field_1);
+  //   ...
+  //}
+  std::string body;
+  uint16_t cnt_fields = 0;
+
+  klass->members.for_each([&](ClassMemberInstanceField &field) {
+    if (field.var->serialization_tag != -1) {
+      body += fmt_format("packer.pack({}); packer.pack(${});\n", field.var->serialization_tag, field.var->name);
+      cnt_fields += 2;
+    }
+  });
+
+  FunctionSignatureGenerator(W).set_const_this()
+    << "void msgpack_pack(msgpack::packer<string_buffer> &packer)" << BEGIN
+    << "packer.pack_array(" << cnt_fields << ");" << NL
+    << body << NL
+    << END << NL;
+}
+
+void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
+  //if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error(); }
+  //auto arr = msgpack_o.via.array;
+  //for (size_t i = 0; i < arr.size; i += 2) {
+  //  auto tag = arr.ptr[i].as<uint8_t>();
+  //  auto elem = arr.ptr[i + 1];
+  //  switch (tag) {
+  //    case tag_x: elem.convert(x); break;
+  //    case tag_s: elem.convert(s); break;
+  //    default   : break;
+  //  }
+  //}
+  //
+
+  std::vector<std::string> cases;
+  klass->members.for_each([&](ClassMemberInstanceField &field) {
+    if (field.var->serialization_tag != -1) {
+      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.var->serialization_tag, field.var->name));
+    }
+  });
+
+  cases.emplace_back("default: break;");
+
+  W << "void msgpack_unpack(msgpack::object const &msgpack_o)" << BEGIN
+      << "if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error(); }" << NL
+      << "auto arr = msgpack_o.via.array;" << NL
+      << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
+        << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
+        << "auto elem = arr.ptr[i + 1];" << NL
+        << "(void) elem;" << NL
+        << "switch (tag)" << BEGIN
+          << JoinValues(cases, "", join_mode::multiple_lines) << NL
+        << END << NL
+      << END << NL
+    << END << NL;
 }
 
 IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) const {

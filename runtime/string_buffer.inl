@@ -166,6 +166,10 @@ string_buffer &string_buffer::append(const char *str, int len) {
   return *this;
 }
 
+void string_buffer::write(const char *str, int len) {
+  append(str, len);
+}
+
 void string_buffer::append_unsafe(const char *str, int len) {
   memcpy(buffer_end, str, len);
   buffer_end += len;

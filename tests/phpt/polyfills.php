@@ -1,6 +1,21 @@
 <?php
 #ifndef KittenPHP
 
+function classAutoLoader($class) {
+  $filename = $class.'.php';
+  $filename = str_replace('\\', '/', $filename);
+  if (strpos($filename, "MessagePack") !== false) {
+    $filename = __DIR__."/vendor/".$filename;
+  } else {
+    list($script_path) = get_included_files();
+    $filename = dirname($script_path)."/".$filename;
+  }
+
+  require_once $filename;
+}
+
+spl_autoload_register('classAutoLoader', true, true);
+
 function tuple(...$args) {
     return $args;
 }
@@ -235,6 +250,8 @@ function array_find(array $ar, callable $clbk) {
   }
   return [null, null];
 }
+
+require_once 'msgpack_polyfill.php';
 
 if (false)
 #endif

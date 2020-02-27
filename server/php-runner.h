@@ -2,6 +2,7 @@
 
 #include <ucontext.h>
 
+#include "common/asan.h"
 #include "drinkless/dl-utils-lite.h"
 
 #include "server/php-engine-vars.h"
@@ -100,6 +101,12 @@ class PHPScriptBase;
 class PHPScriptBase {
   double cur_timestamp, net_time, script_time;
   int queries_cnt;
+
+private:
+#if ASAN7_ENABLED
+  bool fiber_is_started = false;
+#endif
+  int swapcontext_helper(ucontext_t *oucp, const ucontext_t *ucp);
 
 public:
 

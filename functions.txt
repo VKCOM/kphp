@@ -1256,5 +1256,10 @@ function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;
 function instance_cache_clear() ::: bool;
 
+/** @kphp-extern-func-info can_throw */
+function instance_serialize($instance ::: Any) ::: string;
+/** @kphp-extern-func-info cpp_template_call can_throw */
+function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+
 function confdata_get_value($key ::: string) ::: var;
 function confdata_get_values_by_wildcard($wildcard ::: string) ::: var[];

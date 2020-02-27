@@ -10,6 +10,7 @@
 #include <ucontext.h>
 #include <unistd.h>
 
+#include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
 #include "common/server/crash-dump.h"
@@ -35,7 +36,12 @@ void PHPScriptBase::error(const char *error_message, script_error_t error_type) 
   current_script->error_message = error_message;
   current_script->error_type = error_type;
   is_running = false;
-  setcontext(&PHPScriptBase::exit_context);
+  stack_end = reinterpret_cast<char *>(exit_context.uc_stack.ss_sp) + exit_context.uc_stack.ss_size;
+#if ASAN7_ENABLED
+  __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
+  __sanitizer_start_switch_fiber(nullptr, exit_context.uc_stack.ss_sp, exit_context.uc_stack.ss_size);
+#endif
+  setcontext(&exit_context);
 }
 
 void PHPScriptBase::check_tl() {
@@ -78,9 +84,7 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   data(nullptr),
   res(nullptr) {
   //fprintf (stderr, "PHPScriptBase: constructor\n");
-  stack_size += 2 * getpagesize() - 1;
-  stack_size /= getpagesize();
-  stack_size *= getpagesize();
+  stack_size = getpagesize() + (stack_size + getpagesize() - 1) / getpagesize() * getpagesize();
   run_stack = (char *)valloc(stack_size);
   assert (mprotect(run_stack, getpagesize(), PROT_NONE) == 0);
   protected_end = run_stack + getpagesize();
@@ -129,17 +133,29 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   PHPScriptBase::ml_flag = false;
 }
 
+int PHPScriptBase::swapcontext_helper(ucontext_t *oucp, const ucontext_t *ucp) {
+  stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
+#if ASAN7_ENABLED
+  if (fiber_is_started) {
+    __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
+  }
+  fiber_is_started = true;
+  __sanitizer_start_switch_fiber(nullptr, ucp->uc_stack.ss_sp, ucp->uc_stack.ss_size);
+#endif
+
+  return swapcontext(oucp, ucp);
+}
 void PHPScriptBase::pause() {
   //fprintf (stderr, "pause: \n");
   is_running = false;
-  assert (swapcontext(&run_context, &exit_context) == 0);
+  assert (swapcontext_helper(&run_context, &exit_context) == 0);
   is_running = true;
   check_tl();
   //fprintf (stderr, "pause: ended\n");
 }
 
 void PHPScriptBase::resume() {
-  assert (swapcontext(&exit_context, &run_context) == 0);
+  assert (swapcontext_helper(&exit_context, &run_context) == 0);
 }
 
 void dump_query_stats() {

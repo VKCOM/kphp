@@ -42,7 +42,8 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-runtime-check",     kphp_runtime_check},
   {"@kphp-warn-unused-result",kphp_warn_unused_result},
   {"@kphp-serializable",      kphp_serializable},
-  {"@kphp-tag",               kphp_tag},
+  {"@kphp-reserved-fields",   kphp_reserved_fields},
+  {"@kphp-serialized-field",  kphp_serialized_field},
 };
 
 vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {

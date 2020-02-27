@@ -97,10 +97,15 @@ struct ClassDeclaration {
   explicit ClassDeclaration(ClassPtr klass);
   void compile(CodeGenerator &W) const;
   static void compile_inner_methods(CodeGenerator &W, ClassPtr klass);
+
+private:
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
   static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
-private:
+  static void compile_serialization_methods(CodeGenerator &W, ClassPtr klass);
+  static void compile_serialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_deserialize(CodeGenerator &W, ClassPtr klass);
+
   template<class ReturnValueT>
   static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
 

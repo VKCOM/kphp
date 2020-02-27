@@ -37,6 +37,7 @@ public:
   friend inline string_buffer &operator<<(string_buffer &sb, unsigned long long x);
 
   inline string_buffer &append(const char *str, int len);
+  inline void write(const char *str, int len);
 
   inline void append_unsafe(const char *str, int len);
 
