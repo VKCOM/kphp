@@ -385,8 +385,7 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
   // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
   auto add_type_rule_from_field_phpdoc = [this](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-      auto klass = field_root->var_id->class_id;
-      auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, klass->file_id->main_function);
+      auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
         parsed.type_expr->location = field_root->location;
         field_root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
