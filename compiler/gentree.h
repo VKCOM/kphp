@@ -61,7 +61,7 @@ public:
 
   static VertexAdaptor<op_seq> embrace(VertexPtr v);
   PrimitiveType get_func_param_type_help();
-  VertexAdaptor<meta_op_type_rule> get_type_rule();
+  VertexAdaptor<meta_op_type_rule> get_func_param_type_rule();
 
   static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag = 0);
   template<PrimitiveType ToT>

@@ -817,7 +817,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   if (!from_callback && cur->type() == tok_triple_colon) {
     tp = get_func_param_type_help();    // запишется в param->type_help, и при вызове будет неявный cast
   } else {
-    type_rule = get_type_rule();
+    type_rule = get_func_param_type_rule();
   }
 
   VertexPtr def_val = get_def_value();
@@ -870,7 +870,7 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     set_location(params, st_location);
     CE (expect(tok_clpar, "')'"));
 
-    VertexAdaptor<meta_op_type_rule> type_rule = get_type_rule();
+    VertexAdaptor<meta_op_type_rule> type_rule = get_func_param_type_rule();
 
     VertexPtr def_val = get_def_value();
     kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
@@ -1021,7 +1021,7 @@ PrimitiveType GenTree::get_func_param_type_help() {
   return type_expr->type_help;
 }
 
-VertexAdaptor<meta_op_type_rule> GenTree::get_type_rule() {
+VertexAdaptor<meta_op_type_rule> GenTree::get_func_param_type_rule() {
   VertexAdaptor<meta_op_type_rule> res;
 
   TokenType tp = cur->type();
@@ -1504,7 +1504,7 @@ VertexPtr GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModif
   kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
              "arguments and captured variables(in `use` clause) must have different names");
   // а дальше может идти ::: string в functions.txt
-  cur_function->root->type_rule = get_type_rule();
+  cur_function->root->type_rule = get_func_param_type_rule();
   if (is_lambda) {
     cur_function->modifiers.set_instance();
     cur_function->modifiers.set_public();
@@ -2135,22 +2135,11 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return get_class(phpdoc_str, ClassType::trait);
     default:
       res = get_expression();
-      // todo упростить при наличии инета
-      if (!res) {
-        if (cur->type() == tok_semicolon) {
-          auto empty = VertexAdaptor<op_empty>::create();
-          set_location(empty, AutoLocation(this));
-          res = empty;
-        } else if (!phpdoc_str.empty()) {
-          return res;
-        } else {
-          CE (check_statement_end());
-          return res;
-        }
-      } else {
-        res->type_rule = get_type_rule();
-      }
       CE (check_statement_end());
+      if (!res) {
+        res = VertexAdaptor<op_empty>::create();
+        set_location(res, AutoLocation(this));
+      }
       return res;
   }
   kphp_fail();
