@@ -1025,7 +1025,7 @@ VertexAdaptor<meta_op_type_rule> GenTree::get_func_param_type_rule() {
   VertexAdaptor<meta_op_type_rule> res;
 
   TokenType tp = cur->type();
-  if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_eq, tok_triple_lt, tok_triple_gt)) {
+  if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_lt, tok_triple_gt)) {
     AutoLocation rule_location(this);
     next_cur();
 

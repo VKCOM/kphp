@@ -242,10 +242,6 @@
     "base_name": "meta_op_type_rule"
   },
   {
-    "name": "op_eq_type_rule",
-    "base_name": "meta_op_type_rule"
-  },
-  {
     "name": "op_set_check_type_rule",
     "base_name": "meta_op_type_rule"
   },

@@ -1036,10 +1036,8 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("No <common token> found"));
 
   add_rule(h, ":::", tok_triple_colon);
-
   add_rule(h, ":<=:", tok_triple_lt);
   add_rule(h, ":>=:", tok_triple_gt);
-  add_rule(h, ":==:", tok_triple_eq);
 
   add_rule(h, "=", tok_eq1);
   add_rule(h, "==", tok_eq2);

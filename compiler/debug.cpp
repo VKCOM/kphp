@@ -153,7 +153,6 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_triple_colon] = "tok_triple_colon";
   TOKEN_TYPE_NAMES[tok_triple_gt] = "tok_triple_gt";
   TOKEN_TYPE_NAMES[tok_triple_lt] = "tok_triple_lt";
-  TOKEN_TYPE_NAMES[tok_triple_eq] = "tok_triple_eq";
   TOKEN_TYPE_NAMES[tok_throw] = "tok_throw";
   TOKEN_TYPE_NAMES[tok_new] = "tok_new";
   TOKEN_TYPE_NAMES[tok_try] = "tok_try";
