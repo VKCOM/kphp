@@ -79,15 +79,24 @@ class mysqli {
     private function __construct() ::: \mysqli;
 }
 
-$_SERVER ::: var;
-$_GET ::: var;
-$_POST ::: var;
-$_FILES ::: var;
-$_COOKIE ::: var;
-$_REQUEST ::: var;
-$_ENV ::: var;
-$argc ::: var;
-$argv ::: var;
+/** @var mixed $_SERVER */
+global $_SERVER;
+/** @var mixed $_GET */
+global $_GET;
+/** @var mixed $_POST */
+global $_POST;
+/** @var mixed $_FILES */
+global $_FILES;
+/** @var mixed $_COOKIE */
+global $_COOKIE;
+/** @var mixed $_REQUEST */
+global $_REQUEST;
+/** @var mixed $_ENV */
+global $_ENV;
+/** @var mixed $argc */
+global $argc;
+/** @var mixed $argv */
+global $argv;
 
 
 function ob_clean() ::: void;
