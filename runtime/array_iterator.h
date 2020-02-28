@@ -45,9 +45,20 @@ public:
     if (self_->is_vector()) {
       return key_type{static_cast<int>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->int_entries))};
     }
-    return self_->is_string_hash_entry(static_cast<string_hash_type *>(entry_))
-           ? static_cast<string_hash_type *>(entry_)->get_key()
-           : static_cast<int_hash_type *>(entry_)->get_key();
+
+    if (is_string_key()) {
+      return get_string_key();
+    } else {
+      return get_int_key();
+    }
+  }
+
+  inline int get_int_key() noexcept __attribute__ ((always_inline)) {
+    return static_cast<int_hash_type *>(entry_)->int_key;
+  }
+
+  inline int get_int_key() const noexcept __attribute__ ((always_inline)) {
+    return static_cast<const int_hash_type *>(entry_)->int_key;
   }
 
   inline bool is_string_key() const noexcept __attribute__ ((always_inline)) {
