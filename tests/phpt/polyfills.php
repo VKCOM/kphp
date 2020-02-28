@@ -222,6 +222,15 @@ function get_running_fork_id() {
   return 0;
 }
 
+function array_find(array $ar, callable $clbk) {
+  foreach ($ar as $k => $v) {
+    if ($clbk($v)) {
+      return [$k, $v];
+    }
+  }
+  return [null, null];
+}
+
 if (false)
 #endif
 define('kphp', 1);

@@ -879,6 +879,17 @@ typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, boo
   return typename array<T>::key_type(false);
 }
 
+template<class T, class T1>
+std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  const T1 &callback) {
+  for (const auto &it : a) {
+    if (callback(it.get_value())) {
+      return std::make_tuple(it.get_key(), it.get_value());
+    }
+  }
+
+  return {};
+}
+
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a) {
   if (int size = a.count()) {
