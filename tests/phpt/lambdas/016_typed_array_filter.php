@@ -4,13 +4,12 @@
 require_once("Classes/autoload.php");
 
 function test_primitive_types() {
-    $less_than_two = function($x) { 
-        $x /*:= int*/;
-        return $x < 2; 
+    $less_than_two = function(int $x) {
+        return $x < 2;
     };
 
+    /** @var int[] */
     $filtered = array_filter([1, 2, 3], $less_than_two);
-    $filtered /*:= array<int>*/;
     var_dump($filtered);
 }
 

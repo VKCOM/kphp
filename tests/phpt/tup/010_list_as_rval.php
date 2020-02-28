@@ -29,19 +29,21 @@ function getNextTuple() {
 }
 
 function demo() {
-    // (var, var)
+    /**
+     * @var mixed $i
+     * @var mixed $s
+     */
     while (list($i, $s) = getNextArray()) {
         echo $i, ' ', $s, "\n";
     }
-    $i /*:= var */;
-    $s /*:= var */;
 
-    // (int, string)
+    /**
+     * @var int $i
+     * @var string $s
+     */
     while (list($i, $s) = getNextTuple()) {
         echo $i, ' ', $s, "\n";
     }
-    $i /*:= int */;
-    $s /*:= string */;
 }
 
 demo();

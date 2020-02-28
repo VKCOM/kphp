@@ -18,11 +18,11 @@ function getArrOfT() {
 function demo() {
     $arr = getArrOfT();
     foreach ($arr as $t) {
-        $str = $t[0];
-        $int3 = $t[1][2];
         // check that types are correctly inferred
-        $int3 /*:= int */;
-        $str /*:= string */;
+        /** @var string */
+        $str = $t[0];
+        /** @var int */
+        $int3 = $t[1][2];
         /** @var Classes\A */
         $a = $t[2];
         echo $str, ' ', $int3, ' ', $a->a, "\n";

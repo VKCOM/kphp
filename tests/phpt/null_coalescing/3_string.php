@@ -42,7 +42,7 @@ function test_string_strange_keys() {
 }
 
 function test_string_in_var() {
-  $str = 1 ? "hello world" : [1] /*:= mixed */;
+  $str = 1 ? "hello world" : [1];
 
   var_dump($str[1] ?? "x");
   var_dump($str[3] ?? "xxxxxx");

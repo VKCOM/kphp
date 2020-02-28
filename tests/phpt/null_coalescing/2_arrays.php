@@ -44,7 +44,7 @@ function test_array_strange_keys() {
 }
 
 function test_array_in_var() {
-  $arr = 1 ? ["hello", "world", "b", 1, 2, [1, 2], null, "key" => "value"] : "x" /*:= mixed */;
+  $arr = 1 ? ["hello", "world", "b", 1, 2, [1, 2], null, "key" => "value"] : "x";
 
   var_dump($arr[1] ?? "x");
   var_dump($arr["key"] ?? "xxxxxx");

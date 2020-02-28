@@ -4,6 +4,10 @@
 define ('TWO', 2);
 
 function test_integer() {
+    /** @var int $x_int */
+    /** @var mixed $x_var */
+    /** @var mixed $y_var */
+
     echo $x_int = 3 ** TWO, "\n";
     echo $x_int = 3 ** 2, "\n";
     echo $x_int = -3 ** 2, "\n";
@@ -27,13 +31,12 @@ function test_integer() {
     $x_var = 2;
     echo $y_var = $x_int **= 2, "\n";
     echo $y_var = $x_var **= $x_int **= 0, "\n";
-
-    $x_int /*:= int */;
-    $x_var /*:= var */;
-    $y_var /*:= var */;
 }
 
 function test_double() {
+    /** @var mixed $x_var */
+    /** @var mixed $y_var */
+
     echo $x_var = 3.2 ** 2.1, "\n";
     echo $x_var = 3.1 ** -2.2, "\n";
     echo $x_var = -3.2 ** 2.0, "\n";
@@ -46,16 +49,21 @@ function test_double() {
     $x_var = 2.2;
     echo $y_var = $x_var **= 0.5, "\n";
     echo $y_var = $x_var **= $x_var ** 1.5, "\n";
-
-    $x_var /*:= var */;
-    $y_var /*:= var */;
 }
 
 function test_integer_double() {
+    /** @var mixed $x_var1 */
+    /** @var mixed $x_var2 */
+    /** @var mixed $x_var3 */
+    /** @var mixed $x_var5 */
+    /** @var mixed $y_var */
+
     echo $x_var1 = -3 ** 2.1, "\n";
     echo $x_var1 = -2.3 ** 2 ** 1.5, "\n";
     echo $x_float1 = -2.2 ** 2, "\n";
     echo $x_float1 = -2.2 ** 2 ** 3, "\n";
+
+    /** @var float $x_float1 */
 
     $x_var2 = 2;
     $x_var3 = 5;
@@ -67,37 +75,32 @@ function test_integer_double() {
 
     echo $y_var = $x_float1 **= 2, "\n";
     echo $y_var = $x_var5 **= $x_float1 ** 2, "\n";
-
-    $x_var1 /*:= var */;
-    $x_var2 /*:= var */;
-    $x_var3 /*:= var */;
-    $x_float1 /*:= float */;
-    $x_var5 /*:= var */;
-    $y_var /*:= var */;
 }
 
 function test_prefix() {
+    /** @var int $x_int */
+    /** @var mixed $x_var */
+
     $x_int = 1;
     echo $x_var = 2 ** ++$x_int, "\n";
     echo $x_int = ++$x_int ** 2, "\n";
 
     echo $x_var = -2 ** +(--$x_int), "\n";
     echo $x_int = -(--$x_int) ** 2, "\n";
-
-    $x_int /*:= int */;
-    $x_var /*:= var */;
 }
 
 function test_postfix() {
+    /** @var int $x_int */
+    /** @var mixed $x_var */
+
     $x_int = 1;
     echo $x_int = $x_int++ ** 2, "\n";
     echo $x_var = 2 ** $x_int++, "\n";
-
-    $x_int /*:= int */;
-    $x_var /*:= var */;
 }
 
 function test_string() {
+    /** @var mixed $x_var */
+
     echo $x_var = "3.1" ** "-2.3", "\n";
     echo $x_var = "-3" ** 2, "\n";
     echo $x_var = "-3" ** 2.0, "\n";
@@ -107,12 +110,11 @@ function test_string() {
     echo $x_var = false ** "2.2", "\n";
 
     echo $x_var = "bar" ** "foo", "\n";
-
-    $x_var /*:= var */;
-    $x_var /*:= var */;
 }
 
 function test_false() {
+    /** @var mixed $x_var */
+
     if (1) echo $x_var = false ** 2;
     if (1) echo $x_var = 2 ** false;
     if (1) echo $x_var = 2.5 ** false;
@@ -122,12 +124,14 @@ function test_false() {
     if (1) echo $x_var = !false ** false, "\n";
     if (1) echo $x_var = false ** !false, "\n";
     if (1) echo $x_var = !false ** !false, "\n";
-
-    $x_var /*:= var */;
-    $x_var /*:= var */;
 }
 
 function test_or_false() {
+    /** @var int|false $x1_int_or_false */
+    /** @var int|false $x2_int_or_false */
+    /** @var int $y_int */
+    /** @var mixed $y_var */
+
     $x1_int_or_false = 1 ? 2 : false;
     echo $x1_int_or_false **= 2, "\n";
 
@@ -147,11 +151,6 @@ function test_or_false() {
     echo $y_var = $x1_int_or_false ** $x2_int_or_false, "\n";
     echo $x1_int_or_false **= 2, "\n";
     echo $x2_int_or_false **= 3, "\n";
-
-    $x1_int_or_false /*:= OrFalse<int> */;
-    $x2_int_or_false /*:= OrFalse<int> */;
-    $y_int /*:= int */;
-    $y_var /*:= var */;
 }
 
 function test_priority() {

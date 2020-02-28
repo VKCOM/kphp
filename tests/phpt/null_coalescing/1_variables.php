@@ -7,10 +7,14 @@ function foobar() {
 }
 
 function test_variable() {
-  $v0 = 7 /*:= int */;
-  $v1 = 1 ? null : $v0 /*:= int|null */;
-  $v3 = 0 ? $v1 : "xxxx" /*:= mixed */;
-  $v4 = "" /*:= string */;
+  /** @var int */
+  $v0 = 7;
+  /** @var null|int */
+  $v1 = 1 ? null : $v0;
+  /** @var mixed */
+  $v3 = 0 ? $v1 : "xxxx";
+  /** @var string */
+  $v4 = "";
 
   var_dump($v0 ?? 2);
   var_dump($v1 ?? 3);

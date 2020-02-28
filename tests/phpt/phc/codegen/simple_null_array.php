@@ -6,7 +6,8 @@ exit;
 ?>
 #endif
 
-  $x ::: array <var>;
+  /** @var mixed[] $x */
+  $x = [];
 
 	// Illustrates the problem of turning $x[0] into $t =& $x[0]
 	$x[0];

@@ -58,12 +58,12 @@ function demo4() {
     $t = getAlwaysFalse();
     if($t) {
         // type inferring works (see .cpp and comment-guaranteed)
+        /** @var int $int */
+        /** @var string[] $str_array */
+        /** @var false|int $int_or */
         $int = $t[0];
         $str_array = $t[1];
-        $int = $t[2];
-        $t[0] /*:= int */;
-        $t[1] /*:= array < string > */;
-        $t[2] /*:= OrFalse< int > */;
+        $int_or = $t[2];
     }
 }
 

@@ -115,8 +115,8 @@ function test_or_false_array() {
         1 ? ['name' => 'Alex'] : false,
         0 ? ['name' => 'Mike'] : false
     ];
+    /** @var string[]|false $res */
     $res = array_column($or_false_array, 'name');
-    $res /*:= OrFalse< array< string > > */;
     var_dump($res);
 }
 

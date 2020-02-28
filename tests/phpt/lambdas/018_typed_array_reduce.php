@@ -4,9 +4,7 @@
 require_once("Classes/autoload.php");
 
 function test_primitive_types() {
-    $f = function($c, $item) { 
-        $c /*:= int*/;
-        $item /*:= int*/;
+    $f = function(int $c, int $item) {
         return $c + $item; 
     };
 
@@ -17,8 +15,7 @@ function test_primitive_types() {
 }
 
 function test_classes() {
-    $f = function ($carry, $item) {
-        $carry /*:= int*/;
+    $f = function (int $carry, $item) {
         return $carry + $item->a;
     };
 

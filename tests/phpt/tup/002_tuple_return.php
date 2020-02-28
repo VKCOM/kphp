@@ -52,9 +52,12 @@ function demo2($returnShort) {
     }
 
     // check that types are correctly inferred
-    $result[0] /*:= int */;
-    $result[1] /*:= string */;
-    $result[2] /*:= OrFalse < array < array < var > > > */;
+    /** @var int $item_0 */
+    /** @var string $item_1 */
+    /** @var mixed[][]|false $item_2 */
+    $item_0 = $result[0];
+    $item_1 = $result[1];
+    $item_2 = $result[2];
 }
 
 function demo3() {

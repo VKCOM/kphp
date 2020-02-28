@@ -4,13 +4,12 @@
 require_once("Classes/autoload.php");
 
 function test_primitive_types() {
-    $to_string = function($x) { 
-        $x /*:= int*/;
+    $to_string = function(int $x) {
         return (string)$x;
     };
 
+    /** @var string[] */
     $mapped = array_map($to_string, [1, 2, 3]);
-    $mapped /*:= array<string>*/;
     var_dump($mapped);
 }
 

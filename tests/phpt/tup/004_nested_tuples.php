@@ -14,6 +14,12 @@ function getT2() {
 function demo() {
     $a = tuple(1,'string', tuple(1, 'str2', [1,2,3,'vars']), new Classes\A);
 
+    // check that types are correctly inferred
+    /** @var int $int */
+    /** @var string $string */
+    /** @var int $int_of_inner_tuple */
+    /** @var string $str_of_inner_tuple */
+
     $int = $a[0];
     $string = $a[1];
     $in_tuple = $a[2];
@@ -22,12 +28,6 @@ function demo() {
     $int_of_inner_tuple = $a[2][0];
     $str_of_inner_tuple = $in_tuple[1];
     $var_2_of_inner_tuple_array = $a[2][2][2];
-
-    // check that types are correctly inferred
-    $int /*:= int */;
-    $string /*:= string */;
-    $int_of_inner_tuple /*:= int */;
-    $str_of_inner_tuple /*:= string */;
 
     echo $int, "\n";
     echo $string, "\n";
@@ -38,14 +38,14 @@ function demo() {
 }
 
 function demo2() {
+    // check that types are correctly inferred
+    /** @var int $int */
+    /** @var string $str */
+
     $t2 = getT2();                  // tuple <tuple<...>, string>
     $str = $t2[1];
     $int = $t2[0][1][0];            // [0] is tuple, [0][1] is int[]
     echo $int, " ", $str, "\n";
-
-    // check that types are correctly inferred
-    $int /*:= int */;
-    $str /*:= string */;
 }
 
 demo();
