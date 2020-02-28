@@ -736,51 +736,6 @@ int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-int TokenLexerTypeHint::parse(LexerData *lexer_data) const {
-  const char *s = lexer_data->get_code();
-  assert (!strncmp(s, "/*:", 3));
-
-
-  {
-    TokenType type;
-    switch (s[3]) {
-      case ':' :    /*:: это ::: */
-        type = tok_triple_colon;
-        break;
-      case '=' :    /*:= это :==: */
-        type = tok_triple_eq;
-        break;
-      case '>' :    /*:> это :>=: */
-        type = tok_triple_gt;
-        break;
-      case '<' :    /*:< это :<=: */
-        type = tok_triple_lt;
-        break;
-      default:
-        return TokenLexerError("Unknow tipe-hint comment type").parse(lexer_data);
-    }
-    lexer_data->add_token(4, type);
-  }
-
-  while (true) {
-    const char *s = lexer_data->get_code();
-
-    if (!strncmp(s, "*/", 2)) {
-      lexer_data->pass_raw(2);
-      return 0;
-    }
-
-    if (*s == 0) {
-      return TokenLexerError("Unclosed tipe-hint comment").parse(lexer_data);
-    }
-
-    int res = Singleton<TokenLexerPHP>::instance()->parse(lexer_data);
-    if (res) {
-      return res;
-    }
-  }
-}
-
 
 void TokenLexerString::add_esc(const string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
@@ -1170,7 +1125,6 @@ Helper<TokenLexer> *TokenLexerPHP::gen_helper() {
 
   h->add_rule("/*|//|#", Singleton<TokenLexerComment>::instance());
   h->add_rule("#ifndef KittenPHP", Singleton<TokenLexerIfndefComment>::instance());
-  h->add_rule("/*:", Singleton<TokenLexerTypeHint>::instance());
   h->add_rule("\'", Singleton<TokenLexerSimpleString>::instance());
   h->add_rule("\"", Singleton<TokenLexerString>::instance());
   h->add_rule("<<<", Singleton<TokenLexerHeredocString>::instance());

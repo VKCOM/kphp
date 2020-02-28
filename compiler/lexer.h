@@ -128,10 +128,6 @@ struct TokenLexerString : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerTypeHint : TokenLexer {
-  int parse(LexerData *lexer_data) const;
-};
-
 
 struct TokenLexerComment : TokenLexer {
   int parse(LexerData *lexer_data) const;
