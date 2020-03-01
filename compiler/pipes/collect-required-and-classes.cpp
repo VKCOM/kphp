@@ -74,17 +74,34 @@ private:
   // если /** @var Photo */ над полем инстанса, видим класс Photo даже если нет явного вызова конструктора
   inline void require_all_classes_in_phpdoc(const vk::string_view &phpdoc_str) {
     if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-      // здесь вручную бьём на токены, а НЕ вызываем phpdoc_parse_type_and_var_name()
-      // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
-      std::vector<Token> tokens = phpdoc_to_tokens(type_and_var_name->c_str(), type_and_var_name->size());
-      std::vector<Token>::const_iterator cur_tok = tokens.begin();
-      PhpDocTypeRuleParser parser(current_function);
-      parser.parse_from_tokens_silent(cur_tok);
+      require_all_classes_in_phpdoc_type(*type_and_var_name);
+    }
+  }
 
-      for (const auto &class_name : parser.get_unknown_classes()) {
-        require_class(replace_characters(class_name, '\\', '/'));
+  // парсим валидный тип phpdoc — что внутри @var/@param/type declaration — и ищем классы
+  inline void require_all_classes_in_phpdoc_type(const std::string &type_str) {
+    // здесь вручную бьём на токены, а НЕ вызываем phpdoc_parse_type_and_var_name()
+    // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
+    std::vector<Token> tokens = phpdoc_to_tokens(type_str.c_str(), type_str.size());
+    std::vector<Token>::const_iterator cur_tok = tokens.begin();
+    PhpDocTypeRuleParser parser(current_function);
+    parser.parse_from_tokens_silent(cur_tok);
+
+    for (const auto &class_name : parser.get_unknown_classes()) {
+      require_class(replace_characters(class_name, '\\', '/'));
+    }
+  }
+
+  // достаём и require'им все классы, исходя из прототипа функции
+  // ВНИМАНИЕ! сейчас анализируется только type declaration, а phpdoc с @param'ами над функцией не анализируется
+  //           (надо бы, но это когда мы phpdoc будем парсить единожды, а не постоянно при надобности)
+  inline void require_all_classes_from_func_declaration(FunctionPtr f) {
+    for (const auto &p: f->get_params()) {
+      if (!p.as<op_func_param>()->type_declaration.empty()) {
+        require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_declaration);
       }
     }
+    // из f->return_typehint не достаём: считаем, что если функция возвращает класс, уж она-то его создаст
   }
 
 public:
@@ -104,6 +121,8 @@ public:
 
     if (function->type == FunctionData::func_class_holder) {
       require_all_deps_of_class(function->class_id);
+    } else if (function->type == FunctionData::func_local) {
+      require_all_classes_from_func_declaration(function);
     }
     return true;
   }
