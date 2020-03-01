@@ -430,6 +430,12 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       return;
     }
   }
+  if (!f->return_typehint.empty()) {
+    if (auto parsed = phpdoc_parse_type_and_var_name(f->return_typehint, f)) {
+      assumption_add_for_return(f, assumption_create_from_phpdoc(parsed.type_expr));
+      return;
+    }
+  }
 
   for (auto i : *root->cmd()) {
     if (i->type() == op_return && i.as<op_return>()->has_expr()) {
