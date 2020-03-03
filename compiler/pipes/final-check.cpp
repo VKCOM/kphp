@@ -68,6 +68,12 @@ void check_get_global_vars_memory_stats_call() {
                     "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
 }
 
+void set_server_tl_serialization_used() {
+  // Запоминаем, что используется автоматический серверный фетчинг/сторинг.
+  // Используется чтобы не кидать warning'и связанные с ним, если он не используется.
+  G->server_tl_serialization_used = true;
+}
+
 void mark_global_vars_for_memory_stats() {
   if (!G->env().get_enable_global_vars_memory_stats()) {
     return;
@@ -386,6 +392,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(),
                  fmt_format("is_null() will be always false for {}", colored_type_out(arg_type)));
+    } else if (vk::any_of_equal(function_name, "rpc_server_fetch_request", "rpc_server_store_response")) {
+      set_server_tl_serialization_used();
     }
   }
 

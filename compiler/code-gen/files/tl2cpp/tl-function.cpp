@@ -27,8 +27,9 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
       check_kphp_function(f);
       W << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object);" << NL;
       W << "void rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> &tl_object_);" << NL;
-    } else {
-      kphp_warning(fmt_format("TL function {} is marked @kphp, but typed RPC code for it is not found. Automatic serialization in server mode won't work", f->name));
+    } else if (G->server_tl_serialization_used) {
+      kphp_warning(fmt_format("TL function {} is marked @kphp, but typed RPC code for it is not found. Automatic serialization in server mode won't work\n"
+                              "(e.g. rpc_server_fetch_request() and rpc_server_store_response() functions)", f->name));
     }
   }
   W << END << ";" << NL << NL;
