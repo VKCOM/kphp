@@ -36,6 +36,9 @@ int rpc_lookup_int();
 
 int f$fetch_int();
 
+int f$fetch_lookup_int();
+string f$fetch_lookup_data(int x4_bytes_length);
+
 UInt f$fetch_UInt();
 
 Long f$fetch_Long();

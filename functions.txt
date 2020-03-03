@@ -752,6 +752,12 @@ function fetch_memcache_value () ::: var;
 function fetch_eof () ::: bool;
 /** @kphp-extern-func-info can_throw */
 function fetch_end () ::: bool;
+
+/** @kphp-extern-func-info can_throw */
+function fetch_lookup_int () ::: int;
+/** @kphp-extern-func-info can_throw */
+function fetch_lookup_data ($x4_bytes_length ::: int) ::: string;
+
 function rpc_parse ($data) ::: bool;
 
 class RpcConnection {

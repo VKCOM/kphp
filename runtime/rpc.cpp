@@ -223,6 +223,16 @@ int f$fetch_int() {
   return *rpc_data++;
 }
 
+int f$fetch_lookup_int() {
+  return rpc_lookup_int();
+}
+
+string f$fetch_lookup_data(int x4_bytes_length) {
+  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length)));
+  rpc_data_len += x4_bytes_length;
+  return string(reinterpret_cast<const char *>(rpc_data), x4_bytes_length * 4);
+}
+
 UInt f$fetch_UInt() {
   TRY_CALL_VOID(UInt, (check_rpc_data_len(1)));
   return UInt((unsigned int)(*rpc_data++));
