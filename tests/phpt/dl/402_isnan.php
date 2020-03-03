@@ -6,6 +6,7 @@
   $a[] = acos (1);
   $a[] = @1e10101;
   $a[] = @-1e1010101;
+  $a[] = NAN;
   
   foreach ($a as $x) {
     echo ("is_nan      ($x) = ".is_nan ($x)."\n");

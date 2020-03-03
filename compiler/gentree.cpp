@@ -436,10 +436,12 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = v;
       break;
     }
+    case tok_nan:
     case tok_float_const: {
       auto v = VertexAdaptor<op_float_const>::create();
       set_location(v, AutoLocation(this));
       v->str_val = static_cast<string>(cur->str_val);
+      if (type == tok_nan) { v->str_val = "NAN"; }
       next_cur();
       res = v;
       break;

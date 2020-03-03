@@ -16,6 +16,7 @@ void fillTokenTypeNames() {
   TOKEN_TYPE_NAMES[tok_int_const] = "tok_int_const";
   TOKEN_TYPE_NAMES[tok_float_const] = "tok_float_const";
   TOKEN_TYPE_NAMES[tok_null] = "tok_null";
+  TOKEN_TYPE_NAMES[tok_nan] = "tok_nan";
   TOKEN_TYPE_NAMES[tok_inline_html] = "tok_inline_html";
   TOKEN_TYPE_NAMES[tok_str] = "tok_str";
   TOKEN_TYPE_NAMES[tok_str_begin] = "tok_str_begin";

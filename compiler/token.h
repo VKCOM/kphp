@@ -7,6 +7,7 @@ enum TokenType {
   tok_int_const,
   tok_float_const,
   tok_null,
+  tok_nan,
   tok_inline_html,
   tok_str,
   tok_str_begin,
