@@ -128,7 +128,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
       return lhs.as<op_alloc>()->allocated_class;
     // $var->...
     case op_var: {
-      auto as_instance = infer_class_of_expr(function, lhs)->try_as<AssumInstance>();
+      auto as_instance = infer_class_of_expr(function, lhs).try_as<AssumInstance>();
       kphp_error(as_instance,
                  _err_instance_access(v, fmt_format("${} is not an instance or it can't be detected\n"
                                                     "Add phpdoc @var to variable or @return to function was used to initialize it.",
@@ -138,7 +138,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
 
     // getInstance()->...
     case op_func_call: {
-      auto as_instance = infer_class_of_expr(function, lhs)->try_as<AssumInstance>();
+      auto as_instance = infer_class_of_expr(function, lhs).try_as<AssumInstance>();
       kphp_error(as_instance,
                  _err_instance_access(v, fmt_format("{}() does not return instance or it can't be detected.\n"
                                                     "Add @return tag to function phpdoc",
@@ -148,7 +148,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
 
     // ...->anotherInstance->...
     case op_instance_prop: {
-      auto as_instance = infer_class_of_expr(function, lhs)->try_as<AssumInstance>();
+      auto as_instance = infer_class_of_expr(function, lhs).try_as<AssumInstance>();
       kphp_error(as_instance,
                  _err_instance_access(v, fmt_format("${}->{} is not an instance or it can't be detected.\n"
                                                     "Add phpdoc @var to field declaration",
@@ -163,7 +163,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
       if (index->has_key()) {
         // $var[$idx]->...
         if (array->type() == op_var) {
-          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key()).try_as<AssumInstance>();
           kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("${} is not an array of instances or it can't be detected.\n"
                                                         "Add phpdoc to variable or @return tag to function was used to initialize it.",
@@ -172,7 +172,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
-          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key()).try_as<AssumInstance>();
           kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("{}() does not return array of instances or it can't be detected.\n"
                                                         "Add @return tag to function phpdoc",
@@ -181,7 +181,7 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
-          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key())->try_as<AssumInstance>();
+          auto as_inner_instance = infer_class_of_expr(function, array)->get_subkey_by_index(index->key()).try_as<AssumInstance>();
           kphp_error(as_inner_instance,
                      _err_instance_access(v, fmt_format("${}->{} is not array of instances or it can't be detected.\n"
                                                         "Add phpdoc to field declaration",

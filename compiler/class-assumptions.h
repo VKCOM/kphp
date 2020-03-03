@@ -15,16 +15,6 @@ public:
   virtual bool is_primitive() const = 0;
   virtual const TypeData *get_type_data() const = 0;
   virtual vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const = 0;
-
-  template<class Derived>
-  const Derived *try_as() const {
-    return dynamic_cast<Derived *>(this);
-  }
-
-  template<class Derived>
-  Derived *try_as() {
-    return dynamic_cast<Derived *>(this);
-  }
 };
 
 class AssumNotInstance : public Assumption {

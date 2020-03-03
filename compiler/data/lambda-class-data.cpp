@@ -26,7 +26,7 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
   if (auto function = v.try_as<op_function>()) {
     return function->func_id->class_id.try_as<LambdaClassData>();
   } else if (vk::any_of_equal(v->type(), op_func_call, op_var)) {
-    auto as_instance = infer_class_of_expr(stage::get_function(), v)->try_as<AssumInstance>();
+    auto as_instance = infer_class_of_expr(stage::get_function(), v).try_as<AssumInstance>();
     if (as_instance) {
       return as_instance->klass.try_as<LambdaClassData>();
     }
@@ -81,7 +81,7 @@ PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_f
     return tp_Unknown;
   } else if (auto index_rule = type_rule.try_as<op_index>()) {
     PrimitiveType pt = infer_type_of_callback_arg(index_rule->array(), extern_function_call, function_context, assumption);
-    if (auto as_array = assumption->try_as<AssumArray>()) {
+    if (auto as_array = assumption.try_as<AssumArray>()) {
       assumption = as_array->inner;
     }
     return pt;

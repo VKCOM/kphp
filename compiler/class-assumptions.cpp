@@ -69,8 +69,8 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     }
     return ClassPtr{};
   };
-  auto dst_as_instance = dst->try_as<AssumInstance>();
-  auto rhs_as_instance = rhs->try_as<AssumInstance>();
+  auto dst_as_instance = dst.try_as<AssumInstance>();
+  auto rhs_as_instance = rhs.try_as<AssumInstance>();
   if (dst_as_instance && rhs_as_instance) {
     ClassPtr lca_class = merge_classes_lca(dst_as_instance->klass, rhs_as_instance->klass);
     if (lca_class) {
@@ -80,14 +80,14 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     return false;
   }
 
-  auto dst_as_array = dst->try_as<AssumArray>();
-  auto rhs_as_array = rhs->try_as<AssumArray>();
+  auto dst_as_array = dst.try_as<AssumArray>();
+  auto rhs_as_array = rhs.try_as<AssumArray>();
   if (dst_as_array && rhs_as_array) {
     return assumption_merge(dst_as_array->inner, rhs_as_array->inner);
   }
 
-  auto dst_as_tuple = dst->try_as<AssumTuple>();
-  auto rhs_as_tuple = rhs->try_as<AssumTuple>();
+  auto dst_as_tuple = dst.try_as<AssumTuple>();
+  auto rhs_as_tuple = rhs.try_as<AssumTuple>();
   if (dst_as_tuple && rhs_as_tuple && dst_as_tuple->subkeys_assumptions.size() == rhs_as_tuple->subkeys_assumptions.size()) {
     bool ok = true;
     for (int i = 0; i < dst_as_tuple->subkeys_assumptions.size(); ++i) {
@@ -229,7 +229,7 @@ void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor
 static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
   auto a = infer_class_of_expr(f, root->xs(), depth + 1);
 
-  if (auto as_array = a->try_as<AssumArray>()) {
+  if (auto as_array = a.try_as<AssumArray>()) {
     assumption_add_for_var(f, var_name, as_array->inner);
   }
 }
@@ -389,17 +389,17 @@ bool parse_kphp_return_doc(FunctionPtr f) {
 
       if (!field_name.empty()) {
         ClassPtr klass =
-          a->try_as<AssumInstance>() ? a->try_as<AssumInstance>()->klass :
-          a->try_as<AssumArray>() && a->try_as<AssumArray>()->inner->try_as<AssumInstance>() ? a->try_as<AssumArray>()->inner->try_as<AssumInstance>()->klass :
+          a.try_as<AssumInstance>() ? a.try_as<AssumInstance>()->klass :
+          a.try_as<AssumArray>() && a.try_as<AssumArray>()->inner.try_as<AssumInstance>() ? a.try_as<AssumArray>()->inner.try_as<AssumInstance>()->klass :
           ClassPtr{};
         kphp_error_act(klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
         a = calc_assumption_for_class_var(klass, field_name);
       }
 
-      if (a->try_as<AssumInstance>() && return_type_arr_of_arg_type) {
-        assumption_add_for_return(f, AssumArray::create(a->try_as<AssumInstance>()->klass));
-      } else if (a->try_as<AssumArray>() && return_type_element_of_arg_type && field_name.empty()) {
-        assumption_add_for_return(f, a->try_as<AssumArray>()->inner);
+      if (a.try_as<AssumInstance>() && return_type_arr_of_arg_type) {
+        assumption_add_for_return(f, AssumArray::create(a.try_as<AssumInstance>()->klass));
+      } else if (a.try_as<AssumArray>() && return_type_element_of_arg_type && field_name.empty()) {
+        assumption_add_for_return(f, a.try_as<AssumArray>()->inner);
       } else {
         assumption_add_for_return(f, a);
       }
@@ -622,7 +622,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
       auto arr = index->array();
       if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
         auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
-        if (auto arr_a = expr_a->try_as<AssumArray>()) {
+        if (auto arr_a = expr_a.try_as<AssumArray>()) {
           return arr_a->inner;
         }
         return AssumNotInstance::create();
@@ -633,7 +633,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
         auto arr = array_rule->args()[0];
         if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
           auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
-          if (auto inst_a = expr_a->try_as<AssumInstance>()) {
+          if (auto inst_a = expr_a.try_as<AssumInstance>()) {
             return AssumArray::create(inst_a->klass);
           }
           return AssumNotInstance::create();
@@ -659,7 +659,7 @@ vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
     if (auto double_arrow = v.try_as<op_double_arrow>()) {
       v = double_arrow->value();
     }
-    auto as_instance = infer_class_of_expr(f, v, depth + 1)->try_as<AssumInstance>();
+    auto as_instance = infer_class_of_expr(f, v, depth + 1).try_as<AssumInstance>();
     if (!as_instance) {
       return AssumNotInstance::create();
     }
@@ -687,7 +687,7 @@ vk::intrusive_ptr<Assumption> infer_from_tuple(FunctionPtr f,
 vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
                                                        VertexAdaptor<op_instance_prop> prop,
                                                        size_t depth) {
-  auto lhs_a = infer_class_of_expr(f, prop->instance(), depth + 1)->try_as<AssumInstance>();
+  auto lhs_a = infer_class_of_expr(f, prop->instance(), depth + 1).try_as<AssumInstance>();
   if (!lhs_a->klass) {
     return AssumNotInstance::create();
   }
@@ -697,7 +697,7 @@ vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
   do {
     res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val);
     lhs_class = lhs_class->parent_class;
-  } while ((!res_assum || res_assum->try_as<AssumNotInstance>()) && lhs_class);
+  } while ((!res_assum || res_assum.try_as<AssumNotInstance>()) && lhs_class);
 
   return res_assum;
 }

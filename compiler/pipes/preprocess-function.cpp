@@ -28,7 +28,7 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *) {
     if (auto clone_root = root.try_as<op_clone>()) {
-      auto as_instance = infer_class_of_expr(stage::get_function(), clone_root)->try_as<AssumInstance>();
+      auto as_instance = infer_class_of_expr(stage::get_function(), clone_root).try_as<AssumInstance>();
       kphp_error_act(as_instance, "`clone` keyword could be used only with instances", return clone_root);
       kphp_error_act(!as_instance->klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", as_instance->klass->name), return clone_root);
       bool clone_is_inside_virt_clone = vk::any_of_equal(current_function->local_name(),
@@ -325,7 +325,7 @@ private:
       fmt_format("Call methods with prefix `__` are prohibited: `{}`", *name_of_class_method),
       return false);
 
-    auto as_instance = infer_class_of_expr(current_function, array_arg->args()[0])->try_as<AssumInstance>();
+    auto as_instance = infer_class_of_expr(current_function, array_arg->args()[0]).try_as<AssumInstance>();
     if (!as_instance) {
       return false;
     }
