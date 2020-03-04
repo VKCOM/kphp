@@ -261,7 +261,7 @@ class TestRunner:
         env["KPHP_THREADS_COUNT"] = "3"
         env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
         if self._distcc_hosts:
-            env["KPHP_JOBS_COUNT"] = "20"
+            env["KPHP_JOBS_COUNT"] = "30"
             env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
             env["DISTCC_DIR"] = self._kphp_build_tmp_dir
             env["DISTCC_LOG"] = os.path.join(self._kphp_build_tmp_dir, "distcc.log")
