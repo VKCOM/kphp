@@ -273,7 +273,7 @@ class TestRunner:
         cmd = [self._kphp_path, include, "-d", os.path.abspath(self._kphp_build_tmp_dir), self._test_file_path]
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(cmd, cwd=self._kphp_build_tmp_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=900)
+        kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
 
