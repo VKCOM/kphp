@@ -108,7 +108,6 @@ public:
     auto field_name = member.local_name();
     auto par = c->parent_class;
     bool parent_has_instance_or_static_field = par->get_instance_field(field_name) ||
-                                               (!std::is_same<ClassMemberT, ClassMemberConstant>{} && par->get_constant(field_name)) ||
                                                (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
     kphp_error(!parent_has_instance_or_static_field,
                fmt_format("You may not override field: `{}`, in class: `{}`", field_name, c->name));
@@ -434,7 +433,6 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     if (c->parent_class) {
       c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberInstanceField>{c});
       c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberStaticField>{c});
-      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberConstant>{c});
 
       c->members.for_each([&c](const ClassMemberStaticMethod &m) {
         kphp_error(!c->parent_class->get_instance_method(m.local_name()),
