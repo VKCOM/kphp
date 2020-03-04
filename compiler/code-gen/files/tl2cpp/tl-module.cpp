@@ -132,8 +132,15 @@ void check_type_expr(vk::tl::expr_base *expr_base) {
     if (type->is_integer_variable() || type->name == T_TYPE) {
       return;
     }
+    if (type->name == "Maybe") {
+      assert(type_expr->children.size() == 1);
+      const auto &child = type_expr->children.back();
+      if (auto child_as_type_expr = child->as<vk::tl::type_expr>()) {
+        kphp_error(type_of(child_as_type_expr)->id != TL_TRUE, "'Maybe True' usage is prohibited in TL scheme");
+      }
+    }
     kphp_error(!type->is_polymorphic() || !type_expr->is_bare(),
-               fmt_format("Polymorphic tl type {} can't be used as bare in tl scheme.", type->name));
+               fmt_format("Polymorphic TL type {} can't be used as bare in tl scheme.", type->name));
     for (const auto &child : type_expr->children) {
       check_type_expr(child.get());
     }
