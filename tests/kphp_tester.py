@@ -415,8 +415,9 @@ def collect_tests(tests_dir, test_tags, test_list):
             test_file = make_test_file(test_file_path, test_tmp_dir, test_tags)
             if test_file:
                 tests.append(test_file)
-    return tests
 
+    tests.sort(reverse=True, key=lambda f: os.path.getsize(f.file_path))
+    return tests
 
 class TestResult:
     @staticmethod
