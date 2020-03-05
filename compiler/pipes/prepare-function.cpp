@@ -169,7 +169,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
           is_first_time = false;
 
-          auto func_param_it = name_to_function_param.find(var_name.substr(1));
+          auto func_param_it = name_to_function_param.find(std::string{var_name.substr(1)});
           kphp_error_return(func_param_it != name_to_function_param.end(), fmt_format("@kphp-template tag var name mismatch. found {}.", var_name));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();
@@ -184,7 +184,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
       case php_doc_tag::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
-          auto func_param_it = name_to_function_param.find(var_name.substr(1));
+          auto func_param_it = name_to_function_param.find(std::string{var_name.substr(1)});
           kphp_error_return(func_param_it != name_to_function_param.end(), fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
 
           auto cur_func_param = func_params[func_param_it->second].as<op_func_param>();

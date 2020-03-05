@@ -69,15 +69,13 @@ inline std::vector<std::string> split(const std::string &s, char delimiter = ' '
   return res;
 }
 
-inline std::vector<std::string> split_skipping_delimeters(const std::string &str, const std::string &delimiters = " ") {
-  using std::string;
+inline std::vector<vk::string_view> split_skipping_delimeters(vk::string_view str, vk::string_view delimiters = " ") {
+  std::vector<vk::string_view> tokens;
 
-  std::vector<string> tokens;
+  auto pos = str.find_first_not_of(delimiters, 0);
+  auto next_delimiter = str.find_first_of(delimiters, pos);
 
-  string::size_type pos = str.find_first_not_of(delimiters, 0);
-  string::size_type next_delimiter = str.find_first_of(delimiters, pos);
-
-  while (string::npos != pos || string::npos != next_delimiter) {
+  while (std::string::npos != pos || std::string::npos != next_delimiter) {
     tokens.push_back(str.substr(pos, next_delimiter - pos));
 
     pos = str.find_first_not_of(delimiters, next_delimiter);

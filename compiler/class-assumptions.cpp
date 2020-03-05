@@ -386,21 +386,25 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     }
     auto vector_T_var_name = split_skipping_delimeters(kphp_template_str);    // ["T", "$arg"]
     kphp_assert(vector_T_var_name.size() > 1);
-    std::string template_type_of_arg = vector_T_var_name[0];
-    std::string template_arg_name = vector_T_var_name[1].substr(1);
+    auto template_type_of_arg = vector_T_var_name[0];
+    auto template_arg_name = vector_T_var_name[1].substr(1);
     kphp_error_act(!template_arg_name.empty() && !template_type_of_arg.empty(), "wrong format of @kphp-template", return false);
 
+    // `:` for getting type of field inside template type `@return T::data`
     auto type_and_field_name = split_skipping_delimeters(*type_str, ":");
     kphp_error_act(vk::any_of_equal(type_and_field_name.size(), 1, 2), "wrong kphp-return supplied", return false);
 
-    std::string T_type_name = std::move(type_and_field_name[0]);
-    std::string field_name = type_and_field_name.size() > 1 ? std::move(type_and_field_name.back()) : "";
+    auto T_type_name = type_and_field_name[0];
+    auto field_name = type_and_field_name.size() > 1 ? type_and_field_name.back() : "";
 
     bool return_type_eq_arg_type = template_type_of_arg == T_type_name;
-    bool return_type_arr_of_arg_type = (template_type_of_arg + "[]") == T_type_name;
-    bool return_type_element_of_arg_type = template_type_of_arg == (T_type_name + "[]");
-    if (vk::string_view(field_name).ends_with("[]")) {
-      field_name.erase(std::prev(field_name.end(), 2), field_name.end());
+    // (x + "[]") == y; <=> y[-2:] == "[]" && x == y[0:-2]
+    auto x_plus_brackets_equals_y = [](vk::string_view x, vk::string_view y) { return y.ends_with("[]") && x == y.substr(0, y.size() - 2); };
+    bool return_type_arr_of_arg_type = x_plus_brackets_equals_y(template_type_of_arg, T_type_name);
+    bool return_type_element_of_arg_type = x_plus_brackets_equals_y(T_type_name, template_type_of_arg);
+
+    if (field_name.ends_with("[]")) {
+      field_name = field_name.substr(0, field_name.size() - 2);
       return_type_arr_of_arg_type = true;
     }
 
