@@ -37,6 +37,7 @@ private:
   void recalc_conv_array(VertexAdaptor<meta_op_unary> conv);
   void recalc_array(VertexAdaptor<op_array> array);
   void recalc_tuple(VertexAdaptor<op_tuple> tuple);
+  void recalc_shape(VertexAdaptor<op_shape> shape);
   void recalc_plus_minus(VertexAdaptor<meta_op_unary> expr);
   void recalc_inc_dec(VertexAdaptor<meta_op_unary> expr);
   void recalc_noerr(VertexAdaptor<op_noerr> expr);
@@ -157,6 +158,21 @@ void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule,
         }
         break;
       }
+      case tp_shape: {
+        for (const auto &elem : rule->args()) {
+          auto double_arrow = elem.as<op_double_arrow>();
+          push_type();
+          apply_type_rule(double_arrow->rhs(), expr);
+          TypeData *tmp = pop_type();
+          MultiKey key({Key::string_key(double_arrow->lhs()->get_string())});
+          set_lca_at(&key, as_rvalue(tmp));
+          delete tmp;
+        }
+        if (rule->extra_type == op_ex_shape_has_varg) {
+          new_type_->set_shape_has_varg_flag();
+        }
+        break;
+      }
       default:
         kphp_fail();
     }
@@ -273,14 +289,21 @@ void ExprNodeRecalc::recalc_push_back_return(VertexAdaptor<op_push_back_return> 
 
 void ExprNodeRecalc::recalc_index(VertexAdaptor<op_index> index) {
   bool is_const_int_index = index->has_key() && GenTree::get_actual_value(index->key())->type() == op_int_const;
-  if (!is_const_int_index) {
-    set_lca(index->array(), &MultiKey::any_key(1));
+  if (is_const_int_index) {
+    long int_index = parse_int_from_string(GenTree::get_actual_value(index->key()).as<op_int_const>());
+    MultiKey key({Key::int_key((int)int_index)});
+    set_lca(index->array(), &key);
     return;
   }
 
-  long int_index = parse_int_from_string(GenTree::get_actual_value(index->key()).as<op_int_const>());
-  MultiKey key({Key::int_key((int)int_index)});
-  set_lca(index->array(), &key);
+  bool is_const_string_index = index->has_key() && GenTree::get_actual_value(index->key())->type() == op_string;
+  if (is_const_string_index) {
+    MultiKey key({Key::string_key(GenTree::get_actual_value(index->key())->get_string())});
+    set_lca(index->array(), &key);
+    return;
+  }
+
+  set_lca(index->array(), &MultiKey::any_key(1));
 }
 
 void ExprNodeRecalc::recalc_instance_prop(VertexAdaptor<op_instance_prop> index) {
@@ -306,7 +329,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
     set_lca(drop_optional(as_rvalue(arg)));
     // foreach/array_map/(array) на tuple'ах и инстнсах — ошибка
-  } else if (vk::any_of_equal(tinf::get_type(arg)->ptype(), tp_tuple, tp_Class)) {
+  } else if (vk::any_of_equal(tinf::get_type(arg)->ptype(), tp_tuple, tp_shape, tp_Class)) {
     set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype<tp_array>();
@@ -330,6 +353,17 @@ void ExprNodeRecalc::recalc_tuple(VertexAdaptor<op_tuple> tuple) {
     vector<Key> i_key_index{Key::int_key(index++)};
     MultiKey key(i_key_index);
     set_lca_at(&key, i);
+  }
+}
+
+void ExprNodeRecalc::recalc_shape(VertexAdaptor<op_shape> shape) {
+  recalc_ptype<tp_shape>();
+  for (auto i: shape->args()) {
+    auto double_arrow = i.as<op_double_arrow>();
+    const std::string &str_index = GenTree::get_actual_value(double_arrow->key())->get_string();
+    vector<Key> i_key_index{Key::string_key(str_index)};
+    MultiKey key(i_key_index);
+    set_lca_at(&key, double_arrow->value());
   }
 }
 
@@ -514,6 +548,9 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
     case op_tuple:
       recalc_tuple(expr.as<op_tuple>());
+      break;
+    case op_shape:
+      recalc_shape(expr.as<op_shape>());
       break;
 
     case op_conv_var:

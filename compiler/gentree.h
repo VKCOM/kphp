@@ -75,7 +75,12 @@ public:
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
   VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
   static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
-  static VertexAdaptor<op_type_expr_type> create_type_help_vertex(PrimitiveType type, const std::vector<VertexPtr> &children = {});
+  template<Operation op = meta_op_base>
+  static VertexAdaptor<op_type_expr_type> create_type_help_vertex(PrimitiveType type, const std::vector<VertexAdaptor<op>> &children = {}) {
+    auto type_rule = VertexAdaptor<op_type_expr_type>::create(children);
+    type_rule->type_help = type;
+    return type_rule;
+  }
 
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();
@@ -126,6 +131,7 @@ public:
   VertexPtr get_for();
   VertexPtr get_do();
   VertexPtr get_switch();
+  VertexPtr get_shape();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexPtr get_anonymous_function(bool is_static = false);

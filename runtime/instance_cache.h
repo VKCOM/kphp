@@ -15,6 +15,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/shape.h"
 
 namespace ic_impl_ {
 
@@ -47,6 +48,12 @@ public:
   template<typename ...Args>
   bool process(std::tuple<Args...> &value) {
     return process_tuple(value);
+  }
+
+  template<size_t ...Is, typename ...T>
+  bool process(shape<std::index_sequence<Is...>, T...> &value) {
+    const bool child_res[] = {child_.process(value.template get<Is>())...};
+    return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
   }
 
   bool process(var &value) {

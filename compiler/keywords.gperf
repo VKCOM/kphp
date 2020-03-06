@@ -22,6 +22,7 @@ dbg_echo, tok_dbg_echo
 function, tok_function
 array, tok_array
 tuple, tok_tuple
+shape, tok_shape
 Array, tok_array
 as, tok_as
 case, tok_case

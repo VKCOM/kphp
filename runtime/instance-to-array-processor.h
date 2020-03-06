@@ -56,6 +56,15 @@ private:
     add_value(field_name, tuple_processor.flush_result());
   }
 
+  template<size_t ...Is, typename ...T>
+  void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
+    InstanceToArrayVisitor shape_processor;
+    shape_processor.result_.reserve(sizeof...(Is), 0, true);
+
+    process_shape(value, shape_processor);
+    add_value(field_name, shape_processor.flush_result());
+  }
+
   template<size_t Index = 0, class ...Args>
   std::enable_if_t<Index != sizeof...(Args)> process_tuple(const std::tuple<Args...> &value, InstanceToArrayVisitor &tuple_visitor) {
     tuple_visitor.process_impl("", std::get<Index>(value));
@@ -64,6 +73,12 @@ private:
 
   template<size_t Index = 0, class ...Args>
   std::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayVisitor &/*tuple_processor*/) {
+  }
+
+  template<size_t ...Is, typename ...T>
+  void process_shape(const shape<std::index_sequence<Is...>, T...> &value, InstanceToArrayVisitor &shape_visitor) {
+    // shape doesn't have key names at runtime, that's why result will be a vector-array (whereas associative in PHP)
+    std::initializer_list<int>{((void)shape_visitor.process_impl("", value.template get<Is>()), 0)...};
   }
 
   template<class T>

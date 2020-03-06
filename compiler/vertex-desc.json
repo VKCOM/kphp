@@ -718,6 +718,16 @@
     }
   },
   {
+    "name": "op_shape",
+    "base_name": "meta_op_varg",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "shape<>"
+    }
+  },
+  {
     "name": "op_list",
     "base_name": "meta_op_base",
     "props": {

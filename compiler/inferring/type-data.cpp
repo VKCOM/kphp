@@ -85,11 +85,11 @@ TypeData::TypeData(PrimitiveType ptype) :
   ptype_(ptype),
   generation_(current_generation()) {
   if (ptype_ == tp_Null) {
-    set_or_null_flag(true);
+    set_or_null_flag();
     ptype_ = tp_Unknown;
   }
   if (ptype_ == tp_False) {
-    set_or_false_flag(true);
+    set_or_false_flag();
     ptype_ = tp_Unknown;
   }
 }
@@ -165,7 +165,7 @@ void TypeData::set_ptype(PrimitiveType new_ptype) {
   if (new_ptype != ptype_) {
     ptype_ = new_ptype;
     if (new_ptype == tp_Error) {
-      set_error_flag(true);
+      set_error_flag();
     }
     on_changed();
   }
@@ -250,27 +250,11 @@ void TypeData::set_flags(TypeData::flags_t new_flags) {
   kphp_assert_msg((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
   if (flags_ != new_flags) {
     if (new_flags & error_flag_e) {
-      set_error_flag(true);
+      set_error_flag();
     }
     flags_ = new_flags;
     on_changed();
   }
-}
-
-bool TypeData::or_false_flag() const {
-  return get_flag<or_false_flag_e>();
-}
-
-void TypeData::set_or_false_flag(bool f) {
-  set_flag<or_false_flag_e>(f);
-}
-
-bool TypeData::or_null_flag() const {
-  return get_flag<or_null_flag_e>();
-}
-
-void TypeData::set_or_null_flag(bool f) {
-  set_flag<or_null_flag_e>(f);
 }
 
 bool TypeData::use_or_null() const {
@@ -285,18 +269,6 @@ bool TypeData::can_store_null() const {
   return ::can_store_null(ptype()) || or_null_flag();
 }
 
-void TypeData::set_write_flag(bool f) {
-  set_flag<write_flag_e>(f);
-}
-
-bool TypeData::error_flag() const {
-  return get_flag<error_flag_e>();
-}
-
-void TypeData::set_error_flag(bool f) {
-  set_flag<error_flag_e>(f);
-}
-
 bool TypeData::use_or_false() const {
   return !::can_store_false(ptype()) && or_false_flag() && ptype() != tp_Unknown;
 }
@@ -306,7 +278,7 @@ bool TypeData::can_store_false() const {
 }
 
 bool TypeData::structured() const {
-  return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_future, tp_future_queue);
+  return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_shape, tp_future, tp_future_queue);
 }
 
 TypeData::generation_t TypeData::generation() const {
@@ -348,7 +320,7 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   if (!structured()) {
     return get_type(tp_Unknown);
   }
-  if (ptype() == tp_tuple && key.is_any_key()) {
+  if (vk::any_of_equal(ptype(), tp_tuple, tp_shape) && key.is_any_key()) {
     return get_type(tp_Error);
   }
   TypeData *res = at(key);
@@ -383,7 +355,7 @@ TypeData *TypeData::write_at(const Key &key) {
     return nullptr;
   }
   TypeData *res = at_force(key);
-  res->set_write_flag(true);
+  res->set_write_flag();
   return res;
 }
 
@@ -453,11 +425,15 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 
   if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
-    unsigned int s1 = lhs->subkeys_values.size(), s2 = rhs->subkeys_values.size();
-    if (s1 && s2 && s1 != s2) {
+    if (!lhs->subkeys_values.empty() && !rhs->subkeys_values.empty() && lhs->subkeys_values.size() != rhs->subkeys_values.size()) {
       lhs->set_ptype(tp_Error);   // совмещение tuple'ов разных размеров
       return;
     }
+  }
+
+  if (new_ptype == tp_shape && rhs->ptype() == tp_shape) {
+    // shape'ы при расширении образуют более широкий (union) shape, это нормально, tp_Error тут не возникнет
+    // а @param с конкретной структурой shape'аs — на restriction'ах проверится
   }
 
   TypeData *lhs_any_key = lhs->at_force(Key::any_key());
@@ -465,11 +441,16 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   lhs_any_key->set_lca(rhs_any_key);
 
   if (!rhs->subkeys_values.empty()) {
-    for (auto &rhs_subkey : rhs->subkeys_values) {
+    for (const auto &rhs_subkey : rhs->subkeys_values) {
       Key rhs_key = rhs_subkey.first;
       TypeData *rhs_value = rhs_subkey.second;
       TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key, lhs);
       lhs_value->set_lca(rhs_value);
+    }
+    for (auto &lhs_subkey : lhs->subkeys_values) {
+      if (!rhs->subkeys_values.find(lhs_subkey.first)) {
+        lhs_subkey.second->set_or_null_flag();
+      }
     }
   }
 }
@@ -520,7 +501,7 @@ void TypeData::fix_inf_array() {
 }
 
 bool TypeData::should_proxy_error_flag_to_parent() const {
-  if (parent_->ptype() == tp_tuple && parent_->anykey_value == this) {
+  if (vk::any_of_equal(parent_->ptype(), tp_tuple, tp_shape) && parent_->anykey_value == this) {
     return false;   // tp_tuple any key может быть tp_Error (к примеру, tuple(1, new A)), сам tuple от этого не error
   }
   return true;
@@ -641,8 +622,7 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
       res += " >";
     }
 
-    const bool need_all_subkeys = tp == tp_tuple;
-    if (need_all_subkeys) {
+    if (tp == tp_tuple) {
       res += "<";
       for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
         if (subkey != type->lookup_begin()) {
@@ -650,6 +630,45 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
         }
         kphp_assert(subkey->first.is_int_key());
         type_out_impl(type->const_read_at(subkey->first), res, style);
+      }
+      res += ">";
+    }
+
+    if (tp == tp_shape) {
+      // рассчитывать на порядок ключей в subkeys_values у TypeData мы не можем, и для стабильной кодогенерации
+      // ключи shape'ов выводим отсортированными по хешам (не по id ключей! они разные между запусками)
+      // важно! в таком же порядке выводятся значения при конструировании shape'а: см. compile_shape()
+      std::vector<std::pair<Key, TypeData *>> sorted_by_hash(type->lookup_begin(), type->lookup_end());
+      std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
+        const std::string &a_str = a.first.to_string();
+        const std::string &b_str = b.first.to_string();
+        return string_hash(a_str.c_str(), a_str.size()) < string_hash(b_str.c_str(), b_str.size());
+      });
+
+      std::string keys_hashes_str, types_str;
+      for (auto subkey : sorted_by_hash) {
+        if (!keys_hashes_str.empty()) {
+          keys_hashes_str += ",";
+          types_str += ", ";
+        }
+        const std::string &key_str = subkey.first.to_string();
+        keys_hashes_str += std::to_string(static_cast<unsigned int>(string_hash(key_str.c_str(), key_str.size())));
+        if (style == gen_out_style::txt) {
+          types_str += key_str;
+          types_str += ":";
+        }
+        type_out_impl(subkey.second, types_str, style);
+      }
+
+      res += "<";
+      if (style != gen_out_style::txt) {
+        res += "std::index_sequence<";
+        res += keys_hashes_str;
+        res += ">, ";
+      }
+      res += types_str;
+      if (style == gen_out_style::txt && type->shape_has_varg_flag()) {
+        res += ", ...";
       }
       res += ">";
     }
@@ -696,6 +715,8 @@ int type_strlen(const TypeData *type) {
       return STRLEN_ARRAY_;
     case tp_tuple:
       return STRLEN_ARRAY_;
+    case tp_shape:
+      return STRLEN_ARRAY_;
     case tp_string:
       return STRLEN_STRING;
     case tp_var:
@@ -738,7 +759,8 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
     return true;
   }
 
-  auto is_array_or_tuple = [](const TypeData *type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple); };
+  // todo по-моему, этого не нужно
+  auto is_array_or_tuple = [](const TypeData *type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple, tp_shape); };
   if (is_array_or_tuple(type1) && is_array_or_tuple(type2)) {
     return true;
   }
@@ -782,6 +804,23 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
     }
   }
 
+  if (tp == tp_shape) {
+    for (auto it1 = type1->lookup_begin(); it1 != type1->lookup_end(); ++it1) {
+      TypeData *t2_at_it = type2->lookup_at(it1->first);
+      if (t2_at_it == nullptr && !type2->shape_has_varg_flag()) {
+        return false;
+      } else if (t2_at_it && !is_equal_types(it1->second, t2_at_it)) {
+        return false;
+      }
+    }
+    for (auto it2 = type2->lookup_begin(); it2 != type2->lookup_end(); ++it2) {
+      TypeData *t1_at_it = type1->lookup_at(it2->first);
+      if (t1_at_it == nullptr && !type1->shape_has_varg_flag()) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 
@@ -799,8 +838,10 @@ const TypeData *TypeData::create_for_class(ClassPtr klass) {
 const TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool optional_flag /* = false */) {
   auto *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
-  res->set_or_false_flag(optional_flag);
-  res->set_or_null_flag(optional_flag);
+  if (optional_flag) {
+    res->set_or_false_flag();
+    res->set_or_null_flag();
+  }
   return res;
 }
 
@@ -809,7 +850,21 @@ const TypeData *TypeData::create_tuple_type_data(const std::vector<const TypeDat
   for (int int_index = 0; int_index < subkeys_values.size(); ++int_index) {
     res->set_lca_at(MultiKey({Key::int_key(int_index)}), subkeys_values[int_index]);
   }
-  res->set_or_false_flag(optional_flag);
-  res->set_or_null_flag(optional_flag);
+  if (optional_flag) {
+    res->set_or_false_flag();
+    res->set_or_null_flag();
+  }
+  return res;
+}
+
+const TypeData *TypeData::create_shape_type_data(const std::map<std::string, const TypeData *> &subkeys_values, bool optional_flag /* = false */) {
+  auto *res = new TypeData(tp_shape);
+  for (const auto &sub: subkeys_values) {
+    res->set_lca_at(MultiKey({Key::string_key(sub.first)}), sub.second);
+  }
+  if (optional_flag) {
+    res->set_or_false_flag();
+    res->set_or_null_flag();
+  }
   return res;
 }

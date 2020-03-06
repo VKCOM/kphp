@@ -32,6 +32,7 @@
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
+#include "runtime/shape.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"

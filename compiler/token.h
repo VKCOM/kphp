@@ -31,6 +31,7 @@ enum TokenType {
   tok_varg,
   tok_array,
   tok_tuple,
+  tok_shape,
   tok_as,
   tok_case,
   tok_switch,

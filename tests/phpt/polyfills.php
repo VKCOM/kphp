@@ -5,6 +5,11 @@ function tuple(...$args) {
     return $args;
 }
 
+function shape($array) {
+    assert(is_array($array));
+    return $array;
+}
+
 function instance_to_array($instance) {
     if (!is_object($instance)) {
         return $instance;
@@ -74,7 +79,7 @@ $instance_cache_storage = [];
 
 function instance_cache_store($key, $value, $ttl = 0) {
   global $instance_cache_storage;
-  $instance_cache_storage[$key] = $value;
+  $instance_cache_storage[$key] = clone $value;
   return true;
 }
 

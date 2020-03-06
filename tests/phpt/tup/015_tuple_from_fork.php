@@ -1,9 +1,7 @@
 @ok
 <?php
-#ifndef KittenPHP
 require_once 'polyfills.php';
 require_once 'Classes/autoload.php';
-#endif
 
 function demo() {
     sched_yield();

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/mix class A with false/
+/mix class A with non-class/
 <?php
 
 class A {

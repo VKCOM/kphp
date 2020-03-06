@@ -16,6 +16,7 @@
 #include "compiler/threading/tls.h"
 #include "compiler/code-gen/gen-out-style.h"
 
+
 /*** TypeData ***/
 // read/write/lookup at
 // check if something changed since last
@@ -39,15 +40,11 @@ private:
     void clear();
 
     inline std::vector<KeyValue>::iterator begin() { return values_pairs.begin(); }
-
     inline std::vector<KeyValue>::iterator end() { return values_pairs.end(); }
-
     inline std::vector<KeyValue>::const_iterator begin() const { return values_pairs.begin(); }
-
     inline std::vector<KeyValue>::const_iterator end() const { return values_pairs.end(); }
 
     inline bool empty() const { return values_pairs.empty(); }
-
     inline unsigned int size() const { return (unsigned int)values_pairs.size(); }
   };
 
@@ -70,7 +67,8 @@ private:
     write_flag_e = 1,
     or_null_flag_e = 2,
     or_false_flag_e = 4,
-    error_flag_e = 8
+    error_flag_e = 8,
+    shape_has_varg_flag_e = 16,
   };
 
   template<TypeData::flag_id_t FLAG>
@@ -79,7 +77,7 @@ private:
   }
 
   template<flag_id_t FLAG>
-  void set_flag(bool f);
+  void set_flag();
 
   TypeData *write_at(const Key &key);
 
@@ -103,21 +101,26 @@ public:
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
   ClassPtr get_first_class_type_inside() const;
 
-  bool or_false_flag() const;
-  void set_or_false_flag(bool f);
+  bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
+  void set_or_false_flag() { set_flag<or_false_flag_e>(); }
   bool use_or_false() const;
   bool can_store_false() const;
 
-  bool or_null_flag() const;
-  void set_or_null_flag(bool f);
+  bool or_null_flag() const { return get_flag<or_null_flag_e>(); }
+  void set_or_null_flag() { set_flag<or_null_flag_e>(); }
   bool use_or_null() const;
   bool can_store_null() const;
 
   bool use_optional() const;
 
-  void set_write_flag(bool f);
-  bool error_flag() const;
-  void set_error_flag(bool f);
+  void set_write_flag() { set_flag<write_flag_e>(); }
+
+  void set_error_flag() { set_flag<error_flag_e>(); }
+  bool error_flag() const { return get_flag<error_flag_e>(); }
+
+  void set_shape_has_varg_flag() { set_flag<shape_has_varg_flag_e>(); }
+  bool shape_has_varg_flag() const { return get_flag<shape_has_varg_flag_e>(); }
+
   void set_flags(flags_t new_flags);
 
   bool structured() const;
@@ -147,6 +150,7 @@ public:
   static const TypeData *create_for_class(ClassPtr klass);
   static const TypeData *create_array_type_data(const TypeData *element_type, bool optional_flag = false);
   static const TypeData *create_tuple_type_data(const std::vector<const TypeData *> &subkeys_values, bool optional_flag = false);
+  static const TypeData *create_shape_type_data(const std::map<std::string, const TypeData *> &subkeys_values, bool optional_flag = false);
   //FIXME:??
   static void inc_generation();
   static generation_t current_generation();
@@ -160,24 +164,16 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool is_equal_types(const TypeData *type1, const TypeData *type2);
 
 template<TypeData::flag_id_t FLAG>
-void TypeData::set_flag(bool f) {
-  bool old_f = get_flag<FLAG>();
-  if (old_f) {
-    kphp_assert_msg (f, fmt_format("It is forbidden to remove flag {}", FLAG));
-  } else if (f) {
+void TypeData::set_flag() {
+  if (!get_flag<FLAG>()) {
     flags_ |= FLAG;
-    on_changed();
-  }
-}
 
-template<>
-inline void TypeData::set_flag<TypeData::error_flag_e>(bool f) {
-  if (f) {
-    if (!get_flag<error_flag_e>()) {
-      flags_ |= error_flag_e;
+    if (FLAG == error_flag_e) {
       if (parent_ != nullptr && should_proxy_error_flag_to_parent()) {
-        parent_->set_flag<error_flag_e>(true);
+        parent_->set_flag<error_flag_e>();
       }
+    } else {
+      on_changed();
     }
   }
 }

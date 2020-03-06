@@ -52,7 +52,6 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
   int check_mask = ifi_is_null;
 
   switch (ptp) {
-    case tp_tuple:
     case tp_array: {
       check_mask |= ifi_is_array;
       break;
@@ -96,7 +95,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
   if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
-    if (v->type() == op_index && tinf::get_type(v.as<op_index>()->array())->ptype() != tp_tuple && isset_is_dangerous(isset_flags, node->get_type())) {
+    if (v->type() == op_index && !vk::any_of_equal(tinf::get_type(v.as<op_index>()->array())->ptype(), tp_tuple, tp_shape) && isset_is_dangerous(isset_flags, node->get_type())) {
       node->isset_was = -1;
       find_dangerous_isset_warning(*bt, node, "[index]");
       return true;

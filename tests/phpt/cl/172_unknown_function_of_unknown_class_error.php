@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Unknown function ->foo\(\) of Unknown class/
+/Unknown function ->foo\(\)/
 <?php
 
 function test() {

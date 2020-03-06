@@ -1,6 +1,8 @@
 #pragma once
 
+#include <numeric>
 #include "runtime/kphp_core.h"
+#include "runtime/shape.h"
 
 int f$estimate_memory_usage(const string &value);
 
@@ -18,6 +20,9 @@ int f$estimate_memory_usage(const Optional<T> &value);
 
 template<typename ...Args>
 int f$estimate_memory_usage(const std::tuple<Args...> &value);
+
+template<size_t ...Is, typename ...T>
+int f$estimate_memory_usage(const shape<std::index_sequence<Is...>, T...> &value);
 
 template<typename T>
 int f$estimate_memory_usage(const class_instance<T> &value);
@@ -64,6 +69,12 @@ std::enable_if_t<Index != sizeof...(Args), int> estimate_tuple_memory_usage(cons
 template<typename ...Args>
 int f$estimate_memory_usage(const std::tuple<Args...> &value) {
   return estimate_tuple_memory_usage(value);
+}
+
+template<size_t ...Is, typename ...T>
+int f$estimate_memory_usage(const shape<std::index_sequence<Is...>, T...> &value) {
+  int memory[] = {f$estimate_memory_usage(value.template get<Is>())...};
+  return std::accumulate(std::begin(memory), std::end(memory), 0);
 }
 
 class InstanceMemoryEstimateVisitor {

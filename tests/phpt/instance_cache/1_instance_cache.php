@@ -52,6 +52,23 @@ class VectorY {
   public $elements = [];
 }
 
+
+class HasShape {
+  /** @var tuple(int, string) */
+  var $t;
+  /** @var shape(x:int, y:string, z?:int[]) */
+  var $sh;
+
+  function __construct($sh_x) {
+    $this->t = tuple(1, 's');
+    $this->sh = shape(['y' => 'y', 'x' => $sh_x]);
+  }
+
+  function setZ() {
+    $this->sh = shape(['y' => 'y', 'x' => 2, 'z' => [1,2,3]]);
+  }
+}
+
 function test_empty_fetch() {
   $x = instance_cache_fetch(X::class, "key_x0");
   var_dump(!$x);
@@ -218,6 +235,33 @@ function test_memory_limit_exceed() {
   var_dump(instance_cache_fetch(VectorY::class, "large_vector") ? false : true);
 }
 
+function test_with_shape() {
+  $a = new HasShape(19);
+  instance_cache_store('has_shape', $a);
+  $a->sh = shape(['y' => 'y2', 'x' => 222]);
+  $a2 = instance_cache_fetch(HasShape::class, 'has_shape');
+  $dump = instance_to_array($a2);
+#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+  $dump['sh'] = [19, 'y', null];
+#endif
+  var_dump($dump);
+  var_dump($a2->sh['x']);
+  var_dump($a2->sh['y']);
+  var_dump($a2->sh['z']);
+
+  $a->setZ();
+  instance_cache_store('has_shape_more', $a);
+  $a3 = instance_cache_fetch(HasShape::class, 'has_shape_more');
+  $dump = instance_to_array($a3);
+#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+  $dump['sh'] = [2, 'y', [1,2,3]];
+#endif
+  var_dump($dump);
+  var_dump($a3->sh['x']);
+  var_dump($a3->sh['y']);
+  var_dump($a3->sh['z']);
+}
+
 test_empty_fetch();
 test_store_fetch() ;
 test_mismatch_classes();
@@ -227,5 +271,6 @@ test_clear();
 test_tree();
 test_loop_in_tree();
 test_same_instance_in_array();
+test_with_shape();
 // this test should be the last!
 test_memory_limit_exceed();

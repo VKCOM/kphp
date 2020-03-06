@@ -29,6 +29,7 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_long,     tp_array},
   {op_conv_ulong,    tp_array},
 
+  {op_conv_bool,     tp_tuple},
   {op_conv_int,      tp_tuple},
   {op_conv_int_l,    tp_tuple},
   {op_conv_float,    tp_tuple},
@@ -38,6 +39,21 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_uint,     tp_tuple},
   {op_conv_long,     tp_tuple},
   {op_conv_ulong,    tp_tuple},
+
+  {op_conv_bool,     tp_shape},
+  {op_conv_int,      tp_shape},
+  {op_conv_int_l,    tp_shape},
+  {op_conv_float,    tp_shape},
+  {op_conv_string,   tp_shape},
+  {op_conv_string_l, tp_shape},
+  {op_conv_array,    tp_shape},
+  {op_conv_array_l,  tp_shape},
+  {op_conv_object,   tp_shape},
+  {op_conv_var,      tp_shape},
+  {op_conv_uint,     tp_shape},
+  {op_conv_long,     tp_shape},
+  {op_conv_ulong,    tp_shape},
+  {op_conv_regexp,   tp_shape},
 };
 
 VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex, FunctionPassBase::LocalT *) {

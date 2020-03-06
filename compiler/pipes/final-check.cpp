@@ -293,6 +293,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     VertexPtr arr = vertex.as<op_index>()->array();
     VertexPtr key = vertex.as<op_index>()->key();
     const TypeData *array_type = tinf::get_type(arr);
+    // todo по-моему не надо
     if (array_type->ptype() == tp_tuple) {
       long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
       size_t tuple_size = array_type->get_tuple_max_index();
@@ -323,7 +324,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
       PrimitiveType ptype = arrayType->get_real_ptype();
-      kphp_error(ptype == tp_array || ptype == tp_var, "Can't use isset/unset by[idx] for not an array");
+      kphp_error(vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_var), "Can't use isset/unset by[idx] for not an array");
     }
   }
   if (vertex->type() == op_func_call) {
@@ -450,7 +451,7 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
 }
 
 void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation op) {
-  if (vk::none_of_equal(tinf::get_type(lhs)->ptype(), tp_Class, tp_array, tp_tuple)) {
+  if (vk::none_of_equal(tinf::get_type(lhs)->ptype(), tp_Class, tp_array, tp_tuple, tp_shape)) {
     std::swap(lhs, rhs);
   }
 
@@ -470,6 +471,10 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
     bool can_compare_with_tuple = vk::any_of_equal(op, op_eq2, op_neq2) &&
                                   rhs_t->ptype() == tp_tuple && lhs_t->get_tuple_max_index() == rhs_t->get_tuple_max_index();
     kphp_error(can_compare_with_tuple,
+               fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+  } else if (lhs_t->ptype() == tp_shape) {
+    // shape на == не сравниваются (как с другими shape, так и с другими типами), бесполезная операция
+    kphp_error(0,
                fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
   }
 
@@ -506,11 +511,15 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
     if (index_depth.empty()) {              // Unknown type single var access
       kphp_error(0, fmt_format("Variable ${} has Unknown type", var->name));
     } else if (index_depth.size() == 3) {   // 1-depth array[*] access (most common case)
-      bool allowed_as_array = vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_var);
-      // separate error if array is always empty => its elements are Unknown
-      kphp_error(!allowed_as_array, fmt_format("Array ${} is always empty, getting its element has Unknown type", var->name));
-      // all other cases (int or instance access by [*], or tuple access of unexisting element)
-      kphp_error( allowed_as_array, fmt_format("${} is {}, can not get element", var->name, colored_type_out(tinf::get_type(var))));
+
+      if (vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_var)) {
+        kphp_error(0, fmt_format("Array ${} is always empty, getting its element has Unknown type", var->name));
+      } else if (tinf::get_type(var)->get_real_ptype() == tp_shape) {
+        kphp_error(0, fmt_format("Accessing unexisting element of shape ${}", var->name));
+      } else {
+        kphp_error(0, fmt_format("${} is {}, can not get element", var->name, colored_type_out(tinf::get_type(var))));
+      }
+
     } else {                                // multidimentional array[*]...[*] access
       kphp_error(0, fmt_format("${}{} has Unknown type", var->name, index_depth));
     }

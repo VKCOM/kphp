@@ -96,6 +96,19 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     return ok;
   }
 
+  auto dst_as_shape = dst.try_as<AssumShape>();
+  auto rhs_as_shape = rhs.try_as<AssumShape>();
+  if (dst_as_shape && rhs_as_shape) {
+    bool ok = true;
+    for (const auto &it : dst_as_shape->subkeys_assumptions) {
+      auto at_it = rhs_as_shape->subkeys_assumptions.find(it.first);
+      if (at_it != rhs_as_shape->subkeys_assumptions.end()) {
+        ok &= assumption_merge(it.second, at_it->second);
+      }
+    }
+    return ok;
+  }
+
   return dst->is_primitive() && rhs->is_primitive();
 }
 
@@ -173,7 +186,15 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
       sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
     }
-    return AssumTuple::create(sub);
+    return AssumTuple::create(std::move(sub));
+  }
+  if (type_expr->type_help == tp_shape) {
+    decltype(AssumShape::subkeys_assumptions) sub;
+    for (VertexPtr sub_expr : type_expr.as<op_type_expr_type>()->args()) {
+      auto double_arrow = sub_expr.as<op_double_arrow>();
+      sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
+    }
+    return AssumShape::create(std::move(sub));
   }
   return AssumNotInstance::create();
 }
@@ -687,6 +708,17 @@ vk::intrusive_ptr<Assumption> infer_from_tuple(FunctionPtr f,
   return AssumTuple::create(std::move(sub));
 }
 
+vk::intrusive_ptr<Assumption> infer_from_shape(FunctionPtr f,
+                                               VertexAdaptor<op_shape> shape,
+                                               size_t depth) {
+  decltype(AssumShape::subkeys_assumptions) sub;
+  for (auto sub_expr : shape->args()) {
+    auto double_arrow = sub_expr.as<op_double_arrow>();
+    sub.emplace(GenTree::get_actual_value(double_arrow->lhs())->get_string(), infer_class_of_expr(f, double_arrow->rhs(), depth + 1));
+  }
+  return AssumShape::create(std::move(sub));
+}
+
 vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
                                                        VertexAdaptor<op_instance_prop> prop,
                                                        size_t depth) {
@@ -731,6 +763,8 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
       return infer_from_array(f, root.as<op_array>(), depth + 1);
     case op_tuple:
       return infer_from_tuple(f, root.as<op_tuple>(), depth + 1);
+    case op_shape:
+      return infer_from_shape(f, root.as<op_shape>(), depth + 1);
     case op_conv_array:
     case op_conv_array_l:
       return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), depth + 1);
@@ -761,8 +795,17 @@ std::string AssumNotInstance::as_human_readable() const {
 
 std::string AssumTuple::as_human_readable() const {
   std::string r = "tuple(";
-  for (auto a_sub : subkeys_assumptions) {
+  for (const auto &a_sub : subkeys_assumptions) {
     r += a_sub->as_human_readable() + ",";
+  }
+  r[r.size() - 1] = ')';
+  return r;
+}
+
+std::string AssumShape::as_human_readable() const {
+  std::string r = "shape(";
+  for (const auto &a_sub : subkeys_assumptions) {
+    r += a_sub.first + ":" + a_sub.second->as_human_readable() + ",";
   }
   r[r.size() - 1] = ')';
   return r;
@@ -790,6 +833,15 @@ bool AssumTuple::is_primitive() const {
   return true;
 }
 
+bool AssumShape::is_primitive() const {
+  for (auto it : subkeys_assumptions) {
+    if (!it.second->is_primitive()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 
 const TypeData *AssumArray::get_type_data() const {
   return TypeData::create_array_type_data(inner->get_type_data(), true);
@@ -810,6 +862,14 @@ const TypeData *AssumTuple::get_type_data() const {
   return TypeData::create_tuple_type_data(subkeys_values, true);
 }
 
+const TypeData *AssumShape::get_type_data() const {
+  std::map<std::string, const TypeData *> subkeys_values;
+  for (const auto &sub : subkeys_assumptions) {
+    subkeys_values.emplace(sub.first, sub.second->get_type_data());
+  }
+  return TypeData::create_shape_type_data(subkeys_values, true);
+}
+
 
 vk::intrusive_ptr<Assumption> AssumArray::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
   return inner;
@@ -828,6 +888,17 @@ vk::intrusive_ptr<Assumption> AssumTuple::get_subkey_by_index(VertexPtr index_ke
     int int_index = parse_int_from_string(as_int_index);
     if (int_index >= 0 && int_index < subkeys_assumptions.size()) {
       return subkeys_assumptions[int_index];
+    }
+  }
+  return AssumNotInstance::create();
+}
+
+vk::intrusive_ptr<Assumption> AssumShape::get_subkey_by_index(VertexPtr index_key) const {
+  if (vk::any_of_equal(GenTree::get_actual_value(index_key)->type(), op_int_const, op_string)) {
+    const auto &string_index = GenTree::get_actual_value(index_key)->get_string();
+    auto at_index = subkeys_assumptions.find(string_index);
+    if (at_index != subkeys_assumptions.end()) {
+      return at_index->second;
     }
   }
   return AssumNotInstance::create();

@@ -47,6 +47,7 @@ struct Operand {
 struct TupleGetIndex {
   VertexPtr tuple;
   std::string int_index;
+
   TupleGetIndex(VertexPtr tuple, std::string int_index) :
     tuple(tuple),
     int_index(std::move(int_index)) {
@@ -59,6 +60,25 @@ struct TupleGetIndex {
 
   void compile(CodeGenerator &W) const {
     W << "std::get<" << int_index << ">(" << tuple << ")";
+  }
+};
+
+struct ShapeGetIndex {
+  VertexPtr shape;
+  std::string index;
+
+  ShapeGetIndex(VertexPtr shape, std::string index) :
+    shape(shape),
+    index(std::move(index)) {
+  }
+
+  ShapeGetIndex(VertexPtr shape, VertexPtr key) :
+    shape(shape),
+    index(GenTree::get_actual_value(key)->get_string()) {
+  }
+
+  void compile(CodeGenerator &W) const {
+    W << shape << ".get<" << static_cast<unsigned int>(string_hash(index.c_str(), index.size())) << ">()";
   }
 };
 
@@ -1219,6 +1239,9 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
     case tp_tuple:
       W << TupleGetIndex(root->array(), root->key());
       break;
+    case tp_shape:
+      W << ShapeGetIndex(root->array(), root->key());
+      break;
     default:
       compile_index_of_array(root, W);
   }
@@ -1237,28 +1260,28 @@ void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
 
 void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   auto arg = root->expr();
-  if (root->type() == op_unset && arg->type() == op_var) {
-    W << "unset (" << arg << ")";
-    return;
-  }
-  if (root->type() == op_isset && arg->type() == op_var) {
-    W << "(!f$is_null(" << arg << "))";
-    return;
-  }
+  // отдельно: isset($arr[idx]) — это v$arr.isset(idx) (unset аналогично)
+  // но если $arr это tuple/shape, то это не метод .isset, а просто is_null на честном элементе
   if (auto index = arg.try_as<op_index>()) {
     kphp_assert (index->has_key());
-    W << "(" << index->array();
-    if (root->type() == op_isset) {
-      W << ").isset (";
-    } else if (root->type() == op_unset) {
-      W << ").unset (";
-    } else {
-      kphp_assert (0);
+    if (vk::any_of_equal(tinf::get_type(index->array())->ptype(), tp_array, tp_var)) {
+      W << "(" << index->array();
+      if (root->type() == op_isset) {
+        W << ").isset (";
+      } else if (root->type() == op_unset) {
+        W << ").unset (";
+      } else {
+        kphp_assert (0);
+      }
+      W << index->key() << ")";
+      return;
     }
-    W << index->key() << ")";
-    return;
   }
-  kphp_error (0, "Some problems with isset/unset");
+  if (root->type() == op_unset) {
+    W << "unset (" << arg << ")";
+  } else {
+    W << "(!f$is_null(" << arg << "))";
+  }
 }
 
 void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
@@ -1358,6 +1381,28 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 
 void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
   W << "std::make_tuple(" << JoinValues(root->args(), ", ") << ")";
+}
+
+void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
+  // важно! значения выводим в порядке возрастания хешей ключей —
+  // именно так, как генерируется cpp-представление типа shape в type_out_impl()
+  std::vector<std::pair<int, VertexPtr>> sorted_by_hash;
+  sorted_by_hash.reserve(root->args().size());
+  for (auto double_arrow : *root) {
+    const std::string &key_str = GenTree::get_actual_value(double_arrow.as<op_double_arrow>()->lhs())->get_string();
+    sorted_by_hash.emplace_back(string_hash(key_str.c_str(), key_str.size()), double_arrow.as<op_double_arrow>()->rhs());
+  }
+  std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
+    kphp_assert(a.first != b.first);
+    return a.first < b.first;
+  });
+
+  const auto val_gen = [](CodeGenerator &W, const std::pair<int, VertexPtr> &hash_and_rhs) {
+    W << hash_and_rhs.second;
+  };
+
+  W << TypeName(tinf::get_type(root)) << "{" <<
+    JoinValues(sorted_by_hash, W.get_context().inside_macro ? " COMMA " : ", ", join_mode::one_line, val_gen) << "}";
 }
 
 void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
@@ -1647,6 +1692,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_tuple:
       compile_tuple(root.as<op_tuple>(), W);
+      break;
+    case op_shape:
+      compile_shape(root.as<op_shape>(), W);
       break;
     case op_unset:
       compile_xset(root.as<meta_op_xset>(), W);

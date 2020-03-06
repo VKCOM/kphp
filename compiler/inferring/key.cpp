@@ -32,11 +32,14 @@ Key Key::string_key(const std::string &key) {
   }
 
   AutoLocker<Lockable *> locker(node);
+  if (node->data != nullptr) {
+    return *node->data;
+  }
+
   int old_n = __sync_fetch_and_add(&n_string_keys_ht, 1);
   node->data = new Key(old_n * 2 + 2);
 
   auto name_node = string_key_names_ht.at(node->data->id);
-  kphp_assert(name_node->data == nullptr);
   name_node->data = new std::string(key);
 
   return *node->data;

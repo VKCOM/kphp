@@ -22,6 +22,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_Long:          return "Long";
     case tp_ULong:         return "ULong";
     case tp_tuple:         return "tuple";
+    case tp_shape:         return "shape";
     case tp_future:        return "future";
     case tp_future_queue:  return "future_queue";
     case tp_regexp:        return "regexp";

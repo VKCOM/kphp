@@ -1,5 +1,5 @@
 @kphp_should_fail
-/mix class A with false/
+/TYPE INFERENCE ERROR/
 /Expected type:.+A/
 /Actual type:.+false/
 <?php

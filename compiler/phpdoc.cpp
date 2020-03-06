@@ -140,6 +140,8 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       cur_type = tok_bool;
     } else if (cur_tok->str_val == "\\tuple") {
       cur_type = tok_tuple;
+    } else if (cur_tok->str_val == "\\shape") {
+      cur_type = tok_shape;
     }
   }
 
@@ -188,6 +190,9 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
     case tok_tuple:
       cur_tok++;
       return GenTree::create_type_help_vertex(tp_tuple, parse_nested_type_rules());
+    case tok_shape:
+      cur_tok++;
+      return parse_shape_type();
     case tok_callable:
       cur_tok++;
       return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
@@ -298,7 +303,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array() {
 
 std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
-    throw std::runtime_error("expected '<' or '('");
+    throw std::runtime_error("expected '('");
   }
   cur_tok++;
   std::vector<VertexPtr> sub_types;
@@ -311,7 +316,7 @@ std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
     } else if (cur_tok->type() == tok_comma) {
       cur_tok++;
     } else {
-      throw std::runtime_error("expected '>' or ')' or ','");
+      throw std::runtime_error("expected ')' or ','");
     }
   }
   return sub_types;
@@ -319,17 +324,77 @@ std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
 
 VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
-    throw std::runtime_error("expected '<' or '('");
+    throw std::runtime_error("expected '('");
   }
   cur_tok++;
 
   VertexPtr sub_type = parse_type_expression();
   if (vk::none_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
-    throw std::runtime_error("expected '>' or ')'");
+    throw std::runtime_error("expected ')'");
   }
   cur_tok++;
 
   return sub_type;
+}
+
+VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
+  if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
+    throw std::runtime_error("expected '('");
+  }
+  cur_tok++;
+
+  std::vector<VertexAdaptor<op_double_arrow>> shape_rules;
+  bool has_varg = false;
+  // пример: shape(x:int, y?:\A, z:tuple(...))
+  // внутренность — это [ op_double_arrow ( op_func_name "x", type_rule "int" ), ... ]
+  // в конце может стоять tok_varg: shape(x:int, ...)
+  while (true) {
+    auto elem_name_v = VertexAdaptor<op_func_name>::create();
+    elem_name_v->str_val = static_cast<std::string>(cur_tok->str_val);
+    cur_tok++;
+
+    bool is_nullable = false;
+    if (cur_tok->type() == tok_question) {
+      is_nullable = true;
+      cur_tok++;
+    }
+    if (cur_tok->type() != tok_colon) {
+      throw std::runtime_error("expected ':'");
+    }
+    cur_tok++;
+
+    VertexPtr elem_type_rule = parse_type_expression();
+    if (is_nullable) {
+      elem_type_rule = VertexAdaptor<op_type_expr_lca>::create(elem_type_rule, GenTree::create_type_help_vertex(tp_Null));
+    }
+
+    shape_rules.emplace_back(VertexAdaptor<op_double_arrow>::create(elem_name_v, elem_type_rule));
+
+    if (vk::any_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
+      cur_tok++;
+      break;
+    } else if (cur_tok->type() == tok_comma) {
+      cur_tok++;
+      if (cur_tok->type() == tok_varg) {
+        has_varg = true;
+        cur_tok++;
+        if (vk::any_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
+          cur_tok++;
+          break;
+        } else {
+          throw std::runtime_error("expected ')' after ...");
+        }
+      }
+    } else {
+      throw std::runtime_error("expected ')' or ','");
+    }
+  }
+
+  VertexPtr shape_type_help = GenTree::create_type_help_vertex(tp_shape, shape_rules);
+  if (has_varg) {
+    shape_type_help->extra_type = op_ex_shape_has_varg;
+  }
+  return shape_type_help;
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_type_expression() {

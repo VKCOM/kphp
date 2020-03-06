@@ -2,6 +2,8 @@
 
 #include "common/smart_ptrs/intrusive_ptr.h"
 
+#include <map>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
@@ -22,7 +24,7 @@ class AssumNotInstance : public Assumption {
 
 public:
 
-  static vk::intrusive_ptr<Assumption> create() {
+  static auto create() {
     auto self = new AssumNotInstance();
     return vk::intrusive_ptr<Assumption>(self);
   }
@@ -39,7 +41,7 @@ class AssumInstance : public Assumption {
 public:
   ClassPtr klass;
 
-  static vk::intrusive_ptr<Assumption> create(ClassPtr klass) {
+  static auto create(ClassPtr klass) {
     auto self = new AssumInstance();
     self->klass = klass;
     return vk::intrusive_ptr<Assumption>(self);
@@ -57,13 +59,13 @@ class AssumArray : public Assumption {
 public:
   vk::intrusive_ptr<Assumption> inner;
 
-  static vk::intrusive_ptr<Assumption> create(const vk::intrusive_ptr<Assumption> &inner) {
+  static auto create(const vk::intrusive_ptr<Assumption> &inner) {
     auto self = new AssumArray();
     self->inner = inner;
     return vk::intrusive_ptr<Assumption>(self);
   }
 
-  static vk::intrusive_ptr<Assumption> create(ClassPtr klass) {
+  static auto create(ClassPtr klass) {
     return create(AssumInstance::create(klass));
   }
 
@@ -74,15 +76,31 @@ public:
 };
 
 class AssumTuple : public Assumption {
-  AssumTuple() = default;
+  AssumTuple(const std::vector<vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
+    subkeys_assumptions(subkeys_assumptions) {}
 
 public:
   std::vector<vk::intrusive_ptr<Assumption>> subkeys_assumptions;
 
-  static vk::intrusive_ptr<Assumption> create(const std::vector<vk::intrusive_ptr<Assumption>> &sub) {
-    auto self = new AssumTuple();
-    self->subkeys_assumptions = sub;
-    return vk::intrusive_ptr<Assumption>(self);
+  static auto create(std::vector<vk::intrusive_ptr<Assumption>> &&sub) {
+    return vk::intrusive_ptr<Assumption>{new AssumTuple(std::move(sub))};
+  }
+
+  std::string as_human_readable() const override;
+  bool is_primitive() const override;
+  const TypeData *get_type_data() const override;
+  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
+};
+
+class AssumShape : public Assumption {
+  AssumShape(const std::map<std::string, vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
+    subkeys_assumptions(subkeys_assumptions) {}
+
+public:
+  std::map<std::string, vk::intrusive_ptr<Assumption>> subkeys_assumptions;
+
+  static auto create(std::map<std::string, vk::intrusive_ptr<Assumption>> &&sub) {
+    return vk::intrusive_ptr<Assumption>{new AssumShape(std::move(sub))};
   }
 
   std::string as_human_readable() const override;

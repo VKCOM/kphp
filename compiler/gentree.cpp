@@ -5,6 +5,7 @@
 #include "common/algorithms/find.h"
 #include "common/type_traits/constexpr_if.h"
 
+#include "common-php-functions.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
@@ -591,6 +592,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = get_func_call<op_tuple, op_err>();
       CE (!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
       break;
+    case tok_shape:
+      res = get_shape();
+      break;
     case tok_opbrk:
       res = get_short_array();
       break;
@@ -648,12 +652,6 @@ VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(ClassPt
   auto type_rule = VertexAdaptor<op_type_expr_class>::create();
   type_rule->type_help = tp_Class;
   type_rule->class_ptr = klass;
-  return type_rule;
-}
-
-VertexAdaptor<op_type_expr_type> GenTree::create_type_help_vertex(PrimitiveType type, const std::vector<VertexPtr> &children) {
-  auto type_rule = VertexAdaptor<op_type_expr_type>::create(children);
-  type_rule->type_help = type;
   return type_rule;
 }
 
@@ -1334,6 +1332,29 @@ VertexPtr GenTree::get_switch() {
 
   CE (expect(tok_clbrc, "'}'"));
   return switch_vertex;
+}
+
+VertexPtr GenTree::get_shape() {
+  AutoLocation location(this);
+
+  next_cur();
+  CE (expect(tok_oppar, "'('"));
+  VertexPtr inner_array = get_expression();
+  CE (expect(tok_clpar, "')'"));
+  CE (!kphp_error(inner_array && inner_array->type() == op_array && inner_array->size(), "shape() must have an array associative non-empty inside"));
+
+  std::set<int> keys_hashes;
+  for (VertexPtr arr_elem : *inner_array) {
+    auto double_arrow = arr_elem.try_as<op_double_arrow>();
+    auto key_v = double_arrow->lhs();
+    CE (!kphp_error(double_arrow, "shape() must have an array associative non-empty inside"));
+    CE (!kphp_error(vk::any_of_equal(key_v->type(), op_int_const, op_string, op_func_name), "keys of shape() must be constant"));
+    const std::string &key_str = key_v->get_string();
+    CE (!kphp_error(keys_hashes.insert(string_hash(key_str.c_str(), key_str.size())).second, "keys of shape() are not unique"));
+  }
+
+  // shape->args() это набор op_double_arrow
+  return VertexAdaptor<op_shape>::create(inner_array.as<op_array>()->args()).set_location(inner_array);
 }
 
 bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
