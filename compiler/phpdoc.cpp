@@ -389,15 +389,17 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
     doc_type = parser.parse_from_tokens(tok_iter);
   } catch (std::runtime_error &ex) {
     stage::set_location(current_function->root->location);
-    kphp_error(doc_type, fmt_format("{}: {}\n{}",
-                                    TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)),
-                                    TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline),
-                                    ex.what()));
+    kphp_error(0, fmt_format("{}: {}\n{}",
+                             TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)),
+                             TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline),
+                             ex.what()));
   }
 
   if (!parser.get_unknown_classes().empty()) {
     stage::set_location(current_function->root->location);
-    kphp_error(0, fmt_format("Could not find class in phpdoc: {}", *parser.get_unknown_classes().begin()));
+    kphp_error(0, fmt_format("{}: {}",
+                             TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not find class in phpdoc", TermStringFormat::bold)),
+                             TermStringFormat::add_text_attribute(*parser.get_unknown_classes().begin(), TermStringFormat::underline)));
     return {VertexPtr{}, std::move(var_name)};
   }
 
