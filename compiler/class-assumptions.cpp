@@ -199,7 +199,7 @@ void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const v
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
 
-  if (a && !a->is_primitive()) {
+  if (!a->is_primitive()) {
     assumption_add_for_var(f, var_name, a);
   }
 }
@@ -210,7 +210,7 @@ void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr
 void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr index_key, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
 
-  if (a && !a->get_subkey_by_index(index_key)->is_primitive()) {
+  if (!a->get_subkey_by_index(index_key)->is_primitive()) {
     assumption_add_for_var(f, var_name, a->get_subkey_by_index(index_key));
   }
 }
@@ -348,12 +348,11 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
 bool parse_kphp_return_doc(FunctionPtr f) {
   auto type_str = phpdoc_find_tag_as_string(f->phpdoc_str, php_doc_tag::kphp_return);
   if (!type_str) {
-    return true;
+    return false;
   }
 
   if (f->assumptions_inited_args != 2) {
-    auto err_msg = "function: `" + f->name + "` was not instantiated yet, please add `@kphp-return` tag to function which called this function";
-    kphp_error(false, err_msg.c_str());
+    kphp_error(false, fmt_format("function {} was not instantiated yet, please add `@kphp-return` tag to function which called this function", f->get_human_readable_name()));
     return false;
   }
 
@@ -426,7 +425,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       return;
     }
 
-    if (!parse_kphp_return_doc(f)) {
+    if (parse_kphp_return_doc(f)) {
       return;
     }
   }
@@ -452,14 +451,15 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
             return;
           }
         }
-        if (auto fun = call_vertex->func_id) {
-          auto return_a = calc_assumption_for_return(fun, call_vertex);
-          if (return_a) {
-            assumption_add_for_return(f, return_a);
-          }
+        if (call_vertex->func_id) {
+          assumption_add_for_return(f, calc_assumption_for_return(call_vertex->func_id, call_vertex));
         }
       }
     }
+  }
+
+  if (!f->assumption_for_return) {
+    assumption_add_for_return(f, AssumNotInstance::create());
   }
 }
 
@@ -484,6 +484,7 @@ void init_assumptions_for_all_fields(ClassPtr c) {
 /*
  * Высокоуровневая функция, определяющая, что такое $a внутри f.
  * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
+ * Всегда возвращает ненулевой assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
   if (f->modifiers.is_instance() && var_name == "this") {
@@ -517,7 +518,8 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
   auto pos = var_name.find("$$");
   if (pos != std::string::npos) {   // static переменная класса, просто используется внутри функции
     if (auto of_class = G->get_class(replace_characters(std::string{var_name.substr(0, pos)}, '$', '\\'))) {
-      return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
+      auto class_var_assum = calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
+      return class_var_assum ?: AssumNotInstance::create();
     }
   }
 
@@ -529,6 +531,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
 /*
  * Высокоуровневая функция, определяющая, что возвращает f.
  * Включает кеширование повторных вызовов и init на f при первом вызове.
+ * Всегда возвращает ненулевой assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
@@ -547,7 +550,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
         }
       }
     }
-    return {};
+    return AssumNotInstance::create();
   }
 
   if (f->is_constructor()) {
@@ -571,6 +574,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
 /*
  * Высокоуровневая функция, определяющая, что такое ->nested внутри инстанса $a класса c.
  * Выключает кеширование и единождый вызов init на класс.
+ * Может вернуть нулевой assumption, если переменной нет.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
   if (c->assumptions_inited_vars == 0) {
@@ -609,7 +613,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
   const FunctionPtr ptr = G->get_function(fname);
   if (!ptr) {
     kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
-    return {};
+    return AssumNotInstance::create();
   }
 
   // для built-in функций по типу array_pop/array_filter/etc на массиве инстансов
@@ -649,9 +653,8 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
 vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
                                                VertexAdaptor<op_array> array,
                                                size_t depth) {
-  kphp_assert(array);
   if (array->size() == 0) {
-    return {};
+    return AssumNotInstance::create();
   }
 
   ClassPtr klass;
@@ -699,11 +702,12 @@ vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
     lhs_class = lhs_class->parent_class;
   } while ((!res_assum || res_assum.try_as<AssumNotInstance>()) && lhs_class);
 
-  return res_assum;
+  return res_assum ?: AssumNotInstance::create();
 }
 
 /*
  * Главная функция, вызывающаяся извне: возвращает assumption для любого выражения root внутри f.
+ * Гарантированно возвращает не null внутри (если ничего адекватного — AssumNotInstance, но не null)
  */
 vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0*/) {
   if (depth > 1000) {
@@ -719,8 +723,7 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key()) {
-        auto expr_a = infer_class_of_expr(f, index->array(), depth + 1);
-        return expr_a ? expr_a->get_subkey_by_index(index) : AssumNotInstance::create();
+        return infer_class_of_expr(f, index->array(), depth + 1)->get_subkey_by_index(index->key());
       }
       return AssumNotInstance::create();
     }
