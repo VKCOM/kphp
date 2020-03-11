@@ -153,9 +153,6 @@ public:
   static void upd_generation(TypeData::generation_t other_generation);
 };
 
-bool operator<(const TypeData &a, const TypeData &b);
-bool operator==(const TypeData &a, const TypeData &b);
-
 std::string type_out(const TypeData *type, gen_out_style style = gen_out_style::cpp);
 std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
@@ -183,8 +180,4 @@ inline void TypeData::set_flag<TypeData::error_flag_e>(bool f) {
       }
     }
   }
-}
-
-inline bool operator<(const TypeData::KeyValue &a, const TypeData::KeyValue &b) {
-  return a.first < b.first;
 }

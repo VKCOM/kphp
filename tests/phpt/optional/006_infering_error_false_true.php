@@ -1,5 +1,4 @@
-@kphp_should_fail
-/Expected type\:\sfalse\sActual type\:\sboolean/
+@ok
 <?php
 
 /**
@@ -10,3 +9,4 @@ function test($x) {
 }
 
 test(true);
+// 'false' treated as bool in get_real_ptype()

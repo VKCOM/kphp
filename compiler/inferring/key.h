@@ -26,22 +26,12 @@ public:
   inline bool is_string_key() const { return id > 0 && id % 2 == 0; }
 
   friend inline bool operator<(const Key &a, const Key &b);
-  friend inline bool operator>(const Key &a, const Key &b);
-  friend inline bool operator<=(const Key &a, const Key &b);
   friend inline bool operator!=(const Key &a, const Key &b);
   friend inline bool operator==(const Key &a, const Key &b);
 };
 
 inline bool operator<(const Key &a, const Key &b) {
   return a.id < b.id;
-}
-
-inline bool operator>(const Key &a, const Key &b) {
-  return a.id > b.id;
-}
-
-inline bool operator<=(const Key &a, const Key &b) {
-  return a.id <= b.id;
 }
 
 inline bool operator!=(const Key &a, const Key &b) {

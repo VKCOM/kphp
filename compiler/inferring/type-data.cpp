@@ -391,11 +391,7 @@ TypeData *TypeData::lookup_at(const Key &key) const {
   if (!structured()) {
     return nullptr;
   }
-  TypeData *res = at(key);
-  if (res == nullptr && !key.is_any_key()) {
-    res = anykey_value;
-  }
-  return res;
+  return key.is_any_key() ? anykey_value : subkeys_values.find(key);
 }
 
 TypeData::lookup_iterator TypeData::lookup_begin() const {
@@ -548,73 +544,6 @@ void TypeData::upd_generation(TypeData::generation_t other_generation) {
   if (other_generation >= *current_generation_) {
     *current_generation_ = other_generation;
   }
-}
-
-static inline int cmp(const TypeData *a, const TypeData *b) {
-  if (a == b) {
-    return 0;
-  }
-  if (a == nullptr) {
-    return -1;
-  }
-  if (b == nullptr) {
-    return 1;
-  }
-  if (a->ptype() < b->ptype()) {
-    return -1;
-  }
-  if (a->ptype() > b->ptype()) {
-    return +1;
-  }
-  if (a->flags() < b->flags()) {
-    return -1;
-  }
-  if (a->flags() > b->flags()) {
-    return +1;
-  }
-
-  int res;
-  res = cmp(a->lookup_at(Key::any_key()), b->lookup_at(Key::any_key()));
-  if (res) {
-    return res;
-  }
-
-  TypeData::lookup_iterator a_begin = a->lookup_begin(),
-    a_end = a->lookup_end(),
-    b_begin = b->lookup_begin(),
-    b_end = b->lookup_end();
-  int a_size = (int)(a_end - a_begin);
-  int b_size = (int)(b_end - b_begin);
-  if (a_size < b_size) {
-    return -1;
-  }
-  if (a_size > b_size) {
-    return +1;
-  }
-
-  while (a_begin != a_end) {
-    if (a_begin->first < b_begin->first) {
-      return -1;
-    }
-    if (a_begin->first > b_begin->first) {
-      return +1;
-    }
-    res = cmp(a_begin->second, b_begin->second);
-    if (res) {
-      return res;
-    }
-    a_begin++;
-    b_begin++;
-  }
-  return 0;
-}
-
-bool operator<(const TypeData &a, const TypeData &b) {
-  return cmp(&a, &b) < 0;
-}
-
-bool operator==(const TypeData &a, const TypeData &b) {
-  return cmp(&a, &b) == 0;
 }
 
 inline void get_cpp_style_type(const TypeData *type, std::string &res) {
@@ -826,42 +755,33 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
     return false;
   }
 
-  const PrimitiveType tp1 = type1->get_real_ptype();
-  const PrimitiveType tp2 = type2->get_real_ptype();
-  if (tp1 != tp2) {
+  if (type1->get_real_ptype() != type2->get_real_ptype()) {
     return false;
   }
-  const bool is_optional1 = type1->use_optional();
-  const bool is_optional2 = type2->use_optional();
-  if (is_optional1 != is_optional2) {
+  if (type1->use_optional() != type2->use_optional()) {
     return false;
   }
+  const PrimitiveType tp = type1->get_real_ptype();
 
-  if (tp1 == tp_Class) {
+  if (tp == tp_Class) {
     return type1->class_type() == type2->class_type();
   }
 
-  if (tp1 == tp_array) {
+  if (tp == tp_array) {
     return is_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
   }
 
-  if (tp1 == tp_tuple) {
-    auto it1 = type1->lookup_begin();
-    auto it2 = type2->lookup_begin();
-    auto type1_elements = std::distance(it1, type1->lookup_end());
-    auto type2_elements = std::distance(it2, type2->lookup_end());
-    if (type1_elements != type2_elements) {
+  if (tp == tp_tuple) {
+    if (type1->get_tuple_max_index() != type2->get_tuple_max_index()) {
       return false;
     }
-
-    for (; it1 != type1->lookup_end(); ++it1, ++it2) {
-      kphp_assert(it1->first.is_int_key());
-      kphp_assert(it2->first.is_int_key());
+    for (auto it1 = type1->lookup_begin(), it2 = type2->lookup_begin(); it1 != type1->lookup_end(); ++it1, ++it2) {
       if (!is_equal_types(type1->const_read_at(it1->first), type2->const_read_at(it2->first))) {
         return false;
       }
     }
   }
+
   return true;
 }
 
