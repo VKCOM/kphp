@@ -366,7 +366,6 @@
   $xx[1.5] = 2.5;
   var_dump ($xx);
 
-  var_dump (floatval (array ()));
   var_dump (floatval (true));
   var_dump (floatval (2));
   var_dump (floatval (3.0));

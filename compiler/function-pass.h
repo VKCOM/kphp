@@ -25,7 +25,7 @@ public:
   struct LocalT {
   };
 
-  virtual string get_description() {
+  virtual std::string get_description() {
     return "unknown function pass";
   }
 

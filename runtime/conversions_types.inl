@@ -47,18 +47,6 @@ inline int f$intval(const string &val) {
   return val.to_int();
 }
 
-template<class T>
-inline int f$intval(const array<T> &val) {
-  php_warning("Wrong convertion from array to int");
-  return val.to_int();
-}
-
-template<class T>
-inline int f$intval(const class_instance<T> &) {
-  php_warning("Wrong convertion from object to int");
-  return 1;
-}
-
 inline int f$intval(const var &val) {
   return val.to_int();
 }
@@ -88,18 +76,6 @@ inline int f$safe_intval(const string &val) {
   return val.safe_to_int();
 }
 
-template<class T>
-inline int f$safe_intval(const array<T> &val) {
-  php_warning("Wrong convertion from array to int");
-  return val.to_int();
-}
-
-template<class T>
-inline int f$safe_intval(const class_instance<T> &) {
-  php_warning("Wrong convertion from object to int");
-  return 1;
-}
-
 inline int f$safe_intval(const var &val) {
   return val.safe_to_int();
 }
@@ -112,18 +88,6 @@ inline double f$floatval(const T &val) {
 
 inline double f$floatval(const string &val) {
   return val.to_float();
-}
-
-template<class T>
-inline double f$floatval(const array<T> &val) {
-  php_warning("Wrong convertion from array to float");
-  return val.to_float();
-}
-
-template<class T>
-inline double f$floatval(const class_instance<T> &) {
-  php_warning("Wrong convertion from object to float");
-  return 1.0;
 }
 
 inline double f$floatval(const var &val) {
@@ -157,18 +121,6 @@ inline string &&f$strval(string &&val) {
 }
 
 template<class T>
-inline string f$strval(const array<T> &) {
-  php_warning("Convertion from array to string");
-  return string("Array", 5);
-}
-
-template<class ...Args>
-inline string f$strval(const std::tuple<Args...> &) {
-  php_warning("Convertion from tuple to string");
-  return string("Array", 5);
-}
-
-template<class T>
 inline string f$strval(const Optional<T> &val) {
   return val.has_value() ? f$strval(val.val()) : f$strval(false);
 }
@@ -176,11 +128,6 @@ inline string f$strval(const Optional<T> &val) {
 template<class T>
 inline string f$strval(Optional<T> &&val) {
   return val.has_value() ? f$strval(std::move(val.val())) : f$strval(false);
-}
-
-template<class T>
-inline string f$strval(const class_instance<T> &val) {
-  return string(val.get_class());
 }
 
 inline string f$strval(const var &val) {
@@ -206,12 +153,6 @@ inline const array<T> &f$arrayval(const array<T> &val) {
 template<class T>
 inline array<T> &&f$arrayval(array<T> &&val) {
   return std::move(val);
-}
-
-template<class T>
-inline array<var> f$arrayval(const class_instance<T> &) {
-  php_warning("Can not convert class instance to array");
-  return array<var>();
 }
 
 inline array<var> f$arrayval(const var &val) {

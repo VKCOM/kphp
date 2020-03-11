@@ -32,9 +32,9 @@ var_dump(to_printable_bytestring($q));
 
 // Тесты на рандомную строчку, а не ту которую вернула pack функция
 // каст к строке, чтобы привести всё к kphp поведению (строка вместо int-a)
-var_dump((string) unpack("P", "Vasya go gulat"));
-var_dump((string) unpack("J", "Vasya go gulat"));
-var_dump((string) unpack("Q", "Vasya go gulat"));
+var_dump((string) unpack("P", "Vasya go gulat")[1]);
+var_dump((string) unpack("J", "Vasya go gulat")[1]);
+var_dump((string) unpack("Q", "Vasya go gulat")[1]);
 
 // Проверка, что не упадём при строках < необходимой длины
 // silent оператор т.к. в kphp к warning-у добавляется stacktrace для c++ кода

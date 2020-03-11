@@ -12,6 +12,12 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#include "common/algorithms/hashes.h"
+#include "common/crc32.h"
+#include "common/type_traits/function_traits.h"
+#include "common/version-string.h"
+#include "drinkless/dl-utils-lite.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
@@ -27,6 +33,7 @@
 #include "compiler/pipes/cfg.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
+#include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-function-calls.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
@@ -74,11 +81,6 @@
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
-#include "common/algorithms/hashes.h"
-#include "common/crc32.h"
-#include "common/type_traits/function_traits.h"
-#include "common/version-string.h"
-#include "drinkless/dl-utils-lite.h"
 
 class lockf_wrapper {
   std::string locked_filename_;
@@ -274,6 +276,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> SyncC<TypeInfererEndF>{}
     >> PipeC<CFGEndF>{}
     >> PipeC<CheckClassesF>{}
+    >> PassC<CheckConversionsPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<FixReturnsPass>{}
     >> PassC<CalcValRefPass>{}
