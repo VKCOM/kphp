@@ -398,9 +398,15 @@ def test_files_from_dir(tests_dir):
 
 
 def test_files_from_list(tests_dir, test_list):
-    with open(test_list) as f:
+    with open(test_list,  encoding='utf-8') as f:
         for line in f.readlines():
-            yield tests_dir, line.strip()
+            idx = line.find("#")
+            if idx != -1:
+                line = line[:idx]
+            line = line.strip()
+            if not line:
+                continue
+            yield tests_dir, line
 
 
 def collect_tests(tests_dir, test_tags, test_list):
