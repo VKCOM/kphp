@@ -108,7 +108,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
   }
 
   for (int i = 0; i < call_params_n; i++) {
-    auto func_param = func_params[i].try_as<op_func_param_callback>();
+    auto func_param = func_params[i].try_as<op_func_param_typed_callback>();
     if (!func_param) {
       kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
       continue;
@@ -128,7 +128,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     for (auto arg : cur_params) {
       if (auto param_arg = arg.try_as<op_func_param>()) {
         kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
-      } else if (auto callback_arg = arg.try_as<op_func_param_callback>()) {
+      } else if (auto callback_arg = arg.try_as<op_func_param_typed_callback>()) {
         kphp_error_return(callback_arg->has_default_value(), "Callback function with callback parameter");
       }
     }

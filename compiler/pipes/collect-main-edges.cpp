@@ -157,7 +157,7 @@ void CollectMainEdgesPass::add_type_help(VertexPtr v) {
 void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int id) {
   const FunctionPtr call_function = call->func_id;
   const VertexPtr ith_argument_of_call = call->args()[id];
-  auto callback_param = call_function->get_params()[id].as<op_func_param_callback>();
+  auto callback_param = call_function->get_params()[id].as<op_func_param_typed_callback>();
 
   FunctionPtr callback_function;
   if (auto ptr = ith_argument_of_call.try_as<op_func_ptr>()) {
@@ -268,7 +268,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     VertexPtr arg = call->args()[i];
     auto param = function_params[i].as<meta_op_func_param>();
 
-    if (param->type() == op_func_param_callback) {
+    if (param->type() == op_func_param_typed_callback) {
       on_func_param_callback(call, i);
     } else {
       if (!function->is_extern()) {

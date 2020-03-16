@@ -56,7 +56,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
   auto func_param_it = func_params.begin();
 
   for (auto call_arg : call->args()) {
-    if ((*func_param_it)->type() != op_func_param_callback) {
+    if ((*func_param_it)->type() != op_func_param_typed_callback) {
       auto param = (*func_param_it).as<op_func_param>();
       RLValueType tp = param->var()->ref_flag ? val_l : val_r;
       rl_calc(call_arg, tp);

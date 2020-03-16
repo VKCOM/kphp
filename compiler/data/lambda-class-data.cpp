@@ -115,7 +115,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   //int call_params_n = static_cast<int>(call_params.size());
 
   VertexRange extern_func_params = extern_function_call->func_id->get_params();
-  auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_callback; });
+  auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_typed_callback; });
   kphp_assert(callback_it != extern_func_params.end());
   auto callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
   if (auto call_func_ptr = call_params[callback_pos].try_as<op_func_ptr>()) {
@@ -124,7 +124,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
     }
   }
 
-  auto func_param_callback = callback_it->as<op_func_param_callback>();
+  auto func_param_callback = callback_it->as<op_func_param_typed_callback>();
   VertexRange callback_params = get_function_params(func_param_callback);
   if (!FunctionData::check_cnt_params(callback_params.size(), *template_of_invoke_method)) {
     return "";

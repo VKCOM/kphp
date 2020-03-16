@@ -489,7 +489,7 @@
         "override": true
       }
     },
-    "name": "op_func_param_callback",
+    "name": "op_func_param_typed_callback",
     "base_name": "meta_op_func_param"
   },
   {

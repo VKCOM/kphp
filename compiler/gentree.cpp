@@ -877,11 +877,11 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     VertexPtr def_val = get_def_value();
     kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
 
-    VertexAdaptor<op_func_param_callback> v;
+    VertexAdaptor<op_func_param_typed_callback> v;
     if (def_val) {
-      v = VertexAdaptor<op_func_param_callback>::create(name, params, def_val);
+      v = VertexAdaptor<op_func_param_typed_callback>::create(name, params, def_val);
     } else {
-      v = VertexAdaptor<op_func_param_callback>::create(name, params);
+      v = VertexAdaptor<op_func_param_typed_callback>::create(name, params);
     }
 
     v->type_rule = type_rule;

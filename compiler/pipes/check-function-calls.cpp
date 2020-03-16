@@ -42,7 +42,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   );
 
   for (int i = 0; i < call_params.size(); i++) {
-    if (auto func_param = func_params[i].try_as<op_func_param_callback>()) {
+    if (auto func_param = func_params[i].try_as<op_func_param_typed_callback>()) {
       auto call_param = call_params[i].try_as<op_func_ptr>();
       kphp_error_return(call_param,
                         fmt_format("Argument '{}' should be function pointer, but {} found [{} : {}]",
