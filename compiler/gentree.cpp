@@ -1761,6 +1761,16 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
   }
 }
 
+VertexAdaptor<op_func_call> GenTree::generate_critical_error(std::string msg) {
+  auto msg_v = VertexAdaptor<op_string>::create();
+  msg_v->str_val = std::move(msg);
+
+  auto critical_error_v = VertexAdaptor<op_func_call>::create(msg_v);
+  critical_error_v->str_val = "critical_error";
+
+  return critical_error_v;
+}
+
 
 void GenTree::get_traits_uses() {
   next_cur();

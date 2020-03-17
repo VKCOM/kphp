@@ -200,11 +200,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
   }
 
   if (!cases.empty()) {
-    auto message_that_class_is_empty = VertexAdaptor<op_string>::create();
-    message_that_class_is_empty->str_val = fmt_format("call method({}) on null object", virtual_function->get_human_readable_name());
-
-    auto warn_on_default = VertexAdaptor<op_func_call>::create(message_that_class_is_empty);
-    warn_on_default->str_val = "critical_error";
+    auto warn_on_default = GenTree::generate_critical_error(fmt_format("call method({}) on null object", virtual_function->get_human_readable_name()));
 
     auto call_of_exit = VertexAdaptor<op_seq>::create(warn_on_default);
     cases.emplace_back(VertexAdaptor<op_default>::create(call_of_exit));

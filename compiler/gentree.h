@@ -148,6 +148,8 @@ public:
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
 
+  static VertexAdaptor<op_func_call> generate_critical_error(std::string msg);
+
 private:
   std::string get_typehint();
 
