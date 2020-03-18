@@ -2179,13 +2179,13 @@ void start_server() {
     sql_target_id = get_target("localhost", db_port, &db_ct);
     assert (sql_target_id != -1);
   }
-
-  if ((rpc_client_host != nullptr) ^ (rpc_client_port != -1)) {
-    vkprintf (-1, "warning: only rpc_client_host or rpc_client_port is defined\n");
-  }
-  if (rpc_client_host != nullptr && rpc_client_port != -1) {
-    vkprintf (-1, "create rpc client target: %s:%d\n", rpc_client_host, rpc_client_port);
-    set_main_target(get_target(rpc_client_host, rpc_client_port, &rpc_client_ct));
+  auto &rpc_clients = RpcClients::get().rpc_clients;
+  std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
+                  vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
+                  rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
+                });
+  if (!rpc_clients.empty()) {
+    set_main_target(rpc_clients.front());
   }
 
   if (run_once) {
@@ -2424,19 +2424,25 @@ int main_args_handler(int i) {
     case 'w': {
       char *colon = strrchr(optarg, ':');
       if (colon == nullptr) {
-        kprintf ("-w option, can't find ':'\n");
+        kprintf("-w option, can't find ':'\n");
         return -1;
       }
-      rpc_client_host = strndup(optarg, colon - optarg);
+      LeaseRpcClient rpc_client;
+      rpc_client.host.assign(optarg, colon - optarg);
       char *at = strchr(colon, '@');
       if (at) {
         *at = 0;
       }
-      rpc_client_port = atoi(colon + 1);
+      rpc_client.port = atoi(colon + 1);
       if (at) {
         *at = '@';
-        rpc_client_actor = atoi(at + 1);
+        rpc_client.actor = atoi(at + 1);
       }
+      if (const char *err = rpc_client.check()) {
+        kprintf("-w option: %s\n", err);
+        return -1;
+      }
+      RpcClients::get().rpc_clients.push_back(std::move(rpc_client));
       return 0;
     }
     case 'E': {
@@ -2511,10 +2517,7 @@ int main_args_handler(int i) {
     }
     case 'S': {
       const char *lease_config = optarg;
-      if (!LeaseConfigParser::parse_lease_options_config(lease_config)) {
-        return -1;
-      }
-      return 0;
+      return LeaseConfigParser::parse_lease_options_config(lease_config);
     }
     case 2000: {
       queries_to_recreate_script = atoi(optarg);
@@ -2692,7 +2695,6 @@ int run_main(int argc, char **argv, php_mode mode) {
     master_flag = 0;
     rpc_port = -1;
     http_port = -1;
-    rpc_client_port = -1;
     setvbuf(stdout, nullptr, _IONBF, 0);
   }
 

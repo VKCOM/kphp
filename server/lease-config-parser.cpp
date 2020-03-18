@@ -31,13 +31,32 @@ vk::optional<QueueTypesLeaseWorkerMode> LeaseConfigParser::get_lease_mode_from_c
   return lease_worker_mode;
 }
 
-bool LeaseConfigParser::parse_lease_options_config(const char *lease_config) {
+std::vector<LeaseRpcClient> LeaseConfigParser::get_rpc_clients_from_config(const YAML::Node &node) {
+  std::vector<LeaseRpcClient> rpc_clients;
+  if (const auto &rpc_clients_node = node["rpc_clients"]) {
+    for (const auto &rpc_client_node: rpc_clients_node) {
+      LeaseRpcClient rpc_client;
+      rpc_client.host = get_typed_field<std::string>(rpc_client_node, "host");
+      rpc_client.port = get_typed_field<int>(rpc_client_node, "port");
+      rpc_client.actor = get_typed_field<int>(rpc_client_node, "actor", true, -1);
+      if (auto err = rpc_client.check()) {
+        throw std::runtime_error(err);
+      }
+      rpc_clients.emplace_back(std::move(rpc_client));
+    }
+  }
+  return rpc_clients;
+}
+
+int LeaseConfigParser::parse_lease_options_config(const char *lease_config) noexcept {
   try {
     YAML::Node node = YAML::LoadFile(lease_config);
+    const auto &rpc_clients = LeaseConfigParser::get_rpc_clients_from_config(node);
+    RpcClients::get().rpc_clients.insert(RpcClients::get().rpc_clients.end(), rpc_clients.begin(), rpc_clients.end());
     cur_lease_mode = LeaseConfigParser::get_lease_mode_from_config(node);
   } catch (const std::exception &e) {
     kprintf("-S option, incorrect lease config '%s'\n%s\n", lease_config, e.what());
-    return false;
+    return -1;
   }
-  return true;
+  return 0;
 }

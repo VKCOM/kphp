@@ -4,6 +4,7 @@
 #include "common/wrappers/optional.h"
 #include "tasks/lease-worker-settings.h"
 
+#include "server/lease-rpc-client.h"
 #include "server/lease-worker-mode.h"
 #include "server/php-worker.h"
 
@@ -14,7 +15,7 @@ void run_rpc_lease();
 void do_rpc_stop_lease();
 int do_rpc_start_lease(process_id_t pid, double timeout);
 void lease_cron();
-void set_main_target(int target);
+void set_main_target(const LeaseRpcClient &client);
 int get_current_target();
 connection *get_lease_connection();
 process_id_t get_lease_pid();

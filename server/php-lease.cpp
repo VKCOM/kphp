@@ -14,7 +14,7 @@
 #include "server/php-ready.h"
 #include "server/php-worker.h"
 
-static int rpc_main_target = -1;
+static int rpc_proxy_target = -1;
 
 static int cur_lease_target_ip = -1;
 static int cur_lease_target_port = -1;
@@ -121,7 +121,7 @@ static void rpc_send_ready(connection *c) {
   int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
 
   q[qn++] = -1; // will be replaced by op
-  if (get_current_target() == rpc_main_target && rpc_client_actor != -1) { // we don't want to update all tasks
+  if (get_current_target() == rpc_proxy_target && rpc_client_actor != -1) { // we don't want to update all tasks
     *reinterpret_cast<long long*>(&q[qn]) = 0;
     qn += 2;
     q[qn++] = TL_RPC_DEST_ACTOR;
@@ -196,7 +196,7 @@ static void rpct_lease_stats(int target_fd) {
 int get_current_target() {
   if (lease_state == lst_off) {
     // rpc-proxy
-    return rpc_main_target;
+    return rpc_proxy_target;
   }
   if (lease_state == lst_on) {
     // tasks
@@ -213,7 +213,9 @@ static int lease_off() {
   if (has_pending_scripts()) {
     return 0;
   }
-  if (rpct_ready(rpc_main_target) >= 0) {
+  set_main_target(RpcClients::get().get_random_alive_client());
+  // Идем к rpc-proxy за пидом тасок
+  if (rpct_ready(rpc_proxy_target) >= 0) {
     lease_ready_flag = 0;
     return 1;
   }
@@ -228,6 +230,7 @@ static int lease_on() {
   if (has_pending_scripts()) {
     return 0;
   }
+  // Идем к tasks за новыми тасками
   if (rpct_ready(rpc_lease_target) >= 0) {
     lease_ready_flag = 0;
     return 1;
@@ -254,7 +257,7 @@ static int lease_finish() {
     return 0;
   }
   rpct_stop_ready(rpc_lease_target);
-  rpct_lease_stats(rpc_main_target);
+  rpct_lease_stats(rpc_proxy_target);
   lease_change_state(lst_off);
   lease_ready_flag = 1;
   return 1;
@@ -307,7 +310,7 @@ void do_rpc_stop_lease() {
 }
 
 int do_rpc_start_lease(process_id_t pid, double timeout) {
-  if (rpc_main_target == -1) {
+  if (rpc_proxy_target == -1) {
     return -1;
   }
 
@@ -318,7 +321,7 @@ int do_rpc_start_lease(process_id_t pid, double timeout) {
   if (target_fd == -1) {
     return -1;
   }
-  if (target_fd == rpc_main_target) {
+  if (target_fd == rpc_proxy_target) {
     vkprintf(0, "can't lease to itself\n");
     return -1;
   }
@@ -346,8 +349,8 @@ void lease_set_ready() {
 }
 
 void lease_on_stop() {
-  if (rpc_main_target != -1) {
-    conn_target_t *target = &Targets[rpc_main_target];
+  if (rpc_proxy_target != -1) {
+    conn_target_t *target = &Targets[rpc_proxy_target];
     connection *conn = get_target_connection(target, 0);
     if (conn != nullptr) {
       rpc_send_stopped(conn);
@@ -356,8 +359,9 @@ void lease_on_stop() {
   }
 }
 
-void set_main_target(int target) {
-  rpc_main_target = target;
+void set_main_target(const LeaseRpcClient &client) {
+  rpc_client_actor = client.actor;
+  rpc_proxy_target = client.target_id;
 }
 
 connection *get_lease_connection() {
@@ -372,8 +376,8 @@ process_id_t get_lease_pid() {
 }
 
 process_id_t get_rpc_main_target_pid() {
-  if (rpc_main_target != -1) {
-    if (auto c = get_target_connection(&Targets[rpc_main_target], 0)) {
+  if (rpc_proxy_target != -1) {
+    if (auto c = get_target_connection(&Targets[rpc_proxy_target], 0)) {
       return TCP_RPC_DATA(c)->remote_pid;
     }
   }
