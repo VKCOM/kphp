@@ -2109,14 +2109,6 @@ void start_server() {
   int prev_time;
   double next_create_outbound = 0;
 
-  if (run_once) {
-    master_flag = 0;
-    rpc_port = -1;
-    http_port = -1;
-    rpc_client_port = -1;
-    setvbuf(stdout, nullptr, _IONBF, 0);
-  }
-
   pending_signals = 0;
   if (daemonize) {
     setsid();
@@ -2140,21 +2132,6 @@ void start_server() {
     start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
 
     if (logname_pattern != nullptr) {
-      reopen_logs();
-    }
-    reopen_json_log();
-  } else {
-    if (logname != nullptr) {
-      kstdout = dup(1);
-      if (kstdout <= 2) {
-        kprintf("Can't save stdout before opening logs\n");
-        exit(1);
-      }
-      kstderr = dup(2);
-      if (kstderr <= 2) {
-        kprintf("Can't save stderr before opening logs\n");
-        exit(1);
-      }
       reopen_logs();
       reopen_json_log();
     }
@@ -2665,6 +2642,24 @@ void init_default() {
 
   do_relogin();
   prctl(PR_SET_DUMPABLE, 1);
+
+  if (!master_flag && !daemonize) {
+    kstdout = dup(1);
+    if (kstdout <= 2) {
+      kprintf("fatal: can't save stdout\n");
+      exit(1);
+    }
+    kstderr = dup(2);
+    if (kstderr <= 2) {
+      kprintf("fatal: can't save stderr\n");
+      exit(1);
+    }
+  }
+
+  if (logname) {
+    reopen_logs();
+    reopen_json_log();
+  }
 }
 
 int run_main(int argc, char **argv, php_mode mode) {
@@ -2683,6 +2678,14 @@ int run_main(int argc, char **argv, php_mode mode) {
   }
 
   parse_main_args(argc, argv);
+
+  if (run_once) {
+    master_flag = 0;
+    rpc_port = -1;
+    http_port = -1;
+    rpc_client_port = -1;
+    setvbuf(stdout, nullptr, _IONBF, 0);
+  }
 
   load_time = -dl_time();
 
