@@ -2,6 +2,8 @@
 
 #include <pcre.h>
 
+#include "common/mixin/not_copyable.h"
+
 #include "runtime/kphp_core.h"
 #include "runtime/mbstring.h"
 
@@ -34,24 +36,25 @@ enum {
   PHP_PCRE_BAD_UTF8_ERROR,
 };
 
-
-class regexp {
+class regexp : vk::not_copyable{
 private:
-  int subpatterns_count;
-  int named_subpatterns_count;
-  bool is_utf8;
-  bool use_heap_memory;
+  int subpatterns_count{0};
+  int named_subpatterns_count{0};
+  bool is_utf8{false};
+  bool use_heap_memory{false};
 
-  string *subpattern_names;
+  string *subpattern_names{nullptr};
 
-  pcre *pcre_regexp;
-  re2::RE2 *RE2_regexp;
+  pcre *pcre_regexp{nullptr};
+  re2::RE2 *RE2_regexp{nullptr};
+
+  char *regex_compilation_warning{nullptr};
 
   void clean();
 
   int exec(const string &subject, int offset, bool second_try) const;
 
-  static bool is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8, const char *function, const char *file);
+  bool is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8, const char *function, const char *file) noexcept;
 
   static pcre_extra extra;
 
@@ -62,11 +65,12 @@ private:
   template<class T>
   inline string get_replacement(const T &replace_val, const string &subject, int count) const;
 
-  regexp(const regexp &);//DISABLE copy constructor
-  regexp &operator=(const regexp &);//DISABLE copy assignment
+  void pattern_compilation_warning(const char *function, const char *file, char const *message, ...) noexcept __attribute__ ((format (printf, 4, 5)));
+
+  void check_pattern_compilation_warning() const noexcept;
 
 public:
-  regexp();
+  regexp() = default;
 
   explicit regexp(const string &regexp_string);
   regexp(const char *regexp_string, int regexp_len);
@@ -260,6 +264,7 @@ var regexp::replace(const T &replace_val, const string &subject, int limit, int 
   pcre_last_error = 0;
   int result_count = 0;//calls can be recursive, can't write to replace_count directly
 
+  check_pattern_compilation_warning();
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return var();
   }
