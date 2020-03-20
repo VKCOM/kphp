@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 Classes\Inheritance\SimpleBase::test1();
 Classes\Inheritance\SimpleBase::test2();

@@ -1,8 +1,7 @@
 @ok
 <?php
 
-require_once("Classes/autoload.php");
-require_once("instance_cast.php");
+require_once("polyfills.php");
 
 function call_interface(Classes\IDo $can_do) {
     if ($can_do instanceof Classes\A) {

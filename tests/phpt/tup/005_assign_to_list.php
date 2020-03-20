@@ -1,7 +1,7 @@
 @ok
 <?php
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 function getAll() {
     $total_count = 2;

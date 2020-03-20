@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 // kphp fails, because array(1, new A) is array<var>, and list(,$a) = ... — $a is var, not class_instance
 // so, returning mixed array is a bad pattern; you should return a typed class instead

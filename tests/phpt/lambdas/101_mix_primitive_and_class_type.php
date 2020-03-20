@@ -1,7 +1,7 @@
 @kphp_should_fail
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 $fun = function ($a) {
     return $a->a + 100;

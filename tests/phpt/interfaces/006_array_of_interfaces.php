@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once('Classes/autoload.php');
+require_once('polyfills.php');
 
 /** @var Classes\IDo[] $tasks */
 $tasks = [new Classes\A(), new Classes\B()];

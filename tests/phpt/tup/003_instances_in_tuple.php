@@ -1,7 +1,7 @@
 @ok
 <?php
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 function demo1Instance() {
     $t = tuple(1, 'str', new Classes\A);

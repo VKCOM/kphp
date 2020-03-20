@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 Classes\Common::test1('Test1');
 echo Classes\Common::C1."\n";

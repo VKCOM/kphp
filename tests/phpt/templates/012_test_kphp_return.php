@@ -1,6 +1,6 @@
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 /**
  * @kphp-template T[] $arg $arg2

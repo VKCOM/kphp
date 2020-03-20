@@ -1,7 +1,6 @@
 @ok
 <?php
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
 
 function constructT($str, $int) {
     return shape(['str' => $str, 'ints' => [1,2,$int], 'a' => (new Classes\A)->setA($int)]);

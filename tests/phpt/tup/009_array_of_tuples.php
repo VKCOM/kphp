@@ -1,7 +1,7 @@
 @ok
 <?php
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 function constructT($str, $int) {
     return tuple($str, [1,2,$int], (new Classes\A)->setA($int));

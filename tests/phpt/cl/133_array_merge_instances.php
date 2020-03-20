@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 use Classes\B;
 
 $arr1 = [3=>new B(1), 5=>new B(2)];

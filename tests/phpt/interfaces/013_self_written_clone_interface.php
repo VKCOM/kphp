@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once('instance_cast.php');
+require_once 'polyfills.php';
 
 interface ContainsX {
     public function set_x($x);

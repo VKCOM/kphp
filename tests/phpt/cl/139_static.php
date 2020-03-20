@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 Classes\G::static_public_func();
 Classes\G::public_static_func();

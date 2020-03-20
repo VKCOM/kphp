@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 function get_class_name($c) {
     var_dump(get_class($c));

@@ -1,7 +1,7 @@
 @kphp_should_fail
 /Can not override/
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 use Classes\Inheritance\Child11;
 use Classes\Inheritance\Child1;
 use Classes\Inheritance\Base;

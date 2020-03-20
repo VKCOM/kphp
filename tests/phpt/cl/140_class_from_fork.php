@@ -2,7 +2,7 @@
 <?php
 #ifndef KittenPHP
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 #endif
 
 class Temp {

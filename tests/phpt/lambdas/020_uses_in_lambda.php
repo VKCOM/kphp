@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 function test_primitive_capturing($y) {
     $f = function ($x) use ($y) {

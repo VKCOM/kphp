@@ -1,7 +1,6 @@
 @ok
 <?php
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
 
 function getT1($arg) {
     return shape(['arg' => $arg, 'arr' => [$arg]]);

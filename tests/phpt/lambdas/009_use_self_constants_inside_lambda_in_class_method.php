@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 $x = Classes\SelfInsideLambda::run();
 var_dump($x);

@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 var_dump(Classes\TestFieldClassParent::getSelfClass());
 var_dump(Classes\TestFieldClassParent::getStaticClass());

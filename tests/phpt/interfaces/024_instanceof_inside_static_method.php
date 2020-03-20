@@ -2,7 +2,7 @@
 <?php
 
 require_once 'polyfills.php';
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 $x = \Classes\DerivedClassWithMagic::do_magic2();
 $y = \Classes\BaseClassWithMagic::do_magic();

@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once 'Classes/autoload.php';
+require_once 'polyfills.php';
 
 $template_magic = new \Classes\TemplateMagic;
 $a = new \Classes\A;

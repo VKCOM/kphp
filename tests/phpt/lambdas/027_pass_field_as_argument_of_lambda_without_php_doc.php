@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once("Classes/autoload.php");
+require_once("polyfills.php");
 
 $callback = function ($x) { var_dump($x); };
 $i = new Classes\ImplicitCapturingThis(100);
