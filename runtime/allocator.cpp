@@ -3,9 +3,12 @@
 #include <climits>
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
+#include <malloc.h>
 #include <signal.h>
 #include <unistd.h>
 
+#include "common/containers/final_action.h"
 #include "common/wrappers/likely.h"
 
 #include "runtime/critical_section.h"
@@ -49,6 +52,56 @@ size_type get_heap_memory_used() noexcept {
   return get_memory_dealer().get_heap_resource().memory_used();
 }
 
+struct LibcAllocHooks {
+  static decltype(__malloc_hook) malloc_hook_old;
+  static decltype(__realloc_hook) realloc_hook_old;
+  static decltype(__free_hook) free_hook_old;
+
+  static void set_old_hooks() {
+    __malloc_hook = malloc_hook_old;
+    __realloc_hook = realloc_hook_old;
+    __free_hook = free_hook_old;
+  }
+
+  static void set_new_hooks() {
+    __malloc_hook = LibcAllocHooks::malloc_hook;
+    __realloc_hook = LibcAllocHooks::realloc_hook;
+    __free_hook = LibcAllocHooks::free_hook;
+  }
+
+  template<class FunT, class ...Args>
+  static auto call_with_old_hooks(FunT fun, Args ...args) {
+    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
+    set_old_hooks();
+    return fun(args...);
+  }
+
+  static void *malloc_hook(size_t size, const void *) {
+    if (dl::replace_malloc_with_script_allocator) {
+      return script_allocator_malloc(size);
+    }
+    return call_with_old_hooks(std::malloc, size);
+  }
+
+  static void *realloc_hook(void *ptr, size_t size, const void *) {
+    if (dl::replace_malloc_with_script_allocator) {
+      return dl::script_allocator_realloc(ptr, size);
+    }
+    return call_with_old_hooks(std::realloc, ptr, size);
+  }
+
+  static void free_hook(void *ptr, const void *) {
+    if (dl::replace_malloc_with_script_allocator) {
+      return dl::script_allocator_free(ptr);
+    }
+    return call_with_old_hooks(std::free, ptr);
+  }
+};
+
+decltype(__malloc_hook) LibcAllocHooks::malloc_hook_old = __malloc_hook;
+decltype(__realloc_hook) LibcAllocHooks::realloc_hook_old = __realloc_hook;
+decltype(__free_hook) LibcAllocHooks::free_hook_old = __free_hook;
+
 void global_init_script_allocator() noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(dealer.heap_script_resource_replacer());
@@ -69,6 +122,7 @@ void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
   php_assert(dealer.is_default_allocator_used());
 
   CriticalSectionGuard lock;
+  LibcAllocHooks::set_new_hooks();
   dealer.current_script_resource().init(buffer, buffer_size);
   replace_malloc_with_script_allocator = false;
   script_allocator_enabled = true;
