@@ -17,13 +17,15 @@ public:
   void SetUp() final {
     testing::Environment::SetUp();
 
-    php_disable_warnings = true;
     reset_global_vars();
 
     global_init_runtime_libs();
     global_init_script_allocator();
 
     init_runtime_environment(nullptr, memory_.data(), memory_.size());
+
+    php_disable_warnings = true;
+    php_warning_level = 0;
   }
 
   void TearDown() final {

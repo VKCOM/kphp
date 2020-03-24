@@ -12,6 +12,7 @@ void init_global_confdata_confdata() {
   }
   initiated = true;
 
+  pid = 0;
   auto &global_manager = ConfdataGlobalManager::get();
   global_manager.init(1024 * 1024 * 16);
   auto confdata_sample_storage = global_manager.get_current().get_confdata();

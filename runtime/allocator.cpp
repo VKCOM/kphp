@@ -69,32 +69,31 @@ struct LibcAllocHooks {
     __free_hook = LibcAllocHooks::free_hook;
   }
 
-  template<class FunT, class ...Args>
-  static auto call_with_old_hooks(FunT fun, Args ...args) {
-    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
-    set_old_hooks();
-    return fun(args...);
-  }
-
   static void *malloc_hook(size_t size, const void *) {
     if (dl::replace_malloc_with_script_allocator) {
-      return script_allocator_malloc(size);
+      return dl::script_allocator_malloc(size);
     }
-    return call_with_old_hooks(std::malloc, size);
+    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
+    set_old_hooks();
+    return std::malloc(size);
   }
 
   static void *realloc_hook(void *ptr, size_t size, const void *) {
     if (dl::replace_malloc_with_script_allocator) {
       return dl::script_allocator_realloc(ptr, size);
     }
-    return call_with_old_hooks(std::realloc, ptr, size);
+    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
+    set_old_hooks();
+    return std::realloc(ptr, size);
   }
 
   static void free_hook(void *ptr, const void *) {
     if (dl::replace_malloc_with_script_allocator) {
       return dl::script_allocator_free(ptr);
     }
-    return call_with_old_hooks(std::free, ptr);
+    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
+    set_old_hooks();
+    return std::free(ptr);
   }
 };
 
