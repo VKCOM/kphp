@@ -60,10 +60,16 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex, FunctionPassBa
   if (forbidden_conversions.count(vertex->type())) {
     auto range = forbidden_conversions.equal_range(vertex->type());
     auto converted_expr_type = tinf::get_type(vertex.as<meta_op_unary>()->expr());
-    if (std::count(range.first, range.second, std::pair<const Operation, PrimitiveType>{vertex->type(), converted_expr_type->ptype()})) {
+    if (std::count_if(range.first, range.second, [converted_expr_type](const std::pair<Operation, PrimitiveType> &r) -> bool {
+      // делаем, чтоб op_conv_bool не ругался на T|false / T|null, но ругался на просто T
+      if (r.first == op_conv_bool && converted_expr_type->use_optional()) {
+        return false;
+      }
+      return converted_expr_type->ptype() == r.second;
+    })) {
       kphp_error(false, fmt_format("{} conversion of type {} is forbidden",
-        TermStringFormat::paint_green(OpInfo::str(vertex->type())),
-        colored_type_out(converted_expr_type)));
+                                   TermStringFormat::paint_green(OpInfo::str(vertex->type())),
+                                   colored_type_out(converted_expr_type)));
     }
   }
   return vertex;
