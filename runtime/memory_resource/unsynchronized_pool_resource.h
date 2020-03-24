@@ -1,5 +1,4 @@
 #pragma once
-#include <map>
 
 #include "runtime/memory_resource/details/memory_chunk_list.h"
 #include "runtime/memory_resource/details/memory_chunk_tree.h"
@@ -14,6 +13,7 @@ class unsynchronized_pool_resource : private monotonic_buffer_resource {
 public:
   using monotonic_buffer_resource::try_expand;
   using monotonic_buffer_resource::get_memory_stats;
+  using monotonic_buffer_resource::memory_begin;
 
   void init(void *buffer, size_type buffer_size) noexcept;
 

@@ -15,7 +15,7 @@
 namespace dl {
 
 long long query_num = 0;
-volatile bool script_runned = false;
+volatile bool script_allocator_enabled = false;
 volatile bool replace_malloc_with_script_allocator = false;
 
 memory_resource::Dealer &get_memory_dealer() noexcept {
@@ -23,7 +23,7 @@ memory_resource::Dealer &get_memory_dealer() noexcept {
   return dealer;
 }
 
-void set_script_allocator_replacement(memory_resource::synchronized_pool_resource *replacer) noexcept {
+void set_script_allocator_replacement(memory_resource::synchronized_pool_resource &replacer) noexcept {
   get_memory_dealer().set_script_resource_replacer(replacer);
 }
 
@@ -31,132 +31,150 @@ void drop_script_allocator_replacement() noexcept {
   get_memory_dealer().drop_replacer();
 }
 
+void set_current_script_allocator_and_enable_it(memory_resource::unsynchronized_pool_resource &resource) noexcept {
+  get_memory_dealer().set_current_script_resource(resource);
+  script_allocator_enabled = true;
+}
+
+void restore_current_script_allocator_and_disable_it() noexcept {
+  get_memory_dealer().restore_default_script_resource();
+  script_allocator_enabled = false;
+}
+
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
-  return get_memory_dealer().script_default_resource().get_memory_stats();
+  return get_memory_dealer().current_script_resource().get_memory_stats();
 }
 
 size_type get_heap_memory_used() noexcept {
-  return get_memory_dealer().heap_resource().memory_used();
+  return get_memory_dealer().get_heap_resource().memory_used();
 }
 
 void global_init_script_allocator() noexcept {
-  php_assert(get_memory_dealer().heap_script_resource_replacer());
-  php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
+  auto &dealer = get_memory_dealer();
+  php_assert(dealer.heap_script_resource_replacer());
+  php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(!replace_malloc_with_script_allocator);
-  php_assert(!script_runned);
+  php_assert(!script_allocator_enabled);
   php_assert(!query_num);
 
   CriticalSectionGuard lock;
-  get_memory_dealer().drop_replacer();
+  dealer.drop_replacer();
   query_num++;
 }
 
 void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
-  php_assert(!get_memory_dealer().heap_script_resource_replacer());
-  php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
+  auto &dealer = get_memory_dealer();
+  php_assert(!dealer.heap_script_resource_replacer());
+  php_assert(!dealer.synchronized_script_resource_replacer());
+  php_assert(dealer.is_default_allocator_used());
 
   CriticalSectionGuard lock;
-  get_memory_dealer().script_default_resource().init(buffer, buffer_size);
+  dealer.current_script_resource().init(buffer, buffer_size);
   replace_malloc_with_script_allocator = false;
-  script_runned = true;
+  script_allocator_enabled = true;
   query_num++;
 }
 
 void free_script_allocator() noexcept {
-  php_assert(!get_memory_dealer().heap_script_resource_replacer());
-  php_assert(!get_memory_dealer().synchronized_script_resource_replacer());
+  auto &dealer = get_memory_dealer();
+  php_assert(!dealer.heap_script_resource_replacer());
+  php_assert(!dealer.synchronized_script_resource_replacer());
+  php_assert(dealer.is_default_allocator_used());
 
-  CriticalSectionGuard lock;
-  script_runned = false;
+  script_allocator_enabled = false;
 }
 
 void *allocate(size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
-  if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
+  auto &dealer = get_memory_dealer();
+  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate(size);
   }
-  if (auto synchronized_replacer = get_memory_dealer().synchronized_script_resource_replacer()) {
+  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
     return synchronized_replacer->allocate(size);
   }
-  if (unlikely(!script_runned)) {
+  if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call allocate for non runned script, n = %u", size);
     return nullptr;
   }
 
-  return get_memory_dealer().script_default_resource().allocate(size);
+  return dealer.current_script_resource().allocate(size);
 }
 
 void *allocate0(size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
-  if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
+  auto &dealer = get_memory_dealer();
+  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate0(size);
   }
-  if (auto synchronized_replacer = get_memory_dealer().synchronized_script_resource_replacer()) {
+  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
     return synchronized_replacer->allocate0(size);
   }
-  if (unlikely(!script_runned)) {
+  if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call allocate0 for non runned script, n = %u", size);
     return nullptr;
   }
 
-  return get_memory_dealer().script_default_resource().allocate0(size);
+  return dealer.current_script_resource().allocate0(size);
 }
 
 void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   php_assert (new_size > old_size);
   CriticalSectionGuard lock;
-  if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
+  auto &dealer = get_memory_dealer();
+  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->reallocate(mem, new_size, old_size);
   }
-  if (auto synchronized_replacer = get_memory_dealer().synchronized_script_resource_replacer()) {
+  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
     return synchronized_replacer->reallocate(mem, new_size, old_size);
   }
 
-  if (unlikely(!script_runned)) {
+  if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %u, old_size = %u", mem, new_size, old_size);
     return mem;
   }
 
-  return get_memory_dealer().script_default_resource().reallocate(mem, new_size, old_size);
+  return dealer.current_script_resource().reallocate(mem, new_size, old_size);
 }
 
 void deallocate(void *mem, size_type size) noexcept {
   php_assert (size);
   CriticalSectionGuard lock;
-  if (auto heap_replacer = get_memory_dealer().heap_script_resource_replacer()) {
+  auto &dealer = get_memory_dealer();
+  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->deallocate(mem, size);
   }
-  if (auto synchronized_replacer = get_memory_dealer().synchronized_script_resource_replacer()) {
+  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
     return synchronized_replacer->deallocate(mem, size);
   }
 
-  if (script_runned) {
-    get_memory_dealer().script_default_resource().deallocate(mem, size);
+  if (script_allocator_enabled) {
+    dealer.current_script_resource().deallocate(mem, size);
   }
 }
 
 void perform_script_allocator_defragmentation() noexcept {
-  if (script_runned) {
-    get_memory_dealer().script_default_resource().perform_defragmentation();
+  if (script_allocator_enabled) {
+    get_memory_dealer().current_script_resource().perform_defragmentation();
   }
 }
 
 void *heap_allocate(size_type size) noexcept {
   php_assert(!query_num || !replace_malloc_with_script_allocator);
   CriticalSectionGuard lock;
-  return get_memory_dealer().heap_resource().allocate(size);
+  return get_memory_dealer().get_heap_resource().allocate(size);
 }
 
 void *heap_reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   CriticalSectionGuard lock;
-  return get_memory_dealer().heap_resource().reallocate(mem, new_size, old_size);
+  return get_memory_dealer().get_heap_resource().reallocate(mem, new_size, old_size);
 }
 
 void heap_deallocate(void *mem, size_type size) noexcept {
   CriticalSectionGuard lock;
-  return get_memory_dealer().heap_resource().deallocate(mem, size);
+  return get_memory_dealer().get_heap_resource().deallocate(mem, size);
 }
 
 namespace {

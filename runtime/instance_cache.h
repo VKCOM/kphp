@@ -3,9 +3,9 @@
 // This API inspired by APC and allow to cache any kind of instances between requests and workers.
 // Highlights:
 //  1) All strings, arrays, instances are placed into common shared between workers memory;
-//  2) On store, all constant strings and arrays (check REF_CNT_FOR_CONST) are shallow copied as is,
-//    otherwise, a deep copy is used and the reference counter is set to special value (check REF_CNT_FOR_CACHE),
-//    therefore the reference counter of cached strings and arrays is REF_CNT_FOR_CACHE or REF_CNT_FOR_CONST;
+//  2) On store, all constant strings and arrays (check ExtraRefCnt::for_global_const) are shallow copied as is,
+//    otherwise, a deep copy is used and the reference counter is set to special value (check ExtraRefCnt::for_instance_cache),
+//    therefore the reference counter of cached strings and arrays is ExtraRefCnt::for_instance_cache or ExtraRefCnt::for_global_const;
 //  3) On fetch, all strings and arrays are returned as is;
 //  4) On store, all instances (and sub instances) are deeply cloned into instance cache;
 //  5) On fetch, all instances (and sub instances) are deeply cloned from instance cache;
@@ -106,7 +106,7 @@ public:
 
   template<typename T>
   bool process(array<T> &arr) {
-    if (arr.is_const_reference_counter()) {
+    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
     if (memory_limit_exceeded_ || !memory_reserve(arr.estimate_memory_usage())) {
@@ -117,12 +117,13 @@ public:
     // begin mutates array implicitly, therefore call it separately
     auto first = arr.begin();
     // mutates may make array as constant again (e.g. empty array), therefore check again
-    if (arr.is_const_reference_counter()) {
+    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       php_assert(first == arr.end());
       rollback_memory_reserve();
       return true;
     }
-    arr.set_reference_counter_to_cache();
+    php_assert(arr.get_reference_counter() == 1);
+    arr.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
     return Basic::process_range(first, arr.end());
   }
 
@@ -183,9 +184,9 @@ public:
   template<typename T>
   bool process(array<T> &arr) {
     // if array is constant, skip it, otherwise element was cached and should be destroyed
-    if (!arr.is_const_reference_counter()) {
+    if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
-      arr.destroy_cached();
+      arr.force_destroy(ExtraRefCnt::for_instance_cache);
     }
     return true;
   }
@@ -352,9 +353,11 @@ bool instance_cache_is_memory_swap_required();
 // these function should be called from master
 memory_resource::MemoryStats instance_cache_get_memory_stats();
 // these function should be called from master
-bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end);
+bool instance_cache_try_swap_memory();
 // these function should be called from master
 void instance_cache_purge_expired_elements();
+
+void instance_cache_release_all_resources_acquired_by_this_proc();
 
 template<typename ClassInstanceType>
 bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int ttl = 0) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 
 #include "common/wrappers/likely.h"
 
@@ -44,8 +45,24 @@ public:
     return 128u;
   }
 
+  friend inline bool operator==(const resource_allocator &lhs, const resource_allocator &rhs) noexcept {
+    return &lhs.memory_resource_ == &rhs.memory_resource_;
+  }
+
+  friend inline bool operator!=(const resource_allocator &lhs, const resource_allocator &rhs) noexcept {
+    return !(lhs == rhs);
+  }
+
 private:
   MemoryResource &memory_resource_;
 };
+
+namespace stl {
+template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
+using map = std::map<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;
+
+template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
+using multimap = std::multimap<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;
+} // namespace stl
 
 } // namespace memory_resource

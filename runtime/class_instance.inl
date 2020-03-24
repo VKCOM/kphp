@@ -82,18 +82,18 @@ void class_instance<T>::warn_on_access_null() const {
 template<class T>
 void class_instance<T>::set_reference_counter_to_cache() {
   php_assert(o->get_refcnt() == 1);
-  o->set_refcnt(REF_CNT_FOR_CACHE);
+  o->set_refcnt(ExtraRefCnt::for_instance_cache);
 }
 
 template<class T>
 bool class_instance<T>::is_cache_reference_counter() const {
-  return o->get_refcnt() == REF_CNT_FOR_CACHE;
+  return o->get_refcnt() == ExtraRefCnt::for_instance_cache;
 }
 
 template<class T>
 void class_instance<T>::destroy_cached() {
   if (o) {
-    php_assert(o->get_refcnt() == REF_CNT_FOR_CACHE);
+    php_assert(o->get_refcnt() == ExtraRefCnt::for_instance_cache);
     o->set_refcnt(1);
     destroy();
   }

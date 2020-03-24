@@ -44,6 +44,7 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
 #include "server/php-master.h"
@@ -2337,6 +2338,8 @@ void init_all() {
   server_status_rpc(0, 0, dl_time());
 
   worker_id = (int)lrand48();
+
+  init_confdata_binlog_reader();
 }
 
 /*
@@ -2560,7 +2563,22 @@ int main_args_handler(int i) {
       set_instance_cache_memory_limit(static_cast<dl::size_type>(instance_cache_memory_limit));
       return 0;
     }
+    case 2004: {
+      set_confdata_binlog_mask(optarg);
+      return 0;
+    }
+    case 2005: {
+      int64_t confdata_memory_limit = parse_memory_limit(optarg);
+      if (confdata_memory_limit <= 0 || confdata_memory_limit > std::numeric_limits<dl::size_type>::max()) {
+        kprintf("couldn't parse confdata-memory-limit argument\n");
+        return -1;
+      }
+      set_confdata_memory_limit(static_cast<dl::size_type>(confdata_memory_limit));
+      return 0;
+    }
     default:
+
+
       return -1;
   }
 }
@@ -2616,6 +2634,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("worker-memory-to-reload", required_argument, 2001, "worker script is reloaded, when <memory> queries processed");
   parse_option("use-madvise-dontneed", no_argument, 2002, "Use madvise MADV_DONTNEED for script memory above limit");
   parse_option("instance-cache-memory-limit", required_argument, 2003, "memory limit for instance_cache");
+  parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
+  parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

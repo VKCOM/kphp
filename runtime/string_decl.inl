@@ -88,10 +88,13 @@ public:
 
   inline void make_not_shared();
 
+  inline string copy_and_make_not_shared() const;
+
   inline void force_reserve(size_type res);
   inline string &reserve_at_least(size_type res);
 
   inline bool empty() const;
+  inline bool starts_with(const string &other) const noexcept;
 
   inline const char &operator[](size_type pos) const;
   inline char &operator[](size_type pos);
@@ -170,13 +173,15 @@ public:
   inline const string get_value(const var &v) const;
 
   inline int get_reference_counter() const;
-  inline void set_reference_counter_to_const();
-  inline bool is_const_reference_counter() const;
-  inline void set_reference_counter_to_cache();
-  inline bool is_cache_reference_counter() const;
-  inline void destroy_cached();
+
+  inline bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
+  inline void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
+  inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   inline size_type estimate_memory_usage() const;
+
+  inline static constexpr size_t inner_sizeof() noexcept { return sizeof(string_inner); }
+  inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_type memory_size);
 
   inline void destroy() __attribute__((always_inline));
 };

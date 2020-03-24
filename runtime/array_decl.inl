@@ -155,8 +155,16 @@ private:
     inline void unset_vector_value();
     inline void unset_map_value(int int_key);
 
-    inline const T *find_value(int int_key) const;
-    inline const T *find_value(const string &string_key, int precomuted_hash) const;
+    // чтобы не делать const_cast, определяем эти функции как статические шаблонным self (this)
+    template<class S>
+    static inline auto &find_map_entry(S &self, int int_key) noexcept;
+    template<class S>
+    static inline auto &find_map_entry(S &self, const string &string_key, int precomuted_hash) noexcept;
+
+    template<class ...Key>
+    inline const T *find_map_value(Key &&... key) const noexcept;
+    inline const T *find_vector_value(int int_key) const noexcept;
+    inline T *find_vector_value(int int_key) noexcept;
 
     inline const T &get_vector_value(int int_key) const;//unsafe
     inline T &get_vector_value(int int_key);//unsafe
@@ -277,6 +285,11 @@ public:
   const T *find_value(const const_iterator &it) const;
   const T *find_value(const iterator &it) const;
 
+  // Все неконстантные методы find_no_mutate() не приводят к расщеплению
+  iterator find_no_mutate(int int_key) noexcept;
+  iterator find_no_mutate(const string &string_key) noexcept;
+  iterator find_no_mutate(const var &v) noexcept;
+
   template<class K>
   const var get_var(const K &key) const;
 
@@ -353,16 +366,18 @@ public:
 
 
   int get_reference_counter() const;
-  void set_reference_counter_to_const();
-  bool is_const_reference_counter() const;
+  bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
+  void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
+  void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   iterator begin_no_mutate();
   iterator end_no_mutate();
-  void set_reference_counter_to_cache();
-  bool is_cache_reference_counter() const;
-  void destroy_cached();
+
+  void mutate_if_shared() noexcept;
 
   const T *get_const_vector_pointer() const; // unsafe
+
+  bool is_equal_inner_pointer(const array &other) const noexcept;
 
   void reserve(int int_size, int string_size, bool make_vector_if_possible);
 
@@ -370,7 +385,11 @@ public:
 
   template<typename U>
   static array<T> convert_from(const array<U> &);
+
 private:
+  template<class ...Key>
+  iterator find_iterator_in_map_no_mutate(const Key &... key) noexcept;
+
   void push_back_values() {}
 
   template<class Arg, class...Args>

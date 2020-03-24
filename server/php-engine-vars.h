@@ -7,16 +7,12 @@
 
 // Names and versions
 #define VERSION "0.01"
-#define NAME "php-engine"
-#define NAME_VERSION NAME "-" VERSION
+#define NAME_VERSION "php-engine-" VERSION
 
 
 /***
  DEFAULT GLOBAL VARIABLES
  ***/
-
-#define MAX_VALUE_LEN (1 << 24)
-#define MAX_KEY_LEN 1000
 
 #define DEFAULT_SCRIPT_TIMEOUT 30
 #define MAX_SCRIPT_TIMEOUT (60 * 7)

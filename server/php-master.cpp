@@ -41,7 +41,9 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "runtime/confdata-global-manager.h"
 #include "runtime/instance_cache.h"
+#include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
 #include "server/php-engine.h"
@@ -1015,6 +1017,8 @@ int run_worker() {
       logname = strdup(buf);
     }
 
+    instance_cache_release_all_resources_acquired_by_this_proc();
+    ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
     return 1;
   }
 
@@ -1693,13 +1697,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
   add_histogram_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
 
-  const auto instance_cache_mem_stats = instance_cache_get_memory_stats();
-  add_histogram_stat_long(stats, "instance_cache.memory.limit", instance_cache_mem_stats.memory_limit);
-  add_histogram_stat_long(stats, "instance_cache.memory.used", instance_cache_mem_stats.memory_used);
-  add_histogram_stat_long(stats, "instance_cache.memory.used_max", instance_cache_mem_stats.max_memory_used);
-  add_histogram_stat_long(stats, "instance_cache.memory.real_used", instance_cache_mem_stats.real_memory_used);
-  add_histogram_stat_long(stats, "instance_cache.memory.real_used_max", instance_cache_mem_stats.max_real_memory_used);
-  add_histogram_stat_long(stats, "instance_cache.memory.reserved", instance_cache_mem_stats.reserved);
+  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 
@@ -1719,6 +1717,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored", instance_cache_element_stats.elements_logically_expired_and_ignored);
   add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched", instance_cache_element_stats.elements_logically_expired_but_fetched);
 
+  write_confdata_stats_to(stats);
   server_stats.worker_stats.to_stats(stats);
 
   static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
@@ -1926,9 +1925,9 @@ int update_mem_stats() {
   return 0;
 }
 
-void check_and_instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
+void check_and_instance_cache_try_swap_memory() {
   if (instance_cache_is_memory_swap_required()) {
-    if (instance_cache_try_swap_memory(active_workers_begin, active_workers_end)) {
+    if (instance_cache_try_swap_memory()) {
       vkprintf(0, "instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;
     } else {
@@ -1951,10 +1950,8 @@ static void cron() {
 
   server_stats.worker_stats = dead_worker_stats;
   int running_workers = 0;
-  std::array<pid_t, MAX_WORKERS> active_workers{0};
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];
-    active_workers[w->logname_id] = w->pid;
     const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
     if (!get_pid_info_err) {
@@ -1984,7 +1981,8 @@ static void cron() {
   }
 
   instance_cache_purge_expired_elements();
-  check_and_instance_cache_try_swap_memory(active_workers.data(), active_workers.data() + me_workers_n);
+  check_and_instance_cache_try_swap_memory();
+  confdata_binlog_update_cron();
 }
 
 void run_master() {

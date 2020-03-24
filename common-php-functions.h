@@ -3,33 +3,60 @@
 #include <climits>
 #include <cstring>
 
-const int STRLEN_WARNING_FLAG = 1 << 30;
-const int STRLEN_OBJECT = -3;
-const int STRLEN_ERROR = -2;
-const int STRLEN_DYNAMIC = -1;
-const int STRLEN_UNKNOWN = STRLEN_ERROR;
-const int STRLEN_EMPTY = 0;
-const int STRLEN_BOOL = 1;
-const int STRLEN_BOOL_ = STRLEN_BOOL;
-const int STRLEN_INT = 11;
-const int STRLEN_FLOAT = 21;
-const int STRLEN_ARRAY = 5;
-const int STRLEN_ARRAY_ = STRLEN_ARRAY | STRLEN_WARNING_FLAG;
-const int STRLEN_STRING = STRLEN_DYNAMIC;
-const int STRLEN_VAR = STRLEN_DYNAMIC;
-const int STRLEN_UINT = STRLEN_OBJECT;
-const int STRLEN_LONG = STRLEN_OBJECT;
-const int STRLEN_ULONG = STRLEN_OBJECT;
-const int STRLEN_CLASS = STRLEN_ERROR;
-const int STRLEN_VOID = STRLEN_ERROR;
-const int STRLEN_ANY = STRLEN_ERROR;
-const int STRLEN_FUTURE = STRLEN_ERROR;
-const int STRLEN_FUTURE_QUEUE = STRLEN_ERROR;
-const int STRLEN_CREATE_ANY = STRLEN_ERROR;
+constexpr int STRLEN_WARNING_FLAG = 1 << 30;
+constexpr int STRLEN_OBJECT = -3;
+constexpr int STRLEN_ERROR = -2;
+constexpr int STRLEN_DYNAMIC = -1;
+constexpr int STRLEN_UNKNOWN = STRLEN_ERROR;
+constexpr int STRLEN_EMPTY = 0;
+constexpr int STRLEN_BOOL = 1;
+constexpr int STRLEN_BOOL_ = STRLEN_BOOL;
+constexpr int STRLEN_INT = 11;
+constexpr int STRLEN_FLOAT = 21;
+constexpr int STRLEN_ARRAY = 5;
+constexpr int STRLEN_ARRAY_ = STRLEN_ARRAY | STRLEN_WARNING_FLAG;
+constexpr int STRLEN_STRING = STRLEN_DYNAMIC;
+constexpr int STRLEN_VAR = STRLEN_DYNAMIC;
+constexpr int STRLEN_UINT = STRLEN_OBJECT;
+constexpr int STRLEN_LONG = STRLEN_OBJECT;
+constexpr int STRLEN_ULONG = STRLEN_OBJECT;
+constexpr int STRLEN_CLASS = STRLEN_ERROR;
+constexpr int STRLEN_VOID = STRLEN_ERROR;
+constexpr int STRLEN_ANY = STRLEN_ERROR;
+constexpr int STRLEN_FUTURE = STRLEN_ERROR;
+constexpr int STRLEN_FUTURE_QUEUE = STRLEN_ERROR;
+constexpr int STRLEN_CREATE_ANY = STRLEN_ERROR;
 
-const int REF_CNT_FOR_CONST = 0x7ffffff0;
-const int REF_CNT_FOR_CACHE = REF_CNT_FOR_CONST + 1;
+class ExtraRefCnt {
+public:
+  enum extra_ref_cnt_value {
+    // используется в качестве референс каунтера для глобальных констант,
+    // которые обычно используются в качетсве дефолтных значений для различных переменных,
+    // данные находятся либо на куче, либо в data секции и доступны только на чтение
+    for_global_const = 0x7ffffff0,
 
+    // используется в качестве референс каунтера для переменных хранящихся в инстанс кеше (instance_cache),
+    // данные хранятся в шерной памяти между процессами,
+    // подразумевает рекурсивное удаление для массивов
+    for_instance_cache,
+
+    // используется в качестве референс каунтера для переменных хранящихся в конфдата хранилище,
+    // данные хранятся в шерной памяти между процессами,
+    // подразумевает нерекурсивное и рекурсивное удаление для массивов (в зависимости от контекста)
+    for_confdata
+  };
+
+  // Обертка в класс позволяет не засорять глобальный неймспейс
+  ExtraRefCnt(extra_ref_cnt_value value) noexcept:
+    value_(value) {}
+
+  operator int() const noexcept {
+    return static_cast<int>(value_);
+  }
+
+private:
+  extra_ref_cnt_value value_;
+};
 
 inline int string_hash(const char *p, int l) __attribute__ ((always_inline));
 
@@ -165,7 +192,7 @@ inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
   int *dest_int = reinterpret_cast <int *> (dest);
   dest_int[0] = src_len;
   dest_int[1] = src_len;
-  dest_int[2] = REF_CNT_FOR_CONST;
+  dest_int[2] = ExtraRefCnt::for_global_const;
   memcpy(dest + 3 * sizeof(int), src, src_len);
   dest[3 * sizeof(int) + src_len] = '\0';
 

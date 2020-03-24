@@ -21,7 +21,7 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
 
   huge_pieces_.flush_to(mem_list);
   if (const size_type fallback_resource_left_size = fallback_resource_.size()) {
-    mem_list.add_memory(fallback_resource_.current(), fallback_resource_left_size);
+    mem_list.add_memory(fallback_resource_.memory_current(), fallback_resource_left_size);
     fallback_resource_.init(nullptr, 0);
   }
 
@@ -53,7 +53,7 @@ void *unsynchronized_pool_resource::allocate_from_fallback_resource(size_type al
   details::memory_chunk_tree::tree_node *smallest_piece = huge_pieces_.extract_smallest();
   if (likely(smallest_piece != nullptr)) {
     if (const size_type fallback_resource_left_size = fallback_resource_.size()) {
-      put_memory_back(fallback_resource_.current(), fallback_resource_left_size);
+      put_memory_back(fallback_resource_.memory_current(), fallback_resource_left_size);
     }
     fallback_resource_.init(smallest_piece, details::memory_chunk_tree::get_chunk_size(smallest_piece));
     memory_debug("fallback resource was empty, took piece from huge map\n");

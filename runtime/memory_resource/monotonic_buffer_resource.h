@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 
+#include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
 
 #include "runtime/memory_resource/memory_resource.h"
@@ -9,12 +10,13 @@
 
 namespace memory_resource {
 
-class monotonic_buffer {
+class monotonic_buffer : vk::not_copyable {
 protected:
   void init(void *buffer, size_type buffer_size) noexcept;
 
   size_type size() const noexcept { return static_cast<size_type>(memory_end_ - memory_current_); }
-  void *current() const noexcept { return memory_current_; }
+  void *memory_begin() const noexcept { return memory_begin_; }
+  void *memory_current() const noexcept { return memory_current_; }
   const MemoryStats &get_memory_stats() const noexcept { return stats_; }
 
   void register_allocation(void *mem, size_type size) noexcept {
@@ -52,7 +54,8 @@ public:
   using monotonic_buffer::init;
   using monotonic_buffer::get_memory_stats;
   using monotonic_buffer::size;
-  using monotonic_buffer::current;
+  using monotonic_buffer::memory_begin;
+  using monotonic_buffer::memory_current;
 
   void *allocate(size_type size) noexcept {
     void *mem = get_from_pool(size);

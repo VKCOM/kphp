@@ -4,16 +4,15 @@
 #include <forward_list>
 #include <map>
 #include <mutex>
-#include <sys/mman.h>
 #include <unordered_set>
 
 #include "common/kprintf.h"
-#include "common/parallel/lock_accessible.h"
 #include "common/smart_ptrs/not_owner_ptr.h"
 
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/inter_process_mutex.h"
+#include "runtime/inter-process-mutex.h"
+#include "runtime/inter-process-resource.h"
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/synchronized_pool_resource.h"
 #include "server/php-engine-vars.h"
@@ -40,7 +39,7 @@ public:
     resource_(resource),
     mode_(mode) {
     php_assert(!dl::replace_malloc_with_script_allocator);
-    dl::set_script_allocator_replacement(&resource_);
+    dl::set_script_allocator_replacement(resource_);
     if (mode_ == FORBID_ALLOCATIONS) {
       resource_.forbid_allocations();
     }
@@ -118,14 +117,9 @@ public:
   InstanceCacheStats &cache_stats;
 };
 
-template<typename T>
-using InterProcessAllocator_ = memory_resource::resource_allocator<T, memory_resource::synchronized_pool_resource>;
-using ElementStorage_ = std::map<string, vk::intrusive_ptr<ElementHolder>, std::less<string>,
-  InterProcessAllocator_<std::pair<const string, vk::intrusive_ptr<ElementHolder>>>>;
-using ProcessingKeys_ = std::map<string, std::chrono::nanoseconds, std::less<string>,
-  InterProcessAllocator_<std::pair<const string, std::chrono::nanoseconds>>>;
-using ExpirationTrace_ = std::multimap<std::chrono::nanoseconds, string, std::less<std::chrono::nanoseconds>,
-  InterProcessAllocator_<std::pair<const std::chrono::nanoseconds, string>>>;
+using ElementStorage_ = memory_resource::stl::map<string, vk::intrusive_ptr<ElementHolder>, memory_resource::synchronized_pool_resource>;
+using ProcessingKeys_ = memory_resource::stl::map<string, std::chrono::nanoseconds, memory_resource::synchronized_pool_resource>;
+using ExpirationTrace_ = memory_resource::stl::multimap<std::chrono::nanoseconds, string, memory_resource::synchronized_pool_resource>;
 
 struct SharedDataStorages {
   explicit SharedDataStorages(memory_resource::synchronized_pool_resource &resource) :
@@ -149,7 +143,7 @@ public:
     construct_data_inplace();
   }
 
-  void hard_reset() {
+  void reset() {
     php_assert(data);
     php_assert(data->processing_keys.empty());
     // to avoid of calling all destructors, just free mutex
@@ -158,7 +152,7 @@ public:
     construct_data_inplace();
   }
 
-  void free() {
+  void destroy() {
     php_assert(data);
     php_assert(data->processing_keys.empty());
     // to avoid of calling all destructors, just free mutex
@@ -185,118 +179,6 @@ private:
   }
 };
 
-class ControlBlock {
-public:
-  uint32_t acquire_active_memory_id(pid_t user_pid, size_t user_index) {
-    const uint32_t memory_id = get_active_memory_id();
-    get_user_pid_ref(memory_id, user_index) = user_pid;
-    return memory_id;
-  }
-
-  void release(uint32_t memory_id, pid_t user_pid, size_t user_index) {
-    pid_t &stored_pid = get_user_pid_ref(memory_id, user_index);
-    php_assert(stored_pid == user_pid);
-    stored_pid = 0;
-  }
-
-  uint32_t get_active_memory_id() const {
-    return active_memory_id_;
-  }
-
-  uint32_t get_inactive_memory_id() const {
-    return (active_memory_id_ + 1) % 2;
-  }
-
-  bool is_inactive_unused(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
-    const uint32_t inactive_memory_id = get_inactive_memory_id();
-    size_t user_index = 0;
-    for (auto active_worker = active_workers_begin; active_worker != active_workers_end; ++active_worker) {
-      pid_t &stored_pid = get_user_pid_ref(inactive_memory_id, user_index);
-      if (*active_worker && *active_worker == stored_pid) {
-        return false;
-      }
-      stored_pid = 0;
-      ++user_index;
-    }
-    return true;
-  }
-
-  void swap_active() {
-    active_memory_id_ = get_inactive_memory_id();
-  }
-
-private:
-  pid_t &get_user_pid_ref(uint32_t memory_id, size_t user_index) {
-    php_assert(memory_id < 2);
-    php_assert(users_.size() > 2 * user_index + memory_id);
-    // memory_id == 0 => user id is even
-    // memory_id == 1 => user id is odd
-    return users_[2 * user_index + memory_id];
-  }
-
-  uint32_t active_memory_id_{0};
-  std::array<pid_t, 2*MAX_WORKERS> users_{{0}};
-};
-
-class SharedMemoryDataManager {
-public:
-  void init(dl::size_type pool_size) {
-    for (auto &mem: swappable_memory_) {
-      mem.init(pool_size);
-    }
-    void *mem = mmap(nullptr, sizeof(vk::lock_accessible<ControlBlock, inter_process_mutex>),
-                     PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    php_assert(mem);
-    control_block_ = new(mem) vk::lock_accessible<ControlBlock, inter_process_mutex>{};
-  }
-
-  SharedMemoryData *acquire_current_memory_data(int user_worker_id) {
-    php_assert(user_worker_id >= 0);
-    php_assert(control_block_);
-    const uint32_t memory_id = (*control_block_)->acquire_active_memory_id(getpid(), static_cast<size_t>(user_worker_id));
-    return &swappable_memory_[memory_id];
-  }
-
-  void release_memory_data(int user_worker_id, SharedMemoryData *data) {
-    php_assert(user_worker_id >= 0);
-    php_assert(control_block_);
-    const uint32_t memory_id = (data == &swappable_memory_.front()) ? 0 : 1;
-    (*control_block_)->release(memory_id, getpid(), static_cast<size_t>(user_worker_id));
-  }
-
-  // this function should be called only from master
-  SharedMemoryData &get_current_memory_data() {
-    php_assert(control_block_);
-    return swappable_memory_[(*control_block_)->get_active_memory_id()];
-  }
-
-  // this function should be called only from master
-  bool try_swap_if_inactive(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
-    php_assert(control_block_);
-    if((*control_block_)->is_inactive_unused(active_workers_begin, active_workers_end)) {
-      swappable_memory_[(*control_block_)->get_inactive_memory_id()].hard_reset();
-      (*control_block_)->swap_active();
-      return true;
-    }
-    return false;
-  }
-
-  void free() {
-    php_assert(control_block_);
-    control_block_->~lock_accessible();
-    munmap(control_block_, sizeof(std::atomic<SharedMemoryData *>));
-    control_block_ = nullptr;
-
-    for (auto &mem: swappable_memory_) {
-      mem.free();
-    }
-  }
-
-private:
-  std::array<SharedMemoryData, 2> swappable_memory_;
-  vk::lock_accessible<ControlBlock, inter_process_mutex> *control_block_{nullptr};
-};
-
 class InstanceCache {
 private:
   static constexpr size_t DEFAULT_MEMORY_LIMIT{256u * 1024u * 1024u};
@@ -319,21 +201,20 @@ public:
 
   void global_init() {
     php_assert(!current_);
-    initial_process_ = getpid();
     data_manager_.init(total_memory_limit_);
   }
 
-  void refresh(int user_worker_id) {
+  void refresh() {
     php_assert(!current_);
     update_now();
-    current_ = data_manager_.acquire_current_memory_data(user_worker_id);
+    current_ = data_manager_.acquire_current_resource();
   }
 
   void update_now() {
     now_ = std::chrono::system_clock::now().time_since_epoch();
   }
 
-  void free(int user_worker_id) {
+  void free() {
     php_assert(current_);
     // request_cache_ placed in script memory
     request_cache_.clear();
@@ -342,7 +223,7 @@ public:
       // used_elements is placed on heap memory
       used_elements_.clear();
     }
-    data_manager_.release_memory_data(user_worker_id, current_);
+    data_manager_.release_resource(current_);
     current_ = nullptr;
   }
 
@@ -509,10 +390,9 @@ public:
 
   // this function should be called only from master
   void purge_expired() {
-    php_assert(initial_process_ == getpid());
     update_now();
     const auto now_with_delay = now_ - PHYSICAL_REMOVING_DELAY;
-    auto &current_data = data_manager_.get_current_memory_data();
+    auto &current_data = data_manager_.get_current_resource();
     AllocReplacementSection section{current_data.memory_resource, AllocReplacementSection::FORBID_ALLOCATIONS};
     std::lock_guard<inter_process_mutex> shared_data_lock{current_data.data->mutex};
     ic_debug("purge expired [cached: %zu, in expiration trace: %zu]\n",
@@ -545,10 +425,13 @@ public:
     current_->memory_resource.rollback_reserve();
   }
 
+  void force_release_all_resources() {
+    data_manager_.force_release_all_resources();
+  }
+
   // this function should be called only from master
   bool is_memory_swap_required() {
-    php_assert(initial_process_ == getpid());
-    auto &memory_resource = data_manager_.get_current_memory_data().memory_resource;
+    auto &memory_resource = data_manager_.get_current_resource().memory_resource;
     if (memory_resource.is_reset_required()) {
       return true;
     }
@@ -558,27 +441,17 @@ public:
 
   // this function should be called only from master
   memory_resource::MemoryStats get_current_memory_stats() {
-    php_assert(initial_process_ == getpid());
-    return data_manager_.get_current_memory_data().memory_resource.get_memory_stats();
+    return data_manager_.get_current_resource().memory_resource.get_memory_stats();
   }
 
   // this function should be called only from master
-  bool try_swap_memory_resource(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
-    php_assert(initial_process_ == getpid());
-    return data_manager_.try_swap_if_inactive(active_workers_begin, active_workers_end);
-  }
-
-  ~InstanceCache() {
-    if (initial_process_ != getpid()) {
-      return;
-    }
-
-    data_manager_.free();
+  bool try_swap_memory_resource() {
+    return data_manager_.try_switch_to_next_unused_resource();
   }
 
   // this function should be called only from master
   InstanceCacheStats get_stats() {
-    auto &current_data = data_manager_.get_current_memory_data();
+    auto &current_data = data_manager_.get_current_resource();
     std::lock_guard<inter_process_mutex> shared_data_lock{current_data.data->mutex};
     InstanceCacheStats result = current_data.data->stats;
     result.elements_cached = current_data.data->storage.size();
@@ -693,7 +566,7 @@ private:
   }
 
   SharedMemoryData *current_{nullptr};
-  SharedMemoryDataManager data_manager_;
+  InterProcessResourceManager<SharedMemoryData, 2> data_manager_;
 
 
   struct IntrusivePtrHash {
@@ -708,7 +581,6 @@ private:
   // placed in script memory
   array<vk::not_owner_ptr<ElementHolder>> request_cache_;
 
-  pid_t initial_process_{0};
   dl::size_type total_memory_limit_{DEFAULT_MEMORY_LIMIT};
   std::chrono::nanoseconds now_{std::chrono::nanoseconds::zero()};
 };
@@ -734,7 +606,7 @@ ShallowMoveFromCacheToScriptVisitor::ShallowMoveFromCacheToScriptVisitor() :
 }
 
 bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
-  if (str.is_const_reference_counter()) {
+  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     return true;
   }
 
@@ -746,19 +618,20 @@ bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
 
   str.make_not_shared();
   // make_not_shared may make str constant again (e.g. const empty or single char str), therefore check again
-  if (str.is_const_reference_counter()) {
+  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     php_assert(str.size() < 2);
     rollback_memory_reserve();
   } else {
-    str.set_reference_counter_to_cache();
+    php_assert(str.get_reference_counter() == 1);
+    str.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
   }
   return true;
 }
 
 bool DeepDestroyFromCacheVisitor::process(string &str) {
   // if string is constant, skip it, otherwise element was cached and should be destroyed
-  if (!str.is_const_reference_counter()) {
-    str.destroy_cached();
+  if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
+    str.force_destroy(ExtraRefCnt::for_instance_cache);
   }
   return true;
 }
@@ -788,11 +661,11 @@ void global_init_instance_cache_lib() {
 void init_instance_cache_lib() {
   // Before each request we refresh current time point and remove expired elements
   // Time point refreshes only once for request
-  ic_impl_::InstanceCache::get().refresh(logname_id);
+  ic_impl_::InstanceCache::get().refresh();
 }
 
 void free_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().free(logname_id);
+  ic_impl_::InstanceCache::get().free();
 }
 
 // should be called only from master
@@ -816,13 +689,17 @@ memory_resource::MemoryStats instance_cache_get_memory_stats() {
 }
 
 // should be called only from master
-bool instance_cache_try_swap_memory(const pid_t *active_workers_begin, const pid_t *active_workers_end) {
-  return ic_impl_::InstanceCache::get().try_swap_memory_resource(active_workers_begin, active_workers_end);
+bool instance_cache_try_swap_memory() {
+  return ic_impl_::InstanceCache::get().try_swap_memory_resource();
 }
 
 // should be called only from master
 void instance_cache_purge_expired_elements() {
   ic_impl_::InstanceCache::get().purge_expired();
+}
+
+void instance_cache_release_all_resources_acquired_by_this_proc() {
+  ic_impl_::InstanceCache::get().force_release_all_resources();
 }
 
 bool f$instance_cache_update_ttl(const string &key, int ttl) {

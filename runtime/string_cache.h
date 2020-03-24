@@ -7,19 +7,19 @@ private:
     static constexpr size_t TAIL_SIZE = 8u;
 
     constexpr explicit string_8bytes(char c) :
-      inner{1, 1, REF_CNT_FOR_CONST},
+      inner{1, 1, ExtraRefCnt::for_global_const},
       data{c, '\0'} {
     }
 
     template<size_t... Digits>
     constexpr explicit string_8bytes(std::index_sequence<Digits...>) :
-      inner{sizeof...(Digits), sizeof...(Digits), REF_CNT_FOR_CONST},
+      inner{sizeof...(Digits), sizeof...(Digits), ExtraRefCnt::for_global_const},
       data{static_cast<char>('0' + Digits)..., '\0'} {
     }
 
     constexpr string_8bytes() = default;
 
-    string::string_inner inner{0, 0, REF_CNT_FOR_CONST};
+    string::string_inner inner{0, 0, ExtraRefCnt::for_global_const};
     char data[TAIL_SIZE]{'\0'};
   };
 

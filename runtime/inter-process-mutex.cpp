@@ -1,4 +1,4 @@
-#include "runtime/inter_process_mutex.h"
+#include "runtime/inter-process-mutex.h"
 
 #include <cerrno>
 #include <cstring>

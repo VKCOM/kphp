@@ -1,7 +1,7 @@
 #include "runtime/memory_usage.h"
 
 int f$estimate_memory_usage(const string &value) {
-  if (value.is_const_reference_counter() || value.is_cache_reference_counter()) {
+  if (value.is_reference_counter(ExtraRefCnt::for_global_const) || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
     return 0;
   }
   return static_cast<int>(value.estimate_memory_usage());

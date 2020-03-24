@@ -13,6 +13,7 @@
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
+#include "runtime/confdata-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/datetime.h"
@@ -2086,6 +2087,7 @@ static void reset_global_interface_vars() {
 static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
   init_instance_cache_lib();
+  init_confdata_functions_lib();
 
   init_memcache_lib();
   init_mysql_lib();
@@ -2147,6 +2149,7 @@ static void free_runtime_libs() {
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
 
+  free_confdata_functions_lib();
   free_instance_cache_lib();
 
   dl::enter_critical_section();//OK

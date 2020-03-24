@@ -16,7 +16,7 @@ template<class Base>
 class refcountable_polymorphic_php_classes : public Base {
 public:
   void add_ref() final {
-    if (refcnt < REF_CNT_FOR_CONST) {
+    if (refcnt < ExtraRefCnt::for_global_const) {
       ++refcnt;
     }
   }
@@ -26,7 +26,7 @@ public:
   }
 
   void release() final __attribute__((always_inline)) {
-    if (refcnt < REF_CNT_FOR_CONST) {
+    if (refcnt < ExtraRefCnt::for_global_const) {
       --refcnt;
     }
     if (refcnt == 0) {
@@ -46,7 +46,7 @@ template<class Derived>
 class refcountable_php_classes  : public ManagedThroughDlAllocator {
 public:
   void add_ref() {
-    if (refcnt < REF_CNT_FOR_CONST) {
+    if (refcnt < ExtraRefCnt::for_global_const) {
       ++refcnt;
     }
   }
@@ -56,7 +56,7 @@ public:
   }
 
   void release() __attribute__((always_inline)) {
-    if (refcnt < REF_CNT_FOR_CONST) {
+    if (refcnt < ExtraRefCnt::for_global_const) {
       --refcnt;
     }
 

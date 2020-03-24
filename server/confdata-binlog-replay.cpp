@@ -1,0 +1,598 @@
+#include "server/confdata-binlog-replay.h"
+
+#include <bitset>
+#include <chrono>
+#include <cinttypes>
+#include <forward_list>
+#include <map>
+
+#include "binlog/binlog-replayer.h"
+#include "common/precise-time.h"
+#include "common/server/engine-settings.h"
+#include "common/server/init-binlog.h"
+#include "common/server/init-snapshot.h"
+#include "common/wrappers/string_view.h"
+#include "kfs/kfs.h"
+#include "pmemcached/kdb-pmemcached-binlog.h"
+#include "pmemcached/pmemcached-index-ram.h"
+
+#include "runtime/allocator.h"
+#include "runtime/confdata-global-manager.h"
+#include "runtime/kphp_core.h"
+#include "runtime/memcache.h"
+#include "server/confdata-stats.h"
+
+namespace {
+
+struct lev_confdata_delete : lev_pmemcached_delete {
+  constexpr static lev_type_t MAGIC = LEV_PMEMCACHED_DELETE;
+
+  int get_extra_bytes() const {
+    return key_len + 1 + offsetof(struct lev_pmemcached_delete, key) - sizeof(lev_pmemcached_delete);
+  }
+};
+
+struct lev_confdata_store : lev_pmemcached_store {
+  constexpr static lev_type_t BASE_MAGIC = LEV_PMEMCACHED_STORE;
+
+  short get_flags() const noexcept { return flags; }
+  int get_delay() const noexcept { return delay; }
+};
+
+struct lev_confdata_store_forever : lev_pmemcached_store_forever {
+  constexpr static lev_type_t BASE_MAGIC = LEV_PMEMCACHED_STORE_FOREVER;
+
+  short get_flags() const noexcept { return 0; }
+  int get_delay() const noexcept { return -1; }
+};
+
+struct confdata_store_index : index_entry {
+  constexpr static lev_type_t BASE_MAGIC = 0;
+
+  short get_flags() const noexcept { return flags; }
+  int get_delay() const noexcept { return delay; }
+};
+
+template<class BASE, int OPERATION>
+struct lev_confdata_store_template : BASE {
+  constexpr static lev_type_t MAGIC = BASE::BASE_MAGIC + OPERATION;
+
+  int get_extra_bytes() const {
+    return BASE::key_len + BASE::data_len + 1 + offsetof(BASE, data) - sizeof(BASE);
+  }
+
+  var get_value_as_var() const noexcept {
+    const char *mem = BASE::data + BASE::key_len;
+    const int size = BASE::data_len;
+    return size <= 0 ? var{string{}} : mc_get_value(mem, size, BASE::get_flags());
+  }
+};
+
+class ConfdataBinlogReplayer : vk::binlog::replayer {
+public:
+  static ConfdataBinlogReplayer &get() noexcept {
+    static ConfdataBinlogReplayer loader;
+    return loader;
+  }
+
+  using vk::binlog::replayer::replay;
+
+  int load_index() noexcept {
+    if (!Snapshot) {
+      jump_log_ts = 0;
+      jump_log_pos = 0;
+      jump_log_crc32 = 0;
+      return 0;
+    }
+    index_header header;
+    kfs_read_file_assert (Snapshot, &header, sizeof(index_header));
+    if (header.magic != PMEMCACHED_INDEX_MAGIC) {
+      fprintf(stderr, "index file is not for confdata\n");
+      return -1;
+    }
+    jump_log_ts = header.log_timestamp;
+    jump_log_pos = header.log_pos1;
+    jump_log_crc32 = header.log_pos1_crc32;
+
+    const int nrecords = header.nrecords;
+    vkprintf(2, "%d records readed\n", nrecords);
+    auto index_offset = std::make_unique<int64_t[]>(nrecords + 1);
+    assert (index_offset);
+
+    kfs_read_file_assert (Snapshot, index_offset.get(), sizeof(index_offset[0]) * (nrecords + 1));
+    vkprintf(1, "index_offset[%d]=%" PRId64 "\n", nrecords, index_offset[nrecords]);
+
+    auto index_binary_data = std::make_unique<char[]>(index_offset[nrecords]);
+    assert (index_binary_data);
+    kfs_read_file_assert (Snapshot, index_binary_data.get(), index_offset[nrecords]);
+
+    loading_from_snapshot_ = true;
+    for (int i = 0; i < nrecords; i++) {
+      using entry_type = lev_confdata_store_template<confdata_store_index, pmct_set>;
+      store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+    }
+    loading_from_snapshot_ = false;
+    return 0;
+  }
+
+  void delete_element(const char *key, short key_len) noexcept {
+    generic_operation(key, key_len, -1, [this] { return delete_processing_element(); });
+  }
+
+  template<class BASE, int OPERATION>
+  void store_element(const lev_confdata_store_template<BASE, OPERATION> &E) noexcept {
+    // даже не пытайся захватить E по значению, он попытается её скопировать и будет очень грустно :(
+    generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
+  }
+
+  void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {
+    assert(!updating_confdata_storage_);
+    updating_confdata_storage_ = new(&confdata_mem_)confdata_sample_storage{confdata_sample_storage::allocator_type{memory_pool}};
+  }
+
+  struct ConfdataUpdateResult {
+    confdata_sample_storage new_confdata;
+    std::forward_list<ConfdataGarbageNode> previous_confdata_garbage;
+    size_t previous_confdata_garbage_size;
+  };
+
+  ConfdataUpdateResult finish_confdata_update() noexcept {
+    for (auto &confdata_section: *updating_confdata_storage_) {
+      // сохраняем в отдельную переменную, что бы не делать const_cast
+      string key = confdata_section.first;
+      mark_string_as_confdata_const(key);
+      if (confdata_section.second.is_array()) {
+        mark_array_as_confdata_const(confdata_section.second.as_array());
+      } else if (confdata_section.second.is_string()) {
+        mark_string_as_confdata_const(confdata_section.second.as_string());
+      }
+    }
+
+    ConfdataUpdateResult result{
+      std::move(*updating_confdata_storage_),
+      std::move(garbage_from_previous_confdata_sample_),
+      garbage_size_
+    };
+    // после move конейнер остется в "a valid but unspecified state", поэтмому лучше сделать ему явный clear
+    updating_confdata_storage_->clear();
+    garbage_from_previous_confdata_sample_.clear();
+    garbage_size_ = 0;
+    confdata_has_any_updates_ = false;
+    return result;
+  }
+
+  void try_use_previous_confdata_storage_as_init(const confdata_sample_storage &previous_confdata_storage) noexcept {
+    if (!confdata_has_any_updates_) {
+      assert(garbage_from_previous_confdata_sample_.empty());
+      if (updating_confdata_storage_->empty()) {
+        *updating_confdata_storage_ = previous_confdata_storage;
+      } else {
+        // вообще говоря, они должны быть идентичны, но это сложно/затратно проверять
+        assert(updating_confdata_storage_->size() == previous_confdata_storage.size());
+      }
+    }
+  }
+
+  bool has_new_confdata() const noexcept {
+    return confdata_has_any_updates_;
+  }
+
+  void delete_expired_elements() noexcept {
+    assert(expiration_trace_.size() == element_delays_.size());
+
+    size_t expired_elements = expiration_trace_.size();
+    while (!expiration_trace_.empty()) {
+      auto head = expiration_trace_.begin();
+      if (head->first > get_now()) {
+        return;
+      }
+      assert(head->second.size() <= std::numeric_limits<short>::max());
+      delete_element(head->second.c_str(), static_cast<short>(head->second.size()));
+      assert(expired_elements == expiration_trace_.size() + 1);
+      expired_elements = expiration_trace_.size();
+    }
+  }
+
+  size_t get_elements_with_delay_count() const noexcept {
+    return element_delays_.size();
+  }
+
+private:
+  ConfdataBinlogReplayer() noexcept {
+    add_handler([this](const lev_confdata_delete &E) { this->delete_element(E.key, E.key_len); });
+    add_handler([this](const lev_confdata_store_template<lev_confdata_store, pmct_set> &E) { this->store_element(E); });
+    add_handler([this](const lev_confdata_store_template<lev_confdata_store_forever, pmct_set> &E) { this->store_element(E); });
+    add_handler([this](const lev_confdata_store_template<lev_confdata_store, pmct_add> &E) { this->store_element(E); });
+    add_handler([this](const lev_confdata_store_template<lev_confdata_store_forever, pmct_add> &E) { this->store_element(E); });
+  }
+
+  template<typename F>
+  void generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
+    // TODO ассерт?
+    if (key_len < 0) {
+      return;
+    }
+
+    assert(last_element_in_garbage_.is_null());
+    assert(processing_value_.is_null());
+    static_assert(std::is_same<short, int16_t>{}, "short is expected to be int16_t");
+    const auto first_key_dots = processing_key_.update(key, key_len);
+    if (!operation()) {
+      assert(last_element_in_garbage_.is_null());
+      assert(processing_value_.is_null());
+      return;
+    }
+    if (first_key_dots == FirstKeyDots::two) {
+      processing_key_.forcibly_change_first_key_dots_from_two_to_one();
+      const bool should_be_true = operation();
+      assert(should_be_true);
+    }
+
+    last_element_in_garbage_ = var{};
+    processing_value_ = var{};
+    confdata_has_any_updates_ = true;
+    update_element_in_expiration_trace(vk::string_view{key, static_cast<size_t>(key_len)}, delay);
+  }
+
+  confdata_sample_storage::iterator find_updating_confdata_first_key_element() {
+    // это некоторая оптимизация, позволяющая ускорить загрузку снепшота
+    if (loading_from_snapshot_ && processing_key_.get_first_key_dots() != FirstKeyDots::zero) {
+      auto last_it = updating_confdata_storage_->end();
+      size_t attempts = std::min(2ul, updating_confdata_storage_->size());
+      while (attempts--) {
+        if ((--last_it)->first == processing_key_.get_first_key()) {
+          return last_it;
+        }
+      }
+    }
+    return updating_confdata_storage_->find(processing_key_.get_first_key());
+  }
+
+  bool delete_processing_element() noexcept {
+    auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
+    if (first_key_it == updating_confdata_storage_->end()) {
+      return false;
+    }
+
+    // для ключей без '.'
+    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+      // убираем в мусор что было
+      put_confdata_element_value_into_garbage(first_key_it->second);
+      put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
+      updating_confdata_storage_->erase(first_key_it);
+      return true;
+    }
+
+    assert(first_key_it->second.is_array());
+    auto &array_for_second_key = first_key_it->second.as_array();
+    if (!array_for_second_key.has_key(processing_key_.get_second_key())) {
+      return false;
+    }
+
+    // убираем в мусор что было, далее будет копирование с расщеплением
+    put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
+
+    array_for_second_key.mutate_if_shared();
+    auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
+    assert(second_key_it != array_for_second_key.end());
+    // массив должен быть расщиплен
+    assert(array_for_second_key.get_reference_counter() == 1);
+    // ключ и значение убираем в мусор
+    if (second_key_it.is_string_key() && second_key_it.get_string_key().get_reference_counter() != 1) {
+      // ключ убираем с deep_last, потому что он дожен быть уничтожен строго после array_for_second_key
+      put_confdata_var_into_garbage(second_key_it.get_string_key(), ConfdataGarbageDestroyWay::deep_last);
+    }
+    put_confdata_element_value_into_garbage(second_key_it.get_value());
+    array_for_second_key.unset(processing_key_.get_second_key());
+    if (array_for_second_key.empty()) {
+      // имя убираем в мусор, сама же секция удалится, так как была расщеплена (см. выше)
+      put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
+      updating_confdata_storage_->erase(first_key_it);
+    }
+    return true;
+  }
+
+  template<class BASE, int OPERATION>
+  bool store_processing_element(const lev_confdata_store_template<BASE, OPERATION> &E) noexcept {
+    auto first_key_it = find_updating_confdata_first_key_element();
+    bool element_exists = true;
+    if (first_key_it == updating_confdata_storage_->end()) {
+      element_exists = false;
+      // при загрузке снепшота, все ключи отсортированы, поэтому имеет смысл вставлять в конец
+      first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), var{});
+    }
+
+    const bool element_can_be_replaced = can_element_be_replaced(E);
+    // для ключей без '.'
+    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+      if (!element_can_be_replaced && element_exists) {
+        return false;
+      }
+
+      // убираем в мусор предыдущее значение и перезаписываем новым
+      put_confdata_element_value_into_garbage(first_key_it->second);
+      first_key_it->second = get_processing_value(E);
+      return true;
+    }
+
+    // по дефолту вставляется null
+    if (first_key_it->second.is_null()) {
+      first_key_it->second = array<var>{};
+    }
+    assert(first_key_it->second.is_array());
+    auto &array_for_second_key = first_key_it->second.as_array();
+    element_exists = element_exists && array_for_second_key.has_key(processing_key_.get_second_key());
+    if (!element_can_be_replaced && element_exists) {
+      return false;
+    }
+
+    // убираем в мусор что было, далее будет копирование с расщеплением
+    put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
+
+    if (element_exists) {
+      array_for_second_key.mutate_if_shared();
+      auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
+      assert(second_key_it != array_for_second_key.end());
+      // массив должен быть расщиплен
+      assert(array_for_second_key.get_reference_counter() == 1);
+      // предыдущее значение убираем в мусор и сохраняем новое
+      put_confdata_element_value_into_garbage(second_key_it.get_value());
+      second_key_it.get_value() = get_processing_value(E);
+    } else {
+      array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
+      // вставка элемента расщепит массив
+      assert(array_for_second_key.get_reference_counter() == 1);
+    }
+    return true;
+  }
+
+  void put_confdata_element_value_into_garbage(const var &element) noexcept {
+    if (!last_element_in_garbage_.is_null()) {
+      // так как для ключей с 1 и 2 точками мы можем использовать один и тот же эелемнет,
+      // то и тут они внутренние указатели должны совпадать
+      assert(last_element_in_garbage_.get_type() == element.get_type());
+      if (element.is_string()) {
+        assert(element.as_string().c_str() == last_element_in_garbage_.as_string().c_str());
+      } else if (element.is_array()) {
+        assert(element.as_array().is_equal_inner_pointer(last_element_in_garbage_.as_array()));
+      } else {
+        assert(!"Unexpected type!");
+      }
+      return;
+    }
+    if ((element.is_string() || element.is_array()) &&
+        vk::none_of_equal(element.get_reference_counter(), 1, 2)) {
+      put_confdata_var_into_garbage(element, ConfdataGarbageDestroyWay::deep_last);
+      last_element_in_garbage_ = element;
+    }
+  }
+
+  template<typename T>
+  void put_confdata_var_into_garbage(const T &v, ConfdataGarbageDestroyWay destroy_way) noexcept {
+    if (v.is_reference_counter(ExtraRefCnt::for_confdata)) {
+      garbage_from_previous_confdata_sample_.emplace_front(ConfdataGarbageNode{v, destroy_way});
+      ++garbage_size_;
+      return;
+    }
+    if (v.is_reference_counter(ExtraRefCnt::for_global_const) ||
+        (destroy_way == ConfdataGarbageDestroyWay::shallow_first && v.get_reference_counter() == 1)) {
+      return;
+    }
+    assert(!"Got unexpected reference counter");
+  }
+
+  static void mark_string_as_confdata_const(string &str) noexcept {
+    if (str.is_reference_counter(ExtraRefCnt::for_confdata) ||
+        str.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      return;
+    }
+    assert(vk::any_of_equal(str.get_reference_counter(), 1, 2));
+    str.set_reference_counter_to(ExtraRefCnt::for_confdata);
+  }
+
+  static void mark_array_as_confdata_const(array<var> &arr) noexcept {
+    if (arr.is_reference_counter(ExtraRefCnt::for_confdata) ||
+        arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      return;
+    }
+    assert(vk::any_of_equal(arr.get_reference_counter(), 1, 2));
+    arr.set_reference_counter_to(ExtraRefCnt::for_confdata);
+    const auto last = arr.end_no_mutate();
+    for (auto it = arr.begin_no_mutate(); it != last; ++it) {
+      if (it.is_string_key()) {
+        mark_string_as_confdata_const(it.get_string_key());
+      }
+      auto &value = it.get_value();
+      if (value.is_array()) {
+        mark_array_as_confdata_const(value.as_array());
+      } else if (value.is_string()) {
+        mark_string_as_confdata_const(value.as_string());
+      }
+    }
+  }
+
+  template<class BASE>
+  bool can_element_be_replaced(const lev_confdata_store_template<BASE, pmct_set> &) const noexcept {
+    return true;
+  }
+
+  template<class BASE>
+  bool can_element_be_replaced(const lev_confdata_store_template<BASE, pmct_add> &E) const noexcept {
+    vk::string_view key{E.data, static_cast<size_t>(E.key_len)};
+    auto it = element_delays_.find(key);
+    return it == element_delays_.end() ? true : it->second < get_now();
+  }
+
+  void update_element_in_expiration_trace(vk::string_view key, int delay) noexcept {
+    std::string removed_key = remove_element_from_expiration_trace(key);
+    if (delay < 0) {
+      return;
+    }
+    if (removed_key.empty()) {
+      removed_key.assign(key.data(), key.size());
+    } else {
+      assert(vk::string_view{removed_key} == key);
+    }
+    auto it = expiration_trace_.emplace(delay, std::move(removed_key));
+    const bool inserted = element_delays_.emplace(vk::string_view{it->second}, delay).second;
+    assert(inserted);
+  }
+
+  std::string remove_element_from_expiration_trace(vk::string_view key) noexcept {
+    std::string removed_key;
+    auto expired_at_it = element_delays_.find(key);
+    if (expired_at_it != element_delays_.end()) {
+      auto range = expiration_trace_.equal_range(expired_at_it->second);
+      auto it = std::find_if(range.first, range.second,
+                             [&key](const std::pair<const int, std::string> &expired_key) {
+                               return vk::string_view{expired_key.second} == key;
+                             });
+      assert(it != range.second);
+      element_delays_.erase(expired_at_it);
+      removed_key = std::move(it->second);
+      expiration_trace_.erase(it);
+    }
+    return removed_key;
+  }
+
+  template<class BASE, int OPERATION>
+  const var &get_processing_value(const lev_confdata_store_template<BASE, OPERATION> &E) {
+    if (processing_value_.is_null()) {
+      processing_value_ = E.get_value_as_var();
+    }
+    return processing_value_;
+  }
+
+  // TODO: 'now' используется движками, можем ли мы так же её использовать?
+  // На парктике звучит как да, но выглядит не очень ¯\_(ツ)_/¯
+  static int get_now() noexcept { return now; }
+
+  std::aligned_storage_t<sizeof(confdata_sample_storage), alignof(confdata_sample_storage)> confdata_mem_;
+  confdata_sample_storage *updating_confdata_storage_{nullptr};
+  std::forward_list<ConfdataGarbageNode> garbage_from_previous_confdata_sample_;
+  size_t garbage_size_{0};
+  var last_element_in_garbage_;
+  bool confdata_has_any_updates_{false};
+  bool loading_from_snapshot_{false};
+
+  ConfdataKeyMaker processing_key_;
+  var processing_value_;
+
+  std::unordered_map<vk::string_view, int> element_delays_;
+  std::multimap<int, std::string> expiration_trace_;
+};
+
+struct {
+  const char *binlog_mask{nullptr};
+  dl::size_type memory_limit{2u * 1024u * 1024u * 1024u};
+
+  bool is_enabled() const noexcept {
+    return binlog_mask;
+  }
+} confdata_settings;
+
+} // namespace
+
+void set_confdata_binlog_mask(const char *mask) noexcept {
+  confdata_settings.binlog_mask = mask;
+}
+
+void set_confdata_memory_limit(dl::size_type memory_limit) noexcept {
+  confdata_settings.memory_limit = memory_limit;
+}
+
+void init_confdata_binlog_reader() noexcept {
+  if (!confdata_settings.is_enabled()) {
+    return;
+  }
+
+  binlog_disabled = 1;
+  static engine_settings_t settings = {};
+  settings.name = "kphp server";
+  settings.load_index = []() {
+    return ConfdataBinlogReplayer::get().load_index();
+  };
+  settings.replay_logevent = [](const lev_generic *E, int size) {
+    return ConfdataBinlogReplayer::get().replay(E, size);
+  };
+  settings.on_lev_start = [](const lev_start *E) {
+    log_split_min = E->split_min;
+    log_split_max = E->split_max;
+    log_split_mod = E->split_mod;
+  };
+  set_engine_settings(&settings);
+
+  vkprintf(1, "start confdata loading\n");
+
+  auto &confdata_stats = ConfdataStats::get();
+  confdata_stats.initial_loading_time = -std::chrono::steady_clock::now().time_since_epoch();
+
+  auto &confdata_manager = ConfdataGlobalManager::get();
+  confdata_manager.init(confdata_settings.memory_limit);
+  dl::set_current_script_allocator_and_enable_it(confdata_manager.get_resource());
+
+  auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
+  confdata_binlog_replayer.init(confdata_manager.get_resource());
+
+  engine_default_load_index(confdata_settings.binlog_mask);
+  engine_default_read_binlog();
+  confdata_binlog_replayer.delete_expired_elements();
+
+  auto loaded_confdata = confdata_binlog_replayer.finish_confdata_update();
+  assert(loaded_confdata.previous_confdata_garbage.empty());
+
+  confdata_stats.on_update(loaded_confdata.new_confdata, loaded_confdata.previous_confdata_garbage_size);
+  confdata_stats.initial_loading_time += confdata_stats.last_update_time_point.time_since_epoch();
+
+  confdata_manager.get_current().reset(std::move(loaded_confdata.new_confdata));
+
+  vkprintf(1, "confdata loaded\n");
+  dl::restore_current_script_allocator_and_disable_it();
+}
+
+void confdata_binlog_update_cron() noexcept {
+  if (!confdata_settings.is_enabled()) {
+    return;
+  }
+
+  auto &confdata_stats = ConfdataStats::get();
+  confdata_stats.total_updating_time -= std::chrono::steady_clock::now().time_since_epoch();
+  auto &confdata_manager = ConfdataGlobalManager::get();
+  auto &mem_resource = confdata_manager.get_resource();
+  dl::set_current_script_allocator_and_enable_it(mem_resource);
+
+  auto &previous_confdata_sample = confdata_manager.get_current();
+  auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
+  confdata_binlog_replayer.try_use_previous_confdata_storage_as_init(previous_confdata_sample.get_confdata());
+
+  binlog_try_read_events();
+  confdata_binlog_replayer.delete_expired_elements();
+
+  if (confdata_binlog_replayer.has_new_confdata()){
+    if (confdata_manager.can_next_be_updated()) {
+      auto updated_confdata = confdata_binlog_replayer.finish_confdata_update();
+      confdata_stats.on_update(updated_confdata.new_confdata, updated_confdata.previous_confdata_garbage_size);
+      previous_confdata_sample.save_garbage(std::move(updated_confdata.previous_confdata_garbage));
+      const bool switched = confdata_manager.try_switch_to_next_sample(std::move(updated_confdata.new_confdata));
+      assert(switched);
+    } else {
+      ++confdata_stats.ignored_updates;
+    }
+  }
+
+  // TODO подумать над дефрагментацией!
+  // Делать дефрагментацию каждый раз - плохо, необходимо подумать о условиях, когда её реально лучше всего делать.
+  // Либо вообще забить и никогда не делать, а комментарий удалить.
+  confdata_manager.clear_unused_samples();
+
+  dl::restore_current_script_allocator_and_disable_it();
+  confdata_stats.total_updating_time += std::chrono::steady_clock::now().time_since_epoch();
+}
+
+void write_confdata_stats_to(stats_t *stats) noexcept {
+  if (confdata_settings.is_enabled()) {
+    auto &confdata_stats = ConfdataStats::get();
+    confdata_stats.elements_with_delay = ConfdataBinlogReplayer::get().get_elements_with_delay_count();
+    confdata_stats.write_stats_to(stats, ConfdataGlobalManager::get().get_resource().get_memory_stats());
+  }
+}

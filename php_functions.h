@@ -8,6 +8,7 @@
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
+#include "runtime/confdata-functions.h"
 #include "runtime/curl.h"
 #include "runtime/datetime.h"
 #include "runtime/exception.h"

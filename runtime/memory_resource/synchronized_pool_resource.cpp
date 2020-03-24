@@ -10,7 +10,7 @@
 #include "common/wrappers/likely.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/inter_process_mutex.h"
+#include "runtime/inter-process-mutex.h"
 #include "runtime/memory_resource/details/memory_chunk_list.h"
 #include "runtime/memory_resource/details/memory_chunk_tree.h"
 #include "runtime/memory_resource/details/universal_reallocate.h"

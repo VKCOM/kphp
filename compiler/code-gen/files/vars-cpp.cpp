@@ -53,7 +53,7 @@ static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &depen
 void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
     W << InitVar(var);
-    W << VarName(var) << ".set_reference_counter_to_const();" << NL << NL;
+    W << VarName(var) << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
     return;
   }
 
@@ -166,7 +166,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
           if (type_data->use_optional()) {
             W << ".val()";
           }
-          W << ".set_reference_counter_to_const();" << NL;
+          W << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL;
         }
       }
     }

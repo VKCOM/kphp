@@ -125,7 +125,9 @@ int memcache_client_execute(connection *c, int op) {
     case mcrt_empty:
       return SKIP_ALL_BYTES;
 
-    case mcrt_VALUE:
+    case mcrt_VALUE: {
+      constexpr size_t MAX_VALUE_LEN = (1u << 24u);
+      constexpr size_t MAX_KEY_LEN = 1000;
       if (D->key_len > 0 && D->key_len <= MAX_KEY_LEN && D->arg_num == 2 && (unsigned)D->args[1] <= MAX_VALUE_LEN) {
         int needed_bytes = (int)(D->args[1] + D->response_len + 2 - c->In.total_bytes);
         if (needed_bytes > 0) {
@@ -136,7 +138,7 @@ int memcache_client_execute(connection *c, int op) {
         assert (len > 0);
         ptr = reinterpret_cast<char *>(nbit_get_ptr(&c->Q));
       } else {
-        vkprintf (-1, "error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
+        vkprintf(-1, "error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
         D->response_flags |= 16;
         return SKIP_ALL_BYTES;
@@ -145,7 +147,7 @@ int memcache_client_execute(connection *c, int op) {
         nbit_advance(&c->Q, 1);
       }
       if (ptr[0] != '\r' || (len > 1 ? ptr[1] : *((char *)nbit_get_ptr(&c->Q))) != '\n') {
-        vkprintf (-1, "missing cr/lf at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
+        vkprintf(-1, "missing cr/lf at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
         assert (0);
 
@@ -168,7 +170,7 @@ int memcache_client_execute(connection *c, int op) {
       }
       assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
       return 0;
-
+    }
     case mcrt_VERSION:
       c->unreliability >>= 1;
       vkprintf (3, "mcc_got_version: op=%d, key_len=%d, unreliability=%d\n", op, D->key_len, c->unreliability);

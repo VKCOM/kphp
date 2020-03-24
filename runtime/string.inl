@@ -65,7 +65,7 @@ char *string::string_inner::reserve(size_type requested_capacity) {
 
 void string::string_inner::dispose() {
 //  fprintf (stderr, "dec ref cnt %d %s\n", ref_count - 1, ref_data());
-  if (ref_count < REF_CNT_FOR_CONST) {
+  if (ref_count < ExtraRefCnt::for_global_const) {
     ref_count--;
     if (ref_count <= -1) {
       destroy();
@@ -83,7 +83,7 @@ inline string::size_type string::string_inner::get_memory_usage() const {
 
 char *string::string_inner::ref_copy() {
 //  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
-  if (ref_count < REF_CNT_FOR_CONST) {
+  if (ref_count < ExtraRefCnt::for_global_const) {
     ref_count++;
   }
   return ref_data();
@@ -309,6 +309,12 @@ void string::make_not_shared() {
   }
 }
 
+string string::copy_and_make_not_shared() const {
+  string result = *this;
+  result.make_not_shared();
+  return result;
+}
+
 void string::force_reserve(size_type res) {
   char *new_p = inner()->clone(res);
   inner()->dispose();
@@ -326,6 +332,10 @@ string &string::reserve_at_least(size_type res) {
 
 bool string::empty() const {
   return size() == 0;
+}
+
+bool string::starts_with(const string &other) const noexcept{
+  return other.size() > size() ? false : !memcmp(c_str(), other.c_str(), other.size());
 }
 
 const char &string::operator[](size_type pos) const {
@@ -910,29 +920,21 @@ int string::get_reference_counter() const {
   return inner()->ref_count + 1;
 }
 
-inline void string::set_reference_counter_to_const() {
+bool string::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+  return inner()->ref_count == ref_cnt_value;
+}
+
+void string::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   // some const arrays are placed in read only memory and can't be modified
-  if (inner()->ref_count != REF_CNT_FOR_CONST) {
-    inner()->ref_count = REF_CNT_FOR_CONST;
+  if (inner()->ref_count != ref_cnt_value) {
+    inner()->ref_count = ref_cnt_value;
   }
 }
 
-inline bool string::is_const_reference_counter() const {
-  return inner()->ref_count == REF_CNT_FOR_CONST;
-}
-
-inline void string::set_reference_counter_to_cache() {
-  php_assert(get_reference_counter() == 1);
-  inner()->ref_count = REF_CNT_FOR_CACHE;
-}
-
-inline bool string::is_cache_reference_counter() const {
-  return inner()->ref_count == REF_CNT_FOR_CACHE;
-}
-
-inline void string::destroy_cached() {
+void string::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
+  php_assert(expected_ref_cnt != ExtraRefCnt::for_global_const);
   if (p) {
-    php_assert(inner()->ref_count == REF_CNT_FOR_CACHE);
+    php_assert(inner()->ref_count == expected_ref_cnt);
     inner()->ref_count = 0;
     inner()->dispose();
     p = nullptr;
@@ -941,6 +943,16 @@ inline void string::destroy_cached() {
 
 inline string::size_type string::estimate_memory_usage() const {
   return inner()->get_memory_usage();
+}
+
+inline string string::make_const_string_on_memory(const char *str, size_type len, void *memory, size_type memory_size) {
+  php_assert(len + inner_sizeof() + 1 <= memory_size);
+  auto *inner = new (memory) string_inner {len, len, ExtraRefCnt::for_global_const};
+  memcpy(inner->ref_data(), str, len);
+  inner->ref_data()[len] = '\0';
+  string result;
+  result.p = inner->ref_data();
+  return result;
 }
 
 inline void string::destroy() {

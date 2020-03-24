@@ -1255,3 +1255,6 @@ function instance_cache_store($key ::: string, $value ::: Any, $ttl ::: int = 0)
 function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;
 function instance_cache_clear() ::: bool;
+
+function confdata_get_value($key ::: string) ::: var;
+function confdata_get_values_by_wildcard($wildcard ::: string) ::: var[];

@@ -1588,7 +1588,7 @@ int var::get_reference_counter() const {
   }
 }
 
-void var::set_reference_counter_to_const() {
+void var::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1596,9 +1596,38 @@ void var::set_reference_counter_to_const() {
     case type::FLOAT:
       return;
     case type::STRING:
-      return as_string().set_reference_counter_to_const();
+      return as_string().set_reference_counter_to(ref_cnt_value);
     case type::ARRAY:
-      return as_array().set_reference_counter_to_const();
+      return as_array().set_reference_counter_to(ref_cnt_value);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+inline bool var::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+  switch (get_type()) {
+    case type::NUL:
+    case type::BOOLEAN:
+    case type::INTEGER:
+    case type::FLOAT:
+      return false;
+    case type::STRING:
+      return as_string().is_reference_counter(ref_cnt_value);
+    case type::ARRAY:
+      return as_array().is_reference_counter(ref_cnt_value);
+    default:
+      __builtin_unreachable();
+  }
+}
+
+inline void var::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
+  switch (get_type()) {
+    case type::STRING:
+      as_string().force_destroy(expected_ref_cnt);
+      break;
+    case type::ARRAY:
+      as_array().force_destroy(expected_ref_cnt);
+      break;
     default:
       __builtin_unreachable();
   }

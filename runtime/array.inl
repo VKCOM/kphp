@@ -123,7 +123,7 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
   static array_inner empty_array = {
-    REF_CNT_FOR_CONST /* ref_cnt */, -1 /* max_key */,
+    ExtraRefCnt::for_global_const /* ref_cnt */, -1 /* max_key */,
     {0 /* end_.next */, 0 /* end_.prev */},
     0 /* int_size */, 2 /* int_buf_size */,
     0 /* string_size */, -1 /* string_buf_size */,
@@ -324,7 +324,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, 
 
 template<class T>
 void array<T>::array_inner::dispose() {
-  if (ref_cnt < REF_CNT_FOR_CONST) {
+  if (ref_cnt < ExtraRefCnt::for_global_const) {
     ref_cnt--;
     if (ref_cnt <= -1) {
       if (is_vector()) {
@@ -352,7 +352,7 @@ void array<T>::array_inner::dispose() {
 
 template<class T>
 typename array<T>::array_inner *array<T>::array_inner::ref_copy() {
-  if (ref_cnt < REF_CNT_FOR_CONST) {
+  if (ref_cnt < ExtraRefCnt::for_global_const) {
     ref_cnt++;
   }
   return this;
@@ -495,37 +495,48 @@ void array<T>::array_inner::unset_map_value(int int_key) {
 }
 
 template<class T>
-const T *array<T>::array_inner::find_value(int int_key) const {
-  if (is_vector()) {
-    return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
-  }
-
-  int bucket = choose_bucket_int(int_key);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
+template<class S>
+auto &array<T>::array_inner::find_map_entry(S &self, int int_key) noexcept {
+  int bucket = self.choose_bucket_int(int_key);
+  while (self.int_entries[bucket].next != EMPTY_POINTER && self.int_entries[bucket].int_key != int_key) {
+    if (unlikely (++bucket == self.int_buf_size)) {
       bucket = 0;
     }
   }
 
-  return int_entries[bucket].next != EMPTY_POINTER ? &int_entries[bucket].value : nullptr;
+  return self.int_entries[bucket];
 }
 
 template<class T>
-const T *array<T>::array_inner::find_value(const string &string_key, int precomuted_hash) const {
-  if (is_vector()) {
-    return nullptr;
-  }
-
-  const string_hash_entry *string_entries = get_string_entries();
-  int bucket = choose_bucket_string(precomuted_hash);
+template<class S>
+auto &array<T>::array_inner::find_map_entry(S &self, const string &string_key, int precomuted_hash) noexcept {
+  auto *string_entries = self.get_string_entries();
+  int bucket = self.choose_bucket_string(precomuted_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != precomuted_hash || string_entries[bucket].string_key != string_key)) {
-    if (unlikely (++bucket == string_buf_size)) {
+    if (unlikely (++bucket == self.string_buf_size)) {
       bucket = 0;
     }
   }
 
-  return string_entries[bucket].next != EMPTY_POINTER ? &string_entries[bucket].value : nullptr;
+  return string_entries[bucket];
+}
+
+template<class T>
+template<class ...Key>
+const T *array<T>::array_inner::find_map_value(Key &&... key) const noexcept {
+  const auto &entry = find_map_entry(*this, std::forward<Key>(key)...);
+  return entry.next != EMPTY_POINTER ? &entry.value : nullptr;
+}
+
+template<class T>
+const T *array<T>::array_inner::find_vector_value(int int_key) const noexcept {
+  return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
+}
+
+template<class T>
+T *array<T>::array_inner::find_vector_value(int int_key) noexcept {
+  return static_cast<unsigned int>(int_key) < static_cast<unsigned int>(int_size) ? &get_vector_value(int_key) : nullptr;
 }
 
 template<class T>
@@ -1461,22 +1472,24 @@ void array<T>::assign_raw(const char *s) {
 
 template<class T>
 const T *array<T>::find_value(int int_key) const {
-  return p->find_value(int_key);
+  return p->is_vector()
+         ? p->find_vector_value(int_key)
+         : p->find_map_value(int_key);
 }
 
 template<class T>
 const T *array<T>::find_value(const string &string_key) const {
   int int_val = 0;
-  if (try_as_int_key(string_key, int_val)) {
-    return p->find_value(int_val);
+  const bool is_key_int = try_as_int_key(string_key, int_val);
+  if (p->is_vector()) {
+    return is_key_int ? p->find_vector_value(int_val) : nullptr;
   }
-
-  return p->find_value(string_key, string_key.hash());
+  return is_key_int ? p->find_map_value(int_val) : p->find_map_value(string_key, string_key.hash());
 }
 
 template<class T>
 const T *array<T>::find_value(const string &string_key, int precomuted_hash) const {
-  return p->find_value(string_key, precomuted_hash);
+  return p->is_vector() ? nullptr : p->find_map_value(string_key, precomuted_hash);
 }
 
 template<class T>
@@ -1504,18 +1517,72 @@ template<class T>
 const T *array<T>::find_value(const const_iterator &it) const {
   if (it.self_->is_vector()) {
     const auto key = static_cast<int>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
-    return p->find_value(key);
+    return find_value(key);
   } else {
     auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry_);
     return it.self_->is_string_hash_entry(entry)
-           ? p->find_value(entry->string_key, entry->int_key)
-           : p->find_value(entry->int_key);
+           ? find_value(entry->string_key, entry->int_key)
+           : find_value(entry->int_key);
   }
 }
 
 template<class T>
 const T *array<T>::find_value(const iterator &it) const {
   return find_value(const_iterator{it.self_, it.entry_});
+}
+
+template<class T>
+typename array<T>::iterator array<T>::find_no_mutate(int int_key) noexcept {
+  if (p->is_vector()) {
+    if (auto *vector_entry = p->find_vector_value(int_key)) {
+      return iterator{p, reinterpret_cast<list_hash_entry *>(vector_entry)};
+    }
+    return end_no_mutate();
+  }
+  return find_iterator_in_map_no_mutate(int_key);
+}
+
+template<class T>
+typename array<T>::iterator array<T>::find_no_mutate(const string &string_key) noexcept {
+  int int_key = 0;
+  if (try_as_int_key(string_key, int_key)) {
+    return find_no_mutate(int_key);
+  }
+  if (p->is_vector()) {
+    return end_no_mutate();
+  }
+  return find_iterator_in_map_no_mutate(string_key, string_key.hash());
+}
+
+template<class T>
+template<class ...Key>
+typename array<T>::iterator array<T>::find_iterator_in_map_no_mutate(const Key &... key) noexcept {
+  list_hash_entry &map_entry = array_inner::find_map_entry(*p, key...);
+  if (map_entry.next != array_inner::EMPTY_POINTER) {
+    return iterator{p, &map_entry};
+  }
+  return end_no_mutate();
+}
+
+template<class T>
+typename array<T>::iterator array<T>::find_no_mutate(const var &v) noexcept {
+  switch (v.get_type()) {
+    case var::type::NUL:
+      return find_no_mutate(string());
+    case var::type::BOOLEAN:
+      return find_no_mutate(v.as_bool());
+    case var::type::INTEGER:
+      return find_no_mutate(v.as_int());
+    case var::type::FLOAT:
+      return find_no_mutate(static_cast<int>(v.as_double()));
+    case var::type::STRING:
+      return find_no_mutate(v.as_string());
+    case var::type::ARRAY:
+      php_warning("Illegal offset type array");
+      return find_no_mutate(v.as_array().to_int());
+    default:
+      __builtin_unreachable();
+  }
 }
 
 template<class T>
@@ -2189,49 +2256,23 @@ int array<T>::get_reference_counter() const {
 }
 
 template<class T>
-void array<T>::set_reference_counter_to_const() {
+bool array<T>::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+  return p->ref_cnt == ref_cnt_value;
+}
+
+template<class T>
+void array<T>::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   // some const arrays are placed in read only memory and can't be modified
-  if (p->ref_cnt != REF_CNT_FOR_CONST) {
-    p->ref_cnt = REF_CNT_FOR_CONST;
+  if (p->ref_cnt != ref_cnt_value) {
+    p->ref_cnt = ref_cnt_value;
   }
 }
 
 template<class T>
-bool array<T>::is_const_reference_counter() const {
-  return p->ref_cnt == REF_CNT_FOR_CONST;
-}
-
-template<class T>
-typename array<T>::iterator array<T>::begin_no_mutate() {
-  php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
-  if (is_vector()) {
-    return typename array<T>::iterator(p, p->int_entries);
-  }
-
-  return typename array<T>::iterator(p, p->begin());
-}
-
-template<class T>
-typename array<T>::iterator array<T>::end_no_mutate() {
-  php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
-  return end();
-}
-
-template<class T>
-void array<T>::set_reference_counter_to_cache() {
-  php_assert(get_reference_counter() == 1);
-  p->ref_cnt = REF_CNT_FOR_CACHE;
-}
-
-template<class T>
-bool array<T>::is_cache_reference_counter() const {
-  return p->ref_cnt == REF_CNT_FOR_CACHE;
-}
-
-template<class T>
-void array<T>::destroy_cached() {
+void array<T>::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
+  php_assert(expected_ref_cnt != ExtraRefCnt::for_global_const);
   if (p) {
-    php_assert(p->ref_cnt == REF_CNT_FOR_CACHE);
+    php_assert(p->ref_cnt == expected_ref_cnt);
     p->ref_cnt = 0;
     p->dispose();
     p = nullptr;
@@ -2239,9 +2280,36 @@ void array<T>::destroy_cached() {
 }
 
 template<class T>
+typename array<T>::iterator array<T>::begin_no_mutate() {
+  if (is_vector()) {
+    return typename array<T>::iterator(p, p->int_entries);
+  }
+  return typename array<T>::iterator(p, p->begin());
+}
+
+template<class T>
+typename array<T>::iterator array<T>::end_no_mutate() {
+  return end();
+}
+
+template<class T>
+void array<T>::mutate_if_shared() noexcept {
+  if (is_vector()) {
+    mutate_if_vector_shared();
+  } else {
+    mutate_if_map_shared();
+  }
+}
+
+template<class T>
 const T *array<T>::get_const_vector_pointer() const {
   php_assert (is_vector());
   return &(p->get_vector_value(0));
+}
+
+template<class T>
+bool array<T>::is_equal_inner_pointer(const array &other) const noexcept {
+  return p == other.p;
 }
 
 template<class T>

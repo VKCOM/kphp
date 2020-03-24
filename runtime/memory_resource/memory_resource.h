@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "common/stats/provider.h"
+
 // #define DEBUG_MEMORY
 
 inline void memory_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
@@ -26,12 +28,14 @@ public:
   size_type real_memory_used{0}; // currently used and dirty memory
   size_type memory_used{0}; // currently used memory
 
-  size_type max_real_memory_used{0}; // maxumum used and dirty memory
-  size_type max_memory_used{0}; // maxumum used memory
+  size_type max_real_memory_used{0}; // maximum used and dirty memory
+  size_type max_memory_used{0}; // maximum used memory
 
   size_type memory_limit{0}; // size of memory arena
 
   size_type reserved{0}; // reserved memory
+
+  void write_stats_to(stats_t *stats, const char *prefix, bool write_reserved = true) const noexcept;
 };
 
 } // namespace memory_resource

@@ -183,7 +183,10 @@ public:
   inline void swap(var &other);
 
   inline int get_reference_counter() const;
-  inline void set_reference_counter_to_const();
+
+  inline void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
+  inline bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
+  inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   inline dl::size_type estimate_memory_usage() const;
 private:

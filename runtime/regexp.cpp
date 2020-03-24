@@ -523,7 +523,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
           string name(name_table + 2, (dl::size_type)strlen(name_table + 2));
 
           if (use_heap_memory) {
-            name.set_reference_counter_to_const();
+            name.set_reference_counter_to(ExtraRefCnt::for_global_const);
           }
 
           if (name.is_int()) {

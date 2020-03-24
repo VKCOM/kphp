@@ -114,7 +114,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     shift += array_len_in_doubles;
 
     // ref_cnt, max_key
-    W << "{ .is = { .a = " << REF_CNT_FOR_CONST << ", .b = " << array_size - 1 << "}},";
+    W << "{ .is = { .a = " << ExtraRefCnt::for_global_const << ", .b = " << array_size - 1 << "}},";
 
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
