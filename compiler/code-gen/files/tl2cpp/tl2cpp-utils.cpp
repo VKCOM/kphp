@@ -5,7 +5,7 @@
 namespace tl2cpp {
 const std::string T_TYPE = "Type";
 const std::unordered_set<std::string> CUSTOM_IMPL_TYPES
-  {"#", T_TYPE, "Int", "Long", "Double", "String", "Bool", "True", "False", "Vector", "Maybe", "Tuple",
+  {"#", T_TYPE, "Int", "Long", "Double", "Float", "String", "Bool", "True", "False", "Vector", "Maybe", "Tuple",
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
 static const std::string VK_name_prefix = "VK\\";
@@ -230,7 +230,7 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
 bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
   // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- с Optional
   // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- без Optional
-  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_STRING) || type->name == "Bool" || type->is_integer_variable();
+  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool" || type->is_integer_variable();
 }
 
 // классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его

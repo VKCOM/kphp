@@ -70,6 +70,8 @@ string f$fetch_unsigned_long_str();
 
 double f$fetch_double();
 
+double f$fetch_float();
+
 string f$fetch_string();
 
 int f$fetch_string_as_int();
@@ -154,6 +156,8 @@ bool f$store_unsigned_long_hex(const string &v);
 
 bool f$store_double(double v);
 
+bool f$store_float(double v);
+
 bool store_string(const char *v, int v_len);
 bool f$store_string(const string &v);
 
@@ -210,7 +214,9 @@ int tl_parse_int();
 
 long long tl_parse_long();
 
-double tl_parse_double();
+double tl_parse_double(); // TODO: зачем нужны эти функции? (tl_parse_*)
+
+double tl_parse_float();
 
 string tl_parse_string();
 

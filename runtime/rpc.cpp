@@ -248,7 +248,7 @@ UInt f$fetch_UInt() {
 
 Long f$fetch_Long() {
   TRY_CALL_VOID(Long, (check_rpc_data_len(2)));
-  long long result = *(long long *)rpc_data;
+  long long result = *reinterpret_cast<const long long *>(rpc_data);
   rpc_data += 2;
 
   return Long(result);
@@ -256,7 +256,7 @@ Long f$fetch_Long() {
 
 ULong f$fetch_ULong() {
   TRY_CALL_VOID(ULong, (check_rpc_data_len(2)));
-  unsigned long long result = *(unsigned long long *)rpc_data;
+  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
   rpc_data += 2;
 
   return ULong(result);
@@ -275,7 +275,7 @@ var f$fetch_unsigned_int() {
 
 var f$fetch_long() {
   TRY_CALL_VOID(var, (check_rpc_data_len(2)));
-  long long result = *(long long *)rpc_data;
+  long long result = *reinterpret_cast<const long long *>(rpc_data);
   rpc_data += 2;
 
   if ((long long)INT_MIN <= result && result <= (long long)INT_MAX) {
@@ -287,7 +287,7 @@ var f$fetch_long() {
 
 var f$fetch_unsigned_long() {
   TRY_CALL_VOID(var, (check_rpc_data_len(2)));
-  unsigned long long result = *(unsigned long long *)rpc_data;
+  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
   rpc_data += 2;
 
   if (result <= (unsigned long long)INT_MAX) {
@@ -312,7 +312,7 @@ string f$fetch_unsigned_int_hex() {
 
 string f$fetch_unsigned_long_hex() {
   TRY_CALL_VOID(string, (check_rpc_data_len(2)));
-  unsigned long long result = *(unsigned long long *)rpc_data;
+  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
   rpc_data += 2;
 
   char buf[16], *end_buf = buf + 16;
@@ -334,8 +334,16 @@ string f$fetch_unsigned_long_str() {
 
 double f$fetch_double() {
   TRY_CALL_VOID(double, (check_rpc_data_len(2)));
-  double result = *(double *)rpc_data;
+  double result = *reinterpret_cast<const double *>(rpc_data);
   rpc_data += 2;
+
+  return result;
+}
+
+double f$fetch_float() {
+  TRY_CALL_VOID(float, (check_rpc_data_len(1)));
+  float result = *reinterpret_cast<const float *>(rpc_data);
+  rpc_data += 1;
 
   return result;
 }
@@ -599,6 +607,10 @@ bool f$store_unsigned_long_hex(const string &v) {
 
 bool f$store_double(double v) {
   return store_raw(v);
+}
+
+bool f$store_float(double v) {
+  return store_raw(static_cast<float>(v));
 }
 
 bool store_string(const char *v, int v_len) {
@@ -1161,6 +1173,10 @@ long long tl_parse_long() {
 
 double tl_parse_double() {
   return TRY_CALL(double, double, (f$fetch_double()));
+}
+
+double tl_parse_float() {
+  return TRY_CALL(double, double, (f$fetch_float()));
 }
 
 string tl_parse_string() {

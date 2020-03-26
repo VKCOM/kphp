@@ -159,12 +159,34 @@ struct t_Double {
   using PhpType = double;
 
   void typed_store(const PhpType &v) {
-    f$store_double(f$floatval(v));
+    f$store_double(v);
   }
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_double();
+  }
+};
+
+struct t_Float {
+  void store(const var &tl_object) {
+    f$store_float(f$floatval(tl_object));
+  }
+
+  double fetch() {
+    CHECK_EXCEPTION(return 0);
+    return f$fetch_float();
+  }
+
+  using PhpType = double;
+
+  void typed_store(const PhpType &v) {
+    f$store_float(v);
+  }
+
+  void typed_fetch_to(PhpType &out) {
+    CHECK_EXCEPTION(return);
+    out = f$fetch_float();
   }
 };
 
