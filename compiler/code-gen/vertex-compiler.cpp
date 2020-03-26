@@ -257,10 +257,12 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
   W << "null_coalesce< " << TypeName{type} << " >(";
-  if (auto index = lhs.try_as<op_index>()) {
+  const auto index = lhs.try_as<op_index>();
+  const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_Unknown;
+  if (index && vk::none_of_equal(array_ptype, tp_shape, tp_tuple)) {
     kphp_assert (index->has_key());
     W << index->array() << ", " << index->key() << ", ";
-    if (vk::any_of_equal(tinf::get_type(index->array())->get_real_ptype(), tp_array, tp_var)) {
+    if (vk::any_of_equal(array_ptype, tp_array, tp_var)) {
       if (const int precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
         W << precomputed_hash << ", ";
       }
