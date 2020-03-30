@@ -328,6 +328,9 @@ function unserialize ($v ::: string) ::: var;
 function json_encode ($v ::: Any, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
+function msgpack_serialize($v ::: var) ::: string;
+function msgpack_deserialize($v ::: string) ::: var;
+
 define('PREG_PATTERN_ORDER', 1);
 define('PREG_SET_ORDER', 2);
 define('PREG_OFFSET_CAPTURE', 4);

@@ -403,3 +403,12 @@ function instance_deserialize($packed_str, $type_of_instance) {
   $instance_parser = new InstanceParser($type_of_instance);
   return $instance_parser->from_unpacked_array($unpacked_array);
 }
+
+function msgpack_serialize($value) {
+  $packer = new Packer();
+  return $packer->pack($value);
+}
+
+function msgpack_deserialize($packed_str) {
+  return MessagePack::unpack($packed_str);
+}

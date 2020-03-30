@@ -289,17 +289,22 @@ struct pack<class_instance<T>> {
 } // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 } // namespace msgpack
 
-template<class InstanceClass>
-inline string f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
-  msgpack::adaptor::CheckInstanceDepth::depth = 0;
+template<class T>
+inline string f$msgpack_serialize(const T &value) noexcept {
   auto clean_buffer = vk::finally(f$ob_end_clean);
 
   f$ob_start();
   php_assert(f$ob_get_length().has_value() && f$ob_get_length().val() == 0);
-  msgpack::pack(*coub, instance);
+  msgpack::pack(*coub, value);
   CHECK_EXCEPTION(return {});
 
   return std::move(coub->str());
+}
+
+template<class InstanceClass>
+inline string f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
+  msgpack::adaptor::CheckInstanceDepth::depth = 0;
+  return f$msgpack_serialize(instance);
 }
 
 /**
@@ -310,8 +315,8 @@ inline string f$instance_serialize(const class_instance<InstanceClass> &instance
  * For better understanding exceptions please look through this article
  * https://monoinfinito.wordpress.com/series/exception-handling-in-c/
  */
-template<class ResultClass>
-inline ResultClass f$instance_deserialize(const string &buffer, const string&) noexcept {
+template<class ResultType = var>
+inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
   if (buffer.empty()) {
     return {};
   }
@@ -323,7 +328,7 @@ inline ResultClass f$instance_deserialize(const string &buffer, const string&) n
     msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size());
     msgpack::object obj = oh.get();
 
-    return obj.as<ResultClass>();
+    return obj.as<ResultType>();
   } catch (msgpack::type_error &e) {
     THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("Unknown type found during deserialization")));
   } catch (msgpack::unpack_error &e) {
@@ -333,4 +338,9 @@ inline ResultClass f$instance_deserialize(const string &buffer, const string&) n
   }
 
   return {};
+}
+
+template<class ResultClass>
+inline ResultClass f$instance_deserialize(const string &buffer, const string&) noexcept {
+  return f$msgpack_deserialize<ResultClass>(buffer);
 }
