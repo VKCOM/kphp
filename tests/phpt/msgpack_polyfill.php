@@ -237,7 +237,7 @@ class ArrayType extends PHPDocType {
     foreach ($arr as $value) {
       $res[] = $cnt_arrays === 1
         ? $this->inner_type->from_unpacked_value($value)
-        : $res[] = $this->from_unpacked_value($value, $cnt_arrays - 1);
+        : $this->from_unpacked_value($value, $cnt_arrays - 1);
     }
 
     return $res;
