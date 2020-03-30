@@ -2066,8 +2066,11 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return get_class(phpdoc_str, ClassType::klass);
     case tok_interface:
       return get_class(phpdoc_str, ClassType::interface);
-    case tok_trait:
-      return get_class(phpdoc_str, ClassType::trait);
+    case tok_trait: {
+      auto res = get_class(phpdoc_str, ClassType::trait);
+      kphp_error(processing_file->namespace_uses.empty(), "Usage of operator `use`(Aliasing/Importing) with traits is temporarily prohibited");
+      return res;
+    }
     default:
       res = get_expression();
       CE (check_statement_end());
