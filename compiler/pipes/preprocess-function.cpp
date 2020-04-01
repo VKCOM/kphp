@@ -53,24 +53,21 @@ public:
       }
 
       if (as_instance->klass->members.has_instance_method(ClassData::NAME_OF_CLONE)) {
-        auto location = clone_root->get_location();
-
-        auto tmp_var = VertexAdaptor<op_var>::create();
+        auto tmp_var = VertexAdaptor<op_var>::create().set_location(clone_root);
         tmp_var->set_string(gen_unique_name("tmp_for_clone"));
         tmp_var->extra_type = op_ex_var_superlocal;
 
         assumption_add_for_var(stage::get_function(), tmp_var->get_string(), AssumInstance::create(as_instance->klass));
 
-        auto set_clone_to_tmp = VertexAdaptor<op_set>::create(tmp_var, clone_root);
+        auto set_clone_to_tmp = VertexAdaptor<op_set>::create(tmp_var, clone_root).set_location(clone_root);
 
-        auto call_of___clone = VertexAdaptor<op_func_call>::create(tmp_var);
+        auto call_of___clone = VertexAdaptor<op_func_call>::create(tmp_var).set_location(clone_root);
         call_of___clone->set_string(ClassData::NAME_OF_CLONE);
         call_of___clone->extra_type = op_ex_func_call_arrow;
 
         call_of___clone = try_set_func_id(call_of___clone).as<op_func_call>();
 
-        root =  VertexAdaptor<op_seq_rval>::create(set_clone_to_tmp, call_of___clone, tmp_var);
-        set_location(location, tmp_var, set_clone_to_tmp, call_of___clone, root);
+        root = VertexAdaptor<op_seq_rval>::create(set_clone_to_tmp, call_of___clone, tmp_var).set_location(clone_root);
       }
     }
 
@@ -169,10 +166,9 @@ private:
       }
 
       if (instance_of_template_invoke) {
-        VertexAdaptor<op_func_ptr> new_call_arg = VertexAdaptor<op_func_ptr>::create(call_arg);
+        VertexAdaptor<op_func_ptr> new_call_arg = VertexAdaptor<op_func_ptr>::create(call_arg).set_location(call_arg);
         new_call_arg->func_id = instance_of_template_invoke;
         new_call_arg->set_string(invoke_name);
-        ::set_location(new_call_arg, call_arg->location);
         call_arg = new_call_arg;
       }
     }
@@ -420,7 +416,7 @@ private:
               .add_constructor_from_uses()
               .generate_and_require(current_function, instance_of_function_template_stream)
               ->gen_constructor_call_pass_fields_as_args();
-          } else if (convert_array_with_instance_to_lambda_class(call_arg, get_location(call))) {
+          } else if (convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
             break;
           } else if (stage::has_error()) {
             return call;
@@ -444,7 +440,7 @@ private:
         }
 
         case op_func_param_typed_callback: {
-          if (!convert_array_with_instance_to_lambda_class(call_arg, get_location(call))) {
+          if (!convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
             call_arg = conv_to_func_ptr(call_arg);
           }
 

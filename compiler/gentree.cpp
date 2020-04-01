@@ -334,7 +334,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
 
       res = process_arrow(res, call);
       CE(res);
-      set_location(res, location);
+      res.set_location(location);
       need = true;
     }
 

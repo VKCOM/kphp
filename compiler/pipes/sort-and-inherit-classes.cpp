@@ -35,11 +35,9 @@ public:
             vector<VertexAdaptor<op_func_param>> uses_of_lambda;
 
             lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
-              auto new_var_use = VertexAdaptor<op_var>::create();
+              auto new_var_use = VertexAdaptor<op_var>::create().set_location(f.root);
               new_var_use->set_string(std::string{f.local_name()});
-              set_location(new_var_use, f.root->location);
-              auto func_param = VertexAdaptor<op_func_param>::create(new_var_use);
-              set_location(func_param, f.root->location);
+              auto func_param = VertexAdaptor<op_func_param>::create(new_var_use).set_location(f.root);
 
               uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
             });

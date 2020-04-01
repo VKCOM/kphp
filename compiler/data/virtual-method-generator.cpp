@@ -29,7 +29,7 @@ VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instan
 
 template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
-  stage::set_line(get_location(interface_function->root).line);
+  stage::set_line(interface_function->root->get_location().line);
   if (!interface_method_in_derived) {
     kphp_error(context_class->modifiers.is_abstract(),
                fmt_format("class: {} must be abstract, method: {} is not overridden",
@@ -215,13 +215,13 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
   auto body_of_virtual_method = VertexAdaptor<op_seq>::create(GenTree::create_switch_vertex(virtual_function, get_hash_of_this, std::move(cases)));
 
   auto &root = virtual_function->root;
-  auto declaration_location = get_location(root);
+  auto declaration_location = root->get_location();
   root = VertexAdaptor<op_function>::create(root->params(), body_of_virtual_method);
   root->func_id = virtual_function;
   virtual_function->type = FunctionData::func_local;
 
   std::function<void(VertexPtr)> update_location = [&](VertexPtr v) {
-    set_location(v, declaration_location);
+    v.set_location(declaration_location);
     std::for_each(v->begin(), v->end(), update_location);
   };
   update_location(root);

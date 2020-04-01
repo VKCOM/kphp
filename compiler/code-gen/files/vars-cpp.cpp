@@ -22,7 +22,7 @@ struct InitVar {
 
     VertexPtr init_val = var->init_val;
     if (init_val->type() == op_conv_regexp) {
-      const auto &location = get_location(init_val);
+      const auto &location = init_val->get_location();
       kphp_assert(location.function && location.file);
       W << VarName(var) << ".init (" << var->init_val << ", "
         << RawString(location.function->name) << ", "

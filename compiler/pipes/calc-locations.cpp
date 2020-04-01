@@ -10,7 +10,7 @@ bool CalcLocationsPass::on_start(FunctionPtr function) {
   if (function->type == FunctionData::func_class_holder) {
     function->class_id->members.for_each([](ClassMemberConstant &constant) {
       stage::set_line(constant.value->location.line);
-      set_location(constant.value, stage::get_location());
+      constant.value.set_location(stage::get_location());
     });
   }
   return true;

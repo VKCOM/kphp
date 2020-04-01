@@ -16,11 +16,6 @@ class Location;
 
 using VertexPtr = VertexAdaptor<meta_op_base>;
 
-template<Operation op>
-inline void set_location(const Location &location, VertexAdaptor<op> &v);
-
-inline const Location &get_location(const VertexPtr &v);
-
 VertexPtr clone_vertex(VertexPtr);
 
 template<Operation Op>
@@ -133,12 +128,13 @@ public:
   }
 
   VertexAdaptor &set_location(const Location &location) {
-    ::set_location(location, *this);
+    impl->location = location;
     return *this;
   }
 
-  VertexAdaptor &set_location(VertexPtr v) {
-    ::set_location(get_location(v), *this);
+  template<Operation Op2>
+  VertexAdaptor &set_location(VertexAdaptor<Op2> v) {
+    impl->location = v.impl->location;
     return *this;
   }
 

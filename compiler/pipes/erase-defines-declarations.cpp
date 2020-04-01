@@ -10,13 +10,11 @@ VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root, LocalT *)
     DefinePtr define = G->get_define(define_op->name()->get_string());
 
     if (define->type() == DefineData::def_var) {
-      auto var = VertexAdaptor<op_var>::create();
+      auto var = VertexAdaptor<op_var>::create().set_location(root);
       var->extra_type = op_ex_var_superglobal;
       var->str_val = "d$" + define->name;
-      set_location(var, root->get_location());
 
-      auto new_root = VertexAdaptor<op_set>::create(var, define->val);
-      set_location(new_root, root->get_location());
+      auto new_root = VertexAdaptor<op_set>::create(var, define->val).set_location(root);
       root = new_root;
     } else {
       root = VertexAdaptor<op_empty>::create();

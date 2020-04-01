@@ -89,7 +89,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
 
   if (auto binary = v.try_as<meta_op_binary>()) {
     VertexPtr res = create_vertex(OpInfo::base_op(v->type()), binary->lhs(), binary->rhs());
-    set_location(res, stage::get_location());
+    res.set_location(stage::get_location());
     return as_rvalue(res);
   }
 
@@ -322,7 +322,7 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
       auto ith_index = VertexAdaptor<op_int_const>::create();
       ith_index->set_string(std::to_string(i));
       auto new_v = VertexAdaptor<op_index>::create(list->array(), ith_index);
-      set_location(new_v, stage::get_location());
+      new_v.set_location(stage::get_location());
       create_set(cur, new_v);
     }
     i++;

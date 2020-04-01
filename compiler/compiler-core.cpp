@@ -501,9 +501,8 @@ VertexPtr conv_to_func_ptr(VertexPtr call) {
   if (call->type() != op_func_ptr) {
     string name = conv_to_func_ptr_name(call);
     if (!name.empty()) {
-      auto new_call = VertexAdaptor<op_func_ptr>::create();
+      auto new_call = VertexAdaptor<op_func_ptr>::create().set_location(call);
       new_call->str_val = name;
-      set_location(new_call, call->get_location());
       call = new_call;
     }
   }

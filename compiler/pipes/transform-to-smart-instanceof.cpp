@@ -51,16 +51,16 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassB
 }
 
 VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex) {
-  auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var, derived_name_vertex);
+  auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var, derived_name_vertex).set_location(instance_var);
   cast_to_derived->set_string("instance_cast");
 
-  auto tmp_var = VertexAdaptor<op_var>::create();
+  auto tmp_var = VertexAdaptor<op_var>::create().set_location(instance_var);
   tmp_var->set_string(gen_unique_name(instance_var->get_string()));
   tmp_var->extra_type = op_ex_var_superlocal;
   tmp_var->is_const = true;
 
-  auto set_instance_cast_to_tmp = VertexAdaptor<op_set>::create(tmp_var, cast_to_derived);
-  set_location(instance_var->get_location(), cast_to_derived, tmp_var, set_instance_cast_to_tmp, derived_name_vertex);
+  auto set_instance_cast_to_tmp = VertexAdaptor<op_set>::create(tmp_var, cast_to_derived).set_location(instance_var);
+  derived_name_vertex.set_location(instance_var);
 
   return set_instance_cast_to_tmp;
 }

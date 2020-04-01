@@ -26,25 +26,6 @@ void set_index(VertexAdaptor<Op> &v, int id) {
   v->id = id;
 }
 
-inline void set_location(VertexPtr v, const Location &location) {
-  v->location = location;
-}
-
-template<Operation op>
-inline void set_location(const Location &location, VertexAdaptor<op> &v) {
-  v->location = location;
-}
-
-template<Operation op, Operation ...ops>
-inline void set_location(const Location &location, VertexAdaptor<op> &v, VertexAdaptor<ops>& ...vs) {
-  set_location(location, v);
-  set_location(location, vs...);
-}
-
-inline const Location &get_location(const VertexPtr &v) {
-  return v->get_location();
-}
-
 template<Operation Op>
 size_t vertex_inner_size(int args_n) {
   return sizeof(vertex_inner<Op>) + sizeof(VertexPtr) * args_n;

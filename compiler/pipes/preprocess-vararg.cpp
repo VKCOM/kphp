@@ -3,9 +3,8 @@
 #include "compiler/utils/string-utils.h"
 
 VertexAdaptor<op_var> PreprocessVarargPass::create_va_list_var(Location loc) {
-  auto result = VertexAdaptor<op_var>::create();
+  auto result = VertexAdaptor<op_var>::create().set_location(loc);
   result->str_val = "$VA_LIST";
-  set_location(result, loc);
   return result;
 }
 VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
@@ -23,9 +22,8 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
     } else if (name == "func_num_args") {
       kphp_error(call->size() == 0, "Strange func_num_args with arguments");
       VertexPtr arr = create_va_list_var(call->location);
-      auto count_call = VertexAdaptor<op_func_call>::create(arr);
+      auto count_call = VertexAdaptor<op_func_call>::create(arr).set_location(call);
       count_call->str_val = "count";
-      set_location(count_call, call->location);
       return count_call;
     }
     return root;

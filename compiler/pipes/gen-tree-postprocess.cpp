@@ -9,9 +9,8 @@ namespace {
 VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, VertexAdaptor<op_func_call> require_lib_call) {
   auto lib_main_file_name = VertexAdaptor<op_string>::create();
   lib_main_file_name->set_string(lib_main_file->file_name);
-  auto req_once = VertexAdaptor<op_require>::create(lib_main_file_name);
+  auto req_once = VertexAdaptor<op_require>::create(lib_main_file_name).set_location(require_lib_call);
   req_once->once = true;
-  set_location(req_once, require_lib_call->get_location());
   return req_once;
 }
 
@@ -43,8 +42,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
       auto req_header_txt = make_require_once_call(header_file, require_lib_call);
       auto lib_run_global_call = VertexAdaptor<op_func_call>::create();
       lib_run_global_call->set_string(lib->run_global_function_name());
-      new_vertex = VertexAdaptor<op_seq>::create(req_header_txt, lib_run_global_call);
-      set_location(new_vertex, require_lib_call->get_location());
+      new_vertex = VertexAdaptor<op_seq>::create(req_header_txt, lib_run_global_call).set_location(require_lib_call);
     }
   }
   if (!new_vertex) {
@@ -149,7 +147,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (auto return_vertex = root.try_as<op_return>()) {
     if (current_function->is_constructor() && !return_vertex->has_expr()) {
       root = VertexAdaptor<op_return>::create(ClassData::gen_vertex_this(return_vertex->location));
-      set_location(root, return_vertex->location);
+      root.set_location(return_vertex);
     }
   }
 
