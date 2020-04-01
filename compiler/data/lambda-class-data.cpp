@@ -161,7 +161,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   return invoke_method_name;
 }
 
-VertexPtr LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
+VertexAdaptor<op_func_call> LambdaClassData::gen_constructor_call_pass_fields_as_args() const {
   std::vector<VertexPtr> args;
   members.for_each([&](const ClassMemberInstanceField &field) {
     VertexPtr res = VertexAdaptor<op_var>::create();

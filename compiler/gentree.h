@@ -33,25 +33,14 @@ class GenTree {
   };
 
 public:
-  struct AutoLocation {
-    int line_num;
-
-    explicit AutoLocation(int line_num) :
-      line_num(line_num) {}
-
-    explicit AutoLocation(const GenTree *gen) :
-      line_num(gen->line_num) {
-    }
-  };
-
-  static inline void set_location(VertexPtr v, const AutoLocation &location);
+  Location auto_location() const;
   VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, PrimitiveType tp = tp_Unknown);
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function, PrimitiveType tp = tp_Unknown);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
-  VertexPtr generate_constant_field_class_value();
+  VertexAdaptor<op_string> generate_constant_field_class_value();
 
   bool test_expect(TokenType tp);
 
@@ -71,8 +60,8 @@ public:
   static int get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
   static VertexPtr get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
 
-  static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = VertexPtr());
-  VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr left, VertexPtr right, VertexPtr third);
+  static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
+  VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
   VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
   static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
   template<Operation op = meta_op_base>
@@ -95,11 +84,11 @@ public:
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(const vk::string_view &phpdoc_str = vk::string_view{});
-  VertexPtr get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
+  void get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
   void get_traits_uses();
   void get_use();
   void get_seq(std::vector<VertexPtr> &seq_next);
-  VertexPtr get_seq();
+  VertexAdaptor<op_seq> get_seq();
 
   void parse_declare_at_top_of_file();
   void parse_namespace_and_uses_at_top_of_file();
@@ -110,32 +99,32 @@ public:
   template<Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim);
   template<Operation Op>
-  VertexPtr get_conv();
-  VertexPtr get_require(bool once);
+  VertexAdaptor<Op> get_conv();
+  VertexAdaptor<op_require> get_require(bool once);
   template<Operation Op, Operation EmptyOp>
   VertexAdaptor<Op> get_func_call();
-  VertexPtr get_short_array();
-  VertexPtr get_string();
-  VertexPtr get_string_build();
+  VertexAdaptor<op_array> get_short_array();
+  VertexAdaptor<op_string> get_string();
+  VertexAdaptor<op_string_build> get_string_build();
   VertexPtr get_def_value();
   template<PrimitiveType ToT>
-  static VertexPtr conv_to_lval(VertexPtr x);
+  static VertexAdaptor<meta_op_unary> conv_to_lval(VertexPtr x);
   template<Operation Op, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
-  VertexPtr get_return();
+  VertexAdaptor<op_return> get_return();
   template<Operation Op>
-  VertexPtr get_break_continue();
-  VertexPtr get_foreach();
-  VertexPtr get_while();
-  VertexPtr get_if();
-  VertexPtr get_for();
-  VertexPtr get_do();
-  VertexPtr get_switch();
-  VertexPtr get_shape();
+  VertexAdaptor<Op> get_break_or_continue();
+  VertexAdaptor<op_foreach> get_foreach();
+  VertexAdaptor<op_while> get_while();
+  VertexAdaptor<op_if> get_if();
+  VertexAdaptor<op_for> get_for();
+  VertexAdaptor<op_do> get_do();
+  VertexAdaptor<op_switch> get_switch();
+  VertexAdaptor<op_shape> get_shape();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
-  VertexPtr get_anonymous_function(bool is_static = false);
-  VertexPtr get_function(const vk::string_view &phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  VertexAdaptor<op_func_call> get_anonymous_function(bool is_static = false);
+  VertexAdaptor<op_function> get_function(const vk::string_view &phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(const vk::string_view &phpdoc_str);
@@ -161,7 +150,7 @@ private:
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexPtr get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
+  VertexAdaptor<op_empty> get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
 
   void require_lambdas() {
     for (auto &generator : lambda_generators) {
@@ -192,24 +181,13 @@ private:
 void php_gen_tree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
 template<PrimitiveType ToT>
-VertexPtr GenTree::conv_to_lval(VertexPtr x) {
-  VertexPtr res;
+VertexAdaptor<meta_op_unary> GenTree::conv_to_lval(VertexPtr x) {
   switch (ToT) {
-    case tp_array: {
-      res = VertexAdaptor<op_conv_array_l>::create(x);
-      break;
-    }
-    case tp_int: {
-      res = VertexAdaptor<op_conv_int_l>::create(x);
-      break;
-    }
-    case tp_string: {
-      res = VertexAdaptor<op_conv_string_l>::create(x);
-      break;
-    }
+    case tp_array : return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
+    case tp_int   : return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
+    case tp_string: return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
   }
-  ::set_location(res, x->get_location());
-  return res;
+  return {};
 }
 
 template<PrimitiveType ToT>
@@ -245,10 +223,6 @@ VertexPtr GenTree::conv_to(VertexPtr x) {
     default:
       return x;
   }
-}
-
-inline void GenTree::set_location(VertexPtr v, const GenTree::AutoLocation &location) {
-  v->location.line = location.line_num;
 }
 
 static inline bool is_const_int(VertexPtr root) {
