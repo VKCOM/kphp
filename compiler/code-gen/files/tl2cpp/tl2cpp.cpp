@@ -80,7 +80,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
     const auto &f = item.second;
     if (f->is_kphp_rpc_server_function()) {
       auto klass = get_php_class_of_tl_function(f.get());
-      if (klass) { // Если !klass, то будет варнинг из TLFunctionDecl
+      if (klass) { // Если !klass, то просто считаем что такой функции нет
         kphp_functions.emplace_back(f.get());
         deps.add_class_include(klass);
         deps.add_raw_filename_include("tl/" + Module::get_module_name(f->name) + ".h");

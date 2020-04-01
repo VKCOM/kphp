@@ -32,7 +32,6 @@ private:
 
 public:
   string cpp_dir;
-  bool server_tl_serialization_used{false};
 
   CompilerCore();
   void start();

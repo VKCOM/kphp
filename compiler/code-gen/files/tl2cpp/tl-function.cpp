@@ -23,15 +23,12 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object)" << SemicolonAndNL();
     FunctionSignatureGenerator(W) << "class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> typed_fetch()" << SemicolonAndNL();
   }
-  if (f->is_kphp_rpc_server_function()) {
-    if (needs_typed_fetch_store) {
-      check_kphp_function(f);
-      FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object)" << SemicolonAndNL();
-      FunctionSignatureGenerator(W) << "void rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix() << "RpcFunctionReturnResult> &tl_object_)" << SemicolonAndNL();
-    } else if (G->server_tl_serialization_used) {
-      kphp_warning(fmt_format("TL function {} is marked @kphp, but typed RPC code for it is not found. Automatic serialization in server mode won't work\n"
-                              "(e.g. rpc_server_fetch_request() and rpc_server_store_response() functions)", f->name));
-    }
+  if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
+    check_kphp_function(f);
+    FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object)"
+                                  << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void rpc_server_typed_store(const class_instance<" << G->env().get_tl_classname_prefix()
+                                  << "RpcFunctionReturnResult> &tl_object_)" << SemicolonAndNL();
   }
   W << END << ";" << NL << NL;
 }
