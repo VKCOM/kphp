@@ -2327,46 +2327,43 @@ void init_all() {
  */
 
 void init_logname(const char *src) {
-  const char *t = src;
-  while (*t && *t != '%') {
-    t++;
-  }
-  int has_percent = (*t == '%');
-  if (!has_percent) {
+  if (!std::strchr(src, '%')) {
     logname = src;
     kprintf_multiprocessing_mode_enable();
     return;
   }
 
-  char buf1[100];
-  char buf2[100];
+  char pattern_buf[100];
+  char plane_buf[100];
   int buf_len = 100;
 
-  char *patt = buf1;
-  char *plane = buf2;
+  char *pattern = pattern_buf;
+  char *plane = plane_buf;
 
-  int was_percent = 0;
+  bool was_percent = false;
   while (*src) {
-    assert (patt < buf1 + buf_len - 3);
+    assert (pattern < pattern_buf + buf_len - 3);
     if (*src == '%') {
       if (!was_percent) {
-        *patt++ = '%';
-        *patt++ = 'd';
-        was_percent = 1;
+        *pattern++ = '%';
+        *pattern++ = 'd';
+        was_percent = true;
       }
     } else {
-      *patt++ = *src;
-      *plane++ = *src;
+      *pattern++ = *src;
+      // игнорировать первую '-%', так чтобы 'engine-kp-%.log' -> 'engine-kp.log'
+      const bool skip_dash = *src == '-' && *(src + 1) == '%' && !was_percent;
+      if (!skip_dash) {
+        *plane++ = *src;
+      }
     }
     src++;
   }
-  *patt = 0;
-  patt = buf1;
+  *pattern = 0;
   *plane = 0;
-  plane = buf2;
 
-  logname = strdup(plane);
-  logname_pattern = strdup(patt);
+  logname = strdup(plane_buf);
+  logname_pattern = strdup(pattern_buf);
 }
 
 /** main arguments parsing **/
