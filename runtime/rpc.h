@@ -6,6 +6,15 @@
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
 
+extern const string tl_str_;
+extern const string tl_str_underscore;
+extern const string tl_str_resultFalse;
+extern const string tl_str_resultTrue;
+extern const string tl_str_result;
+
+extern const int tl_str_underscore_hash;
+extern const int tl_str_result_hash;
+
 extern const char *new_tl_current_function_name;
 
 void process_rpc_answer(int request_id, char *result, int result_len);

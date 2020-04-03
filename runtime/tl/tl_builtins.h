@@ -14,15 +14,6 @@
 
 #define tl_undefined_php_type nullptr_t
 
-const string tl_str_("");
-const string tl_str_underscore("_");
-const string tl_str_resultFalse("resultFalse");
-const string tl_str_resultTrue("resultTrue");
-const string tl_str_result("result");
-
-const int tl_str_underscore_hash = string_hash("_", 1);
-const int tl_str_result_hash = string_hash("result", 6);
-
 int tl_parse_save_pos();
 bool tl_parse_restore_pos(int pos);
 

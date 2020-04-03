@@ -22,7 +22,15 @@
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
-static const string UNDERSCORE("_", 1);
+const string tl_str_("");
+const string tl_str_underscore("_");
+const string tl_str_resultFalse("resultFalse");
+const string tl_str_resultTrue("resultTrue");
+const string tl_str_result("result");
+
+const int tl_str_underscore_hash = string_hash("_", 1);
+const int tl_str_result_hash = string_hash("result", 6);
+
 static const string STR_ERROR("__error", 7);
 static const string STR_ERROR_CODE("__error_code", 12);
 
@@ -129,7 +137,7 @@ void rpc_parse_restore_previous() {
 
   dl::enter_critical_section();//OK
   rpc_data_copy = rpc_data_copy_backup;
-  rpc_data_copy_backup = UNDERSCORE;//for assert
+  rpc_data_copy_backup = tl_str_underscore;//for assert
   dl::leave_critical_section();
 
   rpc_data_begin = rpc_data_begin_backup;
@@ -1216,7 +1224,7 @@ class_instance<RpcQuery> store_function(const var &tl_object) {
     CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
     return {};
   }
-  string fun_name = tl_arr_get(tl_object, UNDERSCORE, 0).to_string();
+  string fun_name = tl_arr_get(tl_object, tl_str_underscore, 0).to_string();
   if (!tl_storers_ht.has_key(fun_name)) {
     CurrentProcessingQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
