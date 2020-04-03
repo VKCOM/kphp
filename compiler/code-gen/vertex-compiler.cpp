@@ -1401,8 +1401,9 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
     W << hash_and_rhs.second;
   };
 
-  W << TypeName(tinf::get_type(root)) << "{" <<
-    JoinValues(sorted_by_hash, W.get_context().inside_macro ? " COMMA " : ", ", join_mode::one_line, val_gen) << "}";
+  const char *sep = W.get_context().inside_macro ? " COMMA " : ", ";
+  W << TypeName(tinf::get_type(root)) << "{shape_variadic_constructor_stub{} " << sep <<
+    JoinValues(sorted_by_hash, sep, join_mode::one_line, val_gen) << "}";
 }
 
 void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {

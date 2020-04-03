@@ -20,6 +20,8 @@ class shape {
   static_assert(std::is_same<Is, void>{}, "Bad one mapped");
 };
 
+struct shape_variadic_constructor_stub {};
+
 template<size_t ...Is, typename ...T>
 class shape<std::index_sequence<Is...>, T...> : public shape_node<Is, T> ... {
   template<size_t tag, typename T1>
@@ -61,7 +63,7 @@ class shape<std::index_sequence<Is...>, T...> : public shape_node<Is, T> ... {
 public:
 
   template<typename ...Args, typename = std::enable_if_t<is_constructible<Args...>{}>>
-  explicit shape(Args &&...args) :
+  explicit shape(shape_variadic_constructor_stub, Args &&...args) :
     shape_node<Is, T>(std::forward<Args>(args))... {}
 
   template<size_t tag>

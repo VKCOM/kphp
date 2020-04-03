@@ -49,12 +49,21 @@ function demo2() {
 
 function demo3() {
     $a = shape(['a' => shape(['b' => 1])]);
-    echo $a['a']['b'];
+    echo $a['a']['b'], "\n";
 
     $a = $a;
-    echo $a['a']['b'];
+    echo $a['a']['b'], "\n";
+}
+
+function demo4() {
+    $a = shape(['a' => shape(['a' => 123])]);
+    echo $a['a']['a'], "\n";
+
+    $a = $a;
+    echo $a['a']['a'], "\n";
 }
 
 demo();
 demo2();
 demo3();
+demo4();
