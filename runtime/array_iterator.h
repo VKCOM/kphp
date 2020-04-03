@@ -29,8 +29,8 @@ public:
     entry_(entry) {
   }
 
-  inline array_iterator(const array_iterator<std::remove_const_t<value_type>> &other) noexcept __attribute__ ((always_inline)):
-    array_iterator(other.self_, other.entry_) {
+  inline operator array_iterator<const value_type>() noexcept __attribute__ ((always_inline)) {
+   return  array_iterator<const value_type>(self_, entry_);
   }
 
   inline value_type &get_value() noexcept __attribute__ ((always_inline)) {
