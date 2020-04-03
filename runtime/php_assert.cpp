@@ -14,12 +14,12 @@
 #include "common/fast-backtrace.h"
 
 #include "runtime/critical_section.h"
+#include "runtime/datetime.h"
 #include "runtime/kphp_backtrace.h"
+#include "runtime/misc.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
 #include "server/php-engine-vars.h"
-#include "runtime/misc.h"
-#include "runtime/datetime.h"
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";

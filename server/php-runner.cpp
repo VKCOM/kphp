@@ -426,6 +426,10 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
 void perform_error_if_running(const char *msg, script_error_t error_type) {
   if (PHPScriptBase::is_running) {
     kwrite_str(2, msg);
+    if (dl::is_malloc_replaced()) {
+      // на случай, если сигнал пришел в тот момент, когда у нас был подменен malloc
+      dl::rollback_malloc_replacement();
+    }
     PHPScriptBase::error(msg, error_type);
     assert ("unreachable point" && 0);
   }

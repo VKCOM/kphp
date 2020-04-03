@@ -309,7 +309,7 @@ inline string f$instance_serialize(const class_instance<InstanceClass> &instance
 
 /**
  * this function works nice with POSIX signal despite of exceptions
- * due to replace_malloc_with_script_allocator exceptions will be allocated in script memory
+ * due to malloc_replacement_guard exceptions will be allocated in script memory
  * and we don't need critical_section here.
  *
  * For better understanding exceptions please look through this article
@@ -321,9 +321,7 @@ inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
     return {};
   }
 
-  auto bring_back_replace_malloc = vk::finally([prev = dl::replace_malloc_with_script_allocator] { dl::replace_malloc_with_script_allocator = prev; });
-  dl::replace_malloc_with_script_allocator = true;
-
+  const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   try {
     msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size());
     msgpack::object obj = oh.get();

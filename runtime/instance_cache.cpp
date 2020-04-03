@@ -38,7 +38,6 @@ public:
   explicit AllocReplacementSection(memory_resource::synchronized_pool_resource &resource, Mode mode = NORMAL) :
     resource_(resource),
     mode_(mode) {
-    php_assert(!dl::replace_malloc_with_script_allocator);
     dl::set_script_allocator_replacement(resource_);
     if (mode_ == FORBID_ALLOCATIONS) {
       resource_.forbid_allocations();
@@ -50,7 +49,6 @@ public:
       resource_.allow_allocations();
     }
     dl::drop_script_allocator_replacement();
-    php_assert(!dl::replace_malloc_with_script_allocator);
   }
 
 private:

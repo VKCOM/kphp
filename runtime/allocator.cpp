@@ -1,13 +1,12 @@
 #include "runtime/allocator.h"
 
-#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <malloc.h>
-#include <signal.h>
 #include <unistd.h>
 
+#include "common/algorithms/find.h"
 #include "common/containers/final_action.h"
 #include "common/wrappers/likely.h"
 
@@ -16,15 +15,18 @@
 #include "runtime/php_assert.h"
 
 namespace dl {
-
-long long query_num = 0;
-volatile bool script_allocator_enabled = false;
-volatile bool replace_malloc_with_script_allocator = false;
+namespace {
 
 memory_resource::Dealer &get_memory_dealer() noexcept {
   static memory_resource::Dealer dealer;
   return dealer;
 }
+
+volatile bool script_allocator_enabled = false;
+
+} // namespace
+
+long long query_num = 0;
 
 void set_script_allocator_replacement(memory_resource::synchronized_pool_resource &replacer) noexcept {
   get_memory_dealer().set_script_resource_replacer(replacer);
@@ -52,60 +54,11 @@ size_type get_heap_memory_used() noexcept {
   return get_memory_dealer().get_heap_resource().memory_used();
 }
 
-struct LibcAllocHooks {
-  static decltype(__malloc_hook) malloc_hook_old;
-  static decltype(__realloc_hook) realloc_hook_old;
-  static decltype(__free_hook) free_hook_old;
-
-  static void set_old_hooks() {
-    __malloc_hook = malloc_hook_old;
-    __realloc_hook = realloc_hook_old;
-    __free_hook = free_hook_old;
-  }
-
-  static void set_new_hooks() {
-    __malloc_hook = LibcAllocHooks::malloc_hook;
-    __realloc_hook = LibcAllocHooks::realloc_hook;
-    __free_hook = LibcAllocHooks::free_hook;
-  }
-
-  static void *malloc_hook(size_t size, const void *) {
-    if (dl::replace_malloc_with_script_allocator) {
-      return dl::script_allocator_malloc(size);
-    }
-    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
-    set_old_hooks();
-    return std::malloc(size);
-  }
-
-  static void *realloc_hook(void *ptr, size_t size, const void *) {
-    if (dl::replace_malloc_with_script_allocator) {
-      return dl::script_allocator_realloc(ptr, size);
-    }
-    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
-    set_old_hooks();
-    return std::realloc(ptr, size);
-  }
-
-  static void free_hook(void *ptr, const void *) {
-    if (dl::replace_malloc_with_script_allocator) {
-      return dl::script_allocator_free(ptr);
-    }
-    auto reset_hooks = vk::finally(LibcAllocHooks::set_new_hooks);
-    set_old_hooks();
-    return std::free(ptr);
-  }
-};
-
-decltype(__malloc_hook) LibcAllocHooks::malloc_hook_old = __malloc_hook;
-decltype(__realloc_hook) LibcAllocHooks::realloc_hook_old = __realloc_hook;
-decltype(__free_hook) LibcAllocHooks::free_hook_old = __free_hook;
-
 void global_init_script_allocator() noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(dealer.heap_script_resource_replacer());
   php_assert(!dealer.synchronized_script_resource_replacer());
-  php_assert(!replace_malloc_with_script_allocator);
+  php_assert(!is_malloc_replaced());
   php_assert(!script_allocator_enabled);
   php_assert(!query_num);
 
@@ -119,11 +72,10 @@ void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
   php_assert(!dealer.heap_script_resource_replacer());
   php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
+  php_assert(!is_malloc_replaced());
 
   CriticalSectionGuard lock;
-  LibcAllocHooks::set_new_hooks();
   dealer.current_script_resource().init(buffer, buffer_size);
-  replace_malloc_with_script_allocator = false;
   script_allocator_enabled = true;
   query_num++;
 }
@@ -133,13 +85,13 @@ void free_script_allocator() noexcept {
   php_assert(!dealer.heap_script_resource_replacer());
   php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
+  php_assert(!is_malloc_replaced());
 
   script_allocator_enabled = false;
 }
 
 void *allocate(size_type size) noexcept {
-  php_assert (size);
-  CriticalSectionGuard lock;
+  php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate(size);
@@ -156,8 +108,7 @@ void *allocate(size_type size) noexcept {
 }
 
 void *allocate0(size_type size) noexcept {
-  php_assert (size);
-  CriticalSectionGuard lock;
+  php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate0(size);
@@ -174,8 +125,7 @@ void *allocate0(size_type size) noexcept {
 }
 
 void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
-  php_assert (new_size > old_size);
-  CriticalSectionGuard lock;
+  php_assert(new_size > old_size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->reallocate(mem, new_size, old_size);
@@ -183,7 +133,6 @@ void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
     return synchronized_replacer->reallocate(mem, new_size, old_size);
   }
-
   if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %u, old_size = %u", mem, new_size, old_size);
     return mem;
@@ -193,8 +142,7 @@ void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
 }
 
 void deallocate(void *mem, size_type size) noexcept {
-  php_assert (size);
-  CriticalSectionGuard lock;
+  php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->deallocate(mem, size);
@@ -215,60 +163,38 @@ void perform_script_allocator_defragmentation() noexcept {
 }
 
 void *heap_allocate(size_type size) noexcept {
-  php_assert(!query_num || !replace_malloc_with_script_allocator);
-  CriticalSectionGuard lock;
+  php_assert(!query_num || !is_malloc_replaced());
   return get_memory_dealer().get_heap_resource().allocate(size);
 }
 
 void *heap_reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
-  CriticalSectionGuard lock;
   return get_memory_dealer().get_heap_resource().reallocate(mem, new_size, old_size);
 }
 
 void heap_deallocate(void *mem, size_type size) noexcept {
-  CriticalSectionGuard lock;
   return get_memory_dealer().get_heap_resource().deallocate(mem, size);
 }
 
 namespace {
-// guaranteed alignment of dl::allocate
-const size_t MAX_ALIGNMENT = 8;
 
-template<bool always_use_script_allocator>
-void *malloc_replace_impl(size_t size) noexcept {
-  static_assert(sizeof(size_t) <= MAX_ALIGNMENT, "small alignment");
-  const size_type MAX_ALLOC = 0xFFFFFF00;
-  php_assert (size <= MAX_ALLOC - MAX_ALIGNMENT);
-  const size_t real_allocate = size + MAX_ALIGNMENT;
-  void *mem = nullptr;
-  if (always_use_script_allocator || replace_malloc_with_script_allocator) {
-    mem = allocate(real_allocate);
-  } else {
-    mem = heap_allocate(real_allocate);
-  }
+// guaranteed alignment of dl::allocate
+constexpr size_type MALLOC_REPLACER_SIZE_OFFSET = 8;
+constexpr size_type MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
+
+} // namespace
+
+void *script_allocator_malloc(size_t size) noexcept {
+  static_assert(sizeof(size_t) <= MALLOC_REPLACER_SIZE_OFFSET, "small size offset");
+  php_assert (size <= MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET);
+  const size_t real_allocate = size + MALLOC_REPLACER_SIZE_OFFSET;
+  void *mem = allocate(real_allocate);
+
   if (unlikely(!mem)) {
     php_critical_error ("not enough memory to continue");
     return mem;
   }
   *static_cast<size_t *>(mem) = real_allocate;
-  return static_cast<char *>(mem) + MAX_ALIGNMENT;
-}
-
-template<bool always_use_script_allocator>
-void free_replace_impl(void *mem) noexcept {
-  if (mem) {
-    mem = static_cast<char *>(mem) - MAX_ALIGNMENT;
-    if (always_use_script_allocator || replace_malloc_with_script_allocator) {
-      deallocate(mem, *static_cast<size_t *>(mem));
-    } else {
-      heap_deallocate(mem, *static_cast<size_t *>(mem));
-    }
-  }
-}
-} // namespace
-
-void *script_allocator_malloc(size_t x) noexcept {
-  return malloc_replace_impl<true>(x);
+  return static_cast<char *>(mem) + MALLOC_REPLACER_SIZE_OFFSET;
 }
 
 void *script_allocator_calloc(size_t nmemb, size_t size) noexcept {
@@ -311,60 +237,115 @@ char *script_allocator_strdup(const char *str) noexcept {
   return res;
 }
 
-void script_allocator_free(void *p) noexcept {
-  return free_replace_impl<true>(p);
+void script_allocator_free(void *mem) noexcept {
+  if (mem) {
+    mem = static_cast<char *>(mem) - MALLOC_REPLACER_SIZE_OFFSET;
+    deallocate(mem, *static_cast<size_t *>(mem));
+  }
 }
 
+namespace {
 
-void *replaceable_malloc(size_t x) noexcept {
-  return malloc_replace_impl<false>(x);
+class MallocHooksSwitcher : vk::not_copyable {
+public:
+  static MallocHooksSwitcher &get() noexcept {
+    static MallocHooksSwitcher switcher;
+    return switcher;
+  }
+
+  void switch_hooks(bool malloc_hooks_are_replaced_before) noexcept {
+    php_assert(malloc_hooks_are_replaced_before == malloc_hooks_are_replaced_);
+    CriticalSectionGuard critical_section;
+    std::swap(malloc_hook_, __malloc_hook);
+    std::swap(realloc_hook_, __realloc_hook);
+    std::swap(memalign_hook_, __memalign_hook);
+    std::swap(free_hook_, __free_hook);
+    malloc_hooks_are_replaced_ = !malloc_hooks_are_replaced_;
+  }
+
+  bool are_malloc_hooks_replaced() const noexcept {
+    return malloc_hooks_are_replaced_;
+  }
+
+private:
+  MallocHooksSwitcher() :
+    malloc_hook_{[](size_t size, const void *) {
+      return script_allocator_malloc(size);
+    }},
+    realloc_hook_{[](void *ptr, size_t size, const void *) {
+      return script_allocator_realloc(ptr, size);
+    }},
+    memalign_hook_{[](size_t alignment, size_t size, const void *) {
+      // скриптовый аллокатор выдает адреса выровненные на 8 байт
+      php_assert(alignment <= 8);
+      return script_allocator_malloc(size);
+    }},
+    free_hook_{[](void *ptr, const void *) {
+      return script_allocator_free(ptr);
+    }} {}
+
+  decltype(__malloc_hook) malloc_hook_{nullptr};
+  decltype(__realloc_hook) realloc_hook_{nullptr};
+  decltype(__memalign_hook) memalign_hook_{nullptr};
+  decltype(__free_hook) free_hook_{nullptr};
+  bool malloc_hooks_are_replaced_{false};
+};
+
+} // namespace
+
+bool is_malloc_replaced() noexcept {
+  return MallocHooksSwitcher::get().are_malloc_hooks_replaced();
 }
 
-void replaceable_free(void *p) noexcept {
-  return free_replace_impl<false>(p);
+void replace_malloc_with_script_allocator() noexcept {
+  MallocHooksSwitcher::get().switch_hooks(false);
+}
+
+void rollback_malloc_replacement() noexcept {
+  MallocHooksSwitcher::get().switch_hooks(true);
 }
 
 } // namespace dl
 
 // replace global operators new and delete for linked C++ code
 void *operator new(std::size_t size) {
-  return dl::replaceable_malloc(size);
+  return std::malloc(size);
 }
 
 void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
-  return dl::replaceable_malloc(size);
+  return std::malloc(size);
 }
 
 void *operator new[](std::size_t size) {
-  return dl::replaceable_malloc(size);
+  return std::malloc(size);
 }
 
 void *operator new[](std::size_t size, const std::nothrow_t &) noexcept {
-  return dl::replaceable_malloc(size);
+  return std::malloc(size);
 }
 
 void operator delete(void *mem) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 
 void operator delete(void *mem, const std::nothrow_t &) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 
 void operator delete[](void *mem) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 
 void operator delete[](void *mem, const std::nothrow_t &) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 
 #if __cplusplus >= 201402L
 void operator delete(void *mem, size_t) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 
 void operator delete[](void *mem, size_t) noexcept {
-  return dl::replaceable_free(mem);
+  return std::free(mem);
 }
 #endif

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cstdio>
-#include <signal.h>
 #include <unistd.h>
+
+#include "common/wrappers/likely.h"
 
 extern int die_on_fail;
 
@@ -18,7 +19,7 @@ void php_assert__(const char *msg, const char *file, int line) __attribute__((no
 void raise_php_assert_signal__();
 
 #define php_assert(EX) do {                          \
-  if (!(EX)) {                                       \
+  if (unlikely(!(EX))) {                             \
     php_assert__ (#EX, __FILE__, __LINE__);          \
   }                                                  \
 } while(0)

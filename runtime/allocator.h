@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <memory>
 
+#include "common/containers/final_action.h"
 #include "runtime/memory_resource/memory_resource.h"
 
 namespace memory_resource {
@@ -16,8 +17,6 @@ class unsynchronized_pool_resource;
 namespace dl {
 
 extern long long query_num; // engine query number. query_num == 0 before first query
-extern volatile bool script_runned; // betwen init_static and free_static
-extern volatile bool replace_malloc_with_script_allocator; // replace malloc and cpp operator new with script allocator
 
 using size_type = memory_resource::size_type;
 
@@ -51,10 +50,22 @@ void *script_allocator_realloc(void *p, size_t x) noexcept;
 char *script_allocator_strdup(const char *str) noexcept;
 void script_allocator_free(void *p) noexcept;
 
-void *replaceable_malloc(size_t x) noexcept;
-void replaceable_free(void *p) noexcept;
+bool is_malloc_replaced() noexcept;
+void replace_malloc_with_script_allocator() noexcept;
+void rollback_malloc_replacement() noexcept;
 
 } // namespace dl
+
+inline auto make_malloc_replacement_with_script_allocator(bool replace = true) noexcept {
+  if (replace) {
+    dl::replace_malloc_with_script_allocator();
+  }
+  return vk::finally([replace] {
+    if (replace) {
+      dl::rollback_malloc_replacement();
+    }
+  });
+}
 
 class ManagedThroughDlAllocator {
 public:

@@ -387,7 +387,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 
   use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
-  dl::replace_malloc_with_script_allocator = !use_heap_memory;
+  auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
   is_utf8 = false;
   int pcre_options = 0;
@@ -543,18 +543,15 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
     clean();
     return;
   }
-
-  dl::replace_malloc_with_script_allocator = false;
 }
 
 void regexp::clean() {
   if (!use_heap_memory) {
-    //from cache
-    dl::replace_malloc_with_script_allocator = false;
+    // Регексп лежит в статическом кеше, см regexp_cache_storage
     return;
   }
 
-  dl::replace_malloc_with_script_allocator = !use_heap_memory;
+  php_assert(!dl::is_malloc_replaced());
 
   subpatterns_count = 0;
   named_subpatterns_count = 0;
@@ -571,8 +568,6 @@ void regexp::clean() {
 
   delete[] subpattern_names;
   subpattern_names = nullptr;
-
-  dl::replace_malloc_with_script_allocator = false;
 }
 
 regexp::~regexp() {
@@ -586,10 +581,9 @@ int regexp::pcre_last_error;
 int regexp::exec(const string &subject, int offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
     {
-      dl::CriticalSectionGuard critical_section{};
-      auto bring_back_replace_malloc = vk::finally([] { dl::replace_malloc_with_script_allocator = false; });
+      dl::CriticalSectionGuard critical_section;
+      auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
-      dl::replace_malloc_with_script_allocator = !use_heap_memory;
       re2::StringPiece text(subject.c_str(), subject.size());
       bool matched = RE2_regexp->Match(text, offset, subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
       if (!matched) {
@@ -1062,9 +1056,6 @@ string f$preg_quote(const string &str, const string &delimiter) {
 }
 
 void regexp::global_init() {
-  pcre_malloc = dl::replaceable_malloc;
-  pcre_free = dl::replaceable_free;
-
   extra.flags = PCRE_EXTRA_MATCH_LIMIT | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
   extra.match_limit = PCRE_BACKTRACK_LIMIT;
   extra.match_limit_recursion = PCRE_RECURSION_LIMIT;

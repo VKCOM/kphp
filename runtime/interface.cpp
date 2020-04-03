@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <cassert>
 #include <clocale>
+#include <csignal>
 #include <fstream>
 #include <functional>
 #include <getopt.h>

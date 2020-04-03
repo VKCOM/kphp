@@ -1,5 +1,7 @@
 #pragma once
+
 #include <algorithm>
+#include <csignal>
 
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
