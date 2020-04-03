@@ -383,8 +383,6 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
   // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
   // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
   auto add_type_rule_from_field_phpdoc = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
-    auto klass = field_root->var_id->class_id;
-
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
@@ -393,29 +391,32 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
         add_type_rule(field_root);
       }
     }
-
-    if (auto kphp_serialized_field_str = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::kphp_serialized_field)) {
-      if (*kphp_serialized_field_str != "none") {
-        kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
-        auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str);
-        kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
-        kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
-        kphp_error_return(field_root->var_id->is_class_instance_var(), fmt_format("kphp-serialized-field is allowed only for instance fields: {}", field_root->str_val));
-        field_root->var_id->serialization_tag = kphp_serialized_field;
-        used_serialization_tags_for_fields[kphp_serialized_field] = true;
-      }
-    } else if (!field_root->var_id->is_class_static_var()) {
-      kphp_error_return(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", field_root->str_val));
-    }
   };
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {
     on_var(f.var);
     add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
+
+    if (auto kphp_serialized_field_str = phpdoc_find_tag_as_string(f.phpdoc_str, php_doc_tag::kphp_serialized_field)) {
+      if (*kphp_serialized_field_str != "none") {
+        kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
+        auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str);
+        kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
+        kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
+        f.serialization_tag = kphp_serialized_field;
+        used_serialization_tags_for_fields[kphp_serialized_field] = true;
+      }
+    } else {
+      kphp_error_return(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", f.local_name()));
+    }
   });
+
   klass->members.for_each([&](ClassMemberStaticField &f) {
     on_var(f.var);
     add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
+
+    kphp_error_return(!phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_field),
+                      fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
   });
 }
 

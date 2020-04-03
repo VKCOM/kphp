@@ -71,6 +71,7 @@ struct ClassMemberInstanceField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
+  int8_t serialization_tag = -1;
 
   ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
 

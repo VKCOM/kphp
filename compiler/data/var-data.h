@@ -38,7 +38,6 @@ public:
   bool is_read_only = true;
   bool is_foreach_reference = false;
   int dependency_level = 0;
-  int8_t serialization_tag = -1;
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();

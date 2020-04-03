@@ -537,8 +537,8 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
   uint16_t cnt_fields = 0;
 
   klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.var->serialization_tag != -1) {
-      body += fmt_format("packer.pack({}); packer.pack(${});\n", field.var->serialization_tag, field.var->name);
+    if (field.serialization_tag != -1) {
+      body += fmt_format("packer.pack({}); packer.pack(${});\n", field.serialization_tag, field.var->name);
       cnt_fields += 2;
     }
   });
@@ -566,8 +566,8 @@ void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
 
   std::vector<std::string> cases;
   klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.var->serialization_tag != -1) {
-      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.var->serialization_tag, field.var->name));
+    if (field.serialization_tag != -1) {
+      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
     }
   });
 
