@@ -61,11 +61,9 @@ abstract class PHPDocType {
     return false;
   }
 
-  public abstract function from_unpacked_value($value);
+  public abstract function from_unpacked_value($value, UseResolver $use_resolver);
 
   public abstract function has_instance_inside(): bool;
-
-  public static $outer_class_name_for_resolving_self;
 }
 
 class OrType extends PHPDocType {
@@ -85,11 +83,11 @@ class OrType extends PHPDocType {
     return null;
   }
 
-  public function from_unpacked_value($value) {
+  public function from_unpacked_value($value, UseResolver $use_resolver) {
     try {
-      return $this->type1->from_unpacked_value($value);
+      return $this->type1->from_unpacked_value($value, $use_resolver);
     } catch (Throwable $e) {
-      return $this->type2->from_unpacked_value($value);
+      return $this->type2->from_unpacked_value($value, $use_resolver);
     }
   }
 
@@ -121,7 +119,7 @@ class PrimitiveType extends PHPDocType {
     return null;
   }
 
-  public function from_unpacked_value($value) {
+  public function from_unpacked_value($value, UseResolver $use_resolver) {
     $true_type = $this->type;
     switch ($this->type) {
       case "int":
@@ -173,8 +171,12 @@ class InstanceType extends PHPDocType {
     return null;
   }
 
-  public function from_unpacked_value($value) {
-    $parser = new InstanceParser($this->type);
+  public function from_unpacked_value($value, UseResolver $use_resolver) {
+    $resolved_class_name = $use_resolver->resolve_name($this->type);
+    if (!class_exists($resolved_class_name)) {
+      throw new Exception("Can't find class: {$resolved_class_name}");
+    }
+    $parser = new InstanceParser($resolved_class_name);
     return $parser->from_unpacked_array($value);
   }
 
@@ -220,7 +222,7 @@ class ArrayType extends PHPDocType {
     return $inner_type;
   }
 
-  public function from_unpacked_value($arr, ?int $cnt_arrays = null) {
+  public function from_unpacked_value($arr, UseResolver $use_resolver, ?int $cnt_arrays = null) {
     if (!is_array($arr)) {
       throw new Exception("not instance: ".gettype($this->inner_type));
     }
@@ -230,14 +232,14 @@ class ArrayType extends PHPDocType {
     }
 
     if ($cnt_arrays === null) {
-      return $this->from_unpacked_value($arr, $this->cnt_arrays);
+      return $this->from_unpacked_value($arr, $use_resolver, $this->cnt_arrays);
     }
 
     $res = [];
     foreach ($arr as $value) {
       $res[] = $cnt_arrays === 1
-        ? $this->inner_type->from_unpacked_value($value)
-        : $this->from_unpacked_value($value, $cnt_arrays - 1);
+        ? $this->inner_type->from_unpacked_value($value, $use_resolver)
+        : $this->from_unpacked_value($value, $use_resolver, $cnt_arrays - 1);
     }
 
     return $res;
@@ -284,7 +286,7 @@ class TupleType extends PHPDocType {
     return new TupleType($types);
   }
 
-  public function from_unpacked_value($value) {
+  public function from_unpacked_value($value, UseResolver $use_resolver) {
     if (!is_array($value)) {
       throw new Exception("not tuple: ".implode(", ", $this->types));
     }
@@ -295,7 +297,7 @@ class TupleType extends PHPDocType {
 
     $res = [];
     for ($i = 0; $i < count($value); $i++) {
-      $res[] = $this->types[$i]->from_unpacked_value($value[$i]);
+      $res[] = $this->types[$i]->from_unpacked_value($value[$i], $use_resolver);
     }
 
     return $res;
@@ -308,23 +310,27 @@ class TupleType extends PHPDocType {
 
 class InstanceParser
 {
+  /**@var mixed[]*/
   public $tags_values = [];
+
+  /**@var string[]*/
   public $names = [];
+
+  /**@var string[]*/
   public $types = [];
+
+  /**@var ReflectionClass*/
   public $type_of_instance = null;
 
+  /**@var UseResolver*/
+  public $use_resolver = null;
+
   public function __construct($instance) {
-    if ($instance == "self") {
-      $instance = PHPDocType::$outer_class_name_for_resolving_self;
-    } else {
-      PHPDocType::$outer_class_name_for_resolving_self = $instance;
-    }
-    assert(!empty($instance) && $instance != "self");
+    assert(is_object($instance) || ($instance !== "" && $instance !== "self"));
+    $this->type_of_instance = new \ReflectionClass($instance);
+    $this->use_resolver = new UseResolver($this->type_of_instance->getName());
 
-    $this->type_of_instance = $instance;
-    $rc = new ReflectionClass($instance);
-
-    foreach ($rc->getProperties() as $property) {
+    foreach ($this->type_of_instance->getProperties() as $property) {
       preg_match("/@kphp-serialized-field\s+(\d+)/", $property->getDocComment(), $matches);
       if (count($matches) > 1) {
         $this->tags_values[] = (int) $matches[1];
@@ -346,7 +352,7 @@ class InstanceParser
       throw new Exception("Expected NIL or ARRAY type for unpacking class_instance");
     }
 
-    $instance = new $this->type_of_instance;
+    $instance = $this->type_of_instance->newInstanceWithoutConstructor();
 
     $is_even = function ($key) { return $key % 2 == 0; };
     $tags = array_values(array_filter($this->tags_values, $is_even, ARRAY_FILTER_USE_KEY));
@@ -361,7 +367,7 @@ class InstanceParser
 
       $parsed_phpdoc = PHPDocType::parse($cur_type);
 //      print_r($parsed_phpdoc);
-      $instance->{$cur_name} = $parsed_phpdoc->from_unpacked_value($cur_value);
+      $instance->{$cur_name} = $parsed_phpdoc->from_unpacked_value($cur_value, $this->use_resolver);
     }
 
     return $instance;
@@ -387,6 +393,119 @@ class ClassTransformer implements CanPack {
     ClassTransformer::$depth--;
 
     return $res;
+  }
+}
+
+class UseResolver {
+  /**@var ReflectionClass*/
+  private $instance_reflection = null;
+
+  /**@var string[]*/
+  private $alias_to_name = [];
+
+  /**@var string*/
+  private $cur_namespace = "";
+
+  /**@var mixed[]*/
+  private $tokens = [];
+
+  /**@var int*/
+  private $token_id = -1;
+
+  public function __construct(string $instance_type) {
+    $this->instance_reflection = new \ReflectionClass($instance_type);
+
+    $content = '';
+    $file = new \SplFileObject($this->instance_reflection->getFileName());
+    for ($line_id = 0; !$file->eof() && $line_id < $this->instance_reflection->getStartLine(); $line_id++) {
+      $content .= $file->fgets();
+    }
+
+    $this->find_uses($content);
+  }
+
+  public function resolve_name(string $instance_name) {
+    if ($instance_name[0] === '\\') {
+      return $instance_name;
+    }
+
+    if ($instance_name === 'self') {
+      return $this->instance_reflection->getName();
+    }
+
+    $backslash_position = strstr($instance_name, '\\') ?: strlen($instance_name);
+    $first_part_of_name = substr($instance_name, 0, $backslash_position);
+    if (isset($this->alias_to_name[$first_part_of_name])) {
+      return $this->alias_to_name[$first_part_of_name].substr($instance_name, strlen($first_part_of_name));
+    }
+
+    return $this->instance_reflection->getNamespaceName().'\\'.$instance_name;
+  }
+
+  private function cur_token() {
+    return $this->tokens[$this->token_id];
+  }
+
+  private function is_token(array $tokens) {
+    return in_array($this->cur_token()[0], $tokens, true);
+  }
+
+  private function get_next_token() {
+    while ($this->token_id + 1 < count($this->tokens)) {
+      $this->token_id++;
+      if (!$this->is_token([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT])) {
+        return $this->cur_token();
+      }
+    }
+    return null;
+  }
+
+  private function parse_class_name() : array {
+    $class_name = "";
+    $alias = "";
+    while ($this->get_next_token() && $this->is_token([T_STRING, T_NS_SEPARATOR])) {
+      $class_name .= $this->cur_token()[1];
+      $alias = $this->cur_token()[1];
+    }
+    return [$alias, $class_name];
+  }
+
+
+  private function parse_use_statement() : ?array {
+    if ($this->cur_token() === ';' || $this->cur_token() === null) {
+      return null;
+    }
+
+    [$alias, $class_name] = $this->parse_class_name();
+    if ($this->is_token([T_AS])) {
+      [,$alias] = $this->parse_class_name();
+    }
+
+    return [$alias, $class_name];
+  }
+
+  private function parse_namespace() {
+    [,$this->cur_namespace] = $this->parse_class_name();
+  }
+
+  private function find_uses(string $file_content) {
+    $this->tokens = token_get_all($file_content);
+
+    /**
+     * use My\Full\Classname as Another;
+     * use My\Full\Classname as Another, My\Full\NSname;
+     * use My\Full\NSname;
+     * use \My\Fulle\Name;
+     */
+    while ($this->get_next_token()) {
+      if ($this->is_token([T_NAMESPACE])) {
+        $this->parse_namespace();
+      } else if ($this->is_token([T_USE])) {
+        while (list($alias, $class) = $this->parse_use_statement()) {
+          $this->alias_to_name[$alias] = $class;
+        }
+      }
+    }
   }
 }
 

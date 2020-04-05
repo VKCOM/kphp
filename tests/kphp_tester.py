@@ -179,6 +179,7 @@ class TestRunner:
             ("extension", "mbstring.so"),
             ("extension", "curl.so"),
             ("extension", "vkext.so"),
+            ("extension", "tokenizer.so"),
             ("memory_limit", "3072M"),
             ("xdebug.var_display_max_depth", -1),
             ("xdebug.var_display_max_children", -1),

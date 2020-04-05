@@ -3,23 +3,40 @@
 
 require_once 'polyfills.php';
 
+use Classes\A, Classes2\A as A2;
+
 /** 
  * @kphp-serializable
  **/
 class AHolder {
     /**
      * @kphp-serialized-field 1
-     * @var \Classes\A
+     * @var A
      */
     public $a_f;
 
+    /**
+     * @kphp-serialized-field 2
+     * @var \Classes\A
+     */
+    public $a_f2;
+
+    /**
+     * @kphp-serialized-field 3
+     * @var A2
+     */
+    public $a2_f;
+
     public function __construct() {
       $this->a_f = new \Classes\A;
+      $this->a_f2 = new A();
+      $this->a2_f = new A2();
     }
 
   public function equal_to(AHolder $another): bool {
-        var_dump($another->a_f->int_f);
-        return $this->a_f->equal_to($another->a_f);
+        return $this->a_f->equal_to($another->a_f)
+            && $this->a_f2->equal_to($another->a_f2)
+            && $this->a2_f->equal_to($another->a2_f);
     }
 }
 
