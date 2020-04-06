@@ -1,11 +1,18 @@
 <?php
 #ifndef KittenPHP
 
+use MessagePack\MessagePack;
+use MessagePack\Packer;
+use VK\InstanceSerialization\ClassTransformer;
+use VK\InstanceSerialization\InstanceParser;
+
 function classAutoLoader($class) {
   $filename = $class.'.php';
   $filename = str_replace('\\', '/', $filename);
   if (strpos($filename, "MessagePack") !== false) {
     $filename = __DIR__."/vendor/".$filename;
+  } else if (strpos($filename, "VK") === 0) {
+    $filename = __DIR__."/".$filename;
   } else {
     list($script_path) = get_included_files();
     $filename = dirname($script_path)."/".$filename;
@@ -251,7 +258,28 @@ function array_find(array $ar, callable $clbk) {
   return [null, null];
 }
 
-require_once 'msgpack_polyfill.php';
+function instance_serialize($instance) : string {
+  ClassTransformer::$depth = 0;
+  $packer = new Packer();
+  $packer = $packer->extendWith(new ClassTransformer());
+  return $packer->pack($instance);
+}
+
+function instance_deserialize(string $packed_str, $type_of_instance) {
+  $unpacked_array = MessagePack::unpack($packed_str);
+
+  $instance_parser = new InstanceParser($type_of_instance);
+  return $instance_parser->from_unpacked_array($unpacked_array);
+}
+
+function msgpack_serialize($value) : string {
+  $packer = new Packer();
+  return $packer->pack($value);
+}
+
+function msgpack_deserialize(string $packed_str) {
+  return MessagePack::unpack($packed_str);
+}
 
 if (false)
 #endif
