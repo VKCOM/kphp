@@ -143,7 +143,7 @@ class PrimitiveType extends PHPDocType {
       return $value;
     }
 
-    throw new Exception("not primitive: ".$this->type);
+    throw new \Exception("not primitive: ".$this->type);
   }
 
   public function has_instance_inside(): bool {
@@ -163,7 +163,7 @@ class InstanceType extends PHPDocType {
       $str = substr($str, strlen($res->type));
 
       if (in_array($res->type, ["static", "object"])) {
-        throw new Exception("static|object are forbidden in phpdoc");
+        throw new \Exception("static|object are forbidden in phpdoc");
       }
       return $res;
     }
@@ -174,7 +174,7 @@ class InstanceType extends PHPDocType {
   public function from_unpacked_value($value, UseResolver $use_resolver) {
     $resolved_class_name = $use_resolver->resolve_name($this->type);
     if (!class_exists($resolved_class_name)) {
-      throw new Exception("Can't find class: {$resolved_class_name}");
+      throw new \Exception("Can't find class: {$resolved_class_name}");
     }
     $parser = new InstanceParser($resolved_class_name);
     return $parser->from_unpacked_array($value);
@@ -224,7 +224,7 @@ class ArrayType extends PHPDocType {
 
   public function from_unpacked_value($arr, UseResolver $use_resolver, ?int $cnt_arrays = null) {
     if (!is_array($arr)) {
-      throw new Exception("not instance: ".gettype($this->inner_type));
+      throw new \Exception("not instance: ".gettype($this->inner_type));
     }
 
     if (!$this->has_instance_inside()) {
@@ -268,7 +268,7 @@ class TupleType extends PHPDocType {
     while (true) {
       $cur_type = PHPDocType::parse($str);
       if (!$cur_type) {
-        throw new Exception("something went wrong in parsing tuple phpdoc");
+        throw new \Exception("something went wrong in parsing tuple phpdoc");
       }
 
       $types[] = $cur_type;
@@ -279,7 +279,7 @@ class TupleType extends PHPDocType {
         $str = substr($str, 1);
         break;
       } else {
-        throw new Exception("phpdoc parsing error ',' or ')' expected");
+        throw new \Exception("phpdoc parsing error ',' or ')' expected");
       }
     }
 
@@ -288,11 +288,11 @@ class TupleType extends PHPDocType {
 
   public function from_unpacked_value($value, UseResolver $use_resolver) {
     if (!is_array($value)) {
-      throw new Exception("not tuple: ".implode(", ", $this->types));
+      throw new \Exception("not tuple: ".implode(", ", $this->types));
     }
 
     if (count($this->types) != count($value)) {
-      throw new Exception("different counts: ".count($this->types)." and ".count($value));
+      throw new \Exception("different counts: ".count($this->types)." and ".count($value));
     }
 
     $res = [];
@@ -320,17 +320,17 @@ class InstanceParser
   public $types = [];
 
   /**@var ReflectionClass*/
-  public $type_of_instance = null;
+  public $reflection_of_instance = null;
 
   /**@var UseResolver*/
   public $use_resolver = null;
 
   public function __construct($instance) {
     assert(is_object($instance) || ($instance !== "" && $instance !== "self"));
-    $this->type_of_instance = new \ReflectionClass($instance);
-    $this->use_resolver = new UseResolver($this->type_of_instance->getName());
+    $this->reflection_of_instance = new \ReflectionClass($instance);
+    $this->use_resolver = new UseResolver($this->reflection_of_instance->getName());
 
-    foreach ($this->type_of_instance->getProperties() as $property) {
+    foreach ($this->reflection_of_instance->getProperties() as $property) {
       preg_match("/@kphp-serialized-field\s+(\d+)/", $property->getDocComment(), $matches);
       if (count($matches) > 1) {
         $this->tags_values[] = (int) $matches[1];
@@ -349,10 +349,10 @@ class InstanceParser
     if (is_null($unpacked_arr)) {
       return null;
     } else if (!is_array($unpacked_arr)) {
-      throw new Exception("Expected NIL or ARRAY type for unpacking class_instance");
+      throw new \Exception("Expected NIL or ARRAY type for unpacking class_instance");
     }
 
-    $instance = $this->type_of_instance->newInstanceWithoutConstructor();
+    $instance = $this->reflection_of_instance->newInstanceWithoutConstructor();
 
     $is_even = function ($key) { return $key % 2 == 0; };
     $tags = array_values(array_filter($this->tags_values, $is_even, ARRAY_FILTER_USE_KEY));
@@ -385,7 +385,7 @@ class ClassTransformer implements CanPack {
   {
     ClassTransformer::$depth++;
     if (ClassTransformer::$depth > ClassTransformer::$max_depth) {
-      throw new Exception("maximum depth of nested instances exceeded");
+      throw new \Exception("maximum depth of nested instances exceeded");
     }
 
     $instance_parser = new InstanceParser($instance);
@@ -509,25 +509,25 @@ class UseResolver {
   }
 }
 
-function instance_serialize($instance) {
+function instance_serialize($instance) : string {
   ClassTransformer::$depth = 0;
   $packer = new Packer();
   $packer = $packer->extendWith(new ClassTransformer());
   return $packer->pack($instance);
 }
 
-function instance_deserialize($packed_str, $type_of_instance) {
+function instance_deserialize(string $packed_str, $type_of_instance) {
   $unpacked_array = MessagePack::unpack($packed_str);
 
   $instance_parser = new InstanceParser($type_of_instance);
   return $instance_parser->from_unpacked_array($unpacked_array);
 }
 
-function msgpack_serialize($value) {
+function msgpack_serialize($value) : string {
   $packer = new Packer();
   return $packer->pack($value);
 }
 
-function msgpack_deserialize($packed_str) {
+function msgpack_deserialize(string $packed_str) {
   return MessagePack::unpack($packed_str);
 }
