@@ -96,7 +96,7 @@ private:
     int int_buf_size;
     int string_size;
     int string_buf_size;
-    int_hash_entry int_entries[0];
+    int_hash_entry int_entries[];
 
     inline bool is_vector() const __attribute__ ((always_inline));
 
