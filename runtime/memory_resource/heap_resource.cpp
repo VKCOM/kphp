@@ -1,7 +1,7 @@
 #include "runtime/memory_resource/heap_resource.h"
 
 #include <csignal>
-#include <memory>
+#include <cstdlib>
 
 #include "common/wrappers/likely.h"
 

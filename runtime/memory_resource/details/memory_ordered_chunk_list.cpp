@@ -1,6 +1,7 @@
-#include <algorithm>
-
 #include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
+
+#include <algorithm>
+#include <functional>
 
 namespace memory_resource {
 namespace details {

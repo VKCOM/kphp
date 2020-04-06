@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <new>
 
 #include "common/mixin/not_copyable.h"
 
