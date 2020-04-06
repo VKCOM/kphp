@@ -13,6 +13,9 @@ TEST(unsynchronized_pool_resource_test, uninited_state) {
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, 0);
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   // no effect
   resource.perform_defragmentation();
@@ -24,6 +27,9 @@ TEST(unsynchronized_pool_resource_test, uninited_state) {
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, 0);
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 1);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 }
 
 TEST(unsynchronized_pool_resource_test, simple_allocation) {
@@ -39,6 +45,9 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   void *mem1 = resource.allocate(1);
   ASSERT_TRUE(mem1);
@@ -50,6 +59,9 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_memory_used, 8);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   void *mem65530 = resource.allocate(65530);
   ASSERT_TRUE(mem65530);
@@ -61,6 +73,9 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   resource.deallocate(mem65530, 65530);
   resource.deallocate(mem1, 1);
@@ -72,6 +87,9 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 }
 
 TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
@@ -105,6 +123,9 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 2);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 1);
 
   // but we have 2 large piece with sizes 65536 - 8 - 8 and  65536, resource will use it
   int peace_left_size = 65536 - 8 - 8;
@@ -147,6 +168,9 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 1);
 
   resource.deallocate(mem32, 32);
   resource.deallocate(mem64, 64);
@@ -164,6 +188,9 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 7);
 
   // perform defragmentation - make resource great again!
   resource.perform_defragmentation();
@@ -175,7 +202,108 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 1);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
+
 
   void *all_mem = resource.allocate(some_memory.size());
   ASSERT_TRUE(all_mem);
+}
+
+
+TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
+  std::array<char, 131072> some_memory{}; // 1024*128
+  memory_resource::unsynchronized_pool_resource resource;
+
+  resource.init(some_memory.data(), some_memory.size());
+
+  void *mem65536 = resource.allocate(65536);
+  ASSERT_TRUE(mem65536);
+
+  void *mem8 = resource.allocate(8);
+  ASSERT_TRUE(mem8);
+
+  void *mem_left = resource.allocate(some_memory.size() - 65536 - 8 - 8);
+  ASSERT_TRUE(mem_left);
+
+  void *mem8_2 = resource.allocate(8);
+  ASSERT_TRUE(mem8_2);
+
+  resource.deallocate(mem65536, 65536);
+  resource.deallocate(mem8, 8);
+  resource.deallocate(mem_left, some_memory.size() - 65536 - 8 - 8);
+  resource.deallocate(mem8_2, 8);
+
+  // got fragmentation
+  auto mem_stats = resource.get_memory_stats();
+  ASSERT_EQ(mem_stats.real_memory_used, some_memory.size() - 8);
+  ASSERT_EQ(mem_stats.memory_used, 0);
+  ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
+  ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 2);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 1);
+
+  // auto defragmentation
+  void *mem_all = resource.allocate(some_memory.size());
+  ASSERT_TRUE(mem8_2);
+
+  mem_stats = resource.get_memory_stats();
+  ASSERT_EQ(mem_stats.real_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
+  ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 1);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
+  resource.deallocate(mem_all, some_memory.size());
+}
+
+
+TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
+  std::array<char, 1024*32> some_memory{};
+  memory_resource::unsynchronized_pool_resource resource;
+
+  resource.init(some_memory.data(), some_memory.size());
+
+  std::array<void *, 1024> pieces32{};
+  for (auto &mem: pieces32) {
+    mem = resource.allocate(32);
+  }
+
+  for (auto &mem: pieces32) {
+     resource.deallocate(mem, 32);
+  }
+
+  // got fragmentation
+  auto mem_stats = resource.get_memory_stats();
+  ASSERT_EQ(mem_stats.real_memory_used, some_memory.size() - 32);
+  ASSERT_EQ(mem_stats.memory_used, 0);
+  ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
+  ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 1023);
+
+  // auto defragmentation
+  void *mem64 = resource.allocate(64);
+  mem_stats = resource.get_memory_stats();
+  ASSERT_EQ(mem_stats.real_memory_used, 64);
+  ASSERT_EQ(mem_stats.memory_used, 64);
+  ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
+  ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
+  ASSERT_EQ(mem_stats.reserved, 0);
+  ASSERT_EQ(mem_stats.defragmentation_calls, 1);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 0);
+
+  resource.deallocate(mem64, 64);
 }

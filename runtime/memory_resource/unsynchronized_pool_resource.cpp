@@ -17,6 +17,7 @@ void unsynchronized_pool_resource::init(void *buffer, size_type buffer_size) noe
 }
 
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {
+  memory_debug("perform memory defragmentation\n");
   details::memory_ordered_chunk_list mem_list{memory_begin_};
 
   huge_pieces_.flush_to(mem_list);
@@ -34,6 +35,8 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
     }
   }
 
+  stats_.small_memory_pieces = 0;
+  stats_.huge_memory_pieces = 0;
   for (auto *free_mem = mem_list.flush(); free_mem;) {
     const auto next_mem = mem_list.get_next(free_mem);
     put_memory_back(free_mem, free_mem->size());
@@ -42,23 +45,38 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
 
   // update stat
   register_deallocation(0);
+  ++stats_.defragmentation_calls;
 }
 
-void *unsynchronized_pool_resource::allocate_from_fallback_resource(size_type aligned_size) noexcept {
+void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(size_type aligned_size) noexcept {
   void *mem = fallback_resource_.get_from_pool(aligned_size, true);
   if (likely(mem != nullptr)) {
     memory_debug("allocate %d, pool was empty, allocated address from fallback resource %p\n", aligned_size, mem);
     return mem;
   }
-  details::memory_chunk_tree::tree_node *smallest_piece = huge_pieces_.extract_smallest();
-  if (likely(smallest_piece != nullptr)) {
+  details::memory_chunk_tree::tree_node *smallest_huge_piece = huge_pieces_.extract_smallest();
+  if (!smallest_huge_piece) {
+    perform_defragmentation();
+    if ((mem = try_allocate_small_piece(aligned_size))) {
+      return mem;
+    }
+    smallest_huge_piece = huge_pieces_.extract_smallest();
+  }
+  if (smallest_huge_piece) {
+    --stats_.huge_memory_pieces;
     if (const size_type fallback_resource_left_size = fallback_resource_.size()) {
       put_memory_back(fallback_resource_.memory_current(), fallback_resource_left_size);
     }
-    fallback_resource_.init(smallest_piece, details::memory_chunk_tree::get_chunk_size(smallest_piece));
+    fallback_resource_.init(smallest_huge_piece, details::memory_chunk_tree::get_chunk_size(smallest_huge_piece));
     memory_debug("fallback resource was empty, took piece from huge map\n");
   }
   return fallback_resource_.get_from_pool(aligned_size);
+}
+
+void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_type aligned_size) noexcept {
+  // тело этой фукнции специально унесено в cpp файл, что бы она не инлайнилась в метод allocate
+  perform_defragmentation();
+  return allocate_huge_piece(aligned_size, false);
 }
 
 } // namespace memory_resource

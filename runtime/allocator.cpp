@@ -156,12 +156,6 @@ void deallocate(void *mem, size_type size) noexcept {
   }
 }
 
-void perform_script_allocator_defragmentation() noexcept {
-  if (script_allocator_enabled) {
-    get_memory_dealer().current_script_resource().perform_defragmentation();
-  }
-}
-
 void *heap_allocate(size_type size) noexcept {
   php_assert(!query_num || !is_malloc_replaced());
   return get_memory_dealer().get_heap_resource().allocate(size);

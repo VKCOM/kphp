@@ -312,7 +312,7 @@ class TestRunner:
         self._move_asan_logs_to_artifacts(asan_glob_mask, kphp_server_proc, asan_log_name)
         ignore_stderr = self._can_be_ignored(
             ignore_patterns=[
-                "^\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
+                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
             ],
             binary_text=kphp_runtime_stderr)
 

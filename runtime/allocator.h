@@ -38,8 +38,6 @@ void *allocate0(size_type n) noexcept; // allocate zeroed script memory
 void *reallocate(void *p, size_type new_size, size_type old_size) noexcept; // reallocate script memory
 void deallocate(void *p, size_type n) noexcept; // deallocate script memory
 
-void perform_script_allocator_defragmentation() noexcept;
-
 void *heap_allocate(size_type n) noexcept; // allocate heap memory (persistent between script runs)
 void *heap_reallocate(void *p, size_type new_size, size_type old_size) noexcept; // reallocate heap memory
 void heap_deallocate(void *p, size_type n) noexcept; // deallocate heap memory

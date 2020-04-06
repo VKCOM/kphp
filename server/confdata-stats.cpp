@@ -50,7 +50,8 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata, size_
 }
 
 void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) noexcept {
-  memory_stats.write_stats_to(stats, "confdata", false);
+  using MemStats = memory_resource::MemoryStats;
+  memory_stats.write_stats_to(stats, "confdata", MemStats::ADD_PIECES_COUNT | MemStats::ADD_DEFRAGMENTATION_CALLS);
 
   add_histogram_stat_double(stats, "confdata.initial_loading_duration", to_seconds(initial_loading_time));
   add_histogram_stat_double(stats, "confdata.total_updating_time", to_seconds(total_updating_time));

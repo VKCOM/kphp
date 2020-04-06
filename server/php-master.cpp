@@ -1697,7 +1697,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
   add_histogram_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
 
-  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
+  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache", memory_resource::MemoryStats::ADD_RESERVED);
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 

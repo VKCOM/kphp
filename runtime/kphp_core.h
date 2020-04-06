@@ -470,7 +470,7 @@ inline int f$memory_get_usage(bool real_usage = false);
 
 inline int f$memory_get_total_usage();
 
-inline void f$memory_perform_defragmentation();
+inline array<int> f$memory_get_detailed_stats();
 
 template<class T>
 inline int f$get_reference_counter(const array<T> &v);
@@ -1345,8 +1345,21 @@ int f$memory_get_total_usage() {
   return (int)dl::get_script_memory_stats().real_memory_used;
 }
 
-void f$memory_perform_defragmentation() {
-  dl::perform_script_allocator_defragmentation();
+array<int> f$memory_get_detailed_stats() {
+  const auto &stats = dl::get_script_memory_stats();
+  return array<int>(
+    {
+      std::make_pair(string{"memory_limit"}, static_cast<int>(stats.memory_limit)),
+      std::make_pair(string{"real_memory_used"}, static_cast<int>(stats.real_memory_used)),
+      std::make_pair(string{"memory_used"}, static_cast<int>(stats.memory_used)),
+      std::make_pair(string{"max_real_memory_used"}, static_cast<int>(stats.max_real_memory_used)),
+      std::make_pair(string{"max_memory_used"}, static_cast<int>(stats.max_memory_used)),
+      std::make_pair(string{"reserved"}, static_cast<int>(stats.reserved)),
+      std::make_pair(string{"defragmentation_calls"}, static_cast<int>(stats.defragmentation_calls)),
+      std::make_pair(string{"huge_memory_pieces"}, static_cast<int>(stats.huge_memory_pieces)),
+      std::make_pair(string{"small_memory_pieces"}, static_cast<int>(stats.small_memory_pieces)),
+      std::make_pair(string{"heap_memory_used"}, static_cast<int>(dl::get_heap_memory_used()))
+    });
 }
 
 

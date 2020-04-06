@@ -21,25 +21,14 @@ public:
     void *mem = nullptr;
     const auto aligned_size = details::align_for_chunk(size);
     if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
-      const auto chunk_id = details::get_chunk_id(aligned_size);
-      if ((mem = free_chunks_[chunk_id].get_mem())) {
-        memory_debug("allocate %d, chunk found, allocated address %p\n", aligned_size, mem);
-      } else if ((mem = get_from_pool(aligned_size, true))) {
-        memory_debug("allocate %d, chunk not found, allocated address from pool %p\n", aligned_size, mem);
-      } else {
-        mem = allocate_from_fallback_resource(aligned_size);
+      mem = try_allocate_small_piece(aligned_size);
+      if (!mem) {
+        mem = allocate_small_piece_from_fallback_resource(aligned_size);
       }
     } else {
-      if (details::memory_chunk_tree::tree_node *piece = huge_pieces_.extract(aligned_size)) {
-        mem = piece;
-        const size_type real_size = details::memory_chunk_tree::get_chunk_size(piece);
-        if (const size_type left = real_size - aligned_size) {
-          put_memory_back(static_cast<char *>(mem) + aligned_size, left);
-        }
-        memory_debug("allocate %d, huge chunk (%ud) found, allocated address %p\n", aligned_size, real_size, mem);
-      } else {
-        mem = get_from_pool(aligned_size);
-        memory_debug("allocate %d, huge chunk not found, allocated address from pool %p\n", aligned_size, mem);
+      mem = allocate_huge_piece(aligned_size, true);
+      if (!mem) {
+        mem = perform_defragmentation_and_allocate_huge_piece(aligned_size);
       }
     }
 
@@ -71,15 +60,48 @@ public:
   void perform_defragmentation() noexcept;
 
 private:
-  void *allocate_from_fallback_resource(size_type aligned_size) noexcept;
+  void *try_allocate_small_piece(size_type aligned_size) noexcept {
+    const auto chunk_id = details::get_chunk_id(aligned_size);
+    auto *mem = free_chunks_[chunk_id].get_mem();
+    if (mem) {
+      --stats_.small_memory_pieces;
+      memory_debug("allocate %d, chunk found, allocated address %p\n", aligned_size, mem);
+      return mem;
+    }
+    mem = get_from_pool(aligned_size, true);
+    memory_debug("allocate %d, chunk not found, allocated address from pool %p\n", aligned_size, mem);
+    return mem;
+  }
+
+  void *allocate_huge_piece(size_type aligned_size, bool safe) noexcept {
+    void *mem = nullptr;
+    if (details::memory_chunk_tree::tree_node *piece = huge_pieces_.extract(aligned_size)) {
+      --stats_.huge_memory_pieces;
+      const size_type real_size = details::memory_chunk_tree::get_chunk_size(piece);
+      mem = piece;
+      if (const size_type left = real_size - aligned_size) {
+        put_memory_back(static_cast<char *>(mem) + aligned_size, left);
+      }
+      memory_debug("allocate %d, huge chunk (%ud) found, allocated address %p\n", aligned_size, real_size, mem);
+      return piece;
+    }
+    mem = get_from_pool(aligned_size, safe);
+    memory_debug("allocate %d, huge chunk not found, allocated address from pool %p\n", aligned_size, mem);
+    return mem;
+  }
+
+  void *allocate_small_piece_from_fallback_resource(size_type aligned_size) noexcept;
+  void *perform_defragmentation_and_allocate_huge_piece(size_type aligned_size) noexcept;
 
   void put_memory_back(void *mem, size_type size) noexcept {
     if (!monotonic_buffer_resource::put_memory_back(mem, size)) {
       if (size < MAX_CHUNK_BLOCK_SIZE_) {
         size_type chunk_id = details::get_chunk_id(size);
         free_chunks_[chunk_id].put_mem(mem);
+        ++stats_.small_memory_pieces;
       } else {
         huge_pieces_.insert(mem, size);
+        ++stats_.huge_memory_pieces;
       }
     }
   }

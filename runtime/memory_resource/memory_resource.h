@@ -35,7 +35,18 @@ public:
 
   size_type reserved{0}; // reserved memory
 
-  void write_stats_to(stats_t *stats, const char *prefix, bool write_reserved = true) const noexcept;
+  size_t defragmentation_calls{0}; // the number of defragmentation process calls
+
+  size_t huge_memory_pieces{0}; // the number of huge memory pirces (in rb tree)
+  size_t small_memory_pieces{0}; // the number of small memory pieces (in lists)
+
+
+  enum : size_t {
+    ADD_RESERVED = 0x001,
+    ADD_DEFRAGMENTATION_CALLS = 0x010,
+    ADD_PIECES_COUNT = 0x100
+  };
+  void write_stats_to(stats_t *stats, const char *prefix, size_t flags = 0) const noexcept;
 };
 
 } // namespace memory_resource
