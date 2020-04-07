@@ -2286,8 +2286,10 @@ void start_server() {
 }
 
 void set_instance_cache_memory_limit(dl::size_type limit);
-void init_php_scripts();
-void global_init_php_scripts();
+void init_php_scripts() noexcept;
+void global_init_php_scripts() noexcept;
+const char *get_php_scripts_version() noexcept;
+
 
 void init_all() {
   srand48((long)cycleclock_now());
@@ -2319,12 +2321,6 @@ void init_all() {
 
   init_confdata_binlog_reader();
 }
-
-/*
- *
- *    MAIN
- *
- */
 
 void init_logname(const char *src) {
   if (!std::strchr(src, '%')) {
@@ -2561,6 +2557,11 @@ int main_args_handler(int i) {
       set_confdata_memory_limit(static_cast<dl::size_type>(confdata_memory_limit));
       return 0;
     }
+    case 2006: {
+      printf("%s\n", get_php_scripts_version());
+      exit(0);
+    }
+
     default:
 
 
@@ -2622,6 +2623,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("tasks-config", required_argument, 'S', "get lease worker settings from config file: mode and actor");
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
+  parse_option("php-version", no_argument, 2006, "show the compiled php code version and exit");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

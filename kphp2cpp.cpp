@@ -120,6 +120,9 @@ int parse_args_f(int i) {
     case 2009:
       env->set_gen_tl_internals();
       break;
+    case 2010:
+      env->set_php_code_version(optarg);
+      break;
     default:
       return -1;
   }
@@ -164,6 +167,7 @@ int main(int argc, char *argv[]) {
   parse_option("no-index-file", no_argument, 2007, "Forbid to use index file");
   parse_option("enable-global-vars-memory-stats", no_argument, 2008, "Enable an ability to get global vars memory stats");
   parse_option("gen-tl-internals", no_argument, 2009, "Generate storers and fetchers for internal tl functions. Useless if --tl-schema is not provided");
+  parse_option("php-code-version", required_argument, 2010, "Specify the compiled php code version");
   parse_engine_options_long(argc, argv, parse_args_f);
 
 

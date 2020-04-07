@@ -64,6 +64,8 @@ private:
   string cxx_flags_sha256_;
   color_settings color_{auto_colored};
 
+  std::string php_code_version_;
+
   void update_cxx_flags_sha256();
 
 public:
@@ -154,6 +156,9 @@ public:
   const string &get_version() const;
   bool is_static_lib_mode() const;
   color_settings get_color_settings() const;
+  void set_php_code_version(std::string &&version);
+  const std::string &get_php_code_version() const;
+
   const string &get_tl_namespace_prefix() const;
   const string &get_tl_classname_prefix() const;
 

@@ -493,6 +493,8 @@ bool KphpEnviroment::init() {
     color_ = auto_colored;
   }
 
+  init_env_var(&php_code_version_, "KPHP_PHP_CODE_VERSION", "unknown");
+
   string user_cxx_flags;
   init_env_var(&user_cxx_flags, "CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
   init_env_var(&cxx_, "CXX", "g++");
@@ -580,6 +582,7 @@ void KphpEnviroment::debug() const {
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
             "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
+            "KPHP_PHP_CODE_VERSION=[" << get_php_code_version() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
             "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
@@ -634,6 +637,14 @@ std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename
 
 KphpEnviroment::color_settings KphpEnviroment::get_color_settings() const {
   return color_;
+}
+
+void KphpEnviroment::set_php_code_version(std::string &&version_tag) {
+  php_code_version_ = std::move(version_tag);
+}
+
+const std::string &KphpEnviroment::get_php_code_version() const {
+  return php_code_version_;
 }
 
 const std::string &KphpEnviroment::get_tl_namespace_prefix() const {

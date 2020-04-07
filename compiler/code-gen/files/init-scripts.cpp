@@ -5,6 +5,7 @@
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
+#include "compiler/code-gen/raw-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 
@@ -38,6 +39,10 @@ void StaticInit::compile(CodeGenerator &W) const {
   if (G->env().is_static_lib_mode()) {
     FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
+    FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN
+                                  << "return " << RawString(G->env().get_php_code_version()) << ";" << NL
+                                  << END << NL << NL;
+
     FunctionSignatureGenerator(W) << ("void global_init_php_scripts() ") << BEGIN;
     for (LibPtr lib: G->get_libs()) {
       if (lib && !lib->is_raw_php()) {
