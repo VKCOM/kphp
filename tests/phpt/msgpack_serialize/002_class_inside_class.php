@@ -36,7 +36,7 @@ class InstanceHolder {
 
     /**
      * @kphp-serialized-field 3
-     * @var \tuple((IntHolder[]|false)[][],StringHolder)
+     * @var \tuple((IntHolder[] |   false) [][],StringHolder)  some comment
      */
     public $tuple_holders_int_string_f;
 

@@ -269,7 +269,7 @@ function instance_deserialize(string $packed_str, $type_of_instance) {
   $unpacked_array = MessagePack::unpack($packed_str);
 
   $instance_parser = new InstanceParser($type_of_instance);
-  return $instance_parser->from_unpacked_array($unpacked_array);
+  return $instance_parser->fromUnpackedArray($unpacked_array);
 }
 
 function msgpack_serialize($value) : string {
