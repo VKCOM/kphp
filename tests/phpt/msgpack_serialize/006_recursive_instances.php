@@ -25,9 +25,6 @@ $a = new A();
 $a->b = new B();
 $a->b->a = $a;
 
-try {
-    $serialized = instance_serialize($a);
-} catch (Exception $e) {
-    var_dump($e->getMessage());
-}
+$serialized = instance_serialize($a);
+var_dump(is_null($serialized));
 

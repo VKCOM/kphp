@@ -237,13 +237,14 @@ struct CheckInstanceDepth {
 
   CheckInstanceDepth() {
     depth++;
-    if (depth > max_depth) {
-      THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("maximum depth of nested instances exceeded")));
-    }
   }
 
   CheckInstanceDepth(const CheckInstanceDepth&) = delete;
   CheckInstanceDepth& operator=(const CheckInstanceDepth&) = delete;
+
+  static bool is_exceeded() {
+    return depth > max_depth;
+  }
 
   ~CheckInstanceDepth() {
     depth--;
@@ -274,7 +275,9 @@ struct pack<class_instance<T>> {
   template <typename Stream>
   packer<Stream> &operator()(msgpack::packer<Stream> &packer, const class_instance<T> &instance) const noexcept {
     CheckInstanceDepth check_depth;
-    CHECK_EXCEPTION(return packer);
+    if (CheckInstanceDepth::is_exceeded()) {
+      return packer;
+    }
     if (instance.is_null()) {
       packer.pack_nil();
     } else {
@@ -290,21 +293,25 @@ struct pack<class_instance<T>> {
 } // namespace msgpack
 
 template<class T>
-inline string f$msgpack_serialize(const T &value) noexcept {
+inline Optional<string> f$msgpack_serialize(const T &value) noexcept {
   auto clean_buffer = vk::finally(f$ob_end_clean);
 
   f$ob_start();
   php_assert(f$ob_get_length().has_value() && f$ob_get_length().val() == 0);
   msgpack::pack(*coub, value);
-  CHECK_EXCEPTION(return {});
 
   return std::move(coub->str());
 }
 
 template<class InstanceClass>
-inline string f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
+inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
   msgpack::adaptor::CheckInstanceDepth::depth = 0;
-  return f$msgpack_serialize(instance);
+  auto result = f$msgpack_serialize(instance);
+  if (msgpack::adaptor::CheckInstanceDepth::is_exceeded()) {
+    f$warning(string("maximum depth of nested instances exceeded"));
+    return {};
+  };
+  return result;
 }
 
 /**
@@ -322,18 +329,24 @@ inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
   }
 
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
+  string err_msg;
   try {
     msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size());
     msgpack::object obj = oh.get();
 
     return obj.as<ResultType>();
   } catch (msgpack::type_error &e) {
-    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("Unknown type found during deserialization")));
+    err_msg = string("Unknown type found during deserialization");
   } catch (msgpack::unpack_error &e) {
-    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string(e.what())));
+    err_msg = string(e.what());
   } catch (...) {
-    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("something went wrong in deserialization, pass it to KPHP|Team")));
+    err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");
   }
+
+  if (!err_msg.empty()) {
+    f$warning(err_msg);
+    return {};
+  };
 
   return {};
 }

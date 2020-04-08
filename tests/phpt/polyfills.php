@@ -14,7 +14,7 @@ function classAutoLoader($class) {
   } else if (strpos($filename, "VK") === 0) {
     $filename = __DIR__."/".$filename;
   } else {
-    list($script_path) = get_included_files();
+    [$script_path] = get_included_files();
     $filename = dirname($script_path)."/".$filename;
   }
 
@@ -258,27 +258,48 @@ function array_find(array $ar, callable $clbk) {
   return [null, null];
 }
 
-function instance_serialize($instance) : string {
-  ClassTransformer::$depth = 0;
-  $packer = new Packer();
-  $packer = $packer->extendWith(new ClassTransformer());
-  return $packer->pack($instance);
+function warning($str) {
+  trigger_error($str, E_USER_WARNING);
+}
+
+function run_or_warning(callable $fun) {
+  try {
+    return $fun();
+  } catch (Throwable $e) {
+    warning($e->getMessage() . '\n' . $e->getTraceAsString());
+    return null;
+  }
+}
+
+function instance_serialize($instance) : ?string {
+  return run_or_warning(function() use ($instance) {
+    ClassTransformer::$depth = 0;
+    $packer                  = new Packer();
+    $packer                  = $packer->extendWith(new ClassTransformer());
+    return $packer->pack($instance);
+  });
 }
 
 function instance_deserialize(string $packed_str, $type_of_instance) {
-  $unpacked_array = MessagePack::unpack($packed_str);
+  return run_or_warning(function() use($packed_str, $type_of_instance) {
+    $unpacked_array = MessagePack::unpack($packed_str);
 
-  $instance_parser = new InstanceParser($type_of_instance);
-  return $instance_parser->fromUnpackedArray($unpacked_array);
+    $instance_parser = new InstanceParser($type_of_instance);
+    return $instance_parser->fromUnpackedArray($unpacked_array);
+  });
 }
 
 function msgpack_serialize($value) : string {
-  $packer = new Packer();
-  return $packer->pack($value);
+  return run_or_warning(function() use ($value) {
+    $packer = new Packer();
+    return $packer->pack($value);
+  });
 }
 
 function msgpack_deserialize(string $packed_str) {
-  return MessagePack::unpack($packed_str);
+  return run_or_warning(function() use ($packed_str) {
+    return MessagePack::unpack($packed_str);
+  });
 }
 
 if (false)

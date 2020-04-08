@@ -34,12 +34,9 @@ function run() {
     $serialized = instance_serialize($b);
     var_dump(base64_encode($serialized));
 
-    try {
-        $tmp = substr($serialized, 1, strlen($serialized));
-        instance_deserialize($tmp, PrimitiveHolder::class);
-    } catch (Exception $e) {
-        var_dump($e->getMessage());
-    }
+    $tmp = substr($serialized, 1, strlen($serialized));
+    $res = instance_deserialize($tmp, PrimitiveHolder::class);
+    var_dump(is_null($res));
 
     // causes false positive stack-overflow in asan mode with gcc < 7
     // try {

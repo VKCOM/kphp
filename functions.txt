@@ -328,7 +328,7 @@ function unserialize ($v ::: string) ::: var;
 function json_encode ($v ::: Any, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
-function msgpack_serialize($v ::: var) ::: string;
+function msgpack_serialize($v ::: var) ::: string | null;
 function msgpack_deserialize($v ::: string) ::: var;
 
 define('PREG_PATTERN_ORDER', 1);
@@ -1260,9 +1260,8 @@ function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;
 function instance_cache_clear() ::: bool;
 
-/** @kphp-extern-func-info can_throw */
-function instance_serialize($instance ::: Any) ::: string;
-/** @kphp-extern-func-info cpp_template_call can_throw */
+function instance_serialize($instance ::: Any) ::: string | null;
+/** @kphp-extern-func-info cpp_template_call */
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 
 function confdata_get_value($key ::: string) ::: var;
