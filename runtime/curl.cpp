@@ -528,7 +528,9 @@ bool curl_setopt(EasyContext *easy_context, int option, const var &value) noexce
       {CURLOPT_MAX_RECV_SPEED_LARGE, off_option_setter},
       {CURLOPT_MAX_SEND_SPEED_LARGE, off_option_setter},
 
-      {CURLOPT_PUT,                  long_option_setter}
+      {CURLOPT_PUT,                  long_option_setter},
+
+      {CURLOPT_RESOLVE,              linked_list_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;

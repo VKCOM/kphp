@@ -40,6 +40,7 @@ function test_linked_list_options() {
   var_dump(curl_setopt($c, CURLOPT_PREQUOTE, ["foo", "bar", "baz"]));
   var_dump(curl_setopt($c, CURLOPT_QUOTE, [true, false]));
   var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, []));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["www.example.com:8081:127.0.0.1"]));
 
   // bad values
   var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, "bad value"));
