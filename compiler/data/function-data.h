@@ -2,9 +2,11 @@
 
 #include <map>
 #include <set>
+#include <thread>
 
 #include "auto/compiler/vertex/vertex-op_function.h"
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/copyable-atomic.h"
 
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
@@ -68,8 +70,10 @@ public:
 
   std::vector<std::pair<std::string, vk::intrusive_ptr<Assumption>>> assumptions_for_vars;   // (var_name, assumption)[]
   vk::intrusive_ptr<Assumption> assumption_for_return;
-  int assumptions_inited_args = 0;
-  volatile int assumptions_inited_return = 0;
+
+  AssumptionStatus assumption_args_status{AssumptionStatus::unknown};
+  vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
+  vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
 
   string src_name, header_name;
   string subdir;

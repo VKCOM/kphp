@@ -17,6 +17,7 @@
  *
  * По коду, анализ assumption'ов вызывается только у тех функций и переменных, которые используются при -> операторе.
  */
+#include <thread>
 
 #include "compiler/class-assumptions.h"
 
@@ -372,7 +373,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     return false;
   }
 
-  if (f->assumptions_inited_args != 2) {
+  if (f->assumption_args_status != AssumptionStatus::initialized) {
     kphp_error(false, fmt_format("function {} was not instantiated yet, please add `@kphp-return` tag to function which called this function", f->get_human_readable_name()));
     return false;
   }
@@ -441,7 +442,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
  * Вызывается единожды на функцию.
  */
 void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root) {
-  assert (f->assumptions_inited_return == 1);
+  assert (f->assumption_return_status == AssumptionStatus::processing);
 //  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
 
   if (!f->phpdoc_str.empty()) {
@@ -494,7 +495,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
  * Единожды на класс вызывается эта функция, которая парсит все phpdoc'и ко всем var'ам.
  */
 void init_assumptions_for_all_fields(ClassPtr c) {
-  assert (c->assumptions_inited_vars == 1);
+  assert (c->assumption_vars_status == AssumptionStatus::processing);
 //  printf("[%d] init_assumptions_for_all_fields of %s\n", get_thread_id(), c->name.c_str());
 
   c->members.for_each([&](ClassMemberInstanceField &f) {
@@ -516,9 +517,9 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
     return AssumInstance::create(f->class_id);
   }
 
-  if (f->assumptions_inited_args == 0) {
+  if (f->assumption_args_status == AssumptionStatus::unknown) {
     init_assumptions_for_arguments(f, f->root);
-    f->assumptions_inited_args = 2;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
+    f->assumption_args_status = AssumptionStatus::initialized;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
   }
 
   const auto &existing = assumption_get_for_var(f, var_name);
@@ -553,6 +554,17 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
   return not_instance;
 }
 
+namespace {
+template<class Atomic>
+void assumption_busy_wait(Atomic &status_holder) noexcept {
+  const auto start = std::chrono::steady_clock::now();
+  while (status_holder != AssumptionStatus::initialized) {
+    kphp_assert(std::chrono::steady_clock::now() - start < std::chrono::seconds{30});
+    std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+  }
+}
+} // namespace
+
 /*
  * Высокоуровневая функция, определяющая, что возвращает f.
  * Включает кеширование повторных вызовов и init на f при первом вызове.
@@ -582,15 +594,20 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
     return AssumInstance::create(f->class_id);
   }
 
-  if (f->assumptions_inited_return == 0) {
-    if (__sync_bool_compare_and_swap(&f->assumptions_inited_return, 0, 1)) {
-      init_assumptions_for_return(f, f->root);
-      __sync_synchronize();
-      f->assumptions_inited_return = 2;
+  auto expected = AssumptionStatus::unknown;
+  if (f->assumption_return_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
+    kphp_assert(f->assumption_return_processing_thread == std::thread::id{});
+    f->assumption_return_processing_thread = std::this_thread::get_id();
+    init_assumptions_for_return(f, f->root);
+    f->assumption_return_status = AssumptionStatus::initialized;
+  } else if (expected == AssumptionStatus::processing) {
+    if (f->assumption_return_processing_thread == std::this_thread::get_id()) {
+      // Проверяем рекурсию в рамках одного потока, поэтому порядок работы с атомарными операциями не так важен.
+      // Если другой поток изменит assumption_return_status но не успеет выставить assumption_return_processing_thread,
+      // то мы все равно не попадем в этот if, так как assumption_return_processing_thread будет иметь дефолтное значение
+      return AssumNotInstance::create();
     }
-  }
-  while (f->assumptions_inited_return != 2) {
-    __sync_synchronize();
+    assumption_busy_wait(f->assumption_return_status);
   }
 
   return f->assumption_for_return;
@@ -602,15 +619,12 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
  * Может вернуть нулевой assumption, если переменной нет.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
-  if (c->assumptions_inited_vars == 0) {
-    if (__sync_bool_compare_and_swap(&c->assumptions_inited_vars, 0, 1)) {
-      init_assumptions_for_all_fields(c);   // как инстанс-переменные, так и статические
-      __sync_synchronize();
-      c->assumptions_inited_vars = 2;
-    }
-  }
-  while (c->assumptions_inited_vars != 2) {
-    __sync_synchronize();
+  auto expected = AssumptionStatus::unknown;
+  if (c->assumption_vars_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
+    init_assumptions_for_all_fields(c);   // как инстанс-переменные, так и статические
+    c->assumption_vars_status = AssumptionStatus::initialized;
+  } else if (expected == AssumptionStatus::processing) {
+    assumption_busy_wait(c->assumption_vars_status);
   }
 
   return assumption_get_for_var(c, var_name);

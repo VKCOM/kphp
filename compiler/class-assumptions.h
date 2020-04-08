@@ -9,6 +9,12 @@
 
 class TypeData;
 
+enum class AssumptionStatus {
+  unknown,
+  processing,
+  initialized
+};
+
 class Assumption : public vk::thread_safe_refcnt<Assumption> {
 public:
   virtual ~Assumption() = default;
