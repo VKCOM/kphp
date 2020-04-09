@@ -38,6 +38,10 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
   res->update_location_in_body();
   res->name_gen_map = {};
 
+  res->assumption_for_return = {};
+  res->assumption_return_status = AssumptionStatus::unknown;
+  res->assumption_return_processing_thread = std::thread::id{};
+
   new_root->func_id = res;
 
   return res;
