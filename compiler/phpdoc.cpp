@@ -403,6 +403,7 @@ VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
 VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
   VertexPtr result = parse_type_array();
   bool is_raw_bool = result->type() == op_type_expr_type && result->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
+  bool is_raw_null = result->type() == op_type_expr_type && result->type_help == tp_Null && (cur_tok - 1)->type() == tok_null;
   while (cur_tok->type() == tok_or) {
     cur_tok++;
     // lhs|rhs => lca(lhs,rhs)
@@ -410,7 +411,8 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
     result = VertexAdaptor<op_type_expr_lca>::create(result, rhs);
 
     is_raw_bool |= rhs->type() == op_type_expr_type && rhs->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
-    if (is_raw_bool) {
+    is_raw_null |= rhs->type() == op_type_expr_type && rhs->type_help == tp_Null && (cur_tok - 1)->type() == tok_null;
+    if (is_raw_bool && !is_raw_null) {
       throw std::runtime_error("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)");
     }
   }
