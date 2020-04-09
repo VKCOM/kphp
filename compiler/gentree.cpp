@@ -1473,7 +1473,7 @@ VertexAdaptor<op_function> GenTree::get_function(const vk::string_view &phpdoc_s
   } else {
     CE(!kphp_error(cur_function->modifiers.is_abstract() || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
-    cur_function->type = FunctionData::func_extern;
+    cur_function->type = processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
@@ -1493,6 +1493,7 @@ VertexAdaptor<op_function> GenTree::get_function(const vk::string_view &phpdoc_s
       const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
                                       phpdoc_str.find("@kphp-lib-export") != std::string::npos;
       const bool auto_require = cur_function->is_extern()
+                                || cur_function->modifiers.is_abstract()
                                 || cur_function->modifiers.is_instance()
                                 || kphp_required_flag;
       G->register_and_require_function(cur_function, parsed_os, auto_require);

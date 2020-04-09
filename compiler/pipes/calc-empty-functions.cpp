@@ -71,7 +71,7 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
     return f->body_seq;
   }
 
-  if (f->type == FunctionData::func_extern ||
+  if (f->is_extern() ||
       f->type == FunctionData::func_switch ||
       f->type == FunctionData::func_class_holder ||
       f->root->type() != op_function ||

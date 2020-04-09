@@ -366,6 +366,8 @@ private:
       kphp_fail();
       return call;
     }
+    bool func_is_not_empty = !func->root->cmd()->empty() || func->local_name() == ClassData::NAME_OF_VIRT_CLONE;
+    kphp_error(func->is_extern() || func_is_not_empty, fmt_format("Usage of function with empty body: {}", func->get_human_readable_name()));
 
     if (auto new_call = process_varargs(call.as<op_func_call>(), func)) {
       call = new_call;
