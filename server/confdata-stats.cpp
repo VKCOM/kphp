@@ -6,6 +6,12 @@ double to_seconds(std::chrono::nanoseconds t) noexcept {
   return std::chrono::duration<double>(t).count();
 }
 
+void write_if_not_zero(stats_t *stats, const char *name, size_t value) noexcept {
+  if (value) {
+    add_histogram_stat_long(stats, name, value);
+  }
+}
+
 } // namespace
 
 void ConfdataStats::on_update(const confdata_sample_storage &new_confdata, size_t previous_garbage_size) noexcept {
@@ -77,4 +83,21 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   add_histogram_stat_long(stats, "confdata.vars_in_garbage_last", last_garbage_size);
   add_histogram_stat_long(stats, "confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
   add_histogram_stat_double(stats, "confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
+
+  write_if_not_zero(stats, "confdata.binlog_events.delete", event_counters.delete_events);
+  write_if_not_zero(stats, "confdata.binlog_events.touch", event_counters.touch_events);
+
+  write_if_not_zero(stats, "confdata.binlog_events.add", event_counters.add_events);
+  write_if_not_zero(stats, "confdata.binlog_events.set", event_counters.set_events);
+  write_if_not_zero(stats, "confdata.binlog_events.replace", event_counters.replace_events);
+
+  write_if_not_zero(stats, "confdata.binlog_events.add_forever", event_counters.add_forever_events);
+  write_if_not_zero(stats, "confdata.binlog_events.set_forever", event_counters.set_forever_events);
+  write_if_not_zero(stats, "confdata.binlog_events.replace_forever", event_counters.replace_forever_events);
+
+  write_if_not_zero(stats, "confdata.binlog_events.get", event_counters.get_events);
+  write_if_not_zero(stats, "confdata.binlog_events.incr", event_counters.incr_events);
+  write_if_not_zero(stats, "confdata.binlog_events.incr_tiny", event_counters.incr_tiny_events);
+  write_if_not_zero(stats, "confdata.binlog_events.append", event_counters.append_events);
+  write_if_not_zero(stats, "confdata.binlog_events.unsupported_total", event_counters.unsupported_total_events);
 }

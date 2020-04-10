@@ -13,60 +13,14 @@
 #include "common/server/init-snapshot.h"
 #include "common/wrappers/string_view.h"
 #include "kfs/kfs.h"
-#include "pmemcached/kdb-pmemcached-binlog.h"
-#include "pmemcached/pmemcached-index-ram.h"
 
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
 #include "runtime/kphp_core.h"
-#include "runtime/memcache.h"
+#include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 
 namespace {
-
-struct lev_confdata_delete : lev_pmemcached_delete {
-  constexpr static lev_type_t MAGIC = LEV_PMEMCACHED_DELETE;
-
-  int get_extra_bytes() const {
-    return key_len + 1 + offsetof(struct lev_pmemcached_delete, key) - sizeof(lev_pmemcached_delete);
-  }
-};
-
-struct lev_confdata_store : lev_pmemcached_store {
-  constexpr static lev_type_t BASE_MAGIC = LEV_PMEMCACHED_STORE;
-
-  short get_flags() const noexcept { return flags; }
-  int get_delay() const noexcept { return delay; }
-};
-
-struct lev_confdata_store_forever : lev_pmemcached_store_forever {
-  constexpr static lev_type_t BASE_MAGIC = LEV_PMEMCACHED_STORE_FOREVER;
-
-  short get_flags() const noexcept { return 0; }
-  int get_delay() const noexcept { return -1; }
-};
-
-struct confdata_store_index : index_entry {
-  constexpr static lev_type_t BASE_MAGIC = 0;
-
-  short get_flags() const noexcept { return flags; }
-  int get_delay() const noexcept { return delay; }
-};
-
-template<class BASE, int OPERATION>
-struct lev_confdata_store_template : BASE {
-  constexpr static lev_type_t MAGIC = BASE::BASE_MAGIC + OPERATION;
-
-  int get_extra_bytes() const {
-    return BASE::key_len + BASE::data_len + 1 + offsetof(BASE, data) - sizeof(BASE);
-  }
-
-  var get_value_as_var() const noexcept {
-    const char *mem = BASE::data + BASE::key_len;
-    const int size = BASE::data_len;
-    return size <= 0 ? var{string{}} : mc_get_value(mem, size, BASE::get_flags());
-  }
-};
 
 class ConfdataBinlogReplayer : vk::binlog::replayer {
 public:
@@ -108,7 +62,7 @@ public:
 
     loading_from_snapshot_ = true;
     for (int i = 0; i < nrecords; i++) {
-      using entry_type = lev_confdata_store_template<confdata_store_index, pmct_set>;
+      using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
       store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
     }
     loading_from_snapshot_ = false;
@@ -119,10 +73,19 @@ public:
     generic_operation(key, key_len, -1, [this] { return delete_processing_element(); });
   }
 
+  void touch_element(const lev_confdata_touch &E) noexcept {
+    generic_operation(E.key, E.key_len, E.delay, [] { return true; });
+  }
+
   template<class BASE, int OPERATION>
-  void store_element(const lev_confdata_store_template<BASE, OPERATION> &E) noexcept {
+  void store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     // даже не пытайся захватить E по значению, он попытается её скопировать и будет очень грустно :(
     generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
+  }
+
+  void unsupported_operation(const char *operation_name, const char *key, int key_len) noexcept {
+    ++event_counters_.unsupported_total_events;
+    kprintf("Confdata binlog reading error: got unsupported operation '%s' with key '%.*s'\n", operation_name, std::max(key_len, 0), key);
   }
 
   void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {
@@ -197,13 +160,63 @@ public:
     return element_delays_.size();
   }
 
+  const ConfdataStats::EventCounters &get_event_counters() const noexcept {
+    return event_counters_;
+  }
+
 private:
   ConfdataBinlogReplayer() noexcept {
-    add_handler([this](const lev_confdata_delete &E) { this->delete_element(E.key, E.key_len); });
-    add_handler([this](const lev_confdata_store_template<lev_confdata_store, pmct_set> &E) { this->store_element(E); });
-    add_handler([this](const lev_confdata_store_template<lev_confdata_store_forever, pmct_set> &E) { this->store_element(E); });
-    add_handler([this](const lev_confdata_store_template<lev_confdata_store, pmct_add> &E) { this->store_element(E); });
-    add_handler([this](const lev_confdata_store_template<lev_confdata_store_forever, pmct_add> &E) { this->store_element(E); });
+    add_handler([this](const lev_confdata_delete &E) {
+      ++event_counters_.delete_events;
+      this->delete_element(E.key, E.key_len);
+    });
+    add_handler([this](const lev_confdata_touch &E) {
+      ++event_counters_.touch_events;
+      this->touch_element(E);
+    });
+
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_add> &E) {
+      ++event_counters_.add_events;
+      this->store_element(E);
+    });
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_set> &E) {
+      ++event_counters_.set_events;
+      this->store_element(E);
+    });
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_replace> &E) {
+      ++event_counters_.replace_events;
+      this->store_element(E);
+    });
+
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_add> &E) {
+      ++event_counters_.add_forever_events;
+      this->store_element(E);
+    });
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_set> &E) {
+      ++event_counters_.set_forever_events;
+      this->store_element(E);
+    });
+    add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_replace> &E) {
+      ++event_counters_.replace_forever_events;
+      this->store_element(E);
+    });
+
+    add_handler([this](const lev_confdata_get &E) {
+      ++event_counters_.get_events;
+      this->unsupported_operation("get", E.key, E.key_len);
+    });
+    add_handler([this](const lev_confdata_incr &E) {
+      ++event_counters_.incr_events;
+      this->unsupported_operation("incr", E.key, E.key_len);
+    });
+    add_handler_range([this](const lev_confdata_incr_tiny_range &E) {
+      ++event_counters_.incr_tiny_events;
+      this->unsupported_operation("incr tiny", E.key, E.key_len);
+    });
+    add_handler([this](const lev_confdata_append &E) {
+      ++event_counters_.append_events;
+      this->unsupported_operation("append", E.data, E.key_len);
+    });
   }
 
   template<typename F>
@@ -293,7 +306,7 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  bool store_processing_element(const lev_confdata_store_template<BASE, OPERATION> &E) noexcept {
+  bool store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     auto first_key_it = find_updating_confdata_first_key_element();
     bool element_exists = true;
     if (first_key_it == updating_confdata_storage_->end()) {
@@ -302,10 +315,9 @@ private:
       first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), var{});
     }
 
-    const bool element_can_be_replaced = can_element_be_replaced(E);
     // для ключей без '.'
     if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
-      if (!element_can_be_replaced && element_exists) {
+      if (!can_element_be_saved(E, element_exists)) {
         return false;
       }
 
@@ -322,7 +334,7 @@ private:
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
     element_exists = element_exists && array_for_second_key.has_key(processing_key_.get_second_key());
-    if (!element_can_be_replaced && element_exists) {
+    if (!can_element_be_saved(E, element_exists)) {
       return false;
     }
 
@@ -411,16 +423,22 @@ private:
     }
   }
 
-  template<class BASE>
-  bool can_element_be_replaced(const lev_confdata_store_template<BASE, pmct_set> &) const noexcept {
-    return true;
-  }
-
-  template<class BASE>
-  bool can_element_be_replaced(const lev_confdata_store_template<BASE, pmct_add> &E) const noexcept {
+  template<class BASE, int OPERATION>
+  bool can_element_be_saved(const lev_confdata_store_wrapper<BASE, OPERATION> &E, bool element_exists) const noexcept {
+    static_assert(vk::any_of_equal(OPERATION, pmct_add, pmct_set, pmct_replace), "add or set or replace are expected");
+    if (OPERATION == pmct_set) {
+      return true;
+    }
+    if (!element_exists) {
+      // если элемент не существует, мы можем сделать pmct_add, но не можем сделать pmct_replace
+      return OPERATION == pmct_add;
+    }
+    // элемент существует, проверим не протух ли он
     vk::string_view key{E.data, static_cast<size_t>(E.key_len)};
     auto it = element_delays_.find(key);
-    return it == element_delays_.end() ? true : it->second < get_now();
+    // если элемента нет в element_delays_, значит он точно не протух
+    const bool element_outdated = it != element_delays_.end() && it->second < get_now();
+    return element_outdated ? OPERATION == pmct_add : OPERATION == pmct_replace;
   }
 
   void update_element_in_expiration_trace(vk::string_view key, int delay) noexcept {
@@ -456,7 +474,7 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  const var &get_processing_value(const lev_confdata_store_template<BASE, OPERATION> &E) {
+  const var &get_processing_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E) {
     if (processing_value_.is_null()) {
       processing_value_ = E.get_value_as_var();
     }
@@ -474,6 +492,7 @@ private:
   var last_element_in_garbage_;
   bool confdata_has_any_updates_{false};
   bool loading_from_snapshot_{false};
+  ConfdataStats::EventCounters event_counters_;
 
   ConfdataKeyMaker processing_key_;
   var processing_value_;
@@ -529,11 +548,18 @@ void init_confdata_binlog_reader() noexcept {
 
   auto &confdata_manager = ConfdataGlobalManager::get();
   confdata_manager.init(confdata_settings.memory_limit);
+
   dl::set_current_script_allocator_and_enable_it(confdata_manager.get_resource());
+  // engine_default_load_index и engine_default_read_binlog в случае проблем делают exit(1),
+  // что приводит к вызову всех деструкторов глобальных и статических переменных.
+  // Эта статическая переменная откатывает аллокатор конфдаты,
+  // чтобы другие глобальные и статические переменные могли нормально удалиться
+  static auto confdata_allocator_rollback = vk::finally([] {
+    dl::restore_current_script_allocator_and_disable_it();
+  });
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
   confdata_binlog_replayer.init(confdata_manager.get_resource());
-
   engine_default_load_index(confdata_settings.binlog_mask);
   engine_default_read_binlog();
   confdata_binlog_replayer.delete_expired_elements();
@@ -547,6 +573,7 @@ void init_confdata_binlog_reader() noexcept {
   confdata_manager.get_current().reset(std::move(loaded_confdata.new_confdata));
 
   vkprintf(1, "confdata loaded\n");
+  confdata_allocator_rollback.disable();
   dl::restore_current_script_allocator_and_disable_it();
 }
 
@@ -592,7 +619,9 @@ void confdata_binlog_update_cron() noexcept {
 void write_confdata_stats_to(stats_t *stats) noexcept {
   if (confdata_settings.is_enabled()) {
     auto &confdata_stats = ConfdataStats::get();
-    confdata_stats.elements_with_delay = ConfdataBinlogReplayer::get().get_elements_with_delay_count();
+    auto &binlog_replayer = ConfdataBinlogReplayer::get();
+    confdata_stats.elements_with_delay = binlog_replayer.get_elements_with_delay_count();
+    confdata_stats.event_counters = binlog_replayer.get_event_counters();
     confdata_stats.write_stats_to(stats, ConfdataGlobalManager::get().get_resource().get_memory_stats());
   }
 }

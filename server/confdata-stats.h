@@ -29,6 +29,26 @@ struct ConfdataStats : private vk::not_copyable {
   size_t two_dots_first_key_elements{0};
   size_t elements_with_delay{0};
 
+  struct EventCounters {
+    size_t delete_events{0};
+    size_t touch_events{0};
+
+    size_t add_events{0};
+    size_t set_events{0};
+    size_t replace_events{0};
+
+    size_t add_forever_events{0};
+    size_t set_forever_events{0};
+    size_t replace_forever_events{0};
+
+    size_t get_events{0};
+    size_t incr_events{0};
+    size_t incr_tiny_events{0};
+    size_t append_events{0};
+
+    size_t unsupported_total_events{0};
+  } event_counters;
+
   void on_update(const confdata_sample_storage &new_confdata, size_t previous_garbage_size) noexcept;
   void write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) noexcept;
 
