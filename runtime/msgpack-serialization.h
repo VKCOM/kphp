@@ -247,7 +247,9 @@ struct CheckInstanceDepth {
   }
 
   ~CheckInstanceDepth() {
-    depth--;
+    if (!is_exceeded()) {
+      depth--;
+    }
   }
 };
 
