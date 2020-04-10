@@ -40,6 +40,7 @@ public:
 
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
+  static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
   VertexAdaptor<op_string> generate_constant_field_class_value();
 
   bool test_expect(TokenType tp);
@@ -136,6 +137,7 @@ public:
                                                   FunctionPtr already_created_function = FunctionPtr{});
 
   static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name);
+  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args);
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args);
 
   VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);

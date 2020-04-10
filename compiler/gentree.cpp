@@ -44,10 +44,14 @@ Location GenTree::auto_location() const {
   return Location{this->line_num};
 }
 
-VertexAdaptor<op_string> GenTree::generate_constant_field_class_value() {
+VertexAdaptor<op_string> GenTree::generate_constant_field_class_value(ClassPtr klass) {
   auto value_of_const_field_class = VertexAdaptor<op_string>::create();
-  value_of_const_field_class->set_string(cur_class->name);
+  value_of_const_field_class->set_string(klass->name);
   return value_of_const_field_class;
+}
+
+VertexAdaptor<op_string> GenTree::generate_constant_field_class_value() {
+  return generate_constant_field_class_value(cur_class);
 }
 
 void GenTree::next_cur() {
@@ -504,12 +508,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       if (func_call->str_val == "Memcache") {
         func_call->set_string("McMemcache");
       }
-      auto alloc = VertexAdaptor<op_alloc>::create();
-      alloc->allocated_class_name = std::move(func_call->str_val);
-      func_call->str_val = ClassData::NAME_OF_CONSTRUCT;
-      res = process_arrow(alloc, func_call);
+
+      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next()).set_location(func_call);
       CE(res);
-      res->location = alloc->location = func_call->location;
       break;
     }
     case tok_func_name: {
@@ -1662,17 +1663,22 @@ VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr ins
   return call_method;
 }
 
-VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args) {
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args) {
   auto alloc = VertexAdaptor<op_alloc>::create();
-  alloc->allocated_class_name = allocated_class->name;
-  alloc->allocated_class = allocated_class;
-  args.insert(args.begin(), alloc);
-  auto constructor_call = VertexAdaptor<op_func_call>::create(std::move(args));
+  alloc->allocated_class_name = allocated_class_name;
+  auto constructor_call = VertexAdaptor<op_func_call>::create(alloc, std::move(args));
   constructor_call->str_val = ClassData::NAME_OF_CONSTRUCT;
-  constructor_call->func_id = allocated_class->construct_function;
   constructor_call->extra_type = op_ex_func_call_arrow;
 
   return constructor_call;
+}
+
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args) {
+  auto res_func_call = gen_constructor_call_with_args(allocated_class->name, std::move(args));
+  res_func_call->args()[0].as<op_alloc>()->allocated_class = allocated_class;
+  res_func_call->func_id = allocated_class->construct_function;
+
+  return res_func_call;
 }
 
 VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
