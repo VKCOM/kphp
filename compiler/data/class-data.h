@@ -169,6 +169,8 @@ public:
     return str_dependents;
   }
 
+  void register_defines() const;
+
 private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 

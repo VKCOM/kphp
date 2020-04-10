@@ -14,6 +14,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/data/define-data.h"
 
 const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
@@ -346,4 +347,14 @@ void ClassData::deeply_require_instance_memory_estimate_visitor() {
 void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name) {
   auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(class_name), '\\');
   str_dependents.emplace_back(type, full_class_name);
+}
+
+void ClassData::register_defines() const {
+  members.for_each([this](const ClassMemberConstant &c) {
+    auto data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
+    data->file_id = file_id;
+    data->access = c.access;
+    data->class_id = get_self();
+    G->register_define(DefinePtr(data));
+  });
 }
