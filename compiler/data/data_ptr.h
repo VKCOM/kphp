@@ -1,11 +1,12 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
 #include <functional>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "compiler/kphp_assert.h"
 
 template<class IdData>
 class Id {
@@ -47,7 +48,7 @@ public:
   }
 
   IdData &operator*() const {
-    assert (ptr != nullptr);
+    kphp_assert(ptr != nullptr);
     return *ptr;
   }
 
@@ -68,12 +69,12 @@ public:
   template<class AnotherIdData>
   Id<AnotherIdData> as() const {
     auto res = try_as<AnotherIdData>();
-    assert(res);
+    kphp_assert(res);
     return res;
   }
 
   IdData *operator->() const {
-    assert (ptr != nullptr);
+    kphp_assert(ptr != nullptr);
     return ptr;
   }
 

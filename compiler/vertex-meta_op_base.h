@@ -47,12 +47,12 @@ protected:
   bool check_range(int i) const { return 0 <= i && i < size(); }
 
   VertexPtr &ith(int i) {
-    assert (check_range(i));
+    kphp_assert(check_range(i));
     return arr()[-i];
   }
 
   const VertexPtr &ith(int i) const {
-    assert (check_range(i));
+    kphp_assert(check_range(i));
     return arr()[-i];
   }
 
@@ -147,7 +147,7 @@ public:
   }
 
   void raw_init(int real_n) {
-    assert (n == -1);
+    kphp_assert(n == -1);
     n = real_n;
     for (int i = 0; i < n; i++) {
       new(&ith(i)) VertexPtr();
@@ -155,7 +155,7 @@ public:
   }
 
   void raw_copy(const vertex_inner<meta_op_base> &from) {
-    assert (n == -1);
+    kphp_assert(n == -1);
     n = from.size();
     for (int i = 0; i < n; i++) {
       new(&ith(i)) VertexPtr(from.ith(i).clone());
