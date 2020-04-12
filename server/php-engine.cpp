@@ -1597,7 +1597,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       char buf[len];
       auto fetched_bytes = tl_fetch_data(buf, len);
       if (fetched_bytes == -1) {
-        client_rpc_error(c, req_id, TL_ERRNUM, TL_ERROR);
+        client_rpc_error(c, req_id, tl_fetch_error_code(), tl_fetch_error_string());
         return 0;
       }
       assert(fetched_bytes == len);
