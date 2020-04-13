@@ -125,7 +125,13 @@ FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return
  */
 FunctionPtr ClassData::add_virt_clone() {
   auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
-  return add_magic_method(NAME_OF_VIRT_CLONE, clone_this);
+  auto virt_clone = add_magic_method(NAME_OF_VIRT_CLONE, clone_this);
+  virt_clone->file_id = file_id;
+  return virt_clone;
+}
+
+void ClassData::add_class_constant() {
+  members.add_constant("class", GenTree::generate_constant_field_class_value(get_self()), AccessModifiers::public_);
 }
 
 void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
@@ -173,8 +179,9 @@ ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
     return {};
   }
 
-  if (get_self() == other) {
-    return get_self();
+  auto self = get_self();
+  if (self == other) {
+    return self;
   }
 
   auto get_parents_of = [&](ClassPtr klass) {
@@ -187,7 +194,7 @@ ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
     return parents;
   };
 
-  auto parents_of_self = get_parents_of(get_self());
+  auto parents_of_self = get_parents_of(self);
   auto parents_of_other = get_parents_of(other);
 
   auto first_diff_iterators = std::mismatch(parents_of_self.begin(), parents_of_self.end(),

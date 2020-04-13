@@ -189,7 +189,10 @@ public:
 
   bool has_any_instance_var() const;
   bool has_any_instance_method() const;
+  bool has_any_static_method() const;
   FunctionPtr get_constructor() const;
+
+  size_t count_of_instance_methods() const;
 
   const ClassMemberStaticMethod *get_static_method(vk::string_view local_name) const;
   const ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name) const;

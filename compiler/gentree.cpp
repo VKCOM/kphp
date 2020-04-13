@@ -1617,7 +1617,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   VertexPtr body_vertex = get_statement();    // это пустой op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
-  cur_class->members.add_constant("class", generate_constant_field_class_value(), AccessModifiers::public_);    // A::class
+  cur_class->add_class_constant(); // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
     CE (!kphp_error(!cur_class->modifiers.is_abstract(), "constructor in interfaces/abstract classes has not been supported yet"));

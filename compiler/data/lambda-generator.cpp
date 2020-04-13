@@ -137,6 +137,7 @@ LambdaGenerator &LambdaGenerator::require(DataStream<FunctionPtr> &os) {
 LambdaPtr LambdaGenerator::create_class(const std::string &name) {
   LambdaPtr anon_class(new LambdaClassData());
   anon_class->set_name_and_src_name(LambdaClassData::get_lambda_namespace() + "\\" + name, "");
+  anon_class->file_id = stage::get_file();
 
   return anon_class;
 }

@@ -79,6 +79,7 @@ public:
   FunctionPtr gen_holder_function(const std::string &name);
   FunctionPtr add_magic_method(const char *magic_name, VertexPtr return_value);
   FunctionPtr add_virt_clone();
+  void add_class_constant();
 
   void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);

@@ -212,11 +212,19 @@ bool ClassMembersContainer::has_any_instance_method() const {
   return !instance_methods.empty();
 }
 
+bool ClassMembersContainer::has_any_static_method() const {
+  return !static_methods.empty();
+}
+
 FunctionPtr ClassMembersContainer::get_constructor() const {
   if (auto construct_method = get_instance_method(ClassData::NAME_OF_CONSTRUCT)) {
     return construct_method->function;
   }
   return {};
+}
+
+size_t ClassMembersContainer::count_of_instance_methods() const {
+  return instance_methods.size();
 }
 
 const ClassMemberStaticMethod *ClassMembersContainer::get_static_method(vk::string_view local_name) const {

@@ -38,6 +38,8 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
   res->update_location_in_body();
   res->name_gen_map = {};
 
+  res->assumptions_for_vars = {};
+  res->assumption_args_status = AssumptionStatus::unknown;
   res->assumption_for_return = {};
   res->assumption_return_status = AssumptionStatus::unknown;
   res->assumption_return_processing_thread = std::thread::id{};
@@ -150,19 +152,15 @@ int FunctionData::get_min_argn() {
     return min_argn;
   }
 
+  auto has_default = [](VertexPtr v) {
+    auto param = v.as<meta_op_func_param>();
+    return param->has_default_value() && param->default_value();
+  };
+
   auto params = get_params();
-  auto param_n = static_cast<int>(params.size());
-  int res_argn = param_n;
-  for (int i = 0; i < param_n; i++) {
-    auto param = params[i].as<meta_op_func_param>();
+  auto it_param_with_default_value = std::find_if(params.begin(), params.end(), has_default);
+  min_argn = std::distance(params.begin(), it_param_with_default_value);
 
-    if (param->has_default_value() && param->default_value()) {
-      res_argn = i;
-      break;
-    }
-  }
-
-  min_argn = res_argn;
   return min_argn;
 }
 
