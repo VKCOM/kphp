@@ -239,7 +239,6 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<SplitSwitchF>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
-    >> PipeC<GenerateVirtualMethods>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}
@@ -249,7 +248,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
-    >> SyncNode{}
+    >> SyncC<GenerateVirtualMethods>{}
     >> PassC<TransformToSmartInstanceof>{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe

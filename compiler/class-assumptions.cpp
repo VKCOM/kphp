@@ -169,9 +169,9 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
   // из 'A|null', 'A[]|false', 'null|some_class' достаём 'A' / 'A[]' / 'some_class'
   if (auto lca_rule = type_expr.try_as<op_type_expr_lca>()) {
     VertexRange or_rules = lca_rule->args();
-    if (vk::any_of_equal(or_rules[1]->type_help, tp_False, tp_Null)) {
+    if (vk::any_of_equal(or_rules[1]->type_help, tp_False, tp_Null) || or_rules[1]->type() == op_type_expr_callable) {
       type_expr = or_rules[0];
-    } else if (vk::any_of_equal(or_rules[0]->type_help, tp_False, tp_Null)) {
+    } else if (vk::any_of_equal(or_rules[0]->type_help, tp_False, tp_Null) || or_rules[0]->type() == op_type_expr_callable) {
       type_expr = or_rules[1];
     }
   }

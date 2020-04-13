@@ -126,7 +126,6 @@ FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return
 FunctionPtr ClassData::add_virt_clone() {
   auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
   auto virt_clone = add_magic_method(NAME_OF_VIRT_CLONE, clone_this);
-  virt_clone->file_id = file_id;
   return virt_clone;
 }
 
@@ -181,6 +180,12 @@ ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
 
   auto self = get_self();
   if (self == other) {
+    return self;
+  }
+
+  if (is_lambda() && other->is_interface() && self.as<LambdaClassData>()->can_implement_interface(other)) {
+    return other;
+  } else if (other->is_lambda() && is_interface() && other.as<LambdaClassData>()->can_implement_interface(self)) {
     return self;
   }
 

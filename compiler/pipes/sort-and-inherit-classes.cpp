@@ -419,8 +419,12 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
                       fmt_format("You may not `extends` and `implements` simultaneously, class: {}", c->name));
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
-      auto virt_clone = c->add_virt_clone();
-      G->register_and_require_function(virt_clone, generated_self_methods, true);
+      auto inheritors = c->get_all_inheritors();
+      bool has_class_in_hierarchy = std::any_of(inheritors.begin(), inheritors.end(), [](ClassPtr c) { return c->is_class(); });
+      if (has_class_in_hierarchy) {
+        auto virt_clone = c->add_virt_clone();
+        G->register_and_require_function(virt_clone, generated_self_methods, true);
+      }
     }
   }
 

@@ -51,6 +51,39 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
   });
 }
 
+void LambdaClassData::implement_interface(InterfacePtr interface) {
+  implements.emplace_back(interface);
+  add_virt_clone();
+  add_class_constant();
+  register_defines();
+
+  auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
+  my_invoke_method->is_template = false;
+  for (auto &p : my_invoke_method->get_params()) {
+    auto param = p.as<meta_op_func_param>();
+    param->template_type_id = -1;
+    param->is_callable = false;
+  }
+
+  // TODO: add kphp_infer for __invoke method of interface
+  // interface->has_kphp_infer = true;
+  AutoLocker<Lockable *> locker(&(*interface));
+  interface->derived_classes.emplace_back(get_self());
+}
+
+bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {
+  if (interface->members.has_any_static_method() || interface->members.count_of_instance_methods() != 1 || interface->parent_class) {
+    return false;
+  }
+
+  if (auto invoke_method_from_interface = interface->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)) {
+    auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
+    return invoke_method_from_interface->function->get_min_argn() == my_invoke_method->get_min_argn();
+  }
+
+  return false;
+}
+
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_func_call> extern_function_call,
                                          FunctionPtr function_context, vk::intrusive_ptr<Assumption> &assumption) {
   if (auto or_false_rule = type_rule.try_as<op_type_expr_or_false>()) {

@@ -15,8 +15,8 @@
 namespace {
 
 VertexAdaptor<op_func_call> create_call_with_var_and_class_name_params(VertexAdaptor<op_var> instance_var, ClassPtr klass) {
-  auto class_name = VertexAdaptor<op_func_name>::create();
-  class_name->set_string("\\" + klass->name + "::class");
+  DefinePtr d = G->get_define("c#" + replace_backslashes(klass->name) + "$$class");
+  auto class_name = d->val.clone().set_location_recursively(instance_var);
 
   return VertexAdaptor<op_func_call>::create(instance_var, class_name);
 }

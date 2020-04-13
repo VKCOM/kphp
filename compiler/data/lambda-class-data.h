@@ -10,6 +10,8 @@ public:
   static LambdaPtr get_from(VertexPtr v);
 
   void infer_uses_assumptions(FunctionPtr parent_function);
+  void implement_interface(InterfacePtr interface);
+  bool can_implement_interface(InterfacePtr interface) const;
 
   FunctionPtr get_template_of_invoke_function() const;
 

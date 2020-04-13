@@ -421,7 +421,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
-  if (!klass->is_lambda()) {
+  if (!klass->is_lambda() || !klass->implements.empty()) {
     compile_inner_methods(W, klass);
   } else {
     compile_accept_visitor_methods(W, klass);
