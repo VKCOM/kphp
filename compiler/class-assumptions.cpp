@@ -506,6 +506,17 @@ void init_assumptions_for_all_fields(ClassPtr c) {
   });
 }
 
+namespace {
+template<class Atomic>
+void assumption_busy_wait(Atomic &status_holder) noexcept {
+  const auto start = std::chrono::steady_clock::now();
+  while (status_holder != AssumptionStatus::initialized) {
+    kphp_assert(std::chrono::steady_clock::now() - start < std::chrono::seconds{30});
+    std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+  }
+}
+} // namespace
+
 
 /*
  * Высокоуровневая функция, определяющая, что такое $a внутри f.
@@ -517,9 +528,12 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
     return AssumInstance::create(f->class_id);
   }
 
-  if (f->assumption_args_status == AssumptionStatus::unknown) {
+  auto expected = AssumptionStatus::unknown;
+  if (f->assumption_args_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
     init_assumptions_for_arguments(f, f->root);
-    f->assumption_args_status = AssumptionStatus::initialized;   // каждую функцию внутри обрабатывает 1 поток, нет возни с synchronize
+    f->assumption_args_status = AssumptionStatus::initialized;
+  } else if (expected == AssumptionStatus::processing) {
+    assumption_busy_wait(f->assumption_args_status);
   }
 
   const auto &existing = assumption_get_for_var(f, var_name);
@@ -553,17 +567,6 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
   f->assumptions_for_vars.emplace_back(std::string{var_name}, not_instance);
   return not_instance;
 }
-
-namespace {
-template<class Atomic>
-void assumption_busy_wait(Atomic &status_holder) noexcept {
-  const auto start = std::chrono::steady_clock::now();
-  while (status_holder != AssumptionStatus::initialized) {
-    kphp_assert(std::chrono::steady_clock::now() - start < std::chrono::seconds{30});
-    std::this_thread::sleep_for(std::chrono::nanoseconds{100});
-  }
-}
-} // namespace
 
 /*
  * Высокоуровневая функция, определяющая, что возвращает f.

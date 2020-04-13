@@ -71,7 +71,7 @@ public:
   std::vector<std::pair<std::string, vk::intrusive_ptr<Assumption>>> assumptions_for_vars;   // (var_name, assumption)[]
   vk::intrusive_ptr<Assumption> assumption_for_return;
 
-  AssumptionStatus assumption_args_status{AssumptionStatus::unknown};
+  vk::copyable_atomic<AssumptionStatus> assumption_args_status{AssumptionStatus::unknown};
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
   vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
 
