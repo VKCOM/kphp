@@ -14,7 +14,7 @@ void *heap_resource::allocate(size_type size) noexcept {
   dl::CriticalSectionGuard lock;
   void *mem = std::malloc(size);
   if (unlikely(!mem)) {
-    php_warning("Can't heap_allocate %u bytes", size);
+    php_out_of_memory_warning("Can't heap_allocate %u bytes", size);
     raise(SIGUSR2);
     return nullptr;
   }
@@ -28,7 +28,7 @@ void *heap_resource::allocate0(size_type size) noexcept {
   dl::CriticalSectionGuard lock;
   void *mem = std::calloc(1, size);
   if (unlikely(!mem)) {
-    php_warning("Can't heap_allocate0 %u bytes", size);
+    php_out_of_memory_warning("Can't heap_allocate0 %u bytes", size);
     raise(SIGUSR2);
     return nullptr;
   }
@@ -43,7 +43,7 @@ void *heap_resource::reallocate(void *mem, size_type new_size, size_type old_siz
   mem = std::realloc(mem, new_size);
   memory_debug("heap reallocate %u at %p\n", old_size, mem);
   if (unlikely(!mem)) {
-    php_warning("Can't heap_reallocate from %u to %u bytes", old_size, new_size);
+    php_out_of_memory_warning("Can't heap_reallocate from %u to %u bytes", old_size, new_size);
     raise(SIGUSR2);
     return nullptr;
   }

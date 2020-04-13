@@ -14,6 +14,7 @@ extern int php_disable_warnings;
 extern int php_warning_level;
 
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
+void php_out_of_memory_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
 void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
 void raise_php_assert_signal__();

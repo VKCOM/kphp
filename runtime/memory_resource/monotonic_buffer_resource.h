@@ -108,7 +108,7 @@ public:
   void *get_from_pool(size_type size, bool safe = false) noexcept {
     if (unlikely(memory_end_ - memory_current_ < size)) {
       if (unlikely(!safe)) {
-        php_warning("Can't allocate %u bytes", size);
+        php_out_of_memory_warning("Can't allocate %u bytes", size);
         raise(SIGUSR2);
       }
       return nullptr;

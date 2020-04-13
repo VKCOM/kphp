@@ -80,7 +80,7 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, ba
   }
 }
 
-void php_warning(char const *message, ...) {
+static void php_warning_impl(bool out_of_memory, char const *message, va_list args) {
   if (php_warning_level == 0 || php_disable_warnings) {
     return;
   }
@@ -111,16 +111,12 @@ void php_warning(char const *message, ...) {
     return;
   }
 
-  bool in_critical_section = dl::in_critical_section;
+  const bool allocations_allowed = !out_of_memory && !dl::in_critical_section;
   dl::enter_critical_section();//OK
-
-  va_list args;
-  va_start (args, message);
 
   fprintf(stderr, "%s%d%sWarning: ", engine_tag, cur_time, engine_pid);
   vsnprintf(buf, BUF_SIZE, message, args);
   fprintf(stderr, "%s\n", buf);
-  va_end (args);
 
   bool need_stacktrace = php_warning_level >= 1;
   int nptrs = 0;
@@ -136,9 +132,9 @@ void php_warning(char const *message, ...) {
       }
     }
 
-    auto callback = [&cpp_trace, in_critical_section](const char *, const char *trace_str, const char* json_trace_str) {
+    auto callback = [&cpp_trace, allocations_allowed](const char *, const char *trace_str, const char *json_trace_str) {
       fprintf(stderr, "%s", trace_str);
-      if (!in_critical_section) {
+      if (allocations_allowed) {
         cpp_trace.emplace_back(json_trace_str);
       }
     };
@@ -158,7 +154,7 @@ void php_warning(char const *message, ...) {
   }
 
   dl::leave_critical_section();
-  if (!dl::in_critical_section) {
+  if (allocations_allowed) {
     OnKphpWarningCallback::get().invoke_callback(string(buf));
 
     if (need_stacktrace && json_log_file_ptr != nullptr) {
@@ -171,6 +167,20 @@ void php_warning(char const *message, ...) {
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
     _exit(1);
   }
+}
+
+void php_warning(char const *message, ...) {
+  va_list args;
+  va_start (args, message);
+  php_warning_impl(false, message, args);
+  va_end(args);
+}
+
+void php_out_of_memory_warning(char const *message, ...) {
+  va_list args;
+  va_start (args, message);
+  php_warning_impl(true, message, args);
+  va_end(args);
 }
 
 void php_assert__(const char *msg, const char *file, int line) {
