@@ -26,6 +26,11 @@ void check_class_immutableness(ClassPtr klass) {
                             TermStringFormat::paint(sub_class->name, TermStringFormat::red)));
     }
   });
+
+  kphp_error(!klass->parent_class || klass->parent_class->is_immutable,
+             fmt_format("Immutable class {} has mutable base {}",
+                        TermStringFormat::paint(klass->name, TermStringFormat::red),
+                        TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
 }
 
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
