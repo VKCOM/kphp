@@ -605,6 +605,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       set_lca(expr.as<op_alloc>()->allocated_class);
       break;
 
+    case op_instanceof:
+      recalc_ptype<tp_bool>();
+      break;
+
     default:
       recalc_ptype<tp_var>();
       break;
