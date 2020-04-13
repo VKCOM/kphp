@@ -44,8 +44,8 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
-#include "server/lease-config-parser.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
 #include "server/php-master.h"
@@ -1383,7 +1383,7 @@ tcp_rpc_server_functions rpc_methods = [] {
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
-  res.check_ready = server_check_ready; //replaced
+  res.check_ready = default_tcp_rpc_client_check_ready; //replaced
   res.flush_packet = tcp_rpcc_flush_packet;
   res.rpc_check_perm = tcp_rpcc_default_check_perm;
   res.rpc_init_crypto = tcp_rpcc_init_crypto;
