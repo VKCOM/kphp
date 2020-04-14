@@ -518,12 +518,7 @@ void assumption_busy_wait(Atomic &status_holder) noexcept {
 } // namespace
 
 
-/*
- * Высокоуровневая функция, определяющая, что такое $a внутри f.
- * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
- * Всегда возвращает ненулевой assumption.
- */
-vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
+vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name) {
   if (f->modifiers.is_instance() && var_name == "this") {
     return AssumInstance::create(f->class_id);
   }
@@ -536,11 +531,18 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
     assumption_busy_wait(f->assumption_args_status);
   }
 
-  const auto &existing = assumption_get_for_var(f, var_name);
-  if (existing) {
-    return existing;
-  }
+  return assumption_get_for_var(f, var_name);
+}
 
+/*
+ * Высокоуровневая функция, определяющая, что такое $a внутри f.
+ * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
+ * Всегда возвращает ненулевой assumption.
+ */
+vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
+  if (auto assumption_from_argument = calc_assumption_for_argument(f, var_name)) {
+    return assumption_from_argument;
+  }
 
   calc_assumptions_for_var_internal(f, var_name, f->root->cmd(), depth + 1);
 

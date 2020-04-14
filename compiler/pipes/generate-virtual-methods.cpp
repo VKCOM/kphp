@@ -86,8 +86,8 @@ public:
           continue;
         }
 
-        auto assum = calc_assumption_for_var(called_function, func_param->var()->str_val);
-        check_assumption_and_inherit(assum, lambda_class);
+        auto assumption = calc_assumption_for_argument(called_function, func_param->var()->str_val);
+        check_assumption_and_inherit(assumption, lambda_class);
       }
     }
   }
