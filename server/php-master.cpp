@@ -1571,7 +1571,7 @@ int php_master_version(connection *c) {
   return 0;
 }
 
-void php_master_rpc_stats() {
+void php_master_rpc_stats(const vk::optional<vk::vector<vk::string>> &sorted_filter_keys) {
   std::string res(64 * 1024, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
@@ -1580,7 +1580,7 @@ void php_master_rpc_stats() {
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
   res += php_master_prepare_stats(true, -1);
-  tl_store_stats(res.c_str(), 0);
+  tl_store_stats(res.c_str(), 0, sorted_filter_keys);
 }
 
 struct WorkerStats {
