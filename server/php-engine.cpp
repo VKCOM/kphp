@@ -1532,7 +1532,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       if (!check_tasks_manager_pid(remote_pid) || in_sigterm) {
         return 0;
       }
-      tl_fetch_init_tcp_raw_message(raw, len);
+      tl_fetch_init_raw_message(raw, len);
       auto op_from_tl = tl_fetch_int();
       len -= sizeof(op_from_tl);
       assert(op_from_tl == op);
@@ -1562,7 +1562,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
         return 0;
       }
       // Пришла задача от тасок
-      tl_fetch_init_tcp_raw_message(raw, len);
+      tl_fetch_init_raw_message(raw, len);
       auto op_from_tl = tl_fetch_int();
       len -= sizeof(op_from_tl);
       assert(op_from_tl == op);
@@ -1620,7 +1620,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
       assert(result_len >= 0);
 
-      tl_fetch_init_tcp_raw_message(raw, raw->total_bytes);
+      tl_fetch_init_raw_message(raw, raw->total_bytes);
 
       auto op_from_tl = tl_fetch_int();
       assert(op_from_tl == op);

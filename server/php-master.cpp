@@ -45,8 +45,8 @@
 #include "runtime/instance_cache.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
-#include "server/php-worker-stats.h"
 #include "server/php-engine.h"
+#include "server/php-worker-stats.h"
 
 extern const char *engine_tag;
 
@@ -839,7 +839,7 @@ int pr_execute(connection *c, int op, raw_message *raw) {
   assert(len % sizeof(int) == 0);
   assert(len >= sizeof(int));
 
-  tl_fetch_init_tcp_raw_message(raw, len);
+  tl_fetch_init_raw_message(raw, len);
   auto op_from_tl = tl_fetch_int();
   len -= sizeof(op_from_tl);
   assert(op_from_tl == op);
