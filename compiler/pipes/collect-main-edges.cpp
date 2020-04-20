@@ -8,16 +8,13 @@
 #include "compiler/gentree.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
-#include "compiler/inferring/lvalue.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-greater.h"
 #include "compiler/inferring/restriction-isset.h"
 #include "compiler/inferring/restriction-less.h"
 #include "compiler/inferring/restriction-non-void.h"
-#include "compiler/inferring/rvalue.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/phpdoc.h"
-#include "compiler/scheduler/task.h"
 #include "compiler/utils/string-utils.h"
 
 tinf::Node *CollectMainEdgesPass::node_from_rvalue(const RValue &rvalue) {

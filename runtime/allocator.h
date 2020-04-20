@@ -67,21 +67,21 @@ inline auto make_malloc_replacement_with_script_allocator(bool replace = true) n
 
 class ManagedThroughDlAllocator {
 public:
-  void *operator new(size_t size) noexcept {
+  static void *operator new(size_t size) noexcept {
     return dl::allocate(size);
   }
 
-  void *operator new(size_t, void *ptr) noexcept {
+  static void *operator new(size_t, void *ptr) noexcept {
     return ptr;
   }
 
-  void operator delete(void *ptr, size_t size) noexcept {
+  static void operator delete(void *ptr, size_t size) noexcept {
     dl::deallocate(ptr, size);
   }
 
-  void *operator new[](size_t count) = delete;
-  void operator delete[](void *ptr, size_t sz) = delete;
-  void operator delete[](void *ptr) = delete;
+  static void *operator new[](size_t count) = delete;
+  static void operator delete[](void *ptr, size_t sz) = delete;
+  static void operator delete[](void *ptr) = delete;
 
 protected:
   ~ManagedThroughDlAllocator() = default;

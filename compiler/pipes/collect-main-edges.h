@@ -2,49 +2,48 @@
 
 #include "compiler/function-pass.h"
 #include "compiler/pipes/function-and-cfg.h"
-
-struct RValue;
-struct LValue;
+#include "compiler/inferring/lvalue.h"
+#include "compiler/inferring/rvalue.h"
 
 class CollectMainEdgesPass : public FunctionPassBase {
 private:
   bool have_returns = false;
 
-  tinf::Node *node_from_rvalue(const RValue &rvalue);
-  void require_node(const RValue &rvalue);
-  void create_set(const LValue &lvalue, const RValue &rvalue);
+  static tinf::Node *node_from_rvalue(const RValue &rvalue);
+  static void require_node(const RValue &rvalue);
+  static void create_set(const LValue &lvalue, const RValue &rvalue);
   template<class RestrictionT>
-  void create_restriction(const RValue &lhs, const RValue &rhs);
-  void create_less(const RValue &lhs, const RValue &rhs);
-  void create_greater(const RValue &lhs, const RValue &rhs);
-  void create_non_void(const RValue &lhs);
-  void create_isset_check(const RValue &rvalue);
+  static void create_restriction(const RValue &lhs, const RValue &rhs);
+  static void create_less(const RValue &lhs, const RValue &rhs);
+  static void create_greater(const RValue &lhs, const RValue &rhs);
+  static void create_non_void(const RValue &lhs);
+  static void create_isset_check(const RValue &rvalue);
   static RValue as_set_value(VertexPtr v);
 
 
   template<class A, class B>
-  void create_set(const A &a, const B &b);
+  static void create_set(const A &a, const B &b);
   template<class A, class B>
-  void create_less(const A &a, const B &b);
+  static void create_less(const A &a, const B &b);
   template<class A, class B>
-  void create_greater(const A &a, const B &b);
+  static void create_greater(const A &a, const B &b);
   template<class A>
-  void create_non_void(const A &a);
+  static void create_non_void(const A &a);
   template<class A>
-  void require_node(const A &a);
+  static void require_node(const A &a);
 
-  void add_type_rule(VertexPtr v);
-  void add_type_help(VertexPtr v);
-  void on_func_param_callback(VertexAdaptor<op_func_call> call, int id);
-  void on_func_call(VertexAdaptor<op_func_call> call);
+  static void add_type_rule(VertexPtr v);
+  static void add_type_help(VertexPtr v);
+  static void on_func_param_callback(VertexAdaptor<op_func_call> call, int id);
+  static void on_func_call(VertexAdaptor<op_func_call> call);
   void on_return(VertexAdaptor<op_return> v);
-  void on_foreach(VertexAdaptor<op_foreach> foreach_op);
-  void on_list(VertexAdaptor<op_list> list);
-  void on_throw(VertexAdaptor<op_throw> throw_op);
-  void on_try(VertexAdaptor<op_try> try_op);
-  void on_set_op(VertexPtr v);
-  void ifi_fix(VertexPtr v);
-  void on_function(FunctionPtr function);
+  static void on_foreach(VertexAdaptor<op_foreach> foreach_op);
+  static void on_list(VertexAdaptor<op_list> list);
+  static void on_throw(VertexAdaptor<op_throw> throw_op);
+  static void on_try(VertexAdaptor<op_try> try_op);
+  static void on_set_op(VertexPtr v);
+  static void ifi_fix(VertexPtr v);
+  static void on_function(FunctionPtr function);
   void on_class(ClassPtr klass);
   void on_var(VarPtr var);
 
