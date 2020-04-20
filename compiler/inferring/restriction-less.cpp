@@ -116,7 +116,10 @@ bool RestrictionLess::find_call_trace_with_error_impl(tinf::Node *cur_node, cons
 }
 
 bool RestrictionLess::is_less(const TypeData *given, const TypeData *expected, const MultiKey *from_at) {
-  std::unique_ptr<TypeData> type_of_to_node(expected->clone());
+  std::unique_ptr<TypeData> expected_clone(expected->clone());
+  expected_clone->convert_Unknown_to_Any();
+
+  std::unique_ptr<TypeData> type_of_to_node(expected_clone->clone());
 
   if (from_at) {
     type_of_to_node->set_lca_at(*from_at, given);
@@ -124,7 +127,7 @@ bool RestrictionLess::is_less(const TypeData *given, const TypeData *expected, c
     type_of_to_node->set_lca(given);
   }
 
-  return !is_equal_types(type_of_to_node.get(), expected);
+  return is_equal_types(type_of_to_node.get(), expected_clone.get());
 }
 
 void RestrictionLess::find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type) {
@@ -146,9 +149,9 @@ int RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::get_priorit
   const tinf::Node *from_node = edge->from;
   const tinf::Node *to_node = edge->to;
   const TypeData *to_type = to_node->get_type();
-  bool different_types = is_less(to_type, expected, edge->from_at);
+  bool different_types = !is_less(to_type, expected, edge->from_at);
 
-  if (const tinf::ExprNode *expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
+  if (auto expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
     VertexPtr expr_vertex = expr_node->get_expr();
 
     if (auto binary_vertex = expr_vertex.try_as<meta_op_binary>()) {
@@ -177,7 +180,7 @@ int RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::get_priorit
     return different_types ? 3 : (e_default_priority + 3);
   }
 
-  if (is_less(to_type, expected, edge->from_at)) {
+  if (!is_less(to_type, expected, edge->from_at)) {
     return 0;
   }
 
@@ -314,22 +317,11 @@ void RestrictionLess::remove_duplicates_from_stacktrace(vector<row> &rows) const
 }
 
 bool RestrictionLess::check_broken_restriction_impl() {
-  const TypeData *actual_type = actual_->get_type();
-  TypeData *expected_type = expected_->get_type()->clone();
-  expected_type->convert_Unknown_to_Any();
-
-  if (is_less(actual_type, expected_type)) {
-    if (is_greater_restriction()) {
-      std::swap(expected_, actual_);
-      actual_type = actual_->get_type();
-      expected_type = expected_->get_type()->clone();
-      expected_type->convert_Unknown_to_Any();
-    }
-
-    find_call_trace_with_error(actual_, expected_type);
+  if (!is_less_virt(actual_->get_type(), expected_->get_type())) {
+    find_call_trace_with_error(actual_, expected_->get_type());
     desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
     desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
-    desc += "Expected type:\t" + colored_type_out(expected_type) + "\nActual type:\t" + colored_type_out(actual_type) + "\n";
+    desc += "Expected type:\t" + colored_type_out(expected_->get_type()) + "\nActual type:\t" + colored_type_out(actual_->get_type()) + "\n";
     desc += TermStringFormat::add_text_attribute("+-------------+\n| STACKTRACE: |\n+-------------+", TermStringFormat::bold);
     desc += "\n";
     desc += get_stacktrace_text();

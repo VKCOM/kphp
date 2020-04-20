@@ -43,7 +43,7 @@ public:
     expected_(b) {
   }
 
-  const char *get_description() override {
+  const char *get_description() final {
     return desc.c_str();
   }
 
@@ -51,13 +51,9 @@ public:
   std::string get_stacktrace_text();
 
 protected:
-  bool check_broken_restriction_impl() override;
+  bool check_broken_restriction_impl() final;
 
-  bool is_broken_restriction_an_error() override {
-    return true;
-  }
-
-  virtual bool is_greater_restriction() {
-    return false;
+  virtual bool is_less_virt(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr) {
+    return RestrictionLess::is_less(given, expected, from_at);
   }
 };

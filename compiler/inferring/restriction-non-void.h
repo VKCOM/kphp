@@ -13,8 +13,4 @@ public:
 
 protected:
   bool check_broken_restriction_impl() override;
-
-  bool is_broken_restriction_an_error() override {
-    return true;
-  }
 };

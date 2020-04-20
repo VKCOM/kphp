@@ -109,7 +109,7 @@ void CollectMainEdgesPass::create_less(const A &a, const B &b) {
 
 template<class A, class B>
 void CollectMainEdgesPass::create_greater(const A &a, const B &b) {
-  create_greater(as_rvalue(b), as_rvalue(a));
+  create_greater(as_rvalue(a), as_rvalue(b));
 }
 
 template<class A>
@@ -124,9 +124,7 @@ void CollectMainEdgesPass::create_non_void(const A &a) {
 
 
 void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
-  if (v->type() == op_function) {
-    return;
-  }
+  kphp_assert(v->type() != op_function);
 
   switch (v->type_rule->type()) {
     case op_common_type_rule:
@@ -143,7 +141,7 @@ void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
       create_less(v, v->type_rule);
       break;
     default:
-      assert (0 && "unreachable");
+      __builtin_unreachable();
   }
 }
 
@@ -403,14 +401,13 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
 
 void CollectMainEdgesPass::on_function(FunctionPtr function) {
   VertexRange params = function->get_params();
-  int params_n = (int)params.size();
+  int params_n = static_cast<int>(params.size());
 
   for (int i = -1; i < params_n; i++) {
     require_node(as_rvalue(function, i));
   }
 
   if (function->is_extern()) {
-
     auto ret_type = PrimitiveType::tp_var;
     if (auto rule = function->root->type_rule.try_as<op_common_type_rule>()) {
       if (auto type_of_rule = rule->rule().try_as<op_type_expr_type>()) {
@@ -459,13 +456,12 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
 }
 
 bool CollectMainEdgesPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
+  kphp_assert(FunctionPassBase::on_start(function));
   if (function->type == FunctionData::func_class_holder) {
     on_class(function->class_id);
+  } else {
+    on_function(function);
   }
-  on_function(function);
   return !function->is_extern();
 }
 

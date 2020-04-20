@@ -6,7 +6,7 @@ public:
   using RestrictionLess::RestrictionLess;
 
 protected:
-  bool is_greater_restriction() final {
-    return true;
+  bool is_less_virt(const TypeData *given, const TypeData *expected, const MultiKey *from_at) final {
+    return RestrictionLess::is_less_virt(expected, given, from_at);
   }
 };

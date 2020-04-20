@@ -15,7 +15,7 @@ public:
 
   virtual bool check_broken_restriction();
 
-  virtual bool is_broken_restriction_an_error() { return false; }
+  static bool is_broken_restriction_an_error() { return true; }
 
 protected:
   Location location;
