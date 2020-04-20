@@ -9,8 +9,6 @@ struct LValue;
 class CollectMainEdgesPass : public FunctionPassBase {
 private:
   bool have_returns = false;
-  constexpr static int32_t max_serialization_tag_value = std::numeric_limits<int8_t>::max();
-  using used_serialization_tags_t = std::array<bool, max_serialization_tag_value>;
 
   tinf::Node *node_from_rvalue(const RValue &rvalue);
   void require_node(const RValue &rvalue);
@@ -52,8 +50,6 @@ private:
 
   template<class CollectionT>
   void call_on_var(const CollectionT &collection);
-
-  void fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass);
 
 public:
 

@@ -7,12 +7,19 @@
  * Пайп, который после inferring'а бежит по всем классам и что-то проверяет.
  */
 class CheckClassesF {
-  void analyze_class(ClassPtr klass);
+  constexpr static int32_t max_serialization_tag_value = std::numeric_limits<int8_t>::max();
+  using used_serialization_tags_t = std::array<bool, max_serialization_tag_value>;
 
-  void check_instance_fields_inited(ClassPtr klass);
+  static void analyze_class(ClassPtr klass);
 
-  void check_static_fields_inited(ClassPtr klass);
+  static void check_instance_fields_inited(ClassPtr klass);
+
+  static void check_static_fields_inited(ClassPtr klass);
+
+  static void check_serialized_fields(ClassPtr klass);
+
+  static void fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass);
 
 public:
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os);
+  static void execute(FunctionPtr function, DataStream<FunctionPtr> &os);
 };

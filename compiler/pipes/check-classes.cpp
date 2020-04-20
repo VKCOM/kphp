@@ -6,6 +6,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/phpdoc.h"
 #include "compiler/vertex.h"
 
 void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
@@ -24,6 +25,7 @@ void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
 
 inline void CheckClassesF::analyze_class(ClassPtr klass) {
   check_static_fields_inited(klass);
+  check_serialized_fields(klass);
   if (ClassData::does_need_codegen(klass)) {
     check_instance_fields_inited(klass);
   }
@@ -33,7 +35,6 @@ inline void CheckClassesF::analyze_class(ClassPtr klass) {
                           klass->name));
   }
 }
-
 
 /*
  * Проверяем, что все static-поля класса инициализированы при объявлении
@@ -61,4 +62,44 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
     kphp_error(!(ptype == tp_Class && f.var->tinf_node.get_type()->class_type()->is_fully_static()),
                fmt_format("var {}::${} refers to fully static class", klass->name, f.local_name()));
   });
+}
+
+void CheckClassesF::check_serialized_fields(ClassPtr klass) {
+  used_serialization_tags_t used_serialization_tags_for_fields{false};
+  fill_reserved_serialization_tags(used_serialization_tags_for_fields, klass);
+
+  klass->members.for_each([&](ClassMemberInstanceField &f) {
+    if (auto kphp_serialized_field_str = phpdoc_find_tag_as_string(f.phpdoc_str, php_doc_tag::kphp_serialized_field)) {
+      if (*kphp_serialized_field_str != "none") {
+        kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
+        auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str);
+        kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
+        kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
+        f.serialization_tag = kphp_serialized_field;
+        used_serialization_tags_for_fields[kphp_serialized_field] = true;
+      }
+    } else {
+      kphp_error_return(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", f.local_name()));
+    }
+  });
+
+  klass->members.for_each([&](ClassMemberStaticField &f) {
+    kphp_error_return(!phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_field),
+                      fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
+  });
+}
+
+void CheckClassesF::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
+  if (auto reserved_ids = phpdoc_find_tag_as_string(klass->phpdoc_str, php_doc_tag::kphp_reserved_fields)) {
+    vk::string_view ids(*reserved_ids);
+    kphp_error_return(ids.size() >= 2 && ids[0] == '[' && ids[ids.size() - 1] == ']', "reserved tags must be wrapped by []");
+    ids = ids.substr(1, ids.size() - 2);
+
+    for (auto id_str : split_skipping_delimeters(ids, ",")) {
+      int id;
+      kphp_error_return(sscanf(id_str.data(), "%d", &id) == 1, "tag expected");
+      kphp_error_return(0 <= id && id < max_serialization_tag_value, fmt_format("kphp-reserved-field({}) must be >=0 and < than {}", id, max_serialization_tag_value + 0));
+      used_serialization_tags_for_fields[id] = true;
+    }
+  }
 }
