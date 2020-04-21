@@ -1527,16 +1527,16 @@ void clear_array(Optional<array<T>> &a) {
 
 template<class T>
 void unset(array<T> &x) {
-  clear_array(x);
+  x = {};
 }
 
 template<class T>
 void unset(class_instance<T> &x) {
-  x.destroy();
+  x = {};
 }
 
 void unset(var &x) {
-  x = var();
+  x = {};
 }
 
 template<typename T>

@@ -253,12 +253,6 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     }
   }
 
-  if (function->has_variadic_param) {
-    auto id_of_last_param = function_params.size() - 1;
-    RValue array_of_any{TypeData::get_type(tp_array, tp_Any)};
-    create_less(as_rvalue(function, id_of_last_param), array_of_any);
-  }
-
   for (int i = 0; i < call->args().size(); ++i) {
     VertexPtr arg = call->args()[i];
     auto param = function_params[i].as<meta_op_func_param>();
@@ -449,6 +443,12 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
     if (function->assumption_for_return && !function->assumption_for_return->is_primitive()) {
       create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
     }
+
+    if (function->has_variadic_param) {
+      auto id_of_last_param = function->get_params().size() - 1;
+      RValue array_of_any{TypeData::get_type(tp_array, tp_Any)};
+      create_less(as_rvalue(function, id_of_last_param), array_of_any);
+    }
   }
 }
 
@@ -494,11 +494,7 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, FunctionPassBase::L
     default:
       break;
   }
-  if (OpInfo::rl(v->type()) == rl_set ||
-      v->type() == op_prefix_inc ||
-      v->type() == op_postfix_inc ||
-      v->type() == op_prefix_dec ||
-      v->type() == op_postfix_dec) {
+  if (OpInfo::rl(v->type()) == rl_set || vk::any_of_equal(v->type(), op_prefix_inc, op_postfix_inc, op_prefix_dec, op_postfix_dec)) {
     on_set_op(v);
   }
 
