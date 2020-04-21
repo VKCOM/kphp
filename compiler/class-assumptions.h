@@ -16,6 +16,10 @@ enum class AssumptionStatus {
 };
 
 class Assumption : public vk::thread_safe_refcnt<Assumption> {
+protected:
+  bool or_null_{false};
+  bool or_false_{false};
+
 public:
   virtual ~Assumption() = default;
 
@@ -23,6 +27,12 @@ public:
   virtual bool is_primitive() const = 0;
   virtual const TypeData *get_type_data() const = 0;
   virtual vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const = 0;
+
+  vk::intrusive_ptr<Assumption> add_flags(bool or_null, bool or_false) {
+    or_null_ = or_null;
+    or_false_ = or_false;
+    return vk::intrusive_ptr<Assumption>(this);
+  }
 };
 
 class AssumNotInstance : public Assumption {

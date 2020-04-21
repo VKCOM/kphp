@@ -167,27 +167,36 @@ void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const vk::intr
  */
 vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr) {
   // из 'A|null', 'A[]|false', 'null|some_class' достаём 'A' / 'A[]' / 'some_class'
+  bool or_false_flag = false;
+  bool or_null_flag = false;
   if (auto lca_rule = type_expr.try_as<op_type_expr_lca>()) {
     VertexRange or_rules = lca_rule->args();
-    if (vk::any_of_equal(or_rules[1]->type_help, tp_False, tp_Null) || or_rules[1]->type() == op_type_expr_callable) {
-      type_expr = or_rules[0];
-    } else if (vk::any_of_equal(or_rules[0]->type_help, tp_False, tp_Null) || or_rules[0]->type() == op_type_expr_callable) {
-      type_expr = or_rules[1];
+    auto upd_type_expr = [&](VertexPtr lhs, VertexPtr rhs) {
+      or_false_flag = lhs->type_help == tp_False;
+      or_null_flag = lhs->type_help == tp_Null;
+      if (or_false_flag || or_null_flag || lhs->type() == op_type_expr_callable) {
+        type_expr = rhs;
+        return true;
+      }
+      return false;
+    };
+    if (!upd_type_expr(or_rules[0], or_rules[1])) {
+      upd_type_expr(or_rules[1], or_rules[0]);
     }
   }
 
   if (type_expr->type_help == tp_Class) {
-    return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr);
+    return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr)->add_flags(or_null_flag, or_false_flag);
   }
   if (type_expr->type_help == tp_array) {
-    return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]));
+    return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]))->add_flags(or_null_flag, or_false_flag);
   }
   if (type_expr->type_help == tp_tuple) {
     decltype(AssumTuple::subkeys_assumptions) sub;
     for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
       sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
     }
-    return AssumTuple::create(std::move(sub));
+    return AssumTuple::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
   }
   if (type_expr->type_help == tp_shape) {
     decltype(AssumShape::subkeys_assumptions) sub;
@@ -195,7 +204,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
       auto double_arrow = sub_expr.as<op_double_arrow>();
       sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
     }
-    return AssumShape::create(std::move(sub));
+    return AssumShape::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
   }
   return AssumNotInstance::create();
 }
@@ -867,7 +876,7 @@ bool AssumShape::is_primitive() const {
 
 
 const TypeData *AssumArray::get_type_data() const {
-  return TypeData::create_array_type_data(inner->get_type_data(), true);
+  return TypeData::create_type_data(inner->get_type_data(), or_null_, or_false_);
 }
 
 const TypeData *AssumInstance::get_type_data() const {
@@ -882,7 +891,7 @@ const TypeData *AssumTuple::get_type_data() const {
   std::vector<const TypeData *> subkeys_values;
   std::transform(subkeys_assumptions.begin(), subkeys_assumptions.end(), std::back_inserter(subkeys_values),
                  [](const vk::intrusive_ptr<Assumption> &a) { return a->get_type_data(); });
-  return TypeData::create_tuple_type_data(subkeys_values, true);
+  return TypeData::create_type_data(subkeys_values, or_null_, or_false_);
 }
 
 const TypeData *AssumShape::get_type_data() const {
@@ -890,7 +899,7 @@ const TypeData *AssumShape::get_type_data() const {
   for (const auto &sub : subkeys_assumptions) {
     subkeys_values.emplace(sub.first, sub.second->get_type_data());
   }
-  return TypeData::create_shape_type_data(subkeys_values, true);
+  return TypeData::create_type_data(subkeys_values, or_null_, or_false_);
 }
 
 

@@ -517,10 +517,24 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
 
   // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
   const vk::intrusive_ptr<Assumption> &a = var->is_class_instance_var()
-                                         ? assumption_get_for_var(var->class_id, var->name)
-                                         : assumption_get_for_var(current_function, var->name);
+                                           ? assumption_get_for_var(var->class_id, var->name)
+                                           : assumption_get_for_var(current_function, var->name);
+
   if (a && !a->is_primitive()) {
-    create_less(var, a->get_type_data());
+    create_set(var, a->get_type_data());
+
+    // $x = get_instance_arr();
+    // $x = null
+    // $x will have assumption `Instance[]`
+    // we allow mix it with null and false only
+    const auto *less_td = a->get_type_data();
+    if (!a.try_as<AssumInstance>()) {
+      auto *tmp_td = less_td->clone();
+      tmp_td->set_or_false_flag();
+      tmp_td->set_or_null_flag();
+      less_td = tmp_td;
+    }
+    create_less(var, less_td);
   }
 }
 

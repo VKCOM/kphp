@@ -341,6 +341,7 @@ static void apply_function_typehints(FunctionPtr function) {
       auto parsed = phpdoc_parse_type_and_var_name(param->type_declaration, function);
       auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       function->add_kphp_infer_hint(infer_mask::check, i, type_rule);
+      function->add_kphp_infer_hint(infer_mask::hint, i, type_rule);
     }
   }
 
@@ -348,6 +349,7 @@ static void apply_function_typehints(FunctionPtr function) {
     auto parsed = phpdoc_parse_type_and_var_name(function->return_typehint, function);
     auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
     function->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
+    function->add_kphp_infer_hint(infer_mask::hint, -1, type_rule);
   }
 }
 

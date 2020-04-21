@@ -148,9 +148,20 @@ public:
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
   static const TypeData *create_for_class(ClassPtr klass);
-  static const TypeData *create_array_type_data(const TypeData *element_type, bool optional_flag = false);
-  static const TypeData *create_tuple_type_data(const std::vector<const TypeData *> &subkeys_values, bool optional_flag = false);
-  static const TypeData *create_shape_type_data(const std::map<std::string, const TypeData *> &subkeys_values, bool optional_flag = false);
+  template<class T>
+  static const TypeData *create_type_data(const T &element_type, bool or_null, bool or_false) {
+    auto res = create_type_data(element_type);
+    if (or_null) {
+      res->set_or_null_flag();
+    }
+    if (or_false) {
+      res->set_or_false_flag();
+    }
+    return res;
+  }
+  static TypeData *create_type_data(const TypeData *element_type);
+  static TypeData *create_type_data(const std::vector<const TypeData *> &subkeys_values);
+  static TypeData *create_type_data(const std::map<std::string, const TypeData *> &subkeys_values);
   //FIXME:??
   static void inc_generation();
   static generation_t current_generation();

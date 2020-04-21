@@ -66,7 +66,7 @@ void TypeData::init_static() {
   }
 
   for (int tp = 0; tp < ptype_size; tp++) {
-    array_types[tp] = create_array_type_data(primitive_types[tp == tp_Any ? tp_CreateAny : tp]);
+    array_types[tp] = create_type_data(primitive_types[tp == tp_Any ? tp_CreateAny : tp]);
   }
 }
 
@@ -835,36 +835,24 @@ const TypeData *TypeData::create_for_class(ClassPtr klass) {
   return res;
 }
 
-const TypeData *TypeData::create_array_type_data(const TypeData *element_type, bool optional_flag /* = false */) {
+TypeData *TypeData::create_type_data(const TypeData *element_type) {
   auto *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
-  if (optional_flag) {
-    res->set_or_false_flag();
-    res->set_or_null_flag();
-  }
   return res;
 }
 
-const TypeData *TypeData::create_tuple_type_data(const std::vector<const TypeData *> &subkeys_values, bool optional_flag /* = false */) {
+TypeData *TypeData::create_type_data(const std::vector<const TypeData *> &subkeys_values) {
   auto *res = new TypeData(tp_tuple);
   for (int int_index = 0; int_index < subkeys_values.size(); ++int_index) {
     res->set_lca_at(MultiKey({Key::int_key(int_index)}), subkeys_values[int_index]);
   }
-  if (optional_flag) {
-    res->set_or_false_flag();
-    res->set_or_null_flag();
-  }
   return res;
 }
 
-const TypeData *TypeData::create_shape_type_data(const std::map<std::string, const TypeData *> &subkeys_values, bool optional_flag /* = false */) {
+TypeData *TypeData::create_type_data(const std::map<std::string, const TypeData *> &subkeys_values) {
   auto *res = new TypeData(tp_shape);
   for (const auto &sub: subkeys_values) {
     res->set_lca_at(MultiKey({Key::string_key(sub.first)}), sub.second);
-  }
-  if (optional_flag) {
-    res->set_or_false_flag();
-    res->set_or_null_flag();
   }
   return res;
 }
