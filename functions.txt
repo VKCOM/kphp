@@ -53,19 +53,12 @@ class McMemcache implements Memcache {
 class RpcMemcache implements Memcache {
     public function __construct($fake ::: bool = false) ::: RpcMemcache;
 
-    /** @kphp-extern-func-info can_throw */
     public function get ($key) ::: var;
-    /** @kphp-extern-func-info can_throw */
     public function delete ($key ::: string) ::: bool;
-    /** @kphp-extern-func-info can_throw */
     public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    /** @kphp-extern-func-info can_throw */
     public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    /** @kphp-extern-func-info can_throw */
     public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    /** @kphp-extern-func-info can_throw */
     public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
-    /** @kphp-extern-func-info can_throw */
     public function increment ($key ::: string, $v ::: Any = 1) ::: var;
 
     public function getVersion () ::: var;

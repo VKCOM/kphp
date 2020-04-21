@@ -598,6 +598,16 @@ bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const strin
   return false;
 }
 
+template <typename T1, typename T2, typename RetT = T1>
+RetT catchException(T1 result, T2 def, const char *function = __builtin_FUNCTION()) {
+  if (!CurException.is_null()) {
+    class_instance<C$Exception> e = std::move(CurException);
+    php_warning("Exception caught in %s: %s", function, e->message.c_str());
+    return def;
+  }
+  return result;
+}
+
 bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::add with key \"%s\"", key.c_str());
@@ -606,8 +616,7 @@ bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const strin
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  bool res = f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
-  return res;
+  return catchException(f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
 }
 
 bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int flags, int expire) {
@@ -618,7 +627,7 @@ bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  return f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
+  return catchException(f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
 }
 
 bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
@@ -629,7 +638,7 @@ bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const s
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  return f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake);
+  return catchException(f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
 }
 
 var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const var &key_var) {
@@ -642,7 +651,7 @@ var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const var &key_v
     auto cur_host = get_host(mc->hosts);
     var res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, mc->fake);
     php_assert(resumable_finished);
-    return res;
+    return catchException<var>(res, array<var>());
   } else {
     if (mc->hosts.count() <= 0) {
       php_warning("There is no available server to run RpcMemcache::get with key \"%s\"", key_var.to_string().c_str());
@@ -653,7 +662,7 @@ var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const var &key_v
     const string real_key = mc_prepare_key(key);
 
     auto cur_host = get_host(mc->hosts);
-    return f$rpc_mc_get(cur_host.conn, real_key, -1.0, mc->fake);
+    return catchException<var>(f$rpc_mc_get(cur_host.conn, real_key, -1.0, mc->fake), false);
   }
 }
 
@@ -665,7 +674,7 @@ bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &mc, const string
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(mc->hosts);
-  return f$rpc_mc_delete(cur_host.conn, real_key, -1.0, mc->fake);
+  return catchException(f$rpc_mc_delete(cur_host.conn, real_key, -1.0, mc->fake), false);
 }
 
 var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &mc, const string &key, const var &count) {
@@ -676,7 +685,7 @@ var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &mc, const stri
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(mc->hosts);
-  return f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, mc->fake);
+  return catchException(f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, mc->fake), false);
 }
 
 var f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const string &key, const var &count) {
@@ -687,7 +696,7 @@ var f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const stri
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(mc->hosts);
-  return f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, mc->fake);
+  return catchException(f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, mc->fake), false);
 }
 
 var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& mc) {
