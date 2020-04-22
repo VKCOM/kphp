@@ -3,6 +3,8 @@
 /kphp-serialized-field\(128\) must be >=0 and < than 127/
 <?php
 
+require_once 'polyfills.php';
+
 /** @kphp-serializable */
 class A {
     /**
@@ -19,3 +21,4 @@ class A {
 }
 
 $a = new A();
+instance_serialize($a);

@@ -49,6 +49,13 @@ class PrimitiveHolder {
     public $null_f = NULL;
 
     /**
+     * @kphp-serialized-field 8
+     * @var int
+     */
+    public $negative_int_f = -12312323;
+
+
+    /**
      * @param $another PrimitiveHolder
      * @return bool
      */
@@ -59,13 +66,15 @@ class PrimitiveHolder {
         var_dump($another->bool_false_f);
         var_dump($another->bool_true_f);
         var_dump($another->null_f);
+        var_dump($another->negative_int_f);
 
         return $this->int_f === $another->int_f
             && $this->float_f === $another->float_f
             && is_nan($this->float_NaN_f) && is_nan($another->float_NaN_f)
             && $this->bool_false_f === $another->bool_false_f
             && $this->bool_true_f === $another->bool_true_f
-            && $this->null_f === $another->null_f;
+            && $this->null_f === $another->null_f
+            && $this->negative_int_f === $another->negative_int_f;
     }
 }
 

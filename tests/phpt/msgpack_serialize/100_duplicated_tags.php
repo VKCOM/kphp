@@ -2,6 +2,8 @@
 /kphp-serialized-field: 1 is already in use/
 <?php
 
+require_once 'polyfills.php';
+
 /** @kphp-serializable */
 class A {
     /**
@@ -18,3 +20,4 @@ class A {
 }
 
 $a = new A();
+instance_serialize($a);

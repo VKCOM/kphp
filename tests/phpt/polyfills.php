@@ -266,7 +266,7 @@ function run_or_warning(callable $fun) {
   try {
     return $fun();
   } catch (Throwable $e) {
-    warning($e->getMessage() . '\n' . $e->getTraceAsString());
+    warning($e->getMessage() . "\n" . $e->getTraceAsString());
     return null;
   }
 }

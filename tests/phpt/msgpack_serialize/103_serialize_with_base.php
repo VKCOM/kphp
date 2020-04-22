@@ -2,6 +2,8 @@
 /You may not serialize polymorphic classes/
 <?php
 
+require_once 'polyfills.php';
+
 class Base {
     public $b = 10;
 }
@@ -22,3 +24,4 @@ class A extends Base {
 }
 
 $a = new A();
+instance_serialize($a);

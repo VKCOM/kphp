@@ -2,6 +2,8 @@
 /php-serialized-field is required for field: x/
 <?php
 
+require_once 'polyfills.php';
+
 /** 
  * @kphp-serializable
  **/
@@ -19,3 +21,4 @@ class A {
 }
 
 $a = new A();
+instance_serialize($a);

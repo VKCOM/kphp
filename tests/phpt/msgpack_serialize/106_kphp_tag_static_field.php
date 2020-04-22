@@ -2,6 +2,8 @@
 /kphp-serialized-field is allowed only for instance fields: y/
 <?php
 
+require_once 'polyfills.php';
+
 /** 
  * @kphp-serializable
  **/
@@ -16,3 +18,4 @@ class A {
 }
 
 $a = new A();
+instance_serialize($a);
