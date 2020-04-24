@@ -1173,9 +1173,13 @@ void global_init_openssl_lib() {
 
   register_stream_functions(&ssl_stream_functions, false);
 
-  SSL_load_error_strings();
+  OPENSSL_config(nullptr);
+  SSL_library_init();
+  OpenSSL_add_all_ciphers();
+  OpenSSL_add_all_digests();
   OpenSSL_add_all_algorithms();
-  OpenSSL_add_ssl_algorithms();
+
+  SSL_load_error_strings();
 }
 
 void free_openssl_lib() {
@@ -1399,10 +1403,6 @@ var f$openssl_x509_checkpurpose(const string &data, int purpose) {
 }
 
 namespace {
-bool is_mode_allowed(const EVP_CIPHER *cipher_type) {
-  const unsigned long mode = EVP_CIPHER_mode(cipher_type);
-  return (mode != EVP_CIPH_GCM_MODE && mode != EVP_CIPH_CCM_MODE);
-}
 
 enum cipher_opts : int {
   OPENSSL_RAW_DATA = 1,
@@ -1420,7 +1420,7 @@ struct CipherCtx {
     options_(options),
     action_(action) {
     type_ = EVP_get_cipherbyname(method.c_str());
-    if (!type_ || !is_mode_allowed(type_)) {
+    if (!type_) {
       php_warning("Unknown cipher algorithm '%s'", method.c_str());
       return;
     }
@@ -1540,10 +1540,9 @@ private:
 };
 
 template<bool allow_alias>
-void openssl_add_method(const EVP_CIPHER *cipher_type, const char *from, const char *to, void *arg) {
-  const EVP_CIPHER *type = cipher_type ? cipher_type : reinterpret_cast<const EVP_CIPHER *>(to);
-  if (is_mode_allowed(type) && (allow_alias || cipher_type)) {
-    reinterpret_cast<array<string> *>(arg)->push_back(string(from));
+void openssl_add_method(const OBJ_NAME *name, void *arg) {
+  if (name->alias == 0 || allow_alias) {
+    reinterpret_cast<array<string> *>(arg)->push_back(string{name->name});
   }
 }
 
@@ -1559,10 +1558,9 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data
 
 array<string> f$openssl_get_cipher_methods(bool aliases) {
   array<string> return_value;
-  EVP_CIPHER_do_all_sorted(aliases
-                           ? openssl_add_method<true>
-                           : openssl_add_method<false>,
-                           &return_value);
+  OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
+                         aliases ? openssl_add_method<true>: openssl_add_method<false>,
+                         &return_value);
   return return_value;
 }
 
@@ -1572,7 +1570,7 @@ Optional<int> f$openssl_cipher_iv_length(const string &method) {
     return false;
   }
   const EVP_CIPHER *cipher_type = EVP_get_cipherbyname(method.c_str());
-  if (!cipher_type || !is_mode_allowed(cipher_type)) {
+  if (!cipher_type) {
     php_warning("Unknown cipher algorithm");
     return false;
   }
