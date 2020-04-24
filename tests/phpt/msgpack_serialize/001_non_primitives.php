@@ -53,6 +53,12 @@ class NonPrimitivesHolder {
     public $or_null_string_f = true ? "zxcv" : null;
 
     /**
+     * @kphp-serialized-field 40
+     * @var (int|false)[]
+     */
+    public $or_int_false_arr_f = [false ? 10 : false, 10];
+
+    /**
      * @param $another NonPrimitivesHolder
      * @return bool
      */
@@ -65,6 +71,7 @@ class NonPrimitivesHolder {
         var_dump($another->or_int_f);
         var_dump($another->or_int_false_f);
         var_dump($another->or_null_string_f);
+        var_dump($another->or_int_false_arr_f);
 
         return $this->str_f === $another->str_f
             && $this->arr_f === $another->arr_f
@@ -73,7 +80,8 @@ class NonPrimitivesHolder {
             && $this->tuple_string_int_f === $another->tuple_string_int_f
             && $this->or_int_f === $another->or_int_f
             && $this->or_int_false_f === $another->or_int_false_f
-            && $this->or_null_string_f === $another->or_null_string_f;
+            && $this->or_null_string_f === $another->or_null_string_f
+            && $this->or_int_false_arr_f === $another->or_int_false_arr_f;
     }
 }
 
