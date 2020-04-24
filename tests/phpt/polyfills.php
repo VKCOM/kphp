@@ -271,17 +271,16 @@ function run_or_warning(callable $fun) {
   }
 }
 
-function instance_serialize($instance) : ?string {
-  return run_or_warning(function() use ($instance) {
-    ClassTransformer::$depth = 0;
-    $packer                  = new Packer();
-    $packer                  = $packer->extendWith(new ClassTransformer());
+function instance_serialize(object $instance): ?string {
+  ClassTransformer::$depth = 0;
+  return run_or_warning(static function() use ($instance) {
+    $packer = (new Packer())->extendWith(new ClassTransformer());
     return $packer->pack($instance);
   });
 }
 
-function instance_deserialize(string $packed_str, $type_of_instance) {
-  return run_or_warning(function() use($packed_str, $type_of_instance) {
+function instance_deserialize(string $packed_str, string $type_of_instance): ?object {
+  return run_or_warning(static function() use ($packed_str, $type_of_instance) {
     $unpacked_array = MessagePack::unpack($packed_str);
 
     $instance_parser = new InstanceParser($type_of_instance);
@@ -289,15 +288,23 @@ function instance_deserialize(string $packed_str, $type_of_instance) {
   });
 }
 
-function msgpack_serialize($value) : string {
-  return run_or_warning(function() use ($value) {
+/**
+ * @param mixed $value
+ * @return string
+ */
+function msgpack_serialize($value): string {
+  return run_or_warning(static function() use ($value) {
     $packer = new Packer();
     return $packer->pack($value);
   });
 }
 
+/**
+ * @param string $packed_str
+ * @return mixed
+ */
 function msgpack_deserialize(string $packed_str) {
-  return run_or_warning(function() use ($packed_str) {
+  return run_or_warning(static function() use ($packed_str) {
     return MessagePack::unpack($packed_str);
   });
 }
