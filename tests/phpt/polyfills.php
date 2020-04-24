@@ -3,6 +3,7 @@
 
 use MessagePack\MessagePack;
 use MessagePack\Packer;
+use MessagePack\PackOptions;
 use VK\InstanceSerialization\ClassTransformer;
 use VK\InstanceSerialization\InstanceParser;
 
@@ -274,7 +275,7 @@ function run_or_warning(callable $fun) {
 function instance_serialize(object $instance): ?string {
   ClassTransformer::$depth = 0;
   return run_or_warning(static function() use ($instance) {
-    $packer = (new Packer())->extendWith(new ClassTransformer());
+    $packer = (new Packer(PackOptions::FORCE_STR))->extendWith(new ClassTransformer());
     return $packer->pack($instance);
   });
 }
@@ -294,7 +295,7 @@ function instance_deserialize(string $packed_str, string $type_of_instance): ?ob
  */
 function msgpack_serialize($value): string {
   return run_or_warning(static function() use ($value) {
-    $packer = new Packer();
+    $packer = new Packer(PackOptions::FORCE_STR);
     return $packer->pack($value);
   });
 }
