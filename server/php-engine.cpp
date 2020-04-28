@@ -27,6 +27,7 @@
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
 #include "common/server/sockets.h"
+#include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "db-proxy/passwd.h"
 #include "drinkless/dl-utils-lite.h"

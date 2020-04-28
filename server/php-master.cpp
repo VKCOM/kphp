@@ -32,6 +32,7 @@
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
 #include "common/tl/act.h"
+#include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "drinkless/dl-utils-lite.h"
 #include "net/net-connections.h"
