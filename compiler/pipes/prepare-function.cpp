@@ -290,7 +290,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     }
 
     // если нет явного @return и typehint'a на возвращаемое значение, считаем что будто написано @return void
-    if (!has_return_php_doc && !f->is_constructor() && f->return_typehint.empty()) {
+    if (!has_return_php_doc && !f->is_constructor() && f->return_typehint.empty() && !f->assumption_for_return) {
       auto parsed = phpdoc_parse_type_and_var_name("void", f);
       auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
       f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);

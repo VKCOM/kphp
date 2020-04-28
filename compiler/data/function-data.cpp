@@ -132,6 +132,10 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
   auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
+  // It's safe to copy assumptions here and useful only for __virt_clone_self method
+  kphp_assert(assumption_return_status != AssumptionStatus::processing);
+  self_function->assumption_for_return = assumption_for_return;
+  self_function->assumption_return_status = assumption_return_status;
   class_id->members.safe_add_instance_method(self_function);
   self_function->is_virtual_method = false;
 
