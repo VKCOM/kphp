@@ -527,7 +527,7 @@ void init_confdata_binlog_reader() noexcept {
 
   binlog_disabled = 1;
   static engine_settings_t settings = {};
-  settings.name = "kphp server";
+  settings.name = NAME_VERSION;
   settings.load_index = []() {
     return ConfdataBinlogReplayer::get().load_index();
   };
