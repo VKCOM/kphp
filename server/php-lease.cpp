@@ -4,6 +4,7 @@
 #include "auto/TL/constants/kphp.h"
 #include "common/options.h"
 #include "common/precise-time.h"
+#include "common/tl/methods/string.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
 #include "net/net-connections.h"
