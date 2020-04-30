@@ -966,6 +966,8 @@ int run_worker() {
       exit(123);
     }
 
+    // TODO should we just use net_reset_after_fork()?
+
     //Epoll_close should clear internal structures but shouldn't change epoll_fd.
     //The same epoll_fd will be used by master
     //Solution: close epoll_fd first
