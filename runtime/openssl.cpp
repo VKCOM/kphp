@@ -1173,6 +1173,11 @@ void global_init_openssl_lib() {
 
   register_stream_functions(&ssl_stream_functions, false);
 
+  reinit_openssl_lib_hack();
+}
+
+// TODO: Когда разберемся с curl, заинлайнить эту фукнцию в global_init_openssl_lib
+void reinit_openssl_lib_hack() {
   OPENSSL_config(nullptr);
   SSL_library_init();
   OpenSSL_add_all_ciphers();

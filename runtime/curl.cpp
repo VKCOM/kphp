@@ -12,6 +12,7 @@
 #include "runtime/global_storage.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
+#include "runtime/openssl.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -894,5 +895,8 @@ void free_curl_lib() noexcept {
 
     curl_global_cleanup();
     CurlContexts::get().hard_reset();
+    // В curl_global_cleanup() libcurl полностью деинициализирует openssl
+    // TODO: Необходимо научиться жить без curl_global_cleanup(), и убрать этот хак отсюда
+    reinit_openssl_lib_hack();
   }
 }

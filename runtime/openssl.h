@@ -64,5 +64,6 @@ Optional<string> f$openssl_decrypt(const string &data, const string &method,
                                   const string &key, int options = 0, const string &iv = string());
 
 void global_init_openssl_lib();
+void reinit_openssl_lib_hack();
 
 void free_openssl_lib();
