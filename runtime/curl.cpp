@@ -75,6 +75,9 @@ public:
   }
 
   var get_info(CURLINFO what) noexcept {
+    if (what == CURLINFO_PRIVATE) {
+      return private_data;
+    }
     const int type = CURLINFO_TYPEMASK & what;
     switch (type) {
       case CURLINFO_STRING: {
@@ -118,6 +121,7 @@ public:
 
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
+  Optional<string> private_data{false};
 
   bool return_transfer{false};
 };
@@ -261,6 +265,11 @@ void linked_list_option_setter(EasyContext *easy_context, CURLoption option, con
   }
 }
 
+void private_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+  php_assert(option == CURLOPT_PRIVATE);
+  easy_context->private_data = value.to_string();
+}
+
 template<size_t OPTION_OFFSET, typename T, size_t N>
 void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_context, CURLoption option, const var &value) noexcept {
   long val = static_cast<long>(f$longval(value).l);
@@ -304,7 +313,8 @@ void auth_option_setter(EasyContext *easy_context, CURLoption option, const var 
     val -= OPTION_OFFSET;
     val = (val & 1) * CURLAUTH_BASIC +
           ((val >> 1) & 1) * CURLAUTH_DIGEST +
-          ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
+          // curl-kphp-vk не поддеживает эту опцию
+          // ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
           ((val >> 3) & 1) * CURLAUTH_NTLM;
     easy_context->set_option_safe(option, val);
   }
@@ -531,7 +541,15 @@ bool curl_setopt(EasyContext *easy_context, int option, const var &value) noexce
 
       {CURLOPT_PUT,                  long_option_setter},
 
-      {CURLOPT_RESOLVE,              linked_list_option_setter}
+      {CURLOPT_RESOLVE,              linked_list_option_setter},
+      {CURLOPT_HTTP_VERSION,         long_option_setter},
+
+      {CURLOPT_SSL_ENABLE_ALPN,      long_option_setter},
+      {CURLOPT_SSL_ENABLE_NPN,       long_option_setter},
+      {CURLOPT_TCP_KEEPALIVE,        long_option_setter},
+      {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
+      {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
+      {CURLOPT_PRIVATE,              private_option_setter},
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -695,7 +713,8 @@ var f$curl_getinfo(curl_easy easy_id, int option) noexcept {
       CURLINFO_SSL_VERIFYRESULT,
       CURLINFO_CONTENT_LENGTH_DOWNLOAD,
       CURLINFO_CONTENT_LENGTH_UPLOAD,
-      CURLINFO_CONTENT_TYPE
+      CURLINFO_CONTENT_TYPE,
+      CURLINFO_PRIVATE
     });
 
   constexpr size_t CURLINFO_OPTION_OFFSET = 100000;

@@ -15,6 +15,12 @@ function test_long_options() {
   var_dump(curl_setopt($c, CURLOPT_DNS_CACHE_TIMEOUT, null));
   var_dump(curl_setopt($c, CURLOPT_PUT, 897));
 
+  var_dump(curl_setopt($c, CURLOPT_SSL_ENABLE_ALPN, 1));
+  var_dump(curl_setopt($c, CURLOPT_SSL_ENABLE_NPN, 1));
+  var_dump(curl_setopt($c, CURLOPT_TCP_KEEPALIVE, 1));
+  var_dump(curl_setopt($c, CURLOPT_TCP_KEEPIDLE, 5));
+  var_dump(curl_setopt($c, CURLOPT_TCP_KEEPINTVL, 12));
+
   curl_close($c);
 }
 
@@ -90,11 +96,12 @@ function test_auth_option() {
 
   var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_BASIC));
   var_dump(curl_setopt($c, CURLOPT_PROXYAUTH, CURLAUTH_DIGEST));
-  var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_GSSNEGOTIATE));
+  // curl-kphp-vk не поддеживает эту опцию
+  // var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_GSSNEGOTIATE));
   var_dump(curl_setopt($c, CURLOPT_PROXYAUTH, CURLAUTH_NTLM));
   var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_ANYSAFE));
   var_dump(curl_setopt($c, CURLOPT_PROXYAUTH, CURLAUTH_ANY));
-  var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_BASIC|CURLAUTH_GSSNEGOTIATE));
+  var_dump(curl_setopt($c, CURLOPT_HTTPAUTH, CURLAUTH_BASIC|CURLAUTH_NTLM));
 
   curl_close($c);
 }

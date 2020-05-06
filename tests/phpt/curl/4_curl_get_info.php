@@ -11,6 +11,7 @@ function test_get_info_all() {
   unset($info["certinfo"]);
   $info["request_header"] = "";
 #endif
+  $info["filetime"] = 0;
 
   var_dump($info);
 
@@ -34,7 +35,6 @@ function test_get_info_options() {
 
   var_dump(curl_getinfo($c, CURLINFO_EFFECTIVE_URL));
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CODE));
-  var_dump(curl_getinfo($c, CURLINFO_FILETIME));
   var_dump(curl_getinfo($c, CURLINFO_TOTAL_TIME));
   var_dump(curl_getinfo($c, CURLINFO_NAMELOOKUP_TIME));
   var_dump(curl_getinfo($c, CURLINFO_CONNECT_TIME));
@@ -61,6 +61,36 @@ function test_get_info_options() {
   curl_close($c);
 }
 
+function test_get_private_data() {
+  $c = curl_init();
+
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, "Hello!"));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, null));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, 231));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, ["hello", 2, "world"]));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, false));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, true));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  var_dump(curl_setopt($c, CURLOPT_PRIVATE, 0.21));
+  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
+
+  curl_close($c);
+}
+
 test_get_info_all();
 test_get_info_header();
 test_get_info_options();
+test_get_private_data();
