@@ -31,6 +31,7 @@
 #include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
+#include "compiler/pipes/cfg-end.h"
 #include "compiler/pipes/cfg.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"

@@ -17,9 +17,3 @@ public:
     SyncPipeF<FunctionAndCFG>::on_finish(os);
   }
 };
-
-/*** Control flow graph. End ***/
-class CFGEndF {
-public:
-  void execute(FunctionAndCFG data, DataStream<FunctionPtr> &os);
-};

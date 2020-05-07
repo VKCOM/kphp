@@ -3,221 +3,9 @@
 #include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
-#include "compiler/inferring/public.h"
 #include "compiler/utils/dsu.h"
 #include "compiler/utils/idgen.h"
 #include "compiler/utils/string-utils.h"
-
-class CFGData {
-private:
-  std::vector<VertexAdaptor<op_var>> uninited_vars;
-  std::vector<VarPtr> todo_var;
-  std::vector<std::vector<std::vector<VertexAdaptor<op_var>>>> todo_parts;
-  FunctionPtr function;
-
-public:
-  explicit CFGData(FunctionPtr new_function)
-    : function(std::move(new_function)) {}
-
-  void split_var(VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
-
-  FunctionPtr get_function() {
-    return function;
-  }
-
-  void add_uninited_var(VertexAdaptor<op_var> v);
-
-  void check_uninited();
-
-  VarPtr merge_vars(const std::vector<VarPtr> &vars, const std::string &new_name);
-
-  struct MergeData {
-    int id;
-    VarPtr var;
-  };
-
-  static void sort_merge_data(std::vector<MergeData> &to_merge);
-
-  static bool eq_merge_data(const MergeData &a, const MergeData &b);
-
-  void merge_same_type();
-};
-
-VarPtr CFGData::merge_vars(const vector<VarPtr> &vars, const string &new_name) {
-  VarPtr new_var = G->create_var(new_name, VarData::var_unknown_t);;
-  //new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
-  new_var->tinf_node.copy_type_from(tinf::get_type(vars[0]));
-
-  int param_i = -1;
-  for (auto var : vars) {
-    new_var->is_read_only &= var->is_read_only;
-    if (var->type() == VarData::var_param_t) {
-      param_i = var->param_i;
-    } else if (var->type() == VarData::var_local_t) {
-      //FIXME: remember to remove all unused variables
-      //func->local_var_ids.erase (*i);
-      auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
-      if (function->local_var_ids.end() != tmp) {
-        function->local_var_ids.erase(tmp);
-      } else {
-        kphp_fail();
-      }
-
-    } else {
-      kphp_assert_msg(false, "unreachable");
-    }
-  }
-  if (param_i != -1) {
-    new_var->type() = VarData::var_param_t;
-    function->param_ids[param_i] = new_var;
-  } else {
-    new_var->type() = VarData::var_local_t;
-    function->local_var_ids.push_back(new_var);
-  }
-
-  return new_var;
-}
-void CFGData::merge_same_type() {
-  std::vector<MergeData> to_merge;
-  for (auto &parts : todo_parts) {
-    to_merge.clear();
-    to_merge.reserve(parts.size());
-    for (int i = 0; i < parts.size(); i++) {
-      to_merge.emplace_back(MergeData{i, parts[i][0]->var_id});
-    }
-    sort_merge_data(to_merge);
-
-    std::vector<int> ids;
-    const auto n = parts.size();
-    for (size_t i = 0; i <= n; i++) {
-      if (i == n || (i > 0 && !eq_merge_data(to_merge[i - 1], to_merge[i]))) {
-        std::vector<VarPtr> vars;
-        vars.reserve(ids.size());
-        for (int id : ids) {
-          vars.push_back(parts[id][0]->var_id);
-        }
-
-        const std::string &new_name = vars[0]->name;   // либо name, либо name$vN
-        VarPtr new_var = merge_vars(vars, new_name);
-        for (int id : ids) {
-          for (auto v : parts[id]) {
-            v->var_id = new_var;
-          }
-        }
-
-        ids.clear();
-      }
-      if (i == n) {
-        break;
-      }
-      ids.push_back(to_merge[i].id);
-    }
-  }
-}
-
-void CFGData::sort_merge_data(vector<MergeData> &to_merge) {
-  std::sort(to_merge.begin(), to_merge.end(),
-            [](const MergeData &a, const MergeData &b) {
-              // типы отличаются — сортируем по ним, иначе по имени (name$vN < name$vM при N<M, name < name$vN)
-              const int eq = type_out(tinf::get_type(a.var), gen_out_style::txt).compare(type_out(tinf::get_type(b.var), gen_out_style::txt));
-              return eq == 0 ? a.var->name < b.var->name : eq < 0;
-            });
-}
-
-bool CFGData::eq_merge_data(const CFGData::MergeData &a, const CFGData::MergeData &b) {
-  return type_out(tinf::get_type(a.var), gen_out_style::txt) ==
-         type_out(tinf::get_type(b.var), gen_out_style::txt);
-}
-
-void CFGData::check_uninited() {
-  for (auto v : uninited_vars) {
-    if (tinf::get_type(v)->ptype() == tp_var) {
-      continue;
-    }
-
-    stage::set_location(v->get_location());
-    kphp_warning (fmt_format("Variable [{}] may be used uninitialized", v->var_id->name));
-  }
-}
-
-void CFGData::add_uninited_var(VertexAdaptor<op_var> v) {
-  if (v && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
-    uninited_vars.push_back(v);
-    v->var_id->set_uninited_flag(true);
-  }
-}
-
-void CFGData::split_var(VarPtr var, vector<std::vector<VertexAdaptor<op_var>>> &parts) {
-  assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
-  int parts_size = (int)parts.size();
-  if (parts_size == 0) {
-    if (var->type() == VarData::var_local_t) {
-      function->local_var_ids.erase(
-        std::find(
-          function->local_var_ids.begin(),
-          function->local_var_ids.end(),
-          var));
-    }
-    return;
-  }
-  assert (parts_size > 1);
-
-  vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
-
-  for (int i = 0; i < parts_size; i++) {
-    // name$v1, name$v2 и т.п., но name (0-я копия) как есть
-    const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
-    VarPtr new_var = G->create_var(new_name, var->type());
-    new_var->holder_func = var->holder_func;
-
-    if (i && a) {
-      assumption_add_for_var(function, new_name, a);
-    }
-
-    for (auto v : parts[i]) {
-      v->var_id = new_var;
-    }
-
-    VertexRange params = function->get_params();
-    if (var->type() == VarData::var_local_t) {
-      new_var->type() = VarData::var_local_t;
-      function->local_var_ids.push_back(new_var);
-    } else if (var->type() == VarData::var_param_t) {
-      bool was_var = std::find(
-        parts[i].begin(),
-        parts[i].end(),
-        params[var->param_i].as<op_func_param>()->var()
-      ) != parts[i].end();
-
-      if (was_var) { //union of part that contains function argument
-        new_var->type() = VarData::var_param_t;
-        new_var->param_i = var->param_i;
-        new_var->init_val = var->init_val;
-        new_var->is_read_only = var->is_read_only;
-        function->param_ids[var->param_i] = new_var;
-      } else {
-        new_var->type() = VarData::var_local_t;
-        function->local_var_ids.push_back(new_var);
-      }
-    } else {
-      kphp_fail();
-    }
-
-  }
-
-  if (var->type() == VarData::var_local_t) {
-    auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
-    if (function->local_var_ids.end() != tmp) {
-      function->local_var_ids.erase(tmp);
-    } else {
-      kphp_fail();
-    }
-  }
-
-  todo_var.push_back(var);
-
-  todo_parts.emplace_back(std::move(parts));
-}
 
 namespace cfg {
 // just simple int id type
@@ -279,7 +67,7 @@ struct VarSplitData {
 using VarSplitPtr = Id<VarSplitData>;
 
 class CFG {
-  CFGData *data = nullptr;
+  CFGData data;
   IdGen<Node> node_gen;
   IdMap<std::vector<Node>> node_next, node_prev;
   IdMap<std::vector<UsagePtr>> node_usages;
@@ -327,11 +115,15 @@ class CFG {
   void compress_usages(std::vector<UsagePtr> &usages);
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
   void dfs_apply_type_hint(Node v, UsagePtr usage);
-  void process_var(VarPtr v);
+  void process_var(FunctionPtr function, VarPtr v);
   int register_vertices(VertexPtr v, int N);
-  void process_function(FunctionPtr func);
+  void add_uninited_var(VertexAdaptor<op_var> v);
+  void split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
 public:
-  void run(CFGData *new_data);
+  void process_function(FunctionPtr func);
+  CFGData move_data() {
+    return std::move(data);
+  }
 };
 
 Node CFG::new_node() {
@@ -1170,14 +962,93 @@ UsagePtr CFG::search_uninit_usage(Node v, VarPtr var) {
   return {};
 }
 
-void CFG::process_var(VarPtr var) {
+void CFG::add_uninited_var(VertexAdaptor<op_var> v) {
+  if (v && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
+    data.uninited_vars.push_back(v);
+    v->var_id->set_uninited_flag(true);
+  }
+}
+
+void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexAdaptor<op_var>>> &parts) {
+  assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
+  int parts_size = (int)parts.size();
+  if (parts_size == 0) {
+    if (var->type() == VarData::var_local_t) {
+      function->local_var_ids.erase(
+        std::find(
+          function->local_var_ids.begin(),
+          function->local_var_ids.end(),
+          var));
+    }
+    return;
+  }
+  assert (parts_size > 1);
+
+  vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
+
+  for (int i = 0; i < parts_size; i++) {
+    // name$v1, name$v2 и т.п., но name (0-я копия) как есть
+    const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
+    VarPtr new_var = G->create_var(new_name, var->type());
+    new_var->holder_func = var->holder_func;
+
+    if (i && a) {
+      assumption_add_for_var(function, new_name, a);
+    }
+
+    for (auto v : parts[i]) {
+      v->var_id = new_var;
+    }
+
+    VertexRange params = function->get_params();
+    if (var->type() == VarData::var_local_t) {
+      new_var->type() = VarData::var_local_t;
+      function->local_var_ids.push_back(new_var);
+    } else if (var->type() == VarData::var_param_t) {
+      bool was_var = std::find(
+        parts[i].begin(),
+        parts[i].end(),
+        params[var->param_i].as<op_func_param>()->var()
+      ) != parts[i].end();
+
+      if (was_var) { //union of part that contains function argument
+        new_var->type() = VarData::var_param_t;
+        new_var->param_i = var->param_i;
+        new_var->init_val = var->init_val;
+        new_var->is_read_only = var->is_read_only;
+        function->param_ids[var->param_i] = new_var;
+      } else {
+        new_var->type() = VarData::var_local_t;
+        function->local_var_ids.push_back(new_var);
+      }
+    } else {
+      kphp_fail();
+    }
+
+  }
+
+  if (var->type() == VarData::var_local_t) {
+    auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
+    if (function->local_var_ids.end() != tmp) {
+      function->local_var_ids.erase(tmp);
+    } else {
+      kphp_fail();
+    }
+  }
+
+  data.todo_var.push_back(var);
+
+  data.todo_parts.emplace_back(std::move(parts));
+}
+
+void CFG::process_var(FunctionPtr function, VarPtr var) {
   VarSplitPtr var_split = var_split_data[var];
   kphp_assert (var_split);
 
   if (var->type() != VarData::var_param_t) {
     cur_dfs_mark++;
     if (UsagePtr uninited = search_uninit_usage(current_start, var)) {
-      data->add_uninited_var(uninited->v);
+      add_uninited_var(uninited->v);
     }
   }
 
@@ -1219,7 +1090,7 @@ void CFG::process_var(VarPtr var) {
     }
   }
 
-  data->split_var(var, parts);
+  split_var(function, var, parts);
 }
 
 void CFG::confirm_usage(VertexPtr v, bool recursive_flag) {
@@ -1334,15 +1205,10 @@ void CFG::process_function(FunctionPtr function) {
 
   for (auto var: splittable_vars) {
     if (var->type() != VarData::var_local_inplace_t) {
-      process_var(var);
+      process_var(function, var);
     }
   }
   node_gen.clear();
-}
-
-void CFG::run(CFGData *new_data) {
-  data = new_data;
-  process_function(data->get_function());
 }
 } // namespace cfg
 
@@ -1351,26 +1217,11 @@ void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
   stage::set_function(function);
 
   cfg::CFG cfg;
-  auto data = new CFGData(function);
-  cfg.run(data);
+  cfg.process_function(function);
 
   if (stage::has_error()) {
     return;
   }
 
-  os << FunctionAndCFG{function, data};
-}
-
-void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
-  stage::set_name("Control flow graph. End");
-  stage::set_function(data.function);
-  data.data->check_uninited();
-  data.data->merge_same_type();
-  delete data.data;
-
-  if (stage::has_error()) {
-    return;
-  }
-
-  os << data.function;
+  os << FunctionAndCFG{function, cfg.move_data()};
 }
