@@ -87,10 +87,7 @@ bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {
 
 PrimitiveType infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_func_call> extern_function_call,
                                          FunctionPtr function_context, vk::intrusive_ptr<Assumption> &assumption) {
-  if (auto or_false_rule = type_rule.try_as<op_type_expr_or_false>()) {
-    // TODO:
-    return infer_type_of_callback_arg(or_false_rule->expr(), extern_function_call, function_context, assumption);
-  } else if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
+  if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
     PrimitiveType result_pt = tp_Unknown;
     for (auto v : lca_rule->args()) {
       PrimitiveType pt = infer_type_of_callback_arg(v, extern_function_call, function_context, assumption);

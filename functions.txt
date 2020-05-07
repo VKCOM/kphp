@@ -913,7 +913,7 @@ function longval ($v ::: Any) ::: Long;
 function ulongval ($v ::: Any) ::: ULong;
 function arrayval ($v ::: array) ::: ^1;
 #function objectval ($v ::: Any) ::: object;
-
+function drop_optional ($v ::: array) ::: DropFalse< DropNull<^1> >;
 
 /** files **/
 define('STDIN', 'php://stdin');

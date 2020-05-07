@@ -36,6 +36,12 @@ inline RValue drop_or_null(RValue rvalue) {
   return rvalue;
 }
 
+inline RValue drop_or_false(RValue rvalue) {
+  rvalue.drop_or_false = true;
+  return rvalue;
+}
+
+
 inline RValue as_rvalue(PrimitiveType primitive_type) {
   return RValue(TypeData::get_type(primitive_type));
 }

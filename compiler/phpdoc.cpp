@@ -255,15 +255,20 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);
       }
-      // (для functions.txt) OrFalse<int> (нужно оставить, пока есть /*:= в коде сайта)
-      if (cur_tok->str_val == "OrFalse") {
-        cur_tok++;
-        return VertexAdaptor<op_type_expr_or_false>::create(parse_nested_one_type_rule());
-      }
       // (для functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
         return VertexAdaptor<op_type_expr_instance>::create(parse_nested_one_type_rule());
+      }
+      // (для functions.txt) DropFalse<^1>
+      if (cur_tok->str_val == "DropFalse") {
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_drop_false>::create(parse_nested_one_type_rule());
+      }
+      // (для functions.txt) DropNull<^1>
+      if (cur_tok->str_val == "DropNull") {
+        cur_tok++;
+        return VertexAdaptor<op_type_expr_drop_null>::create(parse_nested_one_type_rule());
       }
       // иначе это трактуем как имя класса (в т.ч. с маленькой буквы)
       // работают абсолютное, относительное имя, self (учитывает use'ы файла current_function)

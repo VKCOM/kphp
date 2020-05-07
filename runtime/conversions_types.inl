@@ -221,3 +221,22 @@ inline array<T> f$arrayval(Optional<array<T>> &&val) {
   }
   return std::move(val.val());
 }
+
+template<typename T>
+inline T f$drop_optional(const Optional<T>& val) {
+  if (!val.has_value()) {
+    php_warning("drop optional is called on null or false");
+    return T();
+  }
+  return val.val();
+}
+
+template<typename T>
+inline T f$drop_optional(Optional<T>&& val) {
+  if (!val.has_value()) {
+    php_warning("drop optional is called on null or false");
+    return T();
+  }
+  return std::move(val.val());
+}
+

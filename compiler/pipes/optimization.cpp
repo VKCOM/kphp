@@ -183,46 +183,58 @@ VertexPtr OptimizationPass::fix_int_const(VertexPtr root) {
   return root;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
-  VertexPtr expr = root.as<meta_op_unary>()->expr();
-  const TypeData *tp = tinf::get_type(expr);
-  if (!tp->use_optional()) {
+  while (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
+    VertexPtr expr = root.as<meta_op_unary>()->expr();
+    const TypeData *tp = tinf::get_type(expr);
     VertexPtr res;
-    if (vk::any_of_equal(root->type(), op_conv_int, op_conv_int_l) && tp->ptype() == tp_int) {
-      res = expr;
-    } else if (root->type() == op_conv_bool && tp->ptype() == tp_bool) {
-      res = expr;
-    } else if (root->type() == op_conv_float && tp->ptype() == tp_float) {
-      res = expr;
-    } else if (vk::any_of_equal(root->type(), op_conv_string, op_conv_string_l) && tp->ptype() == tp_string) {
-      res = expr;
-    } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
-      res = expr;
-    } else if (root->type() == op_conv_uint && tp->ptype() == tp_UInt) {
-      res = expr;
-    } else if (root->type() == op_conv_long && tp->ptype() == tp_Long) {
-      res = expr;
-    } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
-      res = expr;
-    } else if (root->type() == op_conv_var) {
-      if (tp->ptype() == tp_void) {
-        expr->rl_type = val_none;
-        res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
-      } else if (type_lca(tp->ptype(), tp_var) == tp_var) {
+    if (!tp->use_optional()) {
+      if (vk::any_of_equal(root->type(), op_conv_int, op_conv_int_l) && tp->ptype() == tp_int) {
         res = expr;
+      } else if (root->type() == op_conv_bool && tp->ptype() == tp_bool) {
+        res = expr;
+      } else if (root->type() == op_conv_float && tp->ptype() == tp_float) {
+        res = expr;
+      } else if (vk::any_of_equal(root->type(), op_conv_string, op_conv_string_l) && tp->ptype() == tp_string) {
+        res = expr;
+      } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
+        res = expr;
+      } else if (root->type() == op_conv_uint && tp->ptype() == tp_UInt) {
+        res = expr;
+      } else if (root->type() == op_conv_long && tp->ptype() == tp_Long) {
+        res = expr;
+      } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
+        res = expr;
+      } else if (root->type() == op_conv_var) {
+        if (tp->ptype() == tp_void) {
+          expr->rl_type = val_none;
+          res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
+        } else if (type_lca(tp->ptype(), tp_var) == tp_var) {
+          res = expr;
+        }
+      } else if (vk::any_of_equal(root->type(), op_conv_drop_optional, op_conv_drop_false, op_conv_drop_null)) {
+        res = expr;
+      }
+    } else {
+      if (vk::any_of_equal(root->type(), op_conv_drop_null, op_conv_drop_false)) {
+        if (!tinf::get_type(root)->use_optional()) {
+          res = VertexAdaptor<op_conv_drop_optional>::create(expr);
+        } else {
+          res = expr;
+        }
       }
     }
     if (res) {
       res->rl_type = root->rl_type;
       root = res;
+    } else {
+      break;
     }
   }
   return root;
 }
 
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
-  if (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
-    root = remove_extra_conversions(root);
-  }
+  root = remove_extra_conversions(root);
 
   if (root->type() == op_set) {
     root = optimize_set_push_back(root.as<op_set>());

@@ -14,11 +14,18 @@ class ExprNodeRecalc : public NodeRecalc {
 private:
   template<PrimitiveType tp>
   void recalc_ptype();
+  template<typename InnerCall>
+  void recalc_and_drop_false(InnerCall call);
+  template<typename InnerCall>
+  void recalc_and_drop_null(InnerCall call);
+  template<typename InnerCall>
+  void recalc_and_drop_optional(InnerCall call);
 
   void recalc_ternary(VertexAdaptor<op_ternary> ternary);
   void apply_type_rule_lca(VertexAdaptor<op_type_expr_lca> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_instance(VertexAdaptor<op_type_expr_instance> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_or_false(VertexAdaptor<op_type_expr_or_false> type_rule, VertexAdaptor<op_func_call> expr);
+  void apply_type_rule_drop_or_false(VertexAdaptor<op_type_expr_drop_false> type_rule, VertexAdaptor<op_func_call> expr);
+  void apply_type_rule_drop_or_null(VertexAdaptor<op_type_expr_drop_null> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule, VertexAdaptor<op_func_call> expr);
   void apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr);
@@ -77,11 +84,40 @@ void ExprNodeRecalc::apply_type_rule_instance(VertexAdaptor<op_type_expr_instanc
   apply_instance_arg_ref(type_rule->expr().try_as<op_type_expr_arg_ref>(), expr);
 }
 
-void ExprNodeRecalc::apply_type_rule_or_false(VertexAdaptor<op_type_expr_or_false> type_rule, VertexAdaptor<op_func_call> expr) {
-  apply_type_rule(type_rule->expr(), expr);
-  if (new_type()->ptype() != tp_void) {
-    recalc_ptype<tp_False>();
-  }
+template<typename InnerCall>
+void ExprNodeRecalc::recalc_and_drop_false(InnerCall call) {
+  push_type();
+  call();
+  TypeData *type = pop_type();
+  set_lca(drop_or_false(as_rvalue(type)));
+}
+
+template<typename InnerCall>
+void ExprNodeRecalc::recalc_and_drop_null(InnerCall call) {
+  push_type();
+  call();
+  TypeData *type = pop_type();
+  set_lca(drop_or_null(as_rvalue(type)));
+}
+
+template<typename InnerCall>
+void ExprNodeRecalc::recalc_and_drop_optional(InnerCall call) {
+  push_type();
+  call();
+  TypeData *type = pop_type();
+  set_lca(drop_optional(as_rvalue(type)));
+  assert(!new_type_->or_false_flag());
+  assert(!new_type_->or_null_flag());
+}
+
+
+
+void ExprNodeRecalc::apply_type_rule_drop_or_false(VertexAdaptor<op_type_expr_drop_false> type_rule, VertexAdaptor<op_func_call> expr) {
+  return recalc_and_drop_false([&, this] {apply_type_rule(type_rule->expr(), expr);});
+}
+
+void ExprNodeRecalc::apply_type_rule_drop_or_null(VertexAdaptor<op_type_expr_drop_null> type_rule, VertexAdaptor<op_func_call> expr) {
+  return recalc_and_drop_null([&, this] {apply_type_rule(type_rule->expr(), expr);});
 }
 
 void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr) {
@@ -231,8 +267,11 @@ void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call>
     case op_type_expr_instance:
       apply_type_rule_instance(rule.as<op_type_expr_instance>(), expr);
       break;
-    case op_type_expr_or_false:
-      apply_type_rule_or_false(rule.as<op_type_expr_or_false>(), expr);
+    case op_type_expr_drop_false:
+      apply_type_rule_drop_or_false(rule.as<op_type_expr_drop_false>(), expr);
+      break;
+    case op_type_expr_drop_null:
+      apply_type_rule_drop_or_null(rule.as<op_type_expr_drop_null>(), expr);
       break;
     case op_type_expr_callback_call:
       apply_type_rule_callback_call(rule.as<op_type_expr_callback_call>(), expr);
@@ -556,6 +595,16 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_null:
       recalc_ptype<tp_Null>();
       break;
+
+    case op_conv_drop_false: {
+      return recalc_and_drop_false([&] { recalc_expr(expr.as<op_conv_drop_false>()->expr());});
+    }
+    case op_conv_drop_null: {
+      return recalc_and_drop_null([&] { recalc_expr(expr.as<op_conv_drop_null>()->expr());});
+    }
+    case op_conv_drop_optional: {
+      return recalc_and_drop_optional([&] { recalc_expr(expr.as<op_conv_drop_optional>()->expr());});
+    }
 
     case op_plus:
     case op_minus:

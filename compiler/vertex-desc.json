@@ -199,7 +199,11 @@
     "base_name": "meta_op_unary"
   },
   {
-    "name": "op_type_expr_or_false",
+    "name": "op_type_expr_drop_false",
+    "base_name": "meta_op_unary"
+  },
+  {
+    "name": "op_type_expr_drop_null",
     "base_name": "meta_op_unary"
   },
   {
@@ -1477,6 +1481,36 @@
       "cnst": "cnst_const_func",
       "type": "conv_op",
       "str": "regexp"
+    }
+  },
+  {
+    "name": "op_conv_drop_false",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": ""
+    }
+  },
+  {
+    "name": "op_conv_drop_null",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": ""
+    }
+  },
+  {
+    "name": "op_conv_drop_optional",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "conv_op",
+      "str": "f$drop_optional"
     }
   },
   {

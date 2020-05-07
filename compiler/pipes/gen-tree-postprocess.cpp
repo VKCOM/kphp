@@ -62,16 +62,19 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
 
 GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
   static std::map<std::string, builtin_fun> functions = {
-    {"strval",   {op_conv_string, 1}},
-    {"intval",   {op_conv_int,    1}},
-    {"boolval",  {op_conv_bool,   1}},
-    {"floatval", {op_conv_float,  1}},
-    {"arrayval", {op_conv_array,  1}},
-    {"uintval",  {op_conv_uint,   1}},
-    {"longval",  {op_conv_long,   1}},
-    {"ulongval", {op_conv_ulong,  1}},
-    {"fork",     {op_fork,        1}},
-    {"pow",      {op_pow,         2}}
+    {"strval",        {op_conv_string,         1}},
+    {"intval",        {op_conv_int,            1}},
+    {"boolval",       {op_conv_bool,           1}},
+    {"floatval",      {op_conv_float,          1}},
+    {"arrayval",      {op_conv_array,          1}},
+    {"uintval",       {op_conv_uint,           1}},
+    {"longval",       {op_conv_long,           1}},
+    {"ulongval",      {op_conv_ulong,          1}},
+    {"drop_false",    {op_conv_drop_false,     1}},
+    {"drop_null",     {op_conv_drop_null,      1}},
+    {"drop_optional", {op_conv_drop_optional,  1}},
+    {"fork",          {op_fork,                1}},
+    {"pow",           {op_pow,                 2}}
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
