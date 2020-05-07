@@ -193,9 +193,14 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
   }
 
   std::vector<VertexPtr> cases;
+  std::unordered_set<ClassPtr> unique_inheritors;
   for (auto inheritor : klass->get_all_inheritors()) {
     if (auto case_for_cur_class = gen_case_calling_methods_on_derived_class(inheritor, virtual_function)) {
       cases.emplace_back(case_for_cur_class);
+
+      if (!unique_inheritors.insert(inheritor).second && !stage::has_global_error()) {
+        kphp_error(false, fmt_format("duplicated class: {} in hierarchy from class: {}", klass->name, inheritor->name));
+      }
     }
   }
 
