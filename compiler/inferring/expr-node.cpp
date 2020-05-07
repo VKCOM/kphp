@@ -106,18 +106,16 @@ void ExprNodeRecalc::recalc_and_drop_optional(InnerCall call) {
   call();
   TypeData *type = pop_type();
   set_lca(drop_optional(as_rvalue(type)));
-  assert(!new_type_->or_false_flag());
-  assert(!new_type_->or_null_flag());
+  kphp_assert(!new_type_->or_false_flag());
+  kphp_assert(!new_type_->or_null_flag());
 }
 
-
-
 void ExprNodeRecalc::apply_type_rule_drop_or_false(VertexAdaptor<op_type_expr_drop_false> type_rule, VertexAdaptor<op_func_call> expr) {
-  return recalc_and_drop_false([&, this] {apply_type_rule(type_rule->expr(), expr);});
+  return recalc_and_drop_false([&] { apply_type_rule(type_rule->expr(), expr); });
 }
 
 void ExprNodeRecalc::apply_type_rule_drop_or_null(VertexAdaptor<op_type_expr_drop_null> type_rule, VertexAdaptor<op_func_call> expr) {
-  return recalc_and_drop_null([&, this] {apply_type_rule(type_rule->expr(), expr);});
+  return recalc_and_drop_null([&] { apply_type_rule(type_rule->expr(), expr); });
 }
 
 void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr) {

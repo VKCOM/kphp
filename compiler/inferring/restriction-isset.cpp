@@ -57,7 +57,7 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
       break;
     }
     case tp_bool: {
-      check_mask |= ifi_is_scalar | ifi_is_bool;
+      check_mask |= ifi_is_scalar | ifi_is_bool | ifi_is_false;
       break;
     }
     case tp_int: {

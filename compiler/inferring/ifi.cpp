@@ -19,7 +19,7 @@ is_func_id_t get_ifi_id(VertexPtr v) {
     }
 
     if (b->type() == op_false) {                                // $var === false
-      return ifi_is_bool;
+      return ifi_is_false;
     }
     if (b->type() == op_string && b->get_string().empty()) {    // $var === ''
       return ifi_is_string;

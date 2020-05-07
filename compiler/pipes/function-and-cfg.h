@@ -5,7 +5,6 @@
 
 struct CFGData {
   std::vector<VertexAdaptor<op_var>> uninited_vars;
-  std::vector<VarPtr> todo_var;
   std::vector<std::vector<std::vector<VertexAdaptor<op_var>>>> todo_parts;
 };
 

@@ -499,6 +499,10 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
     index_depth += "[*]";
   }
 
+  while (vk::any_of_equal(v->type(), op_conv_drop_optional, op_conv_drop_false,op_conv_drop_null)) {
+    v = v.try_as<meta_op_unary>()->expr();
+  }
+
   if (auto var_vertex = v.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     if (index_depth.empty()) {              // Unknown type single var access

@@ -3,6 +3,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/ifi.h"
 #include "compiler/utils/dsu.h"
 #include "compiler/utils/idgen.h"
 #include "compiler/utils/string-utils.h"
@@ -24,7 +25,8 @@ private:
 enum UsageType : uint8_t {
   usage_write_t,
   usage_read_t,
-  usage_type_hint_t
+  usage_type_hint_t,
+  usage_type_check_t,
 };
 
 struct UsageData {
@@ -33,6 +35,8 @@ struct UsageData {
   Node node;
   UsageType type;
   bool weak_write_flag = false;
+  is_func_id_t checked_type;
+
   VertexAdaptor<op_var> v;
 
   UsageData(UsageType type, VertexAdaptor<op_var> v) :
@@ -73,10 +77,12 @@ class CFG {
   IdMap<std::vector<UsagePtr>> node_usages;
   IdMap<std::vector<SubTreeData>> node_subtrees;
   IdMap<VertexUsage> vertex_usage;
+  IdMap<is_func_id_t> vertex_convertions;
   int cur_dfs_mark = 0;
   Node current_start;
 
   IdMap<int> node_was;
+  IdMap<is_func_id_t> node_checked_type;
   IdMap<UsagePtr> node_mark_dfs;
   IdMap<int> node_mark_dfs_type_hint;
   IdMap<VarSplitPtr> var_split_data;
@@ -109,7 +115,7 @@ class CFG {
   void calc_used(Node v);
   void confirm_usage(VertexPtr, bool recursive_flags);
 
-  UsagePtr search_uninit_usage(Node v, VarPtr var);
+  void dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask);
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
   void compress_usages(std::vector<UsagePtr> &usages);
@@ -150,6 +156,7 @@ void CFG::add_usage(Node node, UsagePtr usage) {
   if (!usage) {
     return;
   }
+  //fprintf(stderr, "%s is used at node %d with type %d\n", usage->v->get_string().c_str(), get_index(node), usage->type);
   //hope that one node will contain usages of the same type
   kphp_assert (node_usages[node].empty() || node_usages[node].back()->type == usage->type);
   node_usages[node].push_back(usage);
@@ -165,7 +172,7 @@ void CFG::add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag) 
 
 void CFG::add_edge(Node from, Node to) {
   if (from && to) {
-    // fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), from->id, to->id);
+    //fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), get_index(from), get_index(to));
     node_next[from].push_back(to);
     node_prev[to].push_back(from);
   }
@@ -338,6 +345,47 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
       create_cfg(tree_node, res_start, &res_finish);
       *res_true = new_node();
       *res_false = new_node();
+      auto add_type_check_usage = [&](Node to, int type, VertexAdaptor<op_var> var) {
+        if (vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) && !var->var_id->is_foreach_reference && !var->var_id->is_reference) {
+          UsagePtr usage = new_usage(usage_type_check_t, var);
+          usage->checked_type = static_cast<is_func_id_t>(type);
+          add_usage(to, usage);
+        }
+      };
+      if (auto call = tree_node.try_as<op_func_call>()) {
+        is_func_id_t type = get_ifi_id(tree_node);
+        if (type != ifi_error) {
+          if (auto var = call->args()[0].try_as<op_var>()) {
+            if (type == ifi_is_bool) {
+              type = static_cast<is_func_id_t>(ifi_is_bool | ifi_is_false);
+            }
+            add_type_check_usage(*res_true, type, var);
+            add_type_check_usage(*res_false, ifi_any_type & ~type, var);
+          }
+        }
+      } else if (auto isset = tree_node.try_as<op_isset>()) {
+        if (auto var = isset->expr().try_as<op_var>()) {
+          add_type_check_usage(*res_true, ifi_any_type & ~ifi_is_null, var);
+          add_type_check_usage(*res_false, ifi_is_null, var);
+        }
+      } else if (auto var = tree_node.try_as<op_var>()) {
+        add_type_check_usage(*res_true, ifi_any_type & ~(ifi_is_false | ifi_is_null), var);
+      } else if (vk::any_of_equal(tree_node->type(), op_eq3, op_neq3)) {
+        if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
+          if (tree_node.try_as<meta_op_binary>()->rhs()->type() == op_false) {
+            bool invert = (tree_node->type() == op_neq3);
+            add_type_check_usage(invert ? *res_false : *res_true, ifi_is_false, var);
+            add_type_check_usage(invert ? *res_true : *res_false, ifi_any_type & ~ifi_is_false, var);
+          }
+        }
+      } else if (vk::any_of_equal(tree_node->type(),  op_eq2, op_neq2)) {
+        if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
+          if (vk::any_of_equal(tree_node.try_as<meta_op_binary>()->rhs()->type(), op_false, op_null)) {
+            bool invert = (tree_node->type() == op_neq2);
+            add_type_check_usage(invert ? *res_true : *res_false, ifi_any_type & ~(ifi_is_false|ifi_is_null), var);
+          }
+        }
+      }
       add_edge(res_finish, *res_true);
       add_edge(res_finish, *res_false);
       break;
@@ -933,33 +981,25 @@ void CFG::dfs_apply_type_hint(Node v, UsagePtr usage) {
   }
 }
 
-UsagePtr CFG::search_uninit_usage(Node v, VarPtr var) {
-  node_was[v] = cur_dfs_mark;
+void CFG::dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask) {
+  if ((node_checked_type[v] | current_mask) == node_checked_type[v]) {
+    return;
+  }
+  node_checked_type[v] = static_cast<is_func_id_t>(node_checked_type[v] | current_mask);
 
-  bool write_usage_found = false;
   for (UsagePtr another_usage : node_usages[v]) {
     if (another_usage->v->var_id == var) {
       if (another_usage->type == usage_write_t || another_usage->weak_write_flag) {
-        write_usage_found = true;
-      } else if (another_usage->type == usage_read_t) {
-        return another_usage;
+        current_mask = ifi_any_type;
+      } else if (another_usage->type == usage_type_check_t) {
+        current_mask = static_cast<is_func_id_t>(current_mask & (another_usage->checked_type | ifi_unset));
       }
     }
-  }
-
-  if (write_usage_found) {
-    return {};
   }
 
   for (Node i : node_next[v]) {
-    if (node_was[i] != cur_dfs_mark) {
-      if (UsagePtr res = search_uninit_usage(i, var)) {
-        return res;
-      }
-    }
+    dfs_checked_types(i, var, current_mask);
   }
-
-  return {};
 }
 
 void CFG::add_uninited_var(VertexAdaptor<op_var> v) {
@@ -970,9 +1010,8 @@ void CFG::add_uninited_var(VertexAdaptor<op_var> v) {
 }
 
 void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexAdaptor<op_var>>> &parts) {
-  assert (var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
-  int parts_size = (int)parts.size();
-  if (parts_size == 0) {
+  kphp_assert(var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
+  if (parts.empty()) {
     if (var->type() == VarData::var_local_t) {
       function->local_var_ids.erase(
         std::find(
@@ -982,11 +1021,11 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
     }
     return;
   }
-  assert (parts_size > 1);
+  kphp_assert(parts.size() > 1);
 
   vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
 
-  for (int i = 0; i < parts_size; i++) {
+  for (size_t i = 0; i < parts.size(); i++) {
     // name$v1, name$v2 и т.п., но name (0-я копия) как есть
     const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
     VarPtr new_var = G->create_var(new_name, var->type());
@@ -1036,8 +1075,6 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
     }
   }
 
-  data.todo_var.push_back(var);
-
   data.todo_parts.emplace_back(std::move(parts));
 }
 
@@ -1045,11 +1082,14 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   VarSplitPtr var_split = var_split_data[var];
   kphp_assert (var_split);
 
-  if (var->type() != VarData::var_param_t) {
-    cur_dfs_mark++;
-    if (UsagePtr uninited = search_uninit_usage(current_start, var)) {
-      add_uninited_var(uninited->v);
+  cur_dfs_mark++;
+  std::fill(node_checked_type.begin(), node_checked_type.end(), static_cast<is_func_id_t>(0));
+  dfs_checked_types(current_start, var, static_cast<is_func_id_t>(ifi_any_type | ((var->type() == VarData::var_param_t) ? 0 : ifi_unset)));
+  for (UsagePtr u : var_split->usage_gen) {
+    if (u->type == usage_read_t && (node_checked_type[u->node] & ifi_unset)) {
+      add_uninited_var(u->v);
     }
+    vertex_convertions[u->v] = static_cast<is_func_id_t>(vertex_convertions[u->v] | node_checked_type[u->node]);
   }
 
   std::fill(node_mark_dfs.begin(), node_mark_dfs.end(), UsagePtr());
@@ -1158,6 +1198,57 @@ public:
 
 };
 
+class AddConversionsPass final : public FunctionPassBase {
+  IdMap<is_func_id_t> &conversions;
+public:
+  string get_description() override {
+    return "Add conversions after checks";
+  }
+  explicit AddConversionsPass(IdMap<is_func_id_t> &conversions) :
+    conversions(conversions) {}
+
+  VertexPtr on_exit_vertex(VertexPtr v) override {
+    if (v->rl_type != val_r) {
+      return v;
+    }
+    if (auto var = v.try_as<op_var>()) {
+      if (!vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) || var->var_id->is_reference || var->var_id->is_foreach_reference) {
+        return v;
+      }
+      //fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conversions[v]);
+      if (conversions[v] == 0) {
+        kphp_warning(fmt_format("Unreachable code: variable type conditions creates contradiction for variable {}", var->get_string()));
+      } else if (conversions[v] == ifi_is_integer) {
+        return VertexAdaptor<op_conv_int>::create(v);
+      } else if (conversions[v] == ifi_is_string) {
+        return VertexAdaptor<op_conv_string>::create(v);
+      } else if (conversions[v] == ifi_is_array) {
+        return VertexAdaptor<op_conv_array>::create(v);
+      } else if (conversions[v] == (ifi_is_bool|ifi_is_false) || conversions[v] == ifi_is_bool) {
+        return VertexAdaptor<op_conv_bool>::create(v);
+      } else if (conversions[v] == ifi_is_float) {
+        return VertexAdaptor<op_conv_float>::create(v);
+      } else if (conversions[v] == ifi_is_null) {
+        return VertexAdaptor<op_null>::create();
+      } else if (conversions[v] == ifi_is_false) {
+        return VertexAdaptor<op_false>::create();
+      } else if ((conversions[v] & (ifi_is_false|ifi_is_null)) == 0) {
+        return VertexAdaptor<op_conv_drop_optional>::create(v);
+      } else if ((conversions[v] & ifi_is_false) == 0) {
+        return VertexAdaptor<op_conv_drop_false>::create(v);
+      } else if ((conversions[v] & ifi_is_null) == 0) {
+        return VertexAdaptor<op_conv_drop_null>::create(v);
+      }
+    }
+    return v;
+  }
+
+  bool user_recursion(VertexPtr root) override {
+    // добавлять drop_or_false вокруг объявления параметра сомнительная идея
+    return root->type() == op_func_param_list;
+  }
+};
+
 int CFG::register_vertices(VertexPtr v, int N) {
   set_index(v, N++);
   for (auto i : *v) {
@@ -1184,10 +1275,12 @@ void CFG::process_function(FunctionPtr function) {
 
   int vertex_n = register_vertices(function->root, 0);
   vertex_usage.update_size(vertex_n);
+  vertex_convertions.update_size(vertex_n);
 
   node_gen.add_id_map(&node_next);
   node_gen.add_id_map(&node_prev);
   node_gen.add_id_map(&node_was);
+  node_gen.add_id_map(&node_checked_type);
   node_gen.add_id_map(&node_mark_dfs);
   node_gen.add_id_map(&node_mark_dfs_type_hint);
   node_gen.add_id_map(&node_usages);
@@ -1200,14 +1293,22 @@ void CFG::process_function(FunctionPtr function) {
 
   cur_dfs_mark++;
   calc_used(start);
-  DropUnusedPass pass{vertex_usage};
-  run_function_pass(function, &pass);
+  {
+    DropUnusedPass pass{vertex_usage};
+    run_function_pass(function, &pass);
+  }
 
   for (auto var: splittable_vars) {
     if (var->type() != VarData::var_local_inplace_t) {
       process_var(function, var);
     }
   }
+
+  {
+    AddConversionsPass pass{vertex_convertions};
+    run_function_pass(function, &pass);
+  }
+
   node_gen.clear();
 }
 } // namespace cfg
