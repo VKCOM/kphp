@@ -786,7 +786,10 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
   if (type1->get_real_ptype() != type2->get_real_ptype()) {
     return false;
   }
-  if (type1->use_optional() != type2->use_optional()) {
+  if (type1->use_or_false() != type2->use_or_false()) {
+    return false;
+  }
+  if (type1->use_or_null() != type2->use_or_null()) {
     return false;
   }
   const PrimitiveType tp = type1->get_real_ptype();
