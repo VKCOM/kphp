@@ -138,11 +138,16 @@ public:
     return *this;
   }
 
-  VertexAdaptor &set_location_recursively(VertexPtr v) {
-    set_location(v);
+  VertexAdaptor &set_location_recursively(Location l) {
+    set_location(l);
     for (auto child: *impl) {
-      child.set_location_recursively(v);
+      child.set_location_recursively(l);
     }
     return *this;
+  }
+
+  template<Operation Op2>
+  VertexAdaptor &set_location_recursively(VertexAdaptor<Op2> v) {
+    return set_location_recursively(v.impl->location);
   }
 };

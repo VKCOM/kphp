@@ -105,6 +105,7 @@ FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return
   virt_magic_func_ptr->assumption_for_return = AssumInstance::create(ClassPtr{this});
   virt_magic_func_ptr->is_inline = true;
   virt_magic_func_ptr->modifiers = FunctionModifiers::instance_public();
+  virt_magic_func.set_location_recursively(Location(location_line_num));
 
   members.add_instance_method(virt_magic_func_ptr);
 
