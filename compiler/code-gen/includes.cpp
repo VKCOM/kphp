@@ -80,11 +80,7 @@ void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var
 }
 
 void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
-  if (!klass->implements.empty()) {
-    for (auto &interface : klass->implements) {
-      classes_.emplace(interface);
-    }
-  }
+  classes_.insert(klass->implements.cbegin(), klass->implements.cend());
 
   if (ClassData::does_need_codegen(klass->parent_class)) {
     classes_.emplace(klass->parent_class);

@@ -65,8 +65,11 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
       return;
     }
 
-    for (auto parent = cur_class->get_parent_or_interface(); parent; parent = parent->get_parent_or_interface()) {
-      if (auto parent_member = parent->members.get_instance_method(method.local_name())) {
+    for (const auto &ancestor : cur_class->get_all_ancestors()) {
+      if (ancestor == cur_class) {
+        continue;
+      }
+      if (auto parent_member = ancestor->members.get_instance_method(method.local_name())) {
         auto parent_function = parent_member->function;
 
         kphp_error(parent_function->modifiers.is_abstract() || !parent_function->modifiers.is_final(),

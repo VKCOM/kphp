@@ -155,6 +155,8 @@ public:
 
   std::vector<ClassPtr> get_all_inheritors() const;
 
+  std::vector<ClassPtr> get_all_ancestors() const;
+
   bool is_builtin() const;
   bool is_polymorphic_or_has_polymorphic_member() const;
   static bool does_need_codegen(ClassPtr c);
@@ -177,9 +179,9 @@ private:
 
   template<class MemberT>
   const MemberT *find_by_local_name(vk::string_view local_name) const {
-    for (auto klass = get_self(); klass; klass = klass->get_parent_or_interface()) {
-      AutoLocker<Lockable *> locker(&(*klass));
-      if (auto member = klass->members.find_by_local_name<MemberT>(local_name)) {
+    for (const auto &ancestor : get_all_ancestors()) {
+      AutoLocker<Lockable *> locker(&(*ancestor));
+      if (auto member = ancestor->members.find_by_local_name<MemberT>(local_name)) {
         return member;
       }
     }

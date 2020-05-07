@@ -261,6 +261,20 @@ std::vector<ClassPtr> ClassData::get_all_inheritors() const {
   return inheritors;
 }
 
+std::vector<ClassPtr> ClassData::get_all_ancestors() const {
+  std::vector<ClassPtr> result{get_self()};
+
+  for (size_t cur_idx = 0; cur_idx < result.size(); ++cur_idx) {
+    auto cur_class = result[cur_idx];
+    if (cur_class->parent_class) {
+      result.emplace_back(cur_class->parent_class);
+    }
+    result.insert(result.end(), cur_class->implements.cbegin(), cur_class->implements.cend());
+  }
+
+  return result;
+}
+
 bool ClassData::is_builtin() const {
   return file_id && file_id->is_builtin();
 }

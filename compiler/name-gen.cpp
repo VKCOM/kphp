@@ -265,13 +265,12 @@ string resolve_define_name(string name) {
     string class_name = name.substr(0, pos$$);
     string define_name = name.substr(pos$$ + 2);
     const string &real_class_name = replace_characters(class_name, '$', '\\');
-    ClassPtr klass = G->get_class(real_class_name);
-    if (klass) {
-      while (klass && !klass->members.has_constant(define_name)) {
-        klass = klass->get_parent_or_interface();
-      }
-      if (klass) {
-        name = "c#" + replace_backslashes(klass->name) + "$$" + define_name;
+    if (auto klass = G->get_class(real_class_name)) {
+      for (const auto &ancestor : klass->get_all_ancestors()) {
+        if (ancestor->members.has_constant(define_name)) {
+          name = "c#" + replace_backslashes(ancestor->name) + "$$" + define_name;
+          break;
+        }
       }
     }
   }
