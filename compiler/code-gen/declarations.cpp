@@ -1,5 +1,7 @@
 #include "compiler/code-gen/declarations.h"
 
+#include "common/algorithms/compare.h"
+
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -303,14 +305,10 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(interface->header_name, interface->get_subdir());
   W << "#pragma once" << NL;
 
-  std::string parent_class;
-  if (auto parent = interface->parent_class) {
-    parent_class = parent->src_name;
+  if (!interface->implements.empty()) {
     IncludesCollector includes;
-    includes.add_class_include(parent);
+    includes.add_base_classes_include(interface);
     W << includes;
-  } else {
-    parent_class = "abstract_refcountable_php_interface";
   }
 
   W << OpenNamespace() << NL;
@@ -320,13 +318,23 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
-  W << "struct " << interface->src_name << " : public " << parent_class << " " << BEGIN;
+  W << "struct " << interface->src_name << " : public ";
+  if (!interface->implements.empty()) {
+    auto transform_to_src_name = [](CodeGenerator &W, const InterfacePtr &i) { W << i->src_name; };
+    W << JoinValues(interface->implements, ", public ", join_mode::one_line, transform_to_src_name);
+  } else {
+    W << (interface->need_virtual_modifier() ? "virtual " : "") << "abstract_refcountable_php_interface";
+  }
+  W << " " << BEGIN;
 
   if (tl_dep_usings) {
     W << *tl_dep_usings << NL;
   }
 
   ClassDeclaration::compile_inner_methods(W, interface);
+  // special hack to avoid many lines of asm code to initialize virtual base, it's not inlined due to -Os flag
+  W << interface->src_name << "() __attribute__((always_inline)) = default;" << NL;
+  W << "~" << interface->src_name << "() __attribute__((always_inline)) = default;" << NL;
 
 
   W << END << ";" << NL;
@@ -385,22 +393,29 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     }
   });
 
-  InterfacePtr interface;
-  if (!klass->implements.empty()) {
-    kphp_assert(klass->implements.size() == 1);
-    interface = klass->implements.front();
-  }
-
+  auto get_all_interfaces = [klass = this->klass] {
+    auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };
+    return JoinValues(klass->implements, ", ", join_mode::one_line, transform_to_src_name);
+  };
   W << NL << "struct " << klass->src_name;
   if (ClassData::does_need_codegen(klass->parent_class)) {
-    auto final_keyword = klass->derived_classes.empty() ? " final" : "";
-    W << final_keyword << " : public " << klass->parent_class->src_name;
+    W << (klass->derived_classes.empty() ? " final" : "") << " : public ";
+    if (!klass->implements.empty()) {
+      W << "refcountable_polymorphic_php_classes_virt<" << klass->parent_class->src_name << ", " << get_all_interfaces() << ">";
+    } else {
+      W << klass->parent_class->src_name;
+    }
   } else if (klass->is_empty_class()) {
     W << " final : public refcountable_empty_php_classes";
-  } else if (interface || !klass->derived_classes.empty()) {
-    auto base_name = interface ? interface->src_name.c_str() : "abstract_refcountable_php_interface";
-    W << ": public refcountable_polymorphic_php_classes<" << base_name << ">";
-  } else {
+  } else if (!klass->implements.empty()) {
+    W << ": public refcountable_polymorphic_php_classes<" << get_all_interfaces() << ">";
+  } else if (!klass->derived_classes.empty()) {
+    if (klass->need_virtual_modifier()) {
+      W << ": public refcountable_polymorphic_php_classes_virt<>";
+    } else {
+      W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
+    }
+  } else { // not polymorphic
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
   W << " " << BEGIN;
@@ -446,7 +461,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
-  bool has_parent = ClassData::does_need_codegen(klass->get_parent_or_interface());
+  bool has_parent = ClassData::does_need_codegen(klass->parent_class) || vk::any_of(klass->implements, ClassData::does_need_codegen);
   bool has_derived = !klass->derived_classes.empty();
   bool is_overridden = has_parent && has_derived;
   bool is_final = has_parent && !has_derived;

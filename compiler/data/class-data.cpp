@@ -1,6 +1,7 @@
 #include "compiler/data/class-data.h"
 
 #include <string>
+#include <queue>
 
 #include "common/termformat/termformat.h"
 #include "common/wrappers/string_view.h"
@@ -158,60 +159,66 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   G->register_function(ctor_function);
 }
 
-ClassPtr ClassData::get_parent_or_interface() const {
-  if (parent_class) {
-    return parent_class;
-  }
-
-  return implements.size() == 1 ? implements[0] : ClassPtr{};
-}
-
 bool ClassData::is_parent_of(ClassPtr other) const {
-  if (get_self() == other) {
+  if (!other) {
+    return false;
+  } else if (get_self() == other) {
     return true;
   }
 
-  return other && is_parent_of(other->get_parent_or_interface());
+  for (const auto &interface : other->implements) {
+    if (is_parent_of(interface)) {
+      return true;
+    }
+  }
+
+  return is_parent_of(other->parent_class);
 }
 
-ClassPtr ClassData::get_common_base_or_interface(ClassPtr other) const {
+/**
+ * If we have more than one lca in different hierarchy branches we will return all of them
+ * interface A{}    ; interface B{}    ;
+ * class C impl A, B; class D impl A, B;
+ * $cd = true ? new C() : new D();
+ */
+std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) const {
   if (!other) {
     return {};
   }
 
   auto self = get_self();
   if (self == other) {
-    return self;
+    return {self};
   }
 
   if (is_lambda() && other->is_interface() && self.as<LambdaClassData>()->can_implement_interface(other)) {
-    return other;
+    return {other};
   } else if (other->is_lambda() && is_interface() && other.as<LambdaClassData>()->can_implement_interface(self)) {
-    return self;
+    return {self};
   }
 
-  auto get_parents_of = [&](ClassPtr klass) {
-    std::vector<ClassPtr> parents;
-    for (ClassPtr parent = klass; parent; parent = parent->get_parent_or_interface()) {
-      parents.emplace_back(parent);
+  std::queue<ClassPtr> active_ancestors;
+  active_ancestors.push(self);
+
+  std::vector<ClassPtr> lcas;
+  while (!active_ancestors.empty()) {
+    auto cur_ancestor = active_ancestors.front();
+    active_ancestors.pop();
+
+    if (cur_ancestor->is_parent_of(other)) {
+      lcas.emplace_back(cur_ancestor);
+      continue;
     }
 
-    std::reverse(parents.begin(), parents.end());
-    return parents;
-  };
-
-  auto parents_of_self = get_parents_of(self);
-  auto parents_of_other = get_parents_of(other);
-
-  auto first_diff_iterators = std::mismatch(parents_of_self.begin(), parents_of_self.end(),
-                                            parents_of_other.begin(), parents_of_other.end());
-
-  auto mismatched_iter_in_self_parents = first_diff_iterators.first;
-  if (mismatched_iter_in_self_parents != parents_of_self.begin()) {
-    return *std::prev(mismatched_iter_in_self_parents);
+    if (cur_ancestor->parent_class) {
+      active_ancestors.push(cur_ancestor->parent_class);
+    }
+    for (const auto &c : cur_ancestor->implements) {
+      active_ancestors.push(c);
+    }
   }
 
-  return {};
+  return lcas;
 }
 
 const ClassMemberInstanceMethod *ClassData::get_instance_method(vk::string_view local_name) const {
@@ -321,9 +328,8 @@ void ClassData::mark_as_used() {
   if (parent_class) {
     parent_class->mark_as_used();
   }
-  if (!implements.empty()) {
-    kphp_assert(implements.size() == 1);
-    implements[0]->mark_as_used();
+  for (const auto &interface : implements) {
+    interface->mark_as_used();
   }
 }
 

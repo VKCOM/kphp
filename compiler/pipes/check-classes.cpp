@@ -5,25 +5,43 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/phpdoc.h"
-#include "compiler/vertex.h"
 
-void CheckClassesF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
-  stage::set_name("Check classes");
+VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root, LocalT *) {
+  auto type_data = root->tinf_node.type_;
+  if (auto var = root.try_as<op_var>()) {
+    type_data = var->var_id ? var->var_id->tinf_node.type_ : type_data;
+  }
+  if (type_data && type_data->ptype() == tp_Class) {
+    const auto &class_types = type_data->class_types();
+    kphp_error(std::distance(class_types.begin(), class_types.end()) == 1,
+               fmt_format("Can't deduce class type, possible options are: {}",
+                          vk::join(class_types, ", ", [](ClassPtr c) { return c->src_name; }))
+    );
+  }
+
+  return root;
+}
+
+bool CheckClassesPass::on_start(FunctionPtr function) {
+  if (!FunctionPassBase::on_start(function)) {
+    return false;
+  }
 
   if (function->type == FunctionData::func_class_holder) {
     stage::set_function(function);
     analyze_class(function->class_id);
     if (stage::has_error()) {
-      return;
+      return false;
     }
   }
 
-  os << function;
+  return true;
 }
 
-inline void CheckClassesF::analyze_class(ClassPtr klass) {
+inline void CheckClassesPass::analyze_class(ClassPtr klass) {
   check_static_fields_inited(klass);
   check_serialized_fields(klass);
   if (ClassData::does_need_codegen(klass)) {
@@ -39,7 +57,7 @@ inline void CheckClassesF::analyze_class(ClassPtr klass) {
 /*
  * Проверяем, что все static-поля класса инициализированы при объявлении
  */
-inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
+inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberStaticField &f) {
     bool allow_no_default_value = false;
     // если дефолтного значения нет — а вдруг оно не обязательно? для инстансов например
@@ -53,7 +71,7 @@ inline void CheckClassesF::check_static_fields_inited(ClassPtr klass) {
   });
 }
 
-inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
+inline void CheckClassesPass::check_instance_fields_inited(ClassPtr klass) {
   // todo KPHP-221 ; пока что оставлен старый вариант (проверка на Unknown)
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
@@ -64,7 +82,7 @@ inline void CheckClassesF::check_instance_fields_inited(ClassPtr klass) {
   });
 }
 
-void CheckClassesF::check_serialized_fields(ClassPtr klass) {
+void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
   used_serialization_tags_t used_serialization_tags_for_fields{false};
   fill_reserved_serialization_tags(used_serialization_tags_for_fields, klass);
 
@@ -89,7 +107,7 @@ void CheckClassesF::check_serialized_fields(ClassPtr klass) {
   });
 }
 
-void CheckClassesF::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
+void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
   if (auto reserved_ids = phpdoc_find_tag_as_string(klass->phpdoc_str, php_doc_tag::kphp_reserved_fields)) {
     vk::string_view ids(*reserved_ids);
     kphp_error_return(ids.size() >= 2 && ids[0] == '[' && ids[ids.size() - 1] == ']', "reserved tags must be wrapped by []");
@@ -103,3 +121,4 @@ void CheckClassesF::fill_reserved_serialization_tags(used_serialization_tags_t &
     }
   }
 }
+

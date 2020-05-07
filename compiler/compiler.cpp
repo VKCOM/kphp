@@ -274,7 +274,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
-    >> PipeC<CheckClassesF>{}
+    >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<FixReturnsPass>{}

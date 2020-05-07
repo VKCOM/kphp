@@ -72,7 +72,7 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
 }
 
 bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {
-  if (interface->members.has_any_static_method() || interface->members.count_of_instance_methods() != 1 || interface->parent_class) {
+  if (interface->members.has_any_static_method() || interface->members.count_of_instance_methods() != 1 || !interface->implements.empty()) {
     return false;
   }
 

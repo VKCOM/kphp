@@ -289,11 +289,7 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
   kphp_error(interface_class->is_interface(),
              fmt_format("Error implements {} and {}", child_class->name, interface_class->name));
 
-  if (child_class->is_interface()) {
-    child_class->parent_class = interface_class;
-  } else {
-    child_class->implements.emplace_back(interface_class);
-  }
+  child_class->implements.emplace_back(interface_class);
 
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
@@ -366,8 +362,9 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
     }
   }
   if (klass->is_fully_static()) {
-    auto parent = klass->get_parent_or_interface();
-    if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || (parent && !parent->is_fully_static())) {
+    auto parent = klass->parent_class;
+    bool has_instance_members = klass->members.has_any_instance_var() || klass->members.has_any_instance_method();
+    if (has_instance_members || !klass->implements.empty() || (parent && !parent->is_fully_static())) {
       klass->create_default_constructor(Location{klass->location_line_num}, function_stream);
     }
   }
@@ -419,8 +416,6 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   for (auto c : classes) {
     auto node = ht.at(vk::std_hash(c->name));
     kphp_error(node->data.done, fmt_format("class `{}` has unresolved dependencies", c->name));
-    kphp_error_return(c->implements.empty() || !c->parent_class,
-                      fmt_format("You may not `extends` and `implements` simultaneously, class: {}", c->name));
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
       auto inheritors = c->get_all_inheritors();
@@ -433,7 +428,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   }
 
   for (auto c : classes) {
-    bool is_top_of_hierarchy = !c->get_parent_or_interface() && !c->derived_classes.empty();
+    bool is_top_of_hierarchy = !c->parent_class && c->implements.empty() && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
       mark_virtual_and_overridden_methods(c, generated_self_methods);
     }

@@ -4,18 +4,19 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <forward_list>
 #include <map>
 #include <string>
 
+#include "common/wrappers/fmt_format.h"
+
+#include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/inferring/key.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 #include "compiler/threading/tls.h"
-#include "compiler/code-gen/gen-out-style.h"
-
 
 /*** TypeData ***/
 // read/write/lookup at
@@ -49,7 +50,7 @@ private:
   };
 
   PrimitiveType ptype_{tp_Unknown};
-  ClassPtr class_type_;
+  std::forward_list<ClassPtr> class_type_;
   flags_t flags_{0};
   generation_t generation_;
 
@@ -94,8 +95,9 @@ public:
   flags_t flags() const;
   void set_ptype(PrimitiveType new_ptype);
 
+  const std::forward_list<ClassPtr> &class_types() const;
   ClassPtr class_type() const;
-  void set_class_type(ClassPtr new_class_type);
+  void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
   bool has_class_type_inside() const;
   void mark_classes_used() const;
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;

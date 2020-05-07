@@ -1540,18 +1540,22 @@ static inline bool is_class_name_allowed(const vk::string_view &name) {
 
 void GenTree::parse_extends_implements() {
   if (test_expect(tok_extends)) {     // extends идёт раньше implements, менять местами нельзя
-    next_cur();                       // (в php тоже так)
-    kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
-    kphp_error(!cur_class->is_trait(), "Traits may not extend each other");
-    cur_class->add_str_dependent(cur_function, cur_class->class_type, cur->str_val);
-    next_cur();
+    do {
+      next_cur();                       // (в php тоже так)
+      kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
+      kphp_error(!cur_class->is_trait(), "Traits may not extend each other");
+      cur_class->add_str_dependent(cur_function, cur_class->class_type, cur->str_val);
+      next_cur();
+    } while (cur_class->is_interface() && test_expect(tok_comma));
   }
 
   if (test_expect(tok_implements)) {
-    next_cur();
-    kphp_error(test_expect(tok_func_name), "Class name expected after 'implements'");
-    cur_class->add_str_dependent(cur_function, ClassType::interface, cur->str_val);
-    next_cur();
+    do {
+      next_cur();
+      kphp_error(test_expect(tok_func_name), "Class name expected after 'implements'");
+      cur_class->add_str_dependent(cur_function, ClassType::interface, cur->str_val);
+      next_cur();
+    } while (test_expect(tok_comma));
   }
 }
 

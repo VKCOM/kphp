@@ -5,15 +5,50 @@
 
 class abstract_refcountable_php_interface : public ManagedThroughDlAllocator {
 public:
-  virtual ~abstract_refcountable_php_interface() noexcept = default;
+  abstract_refcountable_php_interface() __attribute__((always_inline)) = default;
+  virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
   virtual void add_ref() noexcept = 0;
   virtual void release() noexcept = 0;
   virtual uint32_t get_refcnt() noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 };
 
-template<class Base>
-class refcountable_polymorphic_php_classes : public Base {
+template<class ...Bases>
+class refcountable_polymorphic_php_classes : public Bases... {
+public:
+  void add_ref() noexcept final {
+    if (refcnt < ExtraRefCnt::for_global_const) {
+      ++refcnt;
+    }
+  }
+
+  uint32_t get_refcnt() noexcept final {
+    return refcnt;
+  }
+
+  void release() noexcept final __attribute__((always_inline)) {
+    if (refcnt < ExtraRefCnt::for_global_const) {
+      --refcnt;
+    }
+    if (refcnt == 0) {
+      delete this;
+    }
+  }
+
+  void set_refcnt(uint32_t new_refcnt) noexcept final {
+    refcnt = new_refcnt;
+  }
+
+private:
+  uint32_t refcnt{0};
+};
+
+template<class ...Interfaces>
+class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
+};
+
+template<>
+class refcountable_polymorphic_php_classes_virt<> : public virtual abstract_refcountable_php_interface {
 public:
   void add_ref() noexcept final {
     if (refcnt < ExtraRefCnt::for_global_const) {

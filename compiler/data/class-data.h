@@ -1,6 +1,9 @@
 #pragma once
 #include <atomic>
 
+#include "common/algorithms/compare.h"
+#include "common/algorithms/hashes.h"
+
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
@@ -9,7 +12,6 @@
 #include "compiler/threading/locks.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/hashes.h"
 
 enum class ClassType {
   klass,
@@ -109,9 +111,8 @@ public:
   bool is_trait() const { return class_type == ClassType::trait; }
   virtual bool is_lambda() const { return false; }
 
-  ClassPtr get_parent_or_interface() const;
   bool is_parent_of(ClassPtr other) const;
-  ClassPtr get_common_base_or_interface(ClassPtr other) const;
+  std::vector<ClassPtr> get_common_base_or_interface(ClassPtr other) const;
   const ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name) const;
   const ClassMemberInstanceField *get_instance_field(vk::string_view local_name) const;
   const ClassMemberStaticField *get_static_field(vk::string_view local_name) const;
@@ -124,6 +125,11 @@ public:
 
   virtual bool is_fully_static() const {
     return is_class() && !modifiers.is_abstract() && !construct_function;
+  }
+
+  bool need_virtual_modifier() const {
+    auto has_several_parents = [](ClassPtr c) { return (c->parent_class && !c->implements.empty()) || c->implements.size() > 1; };
+    return vk::any_of(get_all_inheritors(), has_several_parents);
   }
 
   void set_name_and_src_name(const std::string &name, vk::string_view phpdoc_str);

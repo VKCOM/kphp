@@ -266,10 +266,15 @@ string resolve_define_name(string name) {
     string define_name = name.substr(pos$$ + 2);
     const string &real_class_name = replace_characters(class_name, '$', '\\');
     if (auto klass = G->get_class(real_class_name)) {
+      ClassPtr last_ancestor;
       for (const auto &ancestor : klass->get_all_ancestors()) {
         if (ancestor->members.has_constant(define_name)) {
-          name = "c#" + replace_backslashes(ancestor->name) + "$$" + define_name;
-          break;
+          if (!last_ancestor) {
+            name = "c#" + replace_backslashes(ancestor->name) + "$$" + define_name;
+            last_ancestor = ancestor;
+          } else if (!ancestor->is_parent_of(last_ancestor)) {
+            return {};
+          }
         }
       }
     }

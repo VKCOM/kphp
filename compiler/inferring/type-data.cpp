@@ -4,10 +4,14 @@
 #include <string>
 #include <vector>
 
+#include "common/algorithms/compare.h"
+#include "common/algorithms/contains.h"
 #include "common/termformat/termformat.h"
 
 #include "common-php-functions.h"
+#include "compiler/code-gen/common.h"
 #include "compiler/data/class-data.h"
+#include "compiler/pipes/collect-main-edges.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/utils/string-utils.h"
@@ -171,23 +175,39 @@ void TypeData::set_ptype(PrimitiveType new_ptype) {
   }
 }
 
-ClassPtr TypeData::class_type() const {
+const std::forward_list<ClassPtr> &TypeData::class_types() const {
   return class_type_;
 }
 
-void TypeData::set_class_type(ClassPtr new_class_type) {
-  if (!class_type_) {
+ClassPtr TypeData::class_type() const {
+  if (class_type_.empty()) return {};
+  kphp_assert(std::distance(class_type_.begin(), class_type_.end()) == 1);
+  return class_type_.front();
+}
+
+void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type) {
+  if (new_class_type.empty()) {
+    return;
+  }
+
+  if (class_type_.empty()) {
     class_type_ = new_class_type;
     on_changed();
-  } else if (class_type_ != new_class_type) {
-    if (auto common_interface = class_type_->get_common_base_or_interface(new_class_type)) {
-      if (class_type_ != common_interface) {
-        class_type_ = common_interface;
-        on_changed();
+  } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(new_class_type, c); })) {
+    std::unordered_set<ClassPtr> result_type;
+    for (const auto &possible_class : class_type_) {
+      for (const auto &new_class : new_class_type) {
+        auto common_interfaces = possible_class->get_common_base_or_interface(new_class);
+        result_type.insert(common_interfaces.begin(), common_interfaces.end());
       }
-    } else {
+    }
+
+    if (result_type.empty()) {
       // нельзя в одной переменной/массиве смешивать инстансы разных классов
       set_ptype(tp_Error);
+    } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(result_type, c); })) {
+      class_type_ = {result_type.begin(), result_type.end()};
+      on_changed();
     }
   }
 }
@@ -212,13 +232,15 @@ bool TypeData::for_each_deep(const F &visitor) const {
  * Быстрый аналог !get_all_class_types_inside().empty()
  */
 bool TypeData::has_class_type_inside() const {
-  return for_each_deep(std::mem_fn(&TypeData::class_type));
+  return for_each_deep([](const TypeData &data) { return !data.class_type_.empty(); });
 }
 
 void TypeData::mark_classes_used() const {
   for_each_deep([](const TypeData &this_) {
     if (this_.ptype() == tp_Class) {
-      this_.class_type()->mark_as_used();
+      for (const auto &klass : this_.class_type_) {
+        klass->mark_as_used();
+      }
     }
     return false;
   });
@@ -226,9 +248,7 @@ void TypeData::mark_classes_used() const {
 
 void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
   for_each_deep([&out](const TypeData &this_) {
-    if (this_.class_type()) {
-      out.emplace(this_.class_type());
-    }
+    out.insert(this_.class_type_.begin(), this_.class_type_.end());
     return false;
   });
 }
@@ -416,7 +436,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
     if (lhs->or_false_flag()) {
       lhs->set_ptype(tp_Error);
     } else {
-      lhs->set_class_type(rhs->class_type());
+      lhs->set_class_type(rhs->class_type_);
     }
   }
 
@@ -556,7 +576,7 @@ inline void get_txt_style_type(const TypeData *type, std::string &res) {
   const PrimitiveType tp = type->get_real_ptype();
   switch (tp) {
     case tp_Class:
-      res += type->class_type()->name;
+      res += vk::join(type->class_types(), ", ", std::mem_fn(&ClassData::name));
       break;
     case tp_bool:
       res += "boolean";
@@ -786,7 +806,7 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
   const PrimitiveType tp = type1->get_real_ptype();
 
   if (tp == tp_Class) {
-    return type1->class_type() == type2->class_type();
+    return type1->class_types() == type2->class_types();
   }
 
   if (tp == tp_array) {
@@ -831,7 +851,7 @@ size_t TypeData::get_tuple_max_index() const {
 
 const TypeData *TypeData::create_for_class(ClassPtr klass) {
   auto *res = new TypeData(tp_Class);
-  res->class_type_ = klass;
+  res->class_type_ = {klass};
   return res;
 }
 
