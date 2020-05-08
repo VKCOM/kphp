@@ -114,6 +114,13 @@ public:
     }
   }
 
+  void cleanup_for_next_request() noexcept {
+    header = string{};
+    result = string{};
+    error_num = 0;
+    error_msg[0] = '\0';
+  }
+
   CURL *easy_handle;
 
   string header;
@@ -605,7 +612,9 @@ curl_easy f$curl_init(const string &url) noexcept {
   }
 
   CurlContexts::get()->easy_contexts.push_back(easy_context);
-  return CurlContexts::get()->easy_contexts.count();
+  const int curl_handler_id = CurlContexts::get()->easy_contexts.count();
+  easy_context->set_option(CURLOPT_PRIVATE, reinterpret_cast<void *>(curl_handler_id));
+  return curl_handler_id;
 }
 
 bool f$curl_setopt(curl_easy easy_id, int option, const var &value) noexcept {
@@ -637,8 +646,7 @@ var f$curl_exec(curl_easy easy_id) noexcept {
     return false;
   }
 
-  easy_context->result = string{};
-  easy_context->header = string{};
+  easy_context->cleanup_for_next_request();
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
 
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
@@ -759,6 +767,7 @@ curl_multi f$curl_multi_init() noexcept {
 Optional<int> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      easy_context->cleanup_for_next_request();
       multi_context->error_num = dl::critical_section_call(curl_multi_add_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
     }
@@ -834,12 +843,13 @@ Optional<array<int>> f$curl_multi_info_read(curl_multi multi_id, int &msgs_in_qu
       result.set_value(string{"msg"}, static_cast<int>(msg->msg));
       result.set_value(string{"result"}, static_cast<int>(msg->data.result));
 
-      for (auto it = CurlContexts::get()->easy_contexts.cbegin(); it != CurlContexts::get()->easy_contexts.cend(); ++it) {
-        auto easy_context = it.get_value();
-        if (easy_context && easy_context->easy_handle == msg->easy_handle) {
-          result.set_value(string{"handle"}, it.get_key().to_int() + 1);
-          break;
-        }
+      void *id_as_ptr = nullptr;
+      dl::critical_section_call([&] { curl_easy_getinfo (msg->easy_handle, CURLINFO_PRIVATE, &id_as_ptr); });
+      const auto curl_handler_id = static_cast<int>(reinterpret_cast<size_t>(id_as_ptr));
+      const auto *easy_handle = CurlContexts::get()->easy_contexts.find_value(curl_handler_id - 1);
+      if (easy_handle && (*easy_handle)->easy_handle == msg->easy_handle) {
+        (*easy_handle)->error_num = msg->data.result;
+        result.set_value(string{"handle"}, curl_handler_id);
       }
       return result;
     }
