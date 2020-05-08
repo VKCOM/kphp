@@ -338,6 +338,18 @@ function msgpack_deserialize_safe(string $packed_str) {
   return $result;
 }
 
+function drop_false($x) {
+  return $x;
+}
+
+function drop_null($x) {
+  return $x;
+}
+
+function drop_optional($x) {
+  return $x;
+}
+
 if (false)
 #endif
 define('kphp', 1);
