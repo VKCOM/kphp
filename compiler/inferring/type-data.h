@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 
+#include "common/algorithms/find.h"
 #include "common/wrappers/fmt_format.h"
 
 #include "compiler/code-gen/gen-out-style.h"
@@ -108,6 +109,7 @@ public:
   void mark_classes_used() const;
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
   ClassPtr get_first_class_type_inside() const;
+  bool is_primitive_type() const { return vk::any_of_equal(ptype_, tp_int, tp_bool, tp_float); }
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }

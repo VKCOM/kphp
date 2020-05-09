@@ -469,6 +469,11 @@ enum class func_call_mode {
 };
 
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
+  if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
+    // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
+    W << root->args()[0];
+    return;
+  }
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
