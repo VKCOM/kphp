@@ -840,7 +840,7 @@ int pr_execute(connection *c, int op, raw_message *raw) {
   assert(len % sizeof(int) == 0);
   assert(len >= sizeof(int));
 
-  tl_fetch_init_raw_message(raw, len);
+  tl_fetch_init_raw_message(raw);
   auto op_from_tl = tl_fetch_int();
   len -= sizeof(op_from_tl);
   assert(op_from_tl == op);
