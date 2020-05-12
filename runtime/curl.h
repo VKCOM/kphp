@@ -6,6 +6,8 @@ using curl_easy = int;
 
 curl_easy f$curl_init(const string &url = string{}) noexcept;
 
+void f$curl_reset(curl_easy easy_id) noexcept;
+
 bool f$curl_setopt(curl_easy easy_id, int option, const var &value) noexcept;
 
 bool f$curl_setopt_array(curl_easy easy_id, const array<var> &options) noexcept;

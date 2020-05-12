@@ -1775,6 +1775,9 @@ const array<T> array<T>::operator+(const array<T> &other) const {
 
 template<class T>
 array<T> &array<T>::operator+=(const array<T> &other) {
+  if (other.empty()) {
+    return *this;
+  }
   if (is_vector()) {
     if (other.is_vector()) {
       int size = other.p->int_size;

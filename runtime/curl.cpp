@@ -33,6 +33,8 @@ namespace {
 
 constexpr int BAD_CURL_OPTION = CURL_LAST + CURL_FORMADD_LAST;
 
+size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
+
 class BaseContext {
 public:
   int error_num{0};
@@ -57,8 +59,9 @@ protected:
 
 class EasyContext : public BaseContext {
 public:
-  explicit EasyContext(CURL *handle) noexcept :
-    easy_handle(handle) {
+  explicit EasyContext(CURL *handle, int self_handler_id) noexcept:
+    easy_handle(handle),
+    self_id(self_handler_id) {
   }
 
   template<typename T>
@@ -114,6 +117,22 @@ public:
     }
   }
 
+  void set_default_options() noexcept {
+    set_option(CURLOPT_NOPROGRESS, 1L);
+    set_option(CURLOPT_VERBOSE, 0L);
+    set_option(CURLOPT_ERRORBUFFER, error_msg);
+    set_option(CURLOPT_WRITEFUNCTION, curl_write);
+    set_option(CURLOPT_WRITEDATA, static_cast<void *>(this));
+    set_option(CURLOPT_DNS_USE_GLOBAL_CACHE, 1L);
+    set_option(CURLOPT_DNS_CACHE_TIMEOUT, 120L);
+    set_option(CURLOPT_MAXREDIRS, 20L);
+    set_option(CURLOPT_NOSIGNAL, 1L);
+    set_option(CURLOPT_PRIVATE, reinterpret_cast<void *>(self_id));
+
+    // Always disabled FILE and SCP
+    set_option(CURLOPT_PROTOCOLS, static_cast<long>(CURLPROTO_ALL & ~(CURLPROTO_FILE | CURLPROTO_SCP)));
+  }
+
   void cleanup_for_next_request() noexcept {
     header = string{};
     result = string{};
@@ -121,7 +140,26 @@ public:
     error_msg[0] = '\0';
   }
 
+  void cleanup_slists_and_posts() noexcept {
+    const auto last_slist = slists_to_free.cend();
+    for (auto p = slists_to_free.cbegin(); p != last_slist; ++p) {
+      curl_slist *v = p.get_value();
+      php_assert (v != nullptr);
+      dl::critical_section_call(curl_slist_free_all, v);
+    }
+    slists_to_free = array<curl_slist *>{};
+
+    const auto last_post = httpposts_to_free.cend();
+    for (auto p = httpposts_to_free.cbegin(); p != last_post; ++p) {
+      curl_httppost *v = p.get_value();
+      php_assert (v != nullptr);
+      dl::critical_section_call(curl_formfree, v);
+    }
+    httpposts_to_free = array<curl_httppost *>{};
+  }
+
   CURL *easy_handle;
+  const int self_id{-1};
 
   string header;
   string result;
@@ -184,19 +222,7 @@ T *get_context(int id) noexcept {
 
 void easy_close(EasyContext *easy_context) noexcept {
   dl::critical_section_call(curl_easy_cleanup, easy_context->easy_handle);
-
-  for (auto p = easy_context->slists_to_free.cbegin(); p != easy_context->slists_to_free.cend(); ++p) {
-    curl_slist *v = p.get_value();
-    php_assert (v != nullptr);
-    dl::critical_section_call(curl_slist_free_all, v);
-  }
-
-  for (auto p = easy_context->httpposts_to_free.cbegin(); p != easy_context->httpposts_to_free.cend(); ++p) {
-    curl_httppost *v = p.get_value();
-    php_assert (v != nullptr);
-    dl::critical_section_call(curl_formfree, v);
-  }
-
+  easy_context->cleanup_slists_and_posts();
   easy_context->~EasyContext();
   dl::deallocate(easy_context, sizeof(EasyContext));
 }
@@ -589,21 +615,10 @@ curl_easy f$curl_init(const string &url) noexcept {
     return 0;
   }
 
+  const int curl_handler_id = CurlContexts::get()->easy_contexts.count() + 1;
   auto *easy_context = static_cast<EasyContext *>(dl::allocate(sizeof(EasyContext)));
-  new(easy_context) EasyContext(easy_handle);
-
-  easy_context->set_option(CURLOPT_NOPROGRESS, 1L);
-  easy_context->set_option(CURLOPT_VERBOSE, 0L);
-  easy_context->set_option(CURLOPT_ERRORBUFFER, easy_context->error_msg);
-  easy_context->set_option(CURLOPT_WRITEFUNCTION, curl_write);
-  easy_context->set_option(CURLOPT_WRITEDATA, static_cast<void *>(easy_context));
-  easy_context->set_option(CURLOPT_DNS_USE_GLOBAL_CACHE, 1L);
-  easy_context->set_option(CURLOPT_DNS_CACHE_TIMEOUT, 120L);
-  easy_context->set_option(CURLOPT_MAXREDIRS, 20L);
-  easy_context->set_option(CURLOPT_NOSIGNAL, 1L);
-
-  // Always disabled FILE and SCP
-  easy_context->set_option(CURLOPT_PROTOCOLS, static_cast<long>(CURLPROTO_ALL & ~(CURLPROTO_FILE | CURLPROTO_SCP)));
+  new(easy_context) EasyContext(easy_handle, curl_handler_id);
+  easy_context->set_default_options();
 
   if (!url.empty() && easy_context->set_option_safe(CURLOPT_URL, url.c_str()) != CURLE_OK) {
     php_warning("Could not set url to a new curl easy handle");
@@ -612,9 +627,18 @@ curl_easy f$curl_init(const string &url) noexcept {
   }
 
   CurlContexts::get()->easy_contexts.push_back(easy_context);
-  const int curl_handler_id = CurlContexts::get()->easy_contexts.count();
-  easy_context->set_option(CURLOPT_PRIVATE, reinterpret_cast<void *>(curl_handler_id));
   return curl_handler_id;
+}
+
+void f$curl_reset(curl_easy easy_id) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    curl_easy_reset(easy_context->easy_handle);
+    easy_context->return_transfer = false;
+    easy_context->private_data = false;
+    easy_context->cleanup_slists_and_posts();
+    easy_context->cleanup_for_next_request();
+    easy_context->set_default_options();
+  }
 }
 
 bool f$curl_setopt(curl_easy easy_id, int option, const var &value) noexcept {
