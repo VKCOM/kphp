@@ -18,38 +18,24 @@
 
 /*** TypeData::SubkeysValues ***/
 
-void TypeData::SubkeysValues::add(const Key &key, TypeData *value) {
-  KeyValue to_add(key, value);
-  auto insert_pos = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
-  values_pairs.insert(insert_pos, to_add);
-}
-
 TypeData *TypeData::SubkeysValues::create_if_empty(const Key &key, TypeData *parent) {
-  auto it = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
-  if (it != values_pairs.end() && it->first == key) {
-    return it->second;
+  if (auto existed_type_data = find(key)) {
+    return existed_type_data;
   }
 
   TypeData *value = get_type(tp_Unknown)->clone();
   value->parent_ = parent;
 
-  KeyValue to_add(key, value);
-  values_pairs.insert(it, to_add);
+  add(key, value);
   return value;
 }
 
 TypeData *TypeData::SubkeysValues::find(const Key &key) const {
-  auto it = lower_bound(values_pairs.begin(), values_pairs.end(), KeyValue(key, nullptr));
-  if (it != values_pairs.end() && it->first == key) {
+  auto it = std::find_if(values_pairs_.begin(), values_pairs_.end(), [&](auto &kv) { return kv.first == key; });
+  if (it != values_pairs_.end()) {
     return it->second;
   }
   return nullptr;
-}
-
-inline void TypeData::SubkeysValues::clear() {
-  if (!values_pairs.empty()) {
-    values_pairs.clear();
-  }
 }
 
 
@@ -100,9 +86,9 @@ TypeData::TypeData(PrimitiveType ptype) :
 
 TypeData::TypeData(const TypeData &from) :
   ptype_(from.ptype_),
-  class_type_(from.class_type_),
   flags_(from.flags_),
   generation_(from.generation_),
+  class_type_(from.class_type_),
   subkeys_values(from.subkeys_values) {
   if (from.anykey_value != nullptr) {
     anykey_value = from.anykey_value->clone();
@@ -644,12 +630,12 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
 
     if (tp == tp_tuple) {
       res += "<";
-      for (auto subkey = type->lookup_begin(); subkey != type->lookup_end(); ++subkey) {
-        if (subkey != type->lookup_begin()) {
+      for (const auto &subkey : std::set<TypeData::KeyValue>{type->lookup_begin(), type->lookup_end()}) {
+        if (res.back() != '<') {
           res += " , ";
         }
-        kphp_assert(subkey->first.is_int_key());
-        type_out_impl(type->const_read_at(subkey->first), res, style);
+        kphp_assert(subkey.first.is_int_key());
+        type_out_impl(type->const_read_at(subkey.first), res, style);
       }
       res += ">";
     }
@@ -813,18 +799,7 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
     return is_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
   }
 
-  if (tp == tp_tuple) {
-    if (type1->get_tuple_max_index() != type2->get_tuple_max_index()) {
-      return false;
-    }
-    for (auto it1 = type1->lookup_begin(), it2 = type2->lookup_begin(); it1 != type1->lookup_end(); ++it1, ++it2) {
-      if (!is_equal_types(type1->const_read_at(it1->first), type2->const_read_at(it2->first))) {
-        return false;
-      }
-    }
-  }
-
-  if (tp == tp_shape) {
+  if (vk::any_of_equal(tp, tp_shape, tp_tuple)) {
     for (auto it1 = type1->lookup_begin(); it1 != type1->lookup_end(); ++it1) {
       TypeData *t2_at_it = type2->lookup_at(it1->first);
       if (t2_at_it == nullptr && !type2->shape_has_varg_flag()) {

@@ -23,37 +23,51 @@
 // check if something changed since last
 
 class TypeData {
-public:
-  using KeyValue = std::pair<Key, TypeData *>;
-  using lookup_iterator = std::vector<KeyValue>::const_iterator;
-  using generation_t = long;
-  using flags_t = unsigned long;
 private:
-
-  class SubkeysValues {
-  private:
-    std::vector<KeyValue> values_pairs;
-
-  public:
-    void add(const Key &key, TypeData *value);
-    TypeData *create_if_empty(const Key &key, TypeData *parent);
-    TypeData *find(const Key &key) const;
-    void clear();
-
-    inline std::vector<KeyValue>::iterator begin() { return values_pairs.begin(); }
-    inline std::vector<KeyValue>::iterator end() { return values_pairs.end(); }
-    inline std::vector<KeyValue>::const_iterator begin() const { return values_pairs.begin(); }
-    inline std::vector<KeyValue>::const_iterator end() const { return values_pairs.end(); }
-
-    inline bool empty() const { return values_pairs.empty(); }
-    inline unsigned int size() const { return (unsigned int)values_pairs.size(); }
+  enum flag_id_t : uint8_t {
+    write_flag_e          = 0b00000001,
+    or_null_flag_e        = 0b00000010,
+    or_false_flag_e       = 0b00000100,
+    error_flag_e          = 0b00001000,
+    shape_has_varg_flag_e = 0b00010000,
   };
 
-  PrimitiveType ptype_{tp_Unknown};
-  std::forward_list<ClassPtr> class_type_;
+public:
+  using KeyValue = std::pair<Key, TypeData *>;
+  using lookup_iterator = std::forward_list<KeyValue>::const_iterator;
+  using generation_t = uint32_t;
+  using flags_t = std::underlying_type_t<flag_id_t>;
+
+private:
+  class SubkeysValues {
+  private:
+    std::forward_list<KeyValue> values_pairs_;
+
+  public:
+    void add(const Key &key, TypeData *value) { values_pairs_.emplace_front(key, value); }
+    TypeData *create_if_empty(const Key &key, TypeData *parent);
+    TypeData *find(const Key &key) const;
+
+    inline auto begin() { return values_pairs_.begin(); }
+    inline auto end() { return values_pairs_.end(); }
+    inline auto begin() const { return values_pairs_.cbegin(); }
+    inline auto end() const { return values_pairs_.cend(); }
+
+    inline bool empty() const { return values_pairs_.empty(); }
+    inline auto size() const { return std::distance(begin(), end()); }
+    inline void clear() { values_pairs_.clear(); }
+  };
+
+  // There is a bug in GCC before 8.4 where we can't declare underlying type of the enum PrimitiveType
+  // due-to vertex-meta-op_base.h:33, where the PrimiviteType used as a bit field
+  // GCC produces a false positive warning, which you may not disable; later we need to remove PrimitiveType_
+  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
+  using PrimitiveType_ = uint8_t;
+  PrimitiveType_ ptype_{tp_Unknown};
   flags_t flags_{0};
   generation_t generation_;
 
+  std::forward_list<ClassPtr> class_type_;
   TypeData *parent_{nullptr};
   TypeData *anykey_value{nullptr};
   SubkeysValues subkeys_values;
@@ -64,15 +78,7 @@ private:
   TypeData *at(const Key &key) const;
   TypeData *at_force(const Key &key);
 
-  enum flag_id_t {
-    write_flag_e = 1,
-    or_null_flag_e = 2,
-    or_false_flag_e = 4,
-    error_flag_e = 8,
-    shape_has_varg_flag_e = 16,
-  };
-
-  template<TypeData::flag_id_t FLAG>
+  template<flag_id_t FLAG>
   inline bool get_flag() const {
     return flags_ & FLAG;
   }
@@ -90,7 +96,7 @@ public:
   TypeData(const TypeData &from);
   ~TypeData();
 
-  PrimitiveType ptype() const { return ptype_; }
+  PrimitiveType ptype() const { return static_cast<PrimitiveType>(ptype_); }
   PrimitiveType get_real_ptype() const;
   flags_t flags() const;
   void set_ptype(PrimitiveType new_ptype);
