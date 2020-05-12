@@ -3,6 +3,8 @@
 #include <regex>
 #include <sstream>
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -13,7 +15,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
-#include "common/termformat/termformat.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("create_function");
@@ -172,25 +173,37 @@ string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;
   while (f) {
-    names.push_back(f->name);
+    names.push_back(f->get_human_readable_name());
     f = f->fork_prev;
   }
   std::reverse(names.begin(), names.end());
   names.push_back(TermStringFormat::paint(name, TermStringFormat::red));
   f = wait_prev;
   while (f) {
-    names.push_back(f->name);
+    names.push_back(f->get_human_readable_name());
     f = f->wait_prev;
   }
-  std::stringstream res;
-  for (int i = 0; i < names.size(); i++) {
-    if (i) {
-      res << " -> ";
-    }
-    res << names[i];
-  }
-  return res.str();
+  return vk::join(names, " -> ");
 }
+
+string FunctionData::get_throws_call_chain() const {
+  if (!can_throw) {
+    return "";
+  }
+  vector<string> names;
+  names.push_back(get_human_readable_name());
+  FunctionPtr f = throws_reason;
+  while (true) {
+    names.push_back(f->get_human_readable_name());
+    if (f->throws_reason) {
+      f = f->throws_reason;
+    } else {
+      break;
+    }
+  }
+  return vk::join(names, " -> ") + (f->throws_location.get_line() != -1 ? fmt_format(" (line {})", f->throws_location.get_line()) : "");
+}
+
 
 std::string FunctionData::get_human_readable_name(const std::string &name) {
   std::smatch matched;

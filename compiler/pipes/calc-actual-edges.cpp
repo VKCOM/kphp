@@ -20,6 +20,7 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
   }
   if (v->type() == op_throw && !inside_try) {
     current_function->can_throw = true;
+    current_function->throws_location = v->location;
   }
   return v;
 }

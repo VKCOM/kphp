@@ -13,6 +13,7 @@ void calc_throws_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &
   for (const FunctionPtr &caller : throws_graph[callee]) {
     if (!caller->can_throw) {
       caller->can_throw = true;
+      caller->throws_reason = callee;
       calc_throws_dfs(caller, throws_graph);
     }
   }

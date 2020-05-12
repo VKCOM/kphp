@@ -218,7 +218,7 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   }
 
   if (function->should_not_throw && function->can_throw) {
-    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception", function->get_human_readable_name()));
+    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}", function->get_human_readable_name(), function->get_throws_call_chain()));
   }
 
   for (auto &static_var : function->static_var_ids) {

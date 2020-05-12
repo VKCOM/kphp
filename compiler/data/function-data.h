@@ -81,6 +81,8 @@ public:
 
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
+  FunctionPtr throws_reason;
+  Location throws_location;
   std::set<string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
@@ -124,6 +126,7 @@ public:
   static FunctionPtr clone_from(const std::string &new_name, FunctionPtr other, VertexAdaptor<op_function> new_root);
 
   string get_resumable_path() const;
+  string get_throws_call_chain() const;
   static string get_human_readable_name(const std::string &name);
   string get_human_readable_name() const;
   void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
