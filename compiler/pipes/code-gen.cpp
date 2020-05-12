@@ -94,6 +94,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   //TODO: parallelize;
   for (const auto &fun : xall) {
     if (should_gen_function(fun)) {
+      G->stats.on_function_processed(fun);
       prepare_generate_function(fun);
     }
   }

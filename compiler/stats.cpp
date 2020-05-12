@@ -1,5 +1,7 @@
 #include "compiler/stats.h"
 
+#include "compiler/data/function-data.h"
+
 void Stats::on_var_inserting(VarData::Type type) {
   switch (type) {
     case VarData::var_local_t:
@@ -27,6 +29,17 @@ void Stats::on_var_inserting(VarData::Type type) {
       break;
   }
 }
+
+void Stats::on_function_processed(FunctionPtr function) {
+  ++total_functions_;
+  if (function->can_throw) {
+    ++total_throwing_functions_;
+  }
+  if (function->is_resumable) {
+    ++total_resumable_functions_;
+  }
+}
+
 void Stats::write_to(std::ostream &out) {
   out << std::endl;
   out << "Compile stats:" << std::endl;
@@ -43,5 +56,8 @@ void Stats::write_to(std::ostream &out) {
   out << "  count mixed params: " << cnt_mixed_params << std::endl;
   out << "  count const mixed params: " << cnt_const_mixed_params << std::endl;
   out << "  count make clone: " << cnt_make_clone << std::endl;
+  out << "  total_functions: " << total_functions_ << std::endl;
+  out << "  total_throwing_functions: " << total_throwing_functions_ << std::endl;
+  out << "  total_resumable_functions: " << total_resumable_functions_ << std::endl;
   out << std::endl;
 }
