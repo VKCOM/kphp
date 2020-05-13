@@ -38,6 +38,7 @@
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
+#include "compiler/pipes/check-restrictions.h"
 #include "compiler/pipes/check-tl-classes.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/clone-strange-const-params.h"
@@ -72,7 +73,6 @@
 #include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/transform-to-smart-instanceof.h"
-#include "compiler/pipes/type-inferer-end.h"
 #include "compiler/pipes/type-inferer.h"
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
@@ -272,7 +272,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CloneStrangeConstParams>{}
     >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
-    >> SyncC<TypeInfererEndF>{}
+    >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
     >> PipeC<CheckClassesF>{}
     >> PassC<CheckConversionsPass>{}
