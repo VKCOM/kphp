@@ -2,7 +2,7 @@
 
 #include "compiler/name-gen.h"
 
-bool TransformToSmartInstanceof::user_recursion(VertexPtr v, VisitVertex<TransformToSmartInstanceof> &visit) {
+bool TransformToSmartInstanceof::user_recursion(VertexPtr v) {
   auto if_vertex = v.try_as<op_if>();
   auto condition = get_instanceof_from_if(if_vertex);
   auto instance_var = condition ? condition->lhs().try_as<op_var>().clone() : VertexAdaptor<op_var>{};
@@ -15,18 +15,18 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v, VisitVertex<Transfo
     return false;
   }
 
-  visit(if_vertex->cond());
+  run_function_pass(if_vertex->cond(), this);
 
-  add_tmp_var_with_instance_cast(visit, instance_var, condition->rhs(), if_vertex->true_cmd_ref());
+  add_tmp_var_with_instance_cast(instance_var, condition->rhs(), if_vertex->true_cmd_ref());
   new_names_of_var[instance_var->str_val].pop();
 
   if (if_vertex->has_false_cmd()) {
-    visit(if_vertex->false_cmd_ref());
+    run_function_pass(if_vertex->false_cmd_ref(), this);
   }
   return true;
 }
 
-void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VisitVertex<TransformToSmartInstanceof> &visit, VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd) {
+void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd) {
   auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var, name_of_derived);
   auto &name_of_tmp_var = set_instance_cast_to_tmp->lhs().as<op_var>()->str_val;
   new_names_of_var[instance_var->str_val].push(name_of_tmp_var);
@@ -34,7 +34,9 @@ void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VisitVertex<Tran
   cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd.as<op_seq>()->args()).set_location(cmd);
   auto commands = cmd.as<op_seq>()->args();
 
-  std::for_each(std::next(commands.begin()), commands.end(), visit);
+  std::for_each(std::next(commands.begin()), commands.end(), [&](VertexPtr &v) {
+    return run_function_pass(v, this);
+  });
 }
 
 VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v) {

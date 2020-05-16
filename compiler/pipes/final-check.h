@@ -18,7 +18,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr vertex);
 
-  bool user_recursion(VertexPtr v, VisitVertex<FinalCheckPass> &visit);
+  bool user_recursion(VertexPtr v);
 
   VertexPtr on_exit_vertex(VertexPtr vertex);
 

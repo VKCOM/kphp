@@ -53,9 +53,7 @@ public:
     return vertex;
   }
 
-  template<class VisitT>
-  bool user_recursion(VertexPtr vertex __attribute__((unused)),
-                      VisitT &visit __attribute__((unused))) {
+  bool user_recursion(VertexPtr vertex __attribute__((unused))) {
     return false;
   }
 
@@ -69,39 +67,25 @@ public:
 };
 
 template<class FunctionPassT>
-VertexPtr run_function_pass(VertexPtr vertex, FunctionPassT *pass);
-
-template<class FunctionPassT>
-struct VisitVertex {
-  VertexPtr vertex;
-  FunctionPassT *pass;
-
-  VisitVertex(VertexPtr vertex, FunctionPassT *pass) :
-    vertex(vertex),
-    pass(pass) {
-  }
-
-  inline void operator()(VertexPtr &child) {
-    child = run_function_pass(child, pass);
-  }
-};
-
-template<class FunctionPassT>
-VertexPtr run_function_pass(VertexPtr vertex, FunctionPassT *pass) {
+void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
   stage::set_location(vertex->get_location());
 
   vertex = pass->on_enter_vertex(vertex);
 
-  VisitVertex<FunctionPassT> visit(vertex, pass);
-  if (!pass->user_recursion(vertex, visit) && pass->need_recursion(vertex)) {
+  if (!pass->user_recursion(vertex) && pass->need_recursion(vertex)) {
     for (auto &i : *vertex) {
-      visit(i);
+      run_function_pass(i, pass);
     }
   }
 
   vertex = pass->on_exit_vertex(vertex);
+}
 
-  return vertex;
+template<class FunctionPassT, Operation Op>
+void run_function_pass(VertexAdaptor<Op> &vertex, FunctionPassT *pass) {
+  VertexPtr v = vertex;
+  run_function_pass(v, pass);
+  vertex = v.as<Op>();
 }
 
 template<typename FunctionPassT>
@@ -146,7 +130,7 @@ typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT run_function_pass(Fu
   if (!pass->on_start(function)) {
     return typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT();
   }
-  function->root = run_function_pass(function->root, pass).template as<op_function>();
+  run_function_pass(function->root, pass);
   return pass->on_finish();
 }
 

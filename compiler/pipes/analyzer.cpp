@@ -84,8 +84,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_var) {
     VarPtr var = vertex.as<op_var>()->var_id;
     if (var->is_constant()) {
-      VertexPtr init = var->init_val;
-      run_function_pass(init, this);
+      run_function_pass(var->init_val, this);
     }
     return vertex;
   }

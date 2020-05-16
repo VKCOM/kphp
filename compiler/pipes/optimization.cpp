@@ -249,13 +249,13 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
   return root;
 }
 
-bool OptimizationPass::user_recursion(VertexPtr root, VisitVertex<OptimizationPass> &visit) {
+bool OptimizationPass::user_recursion(VertexPtr root) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     kphp_assert (var);
     if (var->init_val) {
       if (try_optimize_var(var)) {
-        visit(var->init_val);
+        run_function_pass(var->init_val, this);
         cast_const_array(var->init_val, var);
       }
     }

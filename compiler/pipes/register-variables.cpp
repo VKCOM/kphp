@@ -203,11 +203,24 @@ VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root) {
   return root;
 }
 
+void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_list> list) {
+  for (auto i : list->params()) {
+    kphp_assert (i);
+    kphp_assert (i->type() == op_func_param);
+    auto param = i.as<op_func_param>();
+    VertexPtr default_value;
+    if (param->has_default_value() && param->default_value()) {
+      default_value = param->default_value();
+      run_function_pass(param->default_value(), this);
+    }
+    register_param_var(param, default_value);
+  }
+}
 
-bool RegisterVariablesPass::user_recursion(VertexPtr v, VisitVertex<RegisterVariablesPass> &visit) {
+bool RegisterVariablesPass::user_recursion(VertexPtr v) {
   if (v->type() == op_func_param_list) {
     in_param_list++;
-    visit_func_param_list(v.as<op_func_param_list>(), visit);
+    visit_func_param_list(v.as<op_func_param_list>());
     in_param_list--;
     return true;
   }

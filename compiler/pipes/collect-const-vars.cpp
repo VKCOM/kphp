@@ -103,18 +103,18 @@ bool CollectConstVarsPass::need_recursion(VertexPtr root) {
   return root->type() != op_defined;
 }
 
-bool CollectConstVarsPass::user_recursion(VertexPtr v, VisitVertex<CollectConstVarsPass> &visit) {
+bool CollectConstVarsPass::user_recursion(VertexPtr v) {
   if (v->type() == op_function) {
     if (current_function->type == FunctionData::func_class_holder) {
       ClassPtr c = current_function->class_id;
       c->members.for_each([&](ClassMemberInstanceField &field) {
         if (field.var->init_val) {
-          visit(field.var->init_val);
+          run_function_pass(field.var->init_val, this);
         }
       });
       c->members.for_each([&](ClassMemberStaticField &field) {
         if (field.var->init_val) {
-          visit(field.var->init_val);
+          run_function_pass(field.var->init_val, this);
         }
       });
     }

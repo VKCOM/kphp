@@ -51,11 +51,11 @@ private:
     }
     // значения констант класса могут содержать константы других классов, которым нужно require_class()
     cur_class->members.for_each([&](ClassMemberConstant &c) {
-      c.value = run_function_pass(c.value, this);
+      run_function_pass(c.value, this);
     });
     cur_class->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this);
+        run_function_pass(f.var->init_val, this);
       }
       if (!f.phpdoc_str.empty()) {
         require_all_classes_in_phpdoc(f.phpdoc_str);
@@ -63,7 +63,7 @@ private:
     });
     cur_class->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this);
+        run_function_pass(f.var->init_val, this);
       }
       if (!f.phpdoc_str.empty()) {
         require_all_classes_in_phpdoc(f.phpdoc_str);

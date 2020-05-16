@@ -25,5 +25,5 @@ public:
   VertexPtr on_enter_vertex(VertexPtr root);
   VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool user_recursion(VertexPtr root, VisitVertex<OptimizationPass> &visit);
+  bool user_recursion(VertexPtr root);
 };

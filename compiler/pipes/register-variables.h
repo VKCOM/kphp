@@ -32,20 +32,7 @@ private:
   void visit_static_vertex(VertexAdaptor<op_static> stat);
   void visit_var(VertexAdaptor<op_var> var);
 
-  template<class VisitT>
-  void visit_func_param_list(VertexAdaptor<op_func_param_list> list, VisitT &visit) {
-    for (auto i : list->params()) {
-      kphp_assert (i);
-      kphp_assert (i->type() == op_func_param);
-      auto param = i.as<op_func_param>();
-      VertexPtr default_value;
-      if (param->has_default_value() && param->default_value()) {
-        default_value = param->default_value();
-        visit(param->default_value());
-      }
-      register_param_var(param, default_value);
-    }
-  }
+  void visit_func_param_list(VertexAdaptor<op_func_param_list> list);
 
 
 public:
@@ -75,6 +62,6 @@ public:
   VertexPtr on_enter_vertex(VertexPtr root);
   VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool user_recursion(VertexPtr v, VisitVertex<RegisterVariablesPass> &visit);
+  bool user_recursion(VertexPtr v);
 
 };

@@ -477,9 +477,9 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
 
 }
 
-bool FinalCheckPass::user_recursion(VertexPtr v, VisitVertex<FinalCheckPass> &visit) {
+bool FinalCheckPass::user_recursion(VertexPtr v) {
   if (v->type() == op_function) {
-    visit(v.as<op_function>()->cmd_ref());
+    run_function_pass(v.as<op_function>()->cmd_ref(), this);
     return true;
   }
 

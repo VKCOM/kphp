@@ -28,6 +28,6 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool user_recursion(VertexPtr v, VisitVertex<CollectConstVarsPass> &visit);
+  bool user_recursion(VertexPtr v);
 
 };

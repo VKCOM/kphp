@@ -24,17 +24,17 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
   return v;
 }
 
-bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v, VisitVertex<CalcActualCallsEdgesPass> &visit) {
+bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v) {
   if (auto try_v = v.try_as<op_try>()) {
     inside_try++;
-    visit(try_v->try_cmd_ref());
+    run_function_pass(try_v->try_cmd_ref(), this);
     inside_try--;
-    visit(try_v->catch_cmd_ref());
+    run_function_pass(try_v->catch_cmd_ref(), this);
     return true;
   }
   if (auto fork_v = v.try_as<op_fork>()) {
     inside_fork++;
-    visit(fork_v->func_call_ref());
+    run_function_pass(fork_v->func_call_ref(), this);
     inside_fork--;
     return true;
   }

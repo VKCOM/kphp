@@ -29,7 +29,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr v);
 
-  bool user_recursion(VertexPtr v, VisitVertex<CalcActualCallsEdgesPass> &visit);
+  bool user_recursion(VertexPtr v);
 
   std::vector<EdgeInfo> on_finish() {
     return std::move(edges);
