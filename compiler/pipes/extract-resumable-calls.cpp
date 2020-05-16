@@ -59,27 +59,20 @@ VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const T
   return temp_var;
 }
 
-VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, ExtractResumableCallsPass::LocalT *local) {
-  if (!local->from_seq) {
+VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
+  if (vertex->rl_type != val_none) {
     return vertex;
   }
-
   auto resumable_func_call = get_resumable_func_for_replacement(vertex);
   if (!resumable_func_call) {
     return vertex;
   }
   auto func_call = (*resumable_func_call).as<op_func_call>();
 
-  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(func_call));
-  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, func_call);
-
-  *resumable_func_call = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone());
-
-  return VertexAdaptor<op_seq>::create(set_op, vertex);
-}
-
-void ExtractResumableCallsPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local) {
-  dest_local->from_seq = vk::any_of_equal(vertex->type(), op_seq, op_seq_rval);
+  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(func_call)).set_rl_type(val_l);
+  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, func_call).set_rl_type(val_none);
+  *resumable_func_call = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone().set_rl_type(val_r)).set_rl_type(val_r);
+  return VertexAdaptor<op_seq>::create(set_op, vertex).set_rl_type(val_none);
 }
 
 bool ExtractResumableCallsPass::check_function(FunctionPtr function) {

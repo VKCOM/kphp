@@ -50,13 +50,6 @@ private:
 
 public:
 
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool need_recursion_flag;
-
-    LocalT() :
-      need_recursion_flag(true) {}
-  };
-
   RegisterVariablesPass() :
     global_function_flag(false),
     in_param_list(0) {
@@ -84,8 +77,4 @@ public:
 
   bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<RegisterVariablesPass> &visit);
 
-
-  bool need_recursion(VertexPtr root __attribute__((unused)), LocalT *local __attribute__((unused))) {
-    return local->need_recursion_flag;
-  }
 };

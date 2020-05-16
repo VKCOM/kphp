@@ -171,21 +171,16 @@ void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
 }
 
 
-VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, RegisterVariablesPass::LocalT *local) {
+VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   kphp_assert (root);
   if (root->type() == op_global) {
     visit_global_vertex(root.as<op_global>());
-    local->need_recursion_flag = false;
-    auto empty = VertexAdaptor<op_empty>::create();
-    return empty;
+    return VertexAdaptor<op_empty>::create();
   } else if (root->type() == op_static) {
     visit_static_vertex(root.as<op_static>());
-    local->need_recursion_flag = false;
-    auto empty = VertexAdaptor<op_empty>::create();
-    return empty;
+    return VertexAdaptor<op_empty>::create();
   } else if (root->type() == op_var) {
     visit_var(root.as<op_var>());
-    local->need_recursion_flag = false;
   } else if (auto prop = root.try_as<op_instance_prop>()) {
     if (auto klass = resolve_class_of_arrow_access(current_function, root)) {   // если null, то ошибка доступа к непонятному свойству уже кинулась в resolve_class_of_arrow_access()
       if (auto m = klass->get_instance_field(root->get_string())) {

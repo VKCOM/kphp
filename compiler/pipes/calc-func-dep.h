@@ -23,10 +23,8 @@ static_assert(!std::is_copy_constructible<DepData>::value, "DepData shouldn't be
 class CalcFuncDepPass : public FunctionPassBase {
 private:
   DepData data;
+  std::vector<FunctionPtr> calls;
 public:
-  struct LocalT : public FunctionPassBase::LocalT {
-    VertexAdaptor<op_func_call> extern_func_call;
-  };
 
   string get_description() {
     return "Calc function depencencies";
@@ -34,9 +32,8 @@ public:
 
   bool check_function(FunctionPtr function);
 
-  void on_enter_edge(VertexPtr, LocalT *local, VertexPtr, LocalT *dest_local);
-
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *local);
 
   DepData on_finish();
 };

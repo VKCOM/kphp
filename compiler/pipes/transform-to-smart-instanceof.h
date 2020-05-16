@@ -1,8 +1,8 @@
 #pragma once
 
 #include <map>
-#include <string>
 #include <stack>
+#include <string>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
@@ -15,7 +15,7 @@ public:
 
   bool user_recursion(VertexPtr v, LocalT *, VisitVertex<TransformToSmartInstanceof> &visit);
 
-  VertexPtr on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
 
 private:
   static VertexAdaptor<op_set> generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex);

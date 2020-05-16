@@ -1,10 +1,10 @@
 #pragma once
 
 #include "auto/compiler/vertex/is-base-of.h"
+#include "common/wrappers/fmt_format.h"
 
 #include "compiler/operation.h"
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 
 template<Operation Op>
 class vertex_inner;
@@ -125,6 +125,11 @@ public:
 
   bool operator!=(VertexPtr other) {
     return !(*this == other);
+  }
+
+  VertexAdaptor &set_rl_type(RLValueType valueType) {
+    impl->rl_type = valueType;
+    return *this;
   }
 
   VertexAdaptor &set_location(const Location &location) {

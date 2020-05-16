@@ -100,15 +100,6 @@ public:
     return root;
   }
 
-  void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr dest_vertex, LocalT *) {
-    if (auto call = vertex.try_as<op_func_call>()) {
-      if (auto alloc = dest_vertex.try_as<op_alloc>()) {
-        kphp_assert(alloc->allocated_class);
-      }
-    }
-  }
-
-
 private:
   FunctionPtr generate_instance_template_function_by_name(const std::map<int, vk::intrusive_ptr<Assumption>> &template_type_id_to_ClassPtr,
                                                           FunctionPtr func,

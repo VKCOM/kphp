@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include "compiler/inferring/public.h"
 #include "compiler/compiler-core.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/public.h"
 
 class CommonAnalyzerPass : public FunctionPassBase {
   void check_set(VertexAdaptor<op_set> to_check);
@@ -31,11 +31,6 @@ public:
     return true;
   }
 
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool from_seq{false};
-  };
-
-  void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr , LocalT *dest_local);
 
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT * local);
 

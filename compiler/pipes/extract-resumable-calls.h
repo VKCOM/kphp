@@ -15,11 +15,6 @@ public:
 
   bool check_function(FunctionPtr function);
 
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool from_seq;
-  };
-
-  void on_enter_edge(VertexPtr vertex, LocalT *local __attribute__((unused)), VertexPtr dest_vertex __attribute__((unused)), LocalT *dest_local);
-
   VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
+
 };

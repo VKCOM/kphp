@@ -191,7 +191,7 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   return root;
 }
 
-VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::LocalT *) {
+VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, LocalT *) {
   if (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     root = remove_extra_conversions(root);
   }
@@ -223,7 +223,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, FunctionPassBase::Lo
   return root;
 }
 
-VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, FunctionPassBase::LocalT *) {
+VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, LocalT *) {
   if (auto param = root.try_as<op_func_param>()) {
     if (param->has_default_value() && param->default_value()) {
       if (auto var_id = cast_const_array(param->default_value(), param->var())) {

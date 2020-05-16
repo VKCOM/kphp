@@ -6,15 +6,10 @@ bool ExtractAsyncPass::check_function(FunctionPtr function) {
   return default_check_function(function) && !function->is_extern() && function->is_resumable;
 }
 
-void ExtractAsyncPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, ExtractAsyncPass::LocalT *dest_local) {
-  dest_local->from_seq = vk::any_of_equal(vertex->type(), op_seq, op_seq_rval);
-}
-
-VertexPtr ExtractAsyncPass::on_enter_vertex(VertexPtr vertex, ExtractAsyncPass::LocalT *local) {
-  if (!local->from_seq) {
+VertexPtr ExtractAsyncPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+  if (vertex->rl_type != val_none) {
     return vertex;
   }
-
   auto get_resumable_func_call = [](VertexPtr v) {
     auto func_call = v.try_as<op_func_call>();
     if (func_call && func_call->func_id->is_resumable) {

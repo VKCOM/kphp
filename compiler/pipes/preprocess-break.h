@@ -11,9 +11,6 @@ private:
   int get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operation op);
 
 public:
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool is_cycle;
-  };
 
   PreprocessBreakPass() :
     current_label_id(0) {

@@ -10,13 +10,11 @@ public:
 
   bool check_function(FunctionPtr function);
 
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool from_seq;
-  };
+  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *);
 
-  void on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local);
-
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
+  bool need_recursion(VertexPtr vertex, LocalT*) {
+    return vertex->type() != op_fork;
+  }
 
 private:
   void raise_cant_save_result_of_resumable_func(FunctionPtr func);

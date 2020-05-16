@@ -26,10 +26,8 @@ VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   in_param_list_ -= root->type() == op_func_param_list;
   return res;
 }
-VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
+VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *) {
   in_param_list_ += root->type() == op_func_param_list;
-
-  local->need_recursion_flag = false;
 
   if (vk::any_of_equal(root->type(), op_defined)) {
     return root;
@@ -49,7 +47,6 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *local) {
     }
     const_array_depth_ += root->type() == op_array;
   }
-  local->need_recursion_flag = true;
   return root;
 }
 
@@ -102,8 +99,8 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   return var;
 }
 
-bool CollectConstVarsPass::need_recursion(VertexPtr, LocalT *local) {
-  return local->need_recursion_flag;
+bool CollectConstVarsPass::need_recursion(VertexPtr root, LocalT *) {
+  return root->type() != op_defined;
 }
 
 bool CollectConstVarsPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<CollectConstVarsPass> &visit) {

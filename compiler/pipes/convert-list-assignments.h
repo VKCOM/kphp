@@ -10,10 +10,6 @@
  */
 class ConvertListAssignmentsPass : public FunctionPassBase {
 public:
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool need_recursion_flag = true;
-  };
-
   string get_description() final {
     return "Process assignments to list";
   }
@@ -23,10 +19,6 @@ public:
   }
 
   VertexPtr on_exit_vertex(VertexPtr root, LocalT *local);
-
-  bool need_recursion(VertexPtr, LocalT *local) {
-    return local->need_recursion_flag;
-  }
 
 private:
   static VertexPtr process_list_assignment(VertexAdaptor<op_list> list);

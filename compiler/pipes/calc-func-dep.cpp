@@ -5,8 +5,8 @@
 #include "compiler/inferring/public.h"
 #include "compiler/vertex.h"
 
-VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *local) {
-  if (local->extern_func_call && vertex->type() == op_func_ptr) {
+VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *) {
+  if (!calls.empty() && calls.back()->is_extern() && vertex->type() == op_func_ptr) {
     FunctionPtr callback_passed_to_extern_func = vertex.as<op_func_ptr>()->func_id;
     kphp_assert(callback_passed_to_extern_func);
 
@@ -35,8 +35,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;
     data.dep.push_back(other_function);
+    calls.push_back(other_function);
     if (other_function->is_extern()) {
-      local->extern_func_call = vertex.as<op_func_call>();
       if (other_function->cpp_template_call) {
         auto tp = tinf::get_type(call);
         if (auto klass = tp->class_type()) {
@@ -88,6 +88,15 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
   return vertex;
 }
 
+VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+  if (vertex->type() == op_func_call) {
+    calls.pop_back();
+  }
+
+  return vertex;
+}
+
+
 DepData CalcFuncDepPass::on_finish() {
   my_unique(&data.dep);
   my_unique(&data.used_global_vars);
@@ -98,6 +107,3 @@ bool CalcFuncDepPass::check_function(FunctionPtr function) {
   return default_check_function(function) && !function->is_extern();
 }
 
-void CalcFuncDepPass::on_enter_edge(VertexPtr, CalcFuncDepPass::LocalT *local, VertexPtr, CalcFuncDepPass::LocalT *dest_local) {
-  dest_local->extern_func_call = local->extern_func_call;
-}

@@ -3,6 +3,7 @@
 #include "compiler/function-pass.h"
 
 class CalcValRefPass : public FunctionPassBase {
+  bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first);
 public:
   string get_description() {
     return "Calc val ref";
@@ -12,13 +13,6 @@ public:
     return default_check_function(function) && !function->is_extern();
   }
 
-  bool is_allowed_for_getting_val_or_ref(Operation op, bool is_last, bool is_first);
 
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool allowed;
-  };
-
-  void on_enter_edge(VertexPtr vertex, LocalT *local, VertexPtr dest_vertex, LocalT *dest_local);
-
-  bool user_recursion(VertexPtr v, LocalT *local, VisitVertex<CalcValRefPass> &visit);
+  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
 };

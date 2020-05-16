@@ -14,10 +14,6 @@ private:
   VertexPtr create_const_variable(VertexPtr root, Location loc);
 
 public:
-  struct LocalT : public FunctionPassBase::LocalT {
-    bool need_recursion_flag;
-  };
-
   string get_description() {
     return "Collect constants";
   }

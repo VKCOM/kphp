@@ -37,7 +37,7 @@ void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VisitVertex<Tran
   std::for_each(std::next(commands.begin()), commands.end(), visit);
 }
 
-VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
+VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, LocalT *) {
   if (v->type() != op_var || new_names_of_var.empty()) {
     return v;
   }

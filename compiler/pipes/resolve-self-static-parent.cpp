@@ -33,7 +33,7 @@ bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
   return true;
 }
 
-VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, FunctionPassBase::LocalT *) {
+VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, LocalT *) {
   // заменяем \VK\A::method, static::f, self::$field на полные имена вида VK$A$$method и пр.
   if (vk::any_of_equal(v->type(), op_func_call, op_var, op_func_name)) {
     string original_name = v->get_string();

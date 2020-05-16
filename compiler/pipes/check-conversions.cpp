@@ -56,7 +56,7 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_regexp,   tp_shape},
 };
 
-VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex, FunctionPassBase::LocalT *) {
+VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   if (forbidden_conversions.count(vertex->type())) {
     auto range = forbidden_conversions.equal_range(vertex->type());
     auto converted_expr_type = tinf::get_type(vertex.as<meta_op_unary>()->expr());

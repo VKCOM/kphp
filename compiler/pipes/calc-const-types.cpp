@@ -32,11 +32,11 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
   });
 }
 
-void CalcConstTypePass::on_exit_edge(VertexPtr, LocalT *v_local, VertexPtr from, LocalT *) {
-  v_local->has_nonconst |= from->const_type == cnst_nonconst_val;
-}
-
-VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *local) {
+VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *) {
+  bool has_nonconst = false;
+  for (VertexPtr son : *v) {
+    has_nonconst |= son->const_type == cnst_nonconst_val;
+  }
   switch (OpInfo::cnst(v->type())) {
     case cnst_func:
       if (auto as_func_call = v.try_as<op_func_call>()) {
@@ -48,7 +48,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *local) {
       }
       /* fallthrough */
     case cnst_const_func:
-      v->const_type = local->has_nonconst ? cnst_nonconst_val : cnst_const_val;
+      v->const_type = has_nonconst ? cnst_nonconst_val : cnst_const_val;
       break;
     case cnst_nonconst_func:
       v->const_type = cnst_nonconst_val;

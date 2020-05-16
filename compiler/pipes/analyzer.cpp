@@ -73,10 +73,6 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   }
 }
 
-void CommonAnalyzerPass::on_enter_edge(VertexPtr vertex, LocalT *, VertexPtr, LocalT *dest_local) {
-  dest_local->from_seq = vertex->type() == op_seq;
-}
-
 VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT *local) {
   if (vertex->type() == op_array) {
     auto duplications = collect_duplicate_keys(vertex);
@@ -93,8 +89,8 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT *local) {
     }
     return vertex;
   }
-  if (local->from_seq) {
-    if (OpInfo::P[vertex->type()].rl == rl_op && OpInfo::P[vertex->type()].cnst == cnst_const_func) {
+  if (vertex->rl_type == val_none) {
+    if (OpInfo::rl(vertex->type()) == rl_op && OpInfo::cnst(vertex->type()) == cnst_const_func) {
       if (vk::none_of_equal(vertex->type(), op_log_and, op_log_or, op_ternary, op_log_and_let, op_log_or_let, op_unset)) {
         kphp_warning(fmt_format("Statement has no effect [op = {}]", OpInfo::P[vertex->type()].str));
       }

@@ -61,18 +61,15 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
       return false;
   }
 }
-void CalcValRefPass::on_enter_edge(VertexPtr, LocalT *local, VertexPtr dest_vertex, LocalT *) {
-  if (local->allowed && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
-    if (tinf::get_type(dest_vertex)->use_optional()) {
-      dest_vertex->val_ref_flag = dest_vertex->rl_type;
+VertexPtr CalcValRefPass::on_enter_vertex(VertexPtr v, LocalT *) {
+  for (auto child_it = v->begin(); child_it != v->end(); ++child_it) {
+    bool allowed = is_allowed_for_getting_val_or_ref(v->type(), child_it == std::prev(v->end()), child_it == v->begin());
+    VertexPtr dest_vertex = *child_it;
+    if (allowed && dest_vertex->rl_type != val_none && dest_vertex->rl_type != val_error) {
+      if (tinf::get_type(dest_vertex)->use_optional()) {
+        dest_vertex->val_ref_flag = dest_vertex->rl_type;
+      }
     }
   }
-}
-
-bool CalcValRefPass::user_recursion(VertexPtr v, CalcValRefPass::LocalT *local, VisitVertex<CalcValRefPass> &visit) {
-  for (auto child_it = v->begin(); child_it != v->end(); ++child_it) {
-    local->allowed = is_allowed_for_getting_val_or_ref(v->type(), child_it == std::prev(v->end()), child_it == v->begin());
-    visit(*child_it);
-  }
-  return true;
+  return v;
 }
