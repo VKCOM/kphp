@@ -135,10 +135,26 @@ void ClassData::add_class_constant() {
   members.add_constant("class", GenTree::generate_constant_field_class_value(get_self()), AccessModifiers::public_);
 }
 
-void ClassData::create_default_constructor(Location location, DataStream<FunctionPtr> &os) {
-  auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(),
-                                                 VertexAdaptor<op_seq>::create());
-  func->location = location;
+void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {
+  auto parent_constructor = parent_class->construct_function;
+  auto params = parent_constructor->root->params().clone();
+  // skip parent's this
+  params = VertexAdaptor<op_func_param_list>::create(VertexRange{params->params().begin() + 1, params->params().end()});
+
+  auto parent_call = VertexAdaptor<op_func_call>::create(parent_constructor->get_params_as_vector_of_vars(1));
+  parent_call->set_string("parent::__construct");
+  has_custom_constructor = true;
+
+  create_constructor(params, VertexAdaptor<op_seq>::create(parent_call), os);
+}
+
+void ClassData::create_default_constructor(DataStream<FunctionPtr> &os) {
+  create_constructor(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create(), os);
+}
+
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os) {
+  auto func = VertexAdaptor<op_function>::create(params, body);
+  func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
 
   G->require_function(construct_function, os);
@@ -235,17 +251,6 @@ const ClassMemberStaticField *ClassData::get_static_field(vk::string_view local_
 
 const ClassMemberConstant *ClassData::get_constant(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberConstant>(local_name);
-}
-
-void ClassData::check_parent_constructor() {
-  if (!parent_class || !parent_class->construct_function) {
-    return;
-  }
-
-  kphp_error(has_custom_constructor || !parent_class->has_custom_constructor,
-             fmt_format("You must write `__constructor` in class: {} because one of your parent({}) has constructor",
-                        TermStringFormat::paint_green(name), TermStringFormat::paint_green(parent_class->name))
-  );
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {

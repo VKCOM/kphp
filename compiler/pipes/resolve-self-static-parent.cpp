@@ -96,6 +96,8 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
       alloc->allocated_class_name = resolve_uses(current_function, alloc->allocated_class_name, '\\');
       alloc->allocated_class = G->get_class(alloc->allocated_class_name);
       kphp_error_act(alloc->allocated_class, fmt_format("Class {} not found", alloc->allocated_class_name), return v);
+      kphp_error_act(!alloc->allocated_class->modifiers.is_abstract(),
+                     fmt_format("Cannot instantiate abstract class {}", alloc->allocated_class_name), return v);
       check_access_to_class_from_this_file(alloc->allocated_class);
     }
   }

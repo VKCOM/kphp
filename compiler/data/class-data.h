@@ -83,7 +83,9 @@ public:
   FunctionPtr add_virt_clone();
   void add_class_constant();
 
-  void create_default_constructor(Location location, DataStream<FunctionPtr> &os);
+  void create_constructor_with_parent_call(DataStream<FunctionPtr> &os);
+  void create_default_constructor(DataStream<FunctionPtr> &os);
+  void create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
   static auto gen_param_this(Location location) {
@@ -117,7 +119,6 @@ public:
   const ClassMemberInstanceField *get_instance_field(vk::string_view local_name) const;
   const ClassMemberStaticField *get_static_field(vk::string_view local_name) const;
   const ClassMemberConstant *get_constant(vk::string_view local_name) const;
-  void check_parent_constructor();
 
   ClassPtr get_self() const {
     return ClassPtr{const_cast<ClassData *>(this)};

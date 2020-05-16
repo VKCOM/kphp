@@ -30,11 +30,18 @@ VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instan
 template<class ClassMemberMethod>
 bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr context_class, ClassMemberMethod *interface_method_in_derived) {
   stage::set_line(interface_function->root->get_location().line);
-  if (!interface_method_in_derived) {
-    kphp_error(context_class->modifiers.is_abstract(),
-               fmt_format("class: {} must be abstract, method: {} is not overridden",
-                          TermStringFormat::paint_green(context_class->name),
-                          TermStringFormat::paint_green(interface_function->get_human_readable_name())));
+  if (!interface_method_in_derived || (interface_method_in_derived->function->is_constructor() && !context_class->has_custom_constructor)) {
+    kphp_error_act(context_class->modifiers.is_abstract(),
+                   fmt_format("class: {} must be abstract, method: {} is not overridden",
+                              TermStringFormat::paint_green(context_class->name),
+                              TermStringFormat::paint_green(interface_function->get_human_readable_name())),
+                   return true);
+    for (auto derived : context_class->derived_classes) {
+      const auto *method_in_derived = derived->members.find_by_local_name<ClassMemberMethod>(interface_function->local_name());
+      if (!check_that_signatures_are_same(interface_function, derived, method_in_derived)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -100,6 +107,13 @@ void check_static_function(FunctionPtr interface_function, std::vector<ClassPtr>
   for (auto derived : derived_classes) {
     auto static_in_derived = derived->members.get_static_method(interface_function->local_name());
     check_that_signatures_are_same(interface_function, derived, static_in_derived);
+  }
+}
+
+void check_constructor(FunctionPtr interface_constructor, std::vector<ClassPtr> &derived_classes) {
+  for (auto derived : derived_classes) {
+    auto derived_constructor = derived->members.get_instance_method(ClassData::NAME_OF_CONSTRUCT);
+    check_that_signatures_are_same(interface_constructor, derived, derived_constructor);
   }
 }
 
@@ -182,9 +196,29 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     return;
   }
 
+  if (virtual_function->modifiers.is_abstract()) {
+    auto check_parents_dont_have_same_non_abstract_method = [&](auto member) {
+      for (auto parent = klass->parent_class; parent; parent = parent->parent_class) {
+        const auto *method = parent->members.find_by_local_name<decltype(member)>(virtual_function->local_name());
+        kphp_error(!method || method->function->modifiers.is_abstract(),
+                   fmt_format("Cannot make non abstract method {} abstract in class {}", virtual_function->get_human_readable_name(), parent->name));
+      }
+    };
+    if (virtual_function->modifiers.is_static()) {
+      check_parents_dont_have_same_non_abstract_method(ClassMemberStaticMethod{virtual_function});
+    } else {
+      check_parents_dont_have_same_non_abstract_method(ClassMemberInstanceMethod{virtual_function});
+    }
+  }
+
   if (virtual_function->modifiers.is_static()) {
     kphp_assert(klass->modifiers.is_abstract());
     return check_static_function(virtual_function, derived_classes);
+  }
+
+  if (virtual_function == klass->construct_function) {
+    kphp_assert(klass->modifiers.is_abstract());
+    return check_constructor(virtual_function, derived_classes);
   }
 
   if (!virtual_function->modifiers.is_abstract()) {

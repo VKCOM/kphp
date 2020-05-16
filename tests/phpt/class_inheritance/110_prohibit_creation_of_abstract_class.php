@@ -1,5 +1,5 @@
 @kphp_should_fail
-/but this class is abstract/
+/Cannot instantiate abstract class A/
 <?php
 
 abstract class A {

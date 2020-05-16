@@ -1624,8 +1624,7 @@ VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_
   cur_class->add_class_constant(); // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
-    CE (!kphp_error(!cur_class->modifiers.is_abstract(), "constructor in interfaces/abstract classes has not been supported yet"));
-    cur_class->has_custom_constructor = true;
+    cur_class->has_custom_constructor = !constructor_method->modifiers.is_abstract();
     G->register_and_require_function(constructor_method, parsed_os, true);
   }
 
