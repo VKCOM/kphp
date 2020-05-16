@@ -61,7 +61,7 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
       return false;
   }
 }
-VertexPtr CalcValRefPass::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CalcValRefPass::on_enter_vertex(VertexPtr v) {
   for (auto child_it = v->begin(); child_it != v->end(); ++child_it) {
     bool allowed = is_allowed_for_getting_val_or_ref(v->type(), child_it == std::prev(v->end()), child_it == v->begin());
     VertexPtr dest_vertex = *child_it;

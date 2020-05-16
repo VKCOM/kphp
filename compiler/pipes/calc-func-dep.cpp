@@ -5,7 +5,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/vertex.h"
 
-VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::LocalT *) {
+VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   if (!calls.empty() && calls.back()->is_extern() && vertex->type() == op_func_ptr) {
     FunctionPtr callback_passed_to_extern_func = vertex.as<op_func_ptr>()->func_id;
     kphp_assert(callback_passed_to_extern_func);
@@ -88,7 +88,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex, CalcFuncDepPass::Lo
   return vertex;
 }
 
-VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex) {
   if (vertex->type() == op_func_call) {
     calls.pop_back();
   }

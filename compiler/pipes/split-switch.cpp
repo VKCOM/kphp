@@ -73,7 +73,7 @@ public:
     return default_check_function(function) && function->type == FunctionData::func_global;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *local __attribute__((unused))) {
+  VertexPtr on_enter_vertex(VertexPtr root) {
     depth++;
     if (root->type() != op_switch) {
       return root;
@@ -163,11 +163,11 @@ public:
     return root;
   }
 
-  bool need_recursion(VertexPtr root, LocalT *local __attribute__((unused))) {
+  bool need_recursion(VertexPtr root) {
     return depth < 2 || root->type() == op_seq || root->type() == op_try;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local __attribute__((unused))) {
+  VertexPtr on_exit_vertex(VertexPtr root) {
     depth--;
     return root;
   }

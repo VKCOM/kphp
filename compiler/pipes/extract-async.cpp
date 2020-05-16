@@ -6,7 +6,7 @@ bool ExtractAsyncPass::check_function(FunctionPtr function) {
   return default_check_function(function) && !function->is_extern() && function->is_resumable;
 }
 
-VertexPtr ExtractAsyncPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr ExtractAsyncPass::on_exit_vertex(VertexPtr vertex) {
   if (vertex->rl_type != val_none) {
     return vertex;
   }

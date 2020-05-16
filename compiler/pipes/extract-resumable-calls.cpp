@@ -59,7 +59,7 @@ VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const T
   return temp_var;
 }
 
-VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->rl_type != val_none) {
     return vertex;
   }

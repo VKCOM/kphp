@@ -73,7 +73,7 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   }
 }
 
-VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT *local) {
+VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_array) {
     auto duplications = collect_duplicate_keys(vertex);
     if (!duplications.empty()) {
@@ -85,7 +85,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex, LocalT *local) {
     VarPtr var = vertex.as<op_var>()->var_id;
     if (var->is_constant()) {
       VertexPtr init = var->init_val;
-      run_function_pass(init, this, local);
+      run_function_pass(init, this);
     }
     return vertex;
   }

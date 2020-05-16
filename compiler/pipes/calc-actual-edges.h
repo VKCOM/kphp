@@ -27,9 +27,9 @@ public:
     return "Collect actual calls edges";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__ ((unused)));
+  VertexPtr on_enter_vertex(VertexPtr v);
 
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<CalcActualCallsEdgesPass> &visit);
+  bool user_recursion(VertexPtr v, VisitVertex<CalcActualCallsEdgesPass> &visit);
 
   std::vector<EdgeInfo> on_finish() {
     return std::move(edges);

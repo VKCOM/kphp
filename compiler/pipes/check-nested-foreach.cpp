@@ -5,7 +5,7 @@
 
 #include "compiler/data/var-data.h"
 
-VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
   auto already_used = [&](VarPtr v) {
     return vk::contains(foreach_vars, v) || vk::contains(foreach_key_vars, v);
   };
@@ -51,7 +51,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   }
   return vertex;
 }
-VertexPtr CheckNestedForeachPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr CheckNestedForeachPass::on_exit_vertex(VertexPtr vertex) {
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
     auto params = foreach_v->params();
     foreach_vars.pop_back();

@@ -12,5 +12,5 @@ public:
     return "CheckConversions";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local __attribute__((unused)));
+  VertexPtr on_enter_vertex(VertexPtr vertex);
 };

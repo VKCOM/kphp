@@ -16,7 +16,7 @@ public:
     current_label_id(0) {
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_enter_vertex(VertexPtr root);
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr root);
 };

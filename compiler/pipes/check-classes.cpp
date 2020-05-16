@@ -9,7 +9,7 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/phpdoc.h"
 
-VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
   auto type_data = root->tinf_node.type_;
   if (auto var = root.try_as<op_var>()) {
     type_data = var->var_id ? var->var_id->tinf_node.type_ : type_data;

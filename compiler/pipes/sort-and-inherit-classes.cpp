@@ -27,7 +27,7 @@ public:
   explicit PatchInheritedMethodPass(DataStream<FunctionPtr> &function_stream) :
     function_stream(function_stream) {}
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
+  VertexPtr on_enter_vertex(VertexPtr root) {
     if (auto call = root.try_as<op_func_call>()) {
       if (!call->args().empty()) {
         if (auto alloc = call->args()[0].try_as<op_alloc>()) {

@@ -21,7 +21,7 @@ public:
 
   bool on_start(FunctionPtr function);
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 };
 
 template<class MemberModifier>

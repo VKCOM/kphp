@@ -14,7 +14,7 @@ int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
   }
   return max_dependency_level;
 }
-VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   VertexPtr res = root;
   if (root->const_type == cnst_const_val) {
     const_array_depth_ -= root->type() == op_array;
@@ -26,7 +26,7 @@ VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root, LocalT *) {
   in_param_list_ -= root->type() == op_func_param_list;
   return res;
 }
-VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
   in_param_list_ += root->type() == op_func_param_list;
 
   if (vk::any_of_equal(root->type(), op_defined)) {
@@ -99,11 +99,11 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   return var;
 }
 
-bool CollectConstVarsPass::need_recursion(VertexPtr root, LocalT *) {
+bool CollectConstVarsPass::need_recursion(VertexPtr root) {
   return root->type() != op_defined;
 }
 
-bool CollectConstVarsPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<CollectConstVarsPass> &visit) {
+bool CollectConstVarsPass::user_recursion(VertexPtr v, VisitVertex<CollectConstVarsPass> &visit) {
   if (v->type() == op_function) {
     if (current_function->type == FunctionData::func_class_holder) {
       ClassPtr c = current_function->class_id;

@@ -8,7 +8,7 @@ private:
 
 public:
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 
   virtual bool check_function(FunctionPtr function);
 };

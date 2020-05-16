@@ -13,9 +13,9 @@ public:
     return "Trasform To Smart Instanceof";
   }
 
-  bool user_recursion(VertexPtr v, LocalT *, VisitVertex<TransformToSmartInstanceof> &visit);
+  bool user_recursion(VertexPtr v, VisitVertex<TransformToSmartInstanceof> &visit);
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr v);
 
 private:
   static VertexAdaptor<op_set> generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex);

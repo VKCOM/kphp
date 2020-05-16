@@ -12,7 +12,7 @@ bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
   return true;
 }
 
-VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root) {
   if (auto var = root.try_as<op_var>()) {
     VarPtr var_id = var->var_id;
     if (var_id->is_class_static_var()) {

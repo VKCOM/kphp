@@ -80,7 +80,7 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
   return it->second;
 }
 
-VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   stage::set_line(root->location.line);
   if (auto set_op = root.try_as<op_set>()) {
     // list(...) = ... или short syntax (PHP 7) [...] = ...
@@ -162,7 +162,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root, LocalT *) {
   return root;
 }
 
-VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;

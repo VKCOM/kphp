@@ -7,7 +7,7 @@ VertexAdaptor<op_var> PreprocessVarargPass::create_va_list_var(Location loc) {
   result->str_val = "$VA_LIST";
   return result;
 }
-VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root) {
   if (root->type() == op_func_call) {
     VertexPtr call = root.as<op_func_call>();
     const string &name = call->get_string();

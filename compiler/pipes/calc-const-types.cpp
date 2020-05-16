@@ -18,21 +18,19 @@ bool CalcConstTypePass::on_start(FunctionPtr function) {
 void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
   klass->members.for_each([&](ClassMemberStaticField &f) {
     if (f.var->init_val) {
-      LocalT local;
-      f.var->init_val = run_function_pass(f.var->init_val, this, &local);
+      f.var->init_val = run_function_pass(f.var->init_val, this);
       kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {}::${} is not constant", klass->name, f.local_name()));
     }
   });
   klass->members.for_each([&](ClassMemberInstanceField &f) {
     if (f.var->init_val) {
-      LocalT local;
-      f.var->init_val = run_function_pass(f.var->init_val, this, &local);
+      f.var->init_val = run_function_pass(f.var->init_val, this);
       kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {}::${} is not constant", klass->name, f.local_name()));
     }
   });
 }
 
-VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v, LocalT *) {
+VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   bool has_nonconst = false;
   for (VertexPtr son : *v) {
     has_nonconst |= son->const_type == cnst_nonconst_val;

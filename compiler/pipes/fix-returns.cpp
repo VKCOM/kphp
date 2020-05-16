@@ -3,7 +3,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
 
-VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
   auto is_void_fun = [](FunctionPtr f) {
     return tinf::get_type(f, -1)->ptype() == tp_void;
   };

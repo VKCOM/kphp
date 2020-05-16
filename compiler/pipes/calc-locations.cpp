@@ -16,7 +16,7 @@ bool CalcLocationsPass::on_start(FunctionPtr function) {
   return true;
 }
 
-VertexPtr CalcLocationsPass::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CalcLocationsPass::on_enter_vertex(VertexPtr v) {
   stage::set_line(v->location.line);
   v->location = stage::get_location();
   return v;

@@ -32,8 +32,8 @@ public:
 
   bool check_function(FunctionPtr function);
 
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
-  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *local);
+  VertexPtr on_enter_vertex(VertexPtr vertex);
+  VertexPtr on_exit_vertex(VertexPtr vertex);
 
   DepData on_finish();
 };

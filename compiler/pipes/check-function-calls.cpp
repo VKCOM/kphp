@@ -57,14 +57,14 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
     }
   }
 }
-VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v, LocalT*) {
+VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v) {
   if (v->type() == op_func_ptr || v->type() == op_func_call) {
     check_func_call(v);
   }
   return v;
 }
 
-VertexPtr CheckFunctionCallsPass::on_exit_vertex(VertexPtr v, LocalT *) {
+VertexPtr CheckFunctionCallsPass::on_exit_vertex(VertexPtr v) {
   for (auto child : *v) {
     if (child->throw_flag) {
       v->throw_flag = true;

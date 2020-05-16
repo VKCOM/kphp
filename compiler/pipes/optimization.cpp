@@ -191,7 +191,7 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   return root;
 }
 
-VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   if (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     root = remove_extra_conversions(root);
   }
@@ -223,7 +223,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root, LocalT *) {
   return root;
 }
 
-VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
   if (auto param = root.try_as<op_func_param>()) {
     if (param->has_default_value() && param->default_value()) {
       if (auto var_id = cast_const_array(param->default_value(), param->var())) {
@@ -249,7 +249,7 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root, LocalT *) {
   return root;
 }
 
-bool OptimizationPass::user_recursion(VertexPtr root, LocalT *, VisitVertex<OptimizationPass> &visit) {
+bool OptimizationPass::user_recursion(VertexPtr root, VisitVertex<OptimizationPass> &visit) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     kphp_assert (var);

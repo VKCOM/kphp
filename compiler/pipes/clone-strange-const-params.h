@@ -7,9 +7,9 @@ class CloneStrangeConstParams : public FunctionPassBase {
 public:
   using ExecuteType = FunctionAndCFG;
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr v, LocalT *) {
+  bool need_recursion(VertexPtr v) {
     return v->type() != op_func_call;
   }
 };

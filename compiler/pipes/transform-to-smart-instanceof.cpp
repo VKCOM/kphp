@@ -2,7 +2,7 @@
 
 #include "compiler/name-gen.h"
 
-bool TransformToSmartInstanceof::user_recursion(VertexPtr v, LocalT *, VisitVertex<TransformToSmartInstanceof> &visit) {
+bool TransformToSmartInstanceof::user_recursion(VertexPtr v, VisitVertex<TransformToSmartInstanceof> &visit) {
   auto if_vertex = v.try_as<op_if>();
   auto condition = get_instanceof_from_if(if_vertex);
   auto instance_var = condition ? condition->lhs().try_as<op_var>().clone() : VertexAdaptor<op_var>{};
@@ -37,7 +37,7 @@ void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VisitVertex<Tran
   std::for_each(std::next(commands.begin()), commands.end(), visit);
 }
 
-VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v) {
   if (v->type() != op_var || new_names_of_var.empty()) {
     return v;
   }

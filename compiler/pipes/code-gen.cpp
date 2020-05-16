@@ -27,7 +27,7 @@ public:
   std::vector<const TypeData *> waitable_types;
   std::vector<const TypeData *> forkable_types;
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *) {
+  VertexPtr on_enter_vertex(VertexPtr root) {
     if (auto call = root.try_as<op_func_call>()) {
       if (call->func_id->is_resumable) {
         if (call->str_val == "wait_result") {

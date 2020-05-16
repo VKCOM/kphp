@@ -9,9 +9,9 @@ public:
     return "Register defines";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_exit_vertex(VertexPtr root);
 
-  inline bool need_recursion(VertexPtr v, LocalT *) {
+  bool need_recursion(VertexPtr v) {
     return can_define_be_inside_op(v->type());
   }
 };

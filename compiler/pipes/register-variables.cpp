@@ -171,7 +171,7 @@ void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
 }
 
 
-VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root) {
   kphp_assert (root);
   if (root->type() == op_global) {
     visit_global_vertex(root.as<op_global>());
@@ -194,7 +194,7 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root, LocalT *) {
   return root;
 }
 
-VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root) {
   if (auto foreach = root.try_as<op_foreach_param>()) {
     if (foreach->x()->ref_flag) {
       foreach->x()->var_id->is_foreach_reference = true;
@@ -204,7 +204,7 @@ VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root, LocalT *) {
 }
 
 
-bool RegisterVariablesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<RegisterVariablesPass> &visit) {
+bool RegisterVariablesPass::user_recursion(VertexPtr v, VisitVertex<RegisterVariablesPass> &visit) {
   if (v->type() == op_func_param_list) {
     in_param_list++;
     visit_func_param_list(v.as<op_func_param_list>(), visit);

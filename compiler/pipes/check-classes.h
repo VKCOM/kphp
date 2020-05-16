@@ -26,7 +26,7 @@ public:
     return "Check classes";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 
   bool on_start(FunctionPtr function);
 };

@@ -10,9 +10,9 @@ public:
 
   bool check_function(FunctionPtr function);
 
-  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *);
+  VertexPtr on_exit_vertex(VertexPtr vertex);
 
-  bool need_recursion(VertexPtr vertex, LocalT*) {
+  bool need_recursion(VertexPtr vertex) {
     return vertex->type() != op_fork;
   }
 

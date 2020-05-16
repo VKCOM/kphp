@@ -10,5 +10,5 @@ public:
     return "Analyze local phpdocs";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 };

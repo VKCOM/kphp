@@ -14,7 +14,7 @@ int PreprocessBreakPass::get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operat
   }
   return *val;
 }
-VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root) {
   if (OpInfo::type(root->type()) == cycle_op) {
     cycles.push_back(root.as<meta_op_cycle>());
   }
@@ -54,7 +54,7 @@ VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root, LocalT *) {
 
   return root;
 }
-VertexPtr PreprocessBreakPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr PreprocessBreakPass::on_exit_vertex(VertexPtr root) {
   if (OpInfo::type(root->type()) == cycle_op) {
     cycles.pop_back();
   }

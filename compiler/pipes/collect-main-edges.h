@@ -1,9 +1,9 @@
 #pragma once
 
 #include "compiler/function-pass.h"
-#include "compiler/pipes/function-and-cfg.h"
 #include "compiler/inferring/lvalue.h"
 #include "compiler/inferring/rvalue.h"
+#include "compiler/pipes/function-and-cfg.h"
 
 class CollectMainEdgesPass : public FunctionPassBase {
 private:
@@ -60,7 +60,7 @@ public:
 
   bool on_start(FunctionPtr function);
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *local __attribute__((unused)));
+  VertexPtr on_enter_vertex(VertexPtr v);
 
 
   std::nullptr_t on_finish();

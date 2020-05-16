@@ -18,7 +18,7 @@ public:
     return default_check_function(function) && !function->is_extern();
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr root);
 
 private:
   static VertexPtr process_list_assignment(VertexAdaptor<op_list> list);

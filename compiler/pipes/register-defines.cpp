@@ -4,7 +4,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 
-VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
   // дефайны — во-первых, это явное define('name',value)
   if (auto define = root.try_as<op_define>()) {
     VertexPtr name = define->name();

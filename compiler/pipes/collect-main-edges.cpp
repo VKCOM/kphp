@@ -462,7 +462,7 @@ bool CollectMainEdgesPass::on_start(FunctionPtr function) {
   return !function->is_extern();
 }
 
-VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v) {
   if (v->type_rule) {
     add_type_rule(v);
   }

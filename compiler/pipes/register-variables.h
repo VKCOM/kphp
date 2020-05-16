@@ -72,9 +72,9 @@ public:
     return true;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_enter_vertex(VertexPtr root);
+  VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<RegisterVariablesPass> &visit);
+  bool user_recursion(VertexPtr v, VisitVertex<RegisterVariablesPass> &visit);
 
 };

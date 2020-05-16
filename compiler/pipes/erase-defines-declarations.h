@@ -9,9 +9,9 @@ public:
     return "Erase defines declarations";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_exit_vertex(VertexPtr root);
 
-  inline bool need_recursion(VertexPtr v, LocalT *) {
+  inline bool need_recursion(VertexPtr v) {
     return can_define_be_inside_op(v->type());
   }
 };

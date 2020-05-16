@@ -12,6 +12,6 @@ class GenTreePostprocessPass : public FunctionPassBase {
   builtin_fun get_builtin_function(const std::string &name);
 
 public:
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
+  VertexPtr on_exit_vertex(VertexPtr root);
 };

@@ -16,11 +16,11 @@ public:
 
   bool on_start(FunctionPtr function);
 
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local __attribute__((unused)));
+  VertexPtr on_enter_vertex(VertexPtr vertex);
 
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<FinalCheckPass> &visit);
+  bool user_recursion(VertexPtr v, VisitVertex<FinalCheckPass> &visit);
 
-  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *local __attribute__((unused)));
+  VertexPtr on_exit_vertex(VertexPtr vertex);
 
 private:
   void check_op_func_call(VertexAdaptor<op_func_call> call);

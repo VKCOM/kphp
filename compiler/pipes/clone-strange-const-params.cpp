@@ -3,7 +3,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/var-data.h"
 
-VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root) {
   auto func_call = root.try_as<op_func_call>();
   if (!func_call) {
     return root;

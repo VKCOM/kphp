@@ -14,5 +14,5 @@ public:
   }
 
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr v);
 };

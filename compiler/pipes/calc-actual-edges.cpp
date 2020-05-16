@@ -3,7 +3,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
 
-VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
   if (auto ptr = v.try_as<op_func_ptr>()) {
     if (ptr->func_id->is_lambda()) {
       ClassPtr lambda_class = ptr->func_id->class_id;
@@ -24,7 +24,7 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v, LocalT *) {
   return v;
 }
 
-bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<CalcActualCallsEdgesPass> &visit) {
+bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v, VisitVertex<CalcActualCallsEdgesPass> &visit) {
   if (auto try_v = v.try_as<op_try>()) {
     inside_try++;
     visit(try_v->try_cmd_ref());

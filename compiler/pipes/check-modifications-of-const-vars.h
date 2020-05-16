@@ -14,9 +14,9 @@ public:
            function->type != FunctionData::func_class_holder;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr v);
 
-  bool need_recursion(VertexPtr, LocalT *) {
+  bool need_recursion(VertexPtr) {
     return !stage::has_error();
   }
 

@@ -3,7 +3,7 @@
 #include "compiler/const-manipulations.h"
 #include "compiler/data/define-data.h"
 
-VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root, LocalT *) {
+VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root) {
   // define('NAME', 1) внутри функций превратить в ничто для константных дефайнов — они заинлайнятся
   // а define('NAME', f()) — превратить в d$NAME = f()
   if (auto define_op = root.try_as<op_define>()) {

@@ -1,4 +1,4 @@
-#include "convert-local-phpdocs.h"
+#include "compiler/pipes/convert-local-phpdocs.h"
 
 #include "compiler/data/var-data.h"
 #include "compiler/phpdoc.h"
@@ -61,7 +61,7 @@ VertexPtr ConvertLocalPhpdocsPass::visit_phpdoc_and_extract_vars(VertexAdaptor<o
   return result ?: (VertexPtr)VertexAdaptor<op_empty>::create();
 }
 
-VertexPtr ConvertLocalPhpdocsPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr ConvertLocalPhpdocsPass::on_enter_vertex(VertexPtr root) {
   if (auto phpdoc_raw = root.try_as<op_phpdoc_raw>()) {
     return visit_phpdoc_and_extract_vars(phpdoc_raw);
     // после этого пайпа op_phpdoc_raw уже нет в AST:

@@ -5,7 +5,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/pipes/check-access-modifiers.h"
 
-VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root, LocalT *) {
+VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // defined('NAME') заменяем на true или false
   if (auto defined = root.try_as<op_defined>()) {
     kphp_error_act (
@@ -52,12 +52,12 @@ bool InlineDefinesUsagesPass::on_start(FunctionPtr function) {
   if (function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
+        f.var->init_val = run_function_pass(f.var->init_val, this);
       }
     });
     current_function->class_id->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
+        f.var->init_val = run_function_pass(f.var->init_val, this);
       }
     });
   }

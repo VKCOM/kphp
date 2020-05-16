@@ -6,7 +6,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/phpdoc.h"
 
-VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr CheckModificationsOfConstVars::on_enter_vertex(VertexPtr v) {
   check_modifications(v);
   return v;
 }

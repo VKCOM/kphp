@@ -1243,7 +1243,7 @@ public:
   explicit DropUnusedPass(IdMap<VertexUsage> &vertexUsage) :
     vertex_usage(vertexUsage) {}
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *) {
+  VertexPtr on_enter_vertex(VertexPtr v) {
     if (auto try_op = v.try_as<op_try>()) {
       if (!vertex_usage[try_op->exception()].used) {
         kphp_assert(!vertex_usage[try_op->catch_cmd()].used);
@@ -1260,7 +1260,7 @@ public:
     return v;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr v, LocalT *) {
+  VertexPtr on_exit_vertex(VertexPtr v) {
     if (auto do_op = v.try_as<op_do>()) {
       if (do_op->cond()->type() == op_empty) {
         do_op->cond() = VertexAdaptor<op_false>::create();

@@ -22,12 +22,12 @@ public:
     return default_check_function(function) && !function->is_extern();
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *local);
+  VertexPtr on_enter_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr root __attribute__((unused)), LocalT *local);
+  bool need_recursion(VertexPtr root __attribute__((unused)));
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *local __attribute__((unused)));
+  VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool user_recursion(VertexPtr v, LocalT *local __attribute__((unused)), VisitVertex<CollectConstVarsPass> &visit);
+  bool user_recursion(VertexPtr v, VisitVertex<CollectConstVarsPass> &visit);
 
 };

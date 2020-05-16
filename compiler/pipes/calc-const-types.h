@@ -14,5 +14,5 @@ public:
     return "Calc const types";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr v, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr v);
 };

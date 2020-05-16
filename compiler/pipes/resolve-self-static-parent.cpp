@@ -17,23 +17,23 @@ bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
   // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
   if (function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberConstant &c) {
-      c.value = run_function_pass(c.value, this, nullptr);
+      c.value = run_function_pass(c.value, this);
     });
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
+        f.var->init_val = run_function_pass(f.var->init_val, this);
       }
     });
     current_function->class_id->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
-        f.var->init_val = run_function_pass(f.var->init_val, this, nullptr);
+        f.var->init_val = run_function_pass(f.var->init_val, this);
       }
     });
   }
   return true;
 }
 
-VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v, LocalT *) {
+VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
   // заменяем \VK\A::method, static::f, self::$field на полные имена вида VK$A$$method и пр.
   if (vk::any_of_equal(v->type(), op_func_call, op_var, op_func_name)) {
     string original_name = v->get_string();

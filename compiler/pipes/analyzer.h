@@ -32,7 +32,7 @@ public:
   }
 
 
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT * local);
+  VertexPtr on_enter_vertex(VertexPtr vertex);
 
   std::nullptr_t on_finish();
 };

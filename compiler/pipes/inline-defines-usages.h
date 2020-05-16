@@ -14,5 +14,5 @@ public:
     return "Inline defines pass";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr root);
 };

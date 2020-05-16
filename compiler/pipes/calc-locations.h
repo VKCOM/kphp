@@ -10,5 +10,5 @@ public:
 
   bool on_start(FunctionPtr function);
 
-  VertexPtr on_enter_vertex(VertexPtr v, LocalT *);
+  VertexPtr on_enter_vertex(VertexPtr v);
 };

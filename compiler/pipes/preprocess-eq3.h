@@ -10,5 +10,5 @@ public:
     return "Preprocess eq3";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root, LocalT *);
+  VertexPtr on_exit_vertex(VertexPtr root);
 };

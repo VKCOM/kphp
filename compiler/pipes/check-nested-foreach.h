@@ -18,8 +18,8 @@ public:
   }
 
 
-  VertexPtr on_enter_vertex(VertexPtr vertex, LocalT *local);
+  VertexPtr on_enter_vertex(VertexPtr vertex);
 
 
-  VertexPtr on_exit_vertex(VertexPtr vertex, LocalT *local);
+  VertexPtr on_exit_vertex(VertexPtr vertex);
 };

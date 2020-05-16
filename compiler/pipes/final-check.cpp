@@ -231,7 +231,7 @@ bool FinalCheckPass::on_start(FunctionPtr function) {
   return true;
 }
 
-VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_func_name) {
     kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
@@ -371,7 +371,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex, LocalT *) {
   return vertex;
 }
 
-VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex, LocalT *) {
+VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
   return vertex;
 }
 
@@ -477,7 +477,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
 
 }
 
-bool FinalCheckPass::user_recursion(VertexPtr v, LocalT *, VisitVertex<FinalCheckPass> &visit) {
+bool FinalCheckPass::user_recursion(VertexPtr v, VisitVertex<FinalCheckPass> &visit) {
   if (v->type() == op_function) {
     visit(v.as<op_function>()->cmd_ref());
     return true;
