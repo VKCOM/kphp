@@ -99,10 +99,6 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   return var;
 }
 
-bool CollectConstVarsPass::need_recursion(VertexPtr root) {
-  return root->type() != op_defined;
-}
-
 bool CollectConstVarsPass::user_recursion(VertexPtr v) {
   if (v->type() == op_function) {
     if (current_function->type == FunctionData::func_class_holder) {
@@ -119,5 +115,5 @@ bool CollectConstVarsPass::user_recursion(VertexPtr v) {
       });
     }
   }
-  return false;
+  return v->type() == op_defined;
 }

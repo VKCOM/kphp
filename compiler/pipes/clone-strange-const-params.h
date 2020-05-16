@@ -9,7 +9,8 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr v) {
-    return v->type() != op_func_call;
+  bool user_recursion(VertexPtr v) {
+    // TODO: why?
+    return v->type() == op_func_call;
   }
 };

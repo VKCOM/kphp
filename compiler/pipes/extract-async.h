@@ -12,8 +12,8 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr vertex);
 
-  bool need_recursion(VertexPtr vertex) {
-    return vertex->type() != op_fork;
+  bool user_recursion(VertexPtr vertex) {
+    return vertex->type() == op_fork;
   }
 
 private:

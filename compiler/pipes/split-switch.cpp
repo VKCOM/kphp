@@ -163,8 +163,8 @@ public:
     return root;
   }
 
-  bool need_recursion(VertexPtr root) {
-    return depth < 2 || root->type() == op_seq || root->type() == op_try;
+  bool user_recursion(VertexPtr root) {
+    return !(depth < 2 || root->type() == op_seq || root->type() == op_try);
   }
 
   VertexPtr on_exit_vertex(VertexPtr root) {

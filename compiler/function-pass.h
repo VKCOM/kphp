@@ -34,8 +34,6 @@ public:
     return default_check_function(function);
   }
 
-  void init() {
-  }
 
   bool on_start(FunctionPtr function) {
     if (!check_function(function)) {
@@ -57,10 +55,6 @@ public:
     return false;
   }
 
-  bool need_recursion(VertexPtr vertex __attribute__((unused))) {
-    return true;
-  }
-
   VertexPtr on_exit_vertex(VertexPtr vertex) {
     return vertex;
   }
@@ -72,7 +66,7 @@ void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
 
   vertex = pass->on_enter_vertex(vertex);
 
-  if (!pass->user_recursion(vertex) && pass->need_recursion(vertex)) {
+  if (!pass->user_recursion(vertex)) {
     for (auto &i : *vertex) {
       run_function_pass(i, pass);
     }
@@ -126,7 +120,6 @@ template<class FunctionPassT>
 typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT run_function_pass(FunctionPtr function, FunctionPassT *pass) {
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
-  pass->init();
   if (!pass->on_start(function)) {
     return typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT();
   }

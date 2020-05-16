@@ -24,8 +24,6 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr root __attribute__((unused)));
-
   VertexPtr on_exit_vertex(VertexPtr root);
 
   bool user_recursion(VertexPtr v);

@@ -6,7 +6,7 @@ class FixReturnsPass : public FunctionPassBase {
 public:
   VertexPtr on_enter_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr root) {
-    return root->type() != op_fork;
+  bool user_recursion(VertexPtr root) {
+    return root->type() == op_fork;
   }
 };

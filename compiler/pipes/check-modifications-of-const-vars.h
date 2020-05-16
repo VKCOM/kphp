@@ -16,8 +16,8 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr v);
 
-  bool need_recursion(VertexPtr) {
-    return !stage::has_error();
+  bool user_recursion(VertexPtr) {
+    return stage::has_error();
   }
 
 private:

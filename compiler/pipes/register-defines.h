@@ -11,7 +11,7 @@ public:
 
   VertexPtr on_exit_vertex(VertexPtr root);
 
-  bool need_recursion(VertexPtr v) {
-    return can_define_be_inside_op(v->type());
+  bool user_recursion(VertexPtr v) {
+    return !can_define_be_inside_op(v->type());
   }
 };
