@@ -52,7 +52,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   // phpdoc класса может влиять на phpdoc функции
   // @kphp-infer, написанный над классом — будто его написали над каждой функцией
-  if (class_has_kphp_infer) {
+  if (class_has_kphp_infer || !params_with_typehints.empty()) {
     infer_type |= (infer_mask::check | infer_mask::hint);
   }
 
@@ -147,6 +147,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       }
 
       case php_doc_tag::kphp_template: {
+        // we can't use kphp-infer with template parameters simultaneously (we don't know exact type)
+        infer_type = 0;
         f->is_template = true;
         bool is_first_time = true;
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
