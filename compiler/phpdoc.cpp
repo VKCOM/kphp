@@ -198,6 +198,9 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       return parse_shape_type();
     case tok_callable:
       cur_tok++;
+      if (cur_tok->type() == tok_oppar) {    // callable(...) : ... — typed callable
+        return parse_typed_callable();
+      }
       return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
     case tok_array:
       cur_tok++;
@@ -341,6 +344,40 @@ VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
   cur_tok++;
 
   return sub_type;
+}
+
+VertexPtr PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):int, callable(int), callable():void
+  if (cur_tok->type() != tok_oppar) {
+    throw std::runtime_error("expected '('");
+  }
+  cur_tok++;
+
+  std::vector<VertexPtr> arg_types;
+  while (true) {
+    if (cur_tok->type() == tok_clpar) {
+      cur_tok++;
+      break;
+    }
+    arg_types.emplace_back(parse_type_expression());
+
+    if (cur_tok->type() == tok_comma) {
+      cur_tok++;
+    } else if (cur_tok->type() != tok_clpar) {
+      throw std::runtime_error("expected ')' or ','");
+    }
+  }
+
+  VertexPtr return_type;
+  if (cur_tok->type() == tok_colon) {
+    cur_tok++;
+    return_type = parse_type_expression();
+  } else {
+    return_type = GenTree::create_type_help_vertex(tp_void);
+  }
+
+  // todo пока что typed callable просто парсится, но возвращается просто будто бы "callable"
+  // (а нужно придумать, как type_expr хранить в данном случае, используя arg_types и return_type)
+  return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_shape_type() {

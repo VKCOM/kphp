@@ -87,6 +87,7 @@ private:
   std::vector<VertexPtr> parse_nested_type_rules();
   VertexPtr parse_shape_type();
   VertexPtr parse_nested_one_type_rule();
+  VertexPtr parse_typed_callable();
   VertexPtr parse_type_expression();
 };
 
