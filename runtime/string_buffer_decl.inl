@@ -22,7 +22,7 @@ class string_buffer {
 
 public:
   static int string_buffer_error_flag;
-  inline explicit string_buffer(dl::size_type buffer_len = 4000);
+  explicit string_buffer(dl::size_type buffer_len = 4000) noexcept;
 
   inline string_buffer &clean();
 
@@ -55,7 +55,7 @@ public:
 
   inline bool set_pos(int pos);
 
-  inline ~string_buffer();
+  ~string_buffer() noexcept;
 
   friend void init_string_buffer_lib(int max_length);
 
@@ -67,5 +67,5 @@ public:
   friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
 };
 
-string_buffer static_SB __attribute__ ((weak));
-string_buffer static_SB_spare __attribute__ ((weak));
+extern string_buffer static_SB;
+extern string_buffer static_SB_spare;

@@ -2,8 +2,8 @@
 
 #include "runtime/kphp_core.h"
 
-const int ZLIB_COMPRESS = 0x0f;
-const int ZLIB_ENCODE = 0x1f;
+constexpr int ZLIB_COMPRESS = 0x0f;
+constexpr int ZLIB_ENCODE = 0x1f;
 
 const string_buffer *zlib_encode(const char *s, int s_len, int level, int encoding);//returns pointer to static_SB
 

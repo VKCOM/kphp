@@ -13,20 +13,20 @@ class RE2;
 
 extern int preg_replace_count_dummy;
 
-const bool fix_php_bugs = false;
+constexpr bool fix_php_bugs = false;
 
-const int PREG_PATTERN_ORDER = 1;
-const int PREG_SET_ORDER = 2;
-const int PREG_OFFSET_CAPTURE = 4;
+constexpr int PREG_PATTERN_ORDER = 1;
+constexpr int PREG_SET_ORDER = 2;
+constexpr int PREG_OFFSET_CAPTURE = 4;
 
-const int PREG_SPLIT_NO_EMPTY = 8;
-const int PREG_SPLIT_DELIM_CAPTURE = 16;
-const int PREG_SPLIT_OFFSET_CAPTURE = 32;
+constexpr int PREG_SPLIT_NO_EMPTY = 8;
+constexpr int PREG_SPLIT_DELIM_CAPTURE = 16;
+constexpr int PREG_SPLIT_OFFSET_CAPTURE = 32;
 
-const int PCRE_RECURSION_LIMIT = 100000;
-const int PCRE_BACKTRACK_LIMIT = 1000000;
+constexpr int PCRE_RECURSION_LIMIT = 100000;
+constexpr int PCRE_BACKTRACK_LIMIT = 1000000;
 
-const int MAX_SUBPATTERNS = 512;
+constexpr int MAX_SUBPATTERNS = 512;
 
 enum {
   PHP_PCRE_NO_ERROR = 0,
@@ -36,7 +36,7 @@ enum {
   PHP_PCRE_BAD_UTF8_ERROR,
 };
 
-class regexp : vk::not_copyable{
+class regexp : vk::not_copyable {
 private:
   int subpatterns_count{0};
   int named_subpatterns_count{0};

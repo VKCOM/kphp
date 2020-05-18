@@ -153,13 +153,6 @@ int array<T>::array_inner::choose_bucket(const int key, const int buf_size, cons
 }
 
 template<class T>
-const typename array<T>::entry_pointer_type array<T>::array_inner::EMPTY_POINTER = entry_pointer_type();
-
-template<class T>
-const T array<T>::array_inner::empty_T = T();
-
-
-template<class T>
 bool array<T>::array_inner::is_vector() const {
   return string_buf_size == -1;
 }
@@ -1074,7 +1067,7 @@ T &array<T>::operator[](int int_key) {
     if ((unsigned int)int_key <= (unsigned int)p->int_size) {
       if ((unsigned int)int_key == (unsigned int)p->int_size) {
         mutate_if_vector_needed_int();
-        return p->push_back_vector_value(array_inner::empty_T);
+        return p->emplace_back_vector_value();
       } else {
         mutate_if_vector_shared();
         return p->get_vector_value(int_key);
@@ -1086,7 +1079,7 @@ T &array<T>::operator[](int int_key) {
     mutate_if_map_needed_int();
   }
 
-  return p->set_map_value(overwrite_element::NO, int_key, array_inner::empty_T);
+  return p->emplace_int_key_map_value(overwrite_element::NO, int_key);
 }
 
 template<class T>
@@ -1097,7 +1090,7 @@ T &array<T>::operator[](const string &string_key) {
   }
 
   mutate_to_map_if_vector_or_map_need_string();
-  return p->set_map_value(overwrite_element::NO, string_key.hash(), string_key, array_inner::empty_T);
+  return p->emplace_string_key_map_value(overwrite_element::NO, string_key.hash(), string_key);
 }
 
 template<class T>
@@ -1117,8 +1110,7 @@ T &array<T>::operator[](const var &v) {
       php_warning("Illegal offset type array");
       return (*this)[v.as_array().to_int()];
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -1131,7 +1123,7 @@ T &array<T>::operator[](const const_iterator &it) {
       if ((unsigned int)key <= (unsigned int)p->int_size) {
         if ((unsigned int)key == (unsigned int)p->int_size) {
           mutate_if_vector_needed_int();
-          return p->push_back_vector_value(array_inner::empty_T);
+          return p->emplace_back_vector_value();
         } else {
           mutate_if_vector_shared();
           return p->get_vector_value(key);
@@ -1143,7 +1135,7 @@ T &array<T>::operator[](const const_iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    return p->set_map_value(overwrite_element::NO, key, array_inner::empty_T);
+    return p->emplace_int_key_map_value(overwrite_element::NO, key);
   } else {
     string_hash_entry *entry = (string_hash_entry *)it.entry_;
     bool is_string_entry = it.self_->is_string_hash_entry(entry);
@@ -1152,7 +1144,7 @@ T &array<T>::operator[](const const_iterator &it) {
       if (!is_string_entry && (unsigned int)entry->int_key <= (unsigned int)p->int_size) {
         if ((unsigned int)entry->int_key == (unsigned int)p->int_size) {
           mutate_if_vector_needed_int();
-          return p->push_back_vector_value(array_inner::empty_T);
+          return p->emplace_back_vector_value();
         } else {
           mutate_if_vector_shared();
           return p->get_vector_value(entry->int_key);
@@ -1169,9 +1161,9 @@ T &array<T>::operator[](const const_iterator &it) {
     }
 
     if (is_string_entry) {
-      return p->set_map_value(overwrite_element::NO, entry->int_key, entry->string_key, array_inner::empty_T);
+      return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
     } else {
-      return p->set_map_value(overwrite_element::NO, entry->int_key, array_inner::empty_T);
+      return p->emplace_int_key_map_value(overwrite_element::NO, entry->int_key);
     }
   }
 }
@@ -1185,7 +1177,7 @@ T &array<T>::operator[](const iterator &it) {
       if ((unsigned int)key <= (unsigned int)p->int_size) {
         if ((unsigned int)key == (unsigned int)p->int_size) {
           mutate_if_vector_needed_int();
-          return p->push_back_vector_value(array_inner::empty_T);
+          return p->emplace_back_vector_value();
         } else {
           mutate_if_vector_shared();
           return p->get_vector_value(key);
@@ -1197,7 +1189,7 @@ T &array<T>::operator[](const iterator &it) {
       mutate_if_map_needed_int();
     }
 
-    return p->set_map_value(overwrite_element::NO, key, array_inner::empty_T);
+    return p->emplace_int_key_map_value(overwrite_element::NO, key);
   } else {
     const string_hash_entry *entry = (const string_hash_entry *)it.entry_;
     bool is_string_entry = it.self_->is_string_hash_entry(entry);
@@ -1206,7 +1198,7 @@ T &array<T>::operator[](const iterator &it) {
       if (!is_string_entry && (unsigned int)entry->int_key <= (unsigned int)p->int_size) {
         if ((unsigned int)entry->int_key == (unsigned int)p->int_size) {
           mutate_if_vector_needed_int();
-          return p->push_back_vector_value(array_inner::empty_T);
+          return p->emplace_back_vector_value();
         } else {
           mutate_if_vector_shared();
           return p->get_vector_value(entry->int_key);
@@ -1223,9 +1215,9 @@ T &array<T>::operator[](const iterator &it) {
     }
 
     if (is_string_entry) {
-      return p->set_map_value(overwrite_element::NO, entry->int_key, entry->string_key, array_inner::empty_T);
+      return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
     } else {
-      return p->set_map_value(overwrite_element::NO, entry->int_key, array_inner::empty_T);
+      return p->emplace_int_key_map_value(overwrite_element::NO, entry->int_key);
     }
   }
 }
@@ -1318,8 +1310,7 @@ void array<T>::emplace_value(const var &var_key, Args &&... args) noexcept {
       php_warning("Illegal offset type array");
       return emplace_value(var_key.as_array().to_int(), std::forward<Args>(args)...);
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -1596,13 +1587,13 @@ template<class T>
 template<class K>
 const T array<T>::get_value(const K &key) const {
   auto *value = find_value(key);
-  return value ? *value : array<T>::array_inner::empty_T;
+  return value ? *value : T{};
 }
 
 template<class T>
 const T array<T>::get_value(const string &string_key, int precomuted_hash) const {
   auto *value = find_value(string_key, precomuted_hash);
-  return value ? *value : array<T>::array_inner::empty_T;
+  return value ? *value : T{};
 }
 
 template<class T>
@@ -1668,8 +1659,7 @@ void array<T>::unset(const var &v) {
       php_warning("Illegal offset type array");
       return unset(v.as_array().to_int());
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -2118,7 +2108,7 @@ template<class T>
 T array<T>::pop() {
   if (empty()) {
 //    php_warning ("Cannot use function array_pop on empty array");
-    return array_inner::empty_T;
+    return T{};
   }
 
   if (is_vector()) {
@@ -2150,7 +2140,7 @@ template<class T>
 T array<T>::shift() {
   if (count() == 0) {
     php_warning("Cannot use array_shift on empty array");
-    return array_inner::empty_T;
+    return T{};
   }
 
   if (is_vector()) {

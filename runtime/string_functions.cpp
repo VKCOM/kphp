@@ -1910,7 +1910,7 @@ string f$str_repeat(const string &s, int multiplier) {
     return string();
   }
 
-  if (string::max_size / len < (dl::size_type)multiplier) {
+  if (string::max_size() / len < (dl::size_type)multiplier) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)multiplier * len);
   }
 

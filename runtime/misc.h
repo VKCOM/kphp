@@ -13,18 +13,18 @@ void f$sleep(const int &seconds);
 void f$usleep(const int &micro_seconds);
 
 
-const int IMAGETYPE_UNKNOWN = 0;
-const int IMAGETYPE_GIF = 1;
-const int IMAGETYPE_JPEG = 2;
-const int IMAGETYPE_PNG = 3;
-const int IMAGETYPE_SWF = 4;
-const int IMAGETYPE_PSD = 5;
-const int IMAGETYPE_BMP = 6;
-const int IMAGETYPE_TIFF_II = 7;
-const int IMAGETYPE_TIFF_MM = 8;
-const int IMAGETYPE_JPC = 9;
-const int IMAGETYPE_JPEG2000 = 9;
-const int IMAGETYPE_JP2 = 10;
+constexpr int IMAGETYPE_UNKNOWN = 0;
+constexpr int IMAGETYPE_GIF = 1;
+constexpr int IMAGETYPE_JPEG = 2;
+constexpr int IMAGETYPE_PNG = 3;
+constexpr int IMAGETYPE_SWF = 4;
+constexpr int IMAGETYPE_PSD = 5;
+constexpr int IMAGETYPE_BMP = 6;
+constexpr int IMAGETYPE_TIFF_II = 7;
+constexpr int IMAGETYPE_TIFF_MM = 8;
+constexpr int IMAGETYPE_JPC = 9;
+constexpr int IMAGETYPE_JPEG2000 = 9;
+constexpr int IMAGETYPE_JP2 = 10;
 
 var f$getimagesize(const string &name);
 
@@ -39,10 +39,10 @@ string f$serialize(const var &v);
 var f$unserialize(const string &v);
 var unserialize_raw(const char *v, int v_len);
 
-const unsigned int JSON_UNESCAPED_UNICODE = 1;
-const unsigned int JSON_FORCE_OBJECT = 16;
-const unsigned int JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
-const unsigned int JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
+constexpr unsigned int JSON_UNESCAPED_UNICODE = 1;
+constexpr unsigned int JSON_FORCE_OBJECT = 16;
+constexpr unsigned int JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
+constexpr unsigned int JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
 Optional<string> f$json_encode(const var &v, int options = 0, bool simple_encode = false);
 

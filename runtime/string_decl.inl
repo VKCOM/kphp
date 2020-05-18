@@ -19,7 +19,7 @@ inline bool is_decimal_digit(const int c) {
 class string {
 public:
   using size_type = dl::size_type;
-  static const size_type npos = (size_type)-1;
+  static constexpr size_type npos = (size_type)-1;
 
 private:
   char *p;
@@ -63,7 +63,9 @@ private:
   friend class string_cache;
 
 public:
-  static const size_type max_size = ((size_type)-1 - sizeof(string_inner) - 1) / 4;
+  static constexpr size_type max_size() noexcept {
+    return ((size_type)-1 - sizeof(string_inner) - 1) / 4;
+  }
 
   inline string();
   inline string(const string &str);

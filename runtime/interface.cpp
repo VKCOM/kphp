@@ -2063,17 +2063,12 @@ static void global_init_interface_lib() {
   register_stream_functions(&php_stream_functions, false);
 }
 
-dl::size_type string_buffer::MIN_BUFFER_LEN = 266175; //TODO: move to some better place
-dl::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24); //TODO: move to some better place
-
 static void reset_global_interface_vars() {
   dl::enter_critical_section();
 
   hard_reset_var(http_status_line);
 
-  hard_reset_var(empty_string);
-  hard_reset_var(empty_var);
-  hard_reset_var(empty_array_var);
+  var::reset_empty_values();
 
   hard_reset_var(v$argc);
   hard_reset_var(v$argv);
@@ -2126,10 +2121,6 @@ static void init_runtime_libs() {
   static_SB_spare.clean() << "Date: " << date;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
   header("Content-Type: text/html; charset=windows-1251", 45);
-
-  empty_bool = false;
-  empty_int = 0;
-  empty_float = 0.0;
 
   php_assert (dl::in_critical_section == 0);
 }

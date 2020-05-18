@@ -10,7 +10,7 @@ extern const string NEW_LINE;
 extern const string SPACE;
 extern const string WHAT;
 
-const int PHP_BUF_LEN = (1 << 23);//TODO remove usages of static buffer
+constexpr int PHP_BUF_LEN = (1 << 23);//TODO remove usages of static buffer
 extern char php_buf[PHP_BUF_LEN + 1];
 
 extern const char lhex_digits[17];
@@ -37,10 +37,10 @@ var f$count_chars(const string &str, int mode = 0);
 
 string f$hex2bin(const string &str);
 
-const int ENT_HTML401 = 0;
-const int ENT_COMPAT = 0;
-const int ENT_QUOTES = 1;
-const int ENT_NOQUOTES = 2;
+constexpr int ENT_HTML401 = 0;
+constexpr int ENT_COMPAT = 0;
+constexpr int ENT_QUOTES = 1;
+constexpr int ENT_NOQUOTES = 2;
 
 string f$htmlentities(const string &str);
 

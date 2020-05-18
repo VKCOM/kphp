@@ -127,7 +127,7 @@ public:
            : array_iterator{arr.p, arr.p->end()};
   }
 
-  static inline array_iterator make_middle(array_type &arr, int n) noexcept __attribute__ ((always_inline)) {
+  static inline array_iterator make_middle(array_type &arr, int n) noexcept {
     int l = arr.count();
 
     if (arr.is_vector()) {

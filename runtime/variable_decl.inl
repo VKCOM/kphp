@@ -189,6 +189,9 @@ public:
   inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   inline dl::size_type estimate_memory_usage() const;
+
+  static inline void reset_empty_values() noexcept;
+
 private:
   inline void copy_from(const var &other);
   inline void copy_from(var &&other);
@@ -207,6 +210,9 @@ private:
   auto get_type_and_value_ptr(const int      &) { return std::make_pair(type::INTEGER, &as_int());    }
   auto get_type_and_value_ptr(const double   &) { return std::make_pair(type::FLOAT  , &as_double()); }
   auto get_type_and_value_ptr(const string   &) { return std::make_pair(type::STRING , &as_string()); }
+
+  template<typename T>
+  static T &empty_value() noexcept;
 
   type type_{type::NUL};
   uint64_t storage_{0};

@@ -434,22 +434,22 @@ template<class T>
 inline bool f$function_exists(const T &a1);
 
 
-const int E_ERROR = 1;
-const int E_WARNING = 2;
-const int E_PARSE = 4;
-const int E_NOTICE = 8;
-const int E_CORE_ERROR = 16;
-const int E_CORE_WARNING = 32;
-const int E_COMPILE_ERROR = 64;
-const int E_COMPILE_WARNING = 128;
-const int E_USER_ERROR = 256;
-const int E_USER_WARNING = 512;
-const int E_USER_NOTICE = 1024;
-const int E_STRICT = 2048;
-const int E_RECOVERABLE_ERROR = 4096;
-const int E_DEPRECATED = 8192;
-const int E_USER_DEPRECATED = 16384;
-const int E_ALL = 32767;
+constexpr int E_ERROR = 1;
+constexpr int E_WARNING = 2;
+constexpr int E_PARSE = 4;
+constexpr int E_NOTICE = 8;
+constexpr int E_CORE_ERROR = 16;
+constexpr int E_CORE_WARNING = 32;
+constexpr int E_COMPILE_ERROR = 64;
+constexpr int E_COMPILE_WARNING = 128;
+constexpr int E_USER_ERROR = 256;
+constexpr int E_USER_WARNING = 512;
+constexpr int E_USER_NOTICE = 1024;
+constexpr int E_STRICT = 2048;
+constexpr int E_RECOVERABLE_ERROR = 4096;
+constexpr int E_DEPRECATED = 8192;
+constexpr int E_USER_DEPRECATED = 16384;
+constexpr int E_ALL = 32767;
 
 inline var f$error_get_last();
 

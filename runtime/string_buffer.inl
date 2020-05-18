@@ -39,12 +39,6 @@ inline void string_buffer::reserve_at_least(dl::size_type need) {
   }
 }
 
-string_buffer::string_buffer(dl::size_type buffer_len) :
-  buffer_end((char *)dl::heap_allocate(buffer_len)),
-  buffer_begin(buffer_end),
-  buffer_len(buffer_len) {
-}
-
 string_buffer &string_buffer::clean() {
   buffer_end = buffer_begin;
   return *this;
@@ -148,10 +142,6 @@ bool string_buffer::set_pos(int pos) {
   php_assert ((dl::size_type)pos <= buffer_len);
   buffer_end = buffer_begin + pos;
   return true;
-}
-
-string_buffer::~string_buffer() {
-  dl::heap_deallocate(buffer_begin, buffer_len);
 }
 
 string_buffer &string_buffer::append(const char *str, int len) {

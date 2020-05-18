@@ -84,12 +84,10 @@ private:
     //empty hash_entry identified by (next == EMPTY_POINTER)
     //vector is_identified by string_buf_size == -1
 
-    static const int MAX_HASHTABLE_SIZE = (1 << 26);
-    static const int MIN_HASHTABLE_SIZE = 1;
-    static const int DEFAULT_HASHTABLE_SIZE = (1 << 3);
+    static constexpr int MAX_HASHTABLE_SIZE = (1 << 26);
+    static constexpr int MIN_HASHTABLE_SIZE = 1;
 
-    static const entry_pointer_type EMPTY_POINTER;
-    static const T empty_T;
+    static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
     int ref_cnt;
     int max_key;
@@ -230,12 +228,12 @@ public:
   inline array &operator=(array &&other) noexcept __attribute__ ((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array &operator=(const array<T1> &other) __attribute__ ((always_inline));
+  inline array &operator=(const array<T1> &other);
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array &operator=(array<T1> &&other) noexcept;
 
-  inline ~array() /*__attribute__ ((always_inline))*/;
+  inline ~array();
 
   inline void clear() __attribute__ ((always_inline));
 

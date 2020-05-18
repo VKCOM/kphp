@@ -245,8 +245,6 @@ T f$getValueByPos(const array<T> &a, int pos);
 template<class T>
 inline array<T> f$create_vector(int n, const T &default_value);
 
-inline array<var> f$create_vector(int n);
-
 template<class T>
 var f$array_first_key(const array<T> &a);
 
@@ -1380,15 +1378,6 @@ array<T> f$create_vector(int n, const T &default_value) {
   array<T> res(array_size(n, 0, true));
   for (int i = 0; i < n; i++) {
     res.push_back(default_value);
-  }
-  return res;
-}
-
-array<var> f$create_vector(int n) {
-  array<var> res(array_size(n, 0, true));
-  empty_var = var();
-  for (int i = 0; i < n; i++) {
-    res.push_back(empty_var);
   }
   return res;
 }

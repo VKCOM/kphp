@@ -1,7 +1,7 @@
 #pragma once
 
-const int MAX_TIMEOUT = 86400;
-const int MAX_TIMEOUT_MS = MAX_TIMEOUT * 1000;
+constexpr int MAX_TIMEOUT = 86400;
+constexpr int MAX_TIMEOUT_MS = MAX_TIMEOUT * 1000;
 
 int timeout_convert_to_ms(double timeout);
 

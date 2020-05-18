@@ -8,8 +8,6 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-const string::size_type string::max_size __attribute__ ((weak));
-
 bool string::string_inner::is_shared() const {
   return ref_count > 0;
 }
@@ -26,7 +24,7 @@ char *string::string_inner::ref_data() const {
 }
 
 string::size_type string::string_inner::new_capacity(size_type requested_capacity, size_type old_capacity) {
-  if (requested_capacity > max_size) {
+  if (requested_capacity > max_size()) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)requested_capacity);
   }
 
@@ -382,7 +380,7 @@ string &string::append(const char *s) {
 
 string &string::append(const char *s, size_type n) {
   if (n) {
-    if (max_size - size() < n) {
+    if (max_size() - size() < n) {
       php_critical_error ("tried to allocate too big string of size %lld", (long long)size() + n);
     }
     const size_type len = n + size();
@@ -404,7 +402,7 @@ string &string::append(const char *s, size_type n) {
 
 string &string::append(size_type n, char c) {
   if (n) {
-    if (max_size - size() < n) {
+    if (max_size() - size() < n) {
       php_critical_error ("tried to allocate too big string of size %lld", (long long)size() + n);
     }
     const size_type len = n + size();
@@ -467,8 +465,7 @@ string &string::append(const var &v) {
       php_warning("Convertion from array to string");
       return append("Array", 5);
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -543,8 +540,7 @@ string &string::append_unsafe(const var &v) {
     case var::type::ARRAY:
       return append_unsafe(v.as_array());
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -581,7 +577,7 @@ string &string::assign(const string &str, size_type pos, size_type n) {
 }
 
 string &string::assign(const char *s, size_type n) {
-  if (max_size < n) {
+  if (max_size() < n) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)n);
   }
 
@@ -601,7 +597,7 @@ string &string::assign(const char *s, size_type n) {
 }
 
 string &string::assign(size_type n, char c) {
-  if (max_size < n) {
+  if (max_size() < n) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)n);
   }
 
@@ -612,7 +608,7 @@ string &string::assign(size_type n, char c) {
 }
 
 string &string::assign(size_type n, bool b __attribute__((unused))) {
-  if (max_size < n) {
+  if (max_size() < n) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)n);
   }
 
@@ -914,8 +910,7 @@ const string string::get_value(const var &v) const {
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return string();
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -1052,8 +1047,7 @@ dl::size_type max_string_size(const var &v) {
     case var::type::ARRAY:
       return max_string_size(v.as_array());
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 

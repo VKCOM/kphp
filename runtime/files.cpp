@@ -195,7 +195,7 @@ Optional<array<string>> f$file(const string &name) {
   }
 
   size_t size = stat_buf.st_size;
-  if (size > string::max_size) {
+  if (size > string::max_size()) {
     php_warning("File \"%s\" is too large", name.c_str());
     close_safe(file_fd);
     dl::leave_critical_section();
@@ -810,7 +810,7 @@ Optional<string> file_file_get_contents(const string &name) {
   }
 
   size_t size = stat_buf.st_size;
-  if (size > string::max_size) {
+  if (size > string::max_size()) {
     php_warning("File \"%s\" is too large to get its content", name.c_str());
     close_safe(file_fd);
     dl::leave_critical_section();

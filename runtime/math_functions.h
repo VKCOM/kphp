@@ -49,10 +49,10 @@ template<class T, class... Args>
 inline T f$max(const T &arg1, const T &arg2, Args&&... args);
 
 
-const int PHP_ROUND_HALF_UP = 123423141;
-const int PHP_ROUND_HALF_DOWN = 123423144;
-const int PHP_ROUND_HALF_EVEN = 123423145;
-const int PHP_ROUND_HALF_ODD = 123423146;
+constexpr int PHP_ROUND_HALF_UP = 123423141;
+constexpr int PHP_ROUND_HALF_DOWN = 123423144;
+constexpr int PHP_ROUND_HALF_EVEN = 123423145;
+constexpr int PHP_ROUND_HALF_ODD = 123423146;
 
 var f$abs(const var &v);
 

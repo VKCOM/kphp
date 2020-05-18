@@ -5,11 +5,11 @@
 using Stream = var;
 
 
-const int STREAM_SET_BLOCKING_OPTION = 0;
-const int STREAM_SET_WRITE_BUFFER_OPTION = 1;
-const int STREAM_SET_READ_BUFFER_OPTION = 2;
+constexpr int STREAM_SET_BLOCKING_OPTION = 0;
+constexpr int STREAM_SET_WRITE_BUFFER_OPTION = 1;
+constexpr int STREAM_SET_READ_BUFFER_OPTION = 2;
 
-const int FILE_APPEND = 1;
+constexpr int FILE_APPEND = 1;
 
 
 struct stream_functions {
@@ -102,7 +102,7 @@ bool f$stream_context_set_option(var &context, const var &wrapper, const string 
 extern var error_number_dummy;
 extern var error_description_dummy;
 
-const int STREAM_CLIENT_CONNECT = 1;
+constexpr int STREAM_CLIENT_CONNECT = 1;
 
 var f$stream_socket_client(const string &url, var &error_number = error_number_dummy, var &error_description = error_description_dummy, double timeout = -1, int flags = STREAM_CLIENT_CONNECT, const var &context = var());
 

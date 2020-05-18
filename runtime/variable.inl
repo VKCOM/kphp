@@ -8,14 +8,6 @@
 
 static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<var>)), "sizeof of array<var>, string and double must be equal");
 
-bool empty_bool __attribute__ ((weak));
-int empty_int __attribute__ ((weak));
-double empty_float __attribute__ ((weak));
-string empty_string __attribute__ ((weak));
-
-array<var> empty_array_var __attribute__ ((weak));
-var empty_var __attribute__ ((weak));
-
 void var::copy_from(const var &other) {
   switch (other.get_type()) {
     case type::STRING:
@@ -895,8 +887,7 @@ const bool &var::as_bool(const char *function) const {
       return as_bool();
     default:
       php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
-      empty_bool = false;
-      return empty_bool;
+      return empty_value<bool>();
   }
 }
 
@@ -906,8 +897,7 @@ const int &var::as_int(const char *function) const {
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
-      empty_int = 0;
-      return empty_int;
+      return empty_value<int>();
   }
 }
 
@@ -917,8 +907,7 @@ const double &var::as_float(const char *function) const {
       return as_double();
     default:
       php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
-      empty_float = 0;
-      return empty_float;
+      return empty_value<double>();
   }
 }
 
@@ -928,8 +917,7 @@ const string &var::as_string(const char *function) const {
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
-      empty_string = string();
-      return empty_string;
+      return empty_value<string>();
   }
 }
 
@@ -939,8 +927,7 @@ const array<var> &var::as_array(const char *function) const {
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      empty_array_var = array<var>();
-      return empty_array_var;
+      return empty_value<array<var>>();
   }
 }
 
@@ -953,8 +940,7 @@ bool &var::as_bool(const char *function) {
       return as_bool();
     default:
       php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_c_str());
-      empty_bool = false;
-      return empty_bool;
+      return empty_value<bool>();
   }
 }
 
@@ -969,8 +955,7 @@ int &var::as_int(const char *function) {
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
-      empty_int = 0;
-      return empty_int;
+      return empty_value<int>();
   }
 }
 
@@ -985,8 +970,7 @@ double &var::as_float(const char *function) {
       return as_double();
     default:
       php_warning("%s() expects parameter to be float, %s is given", function, get_type_c_str());
-      empty_float = 0;
-      return empty_float;
+      return empty_value<double>();
   }
 }
 
@@ -1001,8 +985,7 @@ string &var::as_string(const char *function) {
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
-      empty_string = string();
-      return empty_string;
+      return empty_value<string>();
   }
 }
 
@@ -1012,8 +995,7 @@ array<var> &var::as_array(const char *function) {
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      empty_array_var = array<var>();
-      return empty_array_var;
+      return empty_value<array<var>>();
   }
 }
 
@@ -1157,8 +1139,7 @@ var &var::operator[](int int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      empty_var = var();
-      return empty_var;
+      return empty_value<var>();
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1166,9 +1147,7 @@ var &var::operator[](int int_key) {
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
-
-      empty_var = var();
-      return empty_var;
+      return empty_value<var>();
     }
   }
   return as_array()[int_key];
@@ -1178,8 +1157,7 @@ var &var::operator[](const string &string_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      empty_var = var();
-      return empty_var;
+      return empty_value<var>();
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1187,9 +1165,7 @@ var &var::operator[](const string &string_key) {
       new(&as_array()) array<var>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
-
-      empty_var = var();
-      return empty_var;
+      return empty_value<var>();
     }
   }
 
@@ -1427,8 +1403,7 @@ const var var::push_back_return(const var &v) {
       new(&as_array()) array<var>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
-      empty_var = var();
-      return empty_var;
+      return empty_value<var>();
     }
   }
 
@@ -1647,6 +1622,23 @@ dl::size_type var::estimate_memory_usage() const {
     default:
       __builtin_unreachable();
   }
+}
+
+void var::reset_empty_values() noexcept {
+  empty_value<bool>();
+  empty_value<int>();
+  empty_value<double>();
+  empty_value<string>();
+  empty_value<var>();
+  empty_value<array<var>>();
+}
+
+template<typename T>
+T &var::empty_value() noexcept {
+  static_assert(vk::is_type_in_list<T, bool, int, double, string, var, array<var>>{}, "unsupported type");
+  static T value;
+  value = T{};
+  return value;
 }
 
 namespace {

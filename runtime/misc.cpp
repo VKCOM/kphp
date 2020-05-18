@@ -552,8 +552,7 @@ void do_serialize(const var &v) {
       return;
     }
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -629,7 +628,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
         while ('0' <= s[j] && s[j] <= '9') {
           len = len * 10 + s[j++] - '0';
         }
-        if (j > 0 && s[j] == ':' && s[j + 1] == '"' && (dl::size_type)len < string::max_size && j + 2 + len < s_len) {
+        if (j > 0 && s[j] == ':' && s[j + 1] == '"' && (dl::size_type)len < string::max_size() && j + 2 + len < s_len) {
           s += j + 2;
 
           if (s[len] == '"' && s[len + 1] == ';') {
@@ -705,7 +704,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
               while ('0' <= s[k] && s[k] <= '9') {
                 str_len = str_len * 10 + s[k++] - '0';
               }
-              if (k > 0 && s[k] == ':' && s[k + 1] == '"' && (dl::size_type)str_len < string::max_size && k + 2 + str_len < s_len) {
+              if (k > 0 && s[k] == ':' && s[k + 1] == '"' && (dl::size_type)str_len < string::max_size() && k + 2 + str_len < s_len) {
                 s += k + 2;
 
                 if (s[str_len] == '"' && s[str_len + 1] == ';') {
@@ -1027,8 +1026,7 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
       return true;
     }
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -1047,8 +1045,6 @@ Optional<string> f$json_encode(const var &v, int options, bool simple_encode) {
 
   return static_SB.str();
 }
-
-int string_buffer::string_buffer_error_flag = 0; // TODO: move in more logic place
 
 string f$vk_json_encode_safe(const var &v, bool simple_encode) {
   static_SB.clean();
@@ -1362,8 +1358,7 @@ void do_print_r(const var &v, int depth) {
       break;
     }
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
 }
 
@@ -1409,8 +1404,7 @@ void do_var_dump(const var &v, int depth) {
       break;
     }
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
   *coub << '\n';
 }
@@ -1485,8 +1479,7 @@ void do_var_export(const var &v, int depth, char endc = 0) {
       break;
     }
     default:
-      php_assert (0);
-      exit(1);
+      __builtin_unreachable();
   }
   if (endc != 0) {
     *coub << endc;

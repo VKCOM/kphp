@@ -21,8 +21,8 @@ var mc_get_value(const char *result_str, int result_str_len, int flags);
 bool mc_is_immediate_query(const string &key);
 
 
-const int MEMCACHE_SERIALIZED = 1;
-const int MEMCACHE_COMPRESSED = 2;
+constexpr int MEMCACHE_SERIALIZED = 1;
+constexpr int MEMCACHE_COMPRESSED = 2;
 
 class C$Memcache : public abstract_refcountable_php_interface {
 public:
@@ -148,22 +148,22 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
  */
 
 
-const int MEMCACHE_ERROR = 0x7ae432f5;
-const int MEMCACHE_VALUE_NOT_FOUND = 0x32c42422;
-const int MEMCACHE_VALUE_LONG = 0x9729c42;
-const int MEMCACHE_VALUE_STRING = 0xa6bebb1a;
-const int MEMCACHE_FALSE = 0xbc799737;
-const int MEMCACHE_TRUE = 0x997275b5;
-const int MEMCACHE_SET = 0xeeeb54c4;
-const int MEMCACHE_ADD = 0xa358f31c;
-const int MEMCACHE_REPLACE = 0x2ecdfaa2;
-const int MEMCACHE_INCR = 0x80e6c950;
-const int MEMCACHE_DECR = 0x6467e0d9;
-const int MEMCACHE_DELETE = 0xab505c0a;
-const int MEMCACHE_GET = 0xd33b13ae;
+constexpr int MEMCACHE_ERROR = 0x7ae432f5;
+constexpr int MEMCACHE_VALUE_NOT_FOUND = 0x32c42422;
+constexpr int MEMCACHE_VALUE_LONG = 0x9729c42;
+constexpr int MEMCACHE_VALUE_STRING = 0xa6bebb1a;
+constexpr int MEMCACHE_FALSE = 0xbc799737;
+constexpr int MEMCACHE_TRUE = 0x997275b5;
+constexpr int MEMCACHE_SET = 0xeeeb54c4;
+constexpr int MEMCACHE_ADD = 0xa358f31c;
+constexpr int MEMCACHE_REPLACE = 0x2ecdfaa2;
+constexpr int MEMCACHE_INCR = 0x80e6c950;
+constexpr int MEMCACHE_DECR = 0x6467e0d9;
+constexpr int MEMCACHE_DELETE = 0xab505c0a;
+constexpr int MEMCACHE_GET = 0xd33b13ae;
 
 // this is here to avoid full kphp recompilation on any tl scheme change
-const int ENGINE_MC_GET_QUERY = 0x62408e9e;
+constexpr int ENGINE_MC_GET_QUERY = 0x62408e9e;
 
 extern const char *mc_method;
 
