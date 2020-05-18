@@ -8,9 +8,4 @@ public:
   using ExecuteType = FunctionAndCFG;
 
   VertexPtr on_enter_vertex(VertexPtr root);
-
-  bool user_recursion(VertexPtr v) {
-    // TODO: why?
-    return v->type() == op_func_call;
-  }
 };
