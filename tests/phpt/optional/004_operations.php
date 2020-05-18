@@ -97,10 +97,6 @@ function test_binary_operations_null_false($lhs, $rhs) {
   echo "binary - "; var_dump($lhs - $rhs);
   echo "* "; var_dump($lhs * $rhs);
   echo "** "; var_dump((float)($lhs ** $rhs));
-  if ($rhs) {
-    echo "/ "; var_dump((float)abs($lhs / $rhs));
-    echo "% "; var_dump($lhs % $rhs);
-  }
 
   echo "& "; var_dump($lhs & $rhs);
   echo "| "; var_dump($lhs | $rhs);
@@ -193,14 +189,6 @@ function test_assign_binary_operations_null_false($lhs, $rhs) {
   $res2 = $lhs;
   $res2 **= $rhs;
   echo "**= "; var_dump((float)$res2);
-  if ($rhs) {
-    $res3 = $lhs;
-    $res3 /= $rhs;
-    echo "/= "; var_dump((float)abs($res3));
-    $res4 = $lhs;
-    $res4 %= $rhs;
-    echo "%= "; var_dump($res4);
-  }
 
   $res1 = $lhs;
   $res1 &= $rhs;
