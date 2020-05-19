@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 import argparse
-import copy
-import glob
 import math
 import multiprocessing
 import os
@@ -13,30 +11,17 @@ import sys
 from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 
-
-def red(text):
-    return "\033[31m{}\033[0m".format(text)
-
-
-def green(text):
-    return "\033[32m{}\033[0m".format(text)
-
-
-def yellow(text):
-    return "\033[33m{}\033[0m".format(text)
-
-
-def blue(text):
-    return "\033[1;34m{}\033[0m".format(text)
+from python.lib.colors import red, green, yellow, blue
+from python.lib.kphp_builder import KphpBuilder
+from python.lib.file_utils import read_distcc_hosts, error_can_be_ignored
 
 
 class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, out_regexps = None, run_options = []):
+    def __init__(self, file_path, test_tmp_dir, tags, out_regexps=None):
         self.test_tmp_dir = test_tmp_dir
         self.file_path = file_path
         self.tags = tags
         self.out_regexps = out_regexps
-        self.run_options = run_options
 
     def is_ok(self):
         return "ok" in self.tags
@@ -51,112 +36,22 @@ class TestFile:
         return "php5" in self.tags
 
 
-class TestArtifacts:
-    class Artifact:
-        def __init__(self):
-            self.file = None
-            self.priority = 0
-
-    def __init__(self):
-        self.php_stderr = TestArtifacts.Artifact()
-        self.kphp_build_stderr = TestArtifacts.Artifact()
-        self.kphp_build_asan_log = TestArtifacts.Artifact()
-        self.kphp_runtime_stderr = TestArtifacts.Artifact()
-        self.kphp_runtime_asan_log = TestArtifacts.Artifact()
-        self.php_and_kphp_stdout_diff = TestArtifacts.Artifact()
-
-    def get_all(self):
-        result = []
-        if self.php_stderr.file:
-            result.append(("php stderr", self.php_stderr))
-        if self.kphp_build_stderr.file:
-            result.append(("kphp build stderr", self.kphp_build_stderr))
-        if self.kphp_build_asan_log.file:
-            result.append(("kphp build asan log", self.kphp_build_asan_log))
-        if self.kphp_runtime_stderr.file:
-            result.append(("kphp runtime stderr", self.kphp_runtime_stderr))
-        if self.kphp_runtime_asan_log.file:
-            result.append(("kphp runtime asan log", self.kphp_runtime_asan_log))
-        if self.php_and_kphp_stdout_diff.file:
-            result.append(("php and kphp stdout diff", self.php_and_kphp_stdout_diff))
-
-        return sorted(result, key=lambda x: x[1].priority, reverse=True)
-
-    def empty(self):
-        return self.php_stderr.file is None and self.kphp_build_stderr.file is None and \
-               self.kphp_build_asan_log.file is None and self.kphp_runtime_stderr.file is None and \
-               self.kphp_runtime_asan_log.file is None and self.php_and_kphp_stdout_diff.file is None
-
-
-class TestRunner:
+class KphpRunOnceRunner(KphpBuilder):
     def __init__(self, test_file, kphp_path, tests_dir, distcc_hosts):
-        self._test_file = test_file
+        super(KphpRunOnceRunner, self).__init__(
+            php_script_path=test_file.file_path,
+            artifacts_dir=os.path.join(test_file.test_tmp_dir, "artifacts"),
+            working_dir=os.path.abspath(os.path.join(test_file.test_tmp_dir, "working_dir")),
+            kphp_path=kphp_path,
+            distcc_hosts=distcc_hosts
+        )
 
-        self.artifacts = TestArtifacts()
-        self._artifacts_dir = os.path.join(self._test_file.test_tmp_dir, "artifacts")
+        self._test_file = test_file
         self._php_stdout = None
         self._kphp_server_stdout = None
-
-        self._kphp_path = os.path.abspath(kphp_path)
-        self._test_file_path = os.path.abspath(self._test_file.file_path)
-        self._working_dir = os.path.abspath(os.path.join(self._test_file.test_tmp_dir, "working_dir"))
-        self._include_dirs = (os.path.abspath(tests_dir), os.path.dirname(self._test_file_path))
         self._php_tmp_dir = os.path.join(self._working_dir, "php")
-        self._kphp_build_tmp_dir = os.path.join(self._working_dir, "kphp_build")
         self._kphp_runtime_tmp_dir = os.path.join(self._working_dir, "kphp_runtime")
-        self._kphp_runtime_bin = os.path.join(self._kphp_build_tmp_dir, "server")
-        self._distcc_hosts = distcc_hosts
-
-    def _create_artifacts_dir(self):
-        os.makedirs(self._artifacts_dir, exist_ok=True)
-
-    def _move_to_artifacts(self, artifact_name, proc, content=None, file=None):
-        self._create_artifacts_dir()
-        artifact = getattr(self.artifacts, artifact_name)
-        artifact.file = os.path.join(self._artifacts_dir, artifact_name)
-        artifact.priority = proc.returncode
-        if content:
-            with open(artifact.file, 'wb') as f:
-                f.write(content)
-        if file:
-            shutil.move(file, artifact.file)
-
-    @staticmethod
-    def _wait_proc(proc, timeout=300):
-        try:
-            stdout, stderr = proc.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            try:
-                stdout, stderr = proc.communicate(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                os.system("kill -9 {}".format(proc.pid))
-                return None, b"Zombie detected?! Proc can't be killed due timeout!"
-
-            stderr = (stderr or b"") + b"\n\nKilled due timeout\n"
-        return stdout, stderr
-
-    @staticmethod
-    def _clear_working_dir(dir_path):
-        if os.path.exists(dir_path):
-            bad_paths = []
-            shutil.rmtree(dir_path, onerror=lambda f, path, e: bad_paths.append(path))
-
-            # some php tests changes permissions
-            for bad_path in reversed(bad_paths):
-                os.chmod(bad_path, 0o777)
-            if bad_paths:
-                shutil.rmtree(dir_path)
-        os.makedirs(dir_path)
-
-    def remove_artifacts_dir(self):
-        shutil.rmtree(self._artifacts_dir, ignore_errors=True)
-
-    def try_remove_kphp_runtime_bin(self):
-        try:
-            os.remove(self._kphp_runtime_bin)
-        except OSError:
-            pass
+        self._include_dirs.append(os.path.abspath(tests_dir))
 
     def run_with_php(self):
         self._clear_working_dir(self._php_tmp_dir)
@@ -195,102 +90,12 @@ class TestRunner:
         self._php_stdout, php_stderr = self._wait_proc(php_proc)
 
         if php_stderr:
-            self._move_to_artifacts("php_stderr", php_proc, content=php_stderr)
+            self._move_to_artifacts("php_stderr", php_proc.returncode, content=php_stderr)
 
         if not os.listdir(self._php_tmp_dir):
             shutil.rmtree(self._php_tmp_dir, ignore_errors=True)
 
         return php_proc.returncode == 0
-
-    @staticmethod
-    def _can_be_ignored(ignore_patterns, binary_text):
-        if not binary_text:
-            return True
-
-        for line in binary_text.split(b'\n'):
-            if not line:
-                continue
-            is_line_ok = False
-            for pattern in ignore_patterns:
-                if re.fullmatch(pattern, line.decode()):
-                    is_line_ok = True
-                    break
-
-            if not is_line_ok:
-                return False
-        return True
-
-    @staticmethod
-    def _prepare_asan_env(working_directory, asan_log_name):
-        tmp_asan_file = os.path.join(working_directory, asan_log_name)
-        asan_glob_mask = "{}.*".format(tmp_asan_file)
-        for old_asan_file in glob.glob(asan_glob_mask):
-            os.remove(old_asan_file)
-
-        env = copy.copy(os.environ)
-        env["ASAN_OPTIONS"] = "detect_leaks=0:log_path={}".format(tmp_asan_file)
-        return env, asan_glob_mask
-
-    @staticmethod
-    def _can_ignore_kphp_asan_log(asan_log_file):
-        with open(asan_log_file, 'rb') as f:
-            ignore_asan = TestRunner._can_be_ignored(
-                ignore_patterns=[
-                    "^==\\d+==WARNING: ASan doesn't fully support makecontext/swapcontext functions and may produce false positives in some cases\\!$",
-                    "^==\\d+==WARNING: ASan is ignoring requested __asan_handle_no_return: stack top.+$",
-                    "^False positive error reports may follow$",
-                    "^For details see .+$"
-                ],
-                binary_text=f.read())
-
-        if ignore_asan:
-            os.remove(asan_log_file)
-
-        return ignore_asan
-
-    def _move_asan_logs_to_artifacts(self, asan_glob_mask, proc, asan_log_name):
-        for asan_log in glob.glob(asan_glob_mask):
-            if not self._can_ignore_kphp_asan_log(asan_log):
-                self._move_to_artifacts(asan_log_name, proc, file=asan_log)
-                return
-
-    def compile_with_kphp(self):
-        os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
-
-        asan_log_name = "kphp_build_asan_log"
-        env, asan_glob_mask = self._prepare_asan_env(self._kphp_build_tmp_dir, asan_log_name)
-        env["KPHP_THREADS_COUNT"] = "3"
-        env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
-        if self._distcc_hosts:
-            env["KPHP_JOBS_COUNT"] = "30"
-            env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
-            env["DISTCC_DIR"] = self._kphp_build_tmp_dir
-            env["DISTCC_LOG"] = os.path.join(self._kphp_build_tmp_dir, "distcc.log")
-            env["CXX"] = "distcc x86_64-linux-gnu-g++"
-        else:
-            env["KPHP_JOBS_COUNT"] = "2"
-
-        include = " ".join("-I {}".format(include_dir) for include_dir in self._include_dirs)
-        cmd = [self._kphp_path, include, "-d", os.path.abspath(self._kphp_build_tmp_dir), self._test_file_path]
-        # TODO kphp writes error into stdout and info into stderr
-        kphp_compilation_proc = subprocess.Popen(cmd, cwd=self._kphp_build_tmp_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
-        if fake_stderr:
-            kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
-
-        self._move_asan_logs_to_artifacts(asan_glob_mask, kphp_compilation_proc, asan_log_name)
-        ignore_stderr = self._can_be_ignored(
-            ignore_patterns=[
-                "^Starting php to cpp transpiling\\.\\.\\.$",
-                "^Starting make\\.\\.\\.$",
-                "^objs cnt = \\d+$",
-                "^\\s*\\d+\\% \\[total jobs \\d+\\] \\[left jobs \\d+\\] \\[running jobs \\d+\\] \\[waiting jobs \\d+\\]$"
-            ],
-            binary_text=kphp_build_stderr)
-        if not ignore_stderr:
-            self._move_to_artifacts("kphp_build_stderr", kphp_compilation_proc, content=kphp_build_stderr)
-
-        return kphp_compilation_proc.returncode == 0
 
     def run_with_kphp(self):
         self._clear_working_dir(self._kphp_runtime_tmp_dir)
@@ -301,7 +106,6 @@ class TestRunner:
         cmd = [self._kphp_runtime_bin, "-o", "--disable-sql"]
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
-        cmd += self._test_file.run_options
         kphp_server_proc = subprocess.Popen(cmd,
                                             cwd=self._kphp_runtime_tmp_dir,
                                             env=env,
@@ -310,14 +114,14 @@ class TestRunner:
         self._kphp_server_stdout, kphp_runtime_stderr = self._wait_proc(kphp_server_proc)
 
         self._move_asan_logs_to_artifacts(asan_glob_mask, kphp_server_proc, asan_log_name)
-        ignore_stderr = self._can_be_ignored(
+        ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
                 "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
             ],
-            binary_text=kphp_runtime_stderr)
+            binary_error_text=kphp_runtime_stderr)
 
         if not ignore_stderr:
-            self._move_to_artifacts("kphp_runtime_stderr", kphp_server_proc, content=kphp_runtime_stderr)
+            self._move_to_artifacts("kphp_runtime_stderr", kphp_server_proc.returncode, content=kphp_runtime_stderr)
 
         return kphp_server_proc.returncode == 0
 
@@ -325,18 +129,16 @@ class TestRunner:
         if self._kphp_server_stdout == self._php_stdout:
             return True
 
-        self._create_artifacts_dir()
+        diff_artifact = self._move_to_artifacts("php_vs_kphp.diff", 1, b"TODO")
         php_stdout_file = os.path.join(self._artifacts_dir, "php_stdout")
         with open(php_stdout_file, 'wb') as f:
             f.write(self._php_stdout)
         kphp_server_stdout_file = os.path.join(self._artifacts_dir, "kphp_server_stdout")
         with open(kphp_server_stdout_file, 'wb') as f:
             f.write(self._kphp_server_stdout)
-        self.artifacts.php_and_kphp_stdout_diff.file = os.path.join(self._artifacts_dir, "php_vs_kphp.diff")
 
-        with open(self.artifacts.php_and_kphp_stdout_diff.file, 'wb') as f:
+        with open(diff_artifact.file, 'wb') as f:
             subprocess.call(["diff", "--text", "-ud", php_stdout_file, kphp_server_stdout_file], stdout=f)
-        self.artifacts.php_and_kphp_stdout_diff.priority = 1
 
         return False
 
@@ -359,18 +161,6 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
         if not first_line.startswith("@"):
             return None
 
-        run_options = []
-        run_options_keyword = 'run_options:"'
-        if run_options_keyword in first_line:
-            first_quote = first_line.find(run_options_keyword)
-            second_quote = first_line.find('"', first_quote + len(run_options_keyword))
-
-            run_options = first_line[first_quote + len(run_options_keyword):second_quote]
-            run_options = run_options.replace("$PHP_SOURCE_DIR", os.path.abspath(os.path.dirname(file_path)))
-            run_options = run_options.split()
-
-            first_line = first_line[:first_quote]
-
         tags = first_line[1:].split()
         test_acceptable = True
         for test_tag in test_tags:
@@ -389,7 +179,7 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
             else:
                 break
 
-        return TestFile(file_path, test_tmp_dir, tags, out_regexps, run_options)
+        return TestFile(file_path, test_tmp_dir, tags, out_regexps)
 
 
 def test_files_from_dir(tests_dir):
@@ -399,7 +189,7 @@ def test_files_from_dir(tests_dir):
 
 
 def test_files_from_list(tests_dir, test_list):
-    with open(test_list,  encoding='utf-8') as f:
+    with open(test_list, encoding='utf-8') as f:
         for line in f.readlines():
             idx = line.find("#")
             if idx != -1:
@@ -426,6 +216,7 @@ def collect_tests(tests_dir, test_tags, test_list):
     tests.sort(reverse=True, key=lambda f: os.path.getsize(f.file_path))
     return tests
 
+
 class TestResult:
     @staticmethod
     def failed(test_file, artifacts, failed_stage):
@@ -442,15 +233,19 @@ class TestResult:
     def __init__(self, status, test_file, artifacts, failed_stage):
         self.status = status
         self.test_file_path = test_file.file_path
-        self.artifacts = artifacts
+        self.artifacts = None
+        if artifacts is not None:
+            self.artifacts = [(name, a) for name, a in artifacts.items() if a.error_priority >= 0]
+            self.artifacts.sort(key=lambda x: x[1].error_priority, reverse=True)
+
         self.failed_stage_msg = None
         if failed_stage:
             self.failed_stage_msg = red("({})".format(failed_stage))
 
     def _print_artifacts(self):
         if self.artifacts:
-            for file_type, artifact in self.artifacts.get_all():
-                file_type_colored = red(file_type) if artifact.priority else yellow(file_type)
+            for file_type, artifact in self.artifacts:
+                file_type_colored = red(file_type) if artifact.error_priority else yellow(file_type)
                 print("  {} - {}".format(blue(artifact.file), file_type_colored), flush=True)
 
     def print_short_report(self, total_tests, test_number):
@@ -460,7 +255,7 @@ class TestResult:
         if self.failed_stage_msg:
             additional_info = self.failed_stage_msg
         elif self.artifacts:
-            stderr_names = ", ".join(file_type for file_type, _ in self.artifacts.get_all())
+            stderr_names = ", ".join(file_type for file_type, _ in self.artifacts)
             if stderr_names:
                 additional_info = yellow("(got {})".format(stderr_names))
 
@@ -490,29 +285,29 @@ def run_fail_test(test, runner):
         return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
 
     if test.out_regexps:
-        if not runner.artifacts.kphp_build_stderr.file:
+        if not runner.kphp_build_stderr_artifact:
             return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
 
-        with open(runner.artifacts.kphp_build_stderr.file) as f:
+        with open(runner.kphp_build_stderr_artifact.file) as f:
             stderr_log = f.read()
             for index, msg_regex in enumerate(test.out_regexps, start=1):
                 if not msg_regex.search(stderr_log):
                     return TestResult.failed(test, runner.artifacts, "can't find {}th error pattern".format(index))
 
-    if runner.artifacts.kphp_build_asan_log.file:
+    if runner.kphp_build_asan_log_artifact:
         return TestResult.failed(test, runner.artifacts, "got asan log")
 
-    runner.artifacts.kphp_build_stderr.file = None
+    runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
 
 
 def run_warn_test(test, runner):
     if not runner.compile_with_kphp():
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
-    if not runner.artifacts.kphp_build_stderr.file:
+    if not runner.kphp_build_stderr_artifact:
         return TestResult.failed(test, runner.artifacts, "kphp build finished without stderr")
 
-    with open(runner.artifacts.kphp_build_stderr.file) as f:
+    with open(runner.kphp_build_stderr_artifact.file) as f:
         stderr_log = f.read()
         if not re.search("Warning ", stderr_log):
             return TestResult.failed(test, runner.artifacts, "can't find kphp warnings")
@@ -520,10 +315,10 @@ def run_warn_test(test, runner):
             if not msg_regex.search(stderr_log):
                 return TestResult.failed(test, runner.artifacts, "can't find {}th warning pattern".format(index))
 
-    if runner.artifacts.kphp_build_asan_log.file:
+    if runner.kphp_build_asan_log_artifact:
         return TestResult.failed(test, runner.artifacts, "got asan log")
 
-    runner.artifacts.kphp_build_stderr.file = None
+    runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
 
 
@@ -544,7 +339,7 @@ def run_test(kphp_path, tests_dir, distcc_hosts, test):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = TestRunner(test, kphp_path, tests_dir, distcc_hosts)
+    runner = KphpRunOnceRunner(test, kphp_path, tests_dir, distcc_hosts)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
@@ -556,7 +351,7 @@ def run_test(kphp_path, tests_dir, distcc_hosts, test):
     else:
         test_result = TestResult.skipped(test)
 
-    if runner.artifacts.empty():
+    if not runner.artifacts:
         runner.try_remove_kphp_runtime_bin()
 
     return test_result
@@ -693,14 +488,11 @@ def main():
         print("Can't find test list file '{}'".format(args.test_list))
         sys.exit(1)
 
-    distcc_hosts = []
-    if args.distcc_host_list:
-        if not os.path.exists(args.distcc_host_list):
-            print("Can't find distcc host list file '{}'".format(args.test_list))
-            sys.exit(1)
-
-        with open(args.distcc_host_list) as f:
-            distcc_hosts = f.readlines()
+    try:
+        distcc_hosts = read_distcc_hosts(args.distcc_host_list)
+    except Exception as ex:
+        print(str(ex))
+        sys.exit(1)
 
     run_all_tests(tests_dir=os.path.normpath(args.tests_dir),
                   kphp_path=os.path.normpath(args.kphp_path),

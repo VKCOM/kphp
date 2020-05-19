@@ -8,25 +8,7 @@ import subprocess
 import sys
 from enum import Enum
 
-
-def red(text):
-    return "\033[31m{}\033[0m".format(text)
-
-
-def green(text):
-    return "\033[32m{}\033[0m".format(text)
-
-
-def yellow(text):
-    return "\033[33m{}\033[0m".format(text)
-
-
-def blue(text):
-    return "\033[1;34m{}\033[0m".format(text)
-
-
-def cyan(text):
-    return "\033[36m{}\033[0m".format(text)
+from python.lib.colors import red, green, yellow, cyan
 
 
 def get_distributive_name():
@@ -144,8 +126,11 @@ def make_relpath(file_dir, file_path):
 
 def get_modes():
     return {
-        "asan": ("asan", "ASAN_OPTIONS=detect_leaks=0", "g=1 asan=1 php tl2php kphp-unittests"),
-        "normal": ("normal", "", "php tl2php kphp-unittests")
+        "asan": (
+            "asan", "ASAN_OPTIONS=detect_leaks=0",
+            "g=1 asan=1 php tl2php kphp-unittests tlclient tasks rpc-proxy"
+        ),
+        "normal": ("normal", "", "php tl2php kphp-unittests tlclient tasks rpc-proxy")
     }
 
 
@@ -222,6 +207,7 @@ if __name__ == "__main__":
 
     runner_dir = os.path.dirname(os.path.abspath(__file__))
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
+    functional_tests_dir = make_relpath(runner_dir, "python/t")
     zend_test_list = make_relpath(runner_dir, "ci/zend-test-list")
     root_engine_path = os.path.join(os.path.join(runner_dir, os.path.pardir), os.path.pardir)
     root_engine_path = os.path.relpath(root_engine_path, os.getcwd())
@@ -230,10 +216,11 @@ if __name__ == "__main__":
     runner = TestRunner("KPHP tests", args.no_report)
 
     distcc_options = ""
+    distcc_host_list = ""
     if args.use_distcc:
         distcc_hosts = "ci/distcc-host-list.{}".format(get_distributive_name())
         distcc_host_list = make_relpath(runner_dir, distcc_hosts)
-        distcc_options = "--distcc-host-list {}".format(distcc_host_list);
+        distcc_options = "--distcc-host-list {}".format(distcc_host_list)
 
     mode_name, env_vars, options = get_modes()[args.mode]
     runner.add_test_group(
@@ -304,6 +291,20 @@ if __name__ == "__main__":
         ),
         skip=args.steps and "typed-tl-tests" not in args.steps
     )
+
+    if mode_name != "asan" or get_distributive_name() != "jessie":
+        distcc_hosts_env_var = ""
+        if distcc_host_list:
+            distcc_hosts_env_var = "KPHP_TESTS_DISTCC_FILE={} ".format(os.path.abspath(distcc_host_list))
+        runner.add_test_group(
+            name="functional-tests",
+            description="run kphp functional tests in {} mode".format(mode_name),
+            cmd="{distcc_hosts_env_var} python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
+                functional_tests_dir=functional_tests_dir,
+                distcc_hosts_env_var=distcc_hosts_env_var
+            ),
+            skip=args.steps and "functional-tests" not in args.steps
+        )
 
     runner.setup(args)
     runner.run_tests()

@@ -1,0 +1,5 @@
+portalocker
+psutil
+requests-toolbelt
+pytest
+pytest-xdist

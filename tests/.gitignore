@@ -8,3 +8,4 @@ regexdna*
 tmp
 dev
 TL-tests/
+python/t/*/_tmp/

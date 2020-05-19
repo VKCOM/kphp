@@ -1,0 +1,12 @@
+rpc_clients:
+  - { host: "localhost", port: ${PORT}, actor: 1 }
+
+#type_names:
+#  - a
+#  - b
+#  - c
+#
+#queue_id:
+#  - 1
+#  - 2
+

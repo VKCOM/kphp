@@ -95,6 +95,11 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
 }
 
 PHPScriptBase::~PHPScriptBase() {
+#if ASAN7_ENABLED
+  if (fiber_is_started) {
+    __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
+  }
+#endif
   mprotect(run_stack, getpagesize(), PROT_READ | PROT_WRITE);
   free(run_stack);
   munmap(run_mem, mem_size);
