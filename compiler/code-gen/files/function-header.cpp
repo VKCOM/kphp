@@ -41,14 +41,16 @@ void FunctionH::compile(CodeGenerator &W) const {
   }
   if (function->is_inline) {
     stage::set_function(function);
-    declare_global_vars(function, W);
-    declare_const_vars(function, W);
-    declare_static_vars(function, W);
+
     W << CloseNamespace();
     includes.start_next_block();
     includes.add_function_body_depends(function);
     W << includes;
     W << OpenNamespace();
+
+    declare_global_vars(function, W);
+    declare_const_vars(function, W);
+    declare_static_vars(function, W);
     W << UnlockComments();
     W << function->root << NL;
     W << LockComments();
