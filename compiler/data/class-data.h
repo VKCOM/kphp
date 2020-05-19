@@ -84,7 +84,7 @@ public:
   void add_class_constant();
 
   void create_constructor_with_parent_call(DataStream<FunctionPtr> &os);
-  void create_default_constructor(DataStream<FunctionPtr> &os);
+  void create_default_constructor_if_required(DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
@@ -122,10 +122,6 @@ public:
 
   ClassPtr get_self() const {
     return ClassPtr{const_cast<ClassData *>(this)};
-  }
-
-  virtual bool is_fully_static() const {
-    return is_class() && !modifiers.is_abstract() && !construct_function;
   }
 
   bool need_virtual_modifier() const {

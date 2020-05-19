@@ -1,13 +1,13 @@
 @ok
 <?php
 
-class BBB { 
+abstract class BBB { 
     public function __construct($a) {
         var_dump("BBB-{$a}");
     }
 }
 
-class BB extends BBB {
+abstract class BB extends BBB {
 }
 
 class B extends BB {

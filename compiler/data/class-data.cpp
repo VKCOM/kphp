@@ -148,8 +148,16 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os)
   create_constructor(params, VertexAdaptor<op_seq>::create(parent_call), os);
 }
 
-void ClassData::create_default_constructor(DataStream<FunctionPtr> &os) {
-  create_constructor(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create(), os);
+void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
+  if (!is_class() || modifiers.is_abstract() || construct_function) {
+    return;
+  }
+
+  if (parent_class && parent_class->has_custom_constructor) {
+    create_constructor_with_parent_call(os);
+  } else {
+    create_constructor(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create(), os);
+  }
 }
 
 void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os) {
@@ -317,8 +325,7 @@ bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked
 
 bool ClassData::does_need_codegen(ClassPtr c) {
   return c && !c->is_builtin() && !c->is_trait() &&
-         (c->really_used || c->is_tl_class) &&
-         (!c->is_fully_static() || !c->derived_classes.empty());
+         (c->really_used || c->is_tl_class);
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {

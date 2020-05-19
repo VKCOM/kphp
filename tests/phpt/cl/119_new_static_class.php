@@ -1,4 +1,4 @@
-@kphp_should_fail
+@ok
 <?php
 require_once 'polyfills.php';
 

@@ -507,10 +507,8 @@ private:
           if (auto alloc = call.as<op_func_call>()->args()[0].as<op_alloc>()) {
             ClassPtr klass = G->get_class(alloc->allocated_class_name);
             if (klass) {
-              const char *type_of_incorrect_class = klass->modifiers.is_abstract() ? "abstract/interface" :
-                                                    klass->is_trait() ? "trait" :
-                                                    "fully static";
-
+              kphp_assert(klass->modifiers.is_abstract() || klass->is_trait());
+              const char *type_of_incorrect_class = klass->is_trait() ? "trait" : "abstract/interface";
               kphp_error(0, fmt_format("Calling 'new {}()', but this class is {}", klass->name, type_of_incorrect_class));
             } else {
               kphp_error(0, fmt_format("Class {} does not exist", call->get_string()));

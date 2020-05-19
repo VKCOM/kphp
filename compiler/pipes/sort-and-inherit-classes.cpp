@@ -361,14 +361,8 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         break;
     }
   }
-  if (klass->is_fully_static()) {
-    auto parent_has_constructor = klass->parent_class && !klass->parent_class->is_fully_static();
-    if (parent_has_constructor && klass->parent_class->has_custom_constructor) {
-      klass->create_constructor_with_parent_call(function_stream);
-    } else if (klass->members.has_any_instance_var() || klass->members.has_any_instance_method() || !klass->implements.empty() || parent_has_constructor) {
-      klass->create_default_constructor(function_stream);
-    }
-  }
+
+  klass->create_default_constructor_if_required(function_stream);
 
   if (!klass->phpdoc_str.empty()) {
     analyze_class_phpdoc(klass);

@@ -198,11 +198,7 @@ void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> 
 
     if (class_name && !class_name->empty()) {
       if (auto klass = G->get_class(*class_name)) {
-        if (!klass->is_fully_static()) {
-          set_lca(klass);
-        } else {
-          err_msg = "class passed as type-string may not be static";
-        }
+        set_lca(klass);
       } else {
         err_msg = fmt_format("bad {} parameter: can't find class {}", arg->int_val, *class_name);
       }
