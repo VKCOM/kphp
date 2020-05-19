@@ -42,7 +42,7 @@ namespace tl2cpp {
 
 /* Разбиваем все комбинаторы и типы на модули, вместе с тем собирая зависимости каждого модуля.
  * */
-void collect_target_objects() {
+static void collect_target_objects() {
   auto should_exclude_tl_type = [](const std::unique_ptr<vk::tl::type> &t) {
     return CUSTOM_IMPL_TYPES.find(t->name) != CUSTOM_IMPL_TYPES.end()
            || t->name == "engine.Query";                        // это единственный тип с !X, надо бы его удалить из схемы

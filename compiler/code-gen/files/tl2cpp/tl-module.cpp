@@ -97,12 +97,8 @@ void Module::update_dependencies(const std::unique_ptr<vk::tl::combinator> &comb
 }
 
 void Module::update_dependencies(const std::unique_ptr<vk::tl::type> &t) {
-  std::string type_module = get_module_name(t->name);
   for (const auto &c : t->constructors) {
     update_dependencies(c);
-    if (type_module != name) {
-      ensure_existence(type_module).h_includes.add_raw_filename_include("tl/" + name + ".h");
-    }
   }
 }
 
