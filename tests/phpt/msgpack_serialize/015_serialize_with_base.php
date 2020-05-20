@@ -1,11 +1,10 @@
-@kphp_should_fail
-/You may not serialize classes which has a parent with fields/
+@ok
 <?php
 
 require_once 'polyfills.php';
 
 class Base {
-    public $b = 10;
+    public function foo() { var_dump("OK"); }
 }
 
 /** @kphp-serializable */
@@ -24,4 +23,6 @@ class A extends Base {
 }
 
 $a = new A();
-instance_serialize($a);
+$str = instance_serialize($a);
+$a_new = instance_deserialize($str, A::class);
+$a_new->foo();

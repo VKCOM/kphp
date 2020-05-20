@@ -1,10 +1,9 @@
 @kphp_should_fail
-/@kphp-serialize is allowed only for classes/
+/You may not serialize class without @kphp-serializable tag IntA/
 <?php
 
 require_once 'polyfills.php';
 
-/** @kphp-serializable */
 interface IntA {
 }
 
@@ -12,5 +11,6 @@ interface IntA {
 class A implements IntA {
 }
 
+/**@var IntA*/
 $a = new A();
 instance_serialize($a);

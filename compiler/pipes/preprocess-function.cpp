@@ -366,8 +366,8 @@ private:
       return call;
     }
 
-    VertexRange call_args = call.as<op_func_call>()->args();
-    VertexRange func_args = func->get_params();
+    const VertexRange call_args = call.as<op_func_call>()->args();
+    const VertexRange func_args = func->get_params();
     auto call_args_n = static_cast<int>(call_args.size());
     auto func_args_n = static_cast<int>(func_args.size());
 
@@ -449,6 +449,12 @@ private:
 
     if (func->is_template) {
       call = set_func_id_for_template(func, call.as<op_func_call>());
+    }
+
+    if (func->name == "instance_serialize" && call_args.size() == 1) {
+      auto assum = infer_class_of_expr(current_function, call_args[0]).try_as<AssumInstance>();
+      kphp_error_act(assum && assum->klass, "You may not use instance_serialize with primitives", return call);
+      kphp_error(assum->klass->is_serializable, fmt_format("You may not serialize class without @kphp-serializable tag {}", assum->klass->name));
     }
 
     return call;
