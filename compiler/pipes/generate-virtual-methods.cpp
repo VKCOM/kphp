@@ -127,17 +127,25 @@ public:
   /**
    * finds patterns like this
    * function my_func() {
-   *   if (true) return function() {...};
-   *   else return function() {...};
+   *   if (true) return [function() {...}];
+   *   else return [function() {...}];
    * }
    */
-  void find_interface_in_op_return(VertexAdaptor<op_return> return_op) {
-    if (!return_op->has_expr()) {
-      return;
+  void find_interface_in_op_return(VertexPtr v) {
+    if (auto return_op = v.try_as<op_return>()) {
+      v = return_op->has_expr() ? return_op->expr() : v;
     }
 
-    if (auto lambda_class = get_lambda_class(return_op->expr())) {
-      auto assum = calc_assumption_for_return(current_function, {}).try_as<AssumInstance>();
+    if (auto return_array = v.try_as<op_array>()) {
+      for (auto array_element : return_array->args()) {
+        find_interface_in_op_return(array_element);
+      }
+    } else if (auto lambda_class = get_lambda_class(v)) {
+      auto assum = calc_assumption_for_return(current_function, {});
+      while (auto assum_array = assum.try_as<AssumArray>()) {
+        assum = assum_array->inner;
+      }
+
       check_assumption_and_inherit(assum, lambda_class);
     }
   }

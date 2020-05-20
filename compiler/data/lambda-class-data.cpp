@@ -58,6 +58,7 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
   register_defines();
 
   auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
+  infer_uses_assumptions(stage::get_function());
   my_invoke_method->is_template = false;
   for (auto &p : my_invoke_method->get_params()) {
     auto param = p.as<meta_op_func_param>();
@@ -77,8 +78,8 @@ bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {
   }
 
   if (auto invoke_method_from_interface = interface->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)) {
-    auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
-    return invoke_method_from_interface->function->get_min_argn() == my_invoke_method->get_min_argn();
+    auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
+    return my_invoke_method && invoke_method_from_interface->function->get_min_argn() == my_invoke_method->function->get_min_argn();
   }
 
   return false;
