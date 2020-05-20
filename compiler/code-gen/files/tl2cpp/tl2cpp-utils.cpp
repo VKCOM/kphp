@@ -272,7 +272,7 @@ std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl
       if (type_of(arg->type_expr)->is_integer_variable()) {
         res.emplace_back(arg->name);
       } else {
-        kphp_assert(arg->is_type(tl));
+        kphp_assert(arg->is_type());
         res.emplace_back("std::move(" + arg->name + ")");
       }
     }
@@ -323,7 +323,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
   if (c_from_renamed->is_constructor() && is_type_dependent(c_from_renamed, tl)) {
     std::vector<std::string> template_params;
     for (const auto &arg : c_from_renamed->args) {
-      if (arg->is_type(tl)) {
+      if (arg->is_type()) {
         kphp_assert(arg->is_optional());
         template_params.emplace_back(fmt_format("typename T{}::PhpType", arg->var_num));
       }

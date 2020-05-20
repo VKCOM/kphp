@@ -16,7 +16,7 @@ struct TlTemplatePhpTypeHelpers {
     std::vector<std::string> type_var_names;
     const vk::tl::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
     for (const auto &arg : target_constructor->args) {
-      if (arg->is_type(tl)) {
+      if (arg->is_type()) {
         ++cnt;
         type_var_names.emplace_back(arg->name);
       }
