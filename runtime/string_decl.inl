@@ -101,6 +101,7 @@ public:
 
   inline string &append(const string &str) __attribute__ ((always_inline));
   inline string &append(const string &str, size_type pos2, size_type n2) __attribute__ ((always_inline));
+  inline string &append(const char *s) __attribute__ ((always_inline));
   inline string &append(const char *s, size_type n) __attribute__ ((always_inline));
   inline string &append(size_type n, char c) __attribute__ ((always_inline));
 

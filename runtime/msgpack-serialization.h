@@ -8,6 +8,7 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_core.h"
+#include "runtime/string_functions.h"
 
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
@@ -295,24 +296,54 @@ struct pack<class_instance<T>> {
 } // namespace msgpack
 
 template<class T>
-inline Optional<string> f$msgpack_serialize(const T &value) noexcept {
-  auto clean_buffer = vk::finally(f$ob_end_clean);
-
+inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {
   f$ob_start();
   php_assert(f$ob_get_length().has_value() && f$ob_get_length().val() == 0);
+
+  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  auto clean_buffer = vk::finally([] {
+    f$ob_end_clean();
+    string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+  });
+
   msgpack::pack(*coub, value);
 
-  return std::move(coub->str());
+  if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+    string err_msg{"msgpacke_serialize buffer overflow"};
+    if (out_err_msg) {
+      *out_err_msg = std::move(err_msg);
+    } else {
+      f$warning(err_msg);
+    }
+    return {};
+  }
+
+  return coub->str();
+}
+
+template<class T>
+inline string f$msgpack_serialize_safe(const T &value) noexcept {
+  string err_msg;
+  auto res = f$msgpack_serialize(value, &err_msg);
+  if (!err_msg.empty()) {
+    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    return {};
+  }
+  return res.val();
 }
 
 template<class InstanceClass>
 inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
   msgpack::adaptor::CheckInstanceDepth::depth = 0;
-  auto result = f$msgpack_serialize(instance);
+  string err_msg;
+  auto result = f$msgpack_serialize(instance, &err_msg);
   if (msgpack::adaptor::CheckInstanceDepth::is_exceeded()) {
     f$warning(string("maximum depth of nested instances exceeded"));
     return {};
-  };
+  } else if (!err_msg.empty()) {
+    f$warning(err_msg);
+    return {};
+  }
   return result;
 }
 
@@ -325,7 +356,7 @@ inline Optional<string> f$instance_serialize(const class_instance<InstanceClass>
  * https://monoinfinito.wordpress.com/series/exception-handling-in-c/
  */
 template<class ResultType = var>
-inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
+inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_msg = nullptr) noexcept {
   if (buffer.empty()) {
     return {};
   }
@@ -333,10 +364,17 @@ inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   string err_msg;
   try {
-    msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size());
+    size_t off{0};
+    msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size(), off);
     msgpack::object obj = oh.get();
 
-    return obj.as<ResultType>();
+    if (off != buffer.size()) {
+      err_msg.append("Consumed only first ").append(static_cast<int>(off))
+             .append(" characters of ").append(static_cast<int>(buffer.size()))
+             .append(" during deserialization");
+    } else {
+      return obj.as<ResultType>();
+    }
   } catch (msgpack::type_error &e) {
     err_msg = string("Unknown type found during deserialization");
   } catch (msgpack::unpack_error &e) {
@@ -346,11 +384,25 @@ inline ResultType f$msgpack_deserialize(const string &buffer) noexcept {
   }
 
   if (!err_msg.empty()) {
-    f$warning(err_msg);
+    if (out_err_msg) {
+      *out_err_msg = std::move(err_msg);
+    } else {
+      f$warning(err_msg);
+    }
     return {};
   };
 
   return {};
+}
+
+template<class ResultType = var>
+inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
+  string err_msg;
+  auto res = f$msgpack_deserialize(buffer, &err_msg);
+  if (!err_msg.empty()) {
+    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+  }
+  return res;
 }
 
 template<class ResultClass>

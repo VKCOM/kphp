@@ -1,6 +1,10 @@
 <?php
 #ifndef KittenPHP
 
+use MessagePack\BufferUnpacker;
+use MessagePack\Exception\InvalidOptionException;
+use MessagePack\Exception\PackingFailedException;
+use MessagePack\Exception\UnpackingFailedException;
 use MessagePack\MessagePack;
 use MessagePack\Packer;
 use MessagePack\PackOptions;
@@ -276,7 +280,7 @@ function instance_serialize(object $instance): ?string {
 
 function instance_deserialize(string $packed_str, string $type_of_instance): ?object {
   return run_or_warning(static function() use ($packed_str, $type_of_instance) {
-    $unpacked_array = MessagePack::unpack($packed_str);
+    $unpacked_array = msgpack_deserialize_safe($packed_str);
 
     $instance_parser = new InstanceParser($type_of_instance);
     return $instance_parser->fromUnpackedArray($unpacked_array);
@@ -289,9 +293,19 @@ function instance_deserialize(string $packed_str, string $type_of_instance): ?ob
  */
 function msgpack_serialize($value): string {
   return run_or_warning(static function() use ($value) {
-    $packer = new Packer(PackOptions::FORCE_STR);
-    return $packer->pack($value);
+    return msgpack_serialize_safe($value);
   });
+}
+
+/**
+ * @param mixed $value
+ * @return string
+ * @throws InvalidOptionException
+ * @throws PackingFailedException
+ */
+function msgpack_serialize_safe($value): string {
+  $packer = new Packer(PackOptions::FORCE_STR);
+  return $packer->pack($value);
 }
 
 /**
@@ -300,8 +314,24 @@ function msgpack_serialize($value): string {
  */
 function msgpack_deserialize(string $packed_str) {
   return run_or_warning(static function() use ($packed_str) {
-    return MessagePack::unpack($packed_str);
+    return msgpack_deserialize_safe($packed_str);
   });
+}
+
+/**
+ * @param string $packed_str
+ * @throws InvalidOptionException
+ * @throws UnpackingFailedException
+ * @return mixed
+ */
+function msgpack_deserialize_safe(string $packed_str) {
+  $unpacker = new BufferUnpacker($packed_str, null);
+  $result = $unpacker->unpack();
+  if (($remaining = $unpacker->getRemainingCount())) {
+    $off = strlen($packed_str) - $remaining;
+    throw new UnpackingFailedException("Consumed only first {$off} characters of " . strlen($packed_str) . " during deserialization");
+  }
+  return $result;
 }
 
 if (false)

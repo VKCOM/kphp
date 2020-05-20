@@ -376,6 +376,10 @@ string &string::append(const string &str, size_type pos2, size_type n2) {
   return *this;
 }
 
+string &string::append(const char *s) {
+  return append(s, strlen(s));
+}
+
 string &string::append(const char *s, size_type n) {
   if (n) {
     if (max_size - size() < n) {

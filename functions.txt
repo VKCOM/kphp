@@ -324,6 +324,11 @@ function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 function msgpack_serialize($v ::: var) ::: string | null;
 function msgpack_deserialize($v ::: string) ::: var;
 
+/** @kphp-extern-func-info can_throw */
+function msgpack_serialize_safe($v ::: var) ::: string;
+/** @kphp-extern-func-info can_throw */
+function msgpack_deserialize_safe($v ::: string) ::: var;
+
 define('PREG_PATTERN_ORDER', 1);
 define('PREG_SET_ORDER', 2);
 define('PREG_OFFSET_CAPTURE', 4);
