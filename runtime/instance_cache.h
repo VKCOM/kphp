@@ -15,12 +15,13 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/shape.h"
 
 namespace ic_impl_ {
 
 template<typename Child>
-class BasicVisitor {
+class BasicVisitor : vk::not_copyable {
 public:
   template<typename T>
   void operator()(const char *, T &&value) {
@@ -109,14 +110,14 @@ public:
   using Basic::operator();
   using Basic::is_ok;
 
-  DeepMoveFromScriptToCacheVisitor();
+  explicit DeepMoveFromScriptToCacheVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept;
 
   template<typename T>
   bool process(array<T> &arr) {
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
-    if (memory_limit_exceeded_ || !memory_reserve(arr.estimate_memory_usage())) {
+    if (unlikely(!is_enough_memory_for(arr.estimate_memory_usage()))) {
       arr = array<T>();
       memory_limit_exceeded_ = true;
       return false;
@@ -126,7 +127,6 @@ public:
     // mutates may make array as constant again (e.g. empty array), therefore check again
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       php_assert(first == arr.end());
-      rollback_memory_reserve();
       return true;
     }
     php_assert(arr.get_reference_counter() == 1);
@@ -144,7 +144,7 @@ public:
 
     bool result = true;
     if (!instance.is_null()) {
-      if (!memory_limit_exceeded_ && memory_reserve(instance.estimate_memory_usage())) {
+      if (likely(is_enough_memory_for(instance.estimate_memory_usage()))) {
         instance = instance.clone();
         instance.set_reference_counter_to_cache();
         result = Basic::process(instance);
@@ -168,15 +168,27 @@ public:
     return memory_limit_exceeded_;
   }
 
-  bool memory_reserve(dl::size_type size);
+  bool is_ok() const noexcept {
+    return !is_depth_limit_exceeded() && !is_memory_limit_exceeded();
+  }
+
+  bool is_enough_memory_for(size_t size) noexcept {
+    if (!memory_limit_exceeded_) {
+      memory_limit_exceeded_ = !memory_pool_.is_enough_memory_for(size);
+    }
+    return !memory_limit_exceeded_;
+  }
+
+  void *prepare_raw_memory(size_t size) noexcept {
+    return is_enough_memory_for(size) ? memory_pool_.allocate(size) : nullptr;
+  }
 
 private:
-  void rollback_memory_reserve();
-
   bool memory_limit_exceeded_{false};
   bool is_depth_limit_exceeded_{false};
   uint8_t instance_depth_level_{0u};
   const uint8_t instance_depth_level_limit_{128u};
+  memory_resource::unsynchronized_pool_resource &memory_pool_;
 };
 
 class DeepDestroyFromCacheVisitor : BasicVisitor<DeepDestroyFromCacheVisitor> {
@@ -208,37 +220,13 @@ public:
   bool process(string &str);
 };
 
-class ShallowMoveFromCacheToScriptVisitor : BasicVisitor<ShallowMoveFromCacheToScriptVisitor> {
-public:
-  using Basic = BasicVisitor<ShallowMoveFromCacheToScriptVisitor>;
-  using Basic::process;
-  using Basic::operator();
-  using Basic::is_ok;
-
-  ShallowMoveFromCacheToScriptVisitor();
-
-  template<typename I>
-  bool process(class_instance<I> &instance) {
-    instance = instance.clone();
-    return Basic::process(instance);
-  }
-
-  bool process(var &) { return true; }
-
-  template<typename T>
-  std::enable_if_t<is_class_instance_inside<T>::value, bool> process(array<T> &arr) {
-    // begin mutates array implicitly, therefore call it separately
-    auto first = arr.begin();
-    return Basic::process_range(first, arr.end());
-  }
-};
-
 class InstanceWrapperBase : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
-  virtual const char *get_class() const = 0;
-  virtual std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref() const = 0;
-  virtual void memory_limit_warning() const = 0;
-  virtual ~InstanceWrapperBase() = default;
+  virtual const char *get_class() const noexcept = 0;
+  virtual std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
+    DeepMoveFromScriptToCacheVisitor &detach_processor) const noexcept = 0;
+  virtual std::unique_ptr<InstanceWrapperBase> clone_on_script_memory() const noexcept = 0;
+  virtual ~InstanceWrapperBase() noexcept = default;
 };
 
 template<typename I>
@@ -247,88 +235,56 @@ class InstanceWrapper;
 template<typename I>
 class InstanceWrapper<class_instance<I>> final : public InstanceWrapperBase {
 public:
-  explicit InstanceWrapper(const class_instance<I> &instance) :
-    instance_(instance) {
+  explicit InstanceWrapper(const class_instance<I> &instance, bool deep_destroy_required = false) noexcept:
+    instance_(instance),
+    deep_destroy_required_(deep_destroy_required) {
   }
 
-  const char *get_class() const final {
+  const char *get_class() const noexcept final {
     return instance_.get_class();
   }
 
-  void memory_limit_warning() const final {
-    php_warning("Memory limit exceeded on saving instance of class '%s' into cache", get_class());
-  }
-
-  std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref() const final {
+  std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
+    DeepMoveFromScriptToCacheVisitor &detach_processor) const noexcept final {
     auto detached_instance = instance_;
-    DeepMoveFromScriptToCacheVisitor detach_processor;
     detach_processor.process(detached_instance);
-    if (detach_processor.is_depth_limit_exceeded()) {
-      php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", get_class());
+
+    // sizeof(size_t) - дополнительная память, которая потребуется в make_unique_on_script_memory
+    constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>);
+    if (unlikely(detach_processor.is_depth_limit_exceeded() ||
+                 !detach_processor.is_enough_memory_for(size_for_wrapper))) {
       DeepDestroyFromCacheVisitor{}.process(detached_instance);
       return {};
     }
-    if (detach_processor.is_memory_limit_exceeded() ||
-        !detach_processor.memory_reserve(sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>))) {
-      memory_limit_warning();
-      DeepDestroyFromCacheVisitor{}.process(detached_instance);
-      return {};
-    }
-    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(detached_instance);
+    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(detached_instance, true);
   }
 
-  class_instance<I> deep_instance_clone() const {
-    auto cloned_instance = instance_;
-    ShallowMoveFromCacheToScriptVisitor{}.process(cloned_instance);
-    return cloned_instance;
+  std::unique_ptr<InstanceWrapperBase> clone_on_script_memory() const noexcept final {
+    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(instance_);
   }
 
-  class_instance<I> get_instance() const {
+  class_instance<I> get_instance() const noexcept {
     return instance_;
   }
 
-  void clear() {
-    instance_.destroy();
-  }
-
-  ~InstanceWrapper() final {
-    if (!instance_.is_null()) {
+  ~InstanceWrapper() noexcept final {
+    if (deep_destroy_required_ && !instance_.is_null()) {
       DeepDestroyFromCacheVisitor{}.process(instance_);
     }
   }
 
 private:
   class_instance<I> instance_;
+  const bool deep_destroy_required_{false};
 };
 
 bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl);
-InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
-
-template<typename ClassInstanceType>
-ClassInstanceType instance_cache_fetch(const string &class_name, const string &key, bool deep_clone, bool even_if_expired) {
-  static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
-  if (auto base_wrapper = ic_impl_::instance_cache_fetch_wrapper(key, even_if_expired)) {
-    // do not use first parameter (class name) for verifying type,
-    // because different classes from separated libs may have same names
-    if (auto wrapper = dynamic_cast<ic_impl_::InstanceWrapper<ClassInstanceType> *>(base_wrapper)) {
-      auto result = deep_clone ?
-                    wrapper->deep_instance_clone() :
-                    wrapper->get_instance();
-      php_assert(!result.is_null());
-      return result;
-    } else {
-      php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
-                  class_name.c_str(), base_wrapper->get_class());
-    }
-  }
-  return {};
-}
+const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace ic_impl_
 
 using DeepMoveFromScriptToCacheVisitor = ic_impl_::DeepMoveFromScriptToCacheVisitor;
 using DeepDestroyFromCacheVisitor = ic_impl_::DeepDestroyFromCacheVisitor;
-using ShallowMoveFromCacheToScriptVisitor = ic_impl_::ShallowMoveFromCacheToScriptVisitor;
 
 void global_init_instance_cache_lib();
 void init_instance_cache_lib();
@@ -337,30 +293,35 @@ void free_instance_cache_lib();
 // these function should be called from master
 void set_instance_cache_memory_limit(dl::size_type limit);
 
-struct InstanceCacheStats {
-  uint64_t elements_stored{0};
-  uint64_t elements_storing_skipped_due_recent_update{0};
-  uint64_t elements_storing_skipped_due_processing{0};
+struct InstanceCacheStats : private vk::not_copyable {
+  std::atomic<uint64_t> elements_stored{0};
+  std::atomic<uint64_t> elements_stored_with_delay{0};
+  std::atomic<uint64_t> elements_storing_skipped_due_recent_update{0};
+  std::atomic<uint64_t> elements_storing_delayed_due_mutex{0};
 
-  uint64_t elements_fetched{0};
-  uint64_t elements_missed{0};
-  uint64_t elements_missed_earlier{0};
+  std::atomic<uint64_t> elements_fetched{0};
+  std::atomic<uint64_t> elements_missed{0};
+  std::atomic<uint64_t> elements_missed_earlier{0};
 
-  uint64_t elements_expired{0};
-  uint64_t elements_logically_expired_but_fetched{0};
-  uint64_t elements_logically_expired_and_ignored{0};
-  uint64_t elements_created{0};
-  uint64_t elements_destroyed{0};
-  uint64_t elements_cached{0};
+  std::atomic<uint64_t> elements_expired{0};
+  std::atomic<uint64_t> elements_logically_expired_but_fetched{0};
+  std::atomic<uint64_t> elements_logically_expired_and_ignored{0};
+  std::atomic<uint64_t> elements_created{0};
+  std::atomic<uint64_t> elements_destroyed{0};
+  std::atomic<uint64_t> elements_cached{0};
+};
+
+enum class InstanceCacheSwapStatus {
+  no_need, // в swap нет необходимости
+  swap_is_finished, // swap прошло успешно
+  swap_is_forbidden // swap невозможен - память все ещё используется
 };
 // these function should be called from master
-InstanceCacheStats instance_cache_get_stats();
+InstanceCacheSwapStatus instance_cache_try_swap_memory();
 // these function should be called from master
-bool instance_cache_is_memory_swap_required();
+const InstanceCacheStats &instance_cache_get_stats();
 // these function should be called from master
-memory_resource::MemoryStats instance_cache_get_memory_stats();
-// these function should be called from master
-bool instance_cache_try_swap_memory();
+const memory_resource::MemoryStats &instance_cache_get_memory_stats();
 // these function should be called from master
 void instance_cache_purge_expired_elements();
 
@@ -373,21 +334,31 @@ bool f$instance_cache_store(const string &key, const ClassInstanceType &instance
     return false;
   }
   ic_impl_::InstanceWrapper<ClassInstanceType> instance_wrapper{instance};
-  const bool result = ic_impl_::instance_cache_store(key, instance_wrapper, ttl);
-  instance_wrapper.clear();
-  return result;
+  return ic_impl_::instance_cache_store(key, instance_wrapper, ttl);
 }
 
 template<typename ClassInstanceType>
 ClassInstanceType f$instance_cache_fetch(const string &class_name, const string &key, bool even_if_expired = false) {
-  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, true, even_if_expired);
+  static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
+  if (const auto *base_wrapper = ic_impl_::instance_cache_fetch_wrapper(key, even_if_expired)) {
+    // do not use first parameter (class name) for verifying type,
+    // because different classes from separated libs may have same names
+    if (auto wrapper = dynamic_cast<const ic_impl_::InstanceWrapper<ClassInstanceType> *>(base_wrapper)) {
+      auto result = wrapper->get_instance();
+      php_assert(!result.is_null());
+      return result;
+    } else {
+      php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
+                  class_name.c_str(), base_wrapper->get_class());
+    }
+  }
+  return {};
 }
 
 template<typename ClassInstanceType>
 ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, const string &key, bool even_if_expired = false) {
-  return ic_impl_::instance_cache_fetch<ClassInstanceType>(class_name, key, false, even_if_expired);
+  return f$instance_cache_fetch<ClassInstanceType>(class_name, key, even_if_expired);
 }
 
 bool f$instance_cache_update_ttl(const string &key, int ttl = 0);
 bool f$instance_cache_delete(const string &key);
-bool f$instance_cache_clear();

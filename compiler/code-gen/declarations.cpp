@@ -528,7 +528,6 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     W << NL;
     compile_accept_visitor(W, klass, "DeepMoveFromScriptToCacheVisitor");
     compile_accept_visitor(W, klass, "DeepDestroyFromCacheVisitor");
-    compile_accept_visitor(W, klass, "ShallowMoveFromCacheToScriptVisitor");
   }
 }
 

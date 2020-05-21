@@ -37,10 +37,8 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
   klass->deeply_require_instance_cache_visitor();
-  if (call->get_string() == "instance_cache_fetch_immutable") {
-    kphp_error(klass->is_immutable,
-               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch_immutable call", klass->name));
-  }
+  kphp_error(klass->is_immutable,
+             fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
 }
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
@@ -51,6 +49,8 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   klass->deeply_require_instance_cache_visitor();
   kphp_error(!klass->is_polymorphic_or_has_polymorphic_member(),
              "Can not store instance with interface inside with instance_cache_store call");
+  kphp_error(klass->is_immutable,
+             fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
 }
 
 void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {

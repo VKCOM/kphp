@@ -120,6 +120,10 @@ memory_chunk_tree::tree_node *memory_chunk_tree::extract_smallest() noexcept {
   return v;
 }
 
+bool memory_chunk_tree::has_memory_for(size_type size) const noexcept {
+  return search(size, true);
+}
+
 size_type memory_chunk_tree::get_chunk_size(tree_node *node) noexcept {
   return node->chunk_size;
 }
@@ -147,7 +151,7 @@ void memory_chunk_tree::flush_node_to(tree_node *node, memory_ordered_chunk_list
   flush_node_to(right, mem_list);
 }
 
-memory_chunk_tree::tree_node *memory_chunk_tree::search(size_type size, bool lower_bound) noexcept {
+memory_chunk_tree::tree_node *memory_chunk_tree::search(size_type size, bool lower_bound) const noexcept {
   tree_node *node = root_;
   tree_node *lower_bound_node = nullptr;
   while (node && size != node->chunk_size) {

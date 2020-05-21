@@ -13,7 +13,7 @@ void unsynchronized_pool_resource::init(void *buffer, size_type buffer_size) noe
 
   huge_pieces_.hard_reset();
   fallback_resource_.init(nullptr, 0);
-  free_chunks_.fill(details::unsynchronized_memory_chunk_list{});
+  free_chunks_.fill(details::memory_chunk_list{});
 }
 
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {

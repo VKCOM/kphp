@@ -12,7 +12,6 @@ TEST(unsynchronized_pool_resource_test, uninited_state) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 0);
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, 0);
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -26,7 +25,6 @@ TEST(unsynchronized_pool_resource_test, uninited_state) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 0);
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, 0);
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -44,7 +42,6 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 0);
   ASSERT_EQ(mem_stats.max_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -58,7 +55,6 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 8);
   ASSERT_EQ(mem_stats.max_memory_used, 8);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -72,7 +68,6 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -86,7 +81,6 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -122,7 +116,6 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 2);
   ASSERT_EQ(mem_stats.small_memory_pieces, 1);
@@ -167,7 +160,6 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 1);
@@ -187,7 +179,6 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 7);
@@ -201,7 +192,6 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -242,7 +232,6 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 2);
   ASSERT_EQ(mem_stats.small_memory_pieces, 1);
@@ -257,7 +246,6 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
@@ -287,7 +275,6 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 1023);
@@ -300,7 +287,6 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
   ASSERT_EQ(mem_stats.max_real_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size());
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
-  ASSERT_EQ(mem_stats.reserved, 0);
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);

@@ -59,6 +59,12 @@ public:
 
   void perform_defragmentation() noexcept;
 
+  bool is_enough_memory_for(size_type size) const noexcept {
+    const auto aligned_size = details::align_for_chunk(size);
+    // не смотрим в free_chunks_, так как реальный размер может оказаться меньше
+    return memory_end_ - memory_current_ >= aligned_size || huge_pieces_.has_memory_for(aligned_size);
+  }
+
 private:
   void *try_allocate_small_piece(size_type aligned_size) noexcept {
     const auto chunk_id = details::get_chunk_id(aligned_size);
@@ -110,7 +116,7 @@ private:
   monotonic_buffer_resource fallback_resource_;
 
   static constexpr size_type MAX_CHUNK_BLOCK_SIZE_{16u * 1024u};
-  std::array<details::unsynchronized_memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunks_;
+  std::array<details::memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunks_;
 };
 
 } // namespace memory_resource

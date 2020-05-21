@@ -8,15 +8,7 @@
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
-// operator < у пхпшных строк очень странный (пытается сравнивать строки как числа),
-// поэтому очень сильно тормозит
-struct confdata_key_less {
-  bool operator()(const string &lhs, const string &rhs) const noexcept {
-    return lhs.compare(rhs) < 0;
-  }
-};
-
-using confdata_sample_storage = memory_resource::stl::map<string, var, memory_resource::unsynchronized_pool_resource, confdata_key_less>;
+using confdata_sample_storage = memory_resource::stl::map<string, var, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 
 enum class ConfdataGarbageDestroyWay {
   shallow_first,

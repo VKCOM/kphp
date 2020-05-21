@@ -1701,25 +1701,37 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
   add_histogram_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
 
-  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache", memory_resource::MemoryStats::ADD_RESERVED);
+  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
   add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 
-  const auto instance_cache_element_stats = instance_cache_get_stats();
-  add_histogram_stat_long(stats, "instance_cache.elements.stored", instance_cache_element_stats.elements_stored);
+  const auto &instance_cache_element_stats = instance_cache_get_stats();
+  add_histogram_stat_long(stats, "instance_cache.elements.stored",
+                          instance_cache_element_stats.elements_stored.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.stored_with_delay",
+                          instance_cache_element_stats.elements_stored_with_delay.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "instance_cache.elements.storing_skipped_due_recent_update",
-                          instance_cache_element_stats.elements_storing_skipped_due_recent_update);
-  add_histogram_stat_long(stats, "instance_cache.elements.storing_skipped_due_processing",
-                          instance_cache_element_stats.elements_storing_skipped_due_processing);
-  add_histogram_stat_long(stats, "instance_cache.elements.fetched", instance_cache_element_stats.elements_fetched);
-  add_histogram_stat_long(stats, "instance_cache.elements.missed", instance_cache_element_stats.elements_missed);
-  add_histogram_stat_long(stats, "instance_cache.elements.missed_earlier", instance_cache_element_stats.elements_missed_earlier);
-  add_histogram_stat_long(stats, "instance_cache.elements.expired", instance_cache_element_stats.elements_expired);
-  add_histogram_stat_long(stats, "instance_cache.elements.created", instance_cache_element_stats.elements_created);
-  add_histogram_stat_long(stats, "instance_cache.elements.destroyed", instance_cache_element_stats.elements_destroyed);
-  add_histogram_stat_long(stats, "instance_cache.elements.cached", instance_cache_element_stats.elements_cached);
-  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored", instance_cache_element_stats.elements_logically_expired_and_ignored);
-  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched", instance_cache_element_stats.elements_logically_expired_but_fetched);
+                          instance_cache_element_stats.elements_storing_skipped_due_recent_update.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.storing_delayed_due_mutex",
+                          instance_cache_element_stats.elements_storing_delayed_due_mutex.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.fetched",
+                          instance_cache_element_stats.elements_fetched.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.missed",
+                          instance_cache_element_stats.elements_missed.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.missed_earlier",
+                          instance_cache_element_stats.elements_missed_earlier.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.expired",
+                          instance_cache_element_stats.elements_expired.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.created",
+                          instance_cache_element_stats.elements_created.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.destroyed",
+                          instance_cache_element_stats.elements_destroyed.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.cached",
+                          instance_cache_element_stats.elements_cached.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored",
+                          instance_cache_element_stats.elements_logically_expired_and_ignored.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched",
+                          instance_cache_element_stats.elements_logically_expired_but_fetched.load(std::memory_order_relaxed));
 
   write_confdata_stats_to(stats);
   server_stats.worker_stats.to_stats(stats);
@@ -1930,14 +1942,17 @@ int update_mem_stats() {
 }
 
 void check_and_instance_cache_try_swap_memory() {
-  if (instance_cache_is_memory_swap_required()) {
-    if (instance_cache_try_swap_memory()) {
+  switch(instance_cache_try_swap_memory()) {
+    case InstanceCacheSwapStatus::no_need:
+      return;
+    case InstanceCacheSwapStatus::swap_is_finished:
       vkprintf(0, "instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;
-    } else {
+      return;
+    case InstanceCacheSwapStatus::swap_is_forbidden:
       vkprintf(0, "can't swap instance cache memory resource\n");
       ++instance_cache_memory_swaps_fail;
-    }
+      return;
   }
 }
 

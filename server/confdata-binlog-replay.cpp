@@ -549,13 +549,13 @@ void init_confdata_binlog_reader() noexcept {
   auto &confdata_manager = ConfdataGlobalManager::get();
   confdata_manager.init(confdata_settings.memory_limit);
 
-  dl::set_current_script_allocator_and_enable_it(confdata_manager.get_resource());
+  dl::set_current_script_allocator(confdata_manager.get_resource(), true);
   // engine_default_load_index и engine_default_read_binlog в случае проблем делают exit(1),
   // что приводит к вызову всех деструкторов глобальных и статических переменных.
   // Эта статическая переменная откатывает аллокатор конфдаты,
   // чтобы другие глобальные и статические переменные могли нормально удалиться
   static auto confdata_allocator_rollback = vk::finally([] {
-    dl::restore_current_script_allocator_and_disable_it();
+    dl::restore_default_script_allocator(true);
   });
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
@@ -574,7 +574,7 @@ void init_confdata_binlog_reader() noexcept {
 
   vkprintf(1, "confdata loaded\n");
   confdata_allocator_rollback.disable();
-  dl::restore_current_script_allocator_and_disable_it();
+  dl::restore_default_script_allocator(true);
 }
 
 void confdata_binlog_update_cron() noexcept {
@@ -586,7 +586,7 @@ void confdata_binlog_update_cron() noexcept {
   confdata_stats.total_updating_time -= std::chrono::steady_clock::now().time_since_epoch();
   auto &confdata_manager = ConfdataGlobalManager::get();
   auto &mem_resource = confdata_manager.get_resource();
-  dl::set_current_script_allocator_and_enable_it(mem_resource);
+  dl::set_current_script_allocator(mem_resource, true);
 
   auto &previous_confdata_sample = confdata_manager.get_current();
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
@@ -612,7 +612,7 @@ void confdata_binlog_update_cron() noexcept {
   // Либо вообще забить и никогда не делать, а комментарий удалить.
   confdata_manager.clear_unused_samples();
 
-  dl::restore_current_script_allocator_and_disable_it();
+  dl::restore_default_script_allocator(true);
   confdata_stats.total_updating_time += std::chrono::steady_clock::now().time_since_epoch();
 }
 

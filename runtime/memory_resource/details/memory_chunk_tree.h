@@ -17,6 +17,7 @@ public:
   void insert(void *mem, size_type size) noexcept;
   tree_node *extract(size_type size) noexcept;
   tree_node *extract_smallest() noexcept;
+  bool has_memory_for(size_type size) const noexcept;
 
   static size_type get_chunk_size(tree_node *node) noexcept;
 
@@ -24,7 +25,7 @@ public:
 
 private:
   void flush_node_to(tree_node *node, memory_ordered_chunk_list &mem_list) noexcept;
-  tree_node *search(size_type size, bool lower_bound) noexcept;
+  tree_node *search(size_type size, bool lower_bound) const noexcept;
 
   void left_rotate(tree_node *node) noexcept;
   void right_rotate(tree_node *node) noexcept;

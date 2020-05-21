@@ -7,6 +7,7 @@
 class inter_process_mutex : vk::not_copyable {
 public:
   void lock() noexcept;
+  bool try_lock() noexcept;
   void unlock() noexcept;
 
 private:

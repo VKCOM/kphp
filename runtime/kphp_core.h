@@ -1354,7 +1354,6 @@ array<int> f$memory_get_detailed_stats() {
       std::make_pair(string{"memory_used"}, static_cast<int>(stats.memory_used)),
       std::make_pair(string{"max_real_memory_used"}, static_cast<int>(stats.max_real_memory_used)),
       std::make_pair(string{"max_memory_used"}, static_cast<int>(stats.max_memory_used)),
-      std::make_pair(string{"reserved"}, static_cast<int>(stats.reserved)),
       std::make_pair(string{"defragmentation_calls"}, static_cast<int>(stats.defragmentation_calls)),
       std::make_pair(string{"huge_memory_pieces"}, static_cast<int>(stats.huge_memory_pieces)),
       std::make_pair(string{"small_memory_pieces"}, static_cast<int>(stats.small_memory_pieces)),

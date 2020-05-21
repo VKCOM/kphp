@@ -133,12 +133,6 @@ function instance_cache_delete($key) {
   return $deleted;
 }
 
-function instance_cache_clear() {
-  global $instance_cache_storage;
-  $instance_cache_storage = [];
-  return true;
-}
-
 function cp1251($utf8_string) {
   return vk_utf8_to_win($utf8_string);
 }

@@ -1272,7 +1272,6 @@ function instance_cache_fetch_immutable($type ::: string, $key ::: string, $even
 function instance_cache_store($key ::: string, $value ::: Any, $ttl ::: int = 0) ::: bool;
 function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;
-function instance_cache_clear() ::: bool;
 
 function instance_serialize($instance ::: Any) ::: string | null;
 /** @kphp-extern-func-info cpp_template_call */

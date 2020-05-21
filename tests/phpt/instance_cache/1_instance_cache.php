@@ -3,6 +3,7 @@
 
 require_once 'polyfills.php';
 
+/** @kphp-immutable-class */
 class X {
   /** @var int */
   public $x_int = 1;
@@ -14,6 +15,7 @@ class X {
   public $x_array_var = ["foo", 12, [123]];
 }
 
+/** @kphp-immutable-class */
 class Y {
   /** @var X */
   public $x_instance;
@@ -40,32 +42,52 @@ class Y {
   }
 }
 
+/** @kphp-immutable-class */
 class TreeX {
   /** @var int */
   public $value = 0;
   /** @var tuple<int, TreeX[]> [] */
   public $children = [];
+
+  public function __construct(int $value, array $children = [], bool $make_loop = false) {
+    $this->value = $value;
+    $this->children = $children;
+    if ($make_loop) {
+      $this->children[] = tuple(1, [$this]);
+    }
+  }
 }
 
+/** @kphp-immutable-class */
 class VectorY {
   /** @var Y[] */
   public $elements = [];
+
+  public function __construct(int $elements_count, array $elements_array = []) {
+    if ($elements_count) {
+      for ($i = 1; $i < $elements_count; ++$i) {
+        $this->elements[] = new Y($i, " <-");
+      }
+    } else {
+      $this->elements = $elements_array;
+    }
+  }
 }
 
-
+/** @kphp-immutable-class */
 class HasShape {
   /** @var tuple(int, string) */
   var $t;
   /** @var shape(x:int, y:string, z?:int[]) */
   var $sh;
 
-  function __construct($sh_x) {
+  function __construct($sh_x, $with_z = false) {
     $this->t = tuple(1, 's');
-    $this->sh = shape(['y' => 'y', 'x' => $sh_x]);
-  }
-
-  function setZ() {
-    $this->sh = shape(['y' => 'y', 'x' => 2, 'z' => [1,2,3]]);
+    if ($with_z) {
+      $this->sh = shape(['y' => 'y', 'x' => 2, 'z' => [1,2,3]]);
+    } else {
+      $this->sh = shape(['y' => 'y', 'x' => $sh_x]);
+    }
   }
 }
 
@@ -106,6 +128,10 @@ function test_update_ttl() {
   var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 2));
 
   var_dump(instance_cache_delete("key_x_test_update_ttl"));
+#ifndef KittenPHP
+  var_dump(true);
+  if (0)
+#endif
   var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 3));
 
   var_dump(instance_cache_store("key_x_test_update_ttl", new X, 2));
@@ -135,57 +161,31 @@ function test_delete() {
   $y = instance_cache_fetch(Y::class, "key_y3");
   var_dump(!$y);
 
+// delete на самом деле не удаляет элемент,
+// а лишь меняет ему ttl так, что бы следующий fetch вернул false
+#ifndef KittenPHP
+  var_dump(true);
+  if (0)
+#endif
   var_dump(instance_cache_delete("key_x3"));
+
+#ifndef KittenPHP
+  var_dump(true);
+  if (0)
+#endif
   var_dump(instance_cache_delete("key_y3"));
 }
 
-function test_clear() {
-  var_dump(instance_cache_store("key_x4", new X));
-  var_dump(instance_cache_store("key_y4", new Y(3, "test_clear")));
-
-  $x = instance_cache_fetch(X::class, "key_x4");
-  var_dump(instance_to_array($x));
-
-  $y = instance_cache_fetch(Y::class, "key_y4");
-  var_dump(instance_to_array($y));
-
-  instance_cache_clear();
-
-  $x = instance_cache_fetch(X::class, "key_x4");
-  var_dump(!$x);
-
-  $y = instance_cache_fetch(Y::class, "key_y4");
-  var_dump(!$y);
-}
-
 function test_tree() {
-  $root = new TreeX;
-  $root->value = 0;
-  $child = new TreeX;
-  $child->value = 1;
-  $root->children = [tuple(1, [$child])];
-
+  $root = new TreeX (0, [tuple(1, [new TreeX(1)])]);
   var_dump(instance_cache_store("tree_root", $root));
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root");
-
   var_dump(instance_to_array($cached_root1));
-
-#ifndef KittenPHP
-  if (false)
-#endif
-  $root->value = 1;
-
-  var_dump(instance_to_array($cached_root1));
-
-  $cached_root2 = instance_cache_fetch(TreeX::class, "tree_root");
-  var_dump(instance_to_array($cached_root2));
 }
 
 function test_loop_in_tree() {
-  $root = new TreeX;
-  $root->value = 0;
-  $root->children = [tuple(0, [$root])];
+  $root = new TreeX(0, [], true);
 
   $result = instance_cache_store("tree_root_loop", $root);
 #ifndef KittenPHP
@@ -203,29 +203,21 @@ function test_loop_in_tree() {
 }
 
 function test_same_instance_in_array() {
-  $vector = new VectorY;
   $y = new Y(10, " <-first");
 #ifndef KittenPHP
-  $vector->elements = [$y, clone $y, new Y(11, " <-second")];
+  $vector = new VectorY(0, [$y, clone $y, new Y(11, " <-second")]);
   if (false)
 #endif
-  $vector->elements = [$y, $y, new Y(11, " <-second")];
+  $vector = new VectorY(0, [$y, $y, new Y(11, " <-second")]);
 
   var_dump(instance_cache_store("vector", $vector));
 
   $cached_vector = instance_cache_fetch(VectorY::class, "vector");
   var_dump(instance_to_array($cached_vector));
-
-  $cached_vector->elements[1]->y_string = "hello world <-second";
-  $cached_vector->elements[2]->y_string = "hello world <-third";
-  var_dump(instance_to_array($cached_vector));
 }
 
 function test_memory_limit_exceed() {
-  $vector = new VectorY;
-  for ($i = 1; $i < 1000000; ++$i) {
-    $vector->elements[] = new Y($i, " <-");
-  }
+  $vector = new VectorY(1000000);
 
 #ifndef KittenPHP
   var_dump(false);
@@ -238,7 +230,7 @@ function test_memory_limit_exceed() {
 function test_with_shape() {
   $a = new HasShape(19);
   instance_cache_store('has_shape', $a);
-  $a->sh = shape(['y' => 'y2', 'x' => 222]);
+
   $a2 = instance_cache_fetch(HasShape::class, 'has_shape');
   $dump = instance_to_array($a2);
 #ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
@@ -249,7 +241,7 @@ function test_with_shape() {
   var_dump($a2->sh['y']);
   var_dump($a2->sh['z']);
 
-  $a->setZ();
+  $a = new HasShape(19, true);
   instance_cache_store('has_shape_more', $a);
   $a3 = instance_cache_fetch(HasShape::class, 'has_shape_more');
   $dump = instance_to_array($a3);
@@ -267,7 +259,6 @@ test_store_fetch() ;
 test_mismatch_classes();
 test_update_ttl();
 test_delete();
-test_clear();
 test_tree();
 test_loop_in_tree();
 test_same_instance_in_array();

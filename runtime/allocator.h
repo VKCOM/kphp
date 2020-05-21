@@ -8,10 +8,7 @@
 #include "runtime/memory_resource/memory_resource.h"
 
 namespace memory_resource {
-
-class synchronized_pool_resource;
 class unsynchronized_pool_resource;
-
 }
 
 namespace dl {
@@ -20,11 +17,8 @@ extern long long query_num; // engine query number. query_num == 0 before first 
 
 using size_type = memory_resource::size_type;
 
-void set_script_allocator_replacement(memory_resource::synchronized_pool_resource &replacer) noexcept;
-void drop_script_allocator_replacement() noexcept;
-
-void set_current_script_allocator_and_enable_it(memory_resource::unsynchronized_pool_resource &replacer) noexcept;
-void restore_current_script_allocator_and_disable_it() noexcept;
+void set_current_script_allocator(memory_resource::unsynchronized_pool_resource &replacer, bool force_enable) noexcept;
+void restore_default_script_allocator(bool force_disable) noexcept;
 
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept;
 size_type get_heap_memory_used() noexcept;

@@ -1062,3 +1062,11 @@ template<class T>
 dl::size_type max_string_size(const Optional<T> &v) {
   return v.has_value() ? max_string_size(v.val()) : 0;
 }
+
+// operator < у пхпшных строк очень странный (пытается сравнивать строки как числа),
+// поэтому stl деревья с ключами типа string очень сильно тормозят
+struct stl_string_less {
+  bool operator()(const string &lhs, const string &rhs) const noexcept {
+    return lhs.compare(rhs) < 0;
+  }
+};

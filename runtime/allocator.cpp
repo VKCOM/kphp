@@ -28,22 +28,20 @@ volatile bool script_allocator_enabled = false;
 
 long long query_num = 0;
 
-void set_script_allocator_replacement(memory_resource::synchronized_pool_resource &replacer) noexcept {
-  get_memory_dealer().set_script_resource_replacer(replacer);
-}
-
-void drop_script_allocator_replacement() noexcept {
-  get_memory_dealer().drop_replacer();
-}
-
-void set_current_script_allocator_and_enable_it(memory_resource::unsynchronized_pool_resource &resource) noexcept {
+void set_current_script_allocator(memory_resource::unsynchronized_pool_resource &resource, bool force_enable) noexcept {
   get_memory_dealer().set_current_script_resource(resource);
-  script_allocator_enabled = true;
+  if (force_enable) {
+    php_assert(!script_allocator_enabled);
+    script_allocator_enabled = true;
+  }
 }
 
-void restore_current_script_allocator_and_disable_it() noexcept {
+void restore_default_script_allocator(bool force_disable) noexcept {
   get_memory_dealer().restore_default_script_resource();
-  script_allocator_enabled = false;
+  if (force_disable) {
+    php_assert(script_allocator_enabled);
+    script_allocator_enabled = false;
+  }
 }
 
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
@@ -57,7 +55,6 @@ size_type get_heap_memory_used() noexcept {
 void global_init_script_allocator() noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(dealer.heap_script_resource_replacer());
-  php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(!is_malloc_replaced());
   php_assert(!script_allocator_enabled);
   php_assert(!query_num);
@@ -70,7 +67,6 @@ void global_init_script_allocator() noexcept {
 void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(!dealer.heap_script_resource_replacer());
-  php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
   php_assert(!is_malloc_replaced());
 
@@ -83,7 +79,6 @@ void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
 void free_script_allocator() noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(!dealer.heap_script_resource_replacer());
-  php_assert(!dealer.synchronized_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
   php_assert(!is_malloc_replaced());
 
@@ -95,9 +90,6 @@ void *allocate(size_type size) noexcept {
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate(size);
-  }
-  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
-    return synchronized_replacer->allocate(size);
   }
   if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call allocate for non runned script, n = %u", size);
@@ -113,9 +105,6 @@ void *allocate0(size_type size) noexcept {
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate0(size);
   }
-  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
-    return synchronized_replacer->allocate0(size);
-  }
   if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call allocate0 for non runned script, n = %u", size);
     return nullptr;
@@ -130,9 +119,6 @@ void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->reallocate(mem, new_size, old_size);
   }
-  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
-    return synchronized_replacer->reallocate(mem, new_size, old_size);
-  }
   if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %u, old_size = %u", mem, new_size, old_size);
     return mem;
@@ -146,9 +132,6 @@ void deallocate(void *mem, size_type size) noexcept {
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->deallocate(mem, size);
-  }
-  if (auto synchronized_replacer = dealer.synchronized_script_resource_replacer()) {
-    return synchronized_replacer->deallocate(mem, size);
   }
 
   if (script_allocator_enabled) {

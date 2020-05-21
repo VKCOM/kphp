@@ -1,6 +1,5 @@
 #pragma once
 #include "runtime/memory_resource/heap_resource.h"
-#include "runtime/memory_resource/synchronized_pool_resource.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 namespace memory_resource {
@@ -9,14 +8,7 @@ class Dealer {
 public:
   Dealer() noexcept;
 
-  void set_script_resource_replacer(synchronized_pool_resource &synchronized_replacer) noexcept {
-    php_assert(!synchronized_replacer_);
-    php_assert(!heap_replacer_);
-    synchronized_replacer_ = &synchronized_replacer;
-  }
-
   void set_script_resource_replacer(heap_resource &heap_replacer) noexcept {
-    php_assert(!synchronized_replacer_);
     php_assert(!heap_replacer_);
     heap_replacer_ = &heap_replacer;
   }
@@ -34,13 +26,8 @@ public:
   }
 
   void drop_replacer() noexcept {
-    php_assert(heap_replacer_ || synchronized_replacer_);
-    synchronized_replacer_ = nullptr;
+    php_assert(heap_replacer_);
     heap_replacer_ = nullptr;
-  }
-
-  synchronized_pool_resource *synchronized_script_resource_replacer() const noexcept {
-    return synchronized_replacer_;
   }
 
   heap_resource *heap_script_resource_replacer() const noexcept {
@@ -60,7 +47,6 @@ private:
   unsynchronized_pool_resource default_script_resource_;
 
   unsynchronized_pool_resource *current_script_resource_{nullptr};
-  synchronized_pool_resource *synchronized_replacer_{nullptr};
   memory_resource::heap_resource *heap_replacer_{nullptr};
 };
 

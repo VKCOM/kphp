@@ -2,6 +2,7 @@
 
 namespace Classes;
 
+/** @kphp-immutable-class */
 class AAA {
     public $x = 1;
 
