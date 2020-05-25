@@ -123,6 +123,9 @@ int parse_args_f(int i) {
     case 2010:
       env->set_php_code_version(optarg);
       break;
+    case 2011:
+      env->set_compilation_metrics_filename(optarg);
+      break;
     default:
       return -1;
   }
@@ -168,6 +171,7 @@ int main(int argc, char *argv[]) {
   parse_option("enable-global-vars-memory-stats", no_argument, 2008, "Enable an ability to get global vars memory stats");
   parse_option("gen-tl-internals", no_argument, 2009, "Generate storers and fetchers for internal tl functions. Useless if --tl-schema is not provided");
   parse_option("php-code-version", required_argument, 2010, "Specify the compiled php code version");
+  parse_option("compilation-metrics-file", required_argument, 2011, "Dump compilation metrics into <file>");
   parse_engine_options_long(argc, argv, parse_args_f);
 
 

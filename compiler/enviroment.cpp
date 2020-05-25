@@ -313,12 +313,20 @@ void KphpEnviroment::set_warnings_filename(const string &path) {
   warnings_filename_ = path;
 }
 
+void KphpEnviroment::set_compilation_metrics_filename(string &&path) {
+  compilation_metrics_file_ = std::move(path);
+}
+
 void KphpEnviroment::set_stats_filename(const string &path) {
   stats_filename_ = path;
 }
 
 const string &KphpEnviroment::get_warnings_filename() const {
   return warnings_filename_;
+}
+
+const string &KphpEnviroment::get_compilation_metrics_filename() const {
+  return compilation_metrics_file_;
 }
 
 const string &KphpEnviroment::get_stats_filename() const {
@@ -494,6 +502,8 @@ bool KphpEnviroment::init() {
   }
 
   init_env_var(&php_code_version_, "KPHP_PHP_CODE_VERSION", "unknown");
+  init_env_var(&compilation_metrics_file_, "KPHP_COMPILATION_METRICS_FILE", "");
+  as_file(&compilation_metrics_file_);
 
   string user_cxx_flags;
   init_env_var(&user_cxx_flags, "CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
@@ -582,6 +592,7 @@ void KphpEnviroment::debug() const {
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
             "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
+            "KPHP_COMPILATION_METRICS_FILE=[" << get_compilation_metrics_filename() << "]\n" <<
             "KPHP_PHP_CODE_VERSION=[" << get_php_code_version() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<

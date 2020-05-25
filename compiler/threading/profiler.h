@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <list>
 #include <string>
+#include <vector>
 
 #include "common/cycleclock.h"
 
@@ -79,7 +80,8 @@ public:
 
 ProfilerRaw &get_profiler(const std::string &name);
 
-void profiler_print_all();
+std::vector<ProfilerRaw> collect_profiler_stats();
+void profiler_print_all(const std::vector<ProfilerRaw> &all);
 
 std::string demangle(const char *name);
 

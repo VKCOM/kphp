@@ -389,6 +389,10 @@ void run_make() {
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 
+  if (bin_file.read_stat() > 0) {
+    G->stats.object_out_size = bin_file.file_size;
+  }
+
   if (!env.get_user_binary_path().empty()) {
     hard_link_or_copy(bin_file.path, env.get_user_binary_path());
   }

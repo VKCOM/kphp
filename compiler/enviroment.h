@@ -55,6 +55,7 @@ private:
   string warnings_filename_;
   FILE *warnings_file_{nullptr};
 
+  string compilation_metrics_file_;
   string stats_filename_;
   FILE *stats_file_{nullptr};
   int warnings_level_{0};
@@ -131,6 +132,7 @@ public:
   void init_dest_dirs();
 
   void set_warnings_filename(const string &path);
+  void set_compilation_metrics_filename(string &&path);
   void set_stats_filename(const string &path);
   void set_stats_file(FILE *file);
   void set_warnings_file(FILE *file);
@@ -138,6 +140,7 @@ public:
   void set_debug_level(const string &level);
 
   const string &get_warnings_filename() const;
+  const string &get_compilation_metrics_filename() const;
   const string &get_stats_filename() const;
   FILE *get_stats_file() const;
   FILE *get_warnings_file() const;

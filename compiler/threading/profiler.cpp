@@ -2,15 +2,15 @@
 
 #include <algorithm>
 #include <cxxabi.h>
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "common/wrappers/fmt_format.h"
 
 TLS<std::list<ProfilerRaw>> profiler;
 
-void profiler_print_all() {
-  std::map<std::string, ProfilerRaw> collected;
+std::vector<ProfilerRaw> collect_profiler_stats() {
+  std::unordered_map<std::string, ProfilerRaw> collected;
 
   for (int i = 0; i <= MAX_THREADS_COUNT; i++) {
     const auto &local = profiler.get(i);
@@ -25,15 +25,18 @@ void profiler_print_all() {
   }
 
   std::vector<ProfilerRaw> all;
+  all.reserve(collected.size());
   std::transform(collected.begin(), collected.end(), std::back_inserter(all),
-    [](const std::pair<std::string, ProfilerRaw> &entry) {
-      return entry.second;
-  });
-  sort(all.begin(), all.end(), [](const ProfilerRaw &a, const ProfilerRaw & b) {
+                 [](const std::pair<std::string, ProfilerRaw> &entry) {
+                   return entry.second;
+                 });
+  std::sort(all.begin(), all.end(), [](const ProfilerRaw &a, const ProfilerRaw & b) {
     return a.print_id < b.print_id;
   });
+  return all;
+}
 
-
+void profiler_print_all(const std::vector<ProfilerRaw> &all) {
   for (const auto &prof : all) {
     if (prof.get_count() > 0 && prof.get_ticks() > 0) {
       fmt_fprintf(stderr, "{:>60}:\t{} {} {}\n",

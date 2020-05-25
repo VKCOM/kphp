@@ -2,6 +2,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <fstream>
 #include <ftw.h>
 #include <functional>
 #include <iostream>
@@ -336,24 +337,29 @@ bool compiler_execute(KphpEnviroment *env) {
     }
   }
 
+  auto profiler_stats = collect_profiler_stats();
   if (verbosity > 1) {
-    profiler_print_all();
-    G->stats.write_to(std::cerr);
+    profiler_print_all(profiler_stats);
   }
 
   if (G->env().get_use_make()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }
+  const std::string compilation_metrics_file = G->env().get_compilation_metrics_filename();
   G->finish();
+
+  G->stats.update_memory_stats();
+  G->stats.total_time = dl_time() - st;
   if (verbosity > 1) {
-    double en = dl_time();
-    double passed = en - st;
-    std::cerr << "PASSED: " << passed << "\n";
-    mem_info_t mem_info;
-    get_mem_stats(getpid(), &mem_info);
-    std::cerr << "RSS: " << mem_info.rss / 1024 << "Mb\n";
-    std::cerr << "Peak RSS: " << mem_info.rss_peak / 1024 << "Mb\n";
+    std::cerr << std::endl;
+    std::cerr << "Compile stats:" << std::endl;
+    G->stats.write_to(std::cerr);
+  }
+  if (!compilation_metrics_file.empty()) {
+    G->stats.profiler_stats = std::move(profiler_stats);
+    std::ofstream compilation_metrics{compilation_metrics_file};
+    G->stats.write_to(compilation_metrics, false);
   }
   return true;
 }
