@@ -65,11 +65,4 @@ private:
   void collect_deps_from_type_tree(vk::tl::expr_base *expr);
 };
 
-// сейчас тут проверка следующая: если тип полиморфный, то он нигде не должен использоваться как bare
-// по идее, этой проверки тут БЫТЬ НЕ ДОЛЖНО: она должна быть на уровне генерации tlo; но пока тут
-void check_type_expr(vk::tl::expr_base *expr_base);
-
-void check_combinator(const std::unique_ptr<vk::tl::combinator> &c);
-
-void check_constructor(const std::unique_ptr<vk::tl::combinator> &c);
 }

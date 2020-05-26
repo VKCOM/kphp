@@ -55,10 +55,6 @@ void collect_target_objects() {
     const std::unique_ptr<vk::tl::type> &t = e.second;
     if (!should_exclude_tl_type(t)) {
       Module::add_to_module(t);
-      for (const auto &c : t->constructors) {
-        cur_combinator = c.get();
-        check_constructor(c);
-      }
     }
   }
 
@@ -66,8 +62,6 @@ void collect_target_objects() {
     const std::unique_ptr<vk::tl::combinator> &f = e.second;
     if (!should_exclude_tl_function(f)) {
       Module::add_to_module(f);
-      cur_combinator = f.get();
-      check_combinator(f);
     }
   }
 }

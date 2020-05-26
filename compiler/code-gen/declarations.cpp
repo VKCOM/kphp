@@ -253,7 +253,8 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           }
         } else {
           inner_access.drop_class_instance = true;
-          inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name; // корректность такого проверяется в tl2cpp.cpp::check_constructor()
+          // корректность такого проверяется в tl_scheme_final_check()
+          inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name;
           auto php_classes = tl2cpp::get_all_php_classes_of_tl_type(parent_tl_type);
           std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass){ dependencies.add_class_include(klass); });
         }
