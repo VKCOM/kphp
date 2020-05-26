@@ -27,10 +27,6 @@ static void as_dir(string *s) {
   }
 }
 
-static void as_file(string *s __attribute__((unused))) {
-  return;
-}
-
 static void init_env_var(string *str, const string &var_name, const string &default_value) {
   if (!str->empty()) {
     return;
@@ -400,7 +396,6 @@ bool KphpEnviroment::init() {
   init_env_var(&path_, "KPHP_PATH", get_home() + "engine/src/");
   as_dir(&path_);
   init_env_var(&functions_, "KPHP_FUNCTIONS", get_path() + "PHP/functions.txt");
-  as_file(&functions_);
   init_env_var(&mode_, "KPHP_MODE", "server");
   if (mode_ == "net") {
     mode_ = "server";
@@ -441,7 +436,7 @@ bool KphpEnviroment::init() {
     add_include(lib_dir + "php/");
     init_env_var(&static_lib_out_dir_, "KPHP_OUT_LIB_DIR", lib_dir + "lib/");
     as_dir(&static_lib_out_dir_);
-    as_file(&main_files_.back().assign(lib_dir).append("/php/index.php"));
+    main_files_.back().assign(lib_dir).append("/php/index.php");
   }
   else {
     if (!static_lib_out_dir_.empty()) {
@@ -449,11 +444,9 @@ bool KphpEnviroment::init() {
       return false;
     }
     init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name);
-    as_file(&link_file_);
   }
 
   init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
-  as_file(&runtime_sha256_filename_);
 
   init_env_var(&base_dir_, "", "");
   as_dir(&base_dir_);
@@ -484,10 +477,6 @@ bool KphpEnviroment::init() {
     as_dir(&include);
   }
 
-  for (string &main_file : main_files_) {
-    as_file(&main_file);
-  }
-
   string color_settings_str;
   init_env_var(&color_settings_str, "KPHP_COLORS", "auto");
   if (color_settings_str == "auto") {
@@ -503,7 +492,6 @@ bool KphpEnviroment::init() {
 
   init_env_var(&php_code_version_, "KPHP_PHP_CODE_VERSION", "unknown");
   init_env_var(&compilation_metrics_file_, "KPHP_COMPILATION_METRICS_FILE", "");
-  as_file(&compilation_metrics_file_);
 
   string user_cxx_flags;
   init_env_var(&user_cxx_flags, "CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
@@ -563,9 +551,6 @@ void KphpEnviroment::init_dest_dirs() {
   init_env_var(&dest_objs_dir_, "", get_dest_dir() + "objs/");
   as_dir(&dest_objs_dir_);
   init_env_var(&binary_path_, "", get_dest_dir() + get_mode());
-  as_file(&binary_path_);
-
-  as_file(&user_binary_path_);
 
   cxx_flags_ += " -iquote" + get_dest_cpp_dir();
 }
