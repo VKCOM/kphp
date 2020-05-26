@@ -2,6 +2,7 @@
 
 #include "common/tlo-parsing/flat-optimization.h"
 #include "common/tlo-parsing/replace-anonymous-args.h"
+#include "common/tlo-parsing/tl-scheme-final-check.h"
 
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
@@ -118,8 +119,13 @@ void write_tl_query_handlers(CodeGenerator &W) {
                     fmt_format("Error while reading tlo: {}", tl_ptr.error()));
 
   tl = tl_ptr.value().get();
-  replace_anonymous_args(*tl);
-  perform_flat_optimization(*tl);
+  try {
+    vk::tl::replace_anonymous_args(*tl);
+    vk::tl::perform_flat_optimization(*tl);
+    vk::tl::tl_scheme_final_check(*tl);
+  } catch (const std::exception &ex) {
+    kphp_error_return(false, ex.what());
+  }
   collect_target_objects();
   for (const auto &e : modules) {
     const Module &module = e.second;
