@@ -145,7 +145,7 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os)
   parent_call->set_string("parent::__construct");
   has_custom_constructor = true;
 
-  create_constructor(params, VertexAdaptor<op_seq>::create(parent_call), os);
+  create_constructor(params, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc_str, os);
 }
 
 void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
@@ -156,14 +156,15 @@ void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &
   if (parent_class && parent_class->has_custom_constructor) {
     create_constructor_with_parent_call(os);
   } else {
-    create_constructor(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create(), os);
+    create_constructor(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create(), {}, os);
   }
 }
 
-void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os) {
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os) {
   auto func = VertexAdaptor<op_function>::create(params, body);
   func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
+  construct_function->phpdoc_str = phpdoc;
 
   G->require_function(construct_function, os);
 }

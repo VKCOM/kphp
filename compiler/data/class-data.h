@@ -85,7 +85,7 @@ public:
 
   void create_constructor_with_parent_call(DataStream<FunctionPtr> &os);
   void create_default_constructor_if_required(DataStream<FunctionPtr> &os);
-  void create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, DataStream<FunctionPtr> &os);
+  void create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
   static auto gen_param_this(Location location) {
