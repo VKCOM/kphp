@@ -31,6 +31,28 @@ public:
 
   using vk::binlog::replayer::replay;
 
+  size_t try_reserve_for_snapshot(const vk::string_view &key, size_t search_from,
+                                  vk::string_view &prev_key, array_size &counter) noexcept {
+    auto dot_pos = key.find('.', search_from);
+    if (dot_pos != std::string::npos) {
+      const auto dot_key = key.substr(0, dot_pos + 1);
+      if (prev_key != dot_key) {
+        if (counter.int_size + counter.string_size > 1) {
+          size_hints_[prev_key] = counter;
+        }
+        prev_key = dot_key;
+        counter = array_size{};
+      }
+      const auto key_tail = key.substr(dot_pos + 1);
+      if (!key_tail.empty() && php_is_int(key_tail.data(), key_tail.size())) {
+        ++counter.int_size;
+      } else {
+        ++counter.string_size;
+      }
+    }
+    return dot_pos;
+  }
+
   int load_index() noexcept {
     if (!Snapshot) {
       jump_log_ts = 0;
@@ -60,12 +82,29 @@ public:
     assert (index_binary_data);
     kfs_read_file_assert (Snapshot, index_binary_data.get(), index_offset[nrecords]);
 
+    using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
     loading_from_snapshot_ = true;
+
+    vk::string_view last_one_dot_key;
+    vk::string_view last_two_dots_key;
+    array_size one_dot_elements_counter;
+    array_size two_dots_elements_counter;
     for (int i = 0; i < nrecords; i++) {
-      using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
+      const auto &element = reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]);
+      if (element.key_len > 0) {
+        const vk::string_view key{element.data, static_cast<size_t>(element.key_len)};
+        const auto first_dot = try_reserve_for_snapshot(key, 0, last_one_dot_key, one_dot_elements_counter);
+        if (first_dot != std::string::npos) {
+          try_reserve_for_snapshot(key, first_dot + 1, last_two_dots_key, two_dots_elements_counter);
+        }
+      }
+    }
+
+    for (int i = 0; i < nrecords; i++) {
       store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
     }
     loading_from_snapshot_ = false;
+    size_hints_.clear();
     return 0;
   }
 
@@ -329,7 +368,7 @@ private:
 
     // по дефолту вставляется null
     if (first_key_it->second.is_null()) {
-      first_key_it->second = array<var>{};
+      first_key_it->second = prepare_array_for(vk::string_view{first_key_it->first.c_str(), first_key_it->first.size()});
     }
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
@@ -474,11 +513,18 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  const var &get_processing_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E) {
+  const var &get_processing_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     if (processing_value_.is_null()) {
       processing_value_ = E.get_value_as_var();
     }
     return processing_value_;
+  }
+
+  array<var> prepare_array_for(vk::string_view key) const noexcept {
+    auto size_hint_it = size_hints_.find(key);
+    return size_hint_it != size_hints_.end()
+           ? array<var>{size_hint_it->second}
+           : array<var>{};
   }
 
   // TODO: 'now' используется движками, можем ли мы так же её использовать?
@@ -492,6 +538,7 @@ private:
   var last_element_in_garbage_;
   bool confdata_has_any_updates_{false};
   bool loading_from_snapshot_{false};
+  std::unordered_map<vk::string_view, array_size> size_hints_;
   ConfdataStats::EventCounters event_counters_;
 
   ConfdataKeyMaker processing_key_;
@@ -525,7 +572,6 @@ void init_confdata_binlog_reader() noexcept {
     return;
   }
 
-  binlog_disabled = 1;
   static engine_settings_t settings = {};
   settings.name = NAME_VERSION;
   settings.load_index = []() {

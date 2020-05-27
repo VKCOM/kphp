@@ -97,7 +97,7 @@ enum class FirstKeyDots {
   two,
 };
 
-class ConfdataKeyMaker {
+class ConfdataKeyMaker : vk::not_copyable {
 public:
   ConfdataKeyMaker() = default;
   ConfdataKeyMaker(const char *key, int16_t key_len) noexcept;

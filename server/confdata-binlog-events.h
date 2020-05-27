@@ -1,8 +1,7 @@
 #pragma once
 
 #include "common/type_traits/list_of_types.h"
-#include "pmemcached/kdb-pmemcached-binlog.h"
-#include "pmemcached/pmemcached-index-ram.h"
+#include "server/pmemcached-binlog-interface.h"
 
 #include "runtime/kphp_core.h"
 #include "runtime/memcache.h"

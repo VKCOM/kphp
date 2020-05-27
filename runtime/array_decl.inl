@@ -8,9 +8,11 @@
 #endif
 
 struct array_size {
-  int int_size;
-  int string_size;
-  bool is_vector;
+  int int_size = 0;
+  int string_size = 0;
+  bool is_vector = false;
+
+  array_size() = default;
 
   inline array_size(int int_size, int string_size, bool is_vector);
 
