@@ -280,8 +280,8 @@ private:
       assert(should_be_true);
     }
 
-    last_element_in_garbage_ = var{};
-    processing_value_ = var{};
+    last_element_in_garbage_.clear();
+    processing_value_.clear();
     confdata_has_any_updates_ = true;
     update_element_in_expiration_trace(vk::string_view{key, static_cast<size_t>(key_len)}, delay);
   }
@@ -360,9 +360,11 @@ private:
         return false;
       }
 
-      // убираем в мусор предыдущее значение и перезаписываем новым
-      put_confdata_element_value_into_garbage(first_key_it->second);
-      first_key_it->second = get_processing_value(E);
+      if (is_new_value(E, first_key_it->second)) {
+        // убираем в мусор предыдущее значение и перезаписываем новым
+        put_confdata_element_value_into_garbage(first_key_it->second);
+        first_key_it->second = get_processing_value(E);
+      }
       return true;
     }
 
@@ -372,15 +374,19 @@ private:
     }
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
-    element_exists = element_exists && array_for_second_key.has_key(processing_key_.get_second_key());
-    if (!can_element_be_saved(E, element_exists)) {
+    const auto *prev_value = element_exists ? array_for_second_key.find_value(processing_key_.get_second_key()) : nullptr;
+    if (!can_element_be_saved(E, prev_value != nullptr)) {
       return false;
     }
 
     // убираем в мусор что было, далее будет копирование с расщеплением
     put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
 
-    if (element_exists) {
+    if (!prev_value) {
+      array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
+      // вставка элемента расщепит массив
+      assert(array_for_second_key.get_reference_counter() == 1);
+    } else if (is_new_value(E, *prev_value)) {
       array_for_second_key.mutate_if_shared();
       auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
       assert(second_key_it != array_for_second_key.end());
@@ -389,10 +395,6 @@ private:
       // предыдущее значение убираем в мусор и сохраняем новое
       put_confdata_element_value_into_garbage(second_key_it.get_value());
       second_key_it.get_value() = get_processing_value(E);
-    } else {
-      array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
-      // вставка элемента расщепит массив
-      assert(array_for_second_key.get_reference_counter() == 1);
     }
     return true;
   }
@@ -510,6 +512,18 @@ private:
       expiration_trace_.erase(it);
     }
     return removed_key;
+  }
+
+  template<class BASE, int OPERATION>
+  bool is_new_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E, const var &prev_value) noexcept {
+    if (E.get_flags()) {
+      return equals(get_processing_value(E), prev_value);
+    }
+    if (!prev_value.is_string()) {
+      return true;
+    }
+    const auto &prev_str_value = prev_value.as_string();
+    return vk::string_view{prev_str_value.c_str(), prev_str_value.size()} != E.get_value_as_string();
   }
 
   template<class BASE, int OPERATION>

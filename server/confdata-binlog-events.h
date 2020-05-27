@@ -86,6 +86,12 @@ public:
     return size <= 0 ? var{string{}} : mc_get_value(mem, size, get_flags());
   }
 
+  vk::string_view get_value_as_string() const noexcept {
+    const char *mem = BASE::data + BASE::key_len;
+    const int size = BASE::data_len;
+    return size <= 0 ? vk::string_view{} : vk::string_view{mem, static_cast<size_t>(size)};
+  }
+
   short get_flags() const noexcept { return get_flags_impl<BASE>(nullptr); }
   int get_delay() const noexcept { return get_delay_impl<BASE>(nullptr); }
 
