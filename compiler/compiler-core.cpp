@@ -312,7 +312,7 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
     *is_new_inserted = static_cast<bool>(new_var);
   }
   if (!new_var) {
-    kphp_assert_msg(var->name == name, "bug in compiler (hash collision)");
+    kphp_assert_msg(var->name == name, fmt_format("bug in compiler (hash collision) {} {}", var->name, name));
     if (init_val) {
       kphp_assert(var->init_val->type() == init_val->type());
       switch (init_val->type()) {

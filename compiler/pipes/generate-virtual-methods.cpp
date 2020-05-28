@@ -162,7 +162,7 @@ public:
   }
 };
 
-void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) {
   stage::set_name("Generate virtual methods of interfaces/base classes");
   stage::set_function(function);
   kphp_assert(function);
@@ -182,12 +182,13 @@ void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPt
     return;
   }
 
-  Base::execute(function, os);
+  Base::execute(function, unused_os);
 }
 
 void GenerateVirtualMethods::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
   for (auto &interface : lambdas_interfaces) {
+    std::sort(interface->derived_classes.begin(), interface->derived_classes.end());
     auto invoke_method = interface->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
     kphp_assert(invoke_method);
     generate_body_of_virtual_method(invoke_method->function);
@@ -195,7 +196,7 @@ void GenerateVirtualMethods::on_finish(DataStream<FunctionPtr> &os) {
     for (auto &derived_lambda : interface->derived_classes) {
       if (derived_lambda->is_lambda()) {
         auto generated_virt_clone = derived_lambda->get_instance_method(ClassData::NAME_OF_VIRT_CLONE)->function;
-        G->register_and_require_function(generated_virt_clone, os, true);
+        G->register_and_require_function(generated_virt_clone, this->tmp_stream, true);
       }
     }
   }

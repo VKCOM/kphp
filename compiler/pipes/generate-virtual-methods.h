@@ -14,6 +14,6 @@ class GenerateVirtualMethods final : public SyncPipeF<FunctionPtr> {
   std::set<ClassPtr> lambdas_interfaces;
 public:
 
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os);
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os);
   void on_finish(DataStream<FunctionPtr> &os) final;
 };
