@@ -26,6 +26,7 @@
 #include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/kprintf.h"
+#include "common/pipe-utils.h"
 #include "common/precise-time.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
@@ -878,46 +879,6 @@ tcp_rpc_client_functions pipe_reader_methods = [] {
 
   return res;
 }();
-
-connection *create_pipe_reader(int pipe_fd, conn_type_t *type, void *extra) {
-  //fprintf (stderr, "create_pipe_reader [%d]\n", pipe_fd);
-
-  if (check_conn_functions(type) < 0) {
-    return nullptr;
-  }
-  if (pipe_fd >= MAX_CONNECTIONS || pipe_fd < 0) {
-    return nullptr;
-  }
-  event_t *ev;
-
-  ev = epoll_fd_event(pipe_fd);
-  connection *c = Connections + pipe_fd;
-  memset(c, 0, sizeof(connection));
-  c->fd = pipe_fd;
-  c->ev = ev;
-  //c->target = nullptr;
-  c->generation = ++conn_generation;
-  c->flags = C_WANTRD | C_RAWMSG;
-  init_connection_buffers(c);
-  c->timer.wakeup = conn_timer_wakeup_gateway;
-  c->type = type;
-  c->extra = extra;
-  c->basic_type = ct_pipe; //why not?
-  c->status = conn_wait_answer;
-  active_connections++;
-  c->first_query = c->last_query = (conn_query *)c;
-  TCP_RPC_DATA(c)->custom_crc_partial = crc32c_partial;
-
-  //assert (c->type->init_outbound (c) >= 0);
-
-  //fprintf (stderr, "epoll_sethandler\n");
-  epoll_sethandler(pipe_fd, 0, server_read_write_gateway, c);
-  //fprintf (stderr, "epoll_insert");
-  epoll_insert(pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | EVT_SPEC);
-
-  //fprintf (stderr, "exit create_pipe_reader [c = %p]\n", c);
-  return c;
-}
 
 void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   info->pipe_read = pipe;

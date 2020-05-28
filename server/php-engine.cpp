@@ -20,6 +20,7 @@
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
 #include "common/options.h"
+#include "common/pipe-utils.h"
 #include "common/precise-time.h"
 #include "common/resolver.h"
 #include "common/rpc-error-codes.h"
