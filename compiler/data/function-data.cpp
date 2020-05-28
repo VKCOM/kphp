@@ -191,17 +191,23 @@ string FunctionData::get_throws_call_chain() const {
     return "";
   }
   vector<string> names;
-  names.push_back(get_human_readable_name());
   FunctionPtr f = throws_reason;
-  while (true) {
-    names.push_back(f->get_human_readable_name());
-    if (f->throws_reason) {
-      f = f->throws_reason;
-    } else {
-      break;
+  Location last;
+  names.push_back(get_human_readable_name());
+  if (f) {
+    while (true) {
+      names.push_back(f->get_human_readable_name());
+      if (f->throws_reason) {
+        f = f->throws_reason;
+      } else {
+        break;
+      }
     }
+    last = f->throws_location;
+  } else {
+    last = throws_location;
   }
-  return vk::join(names, " -> ") + (f->throws_location.get_line() != -1 ? fmt_format(" (line {})", f->throws_location.get_line()) : "");
+  return vk::join(names, " -> ") + (last.get_line() != -1 ? fmt_format(" (line {})", last.get_line()) : "");
 }
 
 
