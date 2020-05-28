@@ -37,6 +37,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   int infer_type = 0;
   VertexRange func_params = f->get_params();
   const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_str);
+  std::size_t id_of_kphp_template = 0;
 
   std::unordered_map<std::string, int> name_to_function_param;
   std::unordered_set<int> params_with_typehints;
@@ -44,9 +45,16 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   for (auto param : func_params) {
     auto op_func_param = param.as<meta_op_func_param>();
     name_to_function_param.emplace(op_func_param->var()->get_string(), param_i);
-    if (!op_func_param->type_declaration.empty()) {
+
+    if (op_func_param->type_declaration == "callable") {
+      op_func_param->is_callable = true;
+      op_func_param->template_type_id = id_of_kphp_template++;
+      op_func_param->type_declaration.clear();
+      f->is_template = true;
+    } else if (!op_func_param->type_declaration.empty()) {
       params_with_typehints.insert(param_i);
     }
+
     ++param_i;
   }
 
@@ -56,7 +64,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     infer_type |= (infer_mask::check | infer_mask::hint);
   }
 
-  std::size_t id_of_kphp_template = 0;
   stage::set_location(f->root->get_location());
   for (auto &tag : tags) {
     stage::set_line(tag.line_num);
@@ -147,8 +154,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       }
 
       case php_doc_tag::kphp_template: {
-        // we can't use kphp-infer with template parameters simultaneously (we don't know exact type)
-        infer_type = 0;
         f->is_template = true;
         bool is_first_time = true;
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
@@ -197,7 +202,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 
   // при наличии @kphp-infer или @kphp-runtime-check парсим все @param'ы
-  if (infer_type) {
+  if (infer_type && !f->is_template) {
     // для @kphp-runtime-check делаем вид, что @return есть всегда
     bool has_return_php_doc = infer_type == infer_mask::runtime_check;
 
@@ -300,21 +305,6 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   }
 }
 
-static void set_template_flag_if_has_callable_arg(FunctionPtr fun) {
-  auto params = fun->get_params();
-  auto param_n = static_cast<int>(params.size());
-  for (int i = 0; i < param_n; i++) {
-    auto param = params[i].as<meta_op_func_param>();
-
-    if (param->type_declaration == "callable") {
-      param->is_callable = true;
-      param->template_type_id = param_n + i;
-      param->type_declaration.clear();
-      fun->is_template = true;
-    }
-  }
-}
-
 static void check_default_args(FunctionPtr fun) {
   bool was_default = false;
 
@@ -361,7 +351,6 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
   kphp_assert (function);
 
   parse_and_apply_function_kphp_phpdoc(function);
-  set_template_flag_if_has_callable_arg(function);
   check_default_args(function);
   apply_function_typehints(function);
 
