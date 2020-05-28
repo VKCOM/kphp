@@ -1312,7 +1312,7 @@ int f$error_reporting(int level) {
     php_warning_level = 3;
   }
   if (0 <= level && level <= 3) {
-    php_warning_level = level;
+    php_warning_level = std::max(php_warning_minimum_level, level);
   }
   return prev;
 }

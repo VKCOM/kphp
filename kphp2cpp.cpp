@@ -126,6 +126,9 @@ int parse_args_f(int i) {
     case 2011:
       env->set_compilation_metrics_filename(optarg);
       break;
+    case 2012:
+      env->set_dynamic_incremental_linkage();
+      break;
     default:
       return -1;
   }
@@ -172,6 +175,7 @@ int main(int argc, char *argv[]) {
   parse_option("gen-tl-internals", no_argument, 2009, "Generate storers and fetchers for internal tl functions. Useless if --tl-schema is not provided");
   parse_option("php-code-version", required_argument, 2010, "Specify the compiled php code version");
   parse_option("compilation-metrics-file", required_argument, 2011, "Dump compilation metrics into <file>");
+  parse_option("dynamic-incremental-linkage", no_argument, 2012, "Use dynamic incremental linkage for building output file");
   parse_engine_options_long(argc, argv, parse_args_f);
 
 

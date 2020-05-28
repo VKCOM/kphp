@@ -2104,7 +2104,7 @@ static void init_runtime_libs() {
   finished = false;
   flushed = false;
 
-  php_warning_level = 2;
+  php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
 
   static char engine_pid_buf[20];

@@ -37,11 +37,14 @@ private:
   bool stop_on_type_error_{true};
   bool show_progress_{true};
   bool enable_global_vars_memory_stats_{false};
+  bool dynamic_incremental_linkage_{false};
 
   string cxx_;
   string cxx_flags_;
-  string ld_;
   string ld_flags_;
+  string incremental_linker_;
+  string incremental_linker_flags_;
+
   string ar_;
 
   string dest_dir_;
@@ -125,6 +128,9 @@ public:
   bool get_show_progress() const;
   void set_enable_global_vars_memory_stats();
   bool get_enable_global_vars_memory_stats() const;
+  void set_dynamic_incremental_linkage();
+  bool get_dynamic_incremental_linkage() const;
+
   void add_main_file(const string &main_file);
   const vector<string> &get_main_files() const;
 
@@ -152,9 +158,10 @@ public:
 
   const string &get_cxx() const;
   const string &get_cxx_flags() const;
-  const string &get_ld() const;
   const string &get_ld_flags() const;
   const string &get_ar() const;
+  const string &get_incremental_linker() const;
+  const string &get_incremental_linker_flags() const;
 
   const string &get_version() const;
   bool is_static_lib_mode() const;

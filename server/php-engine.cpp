@@ -2562,6 +2562,14 @@ int main_args_handler(int i) {
       printf("%s\n", get_php_scripts_version());
       exit(0);
     }
+    case 2007: {
+      php_warning_minimum_level = atoi(optarg);
+      if (php_warning_minimum_level < 0 || php_warning_minimum_level > 3) {
+        kprintf("--php-warnings-minimal-verbosity has to be [0, 3]\n");
+        return -1;
+      }
+      return 0;
+    }
 
     default:
 
@@ -2625,6 +2633,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
   parse_option("php-version", no_argument, 2006, "show the compiled php code version and exit");
+  parse_option("php-warnings-minimal-verbosity", required_argument, 2007, "set minimum verbosity level for php warnings");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

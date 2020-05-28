@@ -26,6 +26,7 @@ const char *engine_pid = "] ";
 
 int php_disable_warnings = 0;
 int php_warning_level = 2;
+int php_warning_minimum_level = 0;
 
 extern FILE* json_log_file_ptr;
 
@@ -45,7 +46,7 @@ array<var> f$kphp_error_callback() {
   return {};
 }
 
-static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, backtrace_each_line_callback_t callback) {
+static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, backtrace_each_line_callback_t callback, bool allow_gdb) {
   if (php_warning_level == 1) {
     for (int i = 0; i < nptrs; i++) {
       fprintf(stderr, "%p\n", buffer[i]);
@@ -55,7 +56,7 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, ba
     if (!was_printed) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
-  } else if (php_warning_level == 3) {
+  } else if (php_warning_level == 3 && allow_gdb) {
     char pid_buf[30];
     sprintf(pid_buf, "%d", getpid());
     char name_buf[512];
@@ -141,13 +142,13 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
 
     int scheduler_id = std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer;
     if (scheduler_id == nptrs) {
-      print_demangled_adresses(buffer, nptrs, 0, callback);
+      print_demangled_adresses(buffer, nptrs, 0, callback, true);
     } else {
-      print_demangled_adresses(buffer, scheduler_id, 0, callback);
+      print_demangled_adresses(buffer, scheduler_id, 0, callback, true);
       void *buffer2[64];
       int res_ptrs = get_resumable_stack(buffer2, sizeof(buffer2) / sizeof(buffer2[0]));
-      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, callback);
-      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, callback);
+      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, callback, false);
+      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, callback, false);
     }
 
     fprintf(stderr, "-------------------------------\n\n");

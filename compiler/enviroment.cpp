@@ -265,6 +265,14 @@ bool KphpEnviroment::get_enable_global_vars_memory_stats() const {
   return enable_global_vars_memory_stats_;
 }
 
+void KphpEnviroment::set_dynamic_incremental_linkage() {
+  dynamic_incremental_linkage_ = true;
+}
+
+bool KphpEnviroment::get_dynamic_incremental_linkage() const {
+  return dynamic_incremental_linkage_;
+}
+
 const string &KphpEnviroment::get_dest_cpp_dir() const {
   return dest_cpp_dir_;
 }
@@ -281,16 +289,20 @@ const string &KphpEnviroment::get_cxx_flags() const {
   return cxx_flags_;
 }
 
-const string &KphpEnviroment::get_ld() const {
-  return ld_;
-}
-
 const string &KphpEnviroment::get_ld_flags() const {
   return ld_flags_;
 }
 
 const string &KphpEnviroment::get_ar() const {
   return ar_;
+}
+
+const string &KphpEnviroment::get_incremental_linker() const {
+  return incremental_linker_;
+}
+
+const string &KphpEnviroment::get_incremental_linker_flags() const {
+  return incremental_linker_flags_;
 }
 
 bool KphpEnviroment::is_static_lib_mode() const {
@@ -379,14 +391,14 @@ void KphpEnviroment::update_cxx_flags_sha256() {
   for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
     fmt_format_to(hash_str + (i * 2), "{:02x}", hash[i]);
   }
-  cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH);
+  cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH * 2);
 }
 
 bool KphpEnviroment::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd(tmp, PATH_MAX);
   if (cur_dir == nullptr) {
-    fmt_print("Failed to get current directory");
+    fmt_print("Failed to get current directory\n");
     return false;
   }
   cur_dir_ = cur_dir;
@@ -414,22 +426,22 @@ bool KphpEnviroment::init() {
 
   if (is_static_lib_mode()) {
     if (main_files_.size() > 1) {
-      fmt_print("Multiple main directories are forbidden for static lib mode");
+      fmt_print("Multiple main directories are forbidden for static lib mode\n");
       return false;
     }
     if (!tl_schema_file_.empty()) {
-      fmt_print("tl-schema is forbidden for static lib mode");
+      fmt_print("tl-schema is forbidden for static lib mode\n");
       return false;
     }
     std::string lib_dir = get_full_path(main_files_.back());
     std::size_t last_slash = lib_dir.rfind('/');
     if (last_slash == std::string::npos) {
-      fmt_print("Bad lib directory");
+      fmt_print("Bad lib directory\n");
       return false;
     }
     static_lib_name_ = lib_dir.substr(last_slash + 1);
     if (static_lib_name_.empty()) {
-      fmt_print("Got empty static lib name");
+      fmt_print("Got empty static lib name\n");
       return false;
     }
     as_dir(&lib_dir);
@@ -440,7 +452,7 @@ bool KphpEnviroment::init() {
   }
   else {
     if (!static_lib_out_dir_.empty()) {
-      fmt_print("Output dir is allowed only for static lib mode");
+      fmt_print("Output dir is allowed only for static lib mode\n");
       return false;
     }
     init_env_var(&link_file_, "KPHP_LINK_FILE", get_path() + "objs/PHP/" + link_file_name);
@@ -458,6 +470,7 @@ bool KphpEnviroment::init() {
   get_bool_option_from_env(show_progress_, "KPHP_SHOW_PROGRESS", true);
   get_bool_option_from_env(enable_global_vars_memory_stats_, "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", false);
   get_bool_option_from_env(gen_tl_internals_, "KPHP_GEN_TL_INTERNALS", false);
+  get_bool_option_from_env(dynamic_incremental_linkage_, "KPHP_DYNAMIC_INCREMENTAL_LINKAGE", false);
 
   init_env_var(&jobs_count_, "KPHP_JOBS_COUNT", "100");
   env_str2int(&jobs_count_int_, jobs_count_);
@@ -504,6 +517,9 @@ bool KphpEnviroment::init() {
   if (!no_pch_) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
+  if (dynamic_incremental_linkage_) {
+    ss << " -fPIC";
+  }
   #if __cplusplus <= 201103L
     ss << " -std=gnu++11";
   #elif __cplusplus <= 201402L
@@ -519,7 +535,10 @@ bool KphpEnviroment::init() {
   update_cxx_flags_sha256();
   runtime_sha256_ = read_runtime_sha256_file(get_runtime_sha256_file());
 
-  init_env_var(&ld_, "LD", "ld");
+  init_env_var(&incremental_linker_, "KPHP_INCREMENTAL_LINKER",
+               dynamic_incremental_linkage_ ? cxx_ : "ld");
+  init_env_var(&incremental_linker_flags_, "KPHP_INCREMENTAL_LINKER_FLAGS",
+               dynamic_incremental_linkage_ ? "-shared" : "-r");
   string user_ld_flags;
   init_env_var(&user_ld_flags, "LDFLAGS", "-ggdb");
   ld_flags_ = user_ld_flags + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -l:libyaml-cpp.a -rdynamic";
@@ -578,6 +597,7 @@ void KphpEnviroment::debug() const {
             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
             "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
             "KPHP_COMPILATION_METRICS_FILE=[" << get_compilation_metrics_filename() << "]\n" <<
+            "KPHP_DYNAMIC_INCREMENTAL_LINKAGE = [" << get_dynamic_incremental_linkage() << "]\n" <<
             "KPHP_PHP_CODE_VERSION=[" << get_php_code_version() << "]\n" <<
 
             "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
@@ -590,10 +610,11 @@ void KphpEnviroment::debug() const {
   }
 
   std::cerr << "CXX=[" << get_cxx() << "]\n" <<
-            "CXX_FLAGS=[" << get_cxx_flags() << "]\n" <<
-            "LD=[" << get_ld() << "]\n" <<
-            "LD_FLAGS=[" << get_ld_flags() << "]\n" <<
-            "AR=[" << get_ar() << "]\n";
+            "CXXFLAGS=[" << get_cxx_flags() << "]\n" <<
+            "LDFLAGS=[" << get_ld_flags() << "]\n" <<
+            "AR=[" << get_ar() << "]\n" <<
+            "KPHP_INCREMENTAL_LINKER=[" << get_incremental_linker() << "]\n" <<
+            "KPHP_INCREMENTAL_LINKER_FLAGS=[" << get_incremental_linker_flags() << "]\n";
   std::cerr << "KPHP_INCLUDES=[";
   bool is_first = true;
   for (const auto &include : get_includes()) {

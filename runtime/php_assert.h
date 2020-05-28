@@ -12,6 +12,7 @@ extern const char *engine_pid;
 
 extern int php_disable_warnings;
 extern int php_warning_level;
+extern int php_warning_minimum_level;
 
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_out_of_memory_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));

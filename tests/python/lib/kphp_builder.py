@@ -108,13 +108,15 @@ class KphpBuilder:
                 return self._move_to_artifacts(asan_log_name, proc.returncode, file=asan_log)
         return None
 
-    def compile_with_kphp(self):
+    def compile_with_kphp(self, use_dynamic_incremental_linkage=True):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
 
         asan_log_name = "kphp_build_asan_log"
         env, asan_glob_mask = self._prepare_asan_env(self._kphp_build_tmp_dir, asan_log_name)
         env["KPHP_THREADS_COUNT"] = "3"
         env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
+        env["GDB_OPTION"] = "-g0"
+        env["KPHP_DYNAMIC_INCREMENTAL_LINKAGE"] = use_dynamic_incremental_linkage and "1" or "0"
         if self._distcc_hosts:
             env["KPHP_JOBS_COUNT"] = "30"
             env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)

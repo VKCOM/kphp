@@ -83,9 +83,10 @@ public:
   void init_env(const KphpEnviroment &kphp_env) {
     env.cxx = kphp_env.get_cxx();
     env.cxx_flags = kphp_env.get_cxx_flags();
-    env.ld = kphp_env.get_ld();
     env.ld_flags = kphp_env.get_ld_flags();
     env.ar = kphp_env.get_ar();
+    env.incremental_linker = kphp_env.get_incremental_linker();
+    env.incremental_linker_flags = kphp_env.get_incremental_linker_flags();
     env.debug_level = kphp_env.get_debug_level();
   }
 
@@ -296,13 +297,14 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   objs = std::move(tmp_objs);
   for (auto &name_and_files : subdirs) {
     auto &deps = name_and_files.second;
-    std::sort(deps.begin(), deps.end(), [](File *a, File *b) { return a->name < b->name;});
+    std::sort(deps.begin(), deps.end(), [](File *a, File *b) { return a->name < b->name; });
     size_t hash = 0;
     for (File *f : deps) {
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
-    auto intermediate_file_name = fmt_format("{}_{:x}.o", name_and_files.first, hash);
-    File *obj_file = obj_dir.insert_file(intermediate_file_name);
+    auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
+                                             G->env().get_dynamic_incremental_linkage() ? "so" : "o");
+    File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
   }

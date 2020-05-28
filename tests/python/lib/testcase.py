@@ -162,7 +162,8 @@ class KphpServerAutoTestCase(BaseTestCase):
         with open(kphp_build_lock_file, "r+") as lock:
             portalocker.lock(lock, portalocker.LOCK_EX)
             print("\nCompiling kphp server")
-            if not cls.kphp_builder.compile_with_kphp():
+            # Специально выключаем KPHP_DYNAMIC_INCREMENTAL_LINKAGE, чтобы не было рейзов
+            if not cls.kphp_builder.compile_with_kphp(use_dynamic_incremental_linkage=False):
                 raise RuntimeError("Can't compile php script")
             cls.kphp_server_bin = os.path.join(cls.kphp_server_working_dir, "kphp_server")
             os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)

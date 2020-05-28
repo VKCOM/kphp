@@ -206,7 +206,10 @@ string CodeGenF::get_subdir(const string &base) {
 
 void CodeGenF::write_lib_version(CodeGenerator &W) {
   W << OpenFile("_lib_version.h");
-  W << "//" << G->env().get_runtime_sha256() << NL;
+  W << "// Runtime sha256: " << G->env().get_runtime_sha256() << NL;
+  W << "// CXX: " << G->env().get_cxx() << NL;
+  W << "// CXXFLAGS: " << G->env().get_cxx_flags() << NL;
+  W << "// DEBUG: " << G->env().get_debug_level() << NL;
   W << CloseFile();
 }
 
