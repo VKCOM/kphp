@@ -1,7 +1,7 @@
 @ok
 <?php
 class Base {
-  public function add(self $base) {
+  public function add(self $base): self {
     return $base;
   }
 

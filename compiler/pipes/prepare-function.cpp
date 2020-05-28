@@ -29,7 +29,15 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   bool function_has_kphp_doc = f->phpdoc_str.find("@kphp") != std::string::npos;
   bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
   if (!function_has_kphp_doc && !class_has_kphp_infer) {
-    return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
+    // add implicit kphp_infer only for functions with primitive type-hints
+    // it's better to enable kphp-infer always but we need to fix ~300 errors on the website
+    bool has_type_hint = vk::any_of(f->get_params(), [](VertexPtr param) {
+      auto type_decl = param.as<meta_op_func_param>()->type_declaration;
+      return !type_decl.empty() && type_decl[0] != std::toupper(type_decl[0]);
+    });
+    if (!has_type_hint) {
+      return;   // обычный phpdoc, без @kphp нотаций, тут не парсим; если там инстансы, распарсится по требованию
+    }
   }
 
   using infer_mask = FunctionData::InferHint::infer_mask;
