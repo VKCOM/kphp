@@ -2198,7 +2198,7 @@ void start_server() {
     int write_fd = pipe_fd[1];
 
     rpc_client_methods.rpc_ready = nullptr;
-    create_pipe_reader(read_fd, &ct_php_rpc_client, &rpc_client_methods);
+    epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
 
     int q[6];
     int qsize = 6 * sizeof(int);

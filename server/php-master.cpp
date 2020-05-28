@@ -884,7 +884,7 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
   info->pipe_read = pipe;
   info->pipe_out_packet_num = -1;
   info->pipe_in_packet_num = -1;
-  connection *reader = create_pipe_reader(pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
+  connection *reader = epoll_insert_pipe(pipe_for_read, pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
   if (reader != nullptr) {
     PR_DATA (reader)->worker = worker;
     PR_DATA (reader)->worker_generation = worker->generation;
