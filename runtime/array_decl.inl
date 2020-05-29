@@ -131,7 +131,7 @@ private:
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
 
-    inline void dispose() __attribute__ ((always_inline));
+    inline void dispose();
 
     inline array_inner *ref_copy() __attribute__ ((always_inline));
 
