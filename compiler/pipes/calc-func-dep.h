@@ -20,22 +20,22 @@ struct DepData : private vk::movable_only {
 static_assert(std::is_nothrow_move_constructible<DepData>::value, "DepData should be movable");
 static_assert(!std::is_copy_constructible<DepData>::value, "DepData shouldn't be copyable");
 
-class CalcFuncDepPass : public FunctionPassBase {
+class CalcFuncDepPass final : public FunctionPassBase {
 private:
   DepData data;
   std::vector<FunctionPtr> calls;
 public:
 
-  string get_description() {
-    return "Calc function depencencies";
+  string get_description() override {
+    return "Calc function dependencies";
   }
 
-  bool check_function(FunctionPtr function) {
+  bool check_function(FunctionPtr function) override {
     return !function->is_extern();
   }
 
-  VertexPtr on_enter_vertex(VertexPtr vertex);
-  VertexPtr on_exit_vertex(VertexPtr vertex);
+  VertexPtr on_enter_vertex(VertexPtr vertex) override;
+  VertexPtr on_exit_vertex(VertexPtr vertex) override;
 
-  DepData on_finish();
+  DepData get_data();
 };

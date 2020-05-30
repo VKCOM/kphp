@@ -14,7 +14,7 @@
  * than lambdas start to implement the interface; all such interfaces are saved to std::set
  * for generation their abstract __invoke method
  */
-class FindLambdasWithInterfacePass : public FunctionPassBase {
+class FindLambdasWithInterfacePass final : public FunctionPassBase {
 public:
   std::set<ClassPtr> lambdas_interfaces;
 

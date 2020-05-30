@@ -22,12 +22,15 @@
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
 
-class CollectForkableTypes : public FunctionPassBase {
+class CollectForkableTypes final : public FunctionPassBase {
 public:
   std::vector<const TypeData *> waitable_types;
   std::vector<const TypeData *> forkable_types;
+  string get_description() override {
+    return "Collect forkable types";
+  }
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto call = root.try_as<op_func_call>()) {
       if (call->func_id->is_resumable) {
         if (call->str_val == "wait_result") {

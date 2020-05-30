@@ -26,7 +26,7 @@ std::string collect_string_concatenation(VertexPtr v) {
 }
 } // namespace
 
-class CollectRequiredPass : public FunctionPassBase {
+class CollectRequiredPass final : public FunctionPassBase {
 private:
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
@@ -110,11 +110,11 @@ public:
     function_stream(function_stream) {
   }
 
-  string get_description() {
+  string get_description() override {
     return "Collect required";
   }
 
-  bool on_start(FunctionPtr function) {
+  bool on_start(FunctionPtr function) override {
     if (!FunctionPassBase::on_start(function)) {
       return false;
     }
@@ -127,7 +127,7 @@ public:
     return true;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) override {
     stage::set_line(root->location.line);
 
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {

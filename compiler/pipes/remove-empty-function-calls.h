@@ -2,9 +2,9 @@
 
 #include "compiler/function-pass.h"
 
-class RemoveEmptyFunctionCalls : public FunctionPassBase {
+class RemoveEmptyFunctionCalls final : public FunctionPassBase {
 public:
-  string get_description() { return "Filter empty functions"; }
+  string get_description() override { return "Filter empty functions"; }
 
-  VertexPtr on_exit_vertex(VertexPtr v);
+  VertexPtr on_exit_vertex(VertexPtr v) override;
 };

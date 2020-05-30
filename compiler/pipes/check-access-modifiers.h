@@ -4,24 +4,24 @@
 #include "compiler/data/class-member-modifiers.h"
 #include "compiler/function-pass.h"
 
-class CheckAccessModifiersPass : public FunctionPassBase {
+class CheckAccessModifiersPass final : public FunctionPassBase {
 private:
   string namespace_name;
   string class_name;
   ClassPtr class_id;
   ClassPtr lambda_class_id;
 public:
-  string get_description() {
+  string get_description() override {
     return "Check access modifiers";
   }
 
-  bool check_function(FunctionPtr function) {
+  bool check_function(FunctionPtr function) override {
     return !function->is_extern();
   }
 
-  bool on_start(FunctionPtr function);
+  bool on_start(FunctionPtr function) override;
 
-  VertexPtr on_enter_vertex(VertexPtr root);
+  VertexPtr on_enter_vertex(VertexPtr root) override;
 };
 
 template<class MemberModifier>

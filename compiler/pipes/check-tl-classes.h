@@ -2,11 +2,11 @@
 
 #include "compiler/function-pass.h"
 
-class CheckTlClasses : public FunctionPassBase {
+class CheckTlClasses final : public FunctionPassBase {
 public:
-  string get_description() {
+  string get_description() override {
     return "Check tl classes";
   }
 
-  bool on_start(FunctionPtr function);
+  bool on_start(FunctionPtr function) override;
 };

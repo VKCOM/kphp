@@ -21,13 +21,16 @@
  * которые получились клонированием родительского дерева
  * В будущем этот pass должен уйти, когда лямбды будут вычленяться не на уровне gentree, а позже
  */
-class PatchInheritedMethodPass : public FunctionPassBase {
+class PatchInheritedMethodPass final : public FunctionPassBase {
   DataStream<FunctionPtr> &function_stream;
 public:
+  string get_description() override {
+    return "Patch inherited methods";
+  }
   explicit PatchInheritedMethodPass(DataStream<FunctionPtr> &function_stream) :
     function_stream(function_stream) {}
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto call = root.try_as<op_func_call>()) {
       if (!call->args().empty()) {
         if (auto alloc = call->args()[0].try_as<op_alloc>()) {

@@ -538,7 +538,7 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   }
 }
 
-std::nullptr_t CollectMainEdgesPass::on_finish() {
+void CollectMainEdgesPass::on_finish() {
   if (!have_returns) {
     // hack to work well with functions which always throws
     create_set(as_lvalue(current_function, -1), tp_void);
@@ -550,7 +550,6 @@ std::nullptr_t CollectMainEdgesPass::on_finish() {
   call_on_var(current_function->explicit_const_var_ids);
   call_on_var(current_function->explicit_header_const_var_ids);
   call_on_var(current_function->param_ids);
-  return {};
 }
 
 template<class CollectionT>

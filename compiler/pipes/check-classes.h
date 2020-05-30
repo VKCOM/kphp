@@ -7,7 +7,7 @@
 /*
  * Пайп, который после inferring'а бежит по всем классам и что-то проверяет.
  */
-class CheckClassesPass : public FunctionPassBase {
+class CheckClassesPass final : public FunctionPassBase {
   constexpr static int32_t max_serialization_tag_value = std::numeric_limits<int8_t>::max();
   using used_serialization_tags_t = std::array<bool, max_serialization_tag_value>;
 
@@ -26,7 +26,7 @@ public:
     return "Check classes";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root);
+  VertexPtr on_enter_vertex(VertexPtr root) override;
 
-  bool on_start(FunctionPtr function);
+  bool on_start(FunctionPtr function) override;
 };

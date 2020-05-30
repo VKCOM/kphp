@@ -5,9 +5,9 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 
-class SplitSwitchPass : public FunctionPassBase {
+class SplitSwitchPass final : public FunctionPassBase {
 private:
-  int depth;
+  int depth{0};
   vector<FunctionPtr> new_functions;
 
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
@@ -61,19 +61,15 @@ private:
   }
 
 public:
-  SplitSwitchPass() :
-    depth(0) {
-  }
-
-  string get_description() {
+  string get_description() override {
     return "Split switch";
   }
 
-  bool check_function(FunctionPtr function) {
+  bool check_function(FunctionPtr function) override {
     return function->type == FunctionData::func_global;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) override {
     depth++;
     if (root->type() != op_switch) {
       return root;
@@ -150,24 +146,18 @@ public:
       auto if_one = VertexAdaptor<op_if>::create(eq_one, GenTree::embrace(cmd_one));
       auto if_minus_one = VertexAdaptor<op_if>::create(eq_minus_one, GenTree::embrace(cmd_minus_one));
 
-      vector<VertexPtr> new_seq_next;
-      new_seq_next.push_back(init);
-      new_seq_next.push_back(run_func);
-      new_seq_next.push_back(if_one);
-      new_seq_next.push_back(if_minus_one);
-
-      auto new_seq = VertexAdaptor<op_seq>::create(new_seq_next);
+      auto new_seq = VertexAdaptor<op_seq>::create(init, run_func, if_one, if_minus_one);
       cs->back() = new_seq;
     }
 
     return root;
   }
 
-  bool user_recursion(VertexPtr root) {
+  bool user_recursion(VertexPtr root) override {
     return !(depth < 2 || root->type() == op_seq || root->type() == op_try);
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root) {
+  VertexPtr on_exit_vertex(VertexPtr root) override {
     depth--;
     return root;
   }

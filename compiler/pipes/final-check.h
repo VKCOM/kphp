@@ -4,23 +4,23 @@
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
 
-class FinalCheckPass : public FunctionPassBase {
+class FinalCheckPass final : public FunctionPassBase {
 private:
   void check_static_var_inited(VarPtr static_var);
   
 public:
 
-  string get_description() {
+  string get_description() override {
     return "Final check";
   }
 
-  bool on_start(FunctionPtr function);
+  bool on_start(FunctionPtr function) override;
 
-  VertexPtr on_enter_vertex(VertexPtr vertex);
+  VertexPtr on_enter_vertex(VertexPtr vertex) override;
 
-  bool user_recursion(VertexPtr v);
+  bool user_recursion(VertexPtr v) override;
 
-  VertexPtr on_exit_vertex(VertexPtr vertex);
+  VertexPtr on_exit_vertex(VertexPtr vertex) override;
 
 private:
   void check_op_func_call(VertexAdaptor<op_func_call> call);

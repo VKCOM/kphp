@@ -5,7 +5,7 @@
 #include "compiler/inferring/rvalue.h"
 #include "compiler/pipes/function-and-cfg.h"
 
-class CollectMainEdgesPass : public FunctionPassBase {
+class CollectMainEdgesPass final : public FunctionPassBase {
 private:
   bool have_returns = false;
 
@@ -54,14 +54,14 @@ public:
 
   using ExecuteType = FunctionAndCFG;
 
-  string get_description() {
+  string get_description() override {
     return "Collect main tinf edges";
   }
 
-  bool on_start(FunctionPtr function);
+  bool on_start(FunctionPtr function) override;
 
-  VertexPtr on_enter_vertex(VertexPtr v);
+  VertexPtr on_enter_vertex(VertexPtr v) override;
 
 
-  std::nullptr_t on_finish();
+  void on_finish() override;
 };

@@ -11,7 +11,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 
-class PreprocessFunctionPass : public FunctionPassBase {
+class PreprocessFunctionPass final : public FunctionPassBase {
 public:
   DataStream<FunctionPtr> &instance_of_function_template_stream;
 

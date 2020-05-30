@@ -3,7 +3,7 @@
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
 
-class CalcActualCallsEdgesPass : public FunctionPassBase {
+class CalcActualCallsEdgesPass final : public FunctionPassBase {
 public:
   struct EdgeInfo {
     FunctionPtr called_f;
@@ -23,15 +23,15 @@ private:
   int inside_fork = 0;
 
 public:
-  string get_description() {
+  string get_description() override {
     return "Collect actual calls edges";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr v);
+  VertexPtr on_enter_vertex(VertexPtr v) override;
 
-  bool user_recursion(VertexPtr v);
+  bool user_recursion(VertexPtr v) override;
 
-  std::vector<EdgeInfo> on_finish() {
+  std::vector<EdgeInfo> get_data() {
     return std::move(edges);
   }
 };

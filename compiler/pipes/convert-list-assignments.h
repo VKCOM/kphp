@@ -8,13 +8,13 @@
  * Соответственно, по смыслу сущность $tmp_var это array или tuple
  * 2. list(...) = $var оборачиваем в op_seq_rval { list; $var }, для поддержки while(list()=f()) / if(... && list()=f())
  */
-class ConvertListAssignmentsPass : public FunctionPassBase {
+class ConvertListAssignmentsPass final : public FunctionPassBase {
 public:
   string get_description() final {
     return "Process assignments to list";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root);
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 
 private:
   static VertexPtr process_list_assignment(VertexAdaptor<op_list> list);

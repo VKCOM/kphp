@@ -105,7 +105,7 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
   return vertex;
 }
 
-std::nullptr_t CommonAnalyzerPass::on_finish() {
+void CommonAnalyzerPass::on_finish() {
   for (VarPtr &var : current_function->local_var_ids) {
     G->stats.cnt_mixed_vars += tinf::get_type(var)->ptype() == tp_var;
   }

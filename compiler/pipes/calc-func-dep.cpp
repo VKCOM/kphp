@@ -97,7 +97,7 @@ VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex) {
 }
 
 
-DepData CalcFuncDepPass::on_finish() {
+DepData CalcFuncDepPass::get_data() {
   my_unique(&data.dep);
   my_unique(&data.used_global_vars);
   return std::move(data);

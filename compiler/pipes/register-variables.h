@@ -12,11 +12,11 @@
  * 4. Local variables
  * 5. Class static fields
  */
-class RegisterVariablesPass : public FunctionPassBase {
+class RegisterVariablesPass final : public FunctionPassBase {
 private:
   std::map<string, VarPtr> registred_vars;
-  bool global_function_flag;
-  int in_param_list;
+  bool global_function_flag{false};
+  int in_param_list{0};
 
   VarPtr create_global_var(const string &name);
   VarPtr create_local_var(const string &name, VarData::Type type, bool create_flag);
@@ -37,20 +37,15 @@ private:
 
 public:
 
-  RegisterVariablesPass() :
-    global_function_flag(false),
-    in_param_list(0) {
-  }
-
-  string get_description() {
+  string get_description() override {
     return "Register variables";
   }
 
-  bool check_function(FunctionPtr function) {
+  bool check_function(FunctionPtr function) override {
     return !function->is_extern();
   }
 
-  bool on_start(FunctionPtr function) {
+  bool on_start(FunctionPtr function) override {
     if (!FunctionPassBase::on_start(function)) {
       return false;
     }
@@ -59,9 +54,9 @@ public:
     return true;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root);
-  VertexPtr on_exit_vertex(VertexPtr root);
+  VertexPtr on_enter_vertex(VertexPtr root) override;
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 
-  bool user_recursion(VertexPtr v);
+  bool user_recursion(VertexPtr v) override;
 
 };

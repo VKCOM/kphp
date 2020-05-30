@@ -2,24 +2,24 @@
 
 #include "compiler/function-pass.h"
 
-class CheckNestedForeachPass : public FunctionPassBase {
+class CheckNestedForeachPass final : public FunctionPassBase {
   vector<VarPtr> foreach_vars{};
   vector<VarPtr> foreach_ref_vars{};
   vector<VarPtr> foreach_key_vars{};
   vector<VarPtr> errored_vars{};
 public:
 
-  string get_description() {
+  string get_description() override {
     return "Try to detect common errors: nested foreach";
   }
 
-  bool check_function(FunctionPtr function) {
+  bool check_function(FunctionPtr function) override {
     return !function->is_extern();
   }
 
 
-  VertexPtr on_enter_vertex(VertexPtr vertex);
+  VertexPtr on_enter_vertex(VertexPtr vertex) override;
 
 
-  VertexPtr on_exit_vertex(VertexPtr vertex);
+  VertexPtr on_exit_vertex(VertexPtr vertex) override;
 };

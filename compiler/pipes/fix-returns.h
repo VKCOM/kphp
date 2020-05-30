@@ -2,11 +2,15 @@
 
 #include "compiler/function-pass.h"
 
-class FixReturnsPass : public FunctionPassBase {
+class FixReturnsPass final : public FunctionPassBase {
 public:
-  VertexPtr on_enter_vertex(VertexPtr root);
+  string get_description() override {
+    return "Fix returns";
+  }
 
-  bool user_recursion(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) override;
+
+  bool user_recursion(VertexPtr root) override {
     return root->type() == op_fork;
   }
 };

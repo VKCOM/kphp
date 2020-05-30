@@ -2,13 +2,13 @@
 
 #include "compiler/function-pass.h"
 
-class PreprocessEq3Pass : public FunctionPassBase {
+class PreprocessEq3Pass final : public FunctionPassBase {
 private:
   VertexPtr convert_eq3_null_to_isset(VertexPtr eq_op, VertexPtr not_null);
 public:
-  string get_description() {
+  string get_description() override {
     return "Preprocess eq3";
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root);
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 };

@@ -2,17 +2,17 @@
 
 #include "compiler/function-pass.h"
 
-class ExtractAsyncPass : public FunctionPassBase {
+class ExtractAsyncPass final : public FunctionPassBase {
 public:
-  string get_description() {
+  string get_description() override {
     return "Extract async";
   }
 
-  bool check_function(FunctionPtr function);
+  bool check_function(FunctionPtr function) override;
 
-  VertexPtr on_exit_vertex(VertexPtr vertex);
+  VertexPtr on_exit_vertex(VertexPtr vertex) override;
 
-  bool user_recursion(VertexPtr vertex) {
+  bool user_recursion(VertexPtr vertex) override {
     return vertex->type() == op_fork;
   }
 

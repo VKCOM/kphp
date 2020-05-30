@@ -2,7 +2,7 @@
 
 #include "compiler/function-pass.h"
 
-class GenTreePostprocessPass : public FunctionPassBase {
+class GenTreePostprocessPass final : public FunctionPassBase {
   struct builtin_fun {
     Operation op;
     int args;
@@ -12,6 +12,9 @@ class GenTreePostprocessPass : public FunctionPassBase {
   builtin_fun get_builtin_function(const std::string &name);
 
 public:
-  VertexPtr on_enter_vertex(VertexPtr root);
-  VertexPtr on_exit_vertex(VertexPtr root);
+  string get_description() override {
+    return "Gen tree postprocess";
+  }
+  VertexPtr on_enter_vertex(VertexPtr root) override;
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 };

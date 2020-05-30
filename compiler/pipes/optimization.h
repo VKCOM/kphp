@@ -3,7 +3,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/function-pass.h"
 
-class OptimizationPass : public FunctionPassBase {
+class OptimizationPass final : public FunctionPassBase {
 private:
   VertexPtr optimize_set_push_back(VertexAdaptor<op_set> set_op);
   void collect_concat(VertexPtr root, vector<VertexPtr> *collected);
@@ -17,13 +17,13 @@ private:
   VertexPtr remove_extra_conversions(VertexPtr root);
 
 public:
-  string get_description() {
+  string get_description() override {
     return "Optimization";
   }
 
-  bool check_function(FunctionPtr function);
-  VertexPtr on_enter_vertex(VertexPtr root);
-  VertexPtr on_exit_vertex(VertexPtr root);
+  bool check_function(FunctionPtr function) override;
+  VertexPtr on_enter_vertex(VertexPtr root) override;
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 
-  bool user_recursion(VertexPtr root);
+  bool user_recursion(VertexPtr root) override;
 };

@@ -4,7 +4,7 @@
 #include "compiler/function-pass.h"
 
 /*** Replace constant expressions with const variables ***/
-class CollectConstVarsPass : public FunctionPassBase {
+class CollectConstVarsPass final : public FunctionPassBase {
 private:
   int in_param_list_{0};
   int const_array_depth_{0};
@@ -14,14 +14,14 @@ private:
   VertexPtr create_const_variable(VertexPtr root, Location loc);
 
 public:
-  string get_description() {
+  string get_description() override {
     return "Collect constants";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root);
+  VertexPtr on_enter_vertex(VertexPtr root) override;
 
-  VertexPtr on_exit_vertex(VertexPtr root);
+  VertexPtr on_exit_vertex(VertexPtr root) override;
 
-  bool user_recursion(VertexPtr v);
+  bool user_recursion(VertexPtr v) override;
 
 };

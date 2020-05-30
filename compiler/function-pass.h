@@ -19,19 +19,16 @@ public:
 
   using ExecuteType = FunctionPtr;
 
-  virtual ~FunctionPassBase() {
-  }
+  virtual ~FunctionPassBase() = default;
 
-  virtual std::string get_description() {
-    return "unknown function pass";
-  }
+  virtual std::string get_description() = 0;
 
   virtual bool check_function(FunctionPtr /*function*/) {
     return true;
   }
 
 
-  bool on_start(FunctionPtr function) {
+  virtual bool on_start(FunctionPtr function) {
     if (!check_function(function)) {
       return false;
     }
@@ -41,17 +38,17 @@ public:
     return true;
   }
 
-  std::nullptr_t on_finish() { return nullptr; }
+  virtual void on_finish() {  }
 
-  VertexPtr on_enter_vertex(VertexPtr vertex) {
+  virtual VertexPtr on_enter_vertex(VertexPtr vertex) {
     return vertex;
   }
 
-  bool user_recursion(VertexPtr vertex __attribute__((unused))) {
+  virtual bool user_recursion(VertexPtr vertex __attribute__((unused))) {
     return false;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr vertex) {
+  virtual VertexPtr on_exit_vertex(VertexPtr vertex) {
     return vertex;
   }
 };
@@ -80,29 +77,42 @@ void run_function_pass(VertexAdaptor<Op> &vertex, FunctionPassT *pass) {
 
 template<typename FunctionPassT>
 class FunctionPassTraits {
+  struct get_data_helper {
+    template<typename T> static decltype(std::declval<T>().get_data()) Test(nullptr_t);
+    template<typename T> static nullptr_t Test(...);
+  };
 public:
-  using OnFinishReturnT = typename vk::function_traits<decltype(&FunctionPassT::on_finish)>::ResultType;
-  using IsNullPtr = std::is_same<OnFinishReturnT, std::nullptr_t>;
+  using GetDataReturnT = decltype(get_data_helper::template Test<FunctionPassT>(nullptr));
+  using IsNullPtr = std::is_same<GetDataReturnT, std::nullptr_t>;
   using ExecuteType = typename FunctionPassT::ExecuteType;
   using OutType = typename std::conditional<
-    IsNullPtr::value,
+    IsNullPtr{},
     ExecuteType,
-    std::pair<ExecuteType, OnFinishReturnT>
+    std::pair<ExecuteType, GetDataReturnT>
     >::type;
-  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret) {
-    return create_out_type(std::forward<ExecuteType>(function), std::forward<OnFinishReturnT>(ret), IsNullPtr{});
+  static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&ret) {
+    return create_out_type(std::move(function), std::move(ret), IsNullPtr{});
   }
   static FunctionPtr get_function(const ExecuteType &f) {
     return get_function_impl(f);
   }
+  static auto get_data(FunctionPassT &f) {
+    return get_data_impl(f, IsNullPtr{});
+  }
   static_assert(IsNullPtr::value || std::is_same<ExecuteType, FunctionPtr>::value,
     "Can't have nontrivial both on_finish return type and execute type");
 private:
-  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&, std::true_type) {
-    return std::forward<ExecuteType>(function);
+  static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&, std::true_type) {
+    return std::move(function);
   }
-  static OutType create_out_type(ExecuteType &&function, OnFinishReturnT &&ret, std::false_type) {
-    return {std::forward<ExecuteType>(function), std::forward<OnFinishReturnT>(ret)};
+  static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&ret, std::false_type) {
+    return {std::move(function), std::move(ret)};
+  }
+  static nullptr_t get_data_impl(FunctionPassT &, std::true_type) {
+    return nullptr;
+  }
+  static auto get_data_impl(FunctionPassT &f, std::false_type) {
+    return f.get_data();
   }
 
   template<typename T>
@@ -113,14 +123,15 @@ private:
 };
 
 template<class FunctionPassT>
-typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT run_function_pass(FunctionPtr function, FunctionPassT *pass) {
+typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(FunctionPtr function, FunctionPassT *pass) {
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
   if (!pass->on_start(function)) {
-    return typename FunctionPassTraits<FunctionPassT>::OnFinishReturnT();
+    return {};
   }
   run_function_pass(function->root, pass);
-  return pass->on_finish();
+  pass->on_finish();
+  return FunctionPassTraits<FunctionPassT>::get_data(*pass);
 }
 
 

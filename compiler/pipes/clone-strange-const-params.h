@@ -3,9 +3,11 @@
 #include "compiler/function-pass.h"
 #include "compiler/pipes/function-and-cfg.h"
 
-class CloneStrangeConstParams : public FunctionPassBase {
+class CloneStrangeConstParams final : public FunctionPassBase {
 public:
   using ExecuteType = FunctionAndCFG;
-
-  VertexPtr on_enter_vertex(VertexPtr root);
+  string get_description() override {
+    return "Clone strange const params";
+  }
+  VertexPtr on_enter_vertex(VertexPtr root) override;
 };
