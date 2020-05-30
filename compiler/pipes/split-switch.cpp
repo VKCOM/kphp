@@ -70,7 +70,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->type == FunctionData::func_global;
+    return function->type == FunctionData::func_global;
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) {

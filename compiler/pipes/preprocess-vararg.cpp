@@ -79,5 +79,5 @@ VertexPtr PreprocessVarargPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 bool PreprocessVarargPass::check_function(FunctionPtr function) {
-  return function->is_vararg && default_check_function(function);
+  return function->is_vararg;
 }

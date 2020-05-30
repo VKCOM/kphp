@@ -26,12 +26,8 @@ public:
     return "unknown function pass";
   }
 
-  bool default_check_function(FunctionPtr function) {
-    return function && function->root;
-  }
-
-  virtual bool check_function(FunctionPtr function) {
-    return default_check_function(function);
+  virtual bool check_function(FunctionPtr /*function*/) {
+    return true;
   }
 
 

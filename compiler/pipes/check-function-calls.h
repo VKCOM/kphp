@@ -10,10 +10,6 @@ public:
     return "Check function calls";
   }
 
-  bool check_function(FunctionPtr function) {
-    return default_check_function(function) && function->root->type() == op_function;
-  }
-
   VertexPtr on_enter_vertex(VertexPtr v);
   VertexPtr on_exit_vertex(VertexPtr v);
 };

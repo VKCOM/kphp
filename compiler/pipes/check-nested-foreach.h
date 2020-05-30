@@ -14,7 +14,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) {
-    return default_check_function(function) && !function->is_extern();
+    return !function->is_extern();
   }
 
 

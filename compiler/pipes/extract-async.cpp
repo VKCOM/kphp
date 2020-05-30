@@ -3,7 +3,7 @@
 #include <atomic>
 
 bool ExtractAsyncPass::check_function(FunctionPtr function) {
-  return default_check_function(function) && !function->is_extern() && function->is_resumable;
+  return !function->is_extern() && function->is_resumable;
 }
 
 VertexPtr ExtractAsyncPass::on_exit_vertex(VertexPtr vertex) {

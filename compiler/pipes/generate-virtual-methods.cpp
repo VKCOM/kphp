@@ -23,7 +23,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) override {
-    return default_check_function(function) && !function->is_extern();
+    return !function->is_extern();
   }
 
   /**

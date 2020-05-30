@@ -30,7 +30,9 @@ public:
     return "Calc function depencencies";
   }
 
-  bool check_function(FunctionPtr function);
+  bool check_function(FunctionPtr function) {
+    return !function->is_extern();
+  }
 
   VertexPtr on_enter_vertex(VertexPtr vertex);
   VertexPtr on_exit_vertex(VertexPtr vertex);

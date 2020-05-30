@@ -23,7 +23,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) override {
-    return default_check_function(function) && !function->is_extern() && !function->is_template;
+    return !function->is_extern() && !function->is_template;
   }
 
   VertexPtr on_exit_vertex(VertexPtr root) {

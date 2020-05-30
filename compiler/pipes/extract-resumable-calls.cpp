@@ -76,5 +76,5 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
 }
 
 bool ExtractResumableCallsPass::check_function(FunctionPtr function) {
-  return default_check_function(function) && !function->is_extern() && function->is_resumable;
+  return !function->is_extern() && function->is_resumable;
 }

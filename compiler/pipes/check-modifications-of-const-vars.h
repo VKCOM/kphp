@@ -8,12 +8,6 @@ public:
     return "Check modifications of const fields";
   }
 
-  bool check_function(FunctionPtr function) final {
-    return default_check_function(function) &&
-           function->root->type() == op_function &&
-           function->type != FunctionData::func_class_holder;
-  }
-
   VertexPtr on_enter_vertex(VertexPtr v);
 
   bool user_recursion(VertexPtr) {

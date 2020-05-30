@@ -14,10 +14,6 @@ public:
     return "Process assignments to list";
   }
 
-  bool check_function(FunctionPtr function) final {
-    return default_check_function(function) && !function->is_extern();
-  }
-
   VertexPtr on_exit_vertex(VertexPtr root);
 
 private:

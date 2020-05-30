@@ -9,10 +9,5 @@ public:
     return "Calc val ref";
   }
 
-  bool check_function(FunctionPtr function) {
-    return default_check_function(function) && !function->is_extern();
-  }
-
-
   VertexPtr on_enter_vertex(VertexPtr v);
 };

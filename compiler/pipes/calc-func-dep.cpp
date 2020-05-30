@@ -102,8 +102,3 @@ DepData CalcFuncDepPass::on_finish() {
   my_unique(&data.used_global_vars);
   return std::move(data);
 }
-
-bool CalcFuncDepPass::check_function(FunctionPtr function) {
-  return default_check_function(function) && !function->is_extern();
-}
-
