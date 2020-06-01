@@ -85,6 +85,9 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
   if (php_warning_level == 0 || php_disable_warnings) {
     return;
   }
+
+  const auto malloc_replacer_rollback = temporary_rollback_malloc_replacement();
+
   static const int BUF_SIZE = 1000;
   static char buf[BUF_SIZE];
   static const int warnings_time_period = 300;
