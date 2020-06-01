@@ -38,6 +38,7 @@ private:
   std::atomic<std::uint64_t> total_functions_{0u};
   std::atomic<std::uint64_t> total_throwing_functions_{0u};
   std::atomic<std::uint64_t> total_resumable_functions_{0u};
+  std::atomic<std::uint64_t> total_inline_functions_{0u};
 
   std::atomic<std::uint64_t> memory_rss_{0};
   std::atomic<std::uint64_t> memory_rss_peak_{0};

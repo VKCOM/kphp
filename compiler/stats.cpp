@@ -40,6 +40,9 @@ void Stats::on_function_processed(FunctionPtr function) {
   if (function->is_resumable) {
     ++total_resumable_functions_;
   }
+  if (function->is_inline) {
+    ++total_inline_functions_;
+  }
 }
 
 void Stats::update_memory_stats() {
