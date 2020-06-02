@@ -28,10 +28,16 @@ struct block_t {
 
 class ZAllocatorRaw {
 private:
-  char *buf;
-  size_t left;
-  block_t *free_blocks[MAX_BLOCK_SIZE >> 3];
+  char *buf{nullptr};
+  size_t left{0};
+  block_t *free_blocks[MAX_BLOCK_SIZE >> 3]{nullptr};
+  size_t memory_used{0};
+
 public:
+  size_t get_memory_used() const noexcept {
+    return memory_used;
+  }
+
   block_t *to_block(void *ptr) {
     return container_of(ptr, block_t, data);
   }
@@ -62,10 +68,12 @@ public:
       }
     }
     res->size = size;
+    memory_used += res->size;
     return res;
   }
 
   void block_free(block_t *block) {
+    memory_used -= block->size;
     if (block->size >= MAX_BLOCK_SIZE) {
       __libc_free(block);
     } else {
@@ -135,5 +143,15 @@ void free(void *ptr) {
   return zallocator->free(ptr);
 }
 }
-#endif
 
+size_t get_thread_memory_used() {
+  return zallocator->get_memory_used();
+}
+
+#else
+
+size_t get_thread_memory_used() {
+  return 0;
+}
+
+#endif

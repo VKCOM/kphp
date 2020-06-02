@@ -1,78 +1,79 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <list>
 #include <string>
 #include <vector>
 
-#include "common/cycleclock.h"
+#include "common/mixin/not_copyable.h"
 
 #include "compiler/threading/tls.h"
 
-#define TACT_SPEED (1e-6 / 2266.0)
+size_t get_thread_memory_used();
 
 class ProfilerRaw {
 private:
-  long long count;
-  long long ticks;
-  size_t memory;
-  int flag;
+  long long count{0};
+  std::chrono::nanoseconds working_time_{std::chrono::nanoseconds::zero()};
+  std::chrono::nanoseconds min_time_{std::chrono::nanoseconds::max()};
+  std::chrono::nanoseconds max_time_{std::chrono::nanoseconds::min()};
+  int64_t memory_allocated_{0};
+  int started_{0};
+
 public:
   std::string name;
   int print_id;
 
-  explicit ProfilerRaw(std::string name, int print_id) :
-    count(0),
-    ticks(0),
-    memory(0),
-    flag(0),
+  ProfilerRaw(std::string name, int print_id) :
     name(std::move(name)),
     print_id(print_id) {
 
   }
 
-  void alloc_memory(size_t size) {
-    count++;
-    memory += size;
-  }
-
-  size_t get_memory() const {
-    return memory;
+  int64_t get_memory_allocated() const {
+    return memory_allocated_;
   }
 
   void start() {
-    if (flag == 0) {
-      ticks -= cycleclock_now();
+    if (started_++ == 0) {
+      const auto now = std::chrono::steady_clock::now().time_since_epoch();
+      working_time_ -= now;
+      min_time_ = std::min(min_time_, now);
+      memory_allocated_ -= get_thread_memory_used();
       count++;
     }
-    flag++;
   }
 
   void finish() {
-    flag--;
-    if (flag == 0) {
-      ticks += cycleclock_now();
+    if (--started_ == 0) {
+      const auto now = std::chrono::steady_clock::now().time_since_epoch();
+      working_time_ += now;
+      max_time_ = std::max(now, max_time_);
+      memory_allocated_ += get_thread_memory_used();
     }
   }
 
-  long long get_ticks() const {
-    return ticks;
+  std::chrono::nanoseconds get_working_time() const noexcept {
+    return working_time_;
+  }
+
+  std::chrono::nanoseconds get_duration() const noexcept {
+    return max_time_ - min_time_;
   }
 
   long long get_count() const {
     return count;
   }
 
-  double get_time() const {
-    return get_ticks() * TACT_SPEED;
-  }
-
   ProfilerRaw& operator+=(const ProfilerRaw& other) {
     assert(name == other.name);
     count += other.count;
-    ticks += other.ticks;
-    memory += other.memory;
+    working_time_ += other.working_time_;
+    min_time_ = std::min(min_time_, other.min_time_);
+    max_time_ = std::max(max_time_, other.max_time_);
+    memory_allocated_ += other.memory_allocated_;
     print_id = std::min(print_id, other.print_id);
     return *this;
   }
@@ -86,25 +87,19 @@ void profiler_print_all(const std::vector<ProfilerRaw> &all);
 std::string demangle(const char *name);
 
 
-class CachedProfiler {
-  TLS<ProfilerRaw*> raws;
+class CachedProfiler : vk::not_copyable {
+  TLS<ProfilerRaw *> raws;
   std::string name;
+
 public:
+  explicit CachedProfiler(std::string name) :
+    name(std::move(name)) {}
 
-
-  explicit CachedProfiler(const char *name) : name(name) {}
-  explicit CachedProfiler(std::string name) : name(std::move(name)) {}
-  CachedProfiler(const CachedProfiler&) = delete;
-  CachedProfiler(CachedProfiler&&) = delete;
-  CachedProfiler& operator=(const CachedProfiler&) = delete;
-  CachedProfiler& operator=(CachedProfiler&&) = delete;
-  ~CachedProfiler() = default;
-
-  ProfilerRaw& operator*() {
+  ProfilerRaw &operator*() {
     return *operator->();
   }
 
-  ProfilerRaw* operator->() {
+  ProfilerRaw *operator->() {
     auto raw = *raws;
     if (raw == nullptr) {
       *raws = raw = &get_profiler(name);
@@ -113,7 +108,7 @@ public:
   }
 };
 
-class AutoProfiler {
+class AutoProfiler : vk::not_copyable {
 private:
   ProfilerRaw &prof;
 public:
@@ -125,10 +120,5 @@ public:
   ~AutoProfiler() {
     prof.finish();
   }
-
-  AutoProfiler(const AutoProfiler &) = delete;
-  AutoProfiler(AutoProfiler &&) = delete;
-  AutoProfiler& operator=(const AutoProfiler&) = delete;
-  AutoProfiler& operator=(AutoProfiler&&) = delete;
 };
 

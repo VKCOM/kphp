@@ -84,10 +84,10 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "compilation.object_out_size: " << object_out_size << std::endl;
   out << block_sep;
   for (const auto &prof : profiler_stats) {
-    if (prof.get_count() > 0 && prof.get_ticks() > 0) {
+    if (prof.get_count() > 0 && prof.get_working_time().count() > 0) {
       std::string name = prof.name;
       std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
-      out << "pipes." << name << ".total_time: " << prof.get_time() << std::endl;
+      out << "pipes." << name << ".total_time: " << std::chrono::duration<double>(prof.get_working_time()).count() << std::endl;
       out << "pipes." << name << ".passed_functions: " << prof.get_count() << std::endl;
     }
   }

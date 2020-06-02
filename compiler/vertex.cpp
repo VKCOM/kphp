@@ -11,13 +11,3 @@ VertexPtr clone_vertex(VertexPtr from) {
   }
   return VertexPtr();
 }
-
-ProfilerRaw &get_vertex_inner_prof() {
-  static CachedProfiler cache{"vertex_inner"};
-  return *cache;
-}
-
-ProfilerRaw &get_vertex_inner_data_prof() {
-  static CachedProfiler cache{"vertex_inner_data"};
-  return *cache;
-}

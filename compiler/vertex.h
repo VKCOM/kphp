@@ -6,12 +6,6 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-size_t vertex_total_mem_used __attribute__ ((weak));
-
-ProfilerRaw& get_vertex_inner_prof();
-
-ProfilerRaw& get_vertex_inner_data_prof();
-
 inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
   return a->id == b->id;
 }
@@ -40,8 +34,6 @@ template<Operation Op>
 vertex_inner<Op> *raw_create_vertex_inner(int args_n) {
   size_t size = vertex_inner_size<Op>(args_n);
   size_t shift = vertex_inner_shift<Op>(args_n);
-  get_vertex_inner_prof().alloc_memory(size);
-  get_vertex_inner_data_prof().alloc_memory(size - shift);
 
   auto ptr = reinterpret_cast<vertex_inner<Op> *>((char *)malloc(size) + shift);
   new(ptr) vertex_inner<Op>();
@@ -54,8 +46,6 @@ template<Operation Op>
 vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
   size_t size = vertex_inner_size<Op>((int)from.size());
   size_t shift = vertex_inner_shift<Op>((int)from.size());
-  get_vertex_inner_prof().alloc_memory(size);
-  get_vertex_inner_data_prof().alloc_memory(size - shift);
 
   auto ptr = reinterpret_cast<vertex_inner<Op> *>((char *)malloc(size) + shift);
   new(ptr) vertex_inner<Op>(from);

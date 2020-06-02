@@ -270,7 +270,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CheckModificationsOfConstVars>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
-    >> SyncNode{}
+    >> SyncC<CFGBeginSync>{}
     >> PassC<CloneStrangeConstParams>{}
     >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
