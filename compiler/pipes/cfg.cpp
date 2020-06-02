@@ -1219,25 +1219,25 @@ public:
       if (conversions[v] == 0) {
         kphp_warning(fmt_format("Unreachable code: variable type conditions creates contradiction for variable {}", var->get_string()));
       } else if (conversions[v] == ifi_is_integer) {
-        return VertexAdaptor<op_conv_int>::create(v);
+        return VertexAdaptor<op_conv_int>::create(v).set_rl_type(val_r);
       } else if (conversions[v] == ifi_is_string) {
-        return VertexAdaptor<op_conv_string>::create(v);
+        return VertexAdaptor<op_conv_string>::create(v).set_rl_type(val_r);
       } else if (conversions[v] == ifi_is_array) {
-        return VertexAdaptor<op_conv_array>::create(v);
+        return VertexAdaptor<op_conv_array>::create(v).set_rl_type(val_r);
       } else if (conversions[v] == (ifi_is_bool|ifi_is_false) || conversions[v] == ifi_is_bool) {
-        return VertexAdaptor<op_conv_bool>::create(v);
+        return VertexAdaptor<op_conv_bool>::create(v).set_rl_type(val_r);
       } else if (conversions[v] == ifi_is_float) {
-        return VertexAdaptor<op_conv_float>::create(v);
+        return VertexAdaptor<op_conv_float>::create(v).set_rl_type(val_r);
       } else if (conversions[v] == ifi_is_null) {
-        return VertexAdaptor<op_null>::create();
+        return VertexAdaptor<op_null>::create().set_rl_type(val_r);
       } else if (conversions[v] == ifi_is_false) {
-        return VertexAdaptor<op_false>::create();
+        return VertexAdaptor<op_false>::create().set_rl_type(val_r);
       } else if ((conversions[v] & (ifi_is_false|ifi_is_null)) == 0) {
-        return VertexAdaptor<op_conv_drop_null>::create(VertexAdaptor<op_conv_drop_false>::create(v));
+        return VertexAdaptor<op_conv_drop_null>::create(VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r)).set_rl_type(val_r);
       } else if ((conversions[v] & ifi_is_false) == 0) {
-        return VertexAdaptor<op_conv_drop_false>::create(v);
+        return VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r);
       } else if ((conversions[v] & ifi_is_null) == 0) {
-        return VertexAdaptor<op_conv_drop_null>::create(v);
+        return VertexAdaptor<op_conv_drop_null>::create(v).set_rl_type(val_r);
       }
     }
     return v;

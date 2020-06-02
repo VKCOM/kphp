@@ -479,7 +479,7 @@ bool FinalCheckPass::user_recursion(VertexPtr v) {
     return true;
   }
 
-  if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index)) {
+  if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index, op_conv_drop_false, op_conv_drop_null)) {
     if (v->rl_type == val_r) {
       const TypeData *type = tinf::get_type(v);
       if (type->get_real_ptype() == tp_Unknown) {
