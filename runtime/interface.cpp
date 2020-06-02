@@ -255,7 +255,7 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
   for (int i = (int)(p - str + 1); i < str_len; i++) {
     if ((0 <= str[i] && str[i] <= 31) || str[i] == 127) {
       if (i + 2 < str_len && str[i] == '\r' && str[i + 1] == '\n' && (str[i + 2] == ' ' || str[i + 2] == '\t')) {
-        i += 2;
+        php_warning("Multi-line header \"%s\": to prevent header injection, support for multi-line headers will be removed soon", name.c_str());        i += 2;
         continue;
       }
 
