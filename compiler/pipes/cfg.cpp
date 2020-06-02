@@ -1233,7 +1233,7 @@ public:
       } else if (conversions[v] == ifi_is_false) {
         return VertexAdaptor<op_false>::create();
       } else if ((conversions[v] & (ifi_is_false|ifi_is_null)) == 0) {
-        return VertexAdaptor<op_conv_drop_optional>::create(v);
+        return VertexAdaptor<op_conv_drop_null>::create(VertexAdaptor<op_conv_drop_false>::create(v));
       } else if ((conversions[v] & ifi_is_false) == 0) {
         return VertexAdaptor<op_conv_drop_false>::create(v);
       } else if ((conversions[v] & ifi_is_null) == 0) {

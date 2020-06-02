@@ -55,6 +55,10 @@ public:
     return value_state_ == OptionalState::null_value;
   }
 
+  bool is_false() const noexcept {
+    return value_state_ == OptionalState::false_value;
+  }
+
   OptionalState value_state() const noexcept {
     return value_state_;
   }

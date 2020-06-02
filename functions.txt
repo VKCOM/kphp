@@ -903,7 +903,11 @@ function get_fork_stat($fork :<=: future<Any>) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 
-/** conversions **/
+/**
+ * conversions
+ * they should be there to work in array_map and similar
+ * as function calls they are replaced by builtins anyway
+ **/
 function boolval ($v ::: Any) ::: bool;
 function intval ($v ::: Any) ::: int;
 function floatval ($v ::: Any) ::: float;
@@ -912,8 +916,6 @@ function uintval ($v ::: Any) ::: UInt;
 function longval ($v ::: Any) ::: Long;
 function ulongval ($v ::: Any) ::: ULong;
 function arrayval ($v ::: array) ::: ^1;
-#function objectval ($v ::: Any) ::: object;
-function drop_optional ($v ::: array) ::: DropFalse< DropNull<^1> >;
 
 /** files **/
 define('STDIN', 'php://stdin');

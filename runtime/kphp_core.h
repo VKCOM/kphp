@@ -3,12 +3,13 @@
 #include <tuple>
 #include <utility>
 
+#include "common/algorithms/find.h"
+#include "common/type_traits/list_of_types.h"
+
 #include "runtime/allocator.h"
 #include "runtime/include.h"
 #include "runtime/kphp_type_traits.h"
 #include "runtime/profiler.h"
-#include "common/algorithms/find.h"
-#include "common/type_traits/list_of_types.h"
 
 // order of includes below matters, be careful
 
@@ -1068,7 +1069,7 @@ bool f$is_bool(const T &) {
 
 template<class T>
 inline bool f$is_bool(const Optional<T> &v) {
-  return v.has_value() ? f$is_bool(v.val()) : v.value_state() == OptionalState::false_value;
+  return v.has_value() ? f$is_bool(v.val()) : v.is_false();
 }
 
 bool f$is_bool(const var &v) {
@@ -1536,6 +1537,22 @@ void unset(class_instance<T> &x) {
 
 void unset(var &x) {
   x = {};
+}
+
+template<typename T>
+inline decltype(auto) check_not_null(T&& val) {
+  if (f$is_null(val)) {
+    php_warning("not_null is called on null");
+  }
+  return std::forward<T>(val);
+}
+
+template<typename T>
+inline decltype(auto) check_not_false(T&& val) {
+  if (f$is_bool(val) && !f$boolval(val)) {
+    php_warning("not_false is called on false");
+  }
+  return std::forward<T>(val);
 }
 
 template<typename T>

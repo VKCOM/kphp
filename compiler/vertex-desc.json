@@ -1490,7 +1490,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "conv_op",
-      "str": ""
+      "str": "check_not_false"
     }
   },
   {
@@ -1500,17 +1500,7 @@
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "conv_op",
-      "str": ""
-    }
-  },
-  {
-    "name": "op_conv_drop_optional",
-    "base_name": "meta_op_unary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "conv_op",
-      "str": "f$drop_optional"
+      "str": "check_not_null"
     }
   },
   {

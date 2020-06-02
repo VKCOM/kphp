@@ -338,15 +338,11 @@ function msgpack_deserialize_safe(string $packed_str) {
   return $result;
 }
 
-function drop_false($x) {
+function not_false($x) {
   return $x;
 }
 
-function drop_null($x) {
-  return $x;
-}
-
-function drop_optional($x) {
+function not_null($x) {
   return $x;
 }
 

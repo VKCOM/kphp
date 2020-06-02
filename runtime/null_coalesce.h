@@ -45,7 +45,7 @@ null_coalesce(const Optional<ValueType> &value, const FallbackType &fallback) no
   using result_can_be_false = vk::is_type_in_list<ReturnType, bool, var>;
   using false_cast_immposible = std::integral_constant<bool, std::is_same<ValueType, bool>{} && !result_can_be_false{}>;
 
-  php_assert((result_can_be_false{} || value.value_state() != OptionalState::false_value));
+  php_assert((result_can_be_false{} || !value.is_false()));
   return impl_::null_coalesce_resolve_or_false<ReturnType>(false_cast_immposible{}, value, fallback);
 }
 

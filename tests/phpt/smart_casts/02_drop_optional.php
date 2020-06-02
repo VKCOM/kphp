@@ -28,13 +28,13 @@ function g($x) {
   return $x;
 }
 
-f(drop_false(1));
-f(drop_null(1));
-f(drop_optional(1));
+f(not_false(1));
+f(not_null(1));
+f(not_false(not_null(1)));
 
-f(drop_false(int_or_false()));
-f(drop_null(int_or_null()));
-f(drop_optional(int_or_false()));
-f(drop_optional(int_or_null()));
+f(not_false(int_or_false()));
+f(not_null(int_or_null()));
+f(not_false(not_null(int_or_false())));
+f(not_false(not_null(int_or_null())));
 
-g(drop_null(int_or_null_or_false()));
+g(not_null(int_or_null_or_false()));

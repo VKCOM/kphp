@@ -230,9 +230,7 @@ function test_conv_operations_optional_false($hint, $x) {
   echo "$hint conv float: "; var_dump((float)$x);
   echo "$hint conv str: "; var_dump((string)$x);
   // TODO KPHP-530
-  if ($x) {
-    echo "$hint conv array: "; var_dump((array)$x);
-  }
+  //  echo "$hint conv array: "; var_dump((array)$x);
 }
 
 test_size_operations_optional_array("test_size_operations_optional_array null", null);

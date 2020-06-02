@@ -70,9 +70,8 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
     {"uintval",       {op_conv_uint,           1}},
     {"longval",       {op_conv_long,           1}},
     {"ulongval",      {op_conv_ulong,          1}},
-    {"drop_false",    {op_conv_drop_false,     1}},
-    {"drop_null",     {op_conv_drop_null,      1}},
-    {"drop_optional", {op_conv_drop_optional,  1}},
+    {"not_false",     {op_conv_drop_false,     1}},
+    {"not_null",      {op_conv_drop_null,      1}},
     {"fork",          {op_fork,                1}},
     {"pow",           {op_pow,                 2}}
   };

@@ -208,7 +208,7 @@ inline array<T> f$arrayval(Optional<T> &&val) {
 
 template<class T>
 inline array<T> f$arrayval(const Optional<array<T>> &val) {
-  if (val.value_state() == OptionalState::false_value) {
+  if (val.is_false()) {
     return impl_::false_cast_to_array<T>();
   }
   return val.val();
@@ -216,27 +216,8 @@ inline array<T> f$arrayval(const Optional<array<T>> &val) {
 
 template<class T>
 inline array<T> f$arrayval(Optional<array<T>> &&val) {
-  if (val.value_state() == OptionalState::false_value) {
+  if (val.is_false()) {
     return impl_::false_cast_to_array<T>();
   }
   return std::move(val.val());
 }
-
-template<typename T>
-inline T f$drop_optional(const Optional<T>& val) {
-  if (!val.has_value()) {
-    php_warning("drop optional is called on null or false");
-    return {};
-  }
-  return val.val();
-}
-
-template<typename T>
-inline T f$drop_optional(Optional<T>&& val) {
-  if (!val.has_value()) {
-    php_warning("drop optional is called on null or false");
-    return {};
-  }
-  return std::move(val.val());
-}
-

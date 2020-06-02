@@ -132,6 +132,11 @@ void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   } else {
     W << OpInfo::str(root->type()) << " (" << root->expr() << ")";
   }
+  if (vk::any_of_equal(root->type(), op_conv_drop_null, op_conv_drop_false)) {
+    if (tinf::get_type(root->expr())->use_optional() && !tinf::get_type(root)->use_optional()) {
+      W << ".val()";
+    }
+  }
 }
 
 void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {

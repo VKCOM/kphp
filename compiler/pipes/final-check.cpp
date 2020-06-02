@@ -499,7 +499,7 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
     index_depth += "[*]";
   }
 
-  while (vk::any_of_equal(v->type(), op_conv_drop_optional, op_conv_drop_false,op_conv_drop_null)) {
+  while (vk::any_of_equal(v->type(), op_conv_drop_false, op_conv_drop_null)) {
     v = v.try_as<meta_op_unary>()->expr();
   }
 

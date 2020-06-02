@@ -211,16 +211,16 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
         } else if (type_lca(tp->ptype(), tp_var) == tp_var) {
           res = expr;
         }
-      } else if (vk::any_of_equal(root->type(), op_conv_drop_optional, op_conv_drop_false, op_conv_drop_null)) {
+      }
+    }
+    if (root->type() == op_conv_drop_null){
+      if (!tp->can_store_null()) {
         res = expr;
       }
-    } else {
-      if (vk::any_of_equal(root->type(), op_conv_drop_null, op_conv_drop_false)) {
-        if (!tinf::get_type(root)->use_optional()) {
-          res = VertexAdaptor<op_conv_drop_optional>::create(expr);
-        } else {
-          res = expr;
-        }
+    }
+    if (root->type() == op_conv_drop_false){
+      if (!tp->can_store_false()) {
+        res = expr;
       }
     }
     if (res) {
