@@ -326,7 +326,7 @@ bool compiler_execute(KphpEnviroment *env) {
   stage::die_if_global_errors();
   const int verbosity = G->env().get_verbosity();
 
-  if (verbosity > 0) {
+  if (verbosity > 1) {
     bool got_changes = false;
     for (const auto &file: G->get_index().get_files()) {
       if (file->is_changed) {
@@ -339,21 +339,18 @@ bool compiler_execute(KphpEnviroment *env) {
     }
   }
 
-  auto profiler_stats = collect_profiler_stats();
-  if (verbosity > 1) {
-    profiler_print_all(profiler_stats);
-  }
-
   if (G->env().get_use_make()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }
+
   const std::string compilation_metrics_file = G->env().get_compilation_metrics_filename();
   G->finish();
-
+  auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();
   G->stats.total_time = dl_time() - st;
-  if (verbosity > 1) {
+  if (verbosity >= 1) {
+    profiler_print_all(profiler_stats);
     std::cerr << std::endl;
     std::cerr << "Compile stats:" << std::endl;
     G->stats.write_to(std::cerr);

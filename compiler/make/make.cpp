@@ -356,7 +356,7 @@ static std::forward_list<Index> collect_imported_headers() {
 }
 
 void run_make() {
-  AutoProfiler profiler{get_profiler("make")};
+  AutoProfiler profiler{get_profiler("Make Binary")};
   stage::set_name("Make");
   G->del_extra_files();
 

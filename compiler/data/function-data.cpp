@@ -17,7 +17,7 @@
 #include "compiler/vertex.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
-  static CachedProfiler cache("create_function");
+  static CachedProfiler cache("Create Function");
   AutoProfiler prof{*cache};
   FunctionPtr function(new FunctionData());
   root->func_id = function;

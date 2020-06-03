@@ -71,7 +71,7 @@ public:
   }
 };
 
-CachedProfiler TypeInfererTask::type_inferer_profiler{"type_inferring"};
+CachedProfiler TypeInfererTask::type_inferer_profiler{"Type Inferring"};
 
 std::vector<Task *> TypeInferer::get_tasks() {
   std::vector<Task *> res;
