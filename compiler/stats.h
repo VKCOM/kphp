@@ -25,7 +25,7 @@ public:
   std::atomic<std::uint64_t> object_out_size{0u};
   std::atomic<double> total_time{0.0};
 
-  std::vector<ProfilerRaw> profiler_stats;
+  std::unordered_map<std::string, ProfilerRaw> profiler_stats;
 
 private:
   std::atomic<std::uint64_t> local_vars_{0u};

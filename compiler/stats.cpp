@@ -77,18 +77,20 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "functions.total_throwing: " << total_throwing_functions_ << std::endl;
   out << indent << "functions.total_resumable: " << total_resumable_functions_ << std::endl;
   out << block_sep;
-  out << indent << "memory.rss_kb: " << memory_rss_ << std::endl;
-  out << indent << "memory.rss_peak_kb: " << memory_rss_peak_ << std::endl;
+  out << indent << "memory.rss: " << memory_rss_ * 1024 << std::endl;
+  out << indent << "memory.rss_peak: " << memory_rss_peak_ * 1024 << std::endl;
   out << block_sep;
   out << indent << "compilation.total_time: " << total_time << std::endl;
   out << indent << "compilation.object_out_size: " << object_out_size << std::endl;
   out << block_sep;
+  out << std::fixed;
   for (const auto &prof : profiler_stats) {
-    if (prof.get_count() > 0 && prof.get_working_time().count() > 0) {
-      std::string name = prof.name;
-      std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
-      out << "pipes." << name << ".total_time: " << std::chrono::duration<double>(prof.get_working_time()).count() << std::endl;
-      out << "pipes." << name << ".passed_functions: " << prof.get_count() << std::endl;
-    }
+    std::string name = prof.first;
+    std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
+    out << "pipes." << name << ".working_time: " << std::chrono::duration<double>(prof.second.get_working_time()).count() << std::endl;
+    out << "pipes." << name << ".duration: " << std::chrono::duration<double>(prof.second.get_duration()).count() << std::endl;
+    out << "pipes." << name << ".memory_allocated: " << prof.second.get_memory_allocated() << std::endl;
+    out << "pipes." << name << ".calls: " << prof.second.get_calls() << std::endl;
   }
+  out.unsetf(std::ios_base::floatfield);
 }

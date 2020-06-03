@@ -21,7 +21,6 @@ CompilerCore::CompilerCore() :
 }
 
 void CompilerCore::start() {
-  get_profiler("total").start();
   stage::die_if_global_errors();
 }
 
@@ -36,8 +35,6 @@ void CompilerCore::finish() {
 
   delete env_;
   env_ = nullptr;
-
-  get_profiler("total").finish();
 }
 
 void CompilerCore::register_env(KphpEnviroment *env) {
