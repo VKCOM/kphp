@@ -412,7 +412,13 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   auto classes = G->get_classes();
   for (auto c : classes) {
     auto node = ht.at(vk::std_hash(c->name));
-    kphp_error(node->data.done, fmt_format("class `{}` has unresolved dependencies", c->name));
+    if (!node->data.done) {
+      auto is_not_done = [](const ClassData::StrDependence &dep) { return !ht.at(vk::std_hash(dep.class_name))->data.done; };
+      auto str_dep_to_string = [](const ClassData::StrDependence &dep) { return dep.class_name; };
+      kphp_error(false, fmt_format("class `{}` has unresolved dependencies [{}]", c->name,
+        vk::join(vk::filter(is_not_done, c->get_str_dependents()), ", ", str_dep_to_string))
+      );
+    }
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
       auto inheritors = c->get_all_inheritors();
