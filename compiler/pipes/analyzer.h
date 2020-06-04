@@ -12,7 +12,7 @@ public:
     return "Try to detect common errors";
   }
 
-  bool check_function(FunctionPtr function) override {
+  bool check_function(FunctionPtr function) const override {
     return !function->is_extern();
   }
 

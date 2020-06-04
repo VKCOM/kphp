@@ -45,9 +45,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
 }
 
 bool InlineDefinesUsagesPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
+  FunctionPassBase::on_start(function);
 
   if (function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {

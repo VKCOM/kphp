@@ -48,19 +48,17 @@ void check_class(ClassPtr class_id) {
   }
 }
 
+} // namespace
+
+bool CheckTlClasses::check_function(FunctionPtr) const {
+  // TODO it should be better
+  return !G->env().get_tl_schema_file().empty();
 }
 
 bool CheckTlClasses::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
-
-  if (G->env().get_tl_schema_file().empty()) {
-    // TODO it should be better
-    return false;
-  }
+  FunctionPassBase::on_start(function);
   if (function->type == FunctionData::func_class_holder) {
     check_class(function->class_id);
   }
-  return false;
+  return true;
 }

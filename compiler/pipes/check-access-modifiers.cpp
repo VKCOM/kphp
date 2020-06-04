@@ -4,9 +4,7 @@
 #include "compiler/data/class-data.h"
 
 bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
+  FunctionPassBase::on_start(function);
   lambda_class_id = function->get_this_or_topmost_if_lambda()->class_id;
   class_id = function->class_id;
   return true;

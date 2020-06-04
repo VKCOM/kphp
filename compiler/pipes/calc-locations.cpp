@@ -3,10 +3,7 @@
 #include "compiler/data/class-data.h"
 
 bool CalcLocationsPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
-
+  FunctionPassBase::on_start(function);
   if (function->type == FunctionData::func_class_holder) {
     function->class_id->members.for_each([](ClassMemberConstant &constant) {
       stage::set_line(constant.value->location.line);

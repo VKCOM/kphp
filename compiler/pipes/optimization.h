@@ -21,9 +21,12 @@ public:
     return "Optimization";
   }
 
-  bool check_function(FunctionPtr function) override;
+  bool check_function(FunctionPtr function) const override;
+
   VertexPtr on_enter_vertex(VertexPtr root) override;
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
   bool user_recursion(VertexPtr root) override;
+
+  void on_finish() override;
 };

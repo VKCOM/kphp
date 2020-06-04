@@ -14,6 +14,10 @@ public:
     return "Final check";
   }
 
+  bool check_function(FunctionPtr function) const override {
+    return !function->is_extern();
+  }
+
   bool on_start(FunctionPtr function) override;
 
   VertexPtr on_enter_vertex(VertexPtr vertex) override;

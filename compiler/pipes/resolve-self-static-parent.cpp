@@ -10,9 +10,7 @@
 #include "compiler/name-gen.h"
 
 bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
+  FunctionPassBase::on_start(function);
 
   // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
   if (function->type == FunctionData::func_class_holder) {

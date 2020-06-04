@@ -5,10 +5,7 @@
 #include "compiler/data/var-data.h"
 
 bool CalcConstTypePass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
-  }
-
+  FunctionPassBase::on_start(function);
   if (current_function->type == FunctionData::func_class_holder) {
     calc_const_type_of_class_fields(current_function->class_id);
   }

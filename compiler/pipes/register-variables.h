@@ -41,14 +41,12 @@ public:
     return "Register variables";
   }
 
-  bool check_function(FunctionPtr function) override {
+  bool check_function(FunctionPtr function) const override {
     return !function->is_extern();
   }
 
   bool on_start(FunctionPtr function) override {
-    if (!FunctionPassBase::on_start(function)) {
-      return false;
-    }
+    FunctionPassBase::on_start(function);
     global_function_flag = function->type == FunctionData::func_global ||
                            function->type == FunctionData::func_switch;
     return true;

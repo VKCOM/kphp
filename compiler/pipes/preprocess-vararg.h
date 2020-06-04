@@ -13,5 +13,5 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root) override;
 
-  bool check_function(FunctionPtr function) override;
+  bool check_function(FunctionPtr function) const override;
 };

@@ -453,7 +453,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
 }
 
 bool CollectMainEdgesPass::on_start(FunctionPtr function) {
-  kphp_assert(FunctionPassBase::on_start(function));
+  FunctionPassBase::on_start(function);
   if (function->type == FunctionData::func_class_holder) {
     on_class(function->class_id);
   } else {

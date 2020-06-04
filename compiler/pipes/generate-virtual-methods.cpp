@@ -22,7 +22,7 @@ public:
     return "Find lambdas with interface";
   }
 
-  bool check_function(FunctionPtr function) override {
+  bool check_function(FunctionPtr function) const override {
     return !function->is_extern();
   }
 

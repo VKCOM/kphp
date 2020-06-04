@@ -202,9 +202,7 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
 } // namespace
 
 bool FinalCheckPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function) || function->is_extern()) {
-    return false;
-  }
+  FunctionPassBase::on_start(function);
 
   mark_global_vars_for_memory_stats();
 

@@ -115,10 +115,7 @@ public:
   }
 
   bool on_start(FunctionPtr function) override {
-    if (!FunctionPassBase::on_start(function)) {
-      return false;
-    }
-
+    FunctionPassBase::on_start(function);
     if (function->type == FunctionData::func_class_holder) {
       require_all_deps_of_class(function->class_id);
     } else if (function->type == FunctionData::func_local) {

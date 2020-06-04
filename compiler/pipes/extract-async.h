@@ -8,7 +8,7 @@ public:
     return "Extract async";
   }
 
-  bool check_function(FunctionPtr function) override;
+  bool check_function(FunctionPtr function) const override;
 
   VertexPtr on_exit_vertex(VertexPtr vertex) override;
 

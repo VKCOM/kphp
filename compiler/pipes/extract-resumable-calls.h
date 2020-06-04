@@ -13,7 +13,7 @@ public:
     return "Extract easy resumable calls";
   }
 
-  bool check_function(FunctionPtr function) override;
+  bool check_function(FunctionPtr function) const override;
 
   VertexPtr on_enter_vertex(VertexPtr vertex) override;
 

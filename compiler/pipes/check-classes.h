@@ -28,5 +28,5 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root) override;
 
-  bool on_start(FunctionPtr function) override;
+  void on_finish() override;
 };

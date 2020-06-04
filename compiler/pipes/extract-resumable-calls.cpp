@@ -75,6 +75,6 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
   return VertexAdaptor<op_seq>::create(set_op, vertex).set_rl_type(val_none);
 }
 
-bool ExtractResumableCallsPass::check_function(FunctionPtr function) {
+bool ExtractResumableCallsPass::check_function(FunctionPtr function) const {
   return !function->is_extern() && function->is_resumable;
 }

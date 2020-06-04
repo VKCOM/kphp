@@ -25,20 +25,10 @@ VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
-bool CheckClassesPass::on_start(FunctionPtr function) {
-  if (!FunctionPassBase::on_start(function)) {
-    return false;
+void CheckClassesPass::on_finish() {
+  if (current_function->type == FunctionData::func_class_holder) {
+    analyze_class(current_function->class_id);
   }
-
-  if (function->type == FunctionData::func_class_holder) {
-    stage::set_function(function);
-    analyze_class(function->class_id);
-    if (stage::has_error()) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 inline void CheckClassesPass::analyze_class(ClassPtr klass) {

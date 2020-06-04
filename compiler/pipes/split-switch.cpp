@@ -65,7 +65,7 @@ public:
     return "Split switch";
   }
 
-  bool check_function(FunctionPtr function) override {
+  bool check_function(FunctionPtr function) const override {
     return function->type == FunctionData::func_global;
   }
 

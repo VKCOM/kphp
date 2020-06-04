@@ -291,9 +291,13 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
   return false;
 }
 
-bool OptimizationPass::check_function(FunctionPtr function) {
-  if (function->type == FunctionData::func_class_holder) {
-    auto class_id = function->class_id;
+bool OptimizationPass::check_function(FunctionPtr function) const {
+  return !function->is_extern();
+}
+
+void OptimizationPass::on_finish() {
+  if (current_function->type == FunctionData::func_class_holder) {
+    auto class_id = current_function->class_id;
     class_id->members.for_each([](ClassMemberInstanceField &class_field) {
       if (class_field.var->init_val) {
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
@@ -304,6 +308,4 @@ bool OptimizationPass::check_function(FunctionPtr function) {
       }
     });
   }
-
-  return !function->is_extern();
 }

@@ -23,15 +23,11 @@ public:
 
   virtual std::string get_description() = 0;
 
-  virtual bool check_function(FunctionPtr /*function*/) {
+  virtual bool check_function(FunctionPtr /*function*/) const {
     return true;
   }
 
-
   virtual bool on_start(FunctionPtr function) {
-    if (!check_function(function)) {
-      return false;
-    }
     stage::set_name(get_description());
     stage::set_function(function);
     current_function = function;
@@ -124,6 +120,10 @@ private:
 
 template<class FunctionPassT>
 typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(FunctionPtr function, FunctionPassT *pass) {
+  if (!pass->check_function(function)) {
+    return {};
+  }
+
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
   if (!pass->on_start(function)) {

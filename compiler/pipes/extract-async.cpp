@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-bool ExtractAsyncPass::check_function(FunctionPtr function) {
+bool ExtractAsyncPass::check_function(FunctionPtr function) const {
   return !function->is_extern() && function->is_resumable;
 }
 
