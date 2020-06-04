@@ -35,6 +35,7 @@ function test_get_info_options() {
 
   var_dump(curl_getinfo($c, CURLINFO_EFFECTIVE_URL));
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CODE));
+  var_dump(curl_getinfo($c, CURLINFO_RESPONSE_CODE));
   var_dump(curl_getinfo($c, CURLINFO_TOTAL_TIME));
   var_dump(curl_getinfo($c, CURLINFO_NAMELOOKUP_TIME));
   var_dump(curl_getinfo($c, CURLINFO_CONNECT_TIME));
@@ -53,6 +54,24 @@ function test_get_info_options() {
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_DOWNLOAD));
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_UPLOAD));
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_TYPE));
+  var_dump(curl_getinfo($c, CURLINFO_SPEED_DOWNLOAD));
+  var_dump(curl_getinfo($c, CURLINFO_REDIRECT_URL));
+  var_dump(curl_getinfo($c, CURLINFO_PRIMARY_IP));
+  var_dump(curl_getinfo($c, CURLINFO_PRIMARY_PORT));
+  var_dump(curl_getinfo($c, CURLINFO_LOCAL_IP));
+  var_dump(curl_getinfo($c, CURLINFO_LOCAL_PORT));
+  var_dump(curl_getinfo($c, CURLINFO_HTTP_CONNECTCODE));
+  var_dump(curl_getinfo($c, CURLINFO_HTTPAUTH_AVAIL));
+  var_dump(curl_getinfo($c, CURLINFO_PROXYAUTH_AVAIL));
+  var_dump(curl_getinfo($c, CURLINFO_OS_ERRNO));
+  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
+  var_dump(curl_getinfo($c, CURLINFO_FTP_ENTRY_PATH));
+  var_dump(curl_getinfo($c, CURLINFO_APPCONNECT_TIME));
+  var_dump(curl_getinfo($c, CURLINFO_CONDITION_UNMET));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_CLIENT_CSEQ));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_CSEQ_RECV));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_SERVER_CSEQ));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_SESSION_ID));
 
   // bad options
   var_dump(curl_getinfo($c, -10));
