@@ -37,6 +37,18 @@ array<string> f$hash_algos() {
     string("md5", 3));
 }
 
+bool f$hash_equals(const string &known_string, const string &user_string) noexcept {
+  if (known_string.size() != user_string.size()) {
+    return false;
+  }
+  int result = 0;
+  // This is security sensitive code. Do not optimize this for speed
+  for (int i = 0; i != known_string.size(); ++i) {
+    result |= known_string[i] ^ user_string[i];
+  }
+  return !result;
+}
+
 string f$hash(const string &algo, const string &s, bool raw_output) {
   if (!strcmp(algo.c_str(), "sha256")) {
     string res;

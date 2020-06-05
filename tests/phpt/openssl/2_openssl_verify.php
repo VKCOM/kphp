@@ -1,4 +1,4 @@
-@ok openssl
+@ok
 <?php
 
 $certificate = <<<EOF

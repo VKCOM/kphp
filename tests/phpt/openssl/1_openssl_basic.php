@@ -1,4 +1,4 @@
-@ok openssl
+@ok
 <?php
 
 $ads_public_key = <<<EOF

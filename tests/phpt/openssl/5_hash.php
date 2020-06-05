@@ -6,6 +6,7 @@
   }
 #endif
 
+function test_hash_basic() {
   hash_algos();
   $algos = array ("md5", "sha1", "sha256");
 
@@ -41,4 +42,24 @@
   var_dump (md5_file ("/bin/ls", true));
 
   var_dump (dechex (crc32_file ("/bin/ls")));
+}
 
+function test_hash_equals() {
+  var_dump(hash_equals("", ""));
+
+  var_dump(hash_equals("xx", "x"));
+  var_dump(hash_equals("x", "xx"));
+  var_dump(hash_equals("x", "y"));
+  var_dump(hash_equals("hello", "world"));
+  var_dump(hash_equals("1", "12"));
+  var_dump(hash_equals("1234", "2345"));
+
+  var_dump(hash_equals("xx", "xx"));
+  var_dump(hash_equals("xyz", "xyz"));
+  var_dump(hash_equals("hello world", "hello world"));
+  var_dump(hash_equals("12345", "12345"));
+}
+
+
+test_hash_basic();
+test_hash_equals();

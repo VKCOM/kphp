@@ -17,6 +17,8 @@ enum openssl_algo : int {
 
 array<string> f$hash_algos();
 
+bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
+
 string f$hash(const string &algo, const string &s, bool raw_output = false);
 
 string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output = false);

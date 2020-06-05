@@ -1,4 +1,4 @@
-@ok openssl
+@ok
 <?php
 
 function test_openssl_get_cipher_methods($aliases) {
