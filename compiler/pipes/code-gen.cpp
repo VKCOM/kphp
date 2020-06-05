@@ -64,7 +64,7 @@ void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &os) {
 }
 
 size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
-  return 1u + cnt_global_vars / 4096u;
+  return 1u + cnt_global_vars / 1024u;
 }
 
 void CodeGenF::on_finish(DataStream<WriterData> &os) {

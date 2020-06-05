@@ -69,8 +69,8 @@ void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
 
 static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part) {
   std::string file_name = "vars" + std::to_string(part) + ".cpp";
-  W << OpenFile(file_name, "o_vars", false);
-
+  W << OpenFile(file_name, "o_vars_" + std::to_string(part / 100), false);
+ 
   W << ExternInclude("php_functions.h");
 
   std::vector<VarPtr> const_raw_string_vars;
@@ -181,7 +181,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
 VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
   vars_(std::move(vars)),
   parts_cnt_(parts_cnt) {
-  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 128);
+  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 1024);
 }
 
 void VarsCpp::compile(CodeGenerator &W) const {
