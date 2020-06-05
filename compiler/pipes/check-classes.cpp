@@ -86,13 +86,21 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {
     if (auto kphp_serialized_field_str = phpdoc_find_tag_as_string(f.phpdoc_str, php_doc_tag::kphp_serialized_field)) {
-      if (*kphp_serialized_field_str != "none") {
+      if (!vk::string_view(*kphp_serialized_field_str).starts_with("none")) {
         kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
-        auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str);
-        kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
-        kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
-        f.serialization_tag = kphp_serialized_field;
-        used_serialization_tags_for_fields[kphp_serialized_field] = true;
+        try {
+          size_t processed_pos{0};
+          auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str, &processed_pos);
+          if (processed_pos != kphp_serialized_field_str->size() && vk::none_of_equal((*kphp_serialized_field_str)[processed_pos], ' ', '/', '#', '\n')) {
+            throw std::invalid_argument("");
+          }
+          kphp_error_return(0 <= kphp_serialized_field && kphp_serialized_field < max_serialization_tag_value, fmt_format("kphp-serialized-field({}) must be >=0 and < than {}", kphp_serialized_field, max_serialization_tag_value + 0));
+          kphp_error_return(!used_serialization_tags_for_fields[kphp_serialized_field], fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
+          f.serialization_tag = kphp_serialized_field;
+          used_serialization_tags_for_fields[kphp_serialized_field] = true;
+        } catch (std::logic_error &) {
+          kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", *kphp_serialized_field_str));
+        }
       }
     } else {
       kphp_error_return(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", f.local_name()));
