@@ -59,7 +59,6 @@ LambdaGenerator &LambdaGenerator::add_invoke_method(const VertexAdaptor<op_funct
 }
 
 LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
-  std::vector<VertexAdaptor<meta_op_func_param>> conv_uses(uses.begin(), uses.end());
   auto constructor_params = VertexAdaptor<op_func_param_list>::create(uses);
   auto constructor_body = create_seq_saving_captured_vars_to_fields(uses);
   auto constructor = VertexAdaptor<op_function>::create(constructor_params, constructor_body);

@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -115,11 +116,11 @@ struct ClassMemberConstant {
 class ClassMembersContainer {
   ClassPtr klass;
 
-  std::vector<ClassMemberStaticMethod> static_methods;
-  std::vector<ClassMemberInstanceMethod> instance_methods;
-  std::vector<ClassMemberStaticField> static_fields;
-  std::vector<ClassMemberInstanceField> instance_fields;
-  std::vector<ClassMemberConstant> constants;
+  std::list<ClassMemberStaticMethod> static_methods;
+  std::list<ClassMemberInstanceMethod> instance_methods;
+  std::list<ClassMemberStaticField> static_fields;
+  std::list<ClassMemberInstanceField> instance_fields;
+  std::list<ClassMemberConstant> constants;
   std::set<uint64_t> names_hashes;
 
   template<class MemberT>
@@ -131,13 +132,13 @@ class ClassMembersContainer {
 
   // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
   template<class MemberT>
-  std::vector<MemberT> &get_all_of() {
+  std::list<MemberT> &get_all_of() {
     static_assert(sizeof(MemberT) == -1u, "Invalid template MemberT parameter");
     return {};
   }
 
   template<class MemberT>
-  const std::vector<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
+  const std::list<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
 
 public:
   explicit ClassMembersContainer(ClassData *klass) :
@@ -158,8 +159,7 @@ public:
   template<class CallbackT>
   inline void remove_if(CallbackT callbackReturningBool) {
     auto &container = get_all_of<GetMemberT<CallbackT>>();
-    auto end = std::remove_if(container.begin(), container.end(), std::move(callbackReturningBool));
-    container.erase(end, container.end());
+    container.remove_if(std::move(callbackReturningBool));
   }
 
   template<class CallbackT>
@@ -221,12 +221,12 @@ inline vk::string_view get_local_name_from_global_$$(T &&global_name) {
 }
 
 template<>
-inline std::vector<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
+inline std::list<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
 template<>
-inline std::vector<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
+inline std::list<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
 template<>
-inline std::vector<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
+inline std::list<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
 template<>
-inline std::vector<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
+inline std::list<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
 template<>
-inline std::vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return constants; }
+inline std::list<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return constants; }
