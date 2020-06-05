@@ -14,11 +14,13 @@
 #include <string>
 #include <utility>
 
-#include "compiler/data/function-modifiers.h"
-#include "compiler/data/field-modifiers.h"
-#include "compiler/data/data_ptr.h"
-#include "compiler/data/vertex-adaptor.h"
+#include "common/type_traits/constexpr_if.h"
 #include "common/type_traits/function_traits.h"
+
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/field-modifiers.h"
+#include "compiler/data/function-modifiers.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
 class ClassMembersContainer;
@@ -117,7 +119,7 @@ class ClassMembersContainer {
   std::vector<ClassMemberInstanceMethod> instance_methods;
   std::vector<ClassMemberStaticField> static_fields;
   std::vector<ClassMemberInstanceField> instance_fields;
-  std::vector<ClassMemberConstant> contants;
+  std::vector<ClassMemberConstant> constants;
   std::set<uint64_t> names_hashes;
 
   template<class MemberT>
@@ -125,9 +127,7 @@ class ClassMembersContainer {
   bool member_exists(vk::string_view hash_name) const;
 
   template<class CallbackT>
-  struct arg_helper {
-    using MemberT = vk::decay_function_arg_t<CallbackT, 0>;
-  };
+  using GetMemberT = vk::decay_function_arg_t<CallbackT, 0>;
 
   // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
   template<class MemberT>
@@ -145,26 +145,26 @@ public:
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) const {
-    const auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    const auto &container = get_all_of<GetMemberT<CallbackT>>();
     std::for_each(container.cbegin(), container.cend(), std::move(callback));
   }
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) {
-    auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    auto &container = get_all_of<GetMemberT<CallbackT>>();
     std::for_each(container.begin(), container.end(), std::move(callback));
   }
 
   template<class CallbackT>
   inline void remove_if(CallbackT callbackReturningBool) {
-    auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+    auto &container = get_all_of<GetMemberT<CallbackT>>();
     auto end = std::remove_if(container.begin(), container.end(), std::move(callbackReturningBool));
     container.erase(end, container.end());
   }
 
   template<class CallbackT>
-  inline const typename arg_helper<CallbackT>::MemberT *find_member(CallbackT callbackReturningBool) const {
-    const auto &container = get_all_of<typename arg_helper<CallbackT>::MemberT>();
+  inline const GetMemberT<CallbackT> *find_member(CallbackT callbackReturningBool) const {
+    const auto &container = get_all_of<GetMemberT<CallbackT>>();
     auto it = std::find_if(container.cbegin(), container.cend(), std::move(callbackReturningBool));
     return it == container.cend() ? nullptr : &(*it);
   }
@@ -229,4 +229,4 @@ inline std::vector<ClassMemberStaticField> &ClassMembersContainer::get_all_of<Cl
 template<>
 inline std::vector<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
 template<>
-inline std::vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return contants; }
+inline std::vector<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return constants; }
