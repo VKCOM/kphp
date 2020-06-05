@@ -163,7 +163,7 @@ inline array<var> f$arrayval(var &&val) {
   return val.is_array() ? std::move(val.as_array()) : val.to_array();
 }
 
-namespace {
+namespace impl_ {
 
 template<typename T>
 inline std::enable_if_t<vk::is_type_in_list<T, bool, var>{}, array<T>> false_cast_to_array() {
@@ -176,7 +176,7 @@ inline std::enable_if_t<!vk::is_type_in_list<T, bool, var>{}, array<T>> false_ca
   return array<T>{};
 }
 
-} // namespace
+} // namespace impl_
 
 template<class T>
 inline array<T> f$arrayval(const Optional<T> &val) {
@@ -184,7 +184,7 @@ inline array<T> f$arrayval(const Optional<T> &val) {
     case OptionalState::has_value:
       return f$arrayval(val.val());
     case OptionalState::false_value:
-      return false_cast_to_array<T>();
+      return impl_::false_cast_to_array<T>();
     case OptionalState::null_value:
       return array<T>{};
     default:
@@ -198,7 +198,7 @@ inline array<T> f$arrayval(Optional<T> &&val) {
     case OptionalState::has_value:
       return f$arrayval(std::move(val.val()));
     case OptionalState::false_value:
-      return false_cast_to_array<T>();
+      return impl_::false_cast_to_array<T>();
     case OptionalState::null_value:
       return array<T>{};
     default:
@@ -209,7 +209,7 @@ inline array<T> f$arrayval(Optional<T> &&val) {
 template<class T>
 inline array<T> f$arrayval(const Optional<array<T>> &val) {
   if (val.value_state() == OptionalState::false_value) {
-    return false_cast_to_array<T>();
+    return impl_::false_cast_to_array<T>();
   }
   return val.val();
 }
@@ -217,7 +217,7 @@ inline array<T> f$arrayval(const Optional<array<T>> &val) {
 template<class T>
 inline array<T> f$arrayval(Optional<array<T>> &&val) {
   if (val.value_state() == OptionalState::false_value) {
-    return false_cast_to_array<T>();
+    return impl_::false_cast_to_array<T>();
   }
   return std::move(val.val());
 }

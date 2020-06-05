@@ -1641,7 +1641,7 @@ T &var::empty_value() noexcept {
   return value;
 }
 
-namespace {
+namespace impl_ {
 
 template<class MathOperation>
 inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&math_op) {
@@ -1667,22 +1667,22 @@ inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&ma
   }
 }
 
-} // namespace
+} // namespace impl_
 
 inline var operator+(const var &lhs, const var &rhs) {
   if (lhs.is_array() && rhs.is_array()) {
     return lhs.as_array() + rhs.as_array();
   }
 
-  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
 }
 
 inline var operator-(const var &lhs, const var &rhs) {
-  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
 }
 
 inline var operator*(const var &lhs, const var &rhs) {
-  return do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
 }
 
 inline var operator-(const string &lhs) {

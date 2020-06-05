@@ -95,7 +95,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 
 } // namespace dl
 
-namespace {
+namespace impl_ {
 
 inline bool try_as_int_key(const string &string_key, int &int_key) {
   return !string_key.empty()
@@ -1085,7 +1085,7 @@ T &array<T>::operator[](int int_key) {
 template<class T>
 T &array<T>::operator[](const string &string_key) {
   int int_val;
-  if (try_as_int_key(string_key, int_val)) {
+  if (impl_::try_as_int_key(string_key, int_val)) {
     return (*this)[int_val];
   }
 
@@ -1259,7 +1259,7 @@ template<class T>
 template<class ...Args>
 void array<T>::emplace_value(const string &string_key, Args &&... args) noexcept {
   int int_val = 0;
-  if (try_as_int_key(string_key, int_val)) {
+  if (impl_::try_as_int_key(string_key, int_val)) {
     emplace_value(int_val, std::forward<Args>(args)...);
     return;
   }
@@ -1471,7 +1471,7 @@ const T *array<T>::find_value(int int_key) const {
 template<class T>
 const T *array<T>::find_value(const string &string_key) const {
   int int_val = 0;
-  const bool is_key_int = try_as_int_key(string_key, int_val);
+  const bool is_key_int = impl_::try_as_int_key(string_key, int_val);
   if (p->is_vector()) {
     return is_key_int ? p->find_vector_value(int_val) : nullptr;
   }
@@ -1536,7 +1536,7 @@ typename array<T>::iterator array<T>::find_no_mutate(int int_key) noexcept {
 template<class T>
 typename array<T>::iterator array<T>::find_no_mutate(const string &string_key) noexcept {
   int int_key = 0;
-  if (try_as_int_key(string_key, int_key)) {
+  if (impl_::try_as_int_key(string_key, int_key)) {
     return find_no_mutate(int_key);
   }
   if (p->is_vector()) {
@@ -1630,7 +1630,7 @@ void array<T>::unset(int int_key) {
 template<class T>
 void array<T>::unset(const string &string_key) {
   int int_val;
-  if (try_as_int_key(string_key, int_val)) {
+  if (impl_::try_as_int_key(string_key, int_val)) {
     return unset(int_val);
   }
 

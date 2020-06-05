@@ -82,16 +82,16 @@ void dbg_echo(const string &s);
 
 void dbg_echo(const string_buffer &sb);
 
-static inline int f$print(const string& s) {
+inline int f$print(const string& s) {
   print(s);
   return 1;
 }
 
-static inline void f$echo(const string& s) {
+inline void f$echo(const string& s) {
   print(s);
 }
 
-static inline void f$dbg_echo(const string& s) {
+inline void f$dbg_echo(const string& s) {
   dbg_echo(s);
 }
 

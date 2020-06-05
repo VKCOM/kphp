@@ -4,7 +4,7 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-namespace {
+namespace impl_ {
 
 template<class T1, class T2>
 inline bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs);
@@ -16,7 +16,7 @@ inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>
 inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs);
 
-} // namespace
+} // namespace impl_
 
 template<class FunT, class T, class ...Args>
 inline decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args);
@@ -256,7 +256,7 @@ inline bool eq2(const var &lhs, const array<T> &rhs) {
 
 template<class T1, class T2>
 inline bool eq2(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_eq2_impl(lhs, rhs);
+  return impl_::optional_eq2_impl(lhs, rhs);
 }
 template<class T1, class T2>
 inline bool eq2(const T1 &lhs, const Optional<T2> &rhs) {
@@ -265,12 +265,12 @@ inline bool eq2(const T1 &lhs, const Optional<T2> &rhs) {
 
 template<class T1, class T2>
 inline bool eq2(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_eq2_impl(lhs, rhs);
+  return impl_::optional_eq2_impl(lhs, rhs);
 }
 
 template<class T>
 inline bool eq2(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_eq2_impl(lhs, rhs);
+  return impl_::optional_eq2_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
@@ -442,7 +442,7 @@ inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}
 
 template<class T1, class T2>
 inline bool equals(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_equals_impl(lhs, rhs);
+  return impl_::optional_equals_impl(lhs, rhs);
 }
 template<class T1, class T2>
 inline bool equals(const T1 &lhs, const Optional<T2> &rhs) {
@@ -451,12 +451,12 @@ inline bool equals(const T1 &lhs, const Optional<T2> &rhs) {
 
 template<class T1, class T2>
 inline bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_equals_impl(lhs, rhs);
+  return impl_::optional_equals_impl(lhs, rhs);
 }
 
 template<class T>
 inline bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_equals_impl(lhs, rhs);
+  return impl_::optional_equals_impl(lhs, rhs);
 }
 
 template<class T1, class T2>
@@ -483,20 +483,20 @@ inline bool lt(const T1 &lhs, const bool &rhs) {
 
 template<class T1, class T2>
 inline bool lt(const Optional<T1> &lhs, const T2 &rhs) {
-  return optional_lt_impl(lhs, rhs);
+  return impl_::optional_lt_impl(lhs, rhs);
 }
 template<class T1, class T2>
 inline bool lt(const T1 &lhs, const Optional<T2> &rhs) {
-  return optional_lt_impl(lhs, rhs);
+  return impl_::optional_lt_impl(lhs, rhs);
 }
 
 template<class T>
 inline bool lt(const Optional<T> &lhs, const Optional<T> &rhs) {
-  return optional_lt_impl(lhs, rhs);
+  return impl_::optional_lt_impl(lhs, rhs);
 }
 template<class T1, class T2>
 inline bool lt(const Optional<T1> &lhs, const Optional<T2> &rhs) {
-  return optional_lt_impl(lhs, rhs);
+  return impl_::optional_lt_impl(lhs, rhs);
 }
 
 template<class T>
@@ -523,7 +523,7 @@ inline bool geq(const T1 &lhs, const T2 &rhs) {
   return leq(rhs, lhs);
 }
 
-namespace {
+namespace impl_ {
 
 template<class T1, class T2>
 bool optional_eq2_impl(const Optional<T1> &lhs, const T2 &rhs) {
@@ -555,7 +555,7 @@ inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, co
   return call_fun_on_optional_value(lt_reversed_args_lambda, rhs, lhs);
 }
 
-} // namespace
+} // namespace impl_
 
 template<class FunT, class T, class ...Args>
 decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {

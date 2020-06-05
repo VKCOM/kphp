@@ -52,7 +52,7 @@ int f$estimate_memory_usage(const Optional<T> &value) {
   return value.has_value() ? f$estimate_memory_usage(value.val()) : 0;
 }
 
-namespace {
+namespace impl_ {
 
 template<size_t Index = 0, typename ...Args>
 std::enable_if_t<Index == sizeof...(Args), int> estimate_tuple_memory_usage(const std::tuple<Args...> &) {
@@ -64,11 +64,11 @@ std::enable_if_t<Index != sizeof...(Args), int> estimate_tuple_memory_usage(cons
   return estimate_tuple_memory_usage<Index + 1>(value) + f$estimate_memory_usage(std::get<Index>(value));
 }
 
-}
+} // namespace impl_
 
 template<typename ...Args>
 int f$estimate_memory_usage(const std::tuple<Args...> &value) {
-  return estimate_tuple_memory_usage(value);
+  return impl_::estimate_tuple_memory_usage(value);
 }
 
 template<size_t ...Is, typename ...T>
