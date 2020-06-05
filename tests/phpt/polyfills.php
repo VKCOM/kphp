@@ -98,6 +98,10 @@ function array_merge_into(array &$a, array $another_array) {
   $a = array_merge($a, $another_array);
 }
 
+function array_filter_by_key(array $a, callable $pred) {
+  return array_filter($a, $pred, ARRAY_FILTER_USE_KEY);
+}
+
 function instance_cast($instance, $unused) {
     return $instance;
 }

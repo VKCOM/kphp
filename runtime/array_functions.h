@@ -36,10 +36,13 @@ template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value);
 
 template<class T>
-array<T> f$array_filter(const array<T> &a);
+array<T> f$array_filter(const array<T> &a) noexcept;
 
 template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback);
+array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept;
+
+template<class T, class T1>
+array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept;
 
 template<class T>
 T f$array_merge(const T &a1);
@@ -605,28 +608,36 @@ inline auto f$array_column(const Optional<T> &a, const var &column_key, const va
   return f$array_column(a.val(), column_key, index_key);
 }
 
-template<class T>
-array<T> f$array_filter(const array<T> &a) {
+template<class T, class F>
+array<T> array_filter_impl(const array<T> &a, const F &pred) noexcept {
   array<T> result(a.size());
   for (const auto &it : a) {
-    if (f$boolval(it.get_value())) {
+    if (pred(it)) {
       result.set_value(it);
     }
   }
-
   return result;
 }
 
-template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback) {
-  array<T> result(a.size());
-  for (const auto &it : a) {
-    if (f$boolval(callback(it.get_value()))) {
-      result.set_value(it);
-    }
-  }
+template<class T>
+array<T> f$array_filter(const array<T> &a) noexcept {
+  return array_filter_impl(a, [](const auto &it) {
+    return f$boolval(it.get_value());
+  });
+}
 
-  return result;
+template<class T, class T1>
+array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept {
+  return array_filter_impl(a, [&callback](const auto &it) {
+    return f$boolval(callback(it.get_value()));
+  });
+}
+
+template<class T, class T1>
+array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
+  return array_filter_impl(a, [&callback](const auto &it) {
+    return f$boolval(callback(it.get_key()));
+  });
 }
 
 

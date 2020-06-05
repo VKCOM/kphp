@@ -235,9 +235,8 @@ function min (...$a) ::: ^1[*];
  */
 function max (...$a) ::: ^1[*];
 
-define('ARRAY_FILTER_USE_KEY', 1);
-
 function array_filter ($a ::: array, callback ($x ::: ^1[*]) ::: bool = TODO) ::: ^1;
+function array_filter_by_key ($a ::: array, callback ($key ::: var) ::: bool) ::: ^1;
 function array_map (callback ($x ::: ^2[*]) ::: Any, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: Any, $initial ::: Any) ::: ^2() | ^3;
