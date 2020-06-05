@@ -5,9 +5,37 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 
 namespace {
+
+bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
+  const auto *variable_type = tinf::get_type(variable);
+  if (variable_type->use_optional() ||
+      vk::any_of_equal(variable_type->ptype(), tp_Class, tp_var)) {
+    return init_value->type() == op_null;
+  }
+
+  const auto *init_type = tinf::get_type(init_value);
+  if (init_value->extra_type != op_ex_var_const ||
+      init_type->use_optional() ||
+      init_type->ptype() != variable_type->ptype()) {
+    return false;
+  }
+
+  switch (init_type->ptype()) {
+    case tp_string: {
+      const auto *init_string = GenTree::get_constexpr_string(init_value);
+      return init_string && init_string->empty();
+    }
+    case tp_array:
+      return init_type->lookup_at(Key::any_key())->get_real_ptype() == tp_Unknown;
+    default:
+      return false;
+  }
+}
+
 template<typename T>
 VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   auto required_type = tinf::get_type(type_donor);
@@ -268,7 +296,11 @@ bool OptimizationPass::check_function(FunctionPtr function) {
     auto class_id = function->class_id;
     class_id->members.for_each([](ClassMemberInstanceField &class_field) {
       if (class_field.var->init_val) {
-        cast_const_array(class_field.var->init_val, class_field.var);
+        if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
+          class_field.var->init_val = {};
+        } else {
+          cast_const_array(class_field.var->init_val, class_field.var);
+        }
       }
     });
   }
