@@ -148,7 +148,11 @@ class KphpBuilder:
             ],
             binary_error_text=kphp_build_stderr)
         if not ignore_stderr:
+            priority = kphp_compilation_proc.returncode
             self._kphp_build_stderr_artifact = self._move_to_artifacts(
-                "kphp_build_stderr", kphp_compilation_proc.returncode, content=kphp_build_stderr)
+                artifact_name="kphp_build_stderr",
+                priority=1 if priority is None else priority,
+                content=kphp_build_stderr
+            )
 
         return kphp_compilation_proc.returncode == 0
