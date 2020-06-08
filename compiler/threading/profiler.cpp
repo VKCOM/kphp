@@ -66,7 +66,7 @@ void profiler_print_all(const std::unordered_map<std::string, ProfilerRaw> &coll
   }
 
   name_width += 2;
-  // Name (longest_name) | Calls (9) | Working time (14) | Life time (14) | Memory (12)
+  // Name (longest_name) | Calls (9) | Working time (14) | Duration (14) | Memory (12)
   constexpr size_t table_fixed_size = 1 + 9 + 1 + 14 + 1 + 14 + 1 + 12;
   fmt_fprintf(stderr,
               "-{2:-^{0}}-\n"
