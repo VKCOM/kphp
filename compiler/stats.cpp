@@ -80,6 +80,7 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "memory.rss: " << memory_rss_ * 1024 << std::endl;
   out << indent << "memory.rss_peak: " << memory_rss_peak_ * 1024 << std::endl;
   out << block_sep;
+  out << indent << "compilation.transpilation_time: " << transpilation_time << std::endl;
   out << indent << "compilation.total_time: " << total_time << std::endl;
   out << indent << "compilation.object_out_size: " << object_out_size << std::endl;
   out << block_sep;

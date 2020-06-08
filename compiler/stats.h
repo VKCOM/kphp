@@ -23,6 +23,7 @@ public:
   std::atomic<std::uint64_t> cnt_make_clone{0u};
 
   std::atomic<std::uint64_t> object_out_size{0u};
+  std::atomic<double> transpilation_time{0.0};
   std::atomic<double> total_time{0.0};
 
   std::unordered_map<std::string, ProfilerRaw> profiler_stats;

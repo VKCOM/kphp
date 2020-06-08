@@ -318,6 +318,7 @@ bool compiler_execute(KphpEnviroment *env) {
   get_scheduler()->execute();
 
   PipesProgress::get().transpiling_process_finish();
+  G->stats.transpilation_time = dl_time() - st;
 
   if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
     stage::error();
