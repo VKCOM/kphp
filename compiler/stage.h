@@ -35,7 +35,7 @@ void print_function(FILE *f);
 void print_line(FILE *f);
 void print_comment(FILE *f);
 
-void set_name(const std::string &name);
+void set_name(std::string &&name);
 const std::string &get_name();
 
 void set_file(SrcFilePtr file);

@@ -9,11 +9,9 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 
-bool ResolveSelfStaticParentPass::on_start(FunctionPtr function) {
-  FunctionPassBase::on_start(function);
-
+bool ResolveSelfStaticParentPass::on_start() {
   // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
-  if (function->type == FunctionData::func_class_holder) {
+  if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberConstant &c) {
       run_function_pass(c.value, this);
     });

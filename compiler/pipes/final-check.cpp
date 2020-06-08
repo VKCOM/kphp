@@ -201,30 +201,29 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
 }
 } // namespace
 
-bool FinalCheckPass::on_start(FunctionPtr function) {
-  FunctionPassBase::on_start(function);
-
+bool FinalCheckPass::on_start() {
   mark_global_vars_for_memory_stats();
 
-  if (function->type == FunctionData::func_class_holder) {
-    check_class_immutableness(function->class_id);
+  if (current_function->type == FunctionData::func_class_holder) {
+    check_class_immutableness(current_function->class_id);
   }
 
-  if (function->modifiers.is_instance() && function->local_name() == ClassData::NAME_OF_CLONE) {
-    kphp_error_act(!function->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
-    kphp_error_act(!function->can_throw, fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE), return false);
+  if (current_function->modifiers.is_instance() && current_function->local_name() == ClassData::NAME_OF_CLONE) {
+    kphp_error_act(!current_function->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE), return false);
+    kphp_error_act(!current_function->can_throw, fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE), return false);
   }
 
-  if (function->should_not_throw && function->can_throw) {
-    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}", function->get_human_readable_name(), function->get_throws_call_chain()));
+  if (current_function->should_not_throw && current_function->can_throw) {
+    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}",
+                             current_function->get_human_readable_name(), current_function->get_throws_call_chain()));
   }
 
-  for (auto &static_var : function->static_var_ids) {
+  for (auto &static_var : current_function->static_var_ids) {
     check_static_var_inited(static_var);
   }
 
-  if (function->kphp_lib_export) {
-    check_lib_exported_function(function);
+  if (current_function->kphp_lib_export) {
+    check_lib_exported_function(current_function);
   }
   return true;
 }

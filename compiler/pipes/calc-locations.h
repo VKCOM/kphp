@@ -8,7 +8,7 @@ public:
     return "Calc locations";
   }
 
-  bool on_start(FunctionPtr function) override;
+  bool on_start() override;
 
   VertexPtr on_enter_vertex(VertexPtr v) override;
 };

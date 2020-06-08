@@ -45,10 +45,8 @@ public:
     return !function->is_extern();
   }
 
-  bool on_start(FunctionPtr function) override {
-    FunctionPassBase::on_start(function);
-    global_function_flag = function->type == FunctionData::func_global ||
-                           function->type == FunctionData::func_switch;
+  bool on_start() override {
+    global_function_flag = vk::any_of_equal(current_function->type, FunctionData::func_global, FunctionData::func_switch);
     return true;
   }
 

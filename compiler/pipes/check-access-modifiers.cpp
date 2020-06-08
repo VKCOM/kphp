@@ -3,10 +3,9 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 
-bool CheckAccessModifiersPass::on_start(FunctionPtr function) {
-  FunctionPassBase::on_start(function);
-  lambda_class_id = function->get_this_or_topmost_if_lambda()->class_id;
-  class_id = function->class_id;
+bool CheckAccessModifiersPass::on_start() {
+  lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
+  class_id = current_function->class_id;
   return true;
 }
 

@@ -114,12 +114,11 @@ public:
     return "Collect required";
   }
 
-  bool on_start(FunctionPtr function) override {
-    FunctionPassBase::on_start(function);
-    if (function->type == FunctionData::func_class_holder) {
-      require_all_deps_of_class(function->class_id);
-    } else if (function->type == FunctionData::func_local) {
-      require_all_classes_from_func_declaration(function);
+  bool on_start() override {
+    if (current_function->type == FunctionData::func_class_holder) {
+      require_all_deps_of_class(current_function->class_id);
+    } else if (current_function->type == FunctionData::func_local) {
+      require_all_classes_from_func_declaration(current_function);
     }
     return true;
   }

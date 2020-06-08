@@ -55,10 +55,9 @@ bool CheckTlClasses::check_function(FunctionPtr) const {
   return !G->env().get_tl_schema_file().empty();
 }
 
-bool CheckTlClasses::on_start(FunctionPtr function) {
-  FunctionPassBase::on_start(function);
-  if (function->type == FunctionData::func_class_holder) {
-    check_class(function->class_id);
+bool CheckTlClasses::on_start() {
+  if (current_function->type == FunctionData::func_class_holder) {
+    check_class(current_function->class_id);
   }
   return true;
 }

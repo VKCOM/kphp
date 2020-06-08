@@ -9,5 +9,5 @@ public:
   }
 
   bool check_function(FunctionPtr function) const override;
-  bool on_start(FunctionPtr function) override;
+  bool on_start() override;
 };

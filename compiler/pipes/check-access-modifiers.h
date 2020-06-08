@@ -19,7 +19,7 @@ public:
     return !function->is_extern();
   }
 
-  bool on_start(FunctionPtr function) override;
+  bool on_start() override;
 
   VertexPtr on_enter_vertex(VertexPtr root) override;
 };

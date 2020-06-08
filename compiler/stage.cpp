@@ -174,8 +174,8 @@ stage::StageInfo *stage::get_stage_info_ptr() {
   return &*stage_info;
 }
 
-void stage::set_name(const string &name) {
-  get_stage_info_ptr()->name = name;
+void stage::set_name(std::string &&name) {
+  get_stage_info_ptr()->name = std::move(name);
   get_stage_info_ptr()->error_flag = false;
 }
 

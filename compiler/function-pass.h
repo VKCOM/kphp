@@ -19,6 +19,12 @@ public:
 
   using ExecuteType = FunctionPtr;
 
+  void setup(FunctionPtr function) {
+    stage::set_name(get_description());
+    stage::set_function(function);
+    current_function = function;
+  }
+
   virtual ~FunctionPassBase() = default;
 
   virtual std::string get_description() = 0;
@@ -27,10 +33,7 @@ public:
     return true;
   }
 
-  virtual bool on_start(FunctionPtr function) {
-    stage::set_name(get_description());
-    stage::set_function(function);
-    current_function = function;
+  virtual bool on_start() {
     return true;
   }
 
@@ -124,9 +127,10 @@ typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(Fun
     return {};
   }
 
+  pass->setup(function);
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
-  if (!pass->on_start(function)) {
+  if (!pass->on_start()) {
     return {};
   }
   run_function_pass(function->root, pass);
