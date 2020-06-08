@@ -58,10 +58,11 @@ public:
     return "Collect main tinf edges";
   }
 
-  bool on_start() override;
+  void on_start() override;
+
+  bool user_recursion(VertexPtr vertex) override;
 
   VertexPtr on_enter_vertex(VertexPtr v) override;
-
 
   void on_finish() override;
 };

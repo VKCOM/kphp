@@ -33,9 +33,7 @@ public:
     return true;
   }
 
-  virtual bool on_start() {
-    return true;
-  }
+  virtual void on_start() {  }
 
   virtual void on_finish() {  }
 
@@ -127,12 +125,10 @@ typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(Fun
     return {};
   }
 
-  pass->setup(function);
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
-  if (!pass->on_start()) {
-    return {};
-  }
+  pass->setup(function);
+  pass->on_start();
   run_function_pass(function->root, pass);
   pass->on_finish();
   return FunctionPassTraits<FunctionPassT>::get_data(*pass);

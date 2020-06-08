@@ -45,9 +45,8 @@ public:
     return !function->is_extern();
   }
 
-  bool on_start() override {
+  void on_start() override {
     global_function_flag = vk::any_of_equal(current_function->type, FunctionData::func_global, FunctionData::func_switch);
-    return true;
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override;

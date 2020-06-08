@@ -4,11 +4,10 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 
-bool CalcConstTypePass::on_start() {
+void CalcConstTypePass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {
     calc_const_type_of_class_fields(current_function->class_id);
   }
-  return true;
 }
 
 void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {

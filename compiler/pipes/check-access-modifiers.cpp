@@ -3,10 +3,9 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 
-bool CheckAccessModifiersPass::on_start() {
+void CheckAccessModifiersPass::on_start() {
   lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
   class_id = current_function->class_id;
-  return true;
 }
 
 VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root) {

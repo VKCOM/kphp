@@ -8,7 +8,7 @@ class CalcConstTypePass final : public FunctionPassBase {
 
 public:
 
-  bool on_start() override;
+  void on_start() override;
 
   string get_description() override {
     return "Calc const types";

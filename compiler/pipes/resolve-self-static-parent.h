@@ -10,7 +10,7 @@ public:
     return "Resolve self/static/parent";
   }
 
-  bool on_start() override;
+  void on_start() override;
 
   VertexPtr on_enter_vertex(VertexPtr v) override;
 };

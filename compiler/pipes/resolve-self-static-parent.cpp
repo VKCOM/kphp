@@ -9,7 +9,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 
-bool ResolveSelfStaticParentPass::on_start() {
+void ResolveSelfStaticParentPass::on_start() {
   // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
   if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberConstant &c) {
@@ -26,7 +26,6 @@ bool ResolveSelfStaticParentPass::on_start() {
       }
     });
   }
-  return true;
 }
 
 VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {

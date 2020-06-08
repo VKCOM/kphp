@@ -8,7 +8,7 @@ public:
   ClassPtr class_id;
   ClassPtr lambda_class_id;
 
-  bool on_start() override;
+  void on_start() override;
 
   string get_description() override {
     return "Inline defines pass";

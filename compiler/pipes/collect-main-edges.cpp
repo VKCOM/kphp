@@ -452,16 +452,23 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
   }
 }
 
-bool CollectMainEdgesPass::on_start() {
+void CollectMainEdgesPass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {
     on_class(current_function->class_id);
   } else {
     on_function(current_function);
   }
-  return !current_function->is_extern();
+}
+
+bool CollectMainEdgesPass::user_recursion(VertexPtr) {
+  return current_function->is_extern();
 }
 
 VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v) {
+  if (current_function->is_extern()) {
+    return v;
+  }
+
   if (v->type_rule) {
     add_type_rule(v);
   }
@@ -538,6 +545,9 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
 }
 
 void CollectMainEdgesPass::on_finish() {
+  if (current_function->is_extern()) {
+    return;
+  }
   if (!have_returns) {
     // hack to work well with functions which always throws
     create_set(as_lvalue(current_function, -1), tp_void);
