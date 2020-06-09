@@ -23,6 +23,7 @@
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";
+int release_version = 0;
 
 int php_disable_warnings = 0;
 int php_warning_level = 2;
@@ -39,20 +40,17 @@ static bool is_address_inside_run_scheduler(void *address) {
   return &__start_run_scheduler_section <= address && address <= &__stop_run_scheduler_section;
 };
 
-void write_json_error_to_log(int version, const string& msg, int type, const array<string>& cpp_trace, int nptrs, void** buffer);
+void write_json_error_to_log(int release, char *msg, int type, int nptrs, void** buffer);
 
-array<var> f$kphp_error_callback() __attribute__((weak));
-array<var> f$kphp_error_callback() {
-  return {};
-}
-
-static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, backtrace_each_line_callback_t callback, bool allow_gdb) {
+static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bool allow_gdb) {
   if (php_warning_level == 1) {
     for (int i = 0; i < nptrs; i++) {
       fprintf(stderr, "%p\n", buffer[i]);
     }
   } else if (php_warning_level == 2) {
-    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, callback);
+    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, [](const char *, const char *trace_str) {
+      fprintf(stderr, "%s", trace_str);
+    });
     if (!was_printed) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
@@ -125,7 +123,6 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
   bool need_stacktrace = php_warning_level >= 1;
   int nptrs = 0;
   void *buffer[64];
-  array<string> cpp_trace;
   if (need_stacktrace) {
     fprintf(stderr, "------- Stack Backtrace -------\n");
     nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
@@ -136,22 +133,15 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
       }
     }
 
-    auto callback = [&cpp_trace, allocations_allowed](const char *, const char *trace_str, const char *json_trace_str) {
-      fprintf(stderr, "%s", trace_str);
-      if (allocations_allowed) {
-        cpp_trace.emplace_back(json_trace_str);
-      }
-    };
-
     int scheduler_id = std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer;
     if (scheduler_id == nptrs) {
-      print_demangled_adresses(buffer, nptrs, 0, callback, true);
+      print_demangled_adresses(buffer, nptrs, 0, true);
     } else {
-      print_demangled_adresses(buffer, scheduler_id, 0, callback, true);
+      print_demangled_adresses(buffer, scheduler_id, 0, true);
       void *buffer2[64];
       int res_ptrs = get_resumable_stack(buffer2, sizeof(buffer2) / sizeof(buffer2[0]));
-      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, callback, false);
-      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, callback, false);
+      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, false);
+      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, false);
     }
 
     fprintf(stderr, "-------------------------------\n\n");
@@ -160,12 +150,12 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
   dl::leave_critical_section();
   if (allocations_allowed) {
     OnKphpWarningCallback::get().invoke_callback(string(buf));
-
-    if (need_stacktrace && json_log_file_ptr != nullptr) {
-      auto version = string(engine_tag).to_int();
-      write_json_error_to_log(version, string(buf), 1, cpp_trace, nptrs, buffer);
-    }
   }
+
+  if (need_stacktrace && json_log_file_ptr != nullptr) {
+    write_json_error_to_log(release_version, buf, E_ERROR, nptrs, buffer);
+  }
+
   if (die_on_fail) {
     raise(SIGPHPASSERT);
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
@@ -198,40 +188,68 @@ void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
 }
 
-// You must call this function after dashed line (old log separation line)
-void write_json_error_to_log(int version, const string& msg, int type, const array<string>& cpp_trace, int nptrs, void** buffer) {
-  array<string> trace;
-  char buffer_for_ptr[50];
-  for (int i = 0; i < nptrs; i++) {
-    sprintf(buffer_for_ptr, "%p", buffer[i]);
-    trace.emplace_back(string(buffer_for_ptr));
+// type - это одна из констант для типа ошибки E_* (E_ERROR, E_WARNING и т.д.)
+void write_json_error_to_log(int release, char *msg, int type, int nptrs, void** buffer) {
+  for (char *c = msg; *c; ++c) {
+    if (*c == '"') {
+      *c = '\'';
+    } else if (*c == '\n') {
+      *c = ' ';
+    }
   }
 
-  array<var> ar;
-  ar.set_value(string("msg"), msg);
-  ar.set_value(string("version"), version);
-  ar.set_value(string("type"), type);
-  ar.set_value(string("trace"), trace);
-  ar.set_value(string("cpp_trace"), cpp_trace);
-  ar.set_value(string("created_at"), f$time());
 
-  // properties from callback
-  auto custom_properties = f$kphp_error_callback();
-  const auto tagsKey = string("tags");
-  ar.set_value(tagsKey, custom_properties.get_value(tagsKey));
+  // todo(k.paltsev) удалить version, когда на всех серверах обновят kw-parser
+  const auto format = R"({"version":%d,"release":%d,"type":%d,"created_at":%d,"msg":"%s")";
+  fprintf(json_log_file_ptr, format, release, release, type, f$time(), msg);
 
-  const auto extraInfoKey = string("extra_info");
-  ar.set_value(extraInfoKey, custom_properties.get_value(extraInfoKey));
+  fprintf(json_log_file_ptr, R"(,"trace":[)");
+  for (int i = 0; i < nptrs; i++) {
+    if (i != 0) {
+      fprintf(json_log_file_ptr, ",");
+    }
+    fprintf(json_log_file_ptr, R"("%p")", buffer[i]);
+  }
+  fprintf(json_log_file_ptr, "]");
 
-  auto opt = f$json_encode(ar);
-  if (!opt.has_value()) {
-    // remember this line can break old log format
-    fprintf(stderr, "%s function can't encode json\n", __FUNCTION__);
+  const auto &err_context = KphpErrorContext::get();
+
+  if (err_context.tags_are_set()) {
+    fprintf(json_log_file_ptr, R"(,"tags":%s)", err_context.tags_c_str());
+  }
+
+  if (err_context.extra_info_is_set()) {
+    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", err_context.extra_info_c_str());
+  }
+
+  fprintf(json_log_file_ptr, "}\n");
+  fflush(json_log_file_ptr);
+}
+
+KphpErrorContext &KphpErrorContext::get() {
+  static KphpErrorContext context;
+  return context;
+}
+
+void KphpErrorContext::set_tags(const char *ptr, size_t size) {
+  if ((size + 1) > sizeof(tags_buffer)) {
     return;
   }
 
-  auto str = opt.val();
-  fwrite(str.c_str(), sizeof(char), str.size(), json_log_file_ptr);
-  fwrite("\n", sizeof(char), 1, json_log_file_ptr);
-  fflush(json_log_file_ptr);
+  memcpy(tags_buffer, ptr, size);
+  tags_buffer[size] = '\0';
+}
+
+void KphpErrorContext::set_extra_info(const char *ptr, size_t size) {
+  if ((size + 1) > sizeof(extra_info_buffer)) {
+    return;
+  }
+
+  memcpy(extra_info_buffer, ptr, size);
+  extra_info_buffer[size] = '\0';
+}
+
+void KphpErrorContext::reset() {
+  extra_info_buffer[0] = '\0';
+  tags_buffer[0] = '\0';
 }

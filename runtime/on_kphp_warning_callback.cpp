@@ -27,7 +27,7 @@ void OnKphpWarningCallback::invoke_callback(const string &warning_message) {
     int nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
     // start_i=2: 0 это invoke_callback(), 1 это php_warning(), а нужная инфа с 2
     array<string> arg_stacktrace;
-    get_demangled_backtrace(buffer, nptrs, 0, [&arg_stacktrace](const char *function_name, const char *, const char *) {
+    get_demangled_backtrace(buffer, nptrs, 0, [&arg_stacktrace](const char *function_name, const char *) {
       arg_stacktrace.push_back(string(function_name));
     }, 2);
 

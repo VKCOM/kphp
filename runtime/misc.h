@@ -80,3 +80,5 @@ string f$cp1251(const string &utf8_string);
 
 /** For local usage only **/
 int f$system(const string &query);
+
+void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info);

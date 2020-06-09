@@ -2140,6 +2140,7 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
+  KphpErrorContext::get().reset();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
@@ -2237,6 +2238,7 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
+  release_version = string::to_int(engine_tag, strlen(engine_tag));
 }
 
 void f$raise_sigsegv() {

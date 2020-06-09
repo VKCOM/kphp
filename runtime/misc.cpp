@@ -1536,3 +1536,18 @@ string f$cp1251(const string &utf8_string) {
 int f$system(const string &query) {
   return system(query.c_str());
 }
+
+void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info) {
+  auto &context = KphpErrorContext::get();
+  static_SB.clean();
+
+  if (do_json_encode(tags, 0, false)) {
+    context.set_tags(static_SB.c_str(), static_SB.size());
+  }
+  static_SB.clean();
+
+  if (do_json_encode(extra_info, 0, false)) {
+    context.set_extra_info(static_SB.c_str(), static_SB.size());
+  }
+  static_SB.clean();
+}
