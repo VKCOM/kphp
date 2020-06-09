@@ -1985,7 +1985,7 @@ static void sigint_handler(const int sig) {
   const char message[] = "SIGINT handled.\n";
   kwrite(2, message, sizeof(message) - (size_t)1);
 
-  pending_signals |= (1 << sig);
+  pending_signals = pending_signals | (1 << sig);
   ksignal(sig, sigint_immediate_handler);
 }
 
@@ -2009,14 +2009,14 @@ static void sighup_handler(const int sig) {
   const char message[] = "got SIGHUP.\n";
   kwrite(2, message, sizeof(message) - (size_t)1);
 
-  pending_signals |= (1ll << sig);
+  pending_signals = pending_signals | (1ll << sig);
 }
 
 static void sigusr1_handler(const int sig) {
   const char message[] = "got SIGUSR1, rotate logs.\n";
   kwrite(2, message, sizeof(message) - (size_t)1);
 
-  pending_signals |= (1ll << sig);
+  pending_signals = pending_signals | (1ll << sig);
 }
 
 int pipe_packet_id = 0;
@@ -2242,11 +2242,11 @@ void start_server() {
     }
 
     if (pending_signals & (1ll << SIGHUP)) {
-      pending_signals &= ~(1ll << SIGHUP);
+      pending_signals = pending_signals & ~(1ll << SIGHUP);
     }
 
     if (pending_signals & (1ll << SIGUSR1)) {
-      pending_signals &= ~(1ll << SIGUSR1);
+      pending_signals = pending_signals & ~(1ll << SIGUSR1);
 
       reopen_logs();
       reopen_json_log();

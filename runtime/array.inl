@@ -123,11 +123,10 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
   static array_inner empty_array = {
-    ExtraRefCnt::for_global_const /* ref_cnt */, -1 /* max_key */,
-    {0 /* end_.next */, 0 /* end_.prev */},
-    0 /* int_size */, 2 /* int_buf_size */,
-    0 /* string_size */, -1 /* string_buf_size */,
-    {} /* int_entries */
+    ExtraRefCnt::for_global_const, -1,
+    {0, 0},
+    0, 2,
+    0, -1
   };
   return &empty_array;
 }

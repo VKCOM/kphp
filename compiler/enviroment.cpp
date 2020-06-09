@@ -526,6 +526,8 @@ bool KphpEnviroment::init() {
     ss << " -std=gnu++14";
   #elif __cplusplus <= 201703L
     ss << " -std=gnu++17";
+  #elif __cplusplus <= 202002L
+    ss << " -std=gnu++20";
   #else
     #error unsupported __cplusplus value
   #endif

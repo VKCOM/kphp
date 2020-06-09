@@ -172,7 +172,16 @@ private:
 
     dl::size_type estimate_memory_usage() const;
 
-    inline array_inner() = delete;
+    inline array_inner(int ref_cnt, int max_key, list_hash_entry end_, int int_size, int int_buf_size, int string_size, int string_buf_size) :
+      ref_cnt(ref_cnt),
+      max_key(max_key),
+      end_(end_),
+      int_size(int_size),
+      int_buf_size(int_buf_size),
+      string_size(string_size),
+      string_buf_size(string_buf_size) {
+    }
+
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
   };

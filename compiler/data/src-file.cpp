@@ -68,7 +68,7 @@ bool SrcFile::load() {
 vk::string_view SrcFile::get_line(int id) {
   id--;
   if (id < 0 || id >= (int)lines.size()) {
-    return {nullptr, nullptr};
+    return {};
   }
   return lines[id];
 }

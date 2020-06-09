@@ -518,7 +518,7 @@ static void sigusr1_handler(const int sig) {
   const char message[] = "got SIGUSR1, rotate logs.\n";
   kwrite(2, message, sizeof(message) - (size_t)1);
 
-  local_pending_signals |= (1ll << sig);
+  local_pending_signals = local_pending_signals | (1ll << sig);
 }
 
 enum master_state_t {
@@ -2088,7 +2088,7 @@ void run_master() {
     }
 
     if (local_pending_signals & (1ll << SIGUSR1)) {
-      local_pending_signals &= ~(1ll << SIGUSR1);
+      local_pending_signals = local_pending_signals & ~(1ll << SIGUSR1);
 
       reopen_logs();
       reopen_json_log();

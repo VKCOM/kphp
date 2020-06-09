@@ -27,7 +27,7 @@ private:
 
   template<typename T>
   void process_impl(const char *field_name, const Optional<T> &value) {
-    auto process_impl_lambda = [=](const auto &v) { return this->process_impl(field_name, v); };
+    auto process_impl_lambda = [this, field_name](const auto &v) { return this->process_impl(field_name, v); };
     call_fun_on_optional_value(process_impl_lambda, value);
   }
 

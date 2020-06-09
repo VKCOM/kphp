@@ -29,7 +29,7 @@ bool Node::try_start_recalc() {
     switch (recalc_state_copy) {
       case empty_st:
         if (__sync_bool_compare_and_swap(&recalc_state_, empty_st, own_recalc_st)) {
-          recalc_cnt_++;
+          recalc_cnt_ = recalc_cnt_ + 1;
           return true;
         }
         break;
@@ -53,7 +53,7 @@ void Node::start_recalc() {
 }
 
 bool Node::try_finish_recalc() {
-  recalc_cnt_++;
+  recalc_cnt_ = recalc_cnt_ + 1;
   while (true) {
     int recalc_state_copy = recalc_state_;
     switch (recalc_state_copy) {

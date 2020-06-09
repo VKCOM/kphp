@@ -18,11 +18,11 @@ volatile long long pending_signals = 0;
 void enter_critical_section() noexcept {
   check_stack_overflow();
   php_assert (in_critical_section >= 0);
-  in_critical_section++;
+  in_critical_section = in_critical_section + 1;
 }
 
 void leave_critical_section() noexcept {
-  in_critical_section--;
+  in_critical_section = in_critical_section - 1;
   php_assert (in_critical_section >= 0);
   if (pending_signals && in_critical_section <= 0) {
     for (size_t i = 0; i < sizeof(pending_signals) * 8; i++) {

@@ -36,7 +36,7 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
 }
 
 void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
-  members.for_each([=](const ClassMemberInstanceField &field) {
+  members.for_each([this, parent_function](const ClassMemberInstanceField &field) {
     vk::intrusive_ptr<Assumption> assumption;
     auto local_name = field.local_name();
     if (local_name == LambdaClassData::get_parent_this_name()) {

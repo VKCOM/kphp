@@ -36,7 +36,12 @@ public:
       runtime_check = 0b1000
     };
 
-    InferHint() = delete;   // создать можно только определяя все 3 параметра
+    InferHint(infer_mask infer_type, int param_i, VertexPtr type_rule) :
+      infer_type(infer_type),
+      param_i(param_i),
+      type_rule(type_rule) {
+    }
+
 
     infer_mask infer_type;
     int param_i;            // 0..N — аргументы, -1 return (как и для tinf)
