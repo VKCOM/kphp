@@ -49,11 +49,8 @@ is_func_id_t get_ifi_id(VertexPtr v) {
       if (name == "is_null") {
         return ifi_is_null;
       }
-      if (name == "is_integer" || name == "is_int") {
+      if (name == "is_integer" || name == "is_int" || name == "is_long") {
         return ifi_is_integer;
-      }
-      if (name == "is_long") {
-        return ifi_is_long;
       }
       if (name == "is_float" || name == "is_double" || name == "is_real") {
         return ifi_is_float;

@@ -356,11 +356,24 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
         is_func_id_t type = get_ifi_id(tree_node);
         if (type != ifi_error) {
           if (auto var = call->args()[0].try_as<op_var>()) {
+            is_func_id_t true_type{};
             if (type == ifi_is_bool) {
-              type = static_cast<is_func_id_t>(ifi_is_bool | ifi_is_false);
+              true_type = static_cast<is_func_id_t>(ifi_is_bool | ifi_is_false);
+            } else if (type == ifi_is_scalar) {
+              true_type = static_cast<is_func_id_t>(ifi_is_false | ifi_is_bool | ifi_is_integer | ifi_is_float | ifi_is_string);
+            } else if (type == ifi_is_numeric) {
+              true_type = static_cast<is_func_id_t>(ifi_is_integer | ifi_is_float | ifi_is_string);
+            } else {
+              true_type = type;
             }
-            add_type_check_usage(*res_true, type, var);
-            add_type_check_usage(*res_false, ifi_any_type & ~type, var);
+            is_func_id_t false_type{};
+            if (type == ifi_is_numeric) {
+              false_type = static_cast<is_func_id_t>((ifi_any_type & ~true_type) | ifi_is_string);
+            } else {
+              false_type = static_cast<is_func_id_t>(ifi_any_type & ~true_type);
+            }
+            add_type_check_usage(*res_true, true_type, var);
+            add_type_check_usage(*res_false, false_type, var);
           }
         }
       } else if (auto isset = tree_node.try_as<op_isset>()) {
