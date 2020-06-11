@@ -335,6 +335,7 @@ void array<T>::array_inner::dispose() {
         }
       }
 
+      php_assert(this != empty_array());
       auto shifted_this = reinterpret_cast<char *>(this) - sizeof(array_inner_fields_for_map);
       dl::deallocate(shifted_this, sizeof_map(int_buf_size, string_buf_size));
     }
