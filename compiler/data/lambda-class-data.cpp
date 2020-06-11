@@ -68,8 +68,6 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
 
   // TODO: add kphp_infer for __invoke method of interface
   // interface->has_kphp_infer = true;
-  AutoLocker<Lockable *> locker(&(*interface));
-  interface->derived_classes.emplace_back(get_self());
 }
 
 bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {

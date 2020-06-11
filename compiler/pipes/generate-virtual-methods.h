@@ -1,6 +1,6 @@
 #pragma once
 
-#include <set>
+#include <map>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/pipes/sync.h"
@@ -11,7 +11,7 @@ class GenerateVirtualMethods final : public SyncPipeF<FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr>;
 
   Lockable mutex;
-  std::set<ClassPtr> lambdas_interfaces;
+  std::map<ClassPtr, std::vector<ClassPtr>> lambdas_interfaces;
 public:
 
   void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os);

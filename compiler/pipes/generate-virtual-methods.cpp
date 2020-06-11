@@ -16,7 +16,7 @@
  */
 class FindLambdasWithInterfacePass final : public FunctionPassBase {
 public:
-  std::set<ClassPtr> lambdas_interfaces;
+  std::map<ClassPtr, std::vector<ClassPtr>> lambdas_interfaces;
 
   std::string get_description() override {
     return "Find lambdas with interface";
@@ -52,7 +52,7 @@ public:
       return;
     }
     lambda->implement_interface(interface_assumption->klass);
-    lambdas_interfaces.insert(interface_assumption->klass);
+    lambdas_interfaces[interface_assumption->klass].emplace_back(lambda);
   }
 
   /**
@@ -174,7 +174,10 @@ void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPt
     run_function_pass(function, &interface_finder);
     if (!interface_finder.lambdas_interfaces.empty()) {
       AutoLocker<Lockable *> locker(&mutex);
-      lambdas_interfaces.insert(interface_finder.lambdas_interfaces.begin(), interface_finder.lambdas_interfaces.end());
+      for (const auto &interface_inheritors : interface_finder.lambdas_interfaces) {
+        auto &res_inheritors = lambdas_interfaces[interface_inheritors.first];
+        res_inheritors.insert(res_inheritors.end(), interface_inheritors.second.begin(), interface_inheritors.second.end());
+      }
     }
   }
 
@@ -187,8 +190,12 @@ void GenerateVirtualMethods::execute(FunctionPtr function, DataStream<FunctionPt
 
 void GenerateVirtualMethods::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
-  for (auto &interface : lambdas_interfaces) {
-    std::sort(interface->derived_classes.begin(), interface->derived_classes.end());
+  for (auto &interface_inheritors : lambdas_interfaces) {
+    const auto &interface = interface_inheritors.first;
+    auto &inheritors = interface_inheritors.second;
+    std::sort(inheritors.begin(), inheritors.end());
+
+    interface->derived_classes = inheritors;
     auto invoke_method = interface->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
     kphp_assert(invoke_method);
     generate_body_of_virtual_method(invoke_method->function);
