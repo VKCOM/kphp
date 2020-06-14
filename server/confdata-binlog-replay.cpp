@@ -379,14 +379,15 @@ private:
       return false;
     }
 
-    // убираем в мусор что было, далее будет копирование с расщеплением
-    put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
-
     if (!prev_value) {
+      // убираем в мусор что было, далее будет копирование с расщеплением
+      put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
       array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
       // вставка элемента расщепит массив
       assert(array_for_second_key.get_reference_counter() == 1);
     } else if (is_new_value(E, *prev_value)) {
+      // убираем в мусор что было, далее будет копирование с расщеплением
+      put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
       array_for_second_key.mutate_if_shared();
       auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
       assert(second_key_it != array_for_second_key.end());
@@ -517,7 +518,7 @@ private:
   template<class BASE, int OPERATION>
   bool is_new_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E, const var &prev_value) noexcept {
     if (E.get_flags()) {
-      return equals(get_processing_value(E), prev_value);
+      return !equals(get_processing_value(E), prev_value);
     }
     if (!prev_value.is_string()) {
       return true;
