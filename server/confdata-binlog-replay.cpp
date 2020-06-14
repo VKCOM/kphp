@@ -24,6 +24,12 @@ namespace {
 
 class ConfdataBinlogReplayer : vk::binlog::replayer {
 public:
+  enum class OperationStatus {
+    no_update,
+    ttl_update_only,
+    full_update
+  };
+
   static ConfdataBinlogReplayer &get() noexcept {
     static ConfdataBinlogReplayer loader;
     return loader;
@@ -113,7 +119,7 @@ public:
   }
 
   void touch_element(const lev_confdata_touch &E) noexcept {
-    generic_operation(E.key, E.key_len, E.delay, [] { return true; });
+    generic_operation(E.key, E.key_len, E.delay, [] { return OperationStatus::ttl_update_only; });
   }
 
   template<class BASE, int OPERATION>
@@ -269,20 +275,23 @@ private:
     assert(processing_value_.is_null());
     static_assert(std::is_same<short, int16_t>{}, "short is expected to be int16_t");
     const auto first_key_dots = processing_key_.update(key, key_len);
-    if (!operation()) {
+    const auto operation_status = operation();
+    if (operation_status == OperationStatus::no_update) {
       assert(last_element_in_garbage_.is_null());
       assert(processing_value_.is_null());
       return;
     }
-    if (first_key_dots == FirstKeyDots::two) {
+    if (operation_status == OperationStatus::full_update && first_key_dots == FirstKeyDots::two) {
       processing_key_.forcibly_change_first_key_dots_from_two_to_one();
-      const bool should_be_true = operation();
-      assert(should_be_true);
+      const auto should_be_full = operation();
+      assert(should_be_full == OperationStatus::full_update);
     }
 
     last_element_in_garbage_.clear();
     processing_value_.clear();
-    confdata_has_any_updates_ = true;
+    if (operation_status == OperationStatus::full_update) {
+      confdata_has_any_updates_ = true;
+    }
     update_element_in_expiration_trace(vk::string_view{key, static_cast<size_t>(key_len)}, delay);
   }
 
@@ -300,10 +309,10 @@ private:
     return updating_confdata_storage_->find(processing_key_.get_first_key());
   }
 
-  bool delete_processing_element() noexcept {
+  OperationStatus delete_processing_element() noexcept {
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     if (first_key_it == updating_confdata_storage_->end()) {
-      return false;
+      return OperationStatus::no_update;
     }
 
     // для ключей без '.'
@@ -312,13 +321,13 @@ private:
       put_confdata_element_value_into_garbage(first_key_it->second);
       put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
       updating_confdata_storage_->erase(first_key_it);
-      return true;
+      return OperationStatus::full_update;
     }
 
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
     if (!array_for_second_key.has_key(processing_key_.get_second_key())) {
-      return false;
+      return OperationStatus::no_update;
     }
 
     // убираем в мусор что было, далее будет копирование с расщеплением
@@ -341,11 +350,11 @@ private:
       put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
       updating_confdata_storage_->erase(first_key_it);
     }
-    return true;
+    return OperationStatus::full_update;
   }
 
   template<class BASE, int OPERATION>
-  bool store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
+  OperationStatus store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     auto first_key_it = find_updating_confdata_first_key_element();
     bool element_exists = true;
     if (first_key_it == updating_confdata_storage_->end()) {
@@ -357,15 +366,16 @@ private:
     // для ключей без '.'
     if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
       if (!can_element_be_saved(E, element_exists)) {
-        return false;
+        return OperationStatus::no_update;
       }
 
       if (is_new_value(E, first_key_it->second)) {
         // убираем в мусор предыдущее значение и перезаписываем новым
         put_confdata_element_value_into_garbage(first_key_it->second);
         first_key_it->second = get_processing_value(E);
+        return OperationStatus::full_update;
       }
-      return true;
+      return OperationStatus::ttl_update_only;
     }
 
     // по дефолту вставляется null
@@ -376,7 +386,7 @@ private:
     auto &array_for_second_key = first_key_it->second.as_array();
     const auto *prev_value = element_exists ? array_for_second_key.find_value(processing_key_.get_second_key()) : nullptr;
     if (!can_element_be_saved(E, prev_value != nullptr)) {
-      return false;
+      return OperationStatus::no_update;
     }
 
     if (!prev_value) {
@@ -385,7 +395,9 @@ private:
       array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
       // вставка элемента расщепит массив
       assert(array_for_second_key.get_reference_counter() == 1);
-    } else if (is_new_value(E, *prev_value)) {
+      return OperationStatus::full_update;
+    }
+    if (is_new_value(E, *prev_value)) {
       // убираем в мусор что было, далее будет копирование с расщеплением
       put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
       array_for_second_key.mutate_if_shared();
@@ -396,8 +408,9 @@ private:
       // предыдущее значение убираем в мусор и сохраняем новое
       put_confdata_element_value_into_garbage(second_key_it.get_value());
       second_key_it.get_value() = get_processing_value(E);
+      return OperationStatus::full_update;
     }
-    return true;
+    return OperationStatus::ttl_update_only;
   }
 
   void put_confdata_element_value_into_garbage(const var &element) noexcept {
