@@ -26,3 +26,8 @@ void global_init_php_scripts() noexcept {
 const char *get_php_scripts_version() noexcept {
   assert(0 && "this code shouldn't be executed and only for linkage test");
 }
+
+char **get_runtime_options(int *) noexcept {
+  assert(0 && "this code shouldn't be executed and only for linkage test");
+  return nullptr;
+}

@@ -2289,6 +2289,7 @@ void set_instance_cache_memory_limit(dl::size_type limit);
 void init_php_scripts() noexcept;
 void global_init_php_scripts() noexcept;
 const char *get_php_scripts_version() noexcept;
+char **get_runtime_options(int *count) noexcept;
 
 
 void init_all() {
@@ -2554,6 +2555,10 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2006: {
+      if (!*optarg) {
+        set_confdata_blacklist_pattern(nullptr);
+        return 0;
+      }
       auto re2_pattern = std::make_unique<re2::RE2>(optarg, re2::RE2::Quiet);
       if (!re2_pattern->ok()) {
         kprintf("couldn't parse confdata-blacklist pattern: %s\n", re2_pattern->error().c_str());
@@ -2698,6 +2703,17 @@ int run_main(int argc, char **argv, php_mode mode) {
     run_once = 1;
     disable_access_log = 2;
     parse_main_args_till_option(argc, argv, "--Xkphp-options");
+  }
+
+  std::vector<char *> new_argv;
+  int options_count = 0;
+  if (char **options_from_php = get_runtime_options(&options_count)) {
+    const int parsed_options = std::max(optind, 1);
+    new_argv.assign(argv, argv + parsed_options);
+    std::copy(options_from_php, options_from_php + options_count, std::back_inserter(new_argv));
+    std::copy(argv + parsed_options, argv + argc, std::back_inserter(new_argv));
+    argv = new_argv.data();
+    argc = new_argv.size();
   }
 
   parse_main_args(argc, argv);

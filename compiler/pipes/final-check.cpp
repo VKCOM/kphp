@@ -1,3 +1,5 @@
+#include <re2/re2.h>
+
 #include "compiler/pipes/final-check.h"
 
 #include "common/termformat/termformat.h"
@@ -31,6 +33,58 @@ void check_class_immutableness(ClassPtr klass) {
              fmt_format("Immutable class {} has mutable base {}",
                         TermStringFormat::paint(klass->name, TermStringFormat::red),
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
+}
+
+void check_kphp_config_class(ClassPtr klass) {
+  const char *configuration_class = "KphpConfiguration";
+  if (klass->name != configuration_class) {
+    return;
+  }
+
+  kphp_error(
+    !klass->members.has_any_instance_method() &&
+    !klass->members.has_any_instance_var() &&
+    !klass->members.has_any_static_method() &&
+    !klass->members.has_any_static_var(),
+    fmt_format("{} class must be empty", configuration_class)
+  );
+
+  klass->members.for_each([configuration_class](const ClassMemberConstant &c) {
+    if (c.local_name() == "class") {
+      return;
+    }
+
+    // TODO сделать красиво
+    const char *runtime_options_name = "DEFAULT_RUNTIME_OPTIONS";
+    kphp_error(c.local_name() == runtime_options_name,
+               fmt_format("Got unexpected {} constant '{}'",
+                          configuration_class, c.local_name()));
+
+    auto arr = c.value.try_as<op_array>();
+    kphp_error(arr, fmt_format("{}::{} must be an array",
+                               configuration_class, runtime_options_name));
+    for (const auto &opt : arr->args()) {
+      auto opt_pair = opt.try_as<op_double_arrow>();
+      kphp_error(opt_pair, fmt_format("{}::{} must be an associative map",
+                                      configuration_class, runtime_options_name));
+      const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
+      kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
+                                            configuration_class, runtime_options_name));
+      const auto *opt_value = GenTree::get_constexpr_string(opt_pair->value());
+      kphp_error_return(opt_value, fmt_format("{}::{} map values must be constexpr strings",
+                                              configuration_class, runtime_options_name));
+      if (*opt_key == "--confdata-blacklist") {
+        re2::RE2 compiled_pattern{*opt_value, re2::RE2::CannedOptions::Quiet};
+        kphp_error_return(compiled_pattern.ok(), fmt_format("Got bad regex pattern in {}::{}['{}']: {}",
+                                                            configuration_class, runtime_options_name, *opt_key, compiled_pattern.error()));
+        G->add_kphp_runtime_opt(*opt_key);
+        G->add_kphp_runtime_opt(*opt_value);
+      } else {
+        kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
+                                 configuration_class, runtime_options_name, *opt_key));
+      }
+    }
+  });
 }
 
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
@@ -166,7 +220,7 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
         return;
       }
 
-    // fall through
+      // fall through
     case op_mul:
     case op_sub:
     case op_div:
@@ -206,6 +260,7 @@ void FinalCheckPass::on_start() {
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);
+    check_kphp_config_class(current_function->class_id);
   }
 
   if (current_function->modifiers.is_instance() && current_function->local_name() == ClassData::NAME_OF_CLONE) {

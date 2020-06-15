@@ -189,6 +189,7 @@ public:
 
   bool has_any_instance_var() const;
   bool has_any_instance_method() const;
+  bool has_any_static_var() const;
   bool has_any_static_method() const;
   FunctionPtr get_constructor() const;
 

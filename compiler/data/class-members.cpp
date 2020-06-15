@@ -212,6 +212,10 @@ bool ClassMembersContainer::has_any_instance_method() const {
   return !instance_methods.empty();
 }
 
+bool ClassMembersContainer::has_any_static_var() const {
+  return !static_fields.empty();
+}
+
 bool ClassMembersContainer::has_any_static_method() const {
   return !static_methods.empty();
 }

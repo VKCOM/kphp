@@ -6,6 +6,7 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 
@@ -42,6 +43,24 @@ void StaticInit::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN
                                   << "return " << RawString(G->env().get_php_code_version()) << ";" << NL
                                   << END << NL << NL;
+
+    FunctionSignatureGenerator(W) << ("char **get_runtime_options(int *count)") << BEGIN;
+    const auto &runtime_opts = G->get_kphp_runtime_opts();
+    if (runtime_opts.empty()) {
+      W << "return nullptr;" << NL;
+    } else {
+      W << "*count = " << runtime_opts.size() << ";" << NL;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "static char arg" << i << "[] = " << RawString{runtime_opts[i]} << ";" << NL;
+      }
+      W << "static char *argv[] = " << BEGIN;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "arg" << i << "," << NL;
+      }
+      W << END << ";" << NL
+        << "return argv;" << NL;
+    }
+    W << END << NL << NL;
 
     FunctionSignatureGenerator(W) << ("void global_init_php_scripts() ") << BEGIN;
     for (LibPtr lib: G->get_libs()) {

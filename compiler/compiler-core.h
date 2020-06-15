@@ -27,6 +27,7 @@ private:
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
+  std::vector<std::string> kphp_runtime_opts;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -91,6 +92,9 @@ public:
 
   void try_load_tl_classes();
   const TlClasses &get_tl_classes() const { return tl_classes; }
+
+  void add_kphp_runtime_opt(const std::string &opt) { kphp_runtime_opts.emplace_back(opt); }
+  const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
 
   Stats stats;
 };
