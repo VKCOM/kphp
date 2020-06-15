@@ -97,8 +97,10 @@ public:
     array_size two_dots_elements_counter;
     for (int i = 0; i < nrecords; i++) {
       const auto &element = reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]);
-      if (element.key_len > 0) {
-        const vk::string_view key{element.data, static_cast<size_t>(element.key_len)};
+      const vk::string_view key{element.data, static_cast<size_t>(std::max(element.key_len, short{0}))};
+      if (key.empty() || is_key_blacklisted(key)) {
+        index_offset[i] = -1;
+      } else {
         const auto first_dot = try_reserve_for_snapshot(key, 0, last_one_dot_key, one_dot_elements_counter);
         if (first_dot != std::string::npos) {
           try_reserve_for_snapshot(key, first_dot + 1, last_two_dots_key, two_dots_elements_counter);
@@ -106,9 +108,13 @@ public:
       }
     }
 
+    auto blacklist = std::move(key_blacklist_pattern_);
     for (int i = 0; i < nrecords; i++) {
-      store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+      if (index_offset[i] >= 0) {
+        store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+      }
     }
+    key_blacklist_pattern_ = std::move(blacklist);
     loading_from_snapshot_ = false;
     size_hints_.clear();
     return 0;
@@ -133,9 +139,11 @@ public:
     kprintf("Confdata binlog reading error: got unsupported operation '%s' with key '%.*s'\n", operation_name, std::max(key_len, 0), key);
   }
 
-  void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {
+  void init(memory_resource::unsynchronized_pool_resource &memory_pool,
+            std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept {
     assert(!updating_confdata_storage_);
     updating_confdata_storage_ = new(&confdata_mem_)confdata_sample_storage{confdata_sample_storage::allocator_type{memory_pool}};
+    key_blacklist_pattern_ = std::move(key_blacklist_pattern);
   }
 
   struct ConfdataUpdateResult {
@@ -270,6 +278,10 @@ private:
     if (key_len < 0) {
       return;
     }
+    const vk::string_view key_view{key, static_cast<size_t>(key_len)};
+    if (is_key_blacklisted(key_view)) {
+      return;
+    }
 
     assert(last_element_in_garbage_.is_null());
     assert(processing_value_.is_null());
@@ -292,7 +304,7 @@ private:
     if (operation_status == OperationStatus::full_update) {
       confdata_has_any_updates_ = true;
     }
-    update_element_in_expiration_trace(vk::string_view{key, static_cast<size_t>(key_len)}, delay);
+    update_element_in_expiration_trace(key_view, delay);
   }
 
   confdata_sample_storage::iterator find_updating_confdata_first_key_element() {
@@ -573,6 +585,11 @@ private:
            : array<var>{};
   }
 
+  bool is_key_blacklisted(vk::string_view key) const noexcept {
+    return key_blacklist_pattern_ &&
+           re2::RE2::FullMatch(re2::StringPiece(key.data(), key.size()), *key_blacklist_pattern_);
+  }
+
   // TODO: 'now' используется движками, можем ли мы так же её использовать?
   // На парктике звучит как да, но выглядит не очень ¯\_(ツ)_/¯
   static int get_now() noexcept { return now; }
@@ -592,11 +609,14 @@ private:
 
   std::unordered_map<vk::string_view, int> element_delays_;
   std::multimap<int, std::string> expiration_trace_;
+
+  std::unique_ptr<re2::RE2> key_blacklist_pattern_;
 };
 
 struct {
   const char *binlog_mask{nullptr};
   dl::size_type memory_limit{2u * 1024u * 1024u * 1024u};
+  std::unique_ptr<re2::RE2> key_blacklist_pattern;
 
   bool is_enabled() const noexcept {
     return binlog_mask;
@@ -611,6 +631,10 @@ void set_confdata_binlog_mask(const char *mask) noexcept {
 
 void set_confdata_memory_limit(dl::size_type memory_limit) noexcept {
   confdata_settings.memory_limit = memory_limit;
+}
+
+void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept {
+  confdata_settings.key_blacklist_pattern = std::move(key_blacklist_pattern);
 }
 
 void init_confdata_binlog_reader() noexcept {
@@ -651,7 +675,8 @@ void init_confdata_binlog_reader() noexcept {
   });
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
-  confdata_binlog_replayer.init(confdata_manager.get_resource());
+  confdata_binlog_replayer.init(confdata_manager.get_resource(),
+                                std::move(confdata_settings.key_blacklist_pattern));
   engine_default_load_index(confdata_settings.binlog_mask);
   engine_default_read_binlog();
   confdata_binlog_replayer.delete_expired_elements();

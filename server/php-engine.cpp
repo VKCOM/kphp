@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <re2/re2.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
@@ -2553,10 +2554,19 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2006: {
+      auto re2_pattern = std::make_unique<re2::RE2>(optarg, re2::RE2::Quiet);
+      if (!re2_pattern->ok()) {
+        kprintf("couldn't parse confdata-blacklist pattern: %s\n", re2_pattern->error().c_str());
+        return -1;
+      }
+      set_confdata_blacklist_pattern(std::move(re2_pattern));
+      return 0;
+    }
+    case 2007: {
       printf("%s\n", get_php_scripts_version());
       exit(0);
     }
-    case 2007: {
+    case 2008: {
       php_warning_minimum_level = atoi(optarg);
       if (php_warning_minimum_level < 0 || php_warning_minimum_level > 3) {
         kprintf("--php-warnings-minimal-verbosity has to be [0, 3]\n");
@@ -2566,8 +2576,6 @@ int main_args_handler(int i) {
     }
 
     default:
-
-
       return -1;
   }
 }
@@ -2625,8 +2633,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("tasks-config", required_argument, 'S', "get lease worker settings from config file: mode and actor");
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
-  parse_option("php-version", no_argument, 2006, "show the compiled php code version and exit");
-  parse_option("php-warnings-minimal-verbosity", required_argument, 2007, "set minimum verbosity level for php warnings");
+  parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
+  parse_option("php-version", no_argument, 2007, "show the compiled php code version and exit");
+  parse_option("php-warnings-minimal-verbosity", required_argument, 2008, "set minimum verbosity level for php warnings");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
