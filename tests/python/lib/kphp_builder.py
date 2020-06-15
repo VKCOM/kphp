@@ -85,11 +85,8 @@ class KphpBuilder:
     def remove_artifacts_dir(self):
         shutil.rmtree(self._artifacts_dir, ignore_errors=True)
 
-    def try_remove_kphp_runtime_bin(self):
-        try:
-            os.remove(self._kphp_runtime_bin)
-        except OSError:
-            pass
+    def try_remove_kphp_build_trash(self):
+        shutil.rmtree(self._kphp_build_tmp_dir, ignore_errors=True)
 
     @staticmethod
     def _prepare_asan_env(working_directory, asan_log_name):

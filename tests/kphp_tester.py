@@ -351,8 +351,7 @@ def run_test(kphp_path, tests_dir, distcc_hosts, test):
     else:
         test_result = TestResult.skipped(test)
 
-    if not runner.artifacts:
-        runner.try_remove_kphp_runtime_bin()
+    runner.try_remove_kphp_build_trash()
 
     return test_result
 
