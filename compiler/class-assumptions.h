@@ -36,7 +36,7 @@ public:
   }
 };
 
-class AssumNotInstance : public Assumption {
+class AssumNotInstance final : public Assumption {
   AssumNotInstance() = default;
   PrimitiveType type{tp_Any};
 
@@ -54,7 +54,7 @@ public:
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumInstance : public Assumption {
+class AssumInstance final : public Assumption {
   AssumInstance() = default;
 
 public:
@@ -72,7 +72,7 @@ public:
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumArray : public Assumption {
+class AssumArray final : public Assumption {
   AssumArray() = default;
 
 public:
@@ -94,7 +94,7 @@ public:
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumTuple : public Assumption {
+class AssumTuple final : public Assumption {
   AssumTuple(const std::vector<vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
     subkeys_assumptions(subkeys_assumptions) {}
 
@@ -111,7 +111,7 @@ public:
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumShape : public Assumption {
+class AssumShape final : public Assumption {
   AssumShape(const std::map<std::string, vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
     subkeys_assumptions(subkeys_assumptions) {}
 
