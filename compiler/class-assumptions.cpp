@@ -186,28 +186,33 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     }
   }
 
-  if (type_expr->type_help == tp_Class) {
-    return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr)->add_flags(or_null_flag, or_false_flag);
-  }
-  if (type_expr->type_help == tp_array) {
-    return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]))->add_flags(or_null_flag, or_false_flag);
-  }
-  if (type_expr->type_help == tp_tuple) {
-    decltype(AssumTuple::subkeys_assumptions) sub;
-    for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
-      sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
+  switch (type_expr->type_help) {
+    case tp_Class:
+      return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr)->add_flags(or_null_flag, or_false_flag);
+
+    case tp_array:
+        return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]))->add_flags(or_null_flag, or_false_flag);
+
+    case tp_tuple: {
+      decltype(AssumTuple::subkeys_assumptions) sub;
+      for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
+        sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
+      }
+      return AssumTuple::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
     }
-    return AssumTuple::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
-  }
-  if (type_expr->type_help == tp_shape) {
-    decltype(AssumShape::subkeys_assumptions) sub;
-    for (VertexPtr sub_expr : type_expr.as<op_type_expr_type>()->args()) {
-      auto double_arrow = sub_expr.as<op_double_arrow>();
-      sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
+
+    case tp_shape: {
+      decltype(AssumShape::subkeys_assumptions) sub;
+      for (VertexPtr sub_expr : type_expr.as<op_type_expr_type>()->args()) {
+        auto double_arrow = sub_expr.as<op_double_arrow>();
+        sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
+      }
+      return AssumShape::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
     }
-    return AssumShape::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
+
+    default:
+      return AssumNotInstance::create();
   }
-  return AssumNotInstance::create();
 }
 
 /*
