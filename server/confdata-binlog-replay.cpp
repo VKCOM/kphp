@@ -119,7 +119,7 @@ public:
   }
 
   void touch_element(const lev_confdata_touch &E) noexcept {
-    generic_operation(E.key, E.key_len, E.delay, [] { return OperationStatus::ttl_update_only; });
+    generic_operation(E.key, E.key_len, E.delay, [this] { return touch_processing_element(); });
   }
 
   template<class BASE, int OPERATION>
@@ -351,6 +351,24 @@ private:
       updating_confdata_storage_->erase(first_key_it);
     }
     return OperationStatus::full_update;
+  }
+
+  OperationStatus touch_processing_element() noexcept {
+    auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
+    if (first_key_it == updating_confdata_storage_->end()) {
+      return OperationStatus::no_update;
+    }
+
+    // для ключей без '.'
+    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+      return OperationStatus::ttl_update_only;
+    }
+
+    assert(first_key_it->second.is_array());
+    auto &array_for_second_key = first_key_it->second.as_array();
+    return array_for_second_key.has_key(processing_key_.get_second_key())
+           ? OperationStatus::ttl_update_only
+           : OperationStatus::no_update;
   }
 
   template<class BASE, int OPERATION>
