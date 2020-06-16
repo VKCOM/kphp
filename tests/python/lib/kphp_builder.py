@@ -4,7 +4,7 @@ import os
 import subprocess
 import shutil
 
-from .file_utils import search_kphp_sh, error_can_be_ignored, can_ignore_asan_log
+from .file_utils import search_kphp_sh, error_can_be_ignored, can_ignore_sanitizer_log
 
 
 class Artifact:
@@ -17,7 +17,7 @@ class KphpBuilder:
     def __init__(self, php_script_path, artifacts_dir, working_dir, kphp_path=None, distcc_hosts=None):
         self.artifacts = {}
         self._kphp_build_stderr_artifact = None
-        self._kphp_build_asan_log_artifact = None
+        self._kphp_build_sanitizer_log_artifact = None
         self._artifacts_dir = artifacts_dir
 
         self._kphp_path = os.path.abspath(kphp_path or search_kphp_sh())
@@ -33,8 +33,8 @@ class KphpBuilder:
         return self._kphp_build_stderr_artifact
 
     @property
-    def kphp_build_asan_log_artifact(self):
-        return self._kphp_build_asan_log_artifact
+    def kphp_build_sanitizer_log_artifact(self):
+        return self._kphp_build_sanitizer_log_artifact
 
     @property
     def kphp_runtime_bin(self):
@@ -89,27 +89,28 @@ class KphpBuilder:
         shutil.rmtree(self._kphp_build_tmp_dir, ignore_errors=True)
 
     @staticmethod
-    def _prepare_asan_env(working_directory, asan_log_name):
-        tmp_asan_file = os.path.join(working_directory, asan_log_name)
-        asan_glob_mask = "{}.*".format(tmp_asan_file)
-        for old_asan_file in glob.glob(asan_glob_mask):
-            os.remove(old_asan_file)
+    def _prepare_sanitizer_env(working_directory, sanitizer_log_name):
+        tmp_sanitizer_file = os.path.join(working_directory, sanitizer_log_name)
+        sanitizer_glob_mask = "{}.*".format(tmp_sanitizer_file)
+        for old_sanitizer_file in glob.glob(sanitizer_glob_mask):
+            os.remove(old_sanitizer_file)
 
         env = copy.copy(os.environ)
-        env["ASAN_OPTIONS"] = "detect_leaks=0:log_path={}".format(tmp_asan_file)
-        return env, asan_glob_mask
+        env["ASAN_OPTIONS"] = "detect_leaks=0:log_path={}".format(tmp_sanitizer_file)
+        env["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(tmp_sanitizer_file)
+        return env, sanitizer_glob_mask
 
-    def _move_asan_logs_to_artifacts(self, asan_glob_mask, proc, asan_log_name):
-        for asan_log in glob.glob(asan_glob_mask):
-            if not can_ignore_asan_log(asan_log):
-                return self._move_to_artifacts(asan_log_name, proc.returncode, file=asan_log)
+    def _move_sanitizer_logs_to_artifacts(self, sanitizer_glob_mask, proc, sanitizer_log_name):
+        for sanitizer_log in glob.glob(sanitizer_glob_mask):
+            if not can_ignore_sanitizer_log(sanitizer_log):
+                return self._move_to_artifacts(sanitizer_log_name, proc.returncode, file=sanitizer_log)
         return None
 
     def compile_with_kphp(self, use_dynamic_incremental_linkage=True):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
 
-        asan_log_name = "kphp_build_asan_log"
-        env, asan_glob_mask = self._prepare_asan_env(self._kphp_build_tmp_dir, asan_log_name)
+        sanitizer_log_name = "kphp_build_sanitizer_log"
+        env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name)
         env["KPHP_THREADS_COUNT"] = "3"
         env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
         env["GDB_OPTION"] = "-g0"
@@ -119,7 +120,6 @@ class KphpBuilder:
             env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
             env["DISTCC_DIR"] = self._kphp_build_tmp_dir
             env["DISTCC_LOG"] = os.path.join(self._kphp_build_tmp_dir, "distcc.log")
-            env["CXX"] = "distcc x86_64-linux-gnu-g++"
         else:
             env["KPHP_JOBS_COUNT"] = "2"
 
@@ -136,8 +136,8 @@ class KphpBuilder:
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
 
-        self._kphp_build_asan_log_artifact = self._move_asan_logs_to_artifacts(
-            asan_glob_mask, kphp_compilation_proc, asan_log_name)
+        self._kphp_build_sanitizer_log_artifact = self._move_sanitizer_logs_to_artifacts(
+            sanitizer_glob_mask, kphp_compilation_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
                 "^Starting php to cpp transpiling\\.\\.\\.$",

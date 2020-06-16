@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "common/algorithms/find.h"
+#include "common/sanitizer.h"
 #include "common/type_traits/list_of_types.h"
 
 #include "runtime/allocator.h"
@@ -63,7 +64,7 @@ inline double divide(const var &lhs, int rhs);
 
 inline double divide(int lhs, double rhs);
 
-inline double divide(double lhs, double rhs);
+inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
 
 inline double divide(const string &lhs, double rhs);
 

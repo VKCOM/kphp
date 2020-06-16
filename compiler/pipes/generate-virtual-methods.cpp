@@ -150,7 +150,7 @@ public:
     }
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) final {
     if (auto func_call = root.try_as<op_func_call>()) {
       find_interface_in_func_call(func_call);
     } else if (auto set_operation = root.try_as<op_set>()) {

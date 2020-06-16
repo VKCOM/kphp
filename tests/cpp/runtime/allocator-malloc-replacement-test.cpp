@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "common/asan.h"
+#include "common/sanitizer.h"
 
 #include "runtime/allocator.h"
 
@@ -30,6 +30,8 @@ TEST(allocator_malloc_replacement_test, test_replacement_raii) {
   ASSERT_FALSE(dl::is_malloc_replaced());
 }
 
+void *alloc_no_inline(int x);
+
 TEST(allocator_malloc_replacement_test, test_replace_and_alloc) {
   ASSERT_FALSE(dl::is_malloc_replaced());
 
@@ -37,8 +39,7 @@ TEST(allocator_malloc_replacement_test, test_replace_and_alloc) {
   {
     auto guard = make_malloc_replacement_with_script_allocator();
     ASSERT_TRUE(dl::is_malloc_replaced());
-
-    void *mem = std::malloc(128);
+    void *mem = alloc_no_inline(128);
     ASSERT_TRUE(mem);
 #if !ASAN_ENABLED
     // asan заменяет malloc, и хуки перестают работать

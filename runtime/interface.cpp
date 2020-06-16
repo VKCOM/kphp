@@ -747,8 +747,8 @@ var v$_ENV     __attribute__ ((weak));
 var v$argc  __attribute__ ((weak));
 var v$argv  __attribute__ ((weak));
 
-static char uploaded_files_storage[sizeof(array<int>)];
-static array<int> *uploaded_files = reinterpret_cast <array<int> *> (uploaded_files_storage);
+static std::aligned_storage_t<sizeof(array<int>), alignof(array<int>)> uploaded_files_storage;
+static array<int> *uploaded_files = reinterpret_cast<array<int> *> (&uploaded_files_storage);
 static long long uploaded_files_last_query_num = -1;
 
 static const int MAX_FILES = 100;
@@ -1135,7 +1135,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     Optional<string> tmp_name;
     if (v$_FILES.count() < MAX_FILES) {
       if (dl::query_num != uploaded_files_last_query_num) {
-        new(uploaded_files_storage) array<int>();
+        new(&uploaded_files_storage) array<int>();
         uploaded_files_last_query_num = dl::query_num;
       }
 

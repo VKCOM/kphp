@@ -2511,7 +2511,9 @@ array<var> f$unpack(const string &pattern, const string &data) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
-              value = *(double *)(data.c_str() + data_pos);
+              double double_value = 0;
+              memcpy(&double_value, data.c_str() + data_pos, sizeof(double));
+              value = double_value;
               data_pos += (int)sizeof(double);
               break;
             }
@@ -2524,7 +2526,8 @@ array<var> f$unpack(const string &pattern, const string &data) {
               }
 
               // по-умолчанию данные хранятся в текущем машинном порядоке (Q флаг)
-              unsigned long long value_byteordered = *(unsigned long long *)(data.c_str() + data_pos);
+              unsigned long long value_byteordered = 0;
+              memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(value_byteordered));
               if (format == 'P') {
                 // для P данные храним в little endian
                 value_byteordered = le64toh(value_byteordered);

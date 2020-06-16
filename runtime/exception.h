@@ -29,7 +29,18 @@ extern Exception CurException;
 
 #define CHECK_EXCEPTION(action) if (!CurException.is_null()) {action;}
 
-#define TRY_CALL_(CallT, call, action) ({CallT x_tmp___ = (call); CHECK_EXCEPTION(action); std::move(x_tmp___);})
+#ifdef __clang__
+  #define TRY_CALL_RET_(x) x
+#else
+  #define TRY_CALL_RET_(x) std::move(x)
+#endif
+
+#define TRY_CALL_(CallT, call, action) ({ \
+  CallT x_tmp___ = (call);                \
+  CHECK_EXCEPTION(action);                \
+  TRY_CALL_RET_(x_tmp___);                \
+})
+
 #define TRY_CALL_VOID_(call, action) ({(call); CHECK_EXCEPTION(action); void();})
 
 #define TRY_CALL(CallT, ResT, call) TRY_CALL_(CallT, call, return (ResT()))

@@ -75,8 +75,8 @@ void run_function_pass(VertexAdaptor<Op> &vertex, FunctionPassT *pass) {
 template<typename FunctionPassT>
 class FunctionPassTraits {
   struct get_data_helper {
-    template<typename T> static decltype(std::declval<T>().get_data()) Test(nullptr_t);
-    template<typename T> static nullptr_t Test(...);
+    template<typename T> static decltype(std::declval<T>().get_data()) Test(std::nullptr_t);
+    template<typename T> static std::nullptr_t Test(...);
   };
 public:
   using GetDataReturnT = decltype(get_data_helper::template Test<FunctionPassT>(nullptr));
@@ -105,7 +105,7 @@ private:
   static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&ret, std::false_type) {
     return {std::move(function), std::move(ret)};
   }
-  static nullptr_t get_data_impl(FunctionPassT &, std::true_type) {
+  static std::nullptr_t get_data_impl(FunctionPassT &, std::true_type) {
     return nullptr;
   }
   static auto get_data_impl(FunctionPassT &f, std::false_type) {

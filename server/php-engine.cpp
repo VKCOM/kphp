@@ -15,7 +15,7 @@
 #include "auto/TL/constants/common.h"
 #include "auto/TL/constants/kphp.h"
 #include "common/allocators/zmalloc.h"
-#include "common/asan.h"
+#include "common/sanitizer.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
@@ -1595,7 +1595,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       double actual_script_timeout = custom_settings.has_timeout() ? normalize_script_timeout(custom_settings.php_timeout_ms / 1000.0) : script_timeout;
       set_connection_timeout(c, actual_script_timeout);
 
-      char buf[len];
+      char buf[len + 1];
       auto fetched_bytes = tl_fetch_data(buf, len);
       if (fetched_bytes == -1) {
         client_rpc_error(c, req_id, tl_fetch_error_code(), tl_fetch_error_string());

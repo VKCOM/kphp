@@ -16,7 +16,7 @@ function get_geoip ($ip) {
 // $key = "geoip.00." . ip_to_hex ($ip);
   $ttt += -microtime (true);
 
-  for ($z = 0; $z <= 32; $z++) {
+  for ($z = 1; $z <= 32; $z++) {
     if ($z == 32) {
       $key = "geoip.32." . dechex($ip);
     } else if ($z < 10) {

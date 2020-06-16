@@ -22,7 +22,7 @@ function test_basic_encrypt_decrypt() {
 
     $ivlen = openssl_cipher_iv_length($method);
     $iv    = '';
-    srand(time() + (intval(microtime(true) * 1000000) % 1000000));
+    srand(time() + intval(microtime(true)));
     while(strlen($iv) < $ivlen) $iv .= chr(rand(0,255));
 
     $encrypted = openssl_encrypt($data, $method, $password, 0, $iv);

@@ -12,13 +12,34 @@ extern const char *last_wait_error;
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
 #define RETURN_VOID() output_->save_void (); return true;
-#define TRY_WAIT(labelName, a, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); a = input_->load <T> (); }
-#define TRY_WAIT_DROP_RESULT(labelName, T) if (!resumable_finished) { pos__ = &&labelName; WAIT; labelName: php_assert (input_ != nullptr); input_->load <T> (); }
-#define RESUMABLE_BEGIN if (pos__ != nullptr) goto *pos__; do {
-#define RESUMABLE_END \
-      } while (0); \
-      php_assert (0);\
-      return false;\
+
+#define TRY_WAIT(labelName, a, T)             \
+  if (!resumable_finished) {                  \
+    pos__ = &&labelName;                      \
+    WAIT;                                     \
+    labelName: php_assert (input_ != nullptr);\
+    a = input_->load <T> ();                  \
+  }
+
+#define TRY_WAIT_DROP_RESULT(labelName, T)    \
+  if (!resumable_finished) {                  \
+    pos__ = &&labelName;                      \
+    WAIT;                                     \
+    labelName: php_assert (input_ != nullptr);\
+    input_->load <T> ();                      \
+  }
+
+#define RESUMABLE_BEGIN   \
+  if (pos__ != nullptr) { \
+    goto *pos__;          \
+  }                       \
+  do {
+
+#define RESUMABLE_END                   \
+  } while (0);                          \
+  pos__ = &&unreachable_end_label;      \
+  unreachable_end_label: php_assert (0);\
+  return false;                         \
 
 
 class Resumable : public ManagedThroughDlAllocator {

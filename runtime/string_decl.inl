@@ -68,7 +68,7 @@ public:
   }
 
   inline string();
-  inline string(const string &str);
+  inline string(const string &str) noexcept;
   inline string(string &&str) noexcept;
   inline string(const char *s, size_type n);
   inline explicit string(const char *s);
@@ -79,7 +79,7 @@ public:
 
   inline ~string();
 
-  inline string &operator=(const string &str);
+  inline string &operator=(const string &str) noexcept;
   inline string &operator=(string &&str) noexcept;
 
   inline size_type size() const;

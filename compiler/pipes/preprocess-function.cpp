@@ -26,7 +26,7 @@ public:
     return !function->is_extern() && !function->is_template;
   }
 
-  VertexPtr on_exit_vertex(VertexPtr root) {
+  VertexPtr on_exit_vertex(VertexPtr root) final {
     if (auto clone_root = root.try_as<op_clone>()) {
       auto as_instance = infer_class_of_expr(stage::get_function(), clone_root).try_as<AssumInstance>();
       kphp_error_act(as_instance, "`clone` keyword could be used only with instances", return clone_root);
@@ -74,7 +74,7 @@ public:
     return root;
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root) {
+  VertexPtr on_enter_vertex(VertexPtr root) final {
     if (auto instanceof = root.try_as<op_instanceof>()) {
       auto str_repr_of_class = GenTree::get_actual_value(instanceof->rhs())->get_string();
       instanceof->derived_class = G->get_class(str_repr_of_class);

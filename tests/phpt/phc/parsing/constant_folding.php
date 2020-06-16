@@ -253,7 +253,7 @@ echo '0 >= 0x786F = '; var_dump (0 >= 0x786F);
 echo '0 && 0x786F = '; var_dump (0 && 0x786F);
 echo '0 || 0x786F = '; var_dump (0 || 0x786F);
 #echo '0 << 0x786F = '; var_dump (0 << 0x786F);
-echo '0 >> 0x786F = '; var_dump (0 >> 0x786F);
+echo '0 >> 0xF = '; var_dump (0 >> 0xF);
 echo '~ 0 = '; var_dump (~ 0);
 echo '! 0 = '; var_dump (! 0);
 }
@@ -512,7 +512,7 @@ echo '1 >= 0x786F = '; var_dump (1 >= 0x786F);
 echo '1 && 0x786F = '; var_dump (1 && 0x786F);
 echo '1 || 0x786F = '; var_dump (1 || 0x786F);
 #echo '1 << 0x786F = '; var_dump (1 << 0x786F);
-echo '1 >> 0x786F = '; var_dump (1 >> 0x786F);
+echo '1 >> 0xF = '; var_dump (1 >> 0xF);
 echo '~ 1 = '; var_dump (~ 1);
 echo '! 1 = '; var_dump (! 1);
 }
@@ -771,7 +771,7 @@ echo '5 >= 0x786F = '; var_dump (5 >= 0x786F);
 echo '5 && 0x786F = '; var_dump (5 && 0x786F);
 echo '5 || 0x786F = '; var_dump (5 || 0x786F);
 #echo '5 << 0x786F = '; var_dump (5 << 0x786F);
-echo '5 >> 0x786F = '; var_dump (5 >> 0x786F);
+echo '5 >> 0xF = '; var_dump (5 >> 0xF);
 echo '~ 5 = '; var_dump (~ 5);
 echo '! 5 = '; var_dump (! 5);
 }
@@ -1030,7 +1030,7 @@ echo '-1 >= 0x786F = '; var_dump (-1 >= 0x786F);
 echo '-1 && 0x786F = '; var_dump (-1 && 0x786F);
 echo '-1 || 0x786F = '; var_dump (-1 || 0x786F);
 #echo '-1 << 0x786F = '; var_dump (-1 << 0x786F);
-echo '-1 >> 0x786F = '; var_dump (-1 >> 0x786F);
+echo '-1 >> 0xF = '; var_dump (-1 >> 0xF);
 echo '~ -1 = '; var_dump (~ -1);
 echo '! -1 = '; var_dump (! -1);
 }
@@ -1289,7 +1289,7 @@ echo '-10000 >= 0x786F = '; var_dump (-10000 >= 0x786F);
 echo '-10000 && 0x786F = '; var_dump (-10000 && 0x786F);
 echo '-10000 || 0x786F = '; var_dump (-10000 || 0x786F);
 #echo '-10000 << 0x786F = '; var_dump (-10000 << 0x786F);
-echo '-10000 >> 0x786F = '; var_dump (-10000 >> 0x786F);
+echo '-10000 >> 0xF = '; var_dump (-10000 >> 0xF);
 echo '~ -10000 = '; var_dump (~ -10000);
 echo '! -10000 = '; var_dump (! -10000);
 }
@@ -1548,7 +1548,7 @@ echo 'true >= 0x786F = '; var_dump (true >= 0x786F);
 echo 'true && 0x786F = '; var_dump (true && 0x786F);
 echo 'true || 0x786F = '; var_dump (true || 0x786F);
 #echo 'true << 0x786F = '; var_dump (true << 0x786F);
-echo 'true >> 0x786F = '; var_dump (true >> 0x786F);
+echo 'true >> 0xF = '; var_dump (true >> 0xF);
 echo '! true = '; var_dump (! true);
 }
 
@@ -1806,7 +1806,7 @@ echo 'false >= 0x786F = '; var_dump (false >= 0x786F);
 echo 'false && 0x786F = '; var_dump (false && 0x786F);
 echo 'false || 0x786F = '; var_dump (false || 0x786F);
 #echo 'false << 0x786F = '; var_dump (false << 0x786F);
-echo 'false >> 0x786F = '; var_dump (false >> 0x786F);
+echo 'false >> 0xF = '; var_dump (false >> 0xF);
 echo '! false = '; var_dump (! false);
 }
 
@@ -2064,7 +2064,7 @@ echo '"String" >= 0x786F = '; var_dump ("String" >= 0x786F);
 echo '"String" && 0x786F = '; var_dump ("String" && 0x786F);
 echo '"String" || 0x786F = '; var_dump ("String" || 0x786F);
 #echo '"String" << 0x786F = '; var_dump ("String" << 0x786F);
-echo '"String" >> 0x786F = '; var_dump ("String" >> 0x786F);
+echo '"String" >> 0xF = '; var_dump ("String" >> 0xF);
 #echo '~ "String" = '; var_dump (~ "String");
 #echo '! "String" = '; var_dump (! "String");
 }
@@ -2323,7 +2323,7 @@ echo '"num3" >= 0x786F = '; var_dump ("num3" >= 0x786F);
 echo '"num3" && 0x786F = '; var_dump ("num3" && 0x786F);
 echo '"num3" || 0x786F = '; var_dump ("num3" || 0x786F);
 #echo '"num3" << 0x786F = '; var_dump ("num3" << 0x786F);
-echo '"num3" >> 0x786F = '; var_dump ("num3" >> 0x786F);
+echo '"num3" >> 0xF = '; var_dump ("num3" >> 0xF);
 #echo '~ "num3" = '; var_dump (~ "num3");
 #echo '! "num3" = '; var_dump (! "num3");
 }
@@ -2582,7 +2582,7 @@ echo '"3" >= 0x786F = '; var_dump ("3" >= 0x786F);
 echo '"3" && 0x786F = '; var_dump ("3" && 0x786F);
 echo '"3" || 0x786F = '; var_dump ("3" || 0x786F);
 #echo '"3" << 0x786F = '; var_dump ("3" << 0x786F);
-echo '"3" >> 0x786F = '; var_dump ("3" >> 0x786F);
+echo '"3" >> 0xF = '; var_dump ("3" >> 0xF);
 #echo '~ "3" = '; var_dump (~ "3");
 #echo '! "3" = '; var_dump (! "3");
 }
@@ -3359,7 +3359,7 @@ echo '0x786F >= 0x786F = '; var_dump (0x786F >= 0x786F);
 echo '0x786F && 0x786F = '; var_dump (0x786F && 0x786F);
 echo '0x786F || 0x786F = '; var_dump (0x786F || 0x786F);
 #echo '0x786F << 0x786F = '; var_dump (0x786F << 0x786F);
-echo '0x786F >> 0x786F = '; var_dump (0x786F >> 0x786F);
+echo '0x786F >> 0xF = '; var_dump (0x786F >> 0xF);
 echo '~ 0x786F = '; var_dump (~ 0x786F);
 echo '! 0x786F = '; var_dump (! 0x786F);
 }

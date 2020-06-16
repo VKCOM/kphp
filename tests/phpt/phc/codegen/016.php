@@ -13,8 +13,16 @@
 #ifndef KittenPHP
   $value = g();
 	$a[f()] = $value;
-  if (false)
+  if (false) {
 #endif
-	$a[f()] = g();
+    if (strpos(get_engine_version(), "Clang") !== false) {
+      $value = g();
+      $a[f()] = $value;
+    } else {
+	    $a[f()] = g();
+	  }
+#ifndef KittenPHP
+  }
+#endif
 	var_dump($a);
 ?>

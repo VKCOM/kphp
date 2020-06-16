@@ -168,7 +168,7 @@ string::string() :
   p(string_cache::empty_string().ref_data()) {
 }
 
-string::string(const string &str) :
+string::string(const string &str) noexcept :
   p(str.inner()->ref_copy()) {
 }
 
@@ -262,7 +262,7 @@ string::~string() {
   destroy();
 }
 
-string &string::operator=(const string &str) {
+string &string::operator=(const string &str) noexcept {
   return assign(str);
 }
 
@@ -703,9 +703,13 @@ bool string::try_to_float(double *val) const {
 
 var string::to_numeric() const {
   double res = to_float();
-  int int_res = static_cast<int>(res);
-  if (int_res == res) {
-    return int_res;
+  constexpr double int_max = std::numeric_limits<int>::max();
+  constexpr double int_min = std::numeric_limits<int>::min();
+  if (int_min <= res && res <= int_max) {
+    const int int_res = static_cast<int>(res);
+    if (int_res == res) {
+      return int_res;
+    }
   }
   return res;
 }

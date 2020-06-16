@@ -271,6 +271,15 @@ dl::size_type array<T>::array_inner::estimate_size(int &new_int_size, int &new_s
   if (new_int_size % 5 == 0) {
     new_int_size += 2;
   }
+
+  constexpr auto int_hash_align = alignof(int_hash_entry);
+  if (int_hash_align != 8) {
+    // помогаем string_hash_entry быть выровненным на 8 байт
+    static_assert(int_hash_align <= alignof(array_inner), "unexpected int_hash_entry align");
+    const auto string_keys_offset = sizeof(array_inner) + new_int_size * sizeof(int_hash_entry);
+    const auto aligned_offset = (string_keys_offset + 7) & -8;
+    new_int_size += (aligned_offset - string_keys_offset) / int_hash_align;
+  }
   new_string_size = 2 * new_string_size + 3;
   if (new_string_size % 5 == 0) {
     new_string_size += 2;
@@ -978,7 +987,7 @@ inline array<T>::array(const std::initializer_list<std::pair<KeyT, T>> &list) :
 
 
 template<class T>
-array<T>::array(const array<T> &other) :
+array<T>::array(const array<T> &other) noexcept :
   p(other.p->ref_copy()) {}
 
 template<class T>
@@ -989,7 +998,7 @@ array<T>::array(array<T> &&other) noexcept :
 
 template<class T>
 template<class T1, class>
-array<T>::array(const array<T1> &other) {
+array<T>::array(const array<T1> &other) noexcept {
   copy_from(other);
 }
 
@@ -1008,7 +1017,7 @@ inline array<T> array<T>::create(Args &&... args) {
 }
 
 template<class T>
-array<T> &array<T>::operator=(const array &other) {
+array<T> &array<T>::operator=(const array &other) noexcept {
   auto other_copy = other.p->ref_copy();
   destroy();
   p = other_copy;
@@ -1027,7 +1036,7 @@ array<T> &array<T>::operator=(array &&other) noexcept {
 
 template<class T>
 template<class T1, class>
-array<T> &array<T>::operator=(const array<T1> &other) {
+array<T> &array<T>::operator=(const array<T1> &other) noexcept {
   destroy();
   copy_from(other);
   return *this;

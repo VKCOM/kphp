@@ -124,14 +124,22 @@ def make_relpath(file_dir, file_path):
     return rel_path
 
 
-def get_modes():
-    return {
-        "asan": (
-            "asan", "ASAN_OPTIONS=detect_leaks=0",
-            "g=1 asan=1 php tl2php kphp-unittests tlclient tasks rpc-proxy"
-        ),
-        "normal": ("normal", "", "php tl2php kphp-unittests tlclient tasks rpc-proxy")
-    }
+MAKE_TARGETS = "php tl2php kphp-unittests tlclient tasks rpc-proxy"
+TESTING_MODES = {
+    "gcc": ("", MAKE_TARGETS),
+    "gcc-asan": (
+        "ASAN_OPTIONS=detect_leaks=0",
+        "g=1 asan=1 " + MAKE_TARGETS
+    ),
+    "clang-ubsan": (
+        "UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1",
+        "CC=clang-7 CXX=clang++-7 g=1 ubsan=1 " + MAKE_TARGETS
+    )
+}
+
+# TODO: Remove this code after teamcity update
+TESTING_MODES["normal"] = TESTING_MODES["gcc"]
+TESTING_MODES["asan"] = TESTING_MODES["gcc-asan"]
 
 
 def parse_args():
@@ -178,8 +186,8 @@ def parse_args():
         type=str,
         dest="mode",
         default="asan",
-        choices=get_modes().keys(),
-        help="specify testing mode, allowed: {}".format(", ".join(get_modes().keys()))
+        choices=TESTING_MODES.keys(),
+        help="specify testing mode, allowed: {}".format(", ".join(TESTING_MODES.keys()))
     )
 
     parser.add_argument(
@@ -222,10 +230,10 @@ if __name__ == "__main__":
         distcc_host_list = make_relpath(runner_dir, distcc_hosts)
         distcc_options = "--distcc-host-list {}".format(distcc_host_list)
 
-    mode_name, env_vars, options = get_modes()[args.mode]
+    env_vars, options = TESTING_MODES[args.mode]
     runner.add_test_group(
         name="make-kphp",
-        description="make kphp and runtime in {} mode".format(mode_name),
+        description="make kphp and runtime in {} mode".format(args.mode),
         cmd="{env_vars} make -C {engine_root} -j{{jobs}} {options}".format(
             env_vars=env_vars,
             engine_root=root_engine_path,
@@ -236,7 +244,7 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="kphp-tests",
-        description="run kphp tests in {} mode".format(mode_name),
+        description="run kphp tests in {} mode".format(args.mode),
         cmd="{kphp_runner} -j{{jobs}} {distcc_options}".format(
             kphp_runner=kphp_test_runner,
             distcc_options=distcc_options
@@ -253,7 +261,7 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="zend-tests",
-        description="run php tests from zend repo in {} mode".format(mode_name),
+        description="run php tests from zend repo in {} mode".format(args.mode),
         cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options}".format(
             kphp_runner=kphp_test_runner,
             zend_repo=args.zend_repo,
@@ -269,7 +277,7 @@ if __name__ == "__main__":
     tl_tests_dir = make_relpath(runner_dir, "TL-tests")
     runner.add_test_group(
         name="tl2php",
-        description="gen php classes with tests from tl schema in {} mode".format(mode_name),
+        description="gen php classes with tests from tl schema in {} mode".format(args.mode),
         cmd="{env_vars} {tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
             env_vars=env_vars,
             tl2php=tl2php_bin,
@@ -282,7 +290,7 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="typed-tl-tests",
-        description="run typed tl tests in {} mode".format(mode_name),
+        description="run typed tl tests in {} mode".format(args.mode),
         cmd="KPHP_TL_SCHEMA={combined_tlo} KPHP_GEN_TL_INTERNALS=1 {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
@@ -292,14 +300,14 @@ if __name__ == "__main__":
         skip=args.steps and "typed-tl-tests" not in args.steps
     )
 
-    if mode_name != "asan" or get_distributive_name() != "jessie":
+    if args.mode != "asan" or get_distributive_name() != "jessie":
         distcc_hosts_env_var = ""
         if distcc_host_list:
             distcc_hosts_env_var = "KPHP_TESTS_DISTCC_FILE={} ".format(os.path.abspath(distcc_host_list))
         runner.add_test_group(
             name="functional-tests",
-            description="run kphp functional tests in {} mode".format(mode_name),
-            cmd="{distcc_hosts_env_var} python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
+            description="run kphp functional tests in {} mode".format(args.mode),
+            cmd="{distcc_hosts_env_var}python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
                 functional_tests_dir=functional_tests_dir,
                 distcc_hosts_env_var=distcc_hosts_env_var
             ),

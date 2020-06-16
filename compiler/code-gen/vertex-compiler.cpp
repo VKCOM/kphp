@@ -1148,8 +1148,8 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   }
 
   bool complex_flag = was_dynamic || was_object;
-  string len_name;
-
+  std::string len_name;
+  std::string tmp_string_name;
   if (complex_flag) {
     W << "(" << BEGIN;
     vector<string> to_add;
@@ -1182,6 +1182,8 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       W << " + max_string_size (" << str << ")";
     }
     W << ";" << NL;
+    tmp_string_name = gen_unique_name("tmp_string");
+    W << "string " << tmp_string_name << " = ";
   }
 
   W << "string (";
@@ -1205,8 +1207,9 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   W << ".finish_append()";
 
   if (complex_flag) {
-    W << ";" << NL <<
-      END << ")";
+    W << ";" << NL
+      << tmp_string_name << ";" << NL
+      << END << ")";
   }
 }
 

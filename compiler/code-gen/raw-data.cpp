@@ -81,9 +81,6 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
   int shift = 0;
 
-  W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double) << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
-  W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
-
   for (auto var_it : const_raw_array_vars) {
     VertexAdaptor<op_array> vertex = var_it->init_val.as<op_array>();
 
@@ -108,6 +105,9 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
 
     if (shift != 0) {
       W << ",";
+    } else {
+      W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double) << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
+      W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
     }
 
     shifts.push_back(shift);
@@ -149,7 +149,9 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     }
   }
 
-  W << "};\n";
+  if (shift) {
+    W << "};\n";
+  }
 
   return shifts;
 }

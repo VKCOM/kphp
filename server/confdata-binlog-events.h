@@ -39,7 +39,7 @@ public:
 
 private:
   template<class B>
-  int get_extra_bytes_impl(std::enable_if_t<sizeof(std::declval<B>().data_len)> *) const noexcept {
+  int get_extra_bytes_impl(decltype(std::declval<B>().data_len) *) const noexcept {
     return BASE::key_len + BASE::data_len + USE_TERMINATED_NULL + offsetof(BASE, data) - sizeof(BASE);
   }
 
@@ -97,7 +97,7 @@ public:
 
 private:
   template<class B>
-  short get_flags_impl(std::enable_if_t<sizeof(std::declval<B>().flags)> *) const noexcept {
+  short get_flags_impl(decltype(std::declval<B>().flags) *) const noexcept {
     return BASE::flags;
   }
 
@@ -105,7 +105,7 @@ private:
   short get_flags_impl(...) const noexcept { return 0; }
 
   template<class B>
-  int get_delay_impl(std::enable_if_t<sizeof(std::declval<B>().delay)> *) const noexcept {
+  int get_delay_impl(decltype(std::declval<B>().delay) *) const noexcept {
     return BASE::delay;
   }
 

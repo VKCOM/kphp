@@ -37,8 +37,10 @@ inline bool f$boolval(const var &val) {
   return val.to_bool();
 }
 
-
 template<class T, class = enable_for_bool_int_double<T>>
+inline int f$intval(const T &val) ubsan_supp("float-cast-overflow");
+
+template<class T, class>
 inline int f$intval(const T &val) {
   return static_cast<int>(val);
 }

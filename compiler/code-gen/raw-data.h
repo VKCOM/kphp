@@ -43,7 +43,7 @@ std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
     ii++;
   }
   if (!raw_data.empty()) {
-    W << "static const char *raw = " << RawString(raw_data) << ";" << NL;
+    W << "alignas(8) static const char raw[] = " << RawString(raw_data) << ";" << NL;
   }
   return const_string_shifts;
 }

@@ -3,6 +3,8 @@
 #include <climits>
 #include <cstring>
 
+#include "common/sanitizer.h"
+
 constexpr int STRLEN_WARNING_FLAG = 1 << 30;
 constexpr int STRLEN_OBJECT = -3;
 constexpr int STRLEN_ERROR = -2;
@@ -58,7 +60,7 @@ private:
   extra_ref_cnt_value value_;
 };
 
-inline int string_hash(const char *p, int l) __attribute__ ((always_inline));
+inline int string_hash(const char *p, int l) __attribute__ ((always_inline)) ubsan_supp("alignment");
 
 int string_hash(const char *p, int l) {
   static const unsigned int HASH_MUL_ = 1915239017;

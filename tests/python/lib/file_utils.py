@@ -85,9 +85,9 @@ def error_can_be_ignored(ignore_patterns, binary_error_text):
     return True
 
 
-def can_ignore_asan_log(asan_log_file):
-    with open(asan_log_file, 'rb') as f:
-        ignore_asan = error_can_be_ignored(
+def can_ignore_sanitizer_log(sanitizer_log_file):
+    with open(sanitizer_log_file, 'rb') as f:
+        ignore_sanitizer = error_can_be_ignored(
             ignore_patterns=[
                 "^==\\d+==WARNING: ASan doesn't fully support makecontext/swapcontext functions and may produce false positives in some cases\\!$",
                 "^==\\d+==WARNING: ASan is ignoring requested __asan_handle_no_return: stack top.+$",
@@ -96,7 +96,7 @@ def can_ignore_asan_log(asan_log_file):
             ],
             binary_error_text=f.read())
 
-    if ignore_asan:
-        os.remove(asan_log_file)
+    if ignore_sanitizer:
+        os.remove(sanitizer_log_file)
 
-    return ignore_asan
+    return ignore_sanitizer

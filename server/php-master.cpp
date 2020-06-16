@@ -147,6 +147,9 @@ struct CpuStat {
 
   CpuStat(const CpuStatTimestamp &from, const CpuStatTimestamp &to) {
     unsigned long long total_diff = to.total_time - from.total_time;
+    if (!total_diff) {
+      ++total_diff;
+    }
     cpu_u_usage = (double)(to.utime - from.utime) / (double)total_diff;
     cpu_s_usage = (double)(to.stime - from.stime) / (double)total_diff;
     cpu_usage = cpu_u_usage + cpu_s_usage;

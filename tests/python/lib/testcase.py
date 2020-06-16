@@ -10,7 +10,7 @@ from unittest import TestCase
 
 from .kphp_server import KphpServer
 from .kphp_builder import KphpBuilder
-from .file_utils import search_combined_tlo, read_distcc_hosts, can_ignore_asan_log
+from .file_utils import search_combined_tlo, read_distcc_hosts, can_ignore_sanitizer_log
 
 logging.disable(logging.DEBUG)
 
@@ -168,8 +168,9 @@ class KphpServerAutoTestCase(BaseTestCase):
             cls.kphp_server_bin = os.path.join(cls.kphp_server_working_dir, "kphp_server")
             os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)
 
-        cls.asan_pattern = os.path.join(cls.kphp_server_working_dir, "engine_asan_log")
-        os.environ["ASAN_OPTIONS"] = "detect_leaks=0:log_path=" + cls.asan_pattern
+        cls.sanitizer_pattern = os.path.join(cls.kphp_server_working_dir, "engine_sanitizer_log")
+        os.environ["ASAN_OPTIONS"] = "detect_leaks=0:log_path=" + cls.sanitizer_pattern
+        os.environ["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(cls.sanitizer_pattern)
         cls.kphp_server = KphpServer(
             engine_bin=cls.kphp_server_bin,
             working_dir=cls.kphp_server_working_dir
@@ -185,9 +186,9 @@ class KphpServerAutoTestCase(BaseTestCase):
             os.remove(cls.kphp_server_bin)
         except OSError:
             pass
-        for asan_log in glob.glob(cls.asan_pattern + ".*"):
-            if not can_ignore_asan_log(asan_log):
-                raise RuntimeError("Got unexpected asan log '{}'".format(asan_log))
+        for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
+            if not can_ignore_sanitizer_log(sanitizer_log):
+                raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
 
     @classmethod
     def extra_class_setup(cls):

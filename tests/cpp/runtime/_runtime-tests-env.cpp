@@ -4,6 +4,11 @@
 #include "runtime/interface.h"
 #include "server/php-engine-vars.h"
 
+// Используется в некоторых тестах, что бы обмануть clang и не дать ему выкинуть вызов std::malloc из кода
+void *alloc_no_inline(int x) {
+  return std::malloc(x);
+}
+
 class RuntimeTestsEnvironment : public testing::Environment {
 public:
   ~RuntimeTestsEnvironment() final {}

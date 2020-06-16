@@ -25,27 +25,27 @@ public:
 
   var(const void *) = delete; // deprecate conversion from pointer to boolean
   inline var() = default;
-  inline var(const Unknown &u);
-  inline var(const char *s, int len);
-  inline var(const var &v);
-  inline var(var &&v);
+  inline var(const Unknown &u) noexcept;
+  inline var(const char *s, int len) noexcept;
+  inline var(const var &v) noexcept;
+  inline var(var &&v) noexcept;
 
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
-  inline var(T &&v);
+  inline var(T &&v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var(const Optional<T> &v);
+  inline var(const Optional<T> &v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var(Optional<T> &&v);
+  inline var(Optional<T> &&v) noexcept;
 
-  inline var &operator=(const var &other);
-  inline var &operator=(var &&other);
+  inline var &operator=(const var &other) noexcept;
+  inline var &operator=(var &&other) noexcept;
 
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<std::decay_t<T>>::value>>
-  inline var &operator=(T &&v);
+  inline var &operator=(T &&v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var &operator=(const Optional<T> &v);
+  inline var &operator=(const Optional<T> &v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_var<T>::value>>
-  inline var &operator=(Optional<T> &&v);
+  inline var &operator=(Optional<T> &&v) noexcept;
 
   inline var &assign(const char *other, int len);
 

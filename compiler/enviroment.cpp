@@ -7,6 +7,7 @@
 #include <sstream>
 #include <unistd.h>
 
+#include "common/algorithms/contains.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
 
@@ -519,6 +520,9 @@ bool KphpEnviroment::init() {
   }
   if (dynamic_incremental_linkage_) {
     ss << " -fPIC";
+  }
+  if (vk::contains(cxx_, "clang")) {
+    ss << " -Wno-invalid-source-encoding";
   }
   #if __cplusplus <= 201103L
     ss << " -std=gnu++11";

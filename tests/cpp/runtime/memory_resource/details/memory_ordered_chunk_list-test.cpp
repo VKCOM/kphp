@@ -22,14 +22,14 @@ TEST(memory_ordered_chunk_list_test, add_memory_and_flush_to) {
     ordered_list.add_memory(some_memory + chunk_offsets[i], chunk_sizes[i]);
   }
 
-  constexpr memory_resource::size_type gap1 = 510250;
+  constexpr memory_resource::size_type gap1 = memory_resource::details::align_for_chunk(510250);
   ASSERT_GT(gap1, chunk_offsets.back());
   char *some_memory_with_gap1 = some_memory + gap1;
   for (size_t i = 0; i < chunk_sizes.size(); ++i) {
     ordered_list.add_memory(some_memory_with_gap1 + chunk_offsets[i], chunk_sizes[i]);
   }
 
-  constexpr memory_resource::size_type gap2 = 235847;
+  constexpr memory_resource::size_type gap2 = memory_resource::details::align_for_chunk(235847);
   ASSERT_GT(gap2, chunk_offsets.back());
   ASSERT_GT(gap1, chunk_offsets.back() + gap2);
   char *some_memory_with_gap2 = some_memory + gap2;
@@ -72,7 +72,7 @@ TEST(memory_ordered_chunk_list_test, add_random) {
 
   for (auto &chunk : chunks) {
     memory_resource::size_type mem_size = dis(gen);
-    char *mem = static_cast<char *>(mem_resource.allocate(mem_size + 1));
+    char *mem = static_cast<char *>(mem_resource.allocate(memory_resource::details::align_for_chunk(mem_size + 1)));
     ordered_list.add_memory(mem, mem_size);
     chunk = {mem, mem_size};
   }

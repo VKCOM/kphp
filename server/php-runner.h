@@ -2,7 +2,7 @@
 
 #include <ucontext.h>
 
-#include "common/asan.h"
+#include "common/sanitizer.h"
 #include "drinkless/dl-utils-lite.h"
 
 #include "server/php-engine-vars.h"

@@ -23,6 +23,14 @@ struct array_size {
   inline array_size &min(const array_size &other);
 };
 
+#ifdef __clang__
+  // clang ругается на 'flexible array member x of type T[] with non-trivial destruction'
+  #define KPHP_ARRAY_TAIL_SIZE 0
+#else
+  // gcc10 ругается на out-of-bounds доступ к массиву нулевого размера
+  #define KPHP_ARRAY_TAIL_SIZE
+#endif
+
 namespace dl {
 template<class T, class TT, class T1>
 void sort(TT *begin_init, TT *end_init, const T1 &compare);
@@ -96,22 +104,22 @@ private:
     int int_buf_size;
     int string_size;
     int string_buf_size;
-    int_hash_entry int_entries[];
+    int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
 
-    inline const string_hash_entry *begin() const __attribute__ ((always_inline));
-    inline const string_hash_entry *next(const string_hash_entry *p) const __attribute__ ((always_inline));
-    inline const string_hash_entry *prev(const string_hash_entry *p) const __attribute__ ((always_inline));
-    inline const string_hash_entry *end() const __attribute__ ((always_inline));
+    inline const string_hash_entry *begin() const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const string_hash_entry *next(const string_hash_entry *p) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const string_hash_entry *prev(const string_hash_entry *p) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const string_hash_entry *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-    inline string_hash_entry *begin() __attribute__ ((always_inline));
-    inline string_hash_entry *next(string_hash_entry *p) __attribute__ ((always_inline));
-    inline string_hash_entry *prev(string_hash_entry *p) __attribute__ ((always_inline));
-    inline string_hash_entry *end() __attribute__ ((always_inline));
+    inline string_hash_entry *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline string_hash_entry *next(string_hash_entry *p) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline string_hash_entry *prev(string_hash_entry *p) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline string_hash_entry *end() __attribute__ ((always_inline)) ubsan_supp("alignment");
 
     inline bool is_string_hash_entry(const string_hash_entry *p) const __attribute__ ((always_inline));
     inline const string_hash_entry *get_string_entries() const __attribute__ ((always_inline));
@@ -219,12 +227,12 @@ public:
   template<class KeyT>
   inline array(const std::initializer_list<std::pair<KeyT, T>> &list) __attribute__ ((always_inline));
 
-  inline array(const array &other) __attribute__ ((always_inline));
+  inline array(const array &other) noexcept __attribute__ ((always_inline));
 
   inline array(array &&other) noexcept __attribute__ ((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array(const array<T1> &other) __attribute__ ((always_inline));
+  inline array(const array<T1> &other) noexcept __attribute__ ((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array(array<T1> &&other) noexcept __attribute__ ((always_inline));
@@ -232,12 +240,12 @@ public:
   template<class... Args>
   inline static array create(Args &&... args) __attribute__ ((always_inline));
 
-  inline array &operator=(const array &other) __attribute__ ((always_inline));
+  inline array &operator=(const array &other) noexcept __attribute__ ((always_inline));
 
   inline array &operator=(array &&other) noexcept __attribute__ ((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array &operator=(const array<T1> &other);
+  inline array &operator=(const array<T1> &other) noexcept;
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
   inline array &operator=(array<T1> &&other) noexcept;

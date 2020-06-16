@@ -44,19 +44,22 @@ TEST(memory_chunk_tree_test, insert_extract) {
   for (int i = 0; i < 2; ++i, ++extracted) {
     auto *mem = mem_chunk_tree.extract(99);
     ASSERT_TRUE(mem);
-    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem), 99);
+    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
+              memory_resource::details::align_for_chunk(99));
   }
 
   for (int i = 0; i < 3; ++i, ++extracted) {
     auto *mem = mem_chunk_tree.extract(99);
     ASSERT_TRUE(mem);
-    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem), 100);
+    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
+              memory_resource::details::align_for_chunk(100));
   }
 
   for (int i = 0; i < 2; ++i, ++extracted) {
     auto *mem = mem_chunk_tree.extract(112);
     ASSERT_TRUE(mem);
-    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem), 112);
+    ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
+              memory_resource::details::align_for_chunk(112));
   }
 
   auto *mem = mem_chunk_tree.extract(250);
@@ -68,12 +71,14 @@ TEST(memory_chunk_tree_test, insert_extract) {
   mem = mem_chunk_tree.extract(1);
   ++extracted;
   ASSERT_TRUE(mem);
-  ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem), 40);
+  ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
+            memory_resource::details::align_for_chunk(40));
 
   mem = mem_chunk_tree.extract(42);
   ++extracted;
   ASSERT_TRUE(mem);
-  ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem), 45);
+  ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
+            memory_resource::details::align_for_chunk(45));
 
   memory_resource::size_type prev_size = 0;
   for (; extracted != chunk_sizes.size(); ++extracted) {

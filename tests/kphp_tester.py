@@ -100,8 +100,8 @@ class KphpRunOnceRunner(KphpBuilder):
     def run_with_kphp(self):
         self._clear_working_dir(self._kphp_runtime_tmp_dir)
 
-        asan_log_name = "kphp_runtime_asan_log"
-        env, asan_glob_mask = self._prepare_asan_env(self._kphp_runtime_tmp_dir, asan_log_name)
+        sanitizer_log_name = "kphp_runtime_sanitizer_log"
+        env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_runtime_tmp_dir, sanitizer_log_name)
 
         cmd = [self._kphp_runtime_bin, "-o", "--disable-sql"]
         if not os.getuid():
@@ -113,7 +113,7 @@ class KphpRunOnceRunner(KphpBuilder):
                                             stderr=subprocess.PIPE)
         self._kphp_server_stdout, kphp_runtime_stderr = self._wait_proc(kphp_server_proc)
 
-        self._move_asan_logs_to_artifacts(asan_glob_mask, kphp_server_proc, asan_log_name)
+        self._move_sanitizer_logs_to_artifacts(sanitizer_glob_mask, kphp_server_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
                 "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
@@ -294,8 +294,8 @@ def run_fail_test(test, runner):
                 if not msg_regex.search(stderr_log):
                     return TestResult.failed(test, runner.artifacts, "can't find {}th error pattern".format(index))
 
-    if runner.kphp_build_asan_log_artifact:
-        return TestResult.failed(test, runner.artifacts, "got asan log")
+    if runner.kphp_build_sanitizer_log_artifact:
+        return TestResult.failed(test, runner.artifacts, "got sanitizer log")
 
     runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
@@ -315,8 +315,8 @@ def run_warn_test(test, runner):
             if not msg_regex.search(stderr_log):
                 return TestResult.failed(test, runner.artifacts, "can't find {}th warning pattern".format(index))
 
-    if runner.kphp_build_asan_log_artifact:
-        return TestResult.failed(test, runner.artifacts, "got asan log")
+    if runner.kphp_build_sanitizer_log_artifact:
+        return TestResult.failed(test, runner.artifacts, "got sanitizer log")
 
     runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)

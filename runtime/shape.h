@@ -10,6 +10,11 @@ class shape_node {
 public:
   T value{};
   shape_node() = default;
+  shape_node(const shape_node &) = default;
+  shape_node(shape_node &&) noexcept = default;
+  shape_node &operator=(const shape_node &) = default;
+  shape_node &operator=(shape_node &&) noexcept = default;
+
   template<typename T1, typename = std::is_constructible<T, T1 &&>>
   explicit shape_node(T1 value) :
     value(std::move(value)) {}

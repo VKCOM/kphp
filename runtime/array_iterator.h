@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/type_traits/list_of_types.h"
+#include "common/sanitizer.h"
 
 template<class T>
 class array_iterator {
@@ -61,7 +62,7 @@ public:
     return static_cast<const int_hash_type *>(entry_)->int_key;
   }
 
-  inline bool is_string_key() const noexcept __attribute__ ((always_inline)) {
+  inline bool is_string_key() const noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const string_hash_type *>(entry_));
   }
 
@@ -73,14 +74,14 @@ public:
     return static_cast<const string_hash_type *>(entry_)->string_key;
   }
 
-  inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) {
+  inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) + 1)
              : self_->next(static_cast<string_hash_type *>(entry_));
     return *this;
   }
 
-  inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) {
+  inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) - 1)
              : self_->prev(static_cast<string_hash_type *>(entry_));

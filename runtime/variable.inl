@@ -58,39 +58,39 @@ var &var::assign_from(T &&v) {
 }
 
 template<typename T, typename>
-var::var(T &&v) {
+var::var(T &&v) noexcept {
   init_from(std::forward<T>(v));
 }
 
-var::var(const Unknown &u __attribute__((unused))) {
+var::var(const Unknown &u __attribute__((unused))) noexcept {
   php_assert ("Unknown used!!!" && 0);
 }
 
-var::var(const char *s, int len) :
+var::var(const char *s, int len) noexcept :
   var(string{s, static_cast<string::size_type>(len)}){
 }
 
 template<typename T, typename>
-var::var(const Optional<T> &v) {
+var::var(const Optional<T> &v) noexcept {
   auto init_from_lambda = [this](const auto &v) { this->init_from(v); };
   call_fun_on_optional_value(init_from_lambda, v);
 }
 
 template<typename T, typename>
-var::var(Optional<T> &&v) {
+var::var(Optional<T> &&v) noexcept {
    auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
    call_fun_on_optional_value(init_from_lambda, std::move(v));
 }
 
-var::var(const var &v) {
+var::var(const var &v) noexcept {
   copy_from(v);
 }
 
-var::var(var &&v) {
+var::var(var &&v) noexcept {
   copy_from(std::move(v));
 }
 
-var &var::operator=(const var &other) {
+var &var::operator=(const var &other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(other);
@@ -98,7 +98,7 @@ var &var::operator=(const var &other) {
   return *this;
 }
 
-var &var::operator=(var &&other) {
+var &var::operator=(var &&other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(std::move(other));
@@ -107,18 +107,18 @@ var &var::operator=(var &&other) {
 }
 
 template<typename T, typename>
-var &var::operator=(T &&v) {
+var &var::operator=(T &&v) noexcept {
   return assign_from(std::forward<T>(v));
 }
 
 template<typename T, typename>
-var &var::operator=(const Optional<T> &v) {
+var &var::operator=(const Optional<T> &v) noexcept {
   auto assign_from_lambda = [this](const auto &v) -> var& { return this->assign_from(v); };
   return call_fun_on_optional_value(assign_from_lambda, v);
 }
 
 template<typename T, typename>
-var &var::operator=(Optional<T> &&v) {
+var &var::operator=(Optional<T> &&v) noexcept {
   auto assign_from_lambda = [this](auto &&v) -> var& { return this->assign_from(std::move(v)); };
   return call_fun_on_optional_value(assign_from_lambda, std::move(v));
 }
