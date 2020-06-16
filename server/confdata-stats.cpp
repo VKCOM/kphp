@@ -6,10 +6,20 @@ double to_seconds(std::chrono::nanoseconds t) noexcept {
   return std::chrono::duration<double>(t).count();
 }
 
-void write_if_not_zero(stats_t *stats, const char *name, size_t value) noexcept {
+void write_if_not_zero(stats_t *stats, const char *name, size_t value, const char *suffix = "") noexcept {
   if (value) {
-    add_histogram_stat_long(stats, name, value);
+    char buffer[256]{0};
+    const int len = snprintf(buffer, sizeof(buffer) - 1, "%s%s", name, suffix);
+    assert(len > 0 && sizeof(buffer) >= static_cast<size_t>(len + 1));
+    add_histogram_stat_long(stats, buffer, value);
   }
+}
+
+void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::EventCounters::Event &event) noexcept {
+  write_if_not_zero(stats, name, event.total, ".total");
+  write_if_not_zero(stats, name, event.blacklisted, ".blacklisted");
+  write_if_not_zero(stats, name, event.ignored, ".ignored");
+  write_if_not_zero(stats, name, event.ttl_updated, ".ttl_updated");
 }
 
 } // namespace
@@ -84,16 +94,18 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   add_histogram_stat_long(stats, "confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
   add_histogram_stat_double(stats, "confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
 
-  write_if_not_zero(stats, "confdata.binlog_events.delete", event_counters.delete_events);
-  write_if_not_zero(stats, "confdata.binlog_events.touch", event_counters.touch_events);
+  write_event_stats(stats, "confdata.binlog_events.snapshot_entry", event_counters.snapshot_entry);
 
-  write_if_not_zero(stats, "confdata.binlog_events.add", event_counters.add_events);
-  write_if_not_zero(stats, "confdata.binlog_events.set", event_counters.set_events);
-  write_if_not_zero(stats, "confdata.binlog_events.replace", event_counters.replace_events);
+  write_event_stats(stats, "confdata.binlog_events.delete", event_counters.delete_events);
+  write_event_stats(stats, "confdata.binlog_events.touch", event_counters.touch_events);
 
-  write_if_not_zero(stats, "confdata.binlog_events.add_forever", event_counters.add_forever_events);
-  write_if_not_zero(stats, "confdata.binlog_events.set_forever", event_counters.set_forever_events);
-  write_if_not_zero(stats, "confdata.binlog_events.replace_forever", event_counters.replace_forever_events);
+  write_event_stats(stats, "confdata.binlog_events.add", event_counters.add_events);
+  write_event_stats(stats, "confdata.binlog_events.set", event_counters.set_events);
+  write_event_stats(stats, "confdata.binlog_events.replace", event_counters.replace_events);
+
+  write_event_stats(stats, "confdata.binlog_events.add_forever", event_counters.add_forever_events);
+  write_event_stats(stats, "confdata.binlog_events.set_forever", event_counters.set_forever_events);
+  write_event_stats(stats, "confdata.binlog_events.replace_forever", event_counters.replace_forever_events);
 
   write_if_not_zero(stats, "confdata.binlog_events.get", event_counters.get_events);
   write_if_not_zero(stats, "confdata.binlog_events.incr", event_counters.incr_events);

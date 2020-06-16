@@ -30,16 +30,25 @@ struct ConfdataStats : private vk::not_copyable {
   size_t elements_with_delay{0};
 
   struct EventCounters {
-    size_t delete_events{0};
-    size_t touch_events{0};
+    struct Event {
+      size_t total{0};
+      size_t blacklisted{0};
+      size_t ignored{0};
+      size_t ttl_updated{0};
+    };
 
-    size_t add_events{0};
-    size_t set_events{0};
-    size_t replace_events{0};
+    Event snapshot_entry;
 
-    size_t add_forever_events{0};
-    size_t set_forever_events{0};
-    size_t replace_forever_events{0};
+    Event delete_events;
+    Event touch_events;
+
+    Event add_events;
+    Event set_events;
+    Event replace_events;
+
+    Event add_forever_events;
+    Event set_forever_events;
+    Event replace_forever_events;
 
     size_t get_events{0};
     size_t incr_events{0};

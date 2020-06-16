@@ -26,6 +26,7 @@ class ConfdataBinlogReplayer : vk::binlog::replayer {
 public:
   enum class OperationStatus {
     no_update,
+    blacklisted,
     ttl_update_only,
     full_update
   };
@@ -100,12 +101,14 @@ public:
       const vk::string_view key{element.data, static_cast<size_t>(std::max(element.key_len, short{0}))};
       if (key.empty() || is_key_blacklisted(key)) {
         index_offset[i] = -1;
+        ++event_counters_.snapshot_entry.blacklisted;
       } else {
         const auto first_dot = try_reserve_for_snapshot(key, 0, last_one_dot_key, one_dot_elements_counter);
         if (first_dot != std::string::npos) {
           try_reserve_for_snapshot(key, first_dot + 1, last_two_dots_key, two_dots_elements_counter);
         }
       }
+      ++event_counters_.snapshot_entry.total;
     }
 
     auto blacklist = std::move(key_blacklist_pattern_);
@@ -120,18 +123,18 @@ public:
     return 0;
   }
 
-  void delete_element(const char *key, short key_len) noexcept {
-    generic_operation(key, key_len, -1, [this] { return delete_processing_element(); });
+  OperationStatus delete_element(const char *key, short key_len) noexcept {
+    return generic_operation(key, key_len, -1, [this] { return delete_processing_element(); });
   }
 
-  void touch_element(const lev_confdata_touch &E) noexcept {
-    generic_operation(E.key, E.key_len, E.delay, [this] { return touch_processing_element(); });
+  OperationStatus touch_element(const lev_confdata_touch &E) noexcept {
+    return generic_operation(E.key, E.key_len, E.delay, [this] { return touch_processing_element(); });
   }
 
   template<class BASE, int OPERATION>
-  void store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
+  OperationStatus store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     // даже не пытайся захватить E по значению, он попытается её скопировать и будет очень грустно :(
-    generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
+    return generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
   }
 
   void unsupported_operation(const char *operation_name, const char *key, int key_len) noexcept {
@@ -220,38 +223,30 @@ public:
 private:
   ConfdataBinlogReplayer() noexcept {
     add_handler([this](const lev_confdata_delete &E) {
-      ++event_counters_.delete_events;
-      this->delete_element(E.key, E.key_len);
+      update_event_stat(this->delete_element(E.key, E.key_len), event_counters_.delete_events);
     });
     add_handler([this](const lev_confdata_touch &E) {
-      ++event_counters_.touch_events;
-      this->touch_element(E);
+      update_event_stat(this->touch_element(E), event_counters_.touch_events);
     });
 
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_add> &E) {
-      ++event_counters_.add_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.add_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_set> &E) {
-      ++event_counters_.set_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.set_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_replace> &E) {
-      ++event_counters_.replace_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.replace_events);
     });
 
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_add> &E) {
-      ++event_counters_.add_forever_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.add_forever_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_set> &E) {
-      ++event_counters_.set_forever_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.set_forever_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_replace> &E) {
-      ++event_counters_.replace_forever_events;
-      this->store_element(E);
+      update_event_stat(this->store_element(E), event_counters_.replace_forever_events);
     });
 
     add_handler([this](const lev_confdata_get &E) {
@@ -273,14 +268,14 @@ private:
   }
 
   template<typename F>
-  void generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
+  OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
     // TODO ассерт?
     if (key_len < 0) {
-      return;
+      return OperationStatus::blacklisted;
     }
     const vk::string_view key_view{key, static_cast<size_t>(key_len)};
     if (is_key_blacklisted(key_view)) {
-      return;
+      return OperationStatus::blacklisted;
     }
 
     assert(last_element_in_garbage_.is_null());
@@ -291,7 +286,7 @@ private:
     if (operation_status == OperationStatus::no_update) {
       assert(last_element_in_garbage_.is_null());
       assert(processing_value_.is_null());
-      return;
+      return operation_status;
     }
     if (operation_status == OperationStatus::full_update && first_key_dots == FirstKeyDots::two) {
       processing_key_.forcibly_change_first_key_dots_from_two_to_one();
@@ -305,6 +300,24 @@ private:
       confdata_has_any_updates_ = true;
     }
     update_element_in_expiration_trace(key_view, delay);
+    return operation_status;
+  }
+
+  static void update_event_stat(OperationStatus status, ConfdataStats::EventCounters::Event &event) noexcept {
+    ++event.total;
+    switch (status) {
+      case OperationStatus::no_update:
+        ++event.ignored;
+        return;
+      case OperationStatus::blacklisted:
+        ++event.blacklisted;
+        return;
+      case OperationStatus::ttl_update_only:
+        ++event.ttl_updated;
+        return;
+      case OperationStatus::full_update:
+        return;
+    }
   }
 
   confdata_sample_storage::iterator find_updating_confdata_first_key_element() {
