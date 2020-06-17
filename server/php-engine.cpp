@@ -98,7 +98,6 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
 
 static int db_port = 3306;
 
-bool enable_json = false;
 FILE* json_log_file_ptr = nullptr;
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
@@ -2103,9 +2102,7 @@ void reopen_json_log() {
   if (json_log_file_ptr != nullptr) {
     fclose(json_log_file_ptr);
   }
-  if (enable_json) {
-    open_json_log();
-  }
+  open_json_log();
 }
 
 void start_server() {
@@ -2392,10 +2389,6 @@ int main_args_handler(int i) {
       }
       return 0;
     }
-    case 'j': {
-      enable_json = true;
-      return 0;
-    }
     case 'l': {
       init_logname(optarg);
       return 0;
@@ -2604,7 +2597,6 @@ void parse_main_args(int argc, char *argv[]) {
   remove_parse_option("clusters-config");
   always_enable_option("maximize-tcp-buffers", NULL);
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
-  parse_option("json-log", no_argument, 'j', "enable json log");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
   parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");
