@@ -1968,20 +1968,22 @@ static void cron() {
   confdata_binlog_update_cron();
 }
 
-void run_master() {
-  int err;
-  int prev_time = 0;
+auto get_steady_tp_ms_now() noexcept {
+  return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+}
 
+void run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
   me->own_http_fd = http_fd != nullptr && *http_fd != -1;
 
   epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
-  err = epoll_insert(signal_fd, EVT_READ);
+  const int err = epoll_insert(signal_fd, EVT_READ);
   dl_assert (err >= 0, "epoll_insert failed");
 
   preallocate_msg_buffers();
 
+  auto prev_cron_start_tp = get_steady_tp_ms_now();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
     my_now = dl_time();
@@ -2059,28 +2061,17 @@ void run_master() {
       workers_send_signal(SIGUSR1);
     }
 
-
     vkprintf(2, "run_master iteration: end\n");
 
-    //timespec timeout;
-    //timeout.tv_sec = failed ? 1 : 10;
-    //timeout.tv_nsec = 0;
-
-    //old solution:
-    //sigtimedwait (&mask, nullptr, &timeout);
-    //new solution:
-    //pselect. Has the opposite behavior, allows all signals in mask during its execution.
-    //So we should use empty_mask instead of mask
-    //pselect (0, 0, 0, 0, &timeout, &empty_mask);
-
-    //int timeout = (failed ? 1 : 10) * 1000;
-    int timeout = 1000;
-    epoll_work(timeout);
+    using namespace std::chrono_literals;
+    auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);
+    epoll_work(std::max(wait_time, 0ms).count());
 
     tl_restart_all_ready();
 
-    if (now != prev_time) {
-      prev_time = now;
+    const auto new_tp = get_steady_tp_ms_now();
+    if (new_tp - prev_cron_start_tp >= 1s) {
+      prev_cron_start_tp = new_tp;
       cron();
     }
   }
