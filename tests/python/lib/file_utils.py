@@ -2,6 +2,7 @@ import os
 import subprocess
 import re
 
+
 def _search_file(file_name, file_checker):
     parent_dir = os.path.dirname(os.path.realpath(__file__))
     while parent_dir != "/":
@@ -100,3 +101,12 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
         os.remove(sanitizer_log_file)
 
     return ignore_sanitizer
+
+
+def make_distcc_env(distcc_hosts, distcc_dir):
+    os.makedirs(distcc_dir, exist_ok=True)
+    return {
+        "DISTCC_HOSTS": "--randomize localhost/1 {}".format(" ".join(distcc_hosts)),
+        "DISTCC_DIR": distcc_dir,
+        "DISTCC_LOG": os.path.join(distcc_dir, "distcc.log")
+    }

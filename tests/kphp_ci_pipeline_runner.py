@@ -9,6 +9,7 @@ import sys
 from enum import Enum
 
 from python.lib.colors import red, green, yellow, cyan
+from python.lib.file_utils import make_distcc_env, read_distcc_hosts
 
 
 def get_distributive_name():
@@ -126,14 +127,14 @@ def make_relpath(file_dir, file_path):
 
 MAKE_TARGETS = "php tl2php kphp-unittests tlclient tasks rpc-proxy"
 TESTING_MODES = {
-    "gcc": ("", MAKE_TARGETS),
+    "gcc": ("", "gcc", "g++", MAKE_TARGETS),
     "gcc-asan": (
-        "ASAN_OPTIONS=detect_leaks=0",
+        "ASAN_OPTIONS=detect_leaks=0", "gcc", "g++",
         "g=1 asan=1 " + MAKE_TARGETS
     ),
     "clang-ubsan": (
-        "UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1",
-        "CC=clang-7 CXX=clang++-7 g=1 ubsan=1 " + MAKE_TARGETS
+        "UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1", "clang", "clang++",
+        "g=1 ubsan=1 " + MAKE_TARGETS
     )
 }
 
@@ -223,21 +224,27 @@ if __name__ == "__main__":
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
 
+    env_vars, cc, cxx, targets = TESTING_MODES[args.mode]
     distcc_options = ""
     distcc_host_list = ""
-    if args.use_distcc:
-        distcc_hosts = "ci/distcc-host-list.{}".format(get_distributive_name())
+    distributive_name = get_distributive_name()
+    if args.use_distcc or distributive_name != "unknown":
+        distcc_hosts = "ci/distcc-host-list.{}".format(distributive_name)
         distcc_host_list = make_relpath(runner_dir, distcc_hosts)
         distcc_options = "--distcc-host-list {}".format(distcc_host_list)
+        os.environ.update(make_distcc_env(read_distcc_hosts(distcc_host_list), os.path.join(runner_dir, "tmp_distcc")))
+        cc = "'distcc {}'".format(cc)
+        cxx = "'distcc {}'".format(cxx)
 
-    env_vars, options = TESTING_MODES[args.mode]
     runner.add_test_group(
         name="make-kphp",
         description="make kphp and runtime in {} mode".format(args.mode),
-        cmd="{env_vars} make -C {engine_root} -j{{jobs}} {options}".format(
+        cmd="CC={cc} CXX={cxx} {env_vars} make -C {engine_root} -j{{jobs}} {targets}".format(
+            cc=cc,
+            cxx=cxx,
             env_vars=env_vars,
             engine_root=root_engine_path,
-            options=options
+            targets=targets
         ),
         skip=args.steps and "make-kphp" not in args.steps
     )

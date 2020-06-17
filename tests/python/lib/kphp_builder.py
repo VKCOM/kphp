@@ -3,8 +3,9 @@ import glob
 import os
 import subprocess
 import shutil
+import multiprocessing
 
-from .file_utils import search_kphp_sh, error_can_be_ignored, can_ignore_sanitizer_log
+from .file_utils import search_kphp_sh, error_can_be_ignored, can_ignore_sanitizer_log, make_distcc_env
 
 
 class Artifact:
@@ -116,10 +117,8 @@ class KphpBuilder:
         env["GDB_OPTION"] = "-g0"
         env["KPHP_DYNAMIC_INCREMENTAL_LINKAGE"] = use_dynamic_incremental_linkage and "1" or "0"
         if self._distcc_hosts:
-            env["KPHP_JOBS_COUNT"] = "30"
-            env["DISTCC_HOSTS"] = " ".join(self._distcc_hosts)
-            env["DISTCC_DIR"] = self._kphp_build_tmp_dir
-            env["DISTCC_LOG"] = os.path.join(self._kphp_build_tmp_dir, "distcc.log")
+            env["KPHP_JOBS_COUNT"] = "{}".format(multiprocessing.cpu_count() or 2)
+            env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
         else:
             env["KPHP_JOBS_COUNT"] = "2"
 
