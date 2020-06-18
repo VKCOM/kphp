@@ -54,6 +54,9 @@ void free_confdata_functions_lib() {
   }
 }
 
+bool f$is_confdata_loaded() noexcept {
+  return ConfdataLocalManager::get().is_initialized();
+}
 
 var f$confdata_get_value(const string &key) noexcept {
   if (!ConfdataLocalManager::get().is_initialized()) {

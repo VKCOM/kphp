@@ -1304,5 +1304,6 @@ function instance_serialize($instance ::: Any) ::: string | null;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 
+function is_confdata_loaded() ::: bool;
 function confdata_get_value($key ::: string) ::: var;
 function confdata_get_values_by_wildcard($wildcard ::: string) ::: var[];
