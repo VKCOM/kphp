@@ -48,7 +48,7 @@ const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
   return get_memory_dealer().current_script_resource().get_memory_stats();
 }
 
-size_type get_heap_memory_used() noexcept {
+size_t get_heap_memory_used() noexcept {
   return get_memory_dealer().get_heap_resource().memory_used();
 }
 
@@ -64,7 +64,7 @@ void global_init_script_allocator() noexcept {
   query_num++;
 }
 
-void init_script_allocator(void *buffer, size_type buffer_size) noexcept {
+void init_script_allocator(void *buffer, size_t buffer_size) noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(!dealer.heap_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
@@ -85,49 +85,49 @@ void free_script_allocator() noexcept {
   script_allocator_enabled = false;
 }
 
-void *allocate(size_type size) noexcept {
+void *allocate(size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate(size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call allocate for non runned script, n = %u", size);
+    php_critical_error("Trying to call allocate for non runned script, n = %zu", size);
     return nullptr;
   }
 
   return dealer.current_script_resource().allocate(size);
 }
 
-void *allocate0(size_type size) noexcept {
+void *allocate0(size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate0(size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call allocate0 for non runned script, n = %u", size);
+    php_critical_error("Trying to call allocate0 for non runned script, n = %zu", size);
     return nullptr;
   }
 
   return dealer.current_script_resource().allocate0(size);
 }
 
-void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
+void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   php_assert(new_size > old_size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->reallocate(mem, new_size, old_size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %u, old_size = %u", mem, new_size, old_size);
+    php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %zu, old_size = %zu", mem, new_size, old_size);
     return mem;
   }
 
   return dealer.current_script_resource().reallocate(mem, new_size, old_size);
 }
 
-void deallocate(void *mem, size_type size) noexcept {
+void deallocate(void *mem, size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
@@ -139,24 +139,24 @@ void deallocate(void *mem, size_type size) noexcept {
   }
 }
 
-void *heap_allocate(size_type size) noexcept {
+void *heap_allocate(size_t size) noexcept {
   php_assert(!query_num || !is_malloc_replaced());
   return get_memory_dealer().get_heap_resource().allocate(size);
 }
 
-void *heap_reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
+void *heap_reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   return get_memory_dealer().get_heap_resource().reallocate(mem, new_size, old_size);
 }
 
-void heap_deallocate(void *mem, size_type size) noexcept {
+void heap_deallocate(void *mem, size_t size) noexcept {
   return get_memory_dealer().get_heap_resource().deallocate(mem, size);
 }
 
 namespace {
 
 // guaranteed alignment of dl::allocate
-constexpr size_type MALLOC_REPLACER_SIZE_OFFSET = 8;
-constexpr size_type MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
+constexpr size_t MALLOC_REPLACER_SIZE_OFFSET = 8;
+constexpr size_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
 
 } // namespace
 
@@ -285,19 +285,19 @@ void rollback_malloc_replacement() noexcept {
 } // namespace dl
 
 // replace global operators new and delete for linked C++ code
-void *operator new(std::size_t size) {
+void *operator new(size_t size) {
   return std::malloc(size);
 }
 
-void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
+void *operator new(size_t size, const std::nothrow_t &) noexcept {
   return std::malloc(size);
 }
 
-void *operator new[](std::size_t size) {
+void *operator new[](size_t size) {
   return std::malloc(size);
 }
 
-void *operator new[](std::size_t size, const std::nothrow_t &) noexcept {
+void *operator new[](size_t size, const std::nothrow_t &) noexcept {
   return std::malloc(size);
 }
 

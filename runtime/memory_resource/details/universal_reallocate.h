@@ -8,9 +8,9 @@ namespace memory_resource {
 namespace details {
 
 template<typename Allocator>
-void *universal_reallocate(Allocator &alloc, void *mem, size_type new_size, size_type old_size) {
+void *universal_reallocate(Allocator &alloc, void *mem, size_t new_size, size_t old_size) {
   if (void *new_mem = alloc.try_expand(mem, new_size, old_size)) {
-    memory_debug("reallocate %d to %d, reallocated address %p\n", old_size, new_size, new_mem);
+    memory_debug("reallocate %zu to %zu, reallocated address %p\n", old_size, new_size, new_mem);
     return new_mem;
   }
 

@@ -10,40 +10,40 @@
 
 namespace memory_resource {
 
-void *heap_resource::allocate(size_type size) noexcept {
+void *heap_resource::allocate(size_t size) noexcept {
   dl::CriticalSectionGuard lock;
   void *mem = std::malloc(size);
   if (unlikely(!mem)) {
-    php_out_of_memory_warning("Can't heap_allocate %u bytes", size);
+    php_out_of_memory_warning("Can't heap_allocate %zu bytes", size);
     raise(SIGUSR2);
     return nullptr;
   }
 
-  memory_debug("heap allocate %u at %p\n", size, mem);
+  memory_debug("heap allocate %zu at %p\n", size, mem);
   memory_used_ += size;
   return mem;
 }
 
-void *heap_resource::allocate0(size_type size) noexcept {
+void *heap_resource::allocate0(size_t size) noexcept {
   dl::CriticalSectionGuard lock;
   void *mem = std::calloc(1, size);
   if (unlikely(!mem)) {
-    php_out_of_memory_warning("Can't heap_allocate0 %u bytes", size);
+    php_out_of_memory_warning("Can't heap_allocate0 %zu bytes", size);
     raise(SIGUSR2);
     return nullptr;
   }
 
-  memory_debug("heap allocate0 %u at %p\n", size, mem);
+  memory_debug("heap allocate0 %zu at %p\n", size, mem);
   memory_used_ += size;
   return mem;
 }
 
-void *heap_resource::reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
+void *heap_resource::reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   dl::CriticalSectionGuard lock;
   mem = std::realloc(mem, new_size);
-  memory_debug("heap reallocate %u at %p\n", old_size, mem);
+  memory_debug("heap reallocate %zu at %p\n", old_size, mem);
   if (unlikely(!mem)) {
-    php_out_of_memory_warning("Can't heap_reallocate from %u to %u bytes", old_size, new_size);
+    php_out_of_memory_warning("Can't heap_reallocate from %zu to %zu bytes", old_size, new_size);
     raise(SIGUSR2);
     return nullptr;
   }
@@ -51,12 +51,12 @@ void *heap_resource::reallocate(void *mem, size_type new_size, size_type old_siz
   return mem;
 }
 
-void heap_resource::deallocate(void *mem, size_type size) noexcept {
+void heap_resource::deallocate(void *mem, size_t size) noexcept {
   dl::CriticalSectionGuard lock;
   memory_used_ -= size;
 
   std::free(mem);
-  memory_debug("heap deallocate %u at %p\n", size, mem);
+  memory_debug("heap deallocate %zu at %p\n", size, mem);
 }
 
 } // namespace memory_resource

@@ -6,25 +6,16 @@
 namespace memory_resource {
 namespace details {
 
-memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin) noexcept:
-  memory_resource_begin_(memory_resource_begin) {
-  static_assert(sizeof(list_node) == 8, "8 bytes expected");
-}
-
-memory_ordered_chunk_list::list_node *memory_ordered_chunk_list::flush() noexcept {
+memory_chunk_list_node *memory_ordered_chunk_list::flush() noexcept {
   add_from_array(tmp_buffer_.data(), tmp_buffer_.data() + tmp_buffer_size_);
   tmp_buffer_size_ = 0;
 
-  memory_ordered_chunk_list::list_node *ret = head_;
+  memory_chunk_list_node *ret = head_;
   head_ = nullptr;
   return ret;
 }
 
-void memory_ordered_chunk_list::save_next(list_node *node, const list_node *next) const noexcept {
-  node->next_chunk_offset_ = static_cast<size_type>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
-}
-
-void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **last) noexcept {
+void memory_ordered_chunk_list::add_from_array(memory_chunk_list_node **first, memory_chunk_list_node **last) noexcept {
   if (first == last) {
     return;
   }
@@ -33,52 +24,52 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
   if (!head_) {
     head_ = *first++;
   } else if (reinterpret_cast<char *>(head_) < reinterpret_cast<char *>(*first)) {
-    list_node *next = head_;
+    memory_chunk_list_node *next = head_;
     head_ = *first++;
-    save_next(head_, next);
+    head_->set_next(next);
   }
 
   // current is always greater than *first
-  list_node *current = head_;
-  for (; first != last && current->has_next();) {
-    list_node *next = get_next(current);
+  memory_chunk_list_node *current = head_;
+  for (; first != last && current->get_next();) {
+    memory_chunk_list_node *next = current->get_next();
     if (reinterpret_cast<char *>(*first) < reinterpret_cast<char *>(next)) {
       current = next;
     } else {
-      (*first)->next_chunk_offset_ = current->next_chunk_offset_;
-      save_next(current, *first);
+      (*first)->set_next(current->get_next());
+      current->set_next(*first);
       current = *first++;
     }
   }
 
   // current->next_chunk_offset_ is zero
   for (; first != last;) {
-    save_next(current, *first);
+    current->set_next(*first);
     current = *first++;
   }
 
   // merge adjacent nodes
-  for (list_node *next = get_next(head_); next; next = get_next(head_)) {
-    if (reinterpret_cast<char *>(head_) == reinterpret_cast<char *>(next) + next->chunk_size_) {
-      next->chunk_size_ += (head_)->chunk_size_;
+  for (memory_chunk_list_node *next = head_->get_next(); next; next = head_->get_next()) {
+    if (reinterpret_cast<char *>(head_) == reinterpret_cast<char *>(next) + next->size()) {
+      next->extend_size(head_->size());
       head_ = next;
     } else {
       break;
     }
   }
 
-  list_node *prev = head_;
-  if (list_node *node = get_next(prev)) {
-    for (list_node *next = get_next(node); next; next = get_next(node)) {
-      if (reinterpret_cast<char *>(node) == reinterpret_cast<char *>(next) + next->chunk_size_) {
-        next->chunk_size_ += node->chunk_size_;
+  memory_chunk_list_node *prev = head_;
+  if (memory_chunk_list_node *node = prev->get_next()) {
+    for (memory_chunk_list_node *next = node->get_next(); next; next = node->get_next()) {
+      if (reinterpret_cast<char *>(node) == reinterpret_cast<char *>(next) + next->size()) {
+        next->extend_size(node->size());
       } else {
-        save_next(prev, node);
+        prev->set_next(node);
         prev = node;
       }
       node = next;
     }
-    save_next(prev, node);
+    prev->set_next(node);
   }
 }
 

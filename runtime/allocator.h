@@ -15,26 +15,26 @@ namespace dl {
 
 extern long long query_num; // engine query number. query_num == 0 before first query
 
-using size_type = memory_resource::size_type;
+using size_type = uint32_t;
 
 void set_current_script_allocator(memory_resource::unsynchronized_pool_resource &replacer, bool force_enable) noexcept;
 void restore_default_script_allocator(bool force_disable) noexcept;
 
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept;
-size_type get_heap_memory_used() noexcept;
+size_t get_heap_memory_used() noexcept;
 
 void global_init_script_allocator() noexcept;
-void init_script_allocator(void *buffer, size_type buffer_size) noexcept; // init script allocator with arena of n bytes at buf
+void init_script_allocator(void *buffer, size_t buffer_size) noexcept; // init script allocator with arena of n bytes at buf
 void free_script_allocator() noexcept;
 
-void *allocate(size_type n) noexcept; // allocate script memory
-void *allocate0(size_type n) noexcept; // allocate zeroed script memory
-void *reallocate(void *p, size_type new_size, size_type old_size) noexcept; // reallocate script memory
-void deallocate(void *p, size_type n) noexcept; // deallocate script memory
+void *allocate(size_t n) noexcept; // allocate script memory
+void *allocate0(size_t n) noexcept; // allocate zeroed script memory
+void *reallocate(void *p, size_t new_size, size_t old_size) noexcept; // reallocate script memory
+void deallocate(void *p, size_t n) noexcept; // deallocate script memory
 
-void *heap_allocate(size_type n) noexcept; // allocate heap memory (persistent between script runs)
-void *heap_reallocate(void *p, size_type new_size, size_type old_size) noexcept; // reallocate heap memory
-void heap_deallocate(void *p, size_type n) noexcept; // deallocate heap memory
+void *heap_allocate(size_t n) noexcept; // allocate heap memory (persistent between script runs)
+void *heap_reallocate(void *p, size_t new_size, size_t old_size) noexcept; // reallocate heap memory
+void heap_deallocate(void *p, size_t n) noexcept; // deallocate heap memory
 
 void *script_allocator_malloc(size_t x) noexcept;
 void *script_allocator_calloc(size_t nmemb, size_t size) noexcept;

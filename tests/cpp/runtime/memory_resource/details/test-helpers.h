@@ -6,8 +6,8 @@
 #include "runtime/memory_resource/details/memory_chunk_list.h"
 
 template<size_t N>
-inline auto make_offsets(const std::array<memory_resource::size_type, N> &sizes) {
-  std::array<memory_resource::size_type, N + 1> offsets;
+inline auto make_offsets(const std::array<size_t, N> &sizes) {
+  std::array<size_t, N + 1> offsets;
   offsets[0] = 0;
   for (size_t i = 0; i < N; ++i) {
     offsets[i + 1] = offsets[i] + sizes[i];
@@ -16,11 +16,11 @@ inline auto make_offsets(const std::array<memory_resource::size_type, N> &sizes)
 }
 
 inline auto prepare_test_sizes() {
-  auto sizes = vk::to_array<memory_resource::size_type>(
+  auto sizes = vk::to_array<size_t>(
     {
-      100u, 120u, 50u, 78u, 100u, 101u, 112u, 222u, 78u, 111u, 112u, 114u, 80u, 79u, 70u, 79u, 55u, 70u,
-      130u, 129u, 130u, 129u, 155u, 150u, 140u, 100u, 88u, 99u, 77u, 45u, 46u, 64u, 87u, 82u, 147u, 99u,
-      48u, 88u, 64u, 100u, 56u, 198u, 41u, 40u, 40u, 40u, 112u, 164u, 163u, 162u, 162u, 163u, 164u, 200u
+      100UL, 120UL, 50UL, 78UL, 100UL, 101UL, 112UL, 222UL, 78UL, 111UL, 112UL, 114UL, 80UL, 79UL, 70UL, 79UL, 55UL, 70UL,
+      130UL, 129UL, 130UL, 129UL, 155UL, 150UL, 140UL, 100UL, 88UL, 99UL, 77UL, 45UL, 46UL, 64UL, 87UL, 82UL, 147UL, 99UL,
+      48UL, 88UL, 64UL, 100UL, 56UL, 198UL, 41UL, 42UL, 42UL, 42UL, 112UL, 164UL, 163UL, 162UL, 162UL, 163UL, 164UL, 200UL
     });
   for (auto &size: sizes) {
     size = memory_resource::details::align_for_chunk(size);

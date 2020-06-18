@@ -3,7 +3,6 @@
 #include <new>
 #include <utility>
 
-#include "runtime/memory_resource/memory_resource.h"
 #include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
 #include "runtime/php_assert.h"
 
@@ -19,10 +18,10 @@ public:
     RED,
     BLACK
   } color{RED};
-  size_type chunk_size;
+  size_t chunk_size;
   tree_node *same_size_chunk_list{nullptr};
 
-  explicit tree_node(size_type size) noexcept :
+  explicit tree_node(size_t size) noexcept :
     chunk_size(size) {
   }
 
@@ -66,7 +65,7 @@ public:
   }
 };
 
-void memory_chunk_tree::insert(void *mem, size_type size) noexcept {
+void memory_chunk_tree::insert(void *mem, size_t size) noexcept {
   php_assert(sizeof(tree_node) <= size);
   tree_node *newNode = new(mem) tree_node{size};
   if (!root_) {
@@ -91,7 +90,7 @@ void memory_chunk_tree::insert(void *mem, size_type size) noexcept {
   }
 }
 
-memory_chunk_tree::tree_node *memory_chunk_tree::extract(size_type size) noexcept {
+memory_chunk_tree::tree_node *memory_chunk_tree::extract(size_t size) noexcept {
   if (tree_node *v = search(size, true)) {
     if (v->same_size_chunk_list) {
       tree_node *result = v->same_size_chunk_list;
@@ -120,11 +119,11 @@ memory_chunk_tree::tree_node *memory_chunk_tree::extract_smallest() noexcept {
   return v;
 }
 
-bool memory_chunk_tree::has_memory_for(size_type size) const noexcept {
+bool memory_chunk_tree::has_memory_for(size_t size) const noexcept {
   return search(size, true);
 }
 
-size_type memory_chunk_tree::get_chunk_size(tree_node *node) noexcept {
+size_t memory_chunk_tree::get_chunk_size(tree_node *node) noexcept {
   return node->chunk_size;
 }
 
@@ -151,7 +150,7 @@ void memory_chunk_tree::flush_node_to(tree_node *node, memory_ordered_chunk_list
   flush_node_to(right, mem_list);
 }
 
-memory_chunk_tree::tree_node *memory_chunk_tree::search(size_type size, bool lower_bound) const noexcept {
+memory_chunk_tree::tree_node *memory_chunk_tree::search(size_t size, bool lower_bound) const noexcept {
   tree_node *node = root_;
   tree_node *lower_bound_node = nullptr;
   while (node && size != node->chunk_size) {

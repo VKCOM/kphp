@@ -14,33 +14,33 @@ namespace memory_resource {
 
 class monotonic_buffer : vk::not_copyable {
 protected:
-  void init(void *buffer, size_type buffer_size) noexcept;
+  void init(void *buffer, size_t buffer_size) noexcept;
 
-  size_type size() const noexcept { return static_cast<size_type>(memory_end_ - memory_current_); }
+  size_t size() const noexcept { return static_cast<size_t>(memory_end_ - memory_current_); }
   void *memory_begin() const noexcept { return memory_begin_; }
   void *memory_current() const noexcept { return memory_current_; }
   const MemoryStats &get_memory_stats() const noexcept { return stats_; }
 
-  void register_allocation(void *mem, size_type size) noexcept {
+  void register_allocation(void *mem, size_t size) noexcept {
     if (mem) {
       stats_.memory_used += size;
       stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
-      stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
+      stats_.real_memory_used = static_cast<size_t>(memory_current_ - memory_begin_);
       stats_.max_real_memory_used = std::max(stats_.real_memory_used, stats_.max_real_memory_used);
     }
   }
 
-  void register_deallocation(size_type size) noexcept {
+  void register_deallocation(size_t size) noexcept {
     stats_.memory_used -= size;
-    stats_.real_memory_used = static_cast<size_type>(memory_current_ - memory_begin_);
+    stats_.real_memory_used = static_cast<size_t>(memory_current_ - memory_begin_);
   }
 
-  bool check_memory_piece(void *mem, size_type size) const noexcept {
+  bool check_memory_piece(void *mem, size_t size) const noexcept {
     return memory_begin_ <= static_cast<char *>(mem) &&
            static_cast<char *>(mem) + size <= memory_current_;
   }
 
-  void critical_dump(void *mem, size_type size) const noexcept;
+  void critical_dump(void *mem, size_t size) const noexcept;
 
   MemoryStats stats_;
 
@@ -59,22 +59,22 @@ public:
   using monotonic_buffer::memory_begin;
   using monotonic_buffer::memory_current;
 
-  void *allocate(size_type size) noexcept {
+  void *allocate(size_t size) noexcept {
     void *mem = get_from_pool(size);
-    memory_debug("allocate %d, allocated address from pool %p\n", size, mem);
+    memory_debug("allocate %zu, allocated address from pool %p\n", size, mem);
     register_allocation(mem, size);
     return mem;
   }
 
-  void *allocate0(size_type size) noexcept {
+  void *allocate0(size_t size) noexcept {
     return memset(allocate(size), 0x00, size);
   }
 
-  void *reallocate(void *mem, size_type new_size, size_type old_size) noexcept {
+  void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
     return details::universal_reallocate(*this, mem, new_size, old_size);
   }
 
-  void *try_expand(void *mem, size_type new_size, size_type old_size) noexcept {
+  void *try_expand(void *mem, size_t new_size, size_t old_size) noexcept {
     if (static_cast<char *>(mem) + old_size == memory_current_) {
       const auto additional_size = old_size - new_size;
       if (memory_end_ - memory_current_ >= additional_size) {
@@ -86,14 +86,14 @@ public:
     return nullptr;
   }
 
-  void deallocate(void *mem, size_type size) noexcept {
-    memory_debug("deallocate %d at %p\n", size, mem);
+  void deallocate(void *mem, size_t size) noexcept {
+    memory_debug("deallocate %zu at %p\n", size, mem);
     if (put_memory_back(mem, size)) {
       register_deallocation(size);
     }
   }
 
-  bool put_memory_back(void *mem, size_type size) noexcept {
+  bool put_memory_back(void *mem, size_t size) noexcept {
     if (unlikely(!check_memory_piece(mem, size))) {
       critical_dump(mem, size);
     }
@@ -105,10 +105,10 @@ public:
     return expandable;
   }
 
-  void *get_from_pool(size_type size, bool safe = false) noexcept {
+  void *get_from_pool(size_t size, bool safe = false) noexcept {
     if (unlikely(memory_end_ - memory_current_ < size)) {
       if (unlikely(!safe)) {
-        php_out_of_memory_warning("Can't allocate %u bytes", size);
+        php_out_of_memory_warning("Can't allocate %zu bytes", size);
         raise(SIGUSR2);
       }
       return nullptr;

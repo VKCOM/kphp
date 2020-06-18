@@ -25,7 +25,7 @@ public:
     memory_resource_(other.memory_resource_) {
   }
 
-  value_type *allocate(size_type size, void const * = nullptr) {
+  value_type *allocate(size_t size, void const * = nullptr) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
     php_assert(size == 1);
     auto result = static_cast<value_type *>(memory_resource_.allocate(sizeof(value_type)));
@@ -35,13 +35,13 @@ public:
     return result;
   }
 
-  void deallocate(value_type *mem, size_type size) {
+  void deallocate(value_type *mem, size_t size) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
     php_assert(size == 1);
     memory_resource_.deallocate(mem, sizeof(value_type));
   }
 
-  static constexpr size_type max_value_type_size() {
+  static constexpr size_t max_value_type_size() {
     return 128u;
   }
 

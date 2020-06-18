@@ -25,13 +25,13 @@ using size_type = unsigned int;
 
 class MemoryStats {
 public:
-  size_type real_memory_used{0}; // currently used and dirty memory
-  size_type memory_used{0}; // currently used memory
+  size_t real_memory_used{0}; // currently used and dirty memory
+  size_t memory_used{0}; // currently used memory
 
-  size_type max_real_memory_used{0}; // maximum used and dirty memory
-  size_type max_memory_used{0}; // maximum used memory
+  size_t max_real_memory_used{0}; // maximum used and dirty memory
+  size_t max_memory_used{0}; // maximum used memory
 
-  size_type memory_limit{0}; // size of memory arena
+  size_t memory_limit{0}; // size of memory arena
 
   size_t defragmentation_calls{0}; // the number of defragmentation process calls
 

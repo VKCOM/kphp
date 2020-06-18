@@ -12,7 +12,7 @@ TEST(memory_chunk_tree_test, empty) {
   ASSERT_FALSE(mem_chunk_tree.extract(1));
   ASSERT_FALSE(mem_chunk_tree.extract(9999));
 
-  memory_resource::details::memory_ordered_chunk_list mem_list{nullptr};
+  memory_resource::details::memory_ordered_chunk_list mem_list;
   mem_chunk_tree.flush_to(mem_list);
   ASSERT_FALSE(mem_list.flush());
 }
@@ -72,7 +72,7 @@ TEST(memory_chunk_tree_test, insert_extract) {
   ++extracted;
   ASSERT_TRUE(mem);
   ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
-            memory_resource::details::align_for_chunk(40));
+            memory_resource::details::align_for_chunk(42));
 
   mem = mem_chunk_tree.extract(42);
   ++extracted;
@@ -80,7 +80,7 @@ TEST(memory_chunk_tree_test, insert_extract) {
   ASSERT_EQ(memory_resource::details::memory_chunk_tree::get_chunk_size(mem),
             memory_resource::details::align_for_chunk(45));
 
-  memory_resource::size_type prev_size = 0;
+  size_t prev_size = 0;
   for (; extracted != chunk_sizes.size(); ++extracted) {
     mem = mem_chunk_tree.extract(40);
     ASSERT_TRUE(mem);
@@ -126,7 +126,7 @@ TEST(memory_chunk_tree_test, flush_to) {
     mem_chunk_tree.insert(some_memory + chunk_offsets[i], chunk_sizes[i]);
   }
 
-  memory_resource::details::memory_ordered_chunk_list ordered_list{some_memory};
+  memory_resource::details::memory_ordered_chunk_list ordered_list;
   mem_chunk_tree.flush_to(ordered_list);
   ASSERT_FALSE(mem_chunk_tree.extract_smallest());
 
@@ -135,18 +135,18 @@ TEST(memory_chunk_tree_test, flush_to) {
   ASSERT_EQ(first_node->size(), chunk_offsets.back());
   ASSERT_EQ(reinterpret_cast<char *>(first_node), some_memory);
 
-  ASSERT_FALSE(ordered_list.get_next(first_node));
+  ASSERT_FALSE(first_node->get_next());
 }
 
 TEST(memory_chunk_tree_test, random_insert) {
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<memory_resource::size_type> dis(40, 512);
+  std::uniform_int_distribution<size_t> dis(48, 512);
 
   memory_resource::details::memory_chunk_tree mem_chunk_tree;
 
   constexpr size_t total_chunks = 16 * 1024;
-  std::array<memory_resource::size_type, total_chunks> sizes{0};
+  std::array<size_t, total_chunks> sizes{0};
   for (auto &size : sizes) {
     size = dis(gen);
     mem_chunk_tree.insert(std::malloc(size), size);
@@ -165,12 +165,12 @@ TEST(memory_chunk_tree_test, random_insert) {
 TEST(memory_chunk_tree_test, random_extract_smallest) {
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<memory_resource::size_type> dis(40, 512);
+  std::uniform_int_distribution<size_t> dis(48, 512);
 
   memory_resource::details::memory_chunk_tree mem_chunk_tree;
 
   constexpr size_t total_chunks = 16 * 1024;
-  std::array<memory_resource::size_type, total_chunks> sizes{0};
+  std::array<size_t, total_chunks> sizes{0};
   for (auto &size : sizes) {
     size = dis(gen);
     mem_chunk_tree.insert(std::malloc(size), size);
