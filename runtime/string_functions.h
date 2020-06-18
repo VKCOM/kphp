@@ -350,11 +350,11 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
       }
     }
     if (best_pos == nullptr) {
-      result.append(piece, (dl::size_type)(piece_end - piece));
+      result.append(piece, static_cast<string::size_type>(piece_end - piece));
       break;
     }
 
-    result.append(piece, (dl::size_type)(best_pos - piece));
+    result.append(piece, static_cast<string::size_type>(best_pos - piece));
     result.append(replace);
 
     piece = best_pos + best_len;

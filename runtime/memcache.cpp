@@ -22,8 +22,8 @@ static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_
 
 static string_buffer drivers_SB(1024);
 
-const int MAX_KEY_LEN = 1000;
-const int MAX_VALUE_LEN = (1 << 20);
+constexpr string::size_type MAX_KEY_LEN = 1000;
+constexpr string::size_type MAX_VALUE_LEN = (1 << 20);
 const int MAX_INPUT_VALUE_LEN = (1 << 24);
 
 const string UNDERSCORE("_", 1);
@@ -41,7 +41,7 @@ const string mc_prepare_key(const string &key) {
     php_warning("Very short key \"%s\" in Memcache::%s", key.c_str(), mc_method);
   }
 
-  bool bad_key = ((int)key.size() > MAX_KEY_LEN || key.empty());
+  bool bad_key = (key.size() > MAX_KEY_LEN || key.empty());
   for (int i = 0; i < (int)key.size() && !bad_key; i++) {
     if ((unsigned int)key[i] <= 32u) {
       bad_key = true;
@@ -51,7 +51,7 @@ const string mc_prepare_key(const string &key) {
     return key;
   }
 
-  string real_key = key.substr(0, min((dl::size_type)MAX_KEY_LEN, key.size()));//need a copy
+  string real_key = key.substr(0, min(MAX_KEY_LEN, key.size()));//need a copy
   for (int i = 0; i < (int)real_key.size(); i++) {
     if ((unsigned int)real_key[i] <= 32u) {
       real_key[i] = '_';
@@ -372,7 +372,7 @@ static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, c
     string_value = f$gzcompress(string_value);
   }
 
-  if (string_value.size() >= (dl::size_type)MAX_VALUE_LEN) {
+  if (string_value.size() >= MAX_VALUE_LEN) {
     php_warning("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
     return false;
   }
@@ -786,7 +786,7 @@ bool rpc_mc_run_set(int op, const class_instance<C$RpcConnection> &conn, const s
     string_value = f$gzcompress(string_value);
   }
 
-  if (string_value.size() >= (dl::size_type)MAX_VALUE_LEN) {
+  if (string_value.size() >= MAX_VALUE_LEN) {
     php_warning("Parameter value has length %d and too large for storing in Memcache", (int)string_value.size());
     return false;
   }

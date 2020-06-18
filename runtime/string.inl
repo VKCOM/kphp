@@ -182,7 +182,7 @@ string::string(const char *s, size_type n) :
 }
 
 string::string(const char *s) :
-  string(s, strlen(s)) {}
+  string(s, static_cast<size_type>(strlen(s))) {}
 
 string::string(size_type n, char c) :
   p(create(n, c)) {
@@ -214,7 +214,7 @@ string::string(int i) {
   // (11 + 1('\0') + 12(sizeof string_inner)) align 8 = 24
   p = create(STRLEN_INT, true);
   const char *end = simd_int32_to_string(i, p);
-  inner()->size = static_cast<dl::size_type>(end - p);
+  inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
 }
 
@@ -375,7 +375,7 @@ string &string::append(const string &str, size_type pos2, size_type n2) {
 }
 
 string &string::append(const char *s) {
-  return append(s, strlen(s));
+  return append(s, static_cast<size_type>(strlen(s)));
 }
 
 string &string::append(const char *s, size_type n) {
@@ -437,7 +437,7 @@ string &string::append(int i) {
 
   reserve_at_least(size() + STRLEN_INT);
   const char *end = simd_int32_to_string(i, p + size());
-  inner()->size = static_cast<dl::size_type>(end - p);
+  inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
   return *this;
 }
@@ -496,7 +496,7 @@ string &string::append_unsafe(int i) {
   }
 
   const char *end = simd_int32_to_string(i, p + size());
-  inner()->size = static_cast<dl::size_type>(end - p);
+  inner()->size = static_cast<size_type>(end - p);
   return *this;
 }
 
@@ -574,6 +574,10 @@ string &string::assign(const string &str, size_type pos, size_type n) {
     n = str.size() - pos;
   }
   return assign(str.p + pos, n);
+}
+
+string &string::assign(const char *s) {
+  return assign(s, static_cast<size_type>(strlen(s)));
 }
 
 string &string::assign(const char *s, size_type n) {
@@ -866,19 +870,19 @@ string::size_type string::find_first_of(const string &s, size_type pos) const {
 }
 
 int string::compare(const string &str) const {
-  const dl::size_type my_size = size();
-  const dl::size_type str_size = str.size();
+  const size_type my_size = size();
+  const size_type str_size = str.size();
   const int res = memcmp(p, str.p, std::min(my_size, str_size));
   return res ? res : static_cast<int>(my_size) - static_cast<int>(str_size);
 }
 
 
-dl::size_type string::get_correct_index(int index) const {
+string::size_type string::get_correct_index(int index) const {
   if (index >= 0) {
     return index;
   }
 
-  return static_cast<dl::size_type>(index + size());
+  return static_cast<size_type>(index + size());
 }
 
 const string string::get_value(int int_key) const {
@@ -1020,23 +1024,23 @@ void swap(string &lhs, string &rhs) {
 }
 
 
-dl::size_type max_string_size(bool) {
-  return STRLEN_BOOL;
+string::size_type max_string_size(bool) {
+  return static_cast<string::size_type>(STRLEN_BOOL);
 }
 
-dl::size_type max_string_size(int) {
-  return STRLEN_INT;
+string::size_type max_string_size(int) {
+  return static_cast<string::size_type>(STRLEN_INT);
 }
 
-dl::size_type max_string_size(double) {
-  return STRLEN_FLOAT;
+string::size_type max_string_size(double) {
+  return static_cast<string::size_type>(STRLEN_FLOAT);
 }
 
-dl::size_type max_string_size(const string &s) {
+string::size_type max_string_size(const string &s) {
   return s.size();
 }
 
-dl::size_type max_string_size(const var &v) {
+string::size_type max_string_size(const var &v) {
   switch (v.get_type()) {
     case var::type::NUL:
       return 0;
@@ -1056,12 +1060,12 @@ dl::size_type max_string_size(const var &v) {
 }
 
 template<class T>
-dl::size_type max_string_size(const array<T> &) {
-  return STRLEN_ARRAY;
+string::size_type max_string_size(const array<T> &) {
+  return static_cast<string::size_type>(STRLEN_ARRAY);
 }
 
 template<class T>
-dl::size_type max_string_size(const Optional<T> &v) {
+string::size_type max_string_size(const Optional<T> &v) {
   return v.has_value() ? max_string_size(v.val()) : 0;
 }
 

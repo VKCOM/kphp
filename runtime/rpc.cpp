@@ -860,7 +860,7 @@ int rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool i
     }
   }
 
-  dl::size_type request_size = (dl::size_type)(data_buf.size() - reserved);
+  const auto request_size = static_cast<size_t>(data_buf.size() - reserved);
   void *p = dl::allocate(request_size);
   memcpy(p, data_buf.c_str() + reserved, request_size);
 

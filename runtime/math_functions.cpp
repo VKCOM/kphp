@@ -37,7 +37,7 @@ string f$decbin(int number) {
     v >>= 1;
   } while (v > 0);
 
-  return string(s + i, (dl::size_type)(65 - i));
+  return string(s + i, static_cast<string::size_type>(65 - i));
 }
 
 string f$dechex(int number) {

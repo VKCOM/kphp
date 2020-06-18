@@ -399,8 +399,8 @@ array<var> f$getdate(int timestamp) {
   result.set_value(string("mon", 3), t.tm_mon + 1);
   result.set_value(string("year", 4), t.tm_year + 1900);
   result.set_value(string("yday", 4), t.tm_yday);
-  result.set_value(string("weekday", 7), string(day_of_week_names_full[t.tm_wday], (dl::size_type)strlen(day_of_week_names_full[t.tm_wday])));
-  result.set_value(string("month", 5), string(month_names_full[t.tm_mon], (dl::size_type)strlen(month_names_full[t.tm_mon])));
+  result.set_value(string("weekday", 7), string(day_of_week_names_full[t.tm_wday]));
+  result.set_value(string("month", 5), string(month_names_full[t.tm_mon]));
   result.set_value(string("0", 1), timestamp);
 
   return result;
@@ -552,7 +552,7 @@ string f$strftime(const string &format, int timestamp) {
     return string();
   }
 
-  return string(php_buf, (dl::size_type)strlen(php_buf));
+  return string(php_buf);
 }
 
 Optional<int> f$strtotime(const string &time_str, int timestamp) {
@@ -787,7 +787,7 @@ Optional<int> f$strtotime(const string &time_str, int timestamp) {
         if (!found) {
           const char *cur_locale_c_ctr = setlocale(LC_TIME, nullptr);
           php_assert (cur_locale_c_ctr != nullptr);
-          cur_locale.assign(cur_locale_c_ctr, (dl::size_type)strlen(cur_locale_c_ctr));
+          cur_locale.assign(cur_locale_c_ctr);
           setlocale(LC_TIME, "C");
         }
       } else {

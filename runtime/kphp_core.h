@@ -1255,8 +1255,7 @@ string f$get_class(const array<T> &) {
 
 template<class T>
 string f$get_class(const class_instance<T> &v) {
-  const char *result = v.get_class();
-  return string(result, (dl::size_type)strlen(result));
+  return string(v.get_class());
 }
 
 template<class T>

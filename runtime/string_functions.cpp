@@ -449,7 +449,7 @@ string f$html_entity_decode(const string &str, int flags, const string &encoding
 
     *p++ = str[i];
   }
-  res.shrink((dl::size_type)(p - res.c_str()));
+  res.shrink(static_cast<string::size_type>(p - res.c_str()));
 
   return res;
 }
@@ -549,7 +549,7 @@ string f$htmlspecialchars_decode(const string &str, int flags) {
       i++;
     }
   }
-  res.shrink((dl::size_type)(p - res.c_str()));
+  res.shrink(static_cast<string::size_type>(p - res.c_str()));
 
   return res;
 }
@@ -758,7 +758,7 @@ string f$number_format(double number, int decimals, const string &dec_point, con
     return string();
   }
 
-  return string(result_begin, (dl::size_type)(php_buf + PHP_BUF_LEN - result_begin));
+  return string(result_begin, static_cast<string::size_type>(php_buf + PHP_BUF_LEN - result_begin));
 }
 
 int f$ord(const string &s) {
@@ -997,7 +997,7 @@ Optional<string> f$setlocale(int category, const string &locale) {
   if (res == nullptr) {
     return false;
   }
-  return string(res, (dl::size_type)strlen(res));
+  return string(res);
 }
 
 string f$sprintf(const string &format, const array<var> &a) {
@@ -1509,7 +1509,7 @@ Optional<string> f$stristr(const string &haystack, const string &needle, bool be
     return false;
   }
 
-  dl::size_type pos = (dl::size_type)(s - haystack.c_str());
+  const auto pos = static_cast<string::size_type>(s - haystack.c_str());
   if (before_needle) {
     return haystack.substr(0, pos);
   }
@@ -1712,7 +1712,7 @@ Optional<string> f$strpbrk(const string &haystack, const string &char_list) {
     return false;
   }
 
-  return string(pos, (dl::size_type)(haystack.size() - (pos - haystack.c_str())));
+  return string(pos, static_cast<string::size_type>(haystack.size() - (pos - haystack.c_str())));
 }
 
 Optional<int> f$strpos(const string &haystack, const string &needle, int offset) {
@@ -1823,7 +1823,7 @@ Optional<string> f$strstr(const string &haystack, const string &needle, bool bef
     return false;
   }
 
-  dl::size_type pos = (dl::size_type)(s - haystack.c_str());
+  const auto pos = static_cast<string::size_type>(s - haystack.c_str());
   if (before_needle) {
     return haystack.substr(0, pos);
   }
@@ -1857,10 +1857,10 @@ string f$strtr(const string &subject, const string &from, const string &to) {
   string result(n, false);
   for (int i = 0; i < n; i++) {
     const char *p = static_cast <const char *> (memchr(static_cast <const void *> (from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
-    if (p == nullptr || (dl::size_type)(p - from.c_str()) >= to.size()) {
+    if (p == nullptr || static_cast<string::size_type>(p - from.c_str()) >= to.size()) {
       result[i] = subject[i];
     } else {
-      result[i] = to[(dl::size_type)(p - from.c_str())];
+      result[i] = to[static_cast<string::size_type>(p - from.c_str())];
     }
   }
   return result;
@@ -1904,27 +1904,28 @@ string f$str_pad(const string &input, int len, const string &pad_str, int pad_ty
 }
 
 string f$str_repeat(const string &s, int multiplier) {
-  int len = (int)s.size();
+  const string::size_type len = s.size();
   if (multiplier <= 0 || len == 0) {
     return string();
   }
 
-  if (string::max_size() / len < (dl::size_type)multiplier) {
+  auto mult = static_cast<string::size_type>(multiplier);
+  if (string::max_size() / len < mult) {
     php_critical_error ("tried to allocate too big string of size %lld", (long long)multiplier * len);
   }
 
   if (len == 1) {
-    return string(multiplier, s[0]);
+    return string(mult, s[0]);
   }
 
-  string result(multiplier * len, false);
+  string result(mult * len, false);
   if (len >= 5) {
-    while (multiplier--) {
-      memcpy(&result[multiplier * len], s.c_str(), len);
+    while (mult--) {
+      memcpy(&result[mult * len], s.c_str(), len);
     }
   } else {
-    for (int i = 0; i < multiplier; i++) {
-      for (int j = 0; j < len; j++) {
+    for (string::size_type i = 0; i < mult; i++) {
+      for (string::size_type j = 0; j < len; j++) {
         result[i * len + j] = s[j];
       }
     }
@@ -1946,13 +1947,13 @@ static string str_replace_char(char c, const string &replace, const string &subj
         return subject;
       }
       replace_count += count;
-      result.append(piece, (dl::size_type)(piece_end - piece));
+      result.append(piece, static_cast<string::size_type>(piece_end - piece));
       return result;
     }
 
     ++count;
 
-    result.append(piece, (dl::size_type)(pos - piece));
+    result.append(piece, static_cast<string::size_type>(pos - piece));
     result.append(replace);
 
     piece = pos + 1;
@@ -2020,13 +2021,13 @@ string str_replace(const string &search, const string &replace, const string &su
         return subject;
       }
       replace_count += count;
-      result.append(piece, (dl::size_type)(piece_end - piece));
+      result.append(piece, static_cast<string::size_type>(piece_end - piece));
       return result;
     }
 
     ++count;
 
-    result.append(piece, (dl::size_type)(pos - piece));
+    result.append(piece, static_cast<string::size_type>(pos - piece));
     result.append(replace);
 
     piece = pos + search.size();
@@ -2341,7 +2342,7 @@ array<var> f$unpack(const string &pattern, const string &data) {
     }
 
     const char *key_end = strchrnul(&pattern[i], '/');
-    string key_prefix(pattern.c_str() + i, (dl::size_type)(key_end - pattern.c_str() - i));
+    string key_prefix(pattern.c_str() + i, static_cast<string::size_type>(key_end - pattern.c_str() - i));
     i = (int)(key_end - pattern.c_str());
     if (i < (int)pattern.size()) {
       i++;

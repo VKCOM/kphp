@@ -188,7 +188,7 @@ public:
   inline bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
   inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
-  inline dl::size_type estimate_memory_usage() const;
+  inline size_t estimate_memory_usage() const;
 
   static inline void reset_empty_values() noexcept;
 

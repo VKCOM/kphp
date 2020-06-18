@@ -1177,7 +1177,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
     }
 
     len_name = gen_unique_name("strlen");
-    W << "dl::size_type " << len_name << " = " << static_length;
+    W << "string::size_type " << len_name << " = " << static_length;
     for (const auto &str : to_add) {
       W << " + max_string_size (" << str << ")";
     }

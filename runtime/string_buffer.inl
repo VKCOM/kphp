@@ -6,7 +6,7 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-inline void string_buffer::resize(dl::size_type new_buffer_len) {
+inline void string_buffer::resize(string::size_type new_buffer_len) {
   if (new_buffer_len < MIN_BUFFER_LEN) {
     new_buffer_len = MIN_BUFFER_LEN;
   }
@@ -19,12 +19,12 @@ inline void string_buffer::resize(dl::size_type new_buffer_len) {
         string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
         return;
       } else {
-        php_critical_error ("maximum buffer size exceeded. buffer_len = %d, new_buffer_len = %d", buffer_len, new_buffer_len);
+        php_critical_error ("maximum buffer size exceeded. buffer_len = %u, new_buffer_len = %u", buffer_len, new_buffer_len);
       }
     }
   }
 
-  dl::size_type current_len = size();
+  string::size_type current_len = size();
   if(void *new_mem = dl::heap_reallocate(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
@@ -32,8 +32,8 @@ inline void string_buffer::resize(dl::size_type new_buffer_len) {
   }
 }
 
-inline void string_buffer::reserve_at_least(dl::size_type need) {
-  dl::size_type new_buffer_len = need + size();
+inline void string_buffer::reserve_at_least(string::size_type need) {
+  string::size_type new_buffer_len = need + size();
   while (unlikely (buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
@@ -68,7 +68,7 @@ string_buffer &operator<<(string_buffer &sb, double f) {
 }
 
 string_buffer &operator<<(string_buffer &sb, const string &s) {
-  dl::size_type l = s.size();
+  string::size_type l = s.size();
   sb.reserve_at_least(l);
 
   if (unlikely (sb.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
@@ -114,8 +114,8 @@ string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
   return sb;
 }
 
-dl::size_type string_buffer::size() const {
-  return (dl::size_type)(buffer_end - buffer_begin);
+string::size_type string_buffer::size() const {
+  return static_cast<string::size_type>(buffer_end - buffer_begin);
 }
 
 char *string_buffer::buffer() {
@@ -139,7 +139,7 @@ string string_buffer::str() const {
 }
 
 bool string_buffer::set_pos(int pos) {
-  php_assert ((dl::size_type)pos <= buffer_len);
+  php_assert (static_cast<string::size_type>(pos) <= buffer_len);
   buffer_end = buffer_begin + pos;
   return true;
 }

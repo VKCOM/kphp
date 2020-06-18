@@ -513,7 +513,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 
         for (int i = 0; i < named_subpatterns_count; i++) {
           int name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
-          string name(name_table + 2, (dl::size_type)strlen(name_table + 2));
+          string name(name_table + 2);
 
           if (use_heap_memory) {
             name.set_reference_counter_to(ExtraRefCnt::for_global_const);

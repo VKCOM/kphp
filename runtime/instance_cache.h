@@ -291,7 +291,7 @@ void init_instance_cache_lib();
 void free_instance_cache_lib();
 
 // these function should be called from master
-void set_instance_cache_memory_limit(dl::size_type limit);
+void set_instance_cache_memory_limit(size_t limit);
 
 struct InstanceCacheStats : private vk::not_copyable {
   std::atomic<uint64_t> elements_stored{0};

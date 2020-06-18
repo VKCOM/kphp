@@ -53,9 +53,9 @@ string f$hash(const string &algo, const string &s, bool raw_output) {
   if (!strcmp(algo.c_str(), "sha256")) {
     string res;
     if (raw_output) {
-      res.assign((dl::size_type)32, false);
+      res.assign(32, false);
     } else {
-      res.assign((dl::size_type)64, false);
+      res.assign(64, false);
     }
 
     SHA256(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
@@ -78,7 +78,7 @@ string f$hash(const string &algo, const string &s, bool raw_output) {
 
 string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output) {
   const EVP_MD *evp_md = nullptr;
-  int hash_len = 0;
+  string::size_type hash_len = 0;
   if (!strcmp(algo.c_str(), "sha1")) {
     evp_md = EVP_sha1();
     hash_len = 20;
@@ -90,16 +90,16 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
   if (evp_md != nullptr) {
     string res;
     if (raw_output) {
-      res.assign((dl::size_type)hash_len, false);
+      res.assign(hash_len, false);
     } else {
-      res.assign((dl::size_type)hash_len * 2, false);
+      res.assign(hash_len * 2, false);
     }
 
     unsigned int md_len;
     HMAC(evp_md, static_cast <const void *> (key.c_str()), (int)key.size(),
          reinterpret_cast <const unsigned char *> (data.c_str()), (int)data.size(),
          reinterpret_cast <unsigned char *> (res.buffer()), &md_len);
-    php_assert (md_len == (unsigned int)hash_len);
+    php_assert (md_len == hash_len);
 
     if (!raw_output) {
       for (int i = hash_len - 1; i >= 0; i--) {
@@ -117,9 +117,9 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
 string f$sha1(const string &s, bool raw_output) {
   string res;
   if (raw_output) {
-    res.assign((dl::size_type)20, false);
+    res.assign(20, false);
   } else {
-    res.assign((dl::size_type)40, false);
+    res.assign(40, false);
   }
 
   SHA1(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
@@ -137,9 +137,9 @@ string f$sha1(const string &s, bool raw_output) {
 string f$md5(const string &s, bool raw_output) {
   string res;
   if (raw_output) {
-    res.assign((dl::size_type)16, false);
+    res.assign(16, false);
   } else {
-    res.assign((dl::size_type)32, false);
+    res.assign(32, false);
   }
 
   MD5(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
@@ -1056,7 +1056,7 @@ static Optional<string> ssl_fread(const Stream &stream, int length) {
   } else {
     dl::leave_critical_section();
     php_assert (res_size <= length);
-    res.shrink((dl::size_type)res_size);
+    res.shrink(static_cast<string::size_type>(res_size));
     return res;
   }
 }

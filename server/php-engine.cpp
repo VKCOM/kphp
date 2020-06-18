@@ -2285,7 +2285,7 @@ void start_server() {
   }
 }
 
-void set_instance_cache_memory_limit(dl::size_type limit);
+void set_instance_cache_memory_limit(size_t limit);
 void init_php_scripts() noexcept;
 void global_init_php_scripts() noexcept;
 const char *get_php_scripts_version() noexcept;
@@ -2534,11 +2534,11 @@ int main_args_handler(int i) {
     }
     case 2003: {
       int64_t instance_cache_memory_limit = parse_memory_limit(optarg);
-      if (instance_cache_memory_limit <= 0 || instance_cache_memory_limit > std::numeric_limits<dl::size_type>::max()) {
+      if (instance_cache_memory_limit <= 0) {
         kprintf("couldn't parse instance-cache-memory-limit argument\n");
         return -1;
       }
-      set_instance_cache_memory_limit(static_cast<dl::size_type>(instance_cache_memory_limit));
+      set_instance_cache_memory_limit(static_cast<size_t>(instance_cache_memory_limit));
       return 0;
     }
     case 2004: {
@@ -2547,11 +2547,11 @@ int main_args_handler(int i) {
     }
     case 2005: {
       int64_t confdata_memory_limit = parse_memory_limit(optarg);
-      if (confdata_memory_limit <= 0 || confdata_memory_limit > std::numeric_limits<dl::size_type>::max()) {
+      if (confdata_memory_limit <= 0) {
         kprintf("couldn't parse confdata-memory-limit argument\n");
         return -1;
       }
-      set_confdata_memory_limit(static_cast<dl::size_type>(confdata_memory_limit));
+      set_confdata_memory_limit(static_cast<size_t>(confdata_memory_limit));
       return 0;
     }
     case 2006: {

@@ -305,7 +305,7 @@ var regexp::replace(const T &replace_val, const string &subject, int limit, int 
     int match_begin = submatch[0];
     offset = submatch[1];
 
-    result.append(subject.c_str() + last_match, (dl::size_type)(match_begin - last_match));
+    result.append(subject.c_str() + last_match, static_cast<string::size_type>(match_begin - last_match));
     result.append(get_replacement(replace_val, subject, count));
 
     second_try = (match_begin == offset);
@@ -322,7 +322,7 @@ var regexp::replace(const T &replace_val, const string &subject, int limit, int 
     return subject;
   }
 
-  result.append(subject.c_str() + last_match, (dl::size_type)(subject.size() - last_match));
+  result.append(subject.c_str() + last_match, static_cast<string::size_type>(subject.size() - last_match));
   return result;
 }
 

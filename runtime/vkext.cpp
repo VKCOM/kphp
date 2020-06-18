@@ -439,7 +439,7 @@ string f$vk_utf8_to_win(const string &text, int max_len, bool exit_on_error) {
   if (r >= 0) {
     return finish_buff(max_len);
   } else {
-    if (!max_len || text.size() <= (dl::size_type)max_len) {
+    if (!max_len || text.size() <= static_cast<string::size_type>(max_len)) {
       return text;
     }
     return string(text.c_str(), max_len);
@@ -609,7 +609,7 @@ string f$vk_flex(const string &name, const string &case_name, int sex, const str
   }
   buff[wp] = 0;
 
-  return string(buff, (dl::size_type)strlen(buff));
+  return string(buff);
 }
 
 Optional<string> f$vk_json_encode(const var &v) {

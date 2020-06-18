@@ -18,7 +18,7 @@ inline bool is_decimal_digit(const int c) {
 
 class string {
 public:
-  using size_type = dl::size_type;
+  using size_type = uint32_t;
   static constexpr size_type npos = (size_type)-1;
 
 private:
@@ -131,6 +131,7 @@ public:
 
   inline string &assign(const string &str);
   inline string &assign(const string &str, size_type pos, size_type n);
+  inline string &assign(const char *s);
   inline string &assign(const char *s, size_type n);
   inline string &assign(size_type n, char c);
   inline string &assign(size_type n, bool b);//do not initialize. if b == true - just reserve
@@ -170,7 +171,7 @@ public:
 
   inline int compare(const string &str) const;
 
-  inline dl::size_type get_correct_index(int index) const;
+  inline size_type get_correct_index(int index) const;
   inline const string get_value(int int_key) const;
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const var &v) const;
@@ -203,14 +204,14 @@ inline int compare_strings_php_order(const string &lhs, const string &rhs);
 inline void swap(string &lhs, string &rhs);
 
 
-inline dl::size_type max_string_size(bool) __attribute__((always_inline));
-inline dl::size_type max_string_size(int) __attribute__((always_inline));
-inline dl::size_type max_string_size(double) __attribute__((always_inline));
-inline dl::size_type max_string_size(const string &s) __attribute__((always_inline));
-inline dl::size_type max_string_size(const var &v) __attribute__((always_inline));
+inline string::size_type max_string_size(bool) __attribute__((always_inline));
+inline string::size_type max_string_size(int) __attribute__((always_inline));
+inline string::size_type max_string_size(double) __attribute__((always_inline));
+inline string::size_type max_string_size(const string &s) __attribute__((always_inline));
+inline string::size_type max_string_size(const var &v) __attribute__((always_inline));
 
 template<class T>
-inline dl::size_type max_string_size(const array<T> &) __attribute__((always_inline));
+inline string::size_type max_string_size(const array<T> &) __attribute__((always_inline));
 
 template<class T>
-inline dl::size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
+inline string::size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));

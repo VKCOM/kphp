@@ -237,7 +237,7 @@ void multi_close(MultiContext *multi_context) noexcept {
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
   dl::leave_critical_section();
 
-  auto length = static_cast<dl::size_type>(size * nmemb);
+  auto length = static_cast<string::size_type>(size * nmemb);
   auto *easy_context = static_cast<EasyContext *>(userdata);
 
   if (easy_context->return_transfer) {
@@ -254,7 +254,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
 int curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
   if (type == CURLINFO_HEADER_OUT) {
     dl::leave_critical_section();
-    static_cast<EasyContext *>(userdata)->header = string{buf, static_cast<dl::size_type>(buf_len)};
+    static_cast<EasyContext *>(userdata)->header = string{buf, static_cast<string::size_type>(buf_len)};
     dl::enter_critical_section();
   }
   return 0;

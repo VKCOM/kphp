@@ -88,7 +88,7 @@ ConfdataGlobalManager &ConfdataGlobalManager::get() noexcept {
   return manager;
 }
 
-void ConfdataGlobalManager::init(dl::size_type confdata_memory_limit) noexcept {
+void ConfdataGlobalManager::init(size_t confdata_memory_limit) noexcept {
   void *confdata_memory = mmap(nullptr, confdata_memory_limit,
                                PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
   php_assert(confdata_memory);

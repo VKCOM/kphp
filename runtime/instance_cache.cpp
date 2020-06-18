@@ -163,7 +163,7 @@ void CacheContext::clear_garbage() noexcept {
 
 class SharedMemoryData : vk::not_copyable {
 public:
-  void init(dl::size_type pool_size) noexcept {
+  void init(size_t pool_size) noexcept {
     php_assert(!data_shards_);
     php_assert(!cache_context_);
     php_assert(!shared_memory_);
@@ -235,13 +235,13 @@ private:
 
   void *shared_memory_{nullptr};
   size_t share_memory_full_size_{0};
-  dl::size_type shared_memory_pool_size_{0};
+  size_t shared_memory_pool_size_{0};
   CacheContext *cache_context_{nullptr};
   SharedDataStorages *data_shards_{nullptr};
 };
 
 struct {
-  dl::size_type total_memory_limit{DEFAULT_MEMORY_LIMIT};
+  size_t total_memory_limit{DEFAULT_MEMORY_LIMIT};
 } static instance_cache_settings;
 
 class InstanceCache {
@@ -739,7 +739,7 @@ void free_instance_cache_lib() {
 }
 
 // should be called only from master
-void set_instance_cache_memory_limit(dl::size_type limit) {
+void set_instance_cache_memory_limit(size_t limit) {
   ic_impl_::instance_cache_settings.total_memory_limit = limit;
 }
 

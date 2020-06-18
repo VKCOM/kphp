@@ -172,7 +172,7 @@ static void parse_str_set_array_value(var &arr, const char *left_br_pos, int key
   php_assert (*left_br_pos == '[');
   const char *right_br_pos = (const char *)memchr(left_br_pos + 1, ']', key_len - 1);
   if (right_br_pos != nullptr) {
-    string next_key(left_br_pos + 1, (dl::size_type)(right_br_pos - left_br_pos - 1));
+    string next_key(left_br_pos + 1, static_cast<string::size_type>(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
       arr = array<var>();
     }
@@ -195,7 +195,7 @@ void parse_str_set_value(var &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr(key_c, '[', key.size());
   if (left_br_pos != nullptr) {
-    return parse_str_set_array_value(arr[string(key_c, (dl::size_type)(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
+    return parse_str_set_array_value(arr[string(key_c, static_cast<string::size_type>(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
   }
 
   arr.set_value(key, value);
@@ -211,17 +211,17 @@ void f$parse_str(const string &str, var &arr) {
     const char *eq_pos = strchrnul(cur, '=');
     string value;
     if (*eq_pos) {
-      value = f$urldecode(string(eq_pos + 1, (dl::size_type)(strlen(eq_pos + 1))));
+      value = f$urldecode(string(eq_pos + 1));
     }
 
-    string key(cur, (dl::size_type)(eq_pos - cur));
+    string key(cur, static_cast<string::size_type>(eq_pos - cur));
     key = f$urldecode(key);
     parse_str_set_value(arr, key, value);
   }
 }
 
 // returns associative array like [host=> path=>] or empty array if str is not a valid url
-array<var> php_url_parse_ex(const char *str, dl::size_type length) {
+array<var> php_url_parse_ex(const char *str, string::size_type length) {
   array<var> result;
   const char *s = str, *e, *p, *pp, *ue = str + length;
 

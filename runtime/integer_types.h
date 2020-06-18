@@ -245,7 +245,7 @@ inline double f$floatval(Long val) {
 
 inline string f$strval(Long val) {
   char buf[20];
-  return string{buf, static_cast<dl::size_type>(simd_int64_to_string(val.l, buf) - buf)};
+  return string{buf, static_cast<string::size_type>(simd_int64_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, Long x) {
@@ -378,7 +378,7 @@ inline double f$floatval(ULong val) {
 
 inline string f$strval(ULong val) {
   char buf[20];
-  return string{buf, static_cast<dl::size_type>(simd_uint64_to_string(val.l, buf) - buf)};
+  return string{buf, static_cast<string::size_type>(simd_uint64_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, ULong x) {
@@ -511,7 +511,7 @@ inline double f$floatval(UInt val) {
 
 inline string f$strval(UInt val) {
   char buf[20];
-  return string{buf, static_cast<dl::size_type>(simd_uint32_to_string(val.l, buf) - buf)};
+  return string{buf, static_cast<string::size_type>(simd_uint32_to_string(val.l, buf) - buf)};
 }
 
 inline string_buffer &operator<<(string_buffer &buf, UInt x) {

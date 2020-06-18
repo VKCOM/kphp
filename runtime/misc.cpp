@@ -62,7 +62,7 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
 
     size_t res = iconv(cd, &input_buf, &input_len, &output_buf, &output_len);
     if (res != (size_t)-1 || errno != E2BIG) {
-      output_str.shrink((dl::size_type)(output_buf - output_str.c_str()));
+      output_str.shrink(static_cast<string::size_type>(output_buf - output_str.c_str()));
       iconv_close(cd);
       return output_str;
     }
@@ -230,7 +230,7 @@ var f$getimagesize(const string &name) {
       if (!strncmp((const char *)buf, php_sig_jpg, sizeof(php_sig_jpg))) {
         type = IMAGETYPE_JPEG;
 
-        unsigned char *image = (unsigned char *)dl::allocate((dl::size_type)size);
+        unsigned char *image = (unsigned char *)dl::allocate(size);
         if (image == nullptr) {
           php_warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
           close(read_fd);
@@ -239,7 +239,7 @@ var f$getimagesize(const string &name) {
         }
         memcpy(image, buf, read_size);
         if (read_safe(read_fd, image + read_size, size - read_size) < (ssize_t)(size - read_size)) {
-          dl::deallocate(image, (dl::size_type)size);
+          dl::deallocate(image, size);
           close(read_fd);
           dl::leave_critical_section();
           return false;
@@ -289,7 +289,7 @@ var f$getimagesize(const string &name) {
             case M_SOF14:
             case M_SOF15:
               if (cur_pos + 8 > size) {
-                dl::deallocate(image, (dl::size_type)size);
+                dl::deallocate(image, size);
                 close(read_fd);
                 dl::leave_critical_section();
                 return false;
@@ -308,7 +308,7 @@ var f$getimagesize(const string &name) {
               size_t length = (image[cur_pos] << 8) + image[cur_pos + 1];
 
               if (length < 2 || cur_pos + length > size) {
-                dl::deallocate(image, (dl::size_type)size);
+                dl::deallocate(image, size);
                 close(read_fd);
                 dl::leave_critical_section();
                 return false;
@@ -318,7 +318,7 @@ var f$getimagesize(const string &name) {
             }
           }
         }
-        dl::deallocate(image, (dl::size_type)size);
+        dl::deallocate(image, size);
       } else if (!strncmp((const char *)buf, php_sig_jpc, sizeof(php_sig_jpc)) && (int)read_size >= 42) {
         type = IMAGETYPE_JPEG;
 
@@ -447,7 +447,7 @@ var f$getimagesize(const string &name) {
   if (channels != 0) {
     result.set_value(string("channels", 8), channels);
   }
-  result.set_value(string("mime", 4), string(mime_type_string[type], (dl::size_type)strlen(mime_type_string[type])));
+  result.set_value(string("mime", 4), string(mime_type_string[type]));
 
   return result;
 }
@@ -475,13 +475,13 @@ Optional<array<var>> f$posix_getpwuid(int uid) {
     return false;
   }
   array<var> result(array_size(0, 7, false));
-  result.set_value(string("name", 4), string(pwd->pw_name, (dl::size_type)strlen(pwd->pw_name)));
-  result.set_value(string("passwd", 6), string(pwd->pw_passwd, (dl::size_type)strlen(pwd->pw_passwd)));
+  result.set_value(string("name", 4), string(pwd->pw_name));
+  result.set_value(string("passwd", 6), string(pwd->pw_passwd));
   result.set_value(string("uid", 3), (int)pwd->pw_uid);
   result.set_value(string("gid", 3), (int)pwd->pw_gid);
-  result.set_value(string("gecos", 5), string(pwd->pw_gecos, (dl::size_type)strlen(pwd->pw_gecos)));
-  result.set_value(string("dir", 3), string(pwd->pw_dir, (dl::size_type)strlen(pwd->pw_dir)));
-  result.set_value(string("shell", 5), string(pwd->pw_shell, (dl::size_type)strlen(pwd->pw_shell)));
+  result.set_value(string("gecos", 5), string(pwd->pw_gecos));
+  result.set_value(string("dir", 3), string(pwd->pw_dir));
+  result.set_value(string("shell", 5), string(pwd->pw_shell));
   return result;
 }
 
@@ -624,11 +624,12 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
     case 's':
       if (s[1] == ':') {
         s += 2;
-        int j = 0, len = 0;
+        uint32_t j = 0;
+        uint32_t len = 0;
         while ('0' <= s[j] && s[j] <= '9') {
           len = len * 10 + s[j++] - '0';
         }
-        if (j > 0 && s[j] == ':' && s[j + 1] == '"' && (dl::size_type)len < string::max_size() && j + 2 + len < s_len) {
+        if (j > 0 && s[j] == ':' && s[j + 1] == '"' && len < string::max_size() && j + 2 + len < s_len) {
           s += j + 2;
 
           if (s[len] == '"' && s[len + 1] == ';') {
@@ -700,11 +701,12 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
               }
             } else if (s[0] == 's' && s[1] == ':') {
               s += 2;
-              int k = 0, str_len = 0;
+              uint32_t k = 0;
+              uint32_t str_len = 0;
               while ('0' <= s[k] && s[k] <= '9') {
                 str_len = str_len * 10 + s[k++] - '0';
               }
-              if (k > 0 && s[k] == ':' && s[k + 1] == '"' && (dl::size_type)str_len < string::max_size() && k + 2 + str_len < s_len) {
+              if (k > 0 && s[k] == ':' && s[k + 1] == '"' && str_len < string::max_size() && k + 2 + str_len < s_len) {
                 s += k + 2;
 
                 if (s[str_len] == '"' && s[str_len + 1] == ';') {
@@ -1053,7 +1055,7 @@ string f$vk_json_encode_safe(const var &v, bool simple_encode) {
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    THROW_EXCEPTION (new_Exception(string(__FILE__, (dl::size_type)strlen(__FILE__)), __LINE__, string("json_encode buffer overflow", 27)));
+    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
     return string();
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;

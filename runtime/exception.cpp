@@ -20,7 +20,7 @@ array<array<string>> f$debug_backtrace() {
     dl::enter_critical_section();//OK
     snprintf(buf, 19, "%p", buffer[i]);
     dl::leave_critical_section();
-    current.set_value(function_key, string(buf, (dl::size_type)strlen(buf)));
+    current.set_value(function_key, string(buf));
     res.push_back(current);
   }
 

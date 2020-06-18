@@ -105,7 +105,7 @@ string f$basename(const string &name, const string &suffix) {
   if ((int)suffix.size() <= l && !strcmp(result_c_str + l - suffix.size(), suffix.c_str())) {
     l -= suffix.size();
   }
-  return string(result_c_str, (dl::size_type)l);
+  return string(result_c_str, static_cast<string::size_type>(l));
 }
 
 bool f$chmod(const string &s, int mode) {
@@ -170,7 +170,7 @@ string f$dirname(const string &name) {
   dl::enter_critical_section();//OK
   const char *result_c_str = dirname(name_copy.buffer());
   dl::leave_critical_section();
-  return string(result_c_str, (dl::size_type)strlen(result_c_str));;
+  return string(result_c_str);
 }
 
 Optional<array<string>> f$file(const string &name) {
@@ -203,7 +203,7 @@ Optional<array<string>> f$file(const string &name) {
   }
   dl::leave_critical_section();
 
-  string res((dl::size_type)size, false);
+  string res(static_cast<string::size_type>(size), false);
 
   dl::enter_critical_section();//OK
   char *s = &res[0];
@@ -335,25 +335,25 @@ string f$php_uname(const string &name) {
   char mode = name[0];
   switch (mode) {
     case 's':
-      return string(res.sysname, (dl::size_type)strlen(res.sysname));
+      return string(res.sysname);
     case 'n':
-      return string(res.nodename, (dl::size_type)strlen(res.nodename));
+      return string(res.nodename);
     case 'r':
-      return string(res.release, (dl::size_type)strlen(res.release));
+      return string(res.release);
     case 'v':
-      return string(res.version, (dl::size_type)strlen(res.version));
+      return string(res.version);
     case 'm':
-      return string(res.machine, (dl::size_type)strlen(res.machine));
+      return string(res.machine);
     default: {
-      string result(res.sysname, (dl::size_type)strlen(res.sysname));
+      string result(res.sysname);
       result.push_back(' ');
-      result.append(res.nodename, (dl::size_type)strlen(res.nodename));
+      result.append(res.nodename);
       result.push_back(' ');
-      result.append(res.release, (dl::size_type)strlen(res.release));
+      result.append(res.release);
       result.push_back(' ');
-      result.append(res.version, (dl::size_type)strlen(res.version));
+      result.append(res.version);
       result.push_back(' ');
-      result.append(res.machine, (dl::size_type)strlen(res.machine));
+      result.append(res.machine);
       return result;
     }
   }
@@ -390,7 +390,7 @@ Optional<string> f$realpath(const string &path) {
     return false;
   }
 
-  return string(real_path, (dl::size_type)strlen(real_path));
+  return string(real_path);
 }
 
 static Optional<string> full_realpath(const string &path) { // realpath resolving only dirname to work with unexisted files
@@ -398,7 +398,7 @@ static Optional<string> full_realpath(const string &path) { // realpath resolvin
   static array<string> *full_realpath_cache = reinterpret_cast <array<string> *> (full_realpath_cache_storage);
   static long long full_realpath_last_query_num = -1;
 
-  const dl::size_type offset = file_wrapper_name.size();
+  const auto offset = file_wrapper_name.size();
   string wrapped_path;
   if (strncmp(path.c_str(), file_wrapper_name.c_str(), offset)) {
     wrapped_path = file_wrapper_name;
@@ -469,7 +469,7 @@ Optional<string> f$tempnam(const string &dir, const string &prefix) {
 
       dir_new.assign(s, len);
     } else if (P_tmpdir != nullptr) {
-      dir_new.assign(P_tmpdir, (dl::size_type)strlen(P_tmpdir));
+      dir_new.assign(P_tmpdir);
     } else {
       php_critical_error ("can't compute name of temporary directory in function tempnam");
       return false;
@@ -665,7 +665,7 @@ static Optional<string> file_fread(const Stream &stream, int length) {
   }
   dl::leave_critical_section();
 
-  res.shrink((dl::size_type)res_size);
+  res.shrink(static_cast<string::size_type>(res_size));
   return res;
 }
 
@@ -715,7 +715,7 @@ static Optional<string> file_fgets(const Stream &stream, int length) {
     return false;
   }
 
-  res.shrink((dl::size_type)strlen(res.c_str()));
+  res.shrink(static_cast<string::size_type>(strlen(res.c_str())));
   return res;
 }
 
@@ -784,7 +784,7 @@ static bool file_fclose(const Stream &stream) {
 
 
 Optional<string> file_file_get_contents(const string &name) {
-  dl::size_type offset = file_wrapper_name.size();
+  auto offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
   }
@@ -818,7 +818,7 @@ Optional<string> file_file_get_contents(const string &name) {
   }
   dl::leave_critical_section();
 
-  string res((dl::size_type)size, false);
+  string res(static_cast<string::size_type>(size), false);
 
   dl::enter_critical_section();//OK
   if (read_safe(file_fd, &res[0], size) < (ssize_t)size) {
@@ -833,7 +833,7 @@ Optional<string> file_file_get_contents(const string &name) {
 }
 
 static Optional<int> file_file_put_contents(const string &name, const string &content, int flags) {
-  dl::size_type offset = file_wrapper_name.size();
+  auto offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
   }

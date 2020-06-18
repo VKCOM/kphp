@@ -80,7 +80,7 @@ public:
   bool is_cache_reference_counter() const;
   void destroy_cached();
 
-  constexpr static dl::size_type estimate_memory_usage() {
+  constexpr static size_t estimate_memory_usage() {
     static_assert(!std::is_polymorphic<T>{}, "forbidden for polymorphic");
     static_assert(!std::is_empty<T>{}, "class T may not be empty");
     return sizeof(T);

@@ -54,7 +54,7 @@ public:
 
 private:
 
-  using entry_pointer_type = dl::size_type;
+  using entry_pointer_type = uint32_t;
 
   struct list_hash_entry {
     entry_pointer_type next;
@@ -93,7 +93,6 @@ private:
     //vector is_identified by string_buf_size == -1
 
     static constexpr int MAX_HASHTABLE_SIZE = (1 << 26);
-    static constexpr int MIN_HASHTABLE_SIZE = 1;
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
@@ -132,9 +131,9 @@ private:
     inline int choose_bucket_string(int key) const __attribute__ ((always_inline));
     inline static int choose_bucket(const int key, const int buf_size, const uint64_t modulo_helper) __attribute__ ((always_inline));
 
-    inline static dl::size_type sizeof_vector(int int_size) __attribute__((always_inline));
-    inline static dl::size_type sizeof_map(int int_size, int string_size) __attribute__((always_inline));
-    inline static dl::size_type estimate_size(int &new_int_size, int &new_string_size, bool is_vector);
+    inline static size_t sizeof_vector(int int_size) __attribute__((always_inline));
+    inline static size_t sizeof_map(int int_size, int string_size) __attribute__((always_inline));
+    inline static size_t estimate_size(int &new_int_size, int &new_string_size, bool is_vector);
     inline static array_inner *create(int new_int_size, int new_string_size, bool is_vector);
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
@@ -178,7 +177,7 @@ private:
     inline T &get_vector_value(int int_key);//unsafe
     inline void unset_map_value(int int_key, const string &string_key);
 
-    dl::size_type estimate_memory_usage() const;
+    size_t estimate_memory_usage() const;
 
     inline array_inner(int ref_cnt, int max_key, list_hash_entry end_, int int_size, int int_buf_size, int string_size, int string_buf_size) :
       ref_cnt(ref_cnt),
@@ -398,7 +397,7 @@ public:
 
   void reserve(int int_size, int string_size, bool make_vector_if_possible);
 
-  dl::size_type estimate_memory_usage() const;
+  size_t estimate_memory_usage() const;
 
   template<typename U>
   static array<T> convert_from(const array<U> &);

@@ -43,7 +43,7 @@ class ConfdataGlobalManager : vk::not_copyable {
 public:
   static ConfdataGlobalManager &get() noexcept;
 
-  void init(dl::size_type confdata_memory_limit) noexcept;
+  void init(size_t confdata_memory_limit) noexcept;
 
   void force_release_all_resources_acquired_by_this_proc_if_init() noexcept {
     if (is_initialized()) {

@@ -280,7 +280,7 @@ Optional<int> f$mb_strpos(const string &haystack, const string &needle, int offs
   if (s == nullptr) {
     return false;
   }
-  return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, (dl::size_type)(s - (haystack.c_str() + UTF8_offset))) + offset;
+  return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, static_cast<int>(s - (haystack.c_str() + UTF8_offset))) + offset;
 }
 
 Optional<int> f$mb_stripos(const string &haystack, const string &needle, int offset, const string &encoding) {

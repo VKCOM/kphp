@@ -240,7 +240,7 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
     php_warning("Wrong header line specified: \"%s\"", str);
     return;
   }
-  string name = f$trim(string(str, (dl::size_type)(p - str)));
+  string name = f$trim(string(str, static_cast<string::size_type>(p - str)));
   if (strpbrk(name.c_str(), "()<>@,;:\\\"/[]?={}") != nullptr) {
     php_warning("Wrong header name: \"%s\"", name.c_str());
     return;
@@ -600,7 +600,7 @@ Optional<array<string>> f$gethostbynamel(const string &name) {
     dl::enter_critical_section();//OK
     const char *ip = inet_ntoa(*(struct in_addr *)hp->h_addr_list[i]);
     dl::leave_critical_section();
-    result.push_back(string(ip, (dl::size_type)strlen(ip)));
+    result.push_back(string(ip));
   }
 
   return result;
@@ -1073,12 +1073,12 @@ static int parse_multipart_one(post_reader &data, int i) {
         if (*p_end == 0) {
           break;
         }
-        const string key = f$trim(string(p, (dl::size_type)(p_end - p)));
+        const string key = f$trim(string(p, static_cast<string::size_type>(p_end - p)));
         p = ++p_end;
         while (*p_end && *p_end != ';') {
           p_end++;
         }
-        string value = f$trim(string(p, (dl::size_type)(p_end - p)));
+        string value = f$trim(string(p, static_cast<string::size_type>(p_end - p)));
         if ((int)value.size() > 1 && value[0] == '"' && value[value.size() - 1] == '"') {
           value.assign(value, 1, value.size() - 2);
         }
@@ -1246,7 +1246,7 @@ Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
   int longopts_count = 0;
   for (array<string>::iterator iter = longopts.begin(); iter != longopts.end(); ++iter) {
     string opt = iter.get_value();
-    dl::size_type count = 0;
+    string::size_type count = 0;
     while (count < opt.size() && opt[opt.size() - count - 1] == ':') {
       count++;
     }
@@ -1269,10 +1269,10 @@ Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
     if (i == -1 || i == '?') {
       break;
     }
-    string key = (i < 255 ? string(1, (char)i) : string(real_longopts[i - 300].name, (dl::size_type)strlen(real_longopts[i - 300].name)));
+    string key = (i < 255 ? string(1, (char)i) : string(real_longopts[i - 300].name));
     var value;
     if (optarg) {
-      value = string(optarg, (dl::size_type)strlen(optarg));
+      value = string(optarg);
     } else {
       value = false;
     }
@@ -1299,7 +1299,7 @@ void arg_add(const char *value) {
     arg_vars = reinterpret_cast <array<string> *> (arg_vars_storage);
   }
 
-  arg_vars->push_back(string(value, (dl::size_type)strlen(value)));
+  arg_vars->push_back(string(value));
 }
 
 static void reset_superglobals() {
@@ -1496,7 +1496,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
             end_p--;
           }
 //          fprintf (stderr, "!%s!\n", p);
-          is_parsed |= parse_multipart(post, post_len, string(p, (dl::size_type)(end_p - p)));
+          is_parsed |= parse_multipart(post, post_len, string(p, static_cast<string::size_type>(end_p - p)));
         }
       }
     } else {
@@ -1553,7 +1553,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     for (int i = 0; environ[i] != nullptr; i++) {
       const char *s = strchr(environ[i], '=');
       php_assert (s != nullptr);
-      v$_ENV.set_value(string(environ[i], (dl::size_type)(s - environ[i])), string(s + 1, (dl::size_type)strlen(s + 1)));
+      v$_ENV.set_value(string(environ[i], static_cast<string::size_type>(s - environ[i])), string(s + 1));
     }
   }
 
@@ -1669,8 +1669,8 @@ void ini_set(vk::string_view key, vk::string_view value) {
     ini_vars = reinterpret_cast <array<string> *> (ini_vars_storage);
   }
 
-  ini_vars->set_value(string(key.data(), static_cast<dl::size_type>(key.size())),
-                      string(value.data(), static_cast<dl::size_type>(value.size())));
+  ini_vars->set_value(string(key.data(), static_cast<string::size_type>(key.size())),
+                      string(value.data(), static_cast<string::size_type>(value.size())));
 }
 
 int ini_set_from_config(const char *config_file_name) {
@@ -1848,7 +1848,7 @@ static Optional<string> php_fread(const Stream &stream, int length __attribute__
     size_t res_size = fread(&res[0], length, 1, stdin);
     dl::leave_critical_section();
     php_assert (res_size <= (size_t)length);
-    res.shrink((dl::size_type)res_size);
+    res.shrink(static_cast<string::size_type>(res_size));
     return res;
   }
 
@@ -1920,7 +1920,7 @@ static Optional<string> php_fgets(const Stream &stream, int length) {
       return false;
     }
 
-    res.shrink((dl::size_type)strlen(res.c_str()));
+    res.shrink(static_cast<string::size_type>(strlen(res.c_str())));
     return res;
   }
 

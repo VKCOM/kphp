@@ -7,7 +7,7 @@
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 
-static dl::size_type max_wrapper_name_size;
+static string::size_type max_wrapper_name_size = 0;
 
 static array<const stream_functions *> wrappers;
 

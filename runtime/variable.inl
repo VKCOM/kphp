@@ -1066,8 +1066,7 @@ inline const char *var::get_type_c_str() const {
 }
 
 inline const string var::get_type_str() const {
-  const char *result = get_type_c_str();
-  return string(result, (dl::size_type)strlen(result));
+  return string(get_type_c_str());
 }
 
 
@@ -1311,10 +1310,10 @@ void var::set_value(const array<var>::iterator &it) {
 const var var::get_value(int int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      if ((dl::size_type)int_key >= as_string().size()) {
+      if (static_cast<string::size_type>(int_key) >= as_string().size()) {
         return string();
       }
-      return string(1, as_string()[int_key]);
+      return string(1, as_string()[static_cast<string::size_type>(int_key)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1334,10 +1333,10 @@ const var var::get_value(const string &string_key) const {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
       }
-      if ((dl::size_type)int_val >= as_string().size()) {
+      if (static_cast<string::size_type>(int_val) >= as_string().size()) {
         return string();
       }
-      return string(1, as_string()[int_val]);
+      return string(1, as_string()[static_cast<string::size_type>(int_val)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1608,7 +1607,7 @@ inline void var::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   }
 }
 
-dl::size_type var::estimate_memory_usage() const {
+size_t var::estimate_memory_usage() const {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:

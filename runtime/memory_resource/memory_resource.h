@@ -21,8 +21,6 @@ inline void memory_debug(const char *format, ...) {
 
 namespace memory_resource {
 
-using size_type = unsigned int;
-
 class MemoryStats {
 public:
   size_t real_memory_used{0}; // currently used and dirty memory

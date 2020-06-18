@@ -628,7 +628,7 @@ private:
 
 struct {
   const char *binlog_mask{nullptr};
-  dl::size_type memory_limit{2u * 1024u * 1024u * 1024u};
+  size_t memory_limit{2u * 1024u * 1024u * 1024u};
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
 
   bool is_enabled() const noexcept {
@@ -642,7 +642,7 @@ void set_confdata_binlog_mask(const char *mask) noexcept {
   confdata_settings.binlog_mask = mask;
 }
 
-void set_confdata_memory_limit(dl::size_type memory_limit) noexcept {
+void set_confdata_memory_limit(size_t memory_limit) noexcept {
   confdata_settings.memory_limit = memory_limit;
 }
 

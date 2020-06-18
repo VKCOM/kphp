@@ -288,9 +288,9 @@ static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, in
   int result_len = llen + rlen;
   int result_scale = lscale + rscale;
   int result_size = result_len + result_scale + 3;
-  string result(result_size, false);
+  string result(static_cast<string::size_type>(result_size), false);
 
-  int *res = (int *)dl::allocate0((dl::size_type)(sizeof(int) * result_size));
+  int *res = (int *)dl::allocate0(static_cast<size_t>(sizeof(int) * result_size));
   for (int i = -lscale; i < llen; i++) {
     int x = (i < 0 ? lhs[lfrac - i - 1] : lhs[ldot - i - 1]) - '0';
     for (int j = -rscale; j < rlen; j++) {
@@ -320,7 +320,7 @@ static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, in
   resint = cur_pos;
   php_assert (cur_pos > 0);
 
-  dl::deallocate(res, (dl::size_type)(sizeof(int) * result_size));
+  dl::deallocate(res, static_cast<size_t>(sizeof(int) * result_size));
 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
@@ -342,8 +342,8 @@ static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, in
 
   int dividend_len = llen + lscale;
   int divider_len = rlen + rscale;
-  int *dividend = (int *)dl::allocate0((dl::size_type)sizeof(int) * (result_size + dividend_len + divider_len));
-  int *divider = (int *)dl::allocate((dl::size_type)sizeof(int) * divider_len);
+  int *dividend = (int *)dl::allocate0(static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
+  int *divider = (int *)dl::allocate(static_cast<size_t>(sizeof(int) * divider_len));
 
   for (int i = -lscale; i < llen; i++) {
     int x = (i < 0 ? lhs[lfrac - i - 1] : lhs[ldot - i - 1]) - '0';
@@ -369,12 +369,12 @@ static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, in
   if (cur_pow < -scale) {
     divider -= divider_skip;
     divider_len += divider_skip;
-    dl::deallocate(dividend, (dl::size_type)sizeof(int) * (result_size + dividend_len + divider_len));
-    dl::deallocate(divider, (dl::size_type)sizeof(int) * divider_len);
+    dl::deallocate(dividend, static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
+    dl::deallocate(divider, static_cast<size_t>(sizeof(int) * divider_len));
     return bc_zero(scale);
   }
 
-  string result(result_size, false);
+  string result(static_cast<string::size_type>(result_size), false);
   resint = cur_pos;
   if (cur_pow < 0) {
     result[cur_pos++] = '0';
@@ -433,8 +433,8 @@ static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, in
 
   divider -= divider_skip;
   divider_len += divider_skip;
-  dl::deallocate(dividend, (dl::size_type)sizeof(int) * (result_size + dividend_len + divider_len));
-  dl::deallocate(divider, (dl::size_type)sizeof(int) * divider_len);
+  dl::deallocate(dividend, static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
+  dl::deallocate(divider, static_cast<size_t>(sizeof(int) * divider_len));
 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }

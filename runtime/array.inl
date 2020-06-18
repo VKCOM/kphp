@@ -236,17 +236,17 @@ const typename array<T>::array_inner_fields_for_map &array<T>::array_inner::fiel
 }
 
 template<class T>
-dl::size_type array<T>::array_inner::sizeof_vector(int int_size) {
-  return static_cast<dl::size_type>(sizeof(array_inner) + int_size * sizeof(T));
+size_t array<T>::array_inner::sizeof_vector(int int_size) {
+  return static_cast<size_t>(sizeof(array_inner) + int_size * sizeof(T));
 }
 
 template<class T>
-dl::size_type array<T>::array_inner::sizeof_map(int int_size, int string_size) {
-  return static_cast<dl::size_type>(sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(int_hash_entry) + string_size * sizeof(string_hash_entry));
+size_t array<T>::array_inner::sizeof_map(int int_size, int string_size) {
+  return static_cast<size_t>(sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(int_hash_entry) + string_size * sizeof(string_hash_entry));
 }
 
 template<class T>
-dl::size_type array<T>::array_inner::estimate_size(int &new_int_size, int &new_string_size, bool is_vector) {
+size_t array<T>::array_inner::estimate_size(int &new_int_size, int &new_string_size, bool is_vector) {
   if (new_int_size + new_string_size > MAX_HASHTABLE_SIZE) {
     php_critical_error ("max array size exceeded");
   }
@@ -257,14 +257,11 @@ dl::size_type array<T>::array_inner::estimate_size(int &new_int_size, int &new_s
   if (new_string_size < 0) {
     new_string_size = 0;
   }
-  if (new_int_size + new_string_size < MIN_HASHTABLE_SIZE) {
-//    new_int_size = MIN_HASHTABLE_SIZE;
-  }
 
   if (is_vector) {
     php_assert (new_string_size == 0);
     new_int_size += 2;
-    return static_cast<dl::size_type>(sizeof_vector(new_int_size));
+    return sizeof_vector(new_int_size);
   }
 
   new_int_size = 2 * new_int_size + 3;
@@ -290,7 +287,7 @@ dl::size_type array<T>::array_inner::estimate_size(int &new_int_size, int &new_s
 
 template<class T>
 typename array<T>::array_inner *array<T>::array_inner::create(int new_int_size, int new_string_size, bool is_vector) {
-  const dl::size_type mem_size = estimate_size(new_int_size, new_string_size, is_vector);
+  const size_t mem_size = estimate_size(new_int_size, new_string_size, is_vector);
   if (is_vector) {
     auto p = reinterpret_cast<array_inner *>(dl::allocate(mem_size));
     p->ref_cnt = 0;
@@ -633,7 +630,7 @@ void array<T>::array_inner::unset_map_value(int int_key, const string &string_ke
 }
 
 template<class T>
-dl::size_type array<T>::array_inner::estimate_memory_usage() const {
+size_t array<T>::array_inner::estimate_memory_usage() const {
   int int_elements = int_size;
   int string_elements = 0;
   const bool vector_structure = is_vector();
@@ -808,7 +805,7 @@ void array<T>::reserve(int int_size, int string_size, bool make_vector_if_possib
 }
 
 template<class T>
-dl::size_type array<T>::estimate_memory_usage() const {
+size_t array<T>::estimate_memory_usage() const {
   return p->estimate_memory_usage();
 }
 
@@ -2019,7 +2016,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
     mutate_if_map_shared();
   }
 
-  int_hash_entry **arTmp = (int_hash_entry **)dl::allocate((dl::size_type)(n * sizeof(int_hash_entry * )));
+  int_hash_entry **arTmp = (int_hash_entry **)dl::allocate(static_cast<size_t>(n * sizeof(int_hash_entry * )));
   int i = 0;
   for (string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
     arTmp[i++] = (int_hash_entry *)it;
@@ -2041,7 +2038,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   arTmp[n - 1]->next = p->get_pointer(p->end());
   p->end()->prev = p->get_pointer(arTmp[n - 1]);
 
-  dl::deallocate(arTmp, (dl::size_type)(n * sizeof(int_hash_entry * )));
+  dl::deallocate(arTmp, static_cast<size_t>(n * sizeof(int_hash_entry * )));
 }
 
 

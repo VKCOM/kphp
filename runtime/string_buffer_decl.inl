@@ -9,20 +9,20 @@
 #define STRING_BUFFER_ERROR_FLAG_FAILED 1
 
 class string_buffer {
-  static dl::size_type MIN_BUFFER_LEN;
-  static dl::size_type MAX_BUFFER_LEN;
+  static string::size_type MIN_BUFFER_LEN;
+  static string::size_type MAX_BUFFER_LEN;
   char *buffer_end;
   char *buffer_begin;
-  dl::size_type buffer_len;
+  string::size_type buffer_len;
 
-  inline void resize(dl::size_type new_buffer_len);
-  inline void reserve_at_least(dl::size_type new_buffer_len);
+  inline void resize(string::size_type new_buffer_len);
+  inline void reserve_at_least(string::size_type new_buffer_len);
   string_buffer(const string_buffer &other) = delete;
   string_buffer &operator=(const string_buffer &other) = delete;
 
 public:
   static int string_buffer_error_flag;
-  explicit string_buffer(dl::size_type buffer_len = 4000) noexcept;
+  explicit string_buffer(string::size_type buffer_len = 4000) noexcept;
 
   inline string_buffer &clean();
 
@@ -45,7 +45,7 @@ public:
 
   inline void reserve(int len);
 
-  inline dl::size_type size() const;
+  inline string::size_type size() const;
 
   inline char *buffer();
   inline const char *buffer() const;
