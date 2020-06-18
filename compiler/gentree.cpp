@@ -1771,9 +1771,9 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
     kphp_assert_msg(current_file_unified_dir.starts_with(lib_unified_dir), "lib processing file should be in lib dir");
     real_unified_dir.erase(0, lib_unified_dir.size() + 1);
   }
-  string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
-  kphp_error (processing_file->namespace_name == expected_namespace_name,
-              fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
+  // для корректной работы vendor/ папки assert ниже закомментирован
+  //string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
+  //kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
 
   next_cur();
   expect (tok_semicolon, "';'");
