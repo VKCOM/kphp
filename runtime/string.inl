@@ -952,7 +952,7 @@ inline string::size_type string::estimate_memory_usage() const {
   return inner()->get_memory_usage();
 }
 
-inline string string::make_const_string_on_memory(const char *str, size_type len, void *memory, size_type memory_size) {
+inline string string::make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size) {
   php_assert(len + inner_sizeof() + 1 <= memory_size);
   auto *inner = new (memory) string_inner {len, len, ExtraRefCnt::for_global_const};
   memcpy(inner->ref_data(), str, len);
@@ -982,7 +982,7 @@ bool is_ok_float(double v) {
 }
 
 inline bool is_all_digits(const string &s) {
-  for (size_t i = 0; i < s.size(); ++i) {
+  for (string::size_type i = 0; i < s.size(); ++i) {
     if (!('0' <= s[i] && s[i] <= '9')) {
       return false;
     }

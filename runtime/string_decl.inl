@@ -185,7 +185,7 @@ public:
   inline size_type estimate_memory_usage() const;
 
   inline static constexpr size_t inner_sizeof() noexcept { return sizeof(string_inner); }
-  inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_type memory_size);
+  inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size);
 
   inline void destroy() __attribute__((always_inline));
 };

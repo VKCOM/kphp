@@ -133,7 +133,7 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
       }
     }
 
-    int scheduler_id = std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer;
+    int scheduler_id = static_cast<int>(std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer);
     if (scheduler_id == nptrs) {
       print_demangled_adresses(buffer, nptrs, 0, true);
     } else {

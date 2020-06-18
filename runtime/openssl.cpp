@@ -717,18 +717,18 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
   }
 
   struct sockaddr_storage addr;
-  addr.ss_family = h->h_addrtype;
+  addr.ss_family = static_cast<sa_family_t>(h->h_addrtype);
   int addrlen;
   switch (h->h_addrtype) {
     case AF_INET:
       php_assert (h->h_length == 4);
-      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons(port);
+      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons(static_cast<uint16_t>(port));
       (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_addr = *(struct in_addr *)h->h_addr;
       addrlen = sizeof(struct sockaddr_in);
       break;
     case AF_INET6:
       php_assert (h->h_length == 16);
-      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons(port);
+      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons(static_cast<uint16_t>(port));
       memcpy(&(reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_addr, h->h_addr, h->h_length);
       addrlen = sizeof(struct sockaddr_in6);
       break;
@@ -1242,7 +1242,7 @@ public:
     auto issuer_name = X509_get_subject_name(x509_.get());
     auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
 
-    string res(issuer, strlen(issuer));
+    string res(issuer);
     OPENSSL_free(issuer);
 
     return res;
@@ -1390,7 +1390,7 @@ private:
       auto value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
       int value_len = ASN1_STRING_length(value);
 
-      res.set_value(string(key_str, strlen(key_str)), string(value_str, value_len));
+      res.set_value(string(key_str), string(value_str, value_len));
     }
 
     return res;
@@ -1538,11 +1538,11 @@ private:
     } else if (iv.size() < iv_required_len) {
       php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
                   iv.size(), iv_required_len);
-      iv.append(iv_required_len - iv.size(), '\0');
+      iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
     } else if (iv.size() > iv_required_len) {
       php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
                   iv.size(), iv_required_len);
-      iv.shrink(iv_required_len);
+      iv.shrink(static_cast<string::size_type>(iv_required_len));
     }
   }
 

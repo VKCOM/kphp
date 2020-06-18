@@ -77,7 +77,7 @@ public:
   void *try_expand(void *mem, size_t new_size, size_t old_size) noexcept {
     if (static_cast<char *>(mem) + old_size == memory_current_) {
       const auto additional_size = old_size - new_size;
-      if (memory_end_ - memory_current_ >= additional_size) {
+      if (static_cast<size_t>(memory_end_ - memory_current_) >= additional_size) {
         memory_current_ += additional_size;
         register_allocation(mem, additional_size);
         return mem;
@@ -106,7 +106,7 @@ public:
   }
 
   void *get_from_pool(size_t size, bool safe = false) noexcept {
-    if (unlikely(memory_end_ - memory_current_ < size)) {
+    if (unlikely(static_cast<size_t>(memory_end_ - memory_current_) < size)) {
       if (unlikely(!safe)) {
         php_out_of_memory_warning("Can't allocate %zu bytes", size);
         raise(SIGUSR2);

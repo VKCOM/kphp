@@ -16,7 +16,7 @@ class InstanceMemoryEstimateVisitor;
 // этот интерфейс реализуют все tl-функции в php коде (см. tl-to-php)
 struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
-  virtual int get_hash() const { return vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class())); }
+  virtual int get_hash() const { return static_cast<int>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
 
   virtual void accept(InstanceToArrayVisitor &) {}
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
@@ -29,7 +29,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 // у которого есть ->value нужного типа 
 struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
-  virtual int get_hash() const { return vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class())); }
+  virtual int get_hash() const { return static_cast<int>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class()))); }
 
   virtual void accept(InstanceToArrayVisitor &) {}
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
@@ -46,7 +46,7 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }
-  virtual int get_hash() const { return vk::std_hash(vk::string_view(C$VK$TL$RpcResponse::get_class())); }
+  virtual int get_hash() const { return static_cast<int>(vk::std_hash(vk::string_view(C$VK$TL$RpcResponse::get_class()))); }
 
   virtual ~C$VK$TL$RpcResponse() = default;
 };

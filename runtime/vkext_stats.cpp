@@ -64,7 +64,7 @@ static unsigned long long seed;
 static unsigned int mrand() {
   //http://en.wikipedia.org/wiki/Linear_congruential_generator
   seed = seed * 25214903917ull + 11ull;
-  return seed >> 16;
+  return static_cast<unsigned int>(seed >> 16);
 }
 
 static unsigned int rand_exact(unsigned int r) {
@@ -151,7 +151,7 @@ Optional<string> f$vk_stats_decompress_sample(const string &s) {
   if (max_size < 0) {
     return false;
   }
-  int size = offsetof(sample_t, values) + max_size * sizeof(int);
+  const auto size = static_cast<string::size_type>(offsetof(sample_t, values) + max_size * sizeof(int));
   string result(size, false);
   sample_t *sample = (sample_t *)result.buffer();
   sample->max_size = max_size;
@@ -326,7 +326,7 @@ Optional<double> hll_count(const string &hll, int m) {
   double c = 0;
   int vz = 0;
   for (int i = 0; i < m; ++i) {
-    c += 1.0 / (1LL << (s[i] - HLL_FIRST_RANK_CHAR));
+    c += 1.0 / static_cast<double>(1LL << (s[i] - HLL_FIRST_RANK_CHAR));
     vz += (s[i] == HLL_FIRST_RANK_CHAR);
   }
   double e = (alpha_m * m * m) / c;

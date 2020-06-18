@@ -53,7 +53,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
     T *end = end_stack[depth];
 
     while (begin < end) {
-      int offset = (end - begin) >> 1;
+      const auto offset = (end - begin) >> 1;
       swap(*begin, begin[offset]);
 
       T *i = begin + 1, *j = end;
@@ -275,7 +275,7 @@ size_t array<T>::array_inner::estimate_size(int &new_int_size, int &new_string_s
     static_assert(int_hash_align <= alignof(array_inner), "unexpected int_hash_entry align");
     const auto string_keys_offset = sizeof(array_inner) + new_int_size * sizeof(int_hash_entry);
     const auto aligned_offset = (string_keys_offset + 7) & -8;
-    new_int_size += (aligned_offset - string_keys_offset) / int_hash_align;
+    new_int_size += static_cast<int>((aligned_offset - string_keys_offset) / int_hash_align);
   }
   new_string_size = 2 * new_string_size + 3;
   if (new_string_size % 5 == 0) {
@@ -1121,6 +1121,11 @@ T &array<T>::operator[](const var &v) {
 }
 
 template<class T>
+T &array<T>::operator[](double double_key) {
+  return (*this)[static_cast<int>(double_key)];
+}
+
+template<class T>
 T &array<T>::operator[](const const_iterator &it) {
   if (it.self_->is_vector()) {
     int key = (int)((T *)it.entry_ - (T *)it.self_->int_entries);
@@ -1259,6 +1264,16 @@ void array<T>::set_value(int int_key, T &&v) noexcept {
 template<class T>
 void array<T>::set_value(int int_key, const T &v) noexcept {
   emplace_value(int_key, v);
+}
+
+template<class T>
+void array<T>::set_value(double double_key, T &&v) noexcept {
+  emplace_value(static_cast<int>(double_key), std::move(v));
+}
+
+template<class T>
+void array<T>::set_value(double double_key, const T &v) noexcept {
+  emplace_value(static_cast<int>(double_key), v);
 }
 
 template<class T>
@@ -1499,7 +1514,7 @@ const T *array<T>::find_value(const var &v) const {
     case var::type::INTEGER:
       return find_value(v.as_int());
     case var::type::FLOAT:
-      return find_value((int)v.as_double());
+      return find_value(static_cast<int>(v.as_double()));
     case var::type::STRING:
       return find_value(v.as_string());
     case var::type::ARRAY:
@@ -1508,6 +1523,11 @@ const T *array<T>::find_value(const var &v) const {
     default:
       __builtin_unreachable();
   }
+}
+
+template<class T>
+const T *array<T>::find_value(double double_key) const {
+  return find_value(static_cast<int>(double_key));
 }
 
 template<class T>
@@ -1667,6 +1687,11 @@ void array<T>::unset(const var &v) {
     default:
       __builtin_unreachable();
   }
+}
+
+template<class T>
+void array<T>::unset(double double_key) {
+  unset(static_cast<int>(double_key));
 }
 
 template<class T>

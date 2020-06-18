@@ -219,7 +219,7 @@ struct MiscStatSegment {
   }
 
   MiscStat get_stat() {
-    auto running_workers_avg = stat_cnt != 0 ? (double)running_workers_sum / stat_cnt : -1.0;
+    auto running_workers_avg = stat_cnt != 0 ? static_cast<double>(running_workers_sum) / static_cast<double>(stat_cnt) : -1.0;
     return {running_workers_max, running_workers_avg};
   }
 };
@@ -846,11 +846,11 @@ int pr_execute(connection *c, int op, raw_message *raw) {
 
   tl_fetch_init_raw_message(raw);
   auto op_from_tl = tl_fetch_int();
-  len -= sizeof(op_from_tl);
+  len -= static_cast<int>(sizeof(op_from_tl));
   assert(op_from_tl == op);
 
   std::vector<char> buf(len);
-  auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
+  auto fetched_bytes = tl_fetch_data(buf.data(), static_cast<int>(buf.size()));
   assert(fetched_bytes == buf.size());
 
   worker_info_t *w = PR_DATA(c)->worker;
@@ -1770,7 +1770,7 @@ void run_master_off() {
     vkprintf(1, "send http fd\n");
     send_fd_via_socket(*http_fd);
     //TODO: process errors
-    me->sent_http_fd_generation = generation;
+    me->sent_http_fd_generation = static_cast<int>(generation);
     changed = 1;
   }
 
@@ -1849,7 +1849,7 @@ void run_master_on() {
           close(socket_fd);
         }
         socket_fd = sock_dgram(socket_name.c_str());
-        me->ask_http_fd_generation = generation;
+        me->ask_http_fd_generation = static_cast<int>(generation);
         changed = 1;
       }
     }
@@ -2065,7 +2065,7 @@ void run_master() {
 
     using namespace std::chrono_literals;
     auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);
-    epoll_work(std::max(wait_time, 0ms).count());
+    epoll_work(static_cast<int>(std::max(wait_time, 0ms).count()));
 
     tl_restart_all_ready();
 

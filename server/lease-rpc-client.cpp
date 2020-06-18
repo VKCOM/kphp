@@ -32,6 +32,6 @@ const LeaseRpcClient &RpcClients::get_random_alive_client() {
   }
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<int> dis(0, alive_cnt - 1);
+  std::uniform_int_distribution<int> dis(0, static_cast<int>(alive_cnt - 1));
   return rpc_clients[dis(gen)];
 }

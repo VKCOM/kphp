@@ -79,20 +79,23 @@ public:
   inline var &operator[](int int_key);
   inline var &operator[](const string &string_key);
   inline var &operator[](const var &v);
+  inline var &operator[](double double_key);
   inline var &operator[](const array<var>::const_iterator &it);
   inline var &operator[](const array<var>::iterator &it);
 
-  inline void set_value(const int int_key, const var &v);
+  inline void set_value(int int_key, const var &v);
   inline void set_value(const string &string_key, const var &v);
   inline void set_value(const string &string_key, const var &v, int precomuted_hash);
   inline void set_value(const var &v, const var &value);
+  inline void set_value(double double_key, const var &value);
   inline void set_value(const array<var>::const_iterator &it);
   inline void set_value(const array<var>::iterator &it);
 
-  inline const var get_value(const int int_key) const;
+  inline const var get_value(int int_key) const;
   inline const var get_value(const string &string_key) const;
   inline const var get_value(const string &string_key, int precomuted_hash) const;
   inline const var get_value(const var &v) const;
+  inline const var get_value(double double_key) const;
   inline const var get_value(const array<var>::const_iterator &it) const;
   inline const var get_value(const array<var>::iterator &it) const;
 
@@ -102,10 +105,12 @@ public:
   inline bool isset(int int_key) const;
   inline bool isset(const string &string_key) const;
   inline bool isset(const var &v) const;
+  inline bool isset(double double_key) const;
 
   inline void unset(int int_key);
   inline void unset(const string &string_key);
   inline void unset(const var &v);
+  inline void unset(double double_key);
 
   inline void destroy();
   inline ~var();

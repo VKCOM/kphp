@@ -264,7 +264,7 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
     }
   }
 
-  string value = string(name.size() + (str_len - (p - str)) + 2, false);
+  string value = string(static_cast<string::size_type>(name.size() + (str_len - (p - str)) + 2), false);
   memcpy(value.buffer(), name.c_str(), name.size());
   memcpy(value.buffer() + name.size(), p, str_len - (p - str));
   value[value.size() - 2] = '\r';
@@ -934,7 +934,7 @@ public:
 
       while (true) {
         (*this)[pos];
-        int i = pos - buf_pos;
+        int64_t i = pos - buf_pos;
 
         while (true) {
           php_assert (0 <= i && i <= buf_len);
@@ -944,7 +944,7 @@ public:
             break;
           }
 
-          int r = s - buf;
+          int64_t r = s - buf;
           if (r > i + 2 && buf[r - 1] == '-' && buf[r - 2] == '-' && buf[r - 3] == '\n') {
             r -= 3;
             if (r > i && buf[r - 1] == '\r') {
@@ -1027,7 +1027,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     int j;
     string header_name;
     for (j = i; !data.is_boundary(j) && 33 <= data[j] && data[j] <= 126 && data[j] != ':'; j++) {
-      header_name.push_back(data[j]);
+      header_name.push_back(static_cast<char>(data[j]));
     }
     if (data[j] != ':') {
       return j;
@@ -1039,7 +1039,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     string header_value;
     do {
       while (!data.is_boundary(i + 1) && (data[i] != '\r' || data[i + 1] != '\n') && data[i] != '\n') {
-        header_value.push_back(data[i++]);
+        header_value.push_back(static_cast<char>(data[i++]));
       }
       if (data[i] == '\r') {
         i++;
@@ -1119,7 +1119,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     if (!name.empty()) {
       string post_data;
       while (!data.is_boundary(i) && (int)post_data.size() < 65536) {
-        post_data.push_back(data[i++]);
+        post_data.push_back(static_cast<char>(data[i++]));
       }
       if ((int)post_data.size() < 65536) {
         if (!strncmp(content_type.c_str(), "application/x-www-form-urlencoded", 33)) {
@@ -1650,8 +1650,7 @@ int f$get_engine_uptime() {
 }
 
 string f$get_engine_version() {
-  const char *full_version_str = get_engine_version();
-  return string(full_version_str, strlen(full_version_str));
+  return string(get_engine_version());
 }
 
 int f$get_engine_workers_number() {
@@ -2093,7 +2092,7 @@ static void init_runtime_libs() {
   init_streams_lib();
   init_rpc_lib();
 
-  init_string_buffer_lib(static_buffer_length_limit);
+  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   shutdown_functions_count = 0;
   finished = false;
@@ -2238,7 +2237,7 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
-  release_version = string::to_int(engine_tag, strlen(engine_tag));
+  release_version = string::to_int(engine_tag, static_cast<int>(strlen(engine_tag)));
 }
 
 void f$raise_sigsegv() {

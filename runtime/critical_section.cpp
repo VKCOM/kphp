@@ -25,7 +25,7 @@ void leave_critical_section() noexcept {
   in_critical_section = in_critical_section - 1;
   php_assert (in_critical_section >= 0);
   if (pending_signals && in_critical_section <= 0) {
-    for (size_t i = 0; i < sizeof(pending_signals) * 8; i++) {
+    for (int i = 0; i < sizeof(pending_signals) * 8; i++) {
       if ((pending_signals >> i) & 1) {
         raise(i);
       }

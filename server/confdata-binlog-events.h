@@ -40,12 +40,12 @@ public:
 private:
   template<class B>
   int get_extra_bytes_impl(decltype(std::declval<B>().data_len) *) const noexcept {
-    return BASE::key_len + BASE::data_len + USE_TERMINATED_NULL + offsetof(BASE, data) - sizeof(BASE);
+    return BASE::key_len + BASE::data_len + USE_TERMINATED_NULL + static_cast<int>(offsetof(BASE, data) - sizeof(BASE));
   }
 
   template<class B>
   int get_extra_bytes_impl(...) const noexcept {
-    return BASE::key_len + USE_TERMINATED_NULL + offsetof(BASE, key) - sizeof(BASE);
+    return BASE::key_len + USE_TERMINATED_NULL + static_cast<int>(offsetof(BASE, key) - sizeof(BASE));
   }
 };
 

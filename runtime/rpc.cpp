@@ -175,7 +175,7 @@ bool f$rpc_parse(const string &new_rpc_data) {
   dl::leave_critical_section();
 
   rpc_data_begin = rpc_data = reinterpret_cast <const int *> (rpc_data_copy.c_str());
-  rpc_data_len = rpc_data_copy.size() / sizeof(int);
+  rpc_data_len = static_cast<int>(rpc_data_copy.size() / sizeof(int));
   return true;
 }
 
@@ -349,14 +349,14 @@ double f$fetch_float() {
 }
 
 void f$fetch_raw_vector_int(array<int> &out, int n_elems) {
-  int rpc_data_buf_offset = sizeof(int) * n_elems / 4;
+  int rpc_data_buf_offset = static_cast<int>(sizeof(int) * n_elems / 4);
   TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
   out.memcpy_vector(n_elems, rpc_data);
   rpc_data += rpc_data_buf_offset;
 }
 
 void f$fetch_raw_vector_double(array<double> &out, int n_elems) {
-  int rpc_data_buf_offset = sizeof(double) * n_elems / 4;
+  int rpc_data_buf_offset = static_cast<int>(sizeof(double) * n_elems / 4);
   TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
   out.memcpy_vector(n_elems, rpc_data);
   rpc_data += rpc_data_buf_offset;
@@ -517,11 +517,13 @@ bool f$store_raw(const string &data) {
 }
 
 void f$store_raw_vector_int(const array<int> &vector) {
-  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(int) * vector.count());
+  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()),
+                  static_cast<string::size_type>(sizeof(int) * vector.count()));
 }
 
 void f$store_raw_vector_double(const array<double> &vector) {
-  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
+  data_buf.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()),
+                  static_cast<string::size_type>(sizeof(double) * vector.count()));
 }
 
 bool store_header(long long cluster_id, int flags) {
@@ -1203,7 +1205,7 @@ array<var> tl_fetch_error(const string &error, int error_code) {
 }
 
 array<var> tl_fetch_error(const char *error, int error_code) {
-  return tl_fetch_error(string(error, strlen(error)), error_code);
+  return tl_fetch_error(string(error), error_code);
 }
 
 static long long rpc_tl_results_last_query_num = -1;

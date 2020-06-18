@@ -42,11 +42,11 @@ static const stream_functions *get_stream_functions_from_url(const string &url) 
     return nullptr;
   }
 
-  void *res = memmem(static_cast <const void *> (url.c_str()), url.size(),
-                     static_cast <const void *> ("://"), 3);
+  void *res = memmem(static_cast<const void *> (url.c_str()), url.size(),
+                     static_cast<const void *> ("://"), 3);
   if (res != nullptr) {
-    const char *wrapper_end = static_cast <const char *> (res);
-    return get_stream_functions(string(url.c_str(), wrapper_end - url.c_str()));
+    const char *wrapper_end = static_cast<const char *> (res);
+    return get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
   }
 
   return default_stream_functions;

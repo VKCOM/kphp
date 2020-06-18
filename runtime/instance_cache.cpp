@@ -509,7 +509,8 @@ public:
   // this function should be called only from master
   InstanceCacheSwapStatus try_swap_memory_resource() {
     const auto &memory_stats = get_last_memory_stats();
-    if (memory_stats.real_memory_used < REAL_MEMORY_USED_THRESHOLD * memory_stats.memory_limit &&
+    const auto threshold = REAL_MEMORY_USED_THRESHOLD * static_cast<double>(memory_stats.memory_limit);
+    if (static_cast<double>(memory_stats.real_memory_used) < threshold &&
         !data_manager_.get_current_resource().get_context().memory_swap_required) {
       return InstanceCacheSwapStatus::no_need;
     }

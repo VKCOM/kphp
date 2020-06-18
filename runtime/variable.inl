@@ -1180,7 +1180,7 @@ var &var::operator[](const var &v) {
     case type::INTEGER:
       return (*this)[v.as_int()];
     case type::FLOAT:
-      return (*this)[(int)v.as_double()];
+      return (*this)[static_cast<int>(v.as_double())];
     case type::STRING:
       return (*this)[v.as_string()];
     case type::ARRAY:
@@ -1189,6 +1189,10 @@ var &var::operator[](const var &v) {
     default:
       __builtin_unreachable();
   }
+}
+
+var &var::operator[](double double_key) {
+  return (*this)[static_cast<int>(double_key)];
 }
 
 var &var::operator[](const array<var>::const_iterator &it) {
@@ -1298,6 +1302,10 @@ void var::set_value(const var &v, const var &value) {
   }
 }
 
+void var::set_value(double double_key, const var &value) {
+  set_value(static_cast<int>(double_key), value);
+}
+
 void var::set_value(const array<var>::const_iterator &it) {
   return as_array().set_value(it);
 }
@@ -1361,7 +1369,7 @@ const var var::get_value(const var &v) const {
     case type::INTEGER:
       return get_value(v.as_int());
     case type::FLOAT:
-      return get_value((int)v.as_double());
+      return get_value(static_cast<int>(v.as_double()));
     case type::STRING:
       return get_value(v.as_string());
     case type::ARRAY:
@@ -1370,6 +1378,10 @@ const var var::get_value(const var &v) const {
     default:
       __builtin_unreachable();
   }
+}
+
+const var var::get_value(double double_key) const {
+  return get_value(static_cast<int>(double_key));
 }
 
 const var var::get_value(const array<var>::const_iterator &it) const {
@@ -1462,6 +1474,10 @@ bool var::isset(const var &v) const {
   }
 }
 
+bool var::isset(double double_key) const {
+  return isset(static_cast<int>(double_key));
+}
+
 void var::unset(int int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1509,6 +1525,10 @@ void var::unset(const var &v) {
     default:
       __builtin_unreachable();
   }
+}
+
+void var::unset(double double_key) {
+  return unset(static_cast<int>(double_key));
 }
 
 array<var>::const_iterator var::begin() const {

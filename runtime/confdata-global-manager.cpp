@@ -132,7 +132,7 @@ FirstKeyDots ConfdataKeyMaker::update(const char *key, int16_t key_len) noexcept
   const auto first_key_len = static_cast<string::size_type>(first_key_end - key);
   first_key_ = string::make_const_string_on_memory(key, first_key_len, first_key_buffer_.data(), first_key_buffer_.size());
   key = first_key_end;
-  key_len -= static_cast<int16_t>(first_key_len);
+  key_len = static_cast<int16_t>(key_len - first_key_len);
 
   int key_as_int = 0;
   if (key_len && php_try_to_int(key, key_len, &key_as_int)) {

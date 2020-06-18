@@ -79,9 +79,9 @@ string f$addcslashes(const string &str, const string &what) {
             static_SB.append_char('f');
             break;
           default:
-            static_SB.append_char(((c >> 6) + '0'));
-            static_SB.append_char((((c >> 3) & 7) + '0'));
-            static_SB.append_char(((c & 7) + '0'));
+            static_SB.append_char(static_cast<char>((c >> 6) + '0'));
+            static_SB.append_char(static_cast<char>(((c >> 3) & 7) + '0'));
+            static_SB.append_char(static_cast<char>((c & 7) + '0'));
         }
       } else {
         static_SB.append_char(c);
@@ -358,7 +358,7 @@ string f$htmlentities(const string &str) {
       default:
         if (str[i] < 0) {
           const char *utf8_str = cp1251_to_utf8_str[128 + str[i]];
-          static_SB.append_unsafe(utf8_str, strlen(utf8_str));
+          static_SB.append_unsafe(utf8_str, static_cast<int>(strlen(utf8_str)));
         } else {
           static_SB.append_char(str[i]);
         }
@@ -964,7 +964,7 @@ string f$prepare_search_query(const string &query) {
   if (s == nullptr) {
     s = "";
   }
-  return string(s, strlen(s));
+  return string(s);
 }
 
 int f$printf(const string &format, const array<var> &a) {
@@ -1232,7 +1232,7 @@ string f$stripslashes(const string &str) {
   if (i + 1 == len && str[i] != '\\') {
     *result_c_str++ = str[i];
   }
-  result.shrink(result_c_str - result.c_str());
+  result.shrink(static_cast<string::size_type>(result_c_str - result.c_str()));
   return result;
 }
 
@@ -1525,7 +1525,7 @@ Optional<string> f$strrchr(const string &haystack, const string &needle) {
     php_warning("Parameter needle contains more than one character, only the first is used");
   }
   const char needle_char = needle[0];
-  for (size_t pos = haystack.size(); pos != 0; --pos) {
+  for (string::size_type pos = haystack.size(); pos != 0; --pos) {
     if (haystack[pos - 1] == needle_char) {
       return haystack.substr(pos - 1, haystack.size() - pos + 1);
     }
@@ -1677,8 +1677,8 @@ static int strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len
     }
 
     if (fold_case) {
-      ca = toupper((int)(unsigned char)ca);
-      cb = toupper((int)(unsigned char)cb);
+      ca = static_cast<unsigned char>(toupper(ca));
+      cb = static_cast<unsigned char>(toupper(cb));
     }
 
     if (ca < cb) {

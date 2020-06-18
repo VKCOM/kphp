@@ -12,8 +12,8 @@ class LongNumber {
 
     if (s[0] == '0' && s[1] == 'x') {
       l = 0;
-      int len = (int)s.size();
-      int cur = 2;
+      const string::size_type len = s.size();
+      string::size_type cur = 2;
       while (cur < len) {
         char c = s[cur];
         if ('0' <= c && c <= '9') {
@@ -29,8 +29,8 @@ class LongNumber {
         cur++;
       }
 
-      int cnt_bits_in_hex_digit = 4;
-      int cnt_hex_digits = strlen("0x") + std::numeric_limits<LongT>::digits / cnt_bits_in_hex_digit;
+      constexpr size_t cnt_bits_in_hex_digit = 4;
+      size_t cnt_hex_digits = strlen("0x") + std::numeric_limits<LongT>::digits / cnt_bits_in_hex_digit;
       if (len == 2 || cur < len || cnt_hex_digits < len) {
         php_warning("Wrong conversion from hexadecimal string \"%s\" to %s", s.c_str(), php_class_name);
       }

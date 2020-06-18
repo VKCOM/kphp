@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "common/allocators/freelist.h"
-
 #include "runtime/memory_resource/memory_resource.h"
 
 namespace memory_resource {

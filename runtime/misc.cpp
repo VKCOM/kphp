@@ -490,7 +490,7 @@ static inline void do_serialize(bool b) {
   static_SB.reserve(4);
   static_SB.append_char('b');
   static_SB.append_char(':');
-  static_SB.append_char(b + '0');
+  static_SB.append_char(static_cast<char>(b + '0'));
   static_SB.append_char(';');
 }
 
@@ -844,8 +844,8 @@ static bool do_json_encode_string_php(const char *s, int len, int options) {
         if ((a & 0x20) == 0) {
           CHECK((a & 0x1e) > 0);
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(a);
-            static_SB.append_char(b);
+            static_SB.append_char(static_cast<char>(a));
+            static_SB.append_char(static_cast<char>(b));
           } else {
             APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
           }
@@ -857,9 +857,9 @@ static bool do_json_encode_string_php(const char *s, int len, int options) {
         if ((a & 0x10) == 0) {
           CHECK(((a & 0x0f) | (b & 0x20)) > 0);
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(a);
-            static_SB.append_char(b);
-            static_SB.append_char(c);
+            static_SB.append_char(static_cast<char>(a));
+            static_SB.append_char(static_cast<char>(b));
+            static_SB.append_char(static_cast<char>(c));
           } else {
             APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
           }
@@ -871,10 +871,10 @@ static bool do_json_encode_string_php(const char *s, int len, int options) {
         if ((a & 0x08) == 0) {
           CHECK(((a & 0x07) | (b & 0x30)) > 0);
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(a);
-            static_SB.append_char(b);
-            static_SB.append_char(c);
-            static_SB.append_char(d);
+            static_SB.append_char(static_cast<char>(a));
+            static_SB.append_char(static_cast<char>(b));
+            static_SB.append_char(static_cast<char>(c));
+            static_SB.append_char(static_cast<char>(d));
           } else {
             APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
           }
@@ -1412,7 +1412,7 @@ void do_var_dump(const var &v, int depth) {
 }
 
 void var_export_escaped_string(const string &s) {
-  for (size_t i = 0; i < s.size(); i++) {
+  for (string::size_type i = 0; i < s.size(); i++) {
     switch (s[i]) {
       case '\'':
       case '\\':

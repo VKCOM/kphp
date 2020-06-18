@@ -22,7 +22,7 @@ static void save_last_net_error(const char *s) {
     return;
   }
 
-  int l = strlen(s);
+  auto l = strlen(s);
   if (l >= MAX_NET_ERROR_LEN) {
     l = MAX_NET_ERROR_LEN - 1;
   }
@@ -703,7 +703,7 @@ static slot_id_t end_slot_id, begin_slot_id;
 static const slot_id_t max_slot_id = 1000000000;
 
 void init_slots() {
-  end_slot_id = begin_slot_id = lrand48() % (max_slot_id / 4) + 1;
+  end_slot_id = begin_slot_id = static_cast<slot_id_t>(lrand48() % (max_slot_id / 4) + 1);
 }
 
 slot_id_t create_slot() {
@@ -797,8 +797,8 @@ void *dl_allocate_safe(size_t size) {
   }
 
   int *dest_int = static_cast <int *> (dest);
-  dest_int[0] = size;
-  dest_int[1] = size;
+  dest_int[0] = static_cast<int>(size);
+  dest_int[1] = static_cast<int>(size);
   dest_int[2] = 0;
   (static_cast <char *> (dest))[size + 12] = '\0';
 

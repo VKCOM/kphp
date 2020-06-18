@@ -51,7 +51,7 @@ public:
         counter = array_size{};
       }
       const auto key_tail = key.substr(dot_pos + 1);
-      if (!key_tail.empty() && php_is_int(key_tail.data(), key_tail.size())) {
+      if (!key_tail.empty() && php_is_int(key_tail.data(), static_cast<int>(key_tail.size()))) {
         ++counter.int_size;
       } else {
         ++counter.string_size;
@@ -128,7 +128,7 @@ public:
   }
 
   OperationStatus touch_element(const lev_confdata_touch &E) noexcept {
-    return generic_operation(E.key, E.key_len, E.delay, [this] { return touch_processing_element(); });
+    return generic_operation(E.key, static_cast<short>(E.key_len), E.delay, [this] { return touch_processing_element(); });
   }
 
   template<class BASE, int OPERATION>
@@ -600,7 +600,8 @@ private:
 
   bool is_key_blacklisted(vk::string_view key) const noexcept {
     return key_blacklist_pattern_ &&
-           re2::RE2::FullMatch(re2::StringPiece(key.data(), key.size()), *key_blacklist_pattern_);
+           re2::RE2::FullMatch(re2::StringPiece(key.data(), static_cast<uint32_t>(key.size())),
+                               *key_blacklist_pattern_);
   }
 
   // TODO: 'now' используется движками, можем ли мы так же её использовать?

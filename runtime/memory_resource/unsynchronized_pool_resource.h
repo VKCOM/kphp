@@ -62,7 +62,7 @@ public:
   bool is_enough_memory_for(size_t size) const noexcept {
     const auto aligned_size = details::align_for_chunk(size);
     // не смотрим в free_chunks_, так как реальный размер может оказаться меньше
-    return memory_end_ - memory_current_ >= aligned_size || huge_pieces_.has_memory_for(aligned_size);
+    return static_cast<size_t>(memory_end_ - memory_current_) >= aligned_size || huge_pieces_.has_memory_for(aligned_size);
   }
 
 private:

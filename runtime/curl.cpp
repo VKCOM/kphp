@@ -868,7 +868,7 @@ Optional<int> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept 
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     int numfds = 0;
     multi_context->error_num = dl::critical_section_call(curl_multi_wait, multi_context->multi_handle, nullptr, 0,
-                                                         static_cast<unsigned long>(timeout * 1000.0), &numfds);
+                                                         static_cast<int>(timeout * 1000.0), &numfds);
     if (multi_context->error_num != CURLM_OK) {
       return -1;
     }

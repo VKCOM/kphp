@@ -50,7 +50,7 @@ Optional<string> f$base64_decode(const string &s, bool strict) {
   int i = 0;
   string::size_type j = 0;
   int padding = 0;
-  for (size_t pos = 0; pos < s.size(); pos++) {
+  for (string::size_type pos = 0; pos < s.size(); pos++) {
     int ch = s[pos];
     if (ch == '=') {
       padding++;
@@ -79,15 +79,16 @@ Optional<string> f$base64_decode(const string &s, bool strict) {
         result[j] = (unsigned char)(ch << 2);
         break;
       case 1:
-        result[j++] |= ch >> 4;
-        result[j] = (unsigned char)((ch & 0x0f) << 4);
+        result[j] = static_cast<char>(result[j] | (ch >> 4));
+        result[++j] = (unsigned char)((ch & 0x0f) << 4);
         break;
       case 2:
-        result[j++] |= ch >> 2;
-        result[j] = (unsigned char)((ch & 0x03) << 6);
+        result[j] = static_cast<char>(result[j] | (ch >> 2));
+        result[++j] = (unsigned char)((ch & 0x03) << 6);
         break;
       case 3:
-        result[j++] |= ch;
+        result[j] = static_cast<char>(result[j] | ch);
+        ++j;
         break;
     }
     i++;
@@ -152,14 +153,14 @@ ULong f$base64url_decode_ulong_NN(const string &s) {
 string f$base64url_encode_ulong_NN(ULong val) {
   unsigned long long l = val.l;
   unsigned char str[8];
-  str[0] = ((l >> 24) & 255);
-  str[1] = ((l >> 16) & 255);
-  str[2] = ((l >> 8) & 255);
-  str[3] = (l & 255);
-  str[4] = (l >> 56);
-  str[5] = ((l >> 48) & 255);
-  str[6] = ((l >> 40) & 255);
-  str[7] = ((l >> 32) & 255);
+  str[0] = static_cast<unsigned char>((l >> 24) & 255);
+  str[1] = static_cast<unsigned char>((l >> 16) & 255);
+  str[2] = static_cast<unsigned char>((l >> 8) & 255);
+  str[3] = static_cast<unsigned char>(l & 255);
+  str[4] = static_cast<unsigned char>(l >> 56);
+  str[5] = static_cast<unsigned char>((l >> 48) & 255);
+  str[6] = static_cast<unsigned char>((l >> 40) & 255);
+  str[7] = static_cast<unsigned char>((l >> 32) & 255);
 
   string res(11, false);
   php_assert (base64url_encode(str, 8, res.buffer(), 12) == 0);
@@ -246,7 +247,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
     }
 
     if (e + 1 == ue) { /* only scheme is available */
-      result.set_value(string("scheme", 6), string(s, e - s));
+      result.set_value(string("scheme", 6), string(s, static_cast<string::size_type>(e - s)));
       return result;
     }
 
@@ -267,11 +268,11 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
         goto parse_port;
       }
 
-      result.set_value(string("scheme", 6), string(s, e - s));
+      result.set_value(string("scheme", 6), string(s, static_cast<string::size_type>(e - s)));
       s = e + 1;
       goto just_path;
     } else {
-      result.set_value(string("scheme", 6), string(s, e - s));
+      result.set_value(string("scheme", 6), string(s, static_cast<string::size_type>(e - s)));
 
       if (e + 2 < ue && *(e + 2) == '/') {
         s = e + 3;
@@ -299,7 +300,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
     }
 
     if (pp - p > 0 && pp - p < 6 && (pp == ue || *pp == '/')) {
-      int port = string(p, pp - p).to_int();
+      int port = string(p, static_cast<string::size_type>(pp - p)).to_int();
       if (port > 0 && port <= 65535) {
         result.set_value(string("port", 4), port);
         if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
@@ -337,11 +338,11 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
   /* check for login and password */
   if ((p = static_cast<const char *>(memrchr(s, '@', (e - s))))) {
     if ((pp = static_cast<const char *>(memchr(s, ':', (p - s))))) {
-      result.set_value(string("user", 4), string(s, pp - s));
+      result.set_value(string("user", 4), string(s, static_cast<string::size_type>(pp - s)));
       pp++;
-      result.set_value(string("pass", 4), string(pp, p - pp));
+      result.set_value(string("pass", 4), string(pp, static_cast<string::size_type>(p - pp)));
     } else {
-      result.set_value(string("user", 4), string(s, p - s));
+      result.set_value(string("user", 4), string(s, static_cast<string::size_type>(p - s)));
     }
 
     s = p + 1;
@@ -361,7 +362,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
       if (e - p > 5) { /* port cannot be longer then 5 characters */
         return {};
       } else if (e - p > 0) {
-        int port = string(p, e - p).to_int();
+        int port = string(p, static_cast<string::size_type>(e - p)).to_int();
         if (port > 0 && port <= 65535) {
           result.set_value(string("port", 4), port);
         } else {
@@ -378,7 +379,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
   if ((p - s) < 1) {
     return {};
   }
-  result.set_value(string("host", 4), string(s, p - s));
+  result.set_value(string("host", 4), string(s, static_cast<string::size_type>(p - s)));
 
   if (e == ue) {
     return result;
@@ -393,7 +394,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
   if (p) {
     p++;
     if (p < e) {
-      result.set_value(string("fragment", 8), string(p, e - p));
+      result.set_value(string("fragment", 8), string(p, static_cast<string::size_type>(e - p)));
     }
     e = p - 1;
   }
@@ -402,13 +403,13 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
   if (p) {
     p++;
     if (p < e) {
-      result.set_value(string("query", 5), string(p, e - p));
+      result.set_value(string("query", 5), string(p, static_cast<string::size_type>(e - p)));
     }
     e = p - 1;
   }
 
   if (s < e || s == ue) {
-    result.set_value(string("path", 4), string(s, e - s));
+    result.set_value(string("path", 4), string(s, static_cast<string::size_type>(e - s)));
   }
 
   return result;
@@ -457,7 +458,7 @@ string f$rawurldecode(const string &s) {
       if (num_high < 16) {
         int num_low = hex_to_int(s[i + 2]);
         if (num_low < 16) {
-          static_SB.append_char((num_high << 4) + num_low);
+          static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
           i += 2;
           continue;
         }
@@ -501,7 +502,7 @@ string f$urldecode(const string &s) {
       if (num_high < 16) {
         int num_low = hex_to_int(s[i + 2]);
         if (num_low < 16) {
-          static_SB.append_char((num_high << 4) + num_low);
+          static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
           i += 2;
           continue;
         }

@@ -70,7 +70,7 @@ const char *gzuncompress_raw(const char *s, int s_len, string::size_type *result
   int uncompress_res = uncompress(reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s), (unsigned long)s_len);
   if (uncompress_res == Z_OK) {
     dl::leave_critical_section();
-    *result_len = res_len;
+    *result_len = static_cast<string::size_type>(res_len);
     return php_buf;
   }
   dl::leave_critical_section();

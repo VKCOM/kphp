@@ -38,7 +38,7 @@ Profiler::~Profiler() {
   profiler_status = 1;
   double start = in_time.back();
   php_assert(!function_name.empty());
-  f$kphp_profiler_handle_call(string(function_name.back().c_str(), function_name.back().size()),
+  f$kphp_profiler_handle_call(string(function_name.back().c_str(), static_cast<string::size_type>(function_name.back().size())),
                               microtime() - start,
                               calls_time.back());
   function_name.pop_back();

@@ -44,8 +44,8 @@ struct convert<array<T>> {
     if (obj.type == msgpack::type::ARRAY) {
       res_arr.reserve(obj.via.array.size, 0, true);
 
-      for (size_t i = 0; i < obj.via.array.size; ++i) {
-        res_arr.set_value(i, obj.via.array.ptr[i].as<T>());
+      for (uint32_t i = 0; i < obj.via.array.size; ++i) {
+        res_arr.set_value(static_cast<int>(i), obj.via.array.ptr[i].as<T>());
       }
 
       return obj;

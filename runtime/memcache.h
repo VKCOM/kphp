@@ -53,7 +53,7 @@ public:
   }
 
   int get_hash() const final {
-    return vk::std_hash(vk::string_view(C$McMemcache::get_class()));
+    return static_cast<int>(vk::std_hash(vk::string_view(C$McMemcache::get_class())));
   }
 
   friend inline int f$estimate_memory_usage(const C$McMemcache::host &) {
@@ -85,7 +85,7 @@ public:
   }
 
   int get_hash() const final {
-    return vk::std_hash(vk::string_view(C$RpcMemcache::get_class()));
+    return static_cast<int>(vk::std_hash(vk::string_view(C$RpcMemcache::get_class())));
   }
 
   friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &h) {

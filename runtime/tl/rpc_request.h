@@ -15,9 +15,9 @@ public:
   }
 
   string tl_function_name() const {
-    string class_name {storing_function_.get()->get_class()};
-    const string tl_class_prefix {"\\Functions\\"};
-    const size_t pos = class_name.find(tl_class_prefix);
+    string class_name{storing_function_.get()->get_class()};
+    const string tl_class_prefix{"\\Functions\\"};
+    const auto pos = class_name.find(tl_class_prefix);
     if (pos != string::npos) {
       class_name = class_name.substr(pos + tl_class_prefix.size(), class_name.size() - (pos + tl_class_prefix.size()));
     }

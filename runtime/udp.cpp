@@ -69,18 +69,18 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
   }
 
   struct sockaddr_storage addr;
-  addr.ss_family = h->h_addrtype;
+  addr.ss_family = static_cast<sa_family_t>(h->h_addrtype);
   int addrlen;
   switch (h->h_addrtype) {
     case AF_INET:
       php_assert (h->h_length == 4);
-      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons(port);
+      (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_port = htons(static_cast<uint16_t>(port));
       (reinterpret_cast <struct sockaddr_in *> (&addr))->sin_addr = *(struct in_addr *)h->h_addr;
       addrlen = sizeof(struct sockaddr_in);
       break;
     case AF_INET6:
       php_assert (h->h_length == 16);
-      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons(port);
+      (reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_port = htons(static_cast<uint16_t>(port));
       memcpy(&(reinterpret_cast <struct sockaddr_in6 *> (&addr))->sin6_addr, h->h_addr, h->h_length);
       addrlen = sizeof(struct sockaddr_in6);
       break;

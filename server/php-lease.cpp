@@ -104,7 +104,7 @@ static void rpc_send_lease_stats(connection *c) {
   qn += 2;
   *(double *)(q + qn) = lease_stats_time;
   qn += 2;
-  q[qn++] = lease_stats_cnt;
+  q[qn++] = static_cast<int>(lease_stats_cnt);
   qn++;
 
   send_rpc_query(c, TL_KPHP_LEASE_STATS, -1, q, qn * 4);

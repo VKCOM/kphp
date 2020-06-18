@@ -258,6 +258,7 @@ public:
   T &operator[](int int_key);
   T &operator[](const string &s);
   T &operator[](const var &v);
+  T &operator[](double double_key);
   T &operator[](const const_iterator &it);
   T &operator[](const iterator &it);
 
@@ -265,6 +266,8 @@ public:
   void emplace_value(int int_key, Args &&... args) noexcept;
   void set_value(int int_key, T &&v) noexcept;
   void set_value(int int_key, const T &v) noexcept;
+  void set_value(double double_key, T &&v) noexcept;
+  void set_value(double double_key, const T &v) noexcept;
 
   template<class ...Args>
   void emplace_value(const string &string_key, Args &&... args) noexcept;
@@ -298,6 +301,7 @@ public:
   const T *find_value(const string &s) const;
   const T *find_value(const string &s, int precomuted_hash) const;
   const T *find_value(const var &v) const;
+  const T *find_value(double double_key) const;
   const T *find_value(const const_iterator &it) const;
   const T *find_value(const iterator &it) const;
 
@@ -338,6 +342,7 @@ public:
   void unset(int int_key);
   void unset(const string &string_key);
   void unset(const var &var_key);
+  void unset(double double_key);
 
   inline bool empty() const __attribute__ ((always_inline));
   inline int count() const __attribute__ ((always_inline));

@@ -157,7 +157,7 @@ int get_target_impl(conn_target_t *ct) {
 }
 
 int get_target_by_pid(int ip, int port, conn_target_t *ct) {
-  ct->endpoint = make_inet_sockaddr_storage(ip, port);
+  ct->endpoint = make_inet_sockaddr_storage(ip, static_cast<uint16_t>(port));
 
   return get_target_impl(ct);
 }
@@ -174,7 +174,7 @@ int get_target(const char *host, int port, conn_target_t *ct) {
     return -1;
   }
 
-  ct->endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t *)h->h_addr), port);
+  ct->endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t *)h->h_addr), static_cast<uint16_t>(port));
 
   return get_target_impl(ct);
 }
@@ -231,7 +231,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
   auto *command = (command_net_write_t *)base_command;
 //  fprintf (stderr, "command_net_write [ptr=%p] [len = %d] [data = %p]\n", base_command, command->len, data);
 
-  slot_id_t slot_id = command->extra;
+  slot_id_t slot_id = static_cast<slot_id_t>(command->extra);
   assert (command->data != nullptr);
   if (data == nullptr) { //send to /dev/null
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
@@ -310,7 +310,7 @@ php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_
   worker->req_id = req_id;
 
   if (worker->conn->target) {
-    worker->target_fd = worker->conn->target - Targets;
+    worker->target_fd = static_cast<int>(worker->conn->target - Targets);
   } else {
     worker->target_fd = -1;
   }
@@ -534,7 +534,7 @@ void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) {
   }
 
   vkprintf (4, "send_rpc_query: [len = %d] [op = %08x] [rpc_id = <%lld>]\n", q[0], op, id);
-  tcp_rpc_conn_send_data(c, qsize - 3 * sizeof(int), q + 2);
+  tcp_rpc_conn_send_data(c, static_cast<int>(qsize - 3 * sizeof(int)), q + 2);
 
   TCP_RPCS_FUNC(c)->flush_packet(c);
 }
@@ -601,7 +601,7 @@ int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, i
     if (r > 0) {
       assert (r == 1);
 
-      r = recv(c->fd, buf + read, max_len - read, 0);
+      r = static_cast<int>(recv(c->fd, buf + read, max_len - read, 0));
       err = errno;
 /*
       if (r < 0) {
@@ -1415,7 +1415,7 @@ int rpcc_func_ready(connection *c) {
   c->last_query_sent_time = precise_now;
   c->last_response_time = precise_now;
 
-  int target_fd = c->target - Targets;
+  auto target_fd = c->target - Targets;
   if (target_fd == get_current_target() && !has_pending_scripts()) {
     lease_set_ready();
     run_rpc_lease();
@@ -1536,7 +1536,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       tl_fetch_init_raw_message(raw);
       auto op_from_tl = tl_fetch_int();
-      len -= sizeof(op_from_tl);
+      len -= static_cast<int>(sizeof(op_from_tl));
       assert(op_from_tl == op);
       assert(len % sizeof(int) == 0);
 
@@ -1550,7 +1550,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
         std::array<char, sizeof(process_id_t)> buf;
         process_id_t xpid;
       };
-      auto fetched_bytes = tl_fetch_data(buf.data(), buf.size());
+      auto fetched_bytes = tl_fetch_data(buf.data(), static_cast<int>(buf.size()));
       assert(fetched_bytes == buf.size());
 
       int timeout = tl_fetch_int();
@@ -1566,12 +1566,12 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       // Пришла задача от тасок
       tl_fetch_init_raw_message(raw);
       auto op_from_tl = tl_fetch_int();
-      len -= sizeof(op_from_tl);
+      len -= static_cast<int>(sizeof(op_from_tl));
       assert(op_from_tl == op);
       assert(len % sizeof(int) == 0);
 
       auto req_id = tl_fetch_long();
-      len -= sizeof(req_id);
+      len -= static_cast<int>(sizeof(req_id));
 
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
@@ -1604,7 +1604,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       assert(fetched_bytes == len);
       auto D = TCP_RPC_DATA(c);
-      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / sizeof(int),
+      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)),
                                                        req_id, D->remote_pid.ip, D->remote_pid.port,
                                                        D->remote_pid.pid, D->remote_pid.utime);
 
@@ -1619,7 +1619,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     case TL_RPC_REQ_ERROR:
     case TL_RPC_REQ_RESULT: {
       // Ответ или ошибка от движка
-      int result_len = raw->total_bytes - sizeof(int) - sizeof(long long);
+      int result_len = raw->total_bytes - static_cast<int>(sizeof(int) + sizeof(long long));
       assert(result_len >= 0);
 
       tl_fetch_init_raw_message(raw);
@@ -1631,12 +1631,12 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       if (op == TL_RPC_REQ_ERROR) {
         //FIXME: error code, error string
         //almost never happens
-        event_status = create_rpc_error_event(id, -1, "unknown error", nullptr);
+        event_status = create_rpc_error_event(static_cast<slot_id_t>(id), -1, "unknown error", nullptr);
         break;
       }
 
       net_event_t *event = nullptr;
-      event_status = create_rpc_answer_event(id, result_len, &event);
+      event_status = create_rpc_answer_event(static_cast<slot_id_t>(id), result_len, &event);
       if (event_status > 0) {
         auto fetched_bytes = tl_fetch_data(event->result, result_len);
         assert (fetched_bytes == result_len);
@@ -2713,7 +2713,7 @@ int run_main(int argc, char **argv, php_mode mode) {
     std::copy(options_from_php, options_from_php + options_count, std::back_inserter(new_argv));
     std::copy(argv + parsed_options, argv + argc, std::back_inserter(new_argv));
     argv = new_argv.data();
-    argc = new_argv.size();
+    argc = static_cast<int>(new_argv.size());
   }
 
   parse_main_args(argc, argv);
