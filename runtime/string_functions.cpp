@@ -1012,15 +1012,14 @@ string f$sprintf(const string &format, const array<var> &a) {
     }
     i++;
 
-    int arg_num = -1, j;
+    int parsed_arg_num = 0, j;
     for (j = i; '0' <= format[j] && format[j] <= '9'; j++) {
-      arg_num = arg_num * 10 + format[j] - '0';
+      parsed_arg_num = parsed_arg_num * 10 + format[j] - '0';
     }
-    if (format[j] == '$' && arg_num > 0) {
+    int arg_num = -2;
+    if (format[j] == '$') {
       i = j + 1;
-      arg_num--;
-    } else {
-      arg_num = -1;
+      arg_num = parsed_arg_num - 1;
     }
 
     char sign = 0;
@@ -1070,7 +1069,7 @@ string f$sprintf(const string &format, const array<var> &a) {
     if (format[i] == '%') {
       piece = PERCENT;
     } else {
-      if (arg_num == -1) {
+      if (arg_num == -2) {
         arg_num = cur_arg++;
       }
 
@@ -1079,7 +1078,7 @@ string f$sprintf(const string &format, const array<var> &a) {
         return string();
       }
 
-      if ((dl::size_type)arg_num == -1) {
+      if (arg_num == -1) {
         php_warning("Wrong parameter number 0 specified in function sprintf with format \"%s\"", format.c_str());
         return string();
       }
