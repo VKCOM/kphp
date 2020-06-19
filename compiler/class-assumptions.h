@@ -1,11 +1,12 @@
 #pragma once
 
-#include "common/smart_ptrs/intrusive_ptr.h"
-
 #include <map>
+
+#include "common/smart_ptrs/intrusive_ptr.h"
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
 
 class TypeData;
 
@@ -37,11 +38,13 @@ public:
 
 class AssumNotInstance : public Assumption {
   AssumNotInstance() = default;
+  PrimitiveType type{tp_Any};
 
 public:
 
-  static auto create() {
+  static auto create(PrimitiveType type = tp_Any) {
     auto self = new AssumNotInstance();
+    self->type = type;
     return vk::intrusive_ptr<Assumption>(self);
   }
 

@@ -211,7 +211,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     }
 
     default:
-      return AssumNotInstance::create();
+      return AssumNotInstance::create(type_expr->type_help)->add_flags(or_null_flag, or_false_flag);
   }
 }
 
@@ -828,7 +828,7 @@ std::string AssumInstance::as_human_readable() const {
 }
 
 std::string AssumNotInstance::as_human_readable() const {
-  return "primitive";
+  return type != tp_Any ? ptype_name(type) : "primitive";
 }
 
 std::string AssumTuple::as_human_readable() const {
@@ -890,7 +890,14 @@ const TypeData *AssumInstance::get_type_data() const {
 }
 
 const TypeData *AssumNotInstance::get_type_data() const {
-  return TypeData::get_type(tp_Any);
+  auto res = TypeData::get_type(type)->clone();
+  if (or_null_) {
+    res->set_or_null_flag();
+  }
+  if (or_false_) {
+    res->set_or_false_flag();
+  }
+  return res;
 }
 
 const TypeData *AssumTuple::get_type_data() const {
