@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 
+#include "common/algorithms/simd-int-to-string.h"
+#include "common/wrappers/fmt_format.h"
+
 #include "compiler/code-gen/writer-data.h"
 #include "compiler/code-gen/writer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 
 struct CGContext {
   std::vector<std::string> catch_labels;
@@ -74,19 +76,23 @@ std::enable_if_t<std::is_constructible<vk::string_view, T>::value, CodeGenerator
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, int64_t value) {
-  return c << std::to_string(value);
+  char buf[32];
+  return c << vk::string_view{buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf)};
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, uint64_t value) {
-  return c << std::to_string(value);
+  char buf[32];
+  return c << vk::string_view{buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf)};
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, int32_t value) {
-  return c << std::to_string(value);
+  char buf[16];
+  return c << vk::string_view{buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf)};
 }
 
 inline CodeGenerator &operator<<(CodeGenerator &c, uint32_t value) {
-  return c << std::to_string(value);
+  char buf[16];
+  return c << vk::string_view{buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf)};
 }
 
 inline CodeGenerator& operator<<(CodeGenerator &c, char value) {
