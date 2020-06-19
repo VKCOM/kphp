@@ -31,11 +31,16 @@ private:
   char *buf{nullptr};
   size_t left{0};
   block_t *free_blocks[MAX_BLOCK_SIZE >> 3]{nullptr};
-  size_t memory_used{0};
+  size_t memory_usage{0};
+  size_t memory_total_allocated{0};
 
 public:
-  size_t get_memory_used() const noexcept {
-    return memory_used;
+  size_t get_memory_usage() const noexcept {
+    return memory_usage;
+  }
+
+  size_t get_memory_total_allocated() const noexcept {
+    return memory_total_allocated;
   }
 
   block_t *to_block(void *ptr) {
@@ -68,12 +73,13 @@ public:
       }
     }
     res->size = size;
-    memory_used += res->size;
+    memory_usage += res->size;
+    memory_total_allocated += res->size;
     return res;
   }
 
   void block_free(block_t *block) {
-    memory_used -= block->size;
+    memory_usage -= block->size;
     if (block->size >= MAX_BLOCK_SIZE) {
       __libc_free(block);
     } else {
@@ -144,13 +150,21 @@ void free(void *ptr) {
 }
 }
 
-size_t get_thread_memory_used() {
-  return zallocator->get_memory_used();
+size_t get_thread_memory_usage() {
+  return zallocator->get_memory_usage();
+}
+
+size_t get_thread_memory_total_allocated() {
+  return zallocator->get_memory_total_allocated();
 }
 
 #else
 
-size_t get_thread_memory_used() {
+size_t get_thread_memory_usage() {
+  return 0;
+}
+
+size_t get_thread_memory_total_allocated() {
   return 0;
 }
 

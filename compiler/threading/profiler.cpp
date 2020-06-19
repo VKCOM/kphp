@@ -66,24 +66,25 @@ void profiler_print_all(const std::unordered_map<std::string, ProfilerRaw> &coll
   }
 
   name_width += 2;
-  // Name (longest_name) | Calls (9) | Working time (14) | Duration (14) | Memory (12)
-  constexpr size_t table_fixed_size = 1 + 9 + 1 + 14 + 1 + 14 + 1 + 12;
+  // Name (longest_name) | Calls (9) | Working time (14) | Duration (14) | Memory (12) | Allocated (12)
+  constexpr size_t table_fixed_size = 1 + 9 + 1 + 14 + 1 + 14 + 1 + 12 + 1 + 12;
   fmt_fprintf(stderr,
               "-{2:-^{0}}-\n"
-              "|{3: ^{1}}|{4: ^9}|{5: ^14}|{6: ^14}|{7: ^12}|\n"
+              "|{3: ^{1}}|{4: ^9}|{5: ^14}|{6: ^14}|{7: ^12}|{8: ^12}|\n"
               "-{2:-^{0}}-\n",
               name_width + table_fixed_size, name_width,
-              "", "Name", "Calls", "Working time", "Duration", "Memory");
+              "", "Name", "Calls", "Working time", "Duration", "Memory", "Allocated");
 
   for (const auto &prof : all) {
     fmt_fprintf(stderr,
-                "|{1: ^{0}}|{2: >8} | {3: >12} | {4: >12} | {5: >10} |\n",
+                "|{1: ^{0}}|{2: >8} | {3: >12} | {4: >12} | {5: >10} | {6: >10} |\n",
                 name_width,
                 prof.first,
                 prof.second.get_calls(),
                 pretty_time(prof.second.get_working_time()),
                 pretty_time(prof.second.get_duration()),
-                pretty_memory(prof.second.get_memory_allocated())
+                pretty_memory(prof.second.get_memory_usage()),
+                pretty_memory(prof.second.get_memory_total_allocated())
     );
   }
   fmt_fprintf(stderr, "-{0:-^{1}}-\n", "", name_width + table_fixed_size);

@@ -90,7 +90,8 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
     std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
     out << "pipes." << name << ".working_time: " << std::chrono::duration<double>(prof.second.get_working_time()).count() << std::endl;
     out << "pipes." << name << ".duration: " << std::chrono::duration<double>(prof.second.get_duration()).count() << std::endl;
-    out << "pipes." << name << ".memory_allocated: " << prof.second.get_memory_allocated() << std::endl;
+    out << "pipes." << name << ".memory_usage: " << prof.second.get_memory_usage() << std::endl;
+    out << "pipes." << name << ".memory_allocated: " << prof.second.get_memory_total_allocated() << std::endl;
     out << "pipes." << name << ".calls: " << prof.second.get_calls() << std::endl;
   }
   out.unsetf(std::ios_base::floatfield);
