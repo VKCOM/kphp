@@ -54,10 +54,10 @@ public:
   void add_location(SrcFilePtr file, int line);
 
   void add_include(const std::string &s);
-  const std::vector<std::string> &get_includes() const;
+  std::vector<std::string> flush_includes();
 
   void add_lib_include(const std::string &s);
-  const std::vector<std::string> &get_lib_includes() const;
+  std::vector<std::string> flush_lib_includes();
 
   unsigned long long calc_crc();
   void dump(std::string &dest_str);

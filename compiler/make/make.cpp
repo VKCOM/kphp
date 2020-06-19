@@ -270,7 +270,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   std::vector<File *> objs;
   for (const auto &cpp_file : cpp_dir.get_files()) {
     if (cpp_file->ext == ".cpp") {
-      File *obj_file = obj_dir.insert_file(cpp_file->name_without_ext + ".o");
+      File *obj_file = obj_dir.insert_file(static_cast<std::string>(cpp_file->name_without_ext) + ".o");
       obj_file->compile_with_debug_info_flag = cpp_file->compile_with_debug_info_flag;
       make->create_cpp2obj_target(cpp_file, obj_file);
       Target *cpp_target = cpp_file->target;
@@ -280,12 +280,12 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   }
   fmt_fprintf(stderr, "objs cnt = {}\n", objs.size());
 
-  std::map<string, vector<File *>> subdirs;
+  std::map<vk::string_view, vector<File *>> subdirs;
   std::vector<File *> tmp_objs;
   for (auto obj_file : objs) {
-    std::string name = obj_file->subdir;
+    auto name = obj_file->subdir;
     if (!name.empty()) {
-      name.pop_back();
+      name.remove_suffix(1);
     }
     if (name.empty()) {
       tmp_objs.push_back(obj_file);

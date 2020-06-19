@@ -50,16 +50,16 @@ void WriterData::add_include(const std::string &s) {
   includes.push_back(s);
 }
 
-const std::vector<std::string> &WriterData::get_includes() const {
-  return includes;
+std::vector<std::string> WriterData::flush_includes() {
+  return std::move(includes);
 }
 
 void WriterData::add_lib_include(const std::string &s) {
   lib_includes.push_back(s);
 }
 
-const std::vector<std::string> &WriterData::get_lib_includes() const {
-  return lib_includes;
+std::vector<std::string> WriterData::flush_lib_includes() {
+  return std::move(lib_includes);
 }
 
 unsigned long long WriterData::calc_crc() {

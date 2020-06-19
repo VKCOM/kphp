@@ -8,6 +8,7 @@
 #include <tuple>
 
 #include "common/wrappers/iterator_range.h"
+#include "common/wrappers/string_view.h"
 
 /*** Index ***/
 class Target;
@@ -18,10 +19,10 @@ private:
   File &operator=(const File &from);
 public:
   std::string path;
-  std::string name;
-  std::string ext;
-  std::string name_without_ext;
-  std::string subdir;
+  vk::string_view name;
+  vk::string_view ext;
+  vk::string_view name_without_ext;
+  vk::string_view subdir;
   long long mtime{0};
   long long file_size{0};
   unsigned long long crc64{static_cast<unsigned long long>(-1)};
@@ -45,9 +46,9 @@ class Index {
 private:
   std::unordered_map<std::string, File *> files;
   std::string dir;
-  std::set<std::string> subdirs;
+  std::set<vk::string_view> subdirs;
   std::string index_file;
-  void create_subdir(const std::string &subdir);
+  void create_subdir(vk::string_view subdir);
 
   static Index *current_index;
   static int scan_dir_callback(const char *fpath, const struct stat *sb,

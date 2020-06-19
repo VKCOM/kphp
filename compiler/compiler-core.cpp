@@ -405,8 +405,8 @@ const Index &CompilerCore::get_index() {
   return cpp_index;
 }
 
-File *CompilerCore::get_file_info(const string &file_name) {
-  return cpp_index.insert_file(file_name);
+File *CompilerCore::get_file_info(std::string &&file_name) {
+  return cpp_index.insert_file(std::move(file_name));
 }
 
 void CompilerCore::del_extra_files() {

@@ -85,7 +85,7 @@ public:
   void load_index();
   void save_index();
   const Index &get_index();
-  File *get_file_info(const string &file_name);
+  File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();
   std::string get_subdir_name() const;

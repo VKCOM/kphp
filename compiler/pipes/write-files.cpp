@@ -7,35 +7,31 @@
 
 void WriteFilesF::execute(WriterData data, EmptyStream &) {
   stage::set_name("Write files");
-  string dir = G->cpp_dir;
 
-  string cur_file_name = data.file_name;
-  string cur_subdir = data.subdir;
-
-  string full_file_name = dir;
-  if (!cur_subdir.empty()) {
-    full_file_name += cur_subdir;
+  std::string full_file_name = G->cpp_dir;
+  if (!data.subdir.empty()) {
+    full_file_name += data.subdir;
     full_file_name += "/";
   }
-  full_file_name += cur_file_name;
+  full_file_name += data.file_name;
 
-  File *file = G->get_file_info(full_file_name);
+  File *file = G->get_file_info(std::move(full_file_name));
   file->needed = true;
-  file->includes = data.get_includes();
-  file->lib_includes = data.get_lib_includes();
+  file->includes = data.flush_includes();
+  file->lib_includes = data.flush_lib_includes();
 
   file->compile_with_debug_info_flag = data.compile_with_debug_info();
 
   if (file->on_disk && data.compile_with_crc()) {
     if (file->crc64 == (unsigned long long)-1) {
-      FILE *old_file = fopen(full_file_name.c_str(), "r");
+      FILE *old_file = fopen(file->path.c_str(), "r");
       kphp_assert_msg (old_file != nullptr,
-                  fmt_format("Failed to open [{}] : {}", full_file_name, strerror(errno)));
+                  fmt_format("Failed to open [{}] : {}", file->path, strerror(errno)));
       unsigned long long old_crc = 0;
       unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
 
       if (fscanf(old_file, "//crc64:%Lx", &old_crc) != 1) {
-        kphp_warning (fmt_format("can't read crc64 from [{}]\n", full_file_name));
+        kphp_warning (fmt_format("can't read crc64 from [{}]\n", file->path));
         old_crc = static_cast<unsigned long long>(-1);
       } else {
         if (fscanf(old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
@@ -79,12 +75,12 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
       }
     }
     if (need_del) {
-      int err = unlink(full_file_name.c_str());
-      kphp_assert_msg(err == 0, fmt_format("Failed to unlink [{}] : {}", full_file_name, strerror(errno)));
+      int err = unlink(file->path.c_str());
+      kphp_assert_msg(err == 0, fmt_format("Failed to unlink [{}] : {}", file->path, strerror(errno)));
     }
-    FILE *dest_file = fopen(full_file_name.c_str(), "w");
+    FILE *dest_file = fopen(file->path.c_str(), "w");
     kphp_assert_msg(dest_file != nullptr,
-                fmt_format("Failed to open [{}] for write : {}\n", full_file_name, strerror(errno)));
+                fmt_format("Failed to open [{}] for write : {}\n", file->path, strerror(errno)));
 
     if (data.compile_with_crc()) {
       kphp_assert(fprintf(dest_file, "//crc64:%016Lx\n", ~crc) >= 0);

@@ -166,7 +166,7 @@ void Index::del_extra_files() {
   }
 }
 
-void Index::create_subdir(const string &subdir) {
+void Index::create_subdir(vk::string_view subdir) {
   if (!subdirs.insert(subdir).second) {
     return;
   }
@@ -198,24 +198,23 @@ File *Index::insert_file(std::string path) {
   File *&f = files[path];
   if (f == nullptr) {
     f = new File();
-    f->path = path;
+    f->path = std::move(path);
     kphp_assert (f->path.size() > get_dir().size());
     kphp_assert (strncmp(f->path.c_str(), get_dir().c_str(), get_dir().size()) == 0);
-    string name = f->path.substr(get_dir().size());
-    string::size_type dot_i = name.find_last_of('.');
+    f->name = vk::string_view{f->path}.substr(get_dir().size());
+    auto dot_i = f->name.rfind('.');
     if (dot_i == string::npos) {
-      dot_i = name.size();
+      dot_i = f->name.size();
     }
-    string::size_type slash_i = name.find_last_of('/', dot_i - 1);
+    auto slash_i = f->name.rfind('/', dot_i - 1);
     if (slash_i != string::npos) {
-      f->subdir = name.substr(0, slash_i + 1);
+      f->subdir = f->name.substr(0, slash_i + 1);
       create_subdir(f->subdir);
     } else {
-      f->subdir = "";
+      f->subdir = vk::string_view{};
     }
-    f->ext = name.substr(dot_i);
-    f->name_without_ext = name.substr(0, dot_i);
-    f->name.swap(name);
+    f->ext = f->name.substr(dot_i);
+    f->name_without_ext = f->name.substr(0, dot_i);
   }
   return f;
 }
