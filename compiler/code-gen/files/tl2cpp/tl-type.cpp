@@ -192,8 +192,10 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
   if (!constructor_params.empty()) {
     W << "explicit " << struct_name << "(" << vk::join(constructor_params, ", ") << ") : " << vk::join(constructor_inits, ", ") << " {}\n" << NL;
   }
-  FunctionSignatureGenerator(W)  << "void store(const var& tl_object)" << SemicolonAndNL();
-  FunctionSignatureGenerator(W)  << "array<var> fetch()" << SemicolonAndNL();
+  if (G->get_untyped_rpc_tl_used()) {
+    FunctionSignatureGenerator(W) << "void store(const var& tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "array<var> fetch()" << SemicolonAndNL();
+  }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W)  << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
     FunctionSignatureGenerator(W)  << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
@@ -210,15 +212,17 @@ void TlTypeDefinition::compile(CodeGenerator &W) const {
   std::string template_def = get_template_definition(constructor);
   auto full_struct_name = struct_name + template_def;
 
-  W << template_decl << NL;
-  FunctionSignatureGenerator(W) << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
-  W << TypeStore(t, template_def);
-  W << END << "\n\n";
+  if (G->get_untyped_rpc_tl_used()) {
+    W << template_decl << NL;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
+    W << TypeStore(t, template_def);
+    W << END << "\n\n";
 
-  W << template_decl << NL;
-  FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
-  W << TypeFetch(t, template_def);
-  W << END << "\n\n";
+    W << template_decl << NL;
+    FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
+    W << TypeFetch(t, template_def);
+    W << END << "\n\n";
+  }
 
   if (needs_typed_fetch_store) {
     W << template_decl << NL;

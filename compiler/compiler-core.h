@@ -28,6 +28,7 @@ private:
   ClassPtr memcache_class;
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
+  bool is_untyped_rpc_tl_used{false};
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -95,6 +96,14 @@ public:
 
   void add_kphp_runtime_opt(const std::string &opt) { kphp_runtime_opts.emplace_back(opt); }
   const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
+
+  void set_untyped_rpc_tl_used() {
+    is_untyped_rpc_tl_used = true;
+  }
+
+  bool get_untyped_rpc_tl_used() const {
+    return is_untyped_rpc_tl_used;
+  }
 
   Stats stats;
 };

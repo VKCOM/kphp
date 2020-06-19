@@ -26,7 +26,9 @@ public:
 
   void compile(CodeGenerator &W) const {
     compile_tl_h_file(W);
-    compile_tl_cpp_file(W);
+    if (!is_empty()) {
+      compile_tl_cpp_file(W);
+    }
   }
 
   void compile_tl_h_file(CodeGenerator &W) const;
@@ -49,6 +51,8 @@ public:
   static void add_to_module(const std::unique_ptr<vk::tl::combinator> &c) {
     ensure_existence(get_module_name(c->name)).add_obj(c);
   }
+
+  bool is_empty() const;
 
 private:
   static Module &ensure_existence(const std::string &module_name) {

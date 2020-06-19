@@ -34,8 +34,10 @@ void TlConstructorDecl::compile(CodeGenerator &W) const {
   }
   W << "struct " << cpp_tl_struct_name("c_", constructor->name) << " " << BEGIN;
   auto params = get_optional_args_for_decl(constructor);
-  FunctionSignatureGenerator(W) << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
-  FunctionSignatureGenerator(W) << "static array<var> fetch(" << params << ")" << SemicolonAndNL();
+  if (G->get_untyped_rpc_tl_used()) {
+    FunctionSignatureGenerator(W) << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static array<var> fetch(" << params << ")" << SemicolonAndNL();
+  }
 
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);
@@ -53,15 +55,17 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
   auto full_struct_name = cpp_tl_struct_name("c_", constructor->name, template_def);
   auto params = TlConstructorDecl::get_optional_args_for_decl(constructor);
 
-  W << template_decl << NL;
-  FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
-  W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
-  W << END << "\n\n";
+  if (G->get_untyped_rpc_tl_used()) {
+    W << template_decl << NL;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
+    W << END << "\n\n";
 
-  W << template_decl << NL;
-  FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
-  W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
-  W << END << "\n\n";
+    W << template_decl << NL;
+    FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+    W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
+    W << END << "\n\n";
+  }
 
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);

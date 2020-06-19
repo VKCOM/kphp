@@ -34,9 +34,11 @@ void StaticInit::compile(CodeGenerator &W) const {
   FunctionSignatureGenerator(W)  << "void const_vars_init()" << SemicolonAndNL() << NL;
 
   FunctionSignatureGenerator(W) << "void tl_str_const_init()" << SemicolonAndNL();
-  FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>)" << SemicolonAndNL();
-  W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
-  FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
+  if (G->get_untyped_rpc_tl_used()) {
+    FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>)" << SemicolonAndNL();
+    W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
+    FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
+  }
   if (G->env().is_static_lib_mode()) {
     FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
@@ -71,8 +73,10 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
   if (!G->env().get_tl_schema_file().empty()) {
     W << "tl_str_const_init();" << NL;
-    W << "fill_tl_storers_ht();" << NL;
-    W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
+    if (G->get_untyped_rpc_tl_used()) {
+      W << "fill_tl_storers_ht();" << NL;
+      W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
+    }
   }
   W << "const_vars_init();" << NL;
 

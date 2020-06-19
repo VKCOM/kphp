@@ -83,6 +83,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
     }
   }
   W << deps << NL;
+  W << ExternInclude{"php_functions.h"} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
   W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
@@ -126,29 +127,31 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << module;
   }
 
-  W << OpenFile("tl_runtime_bindings.cpp", "tl", false);
-  for (const auto &module_name : modules_with_functions) {
-    W << Include("tl/" + module_name + ".h");
-  }
-  W << NL;
-  // Указатель на gen$tl_fetch_wrapper прокидывается в рантайм и вызывается из fetch_function()
-  // Это сделано для того, чтобы не тащить в рантайм t_ReqResult и все его зависимости
-  FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
-                                << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
-                                << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
-                                << END << NL << NL;
-  // Хэш таблица, содержащая все тл функции
-  // Тоже прокидывается в рантайм
-  W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
-  FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
-  for (const auto &module_name : modules_with_functions) {
-    for (const auto &f : modules[module_name].target_functions) {
-      W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
-        << hash_tl_const_str(f->name) << ");" << NL;
+  if (G->get_untyped_rpc_tl_used()) {
+    W << OpenFile("tl_runtime_bindings.cpp", "tl", false);
+    for (const auto &module_name : modules_with_functions) {
+      W << Include("tl/" + module_name + ".h");
     }
+    W << NL;
+    // Указатель на gen$tl_fetch_wrapper прокидывается в рантайм и вызывается из fetch_function()
+    // Это сделано для того, чтобы не тащить в рантайм t_ReqResult и все его зависимости
+    FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
+                                  << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
+                                  << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
+                                  << END << NL << NL;
+    // Хэш таблица, содержащая все тл функции
+    // Тоже прокидывается в рантайм
+    W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
+    FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
+    for (const auto &module_name : modules_with_functions) {
+      for (const auto &f : modules[module_name].target_functions) {
+        W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
+          << hash_tl_const_str(f->name) << ");" << NL;
+      }
+    }
+    W << END << NL;
+    W << CloseFile();
   }
-  W << END << NL;
-  W << CloseFile();
   write_rpc_server_functions(W);
   // Вынесенные строковые константы
   W << OpenFile("tl_const_vars.h", "tl");

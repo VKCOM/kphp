@@ -443,6 +443,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(),
                  fmt_format("is_null() will be always false for {}", colored_type_out(arg_type)));
+    } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
+      G->set_untyped_rpc_tl_used();
     }
   }
 
