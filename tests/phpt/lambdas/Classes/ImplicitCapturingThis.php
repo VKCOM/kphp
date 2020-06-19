@@ -12,6 +12,7 @@ class ImplicitCapturingThis
         $f();
     }
 
+    /** @var int */
     var $a;
 
     public function __construct($a = 0) {

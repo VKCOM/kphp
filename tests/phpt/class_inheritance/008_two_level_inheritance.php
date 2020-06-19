@@ -2,6 +2,7 @@
 <?php
 
 class GrandPa {
+    /** @var int */
     public $grand_pa;
 
     public function __construct($x) {
@@ -15,6 +16,7 @@ class GrandPa {
 }
 
 class Parent_ extends GrandPa {
+    /** @var int */
     public $parent;
 
     public function __construct($x) {
@@ -32,6 +34,7 @@ class Parent_ extends GrandPa {
 }
 
 class Derived extends Parent_ {
+    /** @var int */
     public $derived;
 
     public function __construct($x) {

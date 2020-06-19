@@ -4,6 +4,7 @@ namespace Classes;
 
 class A
 {
+  /** @var any */
   var $a = 0;
 
   function printA() {

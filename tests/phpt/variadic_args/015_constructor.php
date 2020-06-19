@@ -2,6 +2,7 @@
 <?php
 
 class A {
+  /** @var any[] */
   public $args;
   public function __construct(...$args) {
     var_dump(!!$this);

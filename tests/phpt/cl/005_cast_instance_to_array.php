@@ -5,10 +5,12 @@ require_once 'polyfills.php';
 
 class A {
     public $nm_a = 10;
+    /** @var tuple(int, string) */
     public $t_a;
     public $a_a = [1, 2, 3];
     public $s_a = "asdf";
     public $n_a = NULL;
+    /** @var tuple(string) | false */
     public $t_or_false_a = false;
 
     public function __construct() {
@@ -19,7 +21,9 @@ class A {
 
 class B {
     public $s_b = "asdf";
+    /** @var A */
     public $a_b;
+    /** @var A[]|false */
     public $arr_a_b = false;
     public function __construct() { 
         $this->a_b  = new A(); 

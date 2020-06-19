@@ -368,25 +368,41 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
   // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
   // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
-  auto add_type_rule_from_field_phpdoc = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) {
+  auto add_type_rule_from_field_phpdoc = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) -> bool {
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
         parsed.type_expr->location = field_root->location;
         field_root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
         add_type_rule(field_root);
+        return true;
       }
     }
+    return false;
+  };
+
+  // при отсутствии /** @var ... */ над полем пользуемся дефолтным значением: именно оно определяет тип поля
+  // (т.е. public $a = 0; — такое поле считается int, а public $a = [] — это Any[])
+  auto add_type_rule_from_phpdoc_or_default_value = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root, VarPtr var) {
+    if (add_type_rule_from_field_phpdoc(phpdoc_str, field_root)) {
+      return;
+    }
+    if (var->init_val) {
+      create_less(var, var->init_val);   // create_set() сделался в on_var()
+      return;
+    }
+    kphp_error(klass->is_lambda(),
+               fmt_format("{} has no @var phpdoc and no default value", var->get_human_readable_name()));
   };
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {
     on_var(f.var);
-    add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
+    add_type_rule_from_phpdoc_or_default_value(f.phpdoc_str, f.root, f.var);
   });
 
   klass->members.for_each([&](ClassMemberStaticField &f) {
     on_var(f.var);
-    add_type_rule_from_field_phpdoc(f.phpdoc_str, f.root);
+    add_type_rule_from_phpdoc_or_default_value(f.phpdoc_str, f.root, f.var);
   });
 }
 

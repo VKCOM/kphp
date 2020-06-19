@@ -6,6 +6,7 @@ require_once 'polyfills.php';
 #endif
 
 class Temp {
+    /** @var tuple(int, string, \Classes\A) */
     public $x;
 }
 

@@ -69,7 +69,9 @@ function class_static_vars() {
     static public $dynamic_string = "";
     static public $dynamic_array = [];
 
+    /** @var A */
     static public $instance = null;
+    /** @var EmptyClass */
     static public $empty_instance = null;
   }
 

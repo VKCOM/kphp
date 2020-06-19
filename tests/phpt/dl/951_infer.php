@@ -157,7 +157,7 @@ function test_OrFalse() {
 
   /** @var int[] */
   $arr1 = array (1);
-  /** @var (Any|false)[] */
+  /** @var (any|false)[] */
   $arr2 = array (false);
   /** @var (int|false)[] */
   $arr3 = array_merge ($arr1, $arr2);

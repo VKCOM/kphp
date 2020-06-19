@@ -18,6 +18,7 @@
 
 	class Fud
 	{
+	  /** @var any */
 		var $x;
 
 		function fudbar()

@@ -176,13 +176,19 @@ class VarPack {
     static public $unknown_arr = [];
     static public $int_arr1 = [];
     static public $int_arr2 = [1, 2, 3];
+    /** @var mixed */
     static public $var_val = [1, 2, 3];
+    /** @var mixed[] */
     static public $var_arr = [1, 2, 3];
     static public $unknown_arr_arr = [[]];
     static public $int_arr_arr = [[]];
+    /** @var int[]|false */
     static public $or_false_arr1 = false;
+    /** @var mixed[]|false */
     static public $or_false_arr2 = [1, 2, 3];
+    /** @var (int[]|false)[] */
     static public $arr_arr_or_false1 = [false];
+    /** @var (mixed[]|false)[] */
     static public $arr_arr_or_false2 = [[1, 2, 3]];
 
     static public $arr_class1 = [];

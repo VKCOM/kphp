@@ -219,7 +219,11 @@ string RestrictionLess::get_actual_error_message() {
       (as_expr_0->get_expr()->type() == op_instance_prop ||
        (var_0 && var_0->var_id && (var_0->var_id->is_class_instance_var() || var_0->var_id->is_class_static_var()))) &&
       as_var_1 && as_var_1->is_variable()) {
-    return "Incorrect type of class field: " + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
+    return "Incorrect type of class field " + TermStringFormat::add_text_attribute(as_var_1->get_var_name(), TermStringFormat::bold, false) + "\n";
+  }
+
+  if (!as_expr_0 && !as_var_1 && !var_0 && as_var_0 && as_var_0->get_var() && (as_var_0->get_var()->is_class_instance_var() || as_var_0->get_var()->is_class_static_var())) {
+    return "Incorrect type of class field " + TermStringFormat::add_text_attribute(as_var_0->get_var_name(), TermStringFormat::bold, false) + "\n";
   }
 
   if (as_var_0 && as_var_0->is_argument_of_function()) {

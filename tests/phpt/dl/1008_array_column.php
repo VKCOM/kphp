@@ -121,7 +121,7 @@ function test_or_false_array() {
 }
 
 class A {
-    public $x;
+    public $x = 0;
     public function __construct($x) {
         $this->x = $x;
     }

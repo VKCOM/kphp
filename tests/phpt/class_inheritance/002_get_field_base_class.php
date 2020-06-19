@@ -2,6 +2,7 @@
 <?php
 
 class Base {
+    /** @var int */
     public $x;
 }
 
