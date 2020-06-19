@@ -49,7 +49,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_var));
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
-  const std::string name = ss.str();
+  std::string name = ss.str();
   bool is_new = true;
   VarPtr var_id  = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
   if (is_new) {
@@ -58,7 +58,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   }
 
   auto casted_var = VertexAdaptor<op_var>::create();
-  casted_var->str_val = name;
+  casted_var->str_val = std::move(name);
   casted_var->extra_type = op_ex_var_const;
   casted_var->location = type_acceptor->location;
 
@@ -152,8 +152,8 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   return index;
 }
 template<Operation FromOp, Operation ToOp>
-VertexPtr OptimizationPass::fix_int_const(VertexPtr from, const string &from_func) {
-  VertexPtr *tmp;
+VertexPtr OptimizationPass::fix_int_const(VertexPtr from, vk::string_view from_func) {
+  VertexPtr *tmp = nullptr;
   if (from->type() == FromOp) {
     tmp = &from.as<FromOp>()->expr();
   } else if (from->type() == op_func_call &&
