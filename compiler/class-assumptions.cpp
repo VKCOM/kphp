@@ -863,21 +863,11 @@ bool AssumNotInstance::is_primitive() const {
 }
 
 bool AssumTuple::is_primitive() const {
-  for (auto it : subkeys_assumptions) {
-    if (!it->is_primitive()) {
-      return false;
-    }
-  }
-  return true;
+  return false;
 }
 
 bool AssumShape::is_primitive() const {
-  for (auto it : subkeys_assumptions) {
-    if (!it.second->is_primitive()) {
-      return false;
-    }
-  }
-  return true;
+  return false;
 }
 
 
