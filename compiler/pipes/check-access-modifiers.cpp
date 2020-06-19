@@ -29,9 +29,9 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root) {
       //TODO: this is hack, which should be fixed after functions with context are added to static methods list
       auto real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
       if (func_id->context_class->members.has_static_method(real_name)) {
-        check_access(class_id, lambda_class_id, func_id->modifiers, func_id->class_id, "static method", func_id->get_human_readable_name());
+        check_access(class_id, lambda_class_id, func_id->modifiers, func_id->class_id, "static method", func_id);
       } else if (func_id->context_class->members.has_instance_method(real_name)) {
-        check_access(class_id, lambda_class_id, func_id->modifiers, func_id->class_id, "method", func_id->get_human_readable_name());
+        check_access(class_id, lambda_class_id, func_id->modifiers, func_id->class_id, "method", func_id);
       }
     }
   }
