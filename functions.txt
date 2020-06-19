@@ -21,16 +21,16 @@ class Exception {
 interface Memcache {
     public function get ($key) ::: var;
     public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
+    public function increment ($key ::: string, $v ::: any = 1) ::: var;
     public function getVersion () ::: var;
 
     // this two functions shouldn't be there, but we need it to rewrite code
     public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
 
@@ -39,15 +39,15 @@ class McMemcache implements Memcache {
 
     public function get ($key) ::: var;
     public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int  = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int  = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
+    public function increment ($key ::: string, $v ::: any = 1) ::: var;
     public function getVersion () ::: var;
     public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
 
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
 class RpcMemcache implements Memcache {
@@ -55,14 +55,14 @@ class RpcMemcache implements Memcache {
 
     public function get ($key) ::: var;
     public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: Any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: Any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: Any = 1) ::: var;
+    public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
+    public function increment ($key ::: string, $v ::: any = 1) ::: var;
 
     public function getVersion () ::: var;
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 
     public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
 }
@@ -152,7 +152,7 @@ function memory_get_total_usage() ::: int;
 function memory_get_static_usage() ::: int;
 function memory_get_detailed_stats() ::: int[];
 
-function estimate_memory_usage($value ::: Any) ::: int;
+function estimate_memory_usage($value ::: any) ::: int;
 // to enable this function, set KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=1
 function get_global_vars_memory_stats($lower_bound ::: int = 0) ::: int[];
 
@@ -166,7 +166,7 @@ function get_engine_workers_number() ::: int;
 
 function getKeyByPos ($a ::: array, $n ::: int) ::: var;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
-function create_vector ($n ::: int, $x ::: Any) ::: ^2[];
+function create_vector ($n ::: int, $x ::: any) ::: ^2[];
 function array_first_key ($a ::: array) ::: var;
 function array_first_value ($a ::: array) ::: ^1[*];
 function array_last_key ($a ::: array) ::: var;
@@ -200,9 +200,9 @@ function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
 function array_shift (&$a ::: array) ::: ^1[*];
-function array_unshift (&$a ::: array, $val ::: Any) ::: int;
-function array_key_exists ($v ::: Any, $a ::: array) ::: bool;
-function array_search ($val ::: Any, $a ::: array, $strict ::: bool = false) ::: var;
+function array_unshift (&$a ::: array, $val ::: any) ::: int;
+function array_key_exists ($v ::: any, $a ::: array) ::: bool;
+function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: var;
 function array_find ($val ::: array, callback ($x ::: ^1[*]) ::: bool) ::: tuple(var, ^1[*]);
 function array_rand ($a ::: array, $num ::: int = 1) ::: var;
 function array_keys ($a ::: array) ::: var[];
@@ -212,18 +212,18 @@ function array_values ($a ::: array) ::: ^1;
 function array_unique ($a ::: array) ::: ^1;
 function array_count_values ($a ::: array) ::: int[];
 function array_flip ($a ::: array) ::: var[];
-function in_array ($value ::: Any, $a ::: array, $strict ::: bool = false) ::: bool;
-function array_fill ($start_index ::: int, $num ::: int, $value ::: Any) ::: ^3[];
-function array_fill_keys ($a ::: array, $value ::: Any) ::: ^2[];
+function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
+function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
+function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
 function range ($from, $to, $step ::: int = 1) ::: var[];//TODO
-function array_push (&$a ::: array, $val2 ::: Any, $val3 ::: Any = TODO, $val4 ::: Any = TODO, $val5 ::: Any = TODO, $val6 ::: Any = TODO) ::: int;
+function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
 function array_pop (&$a ::: array) ::: ^1[*];
 function array_sum ($a ::: array) ::: float;//TODO
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
-function array_pad ($a ::: array, $size ::: int, $value ::: Any) ::: array< ^1[*] | ^3 >;
-function array_column ($a :>=: Any[][], $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
+function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
+function array_column ($a :>=: any[][], $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
 
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
@@ -238,41 +238,41 @@ function max (...$a) ::: ^1[*];
 
 function array_filter ($a ::: array, callback ($x ::: ^1[*]) ::: bool = TODO) ::: ^1;
 function array_filter_by_key ($a ::: array, callback ($key ::: var) ::: bool) ::: ^1;
-function array_map (callback ($x ::: ^2[*]) ::: Any, $a ::: array) ::: ^1() [];
+function array_map (callback ($x ::: ^2[*]) ::: any, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
-function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: Any, $initial ::: Any) ::: ^2() | ^3;
+function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: any, $initial ::: any) ::: ^2() | ^3;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
 function array_is_vector ($a ::: array) ::: bool;
 
-function empty ($val ::: Any) ::: bool;
-function count ($val ::: Any) ::: int;
-function sizeof ($val ::: Any) ::: int;
-function gettype ($v ::: Any) ::: string;
-function is_scalar ($v ::: Any) ::: bool;
-function is_numeric ($v ::: Any) ::: bool;
-function is_null ($v ::: Any) ::: bool;
-function is_bool ($v ::: Any) ::: bool;
-function is_int ($v ::: Any) ::: bool;
-function is_integer ($v ::: Any) ::: bool;
-function is_long ($v ::: Any) ::: bool;
+function empty ($val ::: any) ::: bool;
+function count ($val ::: any) ::: int;
+function sizeof ($val ::: any) ::: int;
+function gettype ($v ::: any) ::: string;
+function is_scalar ($v ::: any) ::: bool;
+function is_numeric ($v ::: any) ::: bool;
+function is_null ($v ::: any) ::: bool;
+function is_bool ($v ::: any) ::: bool;
+function is_int ($v ::: any) ::: bool;
+function is_integer ($v ::: any) ::: bool;
+function is_long ($v ::: any) ::: bool;
 function is_finite ($v ::: float) ::: bool;
 function is_infinite ($v ::: float) ::: bool;
 function is_nan ($v ::: float) ::: bool;
-function is_float ($v ::: Any) ::: bool;
-function is_double ($v ::: Any) ::: bool;
-function is_real ($v ::: Any) ::: bool;
-function is_string ($v ::: Any) ::: bool;
-function is_array ($v ::: Any) ::: bool;
-function is_object ($v ::: Any) ::: bool;
-function get_class ($v ::: Any) ::: string;
-function get_hash_of_class ($klass ::: Any) ::: int;
-function print_r ($v ::: Any, $buffered ::: bool = false) ::: string;
-function var_export ($v ::: Any, $buffered ::: bool = false) ::: string;
+function is_float ($v ::: any) ::: bool;
+function is_double ($v ::: any) ::: bool;
+function is_real ($v ::: any) ::: bool;
+function is_string ($v ::: any) ::: bool;
+function is_array ($v ::: any) ::: bool;
+function is_object ($v ::: any) ::: bool;
+function get_class ($v ::: any) ::: string;
+function get_hash_of_class ($klass ::: any) ::: int;
+function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
 function print ($v ::: string) ::: int;
 function echo ($v ::: string) ::: void;
 function dbg_echo ($v ::: string) ::: void;
-function var_dump ($v ::: Any) ::: void;
+function var_dump ($v ::: any) ::: void;
 
 define('DATE_ATOM', "Y-m-d\TH:i:sP");
 define('DATE_COOKIE', "l, d-M-y H:i:s T");
@@ -315,10 +315,10 @@ define('JSON_UNESCAPED_UNICODE', 1);
 define('JSON_FORCE_OBJECT', 16);
 define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
 
-function serialize ($v ::: Any) ::: string;
+function serialize ($v ::: any) ::: string;
 /** @kphp-pure-function */
 function unserialize ($v ::: string) ::: var;
-function json_encode ($v ::: Any, $options ::: int = 0) ::: string | false;
+function json_encode ($v ::: any, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
 
 function msgpack_serialize($v ::: var) ::: string | null;
@@ -455,7 +455,7 @@ function parse_url ($str ::: string, $component ::: int = -1) ::: var;
 define('M_PI', 3.1415926535897932384626433832795);
 
 /** @kphp-pure-function */
-function abs ($v ::: Any) ::: ^1 | int;
+function abs ($v ::: any) ::: ^1 | int;
 /** @kphp-pure-function */
 function acos ($v ::: float) ::: float;
 /** @kphp-pure-function */
@@ -628,7 +628,7 @@ function vk_mysqli_connect($host ::: string, $port ::: int) ::: \mysqli;
 function mysqli_select_db($dn :<=: \mysqli, $name ::: string) ::: bool;
 
 
-function function_exists ($func_name ::: Any) ::: bool;
+function function_exists ($func_name ::: any) ::: bool;
 
 define('FILE_APPEND', 1);
 
@@ -681,9 +681,9 @@ function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
 function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
 function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
-function vk_json_encode ($v ::: Any) ::: string | false;
+function vk_json_encode ($v ::: any) ::: string | false;
 /** @kphp-extern-func-info can_throw */
-function vk_json_encode_safe ($v ::: Any) ::: string;
+function vk_json_encode_safe ($v ::: any) ::: string;
 function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
 function vk_sp_simplify ($str ::: string) ::: string;
 function vk_sp_full_simplify ($str ::: string) ::: string;
@@ -769,23 +769,23 @@ class RpcConnection {
 }
 
 /** rpc store **/
-function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: Any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection;
+function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection;
 function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
 function store_start_gzip_pack() ::: void;
 function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;
 function rpc_clean() ::: bool;
 function rpc_get_clean() ::: string;
 function rpc_get_contents() ::: string;
-function store_header ($actor_id ::: Any, $flags ::: int = 0) ::: bool;
+function store_header ($actor_id ::: any, $flags ::: int = 0) ::: bool;
 function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
 function store_raw ($v ::: string) ::: bool;
 function store_int ($v ::: int) ::: bool;
 function store_UInt ($v ::: UInt) ::: bool;
 function store_Long ($v ::: Long) ::: bool;
 function store_ULong ($v ::: ULong) ::: bool;
-function store_unsigned_int ($v ::: Any) ::: bool;
-function store_long ($v ::: Any) ::: bool;
-function store_unsigned_long ($v ::: Any) ::: bool;
+function store_unsigned_int ($v ::: any) ::: bool;
+function store_long ($v ::: any) ::: bool;
+function store_unsigned_long ($v ::: any) ::: bool;
 function store_unsigned_int_hex ($v ::: string) ::: bool;
 function store_unsigned_long_hex ($v ::: string) ::: bool;
 function store_double ($v ::: float) ::: bool;
@@ -801,8 +801,8 @@ function rpc_get ($request_id ::: int) ::: string | false;
 function rpc_get_synchronously ($request_id ::: int) ::: string | false;
 /** @kphp-extern-func-info resumable */
 function rpc_get_and_parse ($request_id ::: int) ::: bool;
-function rpc_queue_create ($request_ids ::: Any = TODO) ::: int;
-function rpc_queue_push ($queue_id ::: int, $request_ids ::: Any) ::: int;
+function rpc_queue_create ($request_ids ::: any = TODO) ::: int;
+function rpc_queue_push ($queue_id ::: int, $request_ids ::: any) ::: int;
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
@@ -825,13 +825,13 @@ function rpc_mc_set ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $fl
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_replace ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: Any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: var;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
-function rpc_tl_query_one ($rpc_conn :<=: \RpcConnection, $arr ::: Any, $timeout ::: float = -1.0) ::: int;
+function rpc_tl_query_one ($rpc_conn :<=: \RpcConnection, $arr ::: any, $timeout ::: float = -1.0) ::: int;
 function rpc_tl_query ($rpc_conn :<=: \RpcConnection, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
 function rpc_tl_query_result_one ($query_id ::: int) ::: var[];
@@ -881,26 +881,26 @@ function rpc_server_fetch_request() ::: @tl\RpcFunction;
 function rpc_server_store_response($response :<=: @tl\RpcFunctionReturnResult) ::: void;
 
 /** @kphp-extern-func-info resumable */
-function wait ($id :<=: future<Any> | false, $timeout ::: float = -1.0) ::: bool;
+function wait ($id :<=: future<any> | false, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result ($id :<=: future(Any) | false, $timeout ::: float = -1.0) ::: ^1[*] | null;
+function wait_result ($id :<=: future(any) | false, $timeout ::: float = -1.0) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_result_multi ($resumables :<=: future(Any)[]) ::: (^1[*][*] | null)[];
-function wait_synchronously ($id :<=: future<Any> | false) ::: bool;
+function wait_result_multi ($resumables :<=: future(any)[]) ::: (^1[*][*] | null)[];
+function wait_synchronously ($id :<=: future<any> | false) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_multiple ($id ::: Any) ::: bool;
-function wait_queue_create ($request_ids :<=: array< future<Any> | false > = []) ::: future_queue<^1[*][*]>;
-function wait_queue_push (&$queue_id :<=: future_queue<Any>, $request_ids :<=: future<Any> | false) ::: void;
-function wait_queue_empty ($queue_id :<=: future_queue<Any>) ::: bool;
+function wait_multiple ($id ::: any) ::: bool;
+function wait_queue_create ($request_ids :<=: array< future<any> | false > = []) ::: future_queue<^1[*][*]>;
+function wait_queue_push (&$queue_id :<=: future_queue<any>, $request_ids :<=: future<any> | false) ::: void;
+function wait_queue_empty ($queue_id :<=: future_queue<any>) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id :<=: future_queue<Any>, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
-function wait_queue_next_synchronously ($queue_id :<=: future_queue<Any>) ::: future<^1[*]> | false;
+function wait_queue_next ($queue_id :<=: future_queue<any>, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
+function wait_queue_next_synchronously ($queue_id :<=: future_queue<any>) ::: future<^1[*]> | false;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
 function sched_yield_sleep($timeout ::: float) ::: void;
 function get_running_fork_id() ::: future <void>;
-function get_fork_stat($fork :<=: future<Any>) ::: mixed[] | false;
+function get_fork_stat($fork :<=: future<any>) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 
@@ -909,13 +909,13 @@ function query_x2 ($x ::: int) ::: int;
  * they should be there to work in array_map and similar
  * as function calls they are replaced by builtins anyway
  **/
-function boolval ($v ::: Any) ::: bool;
-function intval ($v ::: Any) ::: int;
-function floatval ($v ::: Any) ::: float;
-function strval ($v ::: Any) ::: string;
-function uintval ($v ::: Any) ::: UInt;
-function longval ($v ::: Any) ::: Long;
-function ulongval ($v ::: Any) ::: ULong;
+function boolval ($v ::: any) ::: bool;
+function intval ($v ::: any) ::: int;
+function floatval ($v ::: any) ::: float;
+function strval ($v ::: any) ::: string;
+function uintval ($v ::: any) ::: UInt;
+function longval ($v ::: any) ::: Long;
+function ulongval ($v ::: any) ::: ULong;
 function arrayval ($v ::: array) ::: ^1;
 
 /** files **/
@@ -971,7 +971,7 @@ function lor ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function land ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function lxor ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function lcomp ($lhs ::: Long, $rhs ::: Long) ::: int;
-function new_Long ($val ::: Any) ::: Long;
+function new_Long ($val ::: any) ::: Long;
 
 /** ULong **/
 function uldiv ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
@@ -987,7 +987,7 @@ function ulor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function uland ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function ulxor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function ulcomp ($lhs ::: ULong, $rhs ::: ULong) ::: int;
-function new_ULong ($val ::: Any) ::: ULong;
+function new_ULong ($val ::: any) ::: ULong;
 
 /** UInt **/
 function uidiv ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
@@ -1003,7 +1003,7 @@ function uior ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uiand ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uixor ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uicomp ($lhs ::: UInt, $rhs ::: UInt) ::: int;
-function new_UInt ($val ::: Any) ::: UInt;
+function new_UInt ($val ::: any) ::: UInt;
 
 
 define('UPLOAD_ERR_OK', 0);
@@ -1284,23 +1284,23 @@ function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "
 /** For local usage only **/
 function system ($query ::: string) ::: int;
 function raise_sigsegv () ::: void;
-function make_clone ($x ::: Any) ::: ^1;
+function make_clone ($x ::: any) ::: ^1;
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast($instance ::: Any, $to_type ::: string) ::: instance<^2>;
+function instance_cast($instance ::: any, $to_type ::: string) ::: instance<^2>;
 
-function instance_to_array($instance ::: Any) ::: var[];
+function instance_to_array($instance ::: any) ::: var[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cache_fetch($type ::: string, $key ::: string, $even_if_expired ::: bool = false) ::: instance<^1>;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cache_fetch_immutable($type ::: string, $key ::: string, $even_if_expired ::: bool = false) ::: instance<^1>;
-function instance_cache_store($key ::: string, $value ::: Any, $ttl ::: int = 0) ::: bool;
+function instance_cache_store($key ::: string, $value ::: any, $ttl ::: int = 0) ::: bool;
 function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
 function instance_cache_delete($key ::: string) ::: bool;
 
-function instance_serialize($instance ::: Any) ::: string | null;
+function instance_serialize($instance ::: any) ::: string | null;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 

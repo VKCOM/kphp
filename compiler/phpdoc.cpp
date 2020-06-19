@@ -235,7 +235,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         return GenTree::create_type_help_vertex(tp_future_queue, {parse_nested_one_type_rule()});
       }
       // плюс некоторые специальные типы, которые не являются токенами, но имеют смысл в phpdoc / functions.txt
-      if (cur_tok->str_val == "Any") {
+      if (cur_tok->str_val == "any") {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_Any);
       }
