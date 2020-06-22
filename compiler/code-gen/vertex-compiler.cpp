@@ -944,7 +944,7 @@ void compile_runtime_params_checker(FunctionPtr func, CodeGenerator &W) {
     W << "if (unlikely(!(";
     compile_runtime_var_check_expresion(param, check.type_rule, W);
     W << "))) " << BEGIN
-      << R"(php_warning("Got unexpected type [%s] of the arg #)" << check.param_i << R"( (")"
+      << R"(php_notice("Got unexpected type [%s] of the arg #)" << check.param_i << R"( (")"
       << RawString(param->get_human_readable_name()) << R"(") at function ")"
       << RawString(func->get_human_readable_name()) << ", "
       << VarName{param} << ".is_bool() ? (" << VarName{param} << R"s(.as_bool() ? "bool(true)" : "bool(false)"))s"

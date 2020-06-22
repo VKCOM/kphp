@@ -79,7 +79,7 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bo
   }
 }
 
-static void php_warning_impl(bool out_of_memory, char const *message, va_list args) {
+static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
   if (php_warning_level == 0 || php_disable_warnings) {
     return;
   }
@@ -153,7 +153,7 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
   }
 
   if (need_stacktrace && json_log_file_ptr != nullptr) {
-    write_json_error_to_log(release_version, buf, E_ERROR, nptrs, buffer);
+    write_json_error_to_log(release_version, buf, error_type, nptrs, buffer);
   }
 
   if (die_on_fail) {
@@ -163,22 +163,36 @@ static void php_warning_impl(bool out_of_memory, char const *message, va_list ar
   }
 }
 
+void php_notice(char const *message, ...) {
+  va_list args;
+  va_start (args, message);
+  php_warning_impl(false, E_NOTICE, message, args);
+  va_end(args);
+}
+
 void php_warning(char const *message, ...) {
   va_list args;
   va_start (args, message);
-  php_warning_impl(false, message, args);
+  php_warning_impl(false, E_WARNING, message, args);
+  va_end(args);
+}
+
+void php_error(char const *message, ...) {
+  va_list args;
+  va_start (args, message);
+  php_warning_impl(false, E_ERROR, message, args);
   va_end(args);
 }
 
 void php_out_of_memory_warning(char const *message, ...) {
   va_list args;
   va_start (args, message);
-  php_warning_impl(true, message, args);
+  php_warning_impl(true, E_ERROR, message, args);
   va_end(args);
 }
 
 void php_assert__(const char *msg, const char *file, int line) {
-  php_warning("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
+  php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
   raise(SIGPHPASSERT);
   fprintf(stderr, "_exiting in php_assert\n");
   _exit(1);
