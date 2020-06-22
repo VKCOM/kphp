@@ -63,13 +63,8 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     if (dst_class->is_parent_of(rhs_class)) {
       return dst_class;
     }
-    if (rhs_class->is_interface() || dst_class->is_interface()) {
-      auto common_bases = rhs_class->get_common_base_or_interface(dst_class);
-      if (common_bases.size() == 1) {
-        return common_bases[0];
-      }
-    }
-    return ClassPtr{};
+    auto common_bases = rhs_class->get_common_base_or_interface(dst_class);
+    return common_bases.size() == 1 ? common_bases[0] : ClassPtr{};
   };
   auto dst_as_instance = dst.try_as<AssumInstance>();
   auto rhs_as_instance = rhs.try_as<AssumInstance>();
