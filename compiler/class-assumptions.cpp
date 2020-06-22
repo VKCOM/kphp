@@ -757,6 +757,31 @@ vk::intrusive_ptr<Assumption> infer_from_shape(FunctionPtr f,
   return AssumShape::create(std::move(sub));
 }
 
+vk::intrusive_ptr<Assumption> infer_from_pair_vertex_merge(FunctionPtr f, Location location, VertexPtr a, VertexPtr b, size_t depth) {
+  auto a_assumption = infer_class_of_expr(f, a, depth + 1);
+  auto b_assumption = infer_class_of_expr(f, b, depth + 1);
+  if (!a_assumption->is_primitive() && !b_assumption->is_primitive()) {
+    std::swap(*stage::get_location_ptr(), location);
+    kphp_error(assumption_merge(a_assumption, b_assumption),
+               fmt_format("result of operation is both {} and {}\n",
+                          a_assumption->as_human_readable(), b_assumption->as_human_readable()));
+    std::swap(*stage::get_location_ptr(), location);
+  }
+  return a_assumption->is_primitive() ? b_assumption : a_assumption;
+}
+
+vk::intrusive_ptr<Assumption> infer_from_ternary(FunctionPtr f, VertexAdaptor<op_ternary> ternary, size_t depth) {
+  // для поддержки оператора $x = $y ?: $z;
+  // он разворачивается в $x = bool($tmp_var = $y) ? move($tmp_var) : $z;
+  if (auto move_true_expr = ternary->true_expr().try_as<op_move>()) {
+    if (auto tmp_var = move_true_expr->expr().try_as<op_var>()) {
+      calc_assumptions_for_var_internal(f, tmp_var->get_string(), ternary->cond(), depth + 1);
+    }
+  }
+
+  return infer_from_pair_vertex_merge(f, ternary->get_location(), ternary->true_expr(), ternary->false_expr(), depth);
+}
+
 vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
                                                        VertexAdaptor<op_instance_prop> prop,
                                                        size_t depth) {
@@ -803,6 +828,13 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
       return infer_from_tuple(f, root.as<op_tuple>(), depth + 1);
     case op_shape:
       return infer_from_shape(f, root.as<op_shape>(), depth + 1);
+    case op_ternary:
+      return infer_from_ternary(f, root.as<op_ternary>(), depth + 1);
+    case op_null_coalesce: {
+      auto null_coalesce = root.as<op_null_coalesce>();
+      return infer_from_pair_vertex_merge(f, null_coalesce->get_location(),
+                                          null_coalesce->lhs(), null_coalesce->rhs(), depth + 1);
+    }
     case op_conv_array:
     case op_conv_array_l:
       return infer_class_of_expr(f, root.as<meta_op_unary>()->expr(), depth + 1);
@@ -810,6 +842,8 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
       return infer_class_of_expr(f, root.as<op_clone>()->expr(), depth + 1);
     case op_seq_rval:
       return infer_class_of_expr(f, root.as<op_seq_rval>()->back(), depth + 1);
+    case op_move:
+      return infer_class_of_expr(f, root.as<op_move>()->expr(), depth + 1);
     default:
       return AssumNotInstance::create();
   }
