@@ -23,7 +23,7 @@ class B {
   }
 }
 
-function test_ternary_operator(?B $b, $f) {
+function test_ternary_operator(?B $b, bool $f) {
   $factory = $b ? $b : null;
   if ($factory) {
     $a = $f ? $factory->make_a(1) : $factory->make_a(2);

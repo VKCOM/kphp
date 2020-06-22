@@ -5,6 +5,7 @@ class A {
     public $x = true ? 10 : "a";
 }
 
+/**@param mixed $x*/
 function dump($x, A $a) {
     $a->x = 20;
     var_dump($x);

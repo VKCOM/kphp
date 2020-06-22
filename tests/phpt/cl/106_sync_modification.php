@@ -4,7 +4,7 @@ require_once 'polyfills.php';
 
 use Classes\A;
 
-function setA(A $a, $val) {
+function setA(A $a, int $val) {
   $a->setA($val)->printA();
 }
 

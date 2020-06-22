@@ -5,7 +5,7 @@ function my_throw ($msg, $code) {
   throw new Exception ($msg, $code);
 }
 
-function report_exception (Exception $e, $line) {
+function report_exception (Exception $e, int $line) {
   echo "Got exception [". $e->getMessage() . "] code [" . $e->getCode() . "] at " . $line . "\n";
 }
 function smth() {

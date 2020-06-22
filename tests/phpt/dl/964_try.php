@@ -61,6 +61,10 @@ try {
   apiWrapError($e, 10, 'INPUT_FETCH_ERROR');
 }
 
+/**
+ * @param int|false $error_code
+ * @param string $error_description
+ */
 function apiWrapError(Exception $exception, $error_code = false, $error_description = '') {
   $error_type = "??";
   $error_data = array(

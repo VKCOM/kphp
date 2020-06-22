@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Incorrect return type of function: IA::foo/
+/Incorrect return type of function/
 <?php
 
 interface IA {

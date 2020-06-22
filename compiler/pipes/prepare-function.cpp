@@ -3,6 +3,8 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "common/algorithms/contains.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
@@ -21,16 +23,46 @@
 //  }
 //}
 
+static std::pair<vk::string_view, FunctionPtr> get_inherited_phpdoc(FunctionPtr f) {
+  bool is_phpdoc_inherited = f->is_overridden_method || (f->modifiers.is_static() && f->class_id->parent_class);
+  // inherit phpDoc only if it's not overridden in derived class
+  is_phpdoc_inherited &= f->phpdoc_str.empty() ||
+                         (vk::contains(f->phpdoc_str, "@inheritDoc") && !vk::contains(f->phpdoc_str, "@param") && !vk::contains(f->phpdoc_str, "@return"));
+
+  if (!is_phpdoc_inherited) {
+    return {f->phpdoc_str, f};
+  }
+  for (const auto &ancestor : f->class_id->get_all_ancestors()) {
+    if (ancestor == f->class_id) {
+      continue;
+    }
+
+    if (f->modifiers.is_instance()) {
+      if (auto method = ancestor->members.get_instance_method(f->local_name())) {
+        return {method->function->phpdoc_str, method->function};
+      }
+    } else if (auto method = ancestor->members.get_static_method(f->local_name())) {
+      return {method->function->phpdoc_str, method->function};
+    }
+  }
+
+  return {f->phpdoc_str, f};
+}
+
 /*
  * Анализ @kphp-infer, @kphp-inline и других @kphp-* внутри phpdoc над функцией f
  * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
  */
 static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
-  bool function_has_kphp_doc = f->phpdoc_str.find("@kphp") != std::string::npos;
+  vk::string_view phpdoc_str;
+  FunctionPtr phpdoc_from_fun;
+  std::tie(phpdoc_str, phpdoc_from_fun) = get_inherited_phpdoc(f);
+
+  bool function_has_kphp_doc = vk::contains(phpdoc_str, "@kphp");
   bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
   if (!function_has_kphp_doc && !class_has_kphp_infer) {
     // add implicit kphp_infer only for functions with primitive type-hints
-    if (vk::all_of(f->get_params(), [](auto param) { return param.as<meta_op_func_param>()->type_declaration.empty(); })) {
+    if (vk::all_of(f->get_params(), [](VertexPtr param) { return param.as<meta_op_func_param>()->type_declaration.empty(); })) {
       return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
     }
   }
@@ -39,7 +71,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   int infer_type = 0;
   VertexRange func_params = f->get_params();
-  const vector<php_doc_tag> &tags = parse_php_doc(f->phpdoc_str);
+  const vector<php_doc_tag> &tags = parse_php_doc(phpdoc_str);
   std::size_t id_of_kphp_template = 0;
 
   std::unordered_map<std::string, int> name_to_function_param;
@@ -213,7 +245,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       stage::set_line(tag.line_num);
       switch (tag.type) {
         case php_doc_tag::returns: {
-          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
+          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, phpdoc_from_fun);
           if (!doc_parsed) {
             continue;
           }
@@ -228,7 +260,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         }
         case php_doc_tag::param: {
           kphp_error_return(!name_to_function_param.empty(), "Too many @param tags");
-          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f);
+          PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, phpdoc_from_fun);
           if (!doc_parsed) {
             continue;
           }
