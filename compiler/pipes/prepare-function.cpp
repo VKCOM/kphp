@@ -27,7 +27,7 @@ static std::pair<vk::string_view, FunctionPtr> get_inherited_phpdoc(FunctionPtr 
   bool is_phpdoc_inherited = f->is_overridden_method || (f->modifiers.is_static() && f->class_id->parent_class);
   // inherit phpDoc only if it's not overridden in derived class
   is_phpdoc_inherited &= f->phpdoc_str.empty() ||
-                         (vk::contains(f->phpdoc_str, "@inheritDoc") && !vk::contains(f->phpdoc_str, "@param") && !vk::contains(f->phpdoc_str, "@return"));
+                         (!vk::contains(f->phpdoc_str, "@param") && !vk::contains(f->phpdoc_str, "@return"));
 
   if (!is_phpdoc_inherited) {
     return {f->phpdoc_str, f};
@@ -60,11 +60,13 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   bool function_has_kphp_doc = vk::contains(phpdoc_str, "@kphp");
   bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
-  if (!function_has_kphp_doc && !class_has_kphp_infer) {
-    // add implicit kphp_infer only for functions with primitive type-hints
-    if (vk::all_of(f->get_params(), [](VertexPtr param) { return param.as<meta_op_func_param>()->type_declaration.empty(); })) {
-      return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
-    }
+
+  bool implicit_kphp_infer = vk::any_of(f->get_params(), [](VertexPtr param) { return !param.as<meta_op_func_param>()->type_declaration.empty(); }) ||
+                             vk::contains(phpdoc_str, "tuple") ||
+                             vk::contains(phpdoc_str, "shape");
+
+  if (!function_has_kphp_doc && !class_has_kphp_infer && !implicit_kphp_infer) {
+    return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
   }
 
   using infer_mask = FunctionData::InferHint::infer_mask;
@@ -95,7 +97,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   // phpdoc класса может влиять на phpdoc функции
   // @kphp-infer, написанный над классом — будто его написали над каждой функцией
-  if (class_has_kphp_infer || !params_with_typehints.empty()) {
+  if (class_has_kphp_infer || implicit_kphp_infer) {
     infer_type |= (infer_mask::check | infer_mask::hint);
   }
 

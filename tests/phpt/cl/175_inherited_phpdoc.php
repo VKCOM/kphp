@@ -1,6 +1,8 @@
 @ok
 <?php
 
+require_once 'polyfills.php';
+
 /**@kphp-infer*/
 class Base {
     /**
