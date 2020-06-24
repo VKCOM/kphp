@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "common/algorithms/compare.h"
+#include "common/algorithms/contains.h"
 #include "common/algorithms/hashes.h"
 
 #include "compiler/compiler-core.h"
@@ -63,6 +64,12 @@ TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
 namespace {
 void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<FunctionPtr> &os) {
+  static std::unordered_set<ClassPtr> visited_classes;
+  if (vk::contains(visited_classes, cur_class)) {
+    return;
+  }
+  visited_classes.insert(cur_class);
+
   auto find_virtual_overridden = [&](ClassMemberInstanceMethod &method) {
     if (!method.function || method.function->is_constructor() || method.function->modifiers.is_private()) {
       return;
@@ -421,9 +428,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     }
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
-      auto inheritors = c->get_all_inheritors();
-      bool has_class_in_hierarchy = vk::any_of(inheritors, [](ClassPtr c) { return c->is_class(); });
-      if (has_class_in_hierarchy) {
+      if (vk::any_of(c->get_all_inheritors(), [](ClassPtr c) { return c->is_class(); })) {
         auto virt_clone = c->add_virt_clone();
         G->register_and_require_function(virt_clone, generated_self_methods, true);
       }
