@@ -18,7 +18,7 @@ void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size) noexce
 
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   memory_debug("perform memory defragmentation\n");
-  details::memory_ordered_chunk_list mem_list;
+  details::memory_ordered_chunk_list mem_list{memory_begin_};
 
   huge_pieces_.flush_to(mem_list);
   if (const size_t fallback_resource_left_size = fallback_resource_.size()) {
@@ -38,7 +38,7 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   stats_.small_memory_pieces = 0;
   stats_.huge_memory_pieces = 0;
   for (auto *free_mem = mem_list.flush(); free_mem;) {
-    auto *next_mem = free_mem->get_next();
+    const auto next_mem = mem_list.get_next(free_mem);
     put_memory_back(free_mem, free_mem->size());
     free_mem = next_mem;
   }

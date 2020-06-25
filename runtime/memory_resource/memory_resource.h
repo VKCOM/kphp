@@ -1,7 +1,9 @@
 #pragma once
+#include <cinttypes>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 
 #include "common/stats/provider.h"
 
@@ -20,6 +22,10 @@ inline void memory_debug(const char *format, ...) {
 }
 
 namespace memory_resource {
+
+constexpr size_t memory_buffer_limit() noexcept {
+  return std::numeric_limits<uint32_t>::max();
+}
 
 class MemoryStats {
 public:

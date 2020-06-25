@@ -12,7 +12,7 @@ TEST(memory_chunk_tree_test, empty) {
   ASSERT_FALSE(mem_chunk_tree.extract(1));
   ASSERT_FALSE(mem_chunk_tree.extract(9999));
 
-  memory_resource::details::memory_ordered_chunk_list mem_list;
+  memory_resource::details::memory_ordered_chunk_list mem_list{nullptr};
   mem_chunk_tree.flush_to(mem_list);
   ASSERT_FALSE(mem_list.flush());
 }
@@ -126,7 +126,7 @@ TEST(memory_chunk_tree_test, flush_to) {
     mem_chunk_tree.insert(some_memory + chunk_offsets[i], chunk_sizes[i]);
   }
 
-  memory_resource::details::memory_ordered_chunk_list ordered_list;
+  memory_resource::details::memory_ordered_chunk_list ordered_list{some_memory};
   mem_chunk_tree.flush_to(ordered_list);
   ASSERT_FALSE(mem_chunk_tree.extract_smallest());
 
@@ -135,7 +135,7 @@ TEST(memory_chunk_tree_test, flush_to) {
   ASSERT_EQ(first_node->size(), chunk_offsets.back());
   ASSERT_EQ(reinterpret_cast<char *>(first_node), some_memory);
 
-  ASSERT_FALSE(first_node->get_next());
+  ASSERT_FALSE(ordered_list.get_next(first_node));
 }
 
 TEST(memory_chunk_tree_test, random_insert) {

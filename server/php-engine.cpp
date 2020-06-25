@@ -2534,7 +2534,7 @@ int main_args_handler(int i) {
     }
     case 2003: {
       int64_t instance_cache_memory_limit = parse_memory_limit(optarg);
-      if (instance_cache_memory_limit <= 0) {
+      if (instance_cache_memory_limit <= 0 || instance_cache_memory_limit > memory_resource::memory_buffer_limit()) {
         kprintf("couldn't parse instance-cache-memory-limit argument\n");
         return -1;
       }
@@ -2547,7 +2547,7 @@ int main_args_handler(int i) {
     }
     case 2005: {
       int64_t confdata_memory_limit = parse_memory_limit(optarg);
-      if (confdata_memory_limit <= 0) {
+      if (confdata_memory_limit <= 0 || confdata_memory_limit > memory_resource::memory_buffer_limit()) {
         kprintf("couldn't parse confdata-memory-limit argument\n");
         return -1;
       }
