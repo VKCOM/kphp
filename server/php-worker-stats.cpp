@@ -3,16 +3,47 @@
 #include <cassert>
 #include <cstring>
 
+namespace {
+const char *concat_stat(std::array<char, 256> &buffer, const char *prefix, const char *suffix) {
+  int len = snprintf(buffer.data(), buffer.size() - 1, "%s%s", prefix, suffix);
+  assert(len > 0 && buffer.size() >= static_cast<size_t>(len + 1));
+  return buffer.data();
+}
+
+void write_percentile_ns(stats_t *stats, const char *prefix, PhpWorkerStats::PercentileEstimates value) noexcept {
+  std::array<char, 256> buffer{};
+  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_50"),
+                            static_cast<double>(value.p50) * 1e-9);
+  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_95"),
+                            static_cast<double>(value.p95) * 1e-9);
+  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_99"),
+                            static_cast<double>(value.p99) * 1e-9);
+}
+
+void write_percentile(stats_t *stats, const char *prefix, PhpWorkerStats::PercentileEstimates value) noexcept {
+  std::array<char, 256> buffer{};
+  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_50"), value.p50);
+  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_95"), value.p95);
+  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_99"), value.p99);
+}
+} // namespace
+
 void PhpWorkerStats::add_stats(double script_time, double net_time, long script_queries,
                                long max_memory_used, long max_real_memory_used, script_error_t error) noexcept {
   internal_.tot_queries_++;
-  internal_.worked_time_ += script_time + net_time;
   internal_.net_time_ += net_time;
   internal_.script_time_ += script_time;
   internal_.tot_script_queries_ += script_queries;
   internal_.script_max_memory_used_ = std::max(internal_.script_max_memory_used_, max_memory_used);
   internal_.script_max_real_memory_used_ = std::max(internal_.script_max_real_memory_used_, max_real_memory_used);
   ++internal_.errors_[static_cast<size_t>(error)];
+
+  internal_.working_time_ns_ = total_request_time_ns_.add_sample(static_cast<int64_t>((script_time + net_time) * 1e9));
+  internal_.net_time_ns_ = net_time_ns_.add_sample(static_cast<int64_t>(net_time * 1e9));
+  internal_.script_time_ns_ = script_time_ns_.add_sample(static_cast<int64_t>(script_time * 1e9));
+
+  internal_.script_memory_used_ = script_memory_used_.add_sample(max_memory_used);
+  internal_.script_real_memory_used_ = script_real_memory_used_.add_sample(max_real_memory_used);
 }
 
 void PhpWorkerStats::update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept {
@@ -23,7 +54,6 @@ void PhpWorkerStats::update_idle_time(double tot_idle_time, int uptime, double a
 
 void PhpWorkerStats::add_from(const PhpWorkerStats &from) noexcept {
   internal_.tot_queries_ += from.internal_.tot_queries_;
-  internal_.worked_time_ += from.internal_.worked_time_;
   internal_.net_time_ += from.internal_.net_time_;
   internal_.script_time_ += from.internal_.script_time_;
   internal_.tot_script_queries_ += from.internal_.tot_script_queries_;
@@ -37,17 +67,25 @@ void PhpWorkerStats::add_from(const PhpWorkerStats &from) noexcept {
   for (size_t i = 0; i < internal_.errors_.size(); ++i) {
     internal_.errors_[i] += from.internal_.errors_[i];
   }
+
+  internal_.working_time_ns_ = total_request_time_ns_.add_percentiles(from.internal_.working_time_ns_);
+  internal_.net_time_ns_ = net_time_ns_.add_percentiles(from.internal_.net_time_ns_);
+  internal_.script_time_ns_ = script_time_ns_.add_percentiles(from.internal_.script_time_ns_);
+
+  internal_.script_memory_used_ = script_memory_used_.add_percentiles(from.internal_.script_memory_used_);
+  internal_.script_real_memory_used_ = script_real_memory_used_.add_percentiles(from.internal_.script_real_memory_used_);
+
 }
 
 std::string PhpWorkerStats::to_string(const std::string &pid_s) const noexcept {
   char buf[1000] = {0};
   std::string res;
 
-  const int cnt = std::max(internal_.accumulated_stats_, 1);
+  const int cnt = std::max(internal_.accumulated_stats_, 1U);
 
   sprintf(buf, "tot_queries%s\t%ld\n", pid_s.c_str(), internal_.tot_queries_);
   res += buf;
-  sprintf(buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), internal_.worked_time_);
+  sprintf(buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), internal_.script_time_ + internal_.net_time_);
   res += buf;
   sprintf(buf, "net_time%s\t%.3lf\n", pid_s.c_str(), internal_.net_time_);
   res += buf;
@@ -68,8 +106,11 @@ std::string PhpWorkerStats::to_string(const std::string &pid_s) const noexcept {
 void PhpWorkerStats::to_stats(stats_t *stats) const noexcept {
   add_histogram_stat_long(stats, "requests.total_incoming_queries", internal_.tot_queries_);
   add_histogram_stat_long(stats, "requests.total_outgoing_queries", internal_.tot_script_queries_);
-  add_histogram_stat_double(stats, "requests.script_time", internal_.script_time_);
-  add_histogram_stat_double(stats, "requests.net_time", internal_.net_time_);
+  add_histogram_stat_double(stats, "requests.script_time.total", internal_.script_time_);
+  write_percentile_ns(stats, "requests.script_time", internal_.script_time_ns_);
+  add_histogram_stat_double(stats, "requests.net_time.total", internal_.net_time_);
+  write_percentile_ns(stats, "requests.net_time", internal_.net_time_ns_);
+  write_percentile_ns(stats, "requests.working_time", internal_.working_time_ns_);
 
   write_error_stat_to(stats, "terminated_requests.memory_limit_exceeded", script_error_t::memory_limit);
   write_error_stat_to(stats, "terminated_requests.timeout", script_error_t::timeout);
@@ -82,8 +123,10 @@ void PhpWorkerStats::to_stats(stats_t *stats) const noexcept {
   write_error_stat_to(stats, "terminated_requests.post_data_loading_error", script_error_t::post_data_loading_error);
   write_error_stat_to(stats, "terminated_requests.unclassified", script_error_t::memory_limit);
 
-  add_histogram_stat_long(stats, "memory.script_usage_max", internal_.script_max_memory_used_);
-  add_histogram_stat_long(stats, "memory.script_real_usage_max", internal_.script_max_real_memory_used_);
+  add_histogram_stat_long(stats, "memory.script_usage.max", internal_.script_max_memory_used_);
+  write_percentile(stats, "memory.script_usage", internal_.script_memory_used_);
+  add_histogram_stat_long(stats, "memory.script_real_usage.max", internal_.script_max_real_memory_used_);
+  write_percentile(stats, "memory.script_real_usage", internal_.script_real_memory_used_);
 }
 
 int PhpWorkerStats::write_into(char *buffer, int buffer_len) const noexcept {
