@@ -26,25 +26,27 @@ public:
     return this_;
   }
 
-  long total_queries() const noexcept { return tot_queries_; }
-  long total_script_queries() const noexcept { return tot_script_queries_; }
+  long total_queries() const noexcept { return internal_.tot_queries_; }
+  long total_script_queries() const noexcept { return internal_.tot_script_queries_; }
 
   void reset_memory_usage() noexcept;
 
 private:
   void write_error_stat_to(stats_t *stats, const char *stat_name, script_error_t error) const noexcept;
 
-  long tot_queries_{0};
-  double worked_time_{0};
-  double net_time_{0};
-  double script_time_{0};
-  long tot_script_queries_{0};
-  double tot_idle_time_{0};
-  double tot_idle_percent_{0};
-  double a_idle_percent_{0};
-  long script_max_memory_used_{0};
-  long script_max_real_memory_used_{0};
+  struct {
+    long tot_queries_{0};
+    double worked_time_{0};
+    double net_time_{0};
+    double script_time_{0};
+    long tot_script_queries_{0};
+    double tot_idle_time_{0};
+    double tot_idle_percent_{0};
+    double a_idle_percent_{0};
+    long script_max_memory_used_{0};
+    long script_max_real_memory_used_{0};
 
-  int accumulated_stats_{0};
-  std::array<uint32_t, static_cast<size_t>(script_error_t::errors_count)> errors_{{0}};
+    int accumulated_stats_{0};
+    std::array<uint32_t, static_cast<size_t>(script_error_t::errors_count)> errors_{{0}};
+  } internal_;
 };
