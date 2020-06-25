@@ -183,8 +183,6 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       cur_tok++;
       return GenTree::create_type_help_vertex(tp_Null);
     case tok_mixed:
-      cur_tok++;
-      return GenTree::create_type_help_vertex(tp_var);
     case tok_var:
       cur_tok++;
       return GenTree::create_type_help_vertex(tp_var);
@@ -202,7 +200,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       if (cur_tok->type() == tok_oppar) {    // callable(...) : ... — typed callable
         return parse_typed_callable();
       }
-      return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
+      return VertexAdaptor<op_type_expr_callable>::create();
     case tok_array:
       cur_tok++;
       if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>

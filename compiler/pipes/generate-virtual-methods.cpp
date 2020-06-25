@@ -43,7 +43,7 @@ void GenerateVirtualMethods::on_finish(DataStream<FunctionPtr> &os) {
     auto &inheritors = interface_inheritors.second;
     std::sort(inheritors.begin(), inheritors.end());
 
-    interface->derived_classes = inheritors;
+    interface->derived_classes = std::move(inheritors);
     auto invoke_method = interface->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
     kphp_assert(invoke_method);
     generate_body_of_virtual_method(invoke_method->function);

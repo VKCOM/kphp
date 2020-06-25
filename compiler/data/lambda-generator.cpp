@@ -240,8 +240,8 @@ std::vector<VertexAdaptor<op_var>> LambdaGenerator::create_params_for_invoke_whi
   return lambda_params;
 }
 
-void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun) {
-  fun_name = replace_backslashes(generated_lambda->name) + "$$" + fun_name;
+void LambdaGenerator::register_invoke_method(ClassPtr klass, std::string fun_name, VertexAdaptor<op_function> fun) {
+  fun_name = replace_backslashes(klass->name) + "$$" + fun_name;
   auto invoke_function = fun->func_id;
   if (!invoke_function) {
     invoke_function = FunctionData::create_function(fun_name, fun, FunctionData::func_type_t::func_local);
@@ -249,13 +249,17 @@ void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor
   invoke_function->name = fun_name;
   invoke_function->update_location_in_body();
   invoke_function->modifiers = FunctionModifiers::instance_public();
-  generated_lambda->members.add_instance_method(invoke_function);
+  klass->members.add_instance_method(invoke_function);
 
   auto params = invoke_function->get_params();
-  invoke_function->is_template = generated_lambda->members.has_any_instance_var() || params.size() > 1;
+  invoke_function->is_template = klass->members.has_any_instance_var() || params.size() > 1;
   invoke_function->is_inline = true;
 
   G->register_function(invoke_function);
+}
+
+void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun) {
+  register_invoke_method(generated_lambda, std::move(fun_name), fun);
 }
 
 LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {

@@ -377,7 +377,7 @@ void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os
                                              FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE),
                                              ClassData::NAME_OF_INVOKE_METHOD};
 
-    return std::find(std::begin(allowed_magic_names), std::end(allowed_magic_names), name) != std::end(allowed_magic_names);
+    return vk::contains(allowed_magic_names, name);
   };
 
   kphp_error(!function->class_id || is_function_name_allowed(function->local_name()),
