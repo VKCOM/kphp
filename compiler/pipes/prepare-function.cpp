@@ -278,12 +278,16 @@ private:
       name_to_function_param_.erase(func_param_it);
 
       // если в phpdoc написано "callable" у этого @param
-      if (doc_parsed.type_expr->type() == op_type_expr_callable) {
-        f_->is_template = true;
-        cur_func_param->template_type_id = id_of_kphp_template_;
-        cur_func_param->is_callable = true;
-        id_of_kphp_template_++;
-        return;
+      if (auto type_callable = doc_parsed.type_expr.try_as<op_type_expr_callable>()) {
+        cur_func_param->is_callable = type_callable->has_params();
+        // we will generate common interface for typed callables later
+        if (!cur_func_param->is_callable) {
+          f_->is_template = true;
+          cur_func_param->template_type_id = id_of_kphp_template_;
+          cur_func_param->is_callable = true;
+          id_of_kphp_template_++;
+          return;
+        }
       }
 
       if ((infer_type_ & infer_mask::check) && (infer_type_ & infer_mask::hint)) {

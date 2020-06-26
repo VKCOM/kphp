@@ -1,15 +1,12 @@
 @ok
 <?php
-interface CorrectId {
-    public function __invoke(int $x) : bool;
-}
 
 class FilterClass {
-    /**@var CorrectId|callable */
+    /**@var callable(int):bool */
     public $correct_id = null;
 
     /**
-     * @param CorrectId|callable $correct_id
+     * @param callable(int):bool $correct_id
      */
     public function set_correct_id($correct_id = null) : void {
         $this->correct_id = function($x) { return true; };

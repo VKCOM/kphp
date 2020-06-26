@@ -2,13 +2,6 @@
 <?php
 require_once 'polyfills.php';
 
-function unused(Classes\LambdaInterface $i) {
-}
-
-if (0) {
-  unused(null);
-}
-
 class A {
   function bar(int $x) {
     var_dump($x);
@@ -16,10 +9,9 @@ class A {
 
   /**
    * @kphp-infer
-   * @param $x int
-   * @return (Classes\LambdaInterface|callable)[]
+   * @return (callable():void)[]
    **/
-  function foo($x) {
+  function foo(int $x) {
     return [
       function() {
         $this->bar(10);

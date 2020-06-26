@@ -1,11 +1,8 @@
 @ok
 <?php
-interface Runnable {
-    public function __invoke() : void;
-}
 
 function run() {
-    /**@var (callable|Runnable)[]*/
+    /**@var (callable():void)[]*/
     $callbacks = [
         function() { var_dump("Hell"); },
         function() { var_dump("o "); },

@@ -1,11 +1,7 @@
 @ok
 <?php
-interface CorrectId {
-    public function __invoke(int $x) : bool;
-}
-
 /**
- * @return CorrectId|callable
+ * @return callable(int):bool
  */
 function get_checker(bool $get_even) {
     if ($get_even) {

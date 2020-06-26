@@ -1,13 +1,9 @@
 @kphp_should_fail
-/Incorrect return type of function: Runnable::__invoke/
+/Incorrect return type of function/
 <?php
 
-interface Runnable {
-    public function __invoke() : void;
-}
-
 function run() {
-    /**@var $callback callable|Runnable*/
+    /**@var $callback callable():void*/
     $callback = function() { return 10; };
     $callback();
 }

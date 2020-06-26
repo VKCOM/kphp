@@ -358,6 +358,31 @@ VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
   return sub_type;
 }
 
+namespace {
+bool has_compound_type_inside(VertexPtr type) {
+  if (auto lca_rule = type.try_as<op_type_expr_lca>()) {
+    VertexPtr lhs = lca_rule->args()[0];
+    VertexPtr rhs = lca_rule->args()[1];
+    if (vk::any_of_equal(lhs->type_help, tp_False, tp_Null)) {
+      return has_compound_type_inside(rhs);
+    } else if (vk::any_of_equal(rhs->type_help, tp_False, tp_Null)) {
+      return has_compound_type_inside(lhs);
+    } else {
+      return true;
+    }
+  }
+
+  auto get_args = [type]() { return type.as<op_type_expr_type>()->args(); };
+  auto check_shape_arg = [](VertexPtr v) { return has_compound_type_inside(v.as<op_double_arrow>()->rhs()); };
+  switch (type->type_help) {
+    case tp_array: return has_compound_type_inside(get_args()[0]);
+    case tp_tuple: return vk::any_of(get_args(), has_compound_type_inside);
+    case tp_shape: return vk::any_of(get_args(), check_shape_arg);
+    default:       return false;
+  }
+};
+} // namespace
+
 VertexPtr PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):int, callable(int), callable():void
   if (cur_tok->type() != tok_oppar) {
     throw std::runtime_error("expected '('");
@@ -387,9 +412,12 @@ VertexPtr PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):
     return_type = GenTree::create_type_help_vertex(tp_void);
   }
 
-  // todo пока что typed callable просто парсится, но возвращается просто будто бы "callable"
-  // (а нужно придумать, как type_expr хранить в данном случае, используя arg_types и return_type)
-  return VertexAdaptor<op_type_expr_callable>::create(VertexPtr{});
+  // To generate a consistent name of lambda's interface we need arguments' types and return type
+  // At this stage it's not obvious how to calculate the lca of types such as (float[]|int[]), (string|int), (mixed|int[])
+  // but at the same time |null & |false are allowed; example of valid type: callable(?int, float[]|false, tuple(int)):shape(x:int)
+  kphp_error(!vk::any_of(arg_types, has_compound_type_inside) && !has_compound_type_inside(return_type), "Callable type may not contain compound types (int|string...)");
+
+  return VertexAdaptor<op_type_expr_callable>::create(VertexAdaptor<op_func_param_list>::create(arg_types), return_type);
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_shape_type() {

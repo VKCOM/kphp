@@ -20,7 +20,7 @@ public:
     return generated_lambda;
   }
 
-  static void register_invoke_method(ClassPtr klass, std::string fun_name, VertexAdaptor<op_function> fun);
+  static void make_invoke_method(ClassPtr klass, std::string fun_name, VertexAdaptor<op_function> fun);
 
 private:
   static LambdaPtr create_class(const std::string &name);

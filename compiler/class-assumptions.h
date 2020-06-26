@@ -55,7 +55,8 @@ public:
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 
-class AssumInstance final : public Assumption {
+class AssumInstance : public Assumption {
+protected:
   AssumInstance() = default;
 
 public:
@@ -127,6 +128,19 @@ public:
   bool is_primitive() const override;
   const TypeData *get_type_data() const override;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
+};
+
+class AssumCallable final : public AssumInstance {
+  AssumCallable() = default;
+
+public:
+  static auto create(InterfacePtr callable_interface) {
+    auto self = new AssumCallable();
+    self->klass = callable_interface;
+    return vk::intrusive_ptr<AssumCallable>(self);
+  }
+
+  std::string as_human_readable() const final;
 };
 
 

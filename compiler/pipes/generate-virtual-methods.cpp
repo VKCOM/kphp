@@ -47,6 +47,9 @@ void GenerateVirtualMethods::on_finish(DataStream<FunctionPtr> &os) {
     auto invoke_method = interface->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD);
     kphp_assert(invoke_method);
     generate_body_of_virtual_method(invoke_method->function);
+    if (!invoke_method->function->is_required) {
+      G->require_function(invoke_method->function, this->tmp_stream);
+    }
 
     for (auto &derived_lambda : interface->derived_classes) {
       if (derived_lambda->is_lambda()) {

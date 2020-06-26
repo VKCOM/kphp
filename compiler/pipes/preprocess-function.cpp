@@ -391,6 +391,17 @@ private:
             call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
           }
 
+          if (param->is_callable && !func->is_template && func->instantiation_of_template_function_location.line == -1) {
+            if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
+              auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumInstance>();
+              auto is_correct_lambda = arg_assum->klass->is_lambda() && lambda_interface && lambda_interface->klass->is_parent_of(arg_assum->klass);
+              kphp_error_act(is_correct_lambda, fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
+            } else {
+              kphp_error_act(false, fmt_format("You must passed lambda as argument: {}", param->var()->str_val), return call);
+            }
+            break;
+          }
+
           if (!param->is_callable) {
             break;
           }
@@ -491,9 +502,7 @@ private:
         ? resolve_instance_func_name(current_function, call.as<op_func_call>())
         : call->get_string();
 
-    FunctionPtr f = G->get_function(name);
-
-    if (likely(!!f)) {
+    if (auto f = G->get_function(name)) {
       kphp_error(!(f->modifiers.is_static() && f->modifiers.is_abstract()),
                  fmt_format("you may not call abstract static method: {}", f->get_human_readable_name()));
 

@@ -51,13 +51,8 @@ invokator4(function() { return 2; });
 
 
 
-
-interface CorrectId {
-    public function __invoke(int $x) : bool;
-}
-
 /**
- * @return (callable(int):bool)|CorrectId
+ * @return (callable(int):bool)
  */
 function get_checker(bool $get_even) {
     if ($get_even) {

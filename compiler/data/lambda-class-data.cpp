@@ -58,16 +58,18 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
   register_defines();
 
   auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
+  auto interface_invoke_method = interface->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
   infer_uses_assumptions(stage::get_function());
   my_invoke_method->is_template = false;
-  for (auto &p : my_invoke_method->get_params()) {
-    auto param = p.as<meta_op_func_param>();
+  auto my_invoke_params = my_invoke_method->get_params();
+  for (size_t i = 1; i < my_invoke_params.size(); ++i) {
+    auto param = my_invoke_params[i].as<meta_op_func_param>();
     param->template_type_id = -1;
-    param->is_callable = false;
+    my_invoke_method->assumptions_for_vars.emplace_back(param->var()->str_val, interface_invoke_method->assumptions_for_vars[i - 1].second);
   }
-
-  // TODO: add kphp_infer for __invoke method of interface
-  // interface->has_kphp_infer = true;
+  my_invoke_method->assumption_for_return = interface_invoke_method->assumption_for_return;
+  my_invoke_method->assumption_return_status = AssumptionStatus::initialized;
+  my_invoke_method->assumption_args_status = AssumptionStatus::initialized;
 }
 
 bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {

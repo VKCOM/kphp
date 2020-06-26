@@ -199,17 +199,21 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
   });
 }
 
-bool CompilerCore::register_class(ClassPtr cur_class) {
+ClassPtr CompilerCore::try_register_class(ClassPtr cur_class) {
   TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(vk::std_hash(cur_class->name));
   AutoLocker<Lockable *> locker(node);
-  if (node->data) {
-    kphp_error (false,
-                fmt_format("Redeclaration of class [{}], the previous declaration was in [{}]",
-                           cur_class->name, node->data->file_id->file_name));
-    return false;
+  if (!node->data) {
+    node->data = cur_class;
   }
-  node->data = cur_class;
-  return true;
+  return node->data;
+}
+
+bool CompilerCore::register_class(ClassPtr cur_class) {
+  auto registered_class = try_register_class(cur_class);
+  kphp_error (registered_class == cur_class,
+              fmt_format("Redeclaration of class [{}], the previous declaration was in [{}]",
+                         cur_class->name, registered_class->file_id->file_name));
+  return registered_class == cur_class;
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {

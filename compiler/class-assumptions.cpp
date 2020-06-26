@@ -17,13 +17,14 @@
  *
  * По коду, анализ assumption'ов вызывается только у тех функций и переменных, которые используются при -> операторе.
  */
-#include <thread>
-
 #include "compiler/class-assumptions.h"
+
+#include <thread>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/lambda-interface-generator.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
@@ -58,7 +59,9 @@ std::string assumption_debug(vk::string_view var_name, const vk::intrusive_ptr<A
   return "$" + var_name + " is " + (assumption ? assumption->as_human_readable() : "null");
 }
 
-bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr<Assumption> &rhs) {
+bool assumption_merge(vk::intrusive_ptr<Assumption> &dst, const vk::intrusive_ptr<Assumption> &rhs) {
+  if (dst == rhs) return true;
+
   auto merge_classes_lca = [](ClassPtr dst_class, ClassPtr rhs_class) -> ClassPtr {
     if (dst_class->is_parent_of(rhs_class)) {
       return dst_class;
@@ -66,8 +69,22 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     auto common_bases = rhs_class->get_common_base_or_interface(dst_class);
     return common_bases.size() == 1 ? common_bases[0] : ClassPtr{};
   };
+  auto dst_as_callable = dst.try_as<AssumCallable>();
+  auto rhs_as_callable = rhs.try_as<AssumCallable>();
   auto dst_as_instance = dst.try_as<AssumInstance>();
   auto rhs_as_instance = rhs.try_as<AssumInstance>();
+
+  if (dst_as_callable && rhs_as_callable) {
+    return dst_as_callable->klass == rhs_as_callable->klass;
+  } else if (dst_as_callable && rhs_as_instance) {
+    return rhs_as_instance->klass->is_lambda();
+  } else if (rhs_as_callable && dst_as_instance) {
+    if (dst_as_instance->klass->is_lambda()) {
+      dst = rhs_as_callable;
+      return true;
+    }
+  }
+
   if (dst_as_instance && rhs_as_instance) {
     ClassPtr lca_class = merge_classes_lca(dst_as_instance->klass, rhs_as_instance->klass);
     if (lca_class) {
@@ -97,26 +114,13 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
   auto rhs_as_shape = rhs.try_as<AssumShape>();
   if (dst_as_shape && rhs_as_shape) {
     bool ok = true;
-    for (const auto &it : dst_as_shape->subkeys_assumptions) {
+    for (auto &it : dst_as_shape->subkeys_assumptions) {
       auto at_it = rhs_as_shape->subkeys_assumptions.find(it.first);
       if (at_it != rhs_as_shape->subkeys_assumptions.end()) {
         ok &= assumption_merge(it.second, at_it->second);
       }
     }
     return ok;
-  }
-
-  if (dst) {
-    /**
-     *  for template functions, we add assumptions manually from context
-     *  if somebody wants to calculate assumptions for other non-template arguments
-     *  he will accidentally calculate assumptions for template arguments and got Unknown as type,
-     *  therefore, we need to ignore such awkward situation
-     */
-    auto prev_assum = rhs.try_as<AssumNotInstance>();
-    if (prev_assum && vk::any_of_equal(prev_assum->get_type(), tp_Unknown, tp_Any)) {
-      return true;
-    }
   }
 
   return dst->is_primitive() && rhs->is_primitive();
@@ -183,7 +187,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     auto upd_type_expr = [&](VertexPtr lhs, VertexPtr rhs) {
       or_false_flag = lhs->type_help == tp_False;
       or_null_flag = lhs->type_help == tp_Null;
-      if (or_false_flag || or_null_flag || lhs->type() == op_type_expr_callable) {
+      if (or_false_flag || or_null_flag) {
         type_expr = rhs;
         return true;
       }
@@ -192,6 +196,20 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     if (!upd_type_expr(or_rules[0], or_rules[1])) {
       upd_type_expr(or_rules[1], or_rules[0]);
     }
+  }
+
+  if (auto callable = type_expr.try_as<op_type_expr_callable>()) {
+    if (!callable->has_params()) {
+      return AssumCallable::create(InterfacePtr{});
+    }
+    // typed callback
+
+    auto callable_params = callable->params()->params();
+    std::vector<vk::intrusive_ptr<Assumption>> assum_params(callable_params.size());
+    std::transform(callable_params.begin(), callable_params.end(), assum_params.begin(), &assumption_create_from_phpdoc);
+    auto assum_return = assumption_create_from_phpdoc(callable->return_type());
+    auto callable_interface = LambdaInterfaceGenerator{std::move(assum_params), std::move(assum_return)}.generate();
+    return AssumCallable::create(callable_interface)->add_flags(or_null_flag, or_false_flag);
   }
 
   switch (type_expr->type_help) {
@@ -886,6 +904,14 @@ std::string AssumShape::as_human_readable() const {
   return r;
 }
 
+std::string AssumCallable::as_human_readable() const {
+  if (klass) {
+    if (auto invoke_method = klass->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)) {
+      return invoke_method->function->get_human_readable_name();
+    };
+  }
+  return "unknown callable (use `callable` typehint)";
+}
 
 bool AssumArray::is_primitive() const {
   return inner->is_primitive();

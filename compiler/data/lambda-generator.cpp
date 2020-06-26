@@ -30,7 +30,7 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
   }
 
   for (auto param_as_use : uses) {
-    auto variable_in_use = VertexAdaptor<op_var>::create().set_location(param_as_use);
+    auto variable_in_use = VertexAdaptor<op_var>::create().set_location(created_location);
     variable_in_use->str_val = param_as_use->var()->get_string();
     generated_lambda->members.add_instance_field(variable_in_use, {}, FieldModifiers{}.set_private(), vk::string_view{});
 
@@ -240,7 +240,7 @@ std::vector<VertexAdaptor<op_var>> LambdaGenerator::create_params_for_invoke_whi
   return lambda_params;
 }
 
-void LambdaGenerator::register_invoke_method(ClassPtr klass, std::string fun_name, VertexAdaptor<op_function> fun) {
+void LambdaGenerator::make_invoke_method(ClassPtr klass, std::string fun_name, VertexAdaptor<op_function> fun) {
   fun_name = replace_backslashes(klass->name) + "$$" + fun_name;
   auto invoke_function = fun->func_id;
   if (!invoke_function) {
@@ -252,14 +252,13 @@ void LambdaGenerator::register_invoke_method(ClassPtr klass, std::string fun_nam
   klass->members.add_instance_method(invoke_function);
 
   auto params = invoke_function->get_params();
-  invoke_function->is_template = klass->members.has_any_instance_var() || params.size() > 1;
+  invoke_function->is_template = klass->is_lambda() && (klass->members.has_any_instance_var() || params.size() > 1);
   invoke_function->is_inline = true;
-
-  G->register_function(invoke_function);
 }
 
 void LambdaGenerator::register_invoke_method(std::string fun_name, VertexAdaptor<op_function> fun) {
-  register_invoke_method(generated_lambda, std::move(fun_name), fun);
+  make_invoke_method(generated_lambda, std::move(fun_name), fun);
+  G->register_function(fun->func_id);
 }
 
 LambdaGenerator &LambdaGenerator::create_invoke_fun_returning_call(FunctionPtr base_fun, VertexAdaptor<op_func_call> &call_function, VertexAdaptor<op_func_param_list> invoke_params) {

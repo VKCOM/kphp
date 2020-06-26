@@ -40,8 +40,8 @@ public:
   }
 
   void check_assumption_and_inherit(const vk::intrusive_ptr<Assumption> &assumption, LambdaPtr lambda) {
-    auto interface_assumption = assumption.try_as<AssumInstance>();
-    if (!interface_assumption || !interface_assumption->klass->is_interface()) {
+    auto interface_assumption = assumption.try_as<AssumCallable>();
+    if (!interface_assumption || !interface_assumption->klass || !interface_assumption->klass->is_interface()) {
       return;
     }
     if (!lambda->can_implement_interface(interface_assumption->klass)) {
@@ -98,7 +98,11 @@ public:
   void find_interface_in_op_set(VertexPtr lhs, VertexPtr rhs) {
     if (auto rhs_array = rhs.try_as<op_array>()) {
       for (auto array_element : rhs_array->args()) {
-        find_interface_in_op_set(lhs, array_element);
+        if (auto double_arrow = array_element.try_as<op_double_arrow>()) {
+          find_interface_in_op_set(lhs, double_arrow->value());
+        } else {
+          find_interface_in_op_set(lhs, array_element);
+        }
       }
     }
     auto lambda_class = get_lambda_class(rhs);

@@ -453,7 +453,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       }
     }
 
-    if (function->assumption_for_return && !function->assumption_for_return->is_primitive()) {
+    if (function->assumption_for_return && (!function->assumption_for_return->is_primitive() || function->is_from_lambda_namespace())) {
       create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
     }
 
@@ -535,25 +535,31 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   }
 
   // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
-  const vk::intrusive_ptr<Assumption> &a = var->is_class_instance_var()
-                                           ? assumption_get_for_var(var->class_id, var->name)
-                                           : assumption_get_for_var(current_function, var->name);
+  auto assum = var->is_class_instance_var()
+               ? assumption_get_for_var(var->class_id, var->name)
+               : assumption_get_for_var(current_function, var->name);
+  if (!assum) {
+    return;
+  }
+  auto assum_instance = assum.try_as<AssumInstance>();
 
-  if (a && !a->is_primitive()) {
-    create_set(var, a->get_type_data());
-
+  const auto *assum_type_data = assum->get_type_data();
+  if (!assum->is_primitive()) {
+    create_set(var, assum_type_data);
     // $x = get_instance_arr();
     // $x = null
     // $x will have assumption `Instance[]`
     // we allow mix it with null and false only
-    const auto *less_td = a->get_type_data();
-    if (!a.try_as<AssumInstance>()) {
-      auto *tmp_td = less_td->clone();
+    if (!assum_instance) {
+      auto *tmp_td = assum_type_data->clone();
       tmp_td->set_or_false_flag();
       tmp_td->set_or_null_flag();
-      less_td = tmp_td;
+      assum_type_data = tmp_td;
     }
-    create_less(var, less_td);
+    create_less(var, assum_type_data);
+  } else if (assum_instance && assum_instance->klass->get_namespace() == LambdaClassData::get_lambda_namespace()) {
+    create_set(var, assum_type_data);
+    create_less(var, assum_type_data);
   }
 }
 

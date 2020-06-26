@@ -211,6 +211,17 @@
     "base_name": "meta_op_unary"
   },
   {
+    "sons": {
+      "params": {
+        "id": 0,
+        "type": "op_func_param_list",
+        "optional": true
+      },
+      "return_type": {
+        "id": 1,
+        "optional": true
+      }
+    },
     "name": "op_type_expr_callable",
     "base_name": "meta_op_unary"
   },

@@ -93,6 +93,8 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
 
   auto new_function = FunctionData::clone_from(name_of_function_instance, func, new_func_root);
   new_function->is_template = false;
+  // initialize assumptions for arguments of new_function
+  calc_assumption_for_argument(new_function, "");
 
   for (size_t i = 0; i < func_args_n; ++i) {
     auto param = new_function->get_params()[i].as<op_func_param>();
@@ -106,8 +108,14 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     }
     param->template_type_id = -1;
 
-    vk::intrusive_ptr<Assumption> assumption = id_classPtr_it->second;
-    new_function->assumptions_for_vars.emplace_back(param->var()->get_string(), assumption);
+    auto &assumption = id_classPtr_it->second;
+    auto assum_for_param_it = std::find_if(new_function->assumptions_for_vars.begin(), new_function->assumptions_for_vars.end(),
+                                           [&name = param->var()->str_val](auto &name_assum) { return name_assum.first == name; });
+    if (assum_for_param_it != new_function->assumptions_for_vars.end()) {
+      assum_for_param_it->second = assumption;
+    } else {
+      new_function->assumptions_for_vars.emplace_back(param->var()->str_val, assumption);
+    }
   }
 
   // TODO: need copy all lambdas inside template funciton
