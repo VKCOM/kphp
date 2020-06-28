@@ -629,8 +629,8 @@ void delete_worker(worker_info_t *w) {
     dead_stime += w->my_info.stime;
   }
   dead_worker_stats.add_from(w->stats->worker_stats);
-  // ignore dead workers script memory usage
-  dead_worker_stats.reset_memory_usage();
+  // ignore dead workers memory and percentiles stats
+  dead_worker_stats.reset_memory_and_percentiles_stats();
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -1698,6 +1698,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
                           instance_cache_element_stats.elements_logically_expired_but_fetched.load(std::memory_order_relaxed));
 
   write_confdata_stats_to(stats);
+  server_stats.worker_stats.recalc_master_percentiles();
   server_stats.worker_stats.to_stats(stats);
 
   static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
@@ -1931,7 +1932,8 @@ static void cron() {
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
 
-  server_stats.worker_stats = dead_worker_stats;
+  server_stats.worker_stats.copy_internal_from(dead_worker_stats);
+  server_stats.worker_stats.reset_memory_and_percentiles_stats();
   int running_workers = 0;
   for (int i = 0; i < me_workers_n; i++) {
     worker_info_t *w = workers[i];

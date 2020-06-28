@@ -1942,6 +1942,7 @@ void prepare_full_stats() {
 
   PhpWorkerStats::get_local().update_idle_time(epoll_total_idle_time(), get_uptime(),
                                                epoll_average_idle_time(), epoll_average_idle_quotient());
+  PhpWorkerStats::get_local().recalc_worker_percentiles();
   const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
   s += stats_size;
   s_left -= stats_size;
