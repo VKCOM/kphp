@@ -32,10 +32,14 @@ using std::exception;
 
 void PHPScriptBase::error(const char *error_message, script_error_t error_type) {
   assert (is_running == true);
+  is_running = false;
+  if (dl::is_malloc_replaced()) {
+    // на случай, если ошибка поизошла в тот момент, когда у нас был подменен malloc
+    dl::rollback_malloc_replacement();
+  }
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
   current_script->error_type = error_type;
-  is_running = false;
   stack_end = reinterpret_cast<char *>(exit_context.uc_stack.ss_sp) + exit_context.uc_stack.ss_size;
 #if ASAN7_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
@@ -431,10 +435,6 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
 void perform_error_if_running(const char *msg, script_error_t error_type) {
   if (PHPScriptBase::is_running) {
     kwrite_str(2, msg);
-    if (dl::is_malloc_replaced()) {
-      // на случай, если сигнал пришел в тот момент, когда у нас был подменен malloc
-      dl::rollback_malloc_replacement();
-    }
     PHPScriptBase::error(msg, error_type);
     assert ("unreachable point" && 0);
   }

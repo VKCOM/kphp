@@ -162,12 +162,15 @@ constexpr size_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
 
 void *script_allocator_malloc(size_t size) noexcept {
   static_assert(sizeof(size_t) <= MALLOC_REPLACER_SIZE_OFFSET, "small size offset");
-  php_assert (size <= MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET);
+  if (size > MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET) {
+    php_warning("attempt to allocate too much memory: %lu", size);
+    return nullptr;
+  }
   const size_t real_allocate = size + MALLOC_REPLACER_SIZE_OFFSET;
   void *mem = allocate(real_allocate);
 
   if (unlikely(!mem)) {
-    php_critical_error ("not enough memory to continue");
+    php_warning("not enough memory to continue: %lu", size);
     return mem;
   }
   *static_cast<size_t *>(mem) = real_allocate;
@@ -286,7 +289,11 @@ void rollback_malloc_replacement() noexcept {
 
 // replace global operators new and delete for linked C++ code
 void *operator new(size_t size) {
-  return std::malloc(size);
+  auto res = std::malloc(size);
+  if (!res) {
+    php_critical_error("nullptr from malloc");
+  }
+  return res;
 }
 
 void *operator new(size_t size, const std::nothrow_t &) noexcept {
@@ -294,11 +301,11 @@ void *operator new(size_t size, const std::nothrow_t &) noexcept {
 }
 
 void *operator new[](size_t size) {
-  return std::malloc(size);
+  return operator new(size);
 }
 
 void *operator new[](size_t size, const std::nothrow_t &) noexcept {
-  return std::malloc(size);
+  return operator new(size, std::nothrow);
 }
 
 void operator delete(void *mem) noexcept {
