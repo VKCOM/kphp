@@ -781,7 +781,7 @@ vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
                                                        VertexAdaptor<op_instance_prop> prop,
                                                        size_t depth) {
   auto lhs_a = infer_class_of_expr(f, prop->instance(), depth + 1).try_as<AssumInstance>();
-  if (!lhs_a->klass) {
+  if (!lhs_a || !lhs_a->klass) {
     return AssumNotInstance::create();
   }
 
