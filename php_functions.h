@@ -29,6 +29,7 @@
 #include "runtime/null_coalesce.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/openssl.h"
+#include "runtime/profiler.h"
 #include "runtime/refcountable_php_classes.h"
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"

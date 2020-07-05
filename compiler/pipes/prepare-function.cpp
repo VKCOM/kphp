@@ -112,6 +112,11 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         continue;
       }
 
+      case php_doc_tag::kphp_profile: {
+        f->profiler_state = FunctionData::profiler_status::enable_as_root;
+        continue;
+      }
+
       case php_doc_tag::kphp_sync: {
         f->should_be_sync = true;
         continue;
@@ -242,6 +247,10 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   // kphp-runtime-check disables kphp-infer check flag
   if ((infer_type & infer_mask::runtime_check) && infer_type != infer_mask::runtime_check) {
     infer_type &= ~infer_mask::check;
+  }
+
+  if (f->profiler_state == FunctionData::profiler_status::enable_as_root) {
+    kphp_error(!f->is_inline, "@kphp-inline and @kphp-profile are incompatible");
   }
 
   // при наличии @kphp-infer или @kphp-runtime-check парсим все @param'ы

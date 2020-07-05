@@ -22,6 +22,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/profiler.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
 
@@ -224,9 +225,11 @@ run_state_t PHPScriptBase::iterate() {
   state = run_state_t::running;
 
   update_net_time();
+  notify_profiler_stop_waiting();
 
   resume();
 
+  notify_profiler_start_waiting();
   update_script_time();
 
   queries_cnt += state == run_state_t::query;

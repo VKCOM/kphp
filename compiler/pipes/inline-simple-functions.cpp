@@ -90,7 +90,8 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
          !function->has_variadic_param &&
          !function->is_main_function() &&
          function->type != FunctionData::func_class_holder &&
-         !function->kphp_lib_export;
+         !function->kphp_lib_export &&
+         function->profiler_state != FunctionData::profiler_status::enable_as_root;
 }
 
 void InlineSimpleFunctions::on_finish() {

@@ -40,7 +40,7 @@ int parse_args_f(int i) {
       env->set_functions(optarg);
       break;
     case 'g':
-      env->set_enable_profiler();
+      env->set_profiler_level(optarg);
       break;
     case 'I':
       env->add_include(optarg);
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
   parse_option("destination-directory", required_argument, 'd', "Destination directory");
   parse_option("force-make", no_argument, 'F', "Force make. Old object files and binary will be removed");
   parse_option("functions-file", required_argument, 'f', "Internal file with library headers and e.t.c. Equals to $KPHP_FUNCTIONS. $KPHP_PATH/PHP/functions.txt is used by default");
-  parse_option("profiler", no_argument, 'g', "Generate slower code, but with profiling");
+  parse_option("profiler", required_argument, 'g', "Wrap functions with profiler. 0 - disabled, 1 - enabled only for marked php functions, 2 - enabled for all");
   parse_option("include-dir", required_argument, 'I', "Directory where php files will be searched");
   parse_option("jobs-num", required_argument, 'j', "Specifies the number of jobs (commands) to run simultaneously by make. By default equals to 1");
   parse_option("link-with", required_argument, 'l', "Link with <file>. Equals to $KPHP_LINK_FILE. $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME is used by default");

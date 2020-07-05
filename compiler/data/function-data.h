@@ -113,6 +113,11 @@ public:
   bool is_no_return = false;
   bool warn_unused_result = false;
   bool is_flatten = false;
+  enum class profiler_status : uint8_t {
+    disable,
+    enable_as_root,
+    enable_as_child
+  } profiler_state = profiler_status::disable;
 
   ClassPtr class_id;
   ClassPtr context_class;

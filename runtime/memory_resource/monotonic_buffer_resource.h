@@ -27,6 +27,8 @@ protected:
       stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
       stats_.real_memory_used = static_cast<size_t>(memory_current_ - memory_begin_);
       stats_.max_real_memory_used = std::max(stats_.real_memory_used, stats_.max_real_memory_used);
+      ++stats_.total_allocations;
+      stats_.total_memory_allocated += size;
     }
   }
 

@@ -1305,3 +1305,5 @@ function instance_deserialize($serialized ::: string, $to_type ::: string) ::: i
 function is_confdata_loaded() ::: bool;
 function confdata_get_value($key ::: string) ::: var;
 function confdata_get_values_by_wildcard($wildcard ::: string) ::: var[];
+
+function dump_profiler_log_on_finish($suffix ::: string = "") ::: void;

@@ -2,6 +2,8 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/compiler-core.h"
 #include "compiler/threading/profiler.h"
 
 namespace {
@@ -84,6 +86,18 @@ void calc_actually_used_dfs(FunctionPtr from, IdMap<FunctionPtr> &used_functions
   }
 }
 
+void mark_profiler_dfs(FunctionPtr caller, const IdMap<std::vector<EdgeInfo>> &call_graph) {
+  if (caller->profiler_state == FunctionData::profiler_status::disable) {
+    return;
+  }
+  for (const auto &edge: call_graph[caller]) {
+    if (edge.called_f->profiler_state == FunctionData::profiler_status::disable) {
+      edge.called_f->profiler_state = FunctionData::profiler_status::enable_as_child;
+      mark_profiler_dfs(edge.called_f, call_graph);
+    }
+  }
+}
+
 IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndEdges> &all) {
   IdMap<FunctionPtr> used_functions(static_cast<int>(all.size()));
   IdMap<std::vector<EdgeInfo>> call_graph(static_cast<int>(all.size()));
@@ -101,6 +115,9 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
       fun->kphp_lib_export;
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
+    }
+    if (G->env().get_profiler_level()) {
+      mark_profiler_dfs(fun, call_graph);
     }
   }
   return used_functions;
@@ -125,6 +142,12 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
 } // namespace
 
 void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
+  if (G->env().get_profiler_level() == 2) {
+    for (const auto &main_file : G->get_main_files()) {
+      main_file->main_function->profiler_state = FunctionData::profiler_status::enable_as_root;
+    }
+  }
+
   auto all = tmp_stream.flush_as_vector();
 
   // присваиваем FunctionData::id

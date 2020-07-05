@@ -26,6 +26,7 @@
 #include "runtime/net_events.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/openssl.h"
+#include "runtime/profiler.h"
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
@@ -520,13 +521,13 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
 void finish(int64_t exit_code) {
   if (!finished) {
     finished = true;
-    for (int i = 0; i < shutdown_functions_count; i++) {
-      shutdown_functions[i]();
+    forcibly_stop_profiler();
+    if (shutdown_functions_count) {
+      ShutdownProfiler shutdown_profiler;
+      for (int i = 0; i < shutdown_functions_count; i++) {
+        shutdown_functions[i]();
+      }
     }
-  }
-
-  if (Profiler::is_enabled()) {
-    Profiler::finalize();
   }
 
   f$fastcgi_finish_request(exit_code);
@@ -2095,6 +2096,7 @@ static void init_runtime_libs() {
 static void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 
+  forcibly_stop_and_flush_profiler();
   free_bcmath_lib();
   free_exception_lib();
   free_curl_lib();

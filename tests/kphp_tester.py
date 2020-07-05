@@ -103,7 +103,7 @@ class KphpRunOnceRunner(KphpBuilder):
         sanitizer_log_name = "kphp_runtime_sanitizer_log"
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_runtime_tmp_dir, sanitizer_log_name)
 
-        cmd = [self._kphp_runtime_bin, "-o", "--disable-sql"]
+        cmd = [self._kphp_runtime_bin, "-o", "--disable-sql", "--profiler-log-prefix", "profiler.log"]
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
         kphp_server_proc = subprocess.Popen(cmd,

@@ -26,11 +26,11 @@ private:
   bool make_force_bool_{false};
   string threads_count_;
   int threads_count_int_{0};
-  string verbosity_;
   int verbosity_int_{0};
   vector<string> main_files_;
   int print_resumable_graph_{0};
-  int enable_profiler_{0};
+  std::string profiler_level_str_;
+  int profiler_level_{0};
   string tl_schema_file_;
   bool gen_tl_internals_{false};
   bool no_pch_{false};
@@ -112,8 +112,8 @@ public:
   int get_verbosity() const;
   void set_print_resumable_graph();
   int get_print_resumable_graph() const;
-  void set_enable_profiler();
-  int get_enable_profiler() const;
+  void set_profiler_level(string &&level);
+  int get_profiler_level() const;
   void set_error_on_warns();
   bool get_error_on_warns() const;
   void set_tl_schema_file(const string &tl_schema_file);

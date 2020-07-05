@@ -47,6 +47,7 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "runtime/profiler.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
@@ -2583,6 +2584,13 @@ int main_args_handler(int i) {
       }
       return 0;
     }
+    case 2009: {
+      if (set_profiler_log_path(optarg)) {
+        return 0;
+      }
+      kprintf("couldn't set profiler-log-prefix '%s'\n", optarg);
+      return -1;
+    }
 
     default:
       return -1;
@@ -2646,6 +2654,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
   parse_option("php-version", no_argument, 2007, "show the compiled php code version and exit");
   parse_option("php-warnings-minimal-verbosity", required_argument, 2008, "set minimum verbosity level for php warnings");
+  parse_option("profiler-log-prefix", required_argument, 2009, "set profier log path perfix");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

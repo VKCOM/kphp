@@ -12,6 +12,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
@@ -953,10 +954,41 @@ void compile_runtime_params_checker(FunctionPtr func, CodeGenerator &W) {
   }
 }
 
+bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
+  if (func->profiler_state == FunctionData::profiler_status::disable
+      || func->is_inline
+      || !G->env().get_profiler_level()) {
+    return false;
+  }
+
+  const auto &location = func->root->get_location();
+  const char *is_root = func->profiler_state == FunctionData::profiler_status::enable_as_root ? "true" : "false";
+  W << "struct TracingProfilerTraits " << BEGIN
+    << "static constexpr const char *file_name() noexcept { return " << RawString(location.file ? location.file->file_name : "unknown") << "; }" << NL
+    << "static constexpr const char *function_name() noexcept { return " << RawString(func->get_human_readable_name()) << "; }" << NL
+    << "static constexpr size_t function_line() noexcept { return " << std::max(location.line, 0) << "; }" << NL
+    << "static constexpr size_t profiler_level() noexcept { return " << G->env().get_profiler_level() << "; }" << NL
+    << "static constexpr bool is_root() noexcept { return " << is_root << "; }" << NL
+    << END << ";" << NL;
+  if (func->is_resumable) {
+    W << "ResumableProfiler<TracingProfilerTraits> resumable_profiler;" << NL << NL;
+    FunctionSignatureGenerator(W).set_final()
+      << "bool run()" << BEGIN
+      << "resumable_profiler.start(pos__);" << NL
+      << "const bool done = run_profiling_resumable();" << NL
+      << "resumable_profiler.stop(done);" << NL
+      << "return done;"  << NL << END  << NL << NL;
+  } else {
+    W << "AutoProfiler<TracingProfilerTraits> auto_profiler;" << NL << NL;
+  }
+
+  return true;
+}
+
 void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->func_id;
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
-  W << "class " << FunctionClassName(func) << " : public Resumable " <<
+  W << "class " << FunctionClassName(func) << " final : public Resumable " <<
     BEGIN <<
     "private:" << NL << Indent(+2);
 
@@ -994,11 +1026,10 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   }
   W << " " << BEGIN << END << NL;
 
-  //RUN FUNCTION
-  FunctionSignatureGenerator(W) << "bool run() " <<
-    BEGIN;
-  if (G->env().get_enable_profiler()) {
-    W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
+  if (compile_tracing_profiler(func, W)) {
+    FunctionSignatureGenerator(W) << "bool run_profiling_resumable()" << BEGIN;
+  } else {
+    FunctionSignatureGenerator(W).set_final() << "bool run()" << BEGIN;
   }
   W << "RESUMABLE_BEGIN" << NL << Indent(+2);
 
@@ -1050,11 +1081,8 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
 
   W << FunctionDeclaration(func, false) << " " << BEGIN;
 
+  compile_tracing_profiler(func, W);
   compile_runtime_params_checker(func, W);
-
-  if (G->env().get_enable_profiler()) {
-    W << "Profiler __profiler(\"" << func->name.c_str() << "\");" << NL;
-  }
 
   for (auto var : func->local_var_ids) {
     if (var->type() != VarData::var_local_inplace_t && !var->is_foreach_reference) {

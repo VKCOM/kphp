@@ -114,6 +114,7 @@ class KphpBuilder:
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name)
         env["KPHP_THREADS_COUNT"] = "3"
         env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
+        env["KPHP_PROFILER"] = "2"
         env["GDB_OPTION"] = "-g0"
         env["KPHP_DYNAMIC_INCREMENTAL_LINKAGE"] = use_dynamic_incremental_linkage and "1" or "0"
         if self._distcc_hosts:

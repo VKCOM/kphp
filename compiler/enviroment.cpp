@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "common/algorithms/contains.h"
+#include "common/algorithms/find.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
 
@@ -218,12 +219,12 @@ int KphpEnviroment::get_print_resumable_graph() const {
   return print_resumable_graph_;
 }
 
-void KphpEnviroment::set_enable_profiler() {
-  enable_profiler_ = 1;
+void KphpEnviroment::set_profiler_level(string &&level) {
+  profiler_level_str_ = std::move(level);
 }
 
-int KphpEnviroment::get_enable_profiler() const {
-  return enable_profiler_;
+int KphpEnviroment::get_profiler_level() const {
+  return profiler_level_;
 }
 
 void KphpEnviroment::set_no_pch() {
@@ -557,11 +558,18 @@ bool KphpEnviroment::init() {
   as_dir(&dest_dir_);
   init_env_var(&version_, "KPHP_VERSION_OVERRIDE", get_version_string());
 
-  init_env_var(&verbosity_, "KPHP_VERBOSITY", "0");
+  std::string verbosity_level;
+  init_env_var(&verbosity_level, "KPHP_VERBOSITY", "0");
   if (!verbosity_int_) {
-    env_str2int(&verbosity_int_, verbosity_);
+    env_str2int(&verbosity_int_, verbosity_level);
   }
 
+  init_env_var(&profiler_level_str_, "KPHP_PROFILER", "0");
+  if (vk::none_of_equal(profiler_level_str_, "0", "1", "2")) {
+    fmt_print("Got unexpected --profiler (KPHP_PROFILER) option value '{}'; supported values are: [0, 2]\n", profiler_level_str_);
+    return false;
+  }
+  env_str2int(&profiler_level_, profiler_level_str_);
   return true;
 }
 
@@ -597,6 +605,7 @@ void KphpEnviroment::debug() const {
             "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
             "KPHP_TL_SCHEMA=[" << get_tl_schema_file() << "]\n" <<
             "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
+            "KPHP_PROFILER=[" << get_profiler_level() << "]\n" <<
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
             "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
             "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
