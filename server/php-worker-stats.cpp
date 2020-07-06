@@ -49,7 +49,7 @@ std::array<T, 3> calc_timed_50_95_99_percentiles(std::array<T, N> samples,
 
 template<class T, size_t M, size_t N>
 void append_samples(const std::array<T, M> &from, std::array<T, N> &to, size_t offset) {
-  assert(offset + M < N);
+  assert(offset + M <= N);
   std::copy_n(from.begin(), M, to.begin() + offset);
 }
 } // namespace
