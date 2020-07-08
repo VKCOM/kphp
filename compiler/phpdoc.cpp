@@ -255,6 +255,11 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);
       }
+      // force(T) = T (для PhpStorm)
+      if (cur_tok->str_val == "force") {
+        cur_tok++;
+        return parse_nested_one_type_rule();
+      }
       // (для functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
