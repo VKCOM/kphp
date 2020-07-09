@@ -1539,7 +1539,7 @@ int64_t f$system(const string &query) {
   return system(query.c_str());
 }
 
-void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info) {
+void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info, const string& env) {
   auto &context = KphpErrorContext::get();
   static_SB.clean();
 
@@ -1552,4 +1552,6 @@ void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra
     context.set_extra_info(static_SB.c_str(), static_SB.size());
   }
   static_SB.clean();
+
+  context.set_env(env.c_str(), env.size());
 }

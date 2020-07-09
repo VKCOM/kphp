@@ -40,7 +40,7 @@ static bool is_address_inside_run_scheduler(void *address) {
   return &__start_run_scheduler_section <= address && address <= &__stop_run_scheduler_section;
 };
 
-void write_json_error_to_log(int release, char *msg, int type, int nptrs, void** buffer);
+void write_json_error_to_log(int version, char *msg, int type, int nptrs, void** buffer);
 
 static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bool allow_gdb) {
   if (php_warning_level == 1) {
@@ -208,7 +208,7 @@ void raise_php_assert_signal__() {
 }
 
 // type is one of the error E_* constants (E_ERROR, E_WARNING, etc.)
-void write_json_error_to_log(int release, char *msg, int type, int nptrs, void** buffer) {
+void write_json_error_to_log(int version, char *msg, int type, int nptrs, void** buffer) {
   for (char *c = msg; *c; ++c) {
     if (*c == '"') {
       *c = '\'';
@@ -217,10 +217,10 @@ void write_json_error_to_log(int release, char *msg, int type, int nptrs, void**
     }
   }
 
+  const auto &err_context = KphpErrorContext::get();
 
-  // todo(k.paltsev) remove "version" key when all servers will have an updated kw-parser
-  const auto format = R"({"version":%d,"release":%d,"type":%d,"created_at":%ld,"msg":"%s")";
-  fprintf(json_log_file_ptr, format, release, release, type, time(nullptr), msg);
+  const auto format = R"({"version":%d,"type":%d,"created_at":%ld,"msg":"%s","env":"%s")";
+  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, err_context.env_c_str());
 
   fprintf(json_log_file_ptr, R"(,"trace":[)");
   for (int i = 0; i < nptrs; i++) {
@@ -230,8 +230,6 @@ void write_json_error_to_log(int release, char *msg, int type, int nptrs, void**
     fprintf(json_log_file_ptr, R"("%p")", buffer[i]);
   }
   fprintf(json_log_file_ptr, "]");
-
-  const auto &err_context = KphpErrorContext::get();
 
   if (err_context.tags_are_set()) {
     fprintf(json_log_file_ptr, R"(,"tags":%s)", err_context.tags_c_str());
@@ -268,7 +266,17 @@ void KphpErrorContext::set_extra_info(const char *ptr, size_t size) {
   extra_info_buffer[size] = '\0';
 }
 
+void KphpErrorContext::set_env(const char *ptr, size_t size) {
+  if ((size + 1) > sizeof(env_buffer)) {
+    return;
+  }
+
+  memcpy(env_buffer, ptr, size);
+  env_buffer[size] = '\0';
+}
+
 void KphpErrorContext::reset() {
   extra_info_buffer[0] = '\0';
   tags_buffer[0] = '\0';
+  env_buffer[0] = '\0';
 }

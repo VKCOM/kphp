@@ -51,6 +51,7 @@ public:
 
   void set_extra_info(const char *ptr, size_t size);
   void set_tags(const char *ptr, size_t size);
+  void set_env(const char *ptr, size_t size);
   void reset();
 
   const char *tags_c_str() const {
@@ -60,8 +61,13 @@ public:
   const char *extra_info_c_str() const {
     return extra_info_buffer;
   }
+
+  const char *env_c_str() const {
+    return env_buffer;
+  }
 private:
   KphpErrorContext() = default;
   char tags_buffer[10 * 1024]{0};
   char extra_info_buffer[10 * 1024]{0};
+  char env_buffer[128]{0};
 };
