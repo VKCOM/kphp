@@ -52,10 +52,10 @@ string tinf::VarNode::get_function_name() {
     return "global scope";
   }
   if (var_->is_class_instance_var()) {
-    return string("class ") + var_->class_id->name + " : " + std::to_string(var_->as_class_instance_field()->root->location.line);
+    return string("class ") + var_->class_id->name + ":" + std::to_string(var_->as_class_instance_field()->root->location.line);
   }
   if (var_->is_class_static_var()) {
-    return string("class ") + var_->class_id->name + " : " + std::to_string(var_->as_class_static_field()->root->location.line);
+    return string("class ") + var_->class_id->name + ":" + std::to_string(var_->as_class_static_field()->root->location.line);
   }
   return "";
 }
