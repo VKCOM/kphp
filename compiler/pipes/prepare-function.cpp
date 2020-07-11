@@ -63,7 +63,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   bool implicit_kphp_infer = vk::any_of(f->get_params(), [](VertexPtr param) { return !param.as<meta_op_func_param>()->type_declaration.empty(); }) ||
                              vk::contains(phpdoc_str, "tuple") ||
-                             vk::contains(phpdoc_str, "shape");
+                             vk::contains(phpdoc_str, "shape") ||
+                             (f->class_id && !f->class_id->is_builtin() && !f->class_id->is_lambda());
 
   if (!function_has_kphp_doc && !class_has_kphp_infer && !implicit_kphp_infer) {
     return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
@@ -236,6 +237,10 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
       default:
         break;
     }
+  }
+  // kphp-runtime-check disables kphp-infer check flag
+  if ((infer_type & infer_mask::runtime_check) && infer_type != infer_mask::runtime_check) {
+    infer_type &= ~infer_mask::check;
   }
 
   // при наличии @kphp-infer или @kphp-runtime-check парсим все @param'ы
