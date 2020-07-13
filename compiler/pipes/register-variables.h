@@ -46,7 +46,7 @@ public:
   }
 
   void on_start() override {
-    global_function_flag = vk::any_of_equal(current_function->type, FunctionData::func_global, FunctionData::func_switch);
+    global_function_flag = current_function->is_main_function() || current_function->type == FunctionData::func_switch;
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override;

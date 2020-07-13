@@ -86,7 +86,7 @@ public:
     }
 
     if (auto return_op = root.try_as<op_return>()) {
-      if (current_function->type == FunctionData::func_global ||
+      if (current_function->is_main_function() ||
           current_function->type == FunctionData::func_switch ||
           current_function->disabled_warnings.count("return")) {
         if (return_op->has_expr()) {

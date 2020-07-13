@@ -51,7 +51,11 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
 }
 
 bool FunctionData::is_constructor() const {
-  return class_id && class_id->construct_function && &*(class_id->construct_function) == this;
+  return class_id && class_id->construct_function && class_id->construct_function == get_self();
+}
+
+bool FunctionData::is_main_function() const {
+  return type == func_type_t::func_main;
 }
 
 void FunctionData::update_location_in_body() {
@@ -61,7 +65,7 @@ void FunctionData::update_location_in_body() {
 
   std::function<void(VertexPtr)> update_location = [&](VertexPtr root) {
     root->location.file = file;
-    root->location.function = FunctionPtr{this};
+    root->location.function = get_self();
     std::for_each(root->begin(), root->end(), update_location);
   };
   update_location(root);
@@ -132,7 +136,7 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 
 void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
   auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
-  auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), FunctionPtr{this}, self_function_vertex);
+  auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), get_self(), self_function_vertex);
   // It's safe to copy assumptions here and useful only for __virt_clone_self method
   kphp_assert(assumption_return_status != AssumptionStatus::processing);
   self_function->assumption_for_return = assumption_for_return;
@@ -250,7 +254,7 @@ bool FunctionData::is_lambda_with_uses() const {
 }
 
 bool FunctionData::is_imported_from_static_lib() const {
-  return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && &(*file_id->main_function) != this;
+  return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && !is_main_function();
 }
 
 VertexRange FunctionData::get_params() const {

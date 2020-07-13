@@ -386,7 +386,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       std::string fun_name;
       if (is_anonymous_function_name(cur_function->name)) {
         fun_name = "{closure}";
-      } else if (cur_function->name != processing_file->main_func_name) {
+      } else if (!cur_function->is_main_function()) {
         if (cur_class) {
           fun_name = cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1);
         } else {
@@ -406,7 +406,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       std::string fun_name;
       if (is_anonymous_function_name(cur_function->name)) {
         fun_name = "{closure}";
-      } else if (cur_function->name != processing_file->main_func_name) {
+      } else if (!cur_function->is_main_function()) {
         fun_name = cur_function->name.substr(cur_function->name.rfind('$') + 1);
       }
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, fun_name);
@@ -2060,7 +2060,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       if (cur_class) {
         get_traits_uses();
       } else {
-        kphp_error(cur_function && cur_function->type == FunctionData::func_global, "'use' can be declared only in global scope");
+        kphp_error(cur_function && cur_function->is_main_function(), "'use' can be declared only in global scope");
         get_use();
       }
       return VertexAdaptor<op_empty>::create();
@@ -2174,7 +2174,7 @@ void GenTree::run() {
   auto v_func_params = VertexAdaptor<op_func_param_list>::create();
   auto root = VertexAdaptor<op_function>::create(v_func_params, VertexAdaptor<op_seq>{}).set_location(auto_location());
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_global));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_main));
   processing_file->main_function = cur_function;
 
   if (test_expect(tok_declare)) {

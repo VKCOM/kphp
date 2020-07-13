@@ -95,7 +95,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
     const bool should_be_used_apriori =
-      fun->type == FunctionData::func_global ||
+      fun->is_main_function() ||
       fun->type == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
      (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
       fun->kphp_lib_export;

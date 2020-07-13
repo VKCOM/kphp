@@ -66,7 +66,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) const override {
-    return function->type == FunctionData::func_global;
+    return function->is_main_function();
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {

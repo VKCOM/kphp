@@ -556,7 +556,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
 
   calc_assumptions_for_var_internal(f, var_name, f->root->cmd(), depth + 1);
 
-  if (f->type == FunctionData::func_global || f->type == FunctionData::func_switch) {
+  if (f->is_main_function() || f->type == FunctionData::func_switch) {
     if ((var_name.size() == 2 && var_name == "MC") || (var_name.size() == 3 && var_name == "PMC")) {
       analyze_global_var(f, var_name);
     }

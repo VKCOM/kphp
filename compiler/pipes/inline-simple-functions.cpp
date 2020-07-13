@@ -88,7 +88,7 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
          !function->is_inline &&
          !function->can_throw &&
          !function->has_variadic_param &&
-         function->file_id->main_function != function &&
+         !function->is_main_function() &&
          function->type != FunctionData::func_class_holder &&
          !function->kphp_lib_export;
 }

@@ -55,7 +55,7 @@ public:
   bool is_required = false;
 
   enum func_type_t {
-    func_global,
+    func_main,
     func_local,
     func_switch,
     func_extern,
@@ -145,6 +145,7 @@ public:
   }
 
   bool is_constructor() const;
+  bool is_main_function() const;
 
   void update_location_in_body();
   static std::string encode_template_arg_name(const vk::intrusive_ptr<Assumption> &assumption, int id);
@@ -176,4 +177,9 @@ public:
 
   vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
   vk::string_view local_name() const && = delete;
+
+private:
+  FunctionPtr get_self() const {
+    return FunctionPtr{const_cast<FunctionData *>(this)};
+  }
 };

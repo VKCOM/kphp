@@ -361,7 +361,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         kphp_error(!var->is_reference, "Unset of reference variables is not supported");
         if (var->is_in_global_scope()) {
           FunctionPtr f = stage::get_function();
-          if (f->type != FunctionData::func_global && f->type != FunctionData::func_switch) {
+          if (!f->is_main_function() && f->type != FunctionData::func_switch) {
             kphp_error(0, "Unset of global variables in functions is not supported");
           }
         }
@@ -402,9 +402,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
 
     if (function_where_require && function_where_require->type == FunctionData::func_local) {
       FunctionPtr function_which_required = vertex.as<op_func_call>()->func_id;
-      if (function_which_required == function_which_required->file_id->main_function) {
-        kphp_assert(function_which_required->type == FunctionData::func_global);
-
+      if (function_which_required->is_main_function()) {
         for (VarPtr global_var : function_which_required->global_var_ids) {
           if (!global_var->marked_as_global) {
             kphp_warning(fmt_format("require file with global variable not marked as global: {}", global_var->name));
