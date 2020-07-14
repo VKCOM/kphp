@@ -8,6 +8,10 @@ class A {
   const ONE = 1;
 
   var $a = 0;
+  /**
+   * @kphp-infer
+   * @param int $a
+   */
   public function __construct($a = 0) { $this->a = $a; }
 
   public function p() { echo 'A field = ' . $this->a . "\n"; }
@@ -15,6 +19,10 @@ class A {
 
 class B {
   var $a = 0;
+  /**
+   * @kphp-infer
+   * @param int $a
+   */
   public function __construct($a = 0) { $this->a = $a; }
 
   public function p() { echo 'B field = ' . $this->a . "\n"; }

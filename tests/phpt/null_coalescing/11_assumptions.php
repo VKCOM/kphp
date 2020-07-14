@@ -19,6 +19,11 @@ class A2 implements AI {
 }
 
 class B {
+  /**
+   * @kphp-infer
+   * @param int $x
+   * @return AI
+   */
   public function make_a($x): AI {
     return $x == 1 ? new A1 : new A2;
   }

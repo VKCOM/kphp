@@ -18,11 +18,21 @@ class A
     return $this;
   }
 
+  /**
+   * @kphp-infer
+   * @param int $a
+   * @return A
+   */
   public function setA($a) {
     $this->a = $a;
     return $this;
   }
 
+  /**
+   * @kphp-infer
+   * @param int $b1Val
+   * @return B
+   */
   public function createB($b1Val) {
     return new B($b1Val);
   }

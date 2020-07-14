@@ -4,21 +4,45 @@
 require_once 'polyfills.php';
 
 interface ContainsX {
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function set_x($x);
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function get_x();
 }
 
 class X1 implements ContainsX {
     public $x = 10;
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function set_x($x) { $this->x = $x; }
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function get_x() { return $this->x; }
 }
 
 class X2 implements ContainsX {
     public $x = 1000;
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function set_x($x) { $this->x = $x; }
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function get_x() { return $this->x; }
 }
 

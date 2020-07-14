@@ -2,13 +2,13 @@
 <?php
 
 interface IWithStatic {
-   public function foo();
-   public static function bar($x, $y);
+   public function foo(): int;
+   public static function bar(int $x, int $y): int;
 }
 
 class A implements IWithStatic {
-    public function foo() { return 10; }
-    public static function bar($x, $y, $z = 10) { return $x + $y; }
+    public function foo(): int { return 10; }
+    public static function bar(int $x, int $y, int $z = 10): int { return $x + $y; }
 }
 
 $a = new A();

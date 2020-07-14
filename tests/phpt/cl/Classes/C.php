@@ -15,16 +15,31 @@ class C
 
   private static $instances = [];
 
+  /**
+   * @kphp-infer
+   * @param int $b1Val
+   * @param int $b2Val
+   */
   public function __construct($b1Val = 1, $b2Val = 2) {
     $this->aInst = new A();
     $this->bInst = new B();
   }
 
+  /**
+   * @kphp-infer
+   * @param int $c1
+   * @return C
+   */
   function setC1($c1) {
     $this->c1 = $c1;
     return $this;
   }
 
+  /**
+   * @kphp-infer
+   * @param int $c2
+   * @return C
+   */
   function setC2($c2) {
     $this->c2 = $c2;
     return $this;

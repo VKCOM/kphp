@@ -12,6 +12,10 @@ class PassCallbackInsideClass
         return $callback(10, 20, 30);
     }
 
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function use_callback()
     {
         return $this->call_callback(function ($a, $b, $c) {

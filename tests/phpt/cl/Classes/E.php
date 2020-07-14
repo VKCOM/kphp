@@ -8,7 +8,11 @@ class E
   /** @var E */
   var $nextE;
 
-  /** @return E */
+  /**
+   * @kphp-infer
+   * @param int $val
+   * @return E
+   */
   public function makeNextE($val = 0) {
     if ($this->nextE)
       throw new \Exception("next e already initialized");
@@ -24,7 +28,7 @@ class E
     return $this;
   }
 
-  public function setA($a) {
+  public function setA(int $a): self {
     $this->a = $a;
     return $this;
   }

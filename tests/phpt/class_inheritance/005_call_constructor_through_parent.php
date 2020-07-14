@@ -2,6 +2,10 @@
 <?php
 
 class Base {
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x) {
         var_dump("Base", $x);
     }
@@ -12,6 +16,10 @@ class Base {
 }
 
 class Derived extends Base {
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x) {
         parent::__construct($x);
         var_dump("Derived", $x);

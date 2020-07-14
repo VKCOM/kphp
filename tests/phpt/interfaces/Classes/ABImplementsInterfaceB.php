@@ -11,7 +11,7 @@ class ABImplementsInterfaceB implements InterfaceBExtendsInterfaceA {
   }
 
   /**
-   * @return InterfaceB
+   * @return InterfaceBExtendsInterfaceA
    */
   function getSelfAsB() {
     return $this;

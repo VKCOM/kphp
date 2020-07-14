@@ -7,6 +7,10 @@ class SelfInsideLambda extends SelfInsideLambdaBase
     const X = 10;
     protected static $b = 10;
 
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public static function run()
     {
         $f = function () {
@@ -22,16 +26,31 @@ class SelfInsideLambda extends SelfInsideLambdaBase
         return $f();
     }
 
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public static function get_ten()
     {
         return 10;
     }
 
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @param int $b
+     * @return int
+     */
     private static function get_sum($a, $b)
     {
         return $a + $b;
     }
 
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @return int
+     */
     protected static function id($a)
     {
         return $a;

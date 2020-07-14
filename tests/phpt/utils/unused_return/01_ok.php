@@ -10,6 +10,8 @@ function test() {
 class Foo {
   /**
    * @kphp-warn-unused-result
+   * @kphp-infer
+   * @return int
    */
   public static function bar() {
     return 444;

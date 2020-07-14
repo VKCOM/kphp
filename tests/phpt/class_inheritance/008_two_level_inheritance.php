@@ -5,6 +5,10 @@ class GrandPa {
     /** @var int */
     public $grand_pa;
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x) {
         $this->grand_pa = $x + 2;
         var_dump("GrandPa", $this->grand_pa);
@@ -19,6 +23,10 @@ class Parent_ extends GrandPa {
     /** @var int */
     public $parent;
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x) {
         $this->parent = $x + 1;
         var_dump("Parent", $this->parent);
@@ -37,6 +45,10 @@ class Derived extends Parent_ {
     /** @var int */
     public $derived;
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x) {
         GrandPa::__construct($x);
         parent::__construct($x);

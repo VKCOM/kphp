@@ -3,6 +3,10 @@
 class A { 
     public $x = 20; 
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     */
     public function __construct($x = 20) {
         $this->x = $x;
     }

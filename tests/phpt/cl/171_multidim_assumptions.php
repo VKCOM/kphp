@@ -4,6 +4,10 @@
 class A {
   public $a = 0;
 
+  /**
+   * @kphp-infer
+   * @param int $a
+   */
   public function __construct($a = 0) {
     $this->a = $a;
   }

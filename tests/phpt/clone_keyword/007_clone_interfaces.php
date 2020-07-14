@@ -9,6 +9,10 @@ function get_reference_counter($c) { return 0; }
 interface IPrintable {
     function print_me();
     function change_me();
+    /**
+     * @kphp-infer
+     * @param int $value
+     */
     function check_refcnt($value);
 }
 
@@ -17,6 +21,10 @@ class A implements IPrintable {
 
     function print_me() { var_dump($this->x); }
     function change_me() { $this->x = 100; }
+    /**
+     * @kphp-infer
+     * @param int $value
+     */
     function check_refcnt($value) {
         #ifndef KittenPHP
         var_dump(true);
@@ -33,6 +41,10 @@ class B implements IPrintable {
 
     function print_me() { var_dump($this->y); }
     function change_me() { $this->y = 100; }
+    /**
+     * @kphp-infer
+     * @param int $value
+     */
     function check_refcnt($value) {
         #ifndef KittenPHP
         var_dump(true);

@@ -4,6 +4,10 @@
 class A {
   /** @var any[] */
   public $args;
+  /**
+   * @kphp-infer
+   * @param int[] $args
+   */
   public function __construct(...$args) {
     var_dump(!!$this);
     var_dump($args);

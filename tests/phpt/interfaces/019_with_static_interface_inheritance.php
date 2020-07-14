@@ -2,28 +2,86 @@
 <?php
 
 interface IOne {
-    public function one($x);
-    public static function static_one($x, $y);
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
+  public function one($x);
+
+  /**
+   * @param int $x
+   * @param int $y
+   * @return mixed
+   */
+  public static function static_one($x, $y);
 }
 
 interface ITwo extends IOne {
-    public function two($x, $y);
+  /**
+   * @param int $x
+   * @param int $y
+   * @return mixed
+   */
+  public function two($x, $y);
 }
 
 interface IThree extends IOne {
-    public function three($x, $y);
+  /**
+   * @param int $x
+   * @param int $y
+   * @return mixed
+   */
+  public function three($x, $y);
 }
 
 class ImplTwo implements ITwo {
-    public function one($x) { var_dump($x); }
-    public function two($x, $y) { var_dump($x + $y); }
-    public static function static_one($x, $y) { var_dump("impl_two"); }
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
+  public function one($x) {
+    var_dump($x);
+  }
+
+  /**
+   * @param int $x
+   * @param int $y
+   * @return void|var
+   */
+  public function two($x, $y) {
+    var_dump($x + $y);
+  }
+
+  public static function static_one($x, $y) {
+    var_dump("impl_two");
+  }
 }
 
 class ImplThree implements IThree {
-    public function one($x) { var_dump($x); }
-    public function three($x, $y) { var_dump($x + $y); }
-    public static function static_one($x, $y) { var_dump("impl_three"); }
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
+  public function one($x) {
+    var_dump($x);
+  }
+
+  /**
+   * @param int $x
+   * @param int $y
+   * @return void|var
+   */
+  public function three($x, $y) {
+    var_dump($x + $y);
+  }
+
+  /**
+   * @param int $x
+   * @param int $y
+   */
+  public static function static_one($x, $y) {
+    var_dump("impl_three");
+  }
 }
 
 /** @var IOne $one */

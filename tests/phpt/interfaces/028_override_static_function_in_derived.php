@@ -1,11 +1,11 @@
 @ok
 <?php
 interface IOne {
-    public function one($x);
-    public static function static_one($x, $y);
+    public function one(int $x);
+    public static function static_one(int $x, int $y);
 }
 
 interface ITwo extends IOne {
-    public function two($x, $y);
-    public static function static_one($x, $y);
+    public function two(int $x, int $y);
+    public static function static_one(int $x, int $y);
 }

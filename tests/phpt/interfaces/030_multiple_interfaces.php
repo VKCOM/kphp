@@ -9,6 +9,10 @@ class FooBar implements IFoo, IBar {
         var_dump("FooBar::foo({$x})");
     }
 
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function bar() : int {
         var_dump("FooBar::bar()");
         return 536;
@@ -16,6 +20,10 @@ class FooBar implements IFoo, IBar {
 }
 
 class Barr implements IBar {
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function bar() : int {
         var_dump("Bar::bar()");
         return 635;

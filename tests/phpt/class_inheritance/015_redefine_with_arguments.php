@@ -2,10 +2,20 @@
 <?php
 
 class B {
+    /**
+     * @kphp-infer
+     * @param int $a
+     */
     public function __construct($a) {
         var_dump("B::constructed");
     }
 
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @param int $b
+     * @param string $c
+     */
     public function foo($a, $b = 10, $c = "asdf") {
         var_dump("B::foo", $a, $b, $c);
     }
@@ -16,6 +26,12 @@ class D extends B {
         var_dump("D::constructed");
     }
 
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @param int $b
+     * @param string $c
+     */
     public function foo($a, $b = 10, $c = "asdf") {
         parent::foo(890123);
         var_dump("D::foo", $a, $b, $c);
@@ -23,10 +39,22 @@ class D extends B {
 }
 
 class D2 extends B {
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @param int $b
+     */
     public function __construct($a, $b) {
         var_dump("D2::constructed");
     }
 
+    /**
+     * @kphp-infer
+     * @param int $a
+     * @param int $b
+     * @param string $c
+     * @param int $d
+     */
     public function foo($a, $b = 10, $c = "asdf", $d = 123) {
         parent::foo($a);
         var_dump("D2::foo", $a, $b, $c, $d);

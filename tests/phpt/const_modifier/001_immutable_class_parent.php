@@ -5,6 +5,10 @@
  * @kphp-immutable-class
  */
 class A {
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) {
     $this->x = $x;
   }
@@ -16,6 +20,11 @@ class A {
  * @kphp-immutable-class
  */
 class B extends A {
+  /**
+   * @kphp-infer
+   * @param int $y
+   * @param int $x
+   */
   public function __construct($y, $x) {
     parent::__construct($x);
     $this->y = $y;
@@ -25,6 +34,10 @@ class B extends A {
 }
 
 class C extends A {
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) {
     parent::__construct($x);
   }

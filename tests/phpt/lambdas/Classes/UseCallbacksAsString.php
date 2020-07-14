@@ -12,16 +12,27 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
+     * @kphp-infer
+     * @param int $x
      */
     public static function f_print_static($x) {
         var_dump($x);
     }
 
+    /**
+     * @kphp-infer
+     * @return null
+     */
     public static function run_static() {
         self::use_callback_static(['\Classes\UseCallbacksAsString', 'f_print_static']);
         return null;
     }
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     * @return int
+     */
     public static function call_me_static($x) {
         return $x + 1;
     }
@@ -34,6 +45,8 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
+     * @kphp-infer
+     * @return int
      */
     public function get_aaa() {
         return $this->a;
@@ -41,6 +54,8 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
+     * @kphp-infer
+     * @return int
      */
     public function get_bbb() {
         return 1000 + $this->a;

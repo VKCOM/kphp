@@ -2,16 +2,28 @@
 <?php
 
 trait T {
+    /**
+     * @kphp-infer
+     * @return string
+     */
     public static function foo() {
         return 't';
     }
 }
 
 class B {
+    /**
+     * @kphp-infer
+     * @return string
+     */
     public static function foo() {
         return 'b';
     }
 
+    /**
+     * @kphp-infer
+     * @return string
+     */
     public static function bar() {
         return static::foo();
     }

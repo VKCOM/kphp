@@ -2,11 +2,13 @@
 <?php
 
 interface iWithVariadics {
-    public function print_me($x, $y, ...$args);
+    /** @param mixed ...$args */
+    public function print_me(int $x, int $y, ...$args);
 }
 
 class A implements iWithVariadics {
-    public function print_me($x, $y, ...$args)
+    /** @param mixed ...$args */
+    public function print_me(int $x, int $y, ...$args)
     {
         var_dump($args);
     }

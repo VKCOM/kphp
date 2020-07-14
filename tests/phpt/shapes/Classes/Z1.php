@@ -4,15 +4,23 @@ namespace Classes;
 
 class Z1
 {
-    /** @var int */
+  /** @var int */
     var $num = 0;
     /** @var shape(x:int, y:string, z:A[]) */
     var $t;
 
-    public function getInitial() {
+  /**
+   * @kphp-infer
+   * @return shape<x:int, y:string, z:A[]>
+   */
+  public function getInitial() {
         return shape(['x' => $this->num, 'y' => get_class($this), 'z' => [new A]]);
     }
 
+    /**
+     * @kphp-infer
+     * @param shape(x:int, y:string, z:A[]) $t
+     */
     public function setRawShape($t) {
         $this->t = $t;
     }

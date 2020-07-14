@@ -3,10 +3,10 @@
 <?php
 
 abstract class Base {
-    abstract public static function foo($x);
+    abstract public static function foo(int $x);
 }
 
 class Derived extends Base {
-    public static function foo($x, $y) {
+    public static function foo(int $x, int $y) {
     }
 }

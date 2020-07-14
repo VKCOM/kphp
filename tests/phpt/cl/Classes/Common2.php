@@ -11,6 +11,10 @@ class Common2 {
     public static $fa1 = array('C2a1', 'C2a2');
     private static $fp1 = 'PrivateC21';
 
+    /**
+     * @kphp-infer
+     * @param string $f1
+     */
     public static function test1($f1) {
         echo(Common2::C1."\n");
         echo(Common2::C2."\n");

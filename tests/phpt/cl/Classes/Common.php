@@ -11,6 +11,10 @@ class Common {
     public static $fa1 = array('a1', 'a2');
     private static $fp1 = 'Private1';
 
+    /**
+     * @kphp-infer
+     * @param string $f1
+     */
     public static function test1($f1) {
         echo(Common::C1."\n");
         echo(Common::C2."\n");
@@ -21,6 +25,10 @@ class Common {
         var_dump(Common::$fa1);
     }
 
+    /**
+     * @kphp-infer
+     * @param string $f1
+     */
     public static function test2($f1) {
         Common2::test1($f1);
     }

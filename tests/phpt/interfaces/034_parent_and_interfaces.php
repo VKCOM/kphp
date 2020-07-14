@@ -2,6 +2,10 @@
 <?php
 
 interface IToArray {
+    /**
+     * @kphp-infer
+     * @return int[]
+     */
     public function to_array(): array;
 }
 
@@ -35,6 +39,10 @@ class Foo extends Printable implements IArrayConvertible, IRunnable {
         $this->name = "Foo";
     }
 
+    /**
+     * @kphp-infer
+     * @return int[]
+     */
     public function to_array(): array {
         var_dump("{$this->name}::to_array");
         return [10];
@@ -55,6 +63,10 @@ class Foo extends Printable implements IArrayConvertible, IRunnable {
 class Bar implements IToArray, IFromArray {
     public $x = 777;
 
+    /**
+     * @kphp-infer
+     * @return int[]
+     */
     public function to_array(): array {
         var_dump("Bar::to_array");
         return [10];

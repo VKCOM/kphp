@@ -3,6 +3,10 @@
 namespace LibClasses\SUB;
 
 class V {
+    /**
+     * @kphp-infer
+     * @return string
+     */
     static public function static_fun() {
         echo "[example1] V: called static public function static_fun()\n";
         echo "[example1] V: call S::static_fun()\n";

@@ -2,6 +2,10 @@
 <?php
 
 class A {
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) {
     echo "call A::__construct($x)\n";
     $this->x = $x;
@@ -11,6 +15,11 @@ class A {
 }
 
 class B {
+  /**
+   * @kphp-infer
+   * @param A $a
+   * @param int $x
+   */
   public function __construct($a, $x) {
     echo "call B::__construct($x)\n";
     $this->a = $a;
@@ -22,6 +31,10 @@ class B {
 
 
 class C {
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) {
     echo "call C::__construct($x)\n";
   }

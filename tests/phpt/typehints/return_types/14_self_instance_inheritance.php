@@ -2,6 +2,10 @@
 <?php
 class Base {
   public function empty() {}
+  /**
+   * @kphp-infer
+   * @return Base
+   */
   public function factory(): self {
     return new self();
   }

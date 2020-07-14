@@ -2,6 +2,10 @@
 <?php
 
 trait GetJSON {
+    /**
+     * @kphp-infer
+     * @return string
+     */
     public function get_json() {
         return "{'x' : ".$this->x.", 'y' : ".$this->y."}";
     }

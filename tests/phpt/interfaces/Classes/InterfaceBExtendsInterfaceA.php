@@ -5,7 +5,7 @@ namespace Classes;
 interface InterfaceBExtendsInterfaceA extends InterfaceA {
 
   /**
-   * @return InterfaceB
+   * @return InterfaceBExtendsInterfaceA
    */
   function getSelfAsB();
 }

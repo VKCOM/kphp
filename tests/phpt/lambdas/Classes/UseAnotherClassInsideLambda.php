@@ -8,6 +8,10 @@ class UseAnotherClassInsideLambda
 {
     const U = 10;
 
+    /**
+     * @kphp-infer
+     * @return int
+     */
     public function use_another_class_inside_lambda()
     {
         $f = function () {

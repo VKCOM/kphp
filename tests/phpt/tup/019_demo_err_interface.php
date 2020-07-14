@@ -3,6 +3,10 @@
 require_once 'polyfills.php';
 
 interface Err {
+  /**
+   * @kphp-infer
+   * @return string
+   */
   public function getMessage() : string;
 }
 
@@ -12,6 +16,10 @@ class GeneralErr implements Err {
 
   public function __construct(string $message) { $this->message = $message; }
 
+  /**
+   * @kphp-infer
+   * @return string
+   */
   public function getMessage() : string {
     return $this->message;
   }
@@ -33,6 +41,10 @@ class UserLoadErr implements \Err {
 		$this->error_code = $error_code;
 	}
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 	public function getMessage() : string {
 		switch ($this->error_code) {
 			case self::ERR_CONNECT: return 'Error connecting to engine';
@@ -41,6 +53,10 @@ class UserLoadErr implements \Err {
 		}
 	}
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 	public function getUserId() {
 		return $this->user_id;
 	}

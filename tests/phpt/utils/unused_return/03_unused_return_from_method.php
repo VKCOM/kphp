@@ -5,7 +5,7 @@ class Foo {
   /**
    * @kphp-warn-unused-result
    */
-  public static function bar() {
+  public static function bar(): int {
     return 777;
   }
 }

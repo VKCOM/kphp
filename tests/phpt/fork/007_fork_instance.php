@@ -6,6 +6,10 @@ require_once 'polyfills.php';
 class A {
   /** @var int */
   public $x;
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) { $this->x = $x; }
 }
 
@@ -20,6 +24,10 @@ class C implements B {
 class D implements B {
   /** @var int */
   public $x;
+  /**
+   * @kphp-infer
+   * @param int $x
+   */
   public function __construct($x) { $this->x = $x; }
   public function foo() { echo "I'm D, x = {$this->x}\n";}
 }

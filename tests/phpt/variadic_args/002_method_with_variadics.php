@@ -2,6 +2,12 @@
 <?php
 
 class WithStaticVariadicFun {
+    /**
+     * @kphp-infer
+     * @param int $x
+     * @param int[] $args
+     * @return float
+     */
     public static function sum($x, ...$args) {
         return $x + array_sum($args);
     }
@@ -10,6 +16,12 @@ class WithStaticVariadicFun {
 class WithStaticVariadicFunDerived extends WithStaticVariadicFun {}
 
 class WithVariadicMethod {
+    /**
+     * @kphp-infer
+     * @param int $x
+     * @param int[] $args
+     * @return float
+     */
     public function sum($x, ...$args) {
         return $x + array_sum($args);
     }

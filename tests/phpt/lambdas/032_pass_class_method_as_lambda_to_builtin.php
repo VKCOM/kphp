@@ -7,6 +7,11 @@ class A {
     public $value = 10;
     const METHOD_NAME = 'increment_by_value';
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     * @return int
+     */
     public function increment_by_value($x) {
         return $x + $this->value;
     }

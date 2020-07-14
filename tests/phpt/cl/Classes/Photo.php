@@ -15,6 +15,11 @@ class Photo {
   const DEFINES_A_TO_NUMS         = [self::DEFINE_A => 0, self::DEFINE_B => 1];
   const DEFINES_NUMS_TO_DEFINES_A = [0 => self::DEFINE_A, 1 => self::DEFINE_B];
 
+  /**
+   * @kphp-infer
+   * @param string $wl
+   * @return null
+   */
   public static function xxx($wl) {
       var_dump(self::RETINA_MAP[$wl]);
       var_dump(self::LIST_WITH_DEFINES[0]);

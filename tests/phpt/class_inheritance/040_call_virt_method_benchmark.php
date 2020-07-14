@@ -3,112 +3,112 @@
 # It's auto-generated file, please use `print_large_hierarchy.py`
 
 class A_depth_0 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_1 extends A_depth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_1_0 extends A_depth_1
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_1_1 extends A_depth_1
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_2 extends A_depth_1
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_2_0 extends A_depth_2
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_2_1 extends A_depth_2
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_3 extends A_depth_2
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_3_0 extends A_depth_3
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_3_1 extends A_depth_3
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_4 extends A_depth_3
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_4_0 extends A_depth_4
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_4_1 extends A_depth_4
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_5 extends A_depth_4
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_5_0 extends A_depth_5
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_5_1 extends A_depth_5
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_6 extends A_depth_5
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_6_0 extends A_depth_6
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_6_1 extends A_depth_6
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_7 extends A_depth_6
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_7_0 extends A_depth_7
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_depth_temp_7_1 extends A_depth_7
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 function run_false_A_depth() {
@@ -132,42 +132,42 @@ function run_true_A_depth() {
 
 run_true_A_depth();
 class A_breadth_0 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_1 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_2 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_3 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_4 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_5 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_6 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 class A_breadth_7 extends A_breadth_0
 {
-  function run($x) { return $x; }
+  function run(int $x): int { return $x; }
 }
 
 function run_false_A_breadth() {

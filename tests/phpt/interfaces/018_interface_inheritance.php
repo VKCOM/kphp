@@ -2,18 +2,18 @@
 <?php
 
 interface IOne {
-    public function one($x);
+    public function one(int $x);
 }
 
 interface ITwo extends IOne {
-    public function two($x, $y);
+    public function two(int $x, int $y);
 }
 
 class ImplTwo implements ITwo {
-    public function one($x) { var_dump($x); }
-    public function two($x, $y) { var_dump($x + $y); }
+    public function one(int $x) { var_dump($x); }
+    public function two(int $x, int $y) { var_dump($x + $y); }
 
-    public static function one_static($z) {}
+    public static function one_static(int $z) {}
 }
 
 $two = new ImplTwo();

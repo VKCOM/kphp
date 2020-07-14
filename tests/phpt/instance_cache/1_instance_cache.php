@@ -30,6 +30,12 @@ class Y {
   /** @var tuple<string | false, array, int[], string, X> */
   public $y_tuple;
 
+  /**
+   * @kphp-infer
+   * @param int $i
+   * @param string $s
+   * @param string|false $or_false_str
+   */
   public function __construct($i, $s, $or_false_str = false) {
     $this->x_instance = new X;
     $this->y_string = $this->x_instance->x_str . " world" . $s;
@@ -81,6 +87,11 @@ class HasShape {
   /** @var shape(x:int, y:string, z?:int[]) */
   var $sh;
 
+  /**
+   * @kphp-infer
+   * @param int $sh_x
+   * @param bool $with_z
+   */
   function __construct($sh_x, $with_z = false) {
     $this->t = tuple(1, 's');
     if ($with_z) {

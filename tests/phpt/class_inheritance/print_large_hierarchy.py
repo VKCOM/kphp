@@ -5,7 +5,7 @@ def print_class(class_name, base_name=""):
         print(f"extends {base_name}")
     print("{")
 
-    print("  function run($x) { return $x; }")
+    print("  function run(int $x): int { return $x; }")
     print("}\n")
 
 

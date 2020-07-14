@@ -20,6 +20,10 @@ printAllOfArray($var1[2]);
 
 class AA {
   var $a = 0;
+  /**
+   * @kphp-infer
+   * @param int $a
+   */
   function __construct($a) { $this->a = $a; }
 }
 

@@ -5,6 +5,11 @@ class A {
     public $x = 10;
     public $y = "abc";
 
+    /**
+     * @kphp-infer
+     * @param int $x
+     * @param string $y
+     */
     public function __construct($x, $y) {
         $this->x = $x;
         $this->y = $y;

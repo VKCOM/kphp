@@ -9,10 +9,18 @@ class Z1
     /** @var tuple(any, string, A[]) */
     var $t;
 
+    /**
+     * @kphp-infer
+     * @return tuple(int, string, A[])
+     */
     public function getInitial() {
         return tuple($this->num, get_class($this), [new A]);
     }
 
+    /**
+     * @kphp-infer
+     * @param tuple(int, string, A[]) $t
+     */
     public function setRawTuple($t) {
         $this->t = $t;
         // tuple elements are still read-only! so the pattern is useless in practice, just for tests

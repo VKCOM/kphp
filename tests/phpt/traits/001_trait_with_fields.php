@@ -9,6 +9,10 @@ trait HasData {
     /** @var Data */
     public $data;
 
+    /**
+     * @kphp-infer
+     * @param int $y
+     */
     public function print_x_plus_y($y) {
         var_dump($this->data->x + $y);
     }

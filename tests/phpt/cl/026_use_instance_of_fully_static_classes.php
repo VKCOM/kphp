@@ -8,6 +8,10 @@ class B {
   /** @var B[] */
   public static $b = [];
 
+  /**
+   * @kphp-infer
+   * @return bool
+   */
   public static function foo() {
     return isset(self::$b[1]);
   }
