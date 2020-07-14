@@ -2,10 +2,24 @@
 
 #include "compiler/vertex.h"
 
+static bool is_empty_func_call(VertexPtr v) {
+  return v->type() == op_func_call && v.as<op_func_call>()->func_id->body_seq == FunctionData::body_value::empty;
+};
+
+VertexPtr RemoveEmptyFunctionCalls::on_enter_vertex(VertexPtr v) {
+  if (auto return_v = v.try_as<op_return>()) {
+    if (return_v->has_expr() && is_empty_func_call(return_v->expr())) {
+      return VertexAdaptor<op_return>::create().set_location(return_v);
+    }
+  }
+  return v;
+}
+
 VertexPtr RemoveEmptyFunctionCalls::on_exit_vertex(VertexPtr v) {
-  if (v->type() == op_func_call && v.as<op_func_call>()->func_id->body_seq == FunctionData::body_value::empty) {
+  if (is_empty_func_call(v)) {
     return VertexAdaptor<op_null>::create();
   }
+
   if (v->type() == op_seq) {
     auto is_empty = [](VertexPtr v) { return v->type() == op_null || v->type() == op_empty;};
     if (std::any_of(v->begin(), v->end(), is_empty)) {

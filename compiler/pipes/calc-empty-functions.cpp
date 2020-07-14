@@ -36,7 +36,7 @@ FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
       return FunctionData::body_value::unknown;
     case op_return: {
       auto return_vertex = vertex.as<op_return>();
-      if (!return_vertex->has_expr() || return_vertex->expr()->type() == op_null) {
+      if (!return_vertex->has_expr() || (return_vertex->expr()->type() == op_null && stage::get_function()->is_main_function())) {
         return FunctionData::body_value::empty;
       } else {
         return get_vertex_body_type(return_vertex->expr());
