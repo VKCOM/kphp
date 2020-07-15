@@ -28,13 +28,24 @@ function classAutoLoader($class) {
 
 spl_autoload_register('classAutoLoader', true, true);
 
+/**
+ * 'tuple' implementation for plain php: it is just an array of input arguments: tuple(1,'s') === [1,'s']
+ * @noinspection PhpDocSignatureInspection
+ * @noinspection PhpUnusedParameterInspection
+ */
 function tuple(...$args) {
-    return $args;
+  // не даём нативному инферрингу PhpStorm понять, что происходит
+  return ${'args'};
 }
 
-function shape($array) {
-    assert(is_array($array));
-    return $array;
+/**
+ * 'shape' implementation for plain php: it is just an associative array, the same as provided argument
+ * @noinspection PhpDocSignatureInspection
+ * @noinspection PhpUnusedParameterInspection
+ */
+function shape(array $associative_arr) {
+  // не даём нативному инферрингу PhpStorm понять, что происходит
+  return ${'associative_arr'};
 }
 
 function instance_to_array($instance) {
