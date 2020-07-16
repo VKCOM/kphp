@@ -62,6 +62,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
 
   bool implicit_kphp_infer = vk::any_of(f->get_params(), [](VertexPtr param) { return !param.as<meta_op_func_param>()->type_declaration.empty(); }) ||
+                             !f->return_typehint.empty() ||
                              vk::contains(phpdoc_str, "tuple") ||
                              vk::contains(phpdoc_str, "shape") ||
                              (f->class_id && !f->class_id->is_builtin() && !f->class_id->is_lambda());

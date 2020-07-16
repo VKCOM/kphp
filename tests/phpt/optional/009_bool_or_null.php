@@ -1,7 +1,7 @@
 @ok
 <?php
 
-function type_hint_return($x): ?bool {
+function type_hint_return(int $x): ?bool {
   if ($x === 1) {
     return true;
   }

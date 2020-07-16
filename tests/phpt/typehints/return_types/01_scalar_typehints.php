@@ -8,27 +8,27 @@ const FLOAT_ADD_VAL = 10.5 + 0.2;
 const STRING_ADD_VAL = "this" . " is a test";
 const NULL_VAL = null;
 
-function int_val($a = INT_VAL): int {
+function int_val(int $a = INT_VAL): int {
 	return $a;
 }
 
-function float_val($a = FLOAT_VAL): float {
+function float_val(float $a = FLOAT_VAL): float {
 	return $a;
 }
 
-function string_val($a = STRING_VAL): string {
+function string_val(string $a = STRING_VAL): string {
 	return $a;
 }
 
-function int_add_val($a = INT_ADD_VAL): int {
+function int_add_val(int $a = INT_ADD_VAL): int {
 	return $a;
 }
 
-function float_add_val($a = FLOAT_ADD_VAL): float {
+function float_add_val(float $a = FLOAT_ADD_VAL): float {
 	return $a;
 }
 
-function string_add_val($a = STRING_ADD_VAL): string {
+function string_add_val(string $a = STRING_ADD_VAL): string {
 	return $a;
 }
 

@@ -10,7 +10,7 @@ class A {
 /**
  * $sh как shape будет автовыведен из всего, что туда передаётся
  */
-function printAll($sh) : void {
+function printAll($sh) {
   echo "x ", $sh['x'], "\n";
   if($sh['y'] !== null)
     echo "y ", $sh['y'], "\n";
