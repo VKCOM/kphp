@@ -97,7 +97,7 @@ class KphpBuilder:
             os.remove(old_sanitizer_file)
 
         env = copy.copy(os.environ)
-        env["ASAN_OPTIONS"] = "detect_leaks=0:log_path={}".format(tmp_sanitizer_file)
+        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1:log_path={}".format(tmp_sanitizer_file)
         env["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(tmp_sanitizer_file)
         return env, sanitizer_glob_mask
 
