@@ -141,11 +141,11 @@ public:
   string get_human_readable_name() const;
   void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
 
-  inline bool has_implicit_this_arg() const {
+  bool has_implicit_this_arg() const {
     return modifiers.is_instance();
   }
 
-  inline bool is_extern() const {
+  bool is_extern() const {
     return type == func_extern;
   }
 
