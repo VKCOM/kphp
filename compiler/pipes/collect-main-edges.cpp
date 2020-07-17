@@ -433,19 +433,24 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       create_set(function->param_ids[i], as_rvalue(function, i));
     }
 
+    using infer_mask = FunctionData::InferHint::infer_mask;
     // @kphp-infer hint/check для @param/@return — это less/set на соответствующие tinf_nodes функции
     for (const FunctionData::InferHint &hint : function->infer_hints) {
       switch (hint.infer_type) {
-        case FunctionData::InferHint::infer_mask::check:
-          create_less(as_rvalue(function, hint.param_i), hint.type_rule);
+        case infer_mask::hint_check:
+          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_rule));
+          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_rule));
           break;
-        case FunctionData::InferHint::infer_mask::hint:
-          create_set(as_lvalue(function, hint.param_i), hint.type_rule);
+        case infer_mask::check:
+          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_rule));
           break;
-        case FunctionData::InferHint::infer_mask::cast:
+        case infer_mask::hint:
+          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_rule));
+          break;
+        case infer_mask::cast:
           // ничего не делаем, т.к. там просто поставился type_help в parse_and_apply_function_kphp_phpdoc()
           break;
-        case FunctionData::InferHint::infer_mask::runtime_check:
+        case infer_mask::runtime_check:
           // ничего не делаем, проверки будут в рантайме
           break;
       }

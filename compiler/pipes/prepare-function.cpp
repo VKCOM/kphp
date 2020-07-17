@@ -270,8 +270,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
           }
 
           if (infer_type & infer_mask::check) {
-            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
-            f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
+            f->add_kphp_infer_hint(infer_mask::check, -1, doc_parsed.type_expr);
           }
           has_return_php_doc = true;
           // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check
@@ -301,13 +300,12 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
             continue;
           }
 
-          if (infer_type & infer_mask::check) {
-            auto type_rule = VertexAdaptor<op_lt_type_rule>::create(doc_parsed.type_expr);
-            f->add_kphp_infer_hint(infer_mask::check, param_i, type_rule);
-          }
-          if (infer_type & infer_mask::hint) {
-            auto type_rule = VertexAdaptor<op_common_type_rule>::create(doc_parsed.type_expr);
-            f->add_kphp_infer_hint(infer_mask::hint, param_i, type_rule);
+          if ((infer_type & infer_mask::check) && (infer_type & infer_mask::hint)) {
+            f->add_kphp_infer_hint(infer_mask::hint_check, param_i, doc_parsed.type_expr);
+          } else if (infer_type & infer_mask::check) {
+            f->add_kphp_infer_hint(infer_mask::check, param_i, doc_parsed.type_expr);
+          } else if (infer_type & infer_mask::hint) {
+            f->add_kphp_infer_hint(infer_mask::hint, param_i, doc_parsed.type_expr);
           }
           if (infer_type & infer_mask::cast) {
             kphp_error(doc_parsed.type_expr->type() == op_type_expr_type && doc_parsed.type_expr.as<op_type_expr_type>()->args().empty(),
@@ -353,8 +351,7 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
     // если нет явного @return и typehint'a на возвращаемое значение, считаем что будто написано @return void
     if (!has_return_php_doc && !f->is_constructor() && f->return_typehint.empty() && !f->assumption_for_return) {
       auto parsed = phpdoc_parse_type_and_var_name("void", f);
-      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
-      f->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
+      f->add_kphp_infer_hint(infer_mask::hint_check, -1, parsed.type_expr);
     }
   }
 }
@@ -385,17 +382,13 @@ static void apply_function_typehints(FunctionPtr function) {
     auto param = func_params[i].try_as<op_func_param>();
     if (param && !param->type_declaration.empty()) {
       auto parsed = phpdoc_parse_type_and_var_name(param->type_declaration, function);
-      auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
-      function->add_kphp_infer_hint(infer_mask::check, i, type_rule);
-      function->add_kphp_infer_hint(infer_mask::hint, i, type_rule);
+      function->add_kphp_infer_hint(infer_mask::hint_check, i, parsed.type_expr);
     }
   }
 
   if (!function->return_typehint.empty()) {
     auto parsed = phpdoc_parse_type_and_var_name(function->return_typehint, function);
-    auto type_rule = VertexAdaptor<op_lt_type_rule>::create(parsed.type_expr);
-    function->add_kphp_infer_hint(infer_mask::check, -1, type_rule);
-    function->add_kphp_infer_hint(infer_mask::hint, -1, type_rule);
+    function->add_kphp_infer_hint(infer_mask::hint_check, -1, parsed.type_expr);
   }
 }
 
