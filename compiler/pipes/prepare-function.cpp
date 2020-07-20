@@ -45,20 +45,11 @@ public:
       parse_kphp_tag(tag);
     }
 
-    // kphp-runtime-check disables kphp-infer check flag
-    if ((infer_type_ & infer_mask::runtime_check) && (infer_type_ & infer_mask::check)) {
-      infer_type_ &= ~infer_mask::check;
-    }
-
     if (f_->profiler_state == FunctionData::profiler_status::enable_as_root) {
       kphp_error(!f_->is_inline, "@kphp-inline and @kphp-profile are incompatible");
     }
 
-    // при наличии @kphp-infer или @kphp-runtime-check парсим все @param'ы
     if (infer_type_ && !f_->is_template) {
-      // для @kphp-runtime-check делаем вид, что @return есть всегда
-      has_return_php_doc_ = infer_type_ == infer_mask::runtime_check;
-
       for (auto &tag : phpdoc_tags_) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
         parse_generic_phpdoc_tag(tag);
       }
@@ -145,11 +136,6 @@ private:
         if (tag.value.find("cast") != std::string::npos) {
           infer_type_ |= infer_mask::cast;
         }
-        break;
-      }
-
-      case php_doc_tag::kphp_runtime_check: {
-        infer_type_ |= infer_mask::runtime_check;
         break;
       }
 
@@ -310,10 +296,6 @@ private:
         kphp_error(cur_func_param->type_help == tp_Unknown, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
 
         cur_func_param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
-      }
-
-      if (infer_type_ & infer_mask::runtime_check) {
-        f_->add_kphp_infer_hint(infer_mask::runtime_check, param_i, doc_parsed.type_expr);
       }
     }
   }

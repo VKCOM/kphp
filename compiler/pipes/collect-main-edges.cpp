@@ -450,9 +450,6 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
         case infer_mask::cast:
           // ничего не делаем, т.к. там просто поставился type_help в parse_and_apply_function_kphp_phpdoc()
           break;
-        case infer_mask::runtime_check:
-          // ничего не делаем, проверки будут в рантайме
-          break;
       }
     }
 

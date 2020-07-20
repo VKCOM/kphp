@@ -886,74 +886,6 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 }
 
 
-void compile_runtime_var_check_expresion(VarPtr param, VertexPtr rule, CodeGenerator &W) {
-  if (auto lca_rule = rule.try_as<op_type_expr_lca>()) {
-    W << JoinValues(*lca_rule, " || ", join_mode::one_line,
-                    [param](CodeGenerator &W, VertexPtr sub_rule) {
-                      compile_runtime_var_check_expresion(param, sub_rule, W);
-                    });
-    return;
-  }
-  if (auto type_rule = rule.try_as<op_type_expr_type>()) {
-    switch (type_rule->type_help) {
-      case tp_Null:
-        W << VarName{param} << ".is_null()";
-        return;
-      case tp_False:
-        W << "(" << VarName{param} << ".is_bool() && !" << VarName{param} << ".as_bool())";
-        return;
-      case tp_bool:
-        W << VarName{param} << ".is_bool()";
-        return;
-      case tp_int:
-        W << VarName{param} << ".is_int()";
-        return;
-      case tp_float:
-        W << VarName{param} << ".is_float()";
-        return;
-      case tp_string:
-        W << VarName{param} << ".is_string()";
-        return;
-      case tp_array:
-        W << VarName{param} << ".is_array()";
-        return;
-      case tp_var:
-        W << "true";
-        return;
-      default:
-        kphp_error(0, fmt_format("Got unexpected type for @kphp-runtime-check: {}", ptype_name(type_rule->type_help)));
-        return;
-    }
-  }
-
-  kphp_error(0, fmt_format("Got unexpected type expr for @kphp-runtime-check: {}", OpInfo::op_str(rule->type())));
-}
-
-void compile_runtime_params_checker(FunctionPtr func, CodeGenerator &W) {
-  for (const auto &check : func->infer_hints) {
-    if (check.infer_type != FunctionData::InferHint::infer_mask::runtime_check) {
-      continue;
-    }
-
-    kphp_assert(check.param_i >= 0);
-    kphp_assert(func->param_ids.size() > check.param_i);
-    VarPtr param = func->param_ids[check.param_i];
-    if (tinf::get_type(param)->get_real_ptype() != tp_var) {
-      continue;
-    }
-
-    W << "if (unlikely(!(";
-    compile_runtime_var_check_expresion(param, check.type_rule, W);
-    W << "))) " << BEGIN
-      << R"(php_notice("Got unexpected type [%s] of the arg #)" << check.param_i << R"( (")"
-      << RawString(param->get_human_readable_name()) << R"(") at function ")"
-      << RawString(func->get_human_readable_name()) << ", "
-      << VarName{param} << ".is_bool() ? (" << VarName{param} << R"s(.as_bool() ? "bool(true)" : "bool(false)"))s"
-      << " : " << VarName{param} << ".get_type_c_str());" << NL
-      << END << NL;
-  }
-}
-
 bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   if (func->profiler_state == FunctionData::profiler_status::disable
       || func->is_inline
@@ -1046,7 +978,6 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   //CALL FUNCTION
   W << FunctionDeclaration(func, false) << " " <<
     BEGIN;
-  compile_runtime_params_checker(func, W);
   W << "return start_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
     "(new " << FunctionClassName(func) << "(";
 
@@ -1059,7 +990,6 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   //FORK FUNCTION
   W << FunctionForkDeclaration(func, false) << " " <<
     BEGIN;
-  compile_runtime_params_checker(func, W);
   W << "return fork_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
     "(new " << FunctionClassName(func) << "(";
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
@@ -1082,7 +1012,6 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W << FunctionDeclaration(func, false) << " " << BEGIN;
 
   compile_tracing_profiler(func, W);
-  compile_runtime_params_checker(func, W);
 
   for (auto var : func->local_var_ids) {
     if (var->type() != VarData::var_local_inplace_t && !var->is_foreach_reference) {

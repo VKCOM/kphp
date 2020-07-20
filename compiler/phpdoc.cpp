@@ -39,7 +39,6 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-tl-class",          kphp_tl_class},
   {"@kphp-const",             kphp_const},
   {"@kphp-no-return",         kphp_noreturn},
-  {"@kphp-runtime-check",     kphp_runtime_check},
   {"@kphp-warn-unused-result",kphp_warn_unused_result},
   {"@kphp-serializable",      kphp_serializable},
   {"@kphp-reserved-fields",   kphp_reserved_fields},
