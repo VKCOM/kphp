@@ -9,6 +9,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lambda-class-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/phpdoc.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -61,11 +62,9 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
   bool function_has_kphp_doc = vk::contains(phpdoc_str, "@kphp");
   bool class_has_kphp_infer = f->class_id && f->class_id->has_kphp_infer;
 
-  bool implicit_kphp_infer = vk::any_of(f->get_params(), [](VertexPtr param) { return !param.as<meta_op_func_param>()->type_declaration.empty(); }) ||
-                             !f->return_typehint.empty() ||
-                             vk::contains(phpdoc_str, "tuple") ||
-                             vk::contains(phpdoc_str, "shape") ||
-                             (f->class_id && !f->class_id->is_builtin() && !f->class_id->is_lambda());
+  bool implicit_kphp_infer = vk::none_of_equal(f->type, FunctionData::func_main, FunctionData::func_switch) &&
+                             !f->file_id->is_builtin() &&
+                             !(f->class_id && f->class_id->is_lambda());
 
   if (!function_has_kphp_doc && !class_has_kphp_infer && !implicit_kphp_infer) {
     return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
@@ -151,6 +150,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
         while (is >> token) {
           if (!f->disabled_warnings.insert(token).second) {
             kphp_warning(fmt_format("Warning '{}' has been disabled twice", token));
+          } else if (token == "return") {
+            infer_type &= ~(infer_mask::check | infer_mask::hint);
           }
         }
         break;
