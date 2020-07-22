@@ -70,6 +70,7 @@
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/preprocess-vararg.h"
 #include "compiler/pipes/register-defines.h"
+#include "compiler/pipes/register-kphp-configuration.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/remove-empty-function-calls.h"
 #include "compiler/pipes/resolve-self-static-parent.h"
@@ -293,6 +294,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<CheckTlClasses>{}
     >> PassC<CheckAccessModifiersPass>{}
     >> PassC<FinalCheckPass>{}
+    >> PassC<RegisterKphpConfiguration>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};
 
