@@ -3,6 +3,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return shape(i:int, s:string)|false
+ */
 function getT() {
     return true ? false : shape(['i' => 1, 's' => 'str']);
 }

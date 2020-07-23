@@ -83,6 +83,10 @@ function getCommonCount(int $with_user_id) {
 	return tuple($count, null);
 }
 
+/**
+ * @kphp-infer
+ * @param int $with_user_id
+ */
 function demoCommonCount($with_user_id) {
   list($count, $err) = getCommonCount($with_user_id);
   if ($err) {
@@ -103,6 +107,10 @@ function loadUser(int $user_id) {
   return tuple($user, null);
 }
 
+/**
+ * @kphp-infer
+ * @param int $user_id
+ */
 function demoLoadUser($user_id) {
   list($user, $err) = loadUser($user_id);
   if ($err) {

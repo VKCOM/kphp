@@ -4,6 +4,10 @@ require_once 'polyfills.php';
 
 
 // $sh if auto-inferred as shape(a:int|null, b:int|null)
+/**
+ * @kphp-infer
+ * @param shape(a:int|null, b:int|null) $sh
+ */
 function f($sh) {
   var_dump($sh['a']);
   var_dump($sh['b']);
@@ -14,6 +18,10 @@ f(shape(['b' => 3]));
 
 
 // same for f2, but more complex
+/**
+ * @kphp-infer
+ * @param shape(a:mixed, b:mixed, c:string|null, d:string|null) $sh
+ */
 function f2($sh) {
   var_dump($sh['a']);
   var_dump($sh['b']);
@@ -28,6 +36,10 @@ f2(shape(['d' => 's', 'c' => 's']));
 
 
 // same for return of f3 (a?:int, b?:int, c:string)
+/**
+ * @kphp-infer
+ * @return shape(a:int|null, b:int|null, c:string)
+ */
 function f3() {
   if(1)
     return shape(['a' => 1, 'c' => 'c']);

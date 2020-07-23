@@ -2,6 +2,11 @@
 <?php
   date_default_timezone_set ("Etc/GMT-3");
 
+  /**
+   * @kphp-infer
+   * @param string $x
+   * @param int $y
+   */
   function test ($x, $y) {
     $r = strtotime ($x, $y);
     echo "$x : ".$r."(".date('D, d M Y H:i:s', $r).")\n";

@@ -6,6 +6,11 @@ require_once("polyfills.php");
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param int $x
+ */
 function my_callback($x) { 
     var_dump($x);
 }
@@ -43,6 +48,11 @@ function test_callbacks_in_static_classes() {
 
 /**
  * @kphp-required
+ */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @return int
  */
 function my_callback2() { 
     return 100;

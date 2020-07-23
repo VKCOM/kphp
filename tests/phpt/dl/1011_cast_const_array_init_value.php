@@ -117,6 +117,22 @@ function test_local_arrays() {
     var_dump(get_class($arr_class2[0]));
 }
 
+/**
+ * @kphp-infer
+ * @param any[] $unknown_arr
+ * @param int[] $int_arr1
+ * @param int[] $int_arr2
+ * @param int[] $var_val
+ * @param mixed[] $var_arr
+ * @param any[][] $unknown_arr_arr
+ * @param int[][] $int_arr_arr
+ * @param int[]|false $or_false_arr1
+ * @param mixed[]|false $or_false_arr2
+ * @param (int[]|false)[] $arr_arr_or_false1
+ * @param (mixed[]|false)[] $arr_arr_or_false2
+ * @param MyClass1[] $arr_class1
+ * @param MyClass2[] $arr_class2
+ */
 function test_default_params_arrays(
     $unknown_arr = [],
     $int_arr1 = [],
@@ -236,6 +252,22 @@ function test_static_class_member_arrays() {
     var_dump(get_class(VarPack::$arr_class2[0]));
 }
 
+/**
+ * @kphp-infer
+ * @param any[] $unknown_arr
+ * @param int[] $int_arr1
+ * @param int[] $int_arr2
+ * @param int[] $var_val
+ * @param mixed[] $var_arr
+ * @param any[][] $unknown_arr_arr
+ * @param int[][] $int_arr_arr
+ * @param false $or_false_arr1
+ * @param int[] $or_false_arr2
+ * @param false[] $arr_arr_or_false1
+ * @param int[][] $arr_arr_or_false2
+ * @param MyClass1[] $arr_class1
+ * @param MyClass2[] $arr_class2
+ */
 function dummy_func(
     $unknown_arr,
     $int_arr1,

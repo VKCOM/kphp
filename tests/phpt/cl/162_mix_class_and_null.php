@@ -20,6 +20,10 @@ class B {
   public $a2 = null;
 }
 
+/**
+ * @kphp-infer
+ * @return A[]
+ */
 function test_array_mixing() {
   $x = [new A, null];
   var_dump(isset($x[0]));
@@ -63,12 +67,22 @@ function accepts_instance_3(A $a = null) {
 /**
  * @return A
  */
+/**
+ * @kphp-infer
+ * @param int $init_v
+ * @return A
+ */
 function returns_instance($init_v) {
   return $init_v ? new A($init_v) : null;
 }
 
 /**
  * @return A|null
+ */
+/**
+ * @kphp-infer
+ * @param int $init_v
+ * @return A
  */
 function returns_instance_2($init_v) {
   return $init_v ? new A($init_v) : null;
@@ -99,6 +113,10 @@ accepts_instance_2(returns_instance(0));
 accepts_instance_2(returns_instance_2(1));
 accepts_instance_2(returns_instance_2(0));
 
+/**
+ * @kphp-infer
+ * @param RpcConnection $c
+ */
 function accepts_rpc_connection($c) {
   echo $c ? "has conn" : "no conn", "\n";
 }

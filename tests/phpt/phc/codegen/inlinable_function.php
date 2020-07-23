@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 	function a () 
 	{
 		$x=1;
@@ -12,6 +16,10 @@
 	}
 
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 	function b ()
 	{
 		return "b";

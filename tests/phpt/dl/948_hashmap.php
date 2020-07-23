@@ -13,6 +13,11 @@ function test_base_str ($keys, $n) {
   var_dump ($check);
 }
 
+/**
+ * @kphp-infer
+ * @param int[] $keys
+ * @param int $n
+ */
 function test_base_int ($keys, $n) {
   $a = array();
   for ($i = 0; $i < $n; $i++) {
@@ -42,6 +47,11 @@ function gen ($n) {
 }
 
 
+/**
+ * @kphp-infer
+ * @param int $n
+ * @return int[]
+ */
 function gen_int ($n) {
   $res = array();
   $checksum = 0;

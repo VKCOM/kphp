@@ -4,6 +4,12 @@
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param int[] $args
+ * @return int
+ */
 function call_me($args) {
     return count($args);
 }

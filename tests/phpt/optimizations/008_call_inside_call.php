@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return int
+ */
 function f($x) {
     global $a;
     $a += 1;

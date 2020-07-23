@@ -2,6 +2,11 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return int|null
+ */
 function g ($x) {
   switch ($x) {
     case 0:

@@ -17,6 +17,11 @@ exit;
 ?>
 #endif
 
+/**
+ * @kphp-infer
+ * @param int $n
+ * @return int
+ */
 function f($n) {
   if ($n <= 0) {
     return 0;

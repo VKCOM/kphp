@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param mixed[] $args
+ */
 function get_args(...$args) {
     var_dump($args);
 }

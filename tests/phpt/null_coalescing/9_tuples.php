@@ -4,6 +4,10 @@
 require_once "polyfills.php";
 
 
+/**
+ * @kphp-infer
+ * @param tuple(int|null, string|null, false|null, int[]|null) $tup
+ */
 function test_tuple($tup) {
   var_dump($tup[0] ?? 123);
   var_dump($tup[1] ?? "foo");

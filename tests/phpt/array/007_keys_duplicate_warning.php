@@ -24,6 +24,10 @@ class A {
   public $y = [A::D => "D", "BB" => "B"];
 }
 
+/**
+ * @kphp-infer
+ * @param mixed[] $p
+ */
 function test_duplicate_keys($p = ["A" => "y", "A" => "x", A::E => "E", 5 => 5]) {
   static $x = [A::D => "y", A::B => "x", "XXX" => "X1", "BB" => "B", "XXX" => "X2"];
 

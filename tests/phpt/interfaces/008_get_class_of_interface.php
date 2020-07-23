@@ -3,6 +3,10 @@
 
 require_once("polyfills.php");
 
+/**
+ * @kphp-infer
+ * @param \Classes\IDo $c
+ */
 function get_class_name($c) {
     var_dump(get_class($c));
 }

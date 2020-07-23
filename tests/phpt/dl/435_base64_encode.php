@@ -1,14 +1,30 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param string $str
+ * @return string|false
+ */
 function filesBinFromBase64($str) { // for storage-engine: secret packing
   return base64_decode(strtr($str, '-_', '+/').str_repeat('=', ((65536 - strlen($str)) % 4)));
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $str
+ * @return string
+ */
 function filesBinToBase64($str) { // for storage-engine: secret packing
   return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
 }
 
+/**
+ * @kphp-infer
+ * @param string $val
+ * @param string $key
+ * @return string
+ */
 function filesHashEncodedBase64($val, $key) {
   $val = $val . substr(md5($val), 0, 12);
   $len = strlen($val);
@@ -32,6 +48,12 @@ function filesHashEncodedBase64($val, $key) {
   return filesBinToBase64($val);
 }
 
+/**
+ * @kphp-infer
+ * @param string $val
+ * @param string $key
+ * @return string|false
+ */
 function filesHashDecodedBase64($val, $key) {
   $val = filesBinFromBase64($val);
   $len = strlen($val);
@@ -51,6 +73,13 @@ function filesHashDecodedBase64($val, $key) {
   return $val;
 }
 
+/**
+ * @kphp-infer
+ * @param mixed[] $extra_data
+ * @param string $source
+ * @param int $uid
+ * @return string
+ */
 function filesEncodeAudioExtra($extra_data, $source, $uid) {
   $extra = '';
   foreach($extra_data as $key => $val) {
@@ -61,6 +90,13 @@ function filesEncodeAudioExtra($extra_data, $source, $uid) {
   return filesHashEncodedBase64($extra, $key);
 }
 
+/**
+ * @kphp-infer
+ * @param string $extra
+ * @param string $source
+ * @param int $uid
+ * @return mixed[]
+ */
 function filesDecodeAudioExtra($extra, $source, $uid) {
   $key = md5("E5j{$source}6#78d@E{$uid}5hb^dx4");
   $extra = filesHashDecodedBase64($extra, $key);

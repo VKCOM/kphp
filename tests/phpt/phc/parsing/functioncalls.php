@@ -1,8 +1,23 @@
 @ok
 <?php
 	function f() {}
+/**
+ * @kphp-infer
+ * @param int|null $a
+ */
 	function g($a) {}
+/**
+ * @kphp-infer
+ * @param int|null $a
+ * @param int|null $b
+ */
 	function h($a, $b) {}
+/**
+ * @kphp-infer
+ * @param int|null $a
+ * @param int|null $b
+ * @param int|null $c
+ */
 	function i($a, $b, $c) {}
 
 	f();

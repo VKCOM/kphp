@@ -1,6 +1,10 @@
 @ok
 <?php
 $x = 0;
+/**
+ * @kphp-infer
+ * @return int
+ */
 function f(){
   global $x;
   print "CALL\n";

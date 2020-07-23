@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $langs
+ * @return string
+ */
 function sLangBecomeTranslatorScript($langs){
 return <<<EOF
 (){
@@ -11,6 +16,11 @@ return <<<EOF
 EOF;
 }
 
+/**
+ * @kphp-infer
+ * @param int $langs
+ * @return string
+ */
 function sLangAlBecomeTranslatorScript($langs){
 return <<<EOF
 {

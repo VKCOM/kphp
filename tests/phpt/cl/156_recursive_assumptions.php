@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int[][] $arr
+ */
 function foo($arr) {
     foreach ($arr as $a) {
         $b = $a[10];

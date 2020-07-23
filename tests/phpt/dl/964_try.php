@@ -1,5 +1,10 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param string $desc
+ * @return Exception
+ */
 function getException($desc) {
   return new Exception ($desc);
 }
@@ -19,6 +24,11 @@ try {
   processException ($e);  
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return float
+ */
 function inverse($x) {
     if (!$x) {
         throw new Exception('Деление на ноль', 123);
@@ -44,6 +54,10 @@ echo 'Hello World'."\n";
 
 //echo inverse(0) . "\n";
 
+/**
+ * @kphp-infer
+ * @return Exception
+ */
 function f()  {
   return new Exception ("a", 123);
   throw new Exception ("a", 123);

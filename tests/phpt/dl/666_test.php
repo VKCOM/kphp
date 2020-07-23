@@ -1,5 +1,11 @@
 @ok K.O.T.
 <?php
+/**
+ * @kphp-infer
+ * @param int $a
+ * @param int $b
+ * @return int
+ */
 function gcd ($a, $b = 60) {
   return $b ? gcd ($b, $a % $b) : $a;
 }
@@ -7,6 +13,11 @@ function gcd ($a, $b = 60) {
 var_dump (gcd (34, 289));
 
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ * @return mixed
+ */
 function square ($x = true) {
   return $x * $x;
 }

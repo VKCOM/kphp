@@ -2,10 +2,19 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $arg
+ * @return shape(arg:int, arr:int[])
+ */
 function getT1($arg) {
     return shape(['arg' => $arg, 'arr' => [$arg]]);
 }
 
+/**
+ * @kphp-infer
+ * @return shape(s:string, t1:shape(arg:int, arr:int[]))
+ */
 function getT2() {
     return shape(['t1' => getT1(1), 's' => 'str']);
 }

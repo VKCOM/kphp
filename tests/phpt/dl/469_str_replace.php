@@ -1,10 +1,20 @@
 @ok benchmark
 <?php
-function dLog($value) {
-  $x = func_num_args();
+/**
+ * @kphp-infer
+ * @param string $value
+ * @param string ...$args
+ */
+function dLog($value, ...$args) {
+  $x = count($args) + 1;
   var_dump($value);
 }
 
+/**
+ * @kphp-infer
+ * @param string $value
+ * @return string
+ */
 function inputCleanValue($value) {
   $value = "{$value}";
 

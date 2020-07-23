@@ -3,10 +3,19 @@
 require_once 'polyfills.php';
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $arg
+ * @return tuple(int, int[])
+ */
 function getT1($arg) {
     return tuple($arg, [$arg]);
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(tuple(int, int[]), string)
+ */
 function getT2() {
     return tuple(getT1(1), 'str');
 }

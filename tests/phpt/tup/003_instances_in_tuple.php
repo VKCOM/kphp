@@ -14,6 +14,10 @@ function demo1Instance() {
     $a->printA();
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string, \Classes\A, \Classes\B)
+ */
 function get2Instances() {
     return tuple(1, 'str', new Classes\A, new Classes\B);
 }

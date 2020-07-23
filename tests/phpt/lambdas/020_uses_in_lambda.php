@@ -3,6 +3,10 @@
 
 require_once("polyfills.php");
 
+/**
+ * @kphp-infer
+ * @param int $y
+ */
 function test_primitive_capturing($y) {
     $f = function ($x) use ($y) {
         return $x + $y;
@@ -11,7 +15,11 @@ function test_primitive_capturing($y) {
     var_dump($f(100));
 }
 
-function test_returning_lambda_with_captured_values($x) {
+/**
+ * @kphp-infer
+ * @param int $x
+ */
+function test_returning_lambda_with_captured_values($x): callable {
     return function ($y) use ($x) {
         return $y + $x;
     };

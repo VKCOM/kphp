@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int[] $args
+ */
 function fun(...$args) {
     var_dump($args);
 }

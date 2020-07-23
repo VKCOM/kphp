@@ -12,6 +12,11 @@ waited 1123456791
 exit;
 #endif
 
+/**
+ * @kphp-infer
+ * @param float $x
+ * @param int $y
+ */
 function f($x, $y) {
   sched_yield_sleep($x);
   echo $y . "\n";

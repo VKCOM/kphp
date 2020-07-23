@@ -1,5 +1,10 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param int $n
+ * @return int
+ */
 	function factorial($n)
 	{
 		if($n == 0)

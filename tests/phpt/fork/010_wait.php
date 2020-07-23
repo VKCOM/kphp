@@ -2,6 +2,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $t
+ */
 function my_usleep ($t) {
   $end_time = microtime (true) + $t * 1e-6;
   while (microtime (true) < $end_time) {
@@ -12,6 +16,10 @@ function my_usleep ($t) {
 
 $x = fork (my_usleep (3000000));
 
+/**
+ * @kphp-infer
+ * @param future<void> $x
+ */
 function wait_x ($x) {
   $ok = true;
 #ifndef KittenPHP

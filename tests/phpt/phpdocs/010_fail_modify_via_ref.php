@@ -2,6 +2,7 @@
 /TYPE INFERENCE ERROR/
 <?php
 
+/**@param mixed $a*/
 function modify(&$a) {
   $a = 'str';
 }

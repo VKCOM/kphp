@@ -1,11 +1,21 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param mixed[] $args
+ */
 function get_forwarded($x, ...$args) {
     var_dump($x);
     var_dump($args);
 }
 
+/**
+ * @kphp-infer
+ * @param string $y
+ * @param int[] $args
+ */
 function pass_to($y, ...$args) {
     return get_forwarded($args[0], $y, ...$args);
 }

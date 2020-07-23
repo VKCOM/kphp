@@ -2,6 +2,10 @@
 <?php
 
 
+/**
+ * @kphp-infer
+ * @param int $y
+ */
 function f($y) {
   global $x;
   if (array_search($y, $x) !== false) {
@@ -11,6 +15,11 @@ function f($y) {
   }
 }
 
+/**
+ * @kphp-infer
+ * @param int $y
+ * @param bool $strict
+ */
 function g($y, $strict) {
   global $x;
   if (array_search($y, $x, $strict) !== false) {

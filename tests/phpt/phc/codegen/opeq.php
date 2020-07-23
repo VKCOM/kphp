@@ -1,6 +1,10 @@
 @ok
 <?php
 // Demonstrates that $x += $y cannot be represented as $x = $x + $y
+/**
+ * @kphp-infer
+ * @return int
+ */
 	function f()
 	{
 		echo "f is called\n";

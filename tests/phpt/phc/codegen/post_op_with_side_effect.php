@@ -1,5 +1,9 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @return int
+ */
 	function f()
 	{
 		echo "f was called\n";

@@ -1,11 +1,19 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return int[]
+ */
 function get_arr() {
   echo "call get_arr\n";
   return [1, 2, 3, 4, 5];
 }
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function get_one() {
   echo "call get_one\n";
   return 1;

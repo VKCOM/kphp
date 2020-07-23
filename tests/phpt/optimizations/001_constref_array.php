@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param mixed[] $ar
+ * @param mixed $el
+ */
 function dump($ar, $el) {
     $ar[0] = 10;
     var_dump($el);

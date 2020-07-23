@@ -1,6 +1,10 @@
 @ok
 <?php
 $a = 0;
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function f($x) {
   global $a;
   switch ($x) {
@@ -25,6 +29,10 @@ f(2);
 f("2");
 f(3);
 
+/**
+ * @kphp-infer
+ * @param string $x
+ */
 function g($x) {
   switch ($x) {
   case 'abc':

@@ -2,6 +2,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return shape(items:mixed[][], desc:string, count:int)
+ */
 function getAll() {
     $total_count = 2;
     $description = 'str';
@@ -13,6 +17,11 @@ function getAll() {
     return shape(['count' => $total_count, 'desc' => $description, 'items' => $items]);
 }
 
+/**
+ * @kphp-infer
+ * @param bool $returnShort
+ * @return shape(items:mixed[][]|false, desc:string, count:int)
+ */
 function multipleResult($returnShort) {
     $total_count = 2;
     $description = 'str';
@@ -29,6 +38,10 @@ function multipleResult($returnShort) {
     return shape(['count' => $total_count, 'desc' => $description, 'items' => $items]);
 }
 
+/**
+ * @kphp-infer
+ * @return shape(3:mixed, o:mixed, t:mixed)
+ */
 function badMixResult() {   // works, but infers shape<var,var,var>
     return 1
         ? shape(['o' => 1, 't' => 'string', '3' => [1,2,3]])
@@ -43,6 +56,10 @@ function demo() {
     echo "items[1] id = ", $result['items'][1]['id'], "\n";
 }
 
+/**
+ * @kphp-infer
+ * @param bool $returnShort
+ */
 function demo2($returnShort) {
     $result = multipleResult($returnShort);
     echo "total_count = ", $result['count'], "\n";

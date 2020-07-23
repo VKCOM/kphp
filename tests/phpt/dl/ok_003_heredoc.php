@@ -10,12 +10,20 @@ jkflds
 onclick='prepareReport(\"" + type + "\", 1);'
 TAG;
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 function f1() {
   global $config;
   return <<<EOF
 EOF;
 }
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 function f2() {
 
   global $lang;

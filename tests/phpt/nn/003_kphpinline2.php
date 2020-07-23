@@ -4,11 +4,20 @@
 
 define('TIME', 12 * 15 * 16);
 
-/** @kphp-inline */
+/** @kphp-inline
+ * @kphp-infer
+ * @param int $x
+ * @return int
+ */
 function net($x) {
   return $x + 2;
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return int
+ */
 function i($x) {
   var_dump("i(" . $x . ")");
   static $i = 1;
@@ -16,11 +25,21 @@ function i($x) {
   return $x + $y + $i;
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return int
+ */
 function h($x) {
   var_dump("h(" . $x . ")");
   return $x + 2 * $x;
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ * @return mixed
+ */
 function g($x) {
   // global $e;
   global $q;
@@ -30,11 +49,12 @@ function g($x) {
 }
 
 /**
-* @var $x int
-* @kphp-inline
-* @return int
-* @abc
-*/
+ * @kphp-inline
+ * @kphp-infer
+ * @param mixed $x
+ * @return mixed
+ * @abc
+ */
 function ff($x = TIME) {
   var_dump($x);
   $s = 0;
@@ -60,16 +80,31 @@ var_dump($qqq);
 /*
 * @inline
 */
+  /**
+   * @kphp-infer
+   * @param mixed $x
+   * @return mixed
+   */
   function f($x) {
     return g($x) * $x;
   }
 
 /** @kphp-inline */
+  /**
+   * @kphp-infer
+   * @param mixed $x
+   * @return mixed
+   */
   function e($x) {
     return f(ff(g($x)));
   }
 
 
+  /**
+   * @kphp-infer
+   * @param mixed $x
+   * @return mixed
+   */
   function z($x) {
     static $iii = 0;
     $iii += 1;

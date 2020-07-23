@@ -3,10 +3,20 @@
 require_once 'polyfills.php';
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param string $str
+ * @param int $int
+ * @return tuple(string, int[], \Classes\A)
+ */
 function constructT($str, $int) {
     return tuple($str, [1,2,$int], (new Classes\A)->setA($int));
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(string, int[], \Classes\A)[]
+ */
 function getArrOfT() {
     return [
         constructT('s1', 1),

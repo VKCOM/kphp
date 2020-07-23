@@ -1,6 +1,11 @@
 @ok benchmark
 <?php
 
+/**
+ * @kphp-infer
+ * @param string $msg
+ * @param int $code
+ */
 function my_throw ($msg, $code) {
   throw new Exception ($msg, $code);
 }

@@ -2,6 +2,10 @@
 <?php
 
 $x = 20;
+/**
+ * @kphp-infer
+ * @param int $y
+ */
 function foo($y) {
     global $x;
     $x = 100;

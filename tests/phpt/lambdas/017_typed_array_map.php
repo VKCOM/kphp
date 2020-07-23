@@ -32,6 +32,10 @@ function test_map_before_filter() {
     var_dump($filtered[0]->a);
 }
 
+/**
+ * @kphp-infer
+ * @param int[][] $arr
+ */
 function test_recursive_array_map($arr) {
     $arr = $arr[0];
     $arr = array_map(function ($x) { return -$x; }, $arr);

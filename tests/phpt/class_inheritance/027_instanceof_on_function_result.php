@@ -11,6 +11,10 @@ class B implements I {
     public function foo() {}
 }
 
+/**
+ * @kphp-infer
+ * @return I
+ */
 function foo() {
     var_dump("foo");
     return true ? new A() : new B();

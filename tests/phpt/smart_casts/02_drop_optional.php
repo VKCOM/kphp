@@ -3,14 +3,26 @@
 
 require_once "polyfills.php";
 
+/**
+ * @kphp-infer
+ * @return int|false
+ */
 function int_or_false() {
   return 1 ? 1 : false;
 }
 
+/**
+ * @kphp-infer
+ * @return int|null
+ */
 function int_or_null() {
   return 1 ? 1 : null;
 }
 
+/**
+ * @kphp-infer
+ * @return int|null|false
+ */
 function int_or_null_or_false() {
   return 1 ? 1 : (1 ? false : null);
 }

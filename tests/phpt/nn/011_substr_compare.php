@@ -2,6 +2,14 @@
 <?php
 
 error_reporting(0);
+/**
+ * @kphp-infer
+ * @param string $s1
+ * @param string $s2
+ * @param int $o
+ * @param int $l
+ * @param bool $c
+ */
 function substr_compare_helper($s1, $s2, $o = 0, $l = 1000, $c = false) {
     $x = substr_compare($s1, $s2, $o, $l, $c);
 

@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param bool $aliases
+ */
 function test_openssl_get_cipher_methods($aliases) {
     $methods = openssl_get_cipher_methods($aliases);
     $kphp_methods = $methods;

@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 	function f () { echo "1\n"; return 7; }
 
 	switch (f())

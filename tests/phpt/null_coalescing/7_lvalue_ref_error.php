@@ -2,7 +2,7 @@
 /Can't make result of operation to be lvalue/
 <?php
 
-function foo(&$x) {
+function foo(int &$x) {
   $x = 1;
 }
 

@@ -2,6 +2,10 @@
 <?php
 $restore_link = 'blabla'; 
 
+/**
+ * @kphp-infer
+ * @param string $x
+ */
 function f($x) {
   switch ($x) {
   case 'full':
@@ -23,6 +27,10 @@ f ("");
 f ("sgfd");
 
 
+/**
+ * @kphp-infer
+ * @param int $x
+ */
 function g($x) {
   switch ($x) {
   default:

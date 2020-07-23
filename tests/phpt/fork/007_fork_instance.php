@@ -32,8 +32,20 @@ class D implements B {
   public function foo() { echo "I'm D, x = {$this->x}\n";}
 }
 
+/**
+ * @kphp-infer
+ * @return A
+ */
 function return_A() { return new A(4);}
+/**
+ * @kphp-infer
+ * @return C
+ */
 function return_C() { return new C();}
+/**
+ * @kphp-infer
+ * @return D
+ */
 function return_D() { return new D(5);}
 
 function test() {

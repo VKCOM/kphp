@@ -1,5 +1,10 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param string $param
+ * @return int
+ */
 	function f($param)
 	{
 		echo "f ($param) is called\n";

@@ -1,5 +1,11 @@
 @ok benchmark
 <?php
+/**
+ * @kphp-infer
+ * @param int $item
+ * @param int $depth
+ * @return mixed[]
+ */
 function bottomUpTree($item, $depth)
 {
    if (!$depth) return array(null,null,$item);
@@ -10,6 +16,11 @@ function bottomUpTree($item, $depth)
       bottomUpTree($item2,$depth),
       $item);
 }
+/**
+ * @kphp-infer
+ * @param mixed $treeNode
+ * @return mixed
+ */
 function itemCheck($treeNode) { 
    return $treeNode[2]
       + ($treeNode[0][0] == null ? itemCheck($treeNode[0]) : $treeNode[0][2])

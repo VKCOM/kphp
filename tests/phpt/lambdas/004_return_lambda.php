@@ -3,7 +3,7 @@
 
 require_once("polyfills.php");
 
-function fun()
+function fun(): callable
 {
     return function ($a) {
         return $a->a + 10;

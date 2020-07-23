@@ -4,7 +4,7 @@
 /**
  * @kphp-warn-unused-result
  */
-function test() {
+function test(): int {
   return 777;
 }
 

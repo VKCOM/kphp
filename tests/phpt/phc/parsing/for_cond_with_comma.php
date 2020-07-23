@@ -1,5 +1,11 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param string $id
+ * @param bool $x
+ * @param bool $y
+ */
 	function f($id, $x, $y)
 	{
 		for(;$x,$y;)

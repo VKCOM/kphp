@@ -13,6 +13,10 @@ function demo1Instance() {
     $a->printA();
 }
 
+/**
+ * @kphp-infer
+ * @return shape(a:\Classes\A, b:\Classes\B, n:int, s:string)
+ */
 function get2Instances() {
     return shape(['n' => 1, 's' => 'str', 'a' => new Classes\A, 'b' => new Classes\B]);
 }

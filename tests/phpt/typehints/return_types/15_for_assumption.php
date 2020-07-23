@@ -21,6 +21,10 @@ function f1(A $a) : A {
 $a1 = f1(new A);
 echo $a1->a + 1, "\n";
 
+/**
+ * @kphp-infer
+ * @return A
+ */
 function f2() : ?A {
   if(true) return new A(7);
   else return null;

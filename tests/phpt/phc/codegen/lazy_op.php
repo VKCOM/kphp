@@ -1,11 +1,19 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @return false
+ */
 	function f()
 	{
 		echo "this is f\n";
 		return false;
 	}
 
+/**
+ * @kphp-infer
+ * @return bool
+ */
 	function t()
 	{
 		echo "this is t\n";

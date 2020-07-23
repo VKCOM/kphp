@@ -10,6 +10,10 @@ class A {
 /**
  * $sh как shape будет автовыведен из всего, что туда передаётся
  */
+/**
+ * @kphp-infer
+ * @param shape(a:A, x:int, y:mixed, z:int[]|null) $sh
+ */
 function printAll($sh) {
   echo "x ", $sh['x'], "\n";
   if($sh['y'] !== null)

@@ -1,6 +1,12 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param mixed $array
+ * @param false $force_array
+ * @return bool
+ */
 function isVector($array, $force_array = false) {
   if (is_array($array)) {
     if ($count = count($array)) {
@@ -16,6 +22,11 @@ function isVector($array, $force_array = false) {
   return false;
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $text
+ * @return string
+ */
 function xmlStripInvalidCharacters($text) {
   $result = '';
 
@@ -29,6 +40,12 @@ function xmlStripInvalidCharacters($text) {
   return $result;
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $data
+ * @param int $level
+ * @return string
+ */
 function convertToXML($data, $level = 0) {
   global $StrictMode;
 

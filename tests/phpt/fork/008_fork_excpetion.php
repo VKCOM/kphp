@@ -3,11 +3,19 @@
 
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return Exception
+ */
 function return_exception() {
   sched_yield();
   return new Exception();
 }
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function throw_exception() {
   sched_yield();
   if (0) return 1;

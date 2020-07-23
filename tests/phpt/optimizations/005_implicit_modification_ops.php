@@ -1,22 +1,42 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function non_const_foreach($x) {
     foreach ([1] as $x) {}
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function non_const_foreach_key($x) {
     foreach ([1] as $x => $_) {}
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function non_const_foreach_value($x) {
     foreach ([1] as $_ => $x) {}
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $xs
+ */
 function non_const_foreach_ref($xs) {
     foreach ($xs as &$x) { $x = 20; }
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function non_const_list($x) {
     if (0) {
         list(, $x) = [1, 2];
@@ -26,14 +46,26 @@ function non_const_list($x) {
     var_dump($x);
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function const_and_ref(&$x) {
     var_dump($x);
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $xs
+ */
 function unset_non_const($xs) {
     unset($xs[0]);
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function const_var_dump($x) {
     var_dump($x);
 }

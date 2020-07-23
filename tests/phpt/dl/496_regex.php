@@ -42,6 +42,12 @@ $text = preg_replace_callback('/'.RE_URL_PATTERN.'/', 'prcConvertHyperref', $tex
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param string[] $matches
+ * @return string
+ */
 function prcConvertHyperref($matches) {
   return (string)preg_match('/\.([a-zA-ZÙÛÍ–‘” \-0-9]+)$/', $matches[2], $match);
 }
@@ -285,6 +291,12 @@ print_r($m);
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param string[] $param
+ * @return string
+ */
 function cb($param) {
   var_dump($param);
   return "yes!";
@@ -295,6 +307,10 @@ function cb($param) {
 var_dump(preg_match_all('|(\w+)://([^\s"<]*[\w+#?/&=])|', "This is a text string", $matches, PREG_SET_ORDER));
 var_dump($matches);
 
+/**
+ * @kphp-infer
+ * @return mixed
+ */
 function func1(){
         $string = 'what the word and the other word the';
         preg_match_all('/(?P<word>the)/', $string, $matches);
@@ -407,6 +423,11 @@ var_dump($result);
 
 $input = "plain [indent] deep [indent] [abcd]deeper[/abcd] [/indent] deep [/indent] plain"; 
 
+/**
+ * @kphp-infer
+ * @param mixed $input
+ * @return string
+ */
 function parseTagsRecursive($input)
 {
 	global $count; 
@@ -431,6 +452,12 @@ echo $output, "\n";
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param string[] $x
+ * @return string
+ */
 function g($x) {
 	return "'{$x[0]}'";
 }
@@ -441,6 +468,12 @@ var_dump(preg_replace_callback('@\b\w{1,2}\b@', 'g', array('a b3 bcd', 'v' => 'a
 
 /**
  * @kphp-required
+ */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param string[] $m
+ * @return string
  */
 function tmp($m) {
   return strtolower($m[0]);

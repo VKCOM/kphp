@@ -2,6 +2,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param mixed $a
+ */
 function printAllOfArray($a) {
   var_dump(array_first_key($a));
   var_dump(array_first_value($a));

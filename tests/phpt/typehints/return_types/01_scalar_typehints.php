@@ -32,6 +32,11 @@ function string_add_val(string $a = STRING_ADD_VAL): string {
 	return $a;
 }
 
+/**
+ * @kphp-infer
+ * @param null $a
+ * @return null
+ */
 function int_val_default_null($a = NULL_VAL) {
 	return $a;
 }

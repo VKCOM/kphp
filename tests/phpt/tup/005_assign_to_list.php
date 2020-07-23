@@ -3,6 +3,10 @@
 require_once 'polyfills.php';
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string, mixed[][])
+ */
 function getAll() {
     $total_count = 2;
     $description = 'str';
@@ -14,6 +18,10 @@ function getAll() {
     return tuple($total_count, $description, $items);
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string, mixed[][], \Classes\A)
+ */
 function getAllAndA() {
     $total_count = 2;
     $description = 'str';

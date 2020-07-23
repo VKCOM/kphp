@@ -3,6 +3,10 @@
 // dl/455_inc_xor_str.php
 // https://wiki.php.net/rfc/negative-string-offsets
 // В новых версиях можно по отрицательному индексу к строкам обращаться
+/**
+ * @kphp-infer
+ * @param mixed $s
+ */
 function string_as_var($s) {
     $s[0] = 'a';
     var_dump(isset($s[-1]));

@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return int|false
+ */
 function getBits() {
     return 1 ? 10 : false;
 }

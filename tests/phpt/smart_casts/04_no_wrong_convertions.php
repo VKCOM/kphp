@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return mixed[]
+ */
 function run() {
     $a = [null, false, 0, 0.0, [], "", true, 1, 1.0, "abc", [1, 2, 3]];
     $b = [];

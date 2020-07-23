@@ -2,6 +2,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string, mixed[][])
+ */
 function getAll() {
     $total_count = 2;
     $description = 'str';
@@ -13,6 +17,11 @@ function getAll() {
     return tuple($total_count, $description, $items);
 }
 
+/**
+ * @kphp-infer
+ * @param bool $returnShort
+ * @return tuple(int, string, mixed[][]|false)
+ */
 function multipleResult($returnShort) {
     $total_count = 2;
     $description = 'str';
@@ -29,6 +38,10 @@ function multipleResult($returnShort) {
     return tuple($total_count, $description, $items);
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(mixed, mixed, mixed)
+ */
 function badMixResult() {   // works, but infers tuple<var,var,var>
     return 1
         ? tuple(1, 'string', [1,2,3])
@@ -43,6 +56,10 @@ function demo() {
     echo "items[1] id = ", $result[2][1]['id'], "\n";
 }
 
+/**
+ * @kphp-infer
+ * @param bool $returnShort
+ */
 function demo2($returnShort) {
     $result = multipleResult($returnShort);
     echo "total_count = ", $result[0], "\n";

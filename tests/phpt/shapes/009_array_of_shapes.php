@@ -2,10 +2,20 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param string $str
+ * @param int $int
+ * @return shape(a:\Classes\A, str:string, ints:int[])
+ */
 function constructT($str, $int) {
     return shape(['str' => $str, 'ints' => [1,2,$int], 'a' => (new Classes\A)->setA($int)]);
 }
 
+/**
+ * @kphp-infer
+ * @return shape(a:\Classes\A, str:string, ints:int[])[]
+ */
 function getArrOfT() {
     return [
         constructT('s1', 1),

@@ -10,6 +10,10 @@ class Temp {
     public $x;
 }
 
+/**
+ * @kphp-infer
+ * @return Temp
+ */
 function demo() {
     sched_yield();
     $t = new Temp();

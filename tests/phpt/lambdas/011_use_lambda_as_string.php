@@ -4,6 +4,12 @@
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param int $n
+ * @return int
+ */
 function XXX($n)
 {
     return $n * $n;

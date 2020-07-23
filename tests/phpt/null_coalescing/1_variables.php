@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @return string[]
+ */
 function foobar() {
   echo "foobar called\n";
   return ['a'];

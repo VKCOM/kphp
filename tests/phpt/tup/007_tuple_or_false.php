@@ -2,10 +2,20 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $arg
+ * @return tuple(int, string[], int)
+ */
 function getTuple($arg) {
     return tuple(1, ['str', 'array'], $arg);
 }
 
+/**
+ * @kphp-infer
+ * @param int|false $arg
+ * @return tuple(int, string[], int)|false
+ */
 function getTupleOrFalse($arg) {
     if(!$arg)
         return false;
@@ -13,6 +23,10 @@ function getTupleOrFalse($arg) {
     return getTuple($arg);
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string[], int)|false
+ */
 function getAlwaysFalse() {
     return getTupleOrFalse(false);
 }

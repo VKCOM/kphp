@@ -2,6 +2,12 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param int $p
+ * @return int
+ */
 function my_pow ($x, $p = 5) {
   if ($p == 0) {
     if ($x == 5) {

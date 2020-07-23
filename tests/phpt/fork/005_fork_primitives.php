@@ -3,31 +3,56 @@
 
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function return_int() {
   sched_yield();
   return 5;
 }
 
+/**
+ * @kphp-infer
+ * @return float
+ */
 function return_double() {
   sched_yield();
   return 5.0;
 }
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 function return_string() {
   sched_yield();
   return "abc";
 }
 
+/**
+ * @kphp-infer
+ * @return int[]
+ */
 function return_array_int() {
   sched_yield();
   return [1, 2, 3];
 }
 
+/**
+ * @kphp-infer
+ * @return string[]
+ */
 function return_array_string() {
   sched_yield();
   return ["a", "b", "c"];
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return float
+ */
 function return_int_or_double($x) {
   if ($x) {
     return (float)return_int();
@@ -36,6 +61,11 @@ function return_int_or_double($x) {
   }
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return mixed[]
+ */
 function return_mixed_array($x) {
   if ($x) {
     return return_array_int();
@@ -44,6 +74,11 @@ function return_mixed_array($x) {
   }
 }
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @return mixed
+ */
 function return_var($x) {
   switch($x) {
     case 0: return return_int();

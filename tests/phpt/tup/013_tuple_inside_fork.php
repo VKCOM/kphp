@@ -5,16 +5,29 @@ require_once 'polyfills.php';
 require_once 'polyfills.php';
 #endif
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string)
+ */
 function getT() {
     sched_yield();
     return tuple(1, 'string');
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(int|false, int, int[], \Classes\A, string, \Classes\A[])
+ */
 function getBigTuple() {
     $a = 1 ? 1 : false;
     return tuple($a, 1, [1,2,3], new Classes\A, 's', [new Classes\A]);
 }
 
+/**
+ * @kphp-infer
+ * @param bool $getFalse
+ * @return tuple(int|false, int, int[], \Classes\A, string, \Classes\A[])|false
+ */
 function getTOrFalse($getFalse) {
     if($getFalse)
         return false;

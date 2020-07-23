@@ -1,6 +1,12 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param int $y
+ * @param int[] $args
+ */
 function f($x, $y, ...$args) {
     var_dump($x);
     var_dump($y);

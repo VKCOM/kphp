@@ -3,6 +3,10 @@
 require_once 'polyfills.php';
 use Classes\F;
 
+/**
+ * @kphp-infer
+ * @param int[] $intArr
+ */
 function moreInt(&$intArr) {
     $intArr[] = 100;
 }

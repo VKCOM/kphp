@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param mixed[] $args
+ */
 function fun($x, ...$args) {
     var_dump($x);
     var_dump($args);

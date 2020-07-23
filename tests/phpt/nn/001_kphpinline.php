@@ -3,6 +3,10 @@
 
 /** @kphp-inline */
 
+/**
+ * @kphp-infer
+ * @param int $x
+ */
 function f($x = 1) {
   if ($x == 1) {
     g();
@@ -36,6 +40,10 @@ z();
 
 
 /** @kphp-inline */
+/**
+ * @kphp-infer
+ * @param mixed[] $a
+ */
 function complex_default_arg($a = ["hello", "world"]) {
   var_dump($a);
 }

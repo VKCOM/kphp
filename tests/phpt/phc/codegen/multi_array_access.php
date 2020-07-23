@@ -15,6 +15,10 @@
 	//		$t1 =& $x[$t0];
 	//		$y =& $t1;
 
+/**
+ * @kphp-infer
+ * @param mixed $v
+ */
 	function f(&$v) {
 	}
 

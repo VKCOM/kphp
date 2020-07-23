@@ -3,7 +3,7 @@
 
 require_once("polyfills.php");
 
-function get_lambda()
+function get_lambda(): callable
 {
     return function ($x, $y) {
         return $x + $y;

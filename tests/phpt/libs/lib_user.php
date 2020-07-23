@@ -15,6 +15,10 @@ echo "lib_user: require_lib('lib_examples/example1');\n";
 require_lib('lib_examples/example1');
 require_lib('lib_examples/example1');
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function call_example1_lib_functions() {
     echo "lib_user: minus1(5, 2): ", minus1(5, 2), "\n";
     echo "lib_user: foo('hello'): ", foo("hello"), "\n";
@@ -40,6 +44,10 @@ use_class_new();
 
 echo "lib_user: pow2(): ", pow2(), "\n";
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function use_other_lib() {
     require_lib('lib_examples/example2');
     return example2_sum(1, 2);

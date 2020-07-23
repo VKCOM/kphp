@@ -7,6 +7,11 @@
 		var_dump ($x);
 	}
 
+/**
+ * @kphp-infer
+ * @param int $y
+ * @return bool
+ */
 	function f ($y)
 	{
 		return ($y != 7);

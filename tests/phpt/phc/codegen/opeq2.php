@@ -2,6 +2,10 @@
 <?php
   // Nested opeq
 
+  /**
+   * @kphp-infer
+   * @return int
+   */
   function f()
   {
     echo "f is called\n";

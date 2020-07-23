@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param string $x
+ * @return int
+ */
 function md5LastBits($x) {
   $x = md5($x);
   $l = strlen($x);
@@ -9,6 +14,11 @@ function md5LastBits($x) {
 }
 
 
+/**
+ * @kphp-infer
+ * @param string $ipv6
+ * @return string[]|false
+ */
 function ipv6ToArray($ipv6) {
   $ipv6 = strtolower($ipv6);
   if (substr($ipv6, 0, 2) == '::') {
@@ -73,6 +83,11 @@ function ipv6ToArray($ipv6) {
 }
 
 
+/**
+ * @kphp-infer
+ * @param string $ipv6
+ * @return string
+ */
 function ipv6ToIpv4($ipv6) {
   $x = ipv6ToArray($ipv6);
   if (!$x) {
@@ -88,6 +103,11 @@ function ipv6ToIpv4($ipv6) {
   return $n1.".".$n2.".".$n3.".".$n4;
 }
 
+/**
+ * @kphp-infer
+ * @param string $ipv6
+ * @return string|false
+ */
 function ipv6Normalize($ipv6) {
   $x = ipv6ToArray($ipv6);
   if (!$x) {

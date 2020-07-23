@@ -5,6 +5,10 @@
 	// temporary with a reference, we get
 	// wrong code (a NULL gets added to $x)
 
+/**
+ * @kphp-infer
+ * @param int $y
+ */
 	function foo ($y)
 	{
 	}

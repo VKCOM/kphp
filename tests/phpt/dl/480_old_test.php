@@ -256,6 +256,11 @@
   var_dump (inet_pton('127.0.0.1'));
   var_dump (inet_pton('::1'));
 
+  /**
+   * @kphp-infer
+   * @param int $x
+   * @return int
+   */
   function sign ($x) {
     return $x < 0 ? -1 : ($x > 0 ? 1 : 0);
   }
@@ -296,6 +301,12 @@
   var_dump (2.0 % 3.0);
   @var_dump (2 % 4e9);
 
+  /**
+   * @kphp-infer
+   * @param mixed $key
+   * @param mixed $fields
+   * @return mixed
+   */
   function apiWrapObject($key, $fields = array()) {
     return @(array('_' => $key) + $fields);
   }
@@ -347,12 +358,24 @@
   /**
    * @kphp-required
    */
+  /**
+   * @kphp-required
+   * @kphp-infer
+   * @param int $x
+   * @return bool
+   */
   function odd ($x) {
     return (bool)($x & 1);
   }
 
   /**
    * @kphp-required
+   */
+  /**
+   * @kphp-required
+   * @kphp-infer
+   * @param int $x
+   * @return bool
    */
   function even ($x) {
     return !($x & 1);
@@ -767,6 +790,12 @@
   $a = array (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
   print_r ($a);
 
+  /**
+   * @kphp-infer
+   * @param mixed $item
+   * @param mixed $depth
+   * @return mixed[]
+   */
   function bottomUpTree($item, $depth)
   {
      if (!$depth) return array(null,null,$item);
@@ -778,6 +807,11 @@
         $item);
   }
 
+  /**
+   * @kphp-infer
+   * @param mixed $treeNode
+   * @return mixed
+   */
   function itemCheck($treeNode) {
      return $treeNode[2]
         + ($treeNode[0][0] == null ? itemCheck($treeNode[0]) : $treeNode[0][2])

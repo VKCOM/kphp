@@ -1,6 +1,10 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $x
+ */
 function foo($x) {
     static $st = 99;
 

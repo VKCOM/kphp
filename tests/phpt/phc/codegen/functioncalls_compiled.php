@@ -9,7 +9,15 @@
  * Tests are designed to check copy-on-write etc. stuff
  */
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 	function fun($x) { $x = 'x'; }
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 	function fun_r(&$x) { $x = 'x'; }
 
 	// Test proper calling conventions in simple cases

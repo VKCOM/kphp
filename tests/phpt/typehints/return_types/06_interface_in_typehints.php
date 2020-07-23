@@ -8,6 +8,10 @@ class Foo implements Barable {
   }
 }
 
+/**
+ * @kphp-infer
+ * @return Barable
+ */
 function factory(): Barable {
   return new Foo();
 }

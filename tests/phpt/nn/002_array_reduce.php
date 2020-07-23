@@ -5,6 +5,13 @@ $t = array(1, 2, 3, 4, 5);
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param int|null $carry
+ * @param int $item
+ * @return int
+ */
 function multiply($carry, $item) {
   if ($carry === NULL) {
     return $item;
@@ -15,6 +22,13 @@ function multiply($carry, $item) {
 
 /**
  * @kphp-required
+ */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param mixed[]|null $carry
+ * @param mixed[] $item
+ * @return mixed[]|null
  */
 function addall($carry, $item) {
   if ($carry === NULL) {

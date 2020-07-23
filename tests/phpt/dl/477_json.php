@@ -1,6 +1,10 @@
 @ok benchmark
 <?php
 
+/**
+ * @kphp-infer
+ * @param int $options
+ */
 function test_json ($options) {
   $php_ver = 7;
 #ifndef KittenPHP

@@ -6,10 +6,18 @@ class A {
     public $x = 10;
 }
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function forkable_ten() {
     return 10;
 }
 
+/**
+ * @kphp-infer
+ * @return int
+ */
 function forkable_test() {
     $a = new A();
     $a->x += forkable_ten();

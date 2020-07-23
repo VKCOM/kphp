@@ -49,6 +49,11 @@ var_dump((string) unpack("Q", "Vasya go gulat")[1]);
 @unpack("Q", "\x0\x5\x5\x5\x5\x5\x5");
 
 // вспомогательная функция для вывода байтов строки
+/**
+ * @kphp-infer
+ * @param string $str
+ * @return string
+ */
 function to_printable_bytestring($str) {
   $bytes = [];
   for ($i = 0; $i < strlen($str); $i++) {

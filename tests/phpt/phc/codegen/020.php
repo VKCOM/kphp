@@ -1,5 +1,9 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param int $arg
+ */
 	function f($arg)
 	{
 		var_dump($arg);

@@ -1,5 +1,9 @@
 @ok benchmark
 <?php
+  /**
+   * @kphp-infer
+   * @param int $n
+   */
   function hash2($n) {
     for ($i = 0; $i < $n; $i++) {
       $hash1["foo_$i"] = 1;

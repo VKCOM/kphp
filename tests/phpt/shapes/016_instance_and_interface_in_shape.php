@@ -18,6 +18,10 @@ class XY {
   public $t;
 }
 
+/**
+ * @kphp-infer
+ * @return XY
+ */
 function test_interface_and_array_in_shape() {
   $xy = new XY;
   $xy->t = shape(['ix' => new X, 'y' => new Y]);

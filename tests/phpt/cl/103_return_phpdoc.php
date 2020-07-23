@@ -7,6 +7,11 @@ use Classes\A;
 /**
  * @return A
  */
+/**
+ * @kphp-infer
+ * @param int $initAVal
+ * @return A
+ */
 function getAInstance($initAVal = 198) {
   $a = new A();
   $a->a = $initAVal;
@@ -39,6 +44,10 @@ $config += array(
     'group_moderators_manual' => array(),
 );
 
+/**
+ * @kphp-infer
+ * @param any[][] $a
+ */
 function ff($a) {
     echo 1;
 }
@@ -65,6 +74,10 @@ switch( /** @deprecated */ 3 ){
     /** @deprecated */
 }
 
+/**
+ * @kphp-infer
+ * @return string
+ */
 function sss() {
     return /** @lang JavaScript */
       <<<JAVASCRIPT
@@ -83,12 +96,22 @@ $arrr = [
 /**
  * @return A | null
  */
+/**
+ * @kphp-infer
+ * @param bool $returnFalse
+ * @return A
+ */
 function getAOrNull($returnFalse) {
     return $returnFalse ? null : new A();
 }
 
 /**
  * @return A[] | false
+ */
+/**
+ * @kphp-infer
+ * @param bool $returnFalse
+ * @return A[]|false
  */
 function getAArrOrFalse($returnFalse) {
     return $returnFalse ? false : [new A()];

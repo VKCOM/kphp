@@ -2,6 +2,12 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param int $p
+ * @return float
+ */
 function my_pow ($x, $p = 5) {
   if ($p == 0) {
     return 1.0;
@@ -36,16 +42,20 @@ while ($t = wait_queue_next ($q)) {
   var_dump (wait_result ($t));
 }
 
-function a_varg($a, $b, $c = 7, $d = 8) {
-  var_dump (func_get_args());
+function a_varg(int $a, int $b, int $c = 7, int $d = 8) {
+//  var_dump (func_get_args());
   var_dump ($a);
   var_dump ($b);
   var_dump ($c);
   var_dump ($d);
   b_varg(1, 2, 3);
 }
-function b_varg() {
-  var_dump (func_get_args());
+/**
+ * @kphp-infer
+ * @param int ...$args
+ */
+function b_varg(...$args) {
+  var_dump($args);
 }
 
 echo "-----------<stage 3>-----------\n";

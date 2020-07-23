@@ -2,17 +2,30 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return shape(s:string, int:int)
+ */
 function getT() {
     sched_yield();
     return shape(['int' => 1, 's' => 'string']);
 }
 
+/**
+ * @kphp-infer
+ * @return shape(1:int, a:\Classes\A, s:string, arr:int[], arr_a:\Classes\A[], first:int|false)
+ */
 function getBigShape() {
     $a = 1 ? 1 : false;
     sched_yield();
     return shape(['first' => $a, '1' => 1, 'arr' => [1,2,3], 'a' => new Classes\A, 's' => 's', 'arr_a' => [new Classes\A]]);
 }
 
+/**
+ * @kphp-infer
+ * @param bool $getFalse
+ * @return shape(1:int, a:\Classes\A, s:string, arr:int[], arr_a:\Classes\A[], first:int|false)|false
+ */
 function getTOrFalse($getFalse) {
     if($getFalse)
         return false;

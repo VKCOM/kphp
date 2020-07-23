@@ -3,6 +3,10 @@
 /**
  * @kphp-warn-unused-result
  */
+/**
+ * @kphp-infer
+ * @return int
+ */
 function test() {
   return 111;
 }

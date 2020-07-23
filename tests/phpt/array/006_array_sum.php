@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param float $x
+ * @return float
+ */
 function fix_php($x) {
 #ifndef KittenPHP
   return $x * 1.0;

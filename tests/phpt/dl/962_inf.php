@@ -13,6 +13,10 @@ function f($x) {
 f (true);
 */
 
+/**
+ * @kphp-infer
+ * @param int $x
+ */
 function print_int ($x) {
   print $x;
 }

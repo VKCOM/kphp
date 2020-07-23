@@ -2,11 +2,19 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $value
+ */
 function add_res($value) {
   global $res;
   sched_yield();
   $res += $value;
 }
+/**
+ * @kphp-infer
+ * @param int $n
+ */
 function hash2($n) {
   global $res;
   for ($i = 0; $i < $n; $i++) {
@@ -22,6 +30,10 @@ function hash2($n) {
     wait($id);
   }
 }
+/**
+ * @kphp-infer
+ * @param int $n
+ */
 function hash3($n) {
   global $res;
   for ($i = 0; $i < $n; $i++) {
@@ -43,6 +55,11 @@ function hash3($n) {
   }
 }
 
+/**
+ * @kphp-infer
+ * @param int $n
+ * @return future_queue<void>
+ */
 function hash4($n) {
   global $res;
   for ($i = 0; $i < $n; $i++) {

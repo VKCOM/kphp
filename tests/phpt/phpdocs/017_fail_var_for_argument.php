@@ -3,7 +3,7 @@
 <?php
 
 // doesn't work, because such phpdoc prevents splitting, as param $id is used for reading after it
-function demo($id) {
+function demo(int $id) {
   /** @var int $id */
   $id = (int)$id;
   echo $id, "\n";

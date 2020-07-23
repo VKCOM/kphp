@@ -6,6 +6,12 @@
 	$arr = array ();
 	$a = 0;
 	$a1 = 0;
+/**
+ * @kphp-infer
+ * @param mixed $x
+ * @param mixed $y
+ * @return int[]
+ */
 	function f ($x = 0, $y = 0)
 	{
 		global $arr;
@@ -14,6 +20,12 @@
 		return $arr;
 	}
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param int $y
+ * @return int[]
+ */
 	function g ($x = 0, $y = 0)
 	{
 		global $arr2;

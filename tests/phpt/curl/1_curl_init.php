@@ -5,6 +5,11 @@
 $counter = 0;
 #endif
 
+/**
+ * @kphp-infer
+ * @param string $url
+ * @param bool $need_close
+ */
 function test_init($url, $need_close) {
   $c = curl_init($url);
   if ($need_close) {

@@ -4,6 +4,12 @@
 /**
  * @kphp-required
  */
+/**
+ * @kphp-required
+ * @kphp-infer
+ * @param int $x
+ * @return int
+ */
 function inc($x = 10) { return $x; }
 
 function run() {

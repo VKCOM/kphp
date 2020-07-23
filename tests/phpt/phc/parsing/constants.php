@@ -13,6 +13,11 @@
 		static $x4 = Foo::Bar;
 	}
 
+/**
+ * @kphp-infer
+ * @param int $x
+ * @param mixed $y
+ */
 	function x ($x = Foo::Bar, $y = array ("s", Foo::BAR))
 	{
 		var_dump ($x);

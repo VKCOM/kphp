@@ -3,6 +3,10 @@
 
 require_once("polyfills.php");
 
+/**
+ * @kphp-infer
+ * @param mixed[] $a
+ */
 function test_array_filter_by_key($a) {
   var_dump(array_filter_by_key($a, 'is_scalar'));
   var_dump(array_filter_by_key($a, 'is_numeric'));

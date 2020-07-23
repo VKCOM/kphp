@@ -5,7 +5,7 @@
 /**
  * @kphp-const $x
  */
-function foo($x) {
+function foo(int $x) {
     $x = 20;
 }
 

@@ -13,6 +13,10 @@ function get_instance() {
     return $a;
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function run($x) {
     get_instance()->x = 90;
     var_dump($x);

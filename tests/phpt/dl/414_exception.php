@@ -1,8 +1,12 @@
 @ok
 <?php
-  function f() {
-    func_get_args();
-  }
 
-  f (new Exception());
+/**
+ * @kphp-infer
+ * @param any $args
+ */
+function f(...$args) {
+}
+
+f (new Exception());
 //  var_dump (new Exception());

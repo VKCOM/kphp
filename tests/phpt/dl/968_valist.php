@@ -1,5 +1,9 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param any[] $g
+ */
 function g($g) {
   var_dump($g);
 }
@@ -7,18 +11,25 @@ function g($g) {
 g(array());
 
 
-function f($x, $z = 12) {
-  var_dump ($x);
-  var_dump ($z);
+/**
+ * @kphp-infer
+ * @param mixed $x
+ * @param int $z
+ * @param mixed ...$args
+ */
+function f($x, $z, ...$args) {
+  var_dump($x);
+  var_dump($z);
 
-  $args = func_get_args();
+  array_unshift($args, $z);
+  array_unshift($args, $x);
   var_dump($args);
 
-  $n = func_num_args();
+  $n = count($args);
   var_dump ($n);
 
   for ($i = 0; $i < $n; $i++) {
-    var_dump (func_get_arg ($i));
+    var_dump ($args[$i]);
   }
 
   if (1) {
@@ -28,11 +39,10 @@ function f($x, $z = 12) {
     $tmp = 1;
   }
 }
-f(1, 2, 3, "hello", array (1=>23));
-f(1);
+f(1, 2, 3, "hello", [1=>23]);
 f(1, 2);
-
-call_user_func_array ("f", array (1, 2, 3, "hello", array (1=>23)));
-call_user_func_array ("f", array ("hello", 1));
+f(1, 2);
+f(1, 2, 3, "hello", [1=>23]);
+f("hello", 1);
 //call_user_func_array ("g", 123);
 

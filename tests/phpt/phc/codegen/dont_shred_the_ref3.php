@@ -5,6 +5,10 @@
 	// a temporary without a reference, we
 	// get wrong code (nothing is added)
 
+/**
+ * @kphp-infer
+ * @param int $y
+ */
 	function foo (&$y)
 	{
 		$y = 7;

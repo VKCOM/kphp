@@ -2,6 +2,10 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @return mixed[]|false
+ */
 function getNextArray() {
     static $idx = 0;
     $arrays = [
@@ -15,6 +19,10 @@ function getNextArray() {
     return $arrays[$idx++];
 }
 
+/**
+ * @kphp-infer
+ * @return tuple(int, string)|false
+ */
 function getNextTuple() {
     static $idx = 0;
     $tuples = [

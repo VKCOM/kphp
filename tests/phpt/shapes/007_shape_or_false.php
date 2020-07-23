@@ -2,10 +2,20 @@
 <?php
 require_once 'polyfills.php';
 
+/**
+ * @kphp-infer
+ * @param int $arg
+ * @return shape(a:string[], n:int, arg:int)
+ */
 function getShape($arg) {
     return shape(['n' => 1, 'a' => ['str', 'array'], 'arg' => $arg]);
 }
 
+/**
+ * @kphp-infer
+ * @param int|false $arg
+ * @return shape(a:string[], n:int, arg:int)|false
+ */
 function getShapeOrFalse($arg) {
     if(!$arg)
         return false;
@@ -13,6 +23,10 @@ function getShapeOrFalse($arg) {
     return getShape($arg);
 }
 
+/**
+ * @kphp-infer
+ * @return shape(a:string[], n:int, arg:int)|false
+ */
 function getAlwaysFalse() {
     return getShapeOrFalse(false);
 }

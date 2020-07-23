@@ -13,6 +13,10 @@ function f_array(array $x) {
   echo "Hi, i'm array!";
 }
 
+/**
+ * @kphp-infer
+ * @param mixed $x
+ */
 function f($x) {
   if (is_int($x)) {
     f_int($x);

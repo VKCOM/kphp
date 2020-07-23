@@ -15,12 +15,20 @@ function f() {
   $f_finished = true;
 }
 
+/**
+ * @kphp-infer
+ * @param int $id
+ */
 function g($id) {
   global $f_resumable; 
   $res = wait($f_resumable);
   var_dump("g", $id, $res);
 }
 
+/**
+ * @kphp-infer
+ * @param int $id
+ */
 function h($id) {
   global $f_resumable, $f_finished; 
   $res = wait_multiple($f_resumable);

@@ -5,6 +5,10 @@
 
 	// compare print and echo
 	$z = 2;
+/**
+ * @kphp-infer
+ * @return string
+ */
 	function f () 
 	{
 		global $z;
@@ -50,6 +54,10 @@
 	print print "a string of some length";
 
 	// This might fail if we moved print before we shredded.
+/**
+ * @kphp-infer
+ * @return int
+ */
 	function x ()
 	{
 		return print "a string longer than 1";

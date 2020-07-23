@@ -1,6 +1,11 @@
 @ok
 <?php
 
+/**
+ * @kphp-infer
+ * @param int|null $x
+ * @return int|null
+ */
 function foo($x) {
   echo "call foo $x\n";
   if ($x) {
@@ -26,6 +31,10 @@ function test_exception_lhs_try_catch_wrap() {
 }
 
 function test_exception_lhs_no_wrap() {
+  /**
+   * @kphp-infer
+   * @return string
+   */
   function test_1() {
     $x = foo(1) ?? 0;
     var_dump($x);
@@ -40,6 +49,10 @@ function test_exception_lhs_no_wrap() {
   }
 
 
+  /**
+   * @kphp-infer
+   * @return string
+   */
   function test_2() {
     $x = (foo(1) + 2) ?? 0;
     var_dump($x);
@@ -79,6 +92,10 @@ function test_exception_rhs_try_catch_wrap() {
 }
 
 function test_exception_rhs_try_no_wrap() {
+  /**
+   * @kphp-infer
+   * @return string
+   */
   function test_3() {
     $y = null;
     $x = $y ?? foo(1);
@@ -94,6 +111,10 @@ function test_exception_rhs_try_no_wrap() {
   }
 
 
+  /**
+   * @kphp-infer
+   * @return string
+   */
   function test_4() {
     $y = null;
     $x = $y ?? foo(0) ?? foo(null) ?? foo(1) ?? foo(0) ?? foo(2);
@@ -109,6 +130,10 @@ function test_exception_rhs_try_no_wrap() {
   }
 
 
+  /**
+   * @kphp-infer
+   * @return string
+   */
   function test_5() {
     $y = null;
     $x = $y ?? foo(0) ?? foo(null) ?? foo(1) ?? foo(0) ?? foo(2);

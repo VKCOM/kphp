@@ -1,5 +1,9 @@
 @ok
 <?php
+/**
+ * @kphp-infer
+ * @param string $x
+ */
 function f($x) {
   echo $x.": ";
   switch ($x) {
@@ -20,6 +24,10 @@ f('pr');
 
 echo "\n";
 
+/**
+ * @kphp-infer
+ * @param string $x
+ */
 function g($x) {
   echo $x.": ";
   switch ($x) {
