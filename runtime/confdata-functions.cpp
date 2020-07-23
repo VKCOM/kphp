@@ -1,5 +1,7 @@
 #include "runtime/confdata-functions.h"
 
+#include "common/algorithms/contains.h"
+
 #include "runtime/confdata-global-manager.h"
 #include "runtime/string_functions.h"
 
@@ -32,6 +34,14 @@ public:
     return global_manager_.is_initialized();
   }
 
+  const ConfdataPredefinedWildcards &get_predefined_wildcards() const noexcept {
+    return global_manager_.get_predefined_wildcards();
+  }
+
+  const ConfdataKeyBlacklist &get_key_blacklist() const noexcept {
+    return global_manager_.get_key_blacklist();
+  }
+
 private:
   ConfdataLocalManager() :
     global_manager_{ConfdataGlobalManager::get()} {};
@@ -39,6 +49,22 @@ private:
   ConfdataGlobalManager &global_manager_;
   const ConfdataSample *acquired_sample_{nullptr};
 };
+
+bool verify_confdata_key_param(const string &param, const char *real_name) noexcept {
+  if (unlikely(!ConfdataLocalManager::get().is_initialized())) {
+    php_warning("Confdata is not initialized");
+    return false;
+  }
+  if (unlikely(param.size() > std::numeric_limits<int16_t>::max())) {
+    php_warning("Too long %s", real_name);
+    return false;
+  }
+  if (unlikely(param.empty())) {
+    php_warning("Empty %s is not supported", real_name);
+    return false;
+  }
+  return true;
+}
 
 } // namespace
 
@@ -59,50 +85,44 @@ bool f$is_confdata_loaded() noexcept {
 }
 
 var f$confdata_get_value(const string &key) noexcept {
-  if (!ConfdataLocalManager::get().is_initialized()) {
-    php_warning("Confdata is not initialized");
-    return {};
-  }
-  if (key.size() > std::numeric_limits<int16_t>::max()) {
-    php_warning("Too long key");
+  if (unlikely(!verify_confdata_key_param(key, "key"))) {
     return {};
   }
 
-  ConfdataKeyMaker confdata_key_maker{key.c_str(), static_cast<int16_t>(key.size())};
-  const auto &confdata_storage = ConfdataLocalManager::get().get_confdata_storage();
-  auto it = confdata_storage.find(confdata_key_maker.get_first_key());
-  if (it == confdata_storage.end()) {
-    return {};
+  const auto &local_manager = ConfdataLocalManager::get();
+  ConfdataKeyMaker key_maker;
+  key_maker.update(key.c_str(), static_cast<int16_t>(key.size()), local_manager.get_predefined_wildcards());
+  const auto &confdata_storage = local_manager.get_confdata_storage();
+  auto it = confdata_storage.find(key_maker.get_first_key());
+  if (it != confdata_storage.end()) {
+    // если ключ не имеет префиксов
+    if (key_maker.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
+      return it->second;
+    }
+    // тут обязательно должен быть массив, мы так загружали
+    php_assert(it->second.is_array());
+    if (auto *value = it->second.as_array().find_value(key_maker.get_second_key())) {
+      return *value;
+    }
   }
-  // если ключ не имеет '.'
-  if (confdata_key_maker.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
-    return it->second;
+
+  if (unlikely(local_manager.get_key_blacklist().is_blacklisted(vk::string_view{key.c_str(), key.size()}))) {
+    php_warning("Trying to get blacklisted key '%s'", key.c_str());
   }
-  // тут обязательно должен быть массив, мы так загружали
-  php_assert(it->second.is_array());
-  return it->second.as_array().get_var(confdata_key_maker.get_second_key());
+  return {};
 }
 
-array<var> f$confdata_get_values_by_wildcard(const string &wildcard) noexcept {
-  if (!ConfdataLocalManager::get().is_initialized()) {
-    php_warning("Confdata is not initialized");
-    return {};
-  }
-  if (wildcard.size() > std::numeric_limits<int16_t>::max()) {
-    php_warning("Too long wildcard");
+array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcept {
+  if (unlikely(!verify_confdata_key_param(wildcard, "wildcard"))) {
     return {};
   }
 
-  // запрещяем получать всю конфдату
-  if (wildcard.empty()) {
-    php_warning("Empty wildcard is not supported");
-    return {};
-  }
-
-  const auto &confdata_storage = ConfdataLocalManager::get().get_confdata_storage();
-  ConfdataKeyMaker key_maker{wildcard.c_str(), static_cast<int16_t>(wildcard.size())};
-  // wildcard имеет вид '\w+\..*' или '\w+\.\w+\..*'
-  if (key_maker.get_first_key_type() != ConfdataFirstKeyType::simple_key) {
+  const auto &local_manager = ConfdataLocalManager::get();
+  const auto &predefined_wildcards = local_manager.get_predefined_wildcards();
+  ConfdataKeyMaker key_maker;
+  const auto &confdata_storage = local_manager.get_confdata_storage();
+  // wildcard имеет вид '\w+\..*' или '\w+\.\w+\..*' или содержит в себе predefined префикс
+  if (key_maker.update(wildcard.c_str(), static_cast<int16_t>(wildcard.size()), predefined_wildcards) != ConfdataFirstKeyType::simple_key) {
     // соотвественно первый ключ это или '\w+\.' или '\w+\.\w+\.'
     auto it = confdata_storage.find(key_maker.get_first_key());
     if (it == confdata_storage.end()) {
@@ -113,7 +133,7 @@ array<var> f$confdata_get_values_by_wildcard(const string &wildcard) noexcept {
     php_assert(it->second.is_array());
     const auto &second_key_array = it->second.as_array();
 
-    // если второй ключ это пустая строка, т.е. весь префикс это первый ключ ('\w+\.' или '\w+\.\w+\.')
+    // если второй ключ это пустая строка, т.е. весь префикс это первый ключ ('\w+\.' или '\w+\.\w+\.' или predefined)
     if (key_maker.get_second_key().is_string() && key_maker.get_second_key().as_string().empty()) {
       return second_key_array;
     }
@@ -130,31 +150,66 @@ array<var> f$confdata_get_values_by_wildcard(const string &wildcard) noexcept {
     return result;
   }
 
-  // wildcard имеет вид '\w+'
+  // wildcard имеет вид '\w+' и не содержит predefinded префикс
   array<var> result;
+  auto merge_into_result = [&result, &wildcard](confdata_sample_storage::const_iterator iter) {
+    const auto section_suffix = f$substr(iter->first, wildcard.size()).val();
+    php_assert(iter->second.is_array());
+    // тут обязательно должен быть массив, мы так загружали
+    const auto &second_key_array = iter->second.as_array();
+    const auto inserting_size = second_key_array.size() + result.size();
+    result.reserve(inserting_size.int_size, inserting_size.string_size, inserting_size.is_vector);
+    for (const auto &section_it : iter->second) {
+      result.set_value(string{section_suffix}.append(section_it.get_key()), section_it.get_value());
+    }
+  };
   auto it = confdata_storage.lower_bound(wildcard);
   while (it != confdata_storage.end() && it->first.starts_with(wildcard)) {
-    switch (key_maker.update(it->first.c_str(), static_cast<int16_t>(it->first.size()))) {
+    const vk::string_view section_wildcard{it->first.c_str(), it->first.size()};
+    switch (predefined_wildcards.detect_first_key_type(section_wildcard)) {
       case ConfdataFirstKeyType::simple_key:
         result.set_value(f$substr(it->first, wildcard.size()).val(), it->second);
         break;
-      case ConfdataFirstKeyType::one_dot_wildcard: {
-        const auto section_suffix = f$substr(it->first, wildcard.size()).val();
-        php_assert(it->second.is_array());
-        // тут обязательно должен быть массив, мы так загружали
-        const auto &second_key_array = it->second.as_array();
-        const auto inserting_size = second_key_array.size() + result.size();
-        result.reserve(inserting_size.int_size, inserting_size.string_size, inserting_size.is_vector);
-        for (const auto &section_it : it->second) {
-          result.set_value(string{section_suffix}.append(section_it.get_key()), section_it.get_value());
+      case ConfdataFirstKeyType::predefined_wildcard:
+        // не является подмножеством каких-то других префиксов
+        if (!vk::contains(section_wildcard, ".") &&
+            predefined_wildcards.is_most_common_predefined_wildcard(section_wildcard)) {
+          merge_into_result(it);
         }
-      }
+        break;
+      case ConfdataFirstKeyType::one_dot_wildcard:
+        // не является подмножеством каких-то других predefined префиксов
+        if (!predefined_wildcards.has_wildcard_for_key(section_wildcard)) {
+          merge_into_result(it);
+        }
+        break;
       case ConfdataFirstKeyType::two_dots_wildcard:
-        // тут мы ничего не делаем, потому что это является подмножеством элементов ConfdataFirstKeyType::one_dot_wildcard
+        // подмножество элементов ConfdataFirstKeyType::one_dot_wildcard
         break;
     }
     ++it;
   }
 
   return result;
+}
+
+array<var> f$confdata_get_values_by_predefined_wildcard(const string &wildcard) noexcept {
+  if (unlikely(!verify_confdata_key_param(wildcard, "wildcard"))) {
+    return {};
+  }
+
+  const auto &local_manager = ConfdataLocalManager::get();
+  const auto &confdata_storage = local_manager.get_confdata_storage();
+  const vk::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
+  if (local_manager.get_predefined_wildcards().detect_first_key_type(wildcard_view) == ConfdataFirstKeyType::simple_key) {
+    php_warning("Trying to get elements by non predefined wildcard '%s'", wildcard.c_str());
+    return {};
+  }
+
+  const auto elements_it = confdata_storage.find(wildcard);
+  if (elements_it != confdata_storage.end()) {
+    php_assert(elements_it->second.is_array());
+    return elements_it->second.as_array();
+  }
+  return {};
 }

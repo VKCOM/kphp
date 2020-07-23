@@ -1,5 +1,7 @@
 #include "server/confdata-stats.h"
 
+#include "common/algorithms/contains.h"
+
 namespace {
 
 double to_seconds(std::chrono::nanoseconds t) noexcept {
@@ -24,35 +26,52 @@ void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::Ev
 
 } // namespace
 
-void ConfdataStats::on_update(const confdata_sample_storage &new_confdata, size_t previous_garbage_size) noexcept {
+void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
+                              size_t previous_garbage_size,
+                              const ConfdataPredefinedWildcards &confdata_predefined_wildcards) noexcept {
   last_garbage_size = previous_garbage_size;
   garbage_statistic_[(total_updates++) % garbage_statistic_.size()] = last_garbage_size;
 
   total_elements = 0;
-  zero_dots_first_key_elements = 0;
-  one_dot_first_keys = 0;
-  one_dot_first_key_elements = 0;
-  two_dots_first_keys = 0;
-  two_dots_first_key_elements = 0;
+  simple_key_elements = 0;
+  one_dot_wildcards = 0;
+  one_dot_wildcard_elements = 0;
+  two_dots_wildcards = 0;
+  two_dots_wildcard_elements = 0;
+  predefined_wildcards = 0;
+  predefined_wildcard_elements = 0;
   for (const auto &section: new_confdata) {
-    switch (std::count(section.first.c_str(), section.first.c_str() + section.first.size(), '.')) {
-      case 0:
-        ++zero_dots_first_key_elements;
+    const vk::string_view first_key{section.first.c_str(), section.first.size()};
+    switch (confdata_predefined_wildcards.detect_first_key_type(first_key)) {
+      case ConfdataFirstKeyType::simple_key:
+        ++simple_key_elements;
         ++total_elements;
         break;
-      case 1:
+      case ConfdataFirstKeyType::one_dot_wildcard: {
         assert(section.second.is_array());
-        ++one_dot_first_keys;
-        one_dot_first_key_elements += section.second.as_array().count();
-        total_elements += section.second.as_array().count();
+        ++one_dot_wildcards;
+        one_dot_wildcard_elements += section.second.as_array().count();
+        if (!confdata_predefined_wildcards.has_wildcard_for_key(first_key)) {
+          total_elements += section.second.as_array().count();
+        }
         break;
-      case 2:
+      }
+      case ConfdataFirstKeyType::two_dots_wildcard:
         assert(section.second.is_array());
-        ++two_dots_first_keys;
-        two_dots_first_key_elements += section.second.as_array().count();
+        ++two_dots_wildcards;
+        two_dots_wildcard_elements += section.second.as_array().count();
         break;
-      default:
-        assert(!"Unexpected section name");
+      case ConfdataFirstKeyType::predefined_wildcard: {
+        assert(section.second.is_array());
+        ++predefined_wildcards;
+        if (confdata_predefined_wildcards.is_most_common_predefined_wildcard(first_key)) {
+          predefined_wildcard_elements += section.second.as_array().count();
+          if (!vk::contains(first_key, ".")) {
+            total_elements += section.second.as_array().count();  
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -71,13 +90,15 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   add_histogram_stat_long(stats, "confdata.updates.total", total_updates);
 
   add_histogram_stat_long(stats, "confdata.elements.total", total_elements);
-  add_histogram_stat_long(stats, "confdata.elements.first_key_zero_dots", zero_dots_first_key_elements);
-  add_histogram_stat_long(stats, "confdata.elements.first_key_one_dot", one_dot_first_key_elements);
-  add_histogram_stat_long(stats, "confdata.elements.first_key_two_dots", two_dots_first_key_elements);
+  add_histogram_stat_long(stats, "confdata.elements.simple_key", simple_key_elements);
+  add_histogram_stat_long(stats, "confdata.elements.one_dot_wildcard", one_dot_wildcard_elements);
+  add_histogram_stat_long(stats, "confdata.elements.two_dots_wildcard", two_dots_wildcard_elements);
+  add_histogram_stat_long(stats, "confdata.elements.predefined_wildcard", predefined_wildcard_elements);
   add_histogram_stat_long(stats, "confdata.elements.with_delay", elements_with_delay);
 
-  add_histogram_stat_long(stats, "confdata.first_keys.one_dot", one_dot_first_keys);
-  add_histogram_stat_long(stats, "confdata.first_keys.two_dots", two_dots_first_keys);
+  add_histogram_stat_long(stats, "confdata.wildcards.one_dot", one_dot_wildcards);
+  add_histogram_stat_long(stats, "confdata.wildcards.two_dots", two_dots_wildcards);
+  add_histogram_stat_long(stats, "confdata.wildcards.predefined", predefined_wildcards);
 
   size_t last_100_garbage_max = 0;
   double last_100_garbage_avg = 0;

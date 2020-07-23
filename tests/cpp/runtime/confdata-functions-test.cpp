@@ -14,7 +14,7 @@ void init_global_confdata_confdata() {
 
   pid = 0;
   auto &global_manager = ConfdataGlobalManager::get();
-  global_manager.init(1024 * 1024 * 16);
+  global_manager.init(1024 * 1024 * 16, std::unordered_set<vk::string_view>{}, nullptr);
   auto confdata_sample_storage = global_manager.get_current().get_confdata();
 
   confdata_sample_storage[string{"_key_1"}] = string{"value_1"};
@@ -74,72 +74,57 @@ TEST(confdata_functions_test, test_confdata_get_values_by_unknown_wildcard) {
 
   for (auto unknown_wildcard: {"1", "k", "_tx", "_one dot x.", "_two dot.c.", "_two dot.a.x",
                                "1*", "k*", "_tx*", "_one dot x.*", "_two dot.c.*", "_two dot.a.x*"}) {
-    ASSERT_EQ(f$confdata_get_values_by_wildcard(string{unknown_wildcard}).count(), 0);
+    ASSERT_EQ(f$confdata_get_values_by_any_wildcard(string{unknown_wildcard}).count(), 0);
   }
 }
 
-TEST(confdata_functions_test, test_confdata_get_values_by_wildcard) {
+TEST(confdata_functions_test, test_confdata_get_values_by_any_wildcard) {
   init_global_confdata_confdata();
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key_1"}), array<var>{
+    std::make_pair(var{string{""}}, var{string{"value_1"}})
+  }));
 
-  for (auto wildcard: {"_key_1", "_key_1*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{""}}, var{string{"value_1"}})
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key"}), array<var>{
+    std::make_pair(var{string{"_1"}}, var{string{"value_1"}}),
+    std::make_pair(var{string{"_2"}}, var{string{"value_2"}})
+  }));
 
-  for (auto wildcard: {"_key", "_key*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{"_1"}}, var{string{"value_1"}}),
-      std::make_pair(var{string{"_2"}}, var{string{"value_2"}})
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_one dot."}), array<var>{
+    std::make_pair(var{string{"one_1"}}, var{string{"one_value_1"}}),
+    std::make_pair(var{string{"one_2"}}, var{string{"one_value_2"}}),
+    std::make_pair(var{3}, var{string{"one_value_3"}}),
+    std::make_pair(var{string{"one_4"}}, var{string{"one_value_4"}})
+  }));
 
-  for (auto wildcard: {"_one dot.", "_one dot.*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{"one_1"}}, var{string{"one_value_1"}}),
-      std::make_pair(var{string{"one_2"}}, var{string{"one_value_2"}}),
-      std::make_pair(var{3}, var{string{"one_value_3"}}),
-      std::make_pair(var{string{"one_4"}}, var{string{"one_value_4"}})
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a."}), array<var>{
+    std::make_pair(var{string{"two_1a"}}, var{string{"a_one_value_1"}}),
+    std::make_pair(var{string{"two_2a"}}, var{string{"a_one_value_2"}}),
+  }));
 
-  for (auto wildcard: {"_two dot.a.", "_two dot.a.*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{"two_1a"}}, var{string{"a_one_value_1"}}),
-      std::make_pair(var{string{"two_2a"}}, var{string{"a_one_value_2"}}),
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot."}), array<var>{
+    std::make_pair(var{string{"a.two_1a"}}, var{string{"a_one_value_1"}}),
+    std::make_pair(var{string{"a.two_2a"}}, var{string{"a_one_value_2"}}),
+    std::make_pair(var{string{"b.two_1b"}}, var{string{"b_one_value_1"}}),
+    std::make_pair(var{string{"b.two_2b"}}, var{string{"b_one_value_2"}}),
+  }));
 
-  for (auto wildcard: {"_two dot.", "_two dot.*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{"a.two_1a"}}, var{string{"a_one_value_1"}}),
-      std::make_pair(var{string{"a.two_2a"}}, var{string{"a_one_value_2"}}),
-      std::make_pair(var{string{"b.two_1b"}}, var{string{"b_one_value_1"}}),
-      std::make_pair(var{string{"b.two_2b"}}, var{string{"b_one_value_2"}}),
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a.t"}), array<var>{
+    std::make_pair(var{string{"wo_1a"}}, var{string{"a_one_value_1"}}),
+    std::make_pair(var{string{"wo_2a"}}, var{string{"a_one_value_2"}}),
+  }));
 
-  for (auto wildcard: {"_two dot.a.t", "_two dot.a.t*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{"wo_1a"}}, var{string{"a_one_value_1"}}),
-      std::make_pair(var{string{"wo_2a"}}, var{string{"a_one_value_2"}}),
-    }));
-  }
-
-  for (auto wildcard: {"_two", "_two*"}) {
-    ASSERT_TRUE(equals(f$confdata_get_values_by_wildcard(string{wildcard}), array<var>{
-      std::make_pair(var{string{" dot.a.two_1a"}}, var{string{"a_one_value_1"}}),
-      std::make_pair(var{string{" dot.a.two_2a"}}, var{string{"a_one_value_2"}}),
-      std::make_pair(var{string{" dot.b.two_1b"}}, var{string{"b_one_value_1"}}),
-      std::make_pair(var{string{" dot.b.two_2b"}}, var{string{"b_one_value_2"}}),
-    }));
-  }
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two"}), array<var>{
+    std::make_pair(var{string{" dot.a.two_1a"}}, var{string{"a_one_value_1"}}),
+    std::make_pair(var{string{" dot.a.two_2a"}}, var{string{"a_one_value_2"}}),
+    std::make_pair(var{string{" dot.b.two_1b"}}, var{string{"b_one_value_1"}}),
+    std::make_pair(var{string{" dot.b.two_2b"}}, var{string{"b_one_value_2"}}),
+  }));
 }
 
 TEST(confdata_functions_test, test_confdata_get_values_by_bad_wildcard) {
   init_global_confdata_confdata();
 
   for (auto bad_wildcard: {"", "*", "**", "_two*a", "*dot", "*dot*"}) {
-    ASSERT_EQ(f$confdata_get_values_by_wildcard(string{bad_wildcard}).count(), 0);
+    ASSERT_EQ(f$confdata_get_values_by_any_wildcard(string{bad_wildcard}).count(), 0);
   }
 }

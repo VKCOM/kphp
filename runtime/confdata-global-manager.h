@@ -1,10 +1,13 @@
 #pragma once
 #include <forward_list>
+#include <unordered_set>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 
-#include "runtime/kphp_core.h"
+#include "runtime/confdata-keys.h"
 #include "runtime/inter-process-resource.h"
+#include "runtime/kphp_core.h"
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
@@ -43,7 +46,9 @@ class ConfdataGlobalManager : vk::not_copyable {
 public:
   static ConfdataGlobalManager &get() noexcept;
 
-  void init(size_t confdata_memory_limit) noexcept;
+  void init(size_t confdata_memory_limit,
+    std::unordered_set<vk::string_view> &&predefined_wilrdcards,
+            std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept;
 
   void force_release_all_resources_acquired_by_this_proc_if_init() noexcept {
     if (is_initialized()) {
@@ -83,45 +88,21 @@ public:
     return resource_.memory_begin();
   }
 
+  const ConfdataPredefinedWildcards &get_predefined_wildcards() const noexcept {
+    return predefined_wildcards_;
+  }
+
+  const ConfdataKeyBlacklist &get_key_blacklist() const noexcept {
+    return key_blacklist_;
+  }
+
   ~ConfdataGlobalManager() noexcept;
 
 private:
   ConfdataGlobalManager() = default;
   memory_resource::unsynchronized_pool_resource resource_;
   InterProcessResourceManager<ConfdataSample, 30> confdata_samples_;
-};
 
-enum class ConfdataFirstKeyType {
-  simple_key,
-  one_dot_wildcard,
-  two_dots_wildcard,
-};
-
-class ConfdataKeyMaker : vk::not_copyable {
-public:
-  ConfdataKeyMaker() = default;
-  ConfdataKeyMaker(const char *key, int16_t key_len) noexcept;
-
-  ConfdataFirstKeyType update(const char *key, int16_t key_len) noexcept;
-
-  void forcibly_change_first_key_wildcard_dots_from_two_to_one() noexcept;
-
-  ConfdataFirstKeyType get_first_key_type() const noexcept { return first_key_type_; }
-
-  const string &get_first_key() const noexcept { return first_key_; }
-  const var &get_second_key() const noexcept { return second_key_; }
-
-  string make_first_key_copy() const noexcept { return first_key_.copy_and_make_not_shared(); }
-  var make_second_key_copy() const noexcept { return second_key_.is_string() ? var{second_key_.as_string().copy_and_make_not_shared()} : second_key_; }
-
-private:
-  const char *raw_key_{nullptr};
-  short raw_key_len_{0};
-
-  ConfdataFirstKeyType first_key_type_{ConfdataFirstKeyType::simple_key};
-  string first_key_;
-  var second_key_;
-
-  std::array<char, string::inner_sizeof() + std::numeric_limits<int16_t>::max() + 1> first_key_buffer_;
-  std::array<char, string::inner_sizeof() + std::numeric_limits<int16_t>::max() + 1> second_key_buffer_;
+  ConfdataPredefinedWildcards predefined_wildcards_;
+  ConfdataKeyBlacklist key_blacklist_;
 };

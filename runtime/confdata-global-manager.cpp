@@ -88,12 +88,16 @@ ConfdataGlobalManager &ConfdataGlobalManager::get() noexcept {
   return manager;
 }
 
-void ConfdataGlobalManager::init(size_t confdata_memory_limit) noexcept {
+void ConfdataGlobalManager::init(size_t confdata_memory_limit,
+                                 std::unordered_set<vk::string_view> &&predefined_wilrdcards,
+                                 std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept {
   void *confdata_memory = mmap(nullptr, confdata_memory_limit,
                                PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
   php_assert(confdata_memory);
   resource_.init(confdata_memory, confdata_memory_limit);
   confdata_samples_.init(resource_);
+  predefined_wildcards_.set_wildcards(std::move(predefined_wilrdcards));
+  key_blacklist_.set_blacklist(std::move(blacklist_pattern));
 }
 
 ConfdataGlobalManager::~ConfdataGlobalManager() noexcept {
@@ -102,55 +106,4 @@ ConfdataGlobalManager::~ConfdataGlobalManager() noexcept {
     munmap(resource_.memory_begin(), resource_.get_memory_stats().memory_limit);
     resource_.init(nullptr, 0);
   }
-}
-
-ConfdataKeyMaker::ConfdataKeyMaker(const char *key, int16_t key_len) noexcept {
-  update(key, key_len);
-}
-
-ConfdataFirstKeyType ConfdataKeyMaker::update(const char *key, int16_t key_len) noexcept {
-  php_assert(key_len >= 0);
-  raw_key_ = key;
-  raw_key_len_ = key_len;
-  first_key_ = string{};
-  second_key_ = var{};
-
-  const char *dot_one_end = std::find(key, key + key_len, '.');
-  if (dot_one_end++ == key + key_len) {
-    first_key_type_ = ConfdataFirstKeyType::simple_key;
-    first_key_ = string::make_const_string_on_memory(key, key_len, first_key_buffer_.data(), first_key_buffer_.size());
-    return first_key_type_;
-  }
-  const char *dot_two_end = std::find(dot_one_end, key + key_len, '.');
-  const char *first_key_end = dot_one_end;
-  if (dot_two_end++ == key + key_len) {
-    first_key_type_ = ConfdataFirstKeyType::one_dot_wildcard;
-  } else {
-    first_key_type_ = ConfdataFirstKeyType::two_dots_wildcard;
-    first_key_end = dot_two_end;
-  }
-  const auto first_key_len = static_cast<string::size_type>(first_key_end - key);
-  first_key_ = string::make_const_string_on_memory(key, first_key_len, first_key_buffer_.data(), first_key_buffer_.size());
-  key = first_key_end;
-  key_len = static_cast<int16_t>(key_len - first_key_len);
-
-  int64_t key_as_int = 0;
-  if (key_len && php_try_to_int(key, key_len, &key_as_int)) {
-    second_key_ = key_as_int;
-  } else {
-    second_key_ = string::make_const_string_on_memory(key, static_cast<string::size_type>(key_len),
-                                                      second_key_buffer_.data(), second_key_buffer_.size());
-  }
-  return first_key_type_;
-}
-
-void ConfdataKeyMaker::forcibly_change_first_key_wildcard_dots_from_two_to_one() noexcept {
-  php_assert(first_key_type_ == ConfdataFirstKeyType::two_dots_wildcard);
-  const char *first_key_end = std::find(raw_key_, raw_key_ + raw_key_len_, '.') + 1;
-  php_assert(first_key_end != raw_key_ + raw_key_len_ + 1);
-  const auto first_key_len = static_cast<string::size_type>(first_key_end - raw_key_);
-  const auto second_key_len = static_cast<string::size_type>(raw_key_len_ - first_key_len);
-  first_key_ = string::make_const_string_on_memory(raw_key_, first_key_len, first_key_buffer_.data(), first_key_buffer_.size());
-  second_key_ = string::make_const_string_on_memory(first_key_end, second_key_len, second_key_buffer_.data(), second_key_buffer_.size());
-  first_key_type_ = ConfdataFirstKeyType::one_dot_wildcard;
 }

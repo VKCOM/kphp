@@ -98,7 +98,7 @@ public:
     for (int i = 0; i < nrecords; i++) {
       const auto &element = reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]);
       const vk::string_view key{element.data, static_cast<size_t>(std::max(element.key_len, short{0}))};
-      if (key.empty() || is_key_blacklisted(key)) {
+      if (key.empty() || key_blacklist_.is_blacklisted(key)) {
         index_offset[i] = -1;
         ++event_counters_.snapshot_entry.blacklisted;
       } else {
@@ -110,13 +110,14 @@ public:
       ++event_counters_.snapshot_entry.total;
     }
 
-    auto blacklist = std::move(key_blacklist_pattern_);
+    // специально выключаем блеклист, так как проверили ключи на предыдущем этапе
+    blacklist_enabled_ = false;
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
         store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
       }
     }
-    key_blacklist_pattern_ = std::move(blacklist);
+    blacklist_enabled_ = true;
     size_hints_.clear();
     return 0;
   }
@@ -140,11 +141,9 @@ public:
     kprintf("Confdata binlog reading error: got unsupported operation '%s' with key '%.*s'\n", operation_name, std::max(key_len, 0), key);
   }
 
-  void init(memory_resource::unsynchronized_pool_resource &memory_pool,
-            std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept {
+  void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {
     assert(!updating_confdata_storage_);
     updating_confdata_storage_ = new(&confdata_mem_)confdata_sample_storage{confdata_sample_storage::allocator_type{memory_pool}};
-    key_blacklist_pattern_ = std::move(key_blacklist_pattern);
   }
 
   struct ConfdataUpdateResult {
@@ -219,7 +218,9 @@ public:
   }
 
 private:
-  ConfdataBinlogReplayer() noexcept {
+  ConfdataBinlogReplayer() noexcept:
+    key_blacklist_(ConfdataGlobalManager::get().get_key_blacklist()),
+    predefined_wildcards_(ConfdataGlobalManager::get().get_predefined_wildcards()) {
     add_handler([this](const lev_confdata_delete &E) {
       update_event_stat(this->delete_element(E.key, E.key_len), event_counters_.delete_events);
     });
@@ -279,26 +280,51 @@ private:
     assert(last_element_in_garbage_.is_null());
     assert(processing_value_.is_null());
     static_assert(std::is_same<short, int16_t>{}, "short is expected to be int16_t");
-    const auto first_key_dots = processing_key_.update(key, key_len);
-    const auto operation_status = operation();
-    if (operation_status == OperationStatus::no_update) {
+
+    OperationStatus last_operation_status{OperationStatus::no_update};
+    const auto predefined_wildcard_lengths = predefined_wildcards_.make_predefined_wildcard_len_range_by_key(key_view);
+    for (size_t wildcard_len : predefined_wildcard_lengths) {
+      assert(wildcard_len <= std::numeric_limits<int16_t>::max());
+      processing_key_.update_with_predefined_wildcard(key, key_len, static_cast<int16_t>(wildcard_len));
+      const auto operation_status = operation();
+      assert(last_operation_status != OperationStatus::full_update ||
+             operation_status == OperationStatus::full_update);
+      last_operation_status = operation_status;
+      if (operation_status != OperationStatus::full_update) {
+        break;
+      }
+    }
+
+    if (predefined_wildcard_lengths.empty() ||
+        last_operation_status == OperationStatus::full_update) {
+      const auto first_key_type = processing_key_.update(key, key_len);
+      if (predefined_wildcard_lengths.empty() ||
+          first_key_type != ConfdataFirstKeyType::simple_key) {
+        const auto operation_status = operation();
+        assert(last_operation_status != OperationStatus::full_update ||
+               operation_status == OperationStatus::full_update);
+        if (operation_status == OperationStatus::full_update &&
+            first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
+          processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
+          const auto should_be_full = operation();
+          assert(should_be_full == OperationStatus::full_update);
+        }
+        last_operation_status = operation_status;
+      }
+    }
+    if (last_operation_status == OperationStatus::no_update) {
       assert(last_element_in_garbage_.is_null());
       assert(processing_value_.is_null());
-      return operation_status;
-    }
-    if (operation_status == OperationStatus::full_update && first_key_dots == ConfdataFirstKeyType::two_dots_wildcard) {
-      processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
-      const auto should_be_full = operation();
-      assert(should_be_full == OperationStatus::full_update);
+      return last_operation_status;
     }
 
     last_element_in_garbage_.clear();
     processing_value_.clear();
-    if (operation_status == OperationStatus::full_update) {
+    if (last_operation_status == OperationStatus::full_update) {
       confdata_has_any_updates_ = true;
     }
     update_element_in_expiration_trace(key_view, delay);
-    return operation_status;
+    return last_operation_status;
   }
 
   static void update_event_stat(OperationStatus status, ConfdataStats::EventCounters::Event &event) noexcept {
@@ -442,7 +468,7 @@ private:
 
   void put_confdata_element_value_into_garbage(const var &element) noexcept {
     if (!last_element_in_garbage_.is_null()) {
-      // так как для ключей с 1 и 2 точками мы можем использовать один и тот же эелемнет,
+      // так как для ключей с 1 и 2 точками мы можем использовать один и тот же элемнет,
       // то и тут они внутренние указатели должны совпадать
       assert(last_element_in_garbage_.get_type() == element.get_type());
       if (element.is_string()) {
@@ -455,7 +481,8 @@ private:
       return;
     }
     if ((element.is_string() || element.is_array()) &&
-        vk::none_of_equal(element.get_reference_counter(), 1, 2)) {
+        (element.is_reference_counter(ExtraRefCnt::for_confdata) ||
+         element.is_reference_counter(ExtraRefCnt::for_global_const))) {
       put_confdata_var_into_garbage(element, ConfdataGarbageDestroyWay::deep_last);
       last_element_in_garbage_ = element;
     }
@@ -475,21 +502,28 @@ private:
     assert(!"Got unexpected reference counter");
   }
 
-  static void mark_string_as_confdata_const(string &str) noexcept {
+  template<class T>
+  void assert_correct_ref_counter(const T &element) const noexcept {
+    const auto refcnt = element.get_reference_counter();
+    // 2 - максимальное кол-во дефолтных wildcard + максимальное кол-во кастомных wildcard
+    assert(refcnt > 0 && refcnt <= 2 + predefined_wildcards_.get_max_wildcards_for_element());
+  }
+
+  void mark_string_as_confdata_const(string &str) const noexcept {
     if (str.is_reference_counter(ExtraRefCnt::for_confdata) ||
         str.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return;
     }
-    assert(vk::any_of_equal(str.get_reference_counter(), 1, 2));
+    assert_correct_ref_counter(str);
     str.set_reference_counter_to(ExtraRefCnt::for_confdata);
   }
 
-  static void mark_array_as_confdata_const(array<var> &arr) noexcept {
+  void mark_array_as_confdata_const(array<var> &arr) const noexcept {
     if (arr.is_reference_counter(ExtraRefCnt::for_confdata) ||
         arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return;
     }
-    assert(vk::any_of_equal(arr.get_reference_counter(), 1, 2));
+    assert_correct_ref_counter(arr);
     arr.set_reference_counter_to(ExtraRefCnt::for_confdata);
     const auto last = arr.end_no_mutate();
     for (auto it = arr.begin_no_mutate(); it != last; ++it) {
@@ -560,6 +594,7 @@ private:
     if (E.get_flags()) {
       return !equals(get_processing_value(E), prev_value);
     }
+    // (E.get_flags() == 0) -> новое значение строка
     if (!prev_value.is_string()) {
       return true;
     }
@@ -583,9 +618,7 @@ private:
   }
 
   bool is_key_blacklisted(vk::string_view key) const noexcept {
-    return key_blacklist_pattern_ &&
-           re2::RE2::FullMatch(re2::StringPiece(key.data(), static_cast<uint32_t>(key.size())),
-                               *key_blacklist_pattern_);
+    return blacklist_enabled_ && key_blacklist_.is_blacklisted(key);
   }
 
   // TODO: 'now' используется движками, можем ли мы так же её использовать?
@@ -607,13 +640,16 @@ private:
   std::unordered_map<vk::string_view, int> element_delays_;
   std::multimap<int, std::string> expiration_trace_;
 
-  std::unique_ptr<re2::RE2> key_blacklist_pattern_;
+  bool blacklist_enabled_{true};
+  const ConfdataKeyBlacklist &key_blacklist_;
+  const ConfdataPredefinedWildcards &predefined_wildcards_;
 };
 
 struct {
   const char *binlog_mask{nullptr};
   size_t memory_limit{2u * 1024u * 1024u * 1024u};
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
+  std::unordered_set<vk::string_view> predefined_wildcards;
 
   bool is_enabled() const noexcept {
     return binlog_mask;
@@ -632,6 +668,16 @@ void set_confdata_memory_limit(size_t memory_limit) noexcept {
 
 void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept {
   confdata_settings.key_blacklist_pattern = std::move(key_blacklist_pattern);
+}
+
+void add_confdata_predefined_wildcard(const char *wildcard) noexcept {
+  assert(wildcard && *wildcard);
+  vk::string_view wildcard_value{wildcard};
+  confdata_settings.predefined_wildcards.emplace(wildcard_value);
+}
+
+void clear_confdata_predefined_wildcards() noexcept {
+  confdata_settings.predefined_wildcards.clear();
 }
 
 void init_confdata_binlog_reader() noexcept {
@@ -660,7 +706,9 @@ void init_confdata_binlog_reader() noexcept {
   confdata_stats.initial_loading_time = -std::chrono::steady_clock::now().time_since_epoch();
 
   auto &confdata_manager = ConfdataGlobalManager::get();
-  confdata_manager.init(confdata_settings.memory_limit);
+  confdata_manager.init(confdata_settings.memory_limit,
+                        std::move(confdata_settings.predefined_wildcards),
+                        std::move(confdata_settings.key_blacklist_pattern));
 
   dl::set_current_script_allocator(confdata_manager.get_resource(), true);
   // engine_default_load_index и engine_default_read_binlog в случае проблем делают exit(1),
@@ -672,8 +720,7 @@ void init_confdata_binlog_reader() noexcept {
   });
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
-  confdata_binlog_replayer.init(confdata_manager.get_resource(),
-                                std::move(confdata_settings.key_blacklist_pattern));
+  confdata_binlog_replayer.init(confdata_manager.get_resource());
   engine_default_load_index(confdata_settings.binlog_mask);
   engine_default_read_binlog();
   confdata_binlog_replayer.delete_expired_elements();
@@ -681,7 +728,9 @@ void init_confdata_binlog_reader() noexcept {
   auto loaded_confdata = confdata_binlog_replayer.finish_confdata_update();
   assert(loaded_confdata.previous_confdata_garbage.empty());
 
-  confdata_stats.on_update(loaded_confdata.new_confdata, loaded_confdata.previous_confdata_garbage_size);
+  confdata_stats.on_update(loaded_confdata.new_confdata,
+                           loaded_confdata.previous_confdata_garbage_size,
+                           confdata_manager.get_predefined_wildcards());
   confdata_stats.initial_loading_time += confdata_stats.last_update_time_point.time_since_epoch();
 
   confdata_manager.get_current().reset(std::move(loaded_confdata.new_confdata));
@@ -712,7 +761,9 @@ void confdata_binlog_update_cron() noexcept {
   if (confdata_binlog_replayer.has_new_confdata()){
     if (confdata_manager.can_next_be_updated()) {
       auto updated_confdata = confdata_binlog_replayer.finish_confdata_update();
-      confdata_stats.on_update(updated_confdata.new_confdata, updated_confdata.previous_confdata_garbage_size);
+      confdata_stats.on_update(updated_confdata.new_confdata,
+                               updated_confdata.previous_confdata_garbage_size,
+                               confdata_manager.get_predefined_wildcards());
       previous_confdata_sample.save_garbage(std::move(updated_confdata.previous_confdata_garbage));
       const bool switched = confdata_manager.try_switch_to_next_sample(std::move(updated_confdata.new_confdata));
       assert(switched);

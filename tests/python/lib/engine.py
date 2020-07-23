@@ -58,7 +58,7 @@ class Engine:
         """
         :return: Путь до бинглога
         """
-        return self.binlog_path
+        return self._binlog_path
 
     def update_options(self, options):
         """

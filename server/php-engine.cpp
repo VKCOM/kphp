@@ -2573,10 +2573,18 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2007: {
+      if (!*optarg) {
+        clear_confdata_predefined_wildcards();
+      } else {
+        add_confdata_predefined_wildcard(optarg);
+      }
+      return 0;
+    }
+    case 2008: {
       printf("%s\n", get_php_scripts_version());
       exit(0);
     }
-    case 2008: {
+    case 2009: {
       php_warning_minimum_level = atoi(optarg);
       if (php_warning_minimum_level < 0 || php_warning_minimum_level > 3) {
         kprintf("--php-warnings-minimal-verbosity has to be [0, 3]\n");
@@ -2584,7 +2592,7 @@ int main_args_handler(int i) {
       }
       return 0;
     }
-    case 2009: {
+    case 2010: {
       if (set_profiler_log_path(optarg)) {
         return 0;
       }
@@ -2652,9 +2660,10 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
   parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
-  parse_option("php-version", no_argument, 2007, "show the compiled php code version and exit");
-  parse_option("php-warnings-minimal-verbosity", required_argument, 2008, "set minimum verbosity level for php warnings");
-  parse_option("profiler-log-prefix", required_argument, 2009, "set profier log path perfix");
+  parse_option("confdata-predefined-wildcard", required_argument, 2007, "perdefine confdata wildcard for better perfomance");
+  parse_option("php-version", no_argument, 2008, "show the compiled php code version and exit");
+  parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
+  parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

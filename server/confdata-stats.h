@@ -22,11 +22,13 @@ struct ConfdataStats : private vk::not_copyable {
   std::array<size_t, 100> garbage_statistic_{{0}};
 
   size_t total_elements{0};
-  size_t zero_dots_first_key_elements{0};
-  size_t one_dot_first_keys{0};
-  size_t one_dot_first_key_elements{0};
-  size_t two_dots_first_keys{0};
-  size_t two_dots_first_key_elements{0};
+  size_t simple_key_elements{0};
+  size_t one_dot_wildcards{0};
+  size_t one_dot_wildcard_elements{0};
+  size_t two_dots_wildcards{0};
+  size_t two_dots_wildcard_elements{0};
+  size_t predefined_wildcards{0};
+  size_t predefined_wildcard_elements{0};
   size_t elements_with_delay{0};
 
   struct EventCounters {
@@ -58,7 +60,9 @@ struct ConfdataStats : private vk::not_copyable {
     size_t unsupported_total_events{0};
   } event_counters;
 
-  void on_update(const confdata_sample_storage &new_confdata, size_t previous_garbage_size) noexcept;
+  void on_update(const confdata_sample_storage &new_confdata,
+                 size_t previous_garbage_size,
+                 const ConfdataPredefinedWildcards &predefined_wildcards) noexcept;
   void write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) noexcept;
 
 private:

@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <string>
-#include <unordered_map>
 
-#include "runtime/confdata-global-manager.h"
+#include "runtime/confdata-keys.h"
 
 namespace {
 
@@ -225,5 +224,61 @@ TEST(confdata_key_maker_test, test_first_key_two_dots_number_second) {
     ASSERT_KEY(key_maker, s.second.first);
     key_maker.forcibly_change_first_key_wildcard_dots_from_two_to_one();
     ASSERT_KEY(key_maker, s.second.second);
+  }
+}
+
+TEST(confdata_key_maker_test, test_update_with_predefined_wildcard) {
+  struct Sample {
+    std::string key;
+    int32_t wildcard_len;
+    ExpectedKey expected;
+  };
+  std::vector<Sample> samples{
+    {"abcd",   3, {ConfdataFirstKeyType::predefined_wildcard, "abc", var{string{"d"}}}},
+    {"123abc", 3, {ConfdataFirstKeyType::predefined_wildcard, "123", var{string{"abc"}}}},
+    {"abc123", 3, {ConfdataFirstKeyType::predefined_wildcard, "abc", var{123}}},
+    {"abc123", 1, {ConfdataFirstKeyType::predefined_wildcard, "a",   var{string{"bc123"}}}},
+  };
+
+  ConfdataKeyMaker key_maker;
+  for (const auto &s : samples) {
+    key_maker.update_with_predefined_wildcard(s.key.c_str(), s.key.size(), s.wildcard_len);
+    ASSERT_KEY(key_maker, s.expected);
+  }
+}
+
+TEST(confdata_key_maker_test, test_update_with_predefined_wildcard_auto) {
+  ConfdataPredefinedWildcards predefined_wildcards;
+  predefined_wildcards.set_wildcards({"abc", "abc.xyz", "cde", "cd", "hello."});
+
+  std::unordered_map<std::string, ExpectedKey> samples{
+    {"abc",         {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{string{}}}},
+    {"abc.",        {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{string{"."}}}},
+    {"abcd",        {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{string{"d"}}}},
+    {"abc123",      {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{123}}},
+    {"abc.xyz",     {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{string{".xyz"}}}},
+    {"abc.xyz.uvz", {ConfdataFirstKeyType::predefined_wildcard, "abc",         var{string{".xyz.uvz"}}}},
+    {"cd",          {ConfdataFirstKeyType::predefined_wildcard, "cd",          var{string{}}}},
+    {"cdxxx",       {ConfdataFirstKeyType::predefined_wildcard, "cd",          var{string{"xxx"}}}},
+    {"cde.xyz",     {ConfdataFirstKeyType::predefined_wildcard, "cd",          var{string{"e.xyz"}}}},
+
+    {"a",           {ConfdataFirstKeyType::simple_key,          "a",           var{}}},
+    {"ab",          {ConfdataFirstKeyType::simple_key,          "ab",          var{}}},
+    {"hello world", {ConfdataFirstKeyType::simple_key,          "hello world", var{}}},
+    {"foo",         {ConfdataFirstKeyType::simple_key,          "foo",         var{}}},
+
+    {"foo.",        {ConfdataFirstKeyType::one_dot_wildcard,    "foo.",        var{string{}}}},
+    {"foo.bar",     {ConfdataFirstKeyType::one_dot_wildcard,    "foo.",        var{string{"bar"}}}},
+    {"hello.world", {ConfdataFirstKeyType::one_dot_wildcard,    "hello.",      var{string{"world"}}}},
+
+    {"foo.bar.",    {ConfdataFirstKeyType::two_dots_wildcard,   "foo.bar.",    var{string{}}}},
+    {"foo.bar.baz", {ConfdataFirstKeyType::two_dots_wildcard,   "foo.bar.",    var{string{"baz"}}}},
+    {"hello.wo.ld", {ConfdataFirstKeyType::two_dots_wildcard,   "hello.wo.",   var{string{"ld"}}}},
+  };
+
+  ConfdataKeyMaker key_maker;
+  for (const auto &s : samples) {
+    key_maker.update(s.first.c_str(), s.first.size(), predefined_wildcards);
+    ASSERT_KEY(key_maker, s.second);
   }
 }

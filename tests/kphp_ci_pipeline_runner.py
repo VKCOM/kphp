@@ -125,7 +125,7 @@ def make_relpath(file_dir, file_path):
     return rel_path
 
 
-MAKE_TARGETS = "php tl2php kphp-unittests tlclient tasks rpc-proxy"
+MAKE_TARGETS = "php tl2php kphp-unittests tlclient tasks rpc-proxy pmemcached"
 TESTING_MODES = {
     "gcc": ("", "gcc", "g++", MAKE_TARGETS),
     "gcc-asan": (

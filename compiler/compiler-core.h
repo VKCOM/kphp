@@ -94,7 +94,7 @@ public:
   void try_load_tl_classes();
   const TlClasses &get_tl_classes() const { return tl_classes; }
 
-  void add_kphp_runtime_opt(const std::string &opt) { kphp_runtime_opts.emplace_back(opt); }
+  void add_kphp_runtime_opt(std::string opt) { kphp_runtime_opts.emplace_back(std::move(opt)); }
   const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
 
   void set_untyped_rpc_tl_used() {
