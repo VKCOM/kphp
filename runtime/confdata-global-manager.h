@@ -91,10 +91,10 @@ private:
   InterProcessResourceManager<ConfdataSample, 30> confdata_samples_;
 };
 
-enum class FirstKeyDots {
-  zero,
-  one,
-  two,
+enum class ConfdataFirstKeyType {
+  simple_key,
+  one_dot_wildcard,
+  two_dots_wildcard,
 };
 
 class ConfdataKeyMaker : vk::not_copyable {
@@ -102,11 +102,11 @@ public:
   ConfdataKeyMaker() = default;
   ConfdataKeyMaker(const char *key, int16_t key_len) noexcept;
 
-  FirstKeyDots update(const char *key, int16_t key_len) noexcept;
+  ConfdataFirstKeyType update(const char *key, int16_t key_len) noexcept;
 
-  void forcibly_change_first_key_dots_from_two_to_one() noexcept;
+  void forcibly_change_first_key_wildcard_dots_from_two_to_one() noexcept;
 
-  FirstKeyDots get_first_key_dots() const noexcept { return first_key_dots_; }
+  ConfdataFirstKeyType get_first_key_type() const noexcept { return first_key_type_; }
 
   const string &get_first_key() const noexcept { return first_key_; }
   const var &get_second_key() const noexcept { return second_key_; }
@@ -118,7 +118,7 @@ private:
   const char *raw_key_{nullptr};
   short raw_key_len_{0};
 
-  FirstKeyDots first_key_dots_{FirstKeyDots::zero};
+  ConfdataFirstKeyType first_key_type_{ConfdataFirstKeyType::simple_key};
   string first_key_;
   var second_key_;
 

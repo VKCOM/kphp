@@ -75,7 +75,7 @@ var f$confdata_get_value(const string &key) noexcept {
     return {};
   }
   // если ключ не имеет '.'
-  if (confdata_key_maker.get_first_key_dots() == FirstKeyDots::zero) {
+  if (confdata_key_maker.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
     return it->second;
   }
   // тут обязательно должен быть массив, мы так загружали
@@ -110,7 +110,7 @@ array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept {
   const auto &confdata_storage = ConfdataLocalManager::get().get_confdata_storage();
   ConfdataKeyMaker key_maker{wildcard.c_str(), static_cast<int16_t>(wildcard.size())};
   // wildcard имеет вид '\w+\..*' или '\w+\.\w+\..*'
-  if (key_maker.get_first_key_dots() != FirstKeyDots::zero) {
+  if (key_maker.get_first_key_type() != ConfdataFirstKeyType::simple_key) {
     // соотвественно первый ключ это или '\w+\.' или '\w+\.\w+\.'
     auto it = confdata_storage.find(key_maker.get_first_key());
     if (it == confdata_storage.end()) {
@@ -143,10 +143,10 @@ array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept {
   auto it = confdata_storage.lower_bound(wildcard);
   while (it != confdata_storage.end() && it->first.starts_with(wildcard)) {
     switch (key_maker.update(it->first.c_str(), static_cast<int16_t>(it->first.size()))) {
-      case FirstKeyDots::zero:
+      case ConfdataFirstKeyType::simple_key:
         result.set_value(f$substr(it->first, wildcard.size()).val(), it->second);
         break;
-      case FirstKeyDots::one: {
+      case ConfdataFirstKeyType::one_dot_wildcard: {
         const auto section_suffix = f$substr(it->first, wildcard.size()).val();
         php_assert(it->second.is_array());
         // тут обязательно должен быть массив, мы так загружали
@@ -157,8 +157,8 @@ array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept {
           result.set_value(string{section_suffix}.append(section_it.get_key()), section_it.get_value());
         }
       }
-      case FirstKeyDots::two:
-        // тут мы ничего не делаем, потому что это является подмножеством элементов FirstKeyDots::one
+      case ConfdataFirstKeyType::two_dots_wildcard:
+        // тут мы ничего не делаем, потому что это является подмножеством элементов ConfdataFirstKeyType::one_dot_wildcard
         break;
     }
     ++it;

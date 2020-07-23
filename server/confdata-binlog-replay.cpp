@@ -288,8 +288,8 @@ private:
       assert(processing_value_.is_null());
       return operation_status;
     }
-    if (operation_status == OperationStatus::full_update && first_key_dots == FirstKeyDots::two) {
-      processing_key_.forcibly_change_first_key_dots_from_two_to_one();
+    if (operation_status == OperationStatus::full_update && first_key_dots == ConfdataFirstKeyType::two_dots_wildcard) {
+      processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
       const auto should_be_full = operation();
       assert(should_be_full == OperationStatus::full_update);
     }
@@ -322,7 +322,7 @@ private:
 
   confdata_sample_storage::iterator find_updating_confdata_first_key_element() {
     // это некоторая оптимизация, позволяющая ускорить загрузку снепшота
-    if (loading_from_snapshot_ && processing_key_.get_first_key_dots() != FirstKeyDots::zero) {
+    if (loading_from_snapshot_ && processing_key_.get_first_key_type() != ConfdataFirstKeyType::simple_key) {
       auto last_it = updating_confdata_storage_->end();
       size_t attempts = std::min(2ul, updating_confdata_storage_->size());
       while (attempts--) {
@@ -341,7 +341,7 @@ private:
     }
 
     // для ключей без '.'
-    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+    if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       // убираем в мусор что было
       put_confdata_element_value_into_garbage(first_key_it->second);
       put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
@@ -385,7 +385,7 @@ private:
     }
 
     // для ключей без '.'
-    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+    if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       return OperationStatus::ttl_update_only;
     }
 
@@ -407,7 +407,7 @@ private:
     }
 
     // для ключей без '.'
-    if (processing_key_.get_first_key_dots() == FirstKeyDots::zero) {
+    if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       if (!can_element_be_saved(E, element_exists)) {
         return OperationStatus::no_update;
       }
