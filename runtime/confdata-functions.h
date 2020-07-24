@@ -9,4 +9,4 @@ bool f$is_confdata_loaded() noexcept;
 
 var f$confdata_get_value(const string &key) noexcept;
 
-array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept;
+array<var> f$confdata_get_values_by_wildcard(const string &wildcard) noexcept;

@@ -83,7 +83,7 @@ var f$confdata_get_value(const string &key) noexcept {
   return it->second.as_array().get_var(confdata_key_maker.get_second_key());
 }
 
-array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept {
+array<var> f$confdata_get_values_by_wildcard(const string &wildcard) noexcept {
   if (!ConfdataLocalManager::get().is_initialized()) {
     php_warning("Confdata is not initialized");
     return {};
@@ -91,14 +91,6 @@ array<var> f$confdata_get_values_by_wildcard(string wildcard) noexcept {
   if (wildcard.size() > std::numeric_limits<int16_t>::max()) {
     php_warning("Too long wildcard");
     return {};
-  }
-  if (auto star = static_cast<const char *>(memchr(wildcard.c_str(), '*', wildcard.size()))) {
-    const auto star_pos = static_cast<string::size_type>(star - wildcard.c_str());
-    if (star_pos + 1 != wildcard.size()) {
-      php_warning("Wildcard star must be at the end");
-      return {};
-    }
-    wildcard = string{wildcard.c_str(), star_pos};
   }
 
   // запрещяем получать всю конфдату
