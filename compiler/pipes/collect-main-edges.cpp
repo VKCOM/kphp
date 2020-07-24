@@ -79,7 +79,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
   if (vk::any_of_equal(v->type(), op_prefix_inc, op_prefix_dec, op_postfix_dec, op_postfix_inc)) {
     auto unary = v.as<meta_op_unary>();
     auto location = stage::get_location();
-    auto one = VertexAdaptor<op_int_const>::create().set_location(location);
+    auto one = GenTree::create_int_const(1).set_location(location);
     auto res = VertexAdaptor<op_add>::create(unary->expr(), one).set_location(location);
     return as_rvalue(res);
   }

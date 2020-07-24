@@ -21,8 +21,7 @@ private:
       return goto_op;
     }
 
-    auto minus_one = VertexAdaptor<op_int_const>::create();
-    minus_one->str_val = "-1";
+    auto minus_one = GenTree::create_int_const(-1);
     auto state = VertexAdaptor<op_var>::create();
     state->str_val = state_name;
     auto expr = VertexAdaptor<op_set>::create(state, minus_one);
@@ -39,8 +38,7 @@ private:
     const string &state_name,
     int cycle_depth) {
     if (root->type() == op_return) {
-      auto one = VertexAdaptor<op_int_const>::create();
-      one->str_val = "1";
+      auto one = GenTree::create_int_const(1);
       auto state = VertexAdaptor<op_var>::create();
       state->str_val = state_name;
       auto expr = VertexAdaptor<op_set>::create(state, one);
@@ -127,19 +125,15 @@ public:
       auto run_func = VertexAdaptor<op_set>::create(case_res, func_call);
 
 
-      auto zero = VertexAdaptor<op_int_const>::create();
-      zero->str_val = "0";
-      auto one = VertexAdaptor<op_int_const>::create();
-      one->str_val = "1";
-      auto minus_one = VertexAdaptor<op_int_const>::create();
-      minus_one->str_val = "-1";
+      auto zero = GenTree::create_int_const(0);
+      auto one = GenTree::create_int_const(1);
+      auto minus_one = GenTree::create_int_const(-1);
 
       auto eq_one = VertexAdaptor<op_eq2>::create(case_state_1, one);
       auto eq_minus_one = VertexAdaptor<op_eq2>::create(case_state_2, minus_one);
 
       auto cmd_one = VertexAdaptor<op_return>::create(case_res_copy);
-      auto one_2 = VertexAdaptor<op_int_const>::create();
-      one_2->str_val = "1";
+      auto one_2 = GenTree::create_int_const(1);
       auto cmd_minus_one = VertexAdaptor<op_break>::create(one_2);
 
       auto init = VertexAdaptor<op_set>::create(case_state_3, zero);

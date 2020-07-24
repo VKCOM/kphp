@@ -1062,8 +1062,7 @@ VertexAdaptor<Op> GenTree::get_break_or_continue() {
   CE (expect(tok_semicolon, "';'"));
 
   if (!level_of_enclosing_loops_to_skip) {
-    auto one = VertexAdaptor<op_int_const>::create();
-    one->str_val = "1";
+    auto one = GenTree::create_int_const(1);
     level_of_enclosing_loops_to_skip = one;
   }
 

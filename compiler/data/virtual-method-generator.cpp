@@ -118,9 +118,7 @@ void check_constructor(FunctionPtr interface_constructor, std::vector<ClassPtr> 
 }
 
 VertexAdaptor<op_case> gen_case_on_hash(ClassPtr derived, VertexAdaptor<op_seq> cmd) {
-  auto hash_of_derived = VertexAdaptor<op_int_const>::create();
-  hash_of_derived->str_val = std::to_string(derived->get_hash());
-
+  auto hash_of_derived = GenTree::create_int_const(derived->get_hash());
   return VertexAdaptor<op_case>::create(hash_of_derived, cmd);
 }
 

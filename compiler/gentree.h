@@ -72,6 +72,12 @@ public:
     return type_rule;
   }
 
+  static auto create_int_const(int32_t number) {
+    auto int_v = VertexAdaptor<op_int_const>::create();
+    int_v->str_val = std::to_string(number);
+    return int_v;
+  }
+
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();
   VertexAdaptor<meta_op_func_param> get_func_param();

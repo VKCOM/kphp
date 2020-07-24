@@ -4,6 +4,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
 
 namespace {
 VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
@@ -33,8 +34,7 @@ VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
     }
 
     auto var = x;
-    auto key = VertexAdaptor<op_int_const>::create();
-    key->set_string(std::to_string(implicit_key));
+    auto key = GenTree::create_int_const(implicit_key);
     mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(key, var));
   }
 
