@@ -181,11 +181,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
         args[0] = VertexAdaptor<op_varg>::create(args[0]);
       }
     }
-
-    if (vk::any_of_equal(name, "func_get_args", "func_get_arg", "func_num_args")) {
-      current_function->is_vararg = true;
-      current_function->has_variadic_param = true;
-    }
   }
 
   if (auto return_vertex = root.try_as<op_return>()) {

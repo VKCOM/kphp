@@ -96,7 +96,6 @@ public:
   vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
   std::string return_typehint;
 
-  bool is_vararg = false;
   bool has_variadic_param = false;
   bool should_be_sync = false;
   bool should_not_throw = false;

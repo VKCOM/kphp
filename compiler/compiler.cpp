@@ -68,7 +68,6 @@
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-function.h"
-#include "compiler/pipes/preprocess-vararg.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-kphp-configuration.h"
 #include "compiler/pipes/register-variables.h"
@@ -250,7 +249,6 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PassC<EraseDefinesDeclarationsPass>{}
     >> PipeC<PrepareFunctionF>{}
     >> PassC<InlineDefinesUsagesPass>{}
-    >> PassC<PreprocessVarargPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> SyncC<GenerateVirtualMethods>{}
     >> PassC<TransformToSmartInstanceof>{}
