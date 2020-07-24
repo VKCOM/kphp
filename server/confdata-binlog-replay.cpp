@@ -90,7 +90,6 @@ public:
     kfs_read_file_assert (Snapshot, index_binary_data.get(), index_offset[nrecords]);
 
     using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
-    loading_from_snapshot_ = true;
 
     vk::string_view last_one_dot_key;
     vk::string_view last_two_dots_key;
@@ -118,7 +117,6 @@ public:
       }
     }
     key_blacklist_pattern_ = std::move(blacklist);
-    loading_from_snapshot_ = false;
     size_hints_.clear();
     return 0;
   }
@@ -320,20 +318,6 @@ private:
     }
   }
 
-  confdata_sample_storage::iterator find_updating_confdata_first_key_element() {
-    // это некоторая оптимизация, позволяющая ускорить загрузку снепшота
-    if (loading_from_snapshot_ && processing_key_.get_first_key_type() != ConfdataFirstKeyType::simple_key) {
-      auto last_it = updating_confdata_storage_->end();
-      size_t attempts = std::min(2ul, updating_confdata_storage_->size());
-      while (attempts--) {
-        if ((--last_it)->first == processing_key_.get_first_key()) {
-          return last_it;
-        }
-      }
-    }
-    return updating_confdata_storage_->find(processing_key_.get_first_key());
-  }
-
   OperationStatus delete_processing_element() noexcept {
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     if (first_key_it == updating_confdata_storage_->end()) {
@@ -398,7 +382,7 @@ private:
 
   template<class BASE, int OPERATION>
   OperationStatus store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
-    auto first_key_it = find_updating_confdata_first_key_element();
+    auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     bool element_exists = true;
     if (first_key_it == updating_confdata_storage_->end()) {
       element_exists = false;
@@ -614,7 +598,6 @@ private:
   size_t garbage_size_{0};
   var last_element_in_garbage_;
   bool confdata_has_any_updates_{false};
-  bool loading_from_snapshot_{false};
   std::unordered_map<vk::string_view, array_size> size_hints_;
   ConfdataStats::EventCounters event_counters_;
 
