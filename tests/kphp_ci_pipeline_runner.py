@@ -151,7 +151,7 @@ def parse_args():
         "--jobs",
         type=int,
         dest="jobs",
-        default=(multiprocessing.cpu_count() // 2) or 1,
+        default=multiprocessing.cpu_count(),
         help="number of jobs to some tests"
     )
 
@@ -233,8 +233,9 @@ if __name__ == "__main__":
         distcc_host_list = make_relpath(runner_dir, distcc_hosts)
         distcc_options = "--distcc-host-list {}".format(distcc_host_list)
         os.environ.update(make_distcc_env(read_distcc_hosts(distcc_host_list), os.path.join(runner_dir, "tmp_distcc")))
-        cc = "'distcc {}'".format(cc)
-        cxx = "'distcc {}'".format(cxx)
+        if "KDB_USE_CCACHE" not in os.environ:
+            cc = "'distcc {}'".format(cc)
+            cxx = "'distcc {}'".format(cxx)
 
     runner.add_test_group(
         name="make-kphp",
