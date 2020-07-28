@@ -13,20 +13,6 @@
 /***
   LexerData
  ***/
-LexerData::LexerData() :
-  line_num(-1),
-  code(nullptr),
-  code_end(nullptr),
-  start(nullptr),
-  code_len(0),
-  in_gen_str(false),
-  str_begin(nullptr),
-  str_cur(nullptr),
-  dont_hack_last_tokens(false) {}
-
-LexerData::~LexerData() {
-}
-
 void LexerData::new_line() {
   line_num++;
 }
@@ -293,17 +279,7 @@ int LexerData::get_line_num() {
 }
 
 
-/***
-  TokenLexer
- ***/
-//virtual int TokenLexer::parse (LexerData *lexer_data) const = 0;
-TokenLexer::TokenLexer() {
-}
-
-TokenLexer::~TokenLexer() {
-}
-
-int parse_with_helper(LexerData *lexer_data, Helper<TokenLexer> *h) {
+int parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h) {
   const char *s = lexer_data->get_code();
 
   TokenLexer *fnd = h->get_help(s);
@@ -314,13 +290,6 @@ int parse_with_helper(LexerData *lexer_data, Helper<TokenLexer> *h) {
   }
 
   return ret;
-}
-
-TokenLexerError::TokenLexerError(string error_str) :
-  error_str(std::move(error_str)) {
-}
-
-TokenLexerError::~TokenLexerError() {
 }
 
 int TokenLexerError::parse(LexerData *lexer_data) const {
@@ -659,8 +628,9 @@ int TokenLexerHexChar::parse(LexerData *lexer_data) const {
 }
 
 
-Helper<TokenLexer> *TokenLexerStringExpr::gen_helper() {
-  Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("Can't parse"));
+void TokenLexerStringExpr::init() {
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
   h->add_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
   h->add_rule("\"", vk::singleton<TokenLexerString>::get());
@@ -671,21 +641,6 @@ Helper<TokenLexer> *TokenLexerStringExpr::gen_helper() {
 
   h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
   h->add_rule("", vk::singleton<TokenLexerCommon>::get());
-
-  return h;
-}
-
-TokenLexerStringExpr::TokenLexerStringExpr() :
-  h(nullptr) {
-}
-
-void TokenLexerStringExpr::init() {
-  assert (h == nullptr);
-  h = gen_helper();
-}
-
-TokenLexerStringExpr::~TokenLexerStringExpr() {
-  delete h;
 }
 
 int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
@@ -727,8 +682,9 @@ void TokenLexerHeredocString::add_esc(const string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
 }
 
-Helper<TokenLexer> *TokenLexerString::gen_helper() {
-  h = new Helper<TokenLexer>(new TokenLexerAppendChar(-1, 0));
+void TokenLexerString::init() {
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerAppendChar(-1, 0));
 
   add_esc("\\f", '\f');
   add_esc("\\n", '\n');
@@ -744,12 +700,11 @@ Helper<TokenLexer> *TokenLexerString::gen_helper() {
 
   h->add_rule("$[A-Za-z_{]", vk::singleton<TokenLexerName>::get());
   h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
-
-  return h;
 }
 
-Helper<TokenLexer> *TokenLexerHeredocString::gen_helper() {
-  h = new Helper<TokenLexer>(new TokenLexerAppendChar(-1, 0));
+void TokenLexerHeredocString::init() {
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerAppendChar(-1, 0));
 
   add_esc("\\f", '\f');
   add_esc("\\n", '\n');
@@ -764,34 +719,6 @@ Helper<TokenLexer> *TokenLexerHeredocString::gen_helper() {
 
   h->add_rule("$[A-Za-z{]", vk::singleton<TokenLexerName>::get());
   h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
-
-  return h;
-}
-
-TokenLexerString::TokenLexerString() :
-  h(nullptr) {
-}
-
-void TokenLexerString::init() {
-  assert (h == nullptr);
-  h = gen_helper();
-}
-
-TokenLexerString::~TokenLexerString() {
-  delete h;
-}
-
-TokenLexerHeredocString::TokenLexerHeredocString() :
-  h(nullptr) {
-}
-
-void TokenLexerHeredocString::init() {
-  assert (h == nullptr);
-  h = gen_helper();
-}
-
-TokenLexerHeredocString::~TokenLexerHeredocString() {
-  delete h;
 }
 
 int TokenLexerString::parse(LexerData *lexer_data) const {
@@ -982,27 +909,9 @@ int TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-TokenLexerWithHelper::TokenLexerWithHelper() :
-  h(nullptr) {
-}
-
-TokenLexerWithHelper::~TokenLexerWithHelper() {
-  delete h;
-}
-
-void TokenLexerWithHelper::init() {
-  assert (h == nullptr);
-  h = gen_helper();
-}
-
 int TokenLexerWithHelper::parse(LexerData *lexer_data) const {
   assert (h != nullptr);
   return parse_with_helper(lexer_data, h);
-}
-
-TokenLexerToken::TokenLexerToken(TokenType tp, int len) :
-  tp(tp),
-  len(len) {
 }
 
 int TokenLexerToken::parse(LexerData *lexer_data) const {
@@ -1010,12 +919,13 @@ int TokenLexerToken::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-void TokenLexerCommon::add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp) {
+void TokenLexerCommon::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
   h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
 }
 
-Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
-  Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("No <common token> found"));
+void TokenLexerCommon::init() {
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("No <common token> found"));
 
   add_rule(h, ":::", tok_triple_colon);
   add_rule(h, ":<=:", tok_triple_lt);
@@ -1084,15 +994,6 @@ Helper<TokenLexer> *TokenLexerCommon::gen_helper() {
   add_rule(h, "::", tok_double_colon);
   add_rule(h, "->", tok_arrow);
   add_rule(h, "...", tok_varg);
-
-  return h;
-}
-
-TokenLexerCommon::TokenLexerCommon() {
-}
-
-TokenLexerSkip::TokenLexerSkip(int n) :
-  n(n) {
 }
 
 int TokenLexerSkip::parse(LexerData *lexer_data) const {
@@ -1100,8 +1001,9 @@ int TokenLexerSkip::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-Helper<TokenLexer> *TokenLexerPHP::gen_helper() {
-  Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("Can't parse"));
+void TokenLexerPHP::init() {
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
   h->add_rule("/*|//|#", vk::singleton<TokenLexerComment>::get());
   h->add_rule("#ifndef KittenPHP", vk::singleton<TokenLexerIfndefComment>::get());
@@ -1114,18 +1016,13 @@ Helper<TokenLexer> *TokenLexerPHP::gen_helper() {
 
   h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
   h->add_rule("", vk::singleton<TokenLexerCommon>::get());
-
-  return h;
 }
 
-TokenLexerPHP::TokenLexerPHP() {
-}
-
-void TokenLexerPHPDoc::add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp) {
+void TokenLexerPHPDoc::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
   h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
 }
 
-Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
+void TokenLexerPHPDoc::init() {
   struct TokenLexerPHPDocStopParsing : TokenLexer {
     int parse(LexerData *lexer_data) const {
       lexer_data->add_token(0, tok_end);
@@ -1134,7 +1031,8 @@ Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
     }
   };
 
-  auto h = new Helper<TokenLexer>(new TokenLexerPHPDocStopParsing());
+  assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerPHPDocStopParsing());
 
   h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
   h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
@@ -1164,8 +1062,6 @@ Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
   add_rule(h, "=>", tok_double_arrow);
   add_rule(h, "->", tok_arrow);
   add_rule(h, "...", tok_varg);
-
-  return h;
 }
 
 int TokenLexerGlobal::parse(LexerData *lexer_data) const {

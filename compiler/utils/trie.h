@@ -1,79 +1,42 @@
 #pragma once
 
+#include <array>
 #include <cassert>
+#include <memory>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/optional.h"
 
 template<typename T>
 struct Trie : private vk::not_copyable {
-  Trie *next[256];
-  int has_val;
-  T val;
+  std::array<std::unique_ptr<Trie>, 256> next{};
+  vk::optional<T> val;
 
-  Trie();
+  void add(const string &s, T val) {
+    Trie *cur = this;
 
-  void add(const string &s, const T &val);
-  T *get_deepest(const char *s);
-  void clear();
-  ~Trie();
+    for (char c : s) {
+      if (cur->next[c] == nullptr) {
+        cur->next[c] = std::make_unique<Trie>();
+      }
+      cur = cur->next[c].get();
+    }
 
+    assert(!cur->val);
+    cur->val = std::move(val);
+  }
+
+  vk::optional<T> get_deepest(const char *s) {
+    auto *best = this;
+
+    for (auto cur = this; *s && cur; ++s) {
+      cur = cur->next[static_cast<uint8_t>(*s)].get();
+      if (cur && cur->val) {
+        best = cur;
+      }
+    }
+
+    return best->val;
+  }
 };
 
-template<typename T>
-Trie<T>::Trie() {
-  memset(next, 0, sizeof(next));
-  has_val = 0;
-}
-
-template<typename T>
-void Trie<T>::add(const string &s, const T &val) {
-  Trie *cur = this;
-
-  for (int i = 0; i < (int)s.size(); i++) {
-    int c = (unsigned char)s[i];
-
-    if (cur->next[c] == nullptr) {
-      cur->next[c] = new Trie();
-    }
-    cur = cur->next[c];
-  }
-
-  cur->val = val;
-  assert (cur->has_val == 0);
-  cur->has_val = 1;
-}
-
-template<typename T>
-T *Trie<T>::get_deepest(const char *s) {
-  T *best = nullptr;
-  Trie<T> *cur = this;
-
-  while (cur) {
-    if (cur->has_val) {
-      best = &cur->val;
-    }
-    if (*s == 0) {
-      break;
-    }
-    cur = cur->next[(unsigned char)*s++];
-  }
-
-  return best;
-}
-
-
-template<typename T>
-void Trie<T>::clear() {
-  for (int i = 0; i < 256; i++) {
-    delete next[i];
-  }
-}
-
-template<typename T>
-Trie<T>::~Trie() {
-  clear();
-}
-<<<<<<< HEAD:PHP/compiler/trie.hpp
-
-=======
->>>>>>> f48689eb... PHP: split some files:PHP/compiler/utils/trie.h

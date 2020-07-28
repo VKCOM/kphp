@@ -8,8 +8,6 @@
 #include "compiler/utils/string-utils.h"
 
 struct LexerData : private vk::not_copyable {
-  LexerData();
-  ~LexerData();
   void set_code(char *code, int code_len);
   void new_line();
   char *get_code();
@@ -41,153 +39,141 @@ struct LexerData : private vk::not_copyable {
   int get_line_num();
 
 private:
-  int line_num;
-  char *code;
-  char *code_end;
-  char *start;
-  int code_len;
+  int line_num{-1};
+  char *code{nullptr};
+  char *code_end{nullptr};
+  char *start{nullptr};
+  int code_len{0};
   vector<Token> tokens;
-  bool in_gen_str;
-  const char *str_begin;
-  char *str_cur;
-  bool dont_hack_last_tokens;
+  bool in_gen_str{false};
+  const char *str_begin{nullptr};
+  char *str_cur{nullptr};
+  bool dont_hack_last_tokens{false};
 };
 
 struct TokenLexer : private vk::not_copyable {
   virtual int parse(LexerData *lexer_data) const = 0;
-  TokenLexer();
-  virtual ~TokenLexer();
+  virtual ~TokenLexer() = default;
 };
 
 //TODO ??
-int parse_with_helper(LexerData *lexer_data, Helper<TokenLexer> *h);
+int parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h);
 
-struct TokenLexerError : TokenLexer {
+struct TokenLexerError final : TokenLexer {
   string error_str;
 
-  explicit TokenLexerError(string error_str = "unknown_error");
-  ~TokenLexerError();
+  explicit TokenLexerError(string error_str = "unknown_error") :
+    error_str(std::move(error_str)) {
+  }
+
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerName : TokenLexer {
+struct TokenLexerName final : TokenLexer {
   static void init_static();
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerNum : TokenLexer {
+struct TokenLexerNum final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerSimpleString : TokenLexer {
+struct TokenLexerSimpleString final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerAppendChar : TokenLexer {
+struct TokenLexerAppendChar final : TokenLexer {
   int c, pass;
 
   TokenLexerAppendChar(int c, int pass);
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerOctChar : TokenLexer {
+struct TokenLexerOctChar final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerHexChar : TokenLexer {
+struct TokenLexerHexChar final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerStringExpr : TokenLexer {
-  Helper<TokenLexer> *h;
+struct TokenLexerStringExpr final : TokenLexer {
+  std::unique_ptr<Helper<TokenLexer>> h;
 
-  Helper<TokenLexer> *gen_helper();
   void init();
-  TokenLexerStringExpr();
-  ~TokenLexerStringExpr();
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerHeredocString : TokenLexer {
-  Helper<TokenLexer> *h;
+struct TokenLexerHeredocString final : TokenLexer {
+  std::unique_ptr<Helper<TokenLexer>> h;
 
   void add_esc(const string &s, char c);
-  Helper<TokenLexer> *gen_helper();
   void init();
-  TokenLexerHeredocString();
-  ~TokenLexerHeredocString();
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerString : TokenLexer {
-  Helper<TokenLexer> *h;
+struct TokenLexerString final : TokenLexer {
+  std::unique_ptr<Helper<TokenLexer>> h;
 
   void add_esc(const string &s, char c);
-  Helper<TokenLexer> *gen_helper();
   void init();
-  TokenLexerString();
-  ~TokenLexerString();
   int parse(LexerData *lexer_data) const;
 };
 
 
-struct TokenLexerComment : TokenLexer {
+struct TokenLexerComment final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerIfndefComment : TokenLexer {
+struct TokenLexerIfndefComment final : TokenLexer {
   int parse(LexerData *lexer_data) const;
 };
-
 
 struct TokenLexerWithHelper : TokenLexer {
-  Helper<TokenLexer> *h;
-  virtual Helper<TokenLexer> *gen_helper() = 0;
+  std::unique_ptr<Helper<TokenLexer>> h;
 
-  TokenLexerWithHelper();
-
-  virtual ~TokenLexerWithHelper();
-
-  void init();
+  virtual void init() = 0;
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerToken : TokenLexer {
+struct TokenLexerToken final : TokenLexer {
   TokenType tp;
   int len;
 
-  TokenLexerToken(TokenType tp, int len);
+  TokenLexerToken(TokenType tp, int len) :
+    tp(tp),
+    len(len) {
+  }
 
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerCommon : TokenLexerWithHelper {
-  inline void add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp);
+struct TokenLexerCommon final : TokenLexerWithHelper {
+  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp);
 
-  Helper<TokenLexer> *gen_helper();
-  TokenLexerCommon();
+  void init() final;
 };
 
-struct TokenLexerSkip : TokenLexer {
+struct TokenLexerSkip final : TokenLexer {
   int n;
-  TokenLexerSkip(int n = 1);
+  TokenLexerSkip(int n = 1) :
+    n(n) {
+  }
 
   int parse(LexerData *lexer_data) const;
 };
 
-struct TokenLexerPHP : TokenLexerWithHelper {
-  Helper<TokenLexer> *gen_helper();
-  TokenLexerPHP();
+struct TokenLexerPHP final : TokenLexerWithHelper {
+  void init() final;
 };
 
-struct TokenLexerPHPDoc : TokenLexerWithHelper {
-  inline void add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp);
+struct TokenLexerPHPDoc final : TokenLexerWithHelper {
+  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp);
 
-  Helper<TokenLexer> *gen_helper();
+  void init() final;
 };
 
-struct TokenLexerGlobal : TokenLexer {
-  //static TokenLexerPHP php_lexer;
+struct TokenLexerGlobal final : TokenLexer {
   TokenLexerPHP *php_lexer{vk::singleton<TokenLexerPHP>::get()};
 
   int parse(LexerData *lexer_data) const;
