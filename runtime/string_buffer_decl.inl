@@ -31,12 +31,13 @@ public:
   friend inline string_buffer &operator<<(string_buffer &sb, double f);
   friend inline string_buffer &operator<<(string_buffer &sb, const string &s);
   friend inline string_buffer &operator<<(string_buffer &sb, bool x);
-  friend inline string_buffer &operator<<(string_buffer &sb, int x);
+  friend inline string_buffer &operator<<(string_buffer &sb, int32_t x);
   friend inline string_buffer &operator<<(string_buffer &sb, unsigned int x);
   friend inline string_buffer &operator<<(string_buffer &sb, long long x);
   friend inline string_buffer &operator<<(string_buffer &sb, unsigned long long x);
+  friend inline string_buffer &operator<<(string_buffer &sb, int64_t x);
 
-  inline string_buffer &append(const char *str, int len);
+  inline string_buffer &append(const char *str, size_t len);
   inline void write(const char *str, int len);
 
   inline void append_unsafe(const char *str, int len);
@@ -53,7 +54,7 @@ public:
   inline const char *c_str();
   inline string str() const;
 
-  inline bool set_pos(int pos);
+  inline bool set_pos(int64_t pos);
 
   ~string_buffer() noexcept;
 

@@ -23,8 +23,8 @@ void TypeTagger::compile(CodeGenerator &W) const {
   // TODO fix it?
   std::set<std::string> sorted_types = {
     "bool",
-    "int",
-    "Optional < int >",
+    "int64_t",
+    "Optional < int64_t >",
     "void",
     "thrown_exception",
     "var",

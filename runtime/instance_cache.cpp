@@ -88,7 +88,7 @@ public:
     mem_resource.deallocate(this, sizeof(ElementHolder));
   }
 
-  ElementHolder(std::chrono::nanoseconds now, int ttl,
+  ElementHolder(std::chrono::nanoseconds now, int64_t ttl,
                 std::unique_ptr<InstanceWrapperBase> &&instance,
                 CacheContext &context) noexcept:
     inserted_by_process(getpid()),
@@ -112,7 +112,7 @@ public:
     return real_age.count() / max_age.count();
   }
 
-  void update_time_points(std::chrono::nanoseconds now, int ttl) noexcept {
+  void update_time_points(std::chrono::nanoseconds now, int64_t ttl) noexcept {
     stored_at = std::max(now, stored_at);
     expiring_at = ttl > 0 ? stored_at + std::chrono::seconds{ttl} : std::chrono::nanoseconds::max();
     early_fetch_performed = false;
@@ -294,7 +294,7 @@ public:
     context_ = nullptr;
   }
 
-  bool store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl) noexcept {
+  bool store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) noexcept {
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_ && context_);
     if (context_->memory_swap_required) {
@@ -401,9 +401,9 @@ public:
     return result;
   }
 
-  bool update_ttl(const string &key, int ttl) {
+  bool update_ttl(const string &key, int64_t ttl) {
     php_assert(current_ && context_);
-    ic_debug("update_ttl '%s', new ttl '%d'\n", key.c_str(), ttl);
+    ic_debug("update_ttl '%s', new ttl '%ld'\n", key.c_str(), ttl);
     sync_delayed();
     // storing_delayed_ использует память скрипта
     // Не очень понятно, что делать с storing_delayed_, пока пусть будет так,
@@ -584,7 +584,7 @@ private:
   }
 
   ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
-                                               const string &key_in_script_memory, int ttl,
+                                               const string &key_in_script_memory, int64_t ttl,
                                                const InstanceWrapperBase &instance_wrapper,
                                                DeepMoveFromScriptToCacheVisitor &detach_processor) noexcept {
     // подменяем аллокатор
@@ -669,7 +669,7 @@ private:
   // Использует память скрипта. Завернуто в class_instance так как array не умеет работать с unique_ptr
   struct DelayedInstance : refcountable_php_classes<DelayedInstance> {
     std::unique_ptr<InstanceWrapperBase> instance_wrapper;
-    int ttl{0};
+    int64_t ttl{0};
   };
   array<class_instance<DelayedInstance>> storing_delayed_;
 
@@ -717,7 +717,7 @@ bool DeepDestroyFromCacheVisitor::process(string &str) {
   return true;
 }
 
-bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl) {
+bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
@@ -768,7 +768,7 @@ void instance_cache_release_all_resources_acquired_by_this_proc() {
   ic_impl_::InstanceCache::get().force_release_all_resources();
 }
 
-bool f$instance_cache_update_ttl(const string &key, int ttl) {
+bool f$instance_cache_update_ttl(const string &key, int64_t ttl) {
   return ic_impl_::InstanceCache::get().update_ttl(key, ttl);
 }
 

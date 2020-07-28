@@ -206,8 +206,8 @@ void f$parse_str(const string &str, var &arr) {
   arr = array<var>();
 
   array<string> par = explode('&', str, INT_MAX);
-  int len = par.count();
-  for (int i = 0; i < len; i++) {
+  int64_t len = par.count();
+  for (int64_t i = 0; i < len; i++) {
     const char *cur = par.get_value(i).c_str();
     const char *eq_pos = strchrnul(cur, '=');
     string value;
@@ -300,7 +300,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
     }
 
     if (pp - p > 0 && pp - p < 6 && (pp == ue || *pp == '/')) {
-      int port = string(p, static_cast<string::size_type>(pp - p)).to_int();
+      int64_t port = string(p, static_cast<string::size_type>(pp - p)).to_int();
       if (port > 0 && port <= 65535) {
         result.set_value(string("port", 4), port);
         if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
@@ -362,7 +362,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
       if (e - p > 5) { /* port cannot be longer then 5 characters */
         return {};
       } else if (e - p > 0) {
-        int port = string(p, static_cast<string::size_type>(e - p)).to_int();
+        int64_t port = string(p, static_cast<string::size_type>(e - p)).to_int();
         if (port > 0 && port <= 65535) {
           result.set_value(string("port", 4), port);
         } else {
@@ -416,7 +416,7 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
 }
 
 // returns var, as array|false|null (null if component doesn't exist)
-var f$parse_url(const string &s, int component) {
+var f$parse_url(const string &s, int64_t component) {
   array<var> url_as_array = php_url_parse_ex(s.c_str(), s.size());
 
   if (url_as_array.empty()) {
@@ -442,7 +442,7 @@ var f$parse_url(const string &s, int component) {
       case 7:             // PHP_URL_FRAGMENT
         return url_as_array.get_value(string("fragment", 8));
       default:
-        php_warning("Wrong parameter component = %d in function parse_url", component);
+        php_warning("Wrong parameter component = %ld in function parse_url", component);
         return false;
     }
   }

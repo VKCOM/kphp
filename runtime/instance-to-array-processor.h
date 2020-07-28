@@ -78,7 +78,7 @@ private:
   template<size_t ...Is, typename ...T>
   void process_shape(const shape<std::index_sequence<Is...>, T...> &value, InstanceToArrayVisitor &shape_visitor) {
     // shape doesn't have key names at runtime, that's why result will be a vector-array (whereas associative in PHP)
-    std::initializer_list<int>{((void)shape_visitor.process_impl("", value.template get<Is>()), 0)...};
+    std::initializer_list<int32_t>{((void)shape_visitor.process_impl("", value.template get<Is>()), 0)...};
   }
 
   template<class T>

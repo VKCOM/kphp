@@ -12,7 +12,7 @@ struct TlTemplatePhpTypeHelpers {
     constructor(get_this_from_renamed_tl_scheme(constructor)) {}
 
   void compile(CodeGenerator &W) const {
-    int cnt = 0;
+    size_t cnt = 0;
     std::vector<std::string> type_var_names;
     const vk::tl::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
     for (const auto &arg : target_constructor->args) {
@@ -38,7 +38,7 @@ struct TlTemplatePhpTypeHelpers {
         if (tl->get_type_by_magic(constructor->type_id)->name == "ReqResult") {
           type_var_access = "C$VK$TL$RpcResponse";
         } else {
-          int pos = cur_instantiation_name.find("__");
+          size_t pos = cur_instantiation_name.find("__");
           kphp_assert(pos != std::string::npos);
           ClassPtr tl_type_php_class = get_php_class_of_tl_type_specialization(tl->get_type_by_magic(constructor->type_id), cur_instantiation_name.substr(pos));
           kphp_assert(tl_type_php_class);

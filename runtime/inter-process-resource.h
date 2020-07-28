@@ -52,7 +52,7 @@ public:
   bool is_resource_unused(uint32_t resource_id) noexcept {
     php_assert(resource_id < RESOURCE_AMOUNT);
     constexpr static std::array<pid_t, MAX_WORKERS> zeros = {0};
-    const int total_server_workers = std::max(1, workers_n);
+    const int32_t total_server_workers = std::max(1, workers_n);
     const auto worker_pid_it = acquired_pids_[resource_id].begin();
     return std::equal(worker_pid_it, worker_pid_it + total_server_workers, zeros.begin());
   }

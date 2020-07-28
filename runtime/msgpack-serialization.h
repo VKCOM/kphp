@@ -45,7 +45,7 @@ struct convert<array<T>> {
       res_arr.reserve(obj.via.array.size, 0, true);
 
       for (uint32_t i = 0; i < obj.via.array.size; ++i) {
-        res_arr.set_value(static_cast<int>(i), obj.via.array.ptr[i].as<T>());
+        res_arr.set_value(static_cast<int64_t>(i), obj.via.array.ptr[i].as<T>());
       }
 
       return obj;
@@ -95,14 +95,14 @@ struct pack<array<T>> {
   template <typename Stream>
   packer<Stream>& operator()(msgpack::packer<Stream>& packer, const array<T>& arr) const noexcept {
     if (arr.is_vector()) {
-      packer.pack_array(arr.count());
+      packer.pack_array(static_cast<uint32_t>(arr.count()));
       for (const auto &it : arr) {
         packer.pack(it.get_value());
       }
       return packer;
     }
 
-    packer.pack_map(arr.count());
+    packer.pack_map(static_cast<uint32_t>(arr.count()));
     for (const auto &it : arr) {
       if (it.is_string_key()) {
         packer.pack(it.get_string_key());
@@ -369,8 +369,8 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
     msgpack::object obj = oh.get();
 
     if (off != buffer.size()) {
-      err_msg.append("Consumed only first ").append(static_cast<int>(off))
-             .append(" characters of ").append(static_cast<int>(buffer.size()))
+      err_msg.append("Consumed only first ").append(static_cast<int64_t>(off))
+             .append(" characters of ").append(static_cast<int64_t>(buffer.size()))
              .append(" during deserialization");
     } else {
       return obj.as<ResultType>();

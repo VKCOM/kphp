@@ -73,14 +73,14 @@ private:
       }};
   }
 
-  static constexpr int small_int_max() noexcept { return 100; }
+  static constexpr int64_t small_int_max() noexcept { return 100; }
 
   static constexpr auto constexpr_make_small_ints() noexcept {
     return constexpr_make_ints(std::make_index_sequence<small_int_max() / 10>{});
   }
 
   static constexpr auto constexpr_make_large_ints() noexcept;
-  static const string::string_inner &cached_large_int(int i) noexcept;
+  static const string::string_inner &cached_large_int(int64_t i) noexcept;
 
 public:
   static const string::string_inner &empty_string() noexcept {
@@ -93,7 +93,7 @@ public:
     return constexpr_char_cache[static_cast<uint8_t>(c)].inner;
   }
 
-  static const string::string_inner &cached_int(int i) noexcept {
+  static const string::string_inner &cached_int(int64_t i) noexcept {
     // constexpr_make_small_ints генерирует числа от 0 до 99 (small_int_max - 1),
     // сделанно это для того, что бы сильно не замедлять компиляцию
     // числа от 100 (small_int_max) до 9999 (cached_int_max - 1) лежат в cached_large_int
@@ -101,5 +101,5 @@ public:
     return i < static_cast<int>(small_int_cache.size()) ? small_int_cache[i].inner : cached_large_int(i);
   }
 
-  static constexpr int cached_int_max() noexcept { return 10000; }
+  static constexpr int64_t cached_int_max() noexcept { return 10000; }
 };

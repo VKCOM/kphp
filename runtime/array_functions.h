@@ -1,6 +1,7 @@
 #pragma once
 
 #include <climits>
+#include <numeric>
 
 #include "common/type_traits/constexpr_if.h"
 #include "common/type_traits/function_traits.h"
@@ -12,28 +13,28 @@
 template<class T>
 string f$implode(const string &s, const array<T> &a);
 
-array<string> explode(char delimiter, const string &str, int limit = INT_MAX);
+array<string> explode(char delimiter, const string &str, int64_t limit = std::numeric_limits<int64_t>::max());
 
-array<string> f$explode(const string &delimiter, const string &str, int limit = INT_MAX);
+array<string> f$explode(const string &delimiter, const string &str, int64_t limit = std::numeric_limits<int64_t>::max());
 
-
-template<class T>
-array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_keys = false);
 
 template<class T>
-array<T> f$array_slice(const array<T> &a, int offset, const var &length_var = var(), bool preserve_keys = false);
+array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false);
 
 template<class T>
-array<T> f$array_splice(array<T> &a, int offset, int length, const array<Unknown> &);
+array<T> f$array_slice(const array<T> &a, int64_t offset, const var &length_var = var(), bool preserve_keys = false);
+
+template<class T>
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
 
 template<class T, class T1 = T>
-array<T> f$array_splice(array<T> &a, int offset, int length = INT_MAX, const array<T1> &replacement = array<T1>());
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1> &replacement = array<T1>());
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &default_value);
+ReturnT f$array_pad(const array<InputArrayT> &a, int64_t size, const DefaultValueT &default_value);
 
 template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown> &a, int size, const DefaultValueT &default_value);
+ReturnT f$array_pad(const array<Unknown> &a, int64_t size, const DefaultValueT &default_value);
 
 template<class T>
 array<T> f$array_filter(const array<T> &a) noexcept;
@@ -102,11 +103,11 @@ template<class T>
 T f$array_shift(array<T> &a);
 
 template<class T, class T1>
-int f$array_unshift(array<T> &a, const T1 &val);
+int64_t f$array_unshift(array<T> &a, const T1 &val);
 
 
 template<class T>
-bool f$array_key_exists(int int_key, const array<T> &a);
+bool f$array_key_exists(int64_t int_key, const array<T> &a);
 
 template<class T>
 bool f$array_key_exists(const string &string_key, const array<T> &a);
@@ -127,7 +128,7 @@ template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a);
 
 template<class T>
-var f$array_rand(const array<T> &a, int num);
+var f$array_rand(const array<T> &a, int64_t num);
 
 
 template<class T>
@@ -137,7 +138,7 @@ template<class T>
 array<string> f$array_keys_as_strings(const array<T> &a);
 
 template<class T>
-array<int> f$array_keys_as_ints(const array<T> &a);
+array<int64_t> f$array_keys_as_ints(const array<T> &a);
 
 template<class T>
 array<T> f$array_values(const array<T> &a);
@@ -146,7 +147,7 @@ template<class T>
 array<T> f$array_unique(const array<T> &a);
 
 template<class T>
-array<int> f$array_count_values(const array<T> &a);
+array<int64_t> f$array_count_values(const array<T> &a);
 
 template<class T>
 array<typename array<T>::key_type> f$array_flip(const array<T> &a);
@@ -156,7 +157,7 @@ bool f$in_array(const T1 &value, const array<T> &a, bool strict = false);
 
 
 template<class T>
-array<T> f$array_fill(int start_index, int num, const T &value);
+array<T> f$array_fill(int64_t start_index, int64_t num, const T &value);
 
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
@@ -165,25 +166,25 @@ template<class T1, class T>
 array<T> f$array_combine(const array<T1> &keys, const array<T> &values);
 
 template<class T1, class T2>
-int f$array_push(array<T1> &a, const T2 &val);
+int64_t f$array_push(array<T1> &a, const T2 &val);
 
 template<class T1, class T2, class T3>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3);
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3);
 
 template<class T1, class T2, class T3, class T4>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4);
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4);
 
 template<class T1, class T2, class T3, class T4, class T5>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5);
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5);
 
 template<class T1, class T2, class T3, class T4, class T5, class T6>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5, const T6 &val6);
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5, const T6 &val6);
 
 template<class T>
 T f$array_pop(array<T> &a);
 
 template<class T>
-void f$array_reserve(array<T> &a, int int_size, int string_size, bool make_vector_if_possible = true);
+void f$array_reserve(array<T> &a, int64_t int_size, int64_t string_size, bool make_vector_if_possible = true);
 
 template<class T1, class T2>
 void f$array_reserve_from(array<T1> &a, const array<T2> &base);
@@ -192,39 +193,39 @@ template<class T>
 bool f$array_is_vector(const array<T> &a);
 
 
-array<var> f$range(const var &from, const var &to, int step = 1);
+array<var> f$range(const var &from, const var &to, int64_t step = 1);
 
 
 template<class T>
 void f$shuffle(array<T> &a);
 
-const int SORT_REGULAR = 0;
-const int SORT_NUMERIC = 1;
-const int SORT_STRING = 2;
+constexpr int64_t SORT_REGULAR = 0;
+constexpr int64_t SORT_NUMERIC = 1;
+constexpr int64_t SORT_STRING = 2;
 
 template<class T>
-void f$sort(array<T> &a, int flag = SORT_REGULAR);
+void f$sort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T>
-void f$rsort(array<T> &a, int flag = SORT_REGULAR);
+void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T, class T1>
 void f$usort(array<T> &a, const T1 &compare);
 
 template<class T>
-void f$asort(array<T> &a, int flag = SORT_REGULAR);
+void f$asort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T>
-void f$arsort(array<T> &a, int flag = SORT_REGULAR);
+void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T, class T1>
 void f$uasort(array<T> &a, const T1 &compare);
 
 template<class T>
-void f$ksort(array<T> &a, int flag = SORT_REGULAR);
+void f$ksort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T>
-void f$krsort(array<T> &a, int flag = SORT_REGULAR);
+void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR);
 
 template<class T, class T1>
 void f$uksort(array<T> &a, const T1 &compare);
@@ -232,18 +233,18 @@ void f$uksort(array<T> &a, const T1 &compare);
 template<class T>
 void f$natsort(array<T> &a);
 
-template<class T, class ReturnT = std::conditional_t<std::is_same<T, int>{}, int, double>>
+template<class T, class ReturnT = std::conditional_t<std::is_same<T, int64_t>{}, int64_t, double>>
 ReturnT f$array_sum(const array<T> &a);
 
 
 template<class T>
-var f$getKeyByPos(const array<T> &a, int pos);
+var f$getKeyByPos(const array<T> &a, int64_t pos);
 
 template<class T>
-T f$getValueByPos(const array<T> &a, int pos);
+T f$getValueByPos(const array<T> &a, int64_t pos);
 
 template<class T>
-inline array<T> f$create_vector(int n, const T &default_value);
+inline array<T> f$create_vector(int64_t n, const T &default_value);
 
 template<class T>
 var f$array_first_key(const array<T> &a);
@@ -285,11 +286,12 @@ string f$implode(const string &s, const array<T> &a) {
 
 
 template<class T>
-array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_keys) {
+array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys) {
   if (unlikely(chunk_size <= 0)) {
     php_warning("Parameter chunk_size if function array_chunk must be positive");
     return array<array<T>>();
   }
+
   array<array<T>> result(array_size(a.count() / chunk_size + 1, 0, true));
 
   array_size new_size = a.size().cut(chunk_size);
@@ -321,10 +323,10 @@ array<array<T>> f$array_chunk(const array<T> &a, int chunk_size, bool preserve_k
 }
 
 template<class T>
-array<T> f$array_slice(const array<T> &a, int offset, const var &length_var, bool preserve_keys) {
-  int size = a.count();
+array<T> f$array_slice(const array<T> &a, int64_t offset, const var &length_var, bool preserve_keys) {
+  auto size = a.count();
 
-  int length;
+  int64_t length = 0;
   if (length_var.is_null()) {
     length = size;
   } else {
@@ -369,13 +371,13 @@ array<T> f$array_slice(const array<T> &a, int offset, const var &length_var, boo
 }
 
 template<class T>
-array<T> f$array_splice(array<T> &a, int offset, int length, const array<Unknown> &) {
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
   return f$array_splice(a, offset, length, array<T>());
 }
 
 template<class T, class T1>
-array<T> f$array_splice(array<T> &a, int offset, int length, const array<T1> &replacement) {
-  int size = a.count();
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<T1> &replacement) {
+  int64_t size = a.count();
   if (offset < 0) {
     offset += size;
 
@@ -404,7 +406,7 @@ array<T> f$array_splice(array<T> &a, int offset, int length, const array<T1> &re
 
   array<T> result(a.size().cut(length));
   array<T> new_a(a.size().cut(size - length) + replacement.size());
-  int i = 0;
+  int64_t i = 0;
   const auto &const_arr = a;
   for (const auto &it : const_arr) {
     if (i == offset) {
@@ -425,7 +427,7 @@ array<T> f$array_splice(array<T> &a, int offset, int length, const array<T1> &re
 }
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &default_value) {
+ReturnT f$array_pad(const array<InputArrayT> &a, int64_t size, const DefaultValueT &default_value) {
   auto mod_size = static_cast<size_t>(std::abs(size));
 
   if (mod_size <= static_cast<size_t>(a.count())) {
@@ -438,7 +440,7 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
     return {};
   }
 
-  int new_index = 0;
+  int64_t new_index = 0;
   ReturnT result_array;
 
   auto copy_input_to_result = [&] {
@@ -474,7 +476,7 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int size, const DefaultValueT &
 }
 
 template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown> &, int size, const DefaultValueT &default_value) {
+ReturnT f$array_pad(const array<Unknown> &, int64_t size, const DefaultValueT &default_value) {
   if (size == 0) {
     return {};
   }
@@ -734,7 +736,7 @@ template<class T, class T1>
 array<T> f$array_intersect(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
 
-  array<int> values(array_size(0, a2.count(), false));
+  array<int64_t> values(array_size(0, a2.count(), false));
   for (const auto &it : a2) {
     values.set_value(f$strval(it.get_value()), 1);
   }
@@ -783,7 +785,7 @@ template<class T, class T1>
 array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size());
 
-  array<int> values(array_size(0, a2.count(), false));
+  array<int64_t> values(array_size(0, a2.count(), false));
   for (const auto &it : a2) {
     values.set_value(f$strval(it.get_value()), 1);
   }
@@ -847,13 +849,13 @@ T f$array_shift(array<T> &a) {
 }
 
 template<class T, class T1>
-int f$array_unshift(array<T> &a, const T1 &val) {
+int64_t f$array_unshift(array<T> &a, const T1 &val) {
   return a.unshift(val);
 }
 
 
 template<class T>
-bool f$array_key_exists(int int_key, const array<T> &a) {
+bool f$array_key_exists(int64_t int_key, const array<T> &a) {
   return a.has_key(int_key);
 }
 
@@ -901,19 +903,19 @@ std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  cons
 
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a) {
-  if (int size = a.count()) {
+  if (int64_t size = a.count()) {
     return a.middle(rand() % size).get_key();
   }
   return {};
 }
 
 template<class T>
-var f$array_rand(const array<T> &a, int num) {
+var f$array_rand(const array<T> &a, int64_t num) {
   if (num == 1) {
     return f$array_rand(a);
   }
 
-  int size = a.count();
+  int64_t size = a.count();
   if (num > size) {
     num = size;
   }
@@ -955,7 +957,7 @@ array<string> f$array_keys_as_strings(const array<T> &a) {
 }
 
 template<class T>
-array<int> f$array_keys_as_ints(const array<T> &a) {
+array<int64_t> f$array_keys_as_ints(const array<T> &a) {
   using Iterator = typename array<T>::const_iterator;
   return transform_to_vector(a, [](Iterator it) { return it.get_key().to_int(); });
 }
@@ -968,12 +970,12 @@ array<T> f$array_values(const array<T> &a) {
 
 template<class T>
 array<T> f$array_unique(const array<T> &a) {
-  array<int> values(array_size(a.count(), a.count(), false));
+  array<int64_t> values(array_size(a.count(), a.count(), false));
   array<T> result(a.size());
 
   for (const auto &it : a) {
     const T &value = it.get_value();
-    int &cnt = values[f$strval(value)];
+    int64_t &cnt = values[f$strval(value)];
     if (!cnt) {
       cnt = 1;
       result.set_value(it);
@@ -983,8 +985,8 @@ array<T> f$array_unique(const array<T> &a) {
 }
 
 template<class T>
-array<int> f$array_count_values(const array<T> &a) {
-  array<int> result(array_size(0, a.count(), false));
+array<int64_t> f$array_count_values(const array<T> &a) {
+  array<int64_t> result(array_size(0, a.count(), false));
 
   for (const auto &it : a) {
     ++result[f$strval(it.get_value())];
@@ -994,11 +996,12 @@ array<int> f$array_count_values(const array<T> &a) {
 
 template<class T>
 array<typename array<T>::key_type> f$array_flip(const array<T> &a) {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
   array<typename array<T>::key_type> result;
 
   for (const auto &it : a) {
     const auto &value = it.get_value();
-    if (vk::is_type_in_list<T, int, string>{} || f$is_int(value) || f$is_string(value)) {
+    if (vk::is_type_in_list<T, int64_t, string>{} || f$is_int(value) || f$is_string(value)) {
       result.set_value(value, it.get_key());
     } else {
       php_warning("Unsupported type of array element \"%s\" in function array_flip", get_type_c_str(value));
@@ -1028,7 +1031,7 @@ bool f$in_array(const T1 &value, const array<T> &a, bool strict) {
 
 
 template<class T>
-array<T> f$array_fill(int start_index, int num, const T &value) {
+array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) {
   if (unlikely(num < 0)) {
     php_warning("Parameter num of array_fill must not be negative");
     return {};
@@ -1052,15 +1055,21 @@ array<T> f$array_fill(int start_index, int num, const T &value) {
 
 template<class T1>
 array_size make_size_by_keys(const array<T1> &keys) noexcept {
-  return array_size{std::is_same<T1, string>{} ? 0 : keys.count(), std::is_same<T1, int>{} ? 0 : keys.count(), false};
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
+  return array_size{
+    std::is_same<T1, string>{} ? 0 : keys.count(),
+    std::is_same<T1, int64_t>{} ? 0 : keys.count(),
+    false
+  };
 }
 
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> &keys, const T &value) {
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
   array<T> result{make_size_by_keys(keys)};
   for (const auto &it : keys) {
     const auto &key = it.get_value();
-    if (vk::is_type_in_list<T1, string, int>{} || f$is_int(key)) {
+    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
       result.set_value(key, value);
     } else {
       result.set_value(f$strval(key), value);
@@ -1077,13 +1086,14 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
     return {};
   }
 
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
   array<T> result{make_size_by_keys(keys)};
   auto it_values = values.begin();
   auto it_keys = keys.begin();
   const auto it_keys_last = keys.end();
   for (; it_keys != it_keys_last; ++it_keys, ++it_values) {
     const auto &key = it_keys.get_value();
-    if (vk::is_type_in_list<T1, string, int>{} || f$is_int(key)) {
+    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
       result.set_value(key, it_values.get_value());
     } else {
       result.set_value(f$strval(key), it_values.get_value());
@@ -1094,20 +1104,20 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
 }
 
 template<class T1, class T2>
-int f$array_push(array<T1> &a, const T2 &val) {
+int64_t f$array_push(array<T1> &a, const T2 &val) {
   a.push_back(val);
   return a.count();
 }
 
 template<class T1, class T2, class T3>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3) {
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3) {
   a.push_back(val2);
   a.push_back(val3);
   return a.count();
 }
 
 template<class T1, class T2, class T3, class T4>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4) {
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4) {
   a.push_back(val2);
   a.push_back(val3);
   a.push_back(val4);
@@ -1116,7 +1126,7 @@ int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4) {
 
 
 template<class T1, class T2, class T3, class T4, class T5>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5) {
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5) {
   a.push_back(val2);
   a.push_back(val3);
   a.push_back(val4);
@@ -1125,7 +1135,7 @@ int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, c
 }
 
 template<class T1, class T2, class T3, class T4, class T5, class T6>
-int f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5, const T6 &val6) {
+int64_t f$array_push(array<T1> &a, const T2 &val2, const T3 &val3, const T4 &val4, const T5 &val5, const T6 &val6) {
   a.push_back(val2);
   a.push_back(val3);
   a.push_back(val4);
@@ -1141,7 +1151,7 @@ T f$array_pop(array<T> &a) {
 }
 
 template<class T>
-void f$array_reserve(array<T> &a, int int_size, int string_size, bool make_vector_if_possible) {
+void f$array_reserve(array<T> &a, int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
   a.reserve(int_size, string_size, make_vector_if_possible);
 }
 
@@ -1159,7 +1169,7 @@ bool f$array_is_vector(const array<T> &a) {
 
 template<class T>
 void f$shuffle(array<T> &a) {
-  int n = a.count();
+  int64_t n = a.count();
   if (n <= 1) {
     return;
   }
@@ -1170,7 +1180,7 @@ void f$shuffle(array<T> &a) {
     result.push_back(it.get_value());
   }
 
-  for (int i = 1; i < n; i++) {
+  for (int64_t i = 1; i < n; i++) {
     swap(result[i], result[rand() % (i + 1)]);
   }
 
@@ -1186,16 +1196,15 @@ struct sort_compare {
 
 template<class T>
 struct sort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   bool operator()(const T &h1, const T &h2) const {
     return f$floatval(h1) > f$floatval(h2);
   }
 };
 
 template<>
-struct sort_compare_numeric<int> {
-  bool operator()(int h1, int h2) const {
-    return h1 > h2;
-  }
+struct sort_compare_numeric<int64_t> : std::greater<int64_t> {
 };
 
 template<class T>
@@ -1213,7 +1222,7 @@ struct sort_compare_natural {
 };
 
 template<class T>
-void f$sort(array<T> &a, int flag) {
+void f$sort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.sort(sort_compare<T>(), true);
@@ -1236,16 +1245,15 @@ struct rsort_compare {
 
 template<class T>
 struct rsort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   bool operator()(const T &h1, const T &h2) const {
     return f$floatval(h1) < f$floatval(h2);
   }
 };
 
 template<>
-struct rsort_compare_numeric<int> {
-  bool operator()(int h1, int h2) const {
-    return h1 < h2;
-  }
+struct rsort_compare_numeric<int64_t> : std::less<int64_t> {
 };
 
 template<class T>
@@ -1256,7 +1264,7 @@ struct rsort_compare_string {
 };
 
 template<class T>
-void f$rsort(array<T> &a, int flag) {
+void f$rsort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.sort(rsort_compare<T>(), true);
@@ -1277,7 +1285,7 @@ void f$usort(array<T> &a, const T1 &compare) {
 
 
 template<class T>
-void f$asort(array<T> &a, int flag) {
+void f$asort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.sort(sort_compare<T>(), false);
@@ -1291,7 +1299,7 @@ void f$asort(array<T> &a, int flag) {
 }
 
 template<class T>
-void f$arsort(array<T> &a, int flag) {
+void f$arsort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.sort(rsort_compare<T>(), false);
@@ -1311,7 +1319,7 @@ void f$uasort(array<T> &a, const T1 &compare) {
 
 
 template<class T>
-void f$ksort(array<T> &a, int flag) {
+void f$ksort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.ksort(sort_compare<typename array<T>::key_type>());
@@ -1325,7 +1333,7 @@ void f$ksort(array<T> &a, int flag) {
 }
 
 template<class T>
-void f$krsort(array<T> &a, int flag) {
+void f$krsort(array<T> &a, int64_t flag) {
   switch (flag) {
     case SORT_REGULAR:
       return a.ksort(rsort_compare<typename array<T>::key_type>());
@@ -1350,10 +1358,12 @@ void f$natsort(array<T> &a) {
 
 template<class T, class ReturnT>
 ReturnT f$array_sum(const array<T> &a) {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   ReturnT result = 0;
   for (const auto &it : a) {
     result += vk::constexpr_if(
-      std::is_same<T, int>{},
+      std::is_same<T, int64_t>{},
       [&it] { return it.get_value(); },
       [&it] { return f$floatval(it.get_value()); });
   }
@@ -1362,21 +1372,21 @@ ReturnT f$array_sum(const array<T> &a) {
 
 
 template<class T>
-var f$getKeyByPos(const array<T> &a, int pos) {
+var f$getKeyByPos(const array<T> &a, int64_t pos) {
   auto it = a.middle(pos);
   return it == a.end() ? var{} : it.get_key();
 }
 
 template<class T>
-T f$getValueByPos(const array<T> &a, int pos) {
+T f$getValueByPos(const array<T> &a, int64_t pos) {
   auto it = a.middle(pos);
   return it == a.end() ? T{} : it.get_value();
 }
 
 template<class T>
-array<T> f$create_vector(int n, const T &default_value) {
+array<T> f$create_vector(int64_t n, const T &default_value) {
   array<T> res(array_size(n, 0, true));
-  for (int i = 0; i < n; i++) {
+  for (int64_t i = 0; i < n; i++) {
     res.push_back(default_value);
   }
   return res;
@@ -1417,32 +1427,31 @@ T vk_dot_product_sparse(const array<T> &a, const array<T> &b) {
 
 template<class T>
 T vk_dot_product_dense(const array<T> &a, const array<T> &b) {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   T result = T();
-  int size = min(a.count(), b.count());
-  for (int i = 0; i < size; i++) {
+  int64_t size = min(a.count(), b.count());
+  for (int64_t i = 0; i < size; i++) {
     result += a.get_value(i) * b.get_value(i);
   }
   return result;
 }
 
 template<>
-inline int vk_dot_product_dense<int>(const array<int> &a, const array<int> &b) {
-  int result = 0;
-  int size = min(a.count(), b.count());
-  const int *ap = a.get_const_vector_pointer();
-  const int *bp = b.get_const_vector_pointer();
-  for (int i = 0; i < size; i++) {
-    result += ap[i] * bp[i];
-  }
-  return result;
+inline int64_t vk_dot_product_dense<int64_t>(const array<int64_t> &a, const array<int64_t> &b) {
+  const int64_t size = min(a.count(), b.count());
+  const int64_t *ap = a.get_const_vector_pointer();
+  const int64_t *bp = b.get_const_vector_pointer();
+  return std::inner_product(ap, ap + size, bp, 0L);
 }
+
 
 template<>
 inline double vk_dot_product_dense<double>(const array<double> &a, const array<double> &b) {
-  int size = min(a.count(), b.count());
+  int64_t size = min(a.count(), b.count());
   const double *ap = a.get_const_vector_pointer();
   const double *bp = b.get_const_vector_pointer();
-  return __dot_product(ap, bp, size);
+  return __dot_product(ap, bp, static_cast<int>(size));
 }
 
 

@@ -5,11 +5,11 @@
 using Stream = var;
 
 
-constexpr int STREAM_SET_BLOCKING_OPTION = 0;
-constexpr int STREAM_SET_WRITE_BUFFER_OPTION = 1;
-constexpr int STREAM_SET_READ_BUFFER_OPTION = 2;
+constexpr int64_t STREAM_SET_BLOCKING_OPTION = 0;
+constexpr int64_t STREAM_SET_WRITE_BUFFER_OPTION = 1;
+constexpr int64_t STREAM_SET_READ_BUFFER_OPTION = 2;
 
-constexpr int FILE_APPEND = 1;
+constexpr int64_t FILE_APPEND = 1;
 
 
 struct stream_functions {
@@ -17,21 +17,21 @@ struct stream_functions {
 
   Stream (*fopen)(const string &stream, const string &mode);
 
-  Stream (*stream_socket_client)(const string &url, int &error_number, string &error_description, double timeout, int flags, const var &context);
+  Stream (*stream_socket_client)(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags, const var &context);
 
-  Optional<int> (*fwrite)(const Stream &stream, const string &data);
+  Optional<int64_t> (*fwrite)(const Stream &stream, const string &data);
 
-  int (*fseek)(const Stream &stream, int offset, int whence);
+  int64_t (*fseek)(const Stream &stream, int64_t offset, int64_t whence);
 
-  Optional<int> (*ftell)(const Stream &stream);
+  Optional<int64_t> (*ftell)(const Stream &stream);
 
-  Optional<string> (*fread)(const Stream &stream, int length);
+  Optional<string> (*fread)(const Stream &stream, int64_t length);
 
   Optional<string> (*fgetc)(const Stream &stream);
 
-  Optional<string> (*fgets)(const Stream &stream, int length);
+  Optional<string> (*fgets)(const Stream &stream, int64_t length);
 
-  Optional<int> (*fpassthru)(const Stream &stream);
+  Optional<int64_t> (*fpassthru)(const Stream &stream);
 
   bool (*fflush)(const Stream &stream);
 
@@ -41,13 +41,13 @@ struct stream_functions {
 
   Optional<string> (*file_get_contents)(const string &url);
 
-  Optional<int> (*file_put_contents)(const string &url, const string &content, int flags);
+  Optional<int64_t> (*file_put_contents)(const string &url, const string &content, int64_t flags);
 
   bool (*context_set_option)(var &context, const string &option, const var &value);
 
-  bool (*stream_set_option)(const Stream &stream, int option, int value);
+  bool (*stream_set_option)(const Stream &stream, int64_t option, int64_t value);
 
-  int (*get_fd)(const Stream &stream);
+  int32_t (*get_fd)(const Stream &stream);
 };
 
 
@@ -56,21 +56,21 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
 
 Stream f$fopen(const string &stream, const string &mode);
 
-Optional<int> f$fwrite(const Stream &stream, const string &text);
+Optional<int64_t> f$fwrite(const Stream &stream, const string &text);
 
-int f$fseek(const Stream &stream, int offset, int whence = 0);
+int64_t f$fseek(const Stream &stream, int64_t offset, int64_t whence = 0);
 
 bool f$rewind(const Stream &stream);
 
-Optional<int> f$ftell(const Stream &stream);
+Optional<int64_t> f$ftell(const Stream &stream);
 
-Optional<string> f$fread(const Stream &stream, int length);
+Optional<string> f$fread(const Stream &stream, int64_t length);
 
 Optional<string> f$fgetc(const Stream &stream);
 
-Optional<string> f$fgets(const Stream &stream, int length = -1);
+Optional<string> f$fgets(const Stream &stream, int64_t length = -1);
 
-Optional<int> f$fpassthru(const Stream &stream);
+Optional<int64_t> f$fpassthru(const Stream &stream);
 
 bool f$fflush(const Stream &stream);
 
@@ -78,19 +78,19 @@ bool f$feof(const Stream &stream);
 
 bool f$fclose(const Stream &stream);
 
-Optional<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args);
+Optional<int64_t> f$fprintf(const Stream &stream, const string &format, const array<var> &args);
 
-Optional<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args);
+Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const array<var> &args);
 
-Optional<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter = string(",", 1),
-                       string enclosure = string("\"", 1), string escape_char = string("\\", 1));
+Optional<int64_t> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter = string(",", 1),
+                            string enclosure = string("\"", 1), string escape_char = string("\\", 1));
 
-Optional<array<var>> f$fgetcsv(const Stream &stream, int length = 0, string delimiter = string(",", 1),
+Optional<array<var>> f$fgetcsv(const Stream &stream, int64_t length = 0, string delimiter = string(",", 1),
                               string enclosure = string("\"", 1), string escape_char = string("\\", 1));
 
 Optional<string> f$file_get_contents(const string &stream);
 
-Optional<int> f$file_put_contents(const string &stream, const var &content_var, int flags = 0);
+Optional<int64_t> f$file_put_contents(const string &stream, const var &content_var, int64_t flags = 0);
 
 
 var f$stream_context_create(const var &options = array<var>());
@@ -102,18 +102,18 @@ bool f$stream_context_set_option(var &context, const var &wrapper, const string 
 extern var error_number_dummy;
 extern var error_description_dummy;
 
-constexpr int STREAM_CLIENT_CONNECT = 1;
+constexpr int64_t STREAM_CLIENT_CONNECT = 1;
 
-var f$stream_socket_client(const string &url, var &error_number = error_number_dummy, var &error_description = error_description_dummy, double timeout = -1, int flags = STREAM_CLIENT_CONNECT, const var &context = var());
+var f$stream_socket_client(const string &url, var &error_number = error_number_dummy, var &error_description = error_description_dummy, double timeout = -1, int64_t flags = STREAM_CLIENT_CONNECT, const var &context = var());
 
 
 bool f$stream_set_blocking(const Stream &stream, bool mode);
 
-int f$stream_set_write_buffer(const Stream &stream, int size);
+int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size);
 
-int f$stream_set_read_buffer(const Stream &stream, int size);
+int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size);
 
-Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec, int tv_usec = 0);
+Optional<int64_t> f$stream_select(var &read, var &write, var &except, const var &tv_sec, int64_t tv_usec = 0);
 
 
 void init_streams_lib();

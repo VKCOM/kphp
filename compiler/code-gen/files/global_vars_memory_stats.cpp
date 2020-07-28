@@ -32,12 +32,12 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
     << ExternInclude("php_functions.h")
     << OpenNamespace();
 
-  FunctionSignatureGenerator(W) << "array<int> " << getter_name_ << "(int lower_bound) " << BEGIN
-                                << "array<int> result;" << NL
+  FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
+                                << "array<int64_t> result;" << NL
                                 << "result.reserve(" << global_vars_count << ", " << global_vars_count << ", false);" << NL << NL;
 
   for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
-    W << "void " << getter_name_ << "_" << part_id << "(int lower_bound, array<int> &result);" << NL
+    W << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result);" << NL
       << getter_name_ << "_" << part_id << "(lower_bound, result);" << NL << NL;
   }
 
@@ -77,8 +77,8 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
     << "return str;" << NL
     << END << NL << NL;
 
-  FunctionSignatureGenerator(W) << "void " << getter_name_ << "_" << part_id << "(int lower_bound, array<int> &result) " << BEGIN
-                                << "int estimation = 0;" << NL;
+  FunctionSignatureGenerator(W) << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
+                                << "int64_t estimation = 0;" << NL;
   size_t var_num = 0;
   for (auto global_var : global_vars) {
     W << VarDeclaration(global_var, true, false)

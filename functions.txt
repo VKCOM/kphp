@@ -1,7 +1,7 @@
 <?php
 
 define('PHP_INT_MAX', 2147483647);
-define('PHP_INT_SIZE', 4);
+define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 
 if (0) {
@@ -839,8 +839,6 @@ function rpc_tl_query_result_one ($query_id ::: int) ::: var[];
 function rpc_tl_query_result ($query_ids ::: array) ::: var[][];
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: var[][];
 function rpc_tl_pending_queries_count () ::: int;
-
-function set_tl_mode ($mode ::: int) ::: bool;
 
 /** @kphp-tl-class */
 interface RpcFunction {

@@ -10,7 +10,7 @@ bool resumable_finished;
 
 const char *last_wait_error;
 
-static int runned_resumable_id;
+static int64_t runned_resumable_id;
 
 void debug_print_resumables();
 
@@ -24,7 +24,7 @@ Resumable::Resumable() :
 Resumable::~Resumable() {
 }
 
-Storage *get_storage(int resumable_id) {
+Storage *get_storage(int64_t resumable_id) {
   if (resumable_id > 1000000000) {
     return get_forked_storage(resumable_id);
   } else {
@@ -35,13 +35,13 @@ Storage *get_storage(int resumable_id) {
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
 
-static inline void update_current_resumable_id(int new_id);
+static inline void update_current_resumable_id(int64_t new_id);
 
-bool Resumable::resume(int resumable_id, Storage *input) {
+bool Resumable::resume(int64_t resumable_id, Storage *input) {
   if (input) {
     php_assert(check_started_storage(input) || check_forked_storage(input));
   }
-  int parent_id = runned_resumable_id;
+  int64_t parent_id = runned_resumable_id;
 
   input_ = input;
   update_current_resumable_id(resumable_id);
@@ -65,8 +65,8 @@ void Resumable::update_output() {
 struct forked_resumable_info {
   Storage output;
   Resumable *continuation;
-  int queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
-  int son;
+  int64_t queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
+  int64_t son;
   const char *name;
   double running_time;
 };
@@ -74,55 +74,55 @@ struct forked_resumable_info {
 struct started_resumable_info {
   Storage output;
   Resumable *continuation;
-  int parent_id;// x > 0 - has parent x, == 0 - in main thread, == -1 - finished
-  int fork_id;
-  int son;
+  int64_t parent_id;// x > 0 - has parent x, == 0 - in main thread, == -1 - finished
+  int64_t fork_id;
+  int64_t son;
   const char *name;
 };
 
-static int first_forked_resumable_id;
-static int first_array_forked_resumable_id;
-static int current_forked_resumable_id = 1123456789;
+static int64_t first_forked_resumable_id;
+static int64_t first_array_forked_resumable_id;
+static int64_t current_forked_resumable_id = 1123456789;
 static forked_resumable_info *forked_resumables;
 static forked_resumable_info gotten_forked_resumable_info;
-static int forked_resumables_size;
+static uint32_t forked_resumables_size;
 
-static int first_started_resumable_id;
-static int current_started_resumable_id = 123456789;
+static int64_t first_started_resumable_id;
+static int64_t current_started_resumable_id = 123456789;
 static started_resumable_info *started_resumables;
-static int started_resumables_size;
-static int first_free_started_resumable_id;
+static uint32_t started_resumables_size;
+static int64_t first_free_started_resumable_id;
 
 
 struct wait_queue {
-  int first_finished_function;
-  int left_functions;
-  int resumable_id;//0 - default, x > 0 - id of wait_queue_next resumable, x < 0 - next free queue_id
+  int64_t first_finished_function;
+  int32_t left_functions;
+  int64_t resumable_id;//0 - default, x > 0 - id of wait_queue_next resumable, x < 0 - next free queue_id
 };
 
 static wait_queue *wait_queues;
-static int wait_queues_size;
-static int wait_next_queue_id;
+static uint32_t wait_queues_size;
+static int64_t wait_next_queue_id;
 
 
-static int *finished_resumables;
-static int finished_resumables_size;
-static int finished_resumables_count;
+static int64_t *finished_resumables;
+static uint32_t finished_resumables_size;
+static uint32_t finished_resumables_count;
 
-static int *yielded_resumables;
-static int yielded_resumables_l;
-static int yielded_resumables_r;
-static int yielded_resumables_size;
+static int64_t *yielded_resumables;
+static uint32_t yielded_resumables_l;
+static uint32_t yielded_resumables_r;
+static uint32_t yielded_resumables_size;
 
 bool in_main_thread() {
   return runned_resumable_id == 0;
 }
 
-static inline bool is_forked_resumable_id(int resumable_id) {
+static inline bool is_forked_resumable_id(int64_t resumable_id) {
   return first_forked_resumable_id <= resumable_id && resumable_id < current_forked_resumable_id;
 }
 
-static inline forked_resumable_info *get_forked_resumable_info(int resumable_id) {
+static inline forked_resumable_info *get_forked_resumable_info(int64_t resumable_id) {
   php_assert (is_forked_resumable_id(resumable_id));
   if (resumable_id < first_array_forked_resumable_id) {
     return &gotten_forked_resumable_info;
@@ -130,29 +130,29 @@ static inline forked_resumable_info *get_forked_resumable_info(int resumable_id)
   return &forked_resumables[resumable_id - first_array_forked_resumable_id];
 }
 
-static inline bool is_started_resumable_id(int resumable_id) {
+static inline bool is_started_resumable_id(int64_t resumable_id) {
   return first_started_resumable_id <= resumable_id && resumable_id < current_started_resumable_id;
 }
 
-static inline started_resumable_info *get_started_resumable_info(int resumable_id) {
+static inline started_resumable_info *get_started_resumable_info(int64_t resumable_id) {
   php_assert (is_started_resumable_id(resumable_id));
   return &started_resumables[resumable_id - first_started_resumable_id];
 }
 
-static inline bool is_wait_queue_id(int queue_id) {
+static inline bool is_wait_queue_id(int64_t queue_id) {
   return 0 < queue_id && queue_id <= wait_next_queue_id && wait_queues[queue_id - 1].resumable_id >= 0;
 }
 
-static inline wait_queue *get_wait_queue(int queue_id) {
+static inline wait_queue *get_wait_queue(int64_t queue_id) {
   php_assert (is_wait_queue_id(queue_id));
   return &wait_queues[queue_id - 1];
 }
 
-Storage *get_started_storage(int resumable_id) {
+Storage *get_started_storage(int64_t resumable_id) {
   return &get_started_resumable_info(resumable_id)->output;
 }
 
-Storage *get_forked_storage(int resumable_id) {
+Storage *get_forked_storage(int64_t resumable_id) {
   return &get_forked_resumable_info(resumable_id)->output;
 }
 
@@ -165,9 +165,9 @@ bool check_forked_storage(Storage *storage) {
 }
 
 
-int register_forked_resumable(Resumable *resumable) {
+int64_t register_forked_resumable(Resumable *resumable) {
   if (current_forked_resumable_id == first_array_forked_resumable_id + forked_resumables_size) {
-    int first_needed_id = 0;
+    uint32_t first_needed_id = 0;
     while (first_needed_id < forked_resumables_size &&
            forked_resumables[first_needed_id].queue_id == -1 &&
            forked_resumables[first_needed_id].output.tag == 0) {
@@ -186,7 +186,7 @@ int register_forked_resumable(Resumable *resumable) {
     php_critical_error ("too many forked resumables");
   }
 
-  int res_id = current_forked_resumable_id++;
+  int64_t res_id = current_forked_resumable_id++;
   forked_resumable_info *res = get_forked_resumable_info(res_id);
 
   new(&res->output) Storage();
@@ -199,10 +199,10 @@ int register_forked_resumable(Resumable *resumable) {
   return res_id;
 }
 
-static inline void update_current_resumable_id(int new_id) {
-  int old_running_fork = f$get_running_fork_id();
+static inline void update_current_resumable_id(int64_t new_id) {
+  int64_t old_running_fork = f$get_running_fork_id();
   runned_resumable_id = new_id;
-  int new_running_fork = f$get_running_fork_id();
+  int64_t new_running_fork = f$get_running_fork_id();
   if (new_running_fork != old_running_fork) {
     update_precise_now();
     if (old_running_fork) {
@@ -215,7 +215,7 @@ static inline void update_current_resumable_id(int new_id) {
   Resumable::update_output();
 }
 
-int f$get_running_fork_id() {
+int64_t f$get_running_fork_id() {
   if (runned_resumable_id == 0) {
     return 0;
   }
@@ -229,7 +229,7 @@ int f$get_running_fork_id() {
   return 0;
 }
 
-Optional<array<var>> f$get_fork_stat(int fork_id) {
+Optional<array<var>> f$get_fork_stat(int64_t fork_id) {
   auto info = get_forked_resumable_info(fork_id);
   if (!info) {
     return false;
@@ -256,8 +256,8 @@ Optional<array<var>> f$get_fork_stat(int fork_id) {
   return result;
 }
 
-int register_started_resumable(Resumable *resumable) {
-  int res_id;
+int64_t register_started_resumable(Resumable *resumable) {
+  int64_t res_id;
   bool is_new = false;
   if (first_free_started_resumable_id) {
     res_id = first_free_started_resumable_id;
@@ -292,7 +292,7 @@ int register_started_resumable(Resumable *resumable) {
     if (is_started_resumable_id(runned_resumable_id)) {
       started_resumable_info *parent = get_started_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, parent->son, res_id);
+        kprintf("Tring to change %ld->son from %ld to %ld\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
@@ -300,7 +300,7 @@ int register_started_resumable(Resumable *resumable) {
     } else {
       forked_resumable_info *parent = get_forked_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", runned_resumable_id, parent->son, res_id);
+        kprintf("Tring to change %ld->son from %ld to %ld\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
@@ -312,17 +312,17 @@ int register_started_resumable(Resumable *resumable) {
 }
 
 
-Resumable *get_forked_resumable(int resumable_id) {
+Resumable *get_forked_resumable(int64_t resumable_id) {
   return get_forked_resumable_info(resumable_id)->continuation;
 }
 
-Resumable *get_started_resumable(int resumable_id) {
+Resumable *get_started_resumable(int64_t resumable_id) {
   return get_started_resumable_info(resumable_id)->continuation;
 }
 
 
-static void add_resumable_to_queue(int resumable_id, forked_resumable_info *resumable) {
-  int queue_id = resumable->queue_id;
+static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *resumable) {
+  int64_t queue_id = resumable->queue_id;
   wait_queue *q = get_wait_queue(queue_id);
 //  fprintf (stderr, "Push resumable %d to queue %d(%d,%d,%d) at %.6lf\n", resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
   resumable->queue_id = q->first_finished_function;
@@ -336,7 +336,7 @@ static void add_resumable_to_queue(int resumable_id, forked_resumable_info *resu
   q->left_functions--;
 }
 
-void finish_forked_resumable(int resumable_id) {
+void finish_forked_resumable(int64_t resumable_id) {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
   php_assert (res->continuation != nullptr);
 
@@ -345,7 +345,7 @@ void finish_forked_resumable(int resumable_id) {
 
   if (res->queue_id > 100000000) {
     php_assert (is_started_resumable_id(res->queue_id));
-    int wait_resumable_id = res->queue_id;
+    int64_t wait_resumable_id = res->queue_id;
     res->queue_id = -1;
     resumable_run_ready(wait_resumable_id);
   } else if (res->queue_id > 0) {
@@ -357,7 +357,7 @@ void finish_forked_resumable(int resumable_id) {
   php_assert (get_forked_resumable_info(resumable_id)->queue_id < 0);
 }
 
-void finish_started_resumable(int resumable_id) {
+void finish_started_resumable(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   php_assert (res->continuation != nullptr);
 
@@ -365,7 +365,7 @@ void finish_started_resumable(int resumable_id) {
   res->continuation = nullptr;
 }
 
-void unregister_started_resumable_debug_hack(int resumable_id) {
+void unregister_started_resumable_debug_hack(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   php_assert (res->continuation == nullptr);
 
@@ -373,13 +373,13 @@ void unregister_started_resumable_debug_hack(int resumable_id) {
   first_free_started_resumable_id = resumable_id;
 }
 
-void unregister_started_resumable(int resumable_id) {
+void unregister_started_resumable(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   if (res->parent_id > 0) {
     if (is_started_resumable_id(res->parent_id)) {
       started_resumable_info *parent = get_started_resumable_info(res->parent_id);
       if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", res->parent_id, resumable_id, 0);
+        kprintf("Tring to change %ld->son from %ld to %d\n", res->parent_id, resumable_id, 0);
         debug_print_resumables();
         php_assert(parent->son == resumable_id || parent->son == 0);
       }
@@ -387,7 +387,7 @@ void unregister_started_resumable(int resumable_id) {
     } else if (is_forked_resumable_id(res->fork_id)) {
       forked_resumable_info *parent = get_forked_resumable_info(res->parent_id);
       if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %d->son from %d to %d\n", res->parent_id, resumable_id, 0);
+        kprintf("Tring to change %ld->son from %ld to %d\n", res->parent_id, resumable_id, 0);
         debug_print_resumables();
         php_assert(parent->son == resumable_id || parent->son == 0);
       }
@@ -407,23 +407,23 @@ static bool resumable_has_finished() {
   return finished_resumables_count > 0 || yielded_resumables_l != yielded_resumables_r;
 }
 
-static void yielded_resumables_push(int id) {
+static void yielded_resumables_push(int64_t id) {
   yielded_resumables[yielded_resumables_r] = id;
   yielded_resumables_r++;
   if (yielded_resumables_r == yielded_resumables_size) {
     yielded_resumables_r = 0;
   }
   if (yielded_resumables_r == yielded_resumables_l) {
-    yielded_resumables = static_cast <int *> (dl::reallocate(yielded_resumables, sizeof(int) * 2 * yielded_resumables_size, sizeof(int) * yielded_resumables_size));
-    memcpy(yielded_resumables + yielded_resumables_size, yielded_resumables, sizeof(int) * yielded_resumables_r);
+    yielded_resumables = static_cast<int64_t *>(dl::reallocate(yielded_resumables, sizeof(int64_t) * 2 * yielded_resumables_size, sizeof(int64_t) * yielded_resumables_size));
+    memcpy(yielded_resumables + yielded_resumables_size, yielded_resumables, sizeof(int64_t) * yielded_resumables_r);
     yielded_resumables_r += yielded_resumables_size;
     yielded_resumables_size *= 2;
   }
 }
 
-static int yielded_resumables_pop() {
+static int64_t yielded_resumables_pop() {
   php_assert (yielded_resumables_l != yielded_resumables_r);
-  int result = yielded_resumables[yielded_resumables_l];
+  int64_t result = yielded_resumables[yielded_resumables_l];
   yielded_resumables_l++;
   if (yielded_resumables_l == yielded_resumables_size) {
     yielded_resumables_l = 0;
@@ -432,11 +432,14 @@ static int yielded_resumables_pop() {
 }
 
 
-static void resumable_add_finished(int resumable_id) {
+static void resumable_add_finished(int64_t resumable_id) {
   php_assert (is_started_resumable_id(resumable_id));
   if (finished_resumables_count >= finished_resumables_size) {
     php_assert (finished_resumables_count == finished_resumables_size);
-    finished_resumables = static_cast <int *> (dl::reallocate(finished_resumables, sizeof(int) * 2 * finished_resumables_size, sizeof(int) * finished_resumables_size));
+    finished_resumables = static_cast<int64_t *>(
+      dl::reallocate(finished_resumables,
+                     sizeof(int64_t) * 2 * finished_resumables_size,
+                     sizeof(int64_t) * finished_resumables_size));
     finished_resumables_size *= 2;
   }
 
@@ -445,7 +448,7 @@ static void resumable_add_finished(int resumable_id) {
   finished_resumables[finished_resumables_count++] = resumable_id;
 }
 
-static void resumable_get_finished(int *resumable_id, bool *is_yielded) {
+static void resumable_get_finished(int64_t *resumable_id, bool *is_yielded) {
   php_assert (resumable_has_finished());
   if (finished_resumables_count) {
     *resumable_id = finished_resumables[--finished_resumables_count];
@@ -457,26 +460,26 @@ static void resumable_get_finished(int *resumable_id, bool *is_yielded) {
 }
 
 void debug_print_resumables() {
-  fprintf(stderr, "first free resumable id: %d\n", first_free_started_resumable_id);
+  fprintf(stderr, "first free resumable id: %ld\n", first_free_started_resumable_id);
   fprintf(stderr, "finished:");
-  for (int i = 0; i < finished_resumables_count; i++) {
-    fprintf(stderr, " %d", finished_resumables[i]);
+  for (uint32_t i = 0; i < finished_resumables_count; i++) {
+    fprintf(stderr, " %ld", finished_resumables[i]);
   }
   fprintf(stderr, "\n");
-  for (int i = first_started_resumable_id; i < current_started_resumable_id; i++) {
+  for (int64_t i = first_started_resumable_id; i < current_started_resumable_id; i++) {
     started_resumable_info *info = get_started_resumable_info(i);
-    fprintf(stderr, "started id = %d, parent = %d, fork = %d, son = %d, continuation = %s, name = %s\n", i, info->parent_id, info->fork_id, info->son,
+    fprintf(stderr, "started id = %ld, parent = %ld, fork = %ld, son = %ld, continuation = %s, name = %s\n", i, info->parent_id, info->fork_id, info->son,
             info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
   }
-  for (int i = first_forked_resumable_id; i < current_forked_resumable_id; i++) {
+  for (int64_t i = first_forked_resumable_id; i < current_forked_resumable_id; i++) {
     forked_resumable_info *info = get_forked_resumable_info(i);
-    fprintf(stderr, "forked id = %d, queue_id = %d, son = %d, continuation = %s, name = %s\n", i, info->queue_id, info->son,
+    fprintf(stderr, "forked id = %ld, queue_id = %ld, son = %ld, continuation = %s, name = %s\n", i, info->queue_id, info->son,
             info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
   }
 }
 
 
-void resumable_run_ready(int resumable_id) {
+void resumable_run_ready(int64_t resumable_id) {
 //  fprintf (stderr, "run ready %d\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
@@ -501,12 +504,12 @@ void resumable_run_ready(int resumable_id) {
 
 void run_scheduler(double timeout) __attribute__((section("run_scheduler_section")));
 
-static int scheduled_resumable_id = 0;
+static int64_t scheduled_resumable_id = 0;
 
 void run_scheduler(double timeout) {
 //  fprintf (stderr, "!!! run scheduler %d\n", finished_resumables_count);
-  int left_resumables = 1000;
-  int force_run_next = false;
+  int32_t left_resumables = 1000;
+  bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
     if (force_run_next) {
       force_run_next = false;
@@ -514,7 +517,7 @@ void run_scheduler(double timeout) {
       return;
     }
 
-    int resumable_id;
+    int64_t resumable_id;
     bool is_yielded;
     resumable_get_finished(&resumable_id, &is_yielded);
     if (is_yielded) {
@@ -525,7 +528,7 @@ void run_scheduler(double timeout) {
     php_assert (res->continuation == nullptr);
 
 //    fprintf (stderr, "!!! process %d(%d) with parent %d in scheduler\n", resumable_id, is_long, res->parent_id);
-    int parent_id = res->parent_id;
+    int64_t parent_id = res->parent_id;
     if (parent_id == 0) {
       res->parent_id = -1;
       return;
@@ -536,7 +539,7 @@ void run_scheduler(double timeout) {
     if (parent_id < 1000000000) {
       started_resumable_info *parent = get_started_resumable_info(parent_id);
       if (parent->continuation == nullptr || parent->son != resumable_id) {
-        kprintf("Will fail assert with resumbale_id = %d\n", resumable_id);
+        kprintf("Will fail assert with resumbale_id = %ld\n", resumable_id);
         debug_print_resumables();
       }
       php_assert (parent->son == resumable_id);
@@ -552,7 +555,7 @@ void run_scheduler(double timeout) {
     } else {
       forked_resumable_info *parent = get_forked_resumable_info(parent_id);
       if (parent->continuation == nullptr || parent->son != resumable_id) {
-        kprintf("Will fail assert with resumbale_id = %d\n", resumable_id);
+        kprintf("Will fail assert with resumbale_id = %ld\n", resumable_id);
         debug_print_resumables();
       }
       php_assert (parent->son == resumable_id);
@@ -570,7 +573,7 @@ void run_scheduler(double timeout) {
 }
 
 
-void wait_synchronously(int resumable_id) {
+void wait_synchronously(int64_t resumable_id) {
   forked_resumable_info *resumable = get_forked_resumable_info(resumable_id);
 
   if (resumable->queue_id < 0) {
@@ -583,7 +586,7 @@ void wait_synchronously(int resumable_id) {
   }
 }
 
-bool f$wait_synchronously(int resumable_id) {
+bool f$wait_synchronously(int64_t resumable_id) {
   last_wait_error = nullptr;
   if (!is_forked_resumable_id(resumable_id)) {
     last_wait_error = "Wrong resumable id";
@@ -606,7 +609,7 @@ bool f$wait_synchronously(int resumable_id) {
 }
 
 
-static bool wait_forked_resumable(int resumable_id, double timeout) {
+static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
   php_assert (timeout > get_precise_now());//TODO remove asserts
   php_assert (in_main_thread());//TODO remove asserts
   php_assert (is_forked_resumable_id(resumable_id));
@@ -639,7 +642,7 @@ static bool wait_forked_resumable(int resumable_id, double timeout) {
   return false;
 }
 
-bool wait_started_resumable(int resumable_id) {
+bool wait_started_resumable(int64_t resumable_id) {
   php_assert (in_main_thread());//TODO remove asserts
   php_assert (is_started_resumable_id(resumable_id));
 
@@ -667,10 +670,10 @@ bool wait_started_resumable(int resumable_id) {
 }
 
 
-static int wait_timeout_wakeup_id = -1;
+static int32_t wait_timeout_wakeup_id = -1;
 
 class wait_resumable : public Resumable {
-  int child_id;
+  int64_t child_id;
   event_timer *timer;
 protected:
   bool run() {
@@ -694,18 +697,19 @@ protected:
   }
 
 public:
-  wait_resumable(int child_id) :
+  wait_resumable(int64_t child_id) :
     child_id(child_id),
     timer(nullptr) {
   }
 
-  void set_timer(double timeout, int wakeup_extra) {
-    timer = allocate_event_timer(timeout, wait_timeout_wakeup_id, wakeup_extra);
+  void set_timer(double timeout, int64_t wakeup_extra) {
+    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
+    timer = allocate_event_timer(timeout, wait_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
   }
 };
 
 class wait_multiple_resumable : public Resumable {
-  int child_id;
+  int64_t child_id;
   forked_resumable_info *info;
 protected:
   bool run() {
@@ -731,20 +735,20 @@ protected:
   }
 
 public:
-  wait_multiple_resumable(int child_id) :
+  explicit wait_multiple_resumable(int64_t child_id) :
     child_id(child_id),
     info(nullptr) {}
 };
 
 
 void process_wait_timeout(event_timer *timer) {
-  int wait_resumable_id = timer->wakeup_extra;
+  int64_t wait_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_resumable_id));
 
   resumable_run_ready(wait_resumable_id);
 }
 
-bool f$wait(int resumable_id, double timeout) {
+bool f$wait(int64_t resumable_id, double timeout) {
   resumable_finished = true;
 
   last_wait_error = nullptr;
@@ -802,7 +806,7 @@ bool f$wait(int resumable_id, double timeout) {
   return false;
 }
 
-bool f$wait_multiple(int resumable_id) {
+bool f$wait_multiple(int64_t resumable_id) {
   resumable_finished = true;
 
   last_wait_error = nullptr;
@@ -826,15 +830,15 @@ bool f$wait_multiple(int resumable_id) {
   return f$wait(resumable_id);
 }
 
-int wait_queue_push(int queue_id, int resumable_id) {
+int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   if (!is_forked_resumable_id(resumable_id)) {
-    php_warning("Wrong resumable_id %d in function wait_queue_push", resumable_id);
+    php_warning("Wrong resumable_id %ld in function wait_queue_push", resumable_id);
 
     return queue_id;
   }
   forked_resumable_info *resumable = get_forked_resumable_info(resumable_id);
   if (resumable->queue_id != 0 && resumable->queue_id != -1) {
-    php_warning("Someone already waits resumable %d", resumable_id);
+    php_warning("Someone already waits resumable %ld", resumable_id);
 
     return queue_id;
   }
@@ -846,7 +850,7 @@ int wait_queue_push(int queue_id, int resumable_id) {
     queue_id = f$wait_queue_create();
   } else {
     if (!is_wait_queue_id(queue_id)) {
-      php_warning("Wrong queue_id %d", queue_id);
+      php_warning("Wrong queue_id %ld", queue_id);
 
       return queue_id;
     }
@@ -866,7 +870,7 @@ int wait_queue_push(int queue_id, int resumable_id) {
   return queue_id;
 }
 
-int wait_queue_push_unsafe(int queue_id, int resumable_id) {
+int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id) {
   if (queue_id == -1) {
     queue_id = f$wait_queue_create();
   }
@@ -884,9 +888,9 @@ int wait_queue_push_unsafe(int queue_id, int resumable_id) {
   return queue_id;
 }
 
-int first_free_queue_id;
+int64_t first_free_queue_id;
 
-void unregister_wait_queue(int queue_id) {
+void unregister_wait_queue(int64_t queue_id) {
   if (queue_id == -1) {
     return;
   }
@@ -894,8 +898,8 @@ void unregister_wait_queue(int queue_id) {
   first_free_queue_id = queue_id;
 }
 
-int f$wait_queue_create() {
-  int res_id;
+int64_t f$wait_queue_create() {
+  int64_t res_id;
   if (first_free_queue_id != 0) {
     res_id = first_free_queue_id;
     first_free_queue_id = -wait_queues[res_id - 1].resumable_id - 1;
@@ -920,11 +924,11 @@ int f$wait_queue_create() {
   return res_id;
 }
 
-int f$wait_queue_create(const var &resumable_ids) {
+int64_t f$wait_queue_create(const var &resumable_ids) {
   return f$wait_queue_push(-1, resumable_ids);
 }
 
-int f$wait_queue_push(int queue_id, const var &resumable_ids) {
+int64_t f$wait_queue_push(int64_t queue_id, const var &resumable_ids) {
   if (queue_id == -1) {
     queue_id = f$wait_queue_create();
   }
@@ -939,14 +943,15 @@ int f$wait_queue_push(int queue_id, const var &resumable_ids) {
   }
 }
 
-int wait_queue_create(const array<int> &resumable_ids) {
+int64_t wait_queue_create(const array<int64_t> &resumable_ids) {
   if (resumable_ids.count() == 0) {
     return -1;
   }
 
-  int queue_id = f$wait_queue_create();
+  const int64_t queue_id = f$wait_queue_create();
 
-  for (array<int>::const_iterator p = resumable_ids.begin(), p_end = resumable_ids.end(); p != p_end; ++p) {
+  const auto p_end = resumable_ids.end();
+  for (auto p = resumable_ids.begin(); p != p_end; ++p) {
     wait_queue_push(queue_id, p.get_value());
   }
   return queue_id;
@@ -965,10 +970,10 @@ static void wait_queue_skip_gotten(wait_queue *q) {
   }
 }
 
-bool f$wait_queue_empty(int queue_id) {
+bool f$wait_queue_empty(int64_t queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %d in function wait_queue_empty", queue_id);
+      php_warning("Wrong queue_id %ld in function wait_queue_empty", queue_id);
     }
     return true;
   }
@@ -978,7 +983,7 @@ bool f$wait_queue_empty(int queue_id) {
   return q->left_functions == 0 && q->first_finished_function == -2;
 }
 
-static void wait_queue_next(int queue_id, double timeout) {
+static void wait_queue_next(int64_t queue_id, double timeout) {
   php_assert (timeout > get_precise_now());//TODO remove asserts
   php_assert (in_main_thread());//TODO remove asserts
   php_assert (is_wait_queue_id(queue_id));
@@ -1012,7 +1017,7 @@ static void wait_queue_next(int queue_id, double timeout) {
   return;
 }
 
-Optional<int> wait_queue_next_synchronously(int queue_id) {
+Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
   wait_queue *q = get_wait_queue(queue_id);
   wait_queue_skip_gotten(q);
 
@@ -1032,11 +1037,11 @@ Optional<int> wait_queue_next_synchronously(int queue_id) {
   return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
 }
 
-static int wait_queue_timeout_wakeup_id = -1;
+static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable : public Resumable {
-  using ReturnT = Optional<int>;
-  int queue_id;
+  using ReturnT = Optional<int64_t>;
+  int64_t queue_id;
   event_timer *timer;
 protected:
   bool run() {
@@ -1052,7 +1057,7 @@ protected:
 
     queue_id = -1;
     if (q->first_finished_function != -2) {
-      RETURN(-q->first_finished_function);
+      RETURN((-q->first_finished_function));
     } else {
       php_assert (input_ == nullptr);//timeout
       RETURN(false);
@@ -1060,30 +1065,31 @@ protected:
   }
 
 public:
-  wait_queue_resumable(int queue_id) :
+  explicit wait_queue_resumable(int64_t queue_id) :
     queue_id(queue_id),
     timer(nullptr) {
   }
 
-  void set_timer(double timeout, int wakeup_extra) {
-    timer = allocate_event_timer(timeout, wait_queue_timeout_wakeup_id, wakeup_extra);
+  void set_timer(double timeout, int64_t wakeup_extra) {
+    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
+    timer = allocate_event_timer(timeout, wait_queue_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
   }
 };
 
 void process_wait_queue_timeout(event_timer *timer) {
-  int wait_queue_resumable_id = timer->wakeup_extra;
+  int64_t wait_queue_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_queue_resumable_id));
 
   resumable_run_ready(wait_queue_resumable_id);
 }
 
-Optional<int> f$wait_queue_next(int queue_id, double timeout) {
+Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
 //  fprintf (stderr, "Waiting for queue %d\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %d in function wait_queue_next", queue_id);
+      php_warning("Wrong queue_id %ld in function wait_queue_next", queue_id);
     }
 
     return false;
@@ -1091,7 +1097,7 @@ Optional<int> f$wait_queue_next(int queue_id, double timeout) {
 
   wait_queue *q = get_wait_queue(queue_id);
   wait_queue_skip_gotten(q);
-  int finished_slot_id = q->first_finished_function;
+  int64_t finished_slot_id = q->first_finished_function;
   if (finished_slot_id != -2) {
     php_assert (finished_slot_id != -1);
     return -finished_slot_id;
@@ -1103,7 +1109,9 @@ Optional<int> f$wait_queue_next(int queue_id, double timeout) {
   if (timeout == 0.0) {
     wait_net(0);
 
-    return q->first_finished_function == -2 ? Optional<int>{false} : Optional<int>{-q->first_finished_function};
+    return q->first_finished_function == -2
+      ? Optional<int64_t>{false}
+      : Optional<int64_t>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1119,7 +1127,9 @@ Optional<int> f$wait_queue_next(int queue_id, double timeout) {
     wait_queue_next(queue_id, timeout);
 
     q = get_wait_queue(queue_id);//can change in scheduler
-    return q->first_finished_function == -2 ? Optional<int>{false} : Optional<int>{-q->first_finished_function};
+    return q->first_finished_function == -2
+      ? Optional<int64_t>{false}
+      : Optional<int64_t>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);
@@ -1132,10 +1142,10 @@ Optional<int> f$wait_queue_next(int queue_id, double timeout) {
   return false;
 }
 
-Optional<int> f$wait_queue_next_synchronously(int queue_id) {
+Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %d in function wait_queue_next_synchronously", queue_id);
+      php_warning("Wrong queue_id %ld in function wait_queue_next_synchronously", queue_id);
     }
 
     return false;
@@ -1144,7 +1154,7 @@ Optional<int> f$wait_queue_next_synchronously(int queue_id) {
   return wait_queue_next_synchronously(queue_id);
 }
 
-static int yield_wakeup_id;
+static int32_t yield_wakeup_id;
 
 void f$sched_yield_sleep(double timeout) {
   if (in_main_thread()) {
@@ -1153,12 +1163,13 @@ void f$sched_yield_sleep(double timeout) {
   }
 
   resumable_finished = false;
-  int id = register_started_resumable(nullptr);
-  allocate_event_timer(timeout + get_precise_now(), yield_wakeup_id, id);
+  int64_t id = register_started_resumable(nullptr);
+  php_assert(id == static_cast<int32_t>(id));
+  allocate_event_timer(timeout + get_precise_now(), yield_wakeup_id, static_cast<int32_t>(id));
 }
 
 void yielded_resumable_timeout(event_timer *timer) {
-  int resumable_id = timer->wakeup_extra;
+  int64_t resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(resumable_id));
 
   get_started_storage(resumable_id)->save_void();
@@ -1175,7 +1186,7 @@ void f$sched_yield() {
 
   resumable_finished = false;
 
-  int id = register_started_resumable(nullptr);
+  int64_t id = register_started_resumable(nullptr);
 
   get_started_storage(id)->save_void();
 
@@ -1214,21 +1225,21 @@ void init_resumable_lib() {
   first_free_started_resumable_id = 0;
 
   forked_resumables_size = 170;
-  forked_resumables = static_cast <forked_resumable_info *> (dl::allocate(sizeof(forked_resumable_info) * forked_resumables_size));
+  forked_resumables = static_cast<forked_resumable_info *>(dl::allocate(sizeof(forked_resumable_info) * forked_resumables_size));
 
   started_resumables_size = 170;
-  started_resumables = static_cast <started_resumable_info *> (dl::allocate(sizeof(started_resumable_info) * started_resumables_size));
+  started_resumables = static_cast<started_resumable_info *>(dl::allocate(sizeof(started_resumable_info) * started_resumables_size));
 
   finished_resumables_size = 170;
   finished_resumables_count = 0;
-  finished_resumables = static_cast <int *> (dl::allocate(sizeof(int) * finished_resumables_size));
+  finished_resumables = static_cast<int64_t *>(dl::allocate(sizeof(int64_t) * finished_resumables_size));
 
   yielded_resumables_size = 170;
   yielded_resumables_l = yielded_resumables_r = 0;
-  yielded_resumables = static_cast <int *> (dl::allocate(sizeof(int) * yielded_resumables_size));
+  yielded_resumables = static_cast<int64_t *>(dl::allocate(sizeof(int64_t) * yielded_resumables_size));
 
   wait_queues_size = 101;
-  wait_queues = static_cast <wait_queue *> (dl::allocate(sizeof(wait_queue) * wait_queues_size));
+  wait_queues = static_cast<wait_queue *>(dl::allocate(sizeof(wait_queue) * wait_queues_size));
   wait_next_queue_id = 0;
   first_free_queue_id = 0;
   new(&gotten_forked_resumable_info.output) Storage;
@@ -1236,17 +1247,17 @@ void init_resumable_lib() {
   gotten_forked_resumable_info.continuation = nullptr;
 }
 
-int get_resumable_stack(void ** buffer, int limit) {
+int32_t get_resumable_stack(void **buffer, int32_t limit) {
   if (!scheduled_resumable_id) {
     return 0;
   }
-  int resumable_id = scheduled_resumable_id;
+  int64_t resumable_id = scheduled_resumable_id;
   if (is_forked_resumable_id(resumable_id)) {
     return 0;
   }
-  for (int it = 0; it < limit; it++) {
+  for (int32_t it = 0; it < limit; it++) {
     started_resumable_info *my = get_started_resumable_info(resumable_id);
-    int parent_id = my->parent_id;
+    int64_t parent_id = my->parent_id;
     if (is_forked_resumable_id(parent_id)) {
       buffer[it] = get_forked_resumable(parent_id)->get_stack_ptr();
       return it + 1;

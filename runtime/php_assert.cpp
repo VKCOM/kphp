@@ -214,8 +214,8 @@ void write_json_error_to_log(int release, char *msg, int type, int nptrs, void**
 
 
   // todo(k.paltsev) удалить version, когда на всех серверах обновят kw-parser
-  const auto format = R"({"version":%d,"release":%d,"type":%d,"created_at":%d,"msg":"%s")";
-  fprintf(json_log_file_ptr, format, release, release, type, f$time(), msg);
+  const auto format = R"({"version":%d,"release":%d,"type":%d,"created_at":%ld,"msg":"%s")";
+  fprintf(json_log_file_ptr, format, release, release, type, time(nullptr), msg);
 
   fprintf(json_log_file_ptr, R"(,"trace":[)");
   for (int i = 0; i < nptrs; i++) {

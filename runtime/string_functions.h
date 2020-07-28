@@ -10,15 +10,15 @@ extern const string NEW_LINE;
 extern const string SPACE;
 extern const string WHAT;
 
-constexpr int PHP_BUF_LEN = (1 << 23);//TODO remove usages of static buffer
+constexpr int32_t PHP_BUF_LEN = (1 << 23);//TODO remove usages of static buffer
 extern char php_buf[PHP_BUF_LEN + 1];
 
 extern const char lhex_digits[17];
 extern const char uhex_digits[17];
 
-extern int str_replace_count_dummy;
+extern int64_t str_replace_count_dummy;
 
-inline int hex_to_int(char c);
+inline int32_t hex_to_int(char c);
 
 
 string f$addcslashes(const string &str, const string &what);
@@ -29,32 +29,32 @@ string f$bin2hex(const string &str);
 
 string f$chop(const string &s, const string &what = WHAT);
 
-string f$chr(int v);
+string f$chr(int64_t v);
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s);
 
-var f$count_chars(const string &str, int mode = 0);
+var f$count_chars(const string &str, int64_t mode = 0);
 
 string f$hex2bin(const string &str);
 
-constexpr int ENT_HTML401 = 0;
-constexpr int ENT_COMPAT = 0;
-constexpr int ENT_QUOTES = 1;
-constexpr int ENT_NOQUOTES = 2;
+constexpr int64_t ENT_HTML401 = 0;
+constexpr int64_t ENT_COMPAT = 0;
+constexpr int64_t ENT_QUOTES = 1;
+constexpr int64_t ENT_NOQUOTES = 2;
 
 string f$htmlentities(const string &str);
 
-string f$html_entity_decode(const string &str, int flags = ENT_COMPAT | ENT_HTML401, const string &encoding = CP1251);
+string f$html_entity_decode(const string &str, int64_t flags = ENT_COMPAT | ENT_HTML401, const string &encoding = CP1251);
 
-string f$htmlspecialchars(const string &str, int flags = ENT_COMPAT | ENT_HTML401);
+string f$htmlspecialchars(const string &str, int64_t flags = ENT_COMPAT | ENT_HTML401);
 
-string f$htmlspecialchars_decode(const string &str, int flags = ENT_COMPAT | ENT_HTML401);
+string f$htmlspecialchars_decode(const string &str, int64_t flags = ENT_COMPAT | ENT_HTML401);
 
 string f$lcfirst(const string &str);
 
 string f$lcwords(const string &str);
 
-int f$levenshtein(const string &str1, const string &str2);
+int64_t f$levenshtein(const string &str1, const string &str2);
 
 string f$ltrim(const string &s, const string &what = WHAT);
 
@@ -62,45 +62,45 @@ string f$mysql_escape_string(const string &str);
 
 string f$nl2br(const string &str, bool is_xhtml = true);
 
-inline string f$number_format(double number, int decimals = 0);
+inline string f$number_format(double number, int64_t decimals = 0);
 
-inline string f$number_format(double number, int decimals, const string &dec_point);
+inline string f$number_format(double number, int64_t decimals, const string &dec_point);
 
-inline string f$number_format(double number, int decimals, const var &dec_point);
+inline string f$number_format(double number, int64_t decimals, const var &dec_point);
 
-string f$number_format(double number, int decimals, const string &dec_point, const string &thousands_sep);
+string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep);
 
-inline string f$number_format(double number, int decimals, const string &dec_point, const var &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const string &dec_point, const var &thousands_sep);
 
-inline string f$number_format(double number, int decimals, const var &dec_point, const string &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const var &dec_point, const string &thousands_sep);
 
-inline string f$number_format(double number, int decimals, const var &dec_point, const var &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const var &dec_point, const var &thousands_sep);
 
-int f$ord(const string &s);
+int64_t f$ord(const string &s);
 
 string f$pack(const string &pattern, const array<var> &a);
 
 string f$prepare_search_query(const string &query);
 
-int f$printf(const string &format, const array<var> &a);
+int64_t f$printf(const string &format, const array<var> &a);
 
 string f$rtrim(const string &s, const string &what = WHAT);
 
-Optional<string> f$setlocale(int category, const string &locale);
+Optional<string> f$setlocale(int64_t category, const string &locale);
 
 string f$sprintf(const string &format, const array<var> &a);
 
 string f$stripslashes(const string &str);
 
-int f$strcasecmp(const string &lhs, const string &rhs);
+int64_t f$strcasecmp(const string &lhs, const string &rhs);
 
-int f$strcmp(const string &lhs, const string &rhs);
+int64_t f$strcmp(const string &lhs, const string &rhs);
 
 string f$strip_tags(const string &str, const string &allow = string());
 
-Optional<int> f$stripos(const string &haystack, const string &needle, int offset = 0);
+Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int> f$stripos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int64_t> f$stripos(const string &haystack, const var &needle, int64_t offset = 0);
 
 Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false);
 
@@ -108,28 +108,28 @@ inline Optional<string> f$stristr(const string &haystack, const var &needle, boo
 
 Optional<string> f$strrchr(const string &haystack, const string &needle);
 
-inline int f$strlen(const string &s);
+inline int64_t f$strlen(const string &s);
 
-int f$strncmp(const string &lhs, const string &rhs, int len);
+int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len);
 
-int f$strnatcmp(const string &lhs, const string &rhs);
+int64_t f$strnatcmp(const string &lhs, const string &rhs);
 
 Optional<string> f$strpbrk(const string &haystack, const string &char_list);
 
-Optional<int> f$strpos(const string &haystack, const string &needle, int offset = 0);
+Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int> f$strpos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int64_t> f$strpos(const string &haystack, const var &needle, int64_t offset = 0);
 
 template<class T>
-inline Optional<int> f$strpos(const string &haystack, const Optional<T> &needle, int offset = 0);
+inline Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset = 0);
 
-Optional<int> f$strrpos(const string &haystack, const string &needle, int offset = 0);
+Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int> f$strrpos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int64_t> f$strrpos(const string &haystack, const var &needle, int64_t offset = 0);
 
-Optional<int> f$strripos(const string &haystack, const string &needle, int offset = 0);
+Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int> f$strripos(const string &haystack, const var &needle, int offset = 0);
+inline Optional<int64_t> f$strripos(const string &haystack, const var &needle, int64_t offset = 0);
 
 string f$strrev(const string &str);
 
@@ -150,21 +150,21 @@ inline string f$strtr(const string &subject, const var &from, const var &to);
 
 inline string f$strtr(const string &subject, const var &replace_pairs);
 
-const int STR_PAD_LEFT = 0;
-const int STR_PAD_RIGHT = 1;
-const int STR_PAD_BOTH = 2;
+const int64_t STR_PAD_LEFT = 0;
+const int64_t STR_PAD_RIGHT = 1;
+const int64_t STR_PAD_BOTH = 2;
 
-string f$str_pad(const string &input, int len, const string &pad_str = SPACE, int pad_type = STR_PAD_RIGHT);
+string f$str_pad(const string &input, int64_t len, const string &pad_str = SPACE, int64_t pad_type = STR_PAD_RIGHT);
 
-string f$str_repeat(const string &s, int multiplier);
+string f$str_repeat(const string &s, int64_t multiplier);
 
-string f$str_replace(const string &search, const string &replace, const string &subject, int &replace_count = str_replace_count_dummy);
+string f$str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
-void str_replace_inplace(const string &search, const string &replace, string &subject, int &replace_count);
-string str_replace(const string &search, const string &replace, const string &subject, int &replace_count);
+void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count);
+string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count);
 
 template<typename T1, typename T2>
-string str_replace_string_array(const array<T1> &search, const array<T2> &replace, const string &subject, int &replace_count) {
+string str_replace_string_array(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count) {
   string result = subject;
 
   string replace_value;
@@ -191,29 +191,29 @@ string str_replace_string_array(const array<T1> &search, const array<T2> &replac
 };
 
 template<typename T1, typename T2>
-string f$str_replace(const array<T1> &search, const array<T2> &replace, const string &subject, int &replace_count = str_replace_count_dummy) {
+string f$str_replace(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy) {
   replace_count = 0;
   return str_replace_string_array(search, replace, subject, replace_count);
 }
 
-string f$str_replace(const var &search, const var &replace, const string &subject, int &replace_count = str_replace_count_dummy);
+string f$str_replace(const var &search, const var &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
-SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int &replace_count = str_replace_count_dummy) {
+SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
-var f$str_replace(const var &search, const var &replace, const var &subject, int &replace_count = str_replace_count_dummy);
+var f$str_replace(const var &search, const var &replace, const var &subject, int64_t &replace_count = str_replace_count_dummy);
 
-array<string> f$str_split(const string &str, int split_length = 1);
+array<string> f$str_split(const string &str, int64_t split_length = 1);
 
-Optional<string> f$substr(const string &str, int start, int length = INT_MAX);
+Optional<string> f$substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
 
-int f$substr_count(const string &haystack, const string &needle, int offset = 0, int length = INT_MAX);
+int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max());
 
-Optional<string> f$substr_replace(const string &str, const string &replacement, int start, int length = INT_MAX);
+Optional<string> f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
 
-Optional<int> f$substr_compare(const string &main_str, const string &str, int offset, int length = INT_MAX, bool case_insensitivity = false);
+Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), bool case_insensitivity = false);
 
 string f$trim(const string &s, const string &what = WHAT);
 
@@ -223,11 +223,11 @@ string f$ucwords(const string &str);
 
 array<var> f$unpack(const string &pattern, const string &data);
 
-int f$vprintf(const string &format, const array<var> &args);
+int64_t f$vprintf(const string &format, const array<var> &args);
 
 string f$vsprintf(const string &format, const array<var> &args);
 
-string f$wordwrap(const string &str, int width = 75, const string &brk = NEW_LINE, bool cut = false);
+string f$wordwrap(const string &str, int64_t width = 75, const string &brk = NEW_LINE, bool cut = false);
 
 /*
  *
@@ -236,7 +236,7 @@ string f$wordwrap(const string &str, int width = 75, const string &brk = NEW_LIN
  */
 
 
-int hex_to_int(char c) {
+int32_t hex_to_int(char c) {
   if ('0' <= c && c <= '9') {
     return c - '0';
   }
@@ -247,35 +247,35 @@ int hex_to_int(char c) {
   return 16;
 }
 
-string f$number_format(double number, int decimals) {
+string f$number_format(double number, int64_t decimals) {
   return f$number_format(number, decimals, DOT, COLON);
 }
 
-string f$number_format(double number, int decimals, const string &dec_point) {
+string f$number_format(double number, int64_t decimals, const string &dec_point) {
   return f$number_format(number, decimals, dec_point, COLON);
 }
 
-string f$number_format(double number, int decimals, const var &dec_point) {
+string f$number_format(double number, int64_t decimals, const var &dec_point) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), COLON);
 }
 
-string f$number_format(double number, int decimals, const string &dec_point, const var &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const string &dec_point, const var &thousands_sep) {
   return f$number_format(number, decimals, dec_point, thousands_sep.is_null() ? COLON : thousands_sep.to_string());
 }
 
-string f$number_format(double number, int decimals, const var &dec_point, const string &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const var &dec_point, const string &thousands_sep) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), thousands_sep);
 }
 
-string f$number_format(double number, int decimals, const var &dec_point, const var &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const var &dec_point, const var &thousands_sep) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), thousands_sep.is_null() ? COLON : thousands_sep.to_string());
 }
 
-int f$strlen(const string &s) {
-  return (int)s.size();
+int64_t f$strlen(const string &s) {
+  return s.size();
 }
 
-Optional<int> f$stripos(const string &haystack, const var &needle, int offset) {
+Optional<int64_t> f$stripos(const string &haystack, const var &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$stripos(haystack, needle.to_string(), offset);
   } else {
@@ -292,11 +292,11 @@ Optional<string> f$stristr(const string &haystack, const var &needle, bool befor
 }
 
 template<class T>
-inline Optional<int> f$strpos(const string &haystack, const Optional<T> &needle, int offset) {
+inline Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset) {
   return f$strpos(haystack, needle.val(), offset);
 }
 
-Optional<int> f$strpos(const string &haystack, const var &needle, int offset) {
+Optional<int64_t> f$strpos(const string &haystack, const var &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strpos(haystack, needle.to_string(), offset);
   } else {
@@ -304,7 +304,7 @@ Optional<int> f$strpos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-Optional<int> f$strrpos(const string &haystack, const var &needle, int offset) {
+Optional<int64_t> f$strrpos(const string &haystack, const var &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strrpos(haystack, needle.to_string(), offset);
   } else {
@@ -312,7 +312,7 @@ Optional<int> f$strrpos(const string &haystack, const var &needle, int offset) {
   }
 }
 
-Optional<int> f$strripos(const string &haystack, const var &needle, int offset) {
+Optional<int64_t> f$strripos(const string &haystack, const var &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strripos(haystack, needle.to_string(), offset);
   } else {
@@ -334,11 +334,11 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
   string result;
   while (1) {
     const char *best_pos = nullptr;
-    int best_len = -1;
+    int64_t best_len = -1;
     string replace;
     for (typename array<T>::const_iterator p = replace_pairs.begin(); p != replace_pairs.end(); ++p) {
       const string search = f$strval(p.get_key());
-      int search_len = search.size();
+      int64_t search_len = search.size();
       if (search_len == 0) {
         return subject;
       }

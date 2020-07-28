@@ -18,6 +18,8 @@
 template<class T>
 class convert_to {
 public:
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   static inline const T &convert(const T &val);
 
   static inline T &&convert(T &&val);

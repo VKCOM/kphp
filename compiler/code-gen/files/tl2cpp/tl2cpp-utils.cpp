@@ -24,8 +24,8 @@ std::string register_tl_const_str(const std::string &tl_name) {
   return cpp_tl_const_str(tl_name);
 }
 
-int hash_tl_const_str(const std::string &tl_name) {
-  return string_hash(tl_name.c_str(), (int)tl_name.size());
+int64_t hash_tl_const_str(const std::string &tl_name) {
+  return string_hash(tl_name.c_str(), tl_name.size());
 }
 
 std::string cpp_tl_struct_name(const char *prefix, std::string tl_name, const std::string &template_args_postfix) {

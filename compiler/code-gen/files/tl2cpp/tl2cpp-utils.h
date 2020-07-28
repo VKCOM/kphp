@@ -35,7 +35,7 @@ std::string cpp_tl_struct_name(const char *prefix, std::string tl_name, const st
 
 std::string cpp_tl_const_str(std::string tl_name);
 std::string register_tl_const_str(const std::string &tl_name);
-int hash_tl_const_str(const std::string &tl_name);
+int64_t hash_tl_const_str(const std::string &tl_name);
 
 vk::tl::type *get_tl_type_of_php_class(ClassPtr interface);
 vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass);

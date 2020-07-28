@@ -35,18 +35,18 @@ static time_t gmmktime(struct tm *tm) {
   return result;
 }
 
-static inline int is_leap(int year) {
+static inline int32_t is_leap(int32_t year) {
   return ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0));
 }
 
-bool f$checkdate(int month, int day, int year) {
+bool f$checkdate(int64_t month, int64_t day, int64_t year) {
   return (1 <= month && month <= 12) &&
          (1 <= year && year <= 32767) &&
-         (1 <= day && day <= days_in_month[month - 1] + (month == 2 && is_leap(year)));
+         (1 <= day && day <= days_in_month[month - 1] + (month == 2 && is_leap(static_cast<int32_t>(year))));
 }
 
-static inline int fix_year(int year) {
-  if ((unsigned int)year <= 100u) {
+static inline int32_t fix_year(int32_t year) {
+  if ((uint64_t)year <= 100u) {
     if (year <= 69) {
       year += 2000;
     } else {
@@ -121,7 +121,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
 }
 
 
-static string date(const string &format, const tm &t, int timestamp, bool local) {
+static string date(const string &format, const tm &t, int64_t timestamp, bool local) {
   string_buffer &SB = static_SB_spare;
 
   int year = t.tm_year + 1900;
@@ -133,7 +133,7 @@ static string date(const string &format, const tm &t, int timestamp, bool local)
   int second = t.tm_sec;
   int day_of_week = t.tm_wday;
   int day_of_year = t.tm_yday;
-  int internet_time;
+  int64_t internet_time;
   int iso_week, iso_year;
 
   SB.clean();
@@ -355,9 +355,9 @@ static string date(const string &format, const tm &t, int timestamp, bool local)
   return SB.str();
 }
 
-string f$date(const string &format, int timestamp) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+string f$date(const string &format, int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -381,9 +381,9 @@ string f$date_default_timezone_get() {
   return string("Europe/Moscow", 13);
 }
 
-array<var> f$getdate(int timestamp) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+array<var> f$getdate(int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -406,9 +406,9 @@ array<var> f$getdate(int timestamp) {
   return result;
 }
 
-string f$gmdate(const string &format, int timestamp) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+string f$gmdate(const string &format, int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -417,42 +417,42 @@ string f$gmdate(const string &format, int timestamp) {
   return date(format, t, timestamp, false);
 }
 
-int f$gmmktime(int h, int m, int s, int month, int day, int year) {
+int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
   time_t timestamp_t = time(nullptr);
   gmtime_r(&timestamp_t, &t);
 
-  if (h != INT_MIN) {
-    t.tm_hour = h;
+  if (h != std::numeric_limits<int64_t>::min()) {
+    t.tm_hour = static_cast<int32_t>(h);
   }
 
-  if (m != INT_MIN) {
-    t.tm_min = m;
+  if (m != std::numeric_limits<int64_t>::min()) {
+    t.tm_min = static_cast<int32_t>(m);
   }
 
-  if (s != INT_MIN) {
-    t.tm_sec = s - (int)timezone;
+  if (s != std::numeric_limits<int64_t>::min()) {
+    t.tm_sec = static_cast<int32_t>(s - timezone);
   }
 
-  if (month != INT_MIN) {
-    t.tm_mon = month - 1;
+  if (month != std::numeric_limits<int64_t>::min()) {
+    t.tm_mon = static_cast<int32_t>(month - 1);
   }
 
-  if (day != INT_MIN) {
-    t.tm_mday = day;
+  if (day != std::numeric_limits<int64_t>::min()) {
+    t.tm_mday = static_cast<int32_t>(day);
   }
 
-  if (year != INT_MIN) {
-    t.tm_year = fix_year(year) - 1900;
+  if (year != std::numeric_limits<int64_t>::min()) {
+    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
   }
 
   t.tm_isdst = -1;
-  return (int)gmmktime(&t) - 3 * 3600;
+  return gmmktime(&t) - 3 * 3600;
 }
 
-array<var> f$localtime(int timestamp, bool is_associative) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+array<var> f$localtime(int64_t timestamp, bool is_associative) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -506,43 +506,43 @@ var f$microtime(bool get_as_float) {
   }
 }
 
-int f$mktime(int h, int m, int s, int month, int day, int year) {
+int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
   time_t timestamp_t = time(nullptr);
   localtime_r(&timestamp_t, &t);
 
-  if (h != INT_MIN) {
-    t.tm_hour = h;
+  if (h != std::numeric_limits<int64_t>::min()) {
+    t.tm_hour = static_cast<int32_t>(h);
   }
 
-  if (m != INT_MIN) {
-    t.tm_min = m;
+  if (m != std::numeric_limits<int64_t>::min()) {
+    t.tm_min = static_cast<int32_t>(m);
   }
 
-  if (s != INT_MIN) {
-    t.tm_sec = s;
+  if (s != std::numeric_limits<int64_t>::min()) {
+    t.tm_sec = static_cast<int32_t>(s);
   }
 
-  if (month != INT_MIN) {
-    t.tm_mon = month - 1;
+  if (month != std::numeric_limits<int64_t>::min()) {
+    t.tm_mon = static_cast<int32_t>(month - 1);
   }
 
-  if (day != INT_MIN) {
-    t.tm_mday = day;
+  if (day != std::numeric_limits<int64_t>::min()) {
+    t.tm_mday = static_cast<int32_t>(day);
   }
 
-  if (year != INT_MIN) {
-    t.tm_year = fix_year(year) - 1900;
+  if (year != std::numeric_limits<int64_t>::min()) {
+    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
   }
 
   t.tm_isdst = -1;
 
-  return (int)mktime(&t);
+  return mktime(&t);
 }
 
-string f$strftime(const string &format, int timestamp) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+string f$strftime(const string &format, int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -555,9 +555,9 @@ string f$strftime(const string &format, int timestamp) {
   return string(php_buf);
 }
 
-Optional<int> f$strtotime(const string &time_str, int timestamp) {
-  if (timestamp == INT_MIN) {
-    timestamp = (int)time(nullptr);
+Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = time(nullptr);
   }
   tm t;
   time_t timestamp_t = timestamp;
@@ -568,7 +568,7 @@ Optional<int> f$strtotime(const string &time_str, int timestamp) {
   char str[21];
   bool time_set = false;
 
-  int old_size;
+  int64_t old_size;
   do {
     old_size = s.size();
 
@@ -802,15 +802,15 @@ Optional<int> f$strtotime(const string &time_str, int timestamp) {
 
   if ((int)s.size() == 0) {
     t.tm_isdst = -1;
-    return need_gmt ? (int)gmmktime(&t) : (int)mktime(&t);
+    return need_gmt ? gmmktime(&t) : mktime(&t);
   }
 
   php_critical_error ("strtotime can't parse string \"%s\", unparsed part: \"%s\"", time_str.c_str(), s.c_str());
   return false;
 }
 
-int f$time() {
-  return (int)time(nullptr);
+int64_t f$time() {
+  return time(nullptr);
 }
 
 

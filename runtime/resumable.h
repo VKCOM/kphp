@@ -55,7 +55,7 @@ public:
 
   virtual ~Resumable();
 
-  bool resume(int resumable_id, Storage *input);
+  bool resume(int64_t resumable_id, Storage *input);
 
   static void update_output();
 
@@ -67,27 +67,27 @@ template<class T>
 T start_resumable(Resumable *resumable);
 
 template<class T>
-int fork_resumable(Resumable *resumable);
+int64_t fork_resumable(Resumable *resumable);
 
 
-void resumable_run_ready(int resumable_id);
+void resumable_run_ready(int64_t resumable_id);
 
 
-bool wait_started_resumable(int resumable_id);
+bool wait_started_resumable(int64_t resumable_id);
 
-void wait_synchronously(int resumable_id);
+void wait_synchronously(int64_t resumable_id);
 
-bool f$wait_synchronously(int resumable_id);
+bool f$wait_synchronously(int64_t resumable_id);
 
-bool f$wait(int resumable_id, double timeout = -1.0);
+bool f$wait(int64_t resumable_id, double timeout = -1.0);
 
-bool f$wait_multiple(int resumable_id);
+bool f$wait_multiple(int64_t resumable_id);
 
-inline bool f$wait_synchronously(Optional<int> resumable_id) { return f$wait_synchronously(resumable_id.val());}
+inline bool f$wait_synchronously(Optional<int64_t> resumable_id) { return f$wait_synchronously(resumable_id.val());}
 
-inline bool f$wait(Optional<int> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
+inline bool f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
 
-inline bool f$wait_multiple(Optional<int> resumable_id) { return f$wait_multiple(resumable_id.val());};
+inline bool f$wait_multiple(Optional<int64_t> resumable_id) { return f$wait_multiple(resumable_id.val());};
 
 inline bool f$wait_multiple(const var &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
 
@@ -98,45 +98,45 @@ void f$sched_yield_sleep(double timeout);
 
 bool in_main_thread();
 
-int register_forked_resumable(Resumable *resumable);
+int64_t register_forked_resumable(Resumable *resumable);
 
-int register_started_resumable(Resumable *resumable);
+int64_t register_started_resumable(Resumable *resumable);
 
-void finish_forked_resumable(int resumable_id);
+void finish_forked_resumable(int64_t resumable_id);
 
-void finish_started_resumable(int resumable_id);
+void finish_started_resumable(int64_t resumable_id);
 
-void unregister_started_resumable(int resumable_id);
+void unregister_started_resumable(int64_t resumable_id);
 
-Storage *get_started_storage(int resumable_id);
+Storage *get_started_storage(int64_t resumable_id);
 
-Storage *get_forked_storage(int resumable_id);
+Storage *get_forked_storage(int64_t resumable_id);
 
-Resumable *get_forked_resumable(int resumable_id);
+Resumable *get_forked_resumable(int64_t resumable_id);
 
-int get_resumable_stack(void **buffer, int limit);
+int32_t get_resumable_stack(void **buffer, int32_t limit);
 
-int f$wait_queue_create();
-int f$wait_queue_create(const var &resumable_ids);
-int wait_queue_create(const array<int> &resumable_ids);
-void unregister_wait_queue(int queue_id);
+int64_t f$wait_queue_create();
+int64_t f$wait_queue_create(const var &resumable_ids);
+int64_t wait_queue_create(const array<int64_t> &resumable_ids);
+void unregister_wait_queue(int64_t queue_id);
 
-int f$wait_queue_push(int queue_id, const var &resumable_ids);
-int wait_queue_push(int queue_id, int resumable_id);
-int wait_queue_push_unsafe(int queue_id, int resumable_id);
+int64_t f$wait_queue_push(int64_t queue_id, const var &resumable_ids);
+int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id);
+int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
 
-bool f$wait_queue_empty(int queue_id);
+bool f$wait_queue_empty(int64_t queue_id);
 
-Optional<int> f$wait_queue_next(int queue_id, double timeout = -1.0);
-Optional<int> wait_queue_next_synchronously(int queue_id);
-Optional<int> f$wait_queue_next_synchronously(int queue_id);
+Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0);
+Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
+Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
 
 void global_init_resumable_lib();
 
 void init_resumable_lib();
 
-int f$get_running_fork_id();
-Optional<array<var>> f$get_fork_stat(int fork_id);
+int64_t f$get_running_fork_id();
+Optional<array<var>> f$get_fork_stat(int64_t fork_id);
 
 /*
  *
@@ -147,7 +147,7 @@ Optional<array<var>> f$get_fork_stat(int fork_id);
 
 template<class T>
 T start_resumable(Resumable *resumable) {
-  int id = register_started_resumable(resumable);
+  int64_t id = register_started_resumable(resumable);
 
   if (resumable->resume(id, nullptr)) {
     Storage *output = get_started_storage(id);
@@ -170,8 +170,8 @@ T start_resumable(Resumable *resumable) {
 }
 
 template<class T>
-int fork_resumable(Resumable *resumable) {
-  int id = register_forked_resumable(resumable);
+int64_t fork_resumable(Resumable *resumable) {
+  int64_t id = register_forked_resumable(resumable);
 
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);
@@ -183,7 +183,7 @@ int fork_resumable(Resumable *resumable) {
 template<typename T>
 class wait_result_resumable : public Resumable {
   using ReturnT = T;
-  int resumable_id;
+  int64_t resumable_id;
   double timeout;
   bool ready;
 
@@ -210,7 +210,7 @@ protected:
   }
 
 public:
-  wait_result_resumable(int resumable_id, double timeout) :
+  wait_result_resumable(int64_t resumable_id, double timeout) :
     resumable_id(resumable_id),
     timeout(timeout),
     ready(false) {
@@ -241,22 +241,22 @@ inline bool wait_result_resumable<void>::run() {
 }
 
 template<typename T>
-T f$wait_result(int resumable_id, double timeout = -1) {
+T f$wait_result(int64_t resumable_id, double timeout = -1) {
   return start_resumable<T>(new wait_result_resumable<T>(resumable_id, timeout));
 }
 
 template<typename T>
-T f$wait_result(Optional<int> resumable_id, double timeout = -1) {
+T f$wait_result(Optional<int64_t> resumable_id, double timeout = -1) {
   return f$wait_result<T>(resumable_id.val(), timeout);
 }
 
 template<typename T>
 class wait_result_multi_resumable : public Resumable {
   using ReturnT = T;
-  array<int> resumable_ids;
+  array<int64_t> resumable_ids;
   T result;
 
-  array<int>::const_iterator resumable_it;
+  array<int64_t>::const_iterator resumable_it;
   typename T::value_type next_waited_result;
 
 protected:
@@ -276,20 +276,20 @@ protected:
   }
 
 public:
-  explicit wait_result_multi_resumable(const array<int> &resumable_ids) :
+  explicit wait_result_multi_resumable(const array<int64_t> &resumable_ids) :
     resumable_ids(resumable_ids),
     result(resumable_ids.size()) {
   }
 };
 
 template<typename T>
-T f$wait_result_multi(const array<Optional<int>> &resumable_ids) {
-  auto ids = array<int>::convert_from(resumable_ids);
+T f$wait_result_multi(const array<Optional<int64_t>> &resumable_ids) {
+  auto ids = array<int64_t>::convert_from(resumable_ids);
   return f$wait_result_multi<T>(ids);
 }
 
 template<typename T>
-T f$wait_result_multi(const array<int> &resumable_ids) {
+T f$wait_result_multi(const array<int64_t> &resumable_ids) {
   return start_resumable<T>(new wait_result_multi_resumable<T>(resumable_ids));
 }
 

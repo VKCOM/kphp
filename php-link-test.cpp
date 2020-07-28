@@ -4,8 +4,8 @@
 #include "runtime/tl/rpc_response.h"
 
 template<> int Storage::tagger<bool>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<int>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<Optional<int>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<int64_t>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<Optional<int64_t>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<void>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<thrown_exception>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<var>::get_tag() noexcept { return 0; }

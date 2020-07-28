@@ -15,18 +15,19 @@ ULong f$base64url_decode_ulong_NN(const string &s);
 
 string f$base64url_encode_ulong_NN(ULong val);
 
-constexpr int PHP_QUERY_RFC1738 = 1;
-constexpr int PHP_QUERY_RFC3986 = 2;
+constexpr int64_t PHP_QUERY_RFC1738 = 1;
+constexpr int64_t PHP_QUERY_RFC3986 = 2;
 extern string AMPERSAND;
 
 template<class T>
-string f$http_build_query(const array<T> &a, const string &numeric_prefix = {}, const string &arg_separator = AMPERSAND, int enc_type = PHP_QUERY_RFC1738);
+string f$http_build_query(const array<T> &a, const string &numeric_prefix = {},
+                          const string &arg_separator = AMPERSAND, int64_t enc_type = PHP_QUERY_RFC1738);
 
 void parse_str_set_value(var &arr, const string &key, const string &value);
 
 void f$parse_str(const string &str, var &arr);
 
-var f$parse_url(const string &s, int component = -1);
+var f$parse_url(const string &s, int64_t component = -1);
 
 string f$rawurldecode(const string &s);
 
@@ -43,7 +44,8 @@ string f$urlencode(const string &s);
  */
 
 template<class T>
-string http_build_query_get_param_array(const string &key, const array<T> &a, const string &arg_separator, int enc_type) {
+string http_build_query_get_param_array(const string &key, const array<T> &a,
+                                        const string &arg_separator, int64_t enc_type) {
   string result;
   bool first = true;
   for (typename array<T>::const_iterator p = a.begin(); p != a.end(); ++p) {
@@ -61,7 +63,8 @@ string http_build_query_get_param_array(const string &key, const array<T> &a, co
 
 
 template<class T>
-string http_build_query_get_param(const string &key, const T &a, const string &arg_separator, int enc_type) {
+string http_build_query_get_param(const string &key, const T &a,
+                                  const string &arg_separator, int64_t enc_type) {
   if (f$is_null(a)) {
     return {};
   }
@@ -83,13 +86,14 @@ string http_build_query_get_param(const string &key, const T &a, const string &a
 
 
 template<class T>
-string f$http_build_query(const array<T> &a, const string &numeric_prefix, const string &arg_separator, int enc_type) {
+string f$http_build_query(const array<T> &a, const string &numeric_prefix,
+                          const string &arg_separator, int64_t enc_type) {
   if (!vk::any_of_equal(enc_type, PHP_QUERY_RFC1738, PHP_QUERY_RFC3986)) {
-    php_warning("Unknown enc type %d in http_build_query", enc_type);
+    php_warning("Unknown enc type %ld in http_build_query", enc_type);
     enc_type = PHP_QUERY_RFC1738;
   }
   string result;
-  int first = 1;
+  bool first = true;
   for (typename array<T>::const_iterator p = a.begin(); p != a.end(); ++p) {
     string key;
     if (p.get_key().is_int()) {
@@ -103,7 +107,7 @@ string f$http_build_query(const array<T> &a, const string &numeric_prefix, const
       if (!first) {
         result.append(arg_separator);
       }
-      first = 0;
+      first = false;
 
       result.append(param);
     }

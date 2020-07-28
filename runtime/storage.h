@@ -64,11 +64,13 @@ public:
 
   template<typename T>
   struct tagger {
+    static_assert(!std::is_same<T, int>{}, "int is forbidden");
     static int get_tag() noexcept;
   };
 
   template<typename T>
   struct loader {
+    static_assert(!std::is_same<T, int>{}, "int is forbidden");
     using loader_fun = T(*)(storage_ptr &);
     static loader_fun get_function(int tag) noexcept;
   };
@@ -105,6 +107,9 @@ struct Storage::load_implementation_helper<X, Y, std::false_type> {
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::true_type> {
+  static_assert(!std::is_same<X, int>{}, "int is forbidden");
+  static_assert(!std::is_same<Y, int>{}, "int is forbidden");
+
   static Y load(storage_ptr &storage) noexcept {
     X *data = storage.get<X>();
     Y result = std::move(*data);
@@ -120,6 +125,8 @@ struct Storage::load_implementation_helper<void, void, std::true_type> {
 
 template<typename T>
 struct Storage::load_implementation_helper<T, void, std::false_type> {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   static void load(storage_ptr &storage) noexcept {
     Storage::load_implementation_helper<T, T>::load(storage);
   }
@@ -127,6 +134,8 @@ struct Storage::load_implementation_helper<T, void, std::false_type> {
 
 template<class Y>
 struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type> {
+  static_assert(!std::is_same<Y, int>{}, "int is forbidden");
+
   static Y load(storage_ptr &storage) noexcept {
     php_assert (CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
@@ -146,6 +155,8 @@ struct Storage::load_implementation_helper<thrown_exception, void, std::false_ty
 
 template<class T1>
 void Storage::save(std::enable_if_t<true, T1> x) noexcept {
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
+
   if (!CurException.is_null()) {
     save_exception();
   } else {
@@ -156,6 +167,8 @@ void Storage::save(std::enable_if_t<true, T1> x) noexcept {
 
 template<class X>
 X Storage::load() noexcept {
+  static_assert(!std::is_same<X, int>{}, "int is forbidden");
+
   php_assert (tag != 0);
   if (tag == tagger<thrown_exception>::get_tag()) {
     tag = 0;
@@ -170,6 +183,8 @@ X Storage::load() noexcept {
 
 template<class X>
 X Storage::load_as() noexcept {
+  static_assert(!std::is_same<X, int>{}, "int is forbidden");
+
   php_assert (tag != 0);
 
   int tag_save = tag;

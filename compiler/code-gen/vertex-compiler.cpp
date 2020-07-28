@@ -78,7 +78,7 @@ struct ShapeGetIndex {
   }
 
   void compile(CodeGenerator &W) const {
-    W << shape << ".get<" << static_cast<unsigned int>(string_hash(index.c_str(), index.size())) << ">()";
+    W << shape << ".get<" << static_cast<size_t>(string_hash(index.c_str(), index.size())) << "UL>()";
   }
 };
 
@@ -233,19 +233,19 @@ void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
  * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
  * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
  */
-inline int can_use_precomputed_hash_indexing_array(VertexPtr key) {
+inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
   // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
   if (auto key_var = key.try_as<op_var>()) {
     if (key->extra_type == op_ex_var_const && key_var->var_id->init_val->type() == op_string) {
       const std::string &string_key = key_var->var_id->init_val->get_string();
 
       // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
-      int int_val;
-      if (php_try_to_int(string_key.c_str(), (int)string_key.size(), &int_val)) {
+      int64_t int_val;
+      if (php_try_to_int(string_key.c_str(), string_key.size(), &int_val)) {
         return 0;
       }
 
-      return string_hash(string_key.c_str(), (int)string_key.size());
+      return string_hash(string_key.c_str(), string_key.size());
     }
   }
 
@@ -268,8 +268,8 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     kphp_assert (index->has_key());
     W << index->array() << ", " << index->key() << ", ";
     if (vk::any_of_equal(array_ptype, tp_array, tp_var)) {
-      if (const int precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
-        W << precomputed_hash << ", ";
+      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+        W << precomputed_hash << "L, ";
       }
     }
   } else {
@@ -677,7 +677,7 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
 }
 
 struct CaseInfo {
-  unsigned int hash{0};
+  size_t hash{0};
   bool is_default{false};
   string goto_name;
   CaseInfo *next{nullptr};
@@ -697,7 +697,7 @@ struct CaseInfo {
       VertexPtr val = GenTree::get_actual_value(expr);
       kphp_assert (val->type() == op_string);
       const string &s = val.as<op_string>()->str_val;
-      hash = string_hash(s.c_str(), (int)s.size());
+      hash = string_hash(s.c_str(), s.size());
     } else {
       cmd = v.as<op_default>()->cmd();
     }
@@ -1222,9 +1222,8 @@ void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
     W << root->array() << ".get_value (" << root->key();
     // если это обращение по константной строке, типа $a['somekey'],
     // вычисляем хеш строки 'somekey' на этапе компиляции, и вызовем array<T>::get_value(string, precomputed_hash)
-    int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
-    if (precomputed_hash) {
-      W << ", " << precomputed_hash;
+    if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
+      W << ", " << precomputed_hash << "L";
     }
     W << ")";
   }
@@ -1337,7 +1336,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
         VertexPtr key_val = GenTree::get_actual_value(key);
         if (tp == tp_string && key_val->type() == op_string) {
           const string &key_str = key_val.as<op_string>()->str_val;
-          if (php_is_int(key_str.c_str(), (int)key_str.size())) {
+          if (php_is_int(key_str.c_str(), key_str.size())) {
             int_cnt++;
           } else {
             string_cnt++;
@@ -1374,9 +1373,8 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     W << arr_name;
     if (auto arrow = cur.try_as<op_double_arrow>()) {
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
-      int precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key());
-      if (precomputed_hash) {
-        W << ", " << precomputed_hash;
+      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key())) {
+        W << ", " << precomputed_hash << "L";
       }
       W << ")";
     } else {
@@ -1397,7 +1395,7 @@ void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
 void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
   // важно! значения выводим в порядке возрастания хешей ключей —
   // именно так, как генерируется cpp-представление типа shape в type_out_impl()
-  std::vector<std::pair<int, VertexPtr>> sorted_by_hash;
+  std::vector<std::pair<int64_t, VertexPtr>> sorted_by_hash;
   sorted_by_hash.reserve(root->args().size());
   for (auto double_arrow : *root) {
     const std::string &key_str = GenTree::get_actual_value(double_arrow.as<op_double_arrow>()->lhs())->get_string();
@@ -1408,7 +1406,7 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
     return a.first < b.first;
   });
 
-  const auto val_gen = [](CodeGenerator &W, const std::pair<int, VertexPtr> &hash_and_rhs) {
+  const auto val_gen = [](CodeGenerator &W, const std::pair<int64_t, VertexPtr> &hash_and_rhs) {
     W << hash_and_rhs.second;
   };
 
@@ -1506,9 +1504,8 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
 
 void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
   W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
-  int precomputed_hash = can_use_precomputed_hash_indexing_array(root->key());
-  if (precomputed_hash) {
-    W << ", " << precomputed_hash;
+  if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
+    W << ", " << precomputed_hash << "L";
   }
   W << ")";
   // set_value для string/tuple нет отдельных (в отличие от compile_index()), т.к. при использовании их как lvalue
@@ -1604,9 +1601,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_int_const:
       str = root.as<op_int_const>()->str_val;
       if (str.size() > 9) {
-        W << "(int)";
+        W << "(int64_t)";
       }
-      W << str;
+      W << str << "L";
       break;
     case op_uint_const:
       str = root.as<op_uint_const>()->str_val;

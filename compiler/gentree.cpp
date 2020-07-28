@@ -1266,7 +1266,7 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
   CE (expect(tok_clpar, "')'"));
   CE (!kphp_error(inner_array && inner_array->type() == op_array && !inner_array->empty(), "shape() must have an array associative non-empty inside"));
 
-  std::set<int> keys_hashes;
+  std::set<int64_t> keys_hashes;
   for (VertexPtr arr_elem : inner_array.as<op_array>()->args()) {
     auto double_arrow = arr_elem.try_as<op_double_arrow>();
     CE (!kphp_error(double_arrow, "shape() must have an array associative non-empty inside"));

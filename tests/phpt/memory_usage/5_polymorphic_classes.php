@@ -63,7 +63,7 @@ function test_polymorphic_classes_in_array() {
   var_dump(16);
   var_dump(32);
   var_dump(0);
-  var_dump(16 + 16 + 32 + 16 + 32 + 8 + 88);
+  var_dump(16 + 16 + 32 + 16 + 32 + 8 + 96);
   return;
 #endif
   $ix = [new A(), new B1(), new B2(), new C1(), new C2(), null];

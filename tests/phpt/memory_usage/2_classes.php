@@ -22,17 +22,17 @@ function test_empty_class() {
 
 function test_class_with_simple_fields() {
   class MyClass1 {
-    // counter 4
-    public $x = 1; // 4
+    // counter 4 // aligned to 8
+    public $x = 1; // 8
     public $y = 1.0; // 8
     public $z = true; // 1 // aligned to 8
     public $u = "hello world"; // 8
     public $w = [1, 2, 3]; // 8
-  } // total size = 40
+  } // total size = 48
 
 #ifndef KittenPHP
-  var_dump(40);
-  var_dump(40);
+  var_dump(48);
+  var_dump(48);
   var_dump(0);
   return;
 #endif
@@ -60,8 +60,8 @@ function test_class_with_dynamic_array() {
   } // total size = 16
 
 #ifndef KittenPHP
-  var_dump(240);
-  var_dump(16 + 240);
+  var_dump(248);
+  var_dump(16 + 248);
   return;
 #endif
   $instance = new MyClass2(10);

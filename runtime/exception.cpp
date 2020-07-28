@@ -33,7 +33,7 @@ string f$Exception$$getMessage(const Exception &e) {
   return e->message;
 }
 
-int f$Exception$$getCode(const Exception &e) {
+int64_t f$Exception$$getCode(const Exception &e) {
   return e->code;
 }
 
@@ -41,7 +41,7 @@ string f$Exception$$getFile(const Exception &e) {
   return e->file;
 }
 
-int f$Exception$$getLine(const Exception &e) {
+int64_t f$Exception$$getLine(const Exception &e) {
   return e->line;
 }
 
@@ -49,7 +49,7 @@ array<array<string>> f$Exception$$getTrace(const Exception &e) {
   return e->trace;
 }
 
-Exception f$Exception$$__construct(const Exception &v$this, const string &file, int line, const string &message, int code) {
+Exception f$Exception$$__construct(const Exception &v$this, const string &file, int64_t line, const string &message, int64_t code) {
   v$this->file = file;
   v$this->line = line;
   v$this->message = message;
@@ -58,19 +58,19 @@ Exception f$Exception$$__construct(const Exception &v$this, const string &file, 
   return v$this;
 }
 
-Exception new_Exception(const string &file, int line, const string &message, int code) {
+Exception new_Exception(const string &file, int64_t line, const string &message, int64_t code) {
   return f$Exception$$__construct(Exception().alloc(), file, line, message, code);
 }
 
 
-Exception f$err(const string &file, int line, const string &code, const string &desc) {
+Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
   return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 
 string f$Exception$$getTraceAsString(const Exception &e) {
   static_SB.clean();
-  for (int i = 0; i < e->trace.count(); i++) {
+  for (int64_t i = 0; i < e->trace.count(); i++) {
     array<string> current = e->trace.get_value(i);
     static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
   }

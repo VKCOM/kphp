@@ -134,20 +134,20 @@ inline void flush_buff() {
   wptr = buff;
 }
 
-inline string finish_buff(int max_len) {
-  int len = cur_buff_len;
+inline string finish_buff(int64_t max_len) {
+  int64_t len = cur_buff_len;
   if (max_len && max_len < len) {
     len = max_len;
   }
 
   if (result_buff_len) {
     flush_buff();
-    string res(result_buff, len);
+    string res(result_buff, static_cast<string::size_type>(len));
     free_buff();
     return res;
   }
 
-  return string(buff, len);
+  return string(buff, static_cast<string::size_type>(len));
 }
 
 inline void write_buff(const char *s, int l) {
@@ -229,7 +229,7 @@ inline void write_buff_int(int x) {
 }
 
 
-int utf8_to_win(const char *s, int len, int max_len, bool exit_on_error) {
+int utf8_to_win(const char *s, int len, int64_t max_len, bool exit_on_error) {
   int st = 0;
   int acc = 0;
   int i;
@@ -433,7 +433,7 @@ static inline bool is_pre_tag(const char *s) {
   return false;
 }
 
-string f$vk_utf8_to_win(const string &text, int max_len, bool exit_on_error) {
+string f$vk_utf8_to_win(const string &text, int64_t max_len, bool exit_on_error) {
   init_buff();
   int r = utf8_to_win(text.c_str(), text.size(), max_len, exit_on_error);
   if (r >= 0) {
@@ -442,7 +442,7 @@ string f$vk_utf8_to_win(const string &text, int max_len, bool exit_on_error) {
     if (!max_len || text.size() <= static_cast<string::size_type>(max_len)) {
       return text;
     }
-    return string(text.c_str(), max_len);
+    return string(text.c_str(), static_cast<string::size_type>(max_len));
   }
 }
 
@@ -452,7 +452,7 @@ string f$vk_win_to_utf8(const string &text, bool escape) {
   return finish_buff(0);
 }
 
-string f$vk_flex(const string &name, const string &case_name, int sex, const string &type, int lang_id) {
+string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id) {
   if (name.size() > (1 << 10)) {
     php_warning("Name has length %d and is too long in function vk_flex", name.size());
     return name;
@@ -462,7 +462,7 @@ string f$vk_flex(const string &name, const string &case_name, int sex, const str
   }
 
   if ((unsigned int)lang_id >= (unsigned int)LANG_NUM) {
-    php_warning("Unknown lang id %d in function vk_flex", lang_id);
+    php_warning("Unknown lang id %ld in function vk_flex", lang_id);
     return name;
   }
 

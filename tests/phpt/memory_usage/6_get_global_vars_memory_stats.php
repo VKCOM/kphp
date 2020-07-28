@@ -94,19 +94,19 @@ function class_static_vars() {
 
 function test_get_global_vars_memory_stats() {
 #ifndef KittenPHP
-  $greater_than_8 = [
-    "\$dynamic_array" => 48,
-    "static_vars::\$dynamic_array" => 48,
-    "ClassWithStaticVars::\$dynamic_array" => 48,
+  $greater_than_16 = [
+    "\$dynamic_array" => 72,
+    "static_vars::\$dynamic_array" => 72,
+    "ClassWithStaticVars::\$dynamic_array" => 72,
     "ClassWithStaticVars::\$dynamic_string" => 19,
     "\$dynamic_string" => 19,
     "static_vars::\$dynamic_string" => 19
   ];
 
-  $non_empty_vars = $greater_than_8;
-  $non_empty_vars["\$instance"] = 8;
-  $non_empty_vars["static_vars::\$instance"] = 8;
-  $non_empty_vars["ClassWithStaticVars::\$instance"] = 8;
+  $non_empty_vars = $greater_than_16;
+  $non_empty_vars["\$instance"] = 16;
+  $non_empty_vars["static_vars::\$instance"] = 16;
+  $non_empty_vars["ClassWithStaticVars::\$instance"] = 16;
 
   $all_vars = $non_empty_vars;
   $all_vars["ClassWithStaticVars::\$const_array"] = 0;
@@ -121,11 +121,11 @@ function test_get_global_vars_memory_stats() {
 
   ksort($non_empty_vars);
   ksort($all_vars);
-  ksort($greater_than_8);
+  ksort($greater_than_16);
   var_dump($non_empty_vars);
   var_dump($non_empty_vars);
   var_dump($all_vars);
-  var_dump($greater_than_8);
+  var_dump($greater_than_16);
   return;
 #endif
   $non_empty_vars = get_global_vars_memory_stats();
@@ -137,9 +137,9 @@ function test_get_global_vars_memory_stats() {
   $all_vars = get_global_vars_memory_stats(-1);
   ksort($all_vars);
   var_dump($all_vars);
-  $greater_than_8 = get_global_vars_memory_stats(8);
-  ksort($greater_than_8);
-  var_dump($greater_than_8);
+  $greater_than_16 = get_global_vars_memory_stats(16);
+  ksort($greater_than_16);
+  var_dump($greater_than_16);
 }
 
 static_vars();

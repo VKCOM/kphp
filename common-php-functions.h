@@ -2,6 +2,8 @@
 
 #include <climits>
 #include <cstring>
+#include <limits>
+#include <type_traits>
 
 #include "common/sanitizer.h"
 
@@ -13,7 +15,9 @@ constexpr int STRLEN_UNKNOWN = STRLEN_ERROR;
 constexpr int STRLEN_EMPTY = 0;
 constexpr int STRLEN_BOOL = 1;
 constexpr int STRLEN_BOOL_ = STRLEN_BOOL;
-constexpr int STRLEN_INT = 11;
+constexpr int STRLEN_INT32 = 11;
+constexpr int STRLEN_INT64 = 20;
+constexpr int STRLEN_INT = STRLEN_INT64;
 constexpr int STRLEN_FLOAT = 21;
 constexpr int STRLEN_ARRAY = 5;
 constexpr int STRLEN_ARRAY_ = STRLEN_ARRAY | STRLEN_WARNING_FLAG;
@@ -60,60 +64,63 @@ private:
   extra_ref_cnt_value value_;
 };
 
-inline int string_hash(const char *p, int l) __attribute__ ((always_inline)) ubsan_supp("alignment");
+inline int64_t string_hash(const char *p, size_t l) __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-int string_hash(const char *p, int l) {
-  static const unsigned int HASH_MUL_ = 1915239017;
-  unsigned int hash = 2147483648u;
+int64_t string_hash(const char *p, size_t l) {
+  constexpr uint64_t HASH_MUL = 1915239017;
+  uint64_t hash = 2147483648U;
 
-  int prev = (l & 3);
-  for (int i = 0; i < prev; i++) {
-    hash = hash * HASH_MUL_ + p[i];
+  size_t prev = (l & 3);
+  for (size_t i = 0; i < prev; i++) {
+    hash = hash * HASH_MUL + p[i];
   }
 
-  const unsigned int *p_uint = (unsigned int *)(p + prev);
+  const auto *p_uint = reinterpret_cast<const uint32_t *>(p + prev);
   l >>= 2;
   while (l-- > 0) {
-    hash = hash * HASH_MUL_ + *p_uint++;
+    hash = hash * HASH_MUL + *p_uint++;
   }
-  return (int)hash;
+  const auto result = static_cast<int64_t>(hash);
+  // чтобы не было шанса получить -9223372036854775808L при генерации кода
+  return (result != std::numeric_limits<int64_t>::min()) * result;
 }
 
-inline bool php_is_int(const char *s, int l) __attribute__ ((always_inline));
 
-bool php_is_int(const char *s, int l) {
-  if ((s[0] - '-') * (s[0] - '+') == 0) { // no need to check l > 0
+inline bool php_is_int(const char *s, size_t l) __attribute__ ((always_inline));
+
+bool php_is_int(const char *s, size_t l) {
+  if (l == 0) {
+    return false;
+  }
+  const uint8_t has_minus = s[0] == '-';
+  if (has_minus || s[0] == '+') {
     s++;
     l--;
 
-    if ((unsigned int)(s[0] - '1') > 8) {
+    if (s[0] < '1' || s[0] > '9') {
       return false;
     }
   } else {
-    if ((unsigned int)(s[0] - '1') > 8) {
+    if (s[0] < '1' || s[0] > '9') {
       return l == 1 && s[0] == '0';
     }
   }
-
-  if ((unsigned int)(l - 1) > 9) {
+  constexpr size_t max_digits = std::numeric_limits<int64_t>::digits10 + 1;
+  if (l == 0 || l > max_digits) {
     return false;
   }
-  if (l == 10) {
-    int val = 0;
-    for (int j = 1; j < l; j++) {
+  if (l == max_digits) {
+    uint64_t val = s[0] - '0';
+    for (size_t j = 1; j < l; j++) {
       if (s[j] > '9' || s[j] < '0') {
         return false;
       }
       val = val * 10 + s[j] - '0';
     }
-
-    if (s[0] != '2') {
-      return s[0] == '1';
-    }
-    return val < 147483648;
+    return val <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + has_minus;
   }
 
-  for (int j = 1; j < l; j++) {
+  for (size_t j = 1; j < l; j++) {
     if (s[j] > '9' || s[j] < '0') {
       return false;
     }
@@ -121,43 +128,43 @@ bool php_is_int(const char *s, int l) {
   return true;
 }
 
-inline bool php_try_to_int(const char *s, int l, int *val) __attribute__ ((always_inline));
 
-bool php_try_to_int(const char *s, int l, int *val) {
-  int mul;
-  if (s[0] == '-') { // no need to check l > 0
+inline bool php_try_to_int(const char *s, size_t l, int64_t *val) __attribute__ ((always_inline));
+
+bool php_try_to_int(const char *s, size_t l, int64_t *val) {
+  int64_t mul = 1;
+  if (l == 0) {
+    return false;
+  }
+  if (s[0] == '-') {
     mul = -1;
     s++;
     l--;
 
-    if ((unsigned int)(s[0] - '1') > 8) {
+    if (s[0] < '1' || s[0] > '9') {
       return false;
     }
   } else {
-    if ((unsigned int)(s[0] - '1') > 8) {
+    if (s[0] < '1' || s[0] > '9') {
       *val = 0;
       return l == 1 && s[0] == '0';
     }
-    mul = 1;
   }
 
-  if ((unsigned int)(l - 1) > 9) {
+  constexpr size_t max_digits = std::numeric_limits<int64_t>::digits10 + 1;
+  if (l == 0 || l > max_digits) {
     return false;
   }
-  if (l == 10) {
-    if (s[0] > '2') {
-      return false;
-    }
-
+  if (l == max_digits) {
     *val = s[0] - '0';
-    for (int j = 1; j < l; j++) {
+    for (size_t j = 1; j < l; j++) {
       if (s[j] > '9' || s[j] < '0') {
         return false;
       }
       *val = *val * 10 + s[j] - '0';
     }
 
-    if (*val > 0 || (*val == -2147483648 && mul == -1)) {
+    if (*val > 0 || (*val == std::numeric_limits<int64_t>::min() && mul == -1)) {
       *val = *val * mul;
       return true;
     }
@@ -165,7 +172,7 @@ bool php_try_to_int(const char *s, int l, int *val) {
   }
 
   *val = s[0] - '0';
-  for (int j = 1; j < l; j++) {
+  for (size_t j = 1; j < l; j++) {
     if (s[j] > '9' || s[j] < '0') {
       return false;
     }

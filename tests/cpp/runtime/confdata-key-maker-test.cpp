@@ -62,15 +62,15 @@ TEST(confdata_key_maker_test, test_first_key_one_dot_empty_second) {
 
 TEST(confdata_key_maker_test, test_first_key_one_dot_string_second) {
   std::unordered_map<std::string, ExpectedKey> samples{
-    {".g",                {FirstKeyDots::one, ".",         var{string{"g"}}}},
-    {"x.gg",              {FirstKeyDots::one, "x.",        var{string{"gg"}}}},
-    {"1.two",             {FirstKeyDots::one, "1.",        var{string{"two"}}}},
-    {"hello .world!",     {FirstKeyDots::one, "hello .",   var{string{"world!"}}}},
-    {"big.2147483648",    {FirstKeyDots::one, "big.",      var{string{"2147483648"}}}},
-    {"small.-2147483649", {FirstKeyDots::one, "small.",    var{string{"-2147483649"}}}},
-    {"bad_num0.-0",       {FirstKeyDots::one, "bad_num0.", var{string{"-0"}}}},
-    {"bad_num1.1xx",      {FirstKeyDots::one, "bad_num1.", var{string{"1xx"}}}},
-    {"bad_num2.012",      {FirstKeyDots::one, "bad_num2.", var{string{"012"}}}}
+    {".g",                          {FirstKeyDots::one, ".",         var{string{"g"}}}},
+    {"x.gg",                        {FirstKeyDots::one, "x.",        var{string{"gg"}}}},
+    {"1.two",                       {FirstKeyDots::one, "1.",        var{string{"two"}}}},
+    {"hello .world!",               {FirstKeyDots::one, "hello .",   var{string{"world!"}}}},
+    {"big.9223372036854775808",     {FirstKeyDots::one, "big.",      var{string{"9223372036854775808"}}}},
+    {"small.-9223372036854775809",  {FirstKeyDots::one, "small.",    var{string{"-9223372036854775809"}}}},
+    {"bad_num0.-0",                 {FirstKeyDots::one, "bad_num0.", var{string{"-0"}}}},
+    {"bad_num1.1xx",                {FirstKeyDots::one, "bad_num1.", var{string{"1xx"}}}},
+    {"bad_num2.012",                {FirstKeyDots::one, "bad_num2.", var{string{"012"}}}}
   };
 
   ConfdataKeyMaker key_maker;
@@ -86,8 +86,8 @@ TEST(confdata_key_maker_test, test_first_key_one_dot_number_second) {
     {"x.-15",           {FirstKeyDots::one, "x.",   var{-15}}},
     {"x.48",            {FirstKeyDots::one, "x.",   var{48}}},
     {"0.0",             {FirstKeyDots::one, "0.",   var{0}}},
-    {"max.2147483647",  {FirstKeyDots::one, "max.", var{2147483647}}},
-    {"min.-2147483648", {FirstKeyDots::one, "min.", var{int(-2147483648)}}}
+    {"max.9223372036854775807",  {FirstKeyDots::one, "max.", var{9223372036854775807L}}},
+    {"min.-9223372036854775808", {FirstKeyDots::one, "min.", var{std::numeric_limits<int64_t>::min()}}}
   };
 
   ConfdataKeyMaker key_maker;
@@ -160,13 +160,13 @@ TEST(confdata_key_maker_test, test_first_key_two_dots_string_second) {
       ExpectedKey{FirstKeyDots::two, "hello. .", var{string{"world!"}}},
       ExpectedKey{FirstKeyDots::one, "hello.", var{string{" .world!"}}}
     )},
-    {"big.num.2147483648",    std::make_pair(
-      ExpectedKey{FirstKeyDots::two, "big.num.", var{string{"2147483648"}}},
-      ExpectedKey{FirstKeyDots::one, "big.", var{string{"num.2147483648"}}}
+    {"big.num.9223372036854775808",    std::make_pair(
+      ExpectedKey{FirstKeyDots::two, "big.num.", var{string{"9223372036854775808"}}},
+      ExpectedKey{FirstKeyDots::one, "big.", var{string{"num.9223372036854775808"}}}
     )},
-    {"small.num.-2147483649", std::make_pair(
-      ExpectedKey{FirstKeyDots::two, "small.num.", var{string{"-2147483649"}}},
-      ExpectedKey{FirstKeyDots::one, "small.", var{string{"num.-2147483649"}}}
+    {"small.num.-9223372036854775809", std::make_pair(
+      ExpectedKey{FirstKeyDots::two, "small.num.", var{string{"-9223372036854775809"}}},
+      ExpectedKey{FirstKeyDots::one, "small.", var{string{"num.-9223372036854775809"}}}
     )},
     {"bad_num.0.-0",          std::make_pair(
       ExpectedKey{FirstKeyDots::two, "bad_num.0.", var{string{"-0"}}},

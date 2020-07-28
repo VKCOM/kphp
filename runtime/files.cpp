@@ -15,36 +15,36 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"//php_buf, TODO
 
-static int opened_fd{-1};
+static int32_t opened_fd{-1};
 
 const string LETTER_a("a", 1);
 
 const string file_wrapper_name("file://", 7);
 
-int close_safe(int fd) {
+int32_t close_safe(int32_t fd) {
   dl::enter_critical_section();//OK
-  int result = close(fd);
+  int32_t result = close(fd);
   php_assert (fd == opened_fd);
   opened_fd = -1;
   dl::leave_critical_section();
   return result;
 }
 
-int open_safe(const char *pathname, int flags) {
+int32_t open_safe(const char *pathname, int32_t flags) {
   dl::enter_critical_section();//OK
   opened_fd = open(pathname, flags);
   dl::leave_critical_section();
   return opened_fd;
 }
 
-int open_safe(const char *pathname, int flags, mode_t mode) {
+int32_t open_safe(const char *pathname, int32_t flags, mode_t mode) {
   dl::enter_critical_section();
   opened_fd = open(pathname, flags, mode);
   dl::leave_critical_section();
   return opened_fd;
 }
 
-ssize_t read_safe(int fd, void *buf, size_t len) {
+ssize_t read_safe(int32_t fd, void *buf, size_t len) {
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
@@ -69,7 +69,7 @@ ssize_t read_safe(int fd, void *buf, size_t len) {
   return full_len - len;
 }
 
-ssize_t write_safe(int fd, const void *buf, size_t len) {
+ssize_t write_safe(int32_t fd, const void *buf, size_t len) {
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
@@ -108,9 +108,9 @@ string f$basename(const string &name, const string &suffix) {
   return string(result_c_str, static_cast<string::size_type>(l));
 }
 
-bool f$chmod(const string &s, int mode) {
+bool f$chmod(const string &s, int64_t mode) {
   dl::enter_critical_section();//OK
-  bool result = (chmod(s.c_str(), (mode_t)mode) >= 0);
+  bool result = (chmod(s.c_str(), static_cast<mode_t>(mode)) >= 0);
   dl::leave_critical_section();
   return result;
 }
@@ -235,7 +235,7 @@ bool f$file_exists(const string &name) {
   return result;
 }
 
-Optional<int> f$filesize(const string &name) {
+Optional<int64_t> f$filesize(const string &name) {
   struct stat stat_buf;
   dl::enter_critical_section();//OK
   int file_fd = open(name.c_str(), O_RDONLY);
@@ -256,15 +256,10 @@ Optional<int> f$filesize(const string &name) {
     return false;
   }
 
-  size_t size = stat_buf.st_size;
-  if (size > INT_MAX) {
-    php_warning("File \"%s\" size is greater than 2147483647", name.c_str());
-    size = INT_MAX;
-  }
-
+  const int64_t size = stat_buf.st_size;
   close(file_fd);
   dl::leave_critical_section();
-  return (int)size;
+  return size;
 }
 
 bool f$is_dir(const string &name) {
@@ -305,7 +300,7 @@ bool f$is_writeable(const string &name) {
   return result;
 }
 
-bool f$mkdir(const string &name, int mode, bool recursive) {
+bool f$mkdir(const string &name, int64_t mode, bool recursive) {
   dl::enter_critical_section();//OK
 
   bool result;
@@ -591,7 +586,7 @@ static Stream file_fopen(const string &filename, const string &mode) {
   return real_filename;
 }
 
-static Optional<int> file_fwrite(const Stream &stream, const string &text) {
+static Optional<int64_t> file_fwrite(const Stream &stream, const string &text) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -602,19 +597,19 @@ static Optional<int> file_fwrite(const Stream &stream, const string &text) {
   }
 
   dl::enter_critical_section();//OK
-  int res = (int)fwrite(text.c_str(), text.size(), 1, f);
+  const auto res = fwrite(text.c_str(), text.size(), 1, f);
   dl::leave_critical_section();
 
   if (res == 0) {
     return false;
   }
   php_assert (res == 1);
-  return (int)text.size();
+  return text.size();
 }
 
-static int file_fseek(const Stream &stream, int offset, int whence) {
+static int64_t file_fseek(const Stream &stream, int64_t offset, int64_t whence) {
   const static int whences[3] = {SEEK_SET, SEEK_END, SEEK_CUR};
-  if ((unsigned int)whence >= 3u) {
+  if ((uint64_t)whence >= 3u) {
     php_warning("Wrong parameter whence in function fseek");
     return -1;
   }
@@ -626,26 +621,30 @@ static int file_fseek(const Stream &stream, int offset, int whence) {
   }
 
   dl::enter_critical_section();//OK
-  int res = fseek(f, (long)offset, whence);
+  int res = fseek(f, offset, static_cast<int32_t>(whence));
   dl::leave_critical_section();
   return res;
 }
 
-static Optional<int> file_ftell(const Stream &stream) {
+static Optional<int64_t> file_ftell(const Stream &stream) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
   }
 
   dl::enter_critical_section();//OK
-  int result = (int)ftell(f);
+  int64_t result = ftell(f);
   dl::leave_critical_section();
   return result;
 }
 
-static Optional<string> file_fread(const Stream &stream, int length) {
+static Optional<string> file_fread(const Stream &stream, int64_t length) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
+    return false;
+  }
+  if (length > string::max_size()) {
+    php_warning("Parameter length in function fread is too large");
     return false;
   }
 
@@ -654,10 +653,10 @@ static Optional<string> file_fread(const Stream &stream, int length) {
     return false;
   }
 
-  string res(length, false);
+  string res(static_cast<string::size_type>(length), false);
   dl::enter_critical_section();//OK
   clearerr(f);
-  size_t res_size = fread(&res[0], 1, length, f);
+  size_t res_size = fread(&res[0], 1, static_cast<size_t>(length), f);
   if (ferror(f)) {
     dl::leave_critical_section();
     php_warning("Error happened during fread from file \"%s\"", stream.to_string().c_str());
@@ -691,7 +690,7 @@ static Optional<string> file_fgetc(const Stream &stream) {
   return string(1, static_cast<char>(result));
 }
 
-static Optional<string> file_fgets(const Stream &stream, int length) {
+static Optional<string> file_fgets(const Stream &stream, int64_t length) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -700,11 +699,14 @@ static Optional<string> file_fgets(const Stream &stream, int length) {
   if (length < 0) {
     length = 1024; // TODO remove limit
   }
-
-  string res(length, false);
+  if (length > string::max_size()) {
+    php_warning("Parameter length in function fgetc is too large");
+    return false;
+  }
+  string res(static_cast<string::size_type>(length), false);
   dl::enter_critical_section();//OK
   clearerr(f);
-  char *result = fgets(&res[0], length, f);
+  char *result = fgets(&res[0], static_cast<int32_t>(length), f);
   if (ferror(f)) {
     dl::leave_critical_section();
     php_warning("Error happened during fgets from file \"%s\"", stream.to_string().c_str());
@@ -719,13 +721,13 @@ static Optional<string> file_fgets(const Stream &stream, int length) {
   return res;
 }
 
-static Optional<int> file_fpassthru(const Stream &stream) {
+static Optional<int64_t> file_fpassthru(const Stream &stream) {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
   }
 
-  int result = 0;
+  int64_t result = 0;
 
   dl::enter_critical_section();//OK
   while (!feof(f)) {
@@ -736,8 +738,8 @@ static Optional<int> file_fpassthru(const Stream &stream) {
       php_warning("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
       return false;
     }
-    print(php_buf, (int)res_size);
-    result += (int)res_size;
+    print(php_buf, res_size);
+    result += static_cast<int64_t>(res_size);
   }
   dl::leave_critical_section();
   return result;
@@ -832,7 +834,7 @@ Optional<string> file_file_get_contents(const string &name) {
   return res;
 }
 
-static Optional<int> file_file_put_contents(const string &name, const string &content, int flags) {
+static Optional<int64_t> file_file_put_contents(const string &name, const string &content, int64_t flags) {
   auto offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;

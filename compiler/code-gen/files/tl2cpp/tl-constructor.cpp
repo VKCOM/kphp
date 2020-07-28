@@ -12,7 +12,7 @@ std::string TlConstructorDecl::get_optional_args_for_decl(const vk::tl::combinat
   for (const auto &arg : c->args) {
     if (arg->is_optional()) {
       if (type_of(arg->type_expr)->is_integer_variable()) {
-        res.emplace_back("int " + arg->name);
+        res.emplace_back("int64_t " + arg->name);
       } else {
         res.emplace_back("T" + std::to_string(arg->var_num) + " " + arg->name);
       }

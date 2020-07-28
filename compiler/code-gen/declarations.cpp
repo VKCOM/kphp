@@ -93,7 +93,7 @@ FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_h
 }
 
 void FunctionForkDeclaration::compile(CodeGenerator &W) const {
-  FunctionSignatureGenerator(W) << "int " << FunctionForkName(function) <<
+  FunctionSignatureGenerator(W) << "int64_t " << FunctionForkName(function) <<
                                 "(" << FunctionParams(function, in_header) << ")";
 }
 

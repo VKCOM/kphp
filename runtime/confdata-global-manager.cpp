@@ -134,7 +134,7 @@ FirstKeyDots ConfdataKeyMaker::update(const char *key, int16_t key_len) noexcept
   key = first_key_end;
   key_len = static_cast<int16_t>(key_len - first_key_len);
 
-  int key_as_int = 0;
+  int64_t key_as_int = 0;
   if (key_len && php_try_to_int(key, key_len, &key_as_int)) {
     second_key_ = key_as_int;
   } else {

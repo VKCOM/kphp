@@ -44,7 +44,7 @@ public:
 
   inline key_type get_key() const noexcept __attribute__ ((always_inline)) {
     if (self_->is_vector()) {
-      return key_type{static_cast<int>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->int_entries))};
+      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->int_entries))};
     }
 
     if (is_string_key()) {
@@ -54,11 +54,11 @@ public:
     }
   }
 
-  inline int get_int_key() noexcept __attribute__ ((always_inline)) {
+  inline int64_t get_int_key() noexcept __attribute__ ((always_inline)) {
     return static_cast<int_hash_type *>(entry_)->int_key;
   }
 
-  inline int get_int_key() const noexcept __attribute__ ((always_inline)) {
+  inline int64_t get_int_key() const noexcept __attribute__ ((always_inline)) {
     return static_cast<const int_hash_type *>(entry_)->int_key;
   }
 
@@ -128,8 +128,8 @@ public:
            : array_iterator{arr.p, arr.p->end()};
   }
 
-  static inline array_iterator make_middle(array_type &arr, int n) noexcept {
-    int l = arr.count();
+  static inline array_iterator make_middle(array_type &arr, int64_t n) noexcept {
+    int64_t l = arr.count();
 
     if (arr.is_vector()) {
       if (n < 0) {

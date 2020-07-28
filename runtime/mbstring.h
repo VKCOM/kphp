@@ -9,14 +9,14 @@ bool mb_UTF8_check(const char *s);
 
 bool f$mb_check_encoding(const string &str, const string &encoding = CP1251);
 
-int f$mb_strlen(const string &str, const string &encoding = CP1251);
+int64_t f$mb_strlen(const string &str, const string &encoding = CP1251);
 
 string f$mb_strtolower(const string &str, const string &encoding = CP1251);
 
 string f$mb_strtoupper(const string &str, const string &encoding = CP1251);
 
-Optional<int> f$mb_strpos(const string &haystack, const string &needle, int offset = 0, const string &encoding = CP1251);
+Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset = 0, const string &encoding = CP1251);
 
-Optional<int> f$mb_stripos(const string &haystack, const string &needle, int offset = 0, const string &encoding = CP1251);
+Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int64_t offset = 0, const string &encoding = CP1251);
 
-string f$mb_substr(const string &str, int start, const var &length = INT_MAX, const string &encoding = CP1251);
+string f$mb_substr(const string &str, int64_t start, const var &length = std::numeric_limits<int64_t>::max(), const string &encoding = CP1251);

@@ -127,9 +127,10 @@ bool f$stream_context_set_option(var &context, const var &options_var) {
 var error_number_dummy;
 var error_description_dummy;
 
-var f$stream_socket_client(const string &url, var &error_number, var &error_description, double timeout, int flags, const var &context) {
+var f$stream_socket_client(const string &url, var &error_number, var &error_description,
+                           double timeout, int64_t flags, const var &context) {
   if (flags != STREAM_CLIENT_CONNECT) {
-    php_warning("Wrong parameter flags = %d in function stream_socket_client", flags);
+    php_warning("Wrong parameter flags = %ld in function stream_socket_client", flags);
     error_number = -1001;
     error_description = string("Wrong parameter flags", 21);
     return false;
@@ -149,7 +150,7 @@ var f$stream_socket_client(const string &url, var &error_number, var &error_desc
     return false;
   }
 
-  int error_number_int = 0;
+  int64_t error_number_int = 0;
   string error_description_string;
   var result = functions->stream_socket_client(url, error_number_int, error_description_string, timeout, flags, context.get_value(functions->name));
   error_number = error_number_int;
@@ -173,7 +174,7 @@ bool f$stream_set_blocking(const Stream &stream, bool mode) {
   return functions->stream_set_option(stream, STREAM_SET_BLOCKING_OPTION, mode);
 }
 
-int f$stream_set_write_buffer(const Stream &stream, int size) {
+int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size) {
   const string &url = stream.to_string();
 
   const stream_functions *functions = get_stream_functions_from_url(url);
@@ -189,7 +190,7 @@ int f$stream_set_write_buffer(const Stream &stream, int size) {
   return functions->stream_set_option(stream, STREAM_SET_WRITE_BUFFER_OPTION, size);
 }
 
-int f$stream_set_read_buffer(const Stream &stream, int size) {
+int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
   const string &url = stream.to_string();
 
   const stream_functions *functions = get_stream_functions_from_url(url);
@@ -206,7 +207,7 @@ int f$stream_set_read_buffer(const Stream &stream, int size) {
 }
 
 
-static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int *nfds) {
+static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int32_t *nfds) {
   FD_ZERO(fds);
 
   if (!streams_var.is_array()) {
@@ -233,7 +234,7 @@ static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int *nfd
       continue;
     }
 
-    int fd = functions->get_fd(stream);
+    int32_t fd = functions->get_fd(stream);
     if (fd == -1) {
       continue;
     }
@@ -269,7 +270,7 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
       continue;
     }
 
-    int fd = functions->get_fd(stream);
+    int32_t fd = functions->get_fd(stream);
     if (fd == -1) {
       continue;
     }
@@ -282,16 +283,16 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
   streams_var = result;
 }
 
-Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int tv_usec) {
+Optional<int64_t> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int64_t tv_usec) {
   struct timeval tv, *timeout = nullptr;
   if (!tv_sec_var.is_null()) {
-    int tv_sec = tv_sec_var.to_int();
+    int64_t tv_sec = tv_sec_var.to_int();
     if (tv_sec < 0) {
-      php_warning("Wrong parameter tv_sec = %d\n", tv_sec);
+      php_warning("Wrong parameter tv_sec = %ld\n", tv_sec);
       return false;
     }
     if (tv_usec < 0 || tv_usec >= 1000000) {
-      php_warning("Wrong parameter tv_usec = %d\n", tv_usec);
+      php_warning("Wrong parameter tv_usec = %ld\n", tv_usec);
       return false;
     }
 
@@ -302,7 +303,7 @@ Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_
   }
 
   fd_set rfds, wfds, efds;
-  int nfds = 0;
+  int32_t nfds = 0;
 
   stream_array_to_fd_set(read, &rfds, &nfds);
   stream_array_to_fd_set(write, &wfds, &nfds);
@@ -315,7 +316,7 @@ Optional<int> f$stream_select(var &read, var &write, var &except, const var &tv_
 
 //TODO use pselect
   dl::enter_critical_section();//OK
-  int select_result = select(nfds + 1, &rfds, &wfds, &efds, timeout);
+  int32_t select_result = select(nfds + 1, &rfds, &wfds, &efds, timeout);
   dl::leave_critical_section();
 
   if (select_result == -1) {
@@ -351,11 +352,11 @@ Stream f$fopen(const string &stream, const string &mode) {
   STREAM_FUNCTION_BODY(fopen, false)(url, mode);
 }
 
-Optional<int> f$fwrite(const Stream &stream, const string &text) {
+Optional<int64_t> f$fwrite(const Stream &stream, const string &text) {
   STREAM_FUNCTION_BODY(fwrite, false)(stream, text);
 }
 
-int f$fseek(const Stream &stream, int offset, int whence) {
+int64_t f$fseek(const Stream &stream, int64_t offset, int64_t whence) {
   STREAM_FUNCTION_BODY(fseek, -1)(stream, offset, whence);
 }
 
@@ -363,11 +364,11 @@ bool f$rewind(const Stream &stream) {
   return f$fseek(stream, 0, 0) == 0;
 }
 
-Optional<int> f$ftell(const Stream &stream) {
+Optional<int64_t> f$ftell(const Stream &stream) {
   STREAM_FUNCTION_BODY(ftell, false)(stream);
 }
 
-Optional<string> f$fread(const Stream &stream, int length) {
+Optional<string> f$fread(const Stream &stream, int64_t length) {
   STREAM_FUNCTION_BODY(fread, false)(stream, length);
 }
 
@@ -375,11 +376,11 @@ Optional<string> f$fgetc(const Stream &stream) {
   STREAM_FUNCTION_BODY(fgetc, false)(stream);
 }
 
-Optional<string> f$fgets(const Stream &stream, int length) {
+Optional<string> f$fgets(const Stream &stream, int64_t length) {
   STREAM_FUNCTION_BODY(fgets, false)(stream, length);
 }
 
-Optional<int> f$fpassthru(const Stream &stream) {
+Optional<int64_t> f$fpassthru(const Stream &stream) {
   STREAM_FUNCTION_BODY(fpassthru, false)(stream);
 }
 
@@ -395,17 +396,17 @@ bool f$fclose(const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false)(stream);
 }
 
-Optional<int> f$fprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int64_t> f$fprintf(const Stream &stream, const string &format, const array<var> &args) {
   return f$vfprintf(stream, format, args);
 }
 
-Optional<int> f$vfprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const array<var> &args) {
   string text = f$vsprintf(format, args);
   return f$fwrite(stream, text);
 }
 
-Optional<int> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
-                       string enclosure, string escape) {
+Optional<int64_t> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
+                            string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -497,7 +498,7 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
 }
 
 
-Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimiter, string enclosure, string escape) {
+Optional<array<var>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -575,23 +576,23 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
           case 0:
             switch (state) {
               case 2:
-                tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin - 1));
+                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
                 hunk_begin = bptr;
                 goto quit_loop_2;
 
               case 1:
-                tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
                 hunk_begin = bptr;
                 /* fallthrough */
               case 0: {
 
                 if (hunk_begin != line_end) {
-                  tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+                  tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
                   hunk_begin = bptr;
                 }
 
                 /* add the embedded line end to the field */
-                tmp_buffer.append(line_end, (int)line_end_len);
+                tmp_buffer.append(line_end, line_end_len);
                 string new_buffer;
 
                 if (stream.is_null()) {
@@ -635,11 +636,11 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
               case 2: /* embedded enclosure ? let's check it */
                 if (*bptr != enclosure_char) {
                   /* real enclosure */
-                  tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin - 1));
+                  tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
                   hunk_begin = bptr;
                   goto quit_loop_2;
                 }
-                tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
                 bptr++;
                 hunk_begin = bptr;
                 state = 0;
@@ -659,12 +660,12 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
             switch (state) {
               case 2:
                 /* real enclosure */
-                tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin - 1));
+                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
                 hunk_begin = bptr;
                 goto quit_loop_2;
               case 1:
                 bptr += inc_len;
-                tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
                 hunk_begin = bptr;
                 state = 0;
                 break;
@@ -701,7 +702,7 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
       }
 
       quit_loop_3:
-      tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
       bptr += inc_len;
     } else {
       /* 2B. Handle non-enclosure field */
@@ -728,10 +729,10 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int length, string delimite
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
       quit_loop_4:
-      tmp_buffer.append(hunk_begin, (int)(bptr - hunk_begin));
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
       char const *comp_end = (char *)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
-      tmp_buffer.set_pos((int)(comp_end - tmp_buffer.c_str()));
+      tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter_char) {
         bptr++;
       }
@@ -749,7 +750,7 @@ Optional<string> f$file_get_contents(const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false)(url);
 }
 
-Optional<int> f$file_put_contents(const string &stream, const var &content_var, int flags) {
+Optional<int64_t> f$file_put_contents(const string &stream, const var &content_var, int64_t flags) {
   string content;
   if (content_var.is_array()) {
     content = f$implode(string(), content_var.to_array());

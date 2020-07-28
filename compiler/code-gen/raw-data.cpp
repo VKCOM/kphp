@@ -67,7 +67,7 @@ void RawString::compile(CodeGenerator &W) const {
 }
 
 static inline int array_len() {
-  return (8 * sizeof(int)) / sizeof(double);
+  return (10 * sizeof(int)) / sizeof(double);
 }
 
 
@@ -91,9 +91,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     int array_len_in_doubles = -1;
 
     if (0 <= array_size && array_size <= (1 << 30) - array_len()) {
-      if (vertex_inner_type->ptype() == tp_int) {
-        array_len_in_doubles = array_len() + (array_size + 1) / 2;
-      } else if (vertex_inner_type->ptype() == tp_float) {
+      if (vk::any_of_equal(vertex_inner_type->ptype(), tp_int, tp_float)) {
         array_len_in_doubles = array_len() + array_size;
       }
     }
@@ -107,15 +105,21 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
       W << ",";
     } else {
       W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double) << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
-      W << "static const union { struct { int a; int b; } is; double d; } raw_arrays[] = { ";
+      W << "static const union " << BEGIN
+        << "struct { uint32_t a; uint32_t b; } is;" << NL
+        << "double d;" << NL
+        << "int64_t i64;" << NL
+        << END
+        << " raw_arrays[] = { ";
     }
 
     shifts.push_back(shift);
     shift += array_len_in_doubles;
 
-    // ref_cnt, max_key
-    W << "{ .is = { .a = " << ExtraRefCnt::for_global_const << ", .b = " << array_size - 1 << "}},";
-
+    // stub, ref_cnt
+    W << "{ .is = { .a = 0, .b = " << ExtraRefCnt::for_global_const << "}},";
+    // max_key
+    W << "{ .i64 = " << array_size - 1 << "},";
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
 
@@ -123,27 +127,16 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}},";
 
     // string_size, string_buf_size
-    W << "{ .is = { .a = 0 , .b = -1 }}";
+    W << "{ .is = { .a = 0 , .b = " << std::numeric_limits<uint32_t>::max() << " }}";
 
     auto args_end = vertex->args().end();
     for (auto it = vertex->args().begin(); it != args_end; ++it) {
       VertexPtr actual_vertex = GenTree::get_actual_value(*it);
-      kphp_assert(vertex_inner_type->ptype() == tp_int || vertex_inner_type->ptype() == tp_float);
+      kphp_assert(vk::any_of_equal(vertex_inner_type->ptype(), tp_int, tp_float));
 
       if (vertex_inner_type->ptype() == tp_int) {
-        W << ",{ .is = { .a = " << actual_vertex << ", .b = ";
-        ++it;
-
-        if (it != args_end) {
-          actual_vertex = GenTree::get_actual_value(*it);
-          W << actual_vertex << "}}";
-        } else {
-          W << "0}}";
-          break;
-        }
+        W << ", { .i64 =" << actual_vertex << " }";
       } else {
-        assert(vertex_inner_type->ptype() == tp_float);
-
         W << ", { .d =" << actual_vertex << " }";
       }
     }

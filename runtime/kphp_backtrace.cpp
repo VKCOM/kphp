@@ -5,7 +5,7 @@
 
 #include "runtime/critical_section.h"
 
-bool get_demangled_backtrace(void **buffer, int nptrs, int num_shift, backtrace_each_line_callback_t callback, int start_i) {
+bool get_demangled_backtrace(void **buffer, int32_t nptrs, int32_t num_shift, backtrace_each_line_callback_t callback, int32_t start_i) {
   dl::CriticalSectionGuard signal_critical_section;
 
   char **strings = backtrace_symbols(buffer, nptrs);

@@ -26,7 +26,7 @@ static char hll_buf[HLL_BUF_SIZE];
 // sum1, sum2 - sums of sets
 // nsigma21, nsumna22 - (number of elements) * (std deviation) ^ 2
 // return value: (number of elements) * (std deviation) ^ 2 of conjunction
-double f$vk_stats_merge_deviation(int n1, Long sum1, double nsigma21, int n2, Long sum2, double nsigma22) {
+double f$vk_stats_merge_deviation(int64_t n1, Long sum1, double nsigma21, int64_t n2, Long sum2, double nsigma22) {
   if (n1 == 0) {
     if (n2 == 0) {
       return 0.0;
@@ -38,8 +38,8 @@ double f$vk_stats_merge_deviation(int n1, Long sum1, double nsigma21, int n2, Lo
       return nsigma21;
     }
   }
-  double ediff = ((double)sum1.l / n1 - (double)sum2.l / n2);
-  return nsigma21 + nsigma22 + (double)n1 / (n1 + n2) * n2 * ediff * ediff;
+  double ediff = ((double)sum1.l / (double)n1 - (double)sum2.l / (double)n2);
+  return nsigma21 + nsigma22 + (double)n1 / (double)(n1 + n2) * (double)n2 * ediff * ediff;
 }
 
 // Recalc std deviations after add
@@ -47,12 +47,12 @@ double f$vk_stats_merge_deviation(int n1, Long sum1, double nsigma21, int n2, Lo
 // sum- sum of sets
 // nsigma2 - (number of elements) * (std deviation) ^ 2
 // return value: (number of elements) * (std deviation) ^ 2 after add
-double f$vk_stats_add_deviation(int n, Long sum, double nsigma2, long long val) {
+double f$vk_stats_add_deviation(int64_t n, Long sum, double nsigma2, int64_t val) {
   if (n == 0) {
     return 0.0;
   }
   double nediff = (double)(sum.l - val * n);
-  return nsigma2 + nediff / (n + 1) * nediff / n;
+  return nsigma2 + nediff / (double)(n + 1) * nediff / (double)n;
 }
 
 //////
@@ -212,14 +212,14 @@ Optional<string> f$vk_stats_merge_samples(const array<var> &a) {
   return result;
 }
 
-Optional<array<int>> f$vk_stats_parse_sample(const string &str) {
+Optional<array<int64_t>> f$vk_stats_parse_sample(const string &str) {
   sample_t *s = (sample_t *)str.c_str();
   if (!check_sample(s, str.size())) {
     return false;
   }
 
   int count = mymin(s->dataset_size, s->max_size);
-  array<int> result(array_size(count, 0, true));
+  array<int64_t> result(array_size(count, 0, true));
   for (int i = 0; i < count; i++) {
     result.set_value(i, s->values[i]);
   }
@@ -370,7 +370,7 @@ Optional<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
   return string(hll_buf, hll.size());
 }
 
-Optional<string> f$vk_stats_hll_create(const array<var> &a, int size) {
+Optional<string> f$vk_stats_hll_create(const array<var> &a, int64_t size) {
   if (size != (1 << 8) && size != (1 << 14)) {
     return false;
   }

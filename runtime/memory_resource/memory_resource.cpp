@@ -6,7 +6,7 @@ namespace {
 
 void write_stat(stats_t *stats, const char *prefix, const char *suffix, size_t value) noexcept {
   char buffer[256]{0};
-  const int len = snprintf(buffer, sizeof(buffer) - 1, "%s.%s", prefix, suffix);
+  const auto len = snprintf(buffer, sizeof(buffer) - 1, "%s.%s", prefix, suffix);
   assert(len > 0 && sizeof(buffer) >= static_cast<size_t>(len + 1));
   add_histogram_stat_long(stats, buffer, static_cast<int64_t>(value));
 };

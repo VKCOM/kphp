@@ -9,22 +9,20 @@
 extern const string LETTER_a;
 
 
-int close_safe(int fd);
+int32_t close_safe(int32_t fd);
 
-int open_safe(const char *pathname, int flags);
+int32_t open_safe(const char *pathname, int32_t flags);
 
-int open_safe(const char *pathname, int flags, mode_t mode);
+int32_t open_safe(const char *pathname, int32_t flags, mode_t mode);
 
-ssize_t read_safe(int fd, void *buf, size_t len);
+ssize_t read_safe(int32_t fd, void *buf, size_t len);
 
-ssize_t write_safe(int fd, const void *buf, size_t len);
+ssize_t write_safe(int32_t fd, const void *buf, size_t len);
 
 
 string f$basename(const string &name, const string &suffix = string());
 
-bool f$chmod(const string &s, int mode);
-
-bool f$chmod(const string &s, int mode);
+bool f$chmod(const string &s, int64_t mode);
 
 void f$clearstatcache();
 
@@ -36,7 +34,7 @@ Optional<array<string>> f$file(const string &name);
 
 bool f$file_exists(const string &name);
 
-Optional<int> f$filesize(const string &name);
+Optional<int64_t> f$filesize(const string &name);
 
 bool f$is_dir(const string &name);
 
@@ -46,7 +44,7 @@ bool f$is_readable(const string &name);
 
 bool f$is_writeable(const string &name);
 
-bool f$mkdir(const string &name, int mode = 0777, bool recursive = false);
+bool f$mkdir(const string &name, int64_t mode = 0777, bool recursive = false);
 
 string f$php_uname(const string &name = LETTER_a);
 

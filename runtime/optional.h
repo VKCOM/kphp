@@ -34,6 +34,8 @@ enum class OptionalState : uint8_t {
 template<class T>
 class OptionalBase {
 public:
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   T &ref() noexcept {
     value_state_ = OptionalState::has_value;
     return value_;

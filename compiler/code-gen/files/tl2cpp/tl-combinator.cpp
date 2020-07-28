@@ -39,7 +39,7 @@ void CombinatorGen::compile_left(CodeGenerator &W) const {
   if (combinator->is_constructor()) {
     auto fields_masks = tl2cpp::get_not_optional_fields_masks(combinator);
     for (const auto &item : fields_masks) {
-      W << "int " << item << "{0}; (void) " << item << ";" << NL;
+      W << "int64_t " << item << "{0}; (void) " << item << ";" << NL;
     }
   }
   gen_before_args_processing(W);
@@ -94,10 +94,10 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     kphp_assert(as_type_var);
     if (!typed_mode) {
       W << "auto _cur_arg = "
-        << fmt_format("tl_arr_get(tl_object, {}, {}, {})", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
+        << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
         << ";" << NL;
       W << "string target_f_name = "
-        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
+        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
         << ";" << NL;
       W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
         << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
@@ -117,7 +117,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     // Запоминаем филд маску для последующего использования
     // Может быть либо локальной переменной либо полем структуры
     if (!typed_mode) {
-      W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}).to_int();",
+      W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}L).to_int();",
                       var_num_access,
                       combinator->get_var_num_arg(arg->var_num)->name,
                       tl2cpp::register_tl_const_str(arg->name),
@@ -186,7 +186,7 @@ void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     // запоминаем филд маску для дальнейшего использования
     if (!typed_mode) {
       W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << tl2cpp::register_tl_const_str(arg->name) << ", "
-        << tl2cpp::hash_tl_const_str(arg->name) << ").to_int();" << NL;
+        << tl2cpp::hash_tl_const_str(arg->name) << "L).to_int();" << NL;
     } else {
       W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << tl2cpp::get_tl_object_field_access(arg, tl2cpp::field_rw_type::READ)
         << ";" << NL;

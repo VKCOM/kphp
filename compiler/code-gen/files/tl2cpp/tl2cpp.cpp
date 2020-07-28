@@ -85,7 +85,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
   W << deps << NL;
   W << ExternInclude{"php_functions.h"} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
-  W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << "auto function_magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
@@ -146,7 +146,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     for (const auto &module_name : modules_with_functions) {
       for (const auto &f : modules[module_name].target_functions) {
         W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
-          << hash_tl_const_str(f->name) << ");" << NL;
+          << hash_tl_const_str(f->name) << "L);" << NL;
       }
     }
     W << END << NL;
@@ -170,7 +170,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   });
   auto const_string_shifts = compile_raw_data(W, tl_const_vars);
   FunctionSignatureGenerator(W) << "void tl_str_const_init() " << BEGIN;
-  int i = 0;
+  size_t i = 0;
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
     W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
   });

@@ -51,7 +51,7 @@ public:
         counter = array_size{};
       }
       const auto key_tail = key.substr(dot_pos + 1);
-      if (!key_tail.empty() && php_is_int(key_tail.data(), static_cast<int>(key_tail.size()))) {
+      if (!key_tail.empty() && php_is_int(key_tail.data(), key_tail.size())) {
         ++counter.int_size;
       } else {
         ++counter.string_size;

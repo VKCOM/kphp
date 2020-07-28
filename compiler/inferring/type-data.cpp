@@ -551,6 +551,10 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
       res += "double";
       break;
     }
+    case tp_int: {
+      res += "int64_t";
+      break;
+    }
     case tp_tuple: {
       res += "std::tuple";
       break;
@@ -616,7 +620,7 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
 
   const PrimitiveType tp = type->get_real_ptype();
   if (style == gen_out_style::tagger && vk::any_of_equal(tp, tp_future, tp_future_queue)) {
-    res += "int";
+    res += "int64_t";
   } else {
     if (vk::any_of_equal(style, gen_out_style::cpp, gen_out_style::tagger)) {
       get_cpp_style_type(type, res);
@@ -662,7 +666,8 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
           types_str += ", ";
         }
         const std::string &key_str = subkey.first.to_string();
-        keys_hashes_str += std::to_string(static_cast<unsigned int>(string_hash(key_str.c_str(), key_str.size())));
+        keys_hashes_str += std::to_string(static_cast<size_t>(string_hash(key_str.c_str(), key_str.size())));
+        keys_hashes_str += "UL";
         if (style == gen_out_style::txt) {
           types_str += key_str;
           types_str += ":";

@@ -272,18 +272,18 @@ string f$mysqli_error(const class_instance<C$mysqli> &db) {
   return db->error;
 }
 
-int f$mysqli_errno(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_errno(const class_instance<C$mysqli> &db) {
   return db->errno_;
 }
 
-int f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
   if (db->connected < 0) {
     return 0;
   }
   return db->affected_rows;
 }
 
-Optional<array<var>> f$mysqli_fetch_array(int query_id, int result_type) {
+Optional<array<var>> f$mysqli_fetch_array(int64_t query_id, int64_t result_type) {
   if (result_type != 1) {
     php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
   }
@@ -303,14 +303,14 @@ Optional<array<var>> f$mysqli_fetch_array(int query_id, int result_type) {
   return Optional<array<var>>{std::move(result)};
 }
 
-int f$mysqli_insert_id(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_insert_id(const class_instance<C$mysqli> &db) {
   if (db->connected < 0) {
     return -1;
   }
   return db->insert_id;
 }
 
-int f$mysqli_num_rows(int query_id) {
+int64_t f$mysqli_num_rows(int64_t query_id) {
   if (DB_Proxy.is_null()) {
     php_warning("DB object is NULL in get_num_rows");
     return 0;
@@ -323,7 +323,7 @@ int f$mysqli_num_rows(int query_id) {
   if (DB_Proxy->connected < 0) {
     return 0;
   }
-  return DB_Proxy->query_results[DB_Proxy->last_query_id].count();
+  return DB_Proxy->query_results[static_cast<int64_t>(DB_Proxy->last_query_id)].count();
 }
 
 var f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
@@ -338,7 +338,7 @@ var f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
   return db->last_query_id = db->biggest_query_id;
 }
 
-class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((unused)), int port __attribute__((unused))) {
+class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((unused)), int64_t port __attribute__((unused))) {
   if (DB_Proxy.is_null()) {
     DB_Proxy.alloc();
 

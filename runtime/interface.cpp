@@ -132,14 +132,14 @@ Optional<string> f$ob_get_flush() {
   return result;
 }
 
-Optional<int> f$ob_get_length() {
+Optional<int64_t> f$ob_get_length() {
   if (ob_cur_buffer == 0) {
     return false;
   }
   return coub->size();
 }
 
-int f$ob_get_level() {
+int64_t f$ob_get_level() {
   return ob_cur_buffer;
 }
 
@@ -282,8 +282,8 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
   }
 }
 
-void f$header(const string &str, bool replace, int http_response_code) {
-  header(str.c_str(), (int)str.size(), replace, http_response_code);
+void f$header(const string &str, bool replace, int64_t http_response_code) {
+  header(str.c_str(), (int)str.size(), replace, static_cast<int32_t>(http_response_code));
 }
 
 array<string> f$headers_list() {
@@ -307,7 +307,7 @@ array<string> f$headers_list() {
   return result;
 }
 
-void f$setrawcookie(const string &name, const string &value, int expire, const string &path, const string &domain, bool secure, bool http_only) {
+void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 
   static_SB_spare.clean() << "Set-Cookie: " << name << '=';
@@ -335,7 +335,7 @@ void f$setrawcookie(const string &name, const string &value, int expire, const s
   header(static_SB_spare.c_str(), (int)static_SB_spare.size(), false);
 }
 
-void f$setcookie(const string &name, const string &value, int expire, const string &path, const string &domain, bool secure, bool http_only) {
+void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   f$setrawcookie(name, f$urlencode(value), expire, path, domain, secure, http_only);
 }
 
@@ -438,7 +438,7 @@ shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_
 static bool finished;
 static bool flushed;
 
-void f$fastcgi_finish_request(int exit_code) {
+void f$fastcgi_finish_request(int64_t exit_code) {
   if (flushed) {
     return;
   }
@@ -451,7 +451,7 @@ void f$fastcgi_finish_request(int exit_code) {
 
   php_assert (ob_cur_buffer >= 0);
   int first_not_empty_buffer = 0;
-  while (first_not_empty_buffer < ob_cur_buffer && (int)oub[first_not_empty_buffer].size() == 0) {
+  while (first_not_empty_buffer < ob_cur_buffer && oub[first_not_empty_buffer].size() == 0) {
     first_not_empty_buffer++;
   }
 
@@ -489,12 +489,12 @@ void f$fastcgi_finish_request(int exit_code) {
       }
 
       const string_buffer *headers = get_headers(compressed->size());
-      http_set_result(headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), exit_code);//TODO remove exit_code parameter
+      http_set_result(headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), static_cast<int32_t>(exit_code));
 
       break;
     }
     case QUERY_TYPE_RPC: {
-      rpc_set_result(oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), exit_code);
+      rpc_set_result(oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), static_cast<int32_t>(exit_code));
 
       break;
     }
@@ -517,7 +517,7 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
-void finish(int exit_code) {
+void finish(int64_t exit_code) {
   if (!finished) {
     finished = true;
     for (int i = 0; i < shutdown_functions_count; i++) {
@@ -531,7 +531,7 @@ void finish(int exit_code) {
 
   f$fastcgi_finish_request(exit_code);
 
-  finish_script(exit_code);
+  finish_script(static_cast<int32_t>(exit_code));
 
   //unreachable
   php_assert (0);
@@ -551,12 +551,12 @@ void f$die(const var &v) {
 }
 
 
-Optional<int> f$ip2long(const string &ip) {
+Optional<int64_t> f$ip2long(const string &ip) {
   struct in_addr result;
   if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
     return false;
   }
-  return (int)ntohl(result.s_addr);
+  return ntohl(result.s_addr);
 }
 
 Optional<string> f$ip2ulong(const string &ip) {
@@ -570,7 +570,7 @@ Optional<string> f$ip2ulong(const string &ip) {
   return string(buf, len);
 }
 
-string f$long2ip(int num) {
+string f$long2ip(int64_t num) {
   static_SB.clean().reserve(100);
   for (int i = 3; i >= 0; i--) {
     static_SB << ((num >> (i * 8)) & 255);
@@ -628,76 +628,42 @@ Optional<string> f$inet_pton(const string &address) {
 
 extern int run_once;
 
-void print(const char *s) {
+void print(const char *s, size_t s_len) {
   if (run_once && ob_cur_buffer == 0) {
-    dl::enter_critical_section();//OK
-    dprintf(kstdout, "%s", s);
-    dl::leave_critical_section();
-    return;
+    dl::CriticalSectionGuard critical_section;
+    write(kstdout, s, s_len);
+  } else {
+    coub->append(s, s_len);
   }
-  *coub << s;
-  return;
 }
 
-void print(const char *s, int s_len) {
-  if (run_once && ob_cur_buffer == 0) {
-    dl::enter_critical_section();//OK
-    write(kstdout, s, s_len);
-    dl::leave_critical_section();
-    return;
-  }
-  coub->append(s, s_len);
-  return;
+void print(const char *s) {
+  print(s, strlen(s));
 }
 
 void print(const string &s) {
-  if (run_once && ob_cur_buffer == 0) {
-    dl::enter_critical_section();//OK
-    write(kstdout, s.c_str(), s.size());
-    dl::leave_critical_section();
-    return;
-  }
-  *coub << s;
-  return;
+  print(s.c_str(), s.size());
 }
 
 void print(const string_buffer &sb) {
-  if (run_once && ob_cur_buffer == 0) {
-    dl::enter_critical_section();//OK
-    write(kstdout, sb.buffer(), sb.size());
-    dl::leave_critical_section();
-    return;
-  }
-  coub->append(sb.buffer(), sb.size());
-  return;
+  print(sb.buffer(), sb.size());
+}
+
+void dbg_echo(const char *s, size_t s_len) {
+  dl::CriticalSectionGuard critical_section;
+  write(kstderr, s, s_len);
 }
 
 void dbg_echo(const char *s) {
-  dl::enter_critical_section();//OK
-  dprintf(kstderr, "%s", s);
-  dl::leave_critical_section();
-  return;
-}
-
-void dbg_echo(const char *s, int s_len) {
-  dl::enter_critical_section();//OK
-  write(kstderr, s, s_len);
-  dl::leave_critical_section();
-  return;
+  dbg_echo(s, strlen(s));
 }
 
 void dbg_echo(const string &s) {
-  dl::enter_critical_section();//OK
-  write(kstderr, s.c_str(), s.size());
-  dl::leave_critical_section();
-  return;
+  dbg_echo(s.c_str(), s.size());
 }
 
 void dbg_echo(const string_buffer &sb) {
-  dl::enter_critical_section();//OK
-  write(kstderr, sb.buffer(), sb.size());
-  dl::leave_critical_section();
-  return;
+  dbg_echo(sb.buffer(), sb.size());
 }
 
 
@@ -742,8 +708,8 @@ var v$_ENV     __attribute__ ((weak));
 var v$argc  __attribute__ ((weak));
 var v$argv  __attribute__ ((weak));
 
-static std::aligned_storage_t<sizeof(array<int>), alignof(array<int>)> uploaded_files_storage;
-static array<int> *uploaded_files = reinterpret_cast<array<int> *> (&uploaded_files_storage);
+static std::aligned_storage_t<sizeof(array<bool>), alignof(array<bool>)> uploaded_files_storage;
+static array<bool> *uploaded_files = reinterpret_cast<array<bool> *> (&uploaded_files_storage);
 static long long uploaded_files_last_query_num = -1;
 
 static const int MAX_FILES = 100;
@@ -867,7 +833,7 @@ public:
     return true;
   }
 
-  int upload_file(const string &file_name, int &pos, int max_file_size) {
+  int upload_file(const string &file_name, int &pos, int64_t max_file_size) {
     php_assert (pos > 0 && buf_len > 0 && buf_pos <= pos && pos <= post_len);
 
     if (pos == post_len) {
@@ -1017,7 +983,7 @@ static int parse_multipart_one(post_reader &data, int i) {
   string content_type("text/plain", 10);
   string name;
   string filename;
-  int max_file_size = INT_MAX;
+  int64_t max_file_size = std::numeric_limits<int64_t>::max();
   while (!data.is_boundary(i) && 33 <= data[i] && data[i] <= 126) {
     int j;
     string header_name;
@@ -1130,13 +1096,13 @@ static int parse_multipart_one(post_reader &data, int i) {
     Optional<string> tmp_name;
     if (v$_FILES.count() < MAX_FILES) {
       if (dl::query_num != uploaded_files_last_query_num) {
-        new(&uploaded_files_storage) array<int>();
+        new(&uploaded_files_storage) array<bool>();
         uploaded_files_last_query_num = dl::query_num;
       }
 
       dl::enter_critical_section();//NOT OK: uploaded_files
       tmp_name = f$tempnam(string(), string());
-      uploaded_files->set_value(tmp_name.val(), 1);
+      uploaded_files->set_value(tmp_name.val(), true);
       dl::leave_critical_section();
 
       if (f$boolval(tmp_name)) {
@@ -1576,7 +1542,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
       v$argc = 0;
     }
   } else {
-    v$argc = arg_vars->count();
+    v$argc = int64_t{arg_vars->count()};
     v$argv = *arg_vars;
   }
 
@@ -1635,12 +1601,12 @@ double f$get_script_time() {
   return get_script_time();
 }
 
-int f$get_net_queries_count() {
+int64_t f$get_net_queries_count() {
   return get_net_queries_count();
 }
 
 
-int f$get_engine_uptime() {
+int64_t f$get_engine_uptime() {
   return get_engine_uptime();
 }
 
@@ -1648,7 +1614,7 @@ string f$get_engine_version() {
   return string(get_engine_version());
 }
 
-int f$get_engine_workers_number() {
+int64_t f$get_engine_workers_number() {
   return workers_n;
 }
 
@@ -1667,7 +1633,7 @@ void ini_set(vk::string_view key, vk::string_view value) {
                       string(value.data(), static_cast<string::size_type>(value.size())));
 }
 
-int ini_set_from_config(const char *config_file_name) {
+int32_t ini_set_from_config(const char *config_file_name) {
   std::ifstream config(config_file_name);
   if (!config.is_open()) {
     return -1;
@@ -1702,7 +1668,7 @@ Optional<string> f$ini_get(const string &s) {
   } else if (!strcmp(s.c_str(), "max_execution_time")) {
     return string(script_timeout);
   } else if (!strcmp(s.c_str(), "memory_limit")) {
-    return f$strval((int)dl::get_script_memory_stats().memory_limit);//TODO
+    return f$strval((int64_t)dl::get_script_memory_stats().memory_limit);//TODO
   } else if (!strcmp(s.c_str(), "include_path")) {
     return string();//TODO
   } else if (!strcmp(s.c_str(), "static-buffers-size")) {
@@ -1757,15 +1723,15 @@ static Stream php_fopen(const string &stream, const string &mode) {
   return false;
 }
 
-static Optional<int> php_fwrite(const Stream &stream, const string &text) {
+static Optional<int64_t> php_fwrite(const Stream &stream, const string &text) {
   if (eq2(stream, STDOUT)) {
     print(text);
-    return (int)text.size();
+    return text.size();
   }
 
   if (eq2(stream, STDERR)) {
     dbg_echo(text);
-    return (int)text.size();
+    return text.size();
   }
 
   if (eq2(stream, INPUT) || eq2(stream, STDIN)) {
@@ -1777,7 +1743,7 @@ static Optional<int> php_fwrite(const Stream &stream, const string &text) {
   return false;
 }
 
-static int php_fseek(const Stream &stream, int offset __attribute__((unused)), int whence __attribute__((unused))) {
+static int64_t php_fseek(const Stream &stream, int64_t offset __attribute__((unused)), int64_t whence __attribute__((unused))) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fseek with stream %s", stream.to_string().c_str());
     return -1;
@@ -1798,7 +1764,7 @@ static int php_fseek(const Stream &stream, int offset __attribute__((unused)), i
   return -1;
 }
 
-static Optional<int> php_ftell(const Stream &stream) {
+static Optional<int64_t> php_ftell(const Stream &stream) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use ftell with stream %s", stream.to_string().c_str());
     return false;
@@ -1819,9 +1785,13 @@ static Optional<int> php_ftell(const Stream &stream) {
   return false;
 }
 
-static Optional<string> php_fread(const Stream &stream, int length __attribute__((unused))) {
+static Optional<string> php_fread(const Stream &stream, int64_t length) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
+    return false;
+  }
+  if (length > string::max_size()) {
+    php_warning("Parameter length in function fread is too large");
     return false;
   }
 
@@ -1837,11 +1807,11 @@ static Optional<string> php_fread(const Stream &stream, int length __attribute__
   }
 
   if (eq2(stream, STDIN)) {
-    string res(length, false);
+    string res(static_cast<string::size_type>(length), false);
     dl::enter_critical_section();//OK
-    size_t res_size = fread(&res[0], length, 1, stdin);
+    size_t res_size = fread(&res[0], static_cast<size_t>(length), 1, stdin);
     dl::leave_critical_section();
-    php_assert (res_size <= (size_t)length);
+    php_assert (res_size <= static_cast<size_t>(length));
     res.shrink(static_cast<string::size_type>(res_size));
     return res;
   }
@@ -1883,7 +1853,7 @@ static Optional<string> php_fgetc(const Stream &stream) {
   return false;
 }
 
-static Optional<string> php_fgets(const Stream &stream, int length) {
+static Optional<string> php_fgets(const Stream &stream, int64_t length) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
@@ -1899,11 +1869,14 @@ static Optional<string> php_fgets(const Stream &stream, int length) {
     if (length < 0) {
       length = 1024; // TODO remove limit
     }
-
-    string res(length, false);
+    if (length > string::max_size()) {
+      php_warning("Parameter length in function fgetc is too large");
+      return false;
+    }
+    string res(static_cast<string::size_type>(length), false);
     dl::enter_critical_section();//OK
     clearerr(stdin);
-    char *result = fgets(&res[0], length, stdin);
+    char *result = fgets(&res[0], static_cast<int32_t>(length), stdin);
     if (ferror(stdin)) {
       dl::leave_critical_section();
       php_warning("Error happened during fgets with stream %s", stream.to_string().c_str());
@@ -1922,7 +1895,7 @@ static Optional<string> php_fgets(const Stream &stream, int length) {
   return false;
 }
 
-static Optional<int> php_fpassthru(const Stream &stream) {
+static Optional<int64_t> php_fpassthru(const Stream &stream) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fpassthru with stream %s", stream.to_string().c_str());
     return false;
@@ -2000,15 +1973,15 @@ static Optional<string> php_file_get_contents(const string &url) {
   return false;
 }
 
-static Optional<int> php_file_put_contents(const string &url, const string &content, int flags __attribute__((unused))) {
+static Optional<int64_t> php_file_put_contents(const string &url, const string &content, int64_t flags __attribute__((unused))) {
   if (eq2(url, STDOUT)) {
     print(content);
-    return (int)content.size();
+    return content.size();
   }
 
   if (eq2(url, STDERR)) {
     dbg_echo(content);
-    return (int)content.size();
+    return content.size();
   }
 
   if (eq2(url, INPUT) || eq2(url, STDIN)) {
@@ -2141,8 +2114,8 @@ static void free_runtime_libs() {
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {
-    const array<int> *const_uploaded_files = uploaded_files;
-    for (array<int>::const_iterator p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {
+    const array<bool> *const_uploaded_files = uploaded_files;
+    for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {
       unlink(p.get_key().to_string().c_str());
     }
     uploaded_files_last_query_num--;
@@ -2232,7 +2205,7 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
-  release_version = string::to_int(engine_tag, static_cast<int>(strlen(engine_tag)));
+  release_version = static_cast<int32_t>(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
 }
 
 void f$raise_sigsegv() {

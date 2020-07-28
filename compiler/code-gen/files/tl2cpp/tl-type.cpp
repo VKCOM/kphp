@@ -52,7 +52,7 @@ void TypeStore::compile(CodeGenerator &W) const {
   } else {
     bool first = true;
     W << "const string &c_name = tl_arr_get(tl_object, "
-      << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << ").to_string();" << NL;
+      << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << "L).to_string();" << NL;
     for (const auto &c : type->constructors) {
       W << (first ? "if " : " else if ");
       first = false;
@@ -108,7 +108,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
   if (default_constructor != nullptr) {
     W << "int pos = tl_parse_save_pos();" << NL;
   }
-  W << "auto magic = static_cast<unsigned int>(f$fetch_int());" << NL;
+  W << "auto magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
   W << "switch(magic) " << BEGIN;
   for (const auto &c : type->constructors) {
     if (c.get() == default_constructor) {
@@ -118,7 +118,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
     if (!typed_mode) {
       W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << ");"
+        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << "L);"
           << NL;
       }
     } else {
@@ -137,7 +137,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
       W << "result = " << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
         W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
-          << hash_tl_const_str("_") << ");" << NL;
+          << hash_tl_const_str("_") << "L);" << NL;
       }
     } else {
       W << get_php_runtime_type(default_constructor, true) << " result;" << NL;
@@ -177,8 +177,8 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     if (arg->var_num != -1) {
       if (type_of(arg->type_expr)->is_integer_variable()) {
         if (arg->is_optional()) {
-          W << "int " << arg->name << "{0};" << NL;
-          constructor_params.emplace_back("int " + arg->name);
+          W << "int64_t " << arg->name << "{0};" << NL;
+          constructor_params.emplace_back("int64_t " + arg->name);
           constructor_inits.emplace_back(fmt_format("{}({})", arg->name, arg->name));
         }
       } else if (type_of(arg->type_expr)->name == T_TYPE) {

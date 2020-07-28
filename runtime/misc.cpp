@@ -80,19 +80,19 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
 }
 
 
-void f$sleep(const int &seconds) {
+void f$sleep(int64_t seconds) {
   if (seconds <= 0 || seconds > 1800) {
-    php_warning("Wrong parameter seconds (%d) specified in function sleep, must be in seconds", seconds);
+    php_warning("Wrong parameter seconds (%ld) specified in function sleep, must be in seconds", seconds);
     return;
   }
 
   f$usleep(seconds * 1000000);
 }
 
-void f$usleep(const int &micro_seconds) {
-  int sleep_time = micro_seconds;
+void f$usleep(int64_t micro_seconds) {
+  int64_t sleep_time = micro_seconds;
   if (sleep_time <= 0) {
-    php_warning("Wrong parameter micro_seconds (%d) specified in function usleep", sleep_time);
+    php_warning("Wrong parameter micro_seconds (%ld) specified in function usleep", sleep_time);
     return;
   }
 
@@ -106,7 +106,7 @@ void f$usleep(const int &micro_seconds) {
 //  fprintf (stderr, "time_left = %lld, sleep_time = %d\n", time_left, sleep_time);
   if (time_left == 0) {
     dl::enter_critical_section();//OK
-    usleep(sleep_time);
+    usleep(static_cast<uint32_t>(sleep_time));
     dl::leave_critical_section();
     return;
   }
@@ -115,10 +115,10 @@ void f$usleep(const int &micro_seconds) {
     double start_time = microtime_monotonic();
 
     dl::enter_critical_section();//OK
-    usleep(sleep_time);
+    usleep(static_cast<uint32_t>(sleep_time));
     dl::leave_critical_section();
 
-    time_left -= (long long)((microtime_monotonic() - start_time) * 1000000);
+    time_left -= static_cast<int64_t>((microtime_monotonic() - start_time) * 1000000);
   } else {
     time_left = 1;
   }
@@ -453,23 +453,23 @@ var f$getimagesize(const string &name) {
 }
 
 
-int f$posix_getpid() {
+int64_t f$posix_getpid() {
   dl::enter_critical_section();//OK
-  int result = (int)getpid();
+  auto result = getpid();
   dl::leave_critical_section();
   return result;
 }
 
-int f$posix_getuid() {
+int64_t f$posix_getuid() {
   dl::enter_critical_section();//OK
-  int result = (int)getuid();
+  auto result = getuid();
   dl::leave_critical_section();
   return result;
 }
 
-Optional<array<var>> f$posix_getpwuid(int uid) {
+Optional<array<var>> f$posix_getpwuid(int64_t uid) {
   dl::enter_critical_section();//OK
-  passwd *pwd = getpwuid(uid);
+  passwd *pwd = getpwuid(static_cast<uint32_t>(uid));
   dl::leave_critical_section();
   if (!pwd) {
     return false;
@@ -477,8 +477,8 @@ Optional<array<var>> f$posix_getpwuid(int uid) {
   array<var> result(array_size(0, 7, false));
   result.set_value(string("name", 4), string(pwd->pw_name));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd));
-  result.set_value(string("uid", 3), (int)pwd->pw_uid);
-  result.set_value(string("gid", 3), (int)pwd->pw_gid);
+  result.set_value(string("uid", 3), static_cast<int64_t>(pwd->pw_uid));
+  result.set_value(string("gid", 3), static_cast<int64_t>(pwd->pw_gid));
   result.set_value(string("gecos", 5), string(pwd->pw_gecos));
   result.set_value(string("dir", 3), string(pwd->pw_dir));
   result.set_value(string("shell", 5), string(pwd->pw_shell));
@@ -494,8 +494,8 @@ static inline void do_serialize(bool b) {
   static_SB.append_char(';');
 }
 
-static inline void do_serialize(int i) {
-  static_SB.reserve(15);
+static inline void do_serialize(int64_t i) {
+  static_SB.reserve(24);
   static_SB.append_char('i');
   static_SB.append_char(':');
   static_SB << i;
@@ -508,8 +508,8 @@ static inline void do_serialize(double f) {
 }
 
 static inline void do_serialize(const string &s) {
-  int len = (int)s.size();
-  static_SB.reserve(20 + len);
+  string::size_type len = s.size();
+  static_SB.reserve(25 + len);
   static_SB.append_char('s');
   static_SB.append_char(':');
   static_SB << len;
@@ -597,7 +597,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
         int j = 0;
         while (s[j]) {
           if (s[j] == ';') {
-            int intval;
+            int64_t intval = 0;
             if (php_try_to_int(s, j, &intval)) {
               s += j + 1;
               out_var_value = intval;
@@ -663,7 +663,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
               int k = 0;
               while (s[k]) {
                 if (s[k] == ';') {
-                  int intval;
+                  int64_t intval = 0;
                   if (php_try_to_int(s, k, &intval)) {
                     s += k + 1;
                     s_len -= k + 3;
@@ -740,7 +740,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
   return 0;
 }
 
-var unserialize_raw(const char *v, int v_len) {
+var unserialize_raw(const char *v, int32_t v_len) {
   var result;
 
   if (do_unserialize(v, v_len, result) == v_len) {
@@ -782,7 +782,7 @@ static bool json_append_char(unsigned int c) {
   }
 }
 
-static bool do_json_encode_string_php(const char *s, int len, int options) {
+static bool do_json_encode_string_php(const char *s, int len, int64_t options) {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
     static_SB.reserve(2 * len + 2);
@@ -942,7 +942,7 @@ static bool do_json_encode_string_vkext(const char *s, int len) {
   return true;
 }
 
-bool do_json_encode(const var &v, int options, bool simple_encode) {
+bool do_json_encode(const var &v, int64_t options, bool simple_encode) {
   switch (v.get_type()) {
     case var::type::NUL:
       static_SB.append("null", 4);
@@ -977,7 +977,7 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
       return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options);
     case var::type::ARRAY: {
       bool is_vector = v.as_array().is_vector();
-      const bool force_object = (bool)(JSON_FORCE_OBJECT & options);
+      const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options);
       if (!force_object && !is_vector && v.as_array().size().string_size == 0) {
         int n = 0;
         for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
@@ -1032,10 +1032,10 @@ bool do_json_encode(const var &v, int options, bool simple_encode) {
   }
 }
 
-Optional<string> f$json_encode(const var &v, int options, bool simple_encode) {
+Optional<string> f$json_encode(const var &v, int64_t options, bool simple_encode) {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
-    php_warning("Wrong parameter options = %d in function json_encode", options);
+    php_warning("Wrong parameter options = %ld in function json_encode", options);
     return false;
   }
 
@@ -1282,7 +1282,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         j++;
       }
       if (j > i) {
-        int intval;
+        int64_t intval = 0;
         if (php_try_to_int(s + i, j - i, &intval)) {
           i = j;
           new(&v) var(intval);
@@ -1535,7 +1535,7 @@ string f$cp1251(const string &utf8_string) {
 }
 
 
-int f$system(const string &query) {
+int64_t f$system(const string &query) {
   return system(query.c_str());
 }
 

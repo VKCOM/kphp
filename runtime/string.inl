@@ -168,11 +168,11 @@ string::string() :
   p(string_cache::empty_string().ref_data()) {
 }
 
-string::string(const string &str) noexcept :
+string::string(const string &str) noexcept:
   p(str.inner()->ref_copy()) {
 }
 
-string::string(string &&str) noexcept :
+string::string(string &&str) noexcept:
   p(str.p) {
   str.p = string_cache::empty_string().ref_data();
 }
@@ -192,7 +192,7 @@ string::string(size_type n, bool b) :
   p(create(n, b)) {
 }
 
-string::string(int i) {
+string::string(int64_t i) {
   if (i >= 0 && i < string_cache::cached_int_max()) {
     p = string_cache::cached_int(i).ref_data();
     return;
@@ -207,13 +207,15 @@ string::string(int i) {
     return;
   }
 
-  // Тут нет разницы, выделять нужный размер, или STRLEN_INT (11 байт).
-  // Пусть i == 10000 (а меньше и быть не может, см. выше),
-  // Тогда реальный размер, который выделит аллокатор (с учетом выравнивания до 8)
-  // ( 5 + 1('\0') + 12(sizeof string_inner)) align 8 = 24, но в тоже время
-  // (11 + 1('\0') + 12(sizeof string_inner)) align 8 = 24
-  p = create(STRLEN_INT, true);
-  const char *end = simd_int32_to_string(i, p);
+  const auto i32 = static_cast<int32_t>(i);
+  const char *end = nullptr;
+  if (static_cast<int64_t>(i32) == i) {
+    p = create(STRLEN_INT32, true);
+    end = simd_int32_to_string(i32, p);
+  } else {
+    p = create(STRLEN_INT64, true);
+    end = simd_int64_to_string(i, p);
+  }
   inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
 }
@@ -422,7 +424,7 @@ string &string::append(bool b) {
   return *this;
 }
 
-string &string::append(int i) {
+string &string::append(int64_t i) {
   if (i >= 0 && i < string_cache::cached_int_max()) {
     const auto &cached_int = string_cache::cached_int(i);
     return append(cached_int.ref_data(), cached_int.size);
@@ -435,8 +437,8 @@ string &string::append(int i) {
     return finish_append();
   }
 
-  reserve_at_least(size() + STRLEN_INT);
-  const char *end = simd_int32_to_string(i, p + size());
+  reserve_at_least(size() + STRLEN_INT64);
+  const char *end = simd_int64_to_string(i, p + size());
   inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
   return *this;
@@ -484,7 +486,7 @@ string &string::append_unsafe(bool b) {
   return *this;
 }
 
-string &string::append_unsafe(int i) {
+string &string::append_unsafe(int64_t i) {
   if (i >= 0 && i < string_cache::cached_int_max()) {
     const auto &cached_int = string_cache::cached_int(i);
     return append_unsafe(cached_int.ref_data(), cached_int.size);
@@ -495,7 +497,7 @@ string &string::append_unsafe(int i) {
     return append_unsafe(cached_int_positive.ref_data(), cached_int_positive.size);
   }
 
-  const char *end = simd_int32_to_string(i, p + size());
+  const char *end = simd_int64_to_string(i, p + size());
   inner()->size = static_cast<size_type>(end - p);
   return *this;
 }
@@ -690,8 +692,7 @@ inline void string::warn_on_float_conversion() const {
   php_warning("Possible loss of precision on converting string \"%s\" to float", c_str());
 }
 
-
-inline bool string::try_to_int(int *val) const {
+inline bool string::try_to_int(int64_t *val) const {
   return php_try_to_int(p, size(), val);
 }
 
@@ -707,8 +708,8 @@ bool string::try_to_float(double *val) const {
 
 var string::to_numeric() const {
   double res = to_float();
-  constexpr double int_max = std::numeric_limits<int>::max();
-  constexpr double int_min = std::numeric_limits<int>::min();
+  constexpr double int_max = static_cast<double>(std::numeric_limits<int64_t>::max());
+  constexpr double int_min = static_cast<double>(std::numeric_limits<int64_t>::min());
   if (int_min <= res && res <= int_max) {
     const int int_res = static_cast<int>(res);
     if (int_res == res) {
@@ -723,8 +724,8 @@ bool string::to_bool() const {
   return l >= 2 || (l == 1 && p[0] != '0');
 }
 
-int string::to_int(const char *s, int l) {
-  int mul = 1, cur = 0;
+int64_t string::to_int(const char *s, size_type l) {
+  int64_t mul = 1, cur = 0;
   if (l > 0 && (s[0] == '-' || s[0] == '+')) {
     if (s[0] == '-') {
       mul = -1;
@@ -732,19 +733,16 @@ int string::to_int(const char *s, int l) {
     cur++;
   }
 
-  int val = 0;
+  int64_t val = 0;
   while (cur < l && '0' <= s[cur] && s[cur] <= '9') {
     val = val * 10 + s[cur++] - '0';
   }
 
-//  if (cur < l) {
-//    php_warning ("Part of the string \"%s\" was ignored while converting to int", c_str());
-//  }
   return val * mul;
 }
 
 
-int string::to_int() const {
+int64_t string::to_int() const {
   return to_int(p, size());
 }
 
@@ -759,8 +757,10 @@ const string &string::to_string() const {
 }
 
 
-int string::safe_to_int() const {
-  int mul = 1, l = size(), cur = 0;
+int64_t string::safe_to_int() const {
+  int64_t mul = 1;
+  size_type l = size();
+  size_type cur = 0;
   if (l > 0 && (p[0] == '-' || p[0] == '+')) {
     if (p[0] == '-') {
       mul = -1;
@@ -768,17 +768,19 @@ int string::safe_to_int() const {
     cur++;
   }
 
-  int val = 0;
-  double dval = 0;
+  uint64_t val = 0;
+  bool overfow = false;
   while (cur < l && '0' <= p[cur] && p[cur] <= '9') {
     val = val * 10 + p[cur] - '0';
-    dval = dval * 10 + (p[cur++] - '0');
+    if (val > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+      overfow = true;
+    }
   }
 
-  if (val != dval) {
+  if (overfow) {
     php_warning("Integer overflow on converting string \"%s\" to int", c_str());
   }
-  return val * mul;
+  return static_cast<int64_t>(val) * mul;
 }
 
 
@@ -798,14 +800,14 @@ bool string::is_numeric() const {
   }
 
   int l = 0;
-  while (dl::is_decimal_digit(*s)) {
+  while (*s >= '0' && *s <= '9') {
     l++;
     s++;
   }
 
   if (*s == '.') {
     s++;
-    while (dl::is_decimal_digit(*s)) {
+    while (*s >= '0' && *s <= '9') {
       l++;
       s++;
     }
@@ -825,7 +827,7 @@ bool string::is_numeric() const {
       return false;
     }
 
-    while (dl::is_decimal_digit(*s)) {
+    while (*s >= '0' && *s <= '9') {
       s++;
     }
   }
@@ -833,7 +835,7 @@ bool string::is_numeric() const {
   return *s == '\0';
 }
 
-int string::hash() const {
+int64_t string::hash() const {
   return string_hash(p, size());
 }
 
@@ -869,23 +871,23 @@ string::size_type string::find_first_of(const string &s, size_type pos) const {
   return string::npos;
 }
 
-int string::compare(const string &str) const {
+int64_t string::compare(const string &str) const {
   const size_type my_size = size();
   const size_type str_size = str.size();
   const int res = memcmp(p, str.p, std::min(my_size, str_size));
-  return res ? res : static_cast<int>(my_size) - static_cast<int>(str_size);
+  return res ? res : static_cast<int64_t>(my_size) - static_cast<int64_t>(str_size);
 }
 
 
-string::size_type string::get_correct_index(int index) const {
+string::size_type string::get_correct_index(int64_t index) const {
   if (index >= 0) {
-    return index;
+    return static_cast<size_type>(index);
   }
 
   return static_cast<size_type>(index + size());
 }
 
-const string string::get_value(int int_key) const {
+const string string::get_value(int64_t int_key) const {
   auto true_key = get_correct_index(int_key);
   if (true_key >= size()) {
     return {};
@@ -894,7 +896,7 @@ const string string::get_value(int int_key) const {
 }
 
 const string string::get_value(const string &string_key) const {
-  int int_val;
+  int64_t int_val = 0;
   if (!string_key.try_to_int(&int_val)) {
     php_warning("\"%s\" is illegal offset for string", string_key.c_str());
     int_val = string_key.to_int();
@@ -907,11 +909,11 @@ const string string::get_value(const var &v) const {
     case var::type::NUL:
       return get_value(0);
     case var::type::BOOLEAN:
-      return get_value(v.as_bool());
+      return get_value(static_cast<int64_t>(v.as_bool()));
     case var::type::INTEGER:
       return get_value(v.as_int());
     case var::type::FLOAT:
-      return get_value((int)v.as_double());
+      return get_value(static_cast<int64_t>(v.as_double()));
     case var::type::STRING:
       return get_value(v.as_string());
     case var::type::ARRAY:
@@ -923,7 +925,7 @@ const string string::get_value(const var &v) const {
 }
 
 
-int string::get_reference_counter() const {
+int64_t string::get_reference_counter() const {
   return inner()->ref_count + 1;
 }
 
@@ -991,7 +993,7 @@ inline bool is_all_digits(const string &s) {
   return true;
 }
 
-int compare_strings_php_order(const string &lhs, const string &rhs) {
+int64_t compare_strings_php_order(const string &lhs, const string &rhs) {
   if (lhs.size() == rhs.size() && is_all_digits(lhs) && is_all_digits(rhs)) {
     return lhs.compare(rhs);
   }
@@ -1001,7 +1003,7 @@ int compare_strings_php_order(const string &lhs, const string &rhs) {
   bool rhs_maybe_num = rhs[0] <= '9';
 
   if (lhs_maybe_num && rhs_maybe_num) {
-    int lhs_int_val, rhs_int_val;
+    int64_t lhs_int_val, rhs_int_val;
     if (lhs.try_to_int(&lhs_int_val) && rhs.try_to_int(&rhs_int_val)) {
       return three_way_comparison(lhs_int_val, rhs_int_val);
     }
@@ -1028,9 +1030,14 @@ string::size_type max_string_size(bool) {
   return static_cast<string::size_type>(STRLEN_BOOL);
 }
 
-string::size_type max_string_size(int) {
+string::size_type max_string_size(int32_t) {
   return static_cast<string::size_type>(STRLEN_INT);
 }
+
+string::size_type max_string_size(int64_t) {
+  return static_cast<string::size_type>(STRLEN_INT);
+}
+
 
 string::size_type max_string_size(double) {
   return static_cast<string::size_type>(STRLEN_FLOAT);

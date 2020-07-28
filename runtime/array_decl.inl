@@ -8,17 +8,17 @@
 #endif
 
 struct array_size {
-  int int_size = 0;
-  int string_size = 0;
+  int64_t int_size = 0;
+  int64_t string_size = 0;
   bool is_vector = false;
 
   array_size() = default;
 
-  inline array_size(int int_size, int string_size, bool is_vector);
+  inline array_size(int64_t int_size, int64_t string_size, bool is_vector);
 
   inline array_size operator+(const array_size &other) const;
 
-  inline array_size &cut(int length);
+  inline array_size &cut(int64_t length);
 
   inline array_size &min(const array_size &other);
 };
@@ -64,7 +64,7 @@ private:
   struct int_hash_entry : list_hash_entry {
     T value;
 
-    int int_key;
+    int64_t int_key;
 
     inline key_type get_key() const;
   };
@@ -72,7 +72,7 @@ private:
   struct string_hash_entry : list_hash_entry {
     T value;
 
-    int int_key;
+    int64_t int_key;
     string string_key;
 
     inline key_type get_key() const;
@@ -92,17 +92,20 @@ private:
     //empty hash_entry identified by (next == EMPTY_POINTER)
     //vector is_identified by string_buf_size == -1
 
-    static constexpr int MAX_HASHTABLE_SIZE = (1 << 26);
+    static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
+    // нужно для выравнивания при генерации константных массивов
+    // TODO придумать что-нибудь по умнее
+    int stub{0};
     int ref_cnt;
-    int max_key;
+    int64_t max_key;
     list_hash_entry end_;
-    int int_size;
-    int int_buf_size;
-    int string_size;
-    int string_buf_size;
+    uint32_t int_size;
+    uint32_t int_buf_size;
+    uint32_t string_size;
+    uint32_t string_buf_size;
     int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
@@ -127,14 +130,14 @@ private:
     inline array_inner_fields_for_map &fields_for_map() __attribute__((always_inline));
     inline const array_inner_fields_for_map &fields_for_map() const __attribute__((always_inline));
 
-    inline int choose_bucket_int(int key) const __attribute__ ((always_inline));
-    inline int choose_bucket_string(int key) const __attribute__ ((always_inline));
-    inline static int choose_bucket(const int key, const int buf_size, const uint64_t modulo_helper) __attribute__ ((always_inline));
+    inline uint32_t choose_bucket_int(int64_t key) const __attribute__ ((always_inline));
+    inline uint32_t choose_bucket_string(int64_t key) const __attribute__ ((always_inline));
+    inline static uint32_t choose_bucket(int64_t key, uint32_t buf_size, uint64_t modulo_helper) __attribute__ ((always_inline));
 
-    inline static size_t sizeof_vector(int int_size) __attribute__((always_inline));
-    inline static size_t sizeof_map(int int_size, int string_size) __attribute__((always_inline));
-    inline static size_t estimate_size(int &new_int_size, int &new_string_size, bool is_vector);
-    inline static array_inner *create(int new_int_size, int new_string_size, bool is_vector);
+    inline static size_t sizeof_vector(uint32_t int_size) __attribute__((always_inline));
+    inline static size_t sizeof_map(uint32_t int_size, uint32_t string_size) __attribute__((always_inline));
+    inline static size_t estimate_size(int64_t &new_int_size, int64_t &new_string_size, bool is_vector);
+    inline static array_inner *create(int64_t new_int_size, int64_t new_string_size, bool is_vector);
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
 
@@ -148,38 +151,38 @@ private:
     inline T &push_back_vector_value(const T &v); //unsafe
 
     template<class ...Args>
-    inline T &emplace_vector_value(int int_key, Args &&... args) noexcept;
-    inline T &set_vector_value(int int_key, const T &v); //unsafe
+    inline T &emplace_vector_value(int64_t int_key, Args &&... args) noexcept;
+    inline T &set_vector_value(int64_t int_key, const T &v); //unsafe
 
     template<class ...Args>
-    inline T &emplace_int_key_map_value(overwrite_element policy, int int_key, Args &&... args) noexcept;
-    inline T &set_map_value(overwrite_element policy, int int_key, const T &v);
+    inline T &emplace_int_key_map_value(overwrite_element policy, int64_t int_key, Args &&... args) noexcept;
+    inline T &set_map_value(overwrite_element policy, int64_t int_key, const T &v);
 
     template<class STRING, class ...Args>
-    inline T &emplace_string_key_map_value(overwrite_element policy, int int_key, STRING &&string_key, Args &&... args) noexcept;
-    inline T &set_map_value(overwrite_element policy, int int_key, const string &string_key, const T &v);
+    inline T &emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept;
+    inline T &set_map_value(overwrite_element policy, int64_t int_key, const string &string_key, const T &v);
 
     inline void unset_vector_value();
-    inline void unset_map_value(int int_key);
+    inline void unset_map_value(int64_t int_key);
 
     // чтобы не делать const_cast, определяем эти функции как статические шаблонным self (this)
     template<class S>
-    static inline auto &find_map_entry(S &self, int int_key) noexcept;
+    static inline auto &find_map_entry(S &self, int64_t int_key) noexcept;
     template<class S>
-    static inline auto &find_map_entry(S &self, const string &string_key, int precomuted_hash) noexcept;
+    static inline auto &find_map_entry(S &self, const string &string_key, int64_t precomuted_hash) noexcept;
 
     template<class ...Key>
     inline const T *find_map_value(Key &&... key) const noexcept;
-    inline const T *find_vector_value(int int_key) const noexcept;
-    inline T *find_vector_value(int int_key) noexcept;
+    inline const T *find_vector_value(int64_t int_key) const noexcept;
+    inline T *find_vector_value(int64_t int_key) noexcept;
 
-    inline const T &get_vector_value(int int_key) const;//unsafe
-    inline T &get_vector_value(int int_key);//unsafe
-    inline void unset_map_value(int int_key, const string &string_key);
+    inline const T &get_vector_value(int64_t int_key) const;//unsafe
+    inline T &get_vector_value(int64_t int_key);//unsafe
+    inline void unset_map_value(const string &string_key, int64_t precomuted_hash);
 
     size_t estimate_memory_usage() const;
 
-    inline array_inner(int ref_cnt, int max_key, list_hash_entry end_, int int_size, int int_buf_size, int string_size, int string_buf_size) :
+    inline array_inner(int ref_cnt, int64_t max_key, list_hash_entry end_, uint32_t int_size, uint32_t int_buf_size, uint32_t string_size, uint32_t string_buf_size) :
       ref_cnt(ref_cnt),
       max_key(max_key),
       end_(end_),
@@ -193,10 +196,10 @@ private:
     inline array_inner &operator=(const array_inner &other) = delete;
   };
 
-  inline bool mutate_if_vector_shared(int mul = 1);
-  inline bool mutate_to_size_if_vector_shared(int int_size);
-  inline void mutate_to_size(int int_size);
-  inline bool mutate_if_map_shared(int mul = 1);
+  inline bool mutate_if_vector_shared(uint32_t mul = 1);
+  inline bool mutate_to_size_if_vector_shared(uint32_t int_size);
+  inline void mutate_to_size(uint32_t int_size);
+  inline bool mutate_if_map_shared(uint32_t mul = 1);
   inline void mutate_if_vector_needed_int();
   inline void mutate_if_map_needed_int();
   inline void mutate_if_map_needed_string();
@@ -255,7 +258,8 @@ public:
 
   inline bool is_vector() const __attribute__ ((always_inline));
 
-  T &operator[](int int_key);
+  T &operator[](int64_t int_key);
+  T &operator[](int32_t key) { return (*this)[static_cast<int64_t>(key)]; }
   T &operator[](const string &s);
   T &operator[](const var &v);
   T &operator[](double double_key);
@@ -263,9 +267,11 @@ public:
   T &operator[](const iterator &it);
 
   template<class ...Args>
-  void emplace_value(int int_key, Args &&... args) noexcept;
-  void set_value(int int_key, T &&v) noexcept;
-  void set_value(int int_key, const T &v) noexcept;
+  void emplace_value(int64_t int_key, Args &&... args) noexcept;
+  void set_value(int64_t int_key, T &&v) noexcept;
+  void set_value(int64_t int_key, const T &v) noexcept;
+  void set_value(int32_t key, T &&v) noexcept { set_value(static_cast<int64_t>(key), std::move(v)); }
+  void set_value(int32_t key, const T &v) noexcept { set_value(static_cast<int64_t>(key), v); }
   void set_value(double double_key, T &&v) noexcept;
   void set_value(double double_key, const T &v) noexcept;
 
@@ -274,8 +280,8 @@ public:
   void set_value(const string &string_key, T &&v) noexcept;
   void set_value(const string &string_key, const T &v) noexcept;
 
-  void set_value(const string &string_key, T &&v, int precomuted_hash) noexcept;
-  void set_value(const string &string_key, const T &v, int precomuted_hash) noexcept;
+  void set_value(const string &string_key, T &&v, int64_t precomuted_hash) noexcept;
+  void set_value(const string &string_key, const T &v, int64_t precomuted_hash) noexcept;
 
   template<class ...Args>
   void emplace_value(const var &var_key, Args &&... args) noexcept;
@@ -297,16 +303,17 @@ public:
   // can be used only on empty arrays to receive logically const array
   void assign_raw(const char *s);
 
-  const T *find_value(int int_key) const;
+  const T *find_value(int64_t int_key) const;
+  const T *find_value(int32_t key) const { return find_value(static_cast<int64_t>(key)); }
   const T *find_value(const string &s) const;
-  const T *find_value(const string &s, int precomuted_hash) const;
+  const T *find_value(const string &s, int64_t precomuted_hash) const;
   const T *find_value(const var &v) const;
   const T *find_value(double double_key) const;
   const T *find_value(const const_iterator &it) const;
   const T *find_value(const iterator &it) const;
 
   // Все неконстантные методы find_no_mutate() не приводят к расщеплению
-  iterator find_no_mutate(int int_key) noexcept;
+  iterator find_no_mutate(int64_t int_key) noexcept;
   iterator find_no_mutate(const string &string_key) noexcept;
   iterator find_no_mutate(const var &v) noexcept;
 
@@ -315,7 +322,7 @@ public:
 
   template<class K>
   const T get_value(const K &key) const;
-  const T get_value(const string &string_key, int precomuted_hash) const;
+  const T get_value(const string &string_key, int64_t precomuted_hash) const;
 
   template<class ...Args>
   T &emplace_back(Args &&... args) noexcept;
@@ -328,10 +335,10 @@ public:
   const T push_back_return(const T &v);
   const T push_back_return(T &&v);
 
-  inline void fill_vector(int num, const T &value);
-  inline void memcpy_vector(int num, const void *src_buf);
+  inline void fill_vector(int64_t num, const T &value);
+  inline void memcpy_vector(int64_t num, const void *src_buf);
 
-  inline int get_next_key() const __attribute__ ((always_inline));
+  inline int64_t get_next_key() const __attribute__ ((always_inline));
 
   template<class K>
   bool has_key(const K &key) const;
@@ -339,13 +346,14 @@ public:
   template<class K>
   bool isset(const K &key) const;
 
-  void unset(int int_key);
+  void unset(int64_t int_key);
+  void unset(int32_t key) { unset(static_cast<int64_t>(key)); }
   void unset(const string &string_key);
   void unset(const var &var_key);
   void unset(double double_key);
 
   inline bool empty() const __attribute__ ((always_inline));
-  inline int count() const __attribute__ ((always_inline));
+  inline int64_t count() const __attribute__ ((always_inline));
 
   inline array_size size() const __attribute__ ((always_inline));
 
@@ -357,12 +365,12 @@ public:
 
   inline const_iterator begin() const __attribute__ ((always_inline));
   inline const_iterator cbegin() const __attribute__ ((always_inline));
-  inline const_iterator middle(int n) const __attribute__ ((always_inline));
+  inline const_iterator middle(int64_t n) const __attribute__ ((always_inline));
   inline const_iterator end() const __attribute__ ((always_inline));
   inline const_iterator cend() const __attribute__ ((always_inline));
 
   inline iterator begin() __attribute__ ((always_inline));
-  inline iterator middle(int n) __attribute__ ((always_inline));
+  inline iterator middle(int64_t n) __attribute__ ((always_inline));
   inline iterator end() __attribute__ ((always_inline));
 
   template<class T1>
@@ -378,15 +386,15 @@ public:
 
   T shift();
 
-  int unshift(const T &val);
+  int64_t unshift(const T &val);
 
 
   inline bool to_bool() const __attribute__ ((always_inline));
-  inline int to_int() const __attribute__ ((always_inline));
+  inline int64_t to_int() const __attribute__ ((always_inline));
   inline double to_float() const __attribute__ ((always_inline));
 
 
-  int get_reference_counter() const;
+  int64_t get_reference_counter() const;
   bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
   void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
   void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
@@ -400,7 +408,7 @@ public:
 
   bool is_equal_inner_pointer(const array &other) const noexcept;
 
-  void reserve(int int_size, int string_size, bool make_vector_if_possible);
+  void reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible);
 
   size_t estimate_memory_usage() const;
 

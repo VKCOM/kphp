@@ -79,7 +79,7 @@ void TypeExprStore::compile(CodeGenerator &W) const {
   }
   std::string target_expr = get_full_value(arg->type_expr.get(), var_num_access);
   if (!typed_mode) {
-    W << target_expr << fmt_format(".store(tl_arr_get(tl_object, {}, {}, {}))", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name));
+    W << target_expr << fmt_format(".store(tl_arr_get(tl_object, {}, {}, {}L))", register_tl_const_str(arg->name), arg->idx, hash_tl_const_str(arg->name));
   } else {
     W << target_expr << fmt_format(".typed_store({})", get_tl_object_field_access(arg, field_rw_type::READ));
   }
@@ -95,8 +95,7 @@ void TypeExprFetch::compile(CodeGenerator &W) const {
   if (!typed_mode) {
     W << "result.set_value(" << register_tl_const_str(arg->name) << ", "
       << get_full_value(arg->type_expr.get(), var_num_access) << ".fetch(), "
-      << hash_tl_const_str(arg->name)
-      << ");" << NL;
+      << hash_tl_const_str(arg->name) << "L);" << NL;
   } else {
     W << get_full_value(arg->type_expr.get(), var_num_access) + ".typed_fetch_to(" << get_tl_object_field_access(arg, field_rw_type::WRITE) << ");" << NL;
   }

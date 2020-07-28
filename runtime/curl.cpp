@@ -31,13 +31,13 @@ static_assert(CURLM_ADDED_ALREADY == 7, "check value");
 
 namespace {
 
-constexpr int BAD_CURL_OPTION = CURL_LAST + CURL_FORMADD_LAST;
+constexpr int64_t BAD_CURL_OPTION = CURL_LAST + CURL_FORMADD_LAST;
 
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 
 class BaseContext {
 public:
-  int error_num{0};
+  int64_t error_num{0};
   char error_msg[CURL_ERROR_SIZE + 1]{'\0'};
 
   template<size_t OPTION_OFFSET, size_t OPTIONS_COUNT>
@@ -59,7 +59,7 @@ protected:
 
 class EasyContext : public BaseContext {
 public:
-  explicit EasyContext(CURL *handle, int self_handler_id) noexcept:
+  explicit EasyContext(CURL *handle, int64_t self_handler_id) noexcept:
     easy_handle(handle),
     self_id(self_handler_id) {
   }
@@ -71,7 +71,7 @@ public:
   }
 
   template<typename T>
-  int set_option_safe(CURLoption option, const T &value) noexcept {
+  int64_t set_option_safe(CURLoption option, const T &value) noexcept {
     dl::CriticalSectionGuard critical_section;
     error_num = curl_easy_setopt(easy_handle, option, value);
     return error_num;
@@ -91,13 +91,7 @@ public:
       case CURLINFO_LONG: {
         long value = 0;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        if (res == CURLE_OK) {
-          if (std::numeric_limits<int>::min() <= value && value <= std::numeric_limits<int>::max()) {
-            return static_cast<int>(value);
-          }
-          return f$strval(Long(static_cast<long long>(value)));
-        }
-        return var{false};
+        return res == CURLE_OK ? var{value} : var{false};
       }
       case CURLINFO_DOUBLE: {
         double value = 0;
@@ -159,7 +153,7 @@ public:
   }
 
   CURL *easy_handle;
-  const int self_id{-1};
+  const int64_t self_id{-1};
 
   string header;
   string result;
@@ -178,7 +172,7 @@ public:
   }
 
   template<typename T>
-  int set_option_safe(CURLMoption option, const T &value) noexcept {
+  int64_t set_option_safe(CURLMoption option, const T &value) noexcept {
     dl::CriticalSectionGuard critical_section;
     error_num = curl_multi_setopt(multi_handle, option, value);
     return error_num;
@@ -192,23 +186,23 @@ struct CurlContexts_ {
   array<MultiContext *> multi_contexts;
 
   template<typename T>
-  T *get_value(int id) const noexcept;
+  T *get_value(int64_t id) const noexcept;
 };
 
 template<>
-EasyContext *CurlContexts_::get_value<EasyContext>(int easy_id) const noexcept {
+EasyContext *CurlContexts_::get_value<EasyContext>(int64_t easy_id) const noexcept {
   return easy_contexts.get_value(easy_id - 1);
 }
 
 template<>
-MultiContext *CurlContexts_::get_value<MultiContext>(int multi_id) const noexcept {
+MultiContext *CurlContexts_::get_value<MultiContext>(int64_t multi_id) const noexcept {
   return multi_contexts.get_value(multi_id - 1);
 }
 
 using CurlContexts = SingletonStorage<CurlContexts_>;
 
 template<typename T>
-T *get_context(int id) noexcept {
+T *get_context(int64_t id) noexcept {
   T *context = nullptr;
   if (likely(dl::query_num == CurlContexts::get().get_query_tag())) {
     context = CurlContexts::get()->get_value<T>(id);
@@ -251,7 +245,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
 }
 
 // this is a callback called from curl_easy_perform
-int curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
+int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
   if (type == CURLINFO_HEADER_OUT) {
     dl::leave_critical_section();
     static_cast<EasyContext *>(userdata)->header = string{buf, static_cast<string::size_type>(buf_len)};
@@ -415,10 +409,10 @@ void post_fields_option_setter(EasyContext *easy_context, CURLoption, const var 
   }
 }
 
-constexpr int CURLOPT_RETURNTRANSFER = 1234567;
-constexpr int CURLOPT_INFO_HEADER_OUT = 7654321;
+constexpr int64_t CURLOPT_RETURNTRANSFER = 1234567;
+constexpr int64_t CURLOPT_INFO_HEADER_OUT = 7654321;
 
-bool curl_setopt(EasyContext *easy_context, int option, const var &value) noexcept {
+bool curl_setopt(EasyContext *easy_context, int64_t option, const var &value) noexcept {
   if (option == CURLOPT_INFO_HEADER_OUT) {
     if (f$longval(value).l == 1ll) {
       easy_context->set_option(CURLOPT_DEBUGFUNCTION, curl_info_header_out);
@@ -594,11 +588,11 @@ bool curl_setopt(EasyContext *easy_context, int option, const var &value) noexce
   return easy_context->error_num == CURLE_OK;
 }
 
-void long_multi_option_setter(MultiContext *multi_context, CURLMoption option, int value) {
+void long_multi_option_setter(MultiContext *multi_context, CURLMoption option, int64_t value) {
   multi_context->set_option_safe(option, static_cast<long>(value));
 }
 
-void off_multi_option_setter(MultiContext *multi_context, CURLMoption option, int value) {
+void off_multi_option_setter(MultiContext *multi_context, CURLMoption option, int64_t value) {
   multi_context->set_option_safe(option, static_cast<curl_off_t>(value));
 }
 
@@ -615,7 +609,7 @@ curl_easy f$curl_init(const string &url) noexcept {
     return 0;
   }
 
-  const int curl_handler_id = CurlContexts::get()->easy_contexts.count() + 1;
+  const int64_t curl_handler_id = CurlContexts::get()->easy_contexts.count() + 1;
   auto *easy_context = static_cast<EasyContext *>(dl::allocate(sizeof(EasyContext)));
   new(easy_context) EasyContext(easy_handle, curl_handler_id);
   easy_context->set_default_options();
@@ -641,12 +635,12 @@ void f$curl_reset(curl_easy easy_id) noexcept {
   }
 }
 
-bool f$curl_setopt(curl_easy easy_id, int option, const var &value) noexcept {
+bool f$curl_setopt(curl_easy easy_id, int64_t option, const var &value) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
     if (curl_setopt(easy_context, option, value)) {
       return true;
     }
-    php_warning("Can't set curl option %d", option);
+    php_warning("Can't set curl option %ld", option);
   }
   return false;
 }
@@ -684,7 +678,7 @@ var f$curl_exec(curl_easy easy_id) noexcept {
   return true;
 }
 
-var f$curl_getinfo(curl_easy easy_id, int option) noexcept {
+var f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;
@@ -778,7 +772,7 @@ string f$curl_error(curl_easy easy_id) noexcept {
   return (easy_context && easy_context->error_num != CURLE_OK) ? string{easy_context->error_msg} : string{};
 }
 
-int f$curl_errno(curl_easy easy_id) noexcept {
+int64_t f$curl_errno(curl_easy easy_id) noexcept {
   auto *easy_context = get_context<EasyContext>(easy_id);
   return easy_context ? easy_context->error_num : 0;
 }
@@ -806,7 +800,7 @@ curl_multi f$curl_multi_init() noexcept {
   return CurlContexts::get()->multi_contexts.count();
 }
 
-Optional<int> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
       easy_context->cleanup_for_next_request();
@@ -824,7 +818,7 @@ Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   return false;
 }
 
-bool f$curl_multi_setopt(curl_multi multi_id, int option, int value) noexcept {
+bool f$curl_multi_setopt(curl_multi multi_id, int64_t option, int64_t value) noexcept {
   auto *multi_context = get_context<MultiContext>(multi_id);
   if (!multi_context) {
     return false;
@@ -832,7 +826,7 @@ bool f$curl_multi_setopt(curl_multi multi_id, int option, int value) noexcept {
 
   struct MultiOptionHandler {
     CURLMoption option;
-    void (*option_setter)(MultiContext *multi_context, CURLMoption option, int value);
+    void (*option_setter)(MultiContext *multi_context, CURLMoption option, int64_t value);
   };
   constexpr static auto multi_options = vk::to_array<MultiOptionHandler>(
     {
@@ -856,15 +850,17 @@ bool f$curl_multi_setopt(curl_multi multi_id, int option, int value) noexcept {
   return multi_context->error_num == CURLM_OK;
 }
 
-Optional<int> f$curl_multi_exec(curl_multi multi_id, int &still_running) noexcept {
+Optional<int64_t> f$curl_multi_exec(curl_multi multi_id, int64_t &still_running) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
-    multi_context->error_num = dl::critical_section_call(curl_multi_perform, multi_context->multi_handle, &still_running);
+    int still_running_int = 0;
+    multi_context->error_num = dl::critical_section_call(curl_multi_perform, multi_context->multi_handle, &still_running_int);
+    still_running = still_running_int;
     return multi_context->error_num;
   }
   return false;
 }
 
-Optional<int> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept {
+Optional<int64_t> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     int numfds = 0;
     multi_context->error_num = dl::critical_section_call(curl_multi_wait, multi_context->multi_handle, nullptr, 0,
@@ -872,22 +868,25 @@ Optional<int> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept 
     if (multi_context->error_num != CURLM_OK) {
       return -1;
     }
-    return numfds;
+    return int64_t{numfds};
   }
   return false;
 }
 
-int curl_multi_info_read_msgs_in_queue_stub = 0;
-Optional<array<int>> f$curl_multi_info_read(curl_multi multi_id, int &msgs_in_queue) {
+int64_t curl_multi_info_read_msgs_in_queue_stub = 0;
+Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &msgs_in_queue) {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
-    if (CURLMsg *msg = dl::critical_section_call(curl_multi_info_read, multi_context->multi_handle, &msgs_in_queue)) {
-      array<int> result{array_size{0, 3, false}};
-      result.set_value(string{"msg"}, static_cast<int>(msg->msg));
-      result.set_value(string{"result"}, static_cast<int>(msg->data.result));
+    int msgs_in_queue_int = 0;
+    CURLMsg *msg = dl::critical_section_call(curl_multi_info_read, multi_context->multi_handle, &msgs_in_queue_int);
+    msgs_in_queue = msgs_in_queue_int;
+    if (msg) {
+      array<int64_t> result{array_size{0, 3, false}};
+      result.set_value(string{"msg"}, static_cast<int64_t>(msg->msg));
+      result.set_value(string{"result"}, static_cast<int64_t>(msg->data.result));
 
       void *id_as_ptr = nullptr;
       dl::critical_section_call([&] { curl_easy_getinfo (msg->easy_handle, CURLINFO_PRIVATE, &id_as_ptr); });
-      const auto curl_handler_id = static_cast<int>(reinterpret_cast<size_t>(id_as_ptr));
+      const auto curl_handler_id = static_cast<int64_t>(reinterpret_cast<size_t>(id_as_ptr));
       const auto *easy_handle = CurlContexts::get()->easy_contexts.find_value(curl_handler_id - 1);
       if (easy_handle && (*easy_handle)->easy_handle == msg->easy_handle) {
         (*easy_handle)->error_num = msg->data.result;
@@ -899,7 +898,7 @@ Optional<array<int>> f$curl_multi_info_read(curl_multi multi_id, int &msgs_in_qu
   return false;
 }
 
-Optional<int> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
+Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
       multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
@@ -909,7 +908,7 @@ Optional<int> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id)
   return false;
 }
 
-Optional<int> f$curl_multi_errno(curl_multi multi_id) noexcept {
+Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
   auto *multi_context = get_context<MultiContext>(multi_id);
   return multi_context ? multi_context->error_num : false;
 }
@@ -921,7 +920,7 @@ void f$curl_multi_close(curl_multi multi_id) noexcept {
   }
 }
 
-Optional<string> f$curl_multi_strerror(int error_num) noexcept {
+Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept {
   if (error_num == BAD_CURL_OPTION) {
     return string{"Bad curl option"};
   }

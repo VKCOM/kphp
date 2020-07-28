@@ -10,7 +10,7 @@ void RpcPendingQueries::save(const class_instance<RpcQuery> &query) {
   queries_.set_value(query.get()->query_id, query);
 }
 
-class_instance<RpcQuery> RpcPendingQueries::withdraw(int query_id) {
+class_instance<RpcQuery> RpcPendingQueries::withdraw(int64_t query_id) {
   auto query = queries_.get_value(query_id);
   queries_.unset(query_id);
   return query;
@@ -41,7 +41,7 @@ void CurrentProcessingQuery::raise_fetching_error(const char *format, ...) {
     char buff[BUFF_SZ] = {0};
     va_list args;
     va_start(args, format);
-    int sz = vsnprintf(buff, BUFF_SZ, format, args);
+    int32_t sz = vsnprintf(buff, BUFF_SZ, format, args);
     php_assert(sz > 0);
     va_end(args);
     string msg = string(buff, static_cast<size_t>(sz));
@@ -58,7 +58,7 @@ void CurrentProcessingQuery::raise_storing_error(const char *format, ...) {
     char buff[BUFF_SZ] = {0};
     va_list args;
     va_start (args, format);
-    int sz = vsnprintf(buff, BUFF_SZ, format, args);
+    int32_t sz = vsnprintf(buff, BUFF_SZ, format, args);
     php_assert(sz > 0);
     va_end(args);
     string msg = string(buff, static_cast<size_t>(sz));

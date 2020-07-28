@@ -7,13 +7,13 @@ class RpcRequestResult;
 struct RpcQuery : refcountable_php_classes<RpcQuery> {
   std::unique_ptr<RpcRequestResult> result_fetcher;
   string tl_function_name;
-  int query_id{0};
+  int64_t query_id{0};
 };
 
 class RpcPendingQueries {
 public:
   void save(const class_instance<RpcQuery> &query);
-  class_instance<RpcQuery> withdraw(int query_id);
+  class_instance<RpcQuery> withdraw(int64_t query_id);
 
   void hard_reset();
 
@@ -22,7 +22,7 @@ public:
     return queries;
   }
 
-  int count() const { return queries_.count(); }
+  int64_t count() const { return queries_.count(); }
 
 private:
   RpcPendingQueries() = default;

@@ -317,7 +317,7 @@ struct ArrayHash final
   }
 
   void feed_hash_string(const string &s) {
-    feed_hash(string_hash(s.c_str(), static_cast<int>(s.size())));
+    feed_hash(string_hash(s.c_str(), s.size()));
   }
 
 protected:

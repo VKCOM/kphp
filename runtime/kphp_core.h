@@ -53,16 +53,16 @@ template<typename T, typename ...Args>
 void hard_reset_var(T &var, Args &&... args) noexcept {
   new(&var) T(std::forward<Args>(args)...);
 }
-inline double divide(int lhs, int rhs);
+inline double divide(int64_t lhs, int64_t rhs);
 
-inline double divide(double lhs, int rhs);
+inline double divide(double lhs, int64_t rhs);
 
-inline double divide(const string &lhs, int rhs);
+inline double divide(const string &lhs, int64_t rhs);
 
-inline double divide(const var &lhs, int rhs);
+inline double divide(const var &lhs, int64_t rhs);
 
 
-inline double divide(int lhs, double rhs);
+inline double divide(int64_t lhs, double rhs);
 
 inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
 
@@ -71,7 +71,7 @@ inline double divide(const string &lhs, double rhs);
 inline double divide(const var &lhs, double rhs);
 
 
-inline double divide(int lhs, const string &rhs);
+inline double divide(int64_t lhs, const string &rhs);
 
 inline double divide(double lhs, const string &rhs);
 
@@ -80,7 +80,7 @@ inline double divide(const string &lhs, const string &rhs);
 inline double divide(const var &lhs, const string &rhs);
 
 
-inline double divide(int lhs, const var &rhs);
+inline double divide(int64_t lhs, const var &rhs);
 
 inline double divide(double lhs, const var &rhs);
 
@@ -150,7 +150,7 @@ template<class T1, class T2>
 inline double divide(const T1 &lhs, const Optional<T2> &rhs); //not defined
 
 template<class T1, class T2>
-inline int spaceship(const T1 &lhs, const T2 &rhs) {
+inline int64_t spaceship(const T1 &lhs, const T2 &rhs) {
   if (lt(lhs, rhs)) {
     return -1;
   } else if (gt(lhs, rhs)) {
@@ -160,13 +160,13 @@ inline int spaceship(const T1 &lhs, const T2 &rhs) {
   }
 }
 
-inline int modulo(int lhs, int rhs);
+inline int64_t modulo(int64_t lhs, int64_t rhs);
 
 template<class T1, class T2>
-inline int modulo(const T1 &lhs, const T2 &rhs);
+inline int64_t modulo(const T1 &lhs, const T2 &rhs);
 
-inline int int_power(int base, int exp) {
-  int res = 1;
+inline int64_t int_power(int64_t base, int64_t exp) {
+  int64_t res = 1;
   while (exp > 0) {
     if (exp & 1) {
       res *= base;
@@ -177,7 +177,7 @@ inline int int_power(int base, int exp) {
   return res;
 }
 
-inline double float_power(double base, int exp) {
+inline double float_power(double base, int64_t exp) {
   return std::pow(base, exp);
 }
 
@@ -191,7 +191,7 @@ inline var var_power(const var &base, const var &exp) {
   }
 
   const double float_exp = exp.to_float();
-  if (float_exp == static_cast<int>(float_exp)) {
+  if (float_exp == static_cast<double>(static_cast<int64_t>(float_exp))) {
     return std::pow(float_base, float_exp);
   }
 
@@ -203,11 +203,11 @@ inline var var_power(const var &base, const var &exp) {
   return std::pow(float_base, float_exp);
 }
 
-inline int &power_self(int &base, int exp) {
+inline int64_t &power_self(int64_t &base, int64_t exp) {
   return base = int_power(base, exp);
 }
 
-inline double &power_self(double &base, int exp) {
+inline double &power_self(double &base, int64_t exp) {
   return base = float_power(base, exp);
 }
 
@@ -219,7 +219,7 @@ template<class T1, class T2>
 inline T1 &divide_self(T1 &lhs, const T2 &rhs);
 
 
-inline int &modulo_self(int &lhs, int rhs);
+inline int64_t &modulo_self(int64_t &lhs, int64_t rhs);
 
 template<class T1, class T2>
 inline T1 &modulo_self(T1 &lhs, const T2 &rhs);
@@ -238,13 +238,13 @@ inline const bool &boolval_ref(const bool &val);
 inline const bool &boolval_ref(const var &val);
 
 
-inline int &intval_ref(int &val, const char *function);
+inline int64_t &intval_ref(int64_t &val, const char *function);
 
-inline int &intval_ref(var &val, const char *function);
+inline int64_t &intval_ref(var &val, const char *function);
 
-inline const int &intval_ref(const int &val, const char *function);
+inline const int64_t &intval_ref(const int64_t &val, const char *function);
 
-inline const int &intval_ref(const var &val, const char *function);
+inline const int64_t &intval_ref(const var &val, const char *function);
 
 
 inline double &floatval_ref(double &val);
@@ -368,9 +368,9 @@ inline ClassInstanceDerived f$instance_cast(const class_instance<Base> &base, co
   return base.template cast_to<typename ClassInstanceDerived::ClassType>();
 }
 
-inline const char *get_type_c_str(const bool &v);
-inline const char *get_type_c_str(const int &v);
-inline const char *get_type_c_str(const double &v);
+inline const char *get_type_c_str(bool);
+inline const char *get_type_c_str(int64_t);
+inline const char *get_type_c_str(double);
 inline const char *get_type_c_str(const string &v);
 inline const char *get_type_c_str(const var &v);
 template<class T>
@@ -381,9 +381,9 @@ inline const char *get_type_c_str(const class_instance<T> &v);
 template<class T>
 inline string f$get_type(const T &v);
 
-inline string f$get_class(const bool &v);
-inline string f$get_class(const int &v);
-inline string f$get_class(const double &v);
+inline string f$get_class(bool);
+inline string f$get_class(int64_t);
+inline string f$get_class(double);
 inline string f$get_class(const string &v);
 inline string f$get_class(const var &v);
 template<class T>
@@ -392,30 +392,30 @@ template<class T>
 inline string f$get_class(const class_instance<T> &v);
 
 template<class T>
-inline int f$get_hash_of_class(const class_instance<T> &klass);
+inline int64_t f$get_hash_of_class(const class_instance<T> &klass);
 
 
-inline int f$count(const var &v);
-
-template<class T>
-inline int f$count(const Optional<T> &a);
+inline int64_t f$count(const var &v);
 
 template<class T>
-inline int f$count(const array<T> &a);
+inline int64_t f$count(const Optional<T> &a);
+
+template<class T>
+inline int64_t f$count(const array<T> &a);
 
 template<class ...Args>
-inline int f$count(const std::tuple<Args...> &a);
+inline int64_t f$count(const std::tuple<Args...> &a);
 
 template<class T>
-inline int f$count(const T &v);
+inline int64_t f$count(const T &v);
 
 
 template<class T>
-int f$sizeof(const T &v);
+int64_t f$sizeof(const T &v);
 
 
 inline string &append(string &dest, const string &from);
-inline string &append(string &dest, int from);
+inline string &append(string &dest, int64_t from);
 
 template<class T>
 inline string &append(Optional<string> &dest, const T &from);
@@ -436,53 +436,53 @@ template<class T>
 inline bool f$function_exists(const T &a1);
 
 
-constexpr int E_ERROR = 1;
-constexpr int E_WARNING = 2;
-constexpr int E_PARSE = 4;
-constexpr int E_NOTICE = 8;
-constexpr int E_CORE_ERROR = 16;
-constexpr int E_CORE_WARNING = 32;
-constexpr int E_COMPILE_ERROR = 64;
-constexpr int E_COMPILE_WARNING = 128;
-constexpr int E_USER_ERROR = 256;
-constexpr int E_USER_WARNING = 512;
-constexpr int E_USER_NOTICE = 1024;
-constexpr int E_STRICT = 2048;
-constexpr int E_RECOVERABLE_ERROR = 4096;
-constexpr int E_DEPRECATED = 8192;
-constexpr int E_USER_DEPRECATED = 16384;
-constexpr int E_ALL = 32767;
+constexpr int32_t E_ERROR = 1;
+constexpr int32_t E_WARNING = 2;
+constexpr int32_t E_PARSE = 4;
+constexpr int32_t E_NOTICE = 8;
+constexpr int32_t E_CORE_ERROR = 16;
+constexpr int32_t E_CORE_WARNING = 32;
+constexpr int32_t E_COMPILE_ERROR = 64;
+constexpr int32_t E_COMPILE_WARNING = 128;
+constexpr int32_t E_USER_ERROR = 256;
+constexpr int32_t E_USER_WARNING = 512;
+constexpr int32_t E_USER_NOTICE = 1024;
+constexpr int32_t E_STRICT = 2048;
+constexpr int32_t E_RECOVERABLE_ERROR = 4096;
+constexpr int32_t E_DEPRECATED = 8192;
+constexpr int32_t E_USER_DEPRECATED = 16384;
+constexpr int32_t E_ALL = 32767;
 
 inline var f$error_get_last();
 
-inline int f$error_reporting(int level);
+inline int64_t f$error_reporting(int64_t level);
 
-inline int f$error_reporting();
+inline int64_t f$error_reporting();
 
 inline void f$warning(const string &message);
 
 #define f$critical_error(message) \
   php_critical_error("%s", message.c_str());
 
-inline int f$memory_get_static_usage();
+inline int64_t f$memory_get_static_usage();
 
-inline int f$memory_get_peak_usage(bool real_usage = false);
+inline int64_t f$memory_get_peak_usage(bool real_usage = false);
 
-inline int f$memory_get_usage(bool real_usage = false);
+inline int64_t f$memory_get_usage(bool real_usage = false);
 
-inline int f$memory_get_total_usage();
+inline int64_t f$memory_get_total_usage();
 
-inline array<int> f$memory_get_detailed_stats();
-
-template<class T>
-inline int f$get_reference_counter(const array<T> &v);
+inline array<int64_t> f$memory_get_detailed_stats();
 
 template<class T>
-inline int f$get_reference_counter(const class_instance<T> &v);
+inline int64_t f$get_reference_counter(const array<T> &v);
 
-inline int f$get_reference_counter(const string &v);
+template<class T>
+inline int64_t f$get_reference_counter(const class_instance<T> &v);
 
-inline int f$get_reference_counter(const var &v);
+inline int64_t f$get_reference_counter(const string &v);
+
+inline int64_t f$get_reference_counter(const var &v);
 
 
 template<class T>
@@ -576,24 +576,24 @@ inline void unset(var &x);
  *
  */
 
-double divide(int lhs, int rhs) {
+double divide(int64_t lhs, int64_t rhs) {
   return divide(static_cast<double>(lhs), static_cast<double>(rhs));
 }
 
-double divide(double lhs, int rhs) {
+double divide(double lhs, int64_t rhs) {
   return divide(lhs, static_cast<double>(rhs));
 }
 
-double divide(const string &lhs, int rhs) {
+double divide(const string &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const var &lhs, int rhs) {
+double divide(const var &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
 
-double divide(int lhs, double rhs) {
+double divide(int64_t lhs, double rhs) {
   return divide(static_cast<double>(lhs), rhs);
 }
 
@@ -614,7 +614,7 @@ double divide(const var &lhs, double rhs) {
 }
 
 
-double divide(int lhs, const string &rhs) {
+double divide(int64_t lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
@@ -631,7 +631,7 @@ double divide(const var &lhs, const string &rhs) {
 }
 
 
-double divide(int lhs, const var &rhs) {
+double divide(int64_t lhs, const var &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
@@ -650,19 +650,19 @@ double divide(const var &lhs, const var &rhs) {
 
 double divide(bool lhs, bool rhs) {
   php_warning("Both arguments of operator '/' are bool");
-  return divide(static_cast<int>(lhs), static_cast<int>(rhs));
+  return divide(static_cast<int64_t>(lhs), static_cast<int64_t>(rhs));
 }
 
 template<class T>
 double divide(bool lhs, const T &rhs) {
   php_warning("First argument of operator '/' is bool");
-  return divide((int)lhs, f$floatval(rhs));
+  return divide(static_cast<int64_t>(lhs), f$floatval(rhs));
 }
 
 template<class T>
 double divide(const T &lhs, bool rhs) {
   php_warning("Second argument of operator '/' is bool");
-  return divide(f$floatval(lhs), static_cast<int>(rhs));
+  return divide(f$floatval(lhs), static_cast<int64_t>(rhs));
 }
 
 template<class T>
@@ -753,7 +753,7 @@ double divide(const class_instance<T1> &, const array<T> &) {
 }
 
 
-int modulo(int lhs, int rhs) {
+int64_t modulo(int64_t lhs, int64_t rhs) {
   if (rhs == 0) {
     php_warning("Modulo by zero");
     return 0;
@@ -762,9 +762,9 @@ int modulo(int lhs, int rhs) {
 }
 
 template<class T1, class T2>
-int modulo(const T1 &lhs, const T2 &rhs) {
-  int div = f$intval(lhs);
-  int mod = f$intval(rhs);
+int64_t modulo(const T1 &lhs, const T2 &rhs) {
+  int64_t div = f$intval(lhs);
+  int64_t mod = f$intval(rhs);
 
   if (neq2(div, lhs)) {
     php_warning("First parameter of operator %% is not an integer");
@@ -787,7 +787,7 @@ T1 &divide_self(T1 &lhs, const T2 &rhs) {
 }
 
 
-int &modulo_self(int &lhs, int rhs) {
+int64_t &modulo_self(int64_t &lhs, int64_t rhs) {
   return lhs = modulo(lhs, rhs);
 }
 
@@ -819,19 +819,19 @@ const bool &boolval_ref(const var &val) {
 }
 
 
-int &intval_ref(int &val, const char *) {
+int64_t &intval_ref(int64_t &val, const char *) {
   return val;
 }
 
-int &intval_ref(var &val, const char *function) {
+int64_t &intval_ref(var &val, const char *function) {
   return val.as_int(function);
 }
 
-const int &intval_ref(const int &val, const char *) {
+const int64_t &intval_ref(const int64_t &val, const char *) {
   return val;
 }
 
-const int &intval_ref(const var &val, const char *function) {
+const int64_t &intval_ref(const var &val, const char *function) {
   return val.as_int(function);
 }
 
@@ -933,7 +933,7 @@ bool convert_to<bool>::convert(T1 &&val) {
 
 template<>
 template<class T1, class, class>
-int convert_to<int>::convert(T1 &&val) {
+int64_t convert_to<int64_t>::convert(T1 &&val) {
   return f$intval(std::forward<T1>(val));
 }
 
@@ -968,7 +968,7 @@ inline bool f$empty(const T &v) {
 }
 
 bool f$empty(const string &v) {
-  int l = v.size();
+  string::size_type l = v.size();
   return l == 0 || (l == 1 && v[0] == '0');
 }
 
@@ -991,42 +991,43 @@ bool f$empty(const Optional<T> &a) {
   return a.has_value() ? f$empty(a.val()) : true;
 }
 
-int f$count(const var &v) {
+int64_t f$count(const var &v) {
   return v.count();
 }
 
 template<class T>
-int f$count(const Optional<T> &a) {
+int64_t f$count(const Optional<T> &a) {
   auto count_lambda = [](const auto &v) { return f$count(v);};
   return call_fun_on_optional_value(count_lambda, a);
 }
 
 template<class T>
-int f$count(const array<T> &a) {
+int64_t f$count(const array<T> &a) {
   return a.count();
 }
 
 template<class ...Args>
-inline int f$count(const std::tuple<Args...> &a __attribute__ ((unused))) {
-  return (int)std::tuple_size<std::tuple<Args...>>::value;
+inline int64_t f$count(const std::tuple<Args...> &a __attribute__ ((unused))) {
+  return static_cast<int64_t>(std::tuple_size<std::tuple<Args...>>::value);
 }
 
 template<class T>
-int f$count(const T &) {
+int64_t f$count(const T &) {
   php_warning("Count on non-array");
   return 1;
 }
 
 
 template<class T>
-int f$sizeof(const T &v) {
+int64_t f$sizeof(const T &v) {
   return f$count(v);
 }
 
 
 template<class T>
 bool f$is_numeric(const T &) {
-  return std::is_same<T, int>::value || std::is_same<T, double>::value;
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+  return std::is_same<T, int64_t>{} || std::is_same<T, double>{};
 }
 
 bool f$is_numeric(const string &v) {
@@ -1080,7 +1081,8 @@ bool f$is_bool(const var &v) {
 
 template<class T>
 bool f$is_int(const T &) {
-  return std::is_same<T, int>::value;
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+  return std::is_same<T, int64_t>{};
 }
 
 template<class T>
@@ -1184,15 +1186,15 @@ bool f$is_real(const T &v) {
   return f$is_float(v);
 }
 
-const char *get_type_c_str(const bool &) {
+const char *get_type_c_str(bool) {
   return "boolean";
 }
 
-const char *get_type_c_str(const int &) {
+const char *get_type_c_str(int64_t) {
   return "integer";
 }
 
-const char *get_type_c_str(const double &) {
+const char *get_type_c_str(double) {
   return "double";
 }
 
@@ -1222,17 +1224,17 @@ string f$get_type(const T &v) {
 }
 
 
-string f$get_class(const bool &) {
+string f$get_class(bool) {
   php_warning("Called get_class() on boolean");
   return string();
 }
 
-string f$get_class(const int &) {
+string f$get_class(int64_t) {
   php_warning("Called get_class() on integer");
   return string();
 }
 
-string f$get_class(const double &) {
+string f$get_class(double) {
   php_warning("Called get_class() on double");
   return string();
 }
@@ -1259,7 +1261,7 @@ string f$get_class(const class_instance<T> &v) {
 }
 
 template<class T>
-inline int f$get_hash_of_class(const class_instance<T> &klass) {
+inline int64_t f$get_hash_of_class(const class_instance<T> &klass) {
   return klass.get_hash();
 }
 
@@ -1267,7 +1269,7 @@ string &append(string &dest, const string &from) {
   return dest.append(from);
 }
 
-inline string &append(string &dest, int from) {
+inline string &append(string &dest, int64_t from) {
   return dest.append(from);
 }
 
@@ -1307,18 +1309,18 @@ var f$error_get_last() {
   return var();
 }
 
-int f$error_reporting(int level) {
-  int prev = php_warning_level;
+int64_t f$error_reporting(int64_t level) {
+  int32_t prev = php_warning_level;
   if ((level & E_ALL) == E_ALL) {
     php_warning_level = 3;
   }
   if (0 <= level && level <= 3) {
-    php_warning_level = std::max(php_warning_minimum_level, level);
+    php_warning_level = std::max(php_warning_minimum_level, static_cast<int32_t>(level));
   }
   return prev;
 }
 
-int f$error_reporting() {
+int64_t f$error_reporting() {
   return php_warning_level;
 }
 
@@ -1326,58 +1328,58 @@ void f$warning(const string &message) {
   php_warning("%s", message.c_str());
 }
 
-int f$memory_get_static_usage() {
-  return (int)dl::get_heap_memory_used();
+int64_t f$memory_get_static_usage() {
+  return static_cast<int64_t>(dl::get_heap_memory_used());
 }
 
-int f$memory_get_peak_usage(bool real_usage) {
+int64_t f$memory_get_peak_usage(bool real_usage) {
   if (real_usage) {
-    return (int)dl::get_script_memory_stats().max_real_memory_used;
+    return static_cast<int64_t>(dl::get_script_memory_stats().max_real_memory_used);
   } else {
-    return (int)dl::get_script_memory_stats().max_memory_used;
+    return static_cast<int64_t>(dl::get_script_memory_stats().max_memory_used);
   }
 }
 
-int f$memory_get_usage(bool real_usage __attribute__((unused))) {
-  return (int)dl::get_script_memory_stats().memory_used;
+int64_t f$memory_get_usage(bool real_usage __attribute__((unused))) {
+  return static_cast<int64_t>(dl::get_script_memory_stats().memory_used);
 }
 
-int f$memory_get_total_usage() {
-  return (int)dl::get_script_memory_stats().real_memory_used;
+int64_t f$memory_get_total_usage() {
+  return static_cast<int64_t>(dl::get_script_memory_stats().real_memory_used);
 }
 
-array<int> f$memory_get_detailed_stats() {
+array<int64_t> f$memory_get_detailed_stats() {
   const auto &stats = dl::get_script_memory_stats();
-  return array<int>(
+  return array<int64_t>(
     {
-      std::make_pair(string{"memory_limit"}, static_cast<int>(stats.memory_limit)),
-      std::make_pair(string{"real_memory_used"}, static_cast<int>(stats.real_memory_used)),
-      std::make_pair(string{"memory_used"}, static_cast<int>(stats.memory_used)),
-      std::make_pair(string{"max_real_memory_used"}, static_cast<int>(stats.max_real_memory_used)),
-      std::make_pair(string{"max_memory_used"}, static_cast<int>(stats.max_memory_used)),
-      std::make_pair(string{"defragmentation_calls"}, static_cast<int>(stats.defragmentation_calls)),
-      std::make_pair(string{"huge_memory_pieces"}, static_cast<int>(stats.huge_memory_pieces)),
-      std::make_pair(string{"small_memory_pieces"}, static_cast<int>(stats.small_memory_pieces)),
-      std::make_pair(string{"heap_memory_used"}, static_cast<int>(dl::get_heap_memory_used()))
+      std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
+      std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
+      std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
+      std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
+      std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
+      std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
+      std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
+      std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
+      std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))
     });
 }
 
 
 template<class T>
-int f$get_reference_counter(const array<T> &v) {
+int64_t f$get_reference_counter(const array<T> &v) {
   return v.get_reference_counter();
 }
 
 template<class T>
-int f$get_reference_counter(const class_instance<T> &v) {
+int64_t f$get_reference_counter(const class_instance<T> &v) {
   return v.get_reference_counter();
 }
 
-int f$get_reference_counter(const string &v) {
+int64_t f$get_reference_counter(const string &v) {
   return v.get_reference_counter();
 }
 
-int f$get_reference_counter(const var &v) {
+int64_t f$get_reference_counter(const var &v) {
   return v.get_reference_counter();
 }
 
@@ -1556,6 +1558,6 @@ inline decltype(auto) check_not_false(T&& val) {
 }
 
 template<typename T>
-using future = int;
+using future = int64_t;
 template<typename T>
-using future_queue = int;
+using future_queue = int64_t;

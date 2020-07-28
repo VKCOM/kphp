@@ -24,10 +24,10 @@ class MyClass2 implements IMyClass {
   // vtable 8
   // counter 4 // aligned 8
   public $x = "hello"; // 8
-  public $y = false; // 1
-  public $z = 5; // 4 // $y + $z aligned 8
+  public $y = false; // 1 aligned 8
+  public $z = 5; // 8
 
-  // total size = 32
+  // total size = 48
 }
 
 function test_empty_class() {
@@ -41,12 +41,12 @@ function test_empty_class() {
 function test_interfaces() {
 #ifndef KittenPHP
   var_dump(16);
-  var_dump(32);
+  var_dump(40);
   var_dump(16);
   var_dump(16);
-  var_dump(32);
+  var_dump(40);
   var_dump(0);
-  var_dump(16 + 16 + 32 + 8 + 72);
+  var_dump(16 + 16 + 40 + 8 + 80);
   return;
 #endif
   var_dump(estimate_memory_usage(new MyClass1()));

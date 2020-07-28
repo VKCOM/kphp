@@ -56,7 +56,7 @@ ReturnType null_coalesce(const array<ValueType> &arr, const KeyType &key, const 
 }
 
 template<typename ReturnType, class ValueType, typename FallbackType>
-ReturnType null_coalesce(const array<ValueType> &arr, const string &string_key, int precomuted_hash, const FallbackType &fallback) noexcept {
+ReturnType null_coalesce(const array<ValueType> &arr, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
   auto *value = arr.find_value(string_key, precomuted_hash);
   return value ? null_coalesce<ReturnType>(*value, fallback) : impl_::perform_fallback<ReturnType>(fallback);
 }
@@ -75,7 +75,7 @@ ReturnType null_coalesce(const var &v, const KeyType &key, const FallbackType &f
 }
 
 template<typename ReturnType, typename FallbackType>
-ReturnType null_coalesce(const var &v, const string &string_key, int precomuted_hash, const FallbackType &fallback) noexcept {
+ReturnType null_coalesce(const var &v, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
   return v.is_string()
          ? null_coalesce<ReturnType>(v.as_string(), string_key, fallback)
          : null_coalesce<ReturnType>(v.get_value(string_key, precomuted_hash), fallback);

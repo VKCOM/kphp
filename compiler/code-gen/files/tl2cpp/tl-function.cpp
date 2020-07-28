@@ -14,7 +14,7 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
     if (arg->is_optional()) {
       W << "tl_exclamation_fetch_wrapper " << arg->name << ";" << NL;
     } else if (arg->var_num != -1) {
-      W << "int " << arg->name << "{0};" << NL;
+      W << "int64_t " << arg->name << "{0};" << NL;
     }
   }
   if (G->get_untyped_rpc_tl_used()) {

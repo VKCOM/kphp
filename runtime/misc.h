@@ -8,43 +8,43 @@ string f$uniqid(const string &prefix = string(), bool more_entropy = false);
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str);
 
 
-void f$sleep(const int &seconds);
+void f$sleep(int64_t seconds);
 
-void f$usleep(const int &micro_seconds);
+void f$usleep(int64_t micro_seconds);
 
 
-constexpr int IMAGETYPE_UNKNOWN = 0;
-constexpr int IMAGETYPE_GIF = 1;
-constexpr int IMAGETYPE_JPEG = 2;
-constexpr int IMAGETYPE_PNG = 3;
-constexpr int IMAGETYPE_SWF = 4;
-constexpr int IMAGETYPE_PSD = 5;
-constexpr int IMAGETYPE_BMP = 6;
-constexpr int IMAGETYPE_TIFF_II = 7;
-constexpr int IMAGETYPE_TIFF_MM = 8;
-constexpr int IMAGETYPE_JPC = 9;
-constexpr int IMAGETYPE_JPEG2000 = 9;
-constexpr int IMAGETYPE_JP2 = 10;
+constexpr int64_t IMAGETYPE_UNKNOWN = 0;
+constexpr int64_t IMAGETYPE_GIF = 1;
+constexpr int64_t IMAGETYPE_JPEG = 2;
+constexpr int64_t IMAGETYPE_PNG = 3;
+constexpr int64_t IMAGETYPE_SWF = 4;
+constexpr int64_t IMAGETYPE_PSD = 5;
+constexpr int64_t IMAGETYPE_BMP = 6;
+constexpr int64_t IMAGETYPE_TIFF_II = 7;
+constexpr int64_t IMAGETYPE_TIFF_MM = 8;
+constexpr int64_t IMAGETYPE_JPC = 9;
+constexpr int64_t IMAGETYPE_JPEG2000 = 9;
+constexpr int64_t IMAGETYPE_JP2 = 10;
 
 var f$getimagesize(const string &name);
 
 
-int f$posix_getpid();
-int f$posix_getuid();
-Optional<array<var>> f$posix_getpwuid(int uid);
+int64_t f$posix_getpid();
+int64_t f$posix_getuid();
+Optional<array<var>> f$posix_getpwuid(int64_t uid);
 
 
 string f$serialize(const var &v);
 
 var f$unserialize(const string &v);
-var unserialize_raw(const char *v, int v_len);
+var unserialize_raw(const char *v, int32_t v_len);
 
-constexpr unsigned int JSON_UNESCAPED_UNICODE = 1;
-constexpr unsigned int JSON_FORCE_OBJECT = 16;
-constexpr unsigned int JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
-constexpr unsigned int JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
+constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
+constexpr int64_t JSON_FORCE_OBJECT = 16;
+constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
+constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
-Optional<string> f$json_encode(const var &v, int options = 0, bool simple_encode = false);
+Optional<string> f$json_encode(const var &v, int64_t options = 0, bool simple_encode = false);
 
 string f$vk_json_encode_safe(const var &v, bool simple_encode = true);
 
@@ -79,6 +79,6 @@ string f$cp1251(const string &utf8_string);
 
 
 /** For local usage only **/
-int f$system(const string &query);
+int64_t f$system(const string &query);
 
 void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info);

@@ -207,11 +207,11 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   }
 }
 
-int f$crc32(const string &s) {
+int64_t f$crc32(const string &s) {
   return compute_crc32(static_cast <const void *> (s.c_str()), s.size());
 }
 
-int f$crc32_file(const string &file_name) {
+int64_t f$crc32_file(const string &file_name) {
   dl::enter_critical_section();//OK
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
@@ -232,7 +232,7 @@ int f$crc32_file(const string &file_name) {
     return -1;
   }
 
-  int res = -1;
+  uint32_t res = std::numeric_limits<uint32_t>::max();
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
@@ -249,7 +249,7 @@ int f$crc32_file(const string &file_name) {
     return -1;
   }
 
-  return res ^ -1;
+  return res ^ std::numeric_limits<uint32_t>::max();
 }
 
 struct EVPKeyResourceStorage {
@@ -267,7 +267,7 @@ public:
     }
 
     string result(2, prefixChar_);
-    result.append(registered_keys_->count());
+    result.append(int64_t{registered_keys_->count()});
     registered_keys_->push_back(pkey);
     return result;
   }
@@ -527,7 +527,7 @@ static const char *ssl_get_error_string() {
   return static_SB.c_str();
 }
 
-bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int algo) {
+bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int64_t algo) {
   dl::enter_critical_section();
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
   if (!mdtype) {
@@ -572,7 +572,7 @@ bool f$openssl_sign(const string &data, string &signature, const string &priv_ke
   return result;
 }
 
-int f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int algo) {
+int64_t f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int64_t algo) {
   dl::enter_critical_section();
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
 
@@ -611,17 +611,17 @@ int f$openssl_verify(const string &data, const string &signature, const string &
   return err;
 }
 
-Optional<string> f$openssl_random_pseudo_bytes(int length) {
-  if (length <= 0) {
+Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
+  if (length <= 0 || length > string::max_size()) {
     return false;
   }
-  string buffer(length, ' ');
+  string buffer(static_cast<string::size_type>(length), ' ');
   struct timeval tv;
 
   gettimeofday(&tv, nullptr);
   RAND_add(&tv, sizeof(tv), 0.0);
 
-  if (RAND_bytes((unsigned char *)buffer.buffer(), length) <= 0) {
+  if (RAND_bytes(reinterpret_cast<unsigned char *>(buffer.buffer()), static_cast<int32_t>(length)) <= 0) {
     return false;
   }
   return buffer;
@@ -643,7 +643,7 @@ static long long ssl_connections_last_query_num = -1;
 
 const int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static Stream ssl_stream_socket_client(const string &url, int &error_number, string &error_description, double timeout, int flags __attribute__((unused)), const var &options) {
+static Stream ssl_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)), const var &options) {
 #define RETURN(dump_error_stack)                        \
   if (dump_error_stack) {                               \
     php_warning ("%s: %s", error_description.c_str(),   \
@@ -686,13 +686,13 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
 
   var parsed_url = f$parse_url(url);
   string host = f$strval(parsed_url.get_value(string("host", 4)));
-  int port = f$intval(parsed_url.get_value(string("port", 4)));
+  int64_t port = f$intval(parsed_url.get_value(string("port", 4)));
 
   //getting connection options
 #define GET_OPTION(option_name) options.get_value (string (option_name, sizeof (option_name) - 1))
   bool verify_peer = GET_OPTION("verify_peer").to_bool();
   var verify_depth_var = GET_OPTION("verify_depth");
-  int verify_depth = verify_depth_var.to_int();
+  int64_t verify_depth = verify_depth_var.to_int();
   if (verify_depth_var.is_null()) {
     verify_depth = -1;
   }
@@ -774,7 +774,7 @@ static Stream ssl_stream_socket_client(const string &url, int &error_number, str
     SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, nullptr);
 
     if (verify_depth != -1) {
-      SSL_CTX_set_verify_depth(ssl_ctx, verify_depth);
+      SSL_CTX_set_verify_depth(ssl_ctx, static_cast<int32_t>(verify_depth));
     }
 
     if (cafile.empty() && capath.empty()) {
@@ -992,7 +992,7 @@ static bool process_ssl_error(ssl_connection *c, int result) {
   }
 }
 
-static Optional<int> ssl_fwrite(const Stream &stream, const string &data) {
+static Optional<int64_t> ssl_fwrite(const Stream &stream, const string &data) {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr || c->sock == -1) {
     return false;
@@ -1028,9 +1028,13 @@ static Optional<int> ssl_fwrite(const Stream &stream, const string &data) {
   }
 }
 
-static Optional<string> ssl_fread(const Stream &stream, int length) {
+static Optional<string> ssl_fread(const Stream &stream, int64_t length) {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
+    return false;
+  }
+  if (length > string::max_size()) {
+    php_warning("Parameter length in function fread is too large");
     return false;
   }
 
@@ -1039,10 +1043,10 @@ static Optional<string> ssl_fread(const Stream &stream, int length) {
     return false;
   }
 
-  string res(length, false);
+  string res(static_cast<string::size_type>(length), false);
   dl::enter_critical_section();//OK
   ERR_clear_error();
-  int res_size = SSL_read(c->ssl_handle, &res[0], length);
+  int res_size = SSL_read(c->ssl_handle, &res[0], static_cast<int32_t>(length));
   if (res_size <= 0) {
     bool ok = process_ssl_error(c, res_size);
     if (ok) {
@@ -1108,7 +1112,7 @@ static bool ssl_fclose(const Stream &stream) {
   return true;
 }
 
-bool ssl_stream_set_option(const Stream &stream, int option, int value) {
+bool ssl_stream_set_option(const Stream &stream, int64_t option, int64_t value) {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr) {
     return false;
@@ -1327,7 +1331,7 @@ public:
        {string("purposes"),         get_purposes(shortnames)}};
   }
 
-  var check_purpose(int purpose) const {
+  var check_purpose(int64_t purpose) const {
     if (!x509_) {
       return -1;
     }
@@ -1348,7 +1352,7 @@ public:
       return -1;
     }
     // return value is not checked, as in php
-    X509_STORE_CTX_set_purpose(csc.get(), purpose);
+    X509_STORE_CTX_set_purpose(csc.get(), static_cast<int32_t>(purpose));
     int ret = X509_verify_cert(csc.get());
     if (ret != 0 && ret != 1) {
       return ret;
@@ -1415,7 +1419,7 @@ Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames /*
   return X509_parser(data).parse(shortnames);
 }
 
-var f$openssl_x509_checkpurpose(const string &data, int purpose) {
+var f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
   return X509_parser(data).check_purpose(purpose);
 }
 
@@ -1433,7 +1437,7 @@ struct CipherCtx {
     encrypt = 1
   };
 
-  CipherCtx(const string &method, int options, cipher_action action) :
+  CipherCtx(const string &method, int64_t options, cipher_action action) :
     options_(options),
     action_(action) {
     type_ = EVP_get_cipherbyname(method.c_str());
@@ -1552,7 +1556,7 @@ private:
   string out_;
   int out_len_{0};
 
-  const int options_{0};
+  const int64_t options_{0};
   cipher_action action_;
 };
 
@@ -1564,7 +1568,7 @@ void openssl_add_method(const OBJ_NAME *name, void *arg) {
 }
 
 Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
-                            const string &key, int options, const string &iv) {
+                            const string &key, int64_t options, const string &iv) {
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv) && cipher.update(data) && cipher.finalize()) {
     return cipher.get_result();
@@ -1581,7 +1585,7 @@ array<string> f$openssl_get_cipher_methods(bool aliases) {
   return return_value;
 }
 
-Optional<int> f$openssl_cipher_iv_length(const string &method) {
+Optional<int64_t> f$openssl_cipher_iv_length(const string &method) {
   if (method.empty()) {
     php_warning("Unknown cipher algorithm");
     return false;
@@ -1594,10 +1598,10 @@ Optional<int> f$openssl_cipher_iv_length(const string &method) {
   return EVP_CIPHER_iv_length(cipher_type);
 }
 
-Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options, const string &iv) {
   return eval_cipher(CipherCtx::encrypt, data, method, key, options, iv);
 }
 
-Optional<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int options, const string &iv) {
+Optional<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int64_t options, const string &iv) {
   return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv);
 }

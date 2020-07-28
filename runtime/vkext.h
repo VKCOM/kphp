@@ -2,11 +2,11 @@
 
 #include "runtime/kphp_core.h"
 
-string f$vk_utf8_to_win(const string &text, int max_len = 0, bool exit_on_error = false);
+string f$vk_utf8_to_win(const string &text, int64_t max_len = 0, bool exit_on_error = false);
 
 string f$vk_win_to_utf8(const string &text, bool escape = true);
 
-string f$vk_flex(const string &name, const string &case_name, int sex, const string &type, int lang_id = 0);
+string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id = 0);
 
 Optional<string> f$vk_json_encode(const var &v);
 

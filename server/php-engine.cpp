@@ -758,7 +758,7 @@ void php_worker_run_query(php_worker *worker) {
   }
 }
 
-extern int rpc_stored;
+extern bool rpc_stored;
 
 static void send_rpc_error_raw(connection *c, long long req_id, int code, const char *str) {
   static int q[10000];

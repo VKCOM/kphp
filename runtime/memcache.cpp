@@ -68,7 +68,7 @@ const string mc_prepare_key(const string &key) {
 
 
 bool mc_is_immediate_query(const string &key) {
-  return key[0] == '^' && (int)key.size() >= 2;
+  return key[0] == '^' && key.size() >= 2;
 }
 
 const char *mc_parse_value(const char *result, int result_len, const char **key, int *key_len, const char **value, int *value_len, int *flags, int *error_code) {
@@ -110,10 +110,16 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
     *error_code = 5;
     return nullptr;
   }
-  if (!php_try_to_int(*value, (int)(result + i - *value), flags)) {
+  int64_t flags64 = 0;
+  if (!php_try_to_int(*value, static_cast<size_t>(result + i - *value), &flags64)) {
     *error_code = 6;
     return nullptr;
   }
+  if (int64_t{static_cast<int32_t>(flags64)} != flags64) {
+    *error_code = 6;
+    return nullptr;
+  }
+  *flags = static_cast<int32_t>(flags64);
 
   while (result[i] == ' ') {
     i++;
@@ -130,10 +136,14 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
     *error_code = 8;
     return nullptr;
   }
-  if (!php_try_to_int(*value, (int)(result + i - *value), value_len) || (unsigned int)(*value_len) >= (unsigned int)MAX_INPUT_VALUE_LEN) {
+  int64_t value_len64 = 0;
+  if (!php_try_to_int(*value, static_cast<size_t>(result + i - *value), &value_len64)
+      || value_len64 < 0
+      || value_len64 >= MAX_INPUT_VALUE_LEN) {
     *error_code = 9;
     return nullptr;
   }
+  *value_len = static_cast<int32_t>(value_len64);
 
   i += 2;
   *value = result + i;
@@ -151,7 +161,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   return result + i + 2;
 }
 
-var mc_get_value(const char *result_str, int result_str_len, int flags) {
+var mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags) {
   var result;
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
@@ -165,10 +175,6 @@ var mc_get_value(const char *result_str, int result_str_len, int flags) {
     result = unserialize_raw(result_str, result_str_len);
   } else {
     result = string(result_str, result_str_len);
-  }
-
-  if (flags) {
-//    php_warning ("Wrong parameter flags %d with value \"%s\" returned in Memcache::get", flags, result_str.c_str());
   }
 
   return result;
@@ -327,7 +333,7 @@ C$McMemcache::host::host() :
   timeout_ms(200) {
 }
 
-C$McMemcache::host::host(int host_num, int host_port, int host_weight, int timeout_ms) :
+C$McMemcache::host::host(int32_t host_num, int32_t host_port, int32_t host_weight, int32_t timeout_ms) :
   host_num(host_num),
   host_port(host_port),
   host_weight(host_weight),
@@ -342,7 +348,7 @@ C$McMemcache::host get_host(const array<C$McMemcache::host> &hosts) {
 }
 
 
-static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, const var &value, int flags, int expire) {
+static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, const var &value, int64_t flags, int64_t expire) {
   if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
@@ -351,12 +357,12 @@ static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, c
   const string real_key = mc_prepare_key(key);
 
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %ld in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %ld in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 
@@ -439,8 +445,10 @@ var run_increment(const class_instance<C$McMemcache> &mc, const string &key, con
   }
 }
 
-bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const string &host_name, int port, bool persistent __attribute__((unused)), int weight, double timeout, int retry_interval __attribute__((unused)), bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int timeoutms) {
-  int result_timeout = static_cast<int>(timeout * 1000 + timeoutms);
+bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const string &host_name, int64_t port,
+                             bool persistent __attribute__((unused)), int64_t weight, double timeout, int64_t retry_interval __attribute__((unused)),
+                             bool status __attribute__((unused)), const var &failure_callback __attribute__((unused)), int64_t timeoutms) {
+  int32_t result_timeout = static_cast<int32_t>(static_cast<int64_t>(timeout * 1000) + timeoutms);
 
   if (result_timeout <= 0) {
     result_timeout = 1;
@@ -449,29 +457,29 @@ bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const stri
     result_timeout = MAX_TIMEOUT;
   }
 
-  int host_num = mc_connect_to(host_name.c_str(), port);
+  int host_num = mc_connect_to(host_name.c_str(), static_cast<int32_t>(port));
   if (host_num >= 0) {
-    mc->hosts.push_back({host_num, port, weight, result_timeout});
+    mc->hosts.push_back({host_num, static_cast<int32_t>(port), static_cast<int32_t>(weight), result_timeout});
   }
   return host_num >= 0;
 }
 
-bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &, const string &, int, bool, int, double, int, bool, const var &, int) {
+bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &, const string &, int64_t, bool, int64_t, double, int64_t, bool, const var &, int64_t) {
   php_warning("addServer used on rpc-Memcache object");
   return false;
 }
 
-bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags, int64_t expire) {
   mc_method = "add";
   return run_set(v$this, key, value, flags, expire);
 }
 
-bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags, int64_t expire) {
   mc_method = "set";
   return run_set(v$this, key, value, flags, expire);
 }
 
-bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags, int64_t expire) {
   mc_method = "replace";
   return run_set(v$this, key, value, flags, expire);
 }
@@ -583,18 +591,17 @@ static C$RpcMemcache::host get_host(const array<C$RpcMemcache::host> &hosts) {
   return hosts.get_value(f$array_rand(hosts));
 }
 
-bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   class_instance<C$RpcConnection> c = f$new_rpc_connection(host_name, port, default_actor_id, timeout, connect_timeout, reconnect_timeout);
   if (!c.is_null() && c.get()->host_num >= 0) {
     auto h = C$RpcMemcache::host(std::move(c));
-    h.actor_id = default_actor_id.to_int();
     v$this->hosts.push_back(std::move(h));
     return true;
   }
   return false;
 }
 
-bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const string &, int, const var &, double, double, double) {
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const string &, int64_t, const var &, double, double, double) {
   php_warning("rpc_connect used on non-rpc Memcache object");
   return false;
 }
@@ -609,7 +616,7 @@ RetT catchException(T1 result, T2 def, const char *function = __builtin_FUNCTION
   return result;
 }
 
-bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags, int64_t expire) {
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::add with key \"%s\"", key.c_str());
     return false;
@@ -620,7 +627,7 @@ bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const strin
   return catchException(f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
 }
 
-bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int flags, int expire) {
+bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int64_t flags, int64_t expire) {
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::set with key \"%s\"", key.c_str());
     return false;
@@ -631,7 +638,7 @@ bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string
   return catchException(f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
 }
 
-bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags, int expire) {
+bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags, int64_t expire) {
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::replace with key \"%s\"", key.c_str());
     return false;
@@ -729,13 +736,13 @@ class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$
 var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout, bool fake) {
   mc_method = "get";
   const string real_key = mc_prepare_key(key);
-  int is_immediate = mc_is_immediate_query(real_key);
+  bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
   f$store_int(fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
+  int64_t request_id = rpc_send(conn, timeout, is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -750,11 +757,11 @@ var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key,
     return false;
   }
 
-  int op = TRY_CALL(int, var, rpc_lookup_int());
+  int32_t op = TRY_CALL(int32_t, var, rpc_lookup_int());
   if (op == MEMCACHE_ERROR) {
-    TRY_CALL_VOID(var, f$fetch_int());//op
+    TRY_CALL_VOID(var, rpc_fetch_int());//op
     TRY_CALL_VOID(var, f$fetch_long());//query_id
-    int error_code = TRY_CALL(int, bool, f$fetch_int());
+    int32_t error_code = TRY_CALL(int32_t, bool, rpc_fetch_int());
     string error = TRY_CALL(string, bool, f$fetch_string());
     static_cast<void>(error_code);
     return false;
@@ -763,14 +770,14 @@ var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key,
   return result;
 }
 
-bool rpc_mc_run_set(int op, const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags, int expire, double timeout) {
+bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags, int64_t expire, double timeout) {
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning("Wrong parameter flags = %d in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %ld in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning("Wrong parameter expire = %d in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %ld in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 
@@ -792,7 +799,7 @@ bool rpc_mc_run_set(int op, const class_instance<C$RpcConnection> &conn, const s
   }
 
   const string real_key = mc_prepare_key(key);
-  int is_immediate = mc_is_immediate_query(real_key);
+  bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
   f$store_int(op);
@@ -801,7 +808,7 @@ bool rpc_mc_run_set(int op, const class_instance<C$RpcConnection> &conn, const s
   f$store_int(expire);
   store_string(string_value.c_str(), string_value.size());
 
-  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
+  int64_t request_id = rpc_send(conn, timeout, is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -816,35 +823,35 @@ bool rpc_mc_run_set(int op, const class_instance<C$RpcConnection> &conn, const s
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int()));//TODO __FILE__ and __LINE__
+  int32_t res = TRY_CALL(int32_t, bool, (rpc_fetch_int()));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 
-bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags, int64_t expire, double timeout, bool fake) {
   mc_method = "set";
   return rpc_mc_run_set(fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags, int64_t expire, double timeout, bool fake) {
   mc_method = "add";
   return rpc_mc_run_set(fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
 }
 
-bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags, int expire, double timeout, bool fake) {
+bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags, int64_t expire, double timeout, bool fake) {
   mc_method = "replace";
   return rpc_mc_run_set(fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
 }
 
 var rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, const var &v, double timeout) {
   const string real_key = mc_prepare_key(key);
-  int is_immediate = mc_is_immediate_query(real_key);
+  bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
   f$store_int(op);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
   f$store_long(v);
 
-  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
+  int64_t request_id = rpc_send(conn, timeout, is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -859,7 +866,7 @@ var rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, co
     return false;
   }
 
-  int res = TRY_CALL(int, var, (f$fetch_int()));//TODO __FILE__ and __LINE__
+  int32_t res = TRY_CALL(int32_t, var, (rpc_fetch_int()));//TODO __FILE__ and __LINE__
   if (res == MEMCACHE_VALUE_LONG) {
     return TRY_CALL(var, var, (f$fetch_long()));
   }
@@ -880,13 +887,13 @@ var f$rpc_mc_decrement(const class_instance<C$RpcConnection> &conn, const string
 bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout, bool fake) {
   mc_method = "delete";
   const string real_key = mc_prepare_key(key);
-  int is_immediate = mc_is_immediate_query(real_key);
+  bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
   f$store_int(fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-  int request_id = rpc_send(conn, timeout, (bool)is_immediate);
+  int64_t request_id = rpc_send(conn, timeout, is_immediate);
   if (request_id <= 0) {
     return false;
   }
@@ -901,7 +908,7 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
     return false;
   }
 
-  int res = TRY_CALL(int, bool, (f$fetch_int()));//TODO __FILE__ and __LINE__
+  int32_t res = TRY_CALL(int32_t, bool, (rpc_fetch_int()));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
 

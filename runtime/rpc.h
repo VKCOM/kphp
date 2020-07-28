@@ -12,14 +12,14 @@ extern const string tl_str_resultFalse;
 extern const string tl_str_resultTrue;
 extern const string tl_str_result;
 
-extern const int tl_str_underscore_hash;
-extern const int tl_str_result_hash;
+extern const int64_t tl_str_underscore_hash;
+extern const int64_t tl_str_result_hash;
 
 extern const char *new_tl_current_function_name;
 
-void process_rpc_answer(int request_id, char *result, int result_len);
+void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
-void process_rpc_error(int request_id, int error_code, const char *error_message);
+void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message);
 
 void rpc_parse_restore_previous();
 
@@ -27,7 +27,7 @@ const char *last_rpc_error_get();
 
 void last_rpc_error_reset();
 
-void rpc_parse(const int *new_rpc_data, int new_rpc_data_len);
+void rpc_parse(const int32_t *new_rpc_data, int32_t new_rpc_data_len);
 
 bool f$rpc_parse(const string &new_rpc_data);
 
@@ -37,16 +37,18 @@ bool f$rpc_parse(bool new_rpc_data);
 
 bool f$rpc_parse(const Optional<string> &new_rpc_data);
 
-int rpc_get_pos();
+int32_t rpc_get_pos();
 
-bool rpc_set_pos(int pos);
+bool rpc_set_pos(int32_t pos);
 
-int rpc_lookup_int();
+int32_t rpc_lookup_int();
 
-int f$fetch_int();
+int32_t rpc_fetch_int();
 
-int f$fetch_lookup_int();
-string f$fetch_lookup_data(int x4_bytes_length);
+int64_t f$fetch_int();
+
+int64_t f$fetch_lookup_int();
+string f$fetch_lookup_data(int64_t x4_bytes_length);
 
 UInt f$fetch_UInt();
 
@@ -74,7 +76,7 @@ double f$fetch_float();
 
 string f$fetch_string();
 
-int f$fetch_string_as_int();
+int64_t f$fetch_string_as_int();
 
 var f$fetch_memcache_value();
 
@@ -82,11 +84,9 @@ bool f$fetch_eof();
 
 bool f$fetch_end();
 
-void f$fetch_raw_vector_int(array<int> &out, int n_elems);
+void f$fetch_raw_vector_double(array<double> &out, int64_t n_elems);
 
-void f$fetch_raw_vector_double(array<double> &out, int n_elems);
-
-void estimate_and_flush_overflow(int &bytes_sent);
+void estimate_and_flush_overflow(size_t &bytes_sent);
 
 struct tl_func_base;
 using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var&);
@@ -104,38 +104,35 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
 };
 
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection> {
-  int host_num{-1};
-  int port{-1};
-  int timeout_ms{-1};
+  int32_t host_num{-1};
+  int32_t port{-1};
+  int32_t timeout_ms{-1};
   long long default_actor_id{-1};
-  int connect_timeout{-1};
-  int reconnect_timeout{-1};
+  int32_t connect_timeout{-1};
+  int32_t reconnect_timeout{-1};
 
-  C$RpcConnection(int host_num, int port, int timeout_ms, long long default_actor_id, int connect_timeout, int reconnect_timeout);
+  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, long long default_actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
   void accept(InstanceMemoryEstimateVisitor &) {}
 };
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
-void f$store_gzip_pack_threshold(int pack_threshold_bytes);
+void f$store_gzip_pack_threshold(int64_t pack_threshold_bytes);
 
 void f$store_start_gzip_pack();
 
-void f$store_finish_gzip_pack(int threshold);
+void f$store_finish_gzip_pack(int64_t threshold);
 
-bool f$store_header(const var &cluster_id, int flags = 0);
+bool f$store_header(const var &cluster_id, int64_t flags = 0);
 
-bool store_error(int error_code, const char *error_text);
-bool f$store_error(int error_code, const string &error_text);
+bool f$store_error(int64_t error_code, const string &error_text);
 
 bool f$store_raw(const string &data);
 
-void f$store_raw_vector_int(const array<int> &vector);
-
 void f$store_raw_vector_double(const array<double> &vector);
 
-bool f$store_int(int v);
+bool f$store_int(int64_t v);
 
 bool f$store_UInt(UInt v);
 
@@ -158,7 +155,7 @@ bool f$store_double(double v);
 
 bool f$store_float(double v);
 
-bool store_string(const char *v, int v_len);
+bool store_string(const char *v, int32_t v_len);
 bool f$store_string(const string &v);
 
 bool f$store_many(const array<var> &a);
@@ -173,44 +170,44 @@ string f$rpc_get_clean();
 
 bool rpc_store(bool is_error = false);
 
-int f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
-int rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer = false);
+int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
+int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer = false);
 
-int f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
+int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
 
 void f$rpc_flush();
 
-Optional<string> f$rpc_get(int request_id, double timeout = -1.0);
+Optional<string> f$rpc_get(int64_t request_id, double timeout = -1.0);
 
-Optional<string> f$rpc_get_synchronously(int request_id);
+Optional<string> f$rpc_get_synchronously(int64_t request_id);
 
-bool rpc_get_and_parse(int request_id, double timeout);
-bool f$rpc_get_and_parse(int request_id, double timeout = -1.0);
+bool rpc_get_and_parse(int64_t request_id, double timeout);
+bool f$rpc_get_and_parse(int64_t request_id, double timeout = -1.0);
 
 
-int f$rpc_queue_create();
+int64_t f$rpc_queue_create();
 
-int f$rpc_queue_create(const var &request_ids);
+int64_t f$rpc_queue_create(const var &request_ids);
 
-int f$rpc_queue_push(int queue_id, const var &request_ids);
+int64_t f$rpc_queue_push(int64_t queue_id, const var &request_ids);
 
-bool f$rpc_queue_empty(int queue_id);
+bool f$rpc_queue_empty(int64_t queue_id);
 
-Optional<int> f$rpc_queue_next(int queue_id, double timeout = -1);
+Optional<int64_t> f$rpc_queue_next(int64_t queue_id, double timeout = -1);
 
-Optional<int> f$rpc_queue_next_synchronously(int queue_id);
+Optional<int64_t> f$rpc_queue_next_synchronously(int64_t queue_id);
 
 bool f$store_unsigned_int(const var &v);
 
-bool f$rpc_wait(int request_id);
+bool f$rpc_wait(int64_t request_id);
 
-bool f$rpc_wait_multiple(int request_id);
+bool f$rpc_wait_multiple(int64_t request_id);
 
 bool f$store_long(const var &v);
 
 bool f$store_unsigned_long(const var &v);
 
-int tl_parse_int();
+int32_t tl_parse_int();
 
 long long tl_parse_long();
 
@@ -220,28 +217,26 @@ double tl_parse_float();
 
 string tl_parse_string();
 
-int f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout = -1.0);
+int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout = -1.0);
 
-int f$rpc_tl_pending_queries_count();
+int64_t f$rpc_tl_pending_queries_count();
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result);
 
-array<int> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<var> &tl_objects, double timeout = -1.0, bool ignore_answer = false);
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<var> &tl_objects, double timeout = -1.0, bool ignore_answer = false);
 
-array<var> f$rpc_tl_query_result_one(int query_id);
+array<var> f$rpc_tl_query_result_one(int64_t query_id);
 
-array<array<var>> f$rpc_tl_query_result(const array<int> &query_ids);
+array<array<var>> f$rpc_tl_query_result(const array<int64_t> &query_ids);
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result(const array<T> &query_ids);
 
-array<array<var>> f$rpc_tl_query_result_synchronously(const array<int> &query_ids);
+array<array<var>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids);
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids);
 
-bool f$set_tl_mode(int mode);
-
-int f$query_x2(int x);
+int64_t f$query_x2(int64_t x);
 
 
 void global_init_rpc_lib();
@@ -259,10 +254,10 @@ void free_rpc_lib();
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result(const array<T> &query_ids) {
-  return f$rpc_tl_query_result(array<int>::convert_from(query_ids));
+  return f$rpc_tl_query_result(array<int64_t>::convert_from(query_ids));
 }
 
 template<class T>
 array<array<var>> f$rpc_tl_query_result_synchronously(const array<T> &query_ids) {
-  return f$rpc_tl_query_result_synchronously(array<int>::convert_from(query_ids));
+  return f$rpc_tl_query_result_synchronously(array<int64_t>::convert_from(query_ids));
 }

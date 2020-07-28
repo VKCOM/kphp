@@ -5,10 +5,10 @@
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
-int f$bindec(const string &number) {
+int64_t f$bindec(const string &number) {
   unsigned int v = 0;
   bool need_warning = number.empty();
-  for (int i = 0; i < (int)number.size(); i++) {
+  for (string::size_type i = 0; i < number.size(); i++) {
     char c = number[i];
     if (v >= 0x80000000) {
       need_warning = true;
@@ -23,11 +23,11 @@ int f$bindec(const string &number) {
   if (need_warning) {
     php_warning("Wrong parameter \"%s\" in function bindec", number.c_str());
   }
-  return (int)v;
+  return v;
 }
 
-string f$decbin(int number) {
-  unsigned int v = number;
+string f$decbin(int64_t number) {
+  auto v = static_cast<uint32_t>(number);
 
   char s[66];
   int i = 65;
@@ -40,8 +40,8 @@ string f$decbin(int number) {
   return string(s + i, static_cast<string::size_type>(65 - i));
 }
 
-string f$dechex(int number) {
-  unsigned int v = number;
+string f$dechex(int64_t number) {
+  auto v = static_cast<uint32_t>(number);
 
   char s[17];
   int i = 16;
@@ -54,10 +54,10 @@ string f$dechex(int number) {
   return string(s + i, 16 - i);
 }
 
-int f$hexdec(const string &number) {
+int64_t f$hexdec(const string &number) {
   unsigned int v = 0;
   bool need_warning = number.empty();
-  for (int i = 0; i < (int)number.size(); i++) {
+  for (string::size_type i = 0; i < number.size(); i++) {
     char c = number[i];
     if (v >= 0x10000000) {
       need_warning = true;
@@ -77,7 +77,7 @@ int f$hexdec(const string &number) {
   if (need_warning) {
     php_warning("Wrong parameter \"%s\" in function hexdec", number.c_str());
   }
-  return (int)v;
+  return v;
 }
 
 double f$lcg_value() {
@@ -125,23 +125,27 @@ static int make_seed() {
   return ((int)T.tv_nsec * 123456789) ^ ((int)T.tv_sec * 987654321);
 }
 
-void f$srand(int seed) {
-  if (seed == INT_MIN) {
+void f$srand(int64_t seed) {
+  if (seed == std::numeric_limits<int64_t>::min()) {
     seed = make_seed();
   }
-  srand(seed);
+  srand(static_cast<uint32_t>(seed));
 }
 
-int f$rand() {
+int64_t f$rand() {
   return rand();
 }
 
-int f$rand(int l, int r) {
+// TODO FIX
+// REMOVE INT
+int64_t f$rand(int64_t l_i64, int64_t r_i64) {
+  auto l = static_cast<int>(l_i64);
+  auto r = static_cast<int>(r_i64);
   if (l > r) {
     return 0;
   }
   unsigned int diff = (unsigned int)r - (unsigned int)l + 1u;
-  unsigned int shift;
+  int64_t shift = 0;
   if (RAND_MAX == 0x7fffffff && diff == 0) { // l == MIN_INT, r == MAX_INT, RAND_MAX == MAX_INT
     shift = f$rand(0, RAND_MAX) * 2u + (rand() & 1);
   } else if (diff <= RAND_MAX + 1u) {
@@ -157,26 +161,23 @@ int f$rand(int l, int r) {
   return l + shift;
 }
 
-int f$getrandmax() {
+int64_t f$getrandmax() {
   return RAND_MAX;
 }
 
-void f$mt_srand(int seed) {
-  if (seed == INT_MIN) {
-    seed = make_seed();
-  }
-  srand(seed);
+void f$mt_srand(int64_t seed) {
+  f$srand(seed);
 }
 
-int f$mt_rand() {
+int64_t f$mt_rand() {
   return rand();
 }
 
-int f$mt_rand(int l, int r) {
+int64_t f$mt_rand(int64_t l, int64_t r) {
   return f$rand(l, r);
 }
 
-int f$mt_getrandmax() {
+int64_t f$mt_getrandmax() {
   return RAND_MAX;
 }
 
@@ -184,12 +185,12 @@ int f$mt_getrandmax() {
 var f$abs(const var &v) {
   var num = v.to_numeric();
   if (num.is_int()) {
-    return abs(num.to_int());
+    return std::abs(num.to_int());
   }
   return fabs(num.to_float());
 }
 
-int f$abs(int v) {
+int64_t f$abs(int64_t v) {
   return std::abs(v);
 }
 
@@ -197,12 +198,12 @@ double f$abs(double v) {
   return std::abs(v);
 }
 
-int f$abs(const Optional<int> &v) {
+int64_t f$abs(const Optional<int64_t> &v) {
   return f$abs(val(v));
 }
 
-int f$abs(const Optional<bool> &v) {
-  return f$abs(static_cast<int>(val(v)));
+int64_t f$abs(const Optional<bool> &v) {
+  return f$abs(static_cast<int64_t>(val(v)));
 }
 
 double f$abs(const Optional<double> &v) {
@@ -211,67 +212,70 @@ double f$abs(const Optional<double> &v) {
 
 
 
-string f$base_convert(const string &number, int frombase, int tobase) {
+string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   if (frombase < 2 || frombase > 36) {
-    php_warning("Wrong parameter frombase (%d) in function base_convert", frombase);
+    php_warning("Wrong parameter frombase (%ld) in function base_convert", frombase);
     return number;
   }
   if (tobase < 2 || tobase > 36) {
-    php_warning("Wrong parameter tobase (%d) in function base_convert", tobase);
+    php_warning("Wrong parameter tobase (%ld) in function base_convert", tobase);
     return number;
   }
 
-  int l = number.size(), f = 0;
+  string::size_type len = number.size();
+  string::size_type f = 0;
   string result;
   if (number[0] == '-' || number[0] == '+') {
     f++;
-    l--;
+    len--;
     if (number[0] == '-') {
       result.push_back('-');
     }
   }
-  if (l == 0) {
+  if (len == 0) {
     php_warning("Wrong parameter number (%s) in function base_convert", number.c_str());
     return number;
   }
 
   const char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-  string n(l, false);
-  for (int i = 0; i < l; i++) {
+  string n(len, false);
+  for (string::size_type i = 0; i < len; i++) {
     const char *s = (const char *)memchr(digits, tolower(number[i + f]), 36);
-    if (s == nullptr || (int)(s - digits) >= frombase) {
-      php_warning("Wrong character '%c' at position %d in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
+    if (s == nullptr || s - digits >= frombase) {
+      php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
       return number;
     }
     n[i] = (char)(s - digits);
   }
 
-  int um, st = 0;
-  while (st < l) {
+  int64_t um = 0;
+  string::size_type st = 0;
+  while (st < len) {
     um = 0;
-    for (int i = st; i < l; i++) {
+    for (string::size_type i = st; i < len; i++) {
       um = um * frombase + n[i];
       n[i] = (char)(um / tobase);
       um %= tobase;
     }
-    while (st < l && n[st] == 0) {
+    while (st < len && n[st] == 0) {
       st++;
     }
     result.push_back(digits[um]);
   }
 
-  int i = f, j = (int)result.size() - 1;
+  string::size_type i = f;
+  int64_t j = int64_t{result.size()} - 1;
   while (i < j) {
-    swap(result[i++], result[j--]);
+    swap(result[i++], result[static_cast<string::size_type>(j--)]);
   }
 
   return result;
 }
 
-double f$round(double v, int precision) {
-  if (abs(precision) > 100) {
-    php_warning("Wrong parameter precision (%d) in function round", precision);
+double f$round(double v, int64_t precision) {
+  if (std::abs(precision) > 100) {
+    php_warning("Wrong parameter precision (%ld) in function round", precision);
     return v;
   }
 

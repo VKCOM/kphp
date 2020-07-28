@@ -67,11 +67,11 @@ private:
 };
 
 array<class_instance<C$VK$TL$RpcResponse>> sort_rpc_results(const array<class_instance<C$VK$TL$RpcResponse>> &unsorted_results,
-                                                      const array<int> &query_ids,
-                                                      const RpcErrorFactory &error_factory) {
+                                                            const array<int64_t> &query_ids,
+                                                            const RpcErrorFactory &error_factory) {
   array<class_instance<C$VK$TL$RpcResponse>> rpc_results{unsorted_results.size()};
   for (auto it = query_ids.begin(); it != query_ids.end(); ++it) {
-    const int query_id = it.get_value();
+    const int64_t query_id = it.get_value();
     if (!unsorted_results.isset(query_id)) {
       string err = query_id <= 0
                    ? string("Very wrong query_id ")
@@ -86,7 +86,7 @@ array<class_instance<C$VK$TL$RpcResponse>> sort_rpc_results(const array<class_in
 
 class typed_rpc_tl_query_result_resumable : public Resumable {
 public:
-  explicit typed_rpc_tl_query_result_resumable(const array<int> &query_ids, const RpcErrorFactory &error_factory) :
+  explicit typed_rpc_tl_query_result_resumable(const array<int64_t> &query_ids, const RpcErrorFactory &error_factory) :
     query_ids_(query_ids),
     unsorted_results_(array_size(query_ids_.count(), 0, false)),
     error_factory_(error_factory) {
@@ -124,21 +124,21 @@ private:
     RESUMABLE_END
   }
 
-  const array<int> query_ids_;
+  const array<int64_t> query_ids_;
   array<class_instance<C$VK$TL$RpcResponse>> unsorted_results_;
   const RpcErrorFactory &error_factory_;
-  int queue_id_{-1};
-  Optional<int> query_id_;
+  int64_t queue_id_{-1};
+  Optional<int64_t> query_id_;
 };
 } // namespace
 
-int typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
-                            const RpcRequest &req,
-                            double timeout,
-                            bool ignore_answer,
-                            bool bytes_estimating,
-                            int &bytes_sent,
-                            bool flush) {
+int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
+                                const RpcRequest &req,
+                                double timeout,
+                                bool ignore_answer,
+                                bool bytes_estimating,
+                                size_t &bytes_sent,
+                                bool flush) {
   f$rpc_clean();
   if (req.empty()) {
     php_warning("Writing rpc query error: query function is null");
@@ -153,7 +153,7 @@ int typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
   if (bytes_estimating) {
     estimate_and_flush_overflow(bytes_sent);
   }
-  const int query_id = rpc_send(connection, timeout, ignore_answer);
+  const int64_t query_id = rpc_send(connection, timeout, ignore_answer);
   if (query_id <= 0) {
     return 0;
   }
@@ -174,7 +174,7 @@ int typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
 }
 
 
-class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int query_id,
+class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t query_id,
                                                                  const RpcErrorFactory &error_factory) {
   auto resumable_finalizer = vk::finally([] { resumable_finished = true; });
 
@@ -195,24 +195,24 @@ class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int query
   return start_resumable<class_instance<C$VK$TL$RpcResponse>>(new typed_rpc_tl_query_result_one_resumable(query, error_factory));
 }
 
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int> &query_ids,
-                                                                    const RpcErrorFactory &error_factory) {
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int64_t> &query_ids,
+                                                                          const RpcErrorFactory &error_factory) {
   return start_resumable<array<class_instance<C$VK$TL$RpcResponse>>>(new typed_rpc_tl_query_result_resumable(query_ids, error_factory));
 }
 
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int> &query_ids,
-                                                                                  const RpcErrorFactory &error_factory) {
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t> &query_ids,
+                                                                                        const RpcErrorFactory &error_factory) {
   array<class_instance<C$VK$TL$RpcResponse>> unsorted_results(array_size(query_ids.count(), 0, false));
 
   if (query_ids.count() == 1) {
-    const int query_id = query_ids.begin().get_value();
+    const int64_t query_id = query_ids.begin().get_value();
     f$wait_synchronously(query_id);
     unsorted_results[query_id] = typed_rpc_tl_query_result_one_impl(query_id, error_factory);
     php_assert (resumable_finished);
   } else {
-    const int queue_id = wait_queue_create(query_ids);
+    const int64_t queue_id = wait_queue_create(query_ids);
 
-    int query_id = f$wait_queue_next_synchronously(queue_id).val();
+    int64_t query_id = f$wait_queue_next_synchronously(queue_id).val();
     for (; query_id > 0; query_id = f$wait_queue_next_synchronously(queue_id).val()) {
       unsorted_results[query_id] = typed_rpc_tl_query_result_one_impl(query_id, error_factory);
       php_assert (resumable_finished);

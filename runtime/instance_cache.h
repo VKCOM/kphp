@@ -278,7 +278,7 @@ private:
   const bool deep_destroy_required_{false};
 };
 
-bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int ttl);
+bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl);
 const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace ic_impl_
@@ -328,7 +328,7 @@ void instance_cache_purge_expired_elements();
 void instance_cache_release_all_resources_acquired_by_this_proc();
 
 template<typename ClassInstanceType>
-bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int ttl = 0) {
+bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int64_t ttl = 0) {
   static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
   if (instance.is_null()) {
     return false;
@@ -360,5 +360,5 @@ ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, con
   return f$instance_cache_fetch<ClassInstanceType>(class_name, key, even_if_expired);
 }
 
-bool f$instance_cache_update_ttl(const string &key, int ttl = 0);
+bool f$instance_cache_update_ttl(const string &key, int64_t ttl = 0);
 bool f$instance_cache_delete(const string &key);

@@ -27,24 +27,24 @@ bool f$ob_end_flush();
 
 Optional<string> f$ob_get_flush();
 
-Optional<int> f$ob_get_length();
+Optional<int64_t> f$ob_get_length();
 
-int f$ob_get_level();
+int64_t f$ob_get_level();
 
-void f$header(const string &str, bool replace = true, int http_response_code = 0);
+void f$header(const string &str, bool replace = true, int64_t http_response_code = 0);
 
 array<string> f$headers_list();
 
-void f$setcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$setrawcookie(const string &name, const string &value, int expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 void f$register_shutdown_function(const shutdown_function_type &f);
 
-void f$fastcgi_finish_request(int exit_code = 0);
+void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int exit_code);
+void finish(int64_t exit_code);
 
 __attribute__((noreturn))
 void f$exit(const var &v = 0);
@@ -52,11 +52,11 @@ void f$exit(const var &v = 0);
 __attribute__((noreturn))
 void f$die(const var &v = 0);
 
-Optional<int> f$ip2long(const string &ip);
+Optional<int64_t> f$ip2long(const string &ip);
 
 Optional<string> f$ip2ulong(const string &ip);
 
-string f$long2ip(int num);
+string f$long2ip(int64_t num);
 
 template<class T>
 inline string f$long2ip(const T &v);//shut up warning on converting to int
@@ -66,23 +66,23 @@ Optional<array<string>> f$gethostbynamel(const string &name);
 Optional<string> f$inet_pton(const string &address);
 
 
-void print(const char *s);
+void print(const char *s, size_t s_len);
 
-void print(const char *s, int s_len);
+void print(const char *s);
 
 void print(const string &s);
 
 void print(const string_buffer &sb);
 
-void dbg_echo(const char *s);
+void dbg_echo(const char *s, size_t s_len);
 
-void dbg_echo(const char *s, int s_len);
+void dbg_echo(const char *s);
 
 void dbg_echo(const string &s);
 
 void dbg_echo(const string_buffer &sb);
 
-inline int f$print(const string& s) {
+inline int64_t f$print(const string& s) {
   print(s);
   return 1;
 }
@@ -111,14 +111,14 @@ extern var v$_COOKIE;
 extern var v$_REQUEST;
 extern var v$_ENV;
 
-const int UPLOAD_ERR_OK = 0;
-const int UPLOAD_ERR_INI_SIZE = 1;
-const int UPLOAD_ERR_FORM_SIZE = 2;
-const int UPLOAD_ERR_PARTIAL = 3;
-const int UPLOAD_ERR_NO_FILE = 4;
-const int UPLOAD_ERR_NO_TMP_DIR = 6;
-const int UPLOAD_ERR_CANT_WRITE = 7;
-const int UPLOAD_ERR_EXTENSION = 8;
+const int32_t UPLOAD_ERR_OK = 0;
+const int32_t UPLOAD_ERR_INI_SIZE = 1;
+const int32_t UPLOAD_ERR_FORM_SIZE = 2;
+const int32_t UPLOAD_ERR_PARTIAL = 3;
+const int32_t UPLOAD_ERR_NO_FILE = 4;
+const int32_t UPLOAD_ERR_NO_TMP_DIR = 6;
+const int32_t UPLOAD_ERR_CANT_WRITE = 7;
+const int32_t UPLOAD_ERR_EXTENSION = 8;
 
 
 bool f$is_uploaded_file(const string &filename);
@@ -138,19 +138,19 @@ double f$get_net_time();
 
 double f$get_script_time();
 
-int f$get_net_queries_count();
+int64_t f$get_net_queries_count();
 
 
-int f$get_engine_uptime();
+int64_t f$get_engine_uptime();
 
 string f$get_engine_version();
 
-int f$get_engine_workers_number();
+int64_t f$get_engine_workers_number();
 
 void arg_add(const char *value);
 
 void ini_set(vk::string_view key, vk::string_view value);
-int ini_set_from_config(const char *config_file_name);
+int32_t ini_set_from_config(const char *config_file_name);
 
 void read_engine_tag(const char *file_name);
 

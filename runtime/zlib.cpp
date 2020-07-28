@@ -18,7 +18,7 @@ static voidpf zlib_alloc(voidpf opaque, uInt items, uInt size) {
 static void zlib_free(voidpf opaque __attribute__((unused)), voidpf address __attribute__((unused))) {
 }
 
-const string_buffer *zlib_encode(const char *s, int s_len, int level, int encoding) {
+const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, int32_t encoding) {
   int buf_pos = 0;
   z_stream strm;
   strm.zalloc = zlib_alloc;
@@ -42,7 +42,7 @@ const string_buffer *zlib_encode(const char *s, int s_len, int level, int encodi
     if (ret == Z_STREAM_END) {
       dl::leave_critical_section();
 
-      static_SB.set_pos((int)strm.total_out);
+      static_SB.set_pos(static_cast<int64_t>(strm.total_out));
       return &static_SB;
     }
   }
@@ -54,13 +54,13 @@ const string_buffer *zlib_encode(const char *s, int s_len, int level, int encodi
   return &static_SB;
 }
 
-string f$gzcompress(const string &s, int level) {
+string f$gzcompress(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
-    php_warning("Wrong parameter level = %d in function gzcompress", level);
+    php_warning("Wrong parameter level = %ld in function gzcompress", level);
     level = 6;
   }
 
-  return zlib_encode(s.c_str(), s.size(), level, ZLIB_COMPRESS)->str();
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_COMPRESS)->str();
 }
 
 const char *gzuncompress_raw(const char *s, int s_len, string::size_type *result_len) {
@@ -87,12 +87,12 @@ string f$gzuncompress(const string &s) {
   return string(res, res_len);
 }
 
-string f$gzencode(const string &s, int level) {
+string f$gzencode(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
-    php_warning("Wrong parameter level = %d in function gzencode", level);
+    php_warning("Wrong parameter level = %ld in function gzencode", level);
   }
 
-  return zlib_encode(s.c_str(), s.size(), level, ZLIB_ENCODE)->str();
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODE)->str();
 }
 
 string f$gzdecode(const string &s) {

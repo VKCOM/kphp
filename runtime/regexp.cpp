@@ -7,14 +7,14 @@
 
 #include "runtime/critical_section.h"
 
-int preg_replace_count_dummy;
+int64_t preg_replace_count_dummy;
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 // refactor me please :(
 // for i-th match(capturing group)
 // submatch[2 * i]     - start position of match
 // submatch[2 * i + 1] - end position of match
-int regexp::submatch[3 * MAX_SUBPATTERNS];
+int32_t regexp::submatch[3 * MAX_SUBPATTERNS];
 pcre_extra regexp::extra;
 
 
@@ -22,7 +22,7 @@ regexp::regexp(const string &regexp_string) {
   init(regexp_string);
 }
 
-regexp::regexp(const char *regexp_string, int regexp_len) {
+regexp::regexp(const char *regexp_string, int64_t regexp_len) {
   init(regexp_string, regexp_len);
 }
 
@@ -52,12 +52,12 @@ void regexp::check_pattern_compilation_warning() const noexcept {
   }
 }
 
-bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool is_utf8, const char *function, const char *file) noexcept {
+bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, bool is_utf8, const char *function, const char *file) noexcept {
 //  return false;
-  int brackets_depth = 0;
+  int64_t brackets_depth = 0;
   bool prev_is_group = false;
 
-  for (int i = 0; i < regexp_len; i++) {
+  for (int64_t i = 0; i < regexp_len; i++) {
     switch (regexp_string[i]) {
       case -128 ... -1:
       case 1 ... 35:
@@ -128,7 +128,7 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int regexp_len, bool
         }
 
         i++;
-        int k = 0;
+        int64_t k = 0;
         while ('0' <= regexp_string[i] && regexp_string[i] <= '9') {
           i++;
           k++;
@@ -334,7 +334,7 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   }
 }
 
-void regexp::init(const char *regexp_string, int regexp_len, const char *function, const char *file) {
+void regexp::init(const char *regexp_string, int64_t regexp_len, const char *function, const char *file) {
   if (regexp_len == 0) {
     pattern_compilation_warning(function, file, "Empty regular expression");
     return;
@@ -373,7 +373,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
       return;
   }
 
-  int regexp_end = regexp_len - 1;
+  int64_t regexp_end = regexp_len - 1;
   while (regexp_end > 0 && regexp_string[regexp_end] != end_delimiter) {
     regexp_end--;
   }
@@ -383,19 +383,19 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
     return;
   }
 
-  static_SB.clean().append(regexp_string + 1, regexp_end - 1);
+  static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
   use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
   is_utf8 = false;
-  int pcre_options = 0;
+  int32_t pcre_options = 0;
   RE2::Options RE2_options(RE2::Latin1);
   RE2_options.set_log_errors(false);
   bool can_use_RE2 = true;
 
-  for (int i = regexp_end + 1; i < regexp_len; i++) {
+  for (int64_t i = regexp_end + 1; i < regexp_len; i++) {
     switch (regexp_string[i]) {
       case 'i':
         pcre_options |= PCRE_CASELESS;
@@ -481,7 +481,7 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
 
   if (RE2_regexp == nullptr || need_pcre) {
     const char *error;
-    int erroffset;
+    int32_t erroffset = 0;
     pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 
     if (pcre_regexp == nullptr) {
@@ -505,14 +505,14 @@ void regexp::init(const char *regexp_string, int regexp_len, const char *functio
       if (named_subpatterns_count > 0) {
         subpattern_names = new string[subpatterns_count + 1];
 
-        int name_entry_size;
+        int32_t name_entry_size = 0;
         php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
 
         char *name_table;
         php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
 
-        for (int i = 0; i < named_subpatterns_count; i++) {
-          int name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
+        for (int64_t i = 0; i < named_subpatterns_count; i++) {
+          int64_t name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
           string name(name_table + 2);
 
           if (use_heap_memory) {
@@ -576,26 +576,26 @@ regexp::~regexp() {
 }
 
 
-int regexp::pcre_last_error;
+int64_t regexp::pcre_last_error;
 
-int regexp::exec(const string &subject, int offset, bool second_try) const {
+int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
     {
       dl::CriticalSectionGuard critical_section;
       auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
       re2::StringPiece text(subject.c_str(), subject.size());
-      bool matched = RE2_regexp->Match(text, offset, subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
+      bool matched = RE2_regexp->Match(text, static_cast<int32_t>(offset), subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
       if (!matched) {
         return 0;
       }
     }
 
-    int count = -1;
-    for (int i = 0; i < subpatterns_count; i++) {
+    int64_t count = -1;
+    for (int64_t i = 0; i < subpatterns_count; i++) {
       if (RE2_submatch[i].data()) {
-        submatch[i + i]     = static_cast<int>(RE2_submatch[i].data() - subject.c_str());
-        submatch[i + i + 1] = static_cast<int>(submatch[i + i] + RE2_submatch[i].size());
+        submatch[i + i]     = static_cast<int32_t>(RE2_submatch[i].data() - subject.c_str());
+        submatch[i + i + 1] = static_cast<int32_t>(submatch[i + i] + RE2_submatch[i].size());
         count = i;
       } else {
         submatch[i + i] = -1;
@@ -609,9 +609,10 @@ int regexp::exec(const string &subject, int offset, bool second_try) const {
 
   php_assert (pcre_regexp);
 
-  int options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
+  int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
   dl::enter_critical_section();//OK
-  int count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(), offset, options, submatch, 3 * subpatterns_count);
+  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(),
+                            static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
   dl::leave_critical_section();
 
   php_assert (count != 0);
@@ -627,7 +628,7 @@ int regexp::exec(const string &subject, int offset, bool second_try) const {
 }
 
 
-Optional<int> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
+Optional<int64_t> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -643,15 +644,15 @@ Optional<int> regexp::match(const string &subject, bool all_matches __attribute_
   bool second_try = false;//set after matching an empty string
   pcre_last_error = 0;
 
-  int result = 0;
-  int offset = 0;
-  while (offset <= (int)subject.size()) {
+  int64_t result = 0;
+  int64_t offset = 0;
+  while (offset <= int64_t{subject.size()}) {
     if (exec(subject, offset, second_try) == 0) {
       if (second_try) {
         second_try = false;
         do {
           offset++;
-        } while (is_utf8 && offset < (int)subject.size() && (((unsigned char)subject[offset]) & 0xc0) == 0x80);
+        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
         continue;
       }
 
@@ -672,7 +673,7 @@ Optional<int> regexp::match(const string &subject, bool all_matches __attribute_
   return result;
 }
 
-Optional<int> regexp::match(const string &subject, var &matches, bool all_matches, int offset) const {
+Optional<int64_t> regexp::match(const string &subject, var &matches, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -689,7 +690,7 @@ Optional<int> regexp::match(const string &subject, var &matches, bool all_matche
 
   if (all_matches) {
     matches = array<var>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
-    for (int i = 0; i < subpatterns_count; i++) {
+    for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
         matches.set_value(subpattern_names[i], array<var>());
       }
@@ -700,16 +701,16 @@ Optional<int> regexp::match(const string &subject, var &matches, bool all_matche
   bool second_try = false;//set after matching an empty string
   pcre_last_error = 0;
 
-  int result = 0;
-  while (offset <= (int)subject.size()) {
-    int count = exec(subject, offset, second_try);
+  int64_t result = 0;
+  while (offset <= int64_t{subject.size()}) {
+    int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
       if (second_try) {
         second_try = false;
         do {
           offset++;
-        } while (is_utf8 && offset < (int)subject.size() && (((unsigned char)subject[offset]) & 0xc0) == 0x80);
+        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
         continue;
       }
 
@@ -723,7 +724,7 @@ Optional<int> regexp::match(const string &subject, var &matches, bool all_matche
     result++;
 
     if (all_matches) {
-      for (int i = 0; i < subpatterns_count; i++) {
+      for (int32_t i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
         if (named_subpatterns_count && !subpattern_names[i].empty()) {
           matches[subpattern_names[i]].push_back(match_str);
@@ -731,17 +732,17 @@ Optional<int> regexp::match(const string &subject, var &matches, bool all_matche
         matches[i].push_back(match_str);
       }
     } else {
-      int size = fix_php_bugs ? subpatterns_count : count;
+      int64_t size = fix_php_bugs ? subpatterns_count : count;
       array<var> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
-        for (int i = 0; i < size; i++) {
+        for (int64_t i = 0; i < size; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           preg_add_match(result_set, match_str, subpattern_names[i]);
         }
       } else {
-        for (int i = 0; i < size; i++) {
+        for (int64_t i = 0; i < size; i++) {
           result_set.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
         }
       }
@@ -762,7 +763,7 @@ Optional<int> regexp::match(const string &subject, var &matches, bool all_matche
   return result;
 }
 
-Optional<int> regexp::match(const string &subject, var &matches, int flags, bool all_matches, int offset) const {
+Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t flags, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -799,7 +800,7 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
 
   if (pattern_order) {
     matches = array<var>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
-    for (int i = 0; i < subpatterns_count; i++) {
+    for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
         matches.set_value(subpattern_names[i], array<var>());
       }
@@ -811,17 +812,17 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
 
   bool second_try = false;//set after matching an empty string
 
-  int result = 0;
+  int64_t result = 0;
   auto empty_match = array<var>::create(string(), -1);
-  while (offset <= (int)subject.size()) {
-    int count = exec(subject, offset, second_try);
+  while (offset <= int64_t{subject.size()}) {
+    int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
       if (second_try) {
         second_try = false;
         do {
           offset++;
-        } while (is_utf8 && offset < (int)subject.size() && (((unsigned char)subject[offset]) & 0xc0) == 0x80);
+        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
         continue;
       }
 
@@ -831,7 +832,7 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
     result++;
 
     if (pattern_order) {
-      for (int i = 0; i < subpatterns_count; i++) {
+      for (int32_t i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
         if (offset_capture && (fix_php_bugs || i < count)) {
           auto match = array<var>::create(match_str, submatch[i + i]);
@@ -848,11 +849,11 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
         }
       }
     } else {
-      int size = fix_php_bugs ? subpatterns_count : count;
+      int64_t size = fix_php_bugs ? subpatterns_count : count;
       array<var> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
-        for (int i = 0; i < size; i++) {
+        for (int64_t i = 0; i < size; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
@@ -862,7 +863,7 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
           }
         }
       } else {
-        for (int i = 0; i < size; i++) {
+        for (int64_t i = 0; i < size; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
@@ -893,7 +894,7 @@ Optional<int> regexp::match(const string &subject, var &matches, int flags, bool
   return result;
 }
 
-Optional<array<var>> regexp::split(const string &subject, int limit, int flags) const {
+Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -918,20 +919,20 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
     limit = INT_MAX;
   }
 
-  int offset = 0;
-  int last_match = 0;
+  int64_t offset = 0;
+  int64_t last_match = 0;
   bool second_try = false;
 
   array<var> result;
-  while (offset <= (int)subject.size() && limit > 1) {
-    int count = exec(subject, offset, second_try);
+  while (offset <= int64_t{subject.size()} && limit > 1) {
+    int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
       if (second_try) {
         second_try = false;
         do {
           offset++;
-        } while (is_utf8 && offset < (int)subject.size() && (((unsigned char)subject[offset]) & 0xc0) == 0x80);
+        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
         continue;
       }
 
@@ -939,7 +940,7 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
     }
 
     if (submatch[0] != last_match || !no_empty) {
-      string match_str(subject.c_str() + last_match, submatch[0] - last_match);
+      string match_str(subject.c_str() + last_match, static_cast<string::size_type>(submatch[0] - last_match));
 
       if (offset_capture) {
         result.push_back(array<var>::create(match_str, last_match));
@@ -955,7 +956,7 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
     }
 
     if (delim_capture) {
-      for (int i = 1; i < count; i++) {
+      for (int64_t i = 1; i < count; i++) {
         if (submatch[i + i + 1] != submatch[i + i] || !no_empty) {
           string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
@@ -973,8 +974,8 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
     offset = submatch[1];
   }
 
-  if (last_match < (int)subject.size() || !no_empty) {
-    string match_str(subject.c_str() + last_match, subject.size() - last_match);
+  if (last_match < int64_t{subject.size()} || !no_empty) {
+    string match_str(subject.c_str() + last_match, static_cast<string::size_type>(subject.size() - last_match));
 
     if (offset_capture) {
       result.push_back(array<var>::create(match_str, last_match));
@@ -990,7 +991,7 @@ Optional<array<var>> regexp::split(const string &subject, int limit, int flags) 
   return result;
 }
 
-int regexp::last_error() {
+int64_t regexp::last_error() {
   switch (pcre_last_error) {
     case PHP_PCRE_NO_ERROR:
       return PHP_PCRE_NO_ERROR;
@@ -1008,11 +1009,11 @@ int regexp::last_error() {
 
 
 string f$preg_quote(const string &str, const string &delimiter) {
-  int len = str.size();
+  const string::size_type len = str.size();
 
   static_SB.clean().reserve(4 * len);
 
-  for (int i = 0; i < len; i++) {
+  for (string::size_type i = 0; i < len; i++) {
     switch (str[i]) {
       case '.':
       case '\\':

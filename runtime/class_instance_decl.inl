@@ -74,7 +74,7 @@ public:
   inline class_instance<T> alloc(Args &&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() { o.reset(); }
-  int get_reference_counter() const { return o->get_refcnt(); }
+  int64_t get_reference_counter() const { return o->get_refcnt(); }
 
   void set_reference_counter_to_cache();
   bool is_cache_reference_counter() const;
@@ -93,7 +93,7 @@ public:
 
   bool is_null() const { return !static_cast<bool>(o); }
   const char *get_class() const { return o ? o->get_class() : "null"; }
-  int get_hash() const { return o ? o->get_hash() : 0; }
+  int64_t get_hash() const { return o ? o->get_hash() : 0; }
 
   template<class D>
   bool is_a() const {

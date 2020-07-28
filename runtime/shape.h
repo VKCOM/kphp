@@ -8,6 +8,8 @@
 template<size_t tag, typename T>
 class shape_node {
 public:
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
   T value{};
   shape_node() = default;
   shape_node(const shape_node &) = default;

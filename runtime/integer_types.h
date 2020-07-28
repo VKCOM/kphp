@@ -74,7 +74,7 @@ public:
     l(static_cast<LongT>(l)) {
   }
 
-  inline explicit LongNumber(int32_t i) :
+  inline explicit LongNumber(int64_t i) :
     l(static_cast<LongT>(i)) {
   }
 
@@ -137,7 +137,7 @@ inline Long f$lmod(Long lhs, Long rhs) {
   return Long(lhs.l % rhs.l);
 }
 
-inline Long f$lpow(Long lhs, int deg) {
+inline Long f$lpow(Long lhs, int64_t deg) {
   long long result = 1;
   long long mul = lhs.l;
 
@@ -164,11 +164,11 @@ inline Long f$lmul(Long lhs, Long rhs) {
   return Long(lhs.l * rhs.l);
 }
 
-inline Long f$lshl(Long lhs, int rhs) {
+inline Long f$lshl(Long lhs, int64_t rhs) {
   return Long(lhs.l << rhs);
 }
 
-inline Long f$lshr(Long lhs, int rhs) {
+inline Long f$lshr(Long lhs, int64_t rhs) {
   return Long(lhs.l >> rhs);
 }
 
@@ -188,26 +188,26 @@ inline Long f$lxor(Long lhs, Long rhs) {
   return Long(lhs.l ^ rhs.l);
 }
 
-inline int f$lcomp(Long lhs, Long rhs) {
+inline int64_t f$lcomp(Long lhs, Long rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-inline Long f$longval(const long long &val) {
+inline Long f$longval(long long val) {
   return Long(val);
 }
 
-inline Long f$longval(const bool &val) {
+inline Long f$longval(bool val) {
+  return Long(static_cast<long long>(val));
+}
+
+inline Long f$longval(int64_t val) {
   return Long(val);
 }
 
-inline Long f$longval(const int &val) {
-  return Long(val);
-}
-
-inline Long f$longval(const double &val) {
+inline Long f$longval(double val) {
   return Long(val);
 }
 
@@ -228,19 +228,16 @@ inline bool f$boolval(Long val) {
   return val.l;
 }
 
-inline int f$intval(Long val) {
-  return (int)val.l;
+inline int64_t f$intval(Long val) {
+  return static_cast<int64_t>(val.l);
 }
 
-inline int f$safe_intval(Long val) {
-  if ((int)val.l != val.l) {
-    php_warning("Integer overflow on converting %lld to int", val.l);
-  }
-  return (int)val.l;
+inline int64_t f$safe_intval(Long val) {
+  return static_cast<int64_t>(val.l);
 }
 
 inline double f$floatval(Long val) {
-  return (double)val.l;
+  return static_cast<double>(val.l);
 }
 
 inline string f$strval(Long val) {
@@ -270,7 +267,7 @@ inline ULong f$ulmod(ULong lhs, ULong rhs) {
   return ULong(lhs.l % rhs.l);
 }
 
-inline ULong f$ulpow(ULong lhs, int deg) {
+inline ULong f$ulpow(ULong lhs, int64_t deg) {
   unsigned long long result = 1;
   unsigned long long mul = lhs.l;
 
@@ -297,11 +294,11 @@ inline ULong f$ulmul(ULong lhs, ULong rhs) {
   return ULong(lhs.l * rhs.l);
 }
 
-inline ULong f$ulshl(ULong lhs, int rhs) {
+inline ULong f$ulshl(ULong lhs, int64_t rhs) {
   return ULong(lhs.l << rhs);
 }
 
-inline ULong f$ulshr(ULong lhs, int rhs) {
+inline ULong f$ulshr(ULong lhs, int64_t rhs) {
   return ULong(lhs.l >> rhs);
 }
 
@@ -321,26 +318,26 @@ inline ULong f$ulxor(ULong lhs, ULong rhs) {
   return ULong(lhs.l ^ rhs.l);
 }
 
-inline int f$ulcomp(ULong lhs, ULong rhs) {
+inline int64_t f$ulcomp(ULong lhs, ULong rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-inline ULong f$ulongval(const unsigned long long &val) {
+inline ULong f$ulongval(unsigned long long val) {
   return ULong(val);
 }
 
-inline ULong f$ulongval(const bool &val) {
+inline ULong f$ulongval(bool val) {
+  return ULong(static_cast<unsigned long long>(val));
+}
+
+inline ULong f$ulongval(int64_t val) {
   return ULong(val);
 }
 
-inline ULong f$ulongval(const int &val) {
-  return ULong(val);
-}
-
-inline ULong f$ulongval(const double &val) {
+inline ULong f$ulongval(double val) {
   return ULong(val);
 }
 
@@ -358,22 +355,22 @@ inline ULong f$new_ULong(const T &val) {
 }
 
 inline bool f$boolval(ULong val) {
-  return (bool)val.l;
+  return static_cast<bool>(val.l);
 }
 
-inline int f$intval(ULong val) {
-  return (int)val.l;
+inline int64_t f$intval(ULong val) {
+  return static_cast<int64_t>(val.l);
 }
 
-inline int f$safe_intval(ULong val) {
-  if (val.l >= 2147483648llu) {
+inline int64_t f$safe_intval(ULong val) {
+  if (val.l >= std::numeric_limits<int64_t>::max()) {
     php_warning("Integer overflow on converting %llu to int", val.l);
   }
-  return (int)val.l;
+  return static_cast<int64_t>(val.l);
 }
 
 inline double f$floatval(ULong val) {
-  return (double)val.l;
+  return static_cast<double>(val.l);
 }
 
 inline string f$strval(ULong val) {
@@ -403,7 +400,7 @@ inline UInt f$uimod(UInt lhs, UInt rhs) {
   return UInt(lhs.l % rhs.l);
 }
 
-inline UInt f$uipow(UInt lhs, int deg) {
+inline UInt f$uipow(UInt lhs, int64_t deg) {
   unsigned int result = 1;
   unsigned int mul = lhs.l;
 
@@ -430,11 +427,11 @@ inline UInt f$uimul(UInt lhs, UInt rhs) {
   return UInt(lhs.l * rhs.l);
 }
 
-inline UInt f$uishl(UInt lhs, int rhs) {
+inline UInt f$uishl(UInt lhs, int64_t rhs) {
   return UInt(lhs.l << rhs);
 }
 
-inline UInt f$uishr(UInt lhs, int rhs) {
+inline UInt f$uishr(UInt lhs, int64_t rhs) {
   return UInt(lhs.l >> rhs);
 }
 
@@ -454,26 +451,26 @@ inline UInt f$uixor(UInt lhs, UInt rhs) {
   return UInt(lhs.l ^ rhs.l);
 }
 
-inline int f$uicomp(UInt lhs, UInt rhs) {
+inline int64_t f$uicomp(UInt lhs, UInt rhs) {
   if (lhs.l < rhs.l) {
     return -1;
   }
   return lhs.l > rhs.l;
 }
 
-inline UInt f$uintval(const unsigned int &val) {
+inline UInt f$uintval(unsigned int val) {
   return UInt(val);
 }
 
-inline UInt f$uintval(const bool &val) {
+inline UInt f$uintval(bool val) {
+  return UInt(static_cast<unsigned int>(val));
+}
+
+inline UInt f$uintval(int64_t val) {
   return UInt(val);
 }
 
-inline UInt f$uintval(const int &val) {
-  return UInt(val);
-}
-
-inline UInt f$uintval(const double &val) {
+inline UInt f$uintval(double val) {
   return UInt(val);
 }
 
@@ -494,14 +491,11 @@ inline bool f$boolval(UInt val) {
   return val.l;
 }
 
-inline int f$intval(UInt val) {
+inline int64_t f$intval(UInt val) {
   return val.l;
 }
 
-inline int f$safe_intval(UInt val) {
-  if (val.l >= 2147483648u) {
-    php_warning("Integer overflow on converting %u to int", val.l);
-  }
+inline int64_t f$safe_intval(UInt val) {
   return val.l;
 }
 

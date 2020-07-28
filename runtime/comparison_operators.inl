@@ -33,7 +33,7 @@ inline enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
 inline bool eq2(bool lhs, bool rhs) {
   return lhs == rhs;
 }
-inline bool eq2(int lhs, int rhs) {
+inline bool eq2(int64_t lhs, int64_t rhs) {
   return lhs == rhs;
 }
 inline bool eq2(double lhs, double rhs) {
@@ -47,10 +47,10 @@ inline bool eq2(const var &lhs, const var &rhs) {
   return lhs.compare(rhs) == 0;
 }
 
-inline bool eq2(bool lhs, int rhs) {
+inline bool eq2(bool lhs, int64_t rhs) {
   return lhs != !rhs;
 }
-inline bool eq2(int lhs, bool rhs) {
+inline bool eq2(int64_t lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -61,10 +61,10 @@ inline bool eq2(double lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(int lhs, double rhs) {
-  return lhs == rhs;
+inline bool eq2(int64_t lhs, double rhs) {
+  return static_cast<double>(lhs) == rhs;
 }
-inline bool eq2(double lhs, int rhs) {
+inline bool eq2(double lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -75,10 +75,10 @@ inline bool eq2(const string &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(int lhs, const string &rhs) {
-  return lhs == rhs.to_float();
+inline bool eq2(int64_t lhs, const string &rhs) {
+  return eq2(lhs, rhs.to_float());
 }
-inline bool eq2(const string &lhs, int rhs) {
+inline bool eq2(const string &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -99,12 +99,12 @@ inline bool eq2(const array<T> &lhs, bool rhs) {
 }
 
 template<class T>
-inline bool eq2(int, const array<T> &) {
+inline bool eq2(int64_t, const array<T> &) {
   php_warning("Unsupported operand types for operator == (int and array)");
   return false;
 }
 template<class T>
-inline bool eq2(const array<T> &lhs, int rhs) {
+inline bool eq2(const array<T> &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -219,10 +219,27 @@ inline bool eq2(const var &lhs, double rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(int lhs, const var &rhs) {
-  return eq2(static_cast<double>(lhs), rhs);
+inline bool eq2(int64_t lhs, const var &rhs) {
+  switch (rhs.get_type()) {
+    case var::type::NUL:
+      return eq2(lhs, 0L);
+    case var::type::BOOLEAN:
+      return eq2(lhs, rhs.as_bool());
+    case var::type::INTEGER:
+      return eq2(lhs, rhs.as_int());
+    case var::type::FLOAT:
+      return eq2(lhs, rhs.as_double());
+    case var::type::STRING:
+      return eq2(lhs, rhs.as_string());
+    case var::type::ARRAY:
+      php_warning("Unsupported operand types for operator == (int and array)");
+      return false;
+    default:
+      __builtin_unreachable();
+  }
 }
-inline bool eq2(const var &lhs, int rhs) {
+
+inline bool eq2(const var &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -289,6 +306,22 @@ inline bool eq2(const array<T1> &lhs, const array<T2> &rhs) {
   return true;
 }
 
+template<class T>
+inline bool eq2(const T &lhs, int32_t rhs);
+
+template<class T>
+inline bool eq2(int32_t lhs, const T &rhs);
+
+template<class T>
+inline bool eq2(const T &lhs, int32_t rhs) {
+  return eq2(lhs, int64_t{rhs});
+}
+
+template<class T>
+inline bool eq2(int32_t lhs, const T &rhs) {
+  return eq2(int64_t{lhs}, rhs);
+}
+
 template<class T, class U>
 inline enable_if_one_of_types_is_unknown<T, U> equals(const T &lhs, const U &rhs) {
   return eq2(lhs, rhs);
@@ -301,6 +334,7 @@ template<class T>
 inline disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
+
 
 template<class T>
 inline bool equals(const array<T> &lhs, const array<T> &rhs) {
@@ -339,10 +373,10 @@ inline bool equals(const var &lhs, bool rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(int lhs, const var &rhs) {
+inline bool equals(int64_t lhs, const var &rhs) {
   return rhs.is_int() && equals(lhs, rhs.as_int());
 }
-inline bool equals(const var &lhs, int rhs) {
+inline bool equals(const var &lhs, int64_t rhs) {
   return equals(rhs, lhs);
 }
 
@@ -457,6 +491,22 @@ inline bool equals(const Optional<T1> &lhs, const Optional<T2> &rhs) {
 template<class T>
 inline bool equals(const Optional<T> &lhs, const Optional<T> &rhs) {
   return impl_::optional_equals_impl(lhs, rhs);
+}
+
+template<class T>
+inline bool equals(const T &lhs, int32_t rhs);
+
+template<class T>
+inline bool equals(int32_t lhs, const T &rhs);
+
+template<class T>
+inline bool equals(const T &lhs, int32_t rhs) {
+  return equals(lhs, int64_t{rhs});
+}
+
+template<class T>
+inline bool equals(int32_t lhs, const T &rhs) {
+  return equals(int64_t{lhs}, rhs);
 }
 
 template<class T1, class T2>

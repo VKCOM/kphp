@@ -470,28 +470,28 @@ static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, 
 }
 
 
-void f$bcscale(int scale) {
+void f$bcscale(int64_t scale) {
   if (scale < 0) {
     bc_scale = 0;
   } else {
-    bc_scale = scale;
+    bc_scale = static_cast<int>(scale);
   }
 }
 
-string f$bcdiv(const string &lhs, const string &rhs, int scale) {
-  if (scale == INT_MIN) {
+string f$bcdiv(const string &lhs, const string &rhs, int64_t scale) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %d in function bcdiv", scale);
+    php_warning("Wrong parameter scale = %ld in function bcdiv", scale);
     scale = 0;
   }
   if (lhs.empty()) {
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
   if (rhs.empty()) {
     php_warning("Division by empty string in function bcdiv");
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
 
   int lsign, lint, ldot, lfrac, lscale;
@@ -506,7 +506,9 @@ string f$bcdiv(const string &lhs, const string &rhs, int scale) {
     return ZERO;
   }
 
-  return bc_div_positive(lhs.c_str(), lint, ldot, lfrac, lscale, rhs.c_str(), rint, rdot, rfrac, rscale, scale, lsign * rsign);
+  return bc_div_positive(lhs.c_str(), lint, ldot, lfrac, lscale,
+                         rhs.c_str(), rint, rdot, rfrac, rscale,
+                         static_cast<int>(scale), lsign * rsign);
 }
 
 string f$bcmod(const string &lhs, const string &rhs) {
@@ -613,7 +615,7 @@ string f$bcpow(const string &lhs, const string &rhs) {
   return result;
 }
 
-string f$bcadd(const string &lhs, const string &rhs, int scale) {
+string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
   if (lhs.empty()) {
     return f$bcadd(ZERO, rhs, scale);
   }
@@ -621,30 +623,32 @@ string f$bcadd(const string &lhs, const string &rhs, int scale) {
     return f$bcadd(lhs, ZERO, scale);
   }
 
-  if (scale == INT_MIN) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %d in function bcadd", scale);
+    php_warning("Wrong parameter scale = %ld in function bcadd", scale);
     scale = 0;
   }
 
   int lsign, lint, ldot, lfrac, lscale;
   if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
     php_warning("First parameter \"%s\" in function bcadd is not a number", lhs.c_str());
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
 
   int rsign, rint, rdot, rfrac, rscale;
   if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
     php_warning("Second parameter \"%s\" in function bcadd is not a number", rhs.c_str());
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
 
-  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale, rhs.c_str(), rsign, rint, rdot, rfrac, rscale, scale);
+  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale,
+                rhs.c_str(), rsign, rint, rdot, rfrac, rscale,
+                static_cast<int>(scale));
 }
 
-string f$bcsub(const string &lhs, const string &rhs, int scale) {
+string f$bcsub(const string &lhs, const string &rhs, int64_t scale) {
   if (lhs.empty()) {
     return f$bcsub(ZERO, rhs, scale);
   }
@@ -652,32 +656,34 @@ string f$bcsub(const string &lhs, const string &rhs, int scale) {
     return f$bcsub(lhs, ZERO, scale);
   }
 
-  if (scale == INT_MIN) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %d in function bcsub", scale);
+    php_warning("Wrong parameter scale = %ld in function bcsub", scale);
     scale = 0;
   }
 
   int lsign, lint, ldot, lfrac, lscale;
   if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
     php_warning("First parameter \"%s\" in function bcsub is not a number", lhs.c_str());
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
 
   int rsign, rint, rdot, rfrac, rscale;
   if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
     php_warning("Second parameter \"%s\" in function bcsub is not a number", rhs.c_str());
-    return bc_zero(scale);
+    return bc_zero(static_cast<int>(scale));
   }
 
   rsign *= -1;
 
-  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale, rhs.c_str(), rsign, rint, rdot, rfrac, rscale, scale);
+  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale,
+                rhs.c_str(), rsign, rint, rdot, rfrac, rscale,
+                static_cast<int>(scale));
 }
 
-string f$bcmul(const string &lhs, const string &rhs, int scale) {
+string f$bcmul(const string &lhs, const string &rhs, int64_t scale) {
   if (lhs.empty()) {
     return f$bcmul(ZERO, rhs, scale);
   }
@@ -685,11 +691,11 @@ string f$bcmul(const string &lhs, const string &rhs, int scale) {
     return f$bcmul(lhs, ZERO, scale);
   }
 
-  if (scale == INT_MIN) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %d in function bcmul", scale);
+    php_warning("Wrong parameter scale = %ld in function bcmul", scale);
     scale = 0;
   }
 
@@ -705,10 +711,12 @@ string f$bcmul(const string &lhs, const string &rhs, int scale) {
     return ZERO;
   }
 
-  return bc_mul_positive(lhs.c_str(), lint, ldot, lfrac, lscale, rhs.c_str(), rint, rdot, rfrac, rscale, scale, lsign * rsign);
+  return bc_mul_positive(lhs.c_str(), lint, ldot, lfrac, lscale,
+                         rhs.c_str(), rint, rdot, rfrac, rscale,
+                         static_cast<int>(scale), lsign * rsign);
 }
 
-int f$bccomp(const string &lhs, const string &rhs, int scale) {
+int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale) {
   if (lhs.empty()) {
     return f$bccomp(ZERO, rhs, scale);
   }
@@ -716,11 +724,11 @@ int f$bccomp(const string &lhs, const string &rhs, int scale) {
     return f$bccomp(lhs, ZERO, scale);
   }
 
-  if (scale == INT_MIN) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %d in function bccomp", scale);
+    php_warning("Wrong parameter scale = %ld in function bccomp", scale);
     scale = 0;
   }
 
@@ -740,7 +748,9 @@ int f$bccomp(const string &lhs, const string &rhs, int scale) {
     return (lsign - rsign) / 2;
   }
 
-  return (1 - 2 * (lsign < 0)) * bc_comp(lhs.c_str(), lint, ldot, lfrac, lscale, rhs.c_str(), rint, rdot, rfrac, rscale, scale);
+  return (1 - 2 * (lsign < 0)) * bc_comp(lhs.c_str(), lint, ldot, lfrac, lscale,
+                                         rhs.c_str(), rint, rdot, rfrac, rscale,
+                                         static_cast<int>(scale));
 }
 
 void free_bcmath_lib() {

@@ -45,12 +45,12 @@ function test_string() {
 function test_array() {
 #ifndef KittenPHP
   var_dump(0);
-  var_dump(176);
+  var_dump(192);
   var_dump(0);
-  var_dump(64);
+  var_dump(72);
   var_dump(0);
-  var_dump(64);
-  var_dump(128);
+  var_dump(72);
+  var_dump(144);
   return;
 #endif
   $x = ["hello"];

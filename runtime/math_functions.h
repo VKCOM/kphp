@@ -2,32 +2,32 @@
 
 #include "runtime/kphp_core.h"
 
-int f$bindec(const string &number);
+int64_t f$bindec(const string &number);
 
-string f$decbin(int number);
+string f$decbin(int64_t number);
 
-string f$dechex(int number);
+string f$dechex(int64_t number);
 
-int f$hexdec(const string &number);
+int64_t f$hexdec(const string &number);
 
 double f$lcg_value();
 
 
-void f$srand(int seed = INT_MIN);
+void f$srand(int64_t seed = std::numeric_limits<int64_t>::min());
 
-int f$rand();
+int64_t f$rand();
 
-int f$rand(int l, int r);
+int64_t f$rand(int64_t l, int64_t r);
 
-int f$getrandmax();
+int64_t f$getrandmax();
 
-void f$mt_srand(int seed = INT_MIN);
+void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min());
 
-int f$mt_rand();
+int64_t f$mt_rand();
 
-int f$mt_rand(int l, int r);
+int64_t f$mt_rand(int64_t l, int64_t r);
 
-int f$mt_getrandmax();
+int64_t f$mt_getrandmax();
 
 
 template<class T>
@@ -48,24 +48,23 @@ inline T f$max(const T &arg1);
 template<class T, class... Args>
 inline T f$max(const T &arg1, const T &arg2, Args&&... args);
 
-
-constexpr int PHP_ROUND_HALF_UP = 123423141;
-constexpr int PHP_ROUND_HALF_DOWN = 123423144;
-constexpr int PHP_ROUND_HALF_EVEN = 123423145;
-constexpr int PHP_ROUND_HALF_ODD = 123423146;
+// TODO REMOVE?
+constexpr int64_t PHP_ROUND_HALF_UP = 123423141;
+constexpr int64_t PHP_ROUND_HALF_DOWN = 123423144;
+constexpr int64_t PHP_ROUND_HALF_EVEN = 123423145;
+constexpr int64_t PHP_ROUND_HALF_ODD = 123423146;
 
 var f$abs(const var &v);
 
-int f$abs(int v);
+int64_t f$abs(int64_t v);
 
 double f$abs(double v);
 
-int f$abs(const Optional<int> &v);
+int64_t f$abs(const Optional<int64_t> &v);
 
-int f$abs(const Optional<bool> &v);
+int64_t f$abs(const Optional<bool> &v);
 
 double f$abs(const Optional<double> &v);
-
 
 inline double f$acos(double v);
 
@@ -73,7 +72,7 @@ inline double f$atan(double v);
 
 inline double f$atan2(double y, double x);
 
-string f$base_convert(const string &number, int frombase, int tobase);
+string f$base_convert(const string &number, int64_t frombase, int64_t tobase);
 
 inline double f$ceil(double v);
 
@@ -99,7 +98,7 @@ inline double f$log(double v, double base);
 
 inline double f$pi();
 
-double f$round(double v, int precision = 0);
+double f$round(double v, int64_t precision = 0);
 
 inline double f$sin(double v);
 
@@ -117,7 +116,7 @@ inline double f$tan(double v);
 
 template<class T>
 T f$min(const array<T> &a) {
-  if ((int)a.count() == 0) {
+  if (a.count() == 0) {
     php_warning("Empty array specified to function min");
     return T();
   }
@@ -134,7 +133,7 @@ T f$min(const array<T> &a) {
 
 template<class T>
 T f$max(const array<T> &a) {
-  if ((int)a.count() == 0) {
+  if (a.count() == 0) {
     php_warning("Empty array specified to function max");
     return T();
   }

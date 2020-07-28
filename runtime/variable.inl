@@ -66,8 +66,8 @@ var::var(const Unknown &u __attribute__((unused))) noexcept {
   php_assert ("Unknown used!!!" && 0);
 }
 
-var::var(const char *s, int len) noexcept :
-  var(string{s, static_cast<string::size_type>(len)}){
+var::var(const char *s, string::size_type len) noexcept :
+  var(string{s, len}){
 }
 
 template<typename T, typename>
@@ -123,7 +123,7 @@ var &var::operator=(Optional<T> &&v) noexcept {
   return call_fun_on_optional_value(assign_from_lambda, std::move(v));
 }
 
-var &var::assign(const char *other, int len) {
+var &var::assign(const char *other, string::size_type len) {
   if (get_type() == type::STRING) {
     as_string().assign(other, len);
   } else {
@@ -150,7 +150,7 @@ const var var::operator+() const {
 }
 
 
-int var::operator~() const {
+int64_t var::operator~() const {
   return ~to_int();
 }
 
@@ -178,11 +178,11 @@ var &var::operator+=(const var &other) {
       as_int() += arg2.as_int();
     } else {
       type_ = type::FLOAT;
-      as_double() = as_int() + arg2.as_double();
+      as_double() = static_cast<double>(as_int()) + arg2.as_double();
     }
   } else {
     if (arg2.get_type() == type::INTEGER) {
-      as_double() += arg2.as_int();
+      as_double() += static_cast<double>(arg2.as_int());
     } else {
       as_double() += arg2.as_double();
     }
@@ -205,11 +205,11 @@ var &var::operator-=(const var &other) {
       as_int() -= arg2.as_int();
     } else {
       type_ = type::FLOAT;
-      as_double() = as_int() - arg2.as_double();
+      as_double() = static_cast<double>(as_int()) - arg2.as_double();
     }
   } else {
     if (arg2.get_type() == type::INTEGER) {
-      as_double() -= arg2.as_int();
+      as_double() -= static_cast<double>(arg2.as_int());
     } else {
       as_double() -= arg2.as_double();
     }
@@ -232,11 +232,11 @@ var &var::operator*=(const var &other) {
       as_int() *= arg2.as_int();
     } else {
       type_ = type::FLOAT;
-      as_double() = as_int() * arg2.as_double();
+      as_double() = static_cast<double>(as_int()) * arg2.as_double();
     }
   } else {
     if (arg2.get_type() == type::INTEGER) {
-      as_double() *= arg2.as_int();
+      as_double() *= static_cast<double>(arg2.as_int());
     } else {
       as_double() *= arg2.as_double();
     }
@@ -251,7 +251,7 @@ var &var::operator/=(const var &other) {
       as_int() /= other.as_int();
     } else {
       type_ = type::FLOAT;
-      as_double() = (double)as_int() / other.as_int();
+      as_double() = static_cast<double>(as_int()) / static_cast<double>(other.as_int());
     }
     return *this;
   }
@@ -272,10 +272,10 @@ var &var::operator/=(const var &other) {
         as_int() /= arg2.as_int();
       } else {
         type_ = type::FLOAT;
-        as_double() = (double)as_int() / other.as_int();
+        as_double() = static_cast<double>(as_int()) / static_cast<double>(other.as_int());
       }
     } else {
-      as_double() /= arg2.as_int();
+      as_double() /= static_cast<double>(arg2.as_int());
     }
   } else {
     if (arg2.as_double() == 0) {
@@ -287,7 +287,7 @@ var &var::operator/=(const var &other) {
 
     if (get_type() == type::INTEGER) {
       type_ = type::FLOAT;
-      as_double() = as_int() / arg2.as_double();
+      as_double() = static_cast<double>(as_int()) / arg2.as_double();
     } else {
       as_double() /= arg2.as_double();
     }
@@ -297,7 +297,7 @@ var &var::operator/=(const var &other) {
 }
 
 var &var::operator%=(const var &other) {
-  int div = other.to_int();
+  int64_t div = other.to_int();
   if (div == 0) {
     php_warning("Modulo by zero");
     *this = false;
@@ -550,16 +550,16 @@ bool var::to_bool() const {
   }
 }
 
-int var::to_int() const {
+int64_t var::to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
     case type::BOOLEAN:
-      return (int)as_bool();
+      return static_cast<int64_t>(as_bool());
     case type::INTEGER:
       return as_int();
     case type::FLOAT:
-      return (int)as_double();
+      return static_cast<int64_t>(as_double());
     case type::STRING:
       return as_string().to_int();
     case type::ARRAY:
@@ -632,8 +632,8 @@ const array<var> var::to_array() const {
 bool &var::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
 const bool &var::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
 
-int &var::as_int() { return *reinterpret_cast<int *>(&storage_); }
-const int &var::as_int() const { return *reinterpret_cast<const int *>(&storage_); }
+int64_t &var::as_int() { return *reinterpret_cast<int64_t *>(&storage_); }
+const int64_t &var::as_int() const { return *reinterpret_cast<const int64_t *>(&storage_); }
 
 double &var::as_double() { return *reinterpret_cast<double *>(&storage_); }
 const double &var::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
@@ -645,19 +645,21 @@ array<var> &var::as_array() { return *reinterpret_cast<array<var> *>(&storage_);
 const array<var> &var::as_array() const { return *reinterpret_cast<const array<var> *>(&storage_); }
 
 
-int var::safe_to_int() const {
+int64_t var::safe_to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
     case type::BOOLEAN:
-      return (int)as_bool();
+      return static_cast<int64_t>(as_bool());
     case type::INTEGER:
       return as_int();
-    case type::FLOAT:
-      if (fabs(as_double()) > 2147483648) {
+    case type::FLOAT: {
+      constexpr auto max_int = static_cast<double>(static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1);
+      if (fabs(as_double()) > max_int) {
         php_warning("Wrong convertion from double %.6lf to int", as_double());
       }
-      return (int)as_double();
+      return static_cast<int64_t>(as_double());
+    }
     case type::STRING:
       return as_string().safe_to_int();
     case type::ARRAY:
@@ -687,7 +689,7 @@ void var::convert_to_numeric() {
       return;
     case type::ARRAY: {
       php_warning("Wrong convertion from array to number");
-      const int int_val = as_array().to_int();
+      const int64_t int_val = as_array().to_int();
       as_array().~array<var>();
       type_ = type::INTEGER;
       as_int() = int_val;
@@ -747,10 +749,10 @@ void var::convert_to_int() {
       return;
     case type::FLOAT:
       type_ = type::INTEGER;
-      as_int() = (int)as_double();
+      as_int() = static_cast<int64_t>(as_double());
       return;
     case type::STRING: {
-      const int int_val = as_string().to_int();
+      const int64_t int_val = as_string().to_int();
       as_string().~string();
       type_ = type::INTEGER;
       as_int() = int_val;
@@ -758,7 +760,7 @@ void var::convert_to_int() {
     }
     case type::ARRAY: {
       php_warning("Wrong convertion from array to int");
-      const int int_val = as_array().to_int();
+      const int64_t int_val = as_array().to_int();
       as_array().~array<var>();
       type_ = type::INTEGER;
       as_int() = int_val;
@@ -840,47 +842,6 @@ void var::convert_to_string() {
   }
 }
 
-
-void var::safe_convert_to_int() {
-  switch (get_type()) {
-    case type::NUL:
-      type_ = type::INTEGER;
-      as_int() = 0;
-      return;
-    case type::BOOLEAN:
-      type_ = type::INTEGER;
-      as_int() = (int)as_bool();
-      return;
-    case type::INTEGER:
-      return;
-    case type::FLOAT:
-      type_ = type::INTEGER;
-      if (fabs(as_double()) > 2147483648) {
-        php_warning("Wrong convertion from double %.6lf to int", as_double());
-      }
-      as_int() = (int)as_double();
-      return;
-    case type::STRING: {
-      const int int_val = as_string().safe_to_int();
-      as_string().~string();
-      type_ = type::INTEGER;
-      as_int() = int_val;
-      return;
-    }
-    case type::ARRAY: {
-      php_warning("Wrong convertion from array to int");
-      const int int_val = as_array().to_int();
-      as_array().~array<var>();
-      type_ = type::INTEGER;
-      as_int() = int_val;
-      return;
-    }
-    default:
-      __builtin_unreachable();
-  }
-}
-
-
 const bool &var::as_bool(const char *function) const {
   switch (get_type()) {
     case type::BOOLEAN:
@@ -891,13 +852,13 @@ const bool &var::as_bool(const char *function) const {
   }
 }
 
-const int &var::as_int(const char *function) const {
+const int64_t &var::as_int(const char *function) const {
   switch (get_type()) {
     case type::INTEGER:
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
-      return empty_value<int>();
+      return empty_value<int64_t>();
   }
 }
 
@@ -944,7 +905,7 @@ bool &var::as_bool(const char *function) {
   }
 }
 
-int &var::as_int(const char *function) {
+int64_t &var::as_int(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -955,7 +916,7 @@ int &var::as_int(const char *function) {
       return as_int();
     default:
       php_warning("%s() expects parameter to be int, %s is given", function, get_type_c_str());
-      return empty_value<int>();
+      return empty_value<int64_t>();
   }
 }
 
@@ -1074,7 +1035,7 @@ bool var::empty() const {
   return !to_bool();
 }
 
-int var::count() const {
+int64_t var::count() const {
   switch (get_type()) {
     case type::NUL:
       php_warning("count(): Parameter is null, but an array expected");
@@ -1095,7 +1056,7 @@ int var::count() const {
 template<class T1, class T2>
 inline bool eq2(const array<T1> &lhs, const array<T2> &rhs);
 
-int var::compare(const var &rhs) const {
+int64_t var::compare(const var &rhs) const {
   if (unlikely(is_string())) {
     if (likely(rhs.is_string())) {
       return compare_strings_php_order(as_string(), rhs.as_string());
@@ -1134,7 +1095,7 @@ void var::swap(var &other) {
 }
 
 
-var &var::operator[](int int_key) {
+var &var::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
@@ -1145,7 +1106,7 @@ var &var::operator[](int int_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
       return empty_value<var>();
     }
   }
@@ -1180,7 +1141,7 @@ var &var::operator[](const var &v) {
     case type::INTEGER:
       return (*this)[v.as_int()];
     case type::FLOAT:
-      return (*this)[static_cast<int>(v.as_double())];
+      return (*this)[static_cast<int64_t>(v.as_double())];
     case type::STRING:
       return (*this)[v.as_string()];
     case type::ARRAY:
@@ -1192,7 +1153,7 @@ var &var::operator[](const var &v) {
 }
 
 var &var::operator[](double double_key) {
-  return (*this)[static_cast<int>(double_key)];
+  return (*this)[static_cast<int64_t>(double_key)];
 }
 
 var &var::operator[](const array<var>::const_iterator &it) {
@@ -1204,28 +1165,29 @@ var &var::operator[](const array<var>::iterator &it) {
 }
 
 
-void var::set_value(int int_key, const var &v) {
+void var::set_value(int64_t int_key, const var &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       auto rhs_string = v.to_string();
       if (rhs_string.empty()) {
-        php_warning("Cannot assign an empty string to a string offset, index = %d", int_key);
+        php_warning("Cannot assign an empty string to a string offset, index = %ld", int_key);
         return;
       }
 
       const char c = rhs_string[0];
 
       if (int_key >= 0) {
-        const int l = as_string().size();
-        if (int_key >= l) {
-          as_string().append(int_key + 1 - l, ' ');
+        const auto key = static_cast<string::size_type>(int_key);
+        const string::size_type l = as_string().size();
+        if (key >= l) {
+          as_string().append(key + 1 - l, ' ');
         } else {
           as_string().make_not_shared();
         }
 
-        as_string()[int_key] = c;
+        as_string()[key] = c;
       } else {
-        php_warning("%d is illegal offset for string", int_key);
+        php_warning("%ld is illegal offset for string", int_key);
       }
       return;
     }
@@ -1234,7 +1196,7 @@ void var::set_value(int int_key, const var &v) {
       type_ = type::ARRAY;
       new(&as_array()) array<var>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
       return;
     }
   }
@@ -1244,7 +1206,7 @@ void var::set_value(int int_key, const var &v) {
 void var::set_value(const string &string_key, const var &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      int int_val;
+      int64_t int_val = 0;
       if (!string_key.try_to_int(&int_val)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
@@ -1255,14 +1217,14 @@ void var::set_value(const string &string_key, const var &v) {
 
       char c = (v.to_string())[0];
 
-      const int l = as_string().size();
+      const string::size_type l = as_string().size();
       if (int_val >= l) {
-        as_string().append(int_val + 1 - l, ' ');
+        as_string().append(static_cast<string::size_type>(int_val + 1 - l), ' ');
       } else {
         as_string().make_not_shared();
       }
 
-      as_string()[int_val] = c;
+      as_string()[static_cast<string::size_type>(int_val)] = c;
       return;
     }
 
@@ -1278,7 +1240,7 @@ void var::set_value(const string &string_key, const var &v) {
   return as_array().set_value(string_key, v);
 }
 
-void var::set_value(const string &string_key, const var &v, int precomuted_hash) {
+void var::set_value(const string &string_key, const var &v, int64_t precomuted_hash) {
   return get_type() == type::ARRAY ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
 }
 
@@ -1287,11 +1249,11 @@ void var::set_value(const var &v, const var &value) {
     case type::NUL:
       return set_value(string(), value);
     case type::BOOLEAN:
-      return set_value(v.as_bool(), value);
+      return set_value(static_cast<int64_t>(v.as_bool()), value);
     case type::INTEGER:
       return set_value(v.as_int(), value);
     case type::FLOAT:
-      return set_value((int)v.as_double(), value);
+      return set_value(static_cast<int64_t>(v.as_double()), value);
     case type::STRING:
       return set_value(v.as_string(), value);
     case type::ARRAY:
@@ -1303,7 +1265,7 @@ void var::set_value(const var &v, const var &value) {
 }
 
 void var::set_value(double double_key, const var &value) {
-  set_value(static_cast<int>(double_key), value);
+  set_value(static_cast<int64_t>(double_key), value);
 }
 
 void var::set_value(const array<var>::const_iterator &it) {
@@ -1315,7 +1277,7 @@ void var::set_value(const array<var>::iterator &it) {
 }
 
 
-const var var::get_value(int int_key) const {
+const var var::get_value(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       if (static_cast<string::size_type>(int_key) >= as_string().size()) {
@@ -1325,7 +1287,7 @@ const var var::get_value(int int_key) const {
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %d", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
     }
     return var();
   }
@@ -1336,7 +1298,7 @@ const var var::get_value(int int_key) const {
 const var var::get_value(const string &string_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      int int_val;
+      int64_t int_val = 0;
       if (!string_key.try_to_int(&int_val)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
@@ -1356,7 +1318,7 @@ const var var::get_value(const string &string_key) const {
   return as_array().get_value(string_key);
 }
 
-const var var::get_value(const string &string_key, int precomuted_hash) const {
+const var var::get_value(const string &string_key, int64_t precomuted_hash) const {
   return get_type() == type::ARRAY ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
 }
 
@@ -1365,11 +1327,11 @@ const var var::get_value(const var &v) const {
     case type::NUL:
       return get_value(string());
     case type::BOOLEAN:
-      return get_value(v.as_bool());
+      return get_value(static_cast<int64_t>(v.as_bool()));
     case type::INTEGER:
       return get_value(v.as_int());
     case type::FLOAT:
-      return get_value(static_cast<int>(v.as_double()));
+      return get_value(static_cast<int64_t>(v.as_double()));
     case type::STRING:
       return get_value(v.as_string());
     case type::ARRAY:
@@ -1381,7 +1343,7 @@ const var var::get_value(const var &v) const {
 }
 
 const var var::get_value(double double_key) const {
-  return get_value(static_cast<int>(double_key));
+  return get_value(static_cast<int64_t>(double_key));
 }
 
 const var var::get_value(const array<var>::const_iterator &it) const {
@@ -1422,7 +1384,7 @@ const var var::push_back_return(const var &v) {
 }
 
 
-bool var::isset(int int_key) const {
+bool var::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       return as_string().get_correct_index(int_key) < as_string().size();
@@ -1439,8 +1401,7 @@ bool var::isset(int int_key) const {
 
 bool var::isset(const string &string_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
-    int int_key{std::numeric_limits<int>::max()};
-
+    int64_t int_key{std::numeric_limits<int64_t>::max()};
     if (get_type() == type::STRING) {
       if (!string_key.try_to_int(&int_key)) {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
@@ -1459,11 +1420,11 @@ bool var::isset(const var &v) const {
     case type::NUL:
       return isset(string());
     case type::BOOLEAN:
-      return isset(static_cast<int>(v.as_bool()));
+      return isset(static_cast<int64_t>(v.as_bool()));
     case type::INTEGER:
       return isset(v.as_int());
     case type::FLOAT:
-      return isset(static_cast<int>(v.as_double()));
+      return isset(static_cast<int64_t>(v.as_double()));
     case type::STRING:
       return isset(v.as_string());
     case type::ARRAY:
@@ -1475,10 +1436,10 @@ bool var::isset(const var &v) const {
 }
 
 bool var::isset(double double_key) const {
-  return isset(static_cast<int>(double_key));
+  return isset(static_cast<int64_t>(double_key));
 }
 
-void var::unset(int int_key) {
+void var::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
@@ -1512,11 +1473,11 @@ void var::unset(const var &v) {
     case type::NUL:
       return as_array().unset(string());
     case type::BOOLEAN:
-      return as_array().unset(v.as_bool());
+      return as_array().unset(static_cast<int64_t>(v.as_bool()));
     case type::INTEGER:
       return as_array().unset(v.as_int());
     case type::FLOAT:
-      return as_array().unset((int)v.as_double());
+      return as_array().unset(static_cast<int64_t>(v.as_double()));
     case type::STRING:
       return as_array().unset(v.as_string());
     case type::ARRAY:
@@ -1528,7 +1489,7 @@ void var::unset(const var &v) {
 }
 
 void var::unset(double double_key) {
-  return unset(static_cast<int>(double_key));
+  return unset(static_cast<int64_t>(double_key));
 }
 
 array<var>::const_iterator var::begin() const {
@@ -1563,7 +1524,7 @@ array<var>::iterator var::end() {
 }
 
 
-int var::get_reference_counter() const {
+int64_t var::get_reference_counter() const {
   switch (get_type()) {
     case type::NUL:
       return -1;
@@ -1645,7 +1606,7 @@ size_t var::estimate_memory_usage() const {
 
 void var::reset_empty_values() noexcept {
   empty_value<bool>();
-  empty_value<int>();
+  empty_value<int64_t>();
   empty_value<double>();
   empty_value<string>();
   empty_value<var>();
@@ -1654,7 +1615,7 @@ void var::reset_empty_values() noexcept {
 
 template<typename T>
 T &var::empty_value() noexcept {
-  static_assert(vk::is_type_in_list<T, bool, int, double, string, var, array<var>>{}, "unsupported type");
+  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, var, array<var>>{}, "unsupported type");
   static T value;
   value = T{};
   return value;
@@ -1675,11 +1636,11 @@ inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&ma
     if (arg2.is_int()) {
       return math_op(arg1.as_int(), arg2.as_int());
     } else {
-      return math_op(arg1.as_int(), arg2.as_double());
+      return math_op(static_cast<double>(arg1.as_int()), arg2.as_double());
     }
   } else {
     if (arg2.is_int()) {
-      return math_op(arg1.as_double(), arg2.as_int());
+      return math_op(arg1.as_double(), static_cast<double>(arg2.as_int()));
     } else {
       return math_op(arg1.as_double(), arg2.as_double());
     }
@@ -1719,23 +1680,23 @@ inline var operator+(const string &lhs) {
   return lhs.to_numeric();
 }
 
-inline int operator&(const var &lhs, const var &rhs) {
+inline int64_t operator&(const var &lhs, const var &rhs) {
   return lhs.to_int() & rhs.to_int();
 }
 
-inline int operator|(const var &lhs, const var &rhs) {
+inline int64_t operator|(const var &lhs, const var &rhs) {
   return lhs.to_int() | rhs.to_int();
 }
 
-inline int operator^(const var &lhs, const var &rhs) {
+inline int64_t operator^(const var &lhs, const var &rhs) {
   return lhs.to_int() ^ rhs.to_int();
 }
 
-inline int operator<<(const var &lhs, const var &rhs) {
+inline int64_t operator<<(const var &lhs, const var &rhs) {
   return lhs.to_int() << rhs.to_int();
 }
 
-inline int operator>>(const var &lhs, const var &rhs) {
+inline int64_t operator>>(const var &lhs, const var &rhs) {
   return lhs.to_int() >> rhs.to_int();
 }
 

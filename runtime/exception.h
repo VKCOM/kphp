@@ -9,9 +9,9 @@ array<array<string>> f$debug_backtrace();
 
 struct C$Exception : refcountable_php_classes<C$Exception> {
   string message;
-  int code = 0;
+  int64_t code = 0;
   string file;
-  int line = 0;
+  int64_t line = 0;
   array<array<string>> trace;
 
   void accept(InstanceMemoryEstimateVisitor &visitor) {
@@ -49,20 +49,20 @@ extern Exception CurException;
 #define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error (message))
 #define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error (message))
 
-Exception f$Exception$$__construct(const Exception &v$this, const string &file, int line, const string &message = string(), int code = 0);
+Exception f$Exception$$__construct(const Exception &v$this, const string &file, int64_t line, const string &message = string(), int64_t code = 0);
 
-Exception new_Exception(const string &file, int line, const string &message = string(), int code = 0);
+Exception new_Exception(const string &file, int64_t line, const string &message = string(), int64_t code = 0);
 
-Exception f$err(const string &file, int line, const string &code, const string &desc = string());
+Exception f$err(const string &file, int64_t line, const string &code, const string &desc = string());
 
 
 string f$Exception$$getMessage(const Exception &e);
 
-int f$Exception$$getCode(const Exception &e);
+int64_t f$Exception$$getCode(const Exception &e);
 
 string f$Exception$$getFile(const Exception &e);
 
-int f$Exception$$getLine(const Exception &e);
+int64_t f$Exception$$getLine(const Exception &e);
 
 array<array<string>> f$Exception$$getTrace(const Exception &e);
 

@@ -55,7 +55,7 @@ template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner
 array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
   array<var> result;
   CHECK_EXCEPTION(return result);
-  auto magic = static_cast<unsigned int>(f$fetch_int());
+  auto magic = static_cast<unsigned int>(rpc_fetch_int());
   switch(magic) {
     case 0x0a29cd5d: {
       result = c_left<T0, inner_magic0, T1, inner_magic1>::fetch(std::move(X), std::move(Y));
@@ -77,7 +77,7 @@ array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_fetch_to(PhpType &tl_object) {
   CHECK_EXCEPTION(return);
-  auto magic = static_cast<unsigned int>(f$fetch_int());
+  auto magic = static_cast<unsigned int>(rpc_fetch_int());
   switch(magic) {
     case 0x0a29cd5d: {
       class_instance<typename left__<typename T0::PhpType, typename T1::PhpType>::type> result;

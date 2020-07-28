@@ -16,32 +16,32 @@ void free_memcache_lib();
 
 const string mc_prepare_key(const string &key);
 
-var mc_get_value(const char *result_str, int result_str_len, int flags);
+var mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags);
 
 bool mc_is_immediate_query(const string &key);
 
 
-constexpr int MEMCACHE_SERIALIZED = 1;
-constexpr int MEMCACHE_COMPRESSED = 2;
+constexpr int64_t MEMCACHE_SERIALIZED = 1;
+constexpr int64_t MEMCACHE_COMPRESSED = 2;
 
 class C$Memcache : public abstract_refcountable_php_interface {
 public:
   virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
   virtual const char *get_class() const = 0;
-  virtual int get_hash() const = 0;
+  virtual int32_t get_hash() const = 0;
 };
 
 class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
 public:
   class host {
   public:
-    int host_num;
-    int host_port;
-    int host_weight;
-    int timeout_ms;
+    int32_t host_num;
+    int32_t host_port;
+    int32_t host_weight;
+    int32_t timeout_ms;
 
     host();
-    host(int host_num, int host_port, int host_weight, int timeout_ms);
+    host(int32_t host_num, int32_t host_port, int32_t host_weight, int32_t timeout_ms);
   };
 
   void accept(InstanceMemoryEstimateVisitor &visitor) final {
@@ -52,11 +52,11 @@ public:
     return "McMemcache";
   }
 
-  int get_hash() const final {
-    return static_cast<int>(vk::std_hash(vk::string_view(C$McMemcache::get_class())));
+  int32_t get_hash() const final {
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$McMemcache::get_class())));
   }
 
-  friend inline int f$estimate_memory_usage(const C$McMemcache::host &) {
+  friend inline int32_t f$estimate_memory_usage(const C$McMemcache::host &) {
     return 0;
   }
 
@@ -68,11 +68,10 @@ public:
   class host {
   public:
     class_instance<C$RpcConnection> conn;
-    int host_weight = 0;
-    int actor_id = -1;
 
     host() = default;
-    explicit host(class_instance<C$RpcConnection> &&c): conn(std::move(c)), host_weight(1) {}
+    explicit host(class_instance<C$RpcConnection> &&c) :
+      conn(std::move(c)) {}
   };
 
   void accept(InstanceMemoryEstimateVisitor &visitor) final {
@@ -84,11 +83,11 @@ public:
     return "RpcMemcache";
   }
 
-  int get_hash() const final {
-    return static_cast<int>(vk::std_hash(vk::string_view(C$RpcMemcache::get_class())));
+  int32_t get_hash() const final {
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcMemcache::get_class())));
   }
 
-  friend inline int f$estimate_memory_usage(const C$RpcMemcache::host &h) {
+  friend inline int64_t f$estimate_memory_usage(const C$RpcMemcache::host &h) {
     return f$estimate_memory_usage(h.conn);
   }
 
@@ -97,24 +96,26 @@ public:
 };
 
 class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this);
-bool f$McMemcache$$addServer(const class_instance<C$McMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
-bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$McMemcache$$addServer(const class_instance<C$McMemcache> &v$this, const string &host_name, int64_t port = 11211,
+                             bool persistent = true, int64_t weight = 1, double timeout = 1, int64_t retry_interval = 15,
+                             bool status = true, const var &failure_callback = var(), int64_t timeoutms = 0);
+bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
+bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
+bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
 var f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const var &key_var);
 bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this, const string &key);
 var f$McMemcache$$decrement(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
 var f$McMemcache$$increment(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
 var f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
-bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int64_t port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 
 class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this, bool fake = false);
-bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port = 11211, bool persistent = true, int weight = 1, double timeout = 1, int retry_interval = 15, bool status = true, const var &failure_callback = var(), int timeoutms = 0);
-bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
-bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int flags = 0, int expire = 0);
-bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int flags = 0, int expire = 0);
+bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port = 11211, bool persistent = true, int64_t weight = 1, double timeout = 1, int64_t retry_interval = 15, bool status = true, const var &failure_callback = var(), int64_t timeoutms = 0);
+bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
+bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
+bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
 var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &v$this, const var &key_var);
 bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &v$this, const string &key);
 var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &count = 1);
@@ -128,11 +129,11 @@ var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key,
 template<class T>
 Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
-bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int flags = 0, int expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
 var f$rpc_mc_increment(const class_instance<C$RpcConnection> &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
 
@@ -148,32 +149,32 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
  */
 
 
-constexpr int MEMCACHE_ERROR = 0x7ae432f5;
-constexpr int MEMCACHE_VALUE_NOT_FOUND = 0x32c42422;
-constexpr int MEMCACHE_VALUE_LONG = 0x9729c42;
-constexpr int MEMCACHE_VALUE_STRING = 0xa6bebb1a;
-constexpr int MEMCACHE_FALSE = 0xbc799737;
-constexpr int MEMCACHE_TRUE = 0x997275b5;
-constexpr int MEMCACHE_SET = 0xeeeb54c4;
-constexpr int MEMCACHE_ADD = 0xa358f31c;
-constexpr int MEMCACHE_REPLACE = 0x2ecdfaa2;
-constexpr int MEMCACHE_INCR = 0x80e6c950;
-constexpr int MEMCACHE_DECR = 0x6467e0d9;
-constexpr int MEMCACHE_DELETE = 0xab505c0a;
-constexpr int MEMCACHE_GET = 0xd33b13ae;
+constexpr int32_t MEMCACHE_ERROR = 0x7ae432f5;
+constexpr int32_t MEMCACHE_VALUE_NOT_FOUND = 0x32c42422;
+constexpr int32_t MEMCACHE_VALUE_LONG = 0x9729c42;
+constexpr int32_t MEMCACHE_VALUE_STRING = 0xa6bebb1a;
+constexpr int32_t MEMCACHE_FALSE = 0xbc799737;
+constexpr int32_t MEMCACHE_TRUE = 0x997275b5;
+constexpr int32_t MEMCACHE_SET = 0xeeeb54c4;
+constexpr int32_t MEMCACHE_ADD = 0xa358f31c;
+constexpr int32_t MEMCACHE_REPLACE = 0x2ecdfaa2;
+constexpr int32_t MEMCACHE_INCR = 0x80e6c950;
+constexpr int32_t MEMCACHE_DECR = 0x6467e0d9;
+constexpr int32_t MEMCACHE_DELETE = 0xab505c0a;
+constexpr int32_t MEMCACHE_GET = 0xd33b13ae;
 
 // this is here to avoid full kphp recompilation on any tl scheme change
-constexpr int ENGINE_MC_GET_QUERY = 0x62408e9e;
+constexpr int32_t ENGINE_MC_GET_QUERY = 0x62408e9e;
 
 extern const char *mc_method;
 
 class rpc_mc_multiget_resumable : public Resumable {
   using ReturnT = Optional<array<var>>;
 
-  int queue_id;
-  int first_request_id;
-  int keys_n;
-  Optional<int> request_id;
+  int64_t queue_id;
+  int64_t first_request_id;
+  uint32_t keys_n;
+  Optional<int64_t> request_id;
   array<string> query_names;
   array<var> result;
   bool return_false_if_not_found;
@@ -190,8 +191,8 @@ protected:
         }
         keys_n--;
 
-        int k = (int)(request_id.val() - first_request_id);
-        php_assert ((unsigned int)k < (unsigned int)query_names.count());
+        int64_t k = request_id.val() - first_request_id;
+        php_assert (k < query_names.count());
 
         bool parse_result = rpc_get_and_parse(request_id.val(), -1);
         php_assert (resumable_finished);
@@ -199,17 +200,17 @@ protected:
           continue;
         }
 
-        int op = TRY_CALL_(int, rpc_lookup_int(), RETURN(false));
+        int32_t op = TRY_CALL_(int32_t, rpc_lookup_int(), RETURN(false));
         if (op == MEMCACHE_ERROR) {
-          TRY_CALL_VOID_(f$fetch_int(), RETURN(false));//op
+          TRY_CALL_VOID_(rpc_fetch_int(), RETURN(false));//op
           TRY_CALL_VOID_(f$fetch_long(), RETURN(false));//query_id
-          TRY_CALL_VOID_(f$fetch_int(), RETURN(false)); // error_code
+          TRY_CALL_VOID_(rpc_fetch_int(), RETURN(false)); // error_code
           TRY_CALL_VOID_(f$fetch_string(), RETURN(false)); // error
           if (return_false_if_not_found) {
             result.set_value(query_names.get_value(k), false);
           }
         } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
-          TRY_CALL_VOID_(f$fetch_int(), RETURN(false)); // op
+          TRY_CALL_VOID_(rpc_fetch_int(), RETURN(false)); // op
         } else {
           var q_result = TRY_CALL_(var, f$fetch_memcache_value(), RETURN(false));
           result.set_value(query_names.get_value(k), q_result);
@@ -224,7 +225,7 @@ protected:
   }
 
 public:
-  rpc_mc_multiget_resumable(int queue_id, int first_request_id, int keys_n, array<string> query_names, bool return_false_if_not_found) :
+  rpc_mc_multiget_resumable(int64_t queue_id, int64_t first_request_id, uint32_t keys_n, array<string> query_names, bool return_false_if_not_found) :
     queue_id(queue_id),
     first_request_id(first_request_id),
     keys_n(keys_n),
@@ -242,26 +243,26 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
   resumable_finished = true;
 
   array<string> query_names(array_size(keys.count(), 0, true));
-  int queue_id = -1;
-  int keys_n = 0;
-  int first_request_id = 0;
-  int bytes_sent = 0;
+  int64_t queue_id = -1;
+  uint32_t keys_n = 0;
+  int64_t first_request_id = 0;
+  size_t bytes_sent = 0;
   for (auto it = keys.begin(); it != keys.end(); ++it) {
     const string key = f$strval(it.get_value());
     const string real_key = mc_prepare_key(key);
-    int is_immediate = mc_is_immediate_query(real_key);
+    const bool is_immediate = mc_is_immediate_query(real_key);
 
     f$rpc_clean();
     f$store_int(fake ? ENGINE_MC_GET_QUERY : MEMCACHE_GET);
     store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
-    int current_sent_size = real_key.size() + 32;//estimate
+    size_t current_sent_size = real_key.size() + 32;//estimate
     bytes_sent += current_sent_size;
     if (bytes_sent >= (1 << 15) && bytes_sent > current_sent_size) {
       f$rpc_flush();
       bytes_sent = current_sent_size;
     }
-    int request_id = rpc_send(conn, timeout, (bool)is_immediate);
+    int64_t request_id = rpc_send(conn, timeout, is_immediate);
     if (request_id > 0) {
       if (first_request_id == 0) {
         first_request_id = request_id;
@@ -287,14 +288,14 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
     array<var> result(array_size(0, keys_n, false));
 
     while (keys_n > 0) {
-      int request_id = wait_queue_next_synchronously(queue_id).val();
+      int64_t request_id = wait_queue_next_synchronously(queue_id).val();
       if (request_id <= 0) {
         break;
       }
       keys_n--;
 
-      int k = (int)(request_id - first_request_id);
-      php_assert ((unsigned int)k < (unsigned int)query_names.count());
+      int64_t k = request_id - first_request_id;
+      php_assert(static_cast<uint64_t>(k) < query_names.count());
 
       bool parse_result = rpc_get_and_parse(request_id, -1);
       php_assert (resumable_finished);
@@ -302,17 +303,17 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
         continue;
       }
 
-      int op = TRY_CALL(int, bool, rpc_lookup_int());
+      int32_t op = TRY_CALL(int32_t, bool, rpc_lookup_int());
       if (op == MEMCACHE_ERROR) {
-        TRY_CALL_VOID(bool, f$fetch_int());//op
+        TRY_CALL_VOID(bool, rpc_fetch_int());//op
         TRY_CALL_VOID(bool, f$fetch_long());//query_id
-        TRY_CALL_VOID(bool, f$fetch_int());
+        TRY_CALL_VOID(bool, rpc_fetch_int());
         TRY_CALL_VOID(bool, f$fetch_string());
         if (return_false_if_not_found) {
           result.set_value(query_names.get_value(k), false);
         }
       } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
-        TRY_CALL_VOID(bool, f$fetch_int());//op
+        TRY_CALL_VOID(bool, rpc_fetch_int());//op
       } else {
         var q_result = TRY_CALL(var, bool, f$fetch_memcache_value());
         result.set_value(query_names.get_value(k), q_result);

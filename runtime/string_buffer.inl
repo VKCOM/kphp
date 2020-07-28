@@ -90,7 +90,7 @@ string_buffer &operator<<(string_buffer &sb, bool x) {
   return sb;
 }
 
-string_buffer &operator<<(string_buffer &sb, int x) {
+string_buffer &operator<<(string_buffer &sb, int32_t x) {
   sb.reserve_at_least(11);
   sb.buffer_end = simd_int32_to_string(x, sb.buffer_end);
   return sb;
@@ -112,6 +112,10 @@ string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
   sb.reserve_at_least(20);
   sb.buffer_end = simd_uint64_to_string(x, sb.buffer_end);
   return sb;
+}
+
+string_buffer &operator<<(string_buffer &sb, int64_t x) {
+  return sb << static_cast<long long>(x);
 }
 
 string::size_type string_buffer::size() const {
@@ -138,14 +142,14 @@ string string_buffer::str() const {
   return string(buffer_begin, size());
 }
 
-bool string_buffer::set_pos(int pos) {
+bool string_buffer::set_pos(int64_t pos) {
   php_assert (static_cast<string::size_type>(pos) <= buffer_len);
   buffer_end = buffer_begin + pos;
   return true;
 }
 
-string_buffer &string_buffer::append(const char *str, int len) {
-  reserve_at_least(len);
+string_buffer &string_buffer::append(const char *str, size_t len) {
+  reserve_at_least(static_cast<string::size_type>(len));
 
   if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return *this;

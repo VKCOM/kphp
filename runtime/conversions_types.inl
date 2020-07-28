@@ -5,7 +5,7 @@
 #endif
 
 template<class T, class = enable_for_bool_int_double<T>>
-inline bool f$boolval(const T &val) {
+inline bool f$boolval(T val) {
   return static_cast<bool>(val);
 }
 
@@ -38,53 +38,54 @@ inline bool f$boolval(const var &val) {
 }
 
 template<class T, class = enable_for_bool_int_double<T>>
-inline int f$intval(const T &val) ubsan_supp("float-cast-overflow");
+inline int64_t f$intval(T val) ubsan_supp("float-cast-overflow");
 
 template<class T, class>
-inline int f$intval(const T &val) {
-  return static_cast<int>(val);
+inline int64_t f$intval(T val) {
+  return static_cast<int64_t>(val);
 }
 
-inline int f$intval(const string &val) {
+inline int64_t f$intval(const string &val) {
   return val.to_int();
 }
 
-inline int f$intval(const var &val) {
+inline int64_t f$intval(const var &val) {
   return val.to_int();
 }
 
 template<class T>
-inline int f$intval(const Optional<T> &val) {
+inline int64_t f$intval(const Optional<T> &val) {
   return val.has_value() ? f$intval(val.val()) : 0;
 }
 
 
-inline int f$safe_intval(const bool &val) {
+inline int64_t f$safe_intval(bool val) {
   return val;
 }
 
-inline const int &f$safe_intval(const int &val) {
+inline  int64_t f$safe_intval(int64_t val) {
   return val;
 }
 
-inline int f$safe_intval(const double &val) {
-  if (fabs(val) > 2147483648) {
+inline int64_t f$safe_intval(double val) {
+  constexpr auto max_int = static_cast<double>(static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1);
+  if (fabs(val) > max_int) {
     php_warning("Wrong convertion from double %.6lf to int", val);
   }
-  return (int)val;
+  return static_cast<int64_t>(val);
 }
 
-inline int f$safe_intval(const string &val) {
+inline int64_t f$safe_intval(const string &val) {
   return val.safe_to_int();
 }
 
-inline int f$safe_intval(const var &val) {
+inline int64_t f$safe_intval(const var &val) {
   return val.safe_to_int();
 }
 
 
 template<class T, class = enable_for_bool_int_double<T>>
-inline double f$floatval(const T &val) {
+inline double f$floatval(T val) {
   return static_cast<double>(val);
 }
 
@@ -102,15 +103,15 @@ inline double f$floatval(const Optional<T> &val) {
 }
 
 
-inline string f$strval(const bool &val) {
+inline string f$strval(bool val) {
   return (val ? string("1", 1) : string());
 }
 
-inline string f$strval(const int &val) {
+inline string f$strval(int64_t val) {
   return string(val);
 }
 
-inline string f$strval(const double &val) {
+inline string f$strval(double val) {
   return string(val);
 }
 

@@ -19,7 +19,8 @@ static char opened_udp_sockets_storage[sizeof(array<int>)];
 static array<int> *opened_udp_sockets = reinterpret_cast <array<int> *> (opened_udp_sockets_storage);
 static long long opened_udp_sockets_last_query_num = -1;
 
-static Stream udp_stream_socket_client(const string &url, int &error_number, string &error_description, double timeout, int flags __attribute__((unused)), const var &options __attribute__((unused))) {
+static Stream udp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
+                                       int64_t flags __attribute__((unused)), const var &options __attribute__((unused))) {
 #define RETURN                                          \
   php_warning ("%s", error_description.c_str());        \
   if (sock_fd != -1) {                                  \
@@ -53,7 +54,7 @@ static Stream udp_stream_socket_client(const string &url, int &error_number, str
     RETURN_ERROR_FORMAT(-7, "\"%s\" has to be of format 'udp://<host>:<port>'", url);
   }
   string host = url_to_parse.substr(0, pos);
-  int port = f$intval(url_to_parse.substr(pos + 1, url_to_parse.size() - (pos + 1)));
+  int64_t port = f$intval(url_to_parse.substr(pos + 1, url_to_parse.size() - (pos + 1)));
 
   if (host.empty()) {
     RETURN_ERROR_FORMAT(-1, "Wrong host specified in url \"%s\"", url);
@@ -150,13 +151,13 @@ static int udp_get_fd(const Stream &stream) {
   return opened_udp_sockets->get_value(stream_key);
 }
 
-static Optional<int> udp_fwrite(const Stream &stream, const string &data) {
+static Optional<int64_t> udp_fwrite(const Stream &stream, const string &data) {
   int sock_fd = udp_get_fd(stream);
   if (sock_fd == -1) {
     return false;
   }
   const void *data_ptr = static_cast <const void *> (data.c_str());
-  size_t data_len = static_cast <size_t> (data.size());
+  size_t data_len = data.size();
   if (data_len == 0) {
     return 0;
   }
@@ -167,7 +168,7 @@ static Optional<int> udp_fwrite(const Stream &stream, const string &data) {
     php_warning("An error occurred while sending UPD-package");
     return false;
   }
-  return (int)res;
+  return res;
 }
 
 static bool udp_fclose(const Stream &stream) {

@@ -13,9 +13,9 @@ static int mb_detect_encoding(const string &encoding) {
   return -1;
 }
 
-static int mb_UTF8_strlen(const char *s) {
-  int res = 0;
-  for (int i = 0; s[i]; i++) {
+static int64_t mb_UTF8_strlen(const char *s) {
+  int64_t res = 0;
+  for (int64_t i = 0; s[i]; i++) {
     if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
       res++;
     }
@@ -23,9 +23,9 @@ static int mb_UTF8_strlen(const char *s) {
   return res;
 }
 
-static int mb_UTF8_advance(const char *s, int cnt) {
+static int64_t mb_UTF8_advance(const char *s, int64_t cnt) {
   php_assert (cnt >= 0);
-  int i;
+  int64_t i;
   for (i = 0; s[i] && cnt >= 0; i++) {
     if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
       cnt--;
@@ -37,9 +37,9 @@ static int mb_UTF8_advance(const char *s, int cnt) {
   return i;
 }
 
-static int mb_UTF8_get_offset(const char *s, int pos) {
-  int res = 0;
-  for (int i = 0; i < pos && s[i]; i++) {
+static int64_t mb_UTF8_get_offset(const char *s, int64_t pos) {
+  int64_t res = 0;
+  for (int64_t i = 0; i < pos && s[i]; i++) {
     if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
       res++;
     }
@@ -105,7 +105,7 @@ bool f$mb_check_encoding(const string &str, const string &encoding) {
 }
 
 
-int f$mb_strlen(const string &str, const string &encoding) {
+int64_t f$mb_strlen(const string &str, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_strlen", encoding.c_str());
@@ -255,12 +255,12 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
   }
 }
 
-Optional<int> f$mb_strpos(const string &haystack, const string &needle, int offset, const string &encoding) {
+Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset, const string &encoding) {
   if (offset < 0) {
-    php_warning("Wrong offset = %d in function mb_strpos", offset);
+    php_warning("Wrong offset = %ld in function mb_strpos", offset);
     return false;
   }
-  if ((int)needle.size() == 0) {
+  if (needle.size() == 0) {
     php_warning("Parameter needle is empty in function mb_strpos");
     return false;
   }
@@ -275,15 +275,15 @@ Optional<int> f$mb_strpos(const string &haystack, const string &needle, int offs
     return f$strpos(haystack, needle, offset);
   }
 
-  int UTF8_offset = mb_UTF8_advance(haystack.c_str(), offset);
+  int64_t UTF8_offset = mb_UTF8_advance(haystack.c_str(), offset);
   const char *s = (const char *)memmem(haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size());
   if (s == nullptr) {
     return false;
   }
-  return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, static_cast<int>(s - (haystack.c_str() + UTF8_offset))) + offset;
+  return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, s - (haystack.c_str() + UTF8_offset)) + offset;
 }
 
-Optional<int> f$mb_stripos(const string &haystack, const string &needle, int offset, const string &encoding) {
+Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int64_t offset, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_stripos", encoding.c_str());
@@ -293,16 +293,16 @@ Optional<int> f$mb_stripos(const string &haystack, const string &needle, int off
   return f$mb_strpos(f$mb_strtolower(haystack, encoding), f$mb_strtolower(needle, encoding), offset, encoding);
 }
 
-string f$mb_substr(const string &str, int start, const var &length_var, const string &encoding) {
+string f$mb_substr(const string &str, int64_t start, const var &length_var, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
     php_critical_error ("encoding \"%s\" doesn't supported in mb_substr", encoding.c_str());
     return str;
   }
 
-  int length;
+  int64_t length;
   if (length_var.is_null()) {
-    length = INT_MAX;
+    length = std::numeric_limits<int64_t>::max();
   } else {
     length = length_var.to_int();
   }
@@ -315,7 +315,7 @@ string f$mb_substr(const string &str, int start, const var &length_var, const st
     return res.val();
   }
 
-  int len = mb_UTF8_strlen(str.c_str());
+  int64_t len = mb_UTF8_strlen(str.c_str());
   if (start < 0) {
     start += len;
   }
@@ -332,8 +332,8 @@ string f$mb_substr(const string &str, int start, const var &length_var, const st
     length = len - start;
   }
 
-  int UTF8_start = mb_UTF8_advance(str.c_str(), start);
-  int UTF8_length = mb_UTF8_advance(str.c_str() + UTF8_start, length);
+  int64_t UTF8_start = mb_UTF8_advance(str.c_str(), start);
+  int64_t UTF8_length = mb_UTF8_advance(str.c_str() + UTF8_start, length);
 
-  return string(str.c_str() + UTF8_start, UTF8_length);
+  return string(str.c_str() + UTF8_start, static_cast<string::size_type>(UTF8_length));
 }
