@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/smart_ptrs/singleton.h"
+
 #include "compiler/common.h"
 #include "compiler/helper.h"
 #include "compiler/token.h"
@@ -182,17 +184,13 @@ struct TokenLexerPHPDoc : TokenLexerWithHelper {
   inline void add_rule(Helper<TokenLexer> *h, const string &str, TokenType tp);
 
   Helper<TokenLexer> *gen_helper();
-  TokenLexerPHPDoc();
 };
 
 struct TokenLexerGlobal : TokenLexer {
   //static TokenLexerPHP php_lexer;
-  TokenLexerPHP *php_lexer;
+  TokenLexerPHP *php_lexer{vk::singleton<TokenLexerPHP>::get()};
 
-  TokenLexerGlobal();
   int parse(LexerData *lexer_data) const;
-
-  ~TokenLexerGlobal();
 };
 
 void lexer_init();

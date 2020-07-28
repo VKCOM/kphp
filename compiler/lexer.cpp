@@ -5,28 +5,10 @@
 
 #include "auto/compiler/keywords_set.hpp"
 #include "common/algorithms/find.h"
+#include "common/smart_ptrs/singleton.h"
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
-
-template<class T>
-class Singleton {
-public:
-  static T *instance() {
-    if (val == nullptr) {
-      assert (get_thread_id() == 0);
-      val = (T *)(operator new(sizeof(T)));
-      new(val) T();
-    }
-    return val;
-  }
-
-private:
-  static T *val;
-};
-
-template<class T>
-T *Singleton<T>::val = nullptr;
 
 /***
   LexerData
@@ -680,15 +662,15 @@ int TokenLexerHexChar::parse(LexerData *lexer_data) const {
 Helper<TokenLexer> *TokenLexerStringExpr::gen_helper() {
   Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("Can't parse"));
 
-  h->add_rule("\'", Singleton<TokenLexerSimpleString>::instance());
-  h->add_rule("\"", Singleton<TokenLexerString>::instance());
-  h->add_rule("[a-zA-Z_$\\]", Singleton<TokenLexerName>::instance());
+  h->add_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
+  h->add_rule("\"", vk::singleton<TokenLexerString>::get());
+  h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
 
   //TODO: double (?)
-  h->add_rule("[0-9]|.[0-9]", Singleton<TokenLexerNum>::instance());
+  h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
 
-  h->add_rule(" |\t|\n|\r", Singleton<TokenLexerSkip>::instance());
-  h->add_rule("", Singleton<TokenLexerCommon>::instance());
+  h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
+  h->add_rule("", vk::singleton<TokenLexerCommon>::get());
 
   return h;
 }
@@ -757,11 +739,11 @@ Helper<TokenLexer> *TokenLexerString::gen_helper() {
   add_esc("\\\\", '\\');
   add_esc("\\\"", '\"');
 
-  h->add_rule("\\[0-7]", Singleton<TokenLexerOctChar>::instance());
-  h->add_rule("\\x[0-9A-Fa-f]", Singleton<TokenLexerHexChar>::instance());
+  h->add_rule("\\[0-7]", vk::singleton<TokenLexerOctChar>::get());
+  h->add_rule("\\x[0-9A-Fa-f]", vk::singleton<TokenLexerHexChar>::get());
 
-  h->add_rule("$[A-Za-z_{]", Singleton<TokenLexerName>::instance());
-  h->add_rule("{$", Singleton<TokenLexerStringExpr>::instance());
+  h->add_rule("$[A-Za-z_{]", vk::singleton<TokenLexerName>::get());
+  h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
 
   return h;
 }
@@ -777,11 +759,11 @@ Helper<TokenLexer> *TokenLexerHeredocString::gen_helper() {
   add_esc("\\$", '$');
   add_esc("\\\\", '\\');
 
-  h->add_rule("\\[0-7]", Singleton<TokenLexerOctChar>::instance());
-  h->add_rule("\\x[0-9A-Fa-f]", Singleton<TokenLexerHexChar>::instance());
+  h->add_rule("\\[0-7]", vk::singleton<TokenLexerOctChar>::get());
+  h->add_rule("\\x[0-9A-Fa-f]", vk::singleton<TokenLexerHexChar>::get());
 
-  h->add_rule("$[A-Za-z{]", Singleton<TokenLexerName>::instance());
-  h->add_rule("{$", Singleton<TokenLexerStringExpr>::instance());
+  h->add_rule("$[A-Za-z{]", vk::singleton<TokenLexerName>::get());
+  h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
 
   return h;
 }
@@ -1121,17 +1103,17 @@ int TokenLexerSkip::parse(LexerData *lexer_data) const {
 Helper<TokenLexer> *TokenLexerPHP::gen_helper() {
   Helper<TokenLexer> *h = new Helper<TokenLexer>(new TokenLexerError("Can't parse"));
 
-  h->add_rule("/*|//|#", Singleton<TokenLexerComment>::instance());
-  h->add_rule("#ifndef KittenPHP", Singleton<TokenLexerIfndefComment>::instance());
-  h->add_rule("\'", Singleton<TokenLexerSimpleString>::instance());
-  h->add_rule("\"", Singleton<TokenLexerString>::instance());
-  h->add_rule("<<<", Singleton<TokenLexerHeredocString>::instance());
-  h->add_rule("[a-zA-Z_$\\]", Singleton<TokenLexerName>::instance());
+  h->add_rule("/*|//|#", vk::singleton<TokenLexerComment>::get());
+  h->add_rule("#ifndef KittenPHP", vk::singleton<TokenLexerIfndefComment>::get());
+  h->add_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
+  h->add_rule("\"", vk::singleton<TokenLexerString>::get());
+  h->add_rule("<<<", vk::singleton<TokenLexerHeredocString>::get());
+  h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
 
-  h->add_rule("[0-9]|.[0-9]", Singleton<TokenLexerNum>::instance());
+  h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
 
-  h->add_rule(" |\t|\n|\r", Singleton<TokenLexerSkip>::instance());
-  h->add_rule("", Singleton<TokenLexerCommon>::instance());
+  h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
+  h->add_rule("", vk::singleton<TokenLexerCommon>::get());
 
   return h;
 }
@@ -1154,9 +1136,9 @@ Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
 
   auto h = new Helper<TokenLexer>(new TokenLexerPHPDocStopParsing());
 
-  h->add_rule("[a-zA-Z_$\\]", Singleton<TokenLexerName>::instance());
-  h->add_rule("[0-9]|.[0-9]", Singleton<TokenLexerNum>::instance());
-  h->add_rule(" |\t|\n|\r", Singleton<TokenLexerSkip>::instance());
+  h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
+  h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
+  h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
 
   add_rule(h, "<", tok_lt);
   add_rule(h, ">", tok_gt);
@@ -1184,14 +1166,6 @@ Helper<TokenLexer> *TokenLexerPHPDoc::gen_helper() {
   add_rule(h, "...", tok_varg);
 
   return h;
-}
-
-TokenLexerPHPDoc::TokenLexerPHPDoc() {
-}
-
-TokenLexerGlobal::TokenLexerGlobal() {
-  php_lexer = Singleton<TokenLexerPHP>::instance();
-  assert (php_lexer != nullptr);
 }
 
 int TokenLexerGlobal::parse(LexerData *lexer_data) const {
@@ -1250,16 +1224,13 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
   return 0;
 }
 
-TokenLexerGlobal::~TokenLexerGlobal() {
-}
-
 void lexer_init() {
-  Singleton<TokenLexerCommon>::instance()->init();
-  Singleton<TokenLexerStringExpr>::instance()->init();
-  Singleton<TokenLexerString>::instance()->init();
-  Singleton<TokenLexerHeredocString>::instance()->init();
-  Singleton<TokenLexerPHP>::instance()->init();
-  Singleton<TokenLexerPHPDoc>::instance()->init();
+  vk::singleton<TokenLexerCommon>::get()->init();
+  vk::singleton<TokenLexerStringExpr>::get()->init();
+  vk::singleton<TokenLexerString>::get()->init();
+  vk::singleton<TokenLexerHeredocString>::get()->init();
+  vk::singleton<TokenLexerPHP>::get()->init();
+  vk::singleton<TokenLexerPHPDoc>::get()->init();
 }
 
 vector<Token> php_text_to_tokens(char *text, int text_length) {
@@ -1291,7 +1262,7 @@ vector<Token> phpdoc_to_tokens(const char *text, int text_length) {
     if (*lexer_data.get_code() == 0) {
       break;
     }
-    if (Singleton<TokenLexerPHPDoc>::instance()->parse(&lexer_data) == 1) {
+    if (vk::singleton<TokenLexerPHPDoc>::get()->parse(&lexer_data) == 1) {
       break;
     }
 
