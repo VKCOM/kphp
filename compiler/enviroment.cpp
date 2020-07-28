@@ -21,7 +21,7 @@ static void as_dir(string *s) {
   if (s->empty()) {
     return;
   }
-  if ((*s)[(int)s->size() - 1] != '/') {
+  if (s->back() != '/') {
     *s += "/";
   }
   if ((*s)[0] != '/') {
@@ -451,8 +451,7 @@ bool KphpEnviroment::init() {
     init_env_var(&static_lib_out_dir_, "KPHP_OUT_LIB_DIR", lib_dir + "lib/");
     as_dir(&static_lib_out_dir_);
     main_files_.back().assign(lib_dir).append("/php/index.php");
-  }
-  else {
+  } else {
     if (!static_lib_out_dir_.empty()) {
       fmt_print("Output dir is allowed only for static lib mode\n");
       return false;
@@ -462,8 +461,7 @@ bool KphpEnviroment::init() {
 
   init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
 
-  init_env_var(&base_dir_, "", "");
-  as_dir(&base_dir_);
+  base_dir_ = {};
 
   get_bool_option_from_env(no_index_file_, "KPHP_NO_INDEX_FILE", false);
   get_bool_option_from_env(no_pch_, "KPHP_NO_PCH", false);

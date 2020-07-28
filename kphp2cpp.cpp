@@ -184,9 +184,8 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
-  while (optind < argc) {
+  for (; optind < argc; ++optind) {
     env->add_main_file(argv[optind]);
-    optind++;
   }
 
   bool ok = env->init();
