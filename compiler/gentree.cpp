@@ -278,7 +278,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
 }
 
 VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
-  //postfix operators ++, --, [], ->
+  //postfix operators x++, x--, x[] and x{}, x->y, x()
   bool need = true;
   while (need && cur != end) {
     auto op = cur;
@@ -328,7 +328,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       next_cur();
       skip_phpdoc_tokens();
       vector<VertexPtr> next;
-      bool ok_next = gen_list<op_err>(&next, &GenTree::get_expression, tok_comma);
+      bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
       CE (!kphp_error(ok_next, "get argument list failed"));
       CE (expect(tok_clpar, "')'"));
 
@@ -503,7 +503,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_new: {
       next_cur();
       CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      auto func_call = get_func_call<op_func_call, op_err>();
+      auto func_call = get_func_call<op_func_call, op_none>();
       // Hack to be more compatible with php
       if (func_call->str_val == "Memcache") {
         func_call->set_string("McMemcache");
@@ -521,7 +521,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
         break;
       }
       cur--;
-      res = get_func_call<op_func_call, op_err>();
+      res = get_func_call<op_func_call, op_none>();
       return_flag = was_arrow;
       break;
     }
@@ -534,7 +534,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_isset: {
-      auto temp = get_multi_call<op_isset>(&GenTree::get_expression, true);
+      auto temp = get_multi_call<op_isset, op_none>(&GenTree::get_expression, true);
       CE (!kphp_error(temp->size(), "isset function requires at least one argument"));
       res = VertexPtr{};
       for (auto right : temp->args()) {
@@ -1007,7 +1007,7 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
   func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
 }
 
-template<Operation Op, class FuncT, class ResultType>
+template<Operation Op, Operation EmptyOp, class FuncT, class ResultType>
 VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool parenthesis) {
   auto location = auto_location();
   next_cur();
@@ -1017,7 +1017,7 @@ VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool parenthesis) {
   }
 
   std::vector<ResultType> next;
-  bool ok_next = gen_list<op_err>(&next, f, tok_comma);
+  bool ok_next = gen_list<EmptyOp>(&next, f, tok_comma);
   CE (!kphp_error(ok_next, "Failed get_multi_call"));
   if (parenthesis) {
     CE (expect(tok_clpar, "')'"));
@@ -1818,7 +1818,7 @@ void GenTree::parse_declare_at_top_of_file() {
 
 VertexAdaptor<op_empty> GenTree::get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
   cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
-  VertexAdaptor<op_seq> v = get_multi_call<op_static>(&GenTree::get_expression);
+  VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
   CE (check_statement_end());
 
   for (auto seq : v->args()) {
@@ -1885,7 +1885,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       res = get_break_or_continue<op_break>();
       return res;
     case tok_unset: {
-      auto res = get_multi_call<op_unset>(&GenTree::get_expression, true);
+      auto res = get_multi_call<op_unset, op_none>(&GenTree::get_expression, true);
       CE (check_statement_end());
       if (res->size() == 1) {
         return res->args()[0];
@@ -1893,7 +1893,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return res;
     }
     case tok_var_dump: {
-      auto res = get_multi_call<op_func_call>(&GenTree::get_expression, true);
+      auto res = get_multi_call<op_func_call, op_none>(&GenTree::get_expression, true);
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "var_dump";
       }
@@ -1911,7 +1911,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       if (G->env().get_warnings_level() >= 2 && cur_function && cur_function->type == FunctionData::func_local && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
-      res = get_multi_call<op_global>(&GenTree::get_var_name);
+      res = get_multi_call<op_global, op_err>(&GenTree::get_var_name);
       CE (check_statement_end());
       return res;
     case tok_protected:
@@ -1944,7 +1944,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
         return get_class_member(phpdoc_str);
       }
       if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // статическая переменная функции
-        res = get_multi_call<op_static>(&GenTree::get_expression);
+        res = get_multi_call<op_static, op_err>(&GenTree::get_expression);
         CE (check_statement_end());
         return res;
       }
@@ -1952,7 +1952,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       kphp_error(0, "Expected function or variable after keyword `static`");
       return {};
     case tok_echo: {
-      auto res = get_multi_call<op_func_call>(&GenTree::get_expression);
+      auto res = get_multi_call<op_func_call, op_err>(&GenTree::get_expression);
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "echo";
       }
@@ -1960,7 +1960,7 @@ VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
       return res;
     }
     case tok_dbg_echo: {
-      auto res = get_multi_call<op_func_call>(&GenTree::get_expression);
+      auto res = get_multi_call<op_func_call, op_err>(&GenTree::get_expression);
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "dbg_echo";
       }

@@ -35,6 +35,9 @@ class TestFile:
     def is_php5(self):
         return "php5" in self.tags
 
+    def is_php7_4(self):
+        return "php7_4" in self.tags
+
 
 class KphpRunOnceRunner(KphpBuilder):
     def __init__(self, test_file, kphp_path, tests_dir, distcc_hosts):
@@ -58,6 +61,8 @@ class KphpRunOnceRunner(KphpBuilder):
 
         if self._test_file.is_php5():
             php_bin = shutil.which("php5.6") or shutil.which("php5")
+        elif self._test_file.is_php7_4():
+            php_bin = shutil.which("php7.4")
         else:
             php_bin = shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
 

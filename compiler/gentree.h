@@ -110,7 +110,7 @@ public:
   VertexPtr get_def_value();
   template<PrimitiveType ToT>
   static VertexAdaptor<meta_op_unary> conv_to_lval(VertexPtr x);
-  template<Operation Op, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
+  template<Operation Op, Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexAdaptor<op_return> get_return();
   template<Operation Op>
