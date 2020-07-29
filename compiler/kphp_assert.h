@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unistd.h>
+
 #define compiler_assert_(x, y, level, unreachable)  ({          \
   int kphp_error_res__ = 0;                                     \
   if (!(x)) {                                                   \

@@ -4,16 +4,19 @@
 
 class Key {
 private:
-  int id;
+  int id{-1};
 
-  explicit Key(int id);
+  explicit Key(int id) :
+    id(id) {
+  }
 
 public:
-  Key();
+  Key() = default;
   Key(const Key &other) = default;
   Key &operator=(const Key &other) = default;
 
-  static Key any_key();
+  static Key any_key() { return Key(0); }
+
   static Key string_key(const std::string &key);
   static Key int_key(int key);
 

@@ -1,29 +1,15 @@
 #include "compiler/inferring/key.h"
 
-#include <string>
-
 #include "common/algorithms/hashes.h"
+#include "common/wrappers/fmt_format.h"
 
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 #include "compiler/threading/hash-table.h"
 
 static TSHashTable<Key *> int_keys_ht;
 static TSHashTable<Key *> string_keys_ht;
 static TSHashTable<std::string *> string_key_names_ht;
 static int n_string_keys_ht = 0;
-
-Key::Key() :
-  id(-1) {
-}
-
-Key::Key(int id) :
-  id(id) {
-}
-
-Key Key::any_key() {
-  return Key(0);
-}
 
 Key Key::string_key(const std::string &key) {
   auto node = string_keys_ht.at(vk::std_hash(key));

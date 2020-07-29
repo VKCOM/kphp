@@ -9,12 +9,12 @@
 
 class SrcFile {
 public:
-  int id;
+  int id{0};
   std::string text, file_name, short_file_name;
   std::string unified_file_name;
   std::string unified_dir_name;
-  bool loaded;
-  bool is_required;
+  bool loaded{false};
+  bool is_required{false};
 
   std::string main_func_name;
   FunctionPtr main_function;
@@ -25,8 +25,13 @@ public:
   std::string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
   std::map<vk::string_view, vk::string_view> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
 
-  SrcFile();
-  SrcFile(const std::string &file_name, const std::string &short_file_name, LibPtr owner_lib_id);
+  SrcFile() = default;
+  SrcFile(std::string file_name, std::string short_file_name, LibPtr owner_lib_id) :
+    file_name(std::move(file_name)),
+    short_file_name(std::move(short_file_name)),
+    owner_lib(owner_lib_id) {
+  }
+
   bool load();
 
   vk::string_view get_line(int id);

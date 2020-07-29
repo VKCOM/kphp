@@ -12,20 +12,6 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/stage.h"
 
-SrcFile::SrcFile() :
-  id(0),
-  loaded(false),
-  is_required(false) {}
-
-SrcFile::SrcFile(const string &file_name, const string &short_file_name, LibPtr owner_lib_id) :
-  id(0),
-  file_name(file_name),
-  short_file_name(short_file_name),
-  loaded(false),
-  is_required(false),
-  owner_lib(owner_lib_id) {}
-
-
 bool SrcFile::load() {
   if (loaded) {
     return true;
@@ -45,14 +31,11 @@ bool SrcFile::load() {
   err = (int)read(fid, &text[0], file_size);
   kphp_assert_msg(err >= 0, fmt_format("Can't read file [{}]: {}", file_name, strerror(errno)));
 
-  for (int i = 0; i < file_size; i++) {
+  for (int i = 0, prev_i = 0; i < file_size; i++) {
     if (unlikely (text[i] == 0)) {
       kphp_warning(fmt_format("symbol with code zero was replaced by space in file [{}] at [{}]", file_name, i));
       text[i] = ' ';
     }
-  }
-
-  for (int i = 0, prev_i = 0; i <= file_size; i++) {
     if (text[i] == '\n') {
       lines.push_back(vk::string_view(&text[prev_i], &text[i]));
       prev_i = i + 1;
