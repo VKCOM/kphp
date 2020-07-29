@@ -6,13 +6,13 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
-#include "common/wrappers/to_array.h"
-
 #include "runtime/critical_section.h"
 #include "runtime/global_storage.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
 #include "runtime/openssl.h"
+#include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/to_array.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -199,7 +199,7 @@ MultiContext *CurlContexts_::get_value<MultiContext>(int64_t multi_id) const noe
   return multi_contexts.get_value(multi_id - 1);
 }
 
-using CurlContexts = SingletonStorage<CurlContexts_>;
+using CurlContexts = vk::singleton<GlobalStorage<CurlContexts_>>;
 
 template<typename T>
 T *get_context(int64_t id) noexcept {

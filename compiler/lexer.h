@@ -173,7 +173,7 @@ struct TokenLexerPHPDoc final : TokenLexerWithHelper {
 };
 
 struct TokenLexerGlobal final : TokenLexer {
-  TokenLexerPHP *php_lexer{vk::singleton<TokenLexerPHP>::get()};
+  TokenLexerPHP *php_lexer{&vk::singleton<TokenLexerPHP>::get()};
 
   int parse(LexerData *lexer_data) const;
 };

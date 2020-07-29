@@ -36,12 +36,3 @@ private:
   T *data_{nullptr};
   int64_t query_tag_{0};
 };
-
-template<typename T>
-class SingletonStorage {
-public:
-  static GlobalStorage<T> &get() noexcept{
-    static GlobalStorage<T> obj;
-    return obj;
-  }
-};
