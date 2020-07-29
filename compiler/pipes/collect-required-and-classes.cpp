@@ -82,7 +82,7 @@ private:
   inline void require_all_classes_in_phpdoc_type(const std::string &type_str) {
     // здесь вручную бьём на токены, а НЕ вызываем phpdoc_parse_type_and_var_name()
     // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
-    std::vector<Token> tokens = phpdoc_to_tokens(type_str.c_str(), type_str.size());
+    std::vector<Token> tokens = phpdoc_to_tokens(type_str);
     std::vector<Token>::const_iterator cur_tok = tokens.begin();
     PhpDocTypeRuleParser parser(current_function);
     parser.parse_from_tokens_silent(cur_tok);

@@ -11,7 +11,7 @@ void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, st
   kphp_assert(file);
 
   kphp_assert(file->loaded);
-  auto tokens = php_text_to_tokens(&file->text[0], (int)file->text.length());
+  auto tokens = php_text_to_tokens(file->text);
 
   if (stage::has_error()) {
     return;

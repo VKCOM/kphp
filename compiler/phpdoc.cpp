@@ -490,7 +490,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::con
  * распарсить тип (превратив в дерево для type_rule) и имя переменной, если оно есть
  */
 PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdoc_tag_str, FunctionPtr current_function) {
-  std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str.data(), phpdoc_tag_str.size());
+  std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str);
   std::vector<Token>::const_iterator tok_iter = tokens.begin();
   std::string var_name;
 

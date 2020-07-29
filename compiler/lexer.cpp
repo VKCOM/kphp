@@ -17,28 +17,21 @@ void LexerData::new_line() {
   line_num++;
 }
 
-void LexerData::set_code(char *new_code, int new_code_len) {
-  start = new_code;
-  code = new_code;
-  code_len = new_code_len;
-  code_end = code + code_len;
-  line_num = 0;
+LexerData::LexerData(vk::string_view new_code) :
+  code(new_code.data()),
+  code_end(code + new_code.size()),
+  code_len(new_code.size()) {
   new_line();
-  tokens.reserve(static_cast<size_t >(new_code_len * 0.3));
+  tokens.reserve(static_cast<size_t >(code_len * 0.3));
 }
 
-char *LexerData::get_code() {
+const char *LexerData::get_code() {
   return code;
 }
 
 void LexerData::pass(int shift) {
-  while (shift-- > 0) {
-    int c = *code;
-    code++;
-    if (c == '\n') {
-      new_line();
-    }
-  }
+  line_num += std::count_if(code, code + shift, [](char c) { return c == '\n'; });
+  pass_raw(shift);
 }
 
 void LexerData::pass_raw(int shift) {
@@ -68,19 +61,28 @@ void LexerData::start_str() {
   str_cur = get_code();
 }
 
+/**
+ * append_char and flush_str are used to modify entities in PHP source code like string literals
+ * e.g. we have to tokenize this code: $x = "New\n";
+ * but in class-field `std::string SrcFile::text` we have R"($x = \"New\\n\";)"
+ * we will replace "\\n" with "\n" and get string_view on this representation from text field
+ *
+ * It's really strange behaviour to modify source text, it's better to have dedicated tokens for them
+ * which contains `std::string` not string_view, we will do it later
+ */
 void LexerData::append_char(int c) {
   if (!in_gen_str) {
     start_str();
   }
   if (c == -1) {
     int c = *get_code();
-    *str_cur++ = (char)c;
+    *const_cast<char *>(str_cur++) = (char)c;
     if (c == '\n') {
       new_line();
     }
     pass_raw(1);
   } else {
-    *str_cur++ = (char)c;
+    *const_cast<char *>(str_cur++) = (char)c;
   }
 }
 
@@ -88,7 +90,7 @@ void LexerData::flush_str() {
   if (in_gen_str) {
     add_token_(0, tok_str, str_begin, str_cur);
     while (str_cur != get_code()) {
-      *str_cur++ = ' ';
+      *const_cast<char *>(str_cur++) = ' ';
     }
     in_gen_str = false;
   }
@@ -296,9 +298,6 @@ int TokenLexerError::parse(LexerData *lexer_data) const {
   stage::set_line(lexer_data->get_line_num());
   kphp_error (0, error_str.c_str());
   return 1;
-}
-
-void TokenLexerName::init_static() {
 }
 
 int TokenLexerName::parse(LexerData *lexer_data) const {
@@ -534,8 +533,8 @@ int TokenLexerNum::parse(LexerData *lexer_data) const {
 int TokenLexerSimpleString::parse(LexerData *lexer_data) const {
   string str;
 
-  const char *s = lexer_data->get_code(),
-    *t = s + 1;
+  const char *s = lexer_data->get_code();
+  const char *t = s + 1;
 
   lexer_data->pass_raw(1);
   bool need = true;
@@ -632,15 +631,15 @@ void TokenLexerStringExpr::init() {
   assert(!h);
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
-  h->add_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
-  h->add_rule("\"", vk::singleton<TokenLexerString>::get());
+  h->add_simple_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
+  h->add_simple_rule("\"", vk::singleton<TokenLexerString>::get());
   h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
 
   //TODO: double (?)
   h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
 
   h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
-  h->add_rule("", vk::singleton<TokenLexerCommon>::get());
+  h->add_simple_rule("", vk::singleton<TokenLexerCommon>::get());
 }
 
 int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
@@ -699,7 +698,7 @@ void TokenLexerString::init() {
   h->add_rule("\\x[0-9A-Fa-f]", vk::singleton<TokenLexerHexChar>::get());
 
   h->add_rule("$[A-Za-z_{]", vk::singleton<TokenLexerName>::get());
-  h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
+  h->add_simple_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
 }
 
 void TokenLexerHeredocString::init() {
@@ -718,7 +717,7 @@ void TokenLexerHeredocString::init() {
   h->add_rule("\\x[0-9A-Fa-f]", vk::singleton<TokenLexerHexChar>::get());
 
   h->add_rule("$[A-Za-z{]", vk::singleton<TokenLexerName>::get());
-  h->add_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
+  h->add_simple_rule("{$", vk::singleton<TokenLexerStringExpr>::get());
 }
 
 int TokenLexerString::parse(LexerData *lexer_data) const {
@@ -1006,16 +1005,16 @@ void TokenLexerPHP::init() {
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
   h->add_rule("/*|//|#", vk::singleton<TokenLexerComment>::get());
-  h->add_rule("#ifndef KittenPHP", vk::singleton<TokenLexerIfndefComment>::get());
-  h->add_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
-  h->add_rule("\"", vk::singleton<TokenLexerString>::get());
-  h->add_rule("<<<", vk::singleton<TokenLexerHeredocString>::get());
+  h->add_simple_rule("#ifndef KittenPHP", vk::singleton<TokenLexerIfndefComment>::get());
+  h->add_simple_rule("\'", vk::singleton<TokenLexerSimpleString>::get());
+  h->add_simple_rule("\"", vk::singleton<TokenLexerString>::get());
+  h->add_simple_rule("<<<", vk::singleton<TokenLexerHeredocString>::get());
   h->add_rule("[a-zA-Z_$\\]", vk::singleton<TokenLexerName>::get());
 
   h->add_rule("[0-9]|.[0-9]", vk::singleton<TokenLexerNum>::get());
 
   h->add_rule(" |\t|\n|\r", vk::singleton<TokenLexerSkip>::get());
-  h->add_rule("", vk::singleton<TokenLexerCommon>::get());
+  h->add_simple_rule("", vk::singleton<TokenLexerCommon>::get());
 }
 
 void TokenLexerPHPDoc::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
@@ -1076,21 +1075,20 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
     return 0;
   }
 
-  s = t;
   if (*s == 0) {
     return TokenLexerError("End of file").parse(lexer_data);
   }
 
-  int d = 2;
-  if (!strncmp(s + d, "php", 3)) {
-    d += 3;
+  if (!strncmp(s + 2, "php", 3)) {
+    lexer_data->pass_raw(strlen("<?php"));
+  } else {
+    lexer_data->pass_raw(strlen("<?"));
   }
-  lexer_data->pass(d);
 
 
   while (true) {
-    char *s = lexer_data->get_code();
-    char *t = s;
+    const char *s = lexer_data->get_code();
+    const char *t = s;
     while (t[0] == ' ' || t[0] == '\t') {
       t++;
     }
@@ -1108,10 +1106,9 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
   if (*lexer_data->get_code()) {
     lexer_data->pass(2);
   }
-  char c = *lexer_data->get_code();
-  if (c == '\n') {
+  if (*lexer_data->get_code() == '\n') {
     lexer_data->pass(1);
-  } else if (c == ' ') {
+  } else {
     while (*lexer_data->get_code() == ' ') {
       lexer_data->pass(1);
     }
@@ -1129,19 +1126,16 @@ void lexer_init() {
   vk::singleton<TokenLexerPHPDoc>::get()->init();
 }
 
-vector<Token> php_text_to_tokens(char *text, int text_length) {
+vector<Token> php_text_to_tokens(vk::string_view text) {
   static TokenLexerGlobal lexer;
 
-  LexerData lexer_data;
-  lexer_data.set_code(text, text_length);
+  LexerData lexer_data{text};
 
-  while (true) {
-    char c = *lexer_data.get_code();
-    if (c == 0) {
-      break;
+  while (*lexer_data.get_code()) {
+    if (lexer.parse(&lexer_data) != 0) {
+      kphp_error(false, "failed to parse");
+      return {};
     }
-    int ret = lexer.parse(&lexer_data);
-    kphp_error_act (ret == 0, "failed to parse", return {});
   }
 
   auto tokens = lexer_data.move_tokens();
@@ -1149,15 +1143,11 @@ vector<Token> php_text_to_tokens(char *text, int text_length) {
   return tokens;
 }
 
-vector<Token> phpdoc_to_tokens(const char *text, int text_length) {
-  LexerData lexer_data;
-  lexer_data.set_code(const_cast<char*>(text), text_length);
+vector<Token> phpdoc_to_tokens(vk::string_view text) {
+  LexerData lexer_data{text};
   lexer_data.set_dont_hack_last_tokens();   // future(int) — не нужно (int) как op_conv_int
 
-  while (true) {
-    if (*lexer_data.get_code() == 0) {
-      break;
-    }
+  while (*lexer_data.get_code()) {
     if (vk::singleton<TokenLexerPHPDoc>::get()->parse(&lexer_data) == 1) {
       break;
     }

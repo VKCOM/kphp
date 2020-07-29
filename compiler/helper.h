@@ -3,6 +3,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/common.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/utils/trie.h"
 
 inline vector<string> expand_template(const string &s);
@@ -43,81 +44,60 @@ struct Helper : private vk::not_copyable {
   }
 };
 
-inline vector<string> expand_template_(const string &s) {
-  vector<string> res{""};
+inline vector<string> expand_template_(vk::string_view str_template) {
+  vector<string> all_possible_templates{""};
 
-  int si = 0;
-  int sn = (int)s.size();
+  size_t si = 0;
+  size_t sn = str_template.size();
 
   while (si < sn) {
     string to_append;
-    if (s[si] == '[') {
+    if (str_template[si] == '[') {
       si++;
 
-      while (si < sn && s[si] != ']') {
-        int l, r;
-        if (si + 1 < sn && s[si + 1] == '-') {
+      while (si < sn && str_template[si] != ']') {
+        if (si + 1 < sn && str_template[si + 1] == '-') {
           assert (si + 2 < sn);
 
-          l = s[si], r = s[si + 2];
+          char l = str_template[si];
+          char r = str_template[si + 2];
           assert (l < r);
+          for (char c = l; c <= r; c++) {
+            to_append += c;
+          }
 
           si += 3;
         } else {
-          l = r = s[si];
-
-          si += 1;
-        }
-
-        for (int c = l; c <= r; c++) {
-          to_append += (char)c;
+          to_append += str_template[si];
+          si++;
         }
       }
       assert (si < sn);
       si++;
-
     } else {
-      to_append += s[si];
+      to_append += str_template[si];
       si++;
     }
 
-    int n = (int)res.size();
-    for (int i = 0; i < n; i++) {
-      for (int j = 1; j < (int)to_append.size(); j++) {
-        res.push_back(res[i] + to_append[j]);
+    auto n = all_possible_templates.size();
+    for (int i = 0; i < n; ++i) {
+      for (size_t j = 1; j < to_append.size(); j++) {
+        all_possible_templates.push_back(all_possible_templates[i] + to_append[j]);
       }
-      res[i] += to_append[0];
+      all_possible_templates[i] += to_append[0];
     }
   }
 
-  return res;
+  return all_possible_templates;
 }
 
 inline vector<string> expand_template(const string &s) {
-  vector<string> v;
-
-  int sn = (int)s.size();
-
-  string cur = "";
-  for (int i = 0; i < sn; i++) {
-    if (s[i] == '|') {
-      v.push_back(cur);
-      cur = "";
-    } else {
-      cur += s[i];
-    }
-  }
-  v.push_back(cur);
+  auto template_alternatives = split_skipping_delimeters(s, "|");
 
   vector<string> res;
-  int vn = (int)v.size();
-  for (int i = 0; i < vn; i++) {
-    vector<string> tmp = expand_template_(v[i]);
-
-    int tmpn = (int)tmp.size();
-    for (int i = 0; i < tmpn; i++) {
-      res.push_back(tmp[i]);
-    }
+  for (auto rule_template : template_alternatives) {
+    auto tmp = expand_template_(rule_template);
+    std::move(tmp.begin(), tmp.end(), std::back_inserter(res));
   }
 
   return res;

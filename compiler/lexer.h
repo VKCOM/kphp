@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/string_view.h"
 
 #include "compiler/common.h"
 #include "compiler/helper.h"
@@ -8,9 +9,9 @@
 #include "compiler/utils/string-utils.h"
 
 struct LexerData : private vk::not_copyable {
-  void set_code(char *code, int code_len);
+  explicit LexerData(vk::string_view new_code);
   void new_line();
-  char *get_code();
+  const char *get_code();
   void pass(int shift);
   void pass_raw(int shift);
   template <typename ...Args>
@@ -39,15 +40,14 @@ struct LexerData : private vk::not_copyable {
   int get_line_num();
 
 private:
-  int line_num{-1};
-  char *code{nullptr};
-  char *code_end{nullptr};
-  char *start{nullptr};
+  int line_num{0};
+  const char *code{nullptr};
+  const char *code_end{nullptr};
   int code_len{0};
   vector<Token> tokens;
   bool in_gen_str{false};
   const char *str_begin{nullptr};
-  char *str_cur{nullptr};
+  const char *str_cur{nullptr};
   bool dont_hack_last_tokens{false};
 };
 
@@ -70,7 +70,6 @@ struct TokenLexerError final : TokenLexer {
 };
 
 struct TokenLexerName final : TokenLexer {
-  static void init_static();
   int parse(LexerData *lexer_data) const;
 };
 
@@ -180,5 +179,5 @@ struct TokenLexerGlobal final : TokenLexer {
 };
 
 void lexer_init();
-vector<Token> php_text_to_tokens(char *text, int text_length);
-vector<Token> phpdoc_to_tokens(const char *text, int text_length);
+vector<Token> php_text_to_tokens(vk::string_view text);
+vector<Token> phpdoc_to_tokens(vk::string_view text);
