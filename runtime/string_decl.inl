@@ -55,6 +55,14 @@ public:
     return ((size_type)-1 - sizeof(string_inner) - 1) / 4;
   }
 
+  static size_type unsafe_cast_to_size_type(int64_t size) noexcept {
+    php_assert(size >= 0);
+    if (unlikely(size > max_size())) {
+      php_critical_error ("Trying to make too big string of size %" PRId64, size);
+    }
+    return static_cast<size_type>(size);
+  }
+
   inline string();
   inline string(const string &str) noexcept;
   inline string(string &&str) noexcept;
@@ -99,13 +107,13 @@ public:
 
   inline string &append(bool b) __attribute__ ((always_inline));
   inline string &append(int64_t i) __attribute__ ((always_inline));
-  inline string &append(int32_t v) {return append(static_cast<int64_t>(v));}
+  inline string &append(int32_t v) {return append(int64_t{v});}
   inline string &append(double d) __attribute__ ((always_inline));
   inline string &append(const var &v) __attribute__ ((always_inline));
 
   inline string &append_unsafe(bool b) __attribute__((always_inline));
   inline string &append_unsafe(int64_t i) __attribute__((always_inline));
-  inline string &append_unsafe(int32_t v) {return append(static_cast<int64_t>(v));}
+  inline string &append_unsafe(int32_t v) {return append(int64_t{v});}
   inline string &append_unsafe(double d) __attribute__((always_inline));
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
   inline string &append_unsafe(const char *s, size_type n) __attribute__((always_inline));
@@ -163,7 +171,7 @@ public:
 
   inline int64_t compare(const string &str) const;
 
-  inline size_type get_correct_index(int64_t index) const;
+  inline int64_t get_correct_index(int64_t index) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const var &v) const;

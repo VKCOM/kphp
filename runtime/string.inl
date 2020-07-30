@@ -879,17 +879,13 @@ int64_t string::compare(const string &str) const {
 }
 
 
-string::size_type string::get_correct_index(int64_t index) const {
-  if (index >= 0) {
-    return static_cast<size_type>(index);
-  }
-
-  return static_cast<size_type>(index + size());
+int64_t string::get_correct_index(int64_t index) const {
+  return index >= 0 ? index : index + int64_t{size()};
 }
 
 const string string::get_value(int64_t int_key) const {
-  auto true_key = get_correct_index(int_key);
-  if (true_key >= size()) {
+  const int64_t true_key = get_correct_index(int_key);
+  if (true_key < 0 || true_key >= size()) {
     return {};
   }
   return string(1, p[true_key]);

@@ -1,6 +1,6 @@
 <?php
 
-define('PHP_INT_MAX', 2147483647);
+define('PHP_INT_MAX', 9223372036854775807);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 

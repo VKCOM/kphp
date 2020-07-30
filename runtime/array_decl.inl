@@ -197,8 +197,8 @@ private:
   };
 
   inline bool mutate_if_vector_shared(uint32_t mul = 1);
-  inline bool mutate_to_size_if_vector_shared(uint32_t int_size);
-  inline void mutate_to_size(uint32_t int_size);
+  inline bool mutate_to_size_if_vector_shared(int64_t int_size);
+  inline void mutate_to_size(int64_t int_size);
   inline bool mutate_if_map_shared(uint32_t mul = 1);
   inline void mutate_if_vector_needed_int();
   inline void mutate_if_map_needed_int();
@@ -259,7 +259,7 @@ public:
   inline bool is_vector() const __attribute__ ((always_inline));
 
   T &operator[](int64_t int_key);
-  T &operator[](int32_t key) { return (*this)[static_cast<int64_t>(key)]; }
+  T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   T &operator[](const string &s);
   T &operator[](const var &v);
   T &operator[](double double_key);
@@ -270,8 +270,8 @@ public:
   void emplace_value(int64_t int_key, Args &&... args) noexcept;
   void set_value(int64_t int_key, T &&v) noexcept;
   void set_value(int64_t int_key, const T &v) noexcept;
-  void set_value(int32_t key, T &&v) noexcept { set_value(static_cast<int64_t>(key), std::move(v)); }
-  void set_value(int32_t key, const T &v) noexcept { set_value(static_cast<int64_t>(key), v); }
+  void set_value(int32_t key, T &&v) noexcept { set_value(int64_t{key}, std::move(v)); }
+  void set_value(int32_t key, const T &v) noexcept { set_value(int64_t{key}, v); }
   void set_value(double double_key, T &&v) noexcept;
   void set_value(double double_key, const T &v) noexcept;
 
@@ -304,7 +304,7 @@ public:
   void assign_raw(const char *s);
 
   const T *find_value(int64_t int_key) const;
-  const T *find_value(int32_t key) const { return find_value(static_cast<int64_t>(key)); }
+  const T *find_value(int32_t key) const { return find_value(int64_t{key}); }
   const T *find_value(const string &s) const;
   const T *find_value(const string &s, int64_t precomuted_hash) const;
   const T *find_value(const var &v) const;
@@ -347,7 +347,7 @@ public:
   bool isset(const K &key) const;
 
   void unset(int64_t int_key);
-  void unset(int32_t key) { unset(static_cast<int64_t>(key)); }
+  void unset(int32_t key) { unset(int64_t{key}); }
   void unset(const string &string_key);
   void unset(const var &var_key);
   void unset(double double_key);

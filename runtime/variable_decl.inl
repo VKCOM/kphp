@@ -77,7 +77,7 @@ public:
   inline var &append(const string &v);
 
   inline var &operator[](int64_t int_key);
-  inline var &operator[](int32_t key) { return (*this)[static_cast<int64_t>(key)]; }
+  inline var &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   inline var &operator[](const string &string_key);
   inline var &operator[](const var &v);
   inline var &operator[](double double_key);
@@ -85,7 +85,7 @@ public:
   inline var &operator[](const array<var>::iterator &it);
 
   inline void set_value(int64_t int_key, const var &v);
-  inline void set_value(int32_t key, const var &value) { set_value(static_cast<int64_t>(key), value); }
+  inline void set_value(int32_t key, const var &value) { set_value(int64_t{key}, value); }
   inline void set_value(const string &string_key, const var &v);
   inline void set_value(const string &string_key, const var &v, int64_t precomuted_hash);
   inline void set_value(const var &v, const var &value);
@@ -94,7 +94,7 @@ public:
   inline void set_value(const array<var>::iterator &it);
 
   inline const var get_value(int64_t int_key) const;
-  inline const var get_value(int32_t key) const { return get_value(static_cast<int64_t>(key)); }
+  inline const var get_value(int32_t key) const { return get_value(int64_t{key}); }
   inline const var get_value(const string &string_key) const;
   inline const var get_value(const string &string_key, int64_t precomuted_hash) const;
   inline const var get_value(const var &v) const;
@@ -106,13 +106,13 @@ public:
   inline const var push_back_return(const var &v);
 
   inline bool isset(int64_t int_key) const;
-  inline bool isset(int32_t key) const { return isset(static_cast<int64_t>(key)); }
+  inline bool isset(int32_t key) const { return isset(int64_t{key}); }
   inline bool isset(const string &string_key) const;
   inline bool isset(const var &v) const;
   inline bool isset(double double_key) const;
 
   inline void unset(int64_t int_key);
-  inline void unset(int32_t key) { unset(static_cast<int64_t>(key)); }
+  inline void unset(int32_t key) { unset(int64_t{key}); }
   inline void unset(const string &string_key);
   inline void unset(const var &v);
   inline void unset(double double_key);

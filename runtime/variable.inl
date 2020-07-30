@@ -1177,15 +1177,14 @@ void var::set_value(int64_t int_key, const var &v) {
       const char c = rhs_string[0];
 
       if (int_key >= 0) {
-        const auto key = static_cast<string::size_type>(int_key);
         const string::size_type l = as_string().size();
-        if (key >= l) {
-          as_string().append(key + 1 - l, ' ');
+        if (int_key >= l) {
+          as_string().append(string::unsafe_cast_to_size_type(int_key + 1 - l), ' ');
         } else {
           as_string().make_not_shared();
         }
 
-        as_string()[key] = c;
+        as_string()[static_cast<string::size_type>(int_key)] = c;
       } else {
         php_warning("%ld is illegal offset for string", int_key);
       }
@@ -1219,7 +1218,7 @@ void var::set_value(const string &string_key, const var &v) {
 
       const string::size_type l = as_string().size();
       if (int_val >= l) {
-        as_string().append(static_cast<string::size_type>(int_val + 1 - l), ' ');
+        as_string().append(string::unsafe_cast_to_size_type(int_val + 1 - l), ' ');
       } else {
         as_string().make_not_shared();
       }
@@ -1280,7 +1279,7 @@ void var::set_value(const array<var>::iterator &it) {
 const var var::get_value(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      if (static_cast<string::size_type>(int_key) >= as_string().size()) {
+      if (int_key < 0 || int_key >= as_string().size()) {
         return string();
       }
       return string(1, as_string()[static_cast<string::size_type>(int_key)]);
@@ -1303,7 +1302,7 @@ const var var::get_value(const string &string_key) const {
         php_warning("\"%s\" is illegal offset for string", string_key.c_str());
         int_val = string_key.to_int();
       }
-      if (static_cast<string::size_type>(int_val) >= as_string().size()) {
+      if (int_val < 0 || int_val >= as_string().size()) {
         return string();
       }
       return string(1, as_string()[static_cast<string::size_type>(int_val)]);
@@ -1387,7 +1386,8 @@ const var var::push_back_return(const var &v) {
 bool var::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      return as_string().get_correct_index(int_key) < as_string().size();
+      int_key = as_string().get_correct_index(int_key);
+      return int_key >= 0 && int_key < as_string().size();
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {

@@ -508,12 +508,12 @@ const T *array<T>::array_inner::find_map_value(Key &&... key) const noexcept {
 
 template<class T>
 const T *array<T>::array_inner::find_vector_value(int64_t int_key) const noexcept {
-  return static_cast<uint32_t>(int_key) < int_size ? &get_vector_value(int_key) : nullptr;
+  return int_key >= 0 && int_key < int_size ? &get_vector_value(int_key) : nullptr;
 }
 
 template<class T>
 T *array<T>::array_inner::find_vector_value(int64_t int_key) noexcept {
-  return static_cast<uint32_t>(int_key) < int_size ? &get_vector_value(int_key) : nullptr;
+  return int_key >= 0 && int_key < int_size ? &get_vector_value(int_key) : nullptr;
 }
 
 template<class T>
@@ -626,15 +626,15 @@ bool array<T>::is_vector() const {
 
 template<class T>
 bool array<T>::mutate_if_vector_shared(uint32_t mul) {
-  return mutate_to_size_if_vector_shared(mul * p->int_size);
+  return mutate_to_size_if_vector_shared(mul * int64_t{p->int_size});
 }
 
 template<class T>
-bool array<T>::mutate_to_size_if_vector_shared(uint32_t int_size) {
+bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
   if (p->ref_cnt > 0) {
     array_inner *new_array = array_inner::create(int_size, 0, true);
 
-    uint32_t size = p->int_size;
+    const auto size = static_cast<uint32_t>(p->int_size);
     T *it = (T *)p->int_entries;
 
     for (uint32_t i = 0; i < size; i++) {
@@ -675,17 +675,21 @@ void array<T>::mutate_if_vector_needed_int() {
   }
 
   if (p->int_size == p->int_buf_size) {
-    mutate_to_size(p->int_buf_size * 2);
+    mutate_to_size(int64_t{p->int_buf_size} * 2);
   }
 }
 
 template<class T>
-void array<T>::mutate_to_size(uint32_t int_size) {
+void array<T>::mutate_to_size(int64_t int_size) {
   if (mutate_to_size_if_vector_shared(int_size)) {
     return;
   }
-  p = (array_inner *)dl::reallocate((void *)p, p->sizeof_vector(int_size), p->sizeof_vector(p->int_buf_size));
-  p->int_buf_size = int_size;
+  if (unlikely(int_size > array_inner::MAX_HASHTABLE_SIZE)) {
+    php_critical_error ("max array size exceeded");
+  }
+  const auto new_int_buff_size = static_cast<uint32_t>(int_size);
+  p = static_cast<array_inner *>(dl::reallocate(p, p->sizeof_vector(new_int_buff_size), p->sizeof_vector(p->int_buf_size)));
+  p->int_buf_size = new_int_buff_size;
 }
 
 template<class T>
@@ -755,7 +759,7 @@ template<class T>
 void array<T>::reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
   if (int_size > int64_t{p->int_buf_size} || (string_size > 0 && string_size > int64_t{p->string_buf_size})) {
     if (is_vector() && string_size == 0 && make_vector_if_possible) {
-      mutate_to_size(static_cast<uint32_t>(int_size));
+      mutate_to_size(int_size);
     } else {
       const int64_t new_int_size = std::max(int_size, int64_t{p->int_buf_size});
       const int64_t new_string_size = std::max(string_size, is_vector() ? 0L : int64_t{p->string_buf_size});
@@ -1048,8 +1052,8 @@ void array<T>::clear() {
 template<class T>
 T &array<T>::operator[](int64_t int_key) {
   if (is_vector()) {
-    if (int_key >= 0 && static_cast<uint32_t>(int_key) <= p->int_size) {
-      if (static_cast<uint32_t>(int_key) == p->int_size) {
+    if (int_key >= 0 && int_key <= p->int_size) {
+      if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         return p->emplace_back_vector_value();
       } else {
@@ -1214,8 +1218,8 @@ template<class T>
 template<class ...Args>
 void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
   if (is_vector()) {
-    if (int_key >= 0 && static_cast<uint32_t>(int_key) <= p->int_size) {
-      if (static_cast<uint32_t>(int_key) == p->int_size) {
+    if (int_key >= 0 && int_key <= p->int_size) {
+      if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         p->emplace_back_vector_value(std::forward<Args>(args)...);
       } else {
@@ -1615,7 +1619,7 @@ bool array<T>::isset(const K &key) const {
 template<class T>
 void array<T>::unset(int64_t int_key) {
   if (is_vector()) {
-    if (int_key < 0 || static_cast<uint32_t>(int_key) >= p->int_size) {
+    if (int_key < 0 || int_key >= p->int_size) {
       return;
     }
     if (int_key == p->max_key) {
