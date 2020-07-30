@@ -117,7 +117,7 @@ class KphpBuilder:
         env["GDB_OPTION"] = "-g0"
         env["KPHP_DYNAMIC_INCREMENTAL_LINKAGE"] = use_dynamic_incremental_linkage and "1" or "0"
         if self._distcc_hosts:
-            env["KPHP_JOBS_COUNT"] = "{}".format(multiprocessing.cpu_count() or 2)
+            env["KPHP_JOBS_COUNT"] = "8"
             env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
         else:
             env["KPHP_JOBS_COUNT"] = "2"
