@@ -5,43 +5,48 @@
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
-int64_t f$bindec(const string &number) {
-  unsigned int v = 0;
-  bool need_warning = number.empty();
+int64_t f$bindec(const string &number) noexcept {
+  uint64_t v = 0;
+  bool bad_str_param = number.empty();
+  bool overflow = false;
   for (string::size_type i = 0; i < number.size(); i++) {
-    char c = number[i];
-    if (v >= 0x80000000) {
-      need_warning = true;
-    }
-    if ('0' <= c && c <= '1') {
+    const char c = number[i];
+    if (likely(vk::any_of_equal(c, '0', '1'))) {
       v = v * 2 + c - '0';
     } else {
-      need_warning = true;
+      bad_str_param = true;
+    }
+    if (unlikely(v > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))) {
+      overflow = true;
     }
   }
 
-  if (need_warning) {
-    php_warning("Wrong parameter \"%s\" in function bindec", number.c_str());
+  if (unlikely(bad_str_param)) {
+    php_warning("Wrong parameter '%s' in function bindec", number.c_str());
   }
-  return v;
+  if (unlikely(overflow)) {
+    php_warning("Integer overflow on converting '%s' in function bindec, "
+                "the result will be different from PHP", number.c_str());
+  }
+  return static_cast<int64_t>(v);
 }
 
-string f$decbin(int64_t number) {
-  auto v = static_cast<uint32_t>(number);
+string f$decbin(int64_t number) noexcept {
+  auto v = static_cast<uint64_t>(number);
 
   char s[66];
   int i = 65;
 
   do {
-    s[--i] = (char)((v & 1) + '0');
+    s[--i] = static_cast<char>((v & 1) + '0');
     v >>= 1;
   } while (v > 0);
 
   return string(s + i, static_cast<string::size_type>(65 - i));
 }
 
-string f$dechex(int64_t number) {
-  auto v = static_cast<uint32_t>(number);
+string f$dechex(int64_t number) noexcept {
+  auto v = static_cast<uint64_t>(number);
 
   char s[17];
   int i = 16;
@@ -54,28 +59,33 @@ string f$dechex(int64_t number) {
   return string(s + i, 16 - i);
 }
 
-int64_t f$hexdec(const string &number) {
-  unsigned int v = 0;
-  bool need_warning = number.empty();
+int64_t f$hexdec(const string &number) noexcept {
+  uint64_t v = 0;
+  bool bad_str_param = number.empty();
+  bool overflow = false;
   for (string::size_type i = 0; i < number.size(); i++) {
     char c = number[i];
-    if (v >= 0x10000000) {
-      need_warning = true;
-    }
     if ('0' <= c && c <= '9') {
       v = v * 16 + c - '0';
     } else {
       c |= 0x20;
-      if ('a' <= c && c <= 'f') {
+      if (likely('a' <= c && c <= 'f')) {
         v = v * 16 + c - 'a' + 10;
       } else {
-        need_warning = true;
+        bad_str_param = true;
       }
+    }
+    if (unlikely(v > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))) {
+      overflow = true;
     }
   }
 
-  if (need_warning) {
+  if (unlikely(bad_str_param)) {
     php_warning("Wrong parameter \"%s\" in function hexdec", number.c_str());
+  }
+  if (unlikely(overflow)) {
+    php_warning("Integer overflow on converting '%s' in function hexdec, "
+                "the result will be different from PHP", number.c_str());
   }
   return v;
 }

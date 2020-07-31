@@ -22,4 +22,19 @@
   var_dump(- -017777777777);
   var_dump(- - -017777777777);
   var_dump(- - -020000000000);
+
+  var_dump(-9223372036854775807);
+  var_dump(- -9223372036854775807);
+  var_dump(- - -9223372036854775807);
+
+#ifndef KittenPHP
+  var_dump(-PHP_INT_MAX - 1);
+  var_dump(-PHP_INT_MAX - 1);
+  var_dump(-PHP_INT_MAX - 1);
+  return;
+#endif
+  // это все одно и тоже, так как переполнение
+  var_dump(-9223372036854775808);
+  var_dump(- -9223372036854775808);
+  var_dump(- - -9223372036854775808);
 ?>

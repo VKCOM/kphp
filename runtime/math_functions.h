@@ -2,13 +2,13 @@
 
 #include "runtime/kphp_core.h"
 
-int64_t f$bindec(const string &number);
+int64_t f$bindec(const string &number) noexcept;
 
-string f$decbin(int64_t number);
+string f$decbin(int64_t number) noexcept;
 
-string f$dechex(int64_t number);
+string f$dechex(int64_t number) noexcept;
 
-int64_t f$hexdec(const string &number);
+int64_t f$hexdec(const string &number) noexcept;
 
 double f$lcg_value();
 
