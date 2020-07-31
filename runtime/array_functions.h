@@ -8,6 +8,7 @@
 #include "common/vector-product.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 
 template<class T>
@@ -904,7 +905,7 @@ std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  cons
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a) {
   if (int64_t size = a.count()) {
-    return a.middle(rand() % size).get_key();
+    return a.middle(f$mt_rand(0, size - 1)).get_key();
   }
   return {};
 }
@@ -926,7 +927,7 @@ var f$array_rand(const array<T> &a, int64_t num) {
 
   array<typename array<T>::key_type> result(array_size(num, 0, true));
   for (const auto &it : a) {
-    if (rand() % (size--) < num) {
+    if (f$mt_rand(0, --size) < num) {
       result.push_back(it.get_key());
       --num;
     }
@@ -1181,7 +1182,7 @@ void f$shuffle(array<T> &a) {
   }
 
   for (int64_t i = 1; i < n; i++) {
-    swap(result[i], result[rand() % (i + 1)]);
+    swap(result[i], result[f$mt_rand(0, i)]);
   }
 
   a = std::move(result);

@@ -13,21 +13,22 @@ int64_t f$hexdec(const string &number) noexcept;
 double f$lcg_value();
 
 
-void f$srand(int64_t seed = std::numeric_limits<int64_t>::min());
+void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 
-int64_t f$rand();
+int64_t f$mt_rand(int64_t l, int64_t r) noexcept;
 
-int64_t f$rand(int64_t l, int64_t r);
+int64_t f$mt_rand() noexcept;
 
-int64_t f$getrandmax();
+int64_t f$mt_getrandmax() noexcept;
 
-void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min());
 
-int64_t f$mt_rand();
+void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 
-int64_t f$mt_rand(int64_t l, int64_t r);
+int64_t f$rand(int64_t l, int64_t r) noexcept;
 
-int64_t f$mt_getrandmax();
+int64_t f$rand() noexcept;
+
+int64_t f$getrandmax() noexcept;
 
 
 template<class T>
@@ -106,6 +107,7 @@ inline double f$sqrt(double v);
 
 inline double f$tan(double v);
 
+void init_math_functions() noexcept;
 
 /*
  *

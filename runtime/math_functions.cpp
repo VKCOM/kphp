@@ -1,9 +1,13 @@
 #include "runtime/math_functions.h"
 
-#include <sys/time.h> //gettimeofday
+#include <chrono>
+#include <random>
+#include <sys/time.h>
 
+#include "common/cycleclock.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
+#include "server/php-engine-vars.h"
 
 int64_t f$bindec(const string &number) noexcept {
   uint64_t v = 0;
@@ -104,7 +108,7 @@ double f$lcg_value() {
     } else {
       s1 = 1;
     }
-    s2 = (int)getpid();
+    s2 = pid;
 
     if (gettimeofday(&tv, nullptr) == 0) {
       s2 ^= (int)(tv.tv_usec << 11);
@@ -128,69 +132,80 @@ double f$lcg_value() {
   return z * 4.656613e-10;
 }
 
+namespace {
 
-static int make_seed() {
-  struct timespec T;
-  php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
-  return ((int)T.tv_nsec * 123456789) ^ ((int)T.tv_sec * 987654321);
-}
+class MTRandGenerator : vk::not_copyable {
+public:
+  static MTRandGenerator &get() {
+    static MTRandGenerator generator;
+    return generator;
+  }
 
-void f$srand(int64_t seed) {
+  void lazy_init() noexcept {
+    if (unlikely(!gen_)) {
+      const uint64_t s = (static_cast<uint64_t>(pid) << 32) ^ cycleclock_now();
+      gen_ = new(&gen_storage_) std::mt19937_64{s};
+    }
+  }
+
+  void set_seed(int64_t s) noexcept {
+    php_assert(gen_);
+    gen_->seed(static_cast<std::mt19937_64::result_type>(s));
+  }
+
+  int64_t generate_random(int64_t l, int64_t r) noexcept {
+    if (unlikely(l > r)) {
+      return 0;
+    }
+    php_assert(gen_);
+    return std::uniform_int_distribution<int64_t>{l, r}(*gen_);
+  }
+
+private:
+  MTRandGenerator() = default;
+
+  std::aligned_storage_t<sizeof(std::mt19937_64), alignof(std::mt19937_64)> gen_storage_{};
+  std::mt19937_64 *gen_{nullptr};
+};
+
+} // namespace
+
+void f$mt_srand(int64_t seed) noexcept {
   if (seed == std::numeric_limits<int64_t>::min()) {
-    seed = make_seed();
+    seed = std::chrono::steady_clock::now().time_since_epoch().count();
   }
-  srand(static_cast<uint32_t>(seed));
+  MTRandGenerator::get().set_seed(seed);
 }
 
-int64_t f$rand() {
-  return rand();
+int64_t f$mt_getrandmax() noexcept {
+  // В PHP используется именно это значение,
+  // однако это не мешает передавать mt_rand числа больше этого
+  return std::numeric_limits<int32_t>::max();
 }
 
-// TODO FIX
-// REMOVE INT
-int64_t f$rand(int64_t l_i64, int64_t r_i64) {
-  auto l = static_cast<int>(l_i64);
-  auto r = static_cast<int>(r_i64);
-  if (l > r) {
-    return 0;
-  }
-  unsigned int diff = (unsigned int)r - (unsigned int)l + 1u;
-  int64_t shift = 0;
-  if (RAND_MAX == 0x7fffffff && diff == 0) { // l == MIN_INT, r == MAX_INT, RAND_MAX == MAX_INT
-    shift = f$rand(0, RAND_MAX) * 2u + (rand() & 1);
-  } else if (diff <= RAND_MAX + 1u) {
-    unsigned int upper_bound = ((RAND_MAX + 1u) / diff) * diff;
-    unsigned int r;
-    do {
-      r = rand();
-    } while (r > upper_bound);
-    shift = r % diff;
-  } else {
-    shift = f$rand(0, (diff >> 1) - 1) * 2u + (rand() & 1);
-  }
-  return l + shift;
+int64_t f$mt_rand() noexcept {
+  return f$mt_rand(0, f$mt_getrandmax());
 }
 
-int64_t f$getrandmax() {
-  return RAND_MAX;
+int64_t f$mt_rand(int64_t l, int64_t r) noexcept {
+  return MTRandGenerator::get().generate_random(l, r);
 }
 
-void f$mt_srand(int64_t seed) {
-  f$srand(seed);
+void f$srand(int64_t seed) noexcept {
+  f$mt_srand(seed);
 }
 
-int64_t f$mt_rand() {
-  return rand();
+int64_t f$rand() noexcept {
+  return f$mt_rand();
 }
 
-int64_t f$mt_rand(int64_t l, int64_t r) {
-  return f$rand(l, r);
+int64_t f$rand(int64_t l, int64_t r) noexcept {
+  return f$mt_rand(l, r);
 }
 
-int64_t f$mt_getrandmax() {
-  return RAND_MAX;
+int64_t f$getrandmax() noexcept {
+  return f$mt_getrandmax();
 }
-
 
 var f$abs(const var &v) {
   var num = v.to_numeric();
@@ -291,4 +306,8 @@ double f$round(double v, int64_t precision) {
 
   double mul = pow(10.0, (double)precision);
   return round(v * mul) / mul;
+}
+
+void init_math_functions() noexcept {
+  MTRandGenerator::get().lazy_init();
 }
