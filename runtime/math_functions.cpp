@@ -9,6 +9,15 @@
 #include "runtime/string_functions.h"
 #include "server/php-engine-vars.h"
 
+namespace {
+  template<uint8_t M>
+  uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
+    const uint64_t r = x * M + y;
+    overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    return r;
+  }
+} // namespace
+
 int64_t f$bindec(const string &number) noexcept {
   uint64_t v = 0;
   bool bad_str_param = number.empty();
@@ -16,12 +25,9 @@ int64_t f$bindec(const string &number) noexcept {
   for (string::size_type i = 0; i < number.size(); i++) {
     const char c = number[i];
     if (likely(vk::any_of_equal(c, '0', '1'))) {
-      v = v * 2 + c - '0';
+      v = mult_and_add<2>(v, static_cast<uint8_t>(c - '0'), overflow);
     } else {
       bad_str_param = true;
-    }
-    if (unlikely(v > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))) {
-      overflow = true;
     }
   }
 
@@ -68,19 +74,11 @@ int64_t f$hexdec(const string &number) noexcept {
   bool bad_str_param = number.empty();
   bool overflow = false;
   for (string::size_type i = 0; i < number.size(); i++) {
-    char c = number[i];
-    if ('0' <= c && c <= '9') {
-      v = v * 16 + c - '0';
+    const uint8_t d = hex_to_int(number[i]);
+    if (unlikely(d == 16)) {
+      bad_str_param = true;
     } else {
-      c |= 0x20;
-      if (likely('a' <= c && c <= 'f')) {
-        v = v * 16 + c - 'a' + 10;
-      } else {
-        bad_str_param = true;
-      }
-    }
-    if (unlikely(v > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))) {
-      overflow = true;
+      v = mult_and_add<16>(v, d, overflow);
     }
   }
 

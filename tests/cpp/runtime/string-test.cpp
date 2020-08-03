@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "runtime/kphp_core.h"
+#include "runtime/string_functions.h"
 
 TEST(string_test, test_starts_with) {
   string empty_str{""};
@@ -42,4 +43,39 @@ TEST(string_test, test_copy_and_make_not_shared) {
 
   ASSERT_NE(str1.c_str(), str3.c_str());
   ASSERT_EQ(str3.get_reference_counter(), 1);
+}
+
+TEST(string_test, test_hex_to_int) {
+  for (size_t c = 0; c != 256; ++c) {
+    if (vk::none_of_equal(c,
+                          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                          'a', 'b', 'c', 'd', 'e', 'f',
+                          'A', 'B', 'C', 'D', 'E', 'F')) {
+      ASSERT_EQ(hex_to_int(static_cast<char>(c)), 16);
+    }
+  }
+  ASSERT_EQ(hex_to_int('0'), 0);
+  ASSERT_EQ(hex_to_int('1'), 1);
+  ASSERT_EQ(hex_to_int('2'), 2);
+  ASSERT_EQ(hex_to_int('3'), 3);
+  ASSERT_EQ(hex_to_int('4'), 4);
+  ASSERT_EQ(hex_to_int('5'), 5);
+  ASSERT_EQ(hex_to_int('6'), 6);
+  ASSERT_EQ(hex_to_int('7'), 7);
+  ASSERT_EQ(hex_to_int('8'), 8);
+  ASSERT_EQ(hex_to_int('9'), 9);
+
+  ASSERT_EQ(hex_to_int('a'), 10);
+  ASSERT_EQ(hex_to_int('b'), 11);
+  ASSERT_EQ(hex_to_int('c'), 12);
+  ASSERT_EQ(hex_to_int('d'), 13);
+  ASSERT_EQ(hex_to_int('e'), 14);
+  ASSERT_EQ(hex_to_int('f'), 15);
+
+  ASSERT_EQ(hex_to_int('A'), 10);
+  ASSERT_EQ(hex_to_int('B'), 11);
+  ASSERT_EQ(hex_to_int('C'), 12);
+  ASSERT_EQ(hex_to_int('D'), 13);
+  ASSERT_EQ(hex_to_int('E'), 14);
+  ASSERT_EQ(hex_to_int('F'), 15);
 }

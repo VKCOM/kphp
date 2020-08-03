@@ -18,7 +18,7 @@ extern const char uhex_digits[17];
 
 extern int64_t str_replace_count_dummy;
 
-inline int32_t hex_to_int(char c);
+inline uint8_t hex_to_int(char c) noexcept;
 
 
 string f$addcslashes(const string &str, const string &what);
@@ -235,16 +235,31 @@ string f$wordwrap(const string &str, int64_t width = 75, const string &brk = NEW
  *
  */
 
+namespace impl_ {
 
-int32_t hex_to_int(char c) {
-  if ('0' <= c && c <= '9') {
-    return c - '0';
+struct Hex2CharMapMaker {
+private:
+  static constexpr uint8_t hex2int_char(size_t c) noexcept {
+    return ('0' <= c && c <= '9') ? static_cast<uint8_t>(c - '0') :
+           ('a' <= c && c <= 'f') ? static_cast<uint8_t>(c - 'a' + 10) :
+           ('A' <= c && c <= 'F') ? static_cast<uint8_t>(c - 'A' + 10) : 16;
   }
-  c |= 0x20;
-  if ('a' <= c && c <= 'f') {
-    return c - 'a' + 10;
+
+public:
+  template<size_t... Ints>
+  static constexpr auto make(std::index_sequence<Ints...>) noexcept {
+    return std::array<uint8_t, sizeof...(Ints)>{
+      {
+        hex2int_char(Ints)...,
+      }};
   }
-  return 16;
+};
+
+} // namepsace impl_
+
+uint8_t hex_to_int(char c) noexcept {
+  static constexpr auto hex_int_map = impl_::Hex2CharMapMaker::make(std::make_index_sequence<256>());
+  return hex_int_map[static_cast<uint8_t>(c)];
 }
 
 string f$number_format(double number, int64_t decimals) {
