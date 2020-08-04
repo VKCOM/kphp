@@ -235,31 +235,48 @@ bool f$file_exists(const string &name) {
   return result;
 }
 
-Optional<int64_t> f$filesize(const string &name) {
-  struct stat stat_buf;
-  dl::enter_critical_section();//OK
+namespace {
+
+bool get_file_stat(const string &name, struct stat &out, const char *function) noexcept {
+  dl::CriticalSectionGuard critical_section;
   int file_fd = open(name.c_str(), O_RDONLY);
   if (file_fd < 0) {
-    dl::leave_critical_section();
     return false;
   }
-  if (fstat(file_fd, &stat_buf) < 0) {
+  if (fstat(file_fd, &out) < 0) {
     close(file_fd);
-    dl::leave_critical_section();
     return false;
   }
 
-  if (!S_ISREG (stat_buf.st_mode)) {
-    php_warning("Regular file expected as first argument in function filesize, \"%s\" is given", name.c_str());
+  if (!S_ISREG (out.st_mode)) {
+    php_warning("Regular file expected as first argument in function %s, \"%s\" is given", function, name.c_str());
     close(file_fd);
-    dl::leave_critical_section();
     return false;
   }
+  return true;
+}
 
-  const int64_t size = stat_buf.st_size;
-  close(file_fd);
-  dl::leave_critical_section();
-  return size;
+} // namespace
+
+Optional<int64_t> f$filesize(const string &name) {
+  struct stat stat_buf;
+  return get_file_stat(name, stat_buf, __FUNCTION__)
+         ? Optional<int64_t>{static_cast<int64_t>(stat_buf.st_size)}
+         : Optional<int64_t>{false};
+}
+
+Optional<int64_t> f$filectime(const string &name) {
+  struct stat stat_buf;
+  return get_file_stat(name, stat_buf, __FUNCTION__)
+         ? Optional<int64_t>{static_cast<int64_t>(stat_buf.st_ctime)}
+         : Optional<int64_t>{false};
+}
+
+Optional<int64_t> f$filemtime(const string &name) {
+  struct stat stat_buf;
+  return get_file_stat(name, stat_buf, __FUNCTION__)
+         ? Optional<int64_t>{static_cast<int64_t>(stat_buf.st_mtime)}
+         : Optional<int64_t>{false};
 }
 
 bool f$is_dir(const string &name) {

@@ -36,6 +36,10 @@ bool f$file_exists(const string &name);
 
 Optional<int64_t> f$filesize(const string &name);
 
+Optional<int64_t> f$filectime(const string &name);
+
+Optional<int64_t> f$filemtime(const string &name);
+
 bool f$is_dir(const string &name);
 
 bool f$is_file(const string &name);

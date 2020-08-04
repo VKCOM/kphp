@@ -40,6 +40,8 @@
 
   clearstatcache();
   var_dump (filesize ($filename));
+  var_dump (filectime ($filename) > 0);
+  var_dump (filemtime ($filename) > 0);
 
   $new_filename = tempnam ("", "rt");
   rename ($filename, $new_filename);
@@ -48,6 +50,8 @@
   fwrite (STDERR, "Not a part of the answer\n");
   
   var_dump (filesize ($filename));
+  var_dump (filectime ($filename) > 0);
+  var_dump (filemtime ($filename) > 0);
   $file = fopen ($filename, "rb");
   var_dump (fread ($file, 2));
   var_dump (ftell ($file));
@@ -58,6 +62,8 @@
   var_dump (fpassthru ($file));
   fclose ($file);
   var_dump (filesize ($filename));
+  var_dump (filectime ($filename) > 0);
+  var_dump (filemtime ($filename) > 0);
 
   $file = fopen ($filename, "rb");
   var_dump (fgets ($file, 100));

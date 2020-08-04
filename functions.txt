@@ -642,6 +642,8 @@ function file_get_contents ($name ::: string) ::: string | false;
 function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: int | false;
 function file_exists ($name ::: string) ::: bool;
 function filesize ($name ::: string) ::: int | false;
+function filectime ($name ::: string) ::: int | false;
+function filemtime ($name ::: string) ::: int | false;
 function is_dir ($name ::: string) ::: bool;
 function is_file ($name ::: string) ::: bool;
 function is_readable ($name ::: string) ::: bool;
