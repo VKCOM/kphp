@@ -79,6 +79,12 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
     case op_phpdoc_var:
       break;
+    case op_list_keyval: {
+      const auto kv = root.as<op_list_keyval>();
+      rl_calc(kv->key(), val_r);
+      rl_calc(kv->var(), val_l);
+      break;
+    }
     default:
       assert ("Unknown operation in rl_other_calc" && 0);
       break;

@@ -1106,6 +1106,21 @@
     }
   },
   {
+    "alias": {
+      "var": "rhs",
+      "key": "lhs"
+    },
+    "name": "op_list_keyval",
+    "base_name": "meta_op_binary",
+    "props": {
+      "rl": "rl_other",
+      "fixity": "right_opp",
+      "cnst": "cnst_const_func",
+      "type": "binary_op",
+      "str": "@op_list_keyval"
+    }
+  },
+  {
     "name": "op_set_modify",
     "base_name": "meta_op_binary"
   },

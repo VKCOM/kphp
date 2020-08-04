@@ -74,7 +74,8 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
 
     case op_list: {
       for (auto lhs_var_in_list : v.as<op_list>()->list()) {
-        check_modifications(lhs_var_in_list, true);
+        const auto kv = lhs_var_in_list.as<op_list_keyval>();
+        check_modifications(kv->var(), true);
       }
       break;
     }

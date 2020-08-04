@@ -1326,17 +1326,18 @@ void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   VertexPtr arr = root->array();
   VertexRange list = root->list();
   PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
-  kphp_assert(vk::any_of_equal(ptype, tp_array, tp_var, tp_tuple));
+  kphp_assert(vk::any_of_equal(ptype, tp_array, tp_var, tp_tuple, tp_shape));
 
-  for (int i = 0; i < static_cast<int>(list.size()); ++i) {
-    VertexPtr cur = list[i];
-    if (cur->type() != op_lvalue_null) {
+  for (const auto x : list) {
+    const auto kv = x.as<op_list_keyval>();
 
-      if (ptype != tp_tuple) {
-        W << "assign (" << cur << ", " << arr << ".get_value (" << i << "));" << NL;
-      } else {
-        W << "assign (" << cur << ", " << TupleGetIndex(arr, std::to_string(i)) << ");" << NL;
-      }
+    if (ptype == tp_tuple) {
+      const auto index = kv->key().as<op_int_const>();
+      W << "assign (" << kv->var() << ", " << TupleGetIndex(arr, index->str_val) << ");" << NL;
+    } else if (ptype == tp_shape) {
+      W << "assign (" << kv->var() << ", " << ShapeGetIndex(arr, kv->key()) << ");" << NL;
+    } else {
+      W << "assign (" << kv->var() << ", " << arr << ".get_value (" << kv->key() << "));" << NL;
     }
   }
 }

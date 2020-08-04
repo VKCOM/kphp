@@ -572,6 +572,14 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = prev;
       break;
     }
+    case op_list_keyval: {
+      const auto kv = tree_node.as<op_list_keyval>();
+      Node a, b;
+      create_cfg(kv->var(), res_start, &a, true);
+      create_cfg(kv->key(), &b, res_finish);
+      add_edge(a, b);
+      break;
+    }
     case op_var: {
       Node res = new_node();
       UsagePtr usage = new_usage(write_flag ? usage_write_t : usage_read_t, tree_node.as<op_var>());

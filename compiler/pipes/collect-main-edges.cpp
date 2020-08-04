@@ -303,18 +303,13 @@ void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
 }
 
 void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
-  int i = 0;
   for (auto cur : list->list()) {
-    if (cur->type() != op_lvalue_null) {
-      // делаем $cur = $list_array[$i]; хотелось бы array[i] выразить через rvalue multikey int_key, но
-      // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
-      auto ith_index = VertexAdaptor<op_int_const>::create();
-      ith_index->set_string(std::to_string(i));
-      auto new_v = VertexAdaptor<op_index>::create(list->array(), ith_index);
-      new_v.set_location(stage::get_location());
-      create_set(cur, new_v);
-    }
-    i++;
+    const auto kv = cur.as<op_list_keyval>();
+    // делаем $kv->var = $list_array[$kv->key]; хотелось бы array[i] выразить через rvalue multikey int_key, но
+    // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
+    auto new_v = VertexAdaptor<op_index>::create(list->array(), kv->key());
+    new_v.set_location(stage::get_location());
+    create_set(kv->var(), new_v);
   }
 }
 

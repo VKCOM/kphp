@@ -326,7 +326,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     }
   }
   if (vertex->type() == op_list) {
-    VertexPtr arr = vertex.as<op_list>()->array();
+    const auto list = vertex.as<op_list>();
+    VertexPtr arr = list->array();
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at(Key::any_key());
@@ -335,6 +336,21 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
       kphp_error (list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
+      for (const auto cur : list->list()) {
+        const auto kv = cur.as<op_list_keyval>();
+        if (GenTree::get_actual_value(kv->key())->type() != op_int_const) {
+          const TypeData *key_type = tinf::get_type(kv->key());
+          kphp_error(0, fmt_format("Only int const keys can be used, got '{}'", ptype_name(key_type->ptype())));
+        }
+      }
+    } else if (arrayType->ptype() == tp_shape) {
+      for (const auto cur : list->list()) {
+        const auto kv = cur.as<op_list_keyval>();
+        if (GenTree::get_actual_value(kv->key())->type() != op_string) {
+          const TypeData *key_type = tinf::get_type(kv->key());
+          kphp_error(0, fmt_format("Only string const keys can be used, got '{}'", ptype_name(key_type->ptype())));
+        }
+      }
     } else {
       kphp_error (arrayType->ptype() == tp_var, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
     }

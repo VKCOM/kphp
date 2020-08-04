@@ -6,6 +6,48 @@
 #include "compiler/data/src-file.h"
 
 namespace {
+VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
+  bool has_explicit_keys = false;
+  bool has_empty_entries = false; // To give the same error message as PHP
+
+  auto list = assign->lhs();
+  auto arr = assign->rhs();
+
+  std::vector<VertexAdaptor<op_list_keyval>> mappings;
+  mappings.reserve(list->size());
+
+  int implicit_key = -1;
+
+  for (const auto x : *list) {
+    if (const auto arrow = x.try_as<op_double_arrow>()) {
+      has_explicit_keys = true;
+      mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));
+      continue;
+    }
+
+    implicit_key++;
+
+    if (x->type() == op_lvalue_null) {
+      has_empty_entries = true;
+      continue;
+    }
+
+    auto var = x;
+    auto key = VertexAdaptor<op_int_const>::create();
+    key->set_string(std::to_string(implicit_key));
+    mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(key, var));
+  }
+
+  bool has_implicit_keys = implicit_key != -1;
+  if (has_explicit_keys && has_empty_entries) {
+    kphp_error(0, "Cannot use empty array entries in keyed array assignment");
+  } else if (has_explicit_keys && has_implicit_keys) {
+    kphp_error(0, "Cannot mix keyed and unkeyed array entries in assignments");
+  }
+
+  return VertexAdaptor<op_list>::create(mappings, arr).set_location(assign);
+}
+
 VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, VertexAdaptor<op_func_call> require_lib_call) {
   auto lib_main_file_name = VertexAdaptor<op_string>::create();
   lib_main_file_name->set_string(lib_main_file->file_name);
@@ -87,7 +129,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   if (auto set_op = root.try_as<op_set>()) {
     // list(...) = ... или short syntax (PHP 7) [...] = ...
     if (vk::any_of_equal(set_op->lhs()->type(), op_list_ce, op_array)) {
-      return VertexAdaptor<op_list>::create(set_op->lhs()->get_next(), set_op->rhs()).set_location(root);
+      return make_list_op(set_op);
     }
   }
   if (root->type() == op_list_ce) {

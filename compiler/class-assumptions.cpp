@@ -304,14 +304,12 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
 
     case op_list: {
       auto list = root.as<op_list>();
-      VertexRange v_list_items = list->list();
-      for (int int_index = 0; int_index < v_list_items.size(); ++int_index) {
-        auto as_var = v_list_items[int_index].try_as<op_var>();
+
+      for (const auto x : list->list()) {
+        const auto kv = x.as<op_list_keyval>();
+        auto as_var = kv->var().try_as<op_var>();
         if (as_var && as_var->get_string() == var_name) {
-          // создаём index_key, т.к. в будущем всё равно будем парсить list(key=>$var), он и так будет
-          auto index_key = VertexAdaptor<op_int_const>::create();
-          index_key->str_val = std::to_string(int_index);
-          analyze_set_to_list_var(f, var_name, index_key, list->array(), depth + 1);
+          analyze_set_to_list_var(f, var_name, kv->key(), list->array(), depth + 1);
         }
       }
       return;
