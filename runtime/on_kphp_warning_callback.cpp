@@ -2,7 +2,7 @@
 
 #include "common/fast-backtrace.h"
 
-#include "runtime/kphp_backtrace.h"
+#include "runtime/kphp-backtrace.h"
 
 
 OnKphpWarningCallback &OnKphpWarningCallback::get() {
@@ -23,13 +23,19 @@ void OnKphpWarningCallback::invoke_callback(const string &warning_message) {
     // поддомены и тестовые домены собираются без debug-символов, поэтому там addr2line не действует
     // чтобы хоть какой-то трейс отобразить разработчикам при ошибке — собираем и деманглим вручную
     // получаются просто названия функций, но обычно это уже неплохо
-    void *buffer[64];
-    int nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-    // start_i=2: 0 это invoke_callback(), 1 это php_warning(), а нужная инфа с 2
+    std::array<void *, 64> buffer{};
+    const int nptrs = fast_backtrace(buffer.data(), buffer.size());
     array<string> arg_stacktrace;
-    get_demangled_backtrace(buffer, nptrs, 0, [&arg_stacktrace](const char *function_name, const char *) {
-      arg_stacktrace.push_back(string(function_name));
-    }, 2);
+    if (nptrs > 2) {
+      // начинаем со 2-го фрейма: 0 это invoke_callback(), 1 это php_warning(), а нужная инфа с 2
+      arg_stacktrace.reserve(nptrs - 2, 0, true);
+      KphpBacktrace demangler{buffer.data() + 2, nptrs - 2};
+      for (const char *name : demangler.make_demangled_backtrace_range()) {
+        if (name) {
+          arg_stacktrace.emplace_back(string{name});
+        }
+      }
+    }
 
     in_registered_callback = true;
     callback(warning_message, arg_stacktrace);

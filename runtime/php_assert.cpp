@@ -15,7 +15,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
-#include "runtime/kphp_backtrace.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/misc.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
@@ -48,10 +48,15 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bo
       fprintf(stderr, "%p\n", buffer[i]);
     }
   } else if (php_warning_level == 2) {
-    bool was_printed = get_demangled_backtrace(buffer, nptrs, num_shift, [](const char *, const char *trace_str) {
-      fprintf(stderr, "%s", trace_str);
-    });
-    if (!was_printed) {
+    KphpBacktrace demangler{buffer, nptrs};
+    int32_t index = num_shift;
+    auto demangled_range  = demangler.make_demangled_backtrace_range(true);
+    for (const char *line : demangled_range) {
+      if (line) {
+        fprintf(stderr, "(%d) %s", index++, line);
+      }
+    }
+    if (index == num_shift) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
   } else if (php_warning_level == 3 && allow_gdb) {

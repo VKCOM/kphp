@@ -21,6 +21,7 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance_cache.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
@@ -2115,6 +2116,7 @@ static void free_runtime_libs() {
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
+  free_kphp_backtrace();
 
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {

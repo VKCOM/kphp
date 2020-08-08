@@ -34,7 +34,7 @@ spl_autoload_register('classAutoLoader', true, true);
  * @noinspection PhpUnusedParameterInspection
  */
 function tuple(...$args) {
-  // не даём нативному инферрингу PhpStorm понять, что происходит
+  // Г­ГҐ Г¤Г ЕѕГ¬ Г­Г ГІГЁГўГ­Г®Г¬Гі ГЁГ­ГґГҐГ°Г°ГЁГ­ГЈГі PhpStorm ГЇГ®Г­ГїГІГј, Г·ГІГ® ГЇГ°Г®ГЁГ±ГµГ®Г¤ГЁГІ
   return ${'args'};
 }
 
@@ -44,7 +44,7 @@ function tuple(...$args) {
  * @noinspection PhpUnusedParameterInspection
  */
 function shape(array $associative_arr) {
-  // не даём нативному инферрингу PhpStorm понять, что происходит
+  // Г­ГҐ Г¤Г ЕѕГ¬ Г­Г ГІГЁГўГ­Г®Г¬Гі ГЁГ­ГґГҐГ°Г°ГЁГ­ГЈГі PhpStorm ГЇГ®Г­ГїГІГј, Г·ГІГ® ГЇГ°Г®ГЁГ±ГµГ®Г¤ГЁГІ
   return ${'associative_arr'};
 }
 
@@ -355,6 +355,12 @@ function not_false($x) {
 
 function not_null($x) {
   return $x;
+}
+
+function kphp_backtrace(bool $pretty = true): array {
+  $backtrace = array_column(debug_backtrace(), "function");
+  array_shift($backtrace);
+  return $backtrace;
 }
 
 if (false)

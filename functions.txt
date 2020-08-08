@@ -142,6 +142,7 @@ function exit($code = 0) ::: void;
 function die($code = 0) ::: void;
 function register_kphp_on_warning_callback(callback($warning_message ::: string, $stacktrace ::: string[]) ::: void) ::: void;
 function kphp_set_context_on_error($tags ::: var[], $extra_info ::: var[]) ::: void;
+function kphp_backtrace($pretty ::: bool = true) ::: string[];
 
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;

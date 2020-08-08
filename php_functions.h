@@ -18,6 +18,7 @@
 #include "runtime/instance_cache.h"
 #include "runtime/integer_types.h"
 #include "runtime/interface.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/mail.h"
 #include "runtime/math_functions.h"
 #include "runtime/mbstring.h"
