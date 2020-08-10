@@ -64,7 +64,8 @@ static void parse_and_apply_function_kphp_phpdoc(FunctionPtr f) {
 
   bool implicit_kphp_infer = vk::none_of_equal(f->type, FunctionData::func_main, FunctionData::func_switch) &&
                              !f->file_id->is_builtin() &&
-                             !(f->class_id && f->class_id->is_lambda());
+                             !(f->class_id && f->class_id->is_lambda()) &&
+                             !G->env().is_static_lib_mode();
 
   if (!function_has_kphp_doc && !class_has_kphp_infer && !implicit_kphp_infer) {
     return;   // обычный phpdoc, без @kphp нотаций и phphints тут не парсим; если там инстансы, распарсится по требованию
