@@ -40,9 +40,9 @@ class TestConfdataDefault(KphpWithConfdata):
                 "wildcards_one_dot": 3,
                 "wildcards_two_dots": 2,
                 "wildcards_predefined": 0,
-                "vars_in_garbage_last": 0,
-                "vars_in_garbage_last_100_max": 0,
-                "vars_in_garbage_last_100_avg": 0,
+                "vars_in_garbage_last": self.cmpGe(0),
+                "vars_in_garbage_last_100_max": self.cmpGe(0),
+                "vars_in_garbage_last_100_avg": self.cmpGe(0),
                 "binlog_events_set_forever_total": len(self.CONFDATA),
             })
 
