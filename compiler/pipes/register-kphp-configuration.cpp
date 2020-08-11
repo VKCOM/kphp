@@ -28,17 +28,17 @@ void RegisterKphpConfiguration::on_start() {
     }
 
     // TODO сделать красиво
-    kphp_error(c.local_name() == runtime_options_name_,
-               fmt_format("Got unexpected {} constant '{}'",
-                          configuration_class_name_, c.local_name()));
+    kphp_error_return(c.local_name() == runtime_options_name_,
+                      fmt_format("Got unexpected {} constant '{}'",
+                                 configuration_class_name_, c.local_name()));
 
     auto arr = c.value.try_as<op_array>();
-    kphp_error(arr, fmt_format("{}::{} must be a constexpr array",
-                               configuration_class_name_, runtime_options_name_));
+    kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
+                                      configuration_class_name_, runtime_options_name_));
     for (const auto &opt : arr->args()) {
       auto opt_pair = opt.try_as<op_double_arrow>();
-      kphp_error(opt_pair, fmt_format("{}::{} must be an associative map",
-                                      configuration_class_name_, runtime_options_name_));
+      kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
+                                             configuration_class_name_, runtime_options_name_));
       const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
       kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
                                             configuration_class_name_, runtime_options_name_));
