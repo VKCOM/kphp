@@ -1283,17 +1283,22 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 
   bool has_double_arrow = false;
   int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
-  for (auto i : root->args()) {
-    if (auto arrow = i.try_as<op_double_arrow>()) {
+  for (size_t key_id = 0; key_id < root->args().size(); ++key_id) {
+    if (auto arrow = root->args()[key_id].try_as<op_double_arrow>()) {
+      VertexPtr key = GenTree::get_actual_value(arrow->key());
+      if (!has_double_arrow && key->type() == op_int_const) {
+        if (key.as<op_int_const>()->str_val == std::to_string(key_id)) {
+          root->args()[key_id] = arrow->value();
+          continue;
+        }
+      }
       has_double_arrow = true;
-      VertexPtr key = arrow->key();
       PrimitiveType tp = tinf::get_type(key)->ptype();
       if (tp == tp_int) {
         int_cnt++;
       } else {
-        VertexPtr key_val = GenTree::get_actual_value(key);
-        if (tp == tp_string && key_val->type() == op_string) {
-          const string &key_str = key_val.as<op_string>()->str_val;
+        if (tp == tp_string && key->type() == op_string) {
+          const string &key_str = key.as<op_string>()->str_val;
           if (php_is_int(key_str.c_str(), key_str.size())) {
             int_cnt++;
           } else {

@@ -26,8 +26,6 @@ protected:
 
   virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) { return on_non_const(v); }
 
-  virtual bool on_array_double_arrow(VertexAdaptor<op_double_arrow>) { return false; }
-
   virtual bool on_array_value(VertexAdaptor<op_array> array __attribute__((unused)), size_t ind __attribute__((unused))) { return false; }
 
   virtual T on_array_finish(VertexAdaptor<op_array> v) { return on_non_const(v); }
@@ -43,12 +41,7 @@ protected:
   virtual T on_array(VertexAdaptor<op_array> v) {
     VertexRange arr = v->args();
     for (size_t i = 0; i < arr.size(); ++i) {
-      VertexPtr cur = arr[i];
-      if (cur->type() == op_double_arrow) {
-        if (!on_array_double_arrow(cur.as<op_double_arrow>())) {
-          return on_non_const(v);
-        }
-      } else if (!on_array_value(v, i)) {
+      if (!on_array_value(v, i)) {
         return on_non_const(v);
       }
     }
@@ -153,14 +146,14 @@ protected:
     return visit(lhs) && visit(rhs);
   }
 
-  bool on_array_double_arrow(VertexAdaptor<op_double_arrow> v) override {
-    VertexPtr key = GenTree::get_actual_value(v->key());
-    VertexPtr value = GenTree::get_actual_value(v->value());
-    return visit(key) && visit(value);
-  }
-
   bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
-    return visit(GenTree::get_actual_value(v->args()[ind]));
+    auto ith_element = v->args()[ind];
+    if (auto double_arrow = ith_element.try_as<op_double_arrow>()) {
+      VertexPtr key = GenTree::get_actual_value(double_arrow->key());
+      VertexPtr value = GenTree::get_actual_value(double_arrow->value());
+      return visit(key) && visit(value);
+    }
+    return visit(GenTree::get_actual_value(ith_element));
   }
 
   bool on_var(VertexAdaptor<op_var> v) override {
@@ -262,13 +255,13 @@ protected:
   }
 
   bool on_array_value(VertexAdaptor<op_array> v, size_t ind) final {
-    v->args()[ind] = make_const(v->args()[ind]);
-    return true;
-  }
-
-  bool on_array_double_arrow(VertexAdaptor<op_double_arrow> v) final {
-    v->key() = make_const(v->key());
-    v->value() = make_const(v->value());
+    auto ith_element = v->args()[ind];
+    if (auto double_arrow = ith_element.try_as<op_double_arrow>()) {
+      double_arrow->key() = make_const(double_arrow->key());
+      double_arrow->value() = make_const(double_arrow->value());
+    } else {
+      v->args()[ind] = make_const(ith_element);
+    }
     return true;
   }
 
@@ -481,7 +474,13 @@ protected:
   }
 
   bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
-    return visit(GenTree::get_actual_value(v->args()[ind]));
+    auto ith_element = v->args()[ind];
+    if (auto double_arrow = ith_element.try_as<op_double_arrow>()) {
+      auto key = GenTree::get_actual_value(double_arrow->key()).try_as<op_int_const>();
+      VertexPtr value = GenTree::get_actual_value(double_arrow->value());
+      return key && key->str_val == std::to_string(ind) && visit(value);
+    }
+    return visit(GenTree::get_actual_value(ith_element));
   }
 
   bool on_array_finish(VertexAdaptor<op_array>) override {
