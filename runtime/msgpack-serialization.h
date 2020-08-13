@@ -54,12 +54,12 @@ struct convert<array<T>> {
     if (obj.type == msgpack::type::MAP) {
       array_size size(0, 0, false);
       run_callbacks_on_map(obj.via.map,
-                           [&size](int32_t, msgpack::object &) { size.int_size++; },
+                           [&size](int64_t, msgpack::object &) { size.int_size++; },
                            [&size](const string &, msgpack::object &) { size.string_size++; });
 
       res_arr.reserve(size.int_size, size.string_size, size.is_vector);
       run_callbacks_on_map(obj.via.map,
-                           [&res_arr](int32_t key, msgpack::object &value) { res_arr.set_value(key, value.as<T>()); },
+                           [&res_arr](int64_t key, msgpack::object &value) { res_arr.set_value(key, value.as<T>()); },
                            [&res_arr](const string &key, msgpack::object &value) { res_arr.set_value(key, value.as<T>()); });
 
       return obj;
@@ -78,7 +78,7 @@ private:
       switch (key.type) {
         case msgpack::type::POSITIVE_INTEGER:
         case msgpack::type::NEGATIVE_INTEGER:
-          on_integer(key.as<int32_t>(), value);
+          on_integer(key.as<int64_t>(), value);
           break;
         case msgpack::type::STR:
           on_string(key.as<string>(), value);
@@ -129,7 +129,7 @@ struct pack<array<T>> {
          break;
        case msgpack::type::NEGATIVE_INTEGER:
        case msgpack::type::POSITIVE_INTEGER:
-         v = obj.as<int32_t>();
+         v = obj.as<int64_t>();
          break;
        case msgpack::type::FLOAT32:
        case msgpack::type::FLOAT64:
