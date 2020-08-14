@@ -754,6 +754,7 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   auto location = auto_location();
 
+  bool is_nullable = test_expect(tok_question);
   std::string type_declaration = get_typehint();
   bool is_varg = false;
 
@@ -791,7 +792,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   v.set_location(location);
   if (!type_declaration.empty()) {
     // аргумент nullable, когда явно указан nullability через тайпхинт (?type) или значение по-умолчанию = null
-    if (def_val && def_val->type() == op_null) {
+    if (def_val && def_val->type() == op_null && !is_nullable) {
       type_declaration += "|null";
     }
     if (is_varg) {
