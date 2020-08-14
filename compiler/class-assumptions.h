@@ -51,6 +51,7 @@ public:
   std::string as_human_readable() const override;
   bool is_primitive() const override;
   const TypeData *get_type_data() const override;
+  PrimitiveType get_type() const;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const override;
 };
 

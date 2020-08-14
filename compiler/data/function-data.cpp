@@ -108,7 +108,6 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
 
     vk::intrusive_ptr<Assumption> assumption = id_classPtr_it->second;
     new_function->assumptions_for_vars.emplace_back(param->var()->get_string(), assumption);
-    new_function->assumption_args_status = AssumptionStatus::initialized;
   }
 
   // TODO: need copy all lambdas inside template funciton

@@ -185,7 +185,7 @@ private:
             call_arg = param->default_value();
           }
 
-          vk::intrusive_ptr<Assumption> assumption = infer_class_of_expr(stage::get_function(), call_arg);
+          vk::intrusive_ptr<Assumption> assumption = infer_class_of_expr(current_function, call_arg);
 
           auto insertion_result = template_type_id_to_ClassPtr.emplace(param->template_type_id, assumption);
           if (!insertion_result.second) {

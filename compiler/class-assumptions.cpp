@@ -106,6 +106,19 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
     return ok;
   }
 
+  if (dst) {
+    /**
+     *  for template functions, we add assumptions manually from context
+     *  if somebody wants to calculate assumptions for other non-template arguments
+     *  he will accidentally calculate assumptions for template arguments and got Unknown as type,
+     *  therefore, we need to ignore such awkward situation
+     */
+    auto prev_assum_is_unknown = rhs.try_as<AssumNotInstance>();
+    if (prev_assum_is_unknown && prev_assum_is_unknown->get_type() == tp_Unknown) {
+      return true;
+    }
+  }
+
   return dst->is_primitive() && rhs->is_primitive();
 }
 
@@ -381,11 +394,6 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     return false;
   }
 
-  if (f->assumption_args_status != AssumptionStatus::initialized) {
-    kphp_error(false, fmt_format("function {} was not instantiated yet, please add `@kphp-return` tag to function which called this function", f->get_human_readable_name()));
-    return false;
-  }
-
   // нам нужно именно as_string и сами распарсим, т.к. "T $arg" нельзя превратить в дерево type_expr, класса T нет
   for (const auto &kphp_template_str : phpdoc_find_tag_as_string_multi(f->phpdoc_str, php_doc_tag::kphp_template)) {
     // @kphp-template $arg нам не подходит, мы ищем именно
@@ -418,7 +426,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     }
 
     if (return_type_eq_arg_type || return_type_arr_of_arg_type || return_type_element_of_arg_type) {
-      auto a = assumption_get_for_var(f, template_arg_name);
+      auto a = calc_assumption_for_argument(f, template_arg_name);
 
       if (!field_name.empty()) {
         ClassPtr klass =
@@ -917,6 +925,10 @@ const TypeData *AssumNotInstance::get_type_data() const {
     res->set_or_false_flag();
   }
   return res;
+}
+
+PrimitiveType AssumNotInstance::get_type() const {
+  return type;
 }
 
 const TypeData *AssumTuple::get_type_data() const {
