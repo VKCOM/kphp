@@ -496,7 +496,7 @@ void f$dump_profiler_log_on_finish(const string &suffix) noexcept {
     return;
   }
   for (string::size_type i = 0; i != suffix.size(); ++i) {
-    if (!isalnum(suffix[i])) {
+    if (!isalnum(suffix[i]) && suffix[i] != '_') {
       php_warning("Trying to set suffix '%s' with non alphanumeric character", suffix.c_str());
       return;
     }
