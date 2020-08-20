@@ -44,7 +44,7 @@ public:
 
   static auto create(PrimitiveType type = tp_Any) {
     auto self = new AssumNotInstance();
-    self->type = type;
+    self->type = type != tp_Unknown ? type : tp_Any;
     return vk::intrusive_ptr<Assumption>(self);
   }
 

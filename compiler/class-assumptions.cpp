@@ -182,21 +182,27 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
   // из 'A|null', 'A[]|false', 'null|some_class' достаём 'A' / 'A[]' / 'some_class'
   bool or_false_flag = false;
   bool or_null_flag = false;
-  if (auto lca_rule = type_expr.try_as<op_type_expr_lca>()) {
-    VertexRange or_rules = lca_rule->args();
-    auto upd_type_expr = [&](VertexPtr lhs, VertexPtr rhs) {
-      or_false_flag = lhs->type_help == tp_False;
-      or_null_flag = lhs->type_help == tp_Null;
-      if (or_false_flag || or_null_flag) {
-        type_expr = rhs;
-        return true;
+  std::function<VertexPtr(VertexPtr&)> upd_type_expr = [&](VertexPtr &expr) {
+    if (auto lca_rule = expr.try_as<op_type_expr_lca>()) {
+      auto lhs = upd_type_expr(lca_rule->args()[0]);
+      auto rhs = upd_type_expr(lca_rule->args()[1]);
+      if (!lhs && !rhs) { // @param false|null $x
+        return VertexPtr{};
+      } else if (!lhs) {
+        expr = rhs;
+      } else if (!rhs) {
+        expr = lhs;
       }
-      return false;
+    } else if (expr->type_help == tp_False) {
+      or_false_flag = true;
+      return VertexPtr{};
+    } else if (expr->type_help == tp_Null) {
+      or_null_flag = true;
+      return VertexPtr{};
     };
-    if (!upd_type_expr(or_rules[0], or_rules[1])) {
-      upd_type_expr(or_rules[1], or_rules[0]);
-    }
-  }
+    return expr;
+  };
+  upd_type_expr(type_expr);
 
   if (auto callable = type_expr.try_as<op_type_expr_callable>()) {
     if (!callable->has_params()) {

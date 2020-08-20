@@ -453,7 +453,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       }
     }
 
-    if (function->assumption_for_return && (!function->assumption_for_return->is_primitive() || function->is_from_lambda_namespace())) {
+    if (function->assumption_for_return) {
       create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
     }
 
