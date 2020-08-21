@@ -21,6 +21,10 @@ static void as_dir(string *s) {
   if (s->empty()) {
     return;
   }
+  auto full_path = get_full_path(*s);
+  if (!full_path.empty()) {
+    *s = full_path;
+  }
   if (s->back() != '/') {
     *s += "/";
   }

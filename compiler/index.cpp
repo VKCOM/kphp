@@ -108,7 +108,8 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
     if (current_index->index_file == fpath) {
       return 0;
     }
-    File *f = current_index->insert_file(fpath);
+    char full_path[PATH_MAX + 1];
+    File *f = current_index->insert_file(realpath(fpath, full_path));
     f->on_disk = true;
     long long new_mtime = get_mtime(*sb);
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
