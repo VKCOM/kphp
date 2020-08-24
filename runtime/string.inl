@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cctype>
+
 #include "common/algorithms/simd-int-to-string.h"
 
 #include "runtime/string_cache.h"
