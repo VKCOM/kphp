@@ -58,7 +58,7 @@ ULong f$fetch_ULong();
 
 var f$fetch_unsigned_int();
 
-var f$fetch_long();
+int64_t f$fetch_long();
 
 var f$fetch_unsigned_long();
 
@@ -204,6 +204,8 @@ bool f$rpc_wait(int64_t request_id);
 bool f$rpc_wait_multiple(int64_t request_id);
 
 bool f$store_long(const var &v);
+
+bool f$store_long(int64_t v);
 
 bool f$store_unsigned_long(const var &v);
 

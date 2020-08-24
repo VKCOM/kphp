@@ -278,16 +278,12 @@ var f$fetch_unsigned_int() {
   return f$strval(UInt(result));
 }
 
-var f$fetch_long() {
-  TRY_CALL_VOID(var, (check_rpc_data_len(2)));
+int64_t f$fetch_long() {
+  TRY_CALL_VOID(int64_t, (check_rpc_data_len(2)));
   long long result = *reinterpret_cast<const long long *>(rpc_data);
   rpc_data += 2;
 
-  if ((long long)INT_MIN <= result && result <= (long long)INT_MAX) {
-    return (int)result;
-  }
-
-  return f$strval(Long(result));
+  return result;
 }
 
 var f$fetch_unsigned_long() {
@@ -1146,6 +1142,10 @@ bool f$store_unsigned_int(const var &v) {
 
 bool f$store_long(const var &v) {
   return store_long(store_parse_number<long long>(v));
+}
+
+bool f$store_long(int64_t v) {
+  return store_long(v);
 }
 
 bool f$store_unsigned_long(const var &v) {

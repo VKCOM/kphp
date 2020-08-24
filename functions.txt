@@ -735,7 +735,7 @@ function fetch_ULong () ::: ULong;
 /** @kphp-extern-func-info can_throw */
 function fetch_unsigned_int () ::: var;
 /** @kphp-extern-func-info can_throw */
-function fetch_long () ::: var;
+function fetch_long () ::: int;
 /** @kphp-extern-func-info can_throw */
 function fetch_unsigned_long () ::: var;
 /** @kphp-extern-func-info can_throw */

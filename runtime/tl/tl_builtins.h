@@ -114,7 +114,8 @@ struct t_Int {
   }
 };
 
-struct t_Long {
+template <bool new_tl_long>
+struct tl_Long_impl {
   void store(const var &tl_object) {
     f$store_long(tl_object);
   }
@@ -124,7 +125,7 @@ struct t_Long {
     return f$fetch_long();
   }
 
-  using PhpType = var;
+  using PhpType = std::conditional_t<new_tl_long, int64_t, var>;
 
   void typed_store(const PhpType &v) {
     f$store_long(v);
@@ -391,7 +392,7 @@ struct t_Maybe {
   // Не оборачиваются:
   //  1. class_instance<T>
   //  2. Optional<T>
-  //  3. var (long в тл схеме или mixed в php-doc)
+  //  3. var (long в тл схеме или mixed в php-doc) UPD: будет оборачиваться после перевода на int64_t
 
   template<typename S>
   struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
@@ -466,7 +467,7 @@ struct t_Maybe {
   }
 };
 
-template<typename KeyT, typename ValueT, unsigned int inner_value_magic>
+template<typename KeyT, typename ValueT, unsigned int inner_value_magic, bool new_tl_long>
 struct tl_Dictionary_impl {
   ValueT value_state;
 
@@ -513,7 +514,7 @@ struct tl_Dictionary_impl {
     for (auto it = v.begin(); it != v.end(); ++it) {
       KeyT().typed_store(vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_String>::value>{},
                                           [&] { return it.get_key().as_string(); },
-                                          [&] { return vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_Int>::value>{},
+                                          [&] { return vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_Int>::value || new_tl_long>{},
                                                                [&]() { return it.get_key().as_int(); },
                                                                [&]() { return it.get_key(); }); }
                                                                ));
@@ -540,15 +541,6 @@ struct tl_Dictionary_impl {
     }
   }
 };
-
-template<typename T, unsigned int inner_magic>
-using t_Dictionary = tl_Dictionary_impl<t_String, T, inner_magic>;
-
-template<typename T, unsigned int inner_magic>
-using t_IntKeyDictionary = tl_Dictionary_impl<t_Int, T, inner_magic>;
-
-template<typename T, unsigned int inner_magic>
-using t_LongKeyDictionary = tl_Dictionary_impl<t_Long, T, inner_magic>;
 
 template<typename T, unsigned int inner_magic>
 struct t_Tuple {
