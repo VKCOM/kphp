@@ -245,6 +245,9 @@ string FunctionData::get_human_readable_name() const {
 }
 
 void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule) {
+  if (!type_rule) {
+    return;
+  }
   type_rule.set_location(root);
   infer_hints.emplace_back(InferHint{infer_mask, param_i, type_rule});
 }
