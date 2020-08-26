@@ -221,6 +221,9 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
     case tok_question:  // ?string == string|null; ?string[] == string[]|null
       cur_tok++;
       return VertexAdaptor<op_type_expr_lca>::create(parse_type_expression(), GenTree::create_type_help_vertex(tp_Null));
+    case tok_object:
+      cur_tok++;
+      return GenTree::create_type_help_vertex(tp_Any);
 
     case tok_static:
     case tok_func_name:
