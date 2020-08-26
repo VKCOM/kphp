@@ -113,8 +113,8 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> dst, const vk::intrusive_ptr
      *  he will accidentally calculate assumptions for template arguments and got Unknown as type,
      *  therefore, we need to ignore such awkward situation
      */
-    auto prev_assum_is_unknown = rhs.try_as<AssumNotInstance>();
-    if (prev_assum_is_unknown && prev_assum_is_unknown->get_type() == tp_Unknown) {
+    auto prev_assum = rhs.try_as<AssumNotInstance>();
+    if (prev_assum && vk::any_of_equal(prev_assum->get_type(), tp_Unknown, tp_Any)) {
       return true;
     }
   }
