@@ -237,7 +237,7 @@ string FunctionData::get_human_readable_name() const {
   if (instantiation_of_template_function_location.get_line() != -1) {
     auto &file = instantiation_of_template_function_location.get_file()->file_name;
     auto line = std::to_string(instantiation_of_template_function_location.line);
-    result_name += "(instantiated at: " + file + ": " + line + ")";
+    result_name += "(instantiated at: " + file + ":" + line + ")";
   }
 
   return result_name;
