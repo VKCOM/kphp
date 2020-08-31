@@ -1,5 +1,6 @@
 #include "compiler/pipes/preprocess-eq3.h"
 
+#include "common/algorithms/contains.h"
 #include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
@@ -25,19 +26,17 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
   while (v->type() == op_index) {
     v = v.as<op_index>()->array();
   }
-  bool ok = v->type() == op_var;
+  if (auto var_v = v.try_as<op_var>()) {
   // увы, это пока нужно для компиляции реального php кода, но от этого хочется избавиться потом
-  if (ok) {
-    ok &= //(b->type() != op_true && b->type() != op_false) ||
-      (v->get_string() != "connection" &&
-       v->get_string().find("MC") == string::npos);
-  }
+    if (var_v->str_val == "connection" || vk::contains(var_v->str_val, "MC")) {
+      return eq_op;
+    }
 
-  if (ok) {
     auto isset = VertexAdaptor<op_isset>::create(not_null).set_location(not_null->location);
-    return eq_op->type() == op_neq3
-           ? VertexPtr(isset)
-           : VertexPtr(VertexAdaptor<op_log_not>::create(isset));
+    if (eq_op->type() != op_neq3) {
+      return VertexAdaptor<op_log_not>::create(isset);
+    }
+    return isset;
   }
 
   return eq_op;
