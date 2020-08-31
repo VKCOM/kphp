@@ -24,10 +24,8 @@
 #define CE(x) if (!(x)) {return {};}
 
 GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
-  line_num(0),
   tokens(std::move(tokens)),
   parsed_os(os),
-  is_top_of_the_function_(false),
   cur(this->tokens.begin()),
   end(this->tokens.end()),
   processing_file(file) {                  // = stage::get_file()
@@ -2199,11 +2197,6 @@ void GenTree::run() {
     fmt_fprintf(stderr, "line {}: something wrong\n", line_num);
     kphp_error (0, "Cannot compile (probably problems with brace balance)");
   }
-}
-
-void php_gen_tree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) {
-  GenTree gen(std::move(tokens), file, os);
-  gen.run();
 }
 
 #undef CE

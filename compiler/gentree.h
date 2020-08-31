@@ -171,12 +171,12 @@ private:
   VertexPtr get_const(AccessModifiers access);
 
 public:
-  int line_num;
+  int line_num{0};
 
 private:
   const vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
-  bool is_top_of_the_function_;
+  bool is_top_of_the_function_{false};
   decltype(tokens)::const_iterator cur, end;
   vector<ClassPtr> class_stack;
   ClassPtr cur_class;               // = class_stack.back()
@@ -185,8 +185,6 @@ private:
   SrcFilePtr processing_file;
   std::vector<LambdaGenerator> lambda_generators;
 };
-
-void php_gen_tree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
 template<PrimitiveType ToT>
 VertexAdaptor<meta_op_unary> GenTree::conv_to_lval(VertexPtr x) {
