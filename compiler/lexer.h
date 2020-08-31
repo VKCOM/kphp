@@ -52,12 +52,12 @@ private:
 };
 
 struct TokenLexer : private vk::not_copyable {
-  virtual int parse(LexerData *lexer_data) const = 0;
+  virtual bool parse(LexerData *lexer_data) const = 0;
   virtual ~TokenLexer() = default;
 };
 
 //TODO ??
-int parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h);
+bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h);
 
 struct TokenLexerError final : TokenLexer {
   string error_str;
@@ -66,41 +66,45 @@ struct TokenLexerError final : TokenLexer {
     error_str(std::move(error_str)) {
   }
 
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerName final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerNum final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerSimpleString final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerAppendChar final : TokenLexer {
   int c, pass;
 
-  TokenLexerAppendChar(int c, int pass);
-  int parse(LexerData *lexer_data) const;
+  TokenLexerAppendChar(int c, int pass) :
+    c(c),
+    pass(pass) {
+  }
+
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerOctChar final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerHexChar final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerStringExpr final : TokenLexer {
   std::unique_ptr<Helper<TokenLexer>> h;
 
   void init();
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerHeredocString final : TokenLexer {
@@ -108,7 +112,7 @@ struct TokenLexerHeredocString final : TokenLexer {
 
   void add_esc(const string &s, char c);
   void init();
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerString final : TokenLexer {
@@ -116,23 +120,23 @@ struct TokenLexerString final : TokenLexer {
 
   void add_esc(const string &s, char c);
   void init();
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 
 struct TokenLexerComment final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerIfndefComment final : TokenLexer {
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerWithHelper : TokenLexer {
   std::unique_ptr<Helper<TokenLexer>> h;
 
   virtual void init() = 0;
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerToken final : TokenLexer {
@@ -144,7 +148,7 @@ struct TokenLexerToken final : TokenLexer {
     len(len) {
   }
 
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerCommon final : TokenLexerWithHelper {
@@ -155,11 +159,11 @@ struct TokenLexerCommon final : TokenLexerWithHelper {
 
 struct TokenLexerSkip final : TokenLexer {
   int n;
-  TokenLexerSkip(int n = 1) :
+  explicit TokenLexerSkip(int n = 1) :
     n(n) {
   }
 
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 struct TokenLexerPHP final : TokenLexerWithHelper {
@@ -175,7 +179,7 @@ struct TokenLexerPHPDoc final : TokenLexerWithHelper {
 struct TokenLexerGlobal final : TokenLexer {
   TokenLexerPHP *php_lexer{&vk::singleton<TokenLexerPHP>::get()};
 
-  int parse(LexerData *lexer_data) const;
+  bool parse(LexerData *lexer_data) const final;
 };
 
 void lexer_init();

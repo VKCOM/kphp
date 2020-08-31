@@ -281,26 +281,24 @@ int LexerData::get_line_num() {
 }
 
 
-int parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h) {
+bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h) {
   const char *s = lexer_data->get_code();
 
   TokenLexer *fnd = h->get_help(s);
 
-  int ret;
-  if (fnd == nullptr || (ret = fnd->parse(lexer_data)) != 0) {
-    ret = h->get_default()->parse(lexer_data);
+  if (fnd && fnd->parse(lexer_data)) {
+    return true;
   }
-
-  return ret;
+  return h->get_default()->parse(lexer_data);
 }
 
-int TokenLexerError::parse(LexerData *lexer_data) const {
+bool TokenLexerError::parse(LexerData *lexer_data) const {
   stage::set_line(lexer_data->get_line_num());
   kphp_error (0, error_str.c_str());
-  return 1;
+  return false;
 }
 
-int TokenLexerName::parse(LexerData *lexer_data) const {
+bool TokenLexerName::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(), *st = s;
   const TokenType type = s[0] == '$' ? tok_var_name : tok_func_name;
 
@@ -353,17 +351,17 @@ int TokenLexerName::parse(LexerData *lexer_data) const {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.size());
     if (tp != nullptr) {
       lexer_data->add_token((int)(t - st), tp->type, s, t);
-      return 0;
+      return true;
     }
   } else if (name == "GLOBALS") {
     return TokenLexerError("$GLOBALS is not supported").parse(lexer_data);
   }
 
   lexer_data->add_token((int)(t - st), type, name);
-  return 0;
+  return true;
 }
 
-int TokenLexerNum::parse(LexerData *lexer_data) const {
+bool TokenLexerNum::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code();
 
   const char *t = s;
@@ -526,11 +524,11 @@ int TokenLexerNum::parse(LexerData *lexer_data) const {
   assert (t != s);
   lexer_data->add_token((int)(t - s), is_float ? tok_float_const : tok_int_const, s, t);
 
-  return 0;
+  return true;
 }
 
 
-int TokenLexerSimpleString::parse(LexerData *lexer_data) const {
+bool TokenLexerSimpleString::parse(LexerData *lexer_data) const {
   string str;
 
   const char *s = lexer_data->get_code();
@@ -543,7 +541,6 @@ int TokenLexerSimpleString::parse(LexerData *lexer_data) const {
     switch (t[0]) {
       case 0:
         return TokenLexerError("Unexpected end of file").parse(lexer_data);
-        continue;
 
       case '\'':
         need = false;
@@ -572,21 +569,16 @@ int TokenLexerSimpleString::parse(LexerData *lexer_data) const {
   }
   lexer_data->flush_str();
   lexer_data->pass_raw(1);
-  return 0;
+  return true;
 }
 
-TokenLexerAppendChar::TokenLexerAppendChar(int c, int pass) :
-  c(c),
-  pass(pass) {
-}
-
-int TokenLexerAppendChar::parse(LexerData *lexer_data) const {
+bool TokenLexerAppendChar::parse(LexerData *lexer_data) const {
   lexer_data->append_char(c);
   lexer_data->pass_raw(pass);
-  return 0;
+  return true;
 }
 
-int TokenLexerOctChar::parse(LexerData *lexer_data) const {
+bool TokenLexerOctChar::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(), *t = s;
   int val = t[1] - '0';
   t += 2;
@@ -605,10 +597,10 @@ int TokenLexerOctChar::parse(LexerData *lexer_data) const {
   //TODO: \777
   lexer_data->append_char(val);
   lexer_data->pass_raw((int)(t - s));
-  return 0;
+  return true;
 }
 
-int TokenLexerHexChar::parse(LexerData *lexer_data) const {
+bool TokenLexerHexChar::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(), *t = s + 2;
   int val = conv_hex_digit(*t);
   if (val == -1) {
@@ -623,7 +615,7 @@ int TokenLexerHexChar::parse(LexerData *lexer_data) const {
 
   lexer_data->append_char(val);
   lexer_data->pass_raw((int)(t - s));
-  return 0;
+  return true;
 }
 
 
@@ -642,7 +634,7 @@ void TokenLexerStringExpr::init() {
   h->add_simple_rule("", &vk::singleton<TokenLexerCommon>::get());
 }
 
-int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
+bool TokenLexerStringExpr::parse(LexerData *lexer_data) const {
   assert (h != nullptr);
   const char *s = lexer_data->get_code();
   assert (*s == '{');
@@ -664,12 +656,11 @@ int TokenLexerStringExpr::parse(LexerData *lexer_data) const {
       bal--;
     }
 
-    int res = parse_with_helper(lexer_data, h);
-    if (res) {
-      return res;
+    if (!parse_with_helper(lexer_data, h)) {
+      return false;
     }
   }
-  return 0;
+  return true;
 }
 
 
@@ -720,7 +711,7 @@ void TokenLexerHeredocString::init() {
   h->add_simple_rule("{$", &vk::singleton<TokenLexerStringExpr>::get());
 }
 
-int TokenLexerString::parse(LexerData *lexer_data) const {
+bool TokenLexerString::parse(LexerData *lexer_data) const {
   assert (h != nullptr);
   const char *s = lexer_data->get_code();
   int is_heredoc = s[0] == '<';
@@ -739,15 +730,14 @@ int TokenLexerString::parse(LexerData *lexer_data) const {
       return TokenLexerError("Unexpected end of file").parse(lexer_data);
     }
 
-    int res = parse_with_helper(lexer_data, h);
-    if (res) {
-      return res;
+    if (!parse_with_helper(lexer_data, h)) {
+      return false;
     }
   }
-  return 0;
+  return true;
 }
 
-int TokenLexerHeredocString::parse(LexerData *lexer_data) const {
+bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code();
   int is_heredoc = s[0] == '<';
   assert (is_heredoc);
@@ -829,19 +819,18 @@ int TokenLexerHeredocString::parse(LexerData *lexer_data) const {
     }
 
     if (!single_quote) {
-      int res = parse_with_helper(lexer_data, h);
-      if (res) {
-        return res;
+      if (!parse_with_helper(lexer_data, h)) {
+        return false;
       }
     } else {
       lexer_data->append_char(-1);
     }
     first = false;
   }
-  return 0;
+  return true;
 }
 
-int TokenLexerComment::parse(LexerData *lexer_data) const {
+bool TokenLexerComment::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(),
     *st = s;
 
@@ -878,10 +867,10 @@ int TokenLexerComment::parse(LexerData *lexer_data) const {
   }
 
   lexer_data->pass((int)(s - st));
-  return 0;
+  return true;
 }
 
-int TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
+bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(),
     *st = s;
 
@@ -905,17 +894,17 @@ int TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
     return TokenLexerError("Unclosed comment (#endif expected)").parse(lexer_data);
   }
   lexer_data->pass((int)(s - st));
-  return 0;
+  return true;
 }
 
-int TokenLexerWithHelper::parse(LexerData *lexer_data) const {
+bool TokenLexerWithHelper::parse(LexerData *lexer_data) const {
   assert (h != nullptr);
   return parse_with_helper(lexer_data, h);
 }
 
-int TokenLexerToken::parse(LexerData *lexer_data) const {
+bool TokenLexerToken::parse(LexerData *lexer_data) const {
   lexer_data->add_token(len, tp);
-  return 0;
+  return true;
 }
 
 void TokenLexerCommon::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
@@ -995,9 +984,9 @@ void TokenLexerCommon::init() {
   add_rule(h, "...", tok_varg);
 }
 
-int TokenLexerSkip::parse(LexerData *lexer_data) const {
+bool TokenLexerSkip::parse(LexerData *lexer_data) const {
   lexer_data->pass(n);
-  return 0;
+  return true;
 }
 
 void TokenLexerPHP::init() {
@@ -1022,11 +1011,11 @@ void TokenLexerPHPDoc::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, co
 }
 
 void TokenLexerPHPDoc::init() {
-  struct TokenLexerPHPDocStopParsing : TokenLexer {
-    int parse(LexerData *lexer_data) const {
+  struct TokenLexerPHPDocStopParsing final : TokenLexer {
+    bool parse(LexerData *lexer_data) const final {
       lexer_data->add_token(0, tok_end);
       lexer_data->pass(1);
-      return 1;
+      return false;
     }
   };
 
@@ -1063,7 +1052,7 @@ void TokenLexerPHPDoc::init() {
   add_rule(h, "...", tok_varg);
 }
 
-int TokenLexerGlobal::parse(LexerData *lexer_data) const {
+bool TokenLexerGlobal::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code();
   const char *t = s;
   while (*t && strncmp(t, "<?", 2)) {
@@ -1072,7 +1061,7 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
 
   if (s != t) {
     lexer_data->add_token((int)(t - s), tok_inline_html, s, t);
-    return 0;
+    return true;
   }
 
   if (*s == 0) {
@@ -1097,9 +1086,8 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
     if (s[0] == 0 || (s[0] == '?' && s[1] == '>')) {
       break;
     }
-    int ret = php_lexer->parse(lexer_data);
-    if (ret != 0) {
-      return ret;
+    if (!php_lexer->parse(lexer_data)) {
+      return false;
     }
   }
   lexer_data->add_token(0, tok_semicolon);
@@ -1114,7 +1102,7 @@ int TokenLexerGlobal::parse(LexerData *lexer_data) const {
     }
   }
 
-  return 0;
+  return true;
 }
 
 void lexer_init() {
@@ -1132,7 +1120,7 @@ vector<Token> php_text_to_tokens(vk::string_view text) {
   LexerData lexer_data{text};
 
   while (*lexer_data.get_code()) {
-    if (lexer.parse(&lexer_data) != 0) {
+    if (!lexer.parse(&lexer_data)) {
       kphp_error(false, "failed to parse");
       return {};
     }
@@ -1148,7 +1136,7 @@ vector<Token> phpdoc_to_tokens(vk::string_view text) {
   lexer_data.set_dont_hack_last_tokens();   // future(int) — не нужно (int) как op_conv_int
 
   while (*lexer_data.get_code()) {
-    if (vk::singleton<TokenLexerPHPDoc>::get().parse(&lexer_data) == 1) {
+    if (!vk::singleton<TokenLexerPHPDoc>::get().parse(&lexer_data)) {
       break;
     }
 
