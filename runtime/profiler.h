@@ -2,12 +2,14 @@
 
 #include <cinttypes>
 #include <cstdio>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 
 #include "runtime/kphp_core.h"
+#include "server/php-queries-stats.h"
 
 template<class T>
 class TracingProfilerListNode : vk::not_copyable {
@@ -29,22 +31,39 @@ protected:
   T *next_{nullptr};
 };
 
-class FunctionStats : public TracingProfilerListNode<FunctionStats> {
+class FunctionStatsWithLabel;
+
+class FunctionStatsBase {
 public:
-  FunctionStats(const char *file, const char *function, size_t line, size_t level) noexcept;
+  struct Stats {
+    uint64_t calls{0};
+    uint64_t total_allocations{0};
+    uint64_t total_memory_allocated{0};
+    uint64_t memory_used{0};
+    uint64_t real_memory_used{0};
+    uint64_t working_tsc{0};
+    uint64_t waiting_tsc{0};
+    uint64_t context_swaps_for_query_count{0};
+    QueriesStat rpc_requests_stat;
+    QueriesStat sql_requests_stat;
+    QueriesStat mc_requests_stat;
 
-  void on_call_finish(uint64_t total_allocations, uint64_t total_memory_allocated,
-                      uint64_t memory_used, uint64_t real_memory_used,
-                      uint64_t working_tsc, uint64_t waiting_tsc) noexcept;
+    Stats &operator+=(const Stats &other) noexcept;
+    Stats &operator-=(const Stats &other) noexcept;
+    void write_to(FILE *out, long double nanoseconds_to_tsc_rate) const noexcept;
+  };
 
-  void on_callee_call_finish(const FunctionStats &callee_stats,
-                             uint64_t callee_total_allocations, uint64_t callee_total_memory_allocated,
-                             uint64_t callee_memory_used, uint64_t callee_real_memory_used,
-                             uint64_t callee_working_tsc, uint64_t callee_waiting_tsc) noexcept;
+  FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept;
+
+  void on_call_finish(const Stats &profiled_stats) noexcept;
+
+  void on_callee_call_finish(const FunctionStatsBase &callee_stats, const Stats &callee_profiled_stats) noexcept;
 
   uint64_t calls_count() const noexcept;
 
-  void flush(FILE *out = nullptr) noexcept;
+  virtual FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept = 0;
+
+  void flush(FILE *out = nullptr, long double nanoseconds_to_tsc_rate = 1.0) noexcept;
 
   const char *const file_name{nullptr};
   const uint64_t file_id{0};
@@ -55,26 +74,50 @@ public:
   const size_t function_line{0};
   const size_t profiler_level{0};
 
+protected:
+  virtual ~FunctionStatsBase() = default;
+
+  Stats self_stats_;
+  std::unordered_map<const FunctionStatsBase *, Stats> callees_;
+};
+
+
+class FunctionStatsNoLabel final : public FunctionStatsBase, public TracingProfilerListNode<FunctionStatsNoLabel> {
+public:
+  FunctionStatsNoLabel(const char *file, const char *function, size_t line, size_t level) noexcept;
+
+  const auto &get_labels() const noexcept {
+    return labels_;
+  }
+
+  FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final;
+
 private:
-  uint64_t calls_{0};
-  uint64_t self_total_allocations_{0};
-  uint64_t self_total_memory_allocated_{0};
-  uint64_t self_memory_used_{0};
-  uint64_t self_real_memory_used_{0};
-  uint64_t self_working_tsc_{0};
-  uint64_t self_waiting_tsc_{0};
+  std::unordered_map<vk::string_view, std::unique_ptr<FunctionStatsWithLabel>> labels_;
+};
 
-  struct CalleeStats {
-    uint64_t calls{0};
-    uint64_t total_allocations{0};
-    uint64_t total_memory_allocated{0};
-    uint64_t memory_used{0};
-    uint64_t real_memory_used{0};
-    uint64_t working_tsc{0};
-    uint64_t waiting_tsc{0};
-  };
+class FunctionStatsWithLabel final : public FunctionStatsBase {
+public:
+  FunctionStatsWithLabel(FunctionStatsNoLabel &no_label, vk::string_view label) noexcept;
 
-  std::unordered_map<const FunctionStats *, CalleeStats> callees_;
+  const char *get_label() const noexcept {
+    return label_buffer_.data();
+  }
+
+  static constexpr size_t label_max_len() noexcept {
+    return label_max_len_;
+  }
+
+  FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final {
+    return parent_stats_no_label.get_stats_with_label(label);
+  }
+
+  FunctionStatsNoLabel &parent_stats_no_label;
+
+private:
+  static constexpr size_t label_max_len_ = 255;
+
+  std::array<char, label_max_len_ + 1> label_buffer_;
 };
 
 class ProfilerBase : public TracingProfilerListNode<ProfilerBase> {
@@ -82,6 +125,7 @@ public:
   void start() noexcept;
   void stop() noexcept;
   void fix_waiting_tsc(uint64_t waiting_tsc) noexcept;
+  void use_function_label(vk::string_view label) noexcept;
 
 protected:
   ProfilerBase() = default;
@@ -89,17 +133,22 @@ protected:
 
   void set_initial_stats(uint64_t start_working_tsc, const memory_resource::MemoryStats &memory_stats) noexcept;
 
+  static void forcibly_dump_log_on_finish(const char *function_name) noexcept;
+
   static bool is_profiling_allowed(bool is_root) noexcept;
 
   template<class FunctionTag>
-  static FunctionStats *get_function_stats() noexcept {
-    static FunctionStats function_stats{
+  static FunctionStatsNoLabel &get_function_stats() noexcept {
+    static FunctionStatsNoLabel function_stats{
       FunctionTag::file_name(),
       FunctionTag::function_name(),
       FunctionTag::function_line(),
       FunctionTag::profiler_level()
     };
-    return &function_stats;
+    if (FunctionTag::is_root()) {
+      forcibly_dump_log_on_finish(FunctionTag::profiler_level() == 1 ? FunctionTag::function_name() : nullptr);
+    }
+    return function_stats;
   }
 
   uint64_t start_total_allocations_{0};
@@ -108,9 +157,15 @@ protected:
   uint64_t start_real_memory_used_{0};
   uint64_t start_working_tsc_{0};
   uint64_t accumulated_waiting_tsc_{0};
+  uint64_t start_context_swaps_for_query_count_{0};
+
+  QueriesStat start_rpc_queries_stat_;
+  QueriesStat start_sql_queries_stat_;
+  QueriesStat start_mc_queries_stat_;
+
   uint64_t last_callee_waiting_generation_{0};
   uint64_t waiting_generation_{0};
-  FunctionStats *function_stats_{nullptr};
+  FunctionStatsBase *function_stats_{nullptr};
 };
 
 template<class FunctionTag>
@@ -118,7 +173,7 @@ class AutoProfiler : ProfilerBase {
 public:
   AutoProfiler() noexcept {
     if (is_profiling_allowed(FunctionTag::is_root())) {
-      function_stats_ = get_function_stats<FunctionTag>();
+      function_stats_ = &get_function_stats<FunctionTag>();
       start();
     }
   }
@@ -131,7 +186,7 @@ public:
   }
 };
 
-class ShutdownProfiler : AutoProfiler<ShutdownProfiler> {
+class ShutdownProfiler final : AutoProfiler<ShutdownProfiler> {
 public:
   static constexpr const char *file_name() noexcept { return "(unknown)"; }
   static constexpr const char *function_name() noexcept { return "<shutdown caller>"; }
@@ -170,11 +225,11 @@ private:
 };
 
 template<class FunctionTag>
-class ResumableProfiler : ResumableProfilerBase {
+class ResumableProfiler final : ResumableProfilerBase {
 public:
   ResumableProfiler() noexcept {
     if (is_profiling_allowed(FunctionTag::is_root())) {
-      function_stats_ = get_function_stats<FunctionTag>();
+      function_stats_ = &get_function_stats<FunctionTag>();
     }
   }
 
@@ -199,4 +254,6 @@ void forcibly_stop_and_flush_profiler() noexcept;
 
 bool set_profiler_log_path(const char *mask) noexcept;
 
-void f$dump_profiler_log_on_finish(const string &suffix = {}) noexcept;
+void f$profiler_set_log_suffix(const string &suffix) noexcept;
+void f$profiler_set_function_label(const string &label) noexcept;
+bool f$profiler_is_enabled() noexcept;

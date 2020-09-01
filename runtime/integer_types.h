@@ -363,7 +363,7 @@ inline int64_t f$intval(ULong val) {
 }
 
 inline int64_t f$safe_intval(ULong val) {
-  if (val.l >= std::numeric_limits<int64_t>::max()) {
+  if (val.l >= static_cast<unsigned long long int>(std::numeric_limits<int64_t>::max())) {
     php_warning("Integer overflow on converting %llu to int", val.l);
   }
   return static_cast<int64_t>(val.l);

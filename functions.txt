@@ -1310,4 +1310,6 @@ function confdata_get_value($key ::: string) ::: var;
 function confdata_get_values_by_any_wildcard($wildcard ::: string) ::: var[];
 function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: var[];
 
-function dump_profiler_log_on_finish($suffix ::: string = "") ::: void;
+function profiler_set_log_suffix($suffix ::: string) ::: void;
+function profiler_set_function_label($label ::: string) ::: void;
+function profiler_is_enabled() ::: bool;

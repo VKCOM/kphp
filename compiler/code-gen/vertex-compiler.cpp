@@ -888,7 +888,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   if (func->profiler_state == FunctionData::profiler_status::disable
-      || func->is_inline
+      || (func->is_inline && func->profiler_state == FunctionData::profiler_status::enable_as_child)
       || !G->env().get_profiler_level()) {
     return false;
   }
@@ -909,7 +909,7 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
       << "resumable_profiler.start(pos__);" << NL
       << "const bool done = run_profiling_resumable();" << NL
       << "resumable_profiler.stop(done);" << NL
-      << "return done;"  << NL << END  << NL << NL;
+      << "return done;" << NL << END << NL << NL;
   } else {
     W << "AutoProfiler<TracingProfilerTraits> auto_profiler;" << NL << NL;
   }

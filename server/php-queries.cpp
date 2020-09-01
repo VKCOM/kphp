@@ -9,6 +9,7 @@
 
 #include "runtime/allocator.h"
 #include "server/php-engine-vars.h"
+#include "server/php-queries-stats.h"
 #include "server/php-runner.h"
 #include "server/php-script.h"
 
@@ -844,6 +845,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 }
 
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
+  PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
   int status = alloc_net_event(slot_id, ne_rpc_answer, &event);
   if (status <= 0) {
@@ -892,6 +894,7 @@ void free_net_query(net_query_t *query) {
 
 /*** main functions ***/
 void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) {
+  PhpQueriesStats::get_mc_queries_stat().register_query(request_len);
   php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_memcached, query_type | (PNETF_IMMEDIATE * (callback == nullptr)));
   if (res->state == nq_error) {
     if (callback != nullptr) {
@@ -900,6 +903,7 @@ void mc_run_query(int host_num, const char *request, int request_len, int timeou
     save_last_net_error(res->res);
   } else {
     assert (res->res != nullptr);
+    PhpQueriesStats::get_mc_queries_stat().register_answer(res->res_len);
     if (callback != nullptr) {
       callback(res->res, res->res_len);
     }
@@ -907,6 +911,7 @@ void mc_run_query(int host_num, const char *request, int request_len, int timeou
 }
 
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len)) {
+  PhpQueriesStats::get_sql_queries_stat().register_query(request_len);
   php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_sql, 0);
   if (res->state == nq_error) {
     fprintf(stderr, "db_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
@@ -916,6 +921,7 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
     chain_t *cur = res->chain->next;
     while (cur != res->chain) {
       //fprintf (stderr, "sql_callback [len = %d]\n", cur->len);
+      PhpQueriesStats::get_sql_queries_stat().register_answer(cur->len);
       callback(cur->buf, cur->len);
       cur = cur->next;
     }
@@ -933,6 +939,7 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
     return -1;
   }
 
+  PhpQueriesStats::get_rpc_queries_stat().register_query(request_size);
   query->host_num = host_num;
   query->request = request;
   query->request_size = request_size;

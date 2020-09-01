@@ -113,8 +113,12 @@ public:
   bool is_flatten = false;
   enum class profiler_status : uint8_t {
     disable,
+    // Профилируемая фукнция, с которой все начинается и на которой все закончится
     enable_as_root,
-    enable_as_child
+    // Фукнция, которая будет профилироваться в случае достижимости из профилируемой, при этом inline фукнция не профилируется
+    enable_as_child,
+    // Фукнция, которая будет профилироваться в случае достижимости из профилируемой (даже если она inline)
+    enable_as_inline_child,
   } profiler_state = profiler_status::disable;
 
   ClassPtr class_id;

@@ -45,10 +45,6 @@ public:
       parse_kphp_tag(tag);
     }
 
-    if (f_->profiler_state == FunctionData::profiler_status::enable_as_root) {
-      kphp_error(!f_->is_inline, "@kphp-inline and @kphp-profile are incompatible");
-    }
-
     if (infer_type_ && !f_->is_template) {
       for (auto &tag : phpdoc_tags_) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
         parse_generic_phpdoc_tag(tag);
@@ -117,6 +113,14 @@ private:
 
       case php_doc_tag::kphp_profile: {
         f_->profiler_state = FunctionData::profiler_status::enable_as_root;
+        break;
+      }
+      case php_doc_tag::kphp_profile_allow_inline: {
+        if (f_->profiler_state == FunctionData::profiler_status::disable) {
+          f_->profiler_state = FunctionData::profiler_status::enable_as_inline_child;
+        } else {
+          kphp_assert(f_->profiler_state == FunctionData::profiler_status::enable_as_root);
+        }
         break;
       }
 

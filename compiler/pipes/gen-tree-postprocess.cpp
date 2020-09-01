@@ -103,7 +103,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
 } // namespace
 
 GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
-  static std::map<std::string, builtin_fun> functions = {
+  static std::unordered_map<vk::string_view, builtin_fun> functions = {
     {"strval",        {op_conv_string,         1}},
     {"intval",        {op_conv_int,            1}},
     {"boolval",       {op_conv_bool,           1}},
@@ -119,6 +119,9 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
+    if (!G->env().get_profiler_level() && name == "profiler_is_enabled") {
+      return {op_false, 0};
+    }
     return {op_err, -1};
   }
   return it->second;
@@ -149,12 +152,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
     auto builtin = get_builtin_function(name);
     if (builtin.op != op_err && call->size() == builtin.args) {
-      if (builtin.op == op_fork) {
-        if (call->args().size() != 1 || call->args()[0]->type() != op_func_call) {
-          kphp_error(0, "Fork argument must be function call");
-          return root;
-        }
-      }
       return create_vertex(builtin.op, call->args()).set_location(root);
     }
 
@@ -205,6 +202,12 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
+    }
+  }
+  if (auto fork_call = root.try_as<op_fork>()) {
+    if (fork_call->size() != 1 || fork_call->back()->type() != op_func_call) {
+      kphp_error(0, "Fork argument must be function call");
+      return root;
     }
   }
 

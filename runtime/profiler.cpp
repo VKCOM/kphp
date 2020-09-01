@@ -5,13 +5,15 @@
 #include <chrono>
 #include <unordered_set>
 
+#include "common/algorithms/compare.h"
+#include "common/containers/final_action.h"
 #include "common/cycleclock.h"
 #include "common/wrappers/string_view.h"
-#include "common/containers/final_action.h"
 
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/php_assert.h"
+#include "server/php-queries.h"
 
 namespace {
 template<class T>
@@ -37,7 +39,7 @@ public:
     return context;
   }
 
-  TracingProfilerStack<FunctionStats> function_list;
+  TracingProfilerStack<FunctionStatsNoLabel> function_list;
   TracingProfilerStack<ProfilerBase> call_stack;
   TracingProfilerStack<ResumableProfilerBase> current_resumable_call_stack;
   uint64_t start_waiting_tsc{0};
@@ -78,13 +80,37 @@ public:
       // Специально делаем ленивую инициализацию,
       // чтобы конструктор синглтона был максимально тривиальным и не генерировал лишний код
       file_ids_ = new(&file_ids_storage) File2IdMap();
+      start_tp_ = std::chrono::steady_clock::now();
+      start_tsc_ = cycleclock_now();
     }
     return file_ids_->emplace(file_name, file_ids_->size() + 1).first->second;
+  }
+
+  long double calc_nanoseconds_to_tsc_rate() const noexcept {
+    if (!start_tsc_ || start_tp_ == std::chrono::steady_clock::time_point{}) {
+      return 1.0;
+    }
+    const uint64_t interval_tsc = cycleclock_now() - start_tsc_;
+    const std::chrono::nanoseconds interval_nanoseconds = std::chrono::steady_clock::now() - start_tp_;
+    if (!interval_tsc || !interval_nanoseconds.count()) {
+      return 1.0;
+    }
+    return static_cast<long double>(interval_nanoseconds.count()) / static_cast<long double>(interval_tsc);
   }
 
   const auto &get_file_ids() const noexcept {
     php_assert(file_ids_);
     return *file_ids_;
+  }
+
+  void update_log_suffix(vk::string_view suffix) noexcept {
+    *profiler_log_suffix = '.';
+    size_t suffix_len = suffix.size();
+    if (suffix_len) {
+      memcpy(profiler_log_suffix + 1, suffix.data(), suffix_len);
+      profiler_log_suffix[1 + suffix_len++] = '.';
+    }
+    profiler_log_suffix[1 + suffix_len] = '\0';
   }
 
 private:
@@ -98,16 +124,65 @@ private:
   using File2IdMap = std::unordered_map<vk::string_view, uint64_t>;
   File2IdMap *file_ids_{nullptr};
   std::aligned_storage_t<sizeof(File2IdMap), alignof(File2IdMap)> file_ids_storage{};
+
+  std::chrono::steady_clock::time_point start_tp_;
+  uint64_t start_tsc_{0};
 };
+
+uint64_t tsc2ns(uint64_t tsc, long double nanoseconds_to_tsc_rate) noexcept {
+  return static_cast<uint64_t>(static_cast<long double>(tsc) * nanoseconds_to_tsc_rate);
+}
 
 struct {
   const char *log_path_mask{nullptr};
 } profiler_config;
 
+template<typename F>
+FunctionStatsBase::Stats &stats_binary_op(FunctionStatsBase::Stats &lhs, const FunctionStatsBase::Stats &rhs, const F &f) noexcept {
+  f(lhs.total_allocations, rhs.total_allocations);
+  f(lhs.total_memory_allocated, rhs.total_memory_allocated);
+  f(lhs.memory_used, rhs.memory_used);
+  f(lhs.real_memory_used, rhs.real_memory_used);
+  f(lhs.working_tsc, rhs.working_tsc);
+  f(lhs.waiting_tsc, rhs.waiting_tsc);
+  f(lhs.context_swaps_for_query_count, rhs.context_swaps_for_query_count);
+  f(lhs.rpc_requests_stat, rhs.rpc_requests_stat);
+  f(lhs.sql_requests_stat, rhs.sql_requests_stat);
+  f(lhs.mc_requests_stat, rhs.mc_requests_stat);
+  return lhs;
+}
+
 } // namespace
 
-FunctionStats::FunctionStats(const char *file, const char *function, size_t line, size_t level) noexcept:
-  TracingProfilerListNode<FunctionStats>(ProfilerContext::get().function_list.update_top(this)),
+FunctionStatsBase::Stats &FunctionStatsBase::Stats::operator+=(const Stats &other) noexcept {
+  ++calls;
+  return stats_binary_op(*this, other, [](auto &lhs, auto rhs) { lhs += rhs; });
+}
+
+FunctionStatsBase::Stats &FunctionStatsBase::Stats::operator-=(const Stats &other) noexcept {
+  return stats_binary_op(*this, other, [](auto &lhs, auto rhs) { lhs -= rhs; });
+}
+
+void FunctionStatsBase::Stats::write_to(FILE *out, long double nanoseconds_to_tsc_rate) const noexcept {
+  fprintf(out,
+          "%" PRIu64 " %" PRIu64
+          " %" PRIu64 " %" PRIu64
+          " %" PRIu64
+          " %" PRIu64 " %" PRIu64 " %" PRIu64
+          " %" PRIu64 " %" PRIu64 " %" PRIu64
+          " %" PRIu64 " %" PRIu64 " %" PRIu64
+          " %" PRIu64 " %" PRIu64 "\n",
+          total_allocations, total_memory_allocated,
+          memory_used, real_memory_used,
+          context_swaps_for_query_count,
+          rpc_requests_stat.queries_count(), rpc_requests_stat.outgoing_bytes(), rpc_requests_stat.incoming_bytes(),
+          sql_requests_stat.queries_count(), sql_requests_stat.outgoing_bytes(), sql_requests_stat.incoming_bytes(),
+          mc_requests_stat.queries_count(), mc_requests_stat.outgoing_bytes(), mc_requests_stat.incoming_bytes(),
+          tsc2ns(working_tsc, nanoseconds_to_tsc_rate),
+          tsc2ns(waiting_tsc, nanoseconds_to_tsc_rate));
+}
+
+FunctionStatsBase::FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept:
   file_name(file),
   file_id(ProfilerContext::get().get_next_file_id(file)),
   function_name(function),
@@ -116,78 +191,68 @@ FunctionStats::FunctionStats(const char *file, const char *function, size_t line
   profiler_level(level) {
 }
 
-void FunctionStats::on_call_finish(uint64_t total_allocations, uint64_t total_memory_allocated,
-                                   uint64_t memory_used, uint64_t real_memory_used,
-                                   uint64_t working_tsc, uint64_t waiting_tsc) noexcept {
-  ++calls_;
-  self_total_allocations_ += total_allocations;
-  self_total_memory_allocated_ += total_memory_allocated;
-  self_memory_used_ += memory_used;
-  self_real_memory_used_ += real_memory_used;
-  self_working_tsc_ += working_tsc;
-  self_waiting_tsc_ += waiting_tsc;
+void FunctionStatsBase::on_call_finish(const Stats &profiled_stats) noexcept {
+  self_stats_ += profiled_stats;
 }
 
-void FunctionStats::on_callee_call_finish(const FunctionStats &callee_stats,
-                                          uint64_t callee_total_allocations, uint64_t callee_total_memory_allocated,
-                                          uint64_t callee_memory_used, uint64_t callee_real_memory_used,
-                                          uint64_t callee_working_tsc, uint64_t callee_waiting_tsc) noexcept {
-  self_total_allocations_ -= callee_total_allocations;
-  self_total_memory_allocated_ -= callee_total_memory_allocated;
-  self_memory_used_ -= callee_memory_used;
-  self_real_memory_used_ -= callee_real_memory_used;
-  self_working_tsc_ -= callee_working_tsc;
-  self_waiting_tsc_ -= callee_waiting_tsc;
+void FunctionStatsBase::on_callee_call_finish(const FunctionStatsBase &callee_stats, const Stats &callee_profiled_stats) noexcept {
+  self_stats_ -= callee_profiled_stats;
   dl::CriticalSectionGuard critical_section;
-  auto &callee = callees_[&callee_stats];
-  ++callee.calls;
-  callee.total_allocations += callee_total_allocations;
-  callee.total_memory_allocated += callee_total_memory_allocated;
-  callee.memory_used += callee_memory_used;
-  callee.real_memory_used += callee_real_memory_used;
-  callee.working_tsc += callee_working_tsc;
-  callee.waiting_tsc += callee_waiting_tsc;
+  callees_[&callee_stats] += callee_profiled_stats;
 }
 
-uint64_t FunctionStats::calls_count() const noexcept {
-  return calls_;
+uint64_t FunctionStatsBase::calls_count() const noexcept {
+  return self_stats_.calls;
 }
 
-void FunctionStats::flush(FILE *out) noexcept {
+void FunctionStatsBase::flush(FILE *out, long double nanoseconds_to_tsc_rate) noexcept {
   if (out) {
     fprintf(out,
             "\n"
             "fl=(%" PRIu64 ")\n"
             "fn=(%" PRIu64 ")\n"
-            "%zu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
-            file_id, function_id, function_line,
-            self_total_allocations_, self_total_memory_allocated_,
-            self_memory_used_, self_real_memory_used_,
-            self_working_tsc_, self_waiting_tsc_
-    );
+            "%zu ",
+            file_id, function_id, function_line);
+    self_stats_.write_to(out, nanoseconds_to_tsc_rate);
 
     for (const auto &callee: callees_) {
       fprintf(out,
               "cfl=(%" PRIu64 ")\n"
               "cfn=(%" PRIu64 ")\n"
               "calls=%zu\n"
-              "%zu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
-              callee.first->file_id, callee.first->function_id, callee.second.calls, function_line,
-              callee.second.total_allocations, callee.second.total_memory_allocated,
-              callee.second.memory_used, callee.second.real_memory_used,
-              callee.second.working_tsc, callee.second.waiting_tsc
-      );
+              "%zu ",
+              callee.first->file_id, callee.first->function_id, callee.second.calls, function_line);
+      callee.second.write_to(out, nanoseconds_to_tsc_rate);
     }
   }
 
-  calls_ = 0;
-  self_total_allocations_ = 0;
-  self_total_memory_allocated_ = 0;
-  self_memory_used_ = 0;
-  self_real_memory_used_ = 0;
-  self_working_tsc_ = 0;
-  self_waiting_tsc_ = 0;
+  self_stats_ = Stats{};
   callees_.clear();
+}
+
+FunctionStatsNoLabel::FunctionStatsNoLabel(const char *file, const char *function, size_t line, size_t level) noexcept:
+  FunctionStatsBase(file, function, line, level),
+  TracingProfilerListNode<FunctionStatsNoLabel>(ProfilerContext::get().function_list.update_top(this)) {
+}
+
+FunctionStatsWithLabel &FunctionStatsNoLabel::get_stats_with_label(vk::string_view label) noexcept {
+  auto it = labels_.find(label);
+  if (it != labels_.end()) {
+    return *it->second;
+  }
+  dl::CriticalSectionGuard critical_section;
+  auto label_ptr = std::make_unique<FunctionStatsWithLabel>(*this, label);
+  // переопределяем label, так как нам нужна строка из FunctionStatsWithLabel
+  label = vk::string_view{label_ptr->get_label(), label.size()};
+  return *labels_.emplace(label, std::move(label_ptr)).first->second;
+}
+
+FunctionStatsWithLabel::FunctionStatsWithLabel(FunctionStatsNoLabel &no_label, vk::string_view label) noexcept:
+  FunctionStatsBase(no_label.file_name, no_label.function_name, no_label.function_line, no_label.profiler_level),
+  parent_stats_no_label(no_label) {
+  php_assert(label.size() < label_buffer_.size());
+  std::memcpy(label_buffer_.data(), label.data(), label.size());
+  label_buffer_[label.size()] = '\0';
 }
 
 void ProfilerBase::set_initial_stats(uint64_t start_working_tsc, const memory_resource::MemoryStats &memory_stats) noexcept {
@@ -197,6 +262,10 @@ void ProfilerBase::set_initial_stats(uint64_t start_working_tsc, const memory_re
   auto &context = ProfilerContext::get();
   start_memory_used_ = context.get_memory_used_monotonic(memory_stats);
   start_real_memory_used_ = context.get_real_memory_used_monotonic(memory_stats);
+  start_context_swaps_for_query_count_ = static_cast<uint64_t>(get_net_queries_count());
+  start_rpc_queries_stat_ = PhpQueriesStats::get_rpc_queries_stat();
+  start_sql_queries_stat_ = PhpQueriesStats::get_sql_queries_stat();
+  start_mc_queries_stat_ = PhpQueriesStats::get_mc_queries_stat();
 }
 
 void ProfilerBase::start() noexcept {
@@ -205,33 +274,33 @@ void ProfilerBase::start() noexcept {
 }
 
 void ProfilerBase::stop() noexcept {
-  const uint64_t working_tsc = cycleclock_now() - start_working_tsc_;
+  FunctionStatsBase::Stats profiled_stats;
+  profiled_stats.working_tsc = cycleclock_now() - start_working_tsc_;
+  profiled_stats.waiting_tsc = accumulated_waiting_tsc_;
   const auto &memory_stats = dl::get_script_memory_stats();
-  const uint64_t total_allocations = memory_stats.total_allocations - start_total_allocations_;
-  const uint64_t total_memory_allocated = memory_stats.total_memory_allocated - start_total_memory_allocated_;
+  profiled_stats.total_allocations = memory_stats.total_allocations - start_total_allocations_;
+  profiled_stats.total_memory_allocated = memory_stats.total_memory_allocated - start_total_memory_allocated_;
   auto &context = ProfilerContext::get();
-  const uint64_t memory_used = context.get_memory_used_monotonic(memory_stats) - start_memory_used_;
-  const uint64_t real_memory_used = context.get_real_memory_used_monotonic(memory_stats) - start_real_memory_used_;
-  function_stats_->on_call_finish(total_allocations, total_memory_allocated,
-                                  memory_used, real_memory_used,
-                                  working_tsc, accumulated_waiting_tsc_);
+  profiled_stats.memory_used = context.get_memory_used_monotonic(memory_stats) - start_memory_used_;
+  profiled_stats.real_memory_used = context.get_real_memory_used_monotonic(memory_stats) - start_real_memory_used_;
+  profiled_stats.context_swaps_for_query_count = static_cast<uint64_t>(get_net_queries_count()) - start_context_swaps_for_query_count_;
+  profiled_stats.rpc_requests_stat = PhpQueriesStats::get_rpc_queries_stat() - start_rpc_queries_stat_;
+  profiled_stats.sql_requests_stat = PhpQueriesStats::get_sql_queries_stat() - start_sql_queries_stat_;
+  profiled_stats.mc_requests_stat = PhpQueriesStats::get_mc_queries_stat() - start_mc_queries_stat_;
+  function_stats_->on_call_finish(profiled_stats);
 
   auto *caller = get_next();
   auto *self = context.call_stack.update_top(caller);
   php_assert(self == this);
   if (caller) {
-    uint64_t waiting_tsc_for_caller = accumulated_waiting_tsc_;
     if (accumulated_waiting_tsc_) {
       php_assert(caller->last_callee_waiting_generation_ <= waiting_generation_);
       if (caller->last_callee_waiting_generation_ == waiting_generation_) {
-        waiting_tsc_for_caller = 0;
+        profiled_stats.waiting_tsc = 0;
       }
       caller->last_callee_waiting_generation_ = waiting_generation_;
     }
-    caller->function_stats_->on_callee_call_finish(*function_stats_,
-                                                   total_allocations, total_memory_allocated,
-                                                   memory_used, real_memory_used,
-                                                   working_tsc, waiting_tsc_for_caller);
+    caller->function_stats_->on_callee_call_finish(*function_stats_, profiled_stats);
   }
   accumulated_waiting_tsc_ = 0;
   context.flush_required = true;
@@ -245,13 +314,36 @@ void ProfilerBase::fix_waiting_tsc(uint64_t waiting_tsc) noexcept {
   waiting_generation_ = waiting_generation;
 }
 
+void ProfilerBase::use_function_label(vk::string_view label) noexcept {
+  stop();
+  function_stats_ = &function_stats_->get_stats_with_label(label);
+  start();
+}
+
 bool ProfilerBase::is_profiling_allowed(bool is_root) noexcept {
   return profiler_config.log_path_mask &&
          (is_root || ProfilerContext::get().call_stack.get_top());
 }
 
+void ProfilerBase::forcibly_dump_log_on_finish(const char *function_name) noexcept {
+  ProfilerContext &context = ProfilerContext::get();
+  if (*context.profiler_log_suffix) {
+    return;
+  }
+
+  std::array<char, 1024> suffix_buffer;
+  size_t suffix_size = 0;
+  if (function_name) {
+    vk::string_view suffix{function_name};
+    suffix_size = std::min(suffix.size(), suffix_buffer.size());
+    std::replace_copy_if(suffix.begin(), suffix.begin() + suffix_size, suffix_buffer.begin(),
+                         [](char c) { return !isalnum(c); }, '_');
+  }
+  context.update_log_suffix({suffix_buffer.data(), suffix_size});
+}
+
 bool ShutdownProfiler::is_root() noexcept {
-  const FunctionStats *any_function = ProfilerContext::get().function_list.get_top();
+  const FunctionStatsBase *any_function = ProfilerContext::get().function_list.get_top();
   return any_function && any_function->profiler_level == 2;
 }
 
@@ -438,10 +530,13 @@ void forcibly_stop_and_flush_profiler() noexcept {
     return;
   }
 
-  FunctionStats *next_function = context.function_list.get_top();
+  FunctionStatsNoLabel *next_function = context.function_list.get_top();
   if (!*context.profiler_log_suffix) {
     while (next_function) {
       next_function->flush();
+      for (const auto &function_with_label : next_function->get_labels()) {
+        function_with_label.second->flush();
+      }
       next_function = next_function->get_next();
     }
     return;
@@ -456,14 +551,40 @@ void forcibly_stop_and_flush_profiler() noexcept {
   FILE *profiler_log = fopen(profiler_log_path, "w");
   fprintf(profiler_log,
           "# callgrind format\n"
-          "event: total_allocations : Memory: total allocations count\n"
-          "event: total_memory_allocated : Memory: total allocated bytes\n"
-          "event: memory_allocated : Memory: extra allocated bytes\n"
-          "event: real_memory_allocated : Memory: extra real allocated bytes\n"
-          "event: cpu_tsc : TSC: CPU\n"
-          "event: net_tsc : TSC: Net\n"
-          "event: total_tsc = cpu_tsc + net_tsc : TSC: Full\n"
-          "events: total_allocations total_memory_allocated memory_allocated real_memory_allocated cpu_tsc net_tsc\n\n");
+          "event: total_allocations : Memory: Total allocations count\n"
+          "event: total_memory_allocated : Memory: Total allocated bytes\n"
+          "event: memory_allocated : Memory: Extra allocated bytes\n"
+          "event: real_memory_allocated : Memory: Extra real allocated bytes\n"
+
+          "event: query_ctx_swaps : Queries: Context swaps for queries\n"
+
+          "event: rpc_outgoing_queries: Queries: RPC outgoing queries\n"
+          "event: rpc_outgoing_traffic: Traffic: RPC outgoing bytes\n"
+          "event: rpc_incoming_traffic: Traffic: RPC incoming bytes\n"
+
+          "event: sql_outgoing_queries: Queries: SQL outgoing queries\n"
+          "event: sql_outgoing_traffic: Traffic: SQL outgoing bytes\n"
+          "event: sql_incoming_traffic: Traffic: SQL incoming bytes\n"
+
+          "event: mc_outgoing_queries: Queries: MC outgoing queries\n"
+          "event: mc_outgoing_traffic: Traffic: MC outgoing bytes\n"
+          "event: mc_incoming_traffic: Traffic: MC incoming bytes\n"
+
+          "event: summary_queries = rpc_outgoing_queries + sql_outgoing_queries + mc_outgoing_queries: Queries: Summary outgoing queries\n"
+          "event: summary_outgoing_traffic = rpc_outgoing_traffic + sql_outgoing_traffic + mc_outgoing_traffic: Traffic: Summary outgoing bytes\n"
+          "event: summary_incoming_traffic = rpc_incoming_traffic + sql_incoming_traffic + mc_incoming_traffic: Traffic: Summary incoming bytes\n"
+
+          "event: cpu_ns : Nanoseconds: CPU\n"
+          "event: net_ns : Nanoseconds: Net\n"
+          "event: total_ns = cpu_ns + net_ns : Nanoseconds: Full\n"
+
+          "events: "
+          "total_allocations total_memory_allocated memory_allocated real_memory_allocated "
+          "query_ctx_swaps "
+          "rpc_outgoing_queries rpc_outgoing_traffic rpc_incoming_traffic "
+          "sql_outgoing_queries sql_outgoing_traffic sql_incoming_traffic "
+          "mc_outgoing_queries mc_outgoing_traffic mc_incoming_traffic "
+          "cpu_ns net_ns\n\n");
 
   fprintf(profiler_log, "# define file ID mapping\n");
   for (const auto &file2id: context.get_file_ids()) {
@@ -476,38 +597,70 @@ void forcibly_stop_and_flush_profiler() noexcept {
     if (next_function->calls_count()) {
       fprintf(profiler_log, "fn=(%" PRIu64 ") %s\n", next_function->function_id, next_function->function_name);
     }
+    for (const auto &function_with_label : next_function->get_labels()) {
+      if (function_with_label.second->calls_count()) {
+        fprintf(profiler_log, "fn=(%" PRIu64 ") %s (%.*s)\n",
+                function_with_label.second->function_id, function_with_label.second->function_name,
+                static_cast<int>(function_with_label.first.size()), function_with_label.first.data());
+      }
+    }
     next_function = next_function->get_next();
   }
 
+  const long double nanoseconds_to_tsc_rate = context.calc_nanoseconds_to_tsc_rate();
   next_function = context.function_list.get_top();
   while (next_function) {
     if (next_function->calls_count()) {
-      next_function->flush(profiler_log);
+      next_function->flush(profiler_log, nanoseconds_to_tsc_rate);
+    }
+    for (const auto &function_with_label : next_function->get_labels()) {
+      if (function_with_label.second->calls_count()) {
+        function_with_label.second->flush(profiler_log, nanoseconds_to_tsc_rate);
+      }
     }
     next_function = next_function->get_next();
   }
   fclose(profiler_log);
 }
 
-void f$dump_profiler_log_on_finish(const string &suffix) noexcept {
+void f$profiler_set_log_suffix(const string &suffix) noexcept {
   // +2 для 2x. и +1 для \0
   if (suffix.size() + 3 > PATH_MAX) {
     php_warning("Trying to set too long suffix '%s'", suffix.c_str());
     return;
   }
   for (string::size_type i = 0; i != suffix.size(); ++i) {
-    if (!isalnum(suffix[i]) && suffix[i] != '_') {
+    if (unlikely(!isalnum(suffix[i]) && suffix[i] != '_')) {
       php_warning("Trying to set suffix '%s' with non alphanumeric character", suffix.c_str());
       return;
     }
   }
 
-  ProfilerContext &context = ProfilerContext::get();
-  *context.profiler_log_suffix = '.';
-  size_t suffix_len = suffix.size();
-  if (suffix_len) {
-    memcpy(context.profiler_log_suffix + 1, suffix.c_str(), suffix_len);
-    context.profiler_log_suffix[1 + suffix_len++] = '.';
+  ProfilerContext::get().update_log_suffix({suffix.c_str(), suffix.size()});
+}
+
+void f$profiler_set_function_label(const string &label) noexcept {
+  auto &context = ProfilerContext::get();
+  if (ProfilerBase *top = context.call_stack.get_top()) {
+    vk::string_view label_view{label.c_str(), label.size()};
+    if (unlikely(label_view.empty())) {
+      php_warning("Trying to set an empty label, it will be ignored");
+      return;
+    }
+    if (unlikely(vk::any_of(label_view, ::iscntrl))) {
+      php_warning("Trying to set label '%s' with bad character, the label will be ignored", label.c_str());
+      return;
+    }
+
+    if (unlikely(label_view.size() > FunctionStatsWithLabel::label_max_len())) {
+      php_warning("Trying to set too long label '%s', it will be truncated to '%.*s'",
+                  label.c_str(), static_cast<int>(FunctionStatsWithLabel::label_max_len()), label.c_str());
+      label_view.remove_suffix(label.size() - FunctionStatsWithLabel::label_max_len());
+    }
+    top->use_function_label(label_view);
   }
-  context.profiler_log_suffix[1 + suffix_len] = '\0';
+}
+
+bool f$profiler_is_enabled() noexcept {
+  return ProfilerContext::get().call_stack.get_top();
 }
