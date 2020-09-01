@@ -87,8 +87,7 @@ private:
   bool implicit_kphp_infer() const {
     return vk::none_of_equal(f_->type, FunctionData::func_main, FunctionData::func_switch) &&
            !f_->file_id->is_builtin() &&
-           !(f_->class_id && f_->class_id->is_lambda()) &&
-           !G->env().is_static_lib_mode();
+           !(f_->class_id && f_->class_id->is_lambda());
   }
 
   void generate_name_to_param_id() {
