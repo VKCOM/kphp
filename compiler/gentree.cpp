@@ -1357,7 +1357,7 @@ ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
   return modifiers;
 }
 
-VertexPtr GenTree::get_class_member(const vk::string_view &phpdoc_str) {
+VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   auto modifiers = parse_class_member_modifier_mask();
   if (!modifiers.is_static()) {
     modifiers.set_instance();
@@ -1404,7 +1404,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
-VertexAdaptor<op_function> GenTree::get_function(const vk::string_view &phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
+VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   expect(tok_function, "'function'");
   auto func_location = auto_location();
 
@@ -1529,7 +1529,7 @@ bool GenTree::check_statement_end() {
   return expect (tok_semicolon, "';'");
 }
 
-static inline bool is_class_name_allowed(const vk::string_view &name) {
+static inline bool is_class_name_allowed(vk::string_view name) {
   static std::set<vk::string_view> disallowed_names{"Long", "ULong", "UInt"};
 
   return disallowed_names.find(name) == disallowed_names.end();
@@ -1556,7 +1556,7 @@ void GenTree::parse_extends_implements() {
   }
 }
 
-VertexPtr GenTree::get_class(const vk::string_view &phpdoc_str, ClassType class_type) {
+VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   ClassModifiers modifiers;
   if (test_expect(tok_abstract)) {
     modifiers.set_abstract();
@@ -1813,7 +1813,7 @@ void GenTree::parse_declare_at_top_of_file() {
   expect(tok_semicolon, ";");
 }
 
-VertexAdaptor<op_empty> GenTree::get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
+VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers) {
   cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
   VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
   CE (check_statement_end());
@@ -1859,7 +1859,7 @@ std::string GenTree::get_typehint() {
   return typehint;
 }
 
-VertexPtr GenTree::get_statement(const vk::string_view &phpdoc_str) {
+VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
   TokenType type = cur->type();
 
   is_top_of_the_function_ &= vk::any_of_equal(type, tok_global, tok_opbrc);
@@ -2124,10 +2124,10 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
   return VertexAdaptor<op_define>::create(name, v).set_location(location);
 }
 
-void GenTree::get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers) {
+void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers) {
   kphp_error(cur_class, "var declaration is outside of class");
 
-  const vk::string_view &var_name = cur->str_val;
+  vk::string_view var_name = cur->str_val;
   if (!expect(tok_var_name, "expected variable name")) {
     return;
   }

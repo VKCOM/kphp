@@ -72,7 +72,7 @@ private:
   }
 
   // если /** @var Photo */ над полем инстанса, видим класс Photo даже если нет явного вызова конструктора
-  inline void require_all_classes_in_phpdoc(const vk::string_view &phpdoc_str) {
+  inline void require_all_classes_in_phpdoc(vk::string_view phpdoc_str) {
     if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       require_all_classes_in_phpdoc_type(*type_and_var_name);
     }

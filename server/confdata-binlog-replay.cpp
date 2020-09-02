@@ -38,7 +38,7 @@ public:
 
   using vk::binlog::replayer::replay;
 
-  size_t try_reserve_for_snapshot(const vk::string_view &key, size_t search_from,
+  size_t try_reserve_for_snapshot(vk::string_view key, size_t search_from,
                                   vk::string_view &prev_key, array_size &counter) noexcept {
     auto dot_pos = key.find('.', search_from);
     if (dot_pos != std::string::npos) {

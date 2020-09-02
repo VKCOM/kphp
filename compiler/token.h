@@ -197,7 +197,7 @@ public:
     type_(type) {
   }
 
-  Token(TokenType type_, const vk::string_view &s) :
+  Token(TokenType type_, vk::string_view s) :
     type_(type_),
     str_val(s) {
   }

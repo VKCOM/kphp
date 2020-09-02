@@ -47,7 +47,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-profile-allow-inline", kphp_profile_allow_inline},
 };
 
-vector<php_doc_tag> parse_php_doc(const vk::string_view &phpdoc) {
+vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
   if (phpdoc.empty()) {
     return {};
   }
@@ -519,7 +519,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::con
  * "int|false $a maybe comment" или "$var tuple(int, string) maybe comment" или "A[] maybe comment"
  * распарсить тип (превратив в дерево для type_rule) и имя переменной, если оно есть
  */
-PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdoc_tag_str, FunctionPtr current_function) {
+PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_str, FunctionPtr current_function) {
   std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str);
   std::vector<Token>::const_iterator tok_iter = tokens.begin();
   std::string var_name;
@@ -569,7 +569,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(const vk::string_view &phpdo
  * найти первый @tag и распарсить всё что справа.
  * Возвращает result — у него есть operator bool, нашёлся/распарсился ли такой тег
  */
-PhpDocTagParseResult phpdoc_find_tag(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
+PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
   if (auto found_tag = phpdoc_find_tag_as_string(phpdoc, tag_type)) {
     return phpdoc_parse_type_and_var_name(*found_tag, current_function);
   }
@@ -580,7 +580,7 @@ PhpDocTagParseResult phpdoc_find_tag(const vk::string_view &phpdoc, php_doc_tag:
  * Имея на входе полный phpdoc / ** ... * /,
  * найти все @tag и распарсить всё что справа (имеет смысл для @param, т.е. которых много).
  */
-std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
+std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
   std::vector<PhpDocTagParseResult> result;
   for (const auto &tag : parse_php_doc(phpdoc)) {
     if (tag.type == tag_type) {
@@ -596,7 +596,7 @@ std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(const vk::string_view &p
  * Имея на входе полный phpdoc / ** ... * /,
  * найти первый @tag и просто вернуть то, что справа, как строку.
  */
-vk::optional<std::string> phpdoc_find_tag_as_string(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+vk::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   for (const auto &tag : parse_php_doc(phpdoc)) {
     if (tag.type == tag_type) {
       return tag.value;
@@ -609,7 +609,7 @@ vk::optional<std::string> phpdoc_find_tag_as_string(const vk::string_view &phpdo
  * Имея на входе полный phpdoc / ** ... * /,
  * найти все @tag и вернуть то, что справа, как строки (имеет смысл для @kphp-template, т.е. которых много)
  */
-std::vector<std::string> phpdoc_find_tag_as_string_multi(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   std::vector<std::string> result;
   for (const auto &tag : parse_php_doc(phpdoc)) {
     if (tag.type == tag_type) {
@@ -619,6 +619,6 @@ std::vector<std::string> phpdoc_find_tag_as_string_multi(const vk::string_view &
   return result;
 }
 
-bool phpdoc_tag_exists(const vk::string_view &phpdoc, php_doc_tag::doc_type tag_type) {
+bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   return static_cast<bool>(phpdoc_find_tag_as_string(phpdoc, tag_type));
 }

@@ -47,7 +47,7 @@ static inline int conv_hex_digit(int c) {
   return -1;
 }
 
-inline vk::string_view string_view_dup(const vk::string_view &s) {
+inline vk::string_view string_view_dup(vk::string_view s) {
   char *buf = new char[s.size()];
   memcpy(buf, s.begin(), s.size());
   return vk::string_view(buf, buf + s.size());

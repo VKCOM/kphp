@@ -7,7 +7,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 
-ExternInclude::ExternInclude(const vk::string_view &file_name) :
+ExternInclude::ExternInclude(vk::string_view file_name) :
   file_name(file_name) {
   kphp_assert(!file_name.empty());
 }

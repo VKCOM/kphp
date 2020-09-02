@@ -42,7 +42,7 @@ public:
     data.append(c);
   }
 
-  void append(const vk::string_view &s) {
+  void append(vk::string_view s) {
     if (need_indent) {
       write_indent();
     }

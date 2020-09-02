@@ -252,7 +252,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
  * / ** @var A * / var $aInstance;
  * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
  */
-void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, const vk::string_view &phpdoc_str) {
+void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, vk::string_view phpdoc_str) {
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
   if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
     if (parsed.var_name.empty() || var_name == parsed.var_name) {

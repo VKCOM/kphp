@@ -4,7 +4,7 @@
 #include "compiler/inferring/type-data.h"
 
 struct ExternInclude {
-  explicit ExternInclude(const vk::string_view &file_name);
+  explicit ExternInclude(vk::string_view file_name);
   void compile(CodeGenerator &W) const;
 
 protected:

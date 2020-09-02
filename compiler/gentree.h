@@ -90,8 +90,8 @@ public:
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(const vk::string_view &phpdoc_str = vk::string_view{});
-  void get_instance_var_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
+  VertexPtr get_statement(vk::string_view phpdoc_str = vk::string_view{});
+  void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
   void get_traits_uses();
   void get_use();
   void get_seq(std::vector<VertexPtr> &seq_next);
@@ -131,10 +131,10 @@ public:
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexAdaptor<op_func_call> get_anonymous_function(bool is_static = false);
-  VertexAdaptor<op_function> get_function(const vk::string_view &phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  VertexAdaptor<op_function> get_function(vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   ClassMemberModifiers parse_class_member_modifier_mask();
-  VertexPtr get_class_member(const vk::string_view &phpdoc_str);
+  VertexPtr get_class_member(vk::string_view phpdoc_str);
 
   static LambdaGenerator generate_anonymous_class(VertexAdaptor<op_function> function,
                                                   FunctionPtr parent_function,
@@ -146,7 +146,7 @@ public:
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args);
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args);
 
-  VertexPtr get_class(const vk::string_view &phpdoc_str, ClassType class_type);
+  VertexPtr get_class(vk::string_view phpdoc_str, ClassType class_type);
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
@@ -158,7 +158,7 @@ private:
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexAdaptor<op_empty> get_static_field_list(const vk::string_view &phpdoc_str, FieldModifiers modifiers);
+  VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
 
   void require_lambdas() {
     for (auto &generator : lambda_generators) {
