@@ -387,3 +387,10 @@ inline string f$strtr(const string &subject, const var &replace_pairs) {
 }
 
 string f$xor_strings(const string &s, const string &t);
+
+namespace impl_ {
+extern double default_similar_text_percent_stub;
+} // namespace impl_
+int64_t f$similar_text(const string &first, const string &second, double &percent = impl_::default_similar_text_percent_stub);
+
+// similar_text ( string $first , string $second [, float &$percent ] ) : int

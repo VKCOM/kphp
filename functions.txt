@@ -580,6 +580,7 @@ function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
 function xor_strings ($s ::: string, $t ::: string) ::: string;
+function similar_text ($first ::: string, $second ::: string, &$percent :<=: float = TODO) ::: int;
 
 define('LC_ALL', 6);
 define('LC_COLLATE', 3);

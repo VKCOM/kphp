@@ -2635,3 +2635,58 @@ string f$xor_strings(const string &s, const string &t) {
   }
   return result;
 }
+
+namespace impl_ {
+// По исходникам оригинального PHP
+// https://github.com/php/php-src/blob/e8678fcb42c5cb1ea38ff9c6819baca74c2bb5ea/ext/standard/string.c#L3375-L3418
+inline size_t php_similar_str(vk::string_view first, vk::string_view second, size_t &pos1, size_t &pos2, size_t &count) {
+  size_t max = 0;
+  count = 0;
+  for (const char *p = first.begin(); p != first.end(); ++p) {
+    for (const char *q = second.begin(); q != second.end(); ++q) {
+      size_t l = 0;
+      for (; (p + l < first.end()) && (q + l < second.end()) && (p[l] == q[l]); ++l) {
+      }
+      if (l > max) {
+        max = l;
+        ++count;
+        pos1 = p - first.begin();
+        pos2 = q - second.begin();
+      }
+    }
+  }
+  return max;
+}
+
+size_t php_similar_char(vk::string_view first, vk::string_view second) {
+  size_t pos1 = 0;
+  size_t pos2 = 0;
+  size_t count = 0;
+
+  const size_t max = php_similar_str(first, second, pos1, pos2, count);
+  size_t sum = max;
+  if (sum) {
+    if (pos1 && pos2 && count > 1) {
+      sum += php_similar_char(first.substr(0, pos1), second.substr(0, pos2));
+    }
+    pos1 += max;
+    pos2 += max;
+    if (pos1 < first.size() && pos2 < second.size()) {
+      sum += php_similar_char(first.substr(pos1), second.substr(pos2));
+    }
+  }
+  return sum;
+}
+
+double default_similar_text_percent_stub{0.0};
+} // namespace impl_
+
+int64_t f$similar_text(const string &first, const string &second, double &percent) {
+  if (first.empty() && second.empty()) {
+    percent = 0.0;
+    return 0;
+  }
+  const size_t sim = impl_::php_similar_char(vk::string_view{first.c_str(), first.size()}, vk::string_view{second.c_str(), second.size()});
+  percent = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
+  return static_cast<int64_t>(sim);
+}
