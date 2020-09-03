@@ -182,7 +182,7 @@ std::string type_out(const TypeData *type, gen_out_style style = gen_out_style::
 std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
-bool is_equal_types(const TypeData *type1, const TypeData *type2);
+bool are_equal_types(const TypeData *type1, const TypeData *type2);
 
 template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag() {

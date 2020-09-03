@@ -727,9 +727,7 @@ int type_strlen(const TypeData *type) {
     case tp_float:
       return STRLEN_FLOAT;
     case tp_array:
-      return STRLEN_ARRAY_;
     case tp_tuple:
-      return STRLEN_ARRAY_;
     case tp_shape:
       return STRLEN_ARRAY_;
     case tp_string:
@@ -784,7 +782,7 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
 }
 
 // compare types in sense of cpp type out
-bool is_equal_types(const TypeData *type1, const TypeData *type2) {
+bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   if (type1 == nullptr) {
     return type2 == nullptr;
   }
@@ -808,7 +806,7 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
   }
 
   if (tp == tp_array) {
-    return is_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
+    return are_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
   }
 
   if (vk::any_of_equal(tp, tp_shape, tp_tuple)) {
@@ -816,7 +814,7 @@ bool is_equal_types(const TypeData *type1, const TypeData *type2) {
       TypeData *t2_at_it = type2->lookup_at(it1->first);
       if (t2_at_it == nullptr && !type2->shape_has_varg_flag()) {
         return false;
-      } else if (t2_at_it && !is_equal_types(it1->second, t2_at_it)) {
+      } else if (t2_at_it && !are_equal_types(it1->second, t2_at_it)) {
         return false;
       }
     }

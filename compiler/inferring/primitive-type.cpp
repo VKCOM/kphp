@@ -84,7 +84,7 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return tp_Error;
   }
 
-  if (tp_int <= a && a <= tp_float && tp_int <= b && b <= tp_float) { // float can store int
+  if (vk::any_of_equal(a, tp_int, tp_float) && vk::any_of_equal(b, tp_int, tp_float)) { // float can store int
     return tp_float;
   }
 

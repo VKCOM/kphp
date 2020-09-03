@@ -42,7 +42,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   auto existed_type = tinf::get_type(type_acceptor);
   if (existed_type->get_real_ptype() != tp_array ||
       type_acceptor->extra_type != op_ex_var_const ||
-      is_equal_types(existed_type, required_type)) {
+      are_equal_types(existed_type, required_type)) {
     return VarPtr{};
   }
 
