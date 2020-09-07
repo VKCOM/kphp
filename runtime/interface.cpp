@@ -1280,8 +1280,8 @@ static void reset_superglobals() {
   dl::leave_critical_section();
 }
 
-// Ссылка на RFC: https://tools.ietf.org/html/rfc2617#section-2
-// Пример хедера:
+// RFC link: https://tools.ietf.org/html/rfc2617#section-2
+// Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 static void parse_http_authorization_header(const string &header_value) {
   array<string> header_parts = explode(' ', header_value);

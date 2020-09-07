@@ -6,7 +6,7 @@
 #include "compiler/pipes/check-access-modifiers.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
-  // defined('NAME') заменяем на true или false
+  // defined('NAME') is replaced by true or false
   if (auto defined = root.try_as<op_defined>()) {
     kphp_error_act (
       (int)root->size() == 1 && defined->expr()->type() == op_string,
@@ -23,7 +23,8 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
     }
   }
 
-  // значения константных дефайнов заменяем на саму переменную, а неконстантных — на переменную d$...
+  // const value defines are replaced by their value;
+  // non-const defines are replaced by d$ variables
   if (root->type() == op_func_name) {
     DefinePtr d = G->get_define(resolve_define_name(root->get_string()));
     if (d) {

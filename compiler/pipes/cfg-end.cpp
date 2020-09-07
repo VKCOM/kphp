@@ -12,7 +12,8 @@ struct MergeData {
 };
 
 bool operator<(const MergeData&a, const MergeData&b) {
-  // типы отличаются — сортируем по ним, иначе по имени (name$vN < name$vM при N<M, name < name$vN)
+  // sort by types if they're different;
+  // sort by name otherwise (name$vN < name$vM with N<M, name < name$vN)
   const int eq = type_out(tinf::get_type(a.var), gen_out_style::txt).compare(type_out(tinf::get_type(b.var), gen_out_style::txt));
   return eq == 0 ? a.var->name < b.var->name : eq < 0;
 }
@@ -81,7 +82,7 @@ static void merge_same_type(FunctionPtr function, const std::vector<std::vector<
           vars.push_back(parts[id][0]->var_id);
         }
 
-        const std::string &new_name = vars[0]->name;   // либо name, либо name$vN
+        const std::string &new_name = vars[0]->name; // name or name$vN
         VarPtr new_var = merge_vars(function, vars, new_name);
         for (int id : ids) {
           for (auto v : parts[id]) {

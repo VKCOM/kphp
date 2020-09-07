@@ -51,7 +51,7 @@ bool CalcValRefPass::is_allowed_for_getting_val_or_ref(Operation op, bool is_las
     case op_conv_uint:
     case op_conv_long:
     case op_conv_ulong:
-      // case op_conv_bool нет намеренно, чтобы f$boolval(Optional<T>) не превращался в дефолтный T
+      // case op_conv_bool is ignored on purpose so f$boolval(Optional<T>) doesn't turn into the default T
 
     case op_unset:
     case op_switch:

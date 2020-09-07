@@ -6,7 +6,7 @@ constexpr auto string_cache::constexpr_make_large_ints() noexcept {
 
 const string::string_inner &string_cache::cached_large_int(int64_t i) noexcept {
   static_assert(sizeof(string_8bytes) == sizeof(string::string_inner) + string_8bytes::TAIL_SIZE, "unexpected padding");
-  // что бы не напрягать сильно компилятор, генерация чисел от 100 (small_int_max) до 9999 (cached_int_max - 1) находится тут
+  // to avoid a big compilation time impact, we implement numbers generation from 100 (small_int_max) to 9999 (cached_int_max - 1) here
   static constexpr auto large_int_cache = constexpr_make_large_ints();
   php_assert(i < large_int_cache.size());
   return large_int_cache[i].inner;

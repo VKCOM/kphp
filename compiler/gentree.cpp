@@ -125,13 +125,13 @@ int GenTree::open_parent() {
 }
 
 inline void GenTree::skip_phpdoc_tokens() {
-  // считаем просто комментариями phpdoc-и в неожиданных местах — например, внутри массивов или return
-  // (обычно они содержат @see или просто текст, т.е. не значащие, @var'ов там нет)
+  // consider the phpdocs in unexpected locations like array or return to be an ordinary comment
+  // (usually such phpdocs contain @see or some text, they don't have @var annotations)
   while (cur->type() == tok_phpdoc) {
     //kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
     next_cur();
   }
-  // а вот обычные phpdoc'и как statement сюда не приходят: см. op_phpdoc_raw
+  // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_raw
 }
 
 template<Operation EmptyOp, class FuncT, class ResultType>
@@ -542,7 +542,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_declare:
-      // см. GenTree::parse_declare_at_top_of_file
+      // see GenTree::parse_declare_at_top_of_file
       kphp_error(0, "strict_types declaration must be the very first statement in the script");
       break;
     case tok_array:
@@ -634,7 +634,7 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
   if (expr->type() == op_minus || expr->type() == op_plus) {
     VertexPtr maybe_num = expr.as<meta_op_unary>()->expr();
     if (auto num = maybe_num.try_as<meta_op_num>()) {
-      // +N оставляем как "N", а -N делаем константу "-N" (но если N начинается с минуса, то "N", чтобы парсить `- - -7`)
+      // keep the +N as is, but turn -N into a constant (but if N starts with minus, then make it "N" so we can parse `- - -7`)
       if (expr->type() == op_minus) {
         num->str_val = num->str_val[0] == '-' ? num->str_val.substr(1) : "-" + num->str_val;
       }
@@ -773,7 +773,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   PrimitiveType tp = tp_Unknown;
   VertexAdaptor<meta_op_type_rule> type_rule;
   if (!from_callback && cur->type() == tok_triple_colon) {
-    tp = get_func_param_type_help();    // запишется в param->type_help, и при вызове будет неявный cast
+    tp = get_func_param_type_help();    // saved to the param->type_help, implicitly casted during a call
   } else {
     type_rule = get_func_param_type_rule();
   }
@@ -788,7 +788,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   }
   v.set_location(location);
   if (!type_declaration.empty()) {
-    // аргумент nullable, когда явно указан nullability через тайпхинт (?type) или значение по-умолчанию = null
+    // nullable argument with an explicit ?T type hint or with default value of null
     if (def_val && def_val->type() == op_null) {
       type_declaration += "|null";
     }
@@ -1273,7 +1273,7 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
     CE (!kphp_error(keys_hashes.insert(string_hash(key_str.c_str(), key_str.size())).second, "keys of shape() are not unique"));
   }
 
-  // shape->args() это набор op_double_arrow
+  // shape->args() is a sequence of op_double_arrow
   return VertexAdaptor<op_shape>::create(inner_array.as<op_array>()->args()).set_location(location);
 }
 
@@ -1315,7 +1315,7 @@ VertexAdaptor<op_func_call> GenTree::get_anonymous_function(bool is_static/* = f
   auto anon_function = get_function(vk::string_view{}, FunctionModifiers::nonmember(), &uses_of_lambda);
 
   if (anon_function) {
-    // это constructor call
+    // it's a constructor call
     kphp_assert(!functions_stack.empty());
     lambda_generators.push_back(generate_anonymous_class(anon_function, cur_function, is_static, std::move(uses_of_lambda), anon_function->func_id));
     return lambda_generators.back()
@@ -1326,7 +1326,7 @@ VertexAdaptor<op_func_call> GenTree::get_anonymous_function(bool is_static/* = f
   return {};
 }
 
-// парсим 'static public', 'final protected' и другие modifier'ы перед функцией/переменными класса
+// parsing 'static public', 'final protected' and other function/class members modifiers
 ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
   auto modifiers = ClassMemberModifiers::nonmember();
   while (cur != end) {
@@ -1411,13 +1411,13 @@ VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, Fun
   std::string func_name;
   bool is_lambda = uses_of_lambda != nullptr;
 
-  // имя функции — то, что идёт после 'function' (внутри класса сразу же полное$$имя)
+  // a function name is a token that immediately follow a 'function' token (full$$name inside a class)
   if (is_lambda) {
-    func_name = gen_anonymous_function_name(cur_function);   // cur_function пока ещё функция-родитель
+    func_name = gen_anonymous_function_name(cur_function);   // cur_function is a parent function here
   } else {
     CE(expect(tok_func_name, "'tok_func_name'"));
     func_name = static_cast<string>(std::prev(cur)->str_val);
-    if (cur_class) {        // fname внутри класса — это full$class$name$$fname
+    if (cur_class) {        // fname inside a class is full$class$name$$fname
       func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
     }
   }
@@ -1434,17 +1434,17 @@ VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, Fun
 
   auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{}).set_location(func_location);
 
-  // создаём cur_function как func_local, а если body не окажется — сделаем func_extern
+  // create a cur_function with a func_local type; if we won't find a body, we'll mark it as func_extern later
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->modifiers = modifiers;
 
-  // после имени функции — параметры, затем блок use для замыканий
+  // function params follow the function name, followed by the 'use' list for closures
   CE(cur_function->root->params_ref() = parse_cur_function_param_list());
   CE(parse_function_uses(uses_of_lambda));
   kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
              "arguments and captured variables(in `use` clause) must have different names");
-  // а дальше может идти ::: string в functions.txt
+  // declarations from the functions.txt may contain ':::' after that
   cur_function->root->type_rule = get_func_param_type_rule();
   if (is_lambda) {
     cur_function->modifiers.set_instance();
@@ -1457,7 +1457,7 @@ VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, Fun
     kphp_error(!cur_function->return_typehint.empty(), "Expected return typehint after :");
   }
 
-  // потом — либо { cmd }, либо ';' — в последнем случае это func_extern
+  // then we have '{ cmd }' or ';' — function is marked as func_extern in the latter case
   if (test_expect(tok_opbrc)) {
     CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->get_human_readable_name())));
     is_top_of_the_function_ = true;
@@ -1485,8 +1485,8 @@ VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, Fun
       cur_class->members.add_static_method(cur_function);
     }
 
-    // функция готова, регистрируем
-    // конструктор регистрируем в самом конце, после парсинга всего класса
+    // the function is ready, register it;
+    // the constructor is registered later, after the entire class is parsed
     if (!cur_function->is_constructor()) {
       const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
                                       phpdoc_str.find("@kphp-lib-export") != std::string::npos;
@@ -1536,9 +1536,9 @@ static inline bool is_class_name_allowed(vk::string_view name) {
 }
 
 void GenTree::parse_extends_implements() {
-  if (test_expect(tok_extends)) {     // extends идёт раньше implements, менять местами нельзя
+  if (test_expect(tok_extends)) {     // extends comes before 'implements', the order is fixed
     do {
-      next_cur();                       // (в php тоже так)
+      next_cur();                       // (same as in PHP)
       kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
       kphp_error(!cur_class->is_trait(), "Traits may not extend each other");
       cur_class->add_str_dependent(cur_function, cur_class->class_type, cur->str_val);
@@ -1606,7 +1606,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   name_vertex->str_val = static_cast<std::string>(name_str);
 
   cur_class->file_id = processing_file;
-  cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // с полным неймспейсом и слешами
+  cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // with full namespaces and slashes
   cur_class->is_immutable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_immutable_class);
   cur_class->location_line_num = line_num;
 
@@ -1615,7 +1615,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
     ++G->stats.total_classes;
   }
 
-  VertexPtr body_vertex = get_statement();    // это пустой op_seq
+  VertexPtr body_vertex = get_statement();    // an empty op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
   cur_class->add_class_constant(); // A::class
@@ -1626,7 +1626,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   }
 
   if (registered) {
-    G->register_and_require_function(cur_function, parsed_os, true);  // прокидываем класс по пайплайну
+    G->register_and_require_function(cur_function, parsed_os, true);  // push the class down the pipeline
   }
 
   return {};
@@ -1768,7 +1768,7 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
     kphp_assert_msg(current_file_unified_dir.starts_with(lib_unified_dir), "lib processing file should be in lib dir");
     real_unified_dir.erase(0, lib_unified_dir.size() + 1);
   }
-  // для корректной работы vendor/ папки assert ниже закомментирован
+  // to properly handle the vendor/ folder, assert from below is commented-out
   //string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
   //kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
 
@@ -1792,8 +1792,8 @@ void GenTree::parse_declare_at_top_of_file() {
   expect(tok_oppar, "(");
 
   if (test_expect(tok_func_name)) {
-    // В declare могут быть следующие директивы: strict_types, encoding, ticks.
-    // Поддерживаем только strict_types.
+    // declare() may have these directives: strict_types, encoding, ticks;
+    // only strict_types is supported
     kphp_error(cur->str_val == "strict_types", fmt_format("Unsupported declare '{}'", cur->str_val));
     next_cur();
   } else {
@@ -1814,12 +1814,12 @@ void GenTree::parse_declare_at_top_of_file() {
 }
 
 VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers) {
-  cur--;      // он был $field_name, делаем перед, т.к. get_multi_call() делает next_cur()
+  cur--;      // it was a $field_name; we do it before the get_multi_call() as it does next_cur() by itself
   VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
   CE (check_statement_end());
 
   for (auto seq : v->args()) {
-    // node это либо op_var $a (когда нет дефолтного значения), либо op_set(op_var $a, init_val)
+    // node is a op_var $a (if there is no default value) or op_set(op_var $a, init_val)
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
@@ -1939,7 +1939,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc_str);
       }
-      if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // статическая переменная функции
+      if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // a function-scoped static variable
         auto res = get_multi_call<op_static, op_err>(&GenTree::get_expression);
         CE (check_statement_end());
         return res;
@@ -1986,30 +1986,30 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return get_foreach();
     case tok_switch:
       return get_switch();
-    case tok_phpdoc: {      // встречаем /** ... */
+    case tok_phpdoc: {      // enter /** ... */
       auto location = auto_location();
       vk::string_view tok_phpdoc_str = cur->str_val;
       next_cur();
-      // может, это phpdoc над функцией/классом/полем
+      // is it a function/class/field phpdoc?
       if (vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var)
           || (cur->type() == tok_static && cur_function->type == FunctionData::func_class_holder)) {
         return get_statement(tok_phpdoc_str);
       }
-      // иначе это phpdoc-statement: может, там есть @var, понадобится для assumptions и tinf
-      // в общем, сохраняем — пока просто в виде raw-строки,
-      // а потом, в пайпе convert-local-phpdocs.php, оттуда вычленятся @var и превратятся в op_phpdoc_var
-      // (сейчас этого сделать нельзя, т.к. классов ещё нет)
+      // otherwise it's a phpdoc-statement: it may contain @var which will be used for assumptions and tinf;
+      // save as a raw-string for now; the convert-local-phpdocs.php pipe will fetch @var from there
+      // and make turn them into op_phpdoc_var;
+      // we can't do it here as classes are not resolved yet
       auto op = VertexAdaptor<op_phpdoc_raw>::create().set_location(location);
       op->phpdoc_str = tok_phpdoc_str;
-      // распространённый паттерн — phpdoc перед присваиванием: /** @var int */ $v = ...,
-      // т.е. $v внутри нет, но он словно бы мнемонически имеется
+      // it's a common pattern to omit the varname in /** @var int */ $v = ...,
+      // we treat that form as like the following varname was spelled inside the comment
       if (cur->type() == tok_var_name) {
         op->next_var_name = std::string(cur->str_val);
       }
       return op;
     }
     case tok_function:
-      if (cur_class) {      // пропущен access modifier — значит, public
+      if (cur_class) {      // no access modifier implies 'public'
         return get_class_member(phpdoc_str);
       }
       return get_function(phpdoc_str, FunctionModifiers::nonmember());
@@ -2188,7 +2188,7 @@ void GenTree::run() {
   seq_next.push_back(VertexAdaptor<op_return>::create());
   cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(seq_next).set_location(location);
 
-  G->register_and_require_function(cur_function, parsed_os, true);  // global функция — поэтому required
+  G->register_and_require_function(cur_function, parsed_os, true);  // global function — therefore required
   require_lambdas();
 
   if (cur != end) {

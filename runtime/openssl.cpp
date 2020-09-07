@@ -1192,7 +1192,7 @@ void global_init_openssl_lib() {
   reinit_openssl_lib_hack();
 }
 
-// TODO: Когда разберемся с curl, заинлайнить эту фукнцию в global_init_openssl_lib
+// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
 void reinit_openssl_lib_hack() {
   OPENSSL_config(nullptr);
   SSL_library_init();

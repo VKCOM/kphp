@@ -10,7 +10,7 @@ extern std::unordered_map<std::string, Module> modules;
 
 extern std::set<std::string> modules_with_functions;
 
-// Модуль - это два .cpp/.h файла, соответстсвующие одному модулю tl-схемы
+// A module is a two (.cpp+.h) files that correspond to one TL scheme module.
 class Module {
 public:
   std::vector<vk::tl::type *> target_types;

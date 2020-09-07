@@ -18,7 +18,7 @@
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData {
-  // внешний код должен использовать FunctionData::create_function()
+  // code outside of the data/ should use FunctionData::create_function()
   FunctionData() = default;
   FunctionData& operator=(const FunctionData &other) = default;
   FunctionData(const FunctionData &other) = default;
@@ -43,13 +43,13 @@ public:
 
 
     infer_mask infer_type;
-    int param_i;            // 0..N — аргументы, -1 return (как и для tinf)
+    int param_i;            // 0..N — arguments, -1 return (just like in tinf)
     VertexPtr type_rule;    // op_lt_type_rule / op_common_type_rule / etc
   };
 
   int id = -1;
 
-  string name;        // полное имя функции, в случае принадлежности классу это VK$Namespace$funcname
+  string name;        // full function name; when it belongs to a class it looks like VK$Namespace$funcname
   VertexAdaptor<op_function> root;
   bool is_required = false;
 
@@ -70,7 +70,9 @@ public:
   std::set<ClassPtr> class_dep;
   bool tl_common_h_dep = false;
   FunctionPtr function_in_which_lambda_was_created;
-  //std::vector<FunctionPtr> lambdas_inside;    // todo когда будем разрешать лямбды в шаблонных функциях, find usages
+
+  // TODO: find usages when we'll allow lambdas inside template functions.
+  //std::vector<FunctionPtr> lambdas_inside;
 
   std::vector<std::pair<std::string, vk::intrusive_ptr<Assumption>>> assumptions_for_vars;   // (var_name, assumption)[]
   vk::intrusive_ptr<Assumption> assumption_for_return;
@@ -92,7 +94,7 @@ public:
 
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
-  vector<InferHint> infer_hints;        // kphp-infer hint/check для param/return
+  vector<InferHint> infer_hints;        // kphp-infer hint/check for param/return
   std::string return_typehint;
 
   bool has_variadic_param = false;
@@ -113,11 +115,11 @@ public:
   bool is_flatten = false;
   enum class profiler_status : uint8_t {
     disable,
-    // Профилируемая фукнция, с которой все начинается и на которой все закончится
+    // A function that is being profiled that starts and ends the profiling
     enable_as_root,
-    // Фукнция, которая будет профилироваться в случае достижимости из профилируемой, при этом inline фукнция не профилируется
+    // A function that will be profiled if it's reachable from the root (inline functions are not profiled)
     enable_as_child,
-    // Фукнция, которая будет профилироваться в случае достижимости из профилируемой (даже если она inline)
+    // A function that will be profiled if it's reachable from the root even if it's an inline function
     enable_as_inline_child,
   } profiler_state = profiler_status::disable;
 

@@ -110,7 +110,7 @@ public:
       ++event_counters_.snapshot_entry.total;
     }
 
-    // специально выключаем блеклист, так как проверили ключи на предыдущем этапе
+    // disable the blacklist because we checked the keys during the previous step
     blacklist_enabled_ = false;
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
@@ -132,7 +132,7 @@ public:
 
   template<class BASE, int OPERATION>
   OperationStatus store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
-    // даже не пытайся захватить E по значению, он попытается её скопировать и будет очень грустно :(
+    // don't even try to capture E by value; it'll try to copy it and it would be very sad :(
     return generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
   }
 
@@ -154,7 +154,7 @@ public:
 
   ConfdataUpdateResult finish_confdata_update() noexcept {
     for (auto &confdata_section: *updating_confdata_storage_) {
-      // сохраняем в отдельную переменную, что бы не делать const_cast
+      // save into the separate variable to avoid the const_cast
       string key = confdata_section.first;
       mark_string_as_confdata_const(key);
       if (confdata_section.second.is_array()) {
@@ -169,7 +169,7 @@ public:
       std::move(garbage_from_previous_confdata_sample_),
       garbage_size_
     };
-    // после move конейнер остется в "a valid but unspecified state", поэтмому лучше сделать ему явный clear
+    // do an explicit clear() as a container is left in "a valid but unspecified state" after the move
     updating_confdata_storage_->clear();
     garbage_from_previous_confdata_sample_.clear();
     garbage_size_ = 0;
@@ -183,7 +183,7 @@ public:
       if (updating_confdata_storage_->empty()) {
         *updating_confdata_storage_ = previous_confdata_storage;
       } else {
-        // вообще говоря, они должны быть идентичны, но это сложно/затратно проверять
+        // strictly speaking, they should be identical, but it's too hard to verify
         assert(updating_confdata_storage_->size() == previous_confdata_storage.size());
       }
     }
@@ -268,7 +268,7 @@ private:
 
   template<typename F>
   OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
-    // TODO ассерт?
+    // TODO assert?
     if (key_len < 0) {
       return OperationStatus::blacklisted;
     }
@@ -350,9 +350,9 @@ private:
       return OperationStatus::no_update;
     }
 
-    // для ключей без '.'
+    // for keys without '.'
     if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
-      // убираем в мусор что было
+      // move deleted element key and value to garbage
       put_confdata_element_value_into_garbage(first_key_it->second);
       put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
       updating_confdata_storage_->erase(first_key_it);
@@ -365,23 +365,23 @@ private:
       return OperationStatus::no_update;
     }
 
-    // убираем в мусор что было, далее будет копирование с расщеплением
+    // move deleted element data to garbage; it will be a copy with RC detachment
     put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
 
     array_for_second_key.mutate_if_shared();
     auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
     assert(second_key_it != array_for_second_key.end());
-    // массив должен быть расщиплен
+    // array RC should be detached
     assert(array_for_second_key.get_reference_counter() == 1);
-    // ключ и значение убираем в мусор
+    // put key and value to garbage
     if (second_key_it.is_string_key() && second_key_it.get_string_key().get_reference_counter() != 1) {
-      // ключ убираем с deep_last, потому что он дожен быть уничтожен строго после array_for_second_key
+      // key is removed with deep_last option, as it must be removed after array_for_second_key
       put_confdata_var_into_garbage(second_key_it.get_string_key(), ConfdataGarbageDestroyWay::deep_last);
     }
     put_confdata_element_value_into_garbage(second_key_it.get_value());
     array_for_second_key.unset(processing_key_.get_second_key());
     if (array_for_second_key.empty()) {
-      // имя убираем в мусор, сама же секция удалится, так как была расщеплена (см. выше)
+      // name is moved to garbage, the section itself will be removed due to RC detachment (see above)
       put_confdata_var_into_garbage(first_key_it->first, ConfdataGarbageDestroyWay::shallow_first);
       updating_confdata_storage_->erase(first_key_it);
     }
@@ -394,7 +394,7 @@ private:
       return OperationStatus::no_update;
     }
 
-    // для ключей без '.'
+    // for keys without '.'
     if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       return OperationStatus::ttl_update_only;
     }
@@ -412,18 +412,18 @@ private:
     bool element_exists = true;
     if (first_key_it == updating_confdata_storage_->end()) {
       element_exists = false;
-      // при загрузке снепшота, все ключи отсортированы, поэтому имеет смысл вставлять в конец
+      // during the snapshot loading all keys are already sorted, so it makes sense to push it back
       first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), var{});
     }
 
-    // для ключей без '.'
+    // for keys without '.'
     if (processing_key_.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       if (!can_element_be_saved(E, element_exists)) {
         return OperationStatus::no_update;
       }
 
       if (is_new_value(E, first_key_it->second)) {
-        // убираем в мусор предыдущее значение и перезаписываем новым
+        // put the previous value to garbage and overwrite it with a new value
         put_confdata_element_value_into_garbage(first_key_it->second);
         first_key_it->second = get_processing_value(E);
         return OperationStatus::full_update;
@@ -431,7 +431,7 @@ private:
       return OperationStatus::ttl_update_only;
     }
 
-    // по дефолту вставляется null
+    // null is inserted by the default
     if (first_key_it->second.is_null()) {
       first_key_it->second = prepare_array_for(vk::string_view{first_key_it->first.c_str(), first_key_it->first.size()});
     }
@@ -443,22 +443,22 @@ private:
     }
 
     if (!prev_value) {
-      // убираем в мусор что было, далее будет копирование с расщеплением
+      // move old element data to garbage; it will be a copy with RC detachment
       put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
       array_for_second_key.set_value(processing_key_.make_second_key_copy(), get_processing_value(E));
-      // вставка элемента расщепит массив
+      // array insertion will detach the array RC
       assert(array_for_second_key.get_reference_counter() == 1);
       return OperationStatus::full_update;
     }
     if (is_new_value(E, *prev_value)) {
-      // убираем в мусор что было, далее будет копирование с расщеплением
+      // move old element data to garbage; it will be a copy with RC detachment
       put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
       array_for_second_key.mutate_if_shared();
       auto second_key_it = array_for_second_key.find_no_mutate(processing_key_.get_second_key());
       assert(second_key_it != array_for_second_key.end());
-      // массив должен быть расщиплен
+      // array RC should be detached
       assert(array_for_second_key.get_reference_counter() == 1);
-      // предыдущее значение убираем в мусор и сохраняем новое
+      // put the previous value to garbage and overwrite it with a new value
       put_confdata_element_value_into_garbage(second_key_it.get_value());
       second_key_it.get_value() = get_processing_value(E);
       return OperationStatus::full_update;
@@ -468,8 +468,8 @@ private:
 
   void put_confdata_element_value_into_garbage(const var &element) noexcept {
     if (!last_element_in_garbage_.is_null()) {
-      // так как для ключей с 1 и 2 точками мы можем использовать один и тот же элемнет,
-      // то и тут они внутренние указатели должны совпадать
+      // if keys with 1 or 2 can refer the same element,
+      // they should have identical internal pointers here as well
       assert(last_element_in_garbage_.get_type() == element.get_type());
       if (element.is_string()) {
         assert(element.as_string().c_str() == last_element_in_garbage_.as_string().c_str());
@@ -505,7 +505,7 @@ private:
   template<class T>
   void assert_correct_ref_counter(const T &element) const noexcept {
     const auto refcnt = element.get_reference_counter();
-    // 2 - максимальное кол-во дефолтных wildcard + максимальное кол-во кастомных wildcard
+    // 2 is the default wildcard max number + max number of the custom wildcards
     assert(refcnt > 0 && refcnt <= 2 + predefined_wildcards_.get_max_wildcards_for_element());
   }
 
@@ -546,13 +546,13 @@ private:
       return true;
     }
     if (!element_exists) {
-      // если элемент не существует, мы можем сделать pmct_add, но не можем сделать pmct_replace
+      // if the element doesn't exist, we can do pmct_add, but we can't do pmct_replace
       return OPERATION == pmct_add;
     }
-    // элемент существует, проверим не протух ли он
+    // if the element exists, check whether it's not expired
     vk::string_view key{E.data, static_cast<size_t>(E.key_len)};
     auto it = element_delays_.find(key);
-    // если элемента нет в element_delays_, значит он точно не протух
+    // if the element is not inside element_delays_ then it's not expired yet
     const bool element_outdated = it != element_delays_.end() && it->second < get_now();
     return element_outdated ? OPERATION == pmct_add : OPERATION == pmct_replace;
   }
@@ -594,7 +594,7 @@ private:
     if (E.get_flags()) {
       return !equals(get_processing_value(E), prev_value);
     }
-    // (E.get_flags() == 0) -> новое значение строка
+    // (E.get_flags() == 0) -> new value is a string
     if (!prev_value.is_string()) {
       return true;
     }
@@ -621,8 +621,8 @@ private:
     return blacklist_enabled_ && key_blacklist_.is_blacklisted(key);
   }
 
-  // TODO: 'now' используется движками, можем ли мы так же её использовать?
-  // На парктике звучит как да, но выглядит не очень ¯\_(ツ)_/¯
+  // TODO: 'now' is used by engines, can we use it in the same way?
+  // It looks like "yes" in practice, but it looks weird ¯\_(ツ)_/¯
   static int get_now() noexcept { return now; }
 
   std::aligned_storage_t<sizeof(confdata_sample_storage), alignof(confdata_sample_storage)> confdata_mem_;
@@ -711,10 +711,10 @@ void init_confdata_binlog_reader() noexcept {
                         std::move(confdata_settings.key_blacklist_pattern));
 
   dl::set_current_script_allocator(confdata_manager.get_resource(), true);
-  // engine_default_load_index и engine_default_read_binlog в случае проблем делают exit(1),
-  // что приводит к вызову всех деструкторов глобальных и статических переменных.
-  // Эта статическая переменная откатывает аллокатор конфдаты,
-  // чтобы другие глобальные и статические переменные могли нормально удалиться
+  // engine_default_load_index and engine_default_read_binlog call exit(1) on errors,
+  // which runs all global/static variables destructors.
+  // This static variable restores the confdata allocator,
+  // so other global/static variables can be freed normally.
   static auto confdata_allocator_rollback = vk::finally([] {
     dl::restore_default_script_allocator(true);
   });
@@ -772,9 +772,6 @@ void confdata_binlog_update_cron() noexcept {
     }
   }
 
-  // TODO подумать над дефрагментацией!
-  // Делать дефрагментацию каждый раз - плохо, необходимо подумать о условиях, когда её реально лучше всего делать.
-  // Либо вообще забить и никогда не делать, а комментарий удалить.
   confdata_manager.clear_unused_samples();
 
   dl::restore_default_script_allocator(true);

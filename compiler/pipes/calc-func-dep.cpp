@@ -43,8 +43,10 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
           current_function->class_dep.insert(klass);
         }
       }
-      if (other_function->tl_common_h_dep) {      // инфа из functions.txt про extern-функцию
-        current_function->tl_common_h_dep = true; // функции, вызывающие typed rpc, должны инклюдить tl/common.h
+      // information that comes from functions.txt about the extern functions
+      if (other_function->tl_common_h_dep) {
+        // functions that use typed rpc should include tl/common.h
+        current_function->tl_common_h_dep = true;
       }
       return vertex;
     }

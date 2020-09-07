@@ -45,12 +45,12 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
 }
 
 /*
- * Проверяем, что все static-поля класса инициализированы при объявлении
+ * Check that all static class fields are properly initialized during the declaration.
  */
 inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
   klass->members.for_each([&](const ClassMemberStaticField &f) {
     bool allow_no_default_value = false;
-    // если дефолтного значения нет — а вдруг оно не обязательно? для инстансов например
+    // default value can be omitted for the instance values
     if (!f.var->init_val) {
       allow_no_default_value = vk::any_of_equal(f.get_inferred_type()->ptype(), tp_Class);
     }
@@ -62,7 +62,7 @@ inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
 }
 
 inline void CheckClassesPass::check_instance_fields_inited(ClassPtr klass) {
-  // todo KPHP-221 ; пока что оставлен старый вариант (проверка на Unknown)
+  // TODO KPHP-221: the old code is kept for now (check for Unknown)
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_Unknown,

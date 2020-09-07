@@ -35,7 +35,7 @@ void CombinatorGen::compile(CodeGenerator &W) const {
 
 void CombinatorGen::compile_left(CodeGenerator &W) const {
   tl2cpp::cur_combinator = combinator;
-  // Создаем локальные переменные для хранения филд масок
+  // create local variables to hold the field mask values
   if (combinator->is_constructor()) {
     auto fields_masks = tl2cpp::get_not_optional_fields_masks(combinator);
     for (const auto &item : fields_masks) {
@@ -72,7 +72,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
                     combinator->get_var_num_arg(arg->exist_var_num)->name,
                     arg->exist_var_bit) << BEGIN;
     if (typed_mode) {
-      // Проверяем, что не забыли проставить поле под филд маской
+      // check that field under the field mask is set
       std::string value_check = get_value_absence_check_for_optional_arg(arg);
       if (!value_check.empty()) {
         W << "if (" << value_check << ") " << BEGIN;
@@ -87,7 +87,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
   if (!arg->is_forwarded_function()) {
     W << tl2cpp::TypeExprStore(arg, var_num_access, typed_mode);
   }
-  //Обработка восклицательного знака
+  // Exclamation mark "!" handling
   if (arg->is_forwarded_function()) {
     kphp_assert(combinator->is_function());
     auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
@@ -114,8 +114,8 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
         << tl2cpp::get_tl_object_field_access(arg, tl2cpp::field_rw_type::READ) << ".get()->store();" << NL;
     }
   } else if (arg->var_num != -1 && tl2cpp::type_of(arg->type_expr)->is_integer_variable()) {
-    // Запоминаем филд маску для последующего использования
-    // Может быть либо локальной переменной либо полем структуры
+    // save the field mask for the future use;
+    // it can be either a local variable or a struct field
     if (!typed_mode) {
       W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}L).to_int();",
                       var_num_access,
@@ -160,11 +160,11 @@ std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std:
   auto *type = tl2cpp::type_of(arg->type_expr);
   std::string check_target = "tl_object->$" + arg->name;
   if (tl2cpp::is_tl_type_wrapped_to_Optional(type) || (type->id == TL_LONG && !TlClasses::new_tl_long) || !tl2cpp::CUSTOM_IMPL_TYPES.count(type->name)) {
-    // Если это Optional ИЛИ var ИЛИ class_instance<T>
+    // if it's Optional OR var OR class_instance<T>
     return check_target + ".is_null()";
   } else {
-    // Иначе это Optional, который дополнительно не оборачивается в Optional под филд маской,
-    // поэтому мы не можем отличить записанное значение Maybe false, от отсутстсвия значения
+    // Otherwise it's an Optional that was not wrapped into Optional under a field mask,
+    // therefore we can't distinguish a Maybe false from the value absence
     return "";
   }
 }
@@ -183,7 +183,7 @@ void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
   }
   W << tl2cpp::TypeExprFetch(arg, var_num_access, typed_mode);
   if (arg->var_num != -1 && tl2cpp::type_of(arg->type_expr)->is_integer_variable()) {
-    // запоминаем филд маску для дальнейшего использования
+    // save the field mask for the future use
     if (!typed_mode) {
       W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = result.get_value(" << tl2cpp::register_tl_const_str(arg->name) << ", "
         << tl2cpp::hash_tl_const_str(arg->name) << "L).to_int();" << NL;
@@ -204,9 +204,9 @@ void CombinatorFetch::gen_after_args_processing(CodeGenerator &W) const {
 };
 
 void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
-  // Если функция возвращает флатящийся тип, то после perform_flat_optimization() вместо него подставляется его внутренность.
-  // Но при фетчинге функции нам всегда нужен мэджик оригинального типа, даже если он флатится.
-  // Для этого было введено поле original_result_constructor_id у функций, в котором хранится мэджик реального типа, если результат флатится, и 0 иначе.
+  // if function returns a flattable type, then after the perform_flat_optimization() it's contents are inlined;
+  // although, during the function fetching we need a magic value of the original type (even if it was flattened).
+  // To handle this, there is an original_result_constructor_id function field that stores a real type 'magic' if the type is flattened and 0 otherwise.
   if (!combinator->original_result_constructor_id) {
     const auto &magic_fetching = tl2cpp::get_magic_fetching(combinator->result.get(),
                                                             fmt_format("Incorrect magic in result of function: {}", tl2cpp::cur_combinator->name));
@@ -223,11 +223,11 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
     return;
   }
   if (auto type_var = combinator->result->as<vk::tl::type_var>()) {
-    // multiexclamation оптимизация
+    // multiexclamation optimization
     W << "return " << tl2cpp::cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
     return;
   }
-  // для любой getChatInfo implements RpcFunction есть getChatInfo_result implements RpcFunctionReturnResult
+  // for every 'getChatInfo implements RpcFunction' there is a 'getChatInfo_result implements RpcFunctionReturnResult'
   W << tl2cpp::get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
     << "result.alloc();" << NL
     << tl2cpp::get_full_value(combinator->result.get(), "") + ".typed_fetch_to(result->$value);" << NL

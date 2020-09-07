@@ -39,9 +39,9 @@ public:
 private:
   void write_error_stat_to(stats_t *stats, const char *stat_name, script_error_t error) const noexcept;
 
-  // 0 - 50 перцентиль, 1 - 95 перцентиль, 2 - 99 перцентиль
+  // 0 - 50 percentile, 1 - 95 percentile, 2 - 99 percentile
   static constexpr size_t PERCENTILES_COUNT{3};
-  // колличество сэмплов в выборке
+  // the number of samples in the selection
   static constexpr size_t PERCENTILE_SAMPLES{600};
   static_assert(PERCENTILE_SAMPLES % PERCENTILES_COUNT == 0, "bad PERCENTILE_SAMPLES value");
 

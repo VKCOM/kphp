@@ -207,7 +207,7 @@ void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
 }
 
-// type - это одна из констант для типа ошибки E_* (E_ERROR, E_WARNING и т.д.)
+// type is one of the error E_* constants (E_ERROR, E_WARNING, etc.)
 void write_json_error_to_log(int release, char *msg, int type, int nptrs, void** buffer) {
   for (char *c = msg; *c; ++c) {
     if (*c == '"') {
@@ -218,7 +218,7 @@ void write_json_error_to_log(int release, char *msg, int type, int nptrs, void**
   }
 
 
-  // todo(k.paltsev) удалить version, когда на всех серверах обновят kw-parser
+  // todo(k.paltsev) remove "version" key when all servers will have an updated kw-parser
   const auto format = R"({"version":%d,"release":%d,"type":%d,"created_at":%ld,"msg":"%s")";
   fprintf(json_log_file_ptr, format, release, release, type, time(nullptr), msg);
 

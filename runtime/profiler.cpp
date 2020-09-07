@@ -77,8 +77,8 @@ public:
   uint64_t get_next_file_id(vk::string_view file_name) noexcept {
     dl::CriticalSectionGuard critical_section;
     if (unlikely(!file_ids_)) {
-      // Специально делаем ленивую инициализацию,
-      // чтобы конструктор синглтона был максимально тривиальным и не генерировал лишний код
+      // initialized lazily on purpose, so the singleton constructor
+      // remains trivial and does not generate redundant code
       file_ids_ = new(&file_ids_storage) File2IdMap();
       start_tp_ = std::chrono::steady_clock::now();
       start_tsc_ = cycleclock_now();
@@ -242,7 +242,7 @@ FunctionStatsWithLabel &FunctionStatsNoLabel::get_stats_with_label(vk::string_vi
   }
   dl::CriticalSectionGuard critical_section;
   auto label_ptr = std::make_unique<FunctionStatsWithLabel>(*this, label);
-  // переопределяем label, так как нам нужна строка из FunctionStatsWithLabel
+  // overwrite the label as we need a string from the FunctionStatsWithLabel
   label = vk::string_view{label_ptr->get_label(), label.size()};
   return *labels_.emplace(label, std::move(label_ptr)).first->second;
 }
@@ -510,7 +510,7 @@ void forcibly_stop_profiler() noexcept {
 
 bool set_profiler_log_path(const char *mask) noexcept {
   size_t mask_len = strlen(mask);
-  // 128 зарезервированно для pid + timestamp
+  // 128 is reserved for the pid + timestamp
   if (!mask_len || mask_len + 128 > PATH_MAX) {
     return false;
   }
@@ -624,7 +624,7 @@ void forcibly_stop_and_flush_profiler() noexcept {
 }
 
 void f$profiler_set_log_suffix(const string &suffix) noexcept {
-  // +2 для 2x. и +1 для \0
+  // +2 for 2x. and +1 for \0
   if (suffix.size() + 3 > PATH_MAX) {
     php_warning("Trying to set too long suffix '%s'", suffix.c_str());
     return;

@@ -14,7 +14,7 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/vertex.h"
 
-/* эвристика упорядочивания ребер для поиска наиболее подходящего, для вывода ошибки на экран, полученная эмпирическим путем */
+// A heuristic algorithm that sorts edges to optimize their order for the error printing (based on the empirical research)
 struct RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType {
 private:
   enum {
@@ -198,9 +198,8 @@ bool RestrictionLess::ComparatorByEdgePriorityRelativeToExpectedType::is_priorit
 }
 
 RestrictionLess::row RestrictionLess::parse_description(string const &description) {
-  // Все description'ы состоят из трех колонок, разделенных между собой двумя пробелами (внутри колонки двух пробелов не должно быть)
-  // Здесь происходит парсинг description'а на колонки по двум пробелам в качестве разделителя
-  // Это нужно для динамичекого подсчета ширины колонок
+  // all descriptions consist of the three columns delimited by two spaces (a column should never contain two consecutive spaces);
+  // this method splits a description into these columns (it's needed for the column width calculation)
   std::smatch matched;
   if (std::regex_match(description, matched, std::regex("(.+?)\\s\\s(.*?)(\\s\\s(.*))?"))) {
     return row(matched[1], matched[2], matched[4]);
@@ -246,9 +245,9 @@ string RestrictionLess::get_actual_error_message() {
 }
 
 string RestrictionLess::get_stacktrace_text() {
-  // Делаем красивое форматирование stacktrace'а:
-  // 1) Динамически считаем ширину его колонок, выводим выровненно
-  // 2) Удаляем некоторые бесполезные дубликаты строчек
+  // making the stack trace pretty:
+  // 1) dynamically calculate the description columns width, so the output is aligned
+  // 2) delete the line duplicates that are uninformative
   vector<row> rows;
   for (int i = 0; i < stacktrace.size(); ++i) {
     row cur = parse_description(stacktrace[i]->get_description());
@@ -278,25 +277,26 @@ string RestrictionLess::get_stacktrace_text() {
 void RestrictionLess::remove_duplicates_from_stacktrace(vector<row> &rows) const {
   auto ith_row = [&](int idx) -> row { return (idx < rows.size() ? rows[idx] : row()); };
 
-  // Если это ошибка несовпадения phpdoc у переменной инстанса, то первым в стектрейсе идёт ->var_name, убираем
+  // remove the phpdoc with instance types mismatch row; it's expected to start with ->var_name
   if (vk::string_view{rows[0].col[1]}.starts_with("->")) {
     auto as_expr_0 = dynamic_cast<tinf::ExprNode *>(this->stacktrace[0]);
     if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop) {
       rows.erase(rows.begin());
     }
   }
-  // Удаление дубликатов при вызове статически отнаследованных функций (2 случая)
-// 1) Дублирование аргумента, в котором произошла ошибка:
-//  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
-//  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
-//  $x                                        at .../VK/A.php: VK\D :: demo : 20
-//  0-th arg ($x)                             at static function: VK\D :: demo
-//
-// 2) Дубирование return'а:
-//  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
-//  return ...                                at static function: VK\B :: calc
-//  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
-//  return ...                                at static function: VK\B :: calc (inherited from VK\A)
+
+  // duplicates removal for the statically inherited function calls (2 cases)
+  // 1) erroneous argument duplication:
+  //  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
+  //  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
+  //  $x                                        at .../VK/A.php: VK\D :: demo : 20
+  //  0-th arg ($x)                             at static function: VK\D :: demo
+  //
+  // 2) return duplication:
+  //  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
+  //  return ...                                at static function: VK\B :: calc
+  //  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
+  //  return ...                                at static function: VK\B :: calc (inherited from VK\A)
   for (int i = 0; i < rows.size(); ++i) {
     if (ith_row(i).col[0] == "as expression:" && ith_row(i + 1).col[0] == "as argument:" &&
         ith_row(i + 2).col[0] == "as expression:" && ith_row(i + 3).col[0] == "as argument:" &&

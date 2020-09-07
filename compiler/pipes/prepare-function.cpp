@@ -15,10 +15,8 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-/**
- * Анализ @kphp-infer, @kphp-inline и других @kphp-* внутри phpdoc над функцией f
- * Сейчас пока что есть костыль: @kphp-required анализируется всё равно в gentree
- */
+// Inspects @kphp-infer, @kphp-inline and other @kphp-* inside the function phpdoc.
+// Note that @kphp-required is analyzed inside gentree.
 class ParseAndApplyPHPDoc {
 private:
   using infer_mask = FunctionData::InferHint::infer_mask;
@@ -46,7 +44,8 @@ public:
     }
 
     if (infer_type_ && !f_->is_template) {
-      for (auto &tag : phpdoc_tags_) {    // (вторым проходом, т.к. @kphp-infer может стоять в конце)
+      // a second pass is needed as @kphp-infer may be located in the end
+      for (auto &tag : phpdoc_tags_) {
         parse_generic_phpdoc_tag(tag);
       }
       check_params();
@@ -265,7 +264,8 @@ private:
         f_->add_kphp_infer_hint(infer_mask::check, -1, doc_parsed.type_expr);
       }
       has_return_php_doc_ = true;
-      // hint для return'а не делаем совсем, чтобы не грубить вывод типов, только check
+      // we don't record type hints for @return (it would hamper the type inference),
+      // but we do check them
     } else if (tag.type == php_doc_tag::param) {
       kphp_error_return(!name_to_function_param_.empty(), "Too many @param tags");
 
@@ -277,7 +277,7 @@ private:
       auto cur_func_param = func_params_[func_param_it->second].as<op_func_param>();
       name_to_function_param_.erase(func_param_it);
 
-      // если в phpdoc написано "callable" у этого @param
+      // if phpdoc mentions "callable" inside this @param
       if (auto type_callable = doc_parsed.type_expr.try_as<op_type_expr_callable>()) {
         cur_func_param->is_callable = type_callable->has_params();
         // we will generate common interface for typed callables later
@@ -308,7 +308,7 @@ private:
   }
 
   void check_params() {
-    // отсутствует typehint и phpdoc у одного из параметров
+    // missing type hint and phpdoc for one of the parameters
     std::string lack_of_type_for_param_msg;
     for (auto name_and_param_id : name_to_function_param_) {
       auto op_func_param = func_params_[name_and_param_id.second].as<meta_op_func_param>();
@@ -326,7 +326,7 @@ private:
       auto parsed = phpdoc_parse_type_and_var_name(f_->return_typehint, f_);
       f_->add_kphp_infer_hint(infer_mask::hint_check, -1, parsed.type_expr);
     } else if (!has_return_php_doc_ && !f_->is_constructor() && !f_->assumption_for_return) {
-      // если нет явного @return и typehint'a на возвращаемое значение, считаем что будто написано @return void
+      // if we have no @return and no return type hint, assume @return void
       f_->add_kphp_infer_hint(infer_mask::hint_check, -1, GenTree::create_type_help_vertex(tp_void));
     }
   }

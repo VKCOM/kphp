@@ -61,7 +61,7 @@ private:
 
 struct PhpDocTagParseResult {
   VertexPtr type_expr;      // op_type_expr_*
-  std::string var_name;     // без начального "$", может быть пустым, если отсутствует в phpdoc
+  std::string var_name;     // stored without leading "$"; could be empty if omitted in phpdoc
 
   operator bool() const { return static_cast<bool>(type_expr); }
 };

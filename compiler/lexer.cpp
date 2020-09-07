@@ -223,13 +223,13 @@ void LexerData::hack_last_tokens() {
   }
 
   /**
-   * Для случаев:
+   * To properly handle these cases:
    *   \VK\Foo::array
    *   \VK\Foo::try
    *   \VK\Foo::$static_field
-   * после tok_double_colon будет tok_array или tok_try, а мы хотим tok_func_name
-   * так как это корректные имена переменных
-   * поэтому проверяем является ли первый символ следующего токена is_alpha, чтобы не пропустить tok_opbrk и тому подобное
+   * after tok_double_colon we'll get tok_array or tok_try, but we would like to get tok_func_name
+   * as these are valid class member names;
+   * we check whether a first char of the next token with is_alpha to filter-out things like tok_opbrk etc.
    */
   if (are_last_tokens(tok_static, tok_double_colon, any_token_tag{}) || are_last_tokens(tok_func_name, tok_double_colon, any_token_tag{})) {
     if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
@@ -245,17 +245,17 @@ void LexerData::hack_last_tokens() {
   }
 
   /**
-   * Хак для того, чтобы функции с такиим именами парсились в functions.txt,
-   * но при этом это было отдельными токенами, т.к. их надо парсить чуть по другому
+   * A kludge to parse functions with such names correctly in functions.txt;
+   * but keep them as a separate token kinds as they need a slightly different parsing
    */
   if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print) || are_last_tokens(tok_function, tok_echo)) {
     tokens.back() = {tok_func_name, tokens.back().str_val};
   }
 
   /**
-   * Для случаев, когда встречаются ключевые слова после ->, const, это должны быть tok_func_name,
-   * а не tok_array, tok_try и т.д.
-   * например:
+   * For cases when we encounter a keyword after the '->' and 'const', they should be a tok_func_name,
+   * not tok_array, tok_try, etc.
+   * For example:
    *     $c->array, $c->try
    *     class U { const array = [1, 2]; }
    *     class U { const try = [1, 2]; }
@@ -876,7 +876,7 @@ bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
 
   assert (strncmp(s, "#ifndef KittenPHP", 17) == 0);
   s += 17;
-  // ищем \n\s*#endif
+  // looking for the \n\s*#endif
   while (*s) {
     if (*s != '\n') {
       s++;
@@ -1133,16 +1133,15 @@ vector<Token> php_text_to_tokens(vk::string_view text) {
 
 vector<Token> phpdoc_to_tokens(vk::string_view text) {
   LexerData lexer_data{text};
-  lexer_data.set_dont_hack_last_tokens();   // future(int) — не нужно (int) как op_conv_int
-
+  lexer_data.set_dont_hack_last_tokens(); // like in op_conv_int, future(int) doesn't need (int)
   while (*lexer_data.get_code()) {
     if (!vk::singleton<TokenLexerPHPDoc>::get().parse(&lexer_data)) {
       break;
     }
 
-    // обычный паттерн для phpdoc переменной — это "some_type|(or | complex) $var any comment ..."
-    // т.е. $var внутри самого phpdoc-типа не встречается, и когда встретили — стоп, потому что зачем дальше
-    // исключение — когда "$var some_type|(or | complex) any comment ..." (то токенайзим всё)
+    // the usual pattern for the phpdoc variable is "some_type|(or | complex) $var any comment ..."
+    // i.e. there is no $var inside the phpdoc-type, so when we encounter $var we can stop;
+    // "$var some_type|(or | complex) any comment ..." is an exception from this (we tokenize the entire comment in this case)
     if (lexer_data.are_last_tokens(tok_var_name) && lexer_data.get_num_tokens() > 1) {
       break;
     }

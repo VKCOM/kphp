@@ -22,8 +22,10 @@ public:
 
   std::vector<vk::string_view> lines;
 
-  std::string namespace_name;                // namespace_name нужно унести на уровень файла (не функции), но пока не вышло до конца
-  std::map<vk::string_view, vk::string_view> namespace_uses;   // use ... в начале файла — это per-file, а не per-function
+  // TODO: namespace_name should probably be moved to a file level (as opposed to a function level)
+  std::string namespace_name;
+  // use ... in the beginning of the file — is a per-file construction, not a per-function one
+  std::map<vk::string_view, vk::string_view> namespace_uses;
 
   SrcFile() = default;
   SrcFile(std::string file_name, std::string short_file_name, LibPtr owner_lib_id) :

@@ -40,16 +40,19 @@ private:
   }
 
   void require_class(const string &class_name) {
-    if (!G->get_class(class_name)) {              // при отсутствии php-файла не ругаемся:
-      require_file(class_name + ".php", false);   // ошибки об отсутствующих классах будут позже,
-    }                                             // а у built-in и не-autoloadable классов файлов и нет
+    // in case that PHP-file doesn't exist we don't give any error
+    // as they'll be reported as missing classes errors later;
+    // for builtin and non-autoloadable classes there will be no errors
+    if (!G->get_class(class_name)) {
+      require_file(class_name + ".php", false);
+    }
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
     for (const auto &dep : cur_class->get_str_dependents()) {
       require_class(replace_characters(dep.class_name, '\\', '/'));
     }
-    // значения констант класса могут содержать константы других классов, которым нужно require_class()
+    // class constant values may contain other class constants that may need require_class()
     cur_class->members.for_each([&](ClassMemberConstant &c) {
       run_function_pass(c.value, this);
     });
@@ -71,17 +74,18 @@ private:
     });
   }
 
-  // если /** @var Photo */ над полем инстанса, видим класс Photo даже если нет явного вызова конструктора
+  // When looking at /** @var Photo */ under the instance field, assume that we
+  // need to load the Photo class even if there is no explicit constructor call
   inline void require_all_classes_in_phpdoc(vk::string_view phpdoc_str) {
     if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       require_all_classes_in_phpdoc_type(*type_and_var_name);
     }
   }
 
-  // парсим валидный тип phpdoc — что внутри @var/@param/type declaration — и ищем классы
+  // Searching for classes inside @var/@param phpdoc as well as inside the type hints.
   inline void require_all_classes_in_phpdoc_type(const std::string &type_str) {
-    // здесь вручную бьём на токены, а НЕ вызываем phpdoc_parse_type_and_var_name()
-    // потому что классов пока нет, и нам как раз нужно извлечь неизвестные классы
+    // we don't use phpdoc_parse_type_and_var_name() here since classes
+    // are not available at this point and we need to fetch these unknown classes.
     std::vector<Token> tokens = phpdoc_to_tokens(type_str);
     std::vector<Token>::const_iterator cur_tok = tokens.begin();
     PhpDocTypeRuleParser parser(current_function);
@@ -92,16 +96,18 @@ private:
     }
   }
 
-  // достаём и require'им все классы, исходя из прототипа функции
-  // ВНИМАНИЕ! сейчас анализируется только type declaration, а phpdoc с @param'ами над функцией не анализируется
-  //           (надо бы, но это когда мы phpdoc будем парсить единожды, а не постоянно при надобности)
+  // Collect classes to require from the function prototype.
+  // WARNING! We inspect only the type hints (called type declarations below).
+  //          phpdoc with @param is ignored.
+  //          TODO: fix this when we'll parse the phpdoc once.
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
     for (const auto &p: f->get_params()) {
       if (!p.as<op_func_param>()->type_declaration.empty()) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_declaration);
       }
     }
-    // из f->return_typehint не достаём: считаем, что если функция возвращает класс, уж она-то его создаст
+    // f->return_typehint is ignored;
+    // we assume that if it returns an instance, it'll reference the required class in one way or another
   }
 
 public:

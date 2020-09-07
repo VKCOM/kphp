@@ -9,11 +9,11 @@ struct tl_func_base;
 class InstanceToArrayVisitor;
 class InstanceMemoryEstimateVisitor;
 
-// builtin-классы, которые описаны в functions.txt (связанные с типизированным TL)
-// увы, здесь жёстко зашито, что они лежат именно в папке/namespace \VK\TL,
-// т.к. после кодогенерации C$VK$TL$... должны соответствовать этой реализации
+// The locations of the typed TL related builtin classes that are described in functions.txt
+// are hardcoded to the folder/namespace \VK\TL because after the code generation
+// C$VK$TL$... should match that layout
 
-// этот интерфейс реализуют все tl-функции в php коде (см. tl-to-php)
+// this interface is implemented by all PHP classes that represent the TL functions (see tl-to-php)
 struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
@@ -25,8 +25,8 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual std::unique_ptr<tl_func_base> store() const = 0;
 };
 
-// у каждой tl-функции есть отдельный класс-результат implements RpcFunctionReturnResult,
-// у которого есть ->value нужного типа 
+// every TL function has a class for the result that implements RpcFunctionReturnResult;
+// which has ->value of the required type
 struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class()))); }
@@ -37,8 +37,8 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
 };
 
-// ответ исполнения функции — ReqResult в tl-схеме — это rpcResponseOk|rpcResponseHeader|rpcResponseError
-// (если это ok или header, то их body можно зафетчить тем фетчером, что вернул store)
+// function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;
+// if it's rpcResponseOk or rpcResponseHeader, then their bodies can be retrieved by a fetcher that was returned by a store
 struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 

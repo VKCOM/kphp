@@ -68,7 +68,8 @@ string tinf::VarNode::get_var_as_argument_name() {
 string tinf::VarNode::get_description() {
   std::stringstream ss;
   if (is_variable()) {
-    //Вывод должен совпадать с выводом в соответсвующей ветке в get_expr_description, чтобы детектились и убирались дубликаты в стектрейсе
+    // the output should be identical to op_var case in get_expr_description()
+    // so we can detect and remove the duplicates in the stack trace.
     ss << "as variable:" << "  " << get_var_name() << " : " << colored_type_out(tinf::get_type(var_));
   } else if (is_return_value_from_function()) {
     ss << "as expression:" << "  " << "return ...";

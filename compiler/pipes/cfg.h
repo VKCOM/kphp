@@ -10,7 +10,7 @@ public:
   void execute(FunctionPtr function, DataStream<FunctionAndCFG> &os);
 };
 
-// используем эту обертку для того, чтобы было понятное имя в профайлере
+// This wrapper is used to get a readable name in the profiler.
 class CFGBeginSync final : public SyncPipeF<FunctionAndCFG> {
 public:
   void on_finish(DataStream<FunctionAndCFG> &os) final {

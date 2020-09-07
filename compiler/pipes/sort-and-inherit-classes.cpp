@@ -16,12 +16,11 @@
 #include "compiler/threading/profiler.h"
 #include "compiler/utils/string-utils.h"
 
-/**
- * Через этот pass проходят функции вида
- * baseclassname$$fname$$contextclassname
- * которые получились клонированием родительского дерева
- * В будущем этот pass должен уйти, когда лямбды будут вычленяться не на уровне gentree, а позже
- */
+// This pass takes functions like baseclassname$$fname$$contextclassname
+// that were cloned from the parent tree.
+//
+// This pass should go away in the future when lambdas will be handled
+// after the gentree (not during it).
 class PatchInheritedMethodPass final : public FunctionPassBase {
   DataStream<FunctionPtr> &function_stream;
 public:
@@ -148,8 +147,8 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
 } // namespace
 
 
-// если все dependents класса уже обработаны, возвращает nullptr
-// если же какой-то из dependents (класс/интерфейс) ещё не обработан (его надо подождать), возвращает указатель на его
+// Returns nullptr if all class dependents are already processed.
+// Otherwise it returns a pointer to a dependent class/interface that needs to be processed.
 auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
   for (const auto &dep : klass->get_str_dependents()) {
     auto node = ht.at(vk::std_hash(dep.class_name));
@@ -162,7 +161,7 @@ auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltyp
   return {};
 }
 
-// делаем функцию childclassname$$localname, которая выглядит как
+// Generate a childclassname$$localname function that looks like this:
 // function childclassname$$localname($args) { return baseclassname$$localname$$childclassname(...$args); }
 VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent_call(ClassPtr child_class, const ClassMemberStaticMethod &parent_method) {
   auto parent_f = parent_method.function;
@@ -193,9 +192,8 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
   return func;
 }
 
-
-// клонировать функцию baseclassname$$fname в контекстную baseclassname$$fname$$contextclassname
-// (контекстные нужны для реализации статического наследования)
+// Clone the baseclassname$$fname function into the contextual baseclassname$$fname$$contextclassname.
+// Contextual functions are needed for the static inheritance implementation.
 FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name) {
   auto root = parent_f->root.clone();
   auto context_function = FunctionData::clone_from(ctx_function_name, parent_f, root);
@@ -207,11 +205,9 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
   auto parent_class = parent_f->class_id;
-  /**
-   * A::f() -> B -> C; при A->B сделался A::f$$B
-   * но при B->C должно быть A::f$$C, а не B::f$$C
-   * (чтобы B::f$$C не считать required)
-   */
+   // A::f() -> B -> C; with A->B becomes A::f$$B
+   // but with B->C it should be A::f$$C and not B::f$$C
+   // so we don't assume B::f$$C as required
   if (parent_f->is_auto_inherited || parent_f->context_class != parent_class) {
     return;
   }
@@ -231,13 +227,14 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
 
-    child_class->members.add_static_method(child_function);    // пока наследование только статическое
+    // only static inheritance is supported right now
+    child_class->members.add_static_method(child_function);
 
     G->register_and_require_function(child_function, function_stream);
   }
 
-  // контекстная функция имеет название baseclassname$$fname$$contextclassname
-  // это склонированное дерево baseclassname$$fname (parent_f) + патч для лямбд (который должен когда-то уйти)
+  // contextual function has a name like baseclassname$$fname$$contextclassname;
+  // it's a cloned tree of baseclassname$$fname (parent_f) + kludge for lambdas (which should eventually go away)
   string ctx_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
   FunctionPtr context_function = create_function_with_context(parent_f, ctx_function_name);
   context_function->context_class = child_class;
@@ -262,7 +259,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
 
   child_class->parent_class = parent_class;
 
-  // A::f -> B -> C -> D; для D нужно C::f$$D, B::f$$D, A::f$$D
+  // A::f -> B -> C -> D; for D we require C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
     parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
       inherit_static_method_from_parent(child_class, m, function_stream);
@@ -342,10 +339,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
   }
 }
 
-/**
- * Каждый класс поступает сюда один и ровно один раз — когда он и все его dependents
- * (родители, трейты, интерфейсы) тоже готовы.
- */
+// Every class is passed here exactly once - when that class and all of its dependents are ready.
 void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(klass->file_id);
   std::vector<TraitPtr> traits;
@@ -392,7 +386,8 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 
   if (auto dependency = get_not_ready_dependency(klass)) {
     AutoLocker<Lockable*> locker(dependency);
-    if (dependency->data.done) {              // вдруг между вызовом ready и этим моментом стало done
+    // check whether done is changed at this point
+    if (dependency->data.done) {
       restart_class_stream << klass;
     } else {
       dependency->data.waiting.emplace_front(klass);
@@ -406,8 +401,10 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   kphp_assert(!node->data.done);
 
   AutoLocker<Lockable *> locker(node);
-  for (ClassPtr restart_klass: node->data.waiting) {    // все классы, которые ждали текущего —
-    restart_class_stream << restart_klass;              // запустить SortAndInheritClassesF ещё раз для них
+  // for every class that was waiting for the current class
+  // we run SortAndInheritClassesF again
+  for (ClassPtr restart_klass: node->data.waiting) {
+    restart_class_stream << restart_klass;
   }
 
   node->data.waiting.clear();

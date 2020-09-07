@@ -26,22 +26,22 @@ inline void ic_debug(const char *format, ...) __attribute__ ((format (printf, 1,
 inline void ic_debug(const char *, ...) {}
 #endif
 
-// Дефолтное ограничение памяти для всего буффера (их 2)
+// Default memory limit for the entire buffer (there are 2 buffers in total)
 static constexpr size_t DEFAULT_MEMORY_LIMIT{256u * 1024u * 1024u};
-// Уровень используемой памяти, по достижении которой мы свопаем буффера
+// Buffer memory consumption threshold that states at which point we'll swap it
 static constexpr double REAL_MEMORY_USED_THRESHOLD{0.9};
-// Элементы прожившие меньше этого значения относительно ожидаемого времени жизни, не будут перезаписываться
+// Elements that lived less than this ratio to the expected lifetime will not be overwritten
 static constexpr double FRESHNESS_ELEMENT_RATIO{0.2};
-// Для элемента прожившего больше этого значения относительно ожидаемого времени жизни,
-// очередной fetch вернет null (1 раз), чтобы процесс получивший его, мог предварительно обновить этот элемент
+// For the element that lived more than this ratio to the expected lifetime,
+// the next fetch will return null (only once), so the process that receives it could update it before it's completely removed
 static constexpr double EARLY_EXPIRATION_ELEMENT_RATIO{0.8};
-// Ограничение на время жизни элемента после его удаления сверху, чтобы он не жил слишком долго
+// An upper lifetime limit for an element after its removal (so it doesn't live too long)
 static constexpr std::chrono::seconds DELETED_ELEMENT_LIFETIME_LIMIT{1};
-// После окончания времени жизни, элемент будет удален не сразу, а через этот интервал
+// After the lifetime expiration, the element will be removed after this interval
 static constexpr std::chrono::minutes PHYSICAL_REMOVING_DELAY{1};
-// Кол-во используемых бакетов для шардирования элементов
+// Number of buckets that are used for the elements sharding
 static constexpr size_t DATA_SHARDS_COUNT{997u};
-// Задает шаг проверки бакетов при во время чистки кеша
+// The buckets check step during the cache cleanup
 static constexpr size_t SHARDS_PURGE_PERIOD{5u};
 
 class ElementHolder;
@@ -98,9 +98,9 @@ public:
     cache_context.stats.elements_created.fetch_add(1, std::memory_order_relaxed);
   }
 
-  // показывает сколько элемент прожил относительно ожидаемого времени жизни
+  // returns how long the element is lived in relation to the expected lifetime
   double freshness_ratio(std::chrono::nanoseconds now, double immortal_ratio = 0.5) const noexcept {
-    // бессмертный элемент
+    // an immortal element
     if (expiring_at == std::chrono::nanoseconds::max()) {
       return immortal_ratio;
     }
@@ -126,7 +126,7 @@ public:
   std::unique_ptr<InstanceWrapperBase> instance_wrapper;
   CacheContext &cache_context;
 
-  // Список удаленных элементов
+  // Removed elements list
   std::atomic<ElementHolder *> next_in_garbage_list{nullptr};
 };
 
@@ -144,7 +144,7 @@ struct SharedDataStorages : private vk::not_copyable {
 
 void CacheContext::move_to_garbage(ElementHolder *element) noexcept {
   php_assert(element->next_in_garbage_list == nullptr);
-  // Собираем мусор в cache_context.cache_garbage, очистка будет позже под блокировкой
+  // Put all garbage into the cache_context.cache_garbage; the cleanup happens later, under the lock
   auto *next = cache_garbage_.load();
   do {
     element->next_in_garbage_list.store(next);
@@ -276,10 +276,10 @@ public:
     php_assert(current_ && context_);
     sync_delayed();
 
-    // request_cache_ и storing_delayed_ используют память скрипта
+    // request_cache_ and storing_delayed_ use a script memory
     storing_delayed_.clear();
     request_cache_.clear();
-    // used_elements использует heap память
+    // used_elements use a heap memory
     used_elements_.clear();
 
     if (context_->has_garbage()) {
@@ -302,7 +302,7 @@ public:
     }
 
     sync_delayed();
-    // различные сервисные вещи, которые можно делать вне блокировок
+    // various service things that we can do without synchronization
     auto &data = current_->get_data(key);
     update_now();
     if (is_element_insertion_can_be_skipped(data, key)) {
@@ -314,12 +314,12 @@ public:
       data, key, ttl, instance_wrapper, detach_processor);
 
     if (!inserted_element) {
-      // Не удалось вставить элемент из-за каких-то проблем: память, лимит глубины
+      // failed to insert the element due to some problems (e.g. memory, depth limit)
       if (unlikely(!detach_processor.is_ok())) {
         fire_warning(detach_processor, instance_wrapper.get_class());
         return false;
       }
-      // Если не смогли захватить блокировку, сохраняем инстанс в контейнер в памяти скрипта, попроуем позже
+      // failed to acquire a lock, save the instance into the script memory container, we'll try again later
       class_instance<DelayedInstance> delayed_instance;
       delayed_instance.alloc().get()->ttl = ttl;
       delayed_instance.get()->instance_wrapper = instance_wrapper.clone_on_script_memory();
@@ -329,7 +329,7 @@ public:
     }
     ic_debug("element '%s' was successfully inserted\n", key.c_str());
     context_->stats.elements_stored.fetch_add(1, std::memory_order_relaxed);
-    // request_cache_ использует память скрипта
+    // request_cache_ uses a script memory
     request_cache_.set_value(key, inserted_element);
     return true;
   }
@@ -337,12 +337,12 @@ public:
   const InstanceWrapperBase *fetch(const string &key, bool even_if_expired) {
     php_assert(current_ && context_);
     sync_delayed();
-    // storing_delayed_ использует память скрипта
+    // storing_delayed_ uses a script memory
     if (const auto *delayed_instance = storing_delayed_.find_value(key)) {
       ic_debug("fetch '%s' from delayed cache\n", key.c_str());
       return delayed_instance->get()->instance_wrapper.get();
     }
-    // request_cache_ использует память скрипта
+    // request_cache_ uses a script memory
     if (const ElementHolder *const *cached_element_ptr = request_cache_.find_value(key)) {
       ic_debug("fetch '%s' from request cache\n", key.c_str());
       return (*cached_element_ptr)->instance_wrapper.get();
@@ -361,8 +361,8 @@ public:
       }
 
       update_now();
-      // Если прошло больше чем EARLY_EXPIRATION_ELEMENT_RATIO от общего времени жизни элемента
-      // возвращяем null первому попавшемуся процессу, чтобы он обновил его заранее
+      // if more than EARLY_EXPIRATION_ELEMENT_RATIO time is passed out of the expected element lifetime,
+      // return null to the next worker process so it knows that the value needs to be updated in advance
       if (!it->second->early_fetch_performed &&
           it->second->freshness_ratio(now_) >= EARLY_EXPIRATION_ELEMENT_RATIO) {
         it->second->early_fetch_performed = true;
@@ -389,14 +389,14 @@ public:
       element = it->second;
     }
 
-    // не кешируем логически истекшие элементы
+    // don't cache logically expired elements
     if (!element_logically_expired) {
-      // request_cache_ использует память скрипта
+      // request_cache_ uses a script memory
       request_cache_.set_value(key, element.get());
     }
 
     const auto *result = element->instance_wrapper.get();
-    // used_elements_ использует heap memory, будет держать элемент до конца запроса
+    // used_elements uses a heap memory, it'll hold an element until the end of the request
     used_elements_.emplace(std::move(element));
     return result;
   }
@@ -405,9 +405,9 @@ public:
     php_assert(current_ && context_);
     ic_debug("update_ttl '%s', new ttl '%ld'\n", key.c_str(), ttl);
     sync_delayed();
-    // storing_delayed_ использует память скрипта
-    // Не очень понятно, что делать с storing_delayed_, пока пусть будет так,
-    // но возможно стоит его или чистатить от этого ключа или вообще ничего не делать
+    // storing_delayed_ uses a script memory
+    // it's not obvious what to do with the storing_delayed_;
+    // but perhaps we need to either clear it from this key or do nothing at all
     if (const auto *delayed_instance = storing_delayed_.find_value(key)) {
       delayed_instance->get()->ttl = ttl;
     }
@@ -428,7 +428,7 @@ public:
     php_assert(current_ && context_);
     ic_debug("delete '%s'\n", key.c_str());
     sync_delayed();
-    // request_cache_ и storing_delayed_ используют память скрипта
+    // request_cache_ and storing_delayed_ use a script memory
     storing_delayed_.unset(key);
     request_cache_.unset(key);
     auto &data = current_->get_data(key);
@@ -439,7 +439,7 @@ public:
       return false;
     }
 
-    // расчитываем expiring_at так, что бы следующий fetch вернул false
+    // calculate expiring_at in a way that the next fetch returns false
     constexpr double SCALE = 1.0 / EARLY_EXPIRATION_ELEMENT_RATIO;
     auto new_element_ttl = std::chrono::duration_cast<std::chrono::nanoseconds>((now_ - it->second->stored_at) * SCALE);
     auto new_expiring_at = std::chrono::duration_cast<std::chrono::nanoseconds>(it->second->stored_at + new_element_ttl);
@@ -459,9 +459,9 @@ public:
 
     auto &current_data = data_manager_.get_current_resource();
     auto &context = current_data.get_context();
-    // заменяем дефолтный script allocator
-    // так как этот вызов происходит из master процесса
-    // нам необходимо явно активировать и деактивировать его
+    // replace the default script allocator
+    // as this call happens from the master process
+    // we need to explicitly activate and deactivate it
     auto shared_memory_guard = context.memory_replacement_guard(true);
 
     auto *data_shards = current_data.get_data_shards();
@@ -481,7 +481,7 @@ public:
         }
       }
 
-      // Блокировать именно в таком порядке и не переносить allocator_lock в if ниже, иначе будет дедлок!
+      // lock in this very order and do not move allocator_lock anywhere below, otherwise it will result in a deadlock!
       std::lock_guard<inter_process_mutex> allocator_lock{context.allocator_mutex};
       std::lock_guard<inter_process_mutex> shared_data_lock{data_shard.storage_mutex};
       for (auto it = data_shard.storage.begin(); it != data_shard.storage.end();) {
@@ -533,7 +533,7 @@ private:
   bool is_element_insertion_can_be_skipped(SharedDataStorages &data, const string &key) const {
     std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
     auto it = data.storage.find(key);
-    // разрешаем пропустить вставку элемента, если он недавно был вставлен другим процессом
+    // allow to skip the insertion of the element if it was inserted by another process recently enough
     if (it != data.storage.end() &&
         it->second->freshness_ratio(now_) < FRESHNESS_ELEMENT_RATIO &&
         it->second->inserted_by_process != getpid()) {
@@ -566,7 +566,7 @@ private:
         *delayed_instance.instance_wrapper, detach_processor);
       if (!inserted_element) {
         if (likely(detach_processor.is_ok())) {
-          // Не удалось захватить блокировку аллокатора, попробуем позже
+          // failed to acquire an allocator lock; try later
           return;
         }
         fire_warning(detach_processor, delayed_instance.instance_wrapper->get_class());
@@ -576,7 +576,7 @@ private:
       } else {
         ic_debug("element '%s' was successfully inserted with delay\n", key.c_str());
         context_->stats.elements_stored_with_delay.fetch_add(1, std::memory_order_relaxed);
-        // request_cache_ использует память скрипта
+        // request_cache_ uses script memory
         request_cache_.set_value(key, inserted_element);
       }
       storing_delayed_.unset(key);
@@ -587,19 +587,19 @@ private:
                                                const string &key_in_script_memory, int64_t ttl,
                                                const InstanceWrapperBase &instance_wrapper,
                                                DeepMoveFromScriptToCacheVisitor &detach_processor) noexcept {
-    // подменяем аллокатор
+    // swap the allocator
     auto shared_memory_guard = context_->memory_replacement_guard();
 
     std::unique_lock<inter_process_mutex> allocator_lock{context_->allocator_mutex, std::try_to_lock};
-    // Лочим строго перед storage_mutex, что бы не было дедлока
+    // locking strictly before the storage_mutex to avoid a deadlock
     if (!allocator_lock) {
       return nullptr;
     }
 
-    // захватили блокировку аллокатора, поэтому после можем спокойно почистить мусор
+    // acquired an allocator lock, now we can safely collect the garbage
     auto clear_garbage = vk::finally([this] { context_->clear_garbage(); });
 
-    // переносим инстанс в шареную память
+    // moving an instance into a shared memory
     if (auto cached_instance_wrapper = instance_wrapper.clone_and_detach_shared_ref(detach_processor)) {
       if (void *mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
         vk::intrusive_ptr<ElementHolder> element{new(mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
@@ -620,11 +620,11 @@ private:
           data.is_storage_empty.store(false, std::memory_order_relaxed);
           context_->stats.elements_cached.fetch_add(1, std::memory_order_relaxed);
         }
-        // заменяем элемент и сохраняем предыдущий элемент в used_elements_,
-        // это позволит освободить его вне storage_mutex лока
+        // replace element and save previous element into used_elements_;
+        // it'll make it possible to free it without taking a storage_mutex lock
         it->second.swap(element);
         if (element) {
-          // used_elements_ использует heap для внутренних аллокаций
+          // used_elements_ uses heap memory for its internal allocations
           used_elements_.emplace(std::move(element));
         }
         used_elements_.emplace(it->second);
@@ -655,18 +655,18 @@ private:
     }
   };
 
-  // Хранилище когда-либо используемых элементов в скрипте (в рамках запроса)
-  // Сохраняем сюда элементы, чтобы быть уверенными, что они не пропадут в самый неожиданный момент
-  // std::unordered_set использует heap память
-  // vk::intrusive_ptr<ElementHolder> использует shared память
+  // A storage of elements that were used inside a script (during the request)
+  // Elements are inserted here to ensure that they don't go away unexpectedly
+  // std::unordered_set uses heap memory
+  // vk::intrusive_ptr<ElementHolder> uses shared memory
   std::unordered_set<vk::intrusive_ptr<ElementHolder>, IntrusivePtrHash> used_elements_;
 
-  // Локальный кеш, позволят получать элементы без лишних блокировок storage_mutex
-  // Использует память скрипта
+  // A local cache that can be used to get elements without taking a storage_mutex lock
+  // Uses a script memory
   array<const ElementHolder *> request_cache_;
 
-  // Контейнер для инстансов, которые не удалось сохранить с первого раза из-за блокировки аллокатора
-  // Использует память скрипта. Завернуто в class_instance так как array не умеет работать с unique_ptr
+  // A container for instances which we failed to save from the first try due to the allocator lock
+  // Uses script memory. Wrapped into the class_instance as array doesn't work with unique_ptr
   struct DelayedInstance : refcountable_php_classes<DelayedInstance> {
     std::unique_ptr<InstanceWrapperBase> instance_wrapper;
     int64_t ttl{0};

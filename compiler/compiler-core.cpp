@@ -252,8 +252,8 @@ ClassPtr CompilerCore::get_class(vk::string_view name) {
 }
 
 ClassPtr CompilerCore::get_memcache_class() {
-  if (!memcache_class) {            // если нет специального
-    return get_class("Memcache");   // то берём из functions.txt
+  if (!memcache_class) {            // if specific memcache implementation is not set
+    return get_class("Memcache");   // take it from the functions.txt
   }
   return memcache_class;
 }
@@ -374,8 +374,8 @@ const vector<SrcFilePtr> &CompilerCore::get_main_files() {
 }
 
 vector<VarPtr> CompilerCore::get_global_vars() {
-  // статические переменные классов регистрируются как global'ы, но если они не используются,
-  // то реально их типы никогда не считались, и вообще не нужно их экспортировать в vars.cpp
+  // static class variables are registered as globals, but if they're unused,
+  // then their types were never calculated; we don't need to export them to vars.cpp
   return global_vars_ht.get_all_if([](VarPtr v) {
     return v->tinf_node.get_recalc_cnt() != -1;
   });

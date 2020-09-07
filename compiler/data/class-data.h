@@ -21,7 +21,7 @@ enum class ClassType {
 
 class ClassData : public Lockable {
 public:
-  // описание extends / implements / use trait в строковом виде (class_name)
+  // extends/implements/use trait description in a string form (class_name)
   struct StrDependence {
     ClassType type;
     std::string class_name;
@@ -32,12 +32,12 @@ public:
   };
 
 private:
-  std::vector<StrDependence> str_dependents;   // extends / implements / use trait на время парсинга, до связки ptr'ов
+  std::vector<StrDependence> str_dependents;   // extends/implements/use trait during the parsing (before ptr is assigned)
 
 public:
   int id{0};
-  ClassType class_type{ClassType::klass}; // класс / интерфейс / трейт
-  std::string name;                            // название класса с полным namespace и слешами: "VK\Feed\A"
+  ClassType class_type{ClassType::klass}; // class/interface/trait
+  std::string name;                       // class name with a full namespace path and slashes: "VK\Feed\A"
 
   ClassPtr parent_class;                       // extends
   std::vector<InterfacePtr> implements;
@@ -148,8 +148,10 @@ public:
   }
 
   const std::string *get_parent_class_name() const {
-    for (const auto &dep : str_dependents) {    // именно когда нужно строковое имя extends,
-      if (dep.type == ClassType::klass) {       // до связки классов, т.е. parent_class ещё не определёнs
+    // this method returns string name from the extends;
+    // it can work before the classes are bound (i.e. parent_class is not set yet)
+    for (const auto &dep : str_dependents) {
+      if (dep.type == ClassType::klass) {
         return &dep.class_name;
       }
     }

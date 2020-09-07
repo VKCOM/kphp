@@ -546,8 +546,9 @@ bool f$store_error(int64_t error_code, const string &error_text) {
 
 bool f$store_int(int64_t v) {
   const auto v32 = static_cast<int32_t>(v);
-  // эта фукнция используется для сохранения int и magic,
-  // magic может задаваться через hex и выставлять 32-ой бит, поэтому дополнительно проверяем на uint32_t
+  // this function is used for int and 'magic' storing,
+  // 'magic' can he assigned via hex literals which may set the 32nd bit,
+  // this is why we additionally check for the uint32_t here
   if (unlikely(vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)}))) {
     php_warning("Got int32 overflow on storing '%ld', the value will be casted to '%d'", v, v32);
   }
@@ -1255,7 +1256,8 @@ class_instance<RpcQuery> store_function(const var &tl_object) {
 array<var> fetch_function(const class_instance<RpcQuery> &rpc_query) {
   array<var> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
-    return new_tl_object;       // тогда содержит ошибку (см. tl_fetch_error())
+
+    return new_tl_object;       // this object carries an error (see tl_fetch_error())
   }
   php_assert(!rpc_query.is_null());
   CurrentProcessingQuery::get().set_current_tl_function(rpc_query);

@@ -51,7 +51,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     add_var_signature_depends(global_var);
   }
 
-  if (function->tl_common_h_dep) {    // функциям, вызывающим typed rpc, нужно видеть t_ReqResult при компиляции
+  if (function->tl_common_h_dep) {    // functions that use a typed TL RPC need to see t_ReqResult during the compilation
     kphp_error(!G->env().get_tl_schema_file().empty(), "tl schema not given as -T option for compilation");
     internal_headers_.emplace("tl/common.h");
   }

@@ -1,7 +1,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 
 namespace tl2cpp {
-//Рекурсивно обходим дерево выражения типа и возвращаем пару <тип, значение>
+// Recursively traverse the type expression tree and return <type, value> pair
 std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *type_expr, const std::string &var_num_access) {
   if (auto as_nat_var = type_expr->as<vk::tl::nat_var>()) {
     return {"", var_num_access + cur_combinator->get_var_num_arg(as_nat_var->var_num)->name};
@@ -19,7 +19,9 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
   }
   if (auto as_type_array = type_expr->as<vk::tl::type_array>()) {
     std::string inner_magic = "0";
-    // После replace_anonymous_args содержимое ячеек тл массивов, в которых несколько аргументов, выносится в отдельный тип и подставляется единственным аргументом
+    // after the replace_anonymous_args TL array that had multiple items now has only one item
+    // that became a named type that contains all data from the original item;
+    // size*[A B] -> size*[T] where T has A and B as its fields
     kphp_assert(as_type_array->args.size() == 1);
     if (auto casted = as_type_array->args[0]->type_expr->as<vk::tl::type_expr>()) {
       if (is_magic_processing_needed(casted)) {

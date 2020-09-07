@@ -42,8 +42,8 @@ public:
   size_t huge_memory_pieces{0}; // the number of huge memory pirces (in rb tree)
   size_t small_memory_pieces{0}; // the number of small memory pieces (in lists)
 
-  size_t total_allocations{0}; // общее кол-во аллокаций
-  size_t total_memory_allocated{0}; // общее кол-во аллоцированной памяти (без учета освобожденной)
+  size_t total_allocations{0}; // the total number of allocations
+  size_t total_memory_allocated{0}; // the total amount of the memory allocated (doesn't take the freed memory into the account)
 
   void write_stats_to(stats_t *stats, const char *prefix) const noexcept;
 };

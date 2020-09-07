@@ -1,21 +1,25 @@
 /*
- * Assumptions — предположения о том, какие переменные являются инстансами каких классов.
- * Нужен, чтобы стрелочным вызовам методов сопоставить реальные функции.
- * Так, $a->getValue() — нужно догадаться, что это getValue() именно класса A, и сопоставить Classes$A$$getValue().
+ * Assumptions — is a predicted type information that describes which variables belong to which classes.
+ * Used to resolve the arrow method calls and find which actual function is being called.
+ * For $a->getValue() we can infer that getValue() belongs to the A class; hence we resolve it to Classes$A$$getValue().
  *
- * Сопоставление методов проходит в "Preprocess functions C pass" (try_set_func_id). Это ДО type inferring, и даже
- * до register variables, поэтому assumptions опираются исключительно на имена переменных.
- * Здесь реализован парсинг @return/@param/@type/@var у переменных и полей классов, а также проводится несложный анализ
- * кода функции, чтобы меньше phpdoc'ов писать. Так, "$a = new A; $a->...()" — он увидит, что вызван конструктор, и догадается.
+ * Methods resolving happens in "Preprocess functions C pass" (try_set_func_id).
+ * That pass happens before the type inferring and register variables, this is why assumptions relies on variable names.
+ * Parsing of @return/@param/@type/@var for variables and class members is implemented here.
  *
- * Если предсказатель ошибётся (или если неправильный phpdoc), то потом, постфактум, после type inferring проверится,
- * что ожидаемые предположения о типах и методах совпали с выведенными. Если нет — ошибка компиляции.
- * Т.е. assumptions — это ожидания, намерения; преданализ. Нужен для предварительной связки методов, чтобы работал inferring.
- * А собственно type inferring — это реальное использование в коде.
+ * We also perform a simple function code analysis that helps infer some types without explicit phpdoc hints.
+ * For example, in "$a = new A; $a->foo()" we see that A constructor is called, therefore the type of $a is A
+ * and $a->foo can be resolved to Classes$A$$foo().
  *
- * Assumptions есть у функций (локальные переменные) и классов (поля класса).
+ * Predictor mistakes (or phpdoc errors) are checked later, after the type inferring.
+ * If expected types do not match the actual types, compile time error is given.
+ * In other words, assumptions are our type expectations/intentions/predictions.
+ * It's used for an early methods binding so the type inferring can work.
+ * Type inferring produces types that are used inside the actual code.
  *
- * По коду, анализ assumption'ов вызывается только у тех функций и переменных, которые используются при -> операторе.
+ * Assumptions can be associated to functions (local variables) and classes (class fields).
+ *
+ * Assumptions are computed only for such functions and variables that are accessed via the '->' operator.
  */
 #include "compiler/class-assumptions.h"
 
@@ -175,11 +179,14 @@ void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const vk::intr
 }
 
 /*
- * Распарсив содержимое тега после @param/@return/@var в виде VertexPtr type_expr, пробуем найти там класс
- * Разбираем известные случаи: A|null, A[], A[][]|false, tuple(A, B)
+ * After we parsed the @param/@return/@var tag contents in the form of the VertexPtr type_expr,
+ * try to find a class there.
+ * Handles the common cases: A|null, A[], A[][]|false, tuple(A, B)
  */
 vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr) {
-  // из 'A|null', 'A[]|false', 'null|some_class' достаём 'A' / 'A[]' / 'some_class'
+  // 'A|null' => 'A'
+  // 'A[]|false' => 'A[]'
+  // 'null|some_class' => 'some_class'
   bool or_false_flag = false;
   bool or_null_flag = false;
   std::function<VertexPtr(VertexPtr&)> upd_type_expr = [&](VertexPtr &expr) {
@@ -248,9 +255,9 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
 }
 
 /*
- * Если свойство класса является инстансом/массивом другого класса, оно обязательно должно быть помечено как phpdoc:
+ * If a class property is an array/other class instance, it should be marked with this phpdoc:
  * / ** @var A * / var $aInstance;
- * Распознаём такие phpdoc'и у объявления var'ов внутри классов.
+ * We recognize such phpdocs and var defs inside classes.
  */
 void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, vk::string_view phpdoc_str) {
   FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
@@ -263,7 +270,7 @@ void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, vk::str
 
 
 /*
- * Из $a = ...rhs... определяем, что за тип присваивается $a
+ * Deduce which type is assigned to $a in '$a = ...rhs...'
  */
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
@@ -274,7 +281,8 @@ void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr
 }
 
 /*
- * Из list(... $lhs_var ...) = ...rhs... определяем, что присваивается в $lhs_var (возможно, справа tuple/shape)
+ * Deduce which type is assigned to $lhs_var in 'list(... $lhs_var ...) = ...rhs...';
+ * (rhs may contain shape or tuple)
  */
 void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr index_key, const VertexPtr &rhs, size_t depth) {
   auto a = infer_class_of_expr(f, rhs, depth + 1);
@@ -285,15 +293,15 @@ void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr 
 }
 
 /*
- * Из catch($ex) определяем, что $ex это Exception
- * Пользовательских классов исключений и наследования исключений у нас нет, и пока не планируется.
+ * Deduce that $ex is an Exception from `catch ($ex)`
+ * We don't have custom exception classes (and we don't plan to add them yet).
  */
 void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
   assumption_add_for_var(f, var_name, AssumInstance::create(G->get_class("Exception")));
 }
 
 /*
- * Из foreach($arr as $a), если $arr это массив инстансов, делаем вывод, что $a это инстанс того же класса.
+ * Deduce that $a is an instance of T if $arr is T[] in 'foreach($arr as $a)'
  */
 static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
   auto a = infer_class_of_expr(f, root->xs(), depth + 1);
@@ -304,8 +312,8 @@ static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdapt
 }
 
 /*
- * Из global $MC делаем вывод, что это Memcache.
- * Здесь зашиты global built-in переменные в нашем коде с заранее известными именами
+ * Deduce that $MC is Memcache from 'global $MC'.
+ * Variables like $MC, $MC_Local and other are builtins with a known type.
  */
 void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
   if (vk::any_of_equal(var_name, "MC", "MC_Local", "MC_Ads", "MC_Log", "PMC", "mc_fast", "MC_Config", "MC_Stats")) {
@@ -315,14 +323,15 @@ void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
 
 
 /*
- * Если есть запись $a->... (где $a это локальная переменная) то надо понять, что такое $a.
- * Собственно, этим и занимается эта функция: комплексно анализирует использования переменной и вызывает то, что выше.
+ * For the '$a->...' expression (where $a is a local variable) we need to deduce type of $a.
+ * This function tries to accomplish that.
  */
 void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, VertexPtr root, size_t depth) {
   switch (root->type()) {
-    case op_phpdoc_raw: { // assumptions вычисляются рано, и /** phpdoc'и с @var */ ещё не превращены в op_phpdoc_var
+    // assumptions pass happens early in the pipeline, so /** phpdocs with @var */ are not turned into the op_phpdoc_var yet
+    case op_phpdoc_raw: {
       for (const auto &parsed : phpdoc_find_tag_multi(root.as<op_phpdoc_raw>()->phpdoc_str, php_doc_tag::var, f)) {
-        // умеем как в /** @var A $v */, так и в /** @var A */ $v ...
+        // both '/** @var A $v */' and '/** @var A */ $v ...' forms are supported
         const std::string &var_name = parsed.var_name.empty() ? root.as<op_phpdoc_raw>()->next_var_name : parsed.var_name;
         if (!var_name.empty()) {
           assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(parsed.type_expr));
@@ -357,7 +366,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
       if (t->exception()->type() == op_var && t->exception()->get_string() == var_name) {
         analyze_catch_of_var(f, var_name, t);
       }
-      break;    // внутрь try зайти чтоб
+      break;    // break instead of return so we enter the 'try' block
     }
 
     case op_foreach_param: {
@@ -386,9 +395,9 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
 }
 
 /*
- * Для $a->... (где $a это аргумент функции) нужно уметь определять, что в функцию передано.
- * Это можно сделать либо через @param, либо через синтаксис function f(A $a) {
- * Вызывается единожды на функцию.
+ * For the '$a->...' expression (where $a is a function argument) we need to deduce argument types.
+ * That type information comes in two forms: a @param phpdoc or a type hint like in 'f(A $a)'.
+ * Called exactly once for every function.
  */
 void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> root) {
   if (!f->phpdoc_str.empty()) {
@@ -418,10 +427,10 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     return false;
   }
 
-  // нам нужно именно as_string и сами распарсим, т.к. "T $arg" нельзя превратить в дерево type_expr, класса T нет
+  // using as_string and do a an adhoc parsing as "T $arg" can't be turned into a type_expr (class T does not exist yet)
   for (const auto &kphp_template_str : phpdoc_find_tag_as_string_multi(f->phpdoc_str, php_doc_tag::kphp_template)) {
-    // @kphp-template $arg нам не подходит, мы ищем именно
-    // @kphp-template T $arg (т.к. через T выражен @kphp-return)
+    // @kphp-template $arg is skipped, we're looking for
+    // @kphp-template T $arg (as T is used to express the @kphp-return)
     if (kphp_template_str.empty() || kphp_template_str[0] == '$') {
       continue;
     }
@@ -477,9 +486,9 @@ bool parse_kphp_return_doc(FunctionPtr f) {
 }
 
 /*
- * Если $a = getSome(), $a->... , или getSome()->... , то нужно определить, что возвращает getSome().
- * Это можно сделать либо через @return, либо анализируя простые return'ы внутри функции.
- * Вызывается единожды на функцию.
+ * For the '$a = getSome(), $a->... , or getSome()->...' we need to deduce the result type of getSome().
+ * That information can be obtained from the @return tag or trivial returns analysis inside that function.
+ * Called exactly once for every function.
  */
 void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root) {
   assert (f->assumption_return_status == AssumptionStatus::processing);
@@ -532,9 +541,9 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 }
 
 /*
- * Если известно, что $a это A, и мы видим запись $a->chat->..., нужно определить, что за chat.
- * Это можно определить только по phpdoc @var Chat перед 'public $chat' декларации свойства.
- * Единожды на класс вызывается эта функция, которая парсит все phpdoc'и ко всем var'ам.
+ * If we know that $a is A and we have an expression like '$a->chat->...' we need to deduce the chat type.
+ * That information can be obtained from the @var tag near the 'public $chat' declaration.
+ * Called exactly once for every class.
  */
 void init_assumptions_for_all_fields(ClassPtr c) {
   assert (c->assumption_vars_status == AssumptionStatus::processing);
@@ -577,9 +586,9 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::st
 }
 
 /*
- * Высокоуровневая функция, определяющая, что такое $a внутри f.
- * Включает кеширование повторных вызовов, init на f при первом вызове и пр.
- * Всегда возвращает ненулевой assumption.
+ * A high-level function which deduces the type of $a inside f.
+ * The results are cached; init on f is called during the first invocation.
+ * Always returns a non-null assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
   if (auto assumption_from_argument = calc_assumption_for_argument(f, var_name)) {
@@ -600,7 +609,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
   }
 
   auto pos = var_name.find("$$");
-  if (pos != std::string::npos) {   // static переменная класса, просто используется внутри функции
+  if (pos != std::string::npos) {   // static class variable that is used inside a function
     if (auto of_class = G->get_class(replace_characters(std::string{var_name.substr(0, pos)}, '$', '\\'))) {
       auto class_var_assum = calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
       return class_var_assum ?: AssumNotInstance::create();
@@ -613,9 +622,9 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
 }
 
 /*
- * Высокоуровневая функция, определяющая, что возвращает f.
- * Включает кеширование повторных вызовов и init на f при первом вызове.
- * Всегда возвращает ненулевой assumption.
+ * A high-level function which deduces the result type of f.
+ * The results are cached; init on f is called during the first invocation.
+ * Always returns a non-null assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
@@ -649,9 +658,9 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
     f->assumption_return_status = AssumptionStatus::initialized;
   } else if (expected == AssumptionStatus::processing) {
     if (f->assumption_return_processing_thread == std::this_thread::get_id()) {
-      // Проверяем рекурсию в рамках одного потока, поэтому порядок работы с атомарными операциями не так важен.
-      // Если другой поток изменит assumption_return_status но не успеет выставить assumption_return_processing_thread,
-      // то мы все равно не попадем в этот if, так как assumption_return_processing_thread будет иметь дефолтное значение
+      // we're checking for recursion inside a single thread, so the atomic operations order doesn't matter much;
+      // if another thread modifies assumption_return_status but fails to set assumption_return_processing_thread in time,
+      // we still won't enter this branch as assumption_return_processing_thread will have a default value
       return AssumNotInstance::create();
     }
     assumption_busy_wait(f->assumption_return_status);
@@ -661,14 +670,14 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
 }
 
 /*
- * Высокоуровневая функция, определяющая, что такое ->nested внутри инстанса $a класса c.
- * Выключает кеширование и единождый вызов init на класс.
- * Может вернуть нулевой assumption, если переменной нет.
+ * A high-level function which deduces the type of ->nested inside $a instance of the class c.
+ * The results are cached; calls the class init once.
+ * Always returns a non-null assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
   auto expected = AssumptionStatus::unknown;
   if (c->assumption_vars_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
-    init_assumptions_for_all_fields(c);   // как инстанс-переменные, так и статические
+    init_assumptions_for_all_fields(c);   // both instance and static variables
     c->assumption_vars_status = AssumptionStatus::initialized;
   } else if (expected == AssumptionStatus::processing) {
     assumption_busy_wait(c->assumption_vars_status);
@@ -702,7 +711,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
     return AssumNotInstance::create();
   }
 
-  // для built-in функций по типу array_pop/array_filter/etc на массиве инстансов
+  // for builtin functions like array_pop/array_filter/etc with array of instances
   if (auto common_rule = ptr->root->type_rule.try_as<op_common_type_rule>()) {
     auto rule = common_rule->rule();
     if (auto arg_ref = rule.try_as<op_type_expr_arg_ref>()) {     // array_values ($a ::: array) ::: ^1
@@ -798,8 +807,8 @@ vk::intrusive_ptr<Assumption> infer_from_pair_vertex_merge(FunctionPtr f, Locati
 }
 
 vk::intrusive_ptr<Assumption> infer_from_ternary(FunctionPtr f, VertexAdaptor<op_ternary> ternary, size_t depth) {
-  // для поддержки оператора $x = $y ?: $z;
-  // он разворачивается в $x = bool($tmp_var = $y) ? move($tmp_var) : $z;
+  // this code handles '$x = $y ?: $z' operation;
+  // it's converted to '$x = bool($tmp_var = $y) ? move($tmp_var) : $z'
   if (auto move_true_expr = ternary->true_expr().try_as<op_move>()) {
     if (auto tmp_var = move_true_expr->expr().try_as<op_var>()) {
       calc_assumptions_for_var_internal(f, tmp_var->get_string(), ternary->cond(), depth + 1);
@@ -828,8 +837,8 @@ vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
 }
 
 /*
- * Главная функция, вызывающаяся извне: возвращает assumption для любого выражения root внутри f.
- * Гарантированно возвращает не null внутри (если ничего адекватного — AssumNotInstance, но не null)
+ * Main functions that are called from the outside: returns the assumptions for any root expression inside f.
+ * Never returns null (AssumNotInstance is used as a sentinel value).
  */
 vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0*/) {
   if (depth > 1000) {

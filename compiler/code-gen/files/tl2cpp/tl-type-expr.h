@@ -16,7 +16,7 @@ inline std::string get_full_type(vk::tl::expr_base *type_expr, const std::string
   return ans.first;
 }
 
-// Структура для генерации store любого type expression'а
+// Structure for any type expression store generation
 struct TypeExprStore {
   const std::unique_ptr<vk::tl::arg> &arg;
   std::string var_num_access;
@@ -31,7 +31,7 @@ struct TypeExprStore {
 };
 
 
-// Структура для генерации fetch любого type expression'а
+// Structure for any type expression fetch generation
 struct TypeExprFetch {
   const std::unique_ptr<vk::tl::arg> &arg;
   std::string var_num_access;

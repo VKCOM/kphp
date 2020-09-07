@@ -56,7 +56,8 @@ string resolve_uses(FunctionPtr current_function, string class_name, char delim)
 
   if (class_name[0] != '\\') {
     if (class_name == "parent") {
-      // не parent_class->name, а именно поиск по str_dependents: resolve_uses() вызывается раньше, чем связка классов
+      // do a str_dependents search instead of using parent_class->name:
+      // resolve_uses() is called before the classes are resolved
       if (auto parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
         class_name = *parent_class_name;
       } else {
@@ -103,9 +104,9 @@ static std::string _err_instance_access(VertexPtr v, const std::string &desc) {
 }
 
 /*
- * На уровне gentree конструкция '...->method(...)' превращается в 'SOMEMETHOD(...,...)'.
- * Вот тут определяем, что за SOMEMETHOD — это из какого-то класса — именно того, что в левой части (= первый параметр).
- * Например, $a->method(), если $a имеет тип Classes\A, то на самом деле это Classes$A$$method
+ * gentree turns 'x->method(...)' into 'SOMEMETHOD(x, ...)'.
+ * We deduce that SOMEMETHOD belongs to the class type of the first argument (x in the example above).
+ * For example, $a->method, if $a is Classes\A, then Classes$A$$method is returned.
  */
 string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_call> arrow_call) {
   if (auto klass = resolve_class_of_arrow_access(function, arrow_call)) {
@@ -209,14 +210,14 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
 }
 
 /*
- * Когда есть любое выражение lhs перед стрелочкой ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
- * то слева ожидается инстанс какого-то класса.
- * Определяем, что это за класс, и кидаем осмысленную ошибку, если там оказалось что-то не то.
- * Например, '$a = 42; $a->...' скажет, что '$a is not an instance'
+ * For every lhs before the arrow ('$a->...', '(new A())->...', 'get()->nestedArr[0]->...'),
+ * we expect some class instance on the left side.
+ * Deduce that class and throw a meaningful error if something went wrong.
+ * For example, the code '$a = 42; $a->...' will result in '$a is not an instance' error.
  */
 ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
-  // тут всего 2 варианта типа v:
-  // 1) lhs->f(...args), что заменилось на f(lhs,...args)
+  // there are only 2 possible forms of v:
+  // 1) lhs->f(...args), that was replaced with f(lhs,...args)
   // 2) lhs->propname
   kphp_assert((v->type() == op_func_call && v->extra_type == op_ex_func_call_arrow) || v->type() == op_instance_prop);
 

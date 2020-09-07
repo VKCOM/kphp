@@ -55,7 +55,7 @@ ConfdataFirstKeyType ConfdataKeyMaker::update(const char *key, int16_t key_len, 
   php_assert(key_len >= 0);
   const vk::string_view key_view{key, static_cast<size_t>(key_len)};
   const auto predefined_wildcards = wildcards.make_predefined_wildcard_len_range_by_key(key_view);
-  // если ключ имеет predefined префикс
+  // if key has a predefined prefix
   if (!predefined_wildcards.empty()) {
     const size_t wildcard_len = *predefined_wildcards.begin();
     php_assert(wildcard_len <= static_cast<size_t>(std::numeric_limits<int16_t>::max()));

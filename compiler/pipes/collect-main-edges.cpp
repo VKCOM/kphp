@@ -305,8 +305,10 @@ void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
 void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
   for (auto cur : list->list()) {
     const auto kv = cur.as<op_list_keyval>();
-    // делаем $kv->var = $list_array[$kv->key]; хотелось бы array[i] выразить через rvalue multikey int_key, но
-    // при составлении edges (from_node[from_at] = to_node) этот key теряется, поэтому через op_index
+    // we would like to express array[i] as rvalue multikey int_key, but we lose that
+    // key type information during the edges creation (from_node[from_at] = to_node),
+    // therefore we have op_index ($kv->var = $list_array[$kv->key]);
+    // see the comment above build_real_multikey()
     auto new_v = VertexAdaptor<op_index>::create(list->array(), kv->key());
     new_v.set_location(stage::get_location());
     create_set(kv->var(), new_v);
@@ -361,8 +363,9 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
-  // если при объявлении поля класса написано / ** @var int|false * / к примеру, делаем type_rule из phpdoc
-  // это заставит type inferring принимать это во внимание, и если где-то выведется по-другому, будет ошибка
+  // if there is a /** @var int|false */ comment above the class field declaration, we create a type_rule
+  // from that phpdoc. It makes type inferring pass takes that type into account;
+  // if the inferred types mismatch, it is reported as an error
   auto add_type_rule_from_field_phpdoc = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root) -> bool {
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
@@ -376,14 +379,16 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
     return false;
   };
 
-  // при отсутствии /** @var ... */ над полем пользуемся дефолтным значением: именно оно определяет тип поля
-  // (т.е. public $a = 0; — такое поле считается int, а public $a = [] — это Any[])
+  // If there is no /** @var ... */, we'll use the default field initializer expression to
+  // infer the class field type.
+  // public $a = 0; - $a is int
+  // public $a = []; - $a is Any[]
   auto add_type_rule_from_phpdoc_or_default_value = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root, VarPtr var) {
     if (add_type_rule_from_field_phpdoc(phpdoc_str, field_root)) {
       return;
     }
     if (var->init_val) {
-      create_less(var, var->init_val);   // create_set() сделался в on_var()
+      create_less(var, var->init_val);
       return;
     }
     kphp_error(klass->is_lambda(),
@@ -434,7 +439,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
     }
 
     using infer_mask = FunctionData::InferHint::infer_mask;
-    // @kphp-infer hint/check для @param/@return — это less/set на соответствующие tinf_nodes функции
+    // @kphp-infer hint/check for @param/@return — is less/set on the associated tinf_node(s) function.
     for (const FunctionData::InferHint &hint : function->infer_hints) {
       switch (hint.infer_type) {
         case infer_mask::hint_check:
@@ -448,7 +453,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
           create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_rule));
           break;
         case infer_mask::cast:
-          // ничего не делаем, т.к. там просто поставился type_help в parse_and_apply_function_kphp_phpdoc()
+          // do nothing: cast is a type_help attached in parse_and_apply_function_kphp_phpdoc()
           break;
       }
     }
@@ -534,7 +539,8 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
     create_set(var, var->init_val);
   }
 
-  // для всех переменных-инстансов (локальные, параметры и т.п.) делаем restriction'ы, что классы те же что в phpdoc
+  // for all variables that are instances (local vars, params, etc.) we add a restrictions that
+  // classes that are being used match the classes listed in the phpdoc
   auto assum = var->is_class_instance_var()
                ? assumption_get_for_var(var->class_id, var->name)
                : assumption_get_for_var(current_function, var->name);
@@ -587,11 +593,12 @@ void CollectMainEdgesPass::call_on_var(const CollectionT &collection) {
   }
 }
 
-// хотелось сделать, чтобы при записи $a[6][$idx] = ... делался честный multikey (int 6, any), а не AnyKey(2)
-// но у нас в реальном коде очень много числовых индексов на массивах, которые тогда хранятся отдельно,
-// и потом вывод типов отжирает слишком много памяти, т.к. хранит кучу индексов, а не просто any key
-// так что затея провалилась, и, как и раньше, при $a[...] делается AnyKey; поэтому же tuple'ы только read-only
-// но это только запись приводит в any key! с чтением всё в порядке, см. recalc_index() в выводе типов
+// We would like to turn $a[6][$idx] = ... into a multikey (int 6, any) instead of AnyKey(2),
+// but the real code contains a lot of numerical indexes which leads to a big memory usage
+// increase during the type inference.
+//
+// This is one of the reasons why tuples are read-only.
+// Writing to an index leads to any key type, but reading is OK (see recalc_index in the type inference).
 /*
 MultiKey *build_real_multikey (VertexPtr v) {
   MultiKey *key = new MultiKey();

@@ -2,11 +2,11 @@
 
 #include "runtime/rpc.h"
 
-// Определение f$rpc_server_fetch_request() генерируется в файл tl/rpc_server_fetch_request.cpp.
-// Представляет из себя:
+// f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
+// It's composed of:
 //    1. fetching magic
-//    2. switch по всем @kphp функциям
-//    3. сохранение tl_func_state в CurrentRpcServerQuery
+//    2. switch over all @kphp functions
+//    3. tl_func_state storing inside the CurrentRpcServerQuery
 
 void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult> &response) noexcept {
   f$rpc_clean();

@@ -10,7 +10,7 @@ namespace impl_ {
 
 template<lev_type_t EV_MAGIC>
 struct confdata_single_event {
-  // используем enum, потому что для static constexpr переменных нужен cpp файл
+  // use enum as static constexpr variables would require a cpp file
   enum : lev_type_t {
     MAGIC = EV_MAGIC
   };
@@ -18,7 +18,7 @@ struct confdata_single_event {
 
 template<lev_type_t EV_MAGIC_BASE, lev_type_t EV_MAGIC_MASK>
 struct confdata_range_event {
-  // используем enum, потому что для static constexpr переменных нужен cpp файл
+  // use enum as static constexpr variables would require a cpp file
   enum : lev_type_t {
     MAGIC_BASE = EV_MAGIC_BASE,
     MAGIC_MASK = EV_MAGIC_MASK

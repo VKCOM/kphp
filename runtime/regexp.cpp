@@ -39,8 +39,8 @@ void regexp::pattern_compilation_warning(const char *function, const char *file,
     php_warning("%s", buf);
   }
 
-  // Сохраняем на хипе только те регулярки, которые инициализируются в мастер процессе
-  // В дальнейшем, при каждом использовании этих регулярок, будем дублировать этот warning
+  // only master process allocated regular expressions are stored on heap;
+  // during these regexp usages we'll duplicate this warning
   if (use_heap_memory && !regex_compilation_warning) {
     regex_compilation_warning = strdup(buf);
   }
@@ -547,7 +547,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 
 void regexp::clean() {
   if (!use_heap_memory) {
-    // Регексп лежит в статическом кеше, см regexp_cache_storage
+    // Regexp is stored inside a static cache, see regexp_cache_storage
     return;
   }
 

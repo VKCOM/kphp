@@ -340,7 +340,7 @@ void auth_option_setter(EasyContext *easy_context, CURLoption option, const var 
     val -= OPTION_OFFSET;
     val = (val & 1) * CURLAUTH_BASIC +
           ((val >> 1) & 1) * CURLAUTH_DIGEST +
-          // curl-kphp-vk не поддеживает эту опцию
+          // curl-kphp-vk doesn't support this option
           // ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
           ((val >> 3) & 1) * CURLAUTH_NTLM;
     easy_context->set_option_safe(option, val);
@@ -965,8 +965,8 @@ void free_curl_lib() noexcept {
 
     curl_global_cleanup();
     CurlContexts::get().hard_reset();
-    // В curl_global_cleanup() libcurl полностью деинициализирует openssl
-    // TODO: Необходимо научиться жить без curl_global_cleanup(), и убрать этот хак отсюда
+    // curl_global_cleanup() from libcurl de-initializes openssl completely
+    // TODO: understand how to live without curl_global_cleanup() and remove this kludge from here
     reinit_openssl_lib_hack();
   }
 }

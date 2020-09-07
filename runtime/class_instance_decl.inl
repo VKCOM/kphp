@@ -6,9 +6,8 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-// из php-шных классов генерируются С++ структуры такого вида
-// а для их инстанцирования — class_instance<T>
-
+// PHP classes produce the C++ structures of the form:
+//
 //struct C$Classes$A {
 //  int ref_cnt;
 //  int $a;
@@ -17,6 +16,8 @@
 //
 //  inline const char *get_class() const { return "Classes\\A"; }
 //};
+//
+// Their instances are wrapped into the class_instance<T>.
 
 template<class T>
 class class_instance {

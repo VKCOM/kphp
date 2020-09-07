@@ -35,7 +35,7 @@ void PHPScriptBase::error(const char *error_message, script_error_t error_type) 
   assert (is_running == true);
   is_running = false;
   if (dl::is_malloc_replaced()) {
-    // на случай, если ошибка поизошла в тот момент, когда у нас был подменен malloc
+    // in case the error happened when malloc was replaced
     dl::rollback_malloc_replacement();
   }
   current_script->state = run_state_t::error;

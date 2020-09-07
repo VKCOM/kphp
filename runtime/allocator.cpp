@@ -256,7 +256,7 @@ private:
       return script_allocator_realloc(ptr, size);
     }},
     memalign_hook_{[](size_t alignment, size_t size, const void *) {
-      // скриптовый аллокатор выдает адреса выровненные на 8 байт
+      // script allocator gives addresses aligned to 8 bytes
       php_assert(alignment <= 8);
       return script_allocator_malloc(size);
     }},

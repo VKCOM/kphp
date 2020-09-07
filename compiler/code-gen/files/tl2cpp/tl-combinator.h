@@ -31,10 +31,9 @@ struct CombinatorGen {
   virtual void gen_result_expr_processing(CodeGenerator &W) const = 0;
 };
 
-/* Общий код для генерации store(...) для комбинаторов (то есть функций или контсрукторов).
- * Содержит основную логику.
- * Есть несколько частей:
- * 1) Обработка филд масок
+/* The code that is common for combinators (func/constructor) store method generation.
+ *
+ * 1) Field masks handling:
     void c_hints_objectExt::store(const var& tl_object, int fields_mask) {
       (void)tl_object;
       t_Int().store(tl_arr_get(tl_object, tl_str$type, 2, -445613708));
@@ -46,7 +45,7 @@ struct CombinatorGen {
         t_String().store(tl_arr_get(tl_object, tl_str$text, 5, -193436300));
       }
     }
- * 2) Обработка восклицательных знаков:
+ * 2) Exclamation mark handling (! modifier):
     std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
       auto tl_func_state = make_unique_on_script_memory<f_rpcProxy_diagonalTargets>();
       (void)tl_object;
@@ -63,7 +62,7 @@ struct CombinatorGen {
       tl_func_state->X.fetcher = storer_kv(_cur_arg);
       return std::move(tl_func_state);
     }
- * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
+ * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorStore : CombinatorGen {
   CombinatorStore(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :
@@ -79,10 +78,8 @@ private:
   static std::string get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tl::arg> &arg);
 };
 
-/* Общий код для генерации fetch(...) для комбинаторов (то есть функций или контсрукторов).
- * Содержит основную логику.
- * Есть несколько частей:
- * 1) Обработка филд масок:
+/* The code that is common for combinators (func/constructor) fetch method generation.
+ * 1) Field masks handling:
     array<var> c_hints_objectExt::fetch(int fields_mask) {
       array<var> result;
       result.set_value(tl_str$type, t_Int().fetch(), -445613708);
@@ -95,12 +92,12 @@ private:
       }
       return result;
     }
- * 2) Обработка восклицательных знаков:
+ * 2) Exclamation mark handling (! modifier):
     var f_rpcProxy_diagonalTargets::fetch() {
       fetch_magic_if_not_bare(0x1cb5c415, "Incorrect magic in result of function: rpcProxy.diagonalTargets");
       return t_Vector<t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>, 0>, 0>(t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>, 0>(t_Maybe<tl_exclamation_fetch_wrapper, 0>(std::move(X)))).fetch();
     }
- * 3) Обработка основной части типового выражения в TypeExprStore / Fetch
+ * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorFetch : CombinatorGen {
   CombinatorFetch(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :

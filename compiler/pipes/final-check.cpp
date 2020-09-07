@@ -304,7 +304,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     VertexPtr arr = vertex.as<op_index>()->array();
     VertexPtr key = vertex.as<op_index>()->key();
     const TypeData *array_type = tinf::get_type(arr);
-    // todo по-моему не надо
+    // TODO: do we need this?
     if (array_type->ptype() == tp_tuple) {
       long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
       size_t tuple_size = array_type->get_tuple_max_index();
@@ -410,9 +410,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   check_func_call_params(call);
 }
 
-/*
- * Inspection: static-переменная должна быть проинициализирована при объявлении (только если это не var)
- */
+// Inspection: static-var should be initialized at the declaration (with the exception of tp_var).
 inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
   kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_var,
              fmt_format("static ${} is not inited at declaration (inferred {})", static_var->name, colored_type_out(tinf::get_type(static_var))));
@@ -440,7 +438,8 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
   auto lhs_type = tinf::get_type(lhs);
   auto rhs_type = tinf::get_type(rhs);
 
-  // для ===; по идее, эти же проверки нужны и при !==, но что-то слишком много ошибок на сайте
+  // we only check the ===, but !== would also make sense;
+  // but it results in a lot of warnings, so we disable it for now
   if (op == op_eq3) {
     if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
         (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
@@ -451,7 +450,7 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
     }
   }
 
-  // инстанс на === можно сравнивать с другим инстансом (будет сравнение ссылок) или null
+  // instance can be compared with other instances (reference comparison) or nulls
   if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
     auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
     bool cmp_type_is_null = cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
@@ -482,7 +481,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
     kphp_error(can_compare_with_tuple,
                fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_shape) {
-    // shape на == не сравниваются (как с другими shape, так и с другими типами), бесполезная операция
+    // shape can't be compared with anything using ==, it's meaningless
     kphp_error(0,
                fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
   }

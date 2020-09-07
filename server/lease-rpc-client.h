@@ -16,7 +16,7 @@ struct LeaseRpcClient {
 };
 
 struct RpcClients {
-  // Список rpc-proxy, переданных через -w или через -S YAML конфиг
+  // rpc-proxy list that was specified via -w or -S YAML config
   std::vector<LeaseRpcClient> rpc_clients;
 
   static RpcClients &get() {

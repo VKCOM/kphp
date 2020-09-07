@@ -214,7 +214,7 @@ static int lease_off() {
     return 0;
   }
   set_main_target(RpcClients::get().get_random_alive_client());
-  // Идем к rpc-proxy за пидом тасок
+  // query the rpc-proxy to get the tasks pid
   if (rpct_ready(rpc_proxy_target) >= 0) {
     lease_ready_flag = 0;
     return 1;
@@ -230,7 +230,7 @@ static int lease_on() {
   if (has_pending_scripts()) {
     return 0;
   }
-  // Идем к tasks за новыми тасками
+  // query the tasks engine to get new tasks
   if (rpct_ready(rpc_lease_target) >= 0) {
     lease_ready_flag = 0;
     return 1;

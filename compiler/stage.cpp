@@ -270,11 +270,11 @@ string stage::to_str(const Location &new_location) {
   FunctionPtr function = get_function();
   std::stringstream ss;
 
-  // Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
+  // modify with caution! Some symbols are analyzed with regexps during the stack trace printing
   ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << ":" << get_line();
   std::string out = ss.str();
 
-  // Убираем дублирование имени класса в пути до класса
+  // removing the class name from the path to that class to avoid the duplication
   std::smatch matched;
   if (std::regex_match(out, matched, std::regex("(.+?): ((.*?)::.*)"))) {
     string class_name = replace_characters(matched[3].str(), '\\', '/');

@@ -23,8 +23,9 @@ private:
     char data[TAIL_SIZE]{'\0'};
   };
 
-  // у gcc9.2 какие-то сложности с копированием вложенных массивов, он генерирует warnings о том, что строка не null terminated
-  // поэтому make функции не очень работают (хотя для чисел, почему-то работает, хз..)
+  // gcc9.2 has some difficulties with nested arrays copying;
+  // it generates a warning that string is not null-terminated, therefore make functions
+  // are kinda not working here (although they do work for numbers for whatever reason...)
   using single_char_storage = std::array<string_cache::string_8bytes, 256>;
   struct single_char_storage_hack : single_char_storage {
   private:
@@ -57,7 +58,7 @@ private:
 
   template<size_t... Ints>
   static constexpr auto constexpr_make_ints(std::index_sequence<Ints...>) noexcept {
-    // разбиваем на 10 частей, иначе это компилируется слижком долго
+    // split into the 10 parts, otherwise it compiles too long
     return std::array<string_cache::string_8bytes, 10 * sizeof...(Ints)>{
       {
         constexpr_number_to_string<0 * sizeof...(Ints) + Ints>::create()...,
@@ -94,9 +95,9 @@ public:
   }
 
   static const string::string_inner &cached_int(int64_t i) noexcept {
-    // constexpr_make_small_ints генерирует числа от 0 до 99 (small_int_max - 1),
-    // сделанно это для того, что бы сильно не замедлять компиляцию
-    // числа от 100 (small_int_max) до 9999 (cached_int_max - 1) лежат в cached_large_int
+    // constexpr_make_small_ints generates numbers from 0 to 99 (small_int_max - 1),
+    // it makes the compilation faster
+    // numbers from 100 (small_int_max) to 9999 (cached_int_max - 1) live inside the cached_large_int
     static constexpr auto small_int_cache = constexpr_make_small_ints();
     return i < static_cast<int>(small_int_cache.size()) ? small_int_cache[i].inner : cached_large_int(i);
   }

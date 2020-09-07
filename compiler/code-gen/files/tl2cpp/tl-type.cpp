@@ -8,7 +8,7 @@ using vk::tl::FLAG_DEFAULT_CONSTRUCTOR;
 using vk::tl::FLAG_NOCONS;
 
 void TypeStore::compile(CodeGenerator &W) const {
-  // todo: CHECK_EXCEPTION(return); ??? Нужно ли прерывать сторинг если брошено исключение (сейчас это неконситстентно с фетчингом)
+  // todo: CHECK_EXCEPTION(return); ??? Should we interrupt storing if the exception was thrown? (Right now it's inconsistent with fetching)
   auto store_params = get_optional_args_for_call(type->constructors[0]);
   store_params.insert(store_params.begin(),
                       typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
@@ -20,15 +20,15 @@ void TypeStore::compile(CodeGenerator &W) const {
       << "return;" << NL
       << END << NL;
   }
-  // неполиморфные типы — 1 конструктор — просто форвардят ::store() в конструктор, без всяких magic
+  // non-polymorphic types — 1 constructor — forwards a ::store() into the constructor without 'magic'
   if (!type->is_polymorphic()) {
     W << cpp_tl_struct_name("c_", type->constructors[0]->name, template_str) << "::" << store_call << NL;
     return;
   }
 
   auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
-  // для полиморфных типов:
-  // типизированно: if'ы с dynamic_cast, примерно как интерфейсные методы
+  // for polymorphic types:
+  // typed TL: ifs with dynamic_cast, similar to the interface methods
   if (typed_mode) {
     bool first = true;
     for (const auto &c : type->constructors) {
@@ -48,7 +48,7 @@ void TypeStore::compile(CodeGenerator &W) const {
       << "tl_object.get_class(), \"" << type->name << "\");" << NL
       << END << NL;
 
-    // нетипизированно: if'ы с проверкой constructor_name
+    // untyped TL: ifs with constructor_name checks
   } else {
     bool first = true;
     W << "const string &c_name = tl_arr_get(tl_object, "
@@ -80,15 +80,15 @@ void TypeFetch::compile(CodeGenerator &W) const {
     fetch_call = "typed_fetch_to(" + vk::join(fetch_params, ", ") + ");";
   }
 
-  // типы с однозначным конструктором фетчатся просто — делегируют fetch в конструктор
+  // non-polymorphic types are fetched in a trivial way - their fetch is delegated to the constructor
   if (!type->is_polymorphic()) {
     auto &constructor = type->constructors.front();
     if (typed_mode) {
       W << "CHECK_EXCEPTION(return);" << NL;
       W << get_php_runtime_type(constructor.get(), true) << " result;" << NL;
       W << "result.alloc();" << NL;
-      // во все c_*.typed_fetch_to() приходит уже аллоцированный объект.
-      // Он всегда аллоцируется в t_*.typed_fetch_to().
+      // all c_*.typed_fetch_to() get already allocated object;
+      // it's allocated at t_*.typed_fetch_to()
       W << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
       W << "tl_object = result;" << NL;
     } else {
@@ -98,7 +98,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
     return;
   }
 
-  // полиформные типы фетчатся сложнее: сначала magic, потом switch(magic) на каждый конструктор
+  // polymorphic types are fetched differently: first 'magic', then switch (magic) for every constructor
   if (!typed_mode) {
     W << "array<var> result;" << NL;
   }
@@ -159,7 +159,7 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
   W << "/* ~~~~~~~~~ " << t->name << " ~~~~~~~~~ */\n" << NL;
   const bool needs_typed_fetch_store = TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t);
   if (needs_typed_fetch_store && is_type_dependent(t, tl) && t->is_polymorphic()) {
-    // Если тип не полиморфный, то пользуемся type helper'ами конструктора, которые точно должны быть сгенерены и доступны
+    // For non-polymorphic types, use type helpers for the constructor; they're guaranteed to be available
     W << TlTemplatePhpTypeHelpers(t);
   }
   std::string struct_name = cpp_tl_struct_name("t_", t->name);

@@ -1,11 +1,18 @@
 /*
- *  У классов есть статические / инстанс поля, методы; есть константы. См. struct ClassMember*
- *  У ClassData есть поле members, которое предоставляет compile-time reflection, например:
- * пробежаться по всем статическим полям, проверить существование константы, найти метод по условию и т.п.
- *  Методы, статические поля и константы превращаются в глобальные функции / переменные / дефайны, по именованию
- * Namespace$Class$Name$$local_name. Терминология `local_name` — это название внутри класса, `global_name` — вот такое.
- *  Есть ещё контекстные функции для статического наследования и реализации self/parent/static, их именование вида
- * Namespace$ClassName$$local_name$$Namespace$ClassContextName.
+ * Classes have static/instance fields and methods; they can also have constants (see struct ClassMember*).
+ *
+ * ClassData has a members field that is used for the compile-time reflection.
+ * Some examples:
+ * - Walk all static fields;
+ * - Check whether a class defines a specific constant;
+ * - Find a method by some condition.
+ *
+ * Methods, static fields and constants are converted into global functions/variables/defines using the
+ * Namespace$Class$Name$$local_name naming scheme. The 'local_name' is a name inside a class,
+ * 'global_name' is a name that can be used from the outside.
+ *
+ * Contextual functions for the static inheritance (and self/parent/static implementation as well)
+ * has a naming like Namespace$ClassName$$local_name$$Namespace$ClassContextName.
  */
 #pragma once
 
@@ -38,7 +45,7 @@ struct ClassMemberStaticMethod {
   vk::string_view local_name() const &;
   vk::string_view local_name() const && = delete;
 
-  // не просто name из-за context-наследования, там коллизии
+  // can't use name() due to the context-inheritance (it introduces collisions)
   static std::string hash_name(vk::string_view name);
   std::string get_hash_name() const;
 };
@@ -106,12 +113,10 @@ struct ClassMemberConstant {
 /*
    —————————————————————————————————————
 
- *  У каждого php-класса (ClassData) есть members — объект ClassMembersContainer.
- *  Собственно, он хранит все члены php-класса и предоставляет осмысленные методы доступа.
- *  Он хранит вектора — т.к. нужен порядок сохранения и кодогенерации.
- * И параллельно с ними — set хешей, для быстрой проверки существования по имени (особенно актуально для констант).
- *  Несмотря на то, что хранятся 5 векторов — функции for_each и find_member одни, и пробегаются по нужному вектору:
- * он определяется исходя из типа, как первый аргумент callback'а, см. usages.
+ * Every PHP-class (ClassData) has members (ClassMembersContainer).
+ * ClassMembersContainer contains all PHP-class members and defines accessors to them.
+ * All members are ordered like they appear in the source code.
+ * It also provides a fast way to check symbol existence by its name (it's especially useful for constants).
  */
 class ClassMembersContainer {
   ClassPtr klass;
@@ -130,7 +135,7 @@ class ClassMembersContainer {
   template<class CallbackT>
   using GetMemberT = vk::decay_function_arg_t<CallbackT, 0>;
 
-  // выбор нужного vector'а из static_methods/instance_methods/etc; реализации см. внизу
+  // appropriate list selection out of the static_methods/instance_methods/etc; see implementations below
   template<class MemberT>
   std::list<MemberT> &get_all_of() {
     static_assert(sizeof(MemberT) == -1u, "Invalid template MemberT parameter");
@@ -206,9 +211,9 @@ public:
 };
 
 /*
- * У нас методы/статические поля класса превращаются в глобальные функции/дефайны, например:
+ * All class methods/fields are turned into the global functions/defines, for example:
  * "Classes$A$$method", "c#Classes$A$$constname"
- * Т.е. везде паттерн такой, что после $$ идёт именно локальное для класса имя, как оно объявлено разработчиком.
+ * Text after the "$$" matches the class local name (like defied in the source code).
  */
 inline vk::string_view get_local_name_from_global_$$(vk::string_view global_name) {
   auto pos$$ = global_name.find("$$");

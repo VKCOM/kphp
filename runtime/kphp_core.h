@@ -978,7 +978,7 @@ bool f$empty(const array<T> &a) {
 
 template<class T>
 bool f$empty(const class_instance<T> &o) {
-  return o.is_null();   // false/null внутри инстанса (в php empty(false)=true тоже)
+  return o.is_null();   // false/null inside instance (in PHP, empty(false)=true behaves identically)
 }
 
 bool f$empty(const var &v) {

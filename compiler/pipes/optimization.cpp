@@ -87,7 +87,8 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
   VertexPtr result;
 
   if (!b) {
-    // запрещаем '$s[] = ...' для не-массивов; для массивов превращаем в push_back
+    // '$s[] = ...' is forbidden for non-array types;
+    // for arrays it's converted to push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
     kphp_error (a_ptype == tp_array || a_ptype == tp_var,
                 fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
@@ -249,7 +250,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   } else if (auto param = root.try_as<op_foreach_param>()) {
     if (!param->x()->ref_flag) {
       auto temp_var = root.as<op_foreach_param>()->temp_var().as<op_var>();
-      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // см. CreateSwitchForeachVarsPass
+      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // see CreateSwitchForeachVarsPass
         temp_var->var_id->needs_const_iterator_flag = true;
       }
     }

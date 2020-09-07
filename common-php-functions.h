@@ -36,23 +36,23 @@ constexpr int STRLEN_CREATE_ANY = STRLEN_ERROR;
 class ExtraRefCnt {
 public:
   enum extra_ref_cnt_value {
-    // используется в качестве референс каунтера для глобальных констант,
-    // которые обычно используются в качетсве дефолтных значений для различных переменных,
-    // данные находятся либо на куче, либо в data секции и доступны только на чтение
+    // used as a reference counter for global constants,
+    // which are usually used as a default initialization of various variables;
+    // data is located in heap or data section and is readonly
     for_global_const = 0x7ffffff0,
 
-    // используется в качестве референс каунтера для переменных хранящихся в инстанс кеше (instance_cache),
-    // данные хранятся в шерной памяти между процессами,
-    // подразумевает рекурсивное удаление для массивов
+    // used as a reference counter for instance_cache variables;
+    // data is located in shared memory;
+    // recursive array deletion is implied
     for_instance_cache,
 
-    // используется в качестве референс каунтера для переменных хранящихся в конфдата хранилище,
-    // данные хранятся в шерной памяти между процессами,
-    // подразумевает нерекурсивное и рекурсивное удаление для массивов (в зависимости от контекста)
+    // used as a reference counter for the confdata variables;
+    // data is located in shared memory;
+    // either recursive or non-recursive array deletion is implied (depends on the context)
     for_confdata
   };
 
-  // Обертка в класс позволяет не засорять глобальный неймспейс
+  // wrapping this into a class helps avoid the global namespace pollution
   ExtraRefCnt(extra_ref_cnt_value value) noexcept:
     value_(value) {}
 
@@ -81,7 +81,7 @@ int64_t string_hash(const char *p, size_t l) {
     hash = hash * HASH_MUL + *p_uint++;
   }
   const auto result = static_cast<int64_t>(hash);
-  // чтобы не было шанса получить -9223372036854775808L при генерации кода
+  // to ensure that there is no way to get the -9223372036854775808L during code generation
   return (result != std::numeric_limits<int64_t>::min()) * result;
 }
 

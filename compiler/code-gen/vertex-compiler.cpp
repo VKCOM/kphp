@@ -229,18 +229,18 @@ void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
 }
 
 /**
- * Обращения к массиву по константной строке, типа $a['somekey'], хочется заменить не просто на get_value, но
- * ещё и на этапе компиляции посчитать хеш строки, чтобы не делать этого в рантайме.
- * Т.е. нужно проверить, что строка константная, а не $a[$var], не $a[3], не $a['a'.'b'] и т.п.
- * @return int string_hash или 0 (если случайно хеш сам получился 0 — не страшно, просто не заинлайнится)
+ * If array is indexed by a constant string like in $a['somekey'], we want to precompute
+ * the string key hash at the compile time so we don't have to do it during the run time.
+ * This method checks whether a key is a constant key and if it is, computes the hash.
+ * @return int string_hash or 0 (if string hash itself is 0, this array access won't be optimized)
  */
 inline int64_t can_use_precomputed_hash_indexing_array(VertexPtr key) {
-  // если это просто ['строка'], которая превратилась в [$const_string$xxx] (ещё могут быть op_concat и другие странности)
+  // if it's just a ['string'] that became [$const_string$xxx] (it can also be op_concat or other kind thing)
   if (auto key_var = key.try_as<op_var>()) {
     if (key->extra_type == op_ex_var_const && key_var->var_id->init_val->type() == op_string) {
       const std::string &string_key = key_var->var_id->init_val->get_string();
 
-      // см. array::get_value()/set_value(): числовые строки обрабатываются отдельной веткой
+      // see array::get_value()/set_value(): numeric strings have a separate code path
       int64_t int_val;
       if (php_try_to_int(string_key.c_str(), string_key.size(), &int_val)) {
         return 0;
@@ -340,9 +340,9 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
       return;
     }
   }
-  // специальные inplace переменные, которые объявляются в момент присваивания, а не в начале функции
+  // special inplace variables that are defined at the assignment location, not in the beginning of the function
   if (root->type() == op_set && lhs->type() == op_var && lhs->extra_type == op_ex_var_superlocal_inplace) {
-    W << TypeName(lhs_tp) << " ";    // получится не "$tmp = v", а "array<T> $tmp = v" к примеру
+    W << TypeName(lhs_tp) << " ";    // generates "array<T> $tmp = v" instead of "$tmp = v"
   }
 
   if (OpInfo::type(root->type()) == binary_func_op) {
@@ -931,7 +931,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
     W << VarPlainDeclaration(var);
   }
   for (auto var : func->local_var_ids) {
-    W << VarPlainDeclaration(var);         // inplace-переменные тоже, идут как члены Resumable класса, а не по месту
+    W << VarPlainDeclaration(var);         // inplace variables are stored as Resumable class fields as well
   }
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
@@ -1177,8 +1177,8 @@ void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
     W << root->array() << "[" << root->key() << "]";
   } else {
     W << root->array() << ".get_value (" << root->key();
-    // если это обращение по константной строке, типа $a['somekey'],
-    // вычисляем хеш строки 'somekey' на этапе компиляции, и вызовем array<T>::get_value(string, precomputed_hash)
+    // if it's a const string key access like $a['somekey'],
+    // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
     if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
       W << ", " << precomputed_hash << "L";
     }
@@ -1218,17 +1218,17 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
 void compile_seq_rval(VertexPtr root, CodeGenerator &W) {
   kphp_assert(root->size());
 
-  W << "(" << BEGIN;        // gcc конструкция: ({ ...; v$result_var; })
+  W << "(" << BEGIN;        // gcc "statement exprs" feature: ({ ...; v$result_var; })
   for (auto i : *root) {
-    W << i << ";" << NL;    // последнее выражение тут — результат
+    W << i << ";" << NL;    // last statement evaluation result will be used as a whole block result
   }
   W << END << ")";
 }
 
 void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   auto arg = root->expr();
-  // отдельно: isset($arr[idx]) — это v$arr.isset(idx) (unset аналогично)
-  // но если $arr это tuple/shape, то это не метод .isset, а просто is_null на честном элементе
+  // separately: isset($arr[idx]) — is v$arr.isset(idx) (same for the unset)
+  // but if $arr is a tuple/shape, then it's not an .isset method but is_null on the actual element
   if (auto index = arg.try_as<op_index>()) {
     kphp_assert (index->has_key());
     if (vk::any_of_equal(tinf::get_type(index->array())->ptype(), tp_array, tp_var)) {
@@ -1356,8 +1356,8 @@ void compile_tuple(VertexAdaptor<op_tuple> root, CodeGenerator &W) {
 }
 
 void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
-  // важно! значения выводим в порядке возрастания хешей ключей —
-  // именно так, как генерируется cpp-представление типа shape в type_out_impl()
+  // important! values are sorted in the keys hash ascending order;
+  // this is in sync with how shape cpp-layout is generated in type_out_impl()
   std::vector<std::pair<int64_t, VertexPtr>> sorted_by_hash;
   sorted_by_hash.reserve(root->args().size());
   for (auto double_arrow : *root) {
@@ -1471,8 +1471,9 @@ void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
     W << ", " << precomputed_hash << "L";
   }
   W << ")";
-  // set_value для string/tuple нет отдельных (в отличие от compile_index()), т.к. при использовании их как lvalue
-  // строка обобщается до var, а кортеж ругается, и тут остаётся только array/var
+  // there is no dedicated string/tuple overloadings for the set_value() (unlike in compile_index()),
+  // as when these are used in lvalue context string will be generalized to a var
+  // and a tuple will give an error; in the end we get only array/var here
 }
 
 void compile_push_back(VertexAdaptor<op_push_back> root, CodeGenerator &W) {

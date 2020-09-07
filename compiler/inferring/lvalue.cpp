@@ -29,7 +29,7 @@ LValue as_lvalue(VertexPtr v) {
     kphp_fail();
   } else if (auto call = v.try_as<op_func_call>()) {
     value = tinf::get_tinf_node(call->func_id, -1);
-  } else if (auto prop = v.try_as<op_instance_prop>()) {       // при $a->arr[] = 1; когда не работает верхнее условие
+  } else if (auto prop = v.try_as<op_instance_prop>()) {       // for '$a->arr[] = 1;'
     value = tinf::get_tinf_node(prop->var_id);
   } else {
     kphp_error (0, fmt_format("Bug in compiler: Trying to use [{}] as lvalue", OpInfo::str(v->type())));

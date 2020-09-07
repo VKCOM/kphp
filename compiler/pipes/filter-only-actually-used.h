@@ -10,14 +10,15 @@ using EdgeInfo = CalcActualCallsEdgesPass::EdgeInfo;
 using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
 } // namespace filter_detail
 
-/**
- * Имеет на входе FunctionAndEdges — какая функция какие вызывает —  делает следующее:
- * 1) присваивает FunctionData::id — это делается именно тут, когда известно количество функций
- * 2) вычисляет can_throw: функции, которые вызывают те, что могут кидать исключения не внутри try — сами могут кидать
- * 3) вычисляет функции с пустым телом: функции, которые вызывают не пустые функции - сами не пустые
- * 4) в os отправляет только реально достижимые (так, инстанс-функции парсятся все, но дальше пойдут только вызываемые)
- * 5) удаляет неиспользуемые методы классов
- */
+// Input: FunctionAndEdges (which function calls which).
+// Performs:
+// 1) Assigns FunctionData::id - it's done here as we know functions count at this point
+// 2) Calculates can_throw: functions that call functions that may throw outside of the try block
+//    are recorded as throwing themselves.
+// 3) Calculates functions with empty bodies: functions that call non-empty functions are not empty.
+// 4) Sends actually reachable functions to the os.
+//    All instance functions are parsed, but this pipe sends only those that are actually used.
+// 5) Removes the unused class methods.
 class FilterOnlyActuallyUsedFunctionsF final: public SyncPipeF<filter_detail::FunctionAndEdges, FunctionPtr> {
 public:
   using EdgeInfo = filter_detail::EdgeInfo;

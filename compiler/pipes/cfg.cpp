@@ -980,7 +980,8 @@ void CFG::dfs_apply_type_hint(Node v, UsagePtr usage) {
   if (other_usage && other_usage->type != usage_type_hint_t) {
     try_uni_usages(usage, other_usage);
   }
-  if (node_mark_dfs_type_hint[v]) {    // без этого входит в бесконечный цикл, т.к. node_next граф с циклами
+  // this check is needed to avoid the infinite loop (node_next is a graph with cycles)
+  if (node_mark_dfs_type_hint[v]) {
     return;
   }
   node_mark_dfs[v] = usage;
@@ -1047,7 +1048,7 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
   vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
 
   for (size_t i = 0; i < parts.size(); i++) {
-    // name$v1, name$v2 и т.п., но name (0-я копия) как есть
+    // name$v1, name$v2 and so on, but name (0th copy) is kept as is
     const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
     VarPtr new_var = G->create_var(new_name, var->type());
     new_var->holder_func = var->holder_func;
@@ -1265,7 +1266,7 @@ public:
   }
 
   bool user_recursion(VertexPtr root) override {
-    // добавлять drop_or_false вокруг объявления параметра сомнительная идея
+    // it's a bad idea to add drop_or_false around the parameter definition
     return root->type() == op_func_param_list;
   }
 };

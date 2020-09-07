@@ -110,7 +110,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
     FunctionPtr fun = f_and_e.first;
     const bool should_be_used_apriori =
       fun->is_main_function() ||
-      fun->type == FunctionData::func_class_holder ||   // классы нужно прокинуть по пайплайну
+      fun->type == FunctionData::func_class_holder || // classes should be carried along the pipeline
      (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
       fun->kphp_lib_export;
     if (should_be_used_apriori && !used_functions[fun]) {
@@ -150,7 +150,7 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
 
   auto all = tmp_stream.flush_as_vector();
 
-  // присваиваем FunctionData::id
+  // assigning the FunctionData::id
   for (int id = 0; id < all.size(); ++id) {
     kphp_assert(get_index(all[id].first) == -1);
     set_index(all[id].first, id);
@@ -168,15 +168,16 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  // вычисляем реально достижимые функции
-  // очищает all[i].edges
+  // calculate the actually reachable functions;
+  // it clears the all[i].edges
   auto used_functions = calc_actually_used_having_call_edges(all);
 
-  // удаляем неиспользуемые методы классов
+  // remove the unused class methods
   remove_unused_class_methods(all, used_functions);
   stage::die_if_global_errors();
 
-  // прокидываем в os реально достижимые фукнции, должен идти последним
+  // forward the reachable functions into the data stream;
+  // this should be the last step
   for (const auto &f : used_functions) {
     if (f) {
       os << f;

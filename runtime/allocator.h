@@ -46,7 +46,7 @@ void rollback_malloc_replacement() noexcept;
 
 } // namespace dl
 
-// Подменяем malloc так, чтобы он начал использовать память скрипта
+// replace malloc so it starts to use a script memory
 inline auto make_malloc_replacement_with_script_allocator(bool replace = true) noexcept {
   if (replace) {
     dl::replace_malloc_with_script_allocator();
@@ -58,7 +58,7 @@ inline auto make_malloc_replacement_with_script_allocator(bool replace = true) n
   });
 }
 
-// Если была замена malloc, времмено откатываем ее
+// if malloc was replaced, temporarily revert that replacement
 inline auto temporary_rollback_malloc_replacement() noexcept {
   const bool is_replaced = dl::is_malloc_replaced();
   if (is_replaced) {

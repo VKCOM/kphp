@@ -166,7 +166,7 @@ void SplitSwitchF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   run_function_pass(function, &split_switch);
 
   for (auto f : split_switch.get_new_functions()) {
-    G->register_and_require_function(f, os, true);   // switch-функции всегда require
+    G->register_and_require_function(f, os, true); // switch-functions are always required
   }
 
   if (stage::has_error()) {

@@ -10,7 +10,7 @@
 #include "compiler/name-gen.h"
 
 void ResolveSelfStaticParentPass::on_start() {
-  // заменяем self::, parent:: и обращения к другим классам типа Classes\A::CONST внутри констант классов
+  // replace self::, parent:: and accesses to other classes like Classes\A::CONST
   if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberConstant &c) {
       run_function_pass(c.value, this);
@@ -29,7 +29,7 @@ void ResolveSelfStaticParentPass::on_start() {
 }
 
 VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
-  // заменяем \VK\A::method, static::f, self::$field на полные имена вида VK$A$$method и пр.
+  // replace \VK\A::method, static::f, self::$field to their full names like VK$A$$method
   if (vk::any_of_equal(v->type(), op_func_call, op_var, op_func_name)) {
     string original_name = v->get_string();
     auto pos = v->get_string().find("::");
@@ -86,7 +86,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
       v->set_string(get_full_static_member_name(current_function, original_name, v->type() == op_func_call));
     }
   } else if (auto alloc = v.try_as<op_alloc>()) {
-    // заменяем new A на new Classes\A, т.е. зарезолвленное полное имя класса
+    // replace 'new A' to the fully resolved name 'new Classes\A'
     if (!alloc->allocated_class) {
       alloc->allocated_class_name = resolve_uses(current_function, alloc->allocated_class_name, '\\');
       alloc->allocated_class = G->get_class(alloc->allocated_class_name);

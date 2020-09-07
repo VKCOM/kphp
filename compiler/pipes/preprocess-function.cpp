@@ -471,12 +471,10 @@ private:
     return call;
   }
 
-  /**
-   * Имея vertex вида 'fn(...)' или 'new A(...)', сопоставить этому vertex реальную FunctionPtr
-   *  (он будет доступен через vertex->get_func_id()).
-   * Вызовы instance-методов вида $a->fn(...) были на уровне gentree преобразованы в op_func_call fn($a, ...),
-   * со спец. extra_type, поэтому для таких можно определить FunctionPtr по первому аргументу.
-   */
+  // For the vertices like 'fn(...)' and 'new A(...)' associate a real FunctionPtr
+  // which will be available via vertex->get_func_id() afterwards.
+  // Instance method calls like '$a->fn(...)' were converted to op_func_call 'fn($a, ...)' during the gentree
+  // with a special extra_type, so we can deduce the FunctionPtr using the first call argument.
   VertexPtr try_set_func_id(VertexPtr call) {
     FunctionPtr func_id = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
     if (func_id) {

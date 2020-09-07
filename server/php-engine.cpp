@@ -80,7 +80,7 @@ int rpcc_check_ready(connection *c);
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
 int rpcx_execute(connection *c, int op, raw_message *raw);
 
-// Принимает ответы от движков
+// Receives engine responses
 tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
@@ -108,7 +108,7 @@ conn_type_t ct_tcp_rpc_client_read_all = [] {
   return res;
 }();
 
-// Таргет для взаимодействия с движками (rpc-ответы)
+// Engines communication target (rpc-responses)
 conn_target_t rpc_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 2;
@@ -1382,7 +1382,7 @@ tcp_rpc_server_functions rpc_methods = [] {
   return res;
 }();
 
-// Для взаимодействия с тасками и rpc-proxy по поводу тасок
+// For tasks engine and rpc-proxy task-related communication
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
@@ -1399,7 +1399,7 @@ tcp_rpc_client_functions rpc_client_methods = [] {
   return res;
 }();
 
-// Таргет для взаимодействия с тасками
+// Tasks engine communication target
 conn_target_t rpc_client_ct = [] {
   auto res = conn_target_t();
   res.min_connections = 1;
@@ -1531,7 +1531,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       break;
     }
     case TL_KPHP_START_LEASE: {
-      // Ответ от rpc-proxy с pid'ом тасок
+      // rpc-proxy response with task PID
       if (!check_tasks_manager_pid(remote_pid) || in_sigterm) {
         return 0;
       }
@@ -1556,7 +1556,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       int timeout = tl_fetch_int();
 
-      // Получаем по pid'у таргет тасок и посылаем по таргету kphp.readyV2 (по сути запрос на таску)
+      // get tasks target by the PID and send kphp.readyV2 to the target (in other words, do a task request)
       do_rpc_start_lease(xpid, precise_now + timeout);
       return 0;
     }
@@ -1564,7 +1564,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       if (in_sigterm) {
         return 0;
       }
-      // Пришла задача от тасок
+      // got a new task from the tasks engine
       tl_fetch_init_raw_message(raw);
       auto op_from_tl = tl_fetch_int();
       len -= static_cast<int>(sizeof(op_from_tl));
@@ -1619,7 +1619,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     }
     case TL_RPC_REQ_ERROR:
     case TL_RPC_REQ_RESULT: {
-      // Ответ или ошибка от движка
+      // received either error or result from an engine
       int result_len = raw->total_bytes - static_cast<int>(sizeof(int) + sizeof(long long));
       assert(result_len >= 0);
 
@@ -2350,7 +2350,7 @@ void init_logname(const char *src) {
       }
     } else {
       *pattern++ = *src;
-      // игнорировать первую '-%', так чтобы 'engine-kp-%.log' -> 'engine-kp.log'
+      // ignore the first '-%' so we get 'engine-kp-%.log' -> 'engine-kp.log'
       const bool skip_dash = *src == '-' && *(src + 1) == '%' && !was_percent;
       if (!skip_dash) {
         *plane++ = *src;

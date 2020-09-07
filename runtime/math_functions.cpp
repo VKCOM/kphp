@@ -176,8 +176,8 @@ void f$mt_srand(int64_t seed) noexcept {
 }
 
 int64_t f$mt_getrandmax() noexcept {
-  // В PHP используется именно это значение,
-  // однако это не мешает передавать mt_rand числа больше этого
+  // PHP uses this value, but it doesn't forbid the users to pass
+  // a number that exceeds this limit into mt_rand()
   return std::numeric_limits<int32_t>::max();
 }
 

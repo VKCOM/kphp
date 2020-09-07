@@ -134,7 +134,7 @@ VertexPtr PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_
 
 VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
   TokenType cur_type = cur_tok->type();
-  // некоторые слова не являются ключевыми словами (токенами), но трактуются именно так в phpdoc
+  // some type names inside phpdoc are not keywords/tokens, but they should be interpreted as such
   if (cur_type == tok_func_name) {
     if (cur_tok->str_val == "integer") {
       cur_type = tok_int;
@@ -214,7 +214,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       }
       return parse_classname(G->env().get_tl_namespace_prefix() + std::string(cur_tok->str_val).substr(3));
     }
-    case tok_xor:       // ^1, ^2[*] (для functions.txt)
+    case tok_xor:       // ^1, ^2[*] (for functions.txt)
       cur_tok++;
       return parse_arg_ref();
     case tok_question:  // ?string == string|null; ?string[] == string[]|null
@@ -226,17 +226,17 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
 
     case tok_static:
     case tok_func_name:
-      // tok_future не существует, это строка
+      // tok_future doesn't exist, it's a string
       if (vk::any_of_equal(cur_tok->str_val, "future", "\\future")) {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_future, {parse_nested_one_type_rule()});
       }
-      // аналогично future_queue
+      // same for the future_queue
       if (cur_tok->str_val == "future_queue") {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_future_queue, {parse_nested_one_type_rule()});
       }
-      // плюс некоторые специальные типы, которые не являются токенами, но имеют смысл в phpdoc / functions.txt
+      // plus some extra types that are not tokens as well, but they make sense inside the phpdoc/functions.txt
       if (cur_tok->str_val == "any") {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_Any);
@@ -257,28 +257,29 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);
       }
-      // force(T) = T (для PhpStorm)
+      // force(T) = T (for PhpStorm)
       if (cur_tok->str_val == "force") {
         cur_tok++;
         return parse_nested_one_type_rule();
       }
-      // (для functions.txt) instance<^2>
+      // (for functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
         return VertexAdaptor<op_type_expr_instance>::create(parse_nested_one_type_rule());
       }
-      // (для functions.txt) DropFalse<^1>
+      // (for functions.txt) DropFalse<^1>
       if (cur_tok->str_val == "DropFalse") {
         cur_tok++;
         return VertexAdaptor<op_type_expr_drop_false>::create(parse_nested_one_type_rule());
       }
-      // (для functions.txt) DropNull<^1>
+      // (for functions.txt) DropNull<^1>
       if (cur_tok->str_val == "DropNull") {
         cur_tok++;
         return VertexAdaptor<op_type_expr_drop_null>::create(parse_nested_one_type_rule());
       }
-      // иначе это трактуем как имя класса (в т.ч. с маленькой буквы)
-      // работают абсолютное, относительное имя, self (учитывает use'ы файла current_function)
+      // otherwise interpreted as a class name (including the lowercase names);
+      // it works with the absolute and relative names as well as for a special names like 'self';
+      // file 'use' directives are taken into the account
       return parse_classname(std::string(cur_tok->str_val));
 
     default:
@@ -314,7 +315,7 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array() {
     res = GenTree::create_type_help_vertex(tp_array, {res});
     cur_tok += 2;
   }
-  if (cur_tok->type() == tok_varg) {      // "int ...$args" аналогично "int [] $args", даже парсит "(int|false) ..."
+  if (cur_tok->type() == tok_varg) {      // "int ...$args" is identical to "int [] $args"; can also handle "(int|false) ..."
     cur_tok++;
     res = GenTree::create_type_help_vertex(tp_array, {res});
   }
@@ -428,9 +429,9 @@ VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
 
   std::vector<VertexAdaptor<op_double_arrow>> shape_rules;
   bool has_varg = false;
-  // пример: shape(x:int, y?:\A, z:tuple(...))
-  // внутренность — это [ op_double_arrow ( op_func_name "x", type_rule "int" ), ... ]
-  // в конце может стоять tok_varg: shape(x:int, ...)
+  // example: shape(x:int, y?:\A, z:tuple(...))
+  // elements are [ op_double_arrow ( op_func_name "x", type_rule "int" ), ... ]
+  // may end with tok_varg: shape(x:int, ...)
   while (true) {
     auto elem_name_v = VertexAdaptor<op_func_name>::create();
     elem_name_v->str_val = static_cast<std::string>(cur_tok->str_val);
@@ -501,9 +502,9 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
 
 VertexPtr PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
-  VertexPtr v = parse_type_expression();      // может кинуть исключение
+  VertexPtr v = parse_type_expression();      // could throw an exception
   tok_iter = cur_tok;
-  return v;                                   // не null, раз исключения не было
+  return v;                                   // not null if an exception was not thrown
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
@@ -515,9 +516,9 @@ VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::con
 }
 
 /*
- * Имея phpdoc-строку после тега @param/@return/@var, т.е. вида
- * "int|false $a maybe comment" или "$var tuple(int, string) maybe comment" или "A[] maybe comment"
- * распарсить тип (превратив в дерево для type_rule) и имя переменной, если оно есть
+ * With a phpdoc string after a @param/@return/@var like "int|false $a maybe comment"
+ * or "$var tuple(int, string) maybe comment" or "A[] maybe comment"
+ * parse a type (turn it into the tree for a type_rule) and a variable name (if present).
  */
 PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_str, FunctionPtr current_function) {
   std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str);
@@ -528,7 +529,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
   if (tokens.front().type() == tok_var_name) {
     var_name = std::string(tokens.front().str_val);
     tok_iter++;
-    if (tokens.size() <= 2) {     // tok_end и всё
+    if (tokens.size() <= 2) {     // only tok_end is left
       return {VertexPtr{}, std::move(var_name)};
     }
   }
@@ -556,7 +557,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
   if (var_name.empty()) {
     kphp_assert(tok_iter != tokens.end());
     // phpdoc|type $var_name maybe comment
-    if (tok_iter->type() == tok_var_name) {   // tok_iter — сразу после окончания парсинга
+    if (tok_iter->type() == tok_var_name) {   // tok_iter — right after the parsing is finished
       var_name = std::string(tok_iter->str_val);
     }
   }
@@ -565,9 +566,9 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
 }
 
 /*
- * Имея на входе полный phpdoc / ** ... * / с кучей тегов внутри,
- * найти первый @tag и распарсить всё что справа.
- * Возвращает result — у него есть operator bool, нашёлся/распарсился ли такой тег
+ * With a full phpdoc string / ** ... * / with various tags inside,
+ * find the first @tag and parse everything on its right side.
+ * Returns result which has a bool() operator (reports whether this tag was found or not).
  */
 PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
   if (auto found_tag = phpdoc_find_tag_as_string(phpdoc, tag_type)) {
@@ -577,8 +578,9 @@ PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_ty
 }
 
 /*
- * Имея на входе полный phpdoc / ** ... * /,
- * найти все @tag и распарсить всё что справа (имеет смысл для @param, т.е. которых много).
+ * With a full phpdoc string / ** ... * /,
+ * find all @tag and parse everything on their right side.
+ * Useful for @param tags.
  */
 std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
   std::vector<PhpDocTagParseResult> result;
@@ -593,8 +595,8 @@ std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, 
 }
 
 /*
- * Имея на входе полный phpdoc / ** ... * /,
- * найти первый @tag и просто вернуть то, что справа, как строку.
+ * With a full phpdoc string / ** ... * /,
+ * find the first @tag and return everything on its right side as a string.
  */
 vk::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   for (const auto &tag : parse_php_doc(phpdoc)) {
@@ -606,8 +608,9 @@ vk::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_
 }
 
 /*
- * Имея на входе полный phpdoc / ** ... * /,
- * найти все @tag и вернуть то, что справа, как строки (имеет смысл для @kphp-template, т.е. которых много)
+ * With a full phpdoc string / ** ... * /,
+ * find all @tag and return everything on their right side as a string.
+ * Useful for @kphp-template tags.
  */
 std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   std::vector<std::string> result;

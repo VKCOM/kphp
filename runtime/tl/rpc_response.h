@@ -38,6 +38,6 @@ public:
 };
 } // namespace impl_
 
-// появляется после codegen из tl-схемы, при сборке сайта
+// the definition appears after the TL scheme codegen, during the site build
 struct C$VK$TL$_common$Types$rpcResponseError;
 using rpcResponseErrorFactory = impl_::rpcResponseErrorFactory<C$VK$TL$_common$Types$rpcResponseError>;

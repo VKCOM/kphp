@@ -249,7 +249,7 @@ public:
     auto detached_instance = instance_;
     detach_processor.process(detached_instance);
 
-    // sizeof(size_t) - дополнительная память, которая потребуется в make_unique_on_script_memory
+    // sizeof(size_t) - an extra memory that we need inside the make_unique_on_script_memory
     constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>);
     if (unlikely(detach_processor.is_depth_limit_exceeded() ||
                  !detach_processor.is_enough_memory_for(size_for_wrapper))) {
@@ -312,9 +312,9 @@ struct InstanceCacheStats : private vk::not_copyable {
 };
 
 enum class InstanceCacheSwapStatus {
-  no_need, // в swap нет необходимости
-  swap_is_finished, // swap прошло успешно
-  swap_is_forbidden // swap невозможен - память все ещё используется
+  no_need, // no need to do a swap
+  swap_is_finished, // swap succeeded
+  swap_is_forbidden // swap is not possible - the memory is still being used
 };
 // these function should be called from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory();

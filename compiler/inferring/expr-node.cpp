@@ -143,12 +143,12 @@ void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_ca
 }
 
 void ExprNodeRecalc::apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule __attribute__ ((unused)), VertexAdaptor<op_func_call> expr __attribute__ ((unused))) {
-  // ключевое слово callable, написанное в phpdoc/type declaration, никак на вывод типов не влияет
-  // (влияет только на шаблонность функции по тому параметру)
+  // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
+  // (but it does imply a template parameter for it)
 }
 
 void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr) {
-  // по идее, должно быть просто set_lca(rule->type_help), но отдельно не даём смешивать void|null
+  // it could be just set_lca(rule->type_help), but we don't allow a void|null combination
   if (rule->type_help == tp_Null) {
     if (new_type()->ptype() != tp_void) {
       recalc_ptype<tp_Null>();
@@ -349,7 +349,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
   add_dependency(as_rvalue(arg));
   if (tinf::get_type(arg)->get_real_ptype() == tp_array) {
     set_lca(drop_optional(as_rvalue(arg)));
-    // foreach/array_map/(array) на tuple'ах и инстнсах — ошибка
+    // foreach/array_map/(array) on tuples and instances is an error
   } else if (vk::any_of_equal(tinf::get_type(arg)->ptype(), tp_tuple, tp_shape, tp_Class)) {
     set_lca(TypeData::get_type(tp_Error));
   } else {
@@ -674,7 +674,8 @@ static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
 
   switch (expr->type()) {
     case op_var:
-      //Вывод должен совпадать с выводом в соответсвующей ветке в tinf::VarNode::get_description, чтобы детектились и убирались дубликаты в стектрейсе
+      // the output should be identical to e_variable case in tinf::VarNode::get_description
+      // so we can detect and remove the duplicates in the stack trace.
       return "$" + expr.as<op_var>()->var_id->name + print_type(expr);
 
     case op_func_call: {

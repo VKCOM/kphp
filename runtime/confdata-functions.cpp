@@ -95,11 +95,11 @@ var f$confdata_get_value(const string &key) noexcept {
   const auto &confdata_storage = local_manager.get_confdata_storage();
   auto it = confdata_storage.find(key_maker.get_first_key());
   if (it != confdata_storage.end()) {
-    // если ключ не имеет префиксов
+    // if key doesn't contain prefixes
     if (key_maker.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
       return it->second;
     }
-    // тут обязательно должен быть массив, мы так загружали
+    // it must be an array (we loaded it this way)
     php_assert(it->second.is_array());
     if (auto *value = it->second.as_array().find_value(key_maker.get_second_key())) {
       return *value;
@@ -121,24 +121,24 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
   const auto &predefined_wildcards = local_manager.get_predefined_wildcards();
   ConfdataKeyMaker key_maker;
   const auto &confdata_storage = local_manager.get_confdata_storage();
-  // wildcard имеет вид '\w+\..*' или '\w+\.\w+\..*' или содержит в себе predefined префикс
+  // wildcard has a form of '\w+\..*' or '\w+\.\w+\..*' and contains a predefined prefix
   if (key_maker.update(wildcard.c_str(), static_cast<int16_t>(wildcard.size()), predefined_wildcards) != ConfdataFirstKeyType::simple_key) {
-    // соотвественно первый ключ это или '\w+\.' или '\w+\.\w+\.'
+    // the first key is '\w+\.' or '\w+\.\w+\.'
     auto it = confdata_storage.find(key_maker.get_first_key());
     if (it == confdata_storage.end()) {
       return {};
     }
 
-    // тут обязательно должен быть массив, мы так загружали
+    // it must be an array (we loaded it this way)
     php_assert(it->second.is_array());
     const auto &second_key_array = it->second.as_array();
 
-    // если второй ключ это пустая строка, т.е. весь префикс это первый ключ ('\w+\.' или '\w+\.\w+\.' или predefined)
+    // if the second key is an empty string; i.e. the first key is an entire prefix ('\w+\.' or '\w+\.\w+\.' or predefined)
     if (key_maker.get_second_key().is_string() && key_maker.get_second_key().as_string().empty()) {
       return second_key_array;
     }
 
-    // если второй ключ не пустая строка, значит нам нужно соотвествующее подможество
+    // if the second key is not an empty string, then we need a prefix matching subset
     array<var> result;
     const auto second_key_prefix = key_maker.get_second_key().to_string();
     for (const auto &second_key_it : second_key_array) {
@@ -150,12 +150,12 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
     return result;
   }
 
-  // wildcard имеет вид '\w+' и не содержит predefinded префикс
+  // wildcard has a form of '\w+' and does not contain a predefined prefix
   array<var> result;
   auto merge_into_result = [&result, &wildcard](confdata_sample_storage::const_iterator iter) {
     const auto section_suffix = f$substr(iter->first, wildcard.size()).val();
     php_assert(iter->second.is_array());
-    // тут обязательно должен быть массив, мы так загружали
+    // it must be an array (we loaded it this way)
     const auto &second_key_array = iter->second.as_array();
     const auto inserting_size = second_key_array.size() + result.size();
     result.reserve(inserting_size.int_size, inserting_size.string_size, inserting_size.is_vector);
@@ -171,20 +171,20 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
         result.set_value(f$substr(it->first, wildcard.size()).val(), it->second);
         break;
       case ConfdataFirstKeyType::predefined_wildcard:
-        // не является подмножеством каких-то других префиксов
+        // not a subset of any other prefixes
         if (!vk::contains(section_wildcard, ".") &&
             predefined_wildcards.is_most_common_predefined_wildcard(section_wildcard)) {
           merge_into_result(it);
         }
         break;
       case ConfdataFirstKeyType::one_dot_wildcard:
-        // не является подмножеством каких-то других predefined префиксов
+        // not a subset of any other predefined prefixes
         if (!predefined_wildcards.has_wildcard_for_key(section_wildcard)) {
           merge_into_result(it);
         }
         break;
       case ConfdataFirstKeyType::two_dots_wildcard:
-        // подмножество элементов ConfdataFirstKeyType::one_dot_wildcard
+        // a subset of ConfdataFirstKeyType::one_dot_wildcard
         break;
     }
     ++it;

@@ -386,13 +386,13 @@ struct t_Maybe {
     }
   }
 
-  // Оборачиваются в Optional TL типы у которых PhpType:
+  // Wrap into Optional that TL types which PhpType is:
   //  1. int, double, string, bool
   //  2. array<T>
-  // Не оборачиваются:
+  // These types are not wrapped:
   //  1. class_instance<T>
   //  2. Optional<T>
-  //  3. var (long в тл схеме или mixed в php-doc) UPD: будет оборачиваться после перевода на int64_t
+  //  3. var (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
 
   template<typename S>
   struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
@@ -449,8 +449,8 @@ struct t_Maybe {
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
       case TL_MAYBE_FALSE: {
-        // Оборачиваются в Optional: array<T>, int64_t, double, string, bool
-        // Не оборачиваются        : var, class_instance<T>, Optional<T>
+        // Wrapped into Optional: array<T>, int64_t, double, string, bool
+        // Not wrapped:         : var, class_instance<T>, Optional<T>
         out = PhpType();
         break;
       }

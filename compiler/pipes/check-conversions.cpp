@@ -61,7 +61,7 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
     auto range = forbidden_conversions.equal_range(vertex->type());
     auto converted_expr_type = tinf::get_type(vertex.as<meta_op_unary>()->expr());
     if (std::count_if(range.first, range.second, [converted_expr_type](const std::pair<Operation, PrimitiveType> &r) -> bool {
-      // делаем, чтоб op_conv_bool не ругался на T|false / T|null, но ругался на просто T
+      // we do this so the op_conv_bool doesn't report T|false and T|null, but report T.
       if (r.first == op_conv_bool && converted_expr_type->use_optional()) {
         return false;
       }

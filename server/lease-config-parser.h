@@ -6,7 +6,7 @@
 
 #include "server/lease-rpc-client.h"
 
-/* Пример конфига:
+/* Config example:
 ------------- tasks-config.yaml -------------
 rpc_clients:
 - { host: "vk.com", port: 1234, actor: 1 }

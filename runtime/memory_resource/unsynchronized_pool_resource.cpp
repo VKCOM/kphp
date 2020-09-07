@@ -74,7 +74,7 @@ void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(
 }
 
 void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept {
-  // тело этой фукнции специально унесено в cpp файл, что бы она не инлайнилась в метод allocate
+  // the body of this function is moved to the cpp file intentionally, so it doesn't get inlined into the allocate method
   perform_defragmentation();
   return allocate_huge_piece(aligned_size, false);
 }

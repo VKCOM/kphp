@@ -62,7 +62,8 @@ std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, cons
   return "";
 }
 
-// Переименованная тл схема нужна во всех функциях, которые по какому-то tl объекту достают php объект или наоборот. Примерный список таких:
+// The renamed TL scheme is needed inside every function that try to get a PHP object using the TL object (or vice versa).
+// Some examples of such functions:
 // 1) TlTemplateTypeHelpers
 // 2) get_php_runtime_type(...)
 // 3) get_php_class_of_tl_*(...)
@@ -80,9 +81,9 @@ std::string get_php_namespace(const std::string &tl_name) {
   return dot_pos == std::string::npos ? vk::tl::PhpClasses::common_engine_namespace() : tl_name.substr(0, dot_pos);
 }
 
-// найти по php-классу соответствующий конструктор в tl-схеме
-// например, class VK\TL\messages\Types\messages_chatInfo => вернёт messages.chatInfo из схемы
-// это может быть и специализация конструктора зависимого типа: Types\vectorTotal__int вернёт tl-ный vectorTotal
+// find the TL constructor by the PHP-class
+// for example, class VK\TL\messages\Types\messages_chatInfo => messages.chatInfo
+// it could be a specialization of the dependent type constructor: Types\vectorTotal__int => vectorTotal
 vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
 
@@ -98,9 +99,9 @@ vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   return res;
 }
 
-// найти по php-интерфейсу соответствующий tl-ный ПОЛИМОРФНЫЙ тип
-// поскольку если тип не полиморфный, то вместо типов конструкторы (например, class messages_chatInfo)
-// то эта функция только для полиморфных типов (например, interface memcache_Value)
+// find the TL polymorphic type by the PHP-interface;
+// it won't work for non-polymorphic types as we'll have constructors instead of types for them (e.g. class messages_chatInfo);
+// therefore, this function works only for polymorphic types (e.g. interface memcache_Value)
 vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
   kphp_assert(is_php_class_a_tl_polymorphic_type(interface));
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
@@ -117,9 +118,9 @@ vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
   return res_tl_type;
 }
 
-// если конструктор от зависимого типа, например vectorTotal {t:Type} ..., то одному tl-конструктору соответствуют
-// много php-специализаций: vectorTotal__int и др.
-// данная функция получает конкретную специализацию такого конструктора с raw-суффиксом имени php-класса (e.g. "__int")
+// for dependent type constructors, like vectorTotal {t:Type},
+// there can be multiple PHP-specializations like vectorTotal__int, etc per one TL constructor.
+// this function accepts the concrete specialization of such constructor with the raw suffix of the PHP class (e.g. "__int")
 ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator *c, const std::string &specialization_suffix) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string php_namespace = get_php_namespace(c_from_renamed->name);
@@ -140,22 +141,23 @@ std::vector<ClassPtr> _get_all_php_classes_by_tl_magic(int magic, bool need_only
   return classes;
 }
 
-// одному tl-конструктор соответствует либо один php-класс (в случае простых конструкторов, например likes.item)
-// либо несколько, если это конструктор с зависимыми типами, и появляются vectorTotal__int и другие специализации
+// For every TL constructor there can be one PHP-class (in case of the simple constructors like likes.item)
+// or more if it's a constructor with dependent types (then we'll have vectorTotal__int and other specializations)
 std::vector<ClassPtr> get_all_php_classes_of_tl_constructor(const vk::tl::combinator *c) {
-  auto c_from_renamed = get_this_from_renamed_tl_scheme(c); // Для консистентности
+  auto c_from_renamed = get_this_from_renamed_tl_scheme(c); // For the sake of consistency
   return _get_all_php_classes_by_tl_magic(c_from_renamed->id, false);
 }
 
-// одному tl-типу соответствует либо один класс/интерфейс (в случае простых типов, например likes.Item)
-// либо несколько, если это тип с зависимыми типами, и появлятся Either_string_Vertex и другие специализации
+// For every TL type there can be one class/interface (in case of the simple types like likes.Item)
+// or more if it's a type with dependent types (then we'll have Either_string_Vertex and other specializations)
 std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tl::type *t) {
-  auto t_from_renamed = get_this_from_renamed_tl_scheme(t); // Для консистентности
+  auto t_from_renamed = get_this_from_renamed_tl_scheme(t); // For the sake of consistency
   return _get_all_php_classes_by_tl_magic(t_from_renamed->id, t_from_renamed->is_polymorphic());
 }
 
-// если тип с зависимыми типами, например VectorTotal t, то одному tl-типу соответствуют
-// много php-специализаций vectorTotal__int и т.п. (неполиморфные типы сращиваются с конструкторами в один класс как обычно)
+// If type has dependent types, VectorTotal<t> for example, then one TL type will have
+// many PHP-specializations vectorTotal__int, etc
+// (non-polymorphic types are combined with constructors into a single class as usual)
 ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const std::string &specialization_suffix) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t);
   kphp_assert(is_type_dependent(t_from_renamed, G->get_tl_classes().get_scheme().get()));
@@ -165,9 +167,9 @@ ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const st
   return G->get_class(php_class_name);
 }
 
-// tl-функции 'messages.getChatInfo' соответствует php class VK\TL\messages\Functions\messages_getChatInfo
-// если этот класс достижим компилятором — типизированный вариант для messages.getChatInfo нужен
-// (а если нет, то эта tl-функция типизированно гарантированно не вызывается)
+// For the 'messages.getChatInfo' TL function there is a PHP class VK\TL\messages\Functions\messages_getChatInfo
+// if that class is reachable by the compiler, typed form of the 'messages.getChatInfo' should be generated
+// (otherwise, that typed TL function is guaranteed not to be called, hence we don't need it)
 ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
@@ -175,7 +177,7 @@ ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f) {
   return G->get_class(php_class_name);
 }
 
-// и наоборот: классу VK\TL\messages\Functions\messages_getChatInfo соответствует tl-функция messages.getChatInfo
+// For the 'VK\TL\messages\Functions\messages_getChatInfo' PHP class there is a TL function 'messages.getChatInfo', etc
 std::string get_tl_function_name_of_php_class(ClassPtr klass) {
   kphp_assert(is_php_class_a_tl_function(klass));
   size_t functions_ns_pos = vk::string_view{klass->name}.find("Functions\\");
@@ -184,7 +186,10 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
   if (underscore_pos == std::string::npos) {
     return after_ns_functions;
   }
-  // Если есть '_', то надо понять какой из них заменить на '.', тк есть имена и с '_' до '.', и после (expr.earth_distance, smart_alerts.sendMessage)
+  // If name contains '_' then it should be replaced with '.';
+  // there are at least two cases:
+  // 1. '_' before '.' like in smart_alerts.sendMessage
+  // 2. '_' after '.' like in expr.earth_distance
   std::string tmp = klass->name.substr(G->env().get_tl_namespace_prefix().length());
   std::string php_namespace = tmp.substr(0, tmp.find('\\'));
   if (php_namespace == vk::tl::PhpClasses::common_engine_namespace()) {
@@ -194,8 +199,8 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
   return after_ns_functions;
 }
 
-// у tl-функции 'messages.getChatInfo' есть типизированный результат php class VK\TL\messages\Functions\messages_getChatInfo_result
-// по идее, достижима функция <=> достижим результат
+// 'messages.getChatInfo' TL function has a typed result in form of the PHP class VK\TL\messages\Functions\messages_getChatInfo_result
+// If it's reachable <=> the result is reachable
 ClassPtr get_php_class_of_tl_function_result(const vk::tl::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
@@ -203,20 +208,22 @@ ClassPtr get_php_class_of_tl_function_result(const vk::tl::combinator *f) {
   return G->get_class(php_class_name);
 }
 
-// классы VK\TL\*\Functions\* implements RpcFunction — это те, что соответствуют tl-функциям
+// classes VK\TL\*\Functions\* that implement RpcFunction are classes that correspond to the TL-functions
 bool is_php_class_a_tl_function(ClassPtr klass) {
   return klass->is_tl_class && klass->implements.size() == 1 && vk::string_view{klass->implements.front()->name}.ends_with("RpcFunction");
 }
 
-// классы VK\TL\*\Types\* — не интерфейсные — соответствуют конструкторам
-// (или неполиморфмным типам, единственный конструктор которых заинлайнен)
+// classes VK\TL\*\Types\* are a non-interface types that correspond to the TL-constructors
+// (or non-polymorphic types with a single constructor that was inlined)
 bool is_php_class_a_tl_constructor(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos;
 }
 
-// если в tl-схеме объявлены сложные [массивы], то для типизации для каждого массива есть отдельный php-класс
-// пример: isearch.typeInfo n:# data:n*[type:int probability:double] = isearch.TypeInfo
-// из него выделился class isearch\isearch_typeInfo_arg2_item { int type, double probability }
+// for every complex [array] types where array item is composed out of several members,
+// we generate a separate PHP-class. For example:
+// isearch.typeInfo n:# data:n*[type:int probability:double] = isearch.TypeInfo
+// will produce a isearch\isearch_typeInfo_arg2_item { int type, double probability } class and we'll get:
+// isearch.typeInfo n:# data:n*[isearch\isearch_typeInfo_arg2_item] = isearch.TypeInfo
 bool is_php_class_a_tl_array_item(ClassPtr klass) {
   return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos &&
          klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
@@ -228,23 +235,26 @@ bool is_tl_type_a_php_array(const vk::tl::type *t) {
 }
 
 bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
-  // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- с Optional
-  // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- без Optional
+  // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- with Optional
+  // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- without Optional
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool" || type->is_integer_variable()
                                       || (type->id == TL_LONG && TlClasses::new_tl_long);
 }
 
-// классы VK\TL\Types\* — интерфейсы — это полиморфные типы, конструкторы которых классы implements его
+// classes VK\TL\*\Types\* are a non-interface types that correspond to the TL-constructors
+// (or non-polymorphic types with a single constructor that was inlined)
+
+// classes VK\TL\Types\* are interfaces - polymorphic type with constructors that implement it
 bool is_php_class_a_tl_polymorphic_type(ClassPtr klass) {
   return klass->is_tl_class && klass->is_interface() && klass->name.find("Types\\") != std::string::npos;
 }
 
 bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
   const auto &type = tl->types[type_expr->type_id];
-  // полиморфные типы процессят magic внутри себя, а не снаружи, а для "#" вообще magic'а нет никогда
+  // polymorphic types do the 'magic' processing internally; '#' never needs to process 'magic'
   bool handles_magic_inside = type->is_integer_variable() ? true : type->is_polymorphic();
   bool is_used_as_bare = type_expr->is_bare();
-  // означает: тип полиморфный или с % — не нужно читать снаружи его magic
+  // for polymorphic types and types with % we don't need to read 'magic' from the outside
   return !(handles_magic_inside || is_used_as_bare);
 }
 
@@ -345,7 +355,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
 
 std::string get_php_runtime_type(const vk::tl::type *t) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t);
-  if (t_from_renamed->is_polymorphic()) {    // тогда пользуемся именем типа, а не конструктора
+  if (t_from_renamed->is_polymorphic()) {    // then we'll use a type name instead of the constructor name
     return get_php_runtime_type(t_from_renamed->constructors[0].get(), true, t_from_renamed->name);
   }
   return get_php_runtime_type(t_from_renamed->constructors[0].get(), true);

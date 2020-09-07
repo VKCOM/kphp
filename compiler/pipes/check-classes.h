@@ -4,9 +4,7 @@
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
 
-/*
- * Пайп, который после inferring'а бежит по всем классам и что-то проверяет.
- */
+// Pipe that runs after the type inference and checks classes for common issues.
 class CheckClassesPass final : public FunctionPassBase {
   constexpr static int32_t max_serialization_tag_value = std::numeric_limits<int8_t>::max();
   using used_serialization_tags_t = std::array<bool, max_serialization_tag_value>;

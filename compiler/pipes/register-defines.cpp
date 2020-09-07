@@ -5,7 +5,7 @@
 #include "compiler/data/src-file.h"
 
 VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
-  // дефайны — во-первых, это явное define('name',value)
+  // 1. an explicit define('name', value)
   if (auto define = root.try_as<op_define>()) {
     VertexPtr name = define->name();
     VertexPtr val = define->value();
@@ -16,11 +16,11 @@ VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
     data->file_id = stage::get_file();
     G->register_define(DefinePtr(data));
 
-    // на данный момент define() мы оставляем; если он окажется константой в итоге,
-    // то удалится в EraseDefinesDeclarationsPass
+    // we keep the define() call for now; if it'll end up being a constant,
+    // it will be removed in EraseDefinesDeclarationsPass
   }
 
-  // во-вторых, это константы класса — они не добавляются никуда в ast дерево, хранятся отдельно
+  // 2. class constants. They're stored outside of the AST
   if (root->type() == op_function && current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->register_defines();
   }

@@ -68,7 +68,7 @@ void inter_process_mutex::lock() noexcept {
 bool inter_process_mutex::try_lock() noexcept {
   dl::enter_critical_section();
   const pid_t tid = get_main_thread_id();
-  // Пытаемся лочить 2 раза, так как в первый раз можем сфейлится из-за мертвого предыдущего владельца
+  // try to lock two times as the first attempt can fail if the previous owner is dead
   for (size_t attempts = 0; attempts != 2; ++attempts) {
     if (__sync_bool_compare_and_swap(&lock_, 0, tid) ||
         !futex(&lock_, FUTEX_TRYLOCK_PI)) {

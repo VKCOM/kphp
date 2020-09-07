@@ -143,7 +143,7 @@ inline bool ClassMembersContainer::member_exists(vk::string_view hash_name) cons
 
 void ClassMembersContainer::add_static_method(FunctionPtr function) {
   append_member(ClassMemberStaticMethod{function});
-  // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
+  // note that this method gets all functions during the parsing; some of them may not be required
 
   function->class_id = klass;
   function->context_class = klass;
@@ -152,7 +152,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function) {
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   append_member(ClassMemberInstanceMethod{function});
-  // стоит помнить, что сюда попадают все функции при парсинге, даже которые не required в итоге могут получиться
+  // note that this method gets all functions during the parsing; some of them may not be required
 
   function->class_id = klass;
   function->context_class = klass;
@@ -193,11 +193,11 @@ bool ClassMembersContainer::has_constant(vk::string_view local_name) const {
 }
 
 bool ClassMembersContainer::has_field(vk::string_view local_name) const {
-  return member_exists(ClassMemberStaticField::hash_name(local_name));          // либо static, либо instance field — оба не могут существовать с одним именем
+  return member_exists(ClassMemberStaticField::hash_name(local_name));          // either static or instance field — they can't share the same name
 }
 
 bool ClassMembersContainer::has_instance_method(vk::string_view local_name) const {
-  return member_exists(ClassMemberInstanceMethod::hash_name(local_name));          // либо static, либо instance method — не может быть двух с одним именем
+  return member_exists(ClassMemberInstanceMethod::hash_name(local_name));          // either static or instance method — they can't share the same name
 }
 
 bool ClassMembersContainer::has_static_method(vk::string_view local_name) const {

@@ -34,7 +34,7 @@ private:
 
   friend void free_kphp_backtrace() noexcept;
 
-  // тут храним используемые символы на случей внезапно пришедших сигналов
+  // used symbols are stored here in case we get an unexpected signal
   static std::forward_list<char **> last_used_symbols_;
 };
 

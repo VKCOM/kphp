@@ -32,7 +32,7 @@ double load_time;
 int http_port = -1;
 int http_sfd = -1;
 
-/** rpс **/
+/** rpc **/
 long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_received_news_redirect;
 int rpc_port = -1;
 int rpc_sfd = -1;

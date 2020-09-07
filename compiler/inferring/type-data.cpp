@@ -119,7 +119,7 @@ TypeData::~TypeData() {
 TypeData *TypeData::at(const Key &key) const {
   kphp_assert_msg (structured(), "bug in TypeData");
 
-  return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // любое может быть nullptr
+  return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // both could be nullptr
 }
 
 TypeData *TypeData::at_force(const Key &key) {
@@ -189,7 +189,7 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
     }
 
     if (result_type.empty()) {
-      // нельзя в одной переменной/массиве смешивать инстансы разных классов
+      // it's illegal to mix instances of different classes inside one variable/array
       set_ptype(tp_Error);
     } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(result_type, c); })) {
       class_type_ = {result_type.begin(), result_type.end()};
@@ -215,7 +215,7 @@ bool TypeData::for_each_deep(const F &visitor) const {
 }
 
 /**
- * Быстрый аналог !get_all_class_types_inside().empty()
+ * Faster alternative for !get_all_class_types_inside().empty()
  */
 bool TypeData::has_class_type_inside() const {
   return for_each_deep([](const TypeData &data) { return !data.class_type_.empty(); });
@@ -352,7 +352,7 @@ const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
 }
 
 void TypeData::make_structured() {
-  // lvalue $s[idx] делает $s всегда массивом: строки и кортежи только на read-only оставляют типизацию
+  // 'lvalue $s[idx]' makes $s array-typed: strings and tuples keep their types only for read-only operations
   if (ptype() < tp_array) {
     PrimitiveType new_ptype = type_lca(ptype(), tp_array);
     set_ptype(new_ptype);
@@ -436,14 +436,15 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
     if (!lhs->subkeys_values.empty() && !rhs->subkeys_values.empty() && lhs->subkeys_values.size() != rhs->subkeys_values.size()) {
-      lhs->set_ptype(tp_Error);   // совмещение tuple'ов разных размеров
+      lhs->set_ptype(tp_Error);   // mixing tuples of different sizes
       return;
     }
   }
 
   if (new_ptype == tp_shape && rhs->ptype() == tp_shape) {
-    // shape'ы при расширении образуют более широкий (union) shape, это нормально, tp_Error тут не возникнет
-    // а @param с конкретной структурой shape'аs — на restriction'ах проверится
+    // lca(shape1, shape2) results in a union shape;
+    // we don't emit a tp_Error here, associated @param with shape structure definition
+    // will be validated by restrictions
   }
 
   TypeData *lhs_any_key = lhs->at_force(Key::any_key());
@@ -512,7 +513,9 @@ void TypeData::fix_inf_array() {
 
 bool TypeData::should_proxy_error_flag_to_parent() const {
   if (vk::any_of_equal(parent_->ptype(), tp_tuple, tp_shape) && parent_->anykey_value == this) {
-    return false;   // tp_tuple any key может быть tp_Error (к примеру, tuple(1, new A)), сам tuple от этого не error
+    // tp_tuple any key can be tp_Error (for example, tuple(1, new A));
+    // it doesn't make the tuple itself a tp_Error
+    return false;
   }
   return true;
 }
@@ -649,9 +652,10 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
     }
 
     if (tp == tp_shape) {
-      // рассчитывать на порядок ключей в subkeys_values у TypeData мы не можем, и для стабильной кодогенерации
-      // ключи shape'ов выводим отсортированными по хешам (не по id ключей! они разные между запусками)
-      // важно! в таком же порядке выводятся значения при конструировании shape'а: см. compile_shape()
+      // since we can't depend on the TypeData::subkeys_values keys order,
+      // we emit the shape keys sorted by their key hashes to get the stable code generation
+      // Note: key ids can vary between the compiler runs, so they can't be used for sorting
+      // Note: this order is used during the shape construction, see compile_shape()
       std::vector<std::pair<Key, TypeData *>> sorted_by_hash(type->lookup_begin(), type->lookup_end());
       std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
         const std::string &a_str = a.first.to_string();
@@ -772,7 +776,7 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
     return true;
   }
 
-  // todo по-моему, этого не нужно
+  // TODO: do we need this?
   auto is_array_or_tuple = [](const TypeData *type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple, tp_shape); };
   if (is_array_or_tuple(type1) && is_array_or_tuple(type2)) {
     return true;

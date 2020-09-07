@@ -12,7 +12,7 @@
 class CodeGenerator;
 
 namespace tl2cpp {
-extern const std::unordered_set<std::string> CUSTOM_IMPL_TYPES;    // из tl_builtins.h
+extern const std::unordered_set<std::string> CUSTOM_IMPL_TYPES;    // from tl_builtins.h
 extern vk::tl::tl_scheme *tl;
 extern const vk::tl::combinator *cur_combinator;
 extern const std::string T_TYPE;

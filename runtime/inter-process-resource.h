@@ -156,8 +156,8 @@ public:
       return;
     }
 
-    // ресурсы чистятся строго в том порядке, в котором они были помечены как unused т.е. сначала чистится самый старый итд
-    // если самый старый не может быть очищен, то очистка прерывается
+    // resources are cleared strictly in the order they were marked as unused: starting with the oldest, etc.
+    // if the oldest can't be cleared, the cleanup is stopped
     const uint32_t current_resource_id = (*control_block_)->get_active_resource_id();
     for (uint32_t resource_id = (current_resource_id + 1) % RESOURCE_AMOUNT;
          resource_id != current_resource_id && dirty_inactive_resources_.any();

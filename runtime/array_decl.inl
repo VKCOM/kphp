@@ -24,10 +24,10 @@ struct array_size {
 };
 
 #ifdef __clang__
-  // clang ругается на 'flexible array member x of type T[] with non-trivial destruction'
+  // clang complains about 'flexible array member x of type T[] with non-trivial destruction'
   #define KPHP_ARRAY_TAIL_SIZE 0
 #else
-  // gcc10 ругается на out-of-bounds доступ к массиву нулевого размера
+  // gcc10 complains about out-of-bounds access to an array of zero size
   #define KPHP_ARRAY_TAIL_SIZE
 #endif
 
@@ -96,8 +96,8 @@ private:
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    // нужно для выравнивания при генерации константных массивов
-    // TODO придумать что-нибудь по умнее
+    // This stub field is needed to ensure the alignment during the const arrays generation
+    // TODO: figure out something smarter
     int stub{0};
     int ref_cnt;
     int64_t max_key;
@@ -165,7 +165,7 @@ private:
     inline void unset_vector_value();
     inline void unset_map_value(int64_t int_key);
 
-    // чтобы не делать const_cast, определяем эти функции как статические шаблонным self (this)
+    // to avoid the const_cast, declare these functions as static with a template self parameter (this)
     template<class S>
     static inline auto &find_map_entry(S &self, int64_t int_key) noexcept;
     template<class S>
@@ -312,7 +312,7 @@ public:
   const T *find_value(const const_iterator &it) const;
   const T *find_value(const iterator &it) const;
 
-  // Все неконстантные методы find_no_mutate() не приводят к расщеплению
+  // All non-const methods find_no_mutate() do not lead to a copy
   iterator find_no_mutate(int64_t int_key) noexcept;
   iterator find_no_mutate(const string &string_key) noexcept;
   iterator find_no_mutate(const var &v) noexcept;

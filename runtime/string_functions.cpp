@@ -910,13 +910,13 @@ string f$pack(const string &pattern, const array<var> &a) {
             case 'J':
             case 'P':
             case 'Q': {
-              // по-умолчанию храним в текущем машинном порядоке (Q флаг)
+              // stored in the host machine order by the default (Q flag)
               unsigned long long value_byteordered = ULong(arg.to_string()).l;
               if (format == 'P') {
-                // для P данные храним в little endian
+                // for P encode in little endian order
                 value_byteordered = htole64(value_byteordered);
               } else if (format == 'J') {
-                // для J данные храним в big endian
+                // for J encode in big endian order
                 value_byteordered = htobe64(value_byteordered);
               }
 
@@ -2536,14 +2536,14 @@ array<var> f$unpack(const string &pattern, const string &data) {
                 return result;
               }
 
-              // по-умолчанию данные хранятся в текущем машинном порядоке (Q флаг)
+              // stored in the host machine order by the default (Q flag)
               unsigned long long value_byteordered = 0;
               memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(value_byteordered));
               if (format == 'P') {
-                // для P данные храним в little endian
+                // for P encode in little endian order
                 value_byteordered = le64toh(value_byteordered);
               } else if (format == 'J') {
-                // для J данные храним в big endian
+                // for J encode in big endian order
                 value_byteordered = be64toh(value_byteordered);
               }
 
@@ -2637,7 +2637,7 @@ string f$xor_strings(const string &s, const string &t) {
 }
 
 namespace impl_ {
-// По исходникам оригинального PHP
+// Based on the original PHP implementation
 // https://github.com/php/php-src/blob/e8678fcb42c5cb1ea38ff9c6819baca74c2bb5ea/ext/standard/string.c#L3375-L3418
 inline size_t php_similar_str(vk::string_view first, vk::string_view second, size_t &pos1, size_t &pos2, size_t &count) {
   size_t max = 0;

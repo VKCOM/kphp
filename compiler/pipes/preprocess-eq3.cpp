@@ -17,17 +17,17 @@ VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
   return root;
 }
 
-/*
- * $a === null это !isset($a); $a !== null это isset($a)
- * аналогично для массивов: $a[$i] !== null это isset($a[$i]) (скомпилится в нативный isset массива)
- */
+// $a === null is !isset($a)
+// $a !== null is isset($a)
+// For arrays: $a[$i] !== null is isset($a[$i]); compiled to array overloading of isset
 inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, VertexPtr not_null) {
   VertexPtr v = not_null;
   while (v->type() == op_index) {
     v = v.as<op_index>()->array();
   }
   if (auto var_v = v.try_as<op_var>()) {
-  // увы, это пока нужно для компиляции реального php кода, но от этого хочется избавиться потом
+    // it's a kludge to make "real world" PHP code compile
+    // TODO: can we get rid of this?
     if (var_v->str_val == "connection" || vk::contains(var_v->str_val, "MC")) {
       return eq_op;
     }

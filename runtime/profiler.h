@@ -214,10 +214,10 @@ private:
 
   ResumableProfilerBase *resumable_caller_{nullptr};
 
-  // Указатель на начало двусвязного вызываемых фукнций (ниже)
+  // Pointer to a beginning of bidirectional list of called functions (below)
   ResumableProfilerBase *resumable_callee_{nullptr};
 
-  // Двусвязный список вызываемых фукнций - братьев (указатель на начало находится в caller)
+  // A bidirectional list of called sibling functions (pointer to a beginning is stored in caller)
   ResumableProfilerBase *resumable_sibling_callee_next_{nullptr};
   ResumableProfilerBase *resumable_sibling_callee_prev_{nullptr};
 

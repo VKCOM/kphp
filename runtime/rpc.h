@@ -213,7 +213,7 @@ int32_t tl_parse_int();
 
 long long tl_parse_long();
 
-double tl_parse_double(); // TODO: зачем нужны эти функции? (tl_parse_*)
+double tl_parse_double(); // TODO: why do these functions exist? (tl_parse_*)
 
 double tl_parse_float();
 

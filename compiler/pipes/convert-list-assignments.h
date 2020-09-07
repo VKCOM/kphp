@@ -2,12 +2,15 @@
 
 #include "compiler/function-pass.h"
 
-/**
- * 1. Паттерн list(...) = [...] или list(...) = f() : правую часть — во временную переменную $tmp_var
- * При этом $tmp_var это op_ex_var_superlocal_inplace: её нужно объявить по месту, а не выносить в начало функции в c++
- * Соответственно, по смыслу сущность $tmp_var это array или tuple
- * 2. list(...) = $var оборачиваем в op_seq_rval { list; $var }, для поддержки while(list()=f()) / if(... && list()=f())
- */
+// This pipe rewrites some list assignments.
+//
+// 1. In list(...) = [...] or list(...) = f() we put the RHS into the $tmp_var variable.
+// This $tmp_var is op_ex_var_superlocal_inplace: it should be declared right before its usage
+// as opposed to be declared at the top of the function body.
+// $tmp_var contains array or tuple value.
+//
+// 2. list(...) = $var is wrapped into the op_seq_rval { list; $var } to support
+// 'while (list(...) = f())' and 'if (... && list(...) = f())'
 class ConvertListAssignmentsPass final : public FunctionPassBase {
 public:
   string get_description() final {

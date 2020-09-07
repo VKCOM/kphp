@@ -2,9 +2,9 @@
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
 namespace tl2cpp {
-// Пример сгенеренного кода:
+// Generated code example:
 /*
- * Нетипизированно:
+ * Untyped TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 void t_Either<T0, inner_magic0, T1, inner_magic1>::store(const var &tl_object) {
   const string &c_name = tl_arr_get(tl_object, tl_str$_, 0, -2147483553).to_string();
@@ -18,7 +18,7 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::store(const var &tl_object) {
     CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type %s", c_name.c_str(), "Either");
   }
 }
- * Типизированно:
+ * Typed TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_store(const PhpType &tl_object) {
   if (f$is_a<typename left__<typename T0::PhpType, typename T1::PhpType>::type>(tl_object)) {
@@ -48,9 +48,9 @@ struct TypeStore {
 };
 
 
-// Пример сгенеренного кода:
+// Generated code example:
 /*
- * Нетипизированно:
+ * Untyped TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
   array<var> result;
@@ -73,7 +73,7 @@ array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
   }
   return result;
 }
- * Типизированно:
+ * Typed TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
 void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_fetch_to(PhpType &tl_object) {
   CHECK_EXCEPTION(return);
@@ -114,7 +114,7 @@ struct TypeFetch {
 
 
 /*
- * Пример типизированного:
+ * Typed TL example:
 template <typename, typename>
 struct Either__ {
   using type = tl_undefined_php_type;
@@ -141,12 +141,12 @@ struct t_Either {
 struct TlTypeDeclaration {
   const vk::tl::type *t;
 
-  // tl-типу 'messages.ChatInfoUser' соответствует:
-  // * либо php class VK\TL\Types\messages\chatInfoUser
-  // * либо php interface VK\TL\Types\messages\ChatInfoUser, если тип полиморфный
+  // 'messages.ChatInfoUser' TL type can be either:
+  // * A VK\TL\Types\messages\chatInfoUser PHP class
+  // * A VK\TL\Types\messages\ChatInfoUser PHP interface if the type is polymorphic
   static bool does_tl_type_need_typed_fetch_store(const vk::tl::type *t) {
     if (t->name == "ReqResult") {
-      // без этого сайт не компилится, пока typed rpc не подключен — т.к. типизированный t_ReqResult не компилится
+      // the site won't compile without it unless the typed rpc is included as t_ReqResult is not a compilation target
       bool typed_php_code_exists = !!G->get_class(vk::tl::PhpClasses::rpc_response_ok_with_tl_full_namespace());
       return typed_php_code_exists;
     }

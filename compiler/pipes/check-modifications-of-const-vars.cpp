@@ -15,7 +15,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
   if (auto set_op = v.try_as<op_set>()) {
     auto lvalue = set_op->lhs();
     if (auto var_inited = lvalue.try_as<op_var>()) {
-      // todo подумать, куда писать и как сохранять @kphp-const для обычных переменных
+      // TODO: where can we store @kphp-const for normal variables?
       bool const_var_initialization = var_inited->is_const;
       if (const_var_initialization) {
         var_inited->var_id->marked_as_const = true;

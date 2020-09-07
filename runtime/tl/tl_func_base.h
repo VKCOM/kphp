@@ -6,23 +6,23 @@ struct tl_func_base : ManagedThroughDlAllocator {
   virtual var fetch() = 0;
 
   virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
-    // все функции, вызывающиеся типизированно, кодогенерированно переопределяют этот метод
-    // а функции, типизированно не вызывающиеся, никогда не будут вызваны
-    // (не стали делать её чистой виртуальной, чтобы для не типизированных не переопределять на "return {};")
+    // all functions that are called in a typed way override this method with the generated code;
+    // functions that are not called in a typed way will never call this method
+    // (it's not a pure virtual method so it's not necessary to generate "return {};" for the untyped functions)
     php_critical_error("This function should never be called. Should be overridden in every TL function used in typed mode");
     return {};
   }
 
   virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult> &) {
-    // все функции, помеченные аннотацией @kphp, кодогенерированно переопределяют этот метод
+    // all functions annotated with @kphp will override this method with the generated code
     php_critical_error("This function should never be called. Should be overridden in every @kphp TL function");
   }
 
-  // каждая плюсовая tl-функция ещё обладает
+  // every TL function in C++ also has:
   // static std::unique_ptr<tl_func_base> store(const var &tl_object);
   // static std::unique_ptr<tl_func_base> typed_store(const C$VK$TL$Functions$thisfunction *tl_object);
-  // они не виртуальные, т.к. static, но кодогенерятся в каждой
-  // каждая из них создаёт инстанс себя (fetcher), на котором вызываются fetch()/typed_fetch(), когда ответ получен
+  // they are not virtual (as they're static), but the implementation is generated for every class
+  // every one of them creates an instance of itself (fetcher) which is used to do a fetch()/typed_fetch() when the response is received
 
   virtual ~tl_func_base() = default;
 };

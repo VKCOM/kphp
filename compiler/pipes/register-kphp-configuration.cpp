@@ -27,7 +27,7 @@ void RegisterKphpConfiguration::on_start() {
       return;
     }
 
-    // TODO сделать красиво
+    // TODO: make it beautiful
     kphp_error_return(c.local_name() == runtime_options_name_,
                       fmt_format("Got unexpected {} constant '{}'",
                                  configuration_class_name_, c.local_name()));

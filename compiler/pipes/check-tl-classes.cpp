@@ -35,7 +35,7 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
 }
 
 static void read_toggle_constant_for_switching_to_new_tl_long(ClassPtr class_id) {
-  // Временная ручка, будет удалена, когда закончим процесс перехода на int64_t в TL long
+  // this is a temporary toggle that will be removed when we'll finish the int64_t transition for TL long
   if (class_id->name == R"(VK\TL\_common\Types\rpcResponseHeader)") {
     if (const auto *toggle_constant = class_id->get_static_field("_enable_new_tl_long")) {
       if (toggle_constant->var->init_val->type() == op_true) {

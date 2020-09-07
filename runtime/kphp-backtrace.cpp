@@ -91,8 +91,8 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
       continue;
     }
     vk::string_view func_name{name, len};
-    // в зависимости от опций компиляции функции fast_backtrace и f$kphp_backtrace
-    // могут быть, а могут и не быть в backtrace
+    // depending on the compilation options the fast_backtrace function and f$kphp_backtrace
+    // may be present or absent inside a backtrace
     if (func_name.starts_with(__FUNCTION__) &&
         vk::string_view{__PRETTY_FUNCTION__}.ends_with(func_name)) {
       backtrace.clear();
@@ -106,7 +106,7 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
       continue;
     }
     func_name.remove_prefix(2);
-    // пропускаем run функцию, вызывающую main файл
+    // skip the run() function which calls the main file
     if (func_name.ends_with("$run()")) {
       continue;
     }

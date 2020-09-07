@@ -20,14 +20,14 @@ bool OnKphpWarningCallback::set_callback(on_kphp_warning_callback_type new_callb
 
 void OnKphpWarningCallback::invoke_callback(const string &warning_message) {
   if (callback && !in_registered_callback) {
-    // поддомены и тестовые домены собираются без debug-символов, поэтому там addr2line не действует
-    // чтобы хоть какой-то трейс отобразить разработчикам при ошибке — собираем и деманглим вручную
-    // получаются просто названия функций, но обычно это уже неплохо
+    // subdomains and test domains are compiled without debug symbols, so addr2line will not be available there;
+    // in an effort to show at least some kind of trace during an error — collect and demangle manually
+    // what we can get is a function names, but that's better than nothing
     std::array<void *, 64> buffer{};
     const int nptrs = fast_backtrace(buffer.data(), buffer.size());
     array<string> arg_stacktrace;
     if (nptrs > 2) {
-      // начинаем со 2-го фрейма: 0 это invoke_callback(), 1 это php_warning(), а нужная инфа с 2
+      // start with the 2nd frame: 0 is invoke_callback(), 1 is php_warning(), 2 is what we want
       arg_stacktrace.reserve(nptrs - 2, 0, true);
       KphpBacktrace demangler{buffer.data() + 2, nptrs - 2};
       for (const char *name : demangler.make_demangled_backtrace_range()) {

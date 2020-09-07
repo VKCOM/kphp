@@ -230,7 +230,7 @@ std::string FunctionData::get_human_readable_name(const std::string &name) {
     actual_class = replace_characters(actual_class, '$', '\\');
     return actual_class + "::" + matched[2].str() + " (" + "inherited from " + base_class + ")";
   }
-  //Модифицировать вывод осторожно! По некоторым символам используется поиск регекспами при выводе стектрейса
+  // Modify with caution! Some symbols are analyzed with regexps during the stack trace printing
   return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), "::"), std::regex("\\$"), "\\");
 }
 

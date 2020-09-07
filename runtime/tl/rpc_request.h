@@ -21,7 +21,7 @@ public:
     if (pos != string::npos) {
       class_name = class_name.substr(pos + tl_class_prefix.size(), class_name.size() - (pos + tl_class_prefix.size()));
     }
-    // "messages_getChatInfo", "smart_alerts_sendMessage" — без точки как в tl, но всё равно понятно для логов/1kw
+    // "messages_getChatInfo", "smart_alerts_sendMessage" — without a dot (unlike in TL), but it's still valid for logs/1kw
     return class_name;
   }
 
@@ -46,7 +46,7 @@ public:
   virtual ~RpcRequestResult() = default;
 
 protected:
-  std::unique_ptr<tl_func_base> result_fetcher_; // то что возвращает store()
+  std::unique_ptr<tl_func_base> result_fetcher_; // the store() result
 };
 
 class RpcRequestResultUntyped final : public RpcRequestResult {
@@ -103,5 +103,6 @@ public:
 } // namespace impl_
 
 template<class T0, unsigned int inner_magic0>
-struct t_ReqResult;   // появляется после codegen из tl-схемы, при сборке сайта
+struct t_ReqResult;   // the definition appears after the TL scheme codegen, during the site build
+//
 using KphpRpcRequest = impl_::KphpRpcRequest<t_ReqResult>;

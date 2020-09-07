@@ -91,10 +91,10 @@ void PhpWorkerStats::recalc_worker_percentiles() noexcept {
 }
 
 void PhpWorkerStats::recalc_master_percentiles() noexcept {
-  // массивы сэмплов мастер процесса состоят из трёх одинаковых интервалов:
-  // 50 перцентили воркер процессов, берем 50 перцентиль интервала => 17 перцентиль всех семплов
-  // 95 перцентили воркер процессов, берем 95 перцентиль интервала => 65 перцентиль всех семплов
-  // 99 перцентили воркер процессов, берем 99 перцентиль интервала => 99 перцентиль всех семплов
+  // sample arrays of the master process consist of the three identical intervals:
+  // 50 percentile worker processes, take 50 percentile of the interval => 17 percentile of all samples
+  // 95 percentile worker processes, take 95 percentile of the interval => 65 percentile of all samples
+  // 99 percentile worker processes, take 99 percentile of the interval => 99 percentile of all samples
   internal_.working_time_percentiles_ = calc_percentiles<17, 65, 99>(working_time_samples_);
   internal_.net_time_percentiles_ = calc_percentiles<17, 65, 99>(net_time_samples_);
   internal_.script_time_percentiles_ = calc_percentiles<17, 65, 99>(script_time_samples_);

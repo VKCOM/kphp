@@ -138,7 +138,7 @@ private:
 
   void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
     FunctionPtr wait_func = G->get_function("wait");
-    if (!wait_func) {     // когда functions.txt пустой или отключенный для dev
+    if (!wait_func) { // when functions.txt is empty or disabled for dev
       return;
     }
 
