@@ -39,6 +39,11 @@ public:
     return context;
   }
 
+  void global_init() noexcept {
+    start_tp_ = std::chrono::steady_clock::now();
+    start_tsc_ = cycleclock_now();
+  }
+
   TracingProfilerStack<FunctionStatsNoLabel> function_list;
   TracingProfilerStack<ProfilerBase> call_stack;
   TracingProfilerStack<ResumableProfilerBase> current_resumable_call_stack;
@@ -70,22 +75,6 @@ public:
     last_real_memory_used_ = 0;
   }
 
-  uint64_t get_next_function_id() noexcept {
-    return ++function_ids_counter_;
-  }
-
-  uint64_t get_next_file_id(vk::string_view file_name) noexcept {
-    dl::CriticalSectionGuard critical_section;
-    if (unlikely(!file_ids_)) {
-      // initialized lazily on purpose, so the singleton constructor
-      // remains trivial and does not generate redundant code
-      file_ids_ = new(&file_ids_storage) File2IdMap();
-      start_tp_ = std::chrono::steady_clock::now();
-      start_tsc_ = cycleclock_now();
-    }
-    return file_ids_->emplace(file_name, file_ids_->size() + 1).first->second;
-  }
-
   long double calc_nanoseconds_to_tsc_rate() const noexcept {
     if (!start_tsc_ || start_tp_ == std::chrono::steady_clock::time_point{}) {
       return 1.0;
@@ -96,11 +85,6 @@ public:
       return 1.0;
     }
     return static_cast<long double>(interval_nanoseconds.count()) / static_cast<long double>(interval_tsc);
-  }
-
-  const auto &get_file_ids() const noexcept {
-    php_assert(file_ids_);
-    return *file_ids_;
   }
 
   void update_log_suffix(vk::string_view suffix) noexcept {
@@ -118,12 +102,6 @@ private:
 
   uint64_t last_memory_used_{0};
   uint64_t last_real_memory_used_{0};
-
-  uint64_t function_ids_counter_{0};
-
-  using File2IdMap = std::unordered_map<vk::string_view, uint64_t>;
-  File2IdMap *file_ids_{nullptr};
-  std::aligned_storage_t<sizeof(File2IdMap), alignof(File2IdMap)> file_ids_storage{};
 
   std::chrono::steady_clock::time_point start_tp_;
   uint64_t start_tsc_{0};
@@ -184,9 +162,7 @@ void FunctionStatsBase::Stats::write_to(FILE *out, long double nanoseconds_to_ts
 
 FunctionStatsBase::FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept:
   file_name(file),
-  file_id(ProfilerContext::get().get_next_file_id(file)),
   function_name(function),
-  function_id(ProfilerContext::get().get_next_function_id()),
   function_line(line),
   profiler_level(level) {
 }
@@ -207,21 +183,15 @@ uint64_t FunctionStatsBase::calls_count() const noexcept {
 
 void FunctionStatsBase::flush(FILE *out, long double nanoseconds_to_tsc_rate) noexcept {
   if (out) {
-    fprintf(out,
-            "\n"
-            "fl=(%" PRIu64 ")\n"
-            "fn=(%" PRIu64 ")\n"
-            "%zu ",
-            file_id, function_id, function_line);
+    fprintf(out, "\nfl=%s\nfn=", file_name);
+    write_function_name_with_label(out);
+    fprintf(out, "\n%zu ", function_line);
     self_stats_.write_to(out, nanoseconds_to_tsc_rate);
 
     for (const auto &callee: callees_) {
-      fprintf(out,
-              "cfl=(%" PRIu64 ")\n"
-              "cfn=(%" PRIu64 ")\n"
-              "calls=%zu\n"
-              "%zu ",
-              callee.first->file_id, callee.first->function_id, callee.second.calls, function_line);
+      fprintf(out, "cfl=%s\ncfn=", callee.first->file_name);
+      callee.first->write_function_name_with_label(out);
+      fprintf(out, "\ncalls=%zu\n%zu ", callee.second.calls, function_line);
       callee.second.write_to(out, nanoseconds_to_tsc_rate);
     }
   }
@@ -242,7 +212,7 @@ FunctionStatsWithLabel &FunctionStatsNoLabel::get_stats_with_label(vk::string_vi
   }
   dl::CriticalSectionGuard critical_section;
   auto label_ptr = std::make_unique<FunctionStatsWithLabel>(*this, label);
-  // overwrite the label as we need a string from the FunctionStatsWithLabel
+  // FunctionStatsWithLabel object owns raw string, therefore reassign the label
   label = vk::string_view{label_ptr->get_label(), label.size()};
   return *labels_.emplace(label, std::move(label_ptr)).first->second;
 }
@@ -510,12 +480,16 @@ void forcibly_stop_profiler() noexcept {
 
 bool set_profiler_log_path(const char *mask) noexcept {
   size_t mask_len = strlen(mask);
-  // 128 is reserved for the pid + timestamp
+  // reserve 128 bytes for pid + timestamp
   if (!mask_len || mask_len + 128 > PATH_MAX) {
     return false;
   }
   profiler_config.log_path_mask = mask;
   return true;
+}
+
+void global_init_profiler() noexcept {
+  ProfilerContext::get().global_init();
 }
 
 void forcibly_stop_and_flush_profiler() noexcept {
@@ -585,27 +559,6 @@ void forcibly_stop_and_flush_profiler() noexcept {
           "sql_outgoing_queries sql_outgoing_traffic sql_incoming_traffic "
           "mc_outgoing_queries mc_outgoing_traffic mc_incoming_traffic "
           "cpu_ns net_ns\n\n");
-
-  fprintf(profiler_log, "# define file ID mapping\n");
-  for (const auto &file2id: context.get_file_ids()) {
-    fprintf(profiler_log, "fl=(%" PRIu64 ") %.*s\n",
-            file2id.second, static_cast<int>(file2id.first.size()), file2id.first.data());
-  }
-
-  fprintf(profiler_log, "\n# define function ID mapping\n");
-  while (next_function) {
-    if (next_function->calls_count()) {
-      fprintf(profiler_log, "fn=(%" PRIu64 ") %s\n", next_function->function_id, next_function->function_name);
-    }
-    for (const auto &function_with_label : next_function->get_labels()) {
-      if (function_with_label.second->calls_count()) {
-        fprintf(profiler_log, "fn=(%" PRIu64 ") %s (%.*s)\n",
-                function_with_label.second->function_id, function_with_label.second->function_name,
-                static_cast<int>(function_with_label.first.size()), function_with_label.first.data());
-      }
-    }
-    next_function = next_function->get_next();
-  }
 
   const long double nanoseconds_to_tsc_rate = context.calc_nanoseconds_to_tsc_rate();
   next_function = context.function_list.get_top();

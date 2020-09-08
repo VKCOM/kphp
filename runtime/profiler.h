@@ -62,14 +62,12 @@ public:
   uint64_t calls_count() const noexcept;
 
   virtual FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept = 0;
+  virtual void write_function_name_with_label(FILE *out) const noexcept = 0;
 
   void flush(FILE *out = nullptr, long double nanoseconds_to_tsc_rate = 1.0) noexcept;
 
   const char *const file_name{nullptr};
-  const uint64_t file_id{0};
-
   const char *const function_name{nullptr};
-  const uint64_t function_id{0};
 
   const size_t function_line{0};
   const size_t profiler_level{0};
@@ -90,6 +88,10 @@ public:
     return labels_;
   }
 
+  void write_function_name_with_label(FILE *out) const noexcept final {
+    fprintf(out, "%s", function_name);
+  }
+
   FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final;
 
 private:
@@ -108,6 +110,10 @@ public:
     return label_max_len_;
   }
 
+  void write_function_name_with_label(FILE *out) const noexcept final {
+    fprintf(out, "%s (%s)", function_name, label_buffer_.data());
+  }
+
   FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final {
     return parent_stats_no_label.get_stats_with_label(label);
   }
@@ -116,7 +122,6 @@ public:
 
 private:
   static constexpr size_t label_max_len_ = 255;
-
   std::array<char, label_max_len_ + 1> label_buffer_;
 };
 
@@ -253,6 +258,8 @@ void forcibly_stop_profiler() noexcept;
 void forcibly_stop_and_flush_profiler() noexcept;
 
 bool set_profiler_log_path(const char *mask) noexcept;
+
+void global_init_profiler() noexcept;
 
 void f$profiler_set_log_suffix(const string &suffix) noexcept;
 void f$profiler_set_function_label(const string &label) noexcept;
