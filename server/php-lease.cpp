@@ -12,7 +12,6 @@
 #include "net/net-tcp-rpc-common.h"
 
 #include "server/php-engine-vars.h"
-#include "server/php-ready.h"
 #include "server/php-worker.h"
 
 static int rpc_proxy_target = -1;
@@ -132,7 +131,7 @@ static void rpc_send_ready(connection *c) {
     magic = TL_RPC_INVOKE_REQ;
   }
   if (use_ready_v2) {
-    int fields_mask = is_staging ? KPHP_READY_FIELDS_MASK_STAGING : 0;
+    int fields_mask = is_staging ? vk::tl::kphp::ready_v2_fields_mask::is_staging : 0;
     switch (get_lease_mode(cur_lease_mode)) {
       case LeaseWorkerMode::QUEUE_TYPES: {
         fields_mask |= vk::tl::kphp::ready_v2_fields_mask::worker_mode;

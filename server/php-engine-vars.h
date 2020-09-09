@@ -3,9 +3,8 @@
 // for: struct in_addr
 #include <netinet/in.h>
 
+#include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/version-string.h"
-
-#include "server/lease-worker-mode.h"
 
 // Names and versions
 #define VERSION "0.01"

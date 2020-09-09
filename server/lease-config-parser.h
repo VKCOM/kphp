@@ -2,8 +2,9 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "common/kphp-tasks-lease/lease-worker-mode.h"
+
 #include "server/lease-rpc-client.h"
-#include "server/lease-worker-mode.h"
 
 /* Пример конфига:
 ------------- tasks-config.yaml -------------
