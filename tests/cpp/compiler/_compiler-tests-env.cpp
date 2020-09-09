@@ -2,7 +2,7 @@
 
 #include "compiler/compiler-core.h"
 
-class CompilerTestsEnvironment : public testing::Environment {
+class CompilerTestsEnvironment final : public testing::Environment {
 public:
   ~CompilerTestsEnvironment() final {}
 

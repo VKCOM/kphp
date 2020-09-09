@@ -2,8 +2,9 @@
 
 #include <wait.h>
 
-#include "compiler/compiler-core.h"
-#include "compiler/utils/string-utils.h"
+#include "common/precise-time.h"
+#include "common/server/signals.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/utils/string-utils.h"
 

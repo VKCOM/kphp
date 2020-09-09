@@ -9,7 +9,7 @@ void *alloc_no_inline(int x) {
   return std::malloc(x);
 }
 
-class RuntimeTestsEnvironment : public testing::Environment {
+class RuntimeTestsEnvironment final : public testing::Environment {
 public:
   ~RuntimeTestsEnvironment() final {}
 

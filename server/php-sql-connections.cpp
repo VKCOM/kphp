@@ -1,6 +1,7 @@
 #include "server/php-sql-connections.h"
 
 #include "common/allocators/zmalloc.h"
+#include "db-proxy/passwd.h"
 #include "net/net-connections.h"
 #include "net/net-mysql-client.h"
 

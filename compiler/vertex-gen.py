@@ -1,14 +1,10 @@
 #!/usr/bin/python3
-
+import argparse
 import json
 import shutil
 import sys
 import jsonschema
 from pathlib import Path
-
-REL_DIR = Path('auto') / 'PHP' / 'compiler' / 'vertex'
-DIR = Path(__file__).resolve().parents[2] / REL_DIR
-
 
 def clear_dir():
     if DIR.exists():
@@ -349,11 +345,19 @@ constexpr bool op_type_is_base_of(Operation Base, Operation Derived) {
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--auto', required=True, help='path to auto directory')
+    parser.add_argument('--config', required=True, help='path to config.json')
+    args = parser.parse_args()
+
+    REL_DIR = Path(args.auto) / 'compiler' / 'vertex'
+    DIR = Path(__file__).resolve().parents[2] / REL_DIR
+
     print(DIR)
-    with open(sys.argv[1]) as f:
+    with open(args.config) as f:
         data = json.load(f)
 
-    with open(sys.argv[1].replace(".json", ".config.json")) as f:
+    with open(args.config.replace(".json", ".config.json")) as f:
         schema = json.load(f)
 
     jsonschema.validators.Draft4Validator.check_schema(schema)

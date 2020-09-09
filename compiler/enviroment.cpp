@@ -420,9 +420,9 @@ bool KphpEnviroment::init() {
   }
   string link_file_name;
   if (mode_ == "server") {
-    link_file_name = "php-main-server.a";
+    link_file_name = "libphp-main-server.a";
   } else if (mode_ == "cli") {
-    link_file_name = "php-main-cli.a";
+    link_file_name = "libphp-main-cli.a";
   } else if (!is_static_lib_mode()) {
     fmt_print("Unknown $KPHP_MODE={}\n", mode_);
     return false;
