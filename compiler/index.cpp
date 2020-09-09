@@ -7,7 +7,7 @@
 
 #include "common/containers/final_action.h"
 #include "common/wrappers/mkdir_recursive.h"
-#include "drinkless/dl-utils-lite.h"
+#include "compiler/kphp_assert.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
@@ -16,7 +16,7 @@
 bool is_dir(const string &path) {
   struct stat s;
   int err = stat(path.c_str(), &s);
-  dl_passert (err == 0, fmt_format("Failed to stat [{}]", path).c_str());
+  kphp_assert_msg(err == 0, fmt_format("Failed to stat [{}]", path));
   return S_ISDIR (s.st_mode);
 }
 
@@ -79,7 +79,7 @@ void File::unlink() {
 
 void Index::set_dir(const string &new_dir) {
   bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
-  dl_assert(res_mkdir, fmt_format("Failed to mkdir [{}] ({})", new_dir, strerror(errno)).c_str());
+  kphp_assert_msg(res_mkdir, fmt_format("Failed to mkdir [{}] ({})", new_dir, strerror(errno)));
 
   dir = get_full_path(new_dir);
   kphp_assert (!dir.empty());
@@ -132,7 +132,7 @@ void Index::sync_with_dir(const string &new_dir) {
   }
   current_index = this;
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
-  dl_passert (err == 0, fmt_format("ftw [{}] failed", dir).c_str());
+  kphp_assert_msg(err == 0, fmt_format("ftw [{}] failed", dir));
 
   for (auto it = files.begin(); it != files.end();) {
     if (it->second->on_disk) {
@@ -173,7 +173,7 @@ void Index::create_subdir(vk::string_view subdir) {
   }
   string full_path = get_dir() + subdir;
   int ret = mkdir(full_path.c_str(), 0777);
-  dl_passert (ret != -1 || errno == EEXIST, full_path.c_str());
+  kphp_assert_msg(ret != -1 || errno == EEXIST, full_path);
   if (errno == EEXIST && !is_dir(full_path)) {
     kphp_error (0, fmt_format("[{}] is not a directory", full_path.c_str()));
     kphp_fail();

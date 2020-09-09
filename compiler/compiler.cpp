@@ -17,7 +17,7 @@
 #include "common/crc32.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
-#include "drinkless/dl-utils-lite.h"
+#include "common/precise-time.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/lexer.h"
@@ -173,7 +173,7 @@ using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
 
 
 bool compiler_execute(KphpEnviroment *env) {
-  double st = dl_time();
+  double st = get_utime(CLOCK_MONOTONIC);
   G = new CompilerCore();
   G->register_env(env);
   G->start();
@@ -319,7 +319,7 @@ bool compiler_execute(KphpEnviroment *env) {
   get_scheduler()->execute();
 
   PipesProgress::get().transpiling_process_finish();
-  G->stats.transpilation_time = dl_time() - st;
+  G->stats.transpilation_time = get_utime(CLOCK_MONOTONIC) - st;
 
   if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
     stage::error();
@@ -350,7 +350,7 @@ bool compiler_execute(KphpEnviroment *env) {
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();
-  G->stats.total_time = dl_time() - st;
+  G->stats.total_time = get_utime(CLOCK_MONOTONIC) - st;
   if (verbosity >= 1) {
     profiler_print_all(profiler_stats);
     std::cerr << std::endl;

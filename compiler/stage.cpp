@@ -287,6 +287,7 @@ string stage::to_str(const Location &new_location) {
 }
 
 bool stage::should_be_colored(FILE *f)  {
+  if (!G) return TermStringFormat::is_terminal(f);
   switch (G->env().get_color_settings()) {
     case KphpEnviroment::colored:
       return true;

@@ -2,8 +2,8 @@
 
 #include <wait.h>
 
-#include "drinkless/dl-utils-lite.h"
-
+#include "compiler/compiler-core.h"
+#include "compiler/utils/string-utils.h"
 #include "compiler/compiler-core.h"
 #include "compiler/utils/string-utils.h"
 
@@ -108,7 +108,7 @@ static int run_cmd(const string &cmd) {
 }
 
 bool MakeRunner::start_job(Target *target) {
-  target->start_time = dl_time();
+  target->start_time = get_utime(CLOCK_MONOTONIC);
   string cmd = target->get_cmd();
 
   int pid = run_cmd(cmd);
@@ -124,7 +124,7 @@ bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
   assert (it != jobs.end());
   Target *target = it->second;
   if (G->env().get_stats_file() != nullptr) {
-    double passed = dl_time() - target->start_time;
+    double passed = get_utime(CLOCK_MONOTONIC) - target->start_time;
     fmt_fprintf(G->env().get_stats_file(), "{}s {}\n", passed, target->get_name());
   }
   jobs.erase(it);
@@ -177,8 +177,8 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   }
   signal_flag = 0;
   fail_flag = false;
-  dl_signal(SIGINT, MakeRunner::sigint_handler);
-  dl_signal(SIGTERM, MakeRunner::sigint_handler);
+  ksignal(SIGINT, MakeRunner::sigint_handler);
+  ksignal(SIGTERM, MakeRunner::sigint_handler);
 
   //fprintf (stderr, "make target: %s\n", target->get_name().c_str());
   //TODO: check timeouts
@@ -255,8 +255,8 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   }
 
   //TODO: use old handlers instead SIG_DFL
-  dl_signal(SIGINT, SIG_DFL);
-  dl_signal(SIGTERM, SIG_DFL);
+  ksignal(SIGINT, SIG_DFL);
+  ksignal(SIGTERM, SIG_DFL);
   return !fail_flag && target->is_ready;
 }
 
