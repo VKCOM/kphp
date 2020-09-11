@@ -1,6 +1,5 @@
 #pragma once
 
-#include "auto/TL/constants/common.h"
 #include "common/tlo-parsing/tl-objects.h"
 
 #include "compiler/code-gen/common.h"

@@ -1,5 +1,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 
+#include "auto/TL/constants/common.h"
+
 namespace tl2cpp {
 // Recursively traverse the type expression tree and return <type, value> pair
 std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *type_expr, const std::string &var_num_access) {

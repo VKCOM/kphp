@@ -1,5 +1,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
+#include "auto/TL/constants/common.h"
+
 #include "common-php-functions.h"
 
 namespace tl2cpp {
