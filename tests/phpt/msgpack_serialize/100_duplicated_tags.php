@@ -2,7 +2,7 @@
 /kphp-serialized-field: 1 is already in use/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /** @kphp-serializable */
 class A {

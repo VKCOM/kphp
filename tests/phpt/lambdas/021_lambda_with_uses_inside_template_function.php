@@ -1,7 +1,7 @@
 @todo
 <?php
 
-require_once("polyfills.php");
+require_once 'kphp_tester_include.php';
 
 /**
  * @kphp-template T $arg

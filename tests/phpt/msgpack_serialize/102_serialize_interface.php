@@ -2,7 +2,7 @@
 /@kphp-serialize is allowed only for classes/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /** @kphp-serializable */
 interface IntA {

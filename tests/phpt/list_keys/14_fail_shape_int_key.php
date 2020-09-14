@@ -1,7 +1,7 @@
 @kphp_should_fail
 /Only string const keys can be used, got 'int'/
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function test_int_key() {
   $tup = shape(['0' => 10]);

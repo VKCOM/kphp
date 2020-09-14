@@ -2,7 +2,7 @@
 <?php
 #ifndef KittenPHP
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function my_assert($value) {
   if ($value === false) {

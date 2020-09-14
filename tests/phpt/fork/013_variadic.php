@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /**
  * @kphp-infer
@@ -38,9 +38,12 @@ $z = fork (my_pow (2));
 echo "-----------<stage 2>-----------\n";
 
 $q = wait_queue_create (array ($x, $y, $z));
+$res_powers = [];
 while ($t = wait_queue_next ($q)) {
-  var_dump (wait_result ($t));
+  $res_powers[] = wait_result ($t);
 }
+sort ($res_powers);
+var_dump ($res_powers);
 
 function a_varg(int $a, int $b, int $c = 7, int $d = 8) {
 //  var_dump (func_get_args());

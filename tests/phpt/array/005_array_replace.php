@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 // based on https://github.com/php/php-src/blob/master/ext/standard/tests/array/array_replace.phpt
 
 function base_array_replace_test()

@@ -1,7 +1,7 @@
 @kphp_should_fail
 <?php
 
-require_once("polyfills.php");
+require_once 'kphp_tester_include.php';
 
 $x = new \Classes\IntHolder(10);
 

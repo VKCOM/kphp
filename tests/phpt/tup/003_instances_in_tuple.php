@@ -1,7 +1,7 @@
 @ok
 <?php
-require_once 'polyfills.php';
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
+require_once 'kphp_tester_include.php';
 
 function demo1Instance() {
     $t = tuple(1, 'str', new Classes\A);

@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 // this fails because kphp does not support function overloading per-arguments,
 // and $arg is tuple and int at the same time in getT1()

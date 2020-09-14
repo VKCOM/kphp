@@ -3,7 +3,7 @@
 /kphp-serialized-field\(128\) must be >=0 and < than 127/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /** @kphp-serializable */
 class A {

@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function demo1() {
   // интересный пример, из-за порядка получаются разные результаты по понятным причинам

@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function demo1Instance() {
     $t = shape(['n' => 1, 's' => 'str', 'a' => new Classes\A]);

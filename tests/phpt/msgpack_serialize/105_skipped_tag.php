@@ -2,7 +2,7 @@
 /php-serialized-field is required for field: x/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /** 
  * @kphp-serializable

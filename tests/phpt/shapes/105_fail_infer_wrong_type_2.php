@@ -1,7 +1,7 @@
 @kphp_should_fail
 /Error combining shapes/
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 class A {
   /** @var shape(x:int, y:A) */

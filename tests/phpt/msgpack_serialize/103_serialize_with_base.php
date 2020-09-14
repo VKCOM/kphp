@@ -2,7 +2,7 @@
 /You may not serialize classes which has a parent with fields/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 class Base {
     public $b = 10;

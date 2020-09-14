@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 $a = ' €‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—™š›œžŸ!¡"¢#Ž$¤%¥&¦\'§(¨)©*ª+«,¬-­.®/¯0°1±2²3³4´5µ6¶7·8¸9¹:º;»<¼=½>¾?¿@ÀAÁBÂCÃDÄEÅFÆGÇHÈIÉJÊKËLÌMÍNÎOÏPÐQÑRÒSÓTÔUÕVÖW×XØYÙZÚ[Û\Ü]Ý^Þ_ß`àaábâcãdäeåfægçhèiéjêkëlìmínîoïpðqñròsótôuõvöw÷xøyùzú{û|ü}ý~þÿ';
 $serialized = msgpack_serialize($a);

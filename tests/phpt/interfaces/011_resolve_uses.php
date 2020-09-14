@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once('polyfills.php');
+require_once 'kphp_tester_include.php';
 use Classes\B;
 
 $b = new Classes\A;

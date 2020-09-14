@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 
 $mix = [new \Classes\A, new Classes\B];

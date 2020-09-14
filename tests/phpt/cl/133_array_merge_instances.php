@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 use Classes\B;
 
 $arr1 = [3=>new B(1), 5=>new B(2)];

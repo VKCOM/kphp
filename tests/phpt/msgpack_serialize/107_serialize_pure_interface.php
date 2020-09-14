@@ -2,7 +2,7 @@
 /You may not serialize class without @kphp-serializable tag IntA/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 interface IntA {
 }

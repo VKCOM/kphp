@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 // it's a huge array with 2 ** 31 - 1 elements
 $msg = chr(221).chr(0xff).chr(0xff).chr(0xff).chr(0xff).chr(0xff);

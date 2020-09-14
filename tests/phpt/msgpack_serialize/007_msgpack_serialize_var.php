@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 $packed_value = msgpack_serialize(10);
 var_dump(base64_encode($packed_value));

@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 $a = [shape(['int' => 10, 'b' => true])];
 $b = [shape(['int' => 20, 'b' => true])];

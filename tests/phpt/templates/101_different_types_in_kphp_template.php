@@ -1,7 +1,7 @@
 @kphp_should_fail
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 // @kphp-template guarantees that $obj1 and $obj2 will have the same type
 /**

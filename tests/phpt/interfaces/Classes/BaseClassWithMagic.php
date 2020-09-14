@@ -2,7 +2,7 @@
 
 namespace Classes;
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 class BaseClassWithMagic {
     /**

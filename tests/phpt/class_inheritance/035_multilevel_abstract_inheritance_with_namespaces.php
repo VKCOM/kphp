@@ -1,6 +1,6 @@
 <?php
 
-require_once("polyfills.php");
+require_once 'kphp_tester_include.php';
 
 /**@var Classes\AA $c*/
 $c = new Classes\DD();

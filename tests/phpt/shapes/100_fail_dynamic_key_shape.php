@@ -1,7 +1,7 @@
 @kphp_should_fail
 /keys of shape\(\) must be constant/
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function demo() {
     $k = 'k';

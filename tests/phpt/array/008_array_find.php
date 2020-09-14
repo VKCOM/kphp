@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once __DIR__ . '/../polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function run_test() {
   $ar = [1,2,3,4,4,5,6,6];

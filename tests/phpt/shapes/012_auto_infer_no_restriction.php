@@ -1,6 +1,6 @@
 @ok
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 
 // $sh if auto-inferred as shape(a:int|null, b:int|null)

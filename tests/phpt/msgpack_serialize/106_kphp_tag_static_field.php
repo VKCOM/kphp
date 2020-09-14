@@ -2,7 +2,7 @@
 /kphp-serialized-field is allowed only for instance fields: y/
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /** 
  * @kphp-serializable

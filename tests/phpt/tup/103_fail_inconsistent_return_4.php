@@ -1,6 +1,6 @@
 @kphp_should_fail
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 // this fails until we support null as well as false
 

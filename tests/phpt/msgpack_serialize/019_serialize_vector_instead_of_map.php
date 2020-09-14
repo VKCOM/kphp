@@ -1,7 +1,7 @@
 @ok
 <?php
 
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 define('one', 1);
 $arr = [0 => 1, one => 2];

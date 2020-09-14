@@ -1,7 +1,7 @@
 @kphp_should_fail
 /Only int const keys can be used, got 'string'/
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 function test_string_key() {
   $tup = tuple(1, 'str', 5.6);

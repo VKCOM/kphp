@@ -1,7 +1,7 @@
 @kphp_should_fail
 /TYPE INFERENCE ERROR/
 <?php
-require_once 'polyfills.php';
+require_once 'kphp_tester_include.php';
 
 /**
  * @kphp-infer
