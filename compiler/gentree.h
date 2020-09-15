@@ -81,7 +81,6 @@ public:
   VertexAdaptor<op_func_param> get_func_param_without_callbacks(bool from_callback = false);
   VertexAdaptor<op_func_param> get_func_param_from_callback();
   VertexAdaptor<meta_op_func_param> get_func_param();
-  VertexAdaptor<op_foreach_param> get_foreach_param();
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
   VertexPtr get_expr_top(bool was_arrow);
@@ -159,6 +158,9 @@ private:
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
   VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
+  VertexAdaptor<op_var> get_function_use_var_name_ref();
+  VertexPtr get_foreach_value();
+  std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> get_foreach_param();
 
   void require_lambdas() {
     for (auto &generator : lambda_generators) {

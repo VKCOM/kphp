@@ -100,6 +100,27 @@ VertexAdaptor<op_var> GenTree::get_var_name() {
   return var.set_location(location);
 }
 
+VertexPtr GenTree::get_foreach_value() {
+  if (cur->type() == tok_list) {
+    return get_func_call<op_list_ce, op_lvalue_null>();
+  }
+  if (cur->type() == tok_opbrk) {
+    return get_short_array();
+  }
+  return get_var_name_ref();
+}
+
+// The only reason this method exists is that gen_list wants a method,
+// so we can't pass a lambda instead of it.
+//
+// Since get_var_name_ref() doesn't emit an error now, we use
+// this method for use list parsing to report errors as they occur.
+VertexAdaptor<op_var> GenTree::get_function_use_var_name_ref() {
+  auto result = get_var_name_ref();
+  kphp_error(result, fmt_format("function use list: expected varname, found {}", cur->str_val));
+  return result;
+}
+
 VertexAdaptor<op_var> GenTree::get_var_name_ref() {
   bool ref_flag = false;
   if (cur->type() == tok_and) {
@@ -110,8 +131,6 @@ VertexAdaptor<op_var> GenTree::get_var_name_ref() {
   auto name = get_var_name();
   if (name) {
     name->ref_flag = ref_flag;
-  } else {
-    kphp_error(!ref_flag, "Expected var name");
   }
   return name;
 }
@@ -154,6 +173,11 @@ bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
                              [&v] { return v; },
                              [] { return VertexAdaptor<EmptyOp>::create(); });
       } else if (prev_delim) {
+        // TODO: do not emit this error for funcs like var_name_ref() as
+        // they return falsy vertex in case of the parse failure.
+        // If we give "expecting something after ," error it will be
+        // misleading as there might be something after a comma,
+        // we just happen to get a failed parsing.
         kphp_error(0, "Expected something after ','");
         return false;
       } else {
@@ -847,7 +871,7 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
   return get_func_param_without_callbacks();
 }
 
-VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
+std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param() {
   auto location = auto_location();
   VertexPtr array_expression = get_expression();
   CE (!kphp_error(array_expression, ""));
@@ -856,14 +880,29 @@ VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
   skip_phpdoc_tokens();
 
   VertexAdaptor<op_var> key;
-  VertexAdaptor<op_var> value = get_var_name_ref();
+  VertexAdaptor<op_var> value;
+  VertexPtr value_expr = get_foreach_value();
+  VertexPtr list;
 
-  CE (!kphp_error(value, ""));
+  // This error message is given for both key/value parts
+  // as we can't easily distinguish $k=>$v from just $v if
+  // get_var_name_ref failed to parse a variable.
+  auto tok = *cur;
+  CE (!kphp_error(value_expr, fmt_format("Expected a var name, ref or list, found {}", tok.str_val)));
+
+  if (vk::any_of_equal(value_expr->type(), op_list_ce, op_array)) {
+    value = create_superlocal_var("list");
+    list = value_expr;
+  } else {
+    value = value_expr.as<op_var>();
+  }
+
   if (cur->type() == tok_double_arrow) {
     next_cur();
     key = value;
+    tok = *cur;
     value = get_var_name_ref();
-    CE (!kphp_error(value, ""));
+    CE (!kphp_error(value, fmt_format("Expected a var name, ref or list as a foreach value, found {}", tok.str_val)));
   }
 
   VertexPtr temp_var;
@@ -873,8 +912,9 @@ VertexAdaptor<op_foreach_param> GenTree::get_foreach_param() {
     temp_var = create_superlocal_var("tmp_expr");
   }
 
-  return key ? VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var, key).set_location(location)
-             : VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var).set_location(location);
+  auto param = key ? VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var, key).set_location(location)
+                   : VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var).set_location(location);
+  return {param, list};
 }
 
 VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
@@ -1073,13 +1113,23 @@ VertexAdaptor<op_foreach> GenTree::get_foreach() {
 
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
-  auto foreach_param = get_foreach_param();
-  CE (!kphp_error(foreach_param, "Failed to parse 'foreach' params"));
 
+  VertexAdaptor<op_foreach_param> foreach_param;
+  VertexPtr foreach_list;
+  std::tie(foreach_param, foreach_list) = get_foreach_param();
+
+  CE (!kphp_error(foreach_param, "Failed to parse 'foreach' params"));
   CE (expect(tok_clpar, "')'"));
 
-  VertexPtr body= get_statement();
+  VertexPtr body = get_statement();
   CE (!kphp_error(body, "Failed to parse 'foreach' body"));
+
+  // If foreach value is list expression, we rewrite the body
+  // to include the list assignment as a first statement.
+  if (foreach_list) {
+    auto list_assign = VertexAdaptor<op_set>::create(foreach_list, foreach_param->x()).set_location(foreach_location);
+    body = VertexAdaptor<op_seq>::create(list_assign, body).set_location(foreach_location);
+  }
 
   return VertexAdaptor<op_foreach>::create(foreach_param, embrace(body)).set_location(foreach_location);
 }
@@ -1287,7 +1337,7 @@ bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *use
     }
 
     std::vector<VertexAdaptor<op_var>> uses_as_vars;
-    bool ok_params_next = gen_list<op_err>(&uses_as_vars, &GenTree::get_var_name_ref, tok_comma);
+    bool ok_params_next = gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
 
     for (auto &v : uses_as_vars) {
       kphp_error(!v->ref_flag, "references to variables in `use` block are forbidden in lambdas");
