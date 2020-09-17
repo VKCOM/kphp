@@ -3,6 +3,26 @@
 #include "runtime/kphp_core.h"
 #include "runtime/string_functions.h"
 
+TEST(string_test, test_empty) {
+  string empty_str;
+  ASSERT_TRUE(empty_str.empty());
+
+  empty_str.append("");
+  ASSERT_TRUE(empty_str.empty());
+
+  empty_str.assign("");
+  ASSERT_TRUE(empty_str.empty());
+
+  empty_str = string{};
+  ASSERT_TRUE(empty_str.empty());
+
+  empty_str = string{""};
+  ASSERT_TRUE(empty_str.empty());
+
+  empty_str.assign("hello");
+  ASSERT_FALSE(empty_str.empty());
+}
+
 TEST(string_test, test_starts_with) {
   string empty_str{""};
   ASSERT_TRUE(empty_str.starts_with(string{""}));

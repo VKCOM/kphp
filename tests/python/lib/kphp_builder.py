@@ -44,9 +44,9 @@ class KphpBuilder:
     def _create_artifacts_dir(self):
         os.makedirs(self._artifacts_dir, exist_ok=True)
 
-    def _move_to_artifacts(self, artifact_name, priority, content=None, file=None):
+    def _move_to_artifacts(self, artifact_name, return_code, content=None, file=None):
         self._create_artifacts_dir()
-        artifact = Artifact(os.path.join(self._artifacts_dir, artifact_name), priority)
+        artifact = Artifact(os.path.join(self._artifacts_dir, artifact_name), abs(return_code))
         self.artifacts[artifact_name.replace("_", " ").replace(".", " ")] = artifact
         if content:
             with open(artifact.file, 'wb') as f:
@@ -147,10 +147,10 @@ class KphpBuilder:
             ],
             binary_error_text=kphp_build_stderr)
         if not ignore_stderr:
-            priority = kphp_compilation_proc.returncode
+            return_code = kphp_compilation_proc.returncode
             self._kphp_build_stderr_artifact = self._move_to_artifacts(
                 artifact_name="kphp_build_stderr",
-                priority=1 if priority is None else priority,
+                return_code=1 if return_code is None else return_code,
                 content=kphp_build_stderr
             )
 

@@ -121,7 +121,7 @@ class KphpRunOnceRunner(KphpBuilder):
         self._move_sanitizer_logs_to_artifacts(sanitizer_glob_mask, kphp_server_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
-                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
+                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ [\w\d/_-]+/PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
             ],
             binary_error_text=kphp_runtime_stderr)
 

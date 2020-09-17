@@ -125,22 +125,7 @@ def make_relpath(file_dir, file_path):
     return rel_path
 
 
-MAKE_TARGETS = "php tl2php kphp-unittests tlclient tasks rpc-proxy pmemcached"
-TESTING_MODES = {
-    "gcc": ("", "gcc", "g++", MAKE_TARGETS),
-    "gcc-asan": (
-        "ASAN_OPTIONS=detect_leaks=0", "gcc", "g++",
-        "g=1 asan=1 " + MAKE_TARGETS
-    ),
-    "clang-ubsan": (
-        "UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1", "clang", "clang++",
-        "g=1 ubsan=1 " + MAKE_TARGETS
-    )
-}
-
-# TODO: Remove this code after teamcity update
-TESTING_MODES["normal"] = TESTING_MODES["gcc"]
-TESTING_MODES["asan"] = TESTING_MODES["gcc-asan"]
+CC2CXX_MAP = {"gcc": "g++", "clang": "clang++"}
 
 
 def parse_args():
@@ -177,18 +162,53 @@ def parse_args():
         metavar="DIR",
         type=str,
         dest="zend_repo",
-        default=os.path.expanduser("~/php-src"),
+        default="",
         help="specify path to zend php-src repository dir"
     )
 
     parser.add_argument(
-        "--mode",
+        "--engine-repo",
+        metavar="DIR",
+        type=str,
+        dest="engine_repo",
+        default="",
+        help="specify path to vk engine repository dir"
+    )
+
+    parser.add_argument(
+        "--kphp-tests-repo",
+        metavar="DIR",
+        type=str,
+        dest="kphp_tests_repo",
+        default="",
+        help="specify path to kphp tests repository dir"
+    )
+
+    parser.add_argument(
+        "--compiler",
         metavar="MODE",
         type=str,
-        dest="mode",
-        default="asan",
-        choices=TESTING_MODES.keys(),
-        help="specify testing mode, allowed: {}".format(", ".join(TESTING_MODES.keys()))
+        dest="compiler",
+        default="gcc",
+        choices=CC2CXX_MAP.keys(),
+        help="specify compiler for tests"
+
+    )
+
+    parser.add_argument(
+        "--use-asan",
+        action='store_true',
+        dest="use_asan",
+        default=False,
+        help="enable address sanitizer for tests"
+    )
+
+    parser.add_argument(
+        "--use-ubsan",
+        action='store_true',
+        dest="use_ubsan",
+        default=False,
+        help="enable undefined behaviour sanitizer for tests"
     )
 
     parser.add_argument(
@@ -216,43 +236,78 @@ if __name__ == "__main__":
 
     runner_dir = os.path.dirname(os.path.abspath(__file__))
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
-    functional_tests_dir = make_relpath(runner_dir, "python/t")
+    functional_tests_dir = make_relpath(runner_dir, "python/tests")
     zend_test_list = make_relpath(runner_dir, "ci/zend-test-list")
-    root_engine_path = os.path.join(os.path.join(runner_dir, os.path.pardir), os.path.pardir)
-    root_engine_path = os.path.relpath(root_engine_path, os.getcwd())
+    kphp_repo_root = os.path.join(runner_dir, os.path.pardir)
+    kphp_repo_root = os.path.relpath(kphp_repo_root, os.getcwd())
 
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
 
-    env_vars, cc, cxx, targets = TESTING_MODES[args.mode]
+    cc_compiler = args.compiler
+    cxx_compiler = CC2CXX_MAP[cc_compiler]
+
+    cmake_options = []
+    env_vars = []
+    if args.use_asan:
+        cmake_options.append("-DADDRESS_SANITIZER=ON")
+        env_vars.append("ASAN_OPTIONS=detect_leaks=0")
+    if args.use_ubsan:
+        cmake_options.append("-DUNDEFINED_SANITIZER=ON")
+        env_vars.append("UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1")
+    cmake_options = " ".join(cmake_options)
+    env_vars = " ".join(env_vars)
+
     distcc_options = ""
-    distcc_host_list = ""
-    distributive_name = get_distributive_name()
-    if args.use_distcc or distributive_name != "unknown":
+    distcc_cmake_option = ""
+    distcc_hosts_env_var = ""
+    if args.use_distcc:
+        distributive_name = get_distributive_name()
         distcc_hosts = "ci/distcc-host-list.{}".format(distributive_name)
         distcc_host_list = make_relpath(runner_dir, distcc_hosts)
         distcc_options = "--distcc-host-list {}".format(distcc_host_list)
+        distcc_hosts_env_var = "{} ".format(os.path.abspath(distcc_host_list))
         os.environ.update(make_distcc_env(read_distcc_hosts(distcc_host_list), os.path.join(runner_dir, "tmp_distcc")))
-        if "KDB_USE_CCACHE" not in os.environ:
-            cc = "'distcc {}'".format(cc)
-            cxx = "'distcc {}'".format(cxx)
+        distcc_cmake_option = "-DCMAKE_C_COMPILER_LAUNCHER=distcc -DCMAKE_CXX_COMPILER_LAUNCHER=distcc "
 
     runner.add_test_group(
         name="make-kphp",
-        description="make kphp and runtime in {} mode".format(args.mode),
-        cmd="CC={cc} CXX={cxx} {env_vars} make -C {engine_root} -j{{jobs}} {targets}".format(
-            cc=cc,
-            cxx=cxx,
-            env_vars=env_vars,
-            engine_root=root_engine_path,
-            targets=targets
-        ),
+        description="make kphp and runtime",
+        cmd="rm -rf {kphp_repo_root}/build && "
+            "mkdir {kphp_repo_root}/build && "
+            "cmake "
+            "-S {kphp_repo_root} -B {kphp_repo_root}/build "
+            "{distcc_option}"
+            "-DCMAKE_C_COMPILER={cc} -DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
+            "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test".format(
+                kphp_repo_root=kphp_repo_root,
+                distcc_option=distcc_cmake_option,
+                cc=cc_compiler,
+                cxx=cxx_compiler,
+                cmake_options=cmake_options,
+                env_vars=env_vars
+            ),
         skip=args.steps and "make-kphp" not in args.steps
     )
 
+    if args.engine_repo:
+        engine_cc = "distcc gcc" if args.use_distcc else "gcc"
+        engine_cxx = "distcc g++" if args.use_distcc else "g++"
+        runner.add_test_group(
+            name="make-engines",
+            description="make engines",
+            cmd="CC='{engine_cc}' CXX='{engine_cxx}' make -C {engine_repo_root} -j{{jobs}} "
+                "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached".format(
+                    engine_repo_root=args.engine_repo,
+                    engine_cc=engine_cc,
+                    engine_cxx=engine_cxx
+            ),
+            skip=args.steps and "make-engines" not in args.steps
+        )
+
     runner.add_test_group(
         name="kphp-tests",
-        description="run kphp tests in {} mode".format(args.mode),
+        description="run kphp tests in {} mode".format("gcc"),
         cmd="{kphp_runner} -j{{jobs}} {distcc_options}".format(
             kphp_runner=kphp_test_runner,
             distcc_options=distcc_options
@@ -260,32 +315,26 @@ if __name__ == "__main__":
         skip=args.steps and "kphp-tests" not in args.steps
     )
 
-    skip_zend_tests = not os.path.exists(args.zend_repo)
-    if "zend-tests" in args.steps and skip_zend_tests:
-        print("Trying to use zend tests, but there is no zend repo directory", flush=True)
-        sys.exit(1)
-    elif args.steps and "zend-tests" not in args.steps:
-        skip_zend_tests = True
+    if args.zend_repo:
+        runner.add_test_group(
+            name="zend-tests",
+            description="run php tests from zend repo",
+            cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options}".format(
+                kphp_runner=kphp_test_runner,
+                zend_repo=args.zend_repo,
+                zend_tests=zend_test_list,
+                distcc_options=distcc_options
+            ),
+            skip=args.steps and "zend-tests" not in args.steps
+        )
 
-    runner.add_test_group(
-        name="zend-tests",
-        description="run php tests from zend repo in {} mode".format(args.mode),
-        cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options}".format(
-            kphp_runner=kphp_test_runner,
-            zend_repo=args.zend_repo,
-            zend_tests=zend_test_list,
-            distcc_options=distcc_options
-        ),
-        skip=skip_zend_tests
-    )
-
-    tl2php_bin = os.path.join(root_engine_path, "objs/bin/tl2php")
-    combined_tlo = os.path.join(root_engine_path, "objs/bin/combined.tlo")
-    combined2_tl = os.path.join(root_engine_path, "objs/bin/combined2.tl")
+    tl2php_bin = os.path.join(kphp_repo_root, "objs/bin/tl2php")
+    combined_tlo = os.path.join(args.engine_repo or kphp_repo_root, "objs/bin/combined.tlo")
+    combined2_tl = os.path.join(args.engine_repo or kphp_repo_root, "objs/bin/combined2.tl")
     tl_tests_dir = make_relpath(runner_dir, "TL-tests")
     runner.add_test_group(
         name="tl2php",
-        description="gen php classes with tests from tl schema in {} mode".format(args.mode),
+        description="gen php classes with tests from tl schema in {} mode".format("gcc"),
         cmd="{env_vars} {tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
             env_vars=env_vars,
             tl2php=tl2php_bin,
@@ -298,8 +347,10 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="typed-tl-tests",
-        description="run typed tl tests in {} mode".format(args.mode),
-        cmd="KPHP_TL_SCHEMA={combined_tlo} KPHP_GEN_TL_INTERNALS=1 {kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
+        description="run typed tl tests in {} mode".format("gcc"),
+        cmd="KPHP_TL_SCHEMA={combined_tlo} "
+            "KPHP_GEN_TL_INTERNALS=1 "
+            "{kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,
@@ -308,18 +359,33 @@ if __name__ == "__main__":
         skip=args.steps and "typed-tl-tests" not in args.steps
     )
 
-    if args.mode != "asan" or get_distributive_name() != "jessie":
-        distcc_hosts_env_var = ""
-        if distcc_host_list:
-            distcc_hosts_env_var = "KPHP_TESTS_DISTCC_FILE={} ".format(os.path.abspath(distcc_host_list))
+    runner.add_test_group(
+        name="functional-tests",
+        description="run kphp functional tests in {} mode".format("gcc"),
+        cmd="KPHP_TESTS_DISTCC_FILE={distcc_hosts_env_var} "
+            "python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
+            functional_tests_dir=functional_tests_dir,
+            distcc_hosts_env_var=distcc_hosts_env_var
+        ),
+        skip=args.steps and "functional-tests" not in args.steps
+    )
+
+    if args.engine_repo and args.kphp_tests_repo:
         runner.add_test_group(
-            name="functional-tests",
-            description="run kphp functional tests in {} mode".format(args.mode),
-            cmd="{distcc_hosts_env_var}python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
-                functional_tests_dir=functional_tests_dir,
-                distcc_hosts_env_var=distcc_hosts_env_var
+            name="integration-tests",
+            description="run kphp integration tests in {} mode".format("gcc"),
+            cmd="PYTHONPATH={lib_dir} "
+                "KPHP_TESTS_ENGINE_REPO={engine_repo} "
+                "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
+                "KPHP_TESTS_DISTCC_FILE={distcc_hosts_env_var} "
+                "python3 -m pytest --tb=native -n{{jobs}} {tests_dir}".format(
+                lib_dir=os.path.join(runner_dir, "python"),
+                engine_repo=args.engine_repo,
+                kphp_repo_root=kphp_repo_root,
+                distcc_hosts_env_var=distcc_hosts_env_var,
+                tests_dir=os.path.join(args.kphp_tests_repo, "python/tests"),
             ),
-            skip=args.steps and "functional-tests" not in args.steps
+            skip=args.steps and "integration-tests" not in args.steps
         )
 
     runner.setup(args)

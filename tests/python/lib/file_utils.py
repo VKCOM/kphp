@@ -3,16 +3,12 @@ import subprocess
 import re
 
 
-def _search_file(file_name, file_checker):
-    parent_dir = os.path.dirname(os.path.realpath(__file__))
-    while parent_dir != "/":
-        file_path = os.path.abspath(os.path.join(parent_dir, file_name))
-        if file_checker(file_path):
-            return file_path
+def _check_file(file_name, file_dir, file_checker):
+    file_path = os.path.join(file_dir, file_name)
+    if file_checker(file_path):
+        return file_path
 
-        parent_dir = os.path.abspath(os.path.join(parent_dir, os.pardir))
-
-    raise RuntimeError("Can't find " + file_name)
+    raise RuntimeError("Can't find " + file_path)
 
 
 def _check_bin(bin_path):
@@ -26,20 +22,25 @@ def _check_bin(bin_path):
     return False
 
 
+_ENGINE_REPO = os.environ.get("KPHP_TESTS_ENGINE_REPO")
+_DEFAULT_KPHP_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../"))
+_KPHP_REPO = os.environ.get("KPHP_TESTS_KPHP_REPO", _DEFAULT_KPHP_REPO)
+
+
 def search_kphp_sh():
-    return _search_file("kphp.sh", _check_bin)
+    return _check_file("kphp.sh", _KPHP_REPO, _check_bin)
 
 
 def search_engine_bin(engine_name):
-    return _search_file("objs/bin/" + engine_name, _check_bin)
+    return _check_file("objs/bin/" + engine_name, _ENGINE_REPO, _check_bin)
 
 
 def search_tl_client():
-    return _search_file("objs/bin/tlclient", _check_bin)
+    return _check_file("objs/bin/tlclient", _ENGINE_REPO, _check_bin)
 
 
 def search_combined_tlo():
-    return _search_file("objs/bin/combined.tlo", os.path.isfile)
+    return _check_file("objs/bin/combined.tlo", _ENGINE_REPO, os.path.isfile)
 
 
 def replace_in_file(file, old, new):

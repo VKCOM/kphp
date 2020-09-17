@@ -1,4 +1,3 @@
-kphp
 kphp_tmp
 kphp_tester_tmp
 bin
@@ -8,5 +7,5 @@ regexdna*
 tmp
 dev
 TL-tests/
-python/t/*/_tmp/
+python/tests/*/_tmp/
 confdata_g9.*
