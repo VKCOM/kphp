@@ -80,6 +80,7 @@ class KphpRunOnceRunner(KphpBuilder):
             ("extension", "curl.so"),
             ("extension", "vkext.so"),
             ("extension", "tokenizer.so"),
+            ("extension", "h3.so"),
             ("memory_limit", "3072M"),
             ("xdebug.var_display_max_depth", -1),
             ("xdebug.var_display_max_children", -1),

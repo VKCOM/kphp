@@ -13,6 +13,7 @@
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
+#include "runtime/uber-h3.h"
 #include "runtime/msgpack-serialization.h"
 #include "runtime/instance-to-array-processor.h"
 #include "runtime/instance_cache.h"

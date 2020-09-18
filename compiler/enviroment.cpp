@@ -550,7 +550,7 @@ bool KphpEnviroment::init() {
                dynamic_incremental_linkage_ ? "-shared" : "-r");
   string user_ld_flags;
   init_env_var(&user_ld_flags, "LDFLAGS", "-ggdb");
-  ld_flags_ = user_ld_flags + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -l:libyaml-cpp.a -rdynamic";
+  ld_flags_ = user_ld_flags + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -l:libyaml-cpp.a -lh3 -rdynamic";
 
   init_env_var(&ar_, "AR", "ar");
 

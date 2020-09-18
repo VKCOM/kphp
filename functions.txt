@@ -1328,3 +1328,47 @@ function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: va
 function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
+
+// uber h3 bindings https://h3geo.org/docs
+class UberH3 {
+  // Indexing functions: https://h3geo.org/docs/api/indexing
+  static public function geoToH3($latitude ::: float, $longitude ::: float, $resolution ::: int) ::: int;
+  static public function h3ToGeo($h3_index ::: int) ::: tuple(float, float);
+  static public function h3ToGeoBoundary($h3_index ::: int) ::: tuple(float, float)[];
+
+  // Index inspection functions: https://h3geo.org/docs/api/inspection
+  static public function h3GetResolution($h3_index ::: int) ::: int;
+  static public function h3GetBaseCell($h3_index ::: int) ::: int;
+  static public function stringToH3($h3_index_str ::: string) ::: int;
+  static public function h3ToString($h3_index ::: int) ::: string;
+  static public function h3IsValid($h3_index ::: int) ::: bool;
+  static public function h3IsResClassIII($h3_index ::: int) ::: bool;
+  static public function h3IsPentagon($h3_index ::: int) ::: bool;
+  static public function h3GetFaces($h3_index ::: int) ::: int[];
+  static public function maxFaceCount($h3_index ::: int) ::: int;
+
+  // Grid traversal functions: https://h3geo.org/docs/api/traversal
+  static public function kRing($h3_index_origin ::: int, $k ::: int) ::: int[] | false;
+  static public function maxKringSize($k ::: int) ::: int;
+  static public function kRingDistances($h3_index_origin ::: int, $k ::: int) ::: tuple(int, int)[] | false;
+  static public function hexRange($h3_index_origin ::: int, $k ::: int) ::: int[] | false;
+  static public function hexRangeDistances($h3_index_origin ::: int, $k ::: int) ::: tuple(int, int)[] | false;
+  static public function hexRanges($h3_indexes ::: int[], $k ::: int) ::: int[] | false;
+  static public function hexRing($h3_index_origin ::: int, $k ::: int) ::: int[] | false;
+  static public function h3Line($h3_index_start ::: int, $h3_index_end ::: int) ::: int[] | false;
+  static public function h3LineSize($h3_index_start ::: int, $h3_index_end ::: int) ::: int;
+  static public function h3Distance($h3_index_start ::: int, $h3_index_end ::: int) ::: int;
+
+  // Hierarchical grid functions: https://h3geo.org/docs/api/hierarchy
+  static public function h3ToParent($h3_index ::: int, $parent_resolution ::: int) ::: int;
+  static public function h3ToChildren($h3_index ::: int, $children_resolution ::: int) ::: int[] | false;
+  static public function maxH3ToChildrenSize($h3_index ::: int, $children_resolution ::: int) ::: int;
+  static public function h3ToCenterChild($h3_index ::: int, $children_resolution ::: int) ::: int;
+  static public function compact($h3_indexes ::: int[]) ::: int[] | false;
+  static public function uncompact($h3_indexes ::: int[], $resolution ::: int) ::: int[] | false;
+  static public function maxUncompactSize($h3_indexes ::: int[], $resolution ::: int) ::: int;
+
+  // (TODO) Region functions: https://h3geo.org/docs/api/regions
+  static public function maxPolyfillSize($polygon_boundary ::: tuple(float, float)[], $holes ::: tuple(float, float)[][], $resolution ::: int) ::: int;
+  static public function polyfill($polygon_boundary ::: tuple(float, float)[], $holes ::: tuple(float, float)[][], $resolution ::: int) ::: int[] | false;
+}
