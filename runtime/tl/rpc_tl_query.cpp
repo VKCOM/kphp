@@ -1,16 +1,16 @@
-#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_tl_query.h"
 
 #include <cstdarg>
 
 #include "runtime/exception.h"
 #include "runtime/tl/rpc_request.h"
 
-void RpcPendingQueries::save(const class_instance<RpcQuery> &query) {
+void RpcPendingQueries::save(const class_instance<RpcTlQuery> &query) {
   php_assert(!queries_.has_key(query.get()->query_id));
   queries_.set_value(query.get()->query_id, query);
 }
 
-class_instance<RpcQuery> RpcPendingQueries::withdraw(int64_t query_id) {
+class_instance<RpcTlQuery> RpcPendingQueries::withdraw(int64_t query_id) {
   auto query = queries_.get_value(query_id);
   queries_.unset(query_id);
   return query;
@@ -29,7 +29,7 @@ void CurrentProcessingQuery::set_current_tl_function(const string &tl_function_n
   current_tl_function_name_ = tl_function_name;
 }
 
-void CurrentProcessingQuery::set_current_tl_function(const class_instance<RpcQuery> &current_query) {
+void CurrentProcessingQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) {
   php_assert(current_tl_function_name_.empty());
   current_tl_function_name_ = current_query.get()->tl_function_name;
 }

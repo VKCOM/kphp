@@ -9,7 +9,7 @@
 #include "runtime/interface.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/tl_func_base.h"
 
 #define tl_undefined_php_type nullptr_t

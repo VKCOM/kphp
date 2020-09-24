@@ -39,7 +39,7 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
 #include "runtime/tl/rpc_server.h"

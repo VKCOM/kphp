@@ -4,7 +4,7 @@
 
 class RpcRequestResult;
 
-struct RpcQuery : refcountable_php_classes<RpcQuery> {
+struct RpcTlQuery : refcountable_php_classes<RpcTlQuery> {
   std::unique_ptr<RpcRequestResult> result_fetcher;
   string tl_function_name;
   int64_t query_id{0};
@@ -12,8 +12,8 @@ struct RpcQuery : refcountable_php_classes<RpcQuery> {
 
 class RpcPendingQueries {
 public:
-  void save(const class_instance<RpcQuery> &query);
-  class_instance<RpcQuery> withdraw(int64_t query_id);
+  void save(const class_instance<RpcTlQuery> &query);
+  class_instance<RpcTlQuery> withdraw(int64_t query_id);
 
   void hard_reset();
 
@@ -27,7 +27,7 @@ public:
 private:
   RpcPendingQueries() = default;
 
-  array<class_instance<RpcQuery>> queries_;
+  array<class_instance<RpcTlQuery>> queries_;
 };
 
 class CurrentProcessingQuery {
@@ -39,7 +39,7 @@ public:
 
   void reset();
   void set_current_tl_function(const string &tl_function_name);
-  void set_current_tl_function(const class_instance<RpcQuery> &current_query);
+  void set_current_tl_function(const class_instance<RpcTlQuery> &current_query);
   void raise_fetching_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
   void raise_storing_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
 

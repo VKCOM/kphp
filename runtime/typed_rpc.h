@@ -1,7 +1,7 @@
 #pragma once
 #include "runtime/kphp_core.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
 

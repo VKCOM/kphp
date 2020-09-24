@@ -33,7 +33,7 @@ class_instance<C$VK$TL$RpcResponse> fetch_result(std::unique_ptr<RpcRequestResul
 
 class typed_rpc_tl_query_result_one_resumable : public Resumable {
 public:
-  typed_rpc_tl_query_result_one_resumable(const class_instance<RpcQuery> &query, const RpcErrorFactory &error_factory) :
+  typed_rpc_tl_query_result_one_resumable(const class_instance<RpcTlQuery> &query, const RpcErrorFactory &error_factory) :
     query_(query),
     error_factory_(error_factory) {
   }
@@ -62,7 +62,7 @@ private:
     RESUMABLE_END
   }
 
-  class_instance<RpcQuery> query_;
+  class_instance<RpcTlQuery> query_;
   const RpcErrorFactory &error_factory_;
 };
 
@@ -164,7 +164,7 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
     return -1;
   }
 
-  class_instance<RpcQuery> query;
+  class_instance<RpcTlQuery> query;
   query.alloc();
   query.get()->query_id = query_id;
   query.get()->result_fetcher = std::move(stored_fetcher);

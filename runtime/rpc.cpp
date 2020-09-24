@@ -13,7 +13,7 @@
 #include "runtime/resumable.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_query.h"
+#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_server.h"
 #include "runtime/tl/tl_builtins.h"
@@ -1232,7 +1232,7 @@ bool try_fetch_rpc_error(array<var> &out_if_error) {
   return false;
 }
 
-class_instance<RpcQuery> store_function(const var &tl_object) {
+class_instance<RpcTlQuery> store_function(const var &tl_object) {
   php_assert(CurException.is_null());
   if (!tl_object.is_array()) {
     CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
@@ -1243,7 +1243,7 @@ class_instance<RpcQuery> store_function(const var &tl_object) {
     CurrentProcessingQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
   }
-  class_instance<RpcQuery> rpc_query;
+  class_instance<RpcTlQuery> rpc_query;
   rpc_query.alloc();
   rpc_query.get()->tl_function_name = fun_name;
   CurrentProcessingQuery::get().set_current_tl_function(fun_name);
@@ -1253,7 +1253,7 @@ class_instance<RpcQuery> store_function(const var &tl_object) {
   return rpc_query;
 }
 
-array<var> fetch_function(const class_instance<RpcQuery> &rpc_query) {
+array<var> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   array<var> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
 
@@ -1280,7 +1280,7 @@ array<var> fetch_function(const class_instance<RpcQuery> &rpc_query) {
 int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
 
-  class_instance<RpcQuery> rpc_query = store_function(tl_object);
+  class_instance<RpcTlQuery> rpc_query = store_function(tl_object);
   if (!CurException.is_null()) {
     rpc_query.destroy();
     CurException = Optional<bool>{};
@@ -1378,7 +1378,7 @@ class rpc_tl_query_result_one_resumable : public Resumable {
   using ReturnT = array<var>;
 
   int64_t query_id;
-  class_instance<RpcQuery> rpc_query;
+  class_instance<RpcTlQuery> rpc_query;
 protected:
   bool run() {
     bool ready;
@@ -1402,7 +1402,7 @@ protected:
   }
 
 public:
-  rpc_tl_query_result_one_resumable(int64_t query_id, class_instance<RpcQuery> &&rpc_query) :
+  rpc_tl_query_result_one_resumable(int64_t query_id, class_instance<RpcTlQuery> &&rpc_query) :
     query_id(query_id),
     rpc_query(std::move(rpc_query)) {
   }
@@ -1420,7 +1420,7 @@ array<var> f$rpc_tl_query_result_one(int64_t query_id) {
     return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
-  class_instance<RpcQuery> rpc_query = RpcPendingQueries::get().withdraw(query_id);
+  class_instance<RpcTlQuery> rpc_query = RpcPendingQueries::get().withdraw(query_id);
   if (rpc_query.is_null()) {
     resumable_finished = true;
     return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
