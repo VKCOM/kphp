@@ -1,5 +1,7 @@
 #pragma once
 
+#include <openssl/pkcs7.h>
+
 #include "runtime/kphp_core.h"
 
 enum openssl_algo {
@@ -55,6 +57,10 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length);
 Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = true);
 
 var f$openssl_x509_checkpurpose(const string &data, int64_t purpose);
+
+bool f$openssl_pkcs7_sign(const string &infile, const string &outfile,
+                          const string &sign_cert, const string &priv_key,
+                          const array<string> &headers, int64_t flags = PKCS7_DETACHED, const string &extra_certs = {}) noexcept;
 
 array<string> f$openssl_get_cipher_methods(bool aliases = false);
 

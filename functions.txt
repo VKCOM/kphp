@@ -418,6 +418,20 @@ function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: var[] | false;
 function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: var;
 
+define('PKCS7_TEXT', 0x1);
+define('PKCS7_NOCERTS', 0x2);
+define('PKCS7_NOSIGS', 0x4);
+define('PKCS7_NOCHAIN', 0x8);
+define('PKCS7_NOINTERN', 0x10);
+define('PKCS7_NOVERIFY', 0x20);
+define('PKCS7_BINARY', 0x80);
+define('PKCS7_DETACHED', 0x40);
+define('PKCS7_NOATTR', 0x100);
+
+function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
+                            $sign_cert ::: string, $priv_key ::: string,
+                            $headers ::: string[], $flags ::: int = PKCS7_DETACHED, $extra_certs ::: string = "") ::: bool;
+
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;

@@ -21,6 +21,7 @@
 #include "common/resolver.h"
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "common/wrappers/openssl.h"
+#include "common/wrappers/string_view.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
@@ -567,7 +568,7 @@ bool f$openssl_sign(const string &data, string &signature, const string &priv_ke
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  
+
   dl::leave_critical_section();
   return result;
 }
@@ -1219,11 +1220,39 @@ void free_openssl_lib() {
   dl::leave_critical_section();
 }
 
+namespace {
+
+void x509_stack_pop_free(STACK_OF(X509) *stack) {
+  if (stack) {
+    sk_X509_pop_free(stack, X509_free);
+  }
+}
+
+// wrap this function, because in openssl 1.0 it is a macros
+void x509_stack_empty_free(STACK_OF(X509) *stack) {
+  if (stack) {
+    sk_X509_free(stack);
+  }
+}
+
+// wrap this function, because in openssl 1.0 it is a macros
+void x509_stack_info_free(STACK_OF(X509_INFO) *stack) {
+  if (stack) {
+    sk_X509_INFO_free(stack);
+  }
+}
+
+}
+
+using BIO_ptr = vk::unique_ptr_with_delete_function<BIO, BIO_vfree>;
+using PKCS7_ptr = vk::unique_ptr_with_delete_function<PKCS7, PKCS7_free>;
+using X509_ptr = vk::unique_ptr_with_delete_function<X509, X509_free>;
+using X509_info_stack_ptr = vk::unique_ptr_with_delete_function<STACK_OF(X509_INFO), x509_stack_info_free>;
+using X509_empty_stack_ptr = vk::unique_ptr_with_delete_function<STACK_OF(X509), x509_stack_empty_free>;
+using X509_stack_ptr = vk::unique_ptr_with_delete_function<STACK_OF(X509), x509_stack_pop_free>;
 
 class X509_parser {
 private:
-  using BIO_ptr = vk::unique_ptr_with_delete_function<BIO, BIO_vfree>;
-  using X509_ptr = vk::unique_ptr_with_delete_function<X509, X509_free>;
   using ASN1_TIME_ptr = vk::unique_ptr_with_delete_function<ASN1_TIME, ASN1_TIME_free>;
   using X509_STORE_ptr = vk::unique_ptr_with_delete_function<X509_STORE, X509_STORE_free>;
   using X509_STORE_CTX_ptr = vk::unique_ptr_with_delete_function<X509_STORE_CTX, X509_STORE_CTX_free>;
@@ -1425,6 +1454,127 @@ var f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
 
 namespace {
 
+X509_stack_ptr read_x509_cert_stack_from_file(const string &extra_certs) {
+  X509_empty_stack_ptr stack{sk_X509_new_null()};
+  if (!stack) {
+    php_warning("Can't allocate memory for extra certs:\n%s", ssl_get_error_string());
+    return {};
+  }
+
+  BIO_ptr in{BIO_new_file(extra_certs.c_str(), "rb")};
+  if (!in) {
+    php_warning("Can't open extra certs file '%s':\n%s", extra_certs.c_str(), ssl_get_error_string());
+    return {};
+  }
+
+  X509_info_stack_ptr sk{PEM_X509_INFO_read_bio(in.get(), nullptr, nullptr, nullptr)};
+  if (!sk) {
+    php_warning("Can't read certs file '%s':\n%s", extra_certs.c_str(), ssl_get_error_string());
+    return {};
+  }
+
+  while (sk_X509_INFO_num(sk.get())) {
+    X509_INFO *xi = sk_X509_INFO_shift(sk.get());
+    if (xi->x509) {
+      sk_X509_push(stack.get(), xi->x509);
+      xi->x509 = nullptr;
+    }
+    X509_INFO_free(xi);
+  }
+
+  if (!sk_X509_num(stack.get())) {
+    php_warning("Can't find any extra certs in file '%s':\n%s", extra_certs.c_str(), ssl_get_error_string());
+    return {};
+  }
+  return X509_stack_ptr{stack.release()};
+}
+
+X509_ptr read_x509_cert(const string &cert_str) noexcept {
+  vk::string_view file_prefilx{"file://"};
+  if (vk::string_view{cert_str.c_str(), cert_str.size()}.starts_with(file_prefilx)) {
+    if (BIO_ptr in{BIO_new_file(cert_str.c_str() + file_prefilx.size(), "rb")}) {
+      return X509_ptr{PEM_read_bio_X509(in.get(), nullptr, nullptr, nullptr)};
+    }
+  } else if (BIO_ptr in{BIO_new_mem_buf(const_cast<char *>(cert_str.c_str()), static_cast<int32_t>(cert_str.size()))}) {
+    return X509_ptr{static_cast<X509 *>(PEM_ASN1_read_bio(
+      reinterpret_cast<d2i_of_void *>(d2i_X509), PEM_STRING_X509, in.get(),
+      nullptr, nullptr, nullptr))
+    };
+  }
+  return {};
+}
+
+} // namespace
+
+bool f$openssl_pkcs7_sign(const string &infile, const string &outfile,
+                          const string &sign_cert, const string &priv_key,
+                          const array<string> &headers, int64_t flags, const string &extra_certs) noexcept {
+  dl::CriticalSectionGuard critical_section;
+  X509_stack_ptr other_certs;
+  if (!extra_certs.empty()) {
+    other_certs = read_x509_cert_stack_from_file(extra_certs);
+    if (!other_certs) {
+      return false;
+    }
+  }
+
+  bool from_cache = false;
+  EVP_PKEY *privkey = openssl_get_private_evp(priv_key, string{}, from_cache);
+  if (privkey == nullptr) {
+    php_warning("Parameter key cannot be converted into a private key");
+    return false;
+  }
+
+  auto priv_key_free = vk::finally([from_cache, privkey] {
+    if (!from_cache) {
+      EVP_PKEY_free(privkey);
+    }
+  });
+
+  X509_ptr cert = read_x509_cert(sign_cert);
+  if (!cert) {
+    php_warning("Can't read sign cert:\n%s", ssl_get_error_string());
+    return false;
+  }
+
+  BIO_ptr infile_bio{BIO_new_file(infile.c_str(), flags & PKCS7_BINARY ? "rb" : "r")};
+  if (!infile_bio) {
+    php_warning("Can't open input file:\n%s", ssl_get_error_string());
+    return false;
+  }
+
+  BIO_ptr outfile_bio{BIO_new_file(outfile.c_str(), "wb")};
+  if (!outfile_bio) {
+    php_warning("Can't open output file:\n%s", ssl_get_error_string());
+    return false;
+  }
+
+  PKCS7_ptr p7{PKCS7_sign(cert.get(), privkey, other_certs.get(), infile_bio.get(), static_cast<int32_t>(flags))};
+  if (!p7) {
+    php_warning("Can't create PKCS7 structure:\n%s", ssl_get_error_string());
+    return false;
+  }
+
+  static_cast<void>(BIO_reset(infile_bio.get()));
+
+  for (auto header : headers) {
+    const int ret = header.is_string_key()
+                    ? BIO_printf(outfile_bio.get(), "%s: %s\n", header.get_string_key().c_str(), header.get_value().c_str())
+                    : BIO_printf(outfile_bio.get(), "%s\n", header.get_value().c_str());
+    if (ret < 0) {
+      php_warning("Can't add header:\n%s", ssl_get_error_string());
+    }
+  }
+
+  if (!SMIME_write_PKCS7(outfile_bio.get(), p7.get(), infile_bio.get(), static_cast<int32_t>(flags))) {
+    php_warning("Can't write signed data into output file:\n%s", ssl_get_error_string());
+    return false;
+  }
+  return true;
+}
+
+namespace {
+
 enum cipher_opts : int {
   OPENSSL_RAW_DATA = 1,
   OPENSSL_ZERO_PADDING = 2,
@@ -1568,7 +1718,7 @@ void openssl_add_method(const OBJ_NAME *name, void *arg) {
 }
 
 Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
-                            const string &key, int64_t options, const string &iv) {
+                             const string &key, int64_t options, const string &iv) {
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv) && cipher.update(data) && cipher.finalize()) {
     return cipher.get_result();
@@ -1580,7 +1730,7 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data
 array<string> f$openssl_get_cipher_methods(bool aliases) {
   array<string> return_value;
   OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
-                         aliases ? openssl_add_method<true>: openssl_add_method<false>,
+                         aliases ? openssl_add_method<true> : openssl_add_method<false>,
                          &return_value);
   return return_value;
 }
