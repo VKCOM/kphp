@@ -42,6 +42,30 @@ function test_basic_encrypt_decrypt() {
     $encrypted = openssl_encrypt($padded_data, $method, $password, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING, $iv);
     $output = openssl_decrypt($encrypted, $method, $password, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING, $iv);
     var_dump(rtrim($output));
+
+    $tag = 'hello world';
+    $encrypted = openssl_encrypt($data, $method, $password, 0, $iv, $tag);
+    // in PHP it is NULL, in KPHP it is an empty string
+    var_dump((bool)$tag);
+    $tag = 'hello world';
+    $output = openssl_decrypt($encrypted, $method, $password, 0, $iv, $tag);
+    var_dump($output);
+}
+
+function test_basic_encrypt_decrypt_gcm_ccm() {
+    $methods = ['aes-128-gcm'];
+    foreach($methods as $method) {
+        $key = '01234567890123456789012345678901';
+        $data = 'test';
+        $add = 'aad';
+        $tag = '';
+
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($method));
+        $encrypted = openssl_encrypt($data, $method, $key, OPENSSL_RAW_DATA, $iv, $tag, $add, 16);
+
+        $decrypted_data = openssl_decrypt($encrypted, $method, $key, OPENSSL_RAW_DATA, $iv, $tag, $add);
+        var_dump($data === $decrypted_data);
+    }
 }
 
 function test_decrypt_errors() {
@@ -77,5 +101,6 @@ function test_encrypt_errors() {
 test_openssl_get_cipher_methods(true);
 test_openssl_get_cipher_methods(false);
 test_basic_encrypt_decrypt();
+test_basic_encrypt_decrypt_gcm_ccm();
 test_decrypt_errors();
 test_encrypt_errors();

@@ -434,8 +434,10 @@ function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
 
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
-function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
-function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '') ::: string | false;
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
+                         &$tag :<=: string = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
+                        $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);

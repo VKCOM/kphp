@@ -1595,32 +1595,60 @@ struct CipherCtx {
       php_warning("Unknown cipher algorithm '%s'", method.c_str());
       return;
     }
+    const int mode = EVP_CIPHER_mode(type_);
+    if (mode == EVP_CIPH_GCM_MODE) {
+      is_aead_ = true;
+      is_single_run_aead_ = false;
+      aead_get_tag_flag_ = EVP_CTRL_GCM_GET_TAG;
+      aead_set_tag_flag_ = EVP_CTRL_GCM_SET_TAG;
+      aead_ivlen_flag_ = EVP_CTRL_GCM_SET_IVLEN;
+    } else if (mode == EVP_CIPH_CCM_MODE) {
+      is_aead_ = true;
+      is_single_run_aead_ = true;
+      aead_get_tag_flag_ = EVP_CTRL_CCM_GET_TAG;
+      aead_set_tag_flag_ = EVP_CTRL_CCM_SET_TAG;
+      aead_ivlen_flag_ = EVP_CTRL_CCM_SET_IVLEN;
+    }
+
     ctx_ = EVP_CIPHER_CTX_new();
     if (!ctx_) {
       php_warning("Failed to create cipher context");
     }
   }
 
-  string get_result() const {
-    if ((action_ == decrypt) || (options_ & OPENSSL_RAW_DATA)) {
-      return out_;
-    } else {
-      return f$base64_encode(out_);
-    }
+  string flush_result() {
+    return std::move(out_);
   };
 
   explicit operator bool() const { return type_ && ctx_; }
 
-  bool init(string key, string iv) {
+  bool init(string key, string iv, string &tag) {
     const size_t max_iv_len = static_cast<size_t>(EVP_CIPHER_iv_length(type_));
     if (action_ == encrypt && iv.empty() && max_iv_len > 0) {
       php_warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
     }
-    align_iv(iv, max_iv_len);
 
     if (!EVP_CipherInit_ex(ctx_, type_, nullptr, nullptr, nullptr, action_)) {
       php_warning("Cipher init error:\n%s", ssl_get_error_string());
       return false;
+    }
+
+    if (!align_iv(iv, max_iv_len)) {
+      return false;
+    }
+
+    if (is_single_run_aead_ && action_ == cipher_action::encrypt) {
+      if (!EVP_CIPHER_CTX_ctrl(ctx_, aead_set_tag_flag_, static_cast<int32_t>(tag.size()), nullptr)) {
+        php_warning("Setting tag length for AEAD cipher failed");
+        return false;
+      }
+    } else if (action_ == cipher_action::decrypt && !tag.empty()) {
+      if (!is_aead_) {
+        php_warning("The tag cannot be used because the cipher method does not support AEAD");
+      } else if (!EVP_CIPHER_CTX_ctrl(ctx_, aead_set_tag_flag_, static_cast<int32_t>(tag.size()), tag.buffer())) {
+        php_warning("Setting tag for AEAD cipher decryption failed");
+        return false;
+      }
     }
 
     const int cipher_key_len = EVP_CIPHER_key_length(type_);
@@ -1646,14 +1674,15 @@ struct CipherCtx {
     return true;
   }
 
-  bool update(string data) {
-    if (action_ == decrypt && !(options_ & OPENSSL_RAW_DATA)) {
-      Optional<string> decoding_data = f$base64_decode(data, true);
-      if (!decoding_data.has_value()) {
-        php_warning("Failed to base64 decode the input");
-        return false;
-      }
-      data = std::move(decoding_data.val());
+  bool update(const string &data, const string &aad) {
+    if (is_single_run_aead_ && !EVP_CipherUpdate(ctx_, nullptr, &out_len_, nullptr, static_cast<int32_t>(data.size()))) {
+      php_warning("Setting of data length failed:\n%s", ssl_get_error_string());
+      return false;
+    }
+
+    if (is_aead_ && !EVP_CipherUpdate(ctx_, nullptr, &out_len_, reinterpret_cast<const unsigned char *>(aad.c_str()), static_cast<int32_t>(aad.size()))) {
+      php_warning("Setting of additional application data failed:\n%s", ssl_get_error_string());
+      return false;
     }
 
     out_.assign(data.size() + EVP_CIPHER_block_size(type_), '\0');
@@ -1678,6 +1707,23 @@ struct CipherCtx {
     return is_ok;
   }
 
+  bool make_tag(string &tag) {
+    if (is_aead_ && !tag.empty()) {
+      if (EVP_CIPHER_CTX_ctrl(ctx_, aead_get_tag_flag_, static_cast<int32_t>(tag.size()), tag.buffer()) == 1) {
+        return true;
+      }
+      php_warning("Retrieving verification tag failed:\n%s", ssl_get_error_string());
+      return false;
+    } else if (!tag.empty()) {
+      php_warning("The authenticated tag cannot be provided for cipher that doesn not support AEAD");
+    } else if (is_aead_) {
+      php_warning("A tag should be provided when using AEAD mode");
+      return false;
+    }
+    tag = string{};
+    return true;
+  }
+
   ~CipherCtx() {
     if (ctx_) {
       EVP_CIPHER_CTX_cleanup(ctx_);
@@ -1686,18 +1732,34 @@ struct CipherCtx {
   }
 
 private:
-  void align_iv(string &iv, size_t iv_required_len) {
+  bool align_iv(string &iv, size_t iv_required_len) {
+    if (iv.size() == iv_required_len) {
+      return true;
+    }
+
+    if (is_aead_) {
+      if (EVP_CIPHER_CTX_ctrl(ctx_, aead_ivlen_flag_, static_cast<int32_t>(iv.size()), nullptr) != 1) {
+        php_warning("Setting of IV length for AEAD mode failed");
+        return false;
+      }
+      return true;
+    }
+
     if (iv.empty()) {
       iv.assign(static_cast<std::uint32_t>(iv_required_len), '\0');
-    } else if (iv.size() < iv_required_len) {
+      return true;
+    }
+    if (iv.size() < iv_required_len) {
       php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
                   iv.size(), iv_required_len);
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
-    } else if (iv.size() > iv_required_len) {
-      php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
-                  iv.size(), iv_required_len);
-      iv.shrink(static_cast<string::size_type>(iv_required_len));
+      return true;
     }
+    // iv.size() > iv_required_len
+    php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
+                iv.size(), iv_required_len);
+    iv.shrink(static_cast<string::size_type>(iv_required_len));
+    return true;
   }
 
   const EVP_CIPHER *type_{nullptr};
@@ -1708,6 +1770,12 @@ private:
 
   const int64_t options_{0};
   cipher_action action_;
+
+  bool is_aead_{false};
+  bool is_single_run_aead_{false};
+  int aead_get_tag_flag_{0};
+  int aead_set_tag_flag_{0};
+  int aead_ivlen_flag_{0};
 };
 
 template<bool allow_alias>
@@ -1718,10 +1786,13 @@ void openssl_add_method(const OBJ_NAME *name, void *arg) {
 }
 
 Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data, const string &method,
-                             const string &key, int64_t options, const string &iv) {
+                             const string &key, int64_t options, const string &iv, string &tag, const string &aad) {
   CipherCtx cipher{method, options, action};
-  if (cipher && cipher.init(key, iv) && cipher.update(data) && cipher.finalize()) {
-    return cipher.get_result();
+  if (cipher && cipher.init(key, iv, tag) && cipher.update(data, aad) && cipher.finalize()) {
+    if (action == CipherCtx::cipher_action::encrypt && !cipher.make_tag(tag)) {
+      return false;
+    }
+    return cipher.flush_result();
   }
   return false;
 }
@@ -1748,10 +1819,36 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) {
   return EVP_CIPHER_iv_length(cipher_type);
 }
 
-Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options, const string &iv) {
-  return eval_cipher(CipherCtx::encrypt, data, method, key, options, iv);
+namespace impl_ {
+string default_tag_stub;
+} // namespace impl_
+Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options,
+                                   const string &iv, string &tag, const string &aad, int64_t tag_length) {
+  string out_tag;
+  if (&tag != &impl_::default_tag_stub) {
+    out_tag.assign(static_cast<std::uint32_t>(tag_length), '\0');
+  }
+  auto result = eval_cipher(CipherCtx::encrypt, data, method, key, options, iv, out_tag, aad);
+  if (!result.has_value()) {
+    return false;
+  }
+  if (&tag != &impl_::default_tag_stub) {
+    tag = std::move(out_tag);
+  }
+  return (options & OPENSSL_RAW_DATA)
+         ? result
+         : f$base64_encode(result.val());
 }
 
-Optional<string> f$openssl_decrypt(const string &data, const string &method, const string &key, int64_t options, const string &iv) {
-  return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv);
+Optional<string> f$openssl_decrypt(string data, const string &method, const string &key, int64_t options,
+                                   const string &iv, string tag, const string &aad) {
+  if (!(options & OPENSSL_RAW_DATA)) {
+    Optional<string> decoding_data = f$base64_decode(data, true);
+    if (!decoding_data.has_value()) {
+      php_warning("Failed to base64 decode the input");
+      return false;
+    }
+    data = std::move(decoding_data.val());
+  }
+  return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv, tag, aad);
 }
