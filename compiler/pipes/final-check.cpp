@@ -405,6 +405,16 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     }
+
+    // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
+    bool is_value_sort_function = vk::any_of_equal(function_name, "sort", "rsort", "usort", "asort", "arsort", "uasort");
+    if (is_value_sort_function) {
+      // Forbid arrays with elements that would be rejected by check_comparisons().
+      const TypeData *array_type = tinf::get_type(call->args()[0]);
+      auto *elem_type = array_type->lookup_at(Key::any_key());
+      kphp_error(vk::none_of_equal(elem_type->ptype(), tp_Class, tp_tuple, tp_shape),
+                 fmt_format("{} is not comparable and cannot be sorted", colored_type_out(elem_type)));
+    }
   }
 
   check_func_call_params(call);
