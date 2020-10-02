@@ -5,7 +5,7 @@
 #include "common/version-string.h"
 
 #include "compiler/compiler.h"
-#include "compiler/enviroment.h"
+#include "compiler/compiler-settings.h"
 
 /***
  * Kitten compiler for PHP interface
@@ -20,7 +20,7 @@
    KPHP_LINK_FILE ?= $KPHP_PATH/objs/PHP/$KPHP_LINK_FILE_NAME
  */
 
-static KphpEnviroment *env;
+static CompilerSettings *settings;
 
 int parse_args_f(int i) {
   switch (i) {
@@ -28,67 +28,67 @@ int parse_args_f(int i) {
       usage_and_exit();
       exit(2);
     case 'd':
-      env->set_dest_dir(optarg);
+      settings->set_dest_dir(optarg);
       break;
     case 'F':
-      env->set_make_force();
+      settings->set_make_force();
       break;
     case 'f':
-      env->set_functions(optarg);
+      settings->set_functions(optarg);
       break;
     case 'g':
-      env->set_profiler_level(optarg);
+      settings->set_profiler_level(optarg);
       break;
     case 'I':
-      env->add_include(optarg);
+      settings->add_include(optarg);
       break;
     case 'j':
-      env->set_jobs_count(optarg);
+      settings->set_jobs_count(optarg);
       break;
     case 'M':
-      env->set_mode(optarg);
+      settings->set_mode(optarg);
       break;
     case 'l':
-      env->set_link_file(optarg);
+      settings->set_link_file(optarg);
       break;
     case 'm':
-      env->set_use_make();
+      settings->set_use_make();
       break;
     case 'o':
-      env->set_user_binary_path(optarg);
+      settings->set_user_binary_path(optarg);
       break;
     case 'O':
-      env->set_static_lib_out_dir(optarg);
+      settings->set_static_lib_out_dir(optarg);
       break;
     case 'p':
-      env->set_print_resumable_graph();
+      settings->set_print_resumable_graph();
       break;
     case 't':
-      env->set_threads_count(optarg);
+      settings->set_threads_count(optarg);
       break;
     case 'T':
-      env->set_tl_schema_file(optarg);
+      settings->set_tl_schema_file(optarg);
       break;
     case 's':
-      env->set_path(optarg);
+      settings->set_path(optarg);
       break;
     case 'S':
-      env->set_use_auto_dest();
+      settings->set_use_auto_dest();
       break;
     case 'v':
-      env->set_verbosity(optarg);
+      settings->set_verbosity(optarg);
       break;
     case 'W':
-      env->set_error_on_warns();
+      settings->set_error_on_warns();
       break;
     case 2000:
-      env->set_warnings_filename(optarg);
+      settings->set_warnings_filename(optarg);
       break;
     case 2001:
-      env->set_stats_filename(optarg);
+      settings->set_stats_filename(optarg);
       break;
     case 2002: {
-      env->set_warnings_level(optarg);
+      settings->set_warnings_level(optarg);
       break;
     }
     case 2003:
@@ -96,31 +96,31 @@ int parse_args_f(int i) {
       exit(0);
       break;
     case 2004:
-      env->set_debug_level(optarg);
+      settings->set_debug_level(optarg);
       break;
     case 2005:
-      env->set_runtime_sha256_file(optarg);
+      settings->set_runtime_sha256_file(optarg);
       break;
     case 2006:
-      env->set_no_pch();
+      settings->set_no_pch();
       break;
     case 2007:
-      env->set_no_index_file();
+      settings->set_no_index_file();
       break;
     case 2008:
-      env->set_enable_global_vars_memory_stats();
+      settings->set_enable_global_vars_memory_stats();
       break;
     case 2009:
-      env->set_gen_tl_internals();
+      settings->set_gen_tl_internals();
       break;
     case 2010:
-      env->set_php_code_version(optarg);
+      settings->set_php_code_version(optarg);
       break;
     case 2011:
-      env->set_compilation_metrics_filename(optarg);
+      settings->set_compilation_metrics_filename(optarg);
       break;
     case 2012:
-      env->set_dynamic_incremental_linkage();
+      settings->set_dynamic_incremental_linkage();
       break;
     default:
       return -1;
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
   usage_set_other_args_desc("<main-files-list>");
   set_debug_handlers();
 
-  env = new KphpEnviroment();
+  settings = new CompilerSettings();
 
   remove_all_options();
   parse_option("help", no_argument, 'h', "prints help and exits");
@@ -177,17 +177,17 @@ int main(int argc, char *argv[]) {
   }
 
   for (; optind < argc; ++optind) {
-    env->add_main_file(argv[optind]);
+    settings->add_main_file(argv[optind]);
   }
 
-  bool ok = env->init();
-  if (env->get_verbosity() >= 3) {
-    env->debug();
+  bool ok = settings->init();
+  if (settings->get_verbosity() >= 3) {
+    settings->debug();
   }
   if (!ok) {
     return 1;
   }
-  if (!compiler_execute(env)) {
+  if (!compiler_execute(settings)) {
     return 1;
   }
 

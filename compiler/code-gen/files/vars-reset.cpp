@@ -45,7 +45,7 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
 
   FunctionSignatureGenerator(W) << "void " << GlobalVarsResetFuncName(func, part_i) << " " << BEGIN;
   for (auto var : used_vars) {
-    if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
+    if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
 

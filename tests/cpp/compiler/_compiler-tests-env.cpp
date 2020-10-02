@@ -9,7 +9,7 @@ public:
   void SetUp() final {
     testing::Environment::SetUp();
     G = new CompilerCore();
-    G->register_env(new KphpEnviroment{});
+    G->register_settings(new CompilerSettings{});
   }
 
   void TearDown() final {

@@ -296,12 +296,12 @@ string stage::to_str(const Location &new_location) {
 
 bool stage::should_be_colored(FILE *f)  {
   if (!G) return TermStringFormat::is_terminal(f);
-  switch (G->env().get_color_settings()) {
-    case KphpEnviroment::colored:
+  switch (G->settings().get_color_settings()) {
+    case CompilerSettings::colored:
       return true;
-    case KphpEnviroment::not_colored:
+    case CompilerSettings::not_colored:
       return false;
-    case KphpEnviroment::auto_colored:
+    case CompilerSettings::auto_colored:
     default:
       return TermStringFormat::is_terminal(f);
   }

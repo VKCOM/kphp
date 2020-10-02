@@ -121,7 +121,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(FunctionH(function));
     W << Async(FunctionCpp(function));
 
-    if (function->kphp_lib_export && G->env().is_static_lib_mode()) {
+    if (function->kphp_lib_export && G->settings().is_static_lib_mode()) {
       exported_functions.emplace_back(function);
     }
   }
@@ -150,7 +150,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(GlobalVarsReset(main_file));
   }
 
-  if (G->env().get_enable_global_vars_memory_stats()) {
+  if (G->settings().get_enable_global_vars_memory_stats()) {
     W << Async(GlobalVarsMemoryStats{main_files});
   }
   W << Async(InitScriptsCpp(std::move(main_files), std::move(all_functions)));
@@ -162,7 +162,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   size_t parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(std::move(vars), parts_cnt));
 
-  if (G->env().is_static_lib_mode()) {
+  if (G->settings().is_static_lib_mode()) {
     for (FunctionPtr exported_function: exported_functions) {
       W << Async(LibHeaderH(exported_function));
     }
@@ -206,10 +206,10 @@ string CodeGenF::get_subdir(const string &base) {
 
 void CodeGenF::write_lib_version(CodeGenerator &W) {
   W << OpenFile("_lib_version.h");
-  W << "// Runtime sha256: " << G->env().get_runtime_sha256() << NL;
-  W << "// CXX: " << G->env().get_cxx() << NL;
-  W << "// CXXFLAGS: " << G->env().get_cxx_flags() << NL;
-  W << "// DEBUG: " << G->env().get_debug_level() << NL;
+  W << "// Runtime sha256: " << G->settings().get_runtime_sha256() << NL;
+  W << "// CXX: " << G->settings().get_cxx() << NL;
+  W << "// CXXFLAGS: " << G->settings().get_cxx_flags() << NL;
+  W << "// DEBUG: " << G->settings().get_debug_level() << NL;
   W << CloseFile();
 }
 

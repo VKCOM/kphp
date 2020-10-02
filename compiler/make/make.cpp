@@ -84,7 +84,7 @@ public:
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
-  void init_env(const KphpEnviroment &kphp_env) {
+  void init_env(const CompilerSettings &kphp_env) {
     env.cxx = kphp_env.get_cxx();
     env.cxx_flags = kphp_env.get_cxx_flags();
     env.ld_flags = kphp_env.get_ld_flags();
@@ -106,25 +106,25 @@ public:
 
 static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_dir;
-  out_dir.set_dir(G->env().get_static_lib_out_dir());
+  out_dir.set_dir(G->settings().get_static_lib_out_dir());
   out_dir.del_extra_files();
 
   // copy static archive
-  LibData out_lib(G->env().get_static_lib_name(), out_dir.get_dir());
+  LibData out_lib(G->settings().get_static_lib_name(), out_dir.get_dir());
   hard_link_or_copy(static_archive.path, out_lib.static_archive_path());
   static_archive.unlink();
 
   // copy functions.txt of this static archive
-  File functions_txt_tmp(G->env().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
+  File functions_txt_tmp(G->settings().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
   hard_link_or_copy(functions_txt_tmp.path, out_lib.functions_txt_file());
   functions_txt_tmp.unlink();
 
   // copy runtime lib sha256 of this static archive
-  File runtime_lib_sha256(G->env().get_runtime_sha256_file());
+  File runtime_lib_sha256(G->settings().get_runtime_sha256_file());
   hard_link_or_copy(runtime_lib_sha256.path, out_lib.runtime_lib_sha256_file());
 
   Index headers_tmp_dir;
-  headers_tmp_dir.sync_with_dir(G->env().get_dest_cpp_dir() + LibData::headers_tmp_dir());
+  headers_tmp_dir.sync_with_dir(G->settings().get_dest_cpp_dir() + LibData::headers_tmp_dir());
   Index out_headers_dir;
   out_headers_dir.set_dir(out_lib.headers_dir());
   // copy cpp header files of this static archive
@@ -135,18 +135,18 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
 }
 
 static std::forward_list<File> collect_imported_libs() {
-  const string &binary_runtime_sha256 = G->env().get_runtime_sha256();
+  const string &binary_runtime_sha256 = G->settings().get_runtime_sha256();
   stage::die_if_global_errors();
 
   std::forward_list<File> imported_libs;
-  imported_libs.emplace_front(G->env().get_link_file());
+  imported_libs.emplace_front(G->settings().get_link_file());
   for (const auto &lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      std::string lib_runtime_sha256 = KphpEnviroment::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
+      std::string lib_runtime_sha256 = CompilerSettings::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
 
       kphp_error_act(binary_runtime_sha256 == lib_runtime_sha256,
                      fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
-                                G->env().get_runtime_sha256_file(), lib->runtime_lib_sha256_file()),
+                                G->settings().get_runtime_sha256_file(), lib->runtime_lib_sha256_file()),
                      continue);
       imported_libs.emplace_front(lib->static_archive_path());
     }
@@ -154,7 +154,7 @@ static std::forward_list<File> collect_imported_libs() {
 
   for (File &file: imported_libs) {
     kphp_error_act(file.read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
-    if (G->env().get_verbosity() >= 1) {
+    if (G->settings().get_verbosity() >= 1) {
       fmt_fprintf(stderr, "Use static lib [{}]\n", file.path);
     }
   }
@@ -173,7 +173,7 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviroment &kphp_env, FILE *stats_file) {
+static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSettings &kphp_env, FILE *stats_file) {
   std::string gch_dir = "/tmp/kphp_gch/";
   gch_dir.append(kphp_env.get_runtime_sha256()).append(1, '/');
   gch_dir.append(kphp_env.get_cxx_flags_sha256()).append(1, '/');
@@ -307,7 +307,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
     auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
-                                             G->env().get_dynamic_incremental_linkage() ? "so" : "o");
+                                             G->settings().get_dynamic_incremental_linkage() ? "so" : "o");
     File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
@@ -317,7 +317,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
 }
 
 static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
-                      const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+                      const std::forward_list<Index> &imported_headers, const CompilerSettings &kphp_env,
                       const std::string &gch_dir, FILE *stats_file) {
   MakeSetup make{stats_file};
   std::vector<File *> lib_objs;
@@ -336,7 +336,7 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
 }
 
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
-                                 const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+                                 const std::forward_list<Index> &imported_headers, const CompilerSettings &kphp_env,
                                  const std::string &gch_dir, FILE *stats_file) {
   MakeSetup make{stats_file};
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
@@ -360,7 +360,7 @@ static std::forward_list<Index> collect_imported_headers() {
 }
 
 void run_make() {
-  const auto &env = G->env();
+  const auto &env = G->settings();
   FILE *make_stats_file = nullptr;
   if (!env.get_stats_filename().empty()) {
     make_stats_file = fopen(env.get_stats_filename().c_str(), "w");

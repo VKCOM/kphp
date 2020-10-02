@@ -1,4 +1,4 @@
-#include "compiler/enviroment.h"
+#include "compiler/compiler-settings.h"
 
 #include <fmt/format.h>
 #include <fstream>
@@ -59,307 +59,307 @@ void get_bool_option_from_env(bool &option_value, const char *env, bool default_
   }
 }
 
-const string &KphpEnviroment::get_home() const {
+const string &CompilerSettings::get_home() const {
   return home_;
 }
 
-void KphpEnviroment::set_dest_dir(const string &dest_dir) {
+void CompilerSettings::set_dest_dir(const string &dest_dir) {
   dest_dir_ = dest_dir;
 }
 
-const string &KphpEnviroment::get_dest_dir() const {
+const string &CompilerSettings::get_dest_dir() const {
   return dest_dir_;
 }
 
-void KphpEnviroment::set_use_auto_dest() {
+void CompilerSettings::set_use_auto_dest() {
   use_auto_dest_bool_ = true;
 }
 
-bool KphpEnviroment::get_use_auto_dest() const {
+bool CompilerSettings::get_use_auto_dest() const {
   return use_auto_dest_bool_;
 }
 
-void KphpEnviroment::set_functions(const string &functions) {
+void CompilerSettings::set_functions(const string &functions) {
   functions_ = functions;
 }
 
-const string &KphpEnviroment::get_functions() const {
+const string &CompilerSettings::get_functions() const {
   return functions_;
 }
 
-void KphpEnviroment::add_include(const string &include) {
+void CompilerSettings::add_include(const string &include) {
   includes_.push_back(include);
 }
 
-const vector<string> &KphpEnviroment::get_includes() const {
+const vector<string> &CompilerSettings::get_includes() const {
   return includes_;
 }
 
-void KphpEnviroment::set_jobs_count(const string &jobs_count) {
+void CompilerSettings::set_jobs_count(const string &jobs_count) {
   jobs_count_ = jobs_count;
 }
 
-int KphpEnviroment::get_jobs_count() const {
+int CompilerSettings::get_jobs_count() const {
   return jobs_count_int_;
 }
 
-void KphpEnviroment::set_mode(const string &mode) {
+void CompilerSettings::set_mode(const string &mode) {
   mode_ = mode;
 }
 
-const string &KphpEnviroment::get_mode() const {
+const string &CompilerSettings::get_mode() const {
   return mode_;
 }
 
-void KphpEnviroment::set_link_file(const string &link_file) {
+void CompilerSettings::set_link_file(const string &link_file) {
   link_file_ = link_file;
 }
 
-const string &KphpEnviroment::get_link_file() const {
+const string &CompilerSettings::get_link_file() const {
   return link_file_;
 }
 
-void KphpEnviroment::set_use_make() {
+void CompilerSettings::set_use_make() {
   use_make_bool_ = true;
 }
 
-bool KphpEnviroment::get_use_make() const {
+bool CompilerSettings::get_use_make() const {
   return use_make_bool_;
 }
 
-void KphpEnviroment::set_make_force() {
+void CompilerSettings::set_make_force() {
   make_force_bool_ = true;
 }
 
-bool KphpEnviroment::get_make_force() const {
+bool CompilerSettings::get_make_force() const {
   return make_force_bool_;
 }
 
-const string &KphpEnviroment::get_binary_path() const {
+const string &CompilerSettings::get_binary_path() const {
   return binary_path_;
 }
 
-void KphpEnviroment::set_user_binary_path(const string &user_binary_path) {
+void CompilerSettings::set_user_binary_path(const string &user_binary_path) {
   user_binary_path_ = user_binary_path;
 }
 
-const string &KphpEnviroment::get_user_binary_path() const {
+const string &CompilerSettings::get_user_binary_path() const {
   return user_binary_path_;
 }
 
-void KphpEnviroment::set_static_lib_out_dir(string &&lib_dir) {
+void CompilerSettings::set_static_lib_out_dir(string &&lib_dir) {
   static_lib_out_dir_ = std::move(lib_dir);
 }
 
-const string &KphpEnviroment::get_static_lib_out_dir() const {
+const string &CompilerSettings::get_static_lib_out_dir() const {
   return static_lib_out_dir_;
 }
 
-const string &KphpEnviroment::get_static_lib_name() const {
+const string &CompilerSettings::get_static_lib_name() const {
   return static_lib_name_;
 }
 
-void KphpEnviroment::set_threads_count(const string &threads_count) {
+void CompilerSettings::set_threads_count(const string &threads_count) {
   threads_count_ = threads_count;
 }
 
-int KphpEnviroment::get_threads_count() const {
+int CompilerSettings::get_threads_count() const {
   return threads_count_int_;
 }
 
-void KphpEnviroment::set_tl_schema_file(const string &tl_schema_file) {
+void CompilerSettings::set_tl_schema_file(const string &tl_schema_file) {
   tl_schema_file_ = tl_schema_file;
 }
 
-string KphpEnviroment::get_tl_schema_file() const {
+string CompilerSettings::get_tl_schema_file() const {
   return tl_schema_file_;
 }
 
-void KphpEnviroment::set_path(const string &path) {
+void CompilerSettings::set_path(const string &path) {
   path_ = path;
 }
 
-const string &KphpEnviroment::get_path() const {
+const string &CompilerSettings::get_path() const {
   return path_;
 }
 
-void KphpEnviroment::set_runtime_sha256_file(string &&file_name) {
+void CompilerSettings::set_runtime_sha256_file(string &&file_name) {
   runtime_sha256_filename_ = std::move(file_name);
 }
 
-const string &KphpEnviroment::get_runtime_sha256_file() const {
+const string &CompilerSettings::get_runtime_sha256_file() const {
   return runtime_sha256_filename_;
 }
 
-const string &KphpEnviroment::get_runtime_sha256() const {
+const string &CompilerSettings::get_runtime_sha256() const {
   return runtime_sha256_;
 }
 
-const string &KphpEnviroment::get_cxx_flags_sha256() const {
+const string &CompilerSettings::get_cxx_flags_sha256() const {
   return cxx_flags_sha256_;
 }
 
-void KphpEnviroment::set_verbosity(std::string &&verbosity) {
+void CompilerSettings::set_verbosity(std::string &&verbosity) {
   verbosity_str_ = std::move(verbosity);
 }
 
-int KphpEnviroment::get_verbosity() const {
+int CompilerSettings::get_verbosity() const {
   return verbosity_int_;
 }
 
-void KphpEnviroment::set_print_resumable_graph() {
+void CompilerSettings::set_print_resumable_graph() {
   print_resumable_graph_ = 1;
 }
 
-int KphpEnviroment::get_print_resumable_graph() const {
+int CompilerSettings::get_print_resumable_graph() const {
   return print_resumable_graph_;
 }
 
-void KphpEnviroment::set_profiler_level(string &&level) {
+void CompilerSettings::set_profiler_level(string &&level) {
   profiler_level_str_ = std::move(level);
 }
 
-int KphpEnviroment::get_profiler_level() const {
+int CompilerSettings::get_profiler_level() const {
   return profiler_level_;
 }
 
-void KphpEnviroment::set_no_pch() {
+void CompilerSettings::set_no_pch() {
   no_pch_ = true;
 }
 
-bool KphpEnviroment::get_no_pch() const {
+bool CompilerSettings::get_no_pch() const {
   return no_pch_;
 }
 
-void KphpEnviroment::set_no_index_file() {
+void CompilerSettings::set_no_index_file() {
   no_index_file_ = true;
 }
 
-bool KphpEnviroment::get_no_index_file() const {
+bool CompilerSettings::get_no_index_file() const {
   return no_index_file_;
 }
 
-bool KphpEnviroment::get_stop_on_type_error() const {
+bool CompilerSettings::get_stop_on_type_error() const {
   return stop_on_type_error_;
 }
 
-bool KphpEnviroment::get_show_progress() const {
+bool CompilerSettings::get_show_progress() const {
   return show_progress_;
 }
 
-void KphpEnviroment::add_main_file(const string &main_file) {
+void CompilerSettings::add_main_file(const string &main_file) {
   main_files_.push_back(main_file);
 }
 
-const vector<string> &KphpEnviroment::get_main_files() const {
+const vector<string> &CompilerSettings::get_main_files() const {
   return main_files_;
 }
 
-void KphpEnviroment::set_enable_global_vars_memory_stats() {
+void CompilerSettings::set_enable_global_vars_memory_stats() {
   enable_global_vars_memory_stats_ = true;
 }
 
-bool KphpEnviroment::get_enable_global_vars_memory_stats() const {
+bool CompilerSettings::get_enable_global_vars_memory_stats() const {
   return enable_global_vars_memory_stats_;
 }
 
-void KphpEnviroment::set_dynamic_incremental_linkage() {
+void CompilerSettings::set_dynamic_incremental_linkage() {
   dynamic_incremental_linkage_ = true;
 }
 
-bool KphpEnviroment::get_dynamic_incremental_linkage() const {
+bool CompilerSettings::get_dynamic_incremental_linkage() const {
   return dynamic_incremental_linkage_;
 }
 
-const string &KphpEnviroment::get_dest_cpp_dir() const {
+const string &CompilerSettings::get_dest_cpp_dir() const {
   return dest_cpp_dir_;
 }
 
-const string &KphpEnviroment::get_dest_objs_dir() const {
+const string &CompilerSettings::get_dest_objs_dir() const {
   return dest_objs_dir_;
 }
 
-const string &KphpEnviroment::get_cxx() const {
+const string &CompilerSettings::get_cxx() const {
   return cxx_;
 }
 
-const string &KphpEnviroment::get_cxx_flags() const {
+const string &CompilerSettings::get_cxx_flags() const {
   return cxx_flags_;
 }
 
-const string &KphpEnviroment::get_ld_flags() const {
+const string &CompilerSettings::get_ld_flags() const {
   return ld_flags_;
 }
 
-const string &KphpEnviroment::get_ar() const {
+const string &CompilerSettings::get_ar() const {
   return ar_;
 }
 
-const string &KphpEnviroment::get_incremental_linker() const {
+const string &CompilerSettings::get_incremental_linker() const {
   return incremental_linker_;
 }
 
-const string &KphpEnviroment::get_incremental_linker_flags() const {
+const string &CompilerSettings::get_incremental_linker_flags() const {
   return incremental_linker_flags_;
 }
 
-bool KphpEnviroment::is_static_lib_mode() const {
+bool CompilerSettings::is_static_lib_mode() const {
   return mode_ == "lib";
 }
 
-void KphpEnviroment::set_error_on_warns() {
+void CompilerSettings::set_error_on_warns() {
   error_on_warns_ = true;
 }
 
-bool KphpEnviroment::get_error_on_warns() const {
+bool CompilerSettings::get_error_on_warns() const {
   return error_on_warns_;
 }
 
-void KphpEnviroment::set_warnings_filename(const string &path) {
+void CompilerSettings::set_warnings_filename(const string &path) {
   warnings_filename_ = path;
 }
 
-void KphpEnviroment::set_compilation_metrics_filename(string &&path) {
+void CompilerSettings::set_compilation_metrics_filename(string &&path) {
   compilation_metrics_file_ = std::move(path);
 }
 
-void KphpEnviroment::set_stats_filename(const string &path) {
+void CompilerSettings::set_stats_filename(const string &path) {
   stats_filename_ = path;
 }
 
-const string &KphpEnviroment::get_warnings_filename() const {
+const string &CompilerSettings::get_warnings_filename() const {
   return warnings_filename_;
 }
 
-const string &KphpEnviroment::get_compilation_metrics_filename() const {
+const string &CompilerSettings::get_compilation_metrics_filename() const {
   return compilation_metrics_file_;
 }
 
-const string &KphpEnviroment::get_stats_filename() const {
+const string &CompilerSettings::get_stats_filename() const {
   return stats_filename_;
 }
 
-void KphpEnviroment::set_warnings_level(std::string &&level) {
+void CompilerSettings::set_warnings_level(std::string &&level) {
   warnings_level_str_ = std::move(level);
 }
 
-int KphpEnviroment::get_warnings_level() const {
+int CompilerSettings::get_warnings_level() const {
   return warnings_level_;
 }
 
-void KphpEnviroment::set_debug_level(const string &level) {
+void CompilerSettings::set_debug_level(const string &level) {
   debug_level_ = level;
 }
 
-const string &KphpEnviroment::get_debug_level() const {
+const string &CompilerSettings::get_debug_level() const {
   return debug_level_;
 }
 
-const string &KphpEnviroment::get_version() const {
+const string &CompilerSettings::get_version() const {
   return version_;
 }
 
-void KphpEnviroment::update_cxx_flags_sha256() {
+void CompilerSettings::update_cxx_flags_sha256() {
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
 
@@ -376,7 +376,7 @@ void KphpEnviroment::update_cxx_flags_sha256() {
   cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH * 2);
 }
 
-bool KphpEnviroment::init() {
+bool CompilerSettings::init() {
   char tmp[PATH_MAX];
   char *cur_dir = getcwd(tmp, PATH_MAX);
   if (cur_dir == nullptr) {
@@ -558,12 +558,12 @@ bool KphpEnviroment::init() {
   return true;
 }
 
-void KphpEnviroment::set_dest_dir_subdir(const string &s) {
+void CompilerSettings::set_dest_dir_subdir(const string &s) {
   dest_dir_ += s;
   as_dir(&dest_dir_);
 }
 
-void KphpEnviroment::init_dest_dirs() {
+void CompilerSettings::init_dest_dirs() {
   init_env_var(&dest_cpp_dir_, "", get_dest_dir() + "kphp/");
   as_dir(&dest_cpp_dir_);
   init_env_var(&dest_objs_dir_, "", get_dest_dir() + "objs/");
@@ -573,7 +573,7 @@ void KphpEnviroment::init_dest_dirs() {
   cxx_flags_ += " -iquote" + get_dest_cpp_dir();
 }
 
-void KphpEnviroment::debug() const {
+void CompilerSettings::debug() const {
   std::cerr <<
             "HOME=[" << get_home() << "]\n" <<
             "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
@@ -638,7 +638,7 @@ void KphpEnviroment::debug() const {
   std::cerr << "]\n";
 }
 
-std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename) {
+std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {
   std::ifstream runtime_sha256_file(filename.c_str());
   kphp_error(runtime_sha256_file,
              fmt_format("Can't open runtime sha256 file '{}'", filename));
@@ -651,32 +651,32 @@ std::string KphpEnviroment::read_runtime_sha256_file(const std::string &filename
   return std::string(runtime_sha256, runtime_sha256 + SHA256_LEN);
 }
 
-KphpEnviroment::color_settings KphpEnviroment::get_color_settings() const {
+CompilerSettings::color_settings CompilerSettings::get_color_settings() const {
   return color_;
 }
 
-void KphpEnviroment::set_php_code_version(std::string &&version_tag) {
+void CompilerSettings::set_php_code_version(std::string &&version_tag) {
   php_code_version_ = std::move(version_tag);
 }
 
-const std::string &KphpEnviroment::get_php_code_version() const {
+const std::string &CompilerSettings::get_php_code_version() const {
   return php_code_version_;
 }
 
-const std::string &KphpEnviroment::get_tl_namespace_prefix() const {
+const std::string &CompilerSettings::get_tl_namespace_prefix() const {
   static std::string tl_namespace_name("VK\\TL\\");
   return tl_namespace_name;
 }
 
-const std::string &KphpEnviroment::get_tl_classname_prefix() const {
+const std::string &CompilerSettings::get_tl_classname_prefix() const {
   static std::string tl_classname_prefix("C$VK$TL$");
   return tl_classname_prefix;
 }
 
-void KphpEnviroment::set_gen_tl_internals() {
+void CompilerSettings::set_gen_tl_internals() {
   gen_tl_internals_ = true;
 }
 
-bool KphpEnviroment::get_gen_tl_internals() const {
+bool CompilerSettings::get_gen_tl_internals() const {
   return gen_tl_internals_;
 }

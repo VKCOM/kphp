@@ -64,7 +64,7 @@ void check_class(ClassPtr class_id) {
 
 bool CheckTlClasses::check_function(FunctionPtr) const {
   // TODO it should be better
-  return !G->env().get_tl_schema_file().empty();
+  return !G->settings().get_tl_schema_file().empty();
 }
 
 void CheckTlClasses::on_start() {

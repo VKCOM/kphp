@@ -7,7 +7,7 @@
 
 CalcRealDefinesValuesF::CalcRealDefinesValuesF() : Base() {
   auto val = VertexAdaptor<op_string>::create();
-  val->set_string(G->env().get_version());
+  val->set_string(G->settings().get_version());
   DefineData *data = new DefineData("KPHP_COMPILER_VERSION", val, DefineData::def_const);
   G->register_define(DefinePtr(data));
 }

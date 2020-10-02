@@ -7,7 +7,7 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/data_ptr.h"
-#include "compiler/enviroment.h"
+#include "compiler/compiler-settings.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
@@ -23,7 +23,7 @@ private:
   TSHashTable<VarPtr> global_vars_ht;
   TSHashTable<LibPtr> libs_ht;
   vector<SrcFilePtr> main_files;
-  KphpEnviroment *env_;
+  CompilerSettings *settings_;
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -39,8 +39,8 @@ public:
   CompilerCore();
   void start();
   void finish();
-  void register_env(KphpEnviroment *env);
-  const KphpEnviroment &env() const;
+  void register_settings(CompilerSettings *settings);
+  const CompilerSettings &settings() const;
   const string &get_global_namespace() const;
   string unify_file_name(const string &file_name);
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;

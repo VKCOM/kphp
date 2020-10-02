@@ -104,8 +104,8 @@ class lockf_wrapper {
 
 public:
   bool lock() {
-    std::string dest_path = G->env().get_dest_dir();
-    if (G->env().get_use_auto_dest()) {
+    std::string dest_path = G->settings().get_dest_dir();
+    if (G->settings().get_use_auto_dest()) {
       dest_path += G->get_subdir_name();
     }
 
@@ -172,15 +172,15 @@ using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
 
 
 
-bool compiler_execute(KphpEnviroment *env) {
+bool compiler_execute(CompilerSettings *settings) {
   double st = get_utime(CLOCK_MONOTONIC);
   G = new CompilerCore();
-  G->register_env(env);
+  G->register_settings(settings);
   G->start();
-  if (!env->get_warnings_filename().empty()) {
-    FILE *f = fopen(env->get_warnings_filename().c_str(), "w");
+  if (!settings->get_warnings_filename().empty()) {
+    FILE *f = fopen(settings->get_warnings_filename().c_str(), "w");
     if (!f) {
-      std::cerr << "Can't open warnings-file " << env->get_warnings_filename() << "\n";
+      std::cerr << "Can't open warnings-file " << settings->get_warnings_filename() << "\n";
       return false;
     }
     stage::set_warning_file(f);
@@ -196,11 +196,11 @@ bool compiler_execute(KphpEnviroment *env) {
 
   DataStream<SrcFilePtr> src_file_stream;
 
-  for (const auto &main_file : env->get_main_files()) {
+  for (const auto &main_file : settings->get_main_files()) {
     G->register_main_file(main_file, src_file_stream);
   }
-  if (!G->env().get_functions().empty()) {
-    G->require_file(G->env().get_functions(), LibPtr{}, src_file_stream);
+  if (!G->settings().get_functions().empty()) {
+    G->require_file(G->settings().get_functions(), LibPtr{}, src_file_stream);
   }
 
   static lockf_wrapper unique_file_lock;
@@ -209,11 +209,11 @@ bool compiler_execute(KphpEnviroment *env) {
   }
 
   SchedulerBase *scheduler;
-  if (G->env().get_threads_count() == 1) {
+  if (G->settings().get_threads_count() == 1) {
     scheduler = new OneThreadScheduler();
   } else {
     auto s = new Scheduler();
-    s->set_threads_count(G->env().get_threads_count());
+    s->set_threads_count(G->settings().get_threads_count());
     scheduler = s;
   }
 
@@ -298,7 +298,7 @@ bool compiler_execute(KphpEnviroment *env) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
-  if (G->env().get_show_progress()) {
+  if (G->settings().get_show_progress()) {
     PipesProgress::get().enable();
   }
 
@@ -308,12 +308,12 @@ bool compiler_execute(KphpEnviroment *env) {
   PipesProgress::get().transpiling_process_finish();
   G->stats.transpilation_time = get_utime(CLOCK_MONOTONIC) - st;
 
-  if (G->env().get_error_on_warns() && stage::warnings_count > 0) {
+  if (G->settings().get_error_on_warns() && stage::warnings_count > 0) {
     stage::error();
   }
 
   stage::die_if_global_errors();
-  const int verbosity = G->env().get_verbosity();
+  const int verbosity = G->settings().get_verbosity();
 
   if (verbosity > 1) {
     bool got_changes = false;
@@ -328,12 +328,12 @@ bool compiler_execute(KphpEnviroment *env) {
     }
   }
 
-  if (G->env().get_use_make()) {
+  if (G->settings().get_use_make()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }
 
-  const std::string compilation_metrics_file = G->env().get_compilation_metrics_filename();
+  const std::string compilation_metrics_file = G->settings().get_compilation_metrics_filename();
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();

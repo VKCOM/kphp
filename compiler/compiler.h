@@ -2,8 +2,8 @@
 
 #include "compiler/common.h"
 
-#include "compiler/enviroment.h"
+#include "compiler/compiler-settings.h"
 
 class Compiler;
 
-bool compiler_execute(KphpEnviroment *env);
+bool compiler_execute(CompilerSettings *settings);

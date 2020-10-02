@@ -49,7 +49,7 @@ static void collect_target_objects() {
            || t->name == "engine.Query";                        // it's the only type with !X; can we get rid of it in the future?
   };
   auto should_exclude_tl_function = [](const std::unique_ptr<vk::tl::combinator> &f) {
-    return !G->env().get_gen_tl_internals() && f->is_internal_function();
+    return !G->settings().get_gen_tl_internals() && f->is_internal_function();
   };
 
   for (const auto &e : tl->types) {
@@ -106,11 +106,11 @@ void write_rpc_server_functions(CodeGenerator &W) {
 }
 
 void write_tl_query_handlers(CodeGenerator &W) {
-  if (G->env().get_tl_schema_file().empty()) {
+  if (G->settings().get_tl_schema_file().empty()) {
     return;
   }
 
-  auto tl_ptr = vk::tl::parse_tlo(G->env().get_tl_schema_file().c_str(), false);
+  auto tl_ptr = vk::tl::parse_tlo(G->settings().get_tl_schema_file().c_str(), false);
   kphp_error_return(tl_ptr.has_value(),
                     fmt_format("Error while reading tlo: {}", tl_ptr.error()));
 

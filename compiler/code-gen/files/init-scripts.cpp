@@ -39,11 +39,11 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   }
-  if (G->env().is_static_lib_mode()) {
+  if (G->settings().is_static_lib_mode()) {
     FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN
-                                  << "return " << RawString(G->env().get_php_code_version()) << ";" << NL
+                                  << "return " << RawString(G->settings().get_php_code_version()) << ";" << NL
                                   << END << NL << NL;
 
     FunctionSignatureGenerator(W) << ("char **get_runtime_options(int *count)") << BEGIN;
@@ -71,7 +71,7 @@ void StaticInit::compile(CodeGenerator &W) const {
       }
     }
   }
-  if (!G->env().get_tl_schema_file().empty()) {
+  if (!G->settings().get_tl_schema_file().empty()) {
     W << "tl_str_const_init();" << NL;
     if (G->get_untyped_rpc_tl_used()) {
       W << "fill_tl_storers_ht();" << NL;
@@ -171,7 +171,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     W << Include(i->main_function->header_full_name);
   }
 
-  if (!G->env().is_static_lib_mode()) {
+  if (!G->settings().is_static_lib_mode()) {
     W << NL;
     FunctionSignatureGenerator(W) << "void global_init_php_scripts()" << SemicolonAndNL();
     FunctionSignatureGenerator(W) << "void init_php_scripts()" << SemicolonAndNL();
@@ -179,7 +179,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << NL << StaticInit(all_functions) << NL;
 
-  if (G->env().is_static_lib_mode()) {
+  if (G->settings().is_static_lib_mode()) {
     // only one main file is allowed for static lib mode
     kphp_assert(main_file_ids.size() == 1);
     W << LibGlobalVarsReset(main_file_ids.back()->main_function);

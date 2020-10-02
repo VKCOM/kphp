@@ -17,7 +17,7 @@
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
 CompilerCore::CompilerCore() :
-  env_(nullptr) {
+  settings_(nullptr) {
 }
 
 void CompilerCore::start() {
@@ -33,22 +33,22 @@ void CompilerCore::finish() {
   save_index();
   stage::die_if_global_errors();
 
-  delete env_;
-  env_ = nullptr;
+  delete settings_;
+  settings_ = nullptr;
 }
 
-void CompilerCore::register_env(KphpEnviroment *env) {
-  kphp_assert (env_ == nullptr);
-  env_ = env;
+void CompilerCore::register_settings(CompilerSettings *settings) {
+  kphp_assert (settings_ == nullptr);
+  settings_ = settings;
 }
 
-const KphpEnviroment &CompilerCore::env() const {
-  kphp_assert (env_ != nullptr);
-  return *env_;
+const CompilerSettings &CompilerCore::settings() const {
+  kphp_assert (settings_ != nullptr);
+  return *settings_;
 }
 
 const string &CompilerCore::get_global_namespace() const {
-  return env().get_static_lib_name();
+  return settings().get_static_lib_name();
 }
 
 FunctionPtr CompilerCore::get_function(const string &name) {
@@ -81,7 +81,7 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
   }
   std::string full_file_name;
   size_t index = 0;
-  const auto &includes = env().get_includes();
+  const auto &includes = settings().get_includes();
   for (; index < includes.size() && full_file_name.empty(); ++index) {
     full_file_name = get_full_path(includes[index] + file_name);
   }
@@ -393,13 +393,13 @@ vector<LibPtr> CompilerCore::get_libs() {
 }
 
 void CompilerCore::load_index() {
-  if (!env().get_no_index_file()) {
+  if (!settings().get_no_index_file()) {
     cpp_index.load_from_index_file();
   }
 }
 
 void CompilerCore::save_index() {
-  if (!env().get_no_index_file()) {
+  if (!settings().get_no_index_file()) {
     cpp_index.save_into_index_file();
   }
 }
@@ -417,17 +417,17 @@ void CompilerCore::del_extra_files() {
 }
 
 void CompilerCore::init_dest_dir() {
-  if (env().get_use_auto_dest()) {
-    env_->set_dest_dir_subdir(get_subdir_name());
+  if (settings().get_use_auto_dest()) {
+    settings_->set_dest_dir_subdir(get_subdir_name());
   }
-  env_->init_dest_dirs();
-  cpp_dir = env().get_dest_cpp_dir();
+  settings_->init_dest_dirs();
+  cpp_dir = settings().get_dest_cpp_dir();
   cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();
 }
 
 std::string CompilerCore::get_subdir_name() const {
-  assert (env().get_use_auto_dest());
+  assert (settings().get_use_auto_dest());
 
   const string &name = main_files[0]->short_file_name;
   string hash_string;
@@ -447,8 +447,8 @@ bool CompilerCore::try_require_file(SrcFilePtr file) {
 }
 
 void CompilerCore::try_load_tl_classes() {
-  if (!env().get_tl_schema_file().empty()) {
-    tl_classes.load_from(env().get_tl_schema_file(), G->env().get_gen_tl_internals());
+  if (!settings().get_tl_schema_file().empty()) {
+    tl_classes.load_from(settings().get_tl_schema_file(), G->settings().get_gen_tl_internals());
   }
 }
 

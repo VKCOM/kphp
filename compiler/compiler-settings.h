@@ -2,7 +2,7 @@
 
 #include "compiler/common.h"
 
-class KphpEnviroment {
+class CompilerSettings {
 public:
   enum color_settings { auto_colored, not_colored, colored};
 private:

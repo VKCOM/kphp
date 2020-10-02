@@ -214,7 +214,7 @@ private:
         }
       }
     }
-    if (G->env().get_print_resumable_graph()) {
+    if (G->settings().get_print_resumable_graph()) {
       for (const auto &func : call_graph.functions) {
         if (!func->is_resumable) {
           continue;
@@ -235,7 +235,7 @@ private:
       function->dep = std::move(call_graph.graph[function]);
     }
 
-    if (!G->env().is_static_lib_mode()) {
+    if (!G->settings().is_static_lib_mode()) {
       return;
     }
 

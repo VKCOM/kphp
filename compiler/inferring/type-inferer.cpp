@@ -43,7 +43,7 @@ void TypeInferer::check_restrictions() {
   for (int i = 0; i < restrictions.size(); i++) {
     for (RestrictionBase *r : restrictions.get(i)) {
       if (r->check_broken_restriction() &&
-          G->env().get_stop_on_type_error() &&
+        G->settings().get_stop_on_type_error() &&
           r->is_broken_restriction_an_error()) {
         return;
       }

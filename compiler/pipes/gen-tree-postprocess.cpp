@@ -57,7 +57,7 @@ VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, Verte
 }
 
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
-  kphp_error_act (!G->env().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
+  kphp_error_act (!G->settings().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
   VertexRange args = require_lib_call->args();
   kphp_error_act (args.size() == 1, fmt_format("require_lib expected 1 arguments, got {}", args.size()), return require_lib_call);
   auto lib_name_node = args[0];
@@ -119,7 +119,7 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
-    if (!G->env().get_profiler_level() && name == "profiler_is_enabled") {
+    if (!G->settings().get_profiler_level() && name == "profiler_is_enabled") {
       return {op_false, 0};
     }
     return {op_err, -1};

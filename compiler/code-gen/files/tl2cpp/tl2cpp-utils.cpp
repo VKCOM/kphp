@@ -126,7 +126,7 @@ vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
 ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator *c, const std::string &specialization_suffix) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string php_namespace = get_php_namespace(c_from_renamed->name);
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
+  std::string php_class_name = G->settings().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -165,7 +165,7 @@ ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const st
   kphp_assert(is_type_dependent(t_from_renamed, G->get_tl_classes().get_scheme().get()));
   std::string php_namespace = get_php_namespace(t_from_renamed->name);
   std::string lookup_name = t_from_renamed->is_polymorphic() ? t_from_renamed->name : t_from_renamed->constructors[0]->name;
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(lookup_name, '.', '_') + specialization_suffix;
+  std::string php_class_name = G->settings().get_tl_namespace_prefix() + php_namespace + "\\Types\\" + replace_characters(lookup_name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -175,7 +175,7 @@ ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const st
 ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_');
+  std::string php_class_name = G->settings().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_');
   return G->get_class(php_class_name);
 }
 
@@ -192,7 +192,7 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
   // there are at least two cases:
   // 1. '_' before '.' like in smart_alerts.sendMessage
   // 2. '_' after '.' like in expr.earth_distance
-  std::string tmp = klass->name.substr(G->env().get_tl_namespace_prefix().length());
+  std::string tmp = klass->name.substr(G->settings().get_tl_namespace_prefix().length());
   std::string php_namespace = tmp.substr(0, tmp.find('\\'));
   if (php_namespace == vk::tl::PhpClasses::common_engine_namespace()) {
     return after_ns_functions;
@@ -206,7 +206,7 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
 ClassPtr get_php_class_of_tl_function_result(const vk::tl::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
-  std::string php_class_name = G->env().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
+  std::string php_class_name = G->settings().get_tl_namespace_prefix() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
   return G->get_class(php_class_name);
 }
 
@@ -347,7 +347,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
   } else {
     std::string php_namespace = get_php_namespace(name);
     std::replace(name.begin(), name.end(), '.', '_');
-    res = G->env().get_tl_classname_prefix() + php_namespace + "$" + (c_from_renamed->is_constructor() ? "Types$" : "Functions$") + name;
+    res = G->settings().get_tl_classname_prefix() + php_namespace + "$" + (c_from_renamed->is_constructor() ? "Types$" : "Functions$") + name;
   }
   if (wrap_to_class_instance) {
     return fmt_format("class_instance<{}>", res);

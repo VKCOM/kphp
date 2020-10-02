@@ -80,7 +80,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
 
   IncludesCollector includes;
   for (auto var : vars) {
-    if (!G->env().is_static_lib_mode() || !var->is_builtin_global()) {
+    if (!G->settings().is_static_lib_mode() || !var->is_builtin_global()) {
       includes.add_var_signature_depends(var);
     }
   }
@@ -89,7 +89,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
   std::vector<bool> dep_mask;
   W << OpenNamespace();
   for (auto var : vars) {
-    if (G->env().is_static_lib_mode() && var->is_builtin_global()) {
+    if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
 
