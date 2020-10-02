@@ -183,20 +183,7 @@ bool compiler_execute(KphpEnviroment *env) {
       std::cerr << "Can't open warnings-file " << env->get_warnings_filename() << "\n";
       return false;
     }
-
-    env->set_warnings_file(f);
-  } else {
-    env->set_warnings_file(nullptr);
-  }
-  if (!env->get_stats_filename().empty()) {
-    FILE *f = fopen(env->get_stats_filename().c_str(), "w");
-    if (!f) {
-      std::cerr << "Can't open stats-file " << env->get_stats_filename() << "\n";
-      return false;
-    }
-    env->set_stats_file(f);
-  } else {
-    env->set_stats_file(nullptr);
+    stage::set_warning_file(f);
   }
 
   //TODO: call it with pthread_once on need

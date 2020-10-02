@@ -18,6 +18,7 @@ private:
   int targets_waiting = 0;
   int targets_left = 0;
   std::vector<Target *> all_targets;
+  FILE *stats_file_{nullptr};
 
   std::priority_queue<Target *, std::vector<Target *>, compare_by_priority> pending_jobs;
   std::map<int, Target *> jobs;
@@ -39,6 +40,6 @@ private:
 public:
   void register_target(Target *target, std::vector<Target *> &&deps);
   bool make_target(Target *target, int jobs_count = 32);
-  MakeRunner() = default;
+  explicit MakeRunner(FILE *stats_file) noexcept;
   ~MakeRunner();
 };

@@ -124,9 +124,9 @@ bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
   auto it = jobs.find(pid);
   assert (it != jobs.end());
   Target *target = it->second;
-  if (G->env().get_stats_file() != nullptr) {
+  if (stats_file_) {
     double passed = get_utime(CLOCK_MONOTONIC) - target->start_time;
-    fmt_fprintf(G->env().get_stats_file(), "{}s {}\n", passed, target->get_name());
+    fmt_fprintf(stats_file_, "{}s {}\n", passed, target->get_name());
   }
   jobs.erase(it);
   if (return_code != 0) {
@@ -259,6 +259,10 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   ksignal(SIGINT, SIG_DFL);
   ksignal(SIGTERM, SIG_DFL);
   return !fail_flag && target->is_ready;
+}
+
+MakeRunner::MakeRunner(FILE *stats_file) noexcept:
+  stats_file_(stats_file) {
 }
 
 MakeRunner::~MakeRunner() {

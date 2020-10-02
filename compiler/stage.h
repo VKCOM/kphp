@@ -11,6 +11,9 @@ inline void on_compilation_error(const char *description, const char *file_name,
 }
 
 namespace stage {
+
+void set_warning_file(FILE *file) noexcept;
+
 struct StageInfo {
   std::string name;
   Location location;

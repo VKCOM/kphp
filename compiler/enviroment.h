@@ -56,11 +56,9 @@ private:
   bool error_on_warns_{false};
 
   string warnings_filename_;
-  FILE *warnings_file_{nullptr};
 
   string compilation_metrics_file_;
   string stats_filename_;
-  FILE *stats_file_{nullptr};
   std::string warnings_level_str_;
   int warnings_level_{0};
   string debug_level_;
@@ -139,16 +137,12 @@ public:
   void set_warnings_filename(const string &path);
   void set_compilation_metrics_filename(string &&path);
   void set_stats_filename(const string &path);
-  void set_stats_file(FILE *file);
-  void set_warnings_file(FILE *file);
   void set_warnings_level(std::string &&level);
   void set_debug_level(const string &level);
 
   const string &get_warnings_filename() const;
   const string &get_compilation_metrics_filename() const;
   const string &get_stats_filename() const;
-  FILE *get_stats_file() const;
-  FILE *get_warnings_file() const;
   int get_warnings_level() const;
   const string &get_debug_level() const;
 

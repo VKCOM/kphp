@@ -29,13 +29,21 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
 
 volatile int ce_locker;
 
+namespace {
+FILE *warning_file{nullptr};
+}
+
+void stage::set_warning_file(FILE *file) noexcept {
+  warning_file = file;
+}
+
 void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number,
                           const char *full_description, AssertLevelT assert_level) {
 
   AutoLocker<volatile int *> locker(&ce_locker);
   FILE *file = stdout;
-  if (assert_level == WRN_ASSERT_LEVEL && G->env().get_warnings_file()) {
-    file = G->env().get_warnings_file();
+  if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
+    file = warning_file;
   }
   fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} [gen by {} at {}]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);

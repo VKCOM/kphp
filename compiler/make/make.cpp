@@ -60,6 +60,10 @@ private:
   }
 
 public:
+  explicit MakeSetup(FILE *stats_file) noexcept:
+    make(stats_file) {
+  }
+
   Target *create_cpp_target(File *cpp) {
     return create_target(new FileTarget(), vector<Target *>(), cpp);
   }
@@ -169,7 +173,7 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviroment &kphp_env) {
+static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviroment &kphp_env, FILE *stats_file) {
   std::string gch_dir = "/tmp/kphp_gch/";
   gch_dir.append(kphp_env.get_runtime_sha256()).append(1, '/');
   gch_dir.append(kphp_env.get_cxx_flags_sha256()).append(1, '/');
@@ -181,7 +185,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const KphpEnviro
     return gch_dir;
   }
 
-  MakeSetup make;
+  MakeSetup make{stats_file};
   File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
   kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
@@ -265,7 +269,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
 }
 
 static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, const Index &cpp_dir,
-                                     const std::forward_list<Index> &imported_headers) {
+                                            const std::forward_list<Index> &imported_headers) {
   std::unordered_map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir, imported_headers);
   std::vector<File *> objs;
   for (const auto &cpp_file : cpp_dir.get_files()) {
@@ -313,9 +317,9 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
 }
 
 static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
-               const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
-               const std::string &gch_dir) {
-  MakeSetup make;
+                      const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+                      const std::string &gch_dir, FILE *stats_file) {
+  MakeSetup make{stats_file};
   std::vector<File *> lib_objs;
   for (File &link_file: imported_libs) {
     make.create_cpp_target(&link_file);
@@ -332,9 +336,9 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
 }
 
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
-                          const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
-                          const std::string &gch_dir) {
-  MakeSetup make;
+                                 const std::forward_list<Index> &imported_headers, const KphpEnviroment &kphp_env,
+                                 const std::string &gch_dir, FILE *stats_file) {
+  MakeSetup make{stats_file};
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
   make.init_env(kphp_env);
@@ -356,11 +360,18 @@ static std::forward_list<Index> collect_imported_headers() {
 }
 
 void run_make() {
+  const auto &env = G->env();
+  FILE *make_stats_file = nullptr;
+  if (!env.get_stats_filename().empty()) {
+    make_stats_file = fopen(env.get_stats_filename().c_str(), "w");
+    kphp_error(make_stats_file, fmt_format("Can't open stats-file {}", env.get_stats_filename()));
+    stage::die_if_global_errors();
+  }
+
   AutoProfiler profiler{get_profiler("Make Binary")};
   stage::set_name("Make");
   G->del_extra_files();
 
-  const auto &env = G->env();
   Index obj_index;
   obj_index.sync_with_dir(env.get_dest_objs_dir());
 
@@ -376,18 +387,19 @@ void run_make() {
   bool ok = true;
   const bool pch_allowed = !env.get_no_pch();
   if (pch_allowed) {
-    gch_dir = kphp_make_precompiled_header(&obj_index, env);
+    gch_dir = kphp_make_precompiled_header(&obj_index, env, make_stats_file);
     ok = !gch_dir.empty();
     kphp_error (ok, "Make precompiled header failed");
   }
   if (ok) {
     auto lib_header_dirs = collect_imported_headers();
     ok = env.is_static_lib_mode()
-         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, env, gch_dir)
-         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, env, gch_dir);
+         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, env, gch_dir, make_stats_file)
+         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, env, gch_dir, make_stats_file);
     kphp_error (ok, "Make failed");
   }
 
+  fclose(make_stats_file);
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 

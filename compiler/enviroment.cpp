@@ -339,22 +339,6 @@ const string &KphpEnviroment::get_stats_filename() const {
   return stats_filename_;
 }
 
-FILE *KphpEnviroment::get_stats_file() const {
-  return stats_file_;
-}
-
-void KphpEnviroment::set_stats_file(FILE *file) {
-  stats_file_ = file;
-}
-
-FILE *KphpEnviroment::get_warnings_file() const {
-  return warnings_file_;
-}
-
-void KphpEnviroment::set_warnings_file(FILE *file) {
-  warnings_file_ = file;
-}
-
 void KphpEnviroment::set_warnings_level(std::string &&level) {
   warnings_level_str_ = std::move(level);
 }
