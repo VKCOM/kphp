@@ -56,8 +56,8 @@ vk::string_view SrcFile::get_line(int id) {
   return lines[id];
 }
 
-string SrcFile::get_short_name() {
-  string root_path = G->env().get_base_dir();
+std::string SrcFile::get_short_name() {
+  const std::string &root_path = G->get_base_dir();
   if (vk::string_view(file_name).starts_with(root_path)) {
     return file_name.substr(root_path.length());
   }

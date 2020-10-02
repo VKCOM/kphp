@@ -27,9 +27,6 @@ int parse_args_f(int i) {
     case 'h':
       usage_and_exit();
       exit(2);
-    case 'b':
-      env->set_base_dir(optarg);
-      break;
     case 'd':
       env->set_dest_dir(optarg);
       break;
@@ -144,7 +141,6 @@ int main(int argc, char *argv[]) {
 
   remove_all_options();
   parse_option("help", no_argument, 'h', "prints help and exits");
-  parse_option("base-directiory", required_argument, 'b', "Base directory. Use it when compiling the same code from different directories");
   parse_option("destination-directory", required_argument, 'd', "Destination directory");
   parse_option("force-make", no_argument, 'F', "Force make. Old object files and binary will be removed");
   parse_option("functions-file", required_argument, 'f', "Internal file with library headers and e.t.c. Equals to $KPHP_FUNCTIONS. $KPHP_PATH/PHP/functions.txt is used by default");

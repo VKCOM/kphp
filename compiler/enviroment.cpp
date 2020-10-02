@@ -63,14 +63,6 @@ const string &KphpEnviroment::get_home() const {
   return home_;
 }
 
-void KphpEnviroment::set_base_dir(const string &base_dir) {
-  base_dir_ = base_dir;
-}
-
-const string &KphpEnviroment::get_base_dir() const {
-  return base_dir_;
-}
-
 void KphpEnviroment::set_dest_dir(const string &dest_dir) {
   dest_dir_ = dest_dir;
 }
@@ -465,8 +457,6 @@ bool KphpEnviroment::init() {
 
   init_env_var(&runtime_sha256_filename_, "KPHP_RUNTIME_SHA256", get_path() + "objs/PHP/php_lib_version.sha256");
 
-  base_dir_ = {};
-
   get_bool_option_from_env(no_index_file_, "KPHP_NO_INDEX_FILE", false);
   get_bool_option_from_env(no_pch_, "KPHP_NO_PCH", false);
   get_bool_option_from_env(use_make_bool_, "KPHP_USE_MAKE", false);
@@ -593,7 +583,6 @@ void KphpEnviroment::init_dest_dirs() {
 void KphpEnviroment::debug() const {
   std::cerr <<
             "HOME=[" << get_home() << "]\n" <<
-            "KPHP_BASE_DIR=[" << get_base_dir() << "]\n" <<
             "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
             "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<
             "KPHP_JOBS_COUNT=[" << get_jobs_count() << "]\n" <<
