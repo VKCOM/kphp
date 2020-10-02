@@ -355,8 +355,8 @@ void KphpEnviroment::set_warnings_file(FILE *file) {
   warnings_file_ = file;
 }
 
-void KphpEnviroment::set_warnings_level(int level) {
-  warnings_level_ = level;
+void KphpEnviroment::set_warnings_level(std::string &&level) {
+  warnings_level_str_ = std::move(level);
 }
 
 int KphpEnviroment::get_warnings_level() const {
@@ -562,6 +562,14 @@ bool KphpEnviroment::init() {
     return false;
   }
   env_str2int(&profiler_level_, profiler_level_str_);
+
+  init_env_var(&warnings_level_str_, "KPHP_WARNINGS_LEVEL", "0");
+  if (vk::none_of_equal(warnings_level_str_, "0", "1", "2")) {
+    fmt_print("Got unexpected --warnings-level (KPHP_WARNINGS_LEVEL) option value '{}'; supported values are: [0, 2]\n", warnings_level_str_);
+    return false;
+  }
+  env_str2int(&warnings_level_, warnings_level_str_);
+
   return true;
 }
 

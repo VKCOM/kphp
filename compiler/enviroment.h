@@ -60,6 +60,7 @@ private:
   string compilation_metrics_file_;
   string stats_filename_;
   FILE *stats_file_{nullptr};
+  std::string warnings_level_str_;
   int warnings_level_{0};
   string debug_level_;
   string version_;
@@ -139,7 +140,7 @@ public:
   void set_stats_filename(const string &path);
   void set_stats_file(FILE *file);
   void set_warnings_file(FILE *file);
-  void set_warnings_level(int level);
+  void set_warnings_level(std::string &&level);
   void set_debug_level(const string &level);
 
   const string &get_warnings_filename() const;

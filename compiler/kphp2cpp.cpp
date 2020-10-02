@@ -88,11 +88,7 @@ int parse_args_f(int i) {
       env->set_stats_filename(optarg);
       break;
     case 2002: {
-      int level = atoi(optarg);
-      if (level < 0) {
-        return -1;
-      }
-      env->set_warnings_level(level);
+      env->set_warnings_level(optarg);
       break;
     }
     case 2003:
