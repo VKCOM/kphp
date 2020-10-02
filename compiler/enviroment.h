@@ -25,6 +25,7 @@ private:
   bool make_force_bool_{false};
   string threads_count_;
   int threads_count_int_{0};
+  std::string verbosity_str_{0};
   int verbosity_int_{0};
   vector<string> main_files_;
   int print_resumable_graph_{0};
@@ -106,7 +107,7 @@ public:
   const string &get_runtime_sha256_file() const;
   const string &get_runtime_sha256() const;
   const string &get_cxx_flags_sha256() const;
-  void inc_verbosity();
+  void set_verbosity(std::string &&verbosity);
   int get_verbosity() const;
   void set_print_resumable_graph();
   int get_print_resumable_graph() const;

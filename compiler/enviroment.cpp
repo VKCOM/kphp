@@ -199,8 +199,8 @@ const string &KphpEnviroment::get_cxx_flags_sha256() const {
   return cxx_flags_sha256_;
 }
 
-void KphpEnviroment::inc_verbosity() {
-  verbosity_int_++;
+void KphpEnviroment::set_verbosity(std::string &&verbosity) {
+  verbosity_str_ = std::move(verbosity);
 }
 
 int KphpEnviroment::get_verbosity() const {
@@ -518,13 +518,13 @@ bool KphpEnviroment::init() {
     ss << " -Wno-invalid-source-encoding";
   }
   #if __cplusplus <= 201103L
-    ss << " -std=gnu++11";
+  ss << " -std=gnu++11";
   #elif __cplusplus <= 201402L
-    ss << " -std=gnu++14";
+  ss << " -std=gnu++14";
   #elif __cplusplus <= 201703L
-    ss << " -std=gnu++17";
+  ss << " -std=gnu++17";
   #elif __cplusplus <= 202002L
-    ss << " -std=gnu++20";
+  ss << " -std=gnu++20";
   #else
     #error unsupported __cplusplus value
   #endif
@@ -550,11 +550,12 @@ bool KphpEnviroment::init() {
   as_dir(&dest_dir_);
   init_env_var(&version_, "KPHP_VERSION_OVERRIDE", get_version_string());
 
-  std::string verbosity_level;
-  init_env_var(&verbosity_level, "KPHP_VERBOSITY", "0");
-  if (!verbosity_int_) {
-    env_str2int(&verbosity_int_, verbosity_level);
+  init_env_var(&verbosity_str_, "KPHP_VERBOSITY", "0");
+  if (vk::none_of_equal(verbosity_str_, "0", "1", "2", "3")) {
+    fmt_print("Got unexpected --verbosity (KPHP_VERBOSITY) option value '{}'; supported values are: [0, 3]\n", verbosity_str_);
+    return false;
   }
+  env_str2int(&verbosity_int_, verbosity_str_);
 
   init_env_var(&profiler_level_str_, "KPHP_PROFILER", "0");
   if (vk::none_of_equal(profiler_level_str_, "0", "1", "2")) {
