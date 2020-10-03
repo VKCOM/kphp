@@ -34,7 +34,7 @@ private:
   string tl_schema_file_;
   bool gen_tl_internals_{false};
   bool no_pch_{false};
-  bool stop_on_type_error_{true};
+  bool show_all_type_errors_{true};
   bool hide_progress_{false};
   bool enable_global_vars_memory_stats_{false};
   bool dynamic_incremental_linkage_{false};
@@ -121,7 +121,7 @@ public:
   bool get_no_pch() const;
   void set_no_index_file();
   bool get_no_index_file() const;
-  bool get_stop_on_type_error() const;
+  bool get_show_all_type_errors() const;
   bool get_hide_progress() const;
   void set_enable_global_vars_memory_stats();
   bool get_enable_global_vars_memory_stats() const;

@@ -239,8 +239,8 @@ bool CompilerSettings::get_no_index_file() const {
   return no_index_file_;
 }
 
-bool CompilerSettings::get_stop_on_type_error() const {
-  return stop_on_type_error_;
+bool CompilerSettings::get_show_all_type_errors() const {
+  return show_all_type_errors_;
 }
 
 bool CompilerSettings::get_hide_progress() const {
@@ -444,7 +444,7 @@ bool CompilerSettings::init() {
   get_bool_option_from_env(no_index_file_, "KPHP_NO_INDEX_FILE", false);
   get_bool_option_from_env(no_pch_, "KPHP_NO_PCH", false);
   get_bool_option_from_env(use_make_bool_, "KPHP_USE_MAKE", false);
-  get_bool_option_from_env(stop_on_type_error_, "KPHP_STOP_ON_TYPE_ERROR", true);
+  get_bool_option_from_env(show_all_type_errors_, "KPHP_SHOW_ALL_TYPE_ERRORS", false);
   get_bool_option_from_env(hide_progress_, "KPHP_HIDE_PROGRESS", false);
   get_bool_option_from_env(enable_global_vars_memory_stats_, "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", false);
   get_bool_option_from_env(gen_tl_internals_, "KPHP_GEN_TL_INTERNALS", false);
@@ -592,7 +592,7 @@ void CompilerSettings::debug() const {
             "KPHP_PROFILER=[" << get_profiler_level() << "]\n" <<
             "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
             "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
-            "KPHP_STOP_ON_TYPE_ERROR=[" << get_stop_on_type_error() << "]\n" <<
+            "KPHP_SHOW_ALL_TYPE_ERRORS=[" << get_show_all_type_errors() << "]\n" <<
             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
             "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
             "KPHP_COMPILATION_METRICS_FILE=[" << get_compilation_metrics_filename() << "]\n" <<
