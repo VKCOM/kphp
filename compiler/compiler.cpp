@@ -298,7 +298,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
-  if (G->settings().get_show_progress()) {
+  if (G->settings().get_hide_progress()) {
     PipesProgress::get().enable();
   }
 

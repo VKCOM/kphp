@@ -243,8 +243,8 @@ bool CompilerSettings::get_stop_on_type_error() const {
   return stop_on_type_error_;
 }
 
-bool CompilerSettings::get_show_progress() const {
-  return show_progress_;
+bool CompilerSettings::get_hide_progress() const {
+  return hide_progress_;
 }
 
 void CompilerSettings::add_main_file(const string &main_file) {
@@ -445,7 +445,7 @@ bool CompilerSettings::init() {
   get_bool_option_from_env(no_pch_, "KPHP_NO_PCH", false);
   get_bool_option_from_env(use_make_bool_, "KPHP_USE_MAKE", false);
   get_bool_option_from_env(stop_on_type_error_, "KPHP_STOP_ON_TYPE_ERROR", true);
-  get_bool_option_from_env(show_progress_, "KPHP_SHOW_PROGRESS", true);
+  get_bool_option_from_env(hide_progress_, "KPHP_HIDE_PROGRESS", false);
   get_bool_option_from_env(enable_global_vars_memory_stats_, "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", false);
   get_bool_option_from_env(gen_tl_internals_, "KPHP_GEN_TL_INTERNALS", false);
   get_bool_option_from_env(dynamic_incremental_linkage_, "KPHP_DYNAMIC_INCREMENTAL_LINKAGE", false);
