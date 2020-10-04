@@ -81,7 +81,7 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
   }
   std::string full_file_name;
   size_t index = 0;
-  const auto &includes = settings().get_includes();
+  const auto &includes = settings().includes.get();
   for (; index < includes.size() && full_file_name.empty(); ++index) {
     full_file_name = get_full_path(includes[index] + file_name);
   }
@@ -393,13 +393,13 @@ vector<LibPtr> CompilerCore::get_libs() {
 }
 
 void CompilerCore::load_index() {
-  if (!settings().get_no_index_file()) {
+  if (!settings().no_index_file.get()) {
     cpp_index.load_from_index_file();
   }
 }
 
 void CompilerCore::save_index() {
-  if (!settings().get_no_index_file()) {
+  if (!settings().no_index_file.get()) {
     cpp_index.save_into_index_file();
   }
 }
@@ -417,7 +417,7 @@ void CompilerCore::del_extra_files() {
 }
 
 void CompilerCore::init_dest_dir() {
-  if (settings().get_use_auto_dest()) {
+  if (settings().use_auto_dest.get()) {
     settings_->set_dest_dir_subdir(get_subdir_name());
   }
   settings_->init_dest_dirs();
@@ -427,7 +427,7 @@ void CompilerCore::init_dest_dir() {
 }
 
 std::string CompilerCore::get_subdir_name() const {
-  assert (settings().get_use_auto_dest());
+  assert(settings().use_auto_dest.get());
 
   const string &name = main_files[0]->short_file_name;
   string hash_string;
@@ -447,8 +447,8 @@ bool CompilerCore::try_require_file(SrcFilePtr file) {
 }
 
 void CompilerCore::try_load_tl_classes() {
-  if (!settings().get_tl_schema_file().empty()) {
-    tl_classes.load_from(settings().get_tl_schema_file(), G->settings().get_gen_tl_internals());
+  if (!settings().tl_schema_file.get().empty()) {
+    tl_classes.load_from(settings().tl_schema_file.get(), G->settings().gen_tl_internals.get());
   }
 }
 

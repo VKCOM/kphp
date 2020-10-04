@@ -1953,7 +1953,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return res;
     }
     case tok_global: {
-      if (G->settings().get_warnings_level() >= 2 && cur_function && cur_function->type == FunctionData::func_local && !is_top_of_the_function_) {
+      if (G->settings().warnings_level.get() >= 2 && cur_function && cur_function->type == FunctionData::func_local && !is_top_of_the_function_) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
       auto res = get_multi_call<op_global, op_err>(&GenTree::get_var_name);

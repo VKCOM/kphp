@@ -104,8 +104,8 @@ class lockf_wrapper {
 
 public:
   bool lock() {
-    std::string dest_path = G->settings().get_dest_dir();
-    if (G->settings().get_use_auto_dest()) {
+    std::string dest_path = G->settings().dest_dir.get();
+    if (G->settings().use_auto_dest.get()) {
       dest_path += G->get_subdir_name();
     }
 
@@ -177,10 +177,10 @@ bool compiler_execute(CompilerSettings *settings) {
   G = new CompilerCore();
   G->register_settings(settings);
   G->start();
-  if (!settings->get_warnings_filename().empty()) {
-    FILE *f = fopen(settings->get_warnings_filename().c_str(), "w");
+  if (!settings->warnings_file.get().empty()) {
+    FILE *f = fopen(settings->warnings_file.get().c_str(), "w");
     if (!f) {
-      std::cerr << "Can't open warnings-file " << settings->get_warnings_filename() << "\n";
+      std::cerr << "Can't open warnings-file " << settings->warnings_file.get() << "\n";
       return false;
     }
     stage::set_warning_file(f);
@@ -199,8 +199,8 @@ bool compiler_execute(CompilerSettings *settings) {
   for (const auto &main_file : settings->get_main_files()) {
     G->register_main_file(main_file, src_file_stream);
   }
-  if (!G->settings().get_functions().empty()) {
-    G->require_file(G->settings().get_functions(), LibPtr{}, src_file_stream);
+  if (!G->settings().functions_file.get().empty()) {
+    G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream);
   }
 
   static lockf_wrapper unique_file_lock;
@@ -209,11 +209,11 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   SchedulerBase *scheduler;
-  if (G->settings().get_threads_count() == 1) {
+  if (G->settings().threads_count.get() == 1) {
     scheduler = new OneThreadScheduler();
   } else {
     auto s = new Scheduler();
-    s->set_threads_count(G->settings().get_threads_count());
+    s->set_threads_count(static_cast<int32_t>(G->settings().threads_count.get()));
     scheduler = s;
   }
 
@@ -298,7 +298,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
-  if (G->settings().get_hide_progress()) {
+  if (G->settings().hide_progress.get()) {
     PipesProgress::get().enable();
   }
 
@@ -308,12 +308,12 @@ bool compiler_execute(CompilerSettings *settings) {
   PipesProgress::get().transpiling_process_finish();
   G->stats.transpilation_time = get_utime(CLOCK_MONOTONIC) - st;
 
-  if (G->settings().get_error_on_warns() && stage::warnings_count > 0) {
+  if (G->settings().error_on_warns.get() && stage::warnings_count > 0) {
     stage::error();
   }
 
   stage::die_if_global_errors();
-  const int verbosity = G->settings().get_verbosity();
+  const auto verbosity = G->settings().verbosity.get();
 
   if (verbosity > 1) {
     bool got_changes = false;
@@ -328,12 +328,12 @@ bool compiler_execute(CompilerSettings *settings) {
     }
   }
 
-  if (G->settings().get_use_make()) {
+  if (G->settings().use_make.get()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }
 
-  const std::string compilation_metrics_file = G->settings().get_compilation_metrics_filename();
+  const std::string compilation_metrics_file = G->settings().compilation_metrics_file.get();
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();

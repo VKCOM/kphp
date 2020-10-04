@@ -889,7 +889,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   if (func->profiler_state == FunctionData::profiler_status::disable
       || (func->is_inline && func->profiler_state == FunctionData::profiler_status::enable_as_child)
-      || !G->settings().get_profiler_level()) {
+      || !G->settings().profiler_level.get()) {
     return false;
   }
 
@@ -903,7 +903,7 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
     << "static constexpr const char *file_name() noexcept { return " << RawString(file_name) << "; }" << NL
     << "static constexpr const char *function_name() noexcept { return " << RawString(func->get_human_readable_name()) << "; }" << NL
     << "static constexpr size_t function_line() noexcept { return " << std::max(location.line, 0) << "; }" << NL
-    << "static constexpr size_t profiler_level() noexcept { return " << G->settings().get_profiler_level() << "; }" << NL
+    << "static constexpr size_t profiler_level() noexcept { return " << G->settings().profiler_level.get() << "; }" << NL
     << "static constexpr bool is_root() noexcept { return " << is_root << "; }" << NL
     << END << ";" << NL;
   if (func->is_resumable) {

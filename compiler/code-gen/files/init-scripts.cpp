@@ -43,7 +43,7 @@ void StaticInit::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN
-                                  << "return " << RawString(G->settings().get_php_code_version()) << ";" << NL
+                                  << "return " << RawString(G->settings().php_code_version.get()) << ";" << NL
                                   << END << NL << NL;
 
     FunctionSignatureGenerator(W) << ("char **get_runtime_options(int *count)") << BEGIN;
@@ -71,7 +71,7 @@ void StaticInit::compile(CodeGenerator &W) const {
       }
     }
   }
-  if (!G->settings().get_tl_schema_file().empty()) {
+  if (!G->settings().tl_schema_file.get().empty()) {
     W << "tl_str_const_init();" << NL;
     if (G->get_untyped_rpc_tl_used()) {
       W << "fill_tl_storers_ht();" << NL;

@@ -65,7 +65,7 @@ std::string SrcFile::get_short_name() {
 }
 
 bool SrcFile::is_builtin() const {
-  if (file_name == G->settings().get_functions()) {
+  if (file_name == G->settings().functions_file.get()) {
     return true;
   }
 

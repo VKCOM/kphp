@@ -84,14 +84,14 @@ public:
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
-  void init_env(const CompilerSettings &kphp_env) {
-    env.cxx = kphp_env.get_cxx();
-    env.cxx_flags = kphp_env.get_cxx_flags();
-    env.ld_flags = kphp_env.get_ld_flags();
-    env.ar = kphp_env.get_ar();
-    env.incremental_linker = kphp_env.get_incremental_linker();
-    env.incremental_linker_flags = kphp_env.get_incremental_linker_flags();
-    env.debug_level = kphp_env.get_debug_level();
+  void init_env(const CompilerSettings &settings) {
+    env.cxx = settings.cxx.get();
+    env.cxx_flags = settings.get_cxx_flags();
+    env.ld_flags = settings.get_ld_flags();
+    env.ar = settings.archive_creator.get();
+    env.incremental_linker = settings.get_incremental_linker();
+    env.incremental_linker_flags = settings.get_incremental_linker_flags();
+    env.debug_level = settings.debug_level.get();
   }
 
   void add_gch_dir(const std::string &gch_dir) {
@@ -106,7 +106,7 @@ public:
 
 static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_dir;
-  out_dir.set_dir(G->settings().get_static_lib_out_dir());
+  out_dir.set_dir(G->settings().static_lib_out_dir.get());
   out_dir.del_extra_files();
 
   // copy static archive
@@ -120,7 +120,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   functions_txt_tmp.unlink();
 
   // copy runtime lib sha256 of this static archive
-  File runtime_lib_sha256(G->settings().get_runtime_sha256_file());
+  File runtime_lib_sha256(G->settings().runtime_sha256_file.get());
   hard_link_or_copy(runtime_lib_sha256.path, out_lib.runtime_lib_sha256_file());
 
   Index headers_tmp_dir;
@@ -139,14 +139,14 @@ static std::forward_list<File> collect_imported_libs() {
   stage::die_if_global_errors();
 
   std::forward_list<File> imported_libs;
-  imported_libs.emplace_front(G->settings().get_link_file());
+  imported_libs.emplace_front(G->settings().link_file.get());
   for (const auto &lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       std::string lib_runtime_sha256 = CompilerSettings::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
 
       kphp_error_act(binary_runtime_sha256 == lib_runtime_sha256,
                      fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
-                                G->settings().get_runtime_sha256_file(), lib->runtime_lib_sha256_file()),
+                                G->settings().runtime_sha256_file.get(), lib->runtime_lib_sha256_file()),
                      continue);
       imported_libs.emplace_front(lib->static_archive_path());
     }
@@ -154,7 +154,7 @@ static std::forward_list<File> collect_imported_libs() {
 
   for (File &file: imported_libs) {
     kphp_error_act(file.read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
-    if (G->settings().get_verbosity() >= 1) {
+    if (G->settings().verbosity.get() >= 1) {
       fmt_fprintf(stderr, "Use static lib [{}]\n", file.path);
     }
   }
@@ -186,14 +186,14 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSe
   }
 
   MakeSetup make{stats_file};
-  File php_functions_h(kphp_env.get_path() + "PHP/" + header_filename);
+  File php_functions_h(kphp_env.kphp_src_path.get() + header_filename);
   kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});
 
   File *php_functions_h_gch = obj_dir->insert_file(kphp_env.get_dest_objs_dir() + gch_filename);
   make.create_cpp2obj_target(&php_functions_h, php_functions_h_gch);
-  File sha256_version_file(kphp_env.get_runtime_sha256_file());
+  File sha256_version_file(kphp_env.runtime_sha256_file.get());
   kphp_assert(sha256_version_file.read_stat() > 0);
   php_functions_h.target->force_changed(sha256_version_file.mtime);
   make.init_env(kphp_env);
@@ -307,7 +307,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
     auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
-                                             G->settings().get_dynamic_incremental_linkage() ? "so" : "o");
+                                             G->settings().dynamic_incremental_linkage.get() ? "so" : "o");
     File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
@@ -332,20 +332,20 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
   if (!gch_dir.empty()) {
     make.add_gch_dir(gch_dir);
   }
-  return make.make_target(&bin, kphp_env.get_jobs_count());
+  return make.make_target(&bin, kphp_env.jobs_count.get());
 }
 
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
-                                 const std::forward_list<Index> &imported_headers, const CompilerSettings &kphp_env,
+                                 const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
                                  const std::string &gch_dir, FILE *stats_file) {
   MakeSetup make{stats_file};
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
-  make.init_env(kphp_env);
+  make.init_env(settings);
   if (!gch_dir.empty()) {
     make.add_gch_dir(gch_dir);
   }
-  return make.make_target(&static_lib, kphp_env.get_jobs_count());
+  return make.make_target(&static_lib, static_cast<int32_t>(settings.jobs_count.get()));
 }
 
 static std::forward_list<Index> collect_imported_headers() {
@@ -360,11 +360,11 @@ static std::forward_list<Index> collect_imported_headers() {
 }
 
 void run_make() {
-  const auto &env = G->settings();
+  const auto &settings = G->settings();
   FILE *make_stats_file = nullptr;
-  if (!env.get_stats_filename().empty()) {
-    make_stats_file = fopen(env.get_stats_filename().c_str(), "w");
-    kphp_error(make_stats_file, fmt_format("Can't open stats-file {}", env.get_stats_filename()));
+  if (!settings.stats_file.get().empty()) {
+    make_stats_file = fopen(settings.stats_file.get().c_str(), "w");
+    kphp_error(make_stats_file, fmt_format("Can't open stats-file {}", settings.stats_file.get()));
     stage::die_if_global_errors();
   }
 
@@ -373,29 +373,29 @@ void run_make() {
   G->del_extra_files();
 
   Index obj_index;
-  obj_index.sync_with_dir(env.get_dest_objs_dir());
+  obj_index.sync_with_dir(settings.get_dest_objs_dir());
 
-  File bin_file(env.get_binary_path());
+  File bin_file(settings.get_binary_path());
   kphp_assert (bin_file.read_stat() >= 0);
 
-  if (env.get_make_force()) {
+  if (settings.force_make.get()) {
     obj_index.del_extra_files();
     bin_file.unlink();
   }
 
   std::string gch_dir;
   bool ok = true;
-  const bool pch_allowed = !env.get_no_pch();
+  const bool pch_allowed = !settings.no_pch.get();
   if (pch_allowed) {
-    gch_dir = kphp_make_precompiled_header(&obj_index, env, make_stats_file);
+    gch_dir = kphp_make_precompiled_header(&obj_index, settings, make_stats_file);
     ok = !gch_dir.empty();
     kphp_error (ok, "Make precompiled header failed");
   }
   if (ok) {
     auto lib_header_dirs = collect_imported_headers();
-    ok = env.is_static_lib_mode()
-         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, env, gch_dir, make_stats_file)
-         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, env, gch_dir, make_stats_file);
+    ok = settings.is_static_lib_mode()
+         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, settings, gch_dir, make_stats_file)
+         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, settings, gch_dir, make_stats_file);
     kphp_error (ok, "Make failed");
   }
 
@@ -407,10 +407,10 @@ void run_make() {
     G->stats.object_out_size = bin_file.file_size;
   }
 
-  if (!env.get_user_binary_path().empty()) {
-    hard_link_or_copy(bin_file.path, env.get_user_binary_path());
+  if (!settings.user_binary_path.get().empty()) {
+    hard_link_or_copy(bin_file.path, settings.user_binary_path.get());
   }
-  if (env.is_static_lib_mode()) {
+  if (settings.is_static_lib_mode()) {
     copy_static_lib_to_out_dir(std::move(bin_file));
   }
 }

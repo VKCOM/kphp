@@ -52,7 +52,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
   }
 
   if (function->tl_common_h_dep) {    // functions that use a typed TL RPC need to see t_ReqResult during the compilation
-    kphp_error(!G->settings().get_tl_schema_file().empty(), "tl schema not given as -T option for compilation");
+    kphp_error(!G->settings().tl_schema_file.get().empty(), "tl schema not given as -T option for compilation");
     internal_headers_.emplace("tl/common.h");
   }
 }

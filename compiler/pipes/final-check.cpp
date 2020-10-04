@@ -69,12 +69,12 @@ void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
 }
 
 void check_get_global_vars_memory_stats_call() {
-  kphp_error_return(G->settings().get_enable_global_vars_memory_stats(),
+  kphp_error_return(G->settings().enable_global_vars_memory_stats.get(),
                     "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
 }
 
 void mark_global_vars_for_memory_stats() {
-  if (!G->settings().get_enable_global_vars_memory_stats()) {
+  if (!G->settings().enable_global_vars_memory_stats.get()) {
     return;
   }
 
@@ -358,7 +358,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     kphp_error(!func_call->func_id->is_extern(), "fork of builtin function is forbidden");
   }
 
-  if (G->settings().get_warnings_level() >= 2 && vertex->type() == op_func_call) {
+  if (G->settings().warnings_level.get() >= 2 && vertex->type() == op_func_call) {
     FunctionPtr function_where_require = stage::get_function();
 
     if (function_where_require && function_where_require->type == FunctionData::func_local) {

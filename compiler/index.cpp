@@ -149,7 +149,7 @@ void Index::del_extra_files() {
     File *file = it->second;
     if (!file->needed) {
       if (file->on_disk) {
-        if (G->settings().get_verbosity() > 1) {
+        if (G->settings().verbosity.get() > 1) {
           fprintf(stderr, "unlink %s\n", file->path.c_str());
         }
         int err = unlink(file->path.c_str());

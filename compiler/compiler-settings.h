@@ -1,171 +1,179 @@
 #pragma once
 
 #include "compiler/common.h"
+#include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 
-class CompilerSettings {
+struct KphpRawOption : vk::not_copyable {
 public:
-  enum color_settings { auto_colored, not_colored, colored};
+  const std::string &get_option_full_name() const noexcept {
+    return cmd_option_full_name_;
+  }
+
+  void init(vk::string_view long_option, char short_option, vk::string_view env,
+            vk::string_view default_value, std::vector<std::string> choices) noexcept;
+
+  void substitute_depends(const KphpRawOption &other) noexcept;
+  void verify_arg_value() const;
+
+  virtual void set_option_arg_value(const char *optarg_value) noexcept = 0;
+  virtual void parse_arg_value() noexcept = 0;
+  virtual ~KphpRawOption() = default;
+
+protected:
+  void throw_param_exception(const std::string &reason) const;
+
+  std::string env_var_;
+  std::string cmd_option_full_name_;
+  std::string raw_option_arg_;
+  std::vector<std::string> choices_;
+};
+
+template<class T>
+class KphpOption final : public KphpRawOption {
+public:
+  friend class CompilerSettings;
+
+  const T &get() const noexcept {
+    return value_;
+  }
+
 private:
-  string cur_dir_;
-  string home_;
-  string path_;
-  string functions_;
-  string mode_;
-  string link_file_;
-  string runtime_sha256_filename_;
-  string runtime_sha256_;
-  string static_lib_out_dir_;
-  string static_lib_name_;
+  using KphpRawOption::get_option_full_name;
+  using KphpRawOption::init;
+  using KphpRawOption::substitute_depends;
+  using KphpRawOption::verify_arg_value;
 
-  bool no_index_file_{false};
-  vector<string> includes_;
-  string jobs_count_;
-  int jobs_count_int_{0};
-  bool use_make_bool_{false};
-  bool make_force_bool_{false};
-  string threads_count_;
-  int threads_count_int_{0};
-  std::string verbosity_str_{0};
-  int verbosity_int_{0};
-  vector<string> main_files_;
-  int print_resumable_graph_{0};
-  std::string profiler_level_str_;
-  int profiler_level_{0};
-  string tl_schema_file_;
-  bool gen_tl_internals_{false};
-  bool no_pch_{false};
-  bool show_all_type_errors_{true};
-  bool hide_progress_{false};
-  bool enable_global_vars_memory_stats_{false};
-  bool dynamic_incremental_linkage_{false};
+  KphpOption &set_default(std::string &&default_opt) noexcept {
+    if (raw_option_arg_.empty()) {
+      raw_option_arg_ = std::move(default_opt);
+    }
+    return *this;
+  }
 
-  string cxx_;
-  string cxx_flags_;
-  string ld_flags_;
-  string incremental_linker_;
-  string incremental_linker_flags_;
+  void set_option_arg_value(const char *optarg_value) noexcept final {
+    if (std::is_same<T, bool>{}) {
+      raw_option_arg_ = "1";
+    } else if (std::is_same<T, std::vector<std::string>>{} && !raw_option_arg_.empty()) {
+      raw_option_arg_.append(":").append(optarg_value);
+    } else {
+      raw_option_arg_ = optarg_value;
+    }
+  }
 
-  string ar_;
+  void parse_arg_value() noexcept final;
 
-  string dest_dir_;
-  bool use_auto_dest_bool_{false};
-  string dest_cpp_dir_;
-  string dest_objs_dir_;
-  string binary_path_;
-  string user_binary_path_;
-  bool error_on_warns_{false};
+  T value_{};
+};
 
-  string warnings_filename_;
+class CompilerSettings : vk::not_copyable {
+public:
+  enum color_settings {
+    auto_colored,
+    not_colored,
+    colored
+  };
 
-  string compilation_metrics_file_;
-  string stats_filename_;
-  std::string warnings_level_str_;
-  int warnings_level_{0};
-  string debug_level_;
-  string version_;
+  KphpOption<uint64_t> verbosity;
 
-  string cxx_flags_sha256_;
+  KphpOption<std::string> kphp_src_path;
+  KphpOption<std::string> functions_file;
+  KphpOption<std::string> runtime_sha256_file;
+  KphpOption<std::string> mode;
+  KphpOption<std::string> link_file;
+  KphpOption<std::vector<std::string>> includes;
+
+  KphpOption<std::string> dest_dir;
+  KphpOption<std::string> user_binary_path;
+  KphpOption<std::string> static_lib_out_dir;
+  KphpOption<bool> use_auto_dest;
+
+  KphpOption<bool> force_make;
+  KphpOption<bool> use_make;
+  KphpOption<uint64_t> jobs_count;
+  KphpOption<uint64_t> threads_count;
+
+  KphpOption<std::string> tl_schema_file;
+  KphpOption<bool> gen_tl_internals;
+
+  KphpOption<bool> error_on_warns;
+  KphpOption<std::string> warnings_file;
+  KphpOption<uint64_t> warnings_level;
+  KphpOption<bool> show_all_type_errors;
+  KphpOption<std::string> colorize;
+
+  KphpOption<std::string> stats_file;
+  KphpOption<std::string> compilation_metrics_file;
+  KphpOption<std::string> override_kphp_version;
+  KphpOption<std::string> php_code_version;
+
+  KphpOption<std::string> cxx;
+  KphpOption<std::string> extra_cxx_flags;
+  KphpOption<std::string> extra_ld_flags;
+  KphpOption<std::string> debug_level;
+  KphpOption<std::string> archive_creator;
+  KphpOption<bool> dynamic_incremental_linkage;
+
+  KphpOption<uint64_t> profiler_level;
+  KphpOption<bool> enable_global_vars_memory_stats;
+  KphpOption<bool> print_resumable_graph;
+
+  KphpOption<bool> no_pch;
+  KphpOption<bool> no_index_file;
+  KphpOption<bool> hide_progress;
+
+  static std::string get_home() noexcept;
+
+private:
+  static void option_as_dir(KphpOption<std::string> &path) noexcept;
+
+  std::vector<std::string> main_files_;
+
+  std::string cxx_flags_;
+  std::string ld_flags_;
+  std::string incremental_linker_;
+  std::string incremental_linker_flags_;
+
+  std::string dest_cpp_dir_;
+  std::string dest_objs_dir_;
+  std::string binary_path_;
+  std::string static_lib_name_;
+
+  std::string runtime_sha256_;
+  std::string cxx_flags_sha256_;
+
   color_settings color_{auto_colored};
-
-  std::string php_code_version_;
 
   void update_cxx_flags_sha256();
 
 public:
-  const string &get_home() const;
-  void set_dest_dir(const string &dest_dir);
-  const string &get_dest_dir() const;
-  void set_use_auto_dest();
-  bool get_use_auto_dest() const;
-  void set_functions(const string &functions);
-  const string &get_functions() const;
-  void add_include(const string &include);
-  const vector<string> &get_includes() const;
-  void set_jobs_count(const string &jobs_count);
-  int get_jobs_count() const;
-  void set_mode(const string &mode);
-  const string &get_mode() const;
-  void set_link_file(const string &link_file);
-  const string &get_link_file() const;
-  void set_use_make();
-  bool get_use_make() const;
-  void set_make_force();
-  bool get_make_force() const;
-  const string &get_binary_path() const;
-  void set_static_lib_out_dir(string &&lib_dir);
-  const string &get_static_lib_out_dir() const;
-  const string &get_static_lib_name() const;
-  void set_user_binary_path(const string &user_binary_path);
-  const string &get_user_binary_path() const;
-  void set_threads_count(const string &threads_count);
-  int get_threads_count() const;
-  void set_path(const string &path);
-  const string &get_path() const;
-  void set_runtime_sha256_file(string &&file_name);
-  const string &get_runtime_sha256_file() const;
-  const string &get_runtime_sha256() const;
-  const string &get_cxx_flags_sha256() const;
-  void set_verbosity(std::string &&verbosity);
-  int get_verbosity() const;
-  void set_print_resumable_graph();
-  int get_print_resumable_graph() const;
-  void set_profiler_level(string &&level);
-  int get_profiler_level() const;
-  void set_error_on_warns();
-  bool get_error_on_warns() const;
-  void set_tl_schema_file(const string &tl_schema_file);
-  string get_tl_schema_file() const;
-  void set_gen_tl_internals();
-  bool get_gen_tl_internals() const;
-  void set_no_pch();
-  bool get_no_pch() const;
-  void set_no_index_file();
-  bool get_no_index_file() const;
-  bool get_show_all_type_errors() const;
-  bool get_hide_progress() const;
-  void set_enable_global_vars_memory_stats();
-  bool get_enable_global_vars_memory_stats() const;
-  void set_dynamic_incremental_linkage();
-  bool get_dynamic_incremental_linkage() const;
+  const std::string &get_binary_path() const;
+  const std::string &get_static_lib_name() const;
+  const std::string &get_runtime_sha256() const;
+  const std::string &get_cxx_flags_sha256() const;
 
-  void add_main_file(const string &main_file);
-  const vector<string> &get_main_files() const;
+  void add_main_file(const std::string &main_file);
+  const std::vector<std::string> &get_main_files() const;
 
-  void set_dest_dir_subdir(const string &s);
+  void set_dest_dir_subdir(const std::string &s);
   void init_dest_dirs();
 
-  void set_warnings_filename(const string &path);
-  void set_compilation_metrics_filename(string &&path);
-  void set_stats_filename(const string &path);
-  void set_warnings_level(std::string &&level);
-  void set_debug_level(const string &level);
+  const std::string &get_dest_cpp_dir() const;
+  const std::string &get_dest_objs_dir() const;
 
-  const string &get_warnings_filename() const;
-  const string &get_compilation_metrics_filename() const;
-  const string &get_stats_filename() const;
-  int get_warnings_level() const;
-  const string &get_debug_level() const;
+  const std::string &get_cxx_flags() const;
+  const std::string &get_ld_flags() const;
+  const std::string &get_incremental_linker() const;
+  const std::string &get_incremental_linker_flags() const;
 
-  const string &get_dest_cpp_dir() const;
-  const string &get_dest_objs_dir() const;
-
-  const string &get_cxx() const;
-  const string &get_cxx_flags() const;
-  const string &get_ld_flags() const;
-  const string &get_ar() const;
-  const string &get_incremental_linker() const;
-  const string &get_incremental_linker_flags() const;
-
-  const string &get_version() const;
+  std::string get_version() const;
   bool is_static_lib_mode() const;
   color_settings get_color_settings() const;
-  void set_php_code_version(std::string &&version);
-  const std::string &get_php_code_version() const;
 
-  const string &get_tl_namespace_prefix() const;
-  const string &get_tl_classname_prefix() const;
+  const std::string &get_tl_namespace_prefix() const;
+  const std::string &get_tl_classname_prefix() const;
 
-  bool init();
+  void init();
   void debug() const;
 
   static std::string read_runtime_sha256_file(const std::string &filename);

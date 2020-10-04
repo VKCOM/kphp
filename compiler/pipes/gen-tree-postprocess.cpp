@@ -119,7 +119,7 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
-    if (!G->settings().get_profiler_level() && name == "profiler_is_enabled") {
+    if (!G->settings().profiler_level.get() && name == "profiler_is_enabled") {
       return {op_false, 0};
     }
     return {op_err, -1};

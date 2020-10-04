@@ -214,7 +214,7 @@ private:
         }
       }
     }
-    if (G->settings().get_print_resumable_graph()) {
+    if (G->settings().print_resumable_graph.get()) {
       for (const auto &func : call_graph.functions) {
         if (!func->is_resumable) {
           continue;

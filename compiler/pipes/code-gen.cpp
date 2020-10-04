@@ -150,7 +150,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(GlobalVarsReset(main_file));
   }
 
-  if (G->settings().get_enable_global_vars_memory_stats()) {
+  if (G->settings().enable_global_vars_memory_stats.get()) {
     W << Async(GlobalVarsMemoryStats{main_files});
   }
   W << Async(InitScriptsCpp(std::move(main_files), std::move(all_functions)));
@@ -207,9 +207,9 @@ string CodeGenF::get_subdir(const string &base) {
 void CodeGenF::write_lib_version(CodeGenerator &W) {
   W << OpenFile("_lib_version.h");
   W << "// Runtime sha256: " << G->settings().get_runtime_sha256() << NL;
-  W << "// CXX: " << G->settings().get_cxx() << NL;
+  W << "// CXX: " << G->settings().cxx.get() << NL;
   W << "// CXXFLAGS: " << G->settings().get_cxx_flags() << NL;
-  W << "// DEBUG: " << G->settings().get_debug_level() << NL;
+  W << "// DEBUG: " << G->settings().debug_level.get() << NL;
   W << CloseFile();
 }
 
