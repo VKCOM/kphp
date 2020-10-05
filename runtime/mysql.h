@@ -44,6 +44,8 @@ mixed f$mysqli_query(const class_instance<C$mysqli> &dn, const string &query);
 
 class_instance<C$mysqli> f$vk_mysqli_connect(const string &host, int64_t port);
 
+class_instance<C$mysqli> f$mysqli_connect(const string &host, const string &username, const string &password, const string &db_name, int64_t port);
+
 bool f$mysqli_select_db(const class_instance<C$mysqli> &db, const string &name);
 
 void init_mysql_lib();

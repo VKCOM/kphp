@@ -338,7 +338,10 @@ mixed f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
   return db->last_query_id = db->biggest_query_id;
 }
 
-class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((unused)), int64_t port __attribute__((unused))) {
+class_instance<C$mysqli> f$mysqli_connect(const string &host __attribute__((unused)), const string &username __attribute__((unused)), const string &password __attribute__((unused)), const string &db_name __attribute__((unused)), int64_t port __attribute__((unused))) {
+  // though this function is named like PHP's mysqli_connect(), it doesn't use provided credentials for connection
+  // instead, they are embedded to and managed by db proxy
+  
   if (DB_Proxy.is_null()) {
     DB_Proxy.alloc();
 
@@ -361,6 +364,10 @@ class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((u
   } else {
     return {};
   }
+}
+
+class_instance<C$mysqli> f$vk_mysqli_connect(const string &host, int64_t port) {
+  return f$mysqli_connect(host, string{}, string{}, string{}, port);
 }
 
 bool f$mysqli_select_db(const class_instance<C$mysqli> &db __attribute__((unused)), const string &name __attribute__((unused))) {
