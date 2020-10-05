@@ -71,7 +71,7 @@ void ConfdataKeyMaker::reset_raw(const char *key, int16_t key_len) noexcept {
   raw_key_ = key;
   raw_key_len_ = key_len;
   first_key_ = string{};
-  second_key_ = var{};
+  second_key_ = mixed{};
 }
 
 void ConfdataKeyMaker::init_second_key(const char *second_key, int16_t second_key_key_len) noexcept {

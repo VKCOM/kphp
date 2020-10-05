@@ -926,7 +926,7 @@ VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
         return conv_to_lval<tp_int>(x);
       case tp_string:
         return conv_to_lval<tp_string>(x);
-      case tp_var:
+      case tp_mixed:
         return x;
         break;
       default:
@@ -1247,7 +1247,7 @@ VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_pre
 }
 
 VertexAdaptor<op_switch> GenTree::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition,std::vector<VertexPtr> &&cases) {
-  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function, tp_var);
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function, tp_mixed);
   auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function, tp_bool);
   return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
 }

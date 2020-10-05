@@ -19,17 +19,17 @@ class Exception {
 };
 
 interface Memcache {
-    public function get ($key) ::: var;
+    public function get ($key) ::: mixed;
     public function delete ($key ::: string) ::: bool;
     public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: any = 1) ::: var;
-    public function getVersion () ::: var;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function increment ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function getVersion () ::: mixed;
 
     // this two functions shouldn't be there, but we need it to rewrite code
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
@@ -37,15 +37,15 @@ interface Memcache {
 class McMemcache implements Memcache {
     public function __construct() ::: McMemcache;
 
-    public function get ($key) ::: var;
+    public function get ($key) ::: mixed;
     public function delete ($key ::: string) ::: bool;
     public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int  = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: any = 1) ::: var;
-    public function getVersion () ::: var;
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function increment ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function getVersion () ::: mixed;
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
 
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
@@ -53,18 +53,18 @@ class McMemcache implements Memcache {
 class RpcMemcache implements Memcache {
     public function __construct($fake ::: bool = false) ::: RpcMemcache;
 
-    public function get ($key) ::: var;
+    public function get ($key) ::: mixed;
     public function delete ($key ::: string) ::: bool;
     public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: any = 1) ::: var;
-    public function increment ($key ::: string, $v ::: any = 1) ::: var;
+    public function decrement ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function increment ($key ::: string, $v ::: any = 1) ::: mixed;
 
-    public function getVersion () ::: var;
+    public function getVersion () ::: mixed;
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: var = null, $timeoutms ::: int = 0) ::: bool;
+    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
 }
 
 
@@ -131,7 +131,7 @@ define('E_ALL', 32767);
 
 function set_server_status ($status ::: string) ::: bool;
 
-function error_get_last() ::: var;
+function error_get_last() ::: mixed;
 function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
 /** @kphp-no-return */
@@ -141,7 +141,7 @@ function exit($code = 0) ::: void;
 /** @kphp-no-return */
 function die($code = 0) ::: void;
 function register_kphp_on_warning_callback(callback($warning_message ::: string, $stacktrace ::: string[]) ::: void) ::: void;
-function kphp_set_context_on_error($tags ::: var[], $extra_info ::: var[], $env ::: string = "") ::: void;
+function kphp_set_context_on_error($tags ::: mixed[], $extra_info ::: mixed[], $env ::: string = "") ::: void;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
 
 function ini_get ($s ::: string) ::: string | false;
@@ -165,12 +165,12 @@ function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
 function get_engine_workers_number() ::: int;
 
-function getKeyByPos ($a ::: array, $n ::: int) ::: var;
+function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 function create_vector ($n ::: int, $x ::: any) ::: ^2[];
-function array_first_key ($a ::: array) ::: var;
+function array_first_key ($a ::: array) ::: mixed;
 function array_first_value ($a ::: array) ::: ^1[*];
-function array_last_key ($a ::: array) ::: var;
+function array_last_key ($a ::: array) ::: mixed;
 function array_last_value ($a ::: array) ::: ^1[*];
 
 function implode ($s ::: string, $v ::: array) ::: string;
@@ -203,21 +203,21 @@ function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
 function array_shift (&$a ::: array) ::: ^1[*];
 function array_unshift (&$a ::: array, $val ::: any) ::: int;
 function array_key_exists ($v ::: any, $a ::: array) ::: bool;
-function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: var;
-function array_find ($val ::: array, callback ($x ::: ^1[*]) ::: bool) ::: tuple(var, ^1[*]);
-function array_rand ($a ::: array, $num ::: int = 1) ::: var;
-function array_keys ($a ::: array) ::: var[];
+function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: mixed;
+function array_find ($val ::: array, callback ($x ::: ^1[*]) ::: bool) ::: tuple(mixed, ^1[*]);
+function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
+function array_keys ($a ::: array) ::: mixed[];
 function array_keys_as_strings ($a ::: array) ::: string[];
 function array_keys_as_ints ($a ::: array) ::: int[];
 function array_values ($a ::: array) ::: ^1;
 function array_unique ($a ::: array) ::: ^1;
 function array_count_values ($a ::: array) ::: int[];
-function array_flip ($a ::: array) ::: var[];
+function array_flip ($a ::: array) ::: mixed[];
 function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
 function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
-function range ($from, $to, $step ::: int = 1) ::: var[];//TODO
+function range ($from, $to, $step ::: int = 1) ::: mixed[];//TODO
 function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
 function array_pop (&$a ::: array) ::: ^1[*];
 function array_sum ($a ::: array) ::: float;//TODO
@@ -238,7 +238,7 @@ function min (...$a) ::: ^1[*];
 function max (...$a) ::: ^1[*];
 
 function array_filter ($a ::: array, callback ($x ::: ^1[*]) ::: bool = TODO) ::: ^1;
-function array_filter_by_key ($a ::: array, callback ($key ::: var) ::: bool) ::: ^1;
+function array_filter_by_key ($a ::: array, callback ($key ::: mixed) ::: bool) ::: ^1;
 function array_map (callback ($x ::: ^2[*]) ::: any, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: any, $initial ::: any) ::: ^2() | ^3;
@@ -291,11 +291,11 @@ function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
 function date ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function date_default_timezone_set ($s ::: string) ::: bool;
 function date_default_timezone_get() ::: string;
-function getdate ($timestamp ::: int = INT_MIN) ::: var[];
+function getdate ($timestamp ::: int = INT_MIN) ::: mixed[];
 function gmdate ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function gmmktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
 function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = false);
-function microtime ($get_as_float ::: bool = false) ::: var;//TODO
+function microtime ($get_as_float ::: bool = false) ::: mixed;//TODO
 function mktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
 function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | false;
@@ -304,13 +304,13 @@ function time() ::: int;
 function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
-function posix_getpwuid($uid ::: int) ::: var[] | false;
-function getopt ($options ::: string, $longopt ::: array = array()) ::: var[] | false;
+function posix_getpwuid($uid ::: int) ::: mixed[] | false;
+function getopt ($options ::: string, $longopt ::: array = array()) ::: mixed[] | false;
 function gethostbynamel ($name ::: string) ::: string[] | false;
 function inet_pton ($address ::: string) ::: string | false;
 
 function pack ($pattern ::: string, ...$args) ::: string;
-function unpack ($pattern ::: string, $data ::: string) ::: var[];
+function unpack ($pattern ::: string, $data ::: string) ::: mixed[];
 
 define('JSON_UNESCAPED_UNICODE', 1);
 define('JSON_FORCE_OBJECT', 16);
@@ -318,17 +318,17 @@ define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
 
 function serialize ($v ::: any) ::: string;
 /** @kphp-pure-function */
-function unserialize ($v ::: string) ::: var;
+function unserialize ($v ::: string) ::: mixed;
 function json_encode ($v ::: any, $options ::: int = 0) ::: string | false;
-function json_decode ($v ::: string, $assoc ::: bool = false) ::: var;
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
-function msgpack_serialize($v ::: var) ::: string | null;
-function msgpack_deserialize($v ::: string) ::: var;
+function msgpack_serialize($v ::: mixed) ::: string | null;
+function msgpack_deserialize($v ::: string) ::: mixed;
 
 /** @kphp-extern-func-info can_throw */
-function msgpack_serialize_safe($v ::: var) ::: string;
+function msgpack_serialize_safe($v ::: mixed) ::: string;
 /** @kphp-extern-func-info can_throw */
-function msgpack_deserialize_safe($v ::: string) ::: var;
+function msgpack_deserialize_safe($v ::: string) ::: mixed;
 
 define('PREG_PATTERN_ORDER', 1);
 define('PREG_SET_ORDER', 2);
@@ -337,13 +337,13 @@ define('PREG_SPLIT_NO_EMPTY', 8);
 define('PREG_SPLIT_DELIM_CAPTURE', 16);
 define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
-function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
-function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: var = TODO, $flags ::: int = 0) ::: int | false;//TODO
-function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
-function preg_replace_callback ($regex ::: regexp, callback($x ::: string[]) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: var;
+function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0) ::: int | false;//TODO
+function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
+function preg_replace_callback ($regex ::: regexp, callback($x ::: string[]) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
-function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: var[] | false;
+function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);
@@ -358,7 +358,7 @@ function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function uasort (&$a ::: array, callback($x ::: ^1[*], $y ::: ^1[*]) ::: int) ::: void;
 function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function uksort (&$a ::: array, callback($x ::: var, $y ::: var) ::: int) ::: void;
+function uksort (&$a ::: array, callback($x ::: mixed, $y ::: mixed) ::: int) ::: void;
 function natsort (&$a ::: array) ::: void;
 
 function lcg_value() ::: float;
@@ -408,15 +408,15 @@ define('OPENSSL_RAW_DATA', 1);
 define('OPENSSL_ZERO_PADDING', 2);
 define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
-function openssl_public_encrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
-function openssl_private_decrypt ($data ::: string, &$result ::: var, $key ::: string) ::: bool;
+function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
 function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
 function openssl_pkey_get_public ($key ::: string) ::: string | false;
 function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
-function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: var[] | false;
-function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: var;
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: mixed;
 
 define('PKCS7_TEXT', 0x1);
 define('PKCS7_NOCERTS', 0x2);
@@ -467,7 +467,7 @@ define('PHP_URL_PATH', 5);
 define('PHP_URL_QUERY', 6);
 define('PHP_URL_FRAGMENT', 7);
 
-function parse_url ($str ::: string, $component ::: int = -1) ::: var;
+function parse_url ($str ::: string, $component ::: int = -1) ::: mixed;
 
 define('M_PI', 3.1415926535897932384626433832795);
 
@@ -518,7 +518,7 @@ function bindec ($number ::: string) ::: int;
 function bin2hex ($str ::: string) ::: string;
 function chr ($v ::: int) ::: string;
 function convert_cyr_string ($str ::: string, $from ::: string, $to ::: string) ::: string;
-function count_chars ($str ::: string, $mode ::: int = 0) ::: var;
+function count_chars ($str ::: string, $mode ::: int = 0) ::: mixed;
 function decbin ($number ::: int) ::: string;
 function dechex ($number ::: int) ::: string;
 function hex2bin ($str ::: string) ::: string;
@@ -531,7 +531,7 @@ function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
 function mysql_escape_string ($str ::: string) ::: string;
 function nl2br ($str ::: string, $is_xhtml = true) ::: string;
 function number_format ($number ::: float, $decimals ::: int = 0, $dec_point = '.', $thousands_sep = ',') ::: string;
-function parse_str ($str ::: string, &$arr ::: var) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
+function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
 function ord ($c ::: string) ::: int;
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
 function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
@@ -568,7 +568,7 @@ function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
 function fprintf ($stream, $format ::: string, ...$args) ::: int;
 
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
-function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: var[] | false;
+function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: mixed[] | false;
 
 function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
 //function strtr ($subject, $from, $to);
@@ -616,7 +616,7 @@ function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 
 function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
 function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: var = INT_MAX, $encoding ::: string = "1251") ::: string;
+function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = INT_MAX, $encoding ::: string = "1251") ::: string;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
@@ -638,10 +638,10 @@ function mysqli_error($dn :<=: \mysqli) ::: string;
 define('MYSQLI_ASSOC', 1);
 
 function mysqli_affected_rows($dn :<=: \mysqli) ::: int;
-function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: var[] | null;
+function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: mixed[] | null;
 function mysqli_insert_id($dn :<=: \mysqli) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
-function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: var;
+function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: mixed;
 function vk_mysqli_connect($host ::: string, $port ::: int) ::: \mysqli;
 function mysqli_select_db($dn :<=: \mysqli, $name ::: string) ::: bool;
 
@@ -657,7 +657,7 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
 function file ($name ::: string) ::: string[] | false;
 function file_get_contents ($name ::: string) ::: string | false;
-function file_put_contents ($name ::: string, $content ::: var, $flags ::: int = 0) ::: int | false;
+function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 function file_exists ($name ::: string) ::: bool;
 function filesize ($name ::: string) ::: int | false;
 function filectime ($name ::: string) ::: int | false;
@@ -676,7 +676,7 @@ function scandir ($directory ::: string) ::: string[] | false;
 function sleep ($seconds ::: int) ::: void;
 function usleep ($micro_seconds ::: int) ::: void;
 
-function getimagesize ($name ::: string) ::: var;
+function getimagesize ($name ::: string) ::: mixed;
 
 define('IMAGETYPE_UNKNOWN', 0);
 define('IMAGETYPE_GIF', 1);
@@ -722,7 +722,7 @@ function vk_stats_decompress_sample($sample ::: string) ::: string | false;
 function vk_stats_merge_samples($samples ::: array) ::: string | false;
 function vk_stats_parse_sample($sample ::: string) ::: int[] | false;
 
-function vk_stats_hll_merge($str ::: var) ::: string | false;
+function vk_stats_hll_merge($str ::: mixed) ::: string | false;
 function vk_stats_hll_count($hll ::: string) ::: float | false;
 function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
 function vk_stats_hll_add($hll ::: string, $a ::: array) ::: string | false;
@@ -750,11 +750,11 @@ function fetch_Long () ::: Long;
 /** @kphp-extern-func-info can_throw */
 function fetch_ULong () ::: ULong;
 /** @kphp-extern-func-info can_throw */
-function fetch_unsigned_int () ::: var;
+function fetch_unsigned_int () ::: mixed;
 /** @kphp-extern-func-info can_throw */
 function fetch_long () ::: int;
 /** @kphp-extern-func-info can_throw */
-function fetch_unsigned_long () ::: var;
+function fetch_unsigned_long () ::: mixed;
 /** @kphp-extern-func-info can_throw */
 function fetch_unsigned_int_hex () ::: string;
 /** @kphp-extern-func-info can_throw */
@@ -772,7 +772,7 @@ function fetch_string () ::: string;
 /** @kphp-extern-func-info can_throw */
 function fetch_string_as_int () ::: int;
 /** @kphp-extern-func-info can_throw */
-function fetch_memcache_value () ::: var;
+function fetch_memcache_value () ::: mixed;
 function fetch_eof () ::: bool;
 /** @kphp-extern-func-info can_throw */
 function fetch_end () ::: bool;
@@ -833,9 +833,9 @@ function rpc_wait ($request_id ::: int) ::: bool;
 function rpc_wait_multiple ($request_id ::: int) ::: bool;
 
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_get ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_get ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: mixed;
 /** @kphp-extern-func-info can_throw resumable */
-function rpc_mc_multiget ($rpc_conn :<=: \RpcConnection, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: var[] | false;
+function rpc_mc_multiget ($rpc_conn :<=: \RpcConnection, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: mixed[] | false;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_delete ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
@@ -845,19 +845,19 @@ function rpc_mc_set ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $fl
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_replace ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: mixed;
 /** @kphp-extern-func-info can_throw */
-function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: var;
+function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: mixed;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
 function rpc_tl_query_one ($rpc_conn :<=: \RpcConnection, $arr ::: any, $timeout ::: float = -1.0) ::: int;
 function rpc_tl_query ($rpc_conn :<=: \RpcConnection, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
-function rpc_tl_query_result_one ($query_id ::: int) ::: var[];
+function rpc_tl_query_result_one ($query_id ::: int) ::: mixed[];
 /** @kphp-extern-func-info resumable */
-function rpc_tl_query_result ($query_ids ::: array) ::: var[][];
-function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: var[][];
+function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_pending_queries_count () ::: int;
 
 /** @kphp-tl-class */
@@ -958,13 +958,13 @@ function fflush ($stream) ::: bool;
 function feof ($stream) ::: bool;
 function fclose ($stream) ::: bool;
 
-function stream_context_create ($options ::: var = array());
-function stream_context_set_option (&$context, $options_or_wrapper_name ::: var, $option ::: string = TODO, $value ::: var = TODO) ::: bool;
+function stream_context_create ($options ::: mixed = array());
+function stream_context_set_option (&$context, $options_or_wrapper_name ::: mixed, $option ::: string = TODO, $value ::: mixed = TODO) ::: bool;
 
 define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
 
-function stream_socket_client ($url ::: string, &$error_number ::: var = TODO, &$error_description ::: var = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
+function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
 function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
 function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
 function stream_set_read_buffer ($stream, $size ::: int) ::: bool;
@@ -1037,10 +1037,10 @@ function mail ($to ::: string, $subject ::: string, $message ::: string, $additi
 
 function curl_init ($url ::: string = "") ::: int;
 function curl_reset ($curl_handle ::: int) ::: void;
-function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: var) ::: bool;
+function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
-function curl_exec ($curl_handle ::: int) ::: var;
-function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: var;
+function curl_exec ($curl_handle ::: int) ::: mixed;
+function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 function curl_error ($curl_handle ::: int) ::: string;
 function curl_errno ($curl_handle ::: int) ::: int;
 function curl_close ($curl_handle ::: int) ::: void;
@@ -1307,7 +1307,7 @@ function make_clone ($x ::: any) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cast($instance ::: any, $to_type ::: string) ::: instance<^2>;
 
-function instance_to_array($instance ::: any) ::: var[];
+function instance_to_array($instance ::: any) ::: mixed[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
@@ -1323,9 +1323,9 @@ function instance_serialize($instance ::: any) ::: string | null;
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 
 function is_confdata_loaded() ::: bool;
-function confdata_get_value($key ::: string) ::: var;
-function confdata_get_values_by_any_wildcard($wildcard ::: string) ::: var[];
-function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: var[];
+function confdata_get_value($key ::: string) ::: mixed;
+function confdata_get_values_by_any_wildcard($wildcard ::: string) ::: mixed[];
+function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: mixed[];
 
 function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;

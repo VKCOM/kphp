@@ -77,7 +77,7 @@ public:
     return error_num;
   }
 
-  var get_info(CURLINFO what) noexcept {
+  mixed get_info(CURLINFO what) noexcept {
     if (what == CURLINFO_PRIVATE) {
       return private_data;
     }
@@ -86,17 +86,17 @@ public:
       case CURLINFO_STRING: {
         char *value = nullptr;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        return (res == CURLE_OK && value) ? string{value} : var{false};
+        return (res == CURLE_OK && value) ? string{value} : mixed{false};
       }
       case CURLINFO_LONG: {
         long value = 0;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        return res == CURLE_OK ? var{value} : var{false};
+        return res == CURLE_OK ? mixed{value} : mixed{false};
       }
       case CURLINFO_DOUBLE: {
         double value = 0;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        return res == CURLE_OK ? var{value} : var{false};
+        return res == CURLE_OK ? mixed{value} : mixed{false};
       }
       default:
         php_critical_error("Got unknown curl info type '%d'", type);
@@ -104,8 +104,8 @@ public:
     }
   }
 
-  void add_info_into_array(array<var> &out, const char *key, CURLINFO what) noexcept {
-    var value = get_info(what);
+  void add_info_into_array(array<mixed> &out, const char *key, CURLINFO what) noexcept {
+    mixed value = get_info(what);
     if (!equals(value, false)) {
       out.set_value(string{key}, std::move(value));
     }
@@ -254,19 +254,19 @@ int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_l
   return 0;
 }
 
-void long_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void long_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   easy_context->set_option_safe(option, static_cast<long>(f$longval(value).l));
 }
 
-void string_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void string_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   easy_context->set_option_safe(option, value.to_string().c_str());
 }
 
-void off_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void off_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   easy_context->set_option_safe(option, static_cast<curl_off_t>(f$longval(value).l));
 }
 
-void linked_list_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void linked_list_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   if (unlikely(!value.is_array())) {
     php_warning("Value must be an array in function curl_setopt");
     easy_context->error_num = BAD_CURL_OPTION;
@@ -274,7 +274,7 @@ void linked_list_option_setter(EasyContext *easy_context, CURLoption option, con
     return;
   }
 
-  const array<var> &v = value.to_array();
+  const array<mixed> &v = value.to_array();
   curl_slist *slist = nullptr;
   for (auto p = v.begin(); p != v.end(); ++p) {
     slist = dl::critical_section_call(curl_slist_append, slist, f$strval(p.get_value()).c_str());
@@ -292,13 +292,13 @@ void linked_list_option_setter(EasyContext *easy_context, CURLoption option, con
   }
 }
 
-void private_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void private_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   php_assert(option == CURLOPT_PRIVATE);
   easy_context->private_data = value.to_string();
 }
 
 template<size_t OPTION_OFFSET, typename T, size_t N>
-void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_context, CURLoption option, const var &value) noexcept {
+void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_context, CURLoption option, const mixed &value) noexcept {
   long val = static_cast<long>(f$longval(value).l);
   if (easy_context->check_option_value<OPTION_OFFSET, N>(val, "parameter value", "curl_setopt")) {
     val = options[val - OPTION_OFFSET];
@@ -306,7 +306,7 @@ void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_co
   }
 }
 
-void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array(
     {
       CURLPROXY_HTTP,
@@ -319,7 +319,7 @@ void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, cons
   set_enumerated_option<400000>(options, easy_context, option, value);
 }
 
-void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array(
     {
       CURL_SSLVERSION_DEFAULT,
@@ -333,7 +333,7 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
   set_enumerated_option<0>(options, easy_context, option, value);
 }
 
-void auth_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   long val = static_cast<long>(f$longval(value).l);
   constexpr size_t OPTION_OFFSET = 600000;
   if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val, "parameter value", "curl_setopt")) {
@@ -347,24 +347,24 @@ void auth_option_setter(EasyContext *easy_context, CURLoption option, const var 
   }
 }
 
-void ip_resolve_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void ip_resolve_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURL_IPRESOLVE_WHATEVER, CURL_IPRESOLVE_V4, CURL_IPRESOLVE_V6});
   set_enumerated_option<700000>(options, easy_context, option, value);
 }
 
-void ftp_auth_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void ftp_auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLFTPAUTH_DEFAULT, CURLFTPAUTH_SSL, CURLFTPAUTH_TLS});
   set_enumerated_option<800000>(options, easy_context, option, value);
 }
 
-void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const var &value) {
+void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLFTPMETHOD_MULTICWD, CURLFTPMETHOD_NOCWD, CURLFTPMETHOD_SINGLECWD});
   set_enumerated_option<900000>(options, easy_context, option, value);
 }
 
-void post_fields_option_setter(EasyContext *easy_context, CURLoption, const var &value) {
+void post_fields_option_setter(EasyContext *easy_context, CURLoption, const mixed &value) {
   if (value.is_array()) {
-    const array<var> &postfields = value.to_array();
+    const array<mixed> &postfields = value.to_array();
 
     curl_httppost *first = nullptr;
     curl_httppost *last = nullptr;
@@ -412,7 +412,7 @@ void post_fields_option_setter(EasyContext *easy_context, CURLoption, const var 
 constexpr int64_t CURLOPT_RETURNTRANSFER = 1234567;
 constexpr int64_t CURLOPT_INFO_HEADER_OUT = 7654321;
 
-bool curl_setopt(EasyContext *easy_context, int64_t option, const var &value) noexcept {
+bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) noexcept {
   if (option == CURLOPT_INFO_HEADER_OUT) {
     if (f$longval(value).l == 1ll) {
       easy_context->set_option(CURLOPT_DEBUGFUNCTION, curl_info_header_out);
@@ -433,7 +433,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const var &value) no
 
   struct EasyOptionHandler {
     CURLoption option;
-    void (*option_setter)(EasyContext *easy_context, CURLoption option, const var &value);
+    void (*option_setter)(EasyContext *easy_context, CURLoption option, const mixed &value);
   };
   constexpr static auto curlopt_options = vk::to_array<EasyOptionHandler>(
     {
@@ -635,7 +635,7 @@ void f$curl_reset(curl_easy easy_id) noexcept {
   }
 }
 
-bool f$curl_setopt(curl_easy easy_id, int64_t option, const var &value) noexcept {
+bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
     if (curl_setopt(easy_context, option, value)) {
       return true;
@@ -645,7 +645,7 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const var &value) noexcept
   return false;
 }
 
-bool f$curl_setopt_array(curl_easy easy_id, const array<var> &options) noexcept {
+bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
     for (auto p = options.begin(); p != options.end(); ++p) {
       if (!curl_setopt(easy_context, p.get_key().to_int(), p.get_value())) {
@@ -658,7 +658,7 @@ bool f$curl_setopt_array(curl_easy easy_id, const array<var> &options) noexcept 
   return false;
 }
 
-var f$curl_exec(curl_easy easy_id) noexcept {
+mixed f$curl_exec(curl_easy easy_id) noexcept {
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;
@@ -678,14 +678,14 @@ var f$curl_exec(curl_easy easy_id) noexcept {
   return true;
 }
 
-var f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
+mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;
   }
 
   if (option == 0) {
-    array<var> result(array_size(0, 26, false));
+    array<mixed> result(array_size(0, 26, false));
     easy_context->add_info_into_array(result, "url", CURLINFO_EFFECTIVE_URL);
     easy_context->add_info_into_array(result, "content_type", CURLINFO_CONTENT_TYPE);
     easy_context->add_info_into_array(result, "http_code", CURLINFO_RESPONSE_CODE);

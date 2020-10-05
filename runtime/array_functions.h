@@ -23,7 +23,7 @@ template<class T>
 array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false);
 
 template<class T>
-array<T> f$array_slice(const array<T> &a, int64_t offset, const var &length_var = var(), bool preserve_keys = false);
+array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var = mixed(), bool preserve_keys = false);
 
 template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
@@ -114,7 +114,7 @@ template<class T>
 bool f$array_key_exists(const string &string_key, const array<T> &a);
 
 template<class T>
-bool f$array_key_exists(const var &v, const array<T> &a);
+bool f$array_key_exists(const mixed &v, const array<T> &a);
 
 template<class T1, class T2>
 bool f$array_key_exists(const Optional<T1> &v, const array<T2> &a);
@@ -129,7 +129,7 @@ template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a);
 
 template<class T>
-var f$array_rand(const array<T> &a, int64_t num);
+mixed f$array_rand(const array<T> &a, int64_t num);
 
 
 template<class T>
@@ -194,7 +194,7 @@ template<class T>
 bool f$array_is_vector(const array<T> &a);
 
 
-array<var> f$range(const var &from, const var &to, int64_t step = 1);
+array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
 
 
 template<class T>
@@ -239,7 +239,7 @@ ReturnT f$array_sum(const array<T> &a);
 
 
 template<class T>
-var f$getKeyByPos(const array<T> &a, int64_t pos);
+mixed f$getKeyByPos(const array<T> &a, int64_t pos);
 
 template<class T>
 T f$getValueByPos(const array<T> &a, int64_t pos);
@@ -248,13 +248,13 @@ template<class T>
 inline array<T> f$create_vector(int64_t n, const T &default_value);
 
 template<class T>
-var f$array_first_key(const array<T> &a);
+mixed f$array_first_key(const array<T> &a);
 
 template<class T>
 T f$array_first_value(const array<T> &a);
 
 template<class T>
-var f$array_last_key(const array<T> &a);
+mixed f$array_last_key(const array<T> &a);
 
 template<class T>
 T f$array_last_value(const array<T> &a);
@@ -324,7 +324,7 @@ array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preser
 }
 
 template<class T>
-array<T> f$array_slice(const array<T> &a, int64_t offset, const var &length_var, bool preserve_keys) {
+array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var, bool preserve_keys) {
   auto size = a.count();
 
   int64_t length = 0;
@@ -446,7 +446,7 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int64_t size, const DefaultValu
 
   auto copy_input_to_result = [&] {
     for (const auto &it : a) {
-      var key = it.get_key();
+      mixed key = it.get_key();
       const auto &value = it.get_value();
 
       if (key.is_int()) {
@@ -486,7 +486,7 @@ ReturnT f$array_pad(const array<Unknown> &, int64_t size, const DefaultValueT &d
 }
 
 template<class T>
-inline void extract_array_column(array<T> &dest, const array<T> &source, const var &column_key, const var &index_key) {
+inline void extract_array_column(array<T> &dest, const array<T> &source, const mixed &column_key, const mixed &index_key) {
   static_assert(!is_class_instance<T>{}, "using index_key is prohibited with array of class_instances");
   if (!source.has_key(column_key)) {
     return;
@@ -512,14 +512,14 @@ inline void extract_array_column(array<T> &dest, const array<T> &source, const v
 }
 
 template<class T>
-void extract_array_column_instance(array<class_instance<T>> &dest, const array<class_instance<T>> &source, const var &column_key, const var &) {
+void extract_array_column_instance(array<class_instance<T>> &dest, const array<class_instance<T>> &source, const mixed &column_key, const mixed &) {
   if (source.has_key(column_key)) {
     dest.push_back(source.get_value(column_key));
   }
 }
 
 template<class T, class FunT, class ResT = vk::decay_function_arg_t<FunT, 0>>
-Optional<ResT> array_column_helper(const array<T> &a, var column_key, var index_key, FunT &&element_transformer) {
+Optional<ResT> array_column_helper(const array<T> &a, mixed column_key, mixed index_key, FunT &&element_transformer) {
   ResT result;
 
   if (unlikely(!column_key.is_string() && !column_key.is_numeric())) {
@@ -548,13 +548,13 @@ Optional<ResT> array_column_helper(const array<T> &a, var column_key, var index_
 }
 
 template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const var &column_key) {
+Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const mixed &column_key) {
   return array_column_helper(a, column_key, {}, extract_array_column_instance<T>);
 }
 
 template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const var &column_key) {
-  auto element_transformer = [] (array<class_instance<T>> &dest, const Optional<array<class_instance<T>>> &source, const var &column_key, const var &index_key) {
+Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const mixed &column_key) {
+  auto element_transformer = [] (array<class_instance<T>> &dest, const Optional<array<class_instance<T>>> &source, const mixed &column_key, const mixed &index_key) {
     if (source.has_value()) {
       extract_array_column_instance(dest, source.val(), column_key, index_key);
     }
@@ -564,14 +564,14 @@ Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<cla
 }
 
 template<class T>
-Optional<array<T>> f$array_column(const array<array<T>> &a, const var &column_key, const var &index_key = {}) {
+Optional<array<T>> f$array_column(const array<array<T>> &a, const mixed &column_key, const mixed &index_key = {}) {
   return array_column_helper(a, column_key, index_key, extract_array_column<T>);
 
 }
 
 template<class T>
-Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const var &column_key, const var &index_key = {}) {
-  auto element_transformer = [] (array<T> &dest, const Optional<array<T>> &source, const var &column_key, const var &index_key) {
+Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const mixed &column_key, const mixed &index_key = {}) {
+  auto element_transformer = [] (array<T> &dest, const Optional<array<T>> &source, const mixed &column_key, const mixed &index_key) {
     if (source.has_value()) {
       extract_array_column(dest, source.val(), column_key, index_key);
     }
@@ -580,8 +580,8 @@ Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const var 
   return array_column_helper(a, column_key, index_key, std::move(element_transformer));
 }
 
-inline Optional<array<var>> f$array_column(const array<var> &a, const var &column_key, const var &index_key = {}) {
-  auto element_transformer = [] (array<var> &dest, const var &source, const var &column_key, const var &index_key) {
+inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed &column_key, const mixed &index_key = {}) {
+  auto element_transformer = [] (array<mixed> &dest, const mixed &source, const mixed &column_key, const mixed &index_key) {
     if (source.is_array()) {
       extract_array_column(dest, source.as_array(), column_key, index_key);
     }
@@ -590,7 +590,7 @@ inline Optional<array<var>> f$array_column(const array<var> &a, const var &colum
   return array_column_helper(a, column_key, index_key, std::move(element_transformer));
 }
 
-inline Optional<array<var>> f$array_column(const var &a, const var &column_key, const var &index_key = {}) {
+inline Optional<array<mixed>> f$array_column(const mixed &a, const mixed &column_key, const mixed &index_key = {}) {
   if (!a.is_array()) {
     php_warning("first parameter of array_column must be array");
     return false;
@@ -600,7 +600,7 @@ inline Optional<array<var>> f$array_column(const var &a, const var &column_key, 
 }
 
 template<class T>
-inline auto f$array_column(const Optional<T> &a, const var &column_key, const var &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+inline auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;
@@ -866,13 +866,13 @@ bool f$array_key_exists(const string &string_key, const array<T> &a) {
 }
 
 template<class T>
-bool f$array_key_exists(const var &v, const array<T> &a) {
+bool f$array_key_exists(const mixed &v, const array<T> &a) {
   return (v.is_int() || v.is_string() || v.is_null()) && a.has_key(v);
 }
 
 template<class T1, class T2>
 bool f$array_key_exists(const Optional<T1> &v, const array<T2> &a) {
-  return f$array_key_exists(var(v), a);
+  return f$array_key_exists(mixed(v), a);
 }
 
 template<class K, class T, class>
@@ -911,7 +911,7 @@ typename array<T>::key_type f$array_rand(const array<T> &a) {
 }
 
 template<class T>
-var f$array_rand(const array<T> &a, int64_t num) {
+mixed f$array_rand(const array<T> &a, int64_t num) {
   if (num == 1) {
     return f$array_rand(a);
   }
@@ -1373,9 +1373,9 @@ ReturnT f$array_sum(const array<T> &a) {
 
 
 template<class T>
-var f$getKeyByPos(const array<T> &a, int64_t pos) {
+mixed f$getKeyByPos(const array<T> &a, int64_t pos) {
   auto it = a.middle(pos);
-  return it == a.end() ? var{} : it.get_key();
+  return it == a.end() ? mixed{} : it.get_key();
 }
 
 template<class T>
@@ -1394,8 +1394,8 @@ array<T> f$create_vector(int64_t n, const T &default_value) {
 }
 
 template<class T>
-var f$array_first_key(const array<T> &a) {
-  return a.empty() ? var() : a.begin().get_key();
+mixed f$array_first_key(const array<T> &a) {
+  return a.empty() ? mixed() : a.begin().get_key();
 }
 
 template<class T>
@@ -1404,8 +1404,8 @@ T f$array_first_value(const array<T> &a) {
 }
 
 template<class T>
-var f$array_last_key(const array<T> &a) {
-  return a.empty() ? var() : (--a.end()).get_key();
+mixed f$array_last_key(const array<T> &a) {
+  return a.empty() ? mixed() : (--a.end()).get_key();
 }
 
 template<class T>

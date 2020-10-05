@@ -205,8 +205,8 @@ int64_t f$getrandmax() noexcept {
   return f$mt_getrandmax();
 }
 
-var f$abs(const var &v) {
-  var num = v.to_numeric();
+mixed f$abs(const mixed &v) {
+  mixed num = v.to_numeric();
   if (num.is_int()) {
     return std::abs(num.to_int());
   }

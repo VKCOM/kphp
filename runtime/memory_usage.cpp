@@ -7,7 +7,7 @@ int64_t f$estimate_memory_usage(const string &value) {
   return static_cast<int64_t>(value.estimate_memory_usage());
 }
 
-int64_t f$estimate_memory_usage(const var &value) {
+int64_t f$estimate_memory_usage(const mixed &value) {
   if(value.is_string()) {
     return f$estimate_memory_usage(value.as_string());
   } else if (value.is_array()) {

@@ -55,7 +55,7 @@ constexpr int64_t PHP_ROUND_HALF_DOWN = 123423144;
 constexpr int64_t PHP_ROUND_HALF_EVEN = 123423145;
 constexpr int64_t PHP_ROUND_HALF_ODD = 123423146;
 
-var f$abs(const var &v);
+mixed f$abs(const mixed &v);
 
 int64_t f$abs(int64_t v);
 

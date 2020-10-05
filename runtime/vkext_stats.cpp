@@ -174,9 +174,9 @@ int check_sample(sample_t *sample, int len) {
   return 1;
 }
 
-Optional<string> f$vk_stats_merge_samples(const array<var> &a) {
+Optional<string> f$vk_stats_merge_samples(const array<mixed> &a) {
   int max_size = -1;
-  for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
     if (!it.get_value().is_string()) {
       return false;
     }
@@ -195,7 +195,7 @@ Optional<string> f$vk_stats_merge_samples(const array<var> &a) {
   sample_t *sample = nullptr;
   string result;
 
-  for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
     if (!sample) {
       result = it.get_value().to_string();
       result.make_not_shared();
@@ -237,11 +237,11 @@ static int get_hll_size(const string &hll) {
   return hll[0] == HLL_PACK_CHAR ? (1 << 8) : (1 << (hll[1] - '0'));
 }
 
-Optional<string> f$vk_stats_hll_merge(const array<var> &a) {
+Optional<string> f$vk_stats_hll_merge(const array<mixed> &a) {
   string result;
   char *result_buff = 0;
   int result_len = -1;
-  for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
     if (!it.get_value().is_string()) {
       return false;
     }
@@ -355,7 +355,7 @@ Optional<double> hll_count(const string &hll, int m) {
 
 extern "C" void hll_add_shifted(unsigned char *a, int hll_size, long long value);
 
-Optional<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
+Optional<string> f$vk_stats_hll_add(const string &hll, const array<mixed> &a) {
   if (!is_hll_unpacked(hll)) {
     return false;
   }
@@ -364,13 +364,13 @@ Optional<string> f$vk_stats_hll_add(const string &hll, const array<var> &a) {
   }
   int hll_size = __builtin_ctz(get_hll_size(hll));
   memcpy(hll_buf, hll.c_str(), hll.size());
-  for (array<var>::const_iterator it = a.begin(); it != a.end(); ++it) {
+  for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
     hll_add_shifted((unsigned char *)hll_buf, hll_size, it.get_value().to_int());
   }
   return string(hll_buf, hll.size());
 }
 
-Optional<string> f$vk_stats_hll_create(const array<var> &a, int64_t size) {
+Optional<string> f$vk_stats_hll_create(const array<mixed> &a, int64_t size) {
   if (size != (1 << 8) && size != (1 << 14)) {
     return false;
   }

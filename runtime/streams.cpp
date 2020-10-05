@@ -53,13 +53,13 @@ static const stream_functions *get_stream_functions_from_url(const string &url) 
 }
 
 
-var f$stream_context_create(const var &options) {
-  var result;
+mixed f$stream_context_create(const mixed &options) {
+  mixed result;
   f$stream_context_set_option(result, options);
   return result;
 }
 
-bool f$stream_context_set_option(var &context, const var &wrapper, const string &option, const var &value) {
+bool f$stream_context_set_option(mixed &context, const mixed &wrapper, const string &option, const mixed &value) {
   if (!context.is_array() && !context.is_null()) {
     php_warning("Wrong context specified");
     return false;
@@ -84,12 +84,12 @@ bool f$stream_context_set_option(var &context, const var &wrapper, const string 
   return functions->context_set_option(context[wrapper_string], option, value);
 }
 
-bool f$stream_context_set_option(var &context __attribute__((unused)), const var &, const string &) {
+bool f$stream_context_set_option(mixed &context __attribute__((unused)), const mixed &, const string &) {
   php_warning("Function stream_context_set_option can't take 3 arguments");
   return false;
 }
 
-bool f$stream_context_set_option(var &context, const var &options_var) {
+bool f$stream_context_set_option(mixed &context, const mixed &options_var) {
   if (!context.is_array() && !context.is_null()) {
     php_warning("Wrong context specified");
     return false;
@@ -101,10 +101,10 @@ bool f$stream_context_set_option(var &context, const var &options_var) {
   }
 
   bool was_error = false;
-  const array<var> options_array = options_var.to_array();
-  for (array<var>::const_iterator it = options_array.begin(); it != options_array.end(); ++it) {
-    const var &wrapper = it.get_key();
-    const var &values = it.get_value();
+  const array<mixed> options_array = options_var.to_array();
+  for (array<mixed>::const_iterator it = options_array.begin(); it != options_array.end(); ++it) {
+    const mixed &wrapper = it.get_key();
+    const mixed &values = it.get_value();
 
     if (!values.is_array()) {
       php_warning("Parameter options[%s] must be an array", wrapper.to_string().c_str());
@@ -112,8 +112,8 @@ bool f$stream_context_set_option(var &context, const var &options_var) {
       continue;
     }
 
-    const array<var> values_array = values.to_array();
-    for (array<var>::const_iterator values_it = values_array.begin(); values_it != values_array.end(); ++values_it) {
+    const array<mixed> values_array = values.to_array();
+    for (array<mixed>::const_iterator values_it = values_array.begin(); values_it != values_array.end(); ++values_it) {
       if (!f$stream_context_set_option(context, wrapper, f$strval(values_it.get_key()), values_it.get_value())) {
         was_error = true;
       }
@@ -124,11 +124,11 @@ bool f$stream_context_set_option(var &context, const var &options_var) {
 }
 
 
-var error_number_dummy;
-var error_description_dummy;
+mixed error_number_dummy;
+mixed error_description_dummy;
 
-var f$stream_socket_client(const string &url, var &error_number, var &error_description,
-                           double timeout, int64_t flags, const var &context) {
+mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &error_description,
+                           double timeout, int64_t flags, const mixed &context) {
   if (flags != STREAM_CLIENT_CONNECT) {
     php_warning("Wrong parameter flags = %ld in function stream_socket_client", flags);
     error_number = -1001;
@@ -152,7 +152,7 @@ var f$stream_socket_client(const string &url, var &error_number, var &error_desc
 
   int64_t error_number_int = 0;
   string error_description_string;
-  var result = functions->stream_socket_client(url, error_number_int, error_description_string, timeout, flags, context.get_value(functions->name));
+  mixed result = functions->stream_socket_client(url, error_number_int, error_description_string, timeout, flags, context.get_value(functions->name));
   error_number = error_number_int;
   error_description = error_description_string;
   return result;
@@ -207,7 +207,7 @@ int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
 }
 
 
-static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int32_t *nfds) {
+static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_t *nfds) {
   FD_ZERO(fds);
 
   if (!streams_var.is_array()) {
@@ -247,7 +247,7 @@ static void stream_array_to_fd_set(const var &streams_var, fd_set *fds, int32_t 
   }
 }
 
-static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
+static void stream_array_from_fd_set(mixed &streams_var, fd_set *fds) {
   if (!streams_var.is_array()) {
     return;
   }
@@ -283,7 +283,7 @@ static void stream_array_from_fd_set(var &streams_var, fd_set *fds) {
   streams_var = result;
 }
 
-Optional<int64_t> f$stream_select(var &read, var &write, var &except, const var &tv_sec_var, int64_t tv_usec) {
+Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, const mixed &tv_sec_var, int64_t tv_usec) {
   struct timeval tv, *timeout = nullptr;
   if (!tv_sec_var.is_null()) {
     int64_t tv_sec = tv_sec_var.to_int();
@@ -396,16 +396,16 @@ bool f$fclose(const Stream &stream) {
   STREAM_FUNCTION_BODY(fclose, false)(stream);
 }
 
-Optional<int64_t> f$fprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int64_t> f$fprintf(const Stream &stream, const string &format, const array<mixed> &args) {
   return f$vfprintf(stream, format, args);
 }
 
-Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const array<var> &args) {
+Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const array<mixed> &args) {
   string text = f$vsprintf(format, args);
   return f$fwrite(stream, text);
 }
 
-Optional<int64_t> f$fputcsv(const Stream &stream, const array<var> &fields, string delimiter,
+Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, string delimiter,
                             string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
@@ -432,7 +432,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<var> &fields, stri
   string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char))
                                           .append(string(1, enclosure_char))
                                           .append(string(1, escape_char));
-  for (array<var>::const_iterator it = fields.begin(); it != fields.end(); ++it) {
+  for (array<mixed>::const_iterator it = fields.begin(); it != fields.end(); ++it) {
     if (it != fields.begin()) {
       csvline.append_char(delimiter_char);
     }
@@ -498,7 +498,7 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
 }
 
 
-Optional<array<var>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
+Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -531,7 +531,7 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int64_t length, string deli
     return false;
   }
   string buffer = buf_optional.val();
-  array<var> answer;
+  array<mixed> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
   // this part is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c, function php_fgetcsv
@@ -559,7 +559,7 @@ Optional<array<var>> f$fgetcsv(const Stream &stream, int64_t length, string deli
     }
 
     if (first_field && bptr == line_end) {
-      answer.set_value(current_id++, var());
+      answer.set_value(current_id++, mixed());
       break;
     }
     first_field = false;
@@ -750,7 +750,7 @@ Optional<string> f$file_get_contents(const string &stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false)(url);
 }
 
-Optional<int64_t> f$file_put_contents(const string &stream, const var &content_var, int64_t flags) {
+Optional<int64_t> f$file_put_contents(const string &stream, const mixed &content_var, int64_t flags) {
   string content;
   if (content_var.is_array()) {
     content = f$implode(string(), content_var.to_array());

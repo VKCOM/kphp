@@ -107,12 +107,12 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
 
 void CommonAnalyzerPass::on_finish() {
   for (VarPtr &var : current_function->local_var_ids) {
-    G->stats.cnt_mixed_vars += tinf::get_type(var)->ptype() == tp_var;
+    G->stats.cnt_mixed_vars += tinf::get_type(var)->ptype() == tp_mixed;
   }
 
   for (VarPtr &var : current_function->param_ids) {
-    G->stats.cnt_mixed_params += tinf::get_type(var)->ptype() == tp_var;
-    G->stats.cnt_const_mixed_params += (tinf::get_type(var)->ptype() == tp_var) && var->is_read_only;
+    G->stats.cnt_mixed_params += tinf::get_type(var)->ptype() == tp_mixed;
+    G->stats.cnt_const_mixed_params += (tinf::get_type(var)->ptype() == tp_mixed) && var->is_read_only;
   }
 
   if (current_function->type == FunctionData::func_class_holder) {

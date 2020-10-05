@@ -87,10 +87,10 @@ public:
   ConfdataFirstKeyType get_first_key_type() const noexcept { return first_key_type_; }
 
   const string &get_first_key() const noexcept { return first_key_; }
-  const var &get_second_key() const noexcept { return second_key_; }
+  const mixed &get_second_key() const noexcept { return second_key_; }
 
   string make_first_key_copy() const noexcept { return first_key_.copy_and_make_not_shared(); }
-  var make_second_key_copy() const noexcept { return second_key_.is_string() ? var{second_key_.as_string().copy_and_make_not_shared()} : second_key_; }
+  mixed make_second_key_copy() const noexcept { return second_key_.is_string() ? mixed{second_key_.as_string().copy_and_make_not_shared()} : second_key_; }
 
 private:
   void reset_raw(const char *key, int16_t key_len) noexcept;
@@ -101,7 +101,7 @@ private:
 
   ConfdataFirstKeyType first_key_type_{ConfdataFirstKeyType::simple_key};
   string first_key_;
-  var second_key_;
+  mixed second_key_;
 
   std::array<char, string::inner_sizeof() + std::numeric_limits<int16_t>::max() + 1> first_key_buffer_;
   std::array<char, string::inner_sizeof() + std::numeric_limits<int16_t>::max() + 1> second_key_buffer_;

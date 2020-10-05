@@ -612,7 +612,7 @@ string f$vk_flex(const string &name, const string &case_name, int64_t sex, const
   return string(buff);
 }
 
-Optional<string> f$vk_json_encode(const var &v) {
+Optional<string> f$vk_json_encode(const mixed &v) {
   return f$json_encode(v, 0, true);
 }
 

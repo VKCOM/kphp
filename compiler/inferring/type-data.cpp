@@ -321,8 +321,8 @@ void TypeData::convert_Unknown_to_Any() {
 }
 
 const TypeData *TypeData::const_read_at(const Key &key) const {
-  if (ptype() == tp_var) {
-    return get_type(tp_var);
+  if (ptype() == tp_mixed) {
+    return get_type(tp_mixed);
   }
   if (ptype() == tp_string) {
     return get_type(tp_string);
@@ -391,15 +391,15 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   TypeData *lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
-  if (new_ptype == tp_var) {
+  if (new_ptype == tp_mixed) {
     if (lhs->ptype() == tp_array && lhs->anykey_value != nullptr) {
-      lhs->anykey_value->set_lca(tp_var);
+      lhs->anykey_value->set_lca(tp_mixed);
       if (lhs->ptype() == tp_Error) {
         new_ptype = tp_Error;
       }
     }
     if (rhs->ptype() == tp_array && rhs->anykey_value != nullptr) {
-      TypeData tmp(tp_var);
+      TypeData tmp(tp_mixed);
       tmp.set_lca(rhs->anykey_value);
       if (tmp.ptype() == tp_Error) {
         new_ptype = tp_Error;
@@ -474,8 +474,8 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
     auto prev = cur;
     cur = cur->write_at(key);
     if (cur == nullptr) {
-      if (prev->ptype() == tp_var) {
-        TypeData tmp(tp_var);
+      if (prev->ptype() == tp_mixed) {
+        TypeData tmp(tp_mixed);
         tmp.set_lca(rhs);
         if (tmp.ptype() == tp_Error) {
           prev->set_ptype(tp_Error);
@@ -507,7 +507,7 @@ void TypeData::fix_inf_array() {
     depth++;
   }
   if (depth > 6) {
-    set_lca_at(MultiKey::any_key(6), TypeData::get_type(tp_var));
+    set_lca_at(MultiKey::any_key(6), TypeData::get_type(tp_mixed));
   }
 }
 
@@ -736,7 +736,7 @@ int type_strlen(const TypeData *type) {
       return STRLEN_ARRAY_;
     case tp_string:
       return STRLEN_STRING;
-    case tp_var:
+    case tp_mixed:
       return STRLEN_VAR;
     case tp_UInt:
       return STRLEN_UINT;
@@ -766,7 +766,7 @@ int type_strlen(const TypeData *type) {
 }
 
 bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
-  if (type1->ptype() == tp_var || type2->ptype() == tp_var) {
+  if (type1->ptype() == tp_mixed || type2->ptype() == tp_mixed) {
     return true;
   }
   if (type1->can_store_false() && type2->can_store_false()) {

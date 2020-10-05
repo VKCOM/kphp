@@ -8,14 +8,14 @@ template<> int Storage::tagger<int64_t>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<Optional<int64_t>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<void>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<thrown_exception>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<var>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<array<var>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<mixed>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<array<mixed>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<Optional<string>>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<Optional<array<var>>>::get_tag() noexcept { return 0; }
-template<> int Storage::tagger<array<array<var>>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<Optional<array<mixed>>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<array<array<mixed>>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<class_instance<C$VK$TL$RpcResponse>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<array<class_instance<C$VK$TL$RpcResponse>>>::get_tag() noexcept { return 0; }
-template<> Storage::loader<var>::loader_fun Storage::loader<var>::get_function(int) noexcept { return nullptr; }
+template<> Storage::loader<mixed>::loader_fun Storage::loader<mixed>::get_function(int) noexcept { return nullptr; }
 
 void init_php_scripts() noexcept {
   assert(0 && "this code shouldn't be executed and only for linkage test");

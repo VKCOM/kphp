@@ -6,7 +6,7 @@ namespace tl2cpp {
 /*
  * Untyped TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
-void t_Either<T0, inner_magic0, T1, inner_magic1>::store(const var &tl_object) {
+void t_Either<T0, inner_magic0, T1, inner_magic1>::store(const mixed &tl_object) {
   const string &c_name = tl_arr_get(tl_object, tl_str$_, 0, -2147483553).to_string();
   if (c_name == tl_str$left) {
     f$store_int(0x0a29cd5d);
@@ -52,8 +52,8 @@ struct TypeStore {
 /*
  * Untyped TL:
 template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner_magic1>
-array<var> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
-  array<var> result;
+array<mixed> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
+  array<mixed> result;
   CHECK_EXCEPTION(return result);
   auto magic = static_cast<unsigned int>(rpc_fetch_int());
   switch(magic) {
@@ -132,8 +132,8 @@ struct t_Either {
   T1 Y;
   explicit t_Either(T0 X, T1 Y) : X(std::move(X)), Y(std::move(Y)) {}
 
-  void store(const var& tl_object);
-  array<var> fetch();
+  void store(const mixed& tl_object);
+  array<mixed> fetch();
   void typed_store(const PhpType &tl_object);
   void typed_fetch_to(PhpType &tl_object);
 };

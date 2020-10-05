@@ -183,9 +183,8 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       cur_tok++;
       return GenTree::create_type_help_vertex(tp_Null);
     case tok_mixed:
-    case tok_var:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_var);
+      return GenTree::create_type_help_vertex(tp_mixed);
     case tok_void:
       cur_tok++;
       return GenTree::create_type_help_vertex(tp_void);

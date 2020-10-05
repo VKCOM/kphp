@@ -71,13 +71,13 @@ array<string> f$explode(const string &delimiter, const string &str, int64_t limi
   return res;
 }
 
-array<var> range_int(int64_t from, int64_t to, int64_t step) {
+array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
   if (from < to) {
     if (step <= 0) {
       php_warning("Wrong parameters from = %ld, to = %ld, step = %ld in function range", from, to, step);
-      return array<var>();
+      return array<mixed>();
     }
-    array<var> res(array_size((to - from + step) / step, 0, true));
+    array<mixed> res(array_size((to - from + step) / step, 0, true));
     for (int64_t i = from; i <= to; i += step) {
       res.push_back(i);
     }
@@ -85,12 +85,12 @@ array<var> range_int(int64_t from, int64_t to, int64_t step) {
   } else {
     if (step == 0) {
       php_warning("Wrong parameters from = %ld, to = %ld, step = %ld in function range", from, to, step);
-      return array<var>();
+      return array<mixed>();
     }
     if (step < 0) {
       step = -step;
     }
-    array<var> res(array_size((from - to + step) / step, 0, true));
+    array<mixed> res(array_size((from - to + step) / step, 0, true));
     for (int64_t i = from; i >= to; i -= step) {
       res.push_back(i);
     }
@@ -98,10 +98,10 @@ array<var> range_int(int64_t from, int64_t to, int64_t step) {
   }
 }
 
-array<var> range_string(const string &from_s, const string &to_s, int64_t step) {
+array<mixed> range_string(const string &from_s, const string &to_s, int64_t step) {
   if (from_s.empty() || to_s.empty() || from_s.size() > 1 || to_s.size() > 1) {
     php_warning("Wrong parameters \"%s\" and \"%s\" for function range", from_s.c_str(), to_s.c_str());
-    return array<var>();
+    return array<mixed>();
   }
   if (step != 1) {
     php_critical_error ("unsupported step = %ld in function range", step);
@@ -109,13 +109,13 @@ array<var> range_string(const string &from_s, const string &to_s, int64_t step) 
   const int64_t from = static_cast<unsigned char>(from_s[0]);
   const int64_t to = static_cast<unsigned char>(to_s[0]);
   if (from < to) {
-    array<var> res(array_size(to - from + 1, 0, true));
+    array<mixed> res(array_size(to - from + 1, 0, true));
     for (int64_t i = from; i <= to; i++) {
       res.push_back(f$chr(i));
     }
     return res;
   } else {
-    array<var> res(array_size(from - to + 1, 0, true));
+    array<mixed> res(array_size(from - to + 1, 0, true));
     for (int64_t i = from; i >= to; i--) {
       res.push_back(f$chr(i));
     }
@@ -123,7 +123,7 @@ array<var> range_string(const string &from_s, const string &to_s, int64_t step) 
   }
 }
 
-array<var> f$range(const var &from, const var &to, int64_t step) {
+array<mixed> f$range(const mixed &from, const mixed &to, int64_t step) {
   if ((from.is_string() && !from.is_numeric()) || (to.is_string() && !to.is_numeric())) {
     return range_string(from.to_string(), to.to_string(), step);
   }

@@ -244,7 +244,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) ^ (type_right->ptype() == tp_array)) {
-      if (type_left->ptype() != tp_var && type_right->ptype() != tp_var) {
+      if (type_left->ptype() != tp_mixed && type_right->ptype() != tp_mixed) {
         kphp_warning (fmt_format("{} + {} is strange operation", type_out(type_left), type_out(type_right)));
       }
     }
@@ -297,7 +297,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         }
       }
     } else {
-      kphp_error (arrayType->ptype() == tp_var, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
+      kphp_error (arrayType->ptype() == tp_mixed, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
     }
   }
   if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
@@ -335,7 +335,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
       PrimitiveType ptype = arrayType->get_real_ptype();
-      kphp_error(vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_var), "Can't use isset/unset by[idx] for not an array");
+      kphp_error(vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_mixed), "Can't use isset/unset by[idx] for not an array");
     }
   }
   if (vertex->type() == op_func_call) {
@@ -410,9 +410,9 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   check_func_call_params(call);
 }
 
-// Inspection: static-var should be initialized at the declaration (with the exception of tp_var).
+// Inspection: static-var should be initialized at the declaration (with the exception of tp_mixed).
 inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
-  kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_var,
+  kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_mixed,
              fmt_format("static ${} is not inited at declaration (inferred {})", static_var->name, colored_type_out(tinf::get_type(static_var))));
 }
 
@@ -473,7 +473,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
       kphp_error(false, fmt_format("comparison instance with {} is prohibited (operation: {})", colored_type_out(rhs_t), OpInfo::desc(op)));
     }
   } else if (lhs_t->ptype() == tp_array) {
-    kphp_error(vk::any_of_equal(rhs_t->get_real_ptype(), tp_array, tp_bool, tp_var),
+    kphp_error(vk::any_of_equal(rhs_t->get_real_ptype(), tp_array, tp_bool, tp_mixed),
                fmt_format("{} is always > than {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_tuple) {
     bool can_compare_with_tuple = vk::any_of_equal(op, op_eq2, op_neq2) &&
@@ -524,7 +524,7 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
       kphp_error(0, fmt_format("Variable ${} has Unknown type", var->name));
     } else if (index_depth.size() == 3) {   // 1-depth array[*] access (most common case)
 
-      if (vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_var)) {
+      if (vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_mixed)) {
         kphp_error(0, fmt_format("Array ${} is always empty, getting its element has Unknown type", var->name));
       } else if (tinf::get_type(var)->get_real_ptype() == tp_shape) {
         kphp_error(0, fmt_format("Accessing unexisting element of shape ${}", var->name));

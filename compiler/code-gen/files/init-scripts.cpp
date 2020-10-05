@@ -35,7 +35,7 @@ void StaticInit::compile(CodeGenerator &W) const {
 
   FunctionSignatureGenerator(W) << "void tl_str_const_init()" << SemicolonAndNL();
   if (G->get_untyped_rpc_tl_used()) {
-    FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "array<mixed> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base>)" << SemicolonAndNL();
     W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   }

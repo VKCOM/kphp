@@ -57,7 +57,7 @@ public:
     return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
   }
 
-  bool process(var &value) {
+  bool process(mixed &value) {
     if (value.is_string()) {
       return child_.process(value.as_string());
     } else if (value.is_array()) {

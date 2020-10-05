@@ -43,7 +43,7 @@ inline bool eq2(const string &lhs, const string &rhs) {
   return compare_strings_php_order(lhs, rhs) == 0;
 }
 
-inline bool eq2(const var &lhs, const var &rhs) {
+inline bool eq2(const mixed &lhs, const mixed &rhs) {
   return lhs.compare(rhs) == 0;
 }
 
@@ -189,49 +189,49 @@ inline bool eq2(const class_instance<T> &lhs, const class_instance<T> &rhs) {
   return lhs == rhs;
 }
 
-inline bool eq2(bool lhs, const var &rhs) {
+inline bool eq2(bool lhs, const mixed &rhs) {
   return lhs == rhs.to_bool();
 }
-inline bool eq2(const var &lhs, bool rhs) {
+inline bool eq2(const mixed &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(double lhs, const var &rhs) {
+inline bool eq2(double lhs, const mixed &rhs) {
   switch (rhs.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return eq2(lhs, 0.0);
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return eq2(lhs, rhs.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return eq2(lhs, rhs.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return eq2(lhs, rhs.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Unsupported operand types for operator == (float and array)");
       return false;
     default:
       __builtin_unreachable();
   }
 }
-inline bool eq2(const var &lhs, double rhs) {
+inline bool eq2(const mixed &lhs, double rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(int64_t lhs, const var &rhs) {
+inline bool eq2(int64_t lhs, const mixed &rhs) {
   switch (rhs.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return eq2(lhs, 0L);
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return eq2(lhs, rhs.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return eq2(lhs, rhs.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return eq2(lhs, rhs.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Unsupported operand types for operator == (int and array)");
       return false;
     default:
@@ -239,19 +239,19 @@ inline bool eq2(int64_t lhs, const var &rhs) {
   }
 }
 
-inline bool eq2(const var &lhs, int64_t rhs) {
+inline bool eq2(const mixed &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(const string &lhs, const var &rhs) {
-  return eq2(var(lhs), rhs);
+inline bool eq2(const string &lhs, const mixed &rhs) {
+  return eq2(mixed(lhs), rhs);
 }
-inline bool eq2(const var &lhs, const string &rhs) {
+inline bool eq2(const mixed &lhs, const string &rhs) {
   return eq2(rhs, lhs);
 }
 
 template<class T>
-inline bool eq2(const array<T> &lhs, const var &rhs) {
+inline bool eq2(const array<T> &lhs, const mixed &rhs) {
   if (likely (rhs.is_array())) {
     return eq2(lhs, rhs.as_array());
   }
@@ -267,7 +267,7 @@ inline bool eq2(const array<T> &lhs, const var &rhs) {
   return false;
 }
 template<class T>
-inline bool eq2(const var &lhs, const array<T> &rhs) {
+inline bool eq2(const mixed &lhs, const array<T> &rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -366,60 +366,60 @@ inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
   return true;
 }
 
-inline bool equals(bool lhs, const var &rhs) {
+inline bool equals(bool lhs, const mixed &rhs) {
   return rhs.is_bool() && equals(lhs, rhs.as_bool());
 }
-inline bool equals(const var &lhs, bool rhs) {
+inline bool equals(const mixed &lhs, bool rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(int64_t lhs, const var &rhs) {
+inline bool equals(int64_t lhs, const mixed &rhs) {
   return rhs.is_int() && equals(lhs, rhs.as_int());
 }
-inline bool equals(const var &lhs, int64_t rhs) {
+inline bool equals(const mixed &lhs, int64_t rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(double lhs, const var &rhs) {
+inline bool equals(double lhs, const mixed &rhs) {
   return rhs.is_float() && equals(lhs, rhs.as_double());
 }
-inline bool equals(const var &lhs, double rhs) {
+inline bool equals(const mixed &lhs, double rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(const string &lhs, const var &rhs) {
+inline bool equals(const string &lhs, const mixed &rhs) {
   return rhs.is_string() && equals(lhs, rhs.as_string());
 }
-inline bool equals(const var &lhs, const string &rhs) {
+inline bool equals(const mixed &lhs, const string &rhs) {
   return equals(rhs, lhs);
 }
 
 template<class T>
-inline bool equals(const array<T> &lhs, const var &rhs) {
+inline bool equals(const array<T> &lhs, const mixed &rhs) {
   return rhs.is_array() && equals(lhs, rhs.as_array());
 }
 template<class T>
-inline bool equals(const var &lhs, const array<T> &rhs) {
+inline bool equals(const mixed &lhs, const array<T> &rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(const var &lhs, const var &rhs) {
+inline bool equals(const mixed &lhs, const mixed &rhs) {
   if (lhs.get_type() != rhs.get_type()) {
     return false;
   }
 
   switch (lhs.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return true;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return equals(lhs.as_bool(), rhs.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return equals(lhs.as_int(), rhs.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return equals(lhs.as_double(), rhs.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return equals(lhs.as_string(), rhs.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       return equals(lhs.as_array(), rhs.as_array());
     default:
       __builtin_unreachable();
@@ -586,7 +586,7 @@ bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
   auto equals_lambda = [](const auto &l, const auto &r) {
     // if (is_null(lhs)) { return is_null(r); }
     // else return equals(r, l); - parameters are swapped to cope with Optional on right side
-    return std::is_same<decltype(l), const var &>{} ?
+    return std::is_same<decltype(l), const mixed &>{} ?
            f$is_null(r) :
            equals(r, l);
   };
@@ -615,7 +615,7 @@ decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, A
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(var{}, std::forward<Args>(args)...);
+      return fun(mixed{}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }
@@ -629,7 +629,7 @@ decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(var{}, std::forward<Args>(args)...);
+      return fun(mixed{}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }

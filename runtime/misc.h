@@ -26,31 +26,31 @@ constexpr int64_t IMAGETYPE_JPC = 9;
 constexpr int64_t IMAGETYPE_JPEG2000 = 9;
 constexpr int64_t IMAGETYPE_JP2 = 10;
 
-var f$getimagesize(const string &name);
+mixed f$getimagesize(const string &name);
 
 
 int64_t f$posix_getpid();
 int64_t f$posix_getuid();
-Optional<array<var>> f$posix_getpwuid(int64_t uid);
+Optional<array<mixed>> f$posix_getpwuid(int64_t uid);
 
 
-string f$serialize(const var &v);
+string f$serialize(const mixed &v);
 
-var f$unserialize(const string &v);
-var unserialize_raw(const char *v, int32_t v_len);
+mixed f$unserialize(const string &v);
+mixed unserialize_raw(const char *v, int32_t v_len);
 
 constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
 constexpr int64_t JSON_FORCE_OBJECT = 16;
 constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
 constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
-Optional<string> f$json_encode(const var &v, int64_t options = 0, bool simple_encode = false);
+Optional<string> f$json_encode(const mixed &v, int64_t options = 0, bool simple_encode = false);
 
-string f$vk_json_encode_safe(const var &v, bool simple_encode = true);
+string f$vk_json_encode_safe(const mixed &v, bool simple_encode = true);
 
-var f$json_decode(const string &v, bool assoc = false);
+mixed f$json_decode(const string &v, bool assoc = false);
 
-string f$print_r(const var &v, bool buffered = false);
+string f$print_r(const mixed &v, bool buffered = false);
 
 template<class T>
 string f$print_r(const class_instance<T> &v, bool buffered = false) {
@@ -58,7 +58,7 @@ string f$print_r(const class_instance<T> &v, bool buffered = false) {
   return f$print_r(string(v.get_class(), (string::size_type)strlen(v.get_class())), buffered);
 }
 
-void f$var_dump(const var &v);
+void f$var_dump(const mixed &v);
 
 template<class T>
 void f$var_dump(const class_instance<T> &v) {
@@ -67,7 +67,7 @@ void f$var_dump(const class_instance<T> &v) {
 }
 
 
-string f$var_export(const var &v, bool buffered = false);
+string f$var_export(const mixed &v, bool buffered = false);
 
 template<class T>
 string f$var_export(const class_instance<T> &v, bool buffered = false) {
@@ -81,4 +81,4 @@ string f$cp1251(const string &utf8_string);
 /** For local usage only **/
 int64_t f$system(const string &query);
 
-void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info, const string& env = {});
+void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env = {});

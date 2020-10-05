@@ -218,7 +218,7 @@ void compile_power(VertexAdaptor<op_pow> power, CodeGenerator &W) {
       // pow return type with positive constexpr integer exponent and any float base is inferred as float
       W << "float_power";
       return;
-    case tp_var:
+    case tp_mixed:
       // pow return type with any other types in exponent,
       // including negative constexpr integer or unknown integer, is inferred as var
       W << "var_power";
@@ -268,7 +268,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   if (index && vk::none_of_equal(array_ptype, tp_shape, tp_tuple)) {
     kphp_assert (index->has_key());
     W << index->array() << ", " << index->key() << ", ";
-    if (vk::any_of_equal(array_ptype, tp_array, tp_var)) {
+    if (vk::any_of_equal(array_ptype, tp_array, tp_mixed)) {
       if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
         W << precomputed_hash << "L, ";
       }
@@ -630,7 +630,7 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
 
   PrimitiveType ptype = type_data->get_real_ptype();
 
-  if (vk::none_of_equal(ptype, tp_array, tp_var)) {
+  if (vk::none_of_equal(ptype, tp_array, tp_mixed)) {
     kphp_error_return(false, fmt_format("Invalid argument supplied for foreach() ({})", ptype_name(ptype)));
   }
 
@@ -1235,7 +1235,7 @@ void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   // but if $arr is a tuple/shape, then it's not an .isset method but is_null on the actual element
   if (auto index = arg.try_as<op_index>()) {
     kphp_assert (index->has_key());
-    if (vk::any_of_equal(tinf::get_type(index->array())->ptype(), tp_array, tp_var)) {
+    if (vk::any_of_equal(tinf::get_type(index->array())->ptype(), tp_array, tp_mixed)) {
       W << "(" << index->array();
       if (root->type() == op_isset) {
         W << ").isset (";
@@ -1259,7 +1259,7 @@ void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   VertexPtr arr = root->array();
   VertexRange list = root->list();
   PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
-  kphp_assert(vk::any_of_equal(ptype, tp_array, tp_var, tp_tuple, tp_shape));
+  kphp_assert(vk::any_of_equal(ptype, tp_array, tp_mixed, tp_tuple, tp_shape));
 
   for (const auto x : list) {
     const auto kv = x.as<op_list_keyval>();
@@ -1330,7 +1330,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   if (type->ptype() == tp_array) {
     W << TypeName(type);
   } else {
-    W << "array <var>";
+    W << "array <mixed>";
   }
   W << " (array_size ("
     << int_cnt + xx_cnt << ", "
@@ -1516,7 +1516,7 @@ void compile_conv_l(VertexAdaptor<op_conv_l> root, CodeGenerator &W) {
   static_assert(vk::any_of_equal(op_conv_l, op_conv_array_l, op_conv_int_l, op_conv_string_l), "unexpected conv_op");
   VertexPtr val = root->expr();
   PrimitiveType tp = tinf::get_type(val)->get_real_ptype();
-  if (tp == tp_var ||
+  if (tp == tp_mixed ||
       (op_conv_l == op_conv_array_l && tp == tp_array) ||
       (op_conv_l == op_conv_int_l && tp == tp_int) ||
       (op_conv_l == op_conv_string_l && tp == tp_string)) {

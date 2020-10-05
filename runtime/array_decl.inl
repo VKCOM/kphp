@@ -47,7 +47,7 @@ class array {
 public:
   using ValueType = T;
 
-  typedef var key_type;
+  typedef mixed key_type;
   typedef T value_type;
 
   inline static bool is_int_key(const key_type &key);
@@ -261,7 +261,7 @@ public:
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   T &operator[](const string &s);
-  T &operator[](const var &v);
+  T &operator[](const mixed &v);
   T &operator[](double double_key);
   T &operator[](const const_iterator &it);
   T &operator[](const iterator &it);
@@ -284,9 +284,9 @@ public:
   void set_value(const string &string_key, const T &v, int64_t precomuted_hash) noexcept;
 
   template<class ...Args>
-  void emplace_value(const var &var_key, Args &&... args) noexcept;
-  void set_value(const var &v, T &&value) noexcept;
-  void set_value(const var &v, const T &value) noexcept;
+  void emplace_value(const mixed &var_key, Args &&... args) noexcept;
+  void set_value(const mixed &v, T &&value) noexcept;
+  void set_value(const mixed &v, const T &value) noexcept;
 
 
   template<class OptionalT, class ...Args>
@@ -307,7 +307,7 @@ public:
   const T *find_value(int32_t key) const { return find_value(int64_t{key}); }
   const T *find_value(const string &s) const;
   const T *find_value(const string &s, int64_t precomuted_hash) const;
-  const T *find_value(const var &v) const;
+  const T *find_value(const mixed &v) const;
   const T *find_value(double double_key) const;
   const T *find_value(const const_iterator &it) const;
   const T *find_value(const iterator &it) const;
@@ -315,10 +315,10 @@ public:
   // All non-const methods find_no_mutate() do not lead to a copy
   iterator find_no_mutate(int64_t int_key) noexcept;
   iterator find_no_mutate(const string &string_key) noexcept;
-  iterator find_no_mutate(const var &v) noexcept;
+  iterator find_no_mutate(const mixed &v) noexcept;
 
   template<class K>
-  const var get_var(const K &key) const;
+  const mixed get_var(const K &key) const;
 
   template<class K>
   const T get_value(const K &key) const;
@@ -349,7 +349,7 @@ public:
   void unset(int64_t int_key);
   void unset(int32_t key) { unset(int64_t{key}); }
   void unset(const string &string_key);
-  void unset(const var &var_key);
+  void unset(const mixed &var_key);
   void unset(double double_key);
 
   inline bool empty() const __attribute__ ((always_inline));

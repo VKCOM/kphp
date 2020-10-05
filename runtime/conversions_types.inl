@@ -33,7 +33,7 @@ inline bool f$boolval(const Optional<T> &val) {
   return val.has_value() ? f$boolval(val.val()) : false;
 }
 
-inline bool f$boolval(const var &val) {
+inline bool f$boolval(const mixed &val) {
   return val.to_bool();
 }
 
@@ -49,7 +49,7 @@ inline int64_t f$intval(const string &val) {
   return val.to_int();
 }
 
-inline int64_t f$intval(const var &val) {
+inline int64_t f$intval(const mixed &val) {
   return val.to_int();
 }
 
@@ -79,7 +79,7 @@ inline int64_t f$safe_intval(const string &val) {
   return val.safe_to_int();
 }
 
-inline int64_t f$safe_intval(const var &val) {
+inline int64_t f$safe_intval(const mixed &val) {
   return val.safe_to_int();
 }
 
@@ -93,7 +93,7 @@ inline double f$floatval(const string &val) {
   return val.to_float();
 }
 
-inline double f$floatval(const var &val) {
+inline double f$floatval(const mixed &val) {
   return val.to_float();
 }
 
@@ -133,11 +133,11 @@ inline string f$strval(Optional<T> &&val) {
   return val.has_value() ? f$strval(std::move(val.val())) : f$strval(false);
 }
 
-inline string f$strval(const var &val) {
+inline string f$strval(const mixed &val) {
   return val.to_string();
 }
 
-inline string f$strval(var &&val) {
+inline string f$strval(mixed &&val) {
   return val.is_string() ? std::move(val.as_string()) : val.to_string();
 }
 
@@ -158,23 +158,23 @@ inline array<T> &&f$arrayval(array<T> &&val) {
   return std::move(val);
 }
 
-inline array<var> f$arrayval(const var &val) {
+inline array<mixed> f$arrayval(const mixed &val) {
   return val.to_array();
 }
 
-inline array<var> f$arrayval(var &&val) {
+inline array<mixed> f$arrayval(mixed &&val) {
   return val.is_array() ? std::move(val.as_array()) : val.to_array();
 }
 
 namespace impl_ {
 
 template<typename T>
-inline std::enable_if_t<vk::is_type_in_list<T, bool, var>{}, array<T>> false_cast_to_array() {
+inline std::enable_if_t<vk::is_type_in_list<T, bool, mixed>{}, array<T>> false_cast_to_array() {
   return f$arrayval(T{false});
 }
 
 template<typename T>
-inline std::enable_if_t<!vk::is_type_in_list<T, bool, var>{}, array<T>> false_cast_to_array() {
+inline std::enable_if_t<!vk::is_type_in_list<T, bool, mixed>{}, array<T>> false_cast_to_array() {
   php_warning("Dangerous cast false to array, the result will be different from PHP");
   return array<T>{};
 }

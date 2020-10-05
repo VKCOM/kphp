@@ -381,7 +381,7 @@ string f$date_default_timezone_get() {
   return string("Europe/Moscow", 13);
 }
 
-array<var> f$getdate(int64_t timestamp) {
+array<mixed> f$getdate(int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -389,7 +389,7 @@ array<var> f$getdate(int64_t timestamp) {
   time_t timestamp_t = timestamp;
   localtime_r(&timestamp_t, &t);
 
-  array<var> result(array_size(1, 10, false));
+  array<mixed> result(array_size(1, 10, false));
 
   result.set_value(string("seconds", 7), t.tm_sec);
   result.set_value(string("minutes", 7), t.tm_min);
@@ -450,7 +450,7 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   return gmmktime(&t) - 3 * 3600;
 }
 
-array<var> f$localtime(int64_t timestamp, bool is_associative) {
+array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -459,10 +459,10 @@ array<var> f$localtime(int64_t timestamp, bool is_associative) {
   localtime_r(&timestamp_t, &t);
 
   if (!is_associative) {
-    return array<var>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
+    return array<mixed>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
   }
 
-  array<var> result(array_size(0, 9, false));
+  array<mixed> result(array_size(0, 9, false));
 
   result.set_value(string("tm_sec", 6), t.tm_sec);
   result.set_value(string("tm_min", 6), t.tm_min);
@@ -498,7 +498,7 @@ double microtime() {
   return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
-var f$microtime(bool get_as_float) {
+mixed f$microtime(bool get_as_float) {
   if (get_as_float) {
     return microtime();
   } else {

@@ -399,13 +399,13 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   return true;
 }
 
-bool f$openssl_public_encrypt(const string &data, var &result, const string &key) {
+bool f$openssl_public_encrypt(const string &data, mixed &result, const string &key) {
   string result_string;
   if (f$openssl_public_encrypt(data, result_string, key)) {
     result = result_string;
     return true;
   }
-  result = var();
+  result = mixed();
   return false;
 }
 
@@ -446,13 +446,13 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   return true;
 }
 
-bool f$openssl_private_decrypt(const string &data, var &result, const string &key) {
+bool f$openssl_private_decrypt(const string &data, mixed &result, const string &key) {
   string result_string;
   if (f$openssl_private_decrypt(data, result_string, key)) {
     result = result_string;
     return true;
   }
-  result = var();
+  result = mixed();
   return false;
 }
 
@@ -644,7 +644,7 @@ static long long ssl_connections_last_query_num = -1;
 
 const int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static Stream ssl_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)), const var &options) {
+static Stream ssl_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)), const mixed &options) {
 #define RETURN(dump_error_stack)                        \
   if (dump_error_stack) {                               \
     php_warning ("%s: %s", error_description.c_str(),   \
@@ -672,7 +672,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
 #define RETURN_ERROR_FORMAT(dump_error_stack, error_no, format, ...) \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    CONST_STRING(format), array<var>::create(__VA_ARGS__));          \
+    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));          \
   RETURN(dump_error_stack)
 
   if (timeout < 0) {
@@ -685,14 +685,14 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   SSL *ssl_handle = nullptr;
   SSL_CTX *ssl_ctx = nullptr;
 
-  var parsed_url = f$parse_url(url);
+  mixed parsed_url = f$parse_url(url);
   string host = f$strval(parsed_url.get_value(string("host", 4)));
   int64_t port = f$intval(parsed_url.get_value(string("port", 4)));
 
   //getting connection options
 #define GET_OPTION(option_name) options.get_value (string (option_name, sizeof (option_name) - 1))
   bool verify_peer = GET_OPTION("verify_peer").to_bool();
-  var verify_depth_var = GET_OPTION("verify_depth");
+  mixed verify_depth_var = GET_OPTION("verify_depth");
   int64_t verify_depth = verify_depth_var.to_int();
   if (verify_depth_var.is_null()) {
     verify_depth = -1;
@@ -899,7 +899,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
 #undef RETURN_ERROR_FORMAT
 }
 
-static bool ssl_context_set_option(var &context_ssl, const string &option, const var &value) {
+static bool ssl_context_set_option(mixed &context_ssl, const string &option, const mixed &value) {
   if (STRING_EQUALS(option, "verify_peer") ||
       STRING_EQUALS(option, "verify_depth") ||
       STRING_EQUALS(option, "cafile") ||
@@ -1261,7 +1261,7 @@ public:
   explicit X509_parser(const string &data) :
     x509_(get_x509_from_data(data)) {}
 
-  array<var> get_subject(bool shortnames = true) const {
+  array<mixed> get_subject(bool shortnames = true) const {
     php_assert(x509_.get());
 
     X509_NAME *subj = X509_get_subject_name(x509_.get());
@@ -1290,7 +1290,7 @@ public:
     return string(buf, 8);
   }
 
-  array<var> get_issuer(bool shortnames = true) const {
+  array<mixed> get_issuer(bool shortnames = true) const {
     php_assert(x509_.get());
 
     X509_NAME *issuer_name = X509_get_issuer_name(x509_.get());
@@ -1319,12 +1319,12 @@ public:
     return (int)convert_asn1_time(asn_time_not_after);
   }
 
-  array<var> get_purposes(bool shortnames = true) const {
+  array<mixed> get_purposes(bool shortnames = true) const {
     php_assert(x509_.get());
 
-    array<var> res;
+    array<mixed> res;
     for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
-      array<var> purposes;
+      array<mixed> purposes;
 
       X509_PURPOSE *purp = X509_PURPOSE_get0(i);
       int id = X509_PURPOSE_get_id(purp);
@@ -1344,12 +1344,12 @@ public:
     return res;
   }
 
-  Optional<array<var>> parse(bool shortnames = true) const {
+  Optional<array<mixed>> parse(bool shortnames = true) const {
     if (!x509_) {
       return false;
     }
 
-    return std::initializer_list<std::pair<string, var>>
+    return std::initializer_list<std::pair<string, mixed>>
       {{string("name"),             get_subject_name()},
        {string("subject"),          get_subject(shortnames)},
        {string("hash"),             get_hash()},
@@ -1360,7 +1360,7 @@ public:
        {string("purposes"),         get_purposes(shortnames)}};
   }
 
-  var check_purpose(int64_t purpose) const {
+  mixed check_purpose(int64_t purpose) const {
     if (!x509_) {
       return -1;
     }
@@ -1406,8 +1406,8 @@ private:
     return X509_ptr(PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr));
   }
 
-  array<var> get_entries_of(X509_NAME *name, bool shortnames = true) const {
-    array<var> res;
+  array<mixed> get_entries_of(X509_NAME *name, bool shortnames = true) const {
+    array<mixed> res;
 
     int count_of_entries = X509_NAME_entry_count(name);
 
@@ -1444,11 +1444,11 @@ private:
   X509_ptr x509_;
 };
 
-Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
+Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
   return X509_parser(data).parse(shortnames);
 }
 
-var f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
+mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
   return X509_parser(data).check_purpose(purpose);
 }
 

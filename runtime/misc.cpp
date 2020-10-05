@@ -177,7 +177,7 @@ static const int M_COM = 0xFE;
 
 static const int M_PSEUDO = 0xFFD8;
 
-var f$getimagesize(const string &name) {
+mixed f$getimagesize(const string &name) {
   dl::enter_critical_section();//OK
   struct stat stat_buf;
   int read_fd = open(name.c_str(), O_RDONLY);
@@ -435,7 +435,7 @@ var f$getimagesize(const string &name) {
   close(read_fd);
   dl::leave_critical_section();
 
-  array<var> result(array_size(4, 3, false));
+  array<mixed> result(array_size(4, 3, false));
   result.push_back(width);
   result.push_back(height);
   result.push_back(type);
@@ -467,14 +467,14 @@ int64_t f$posix_getuid() {
   return result;
 }
 
-Optional<array<var>> f$posix_getpwuid(int64_t uid) {
+Optional<array<mixed>> f$posix_getpwuid(int64_t uid) {
   dl::enter_critical_section();//OK
   passwd *pwd = getpwuid(static_cast<uint32_t>(uid));
   dl::leave_critical_section();
   if (!pwd) {
     return false;
   }
-  array<var> result(array_size(0, 7, false));
+  array<mixed> result(array_size(0, 7, false));
   result.set_value(string("name", 4), string(pwd->pw_name));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd));
   result.set_value(string("uid", 3), static_cast<int64_t>(pwd->pw_uid));
@@ -520,28 +520,28 @@ static inline void do_serialize(const string &s) {
   static_SB.append_char(';');
 }
 
-void do_serialize(const var &v) {
+void do_serialize(const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       static_SB.reserve(2);
       static_SB.append_char('N');
       static_SB.append_char(';');
       return;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return do_serialize(v.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return do_serialize(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return do_serialize(v.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return do_serialize(v.as_string());
-    case var::type::ARRAY: {
+    case mixed::type::ARRAY: {
       static_SB.append("a:", 2);
       static_SB << v.as_array().count();
       static_SB.append(":{", 2);
-      for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
-        const array<var>::key_type &key = p.get_key();
-        if (array<var>::is_int_key(key)) {
+      for (array<mixed>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
+        const array<mixed>::key_type &key = p.get_key();
+        if (array<mixed>::is_int_key(key)) {
           do_serialize(key.to_int());
         } else {
           do_serialize(key.to_string());
@@ -556,7 +556,7 @@ void do_serialize(const var &v) {
   }
 }
 
-string f$serialize(const var &v) {
+string f$serialize(const mixed &v) {
   static_SB.clean();
 
   do_serialize(v);
@@ -564,9 +564,9 @@ string f$serialize(const var &v) {
   return static_SB.str();
 }
 
-static int do_unserialize(const char *s, int s_len, var &out_var_value) {
+static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
   if (!out_var_value.is_null()) {
-    out_var_value = var{};
+    out_var_value = mixed{};
   }
   switch (s[0]) {
     case 'N':
@@ -612,7 +612,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
               k++;
             }
             if (k == j) {
-              out_var_value = var(s, j);
+              out_var_value = mixed(s, j);
               return j + 3;
             }
             return 0;
@@ -633,7 +633,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
           s += j + 2;
 
           if (s[len] == '"' && s[len + 1] == ';') {
-            out_var_value = var(s, len);
+            out_var_value = mixed(s, len);
             return len + 6 + j;
           }
         }
@@ -655,7 +655,7 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
           if (s[0] == 'i') {//try to cheat
             size = array_size(len, 0, s[1] == ':' && s[2] == '0' && s[3] == ';');
           }
-          array<var> res(size);
+          array<mixed> res(size);
 
           while (len-- > 0) {
             if (s[0] == 'i' && s[1] == ':') {
@@ -740,8 +740,8 @@ static int do_unserialize(const char *s, int s_len, var &out_var_value) {
   return 0;
 }
 
-var unserialize_raw(const char *v, int32_t v_len) {
-  var result;
+mixed unserialize_raw(const char *v, int32_t v_len) {
+  mixed result;
 
   if (do_unserialize(v, v_len, result) == v_len) {
     return result;
@@ -751,7 +751,7 @@ var unserialize_raw(const char *v, int32_t v_len) {
 }
 
 
-var f$unserialize(const string &v) {
+mixed f$unserialize(const string &v) {
   return unserialize_raw(v.c_str(), v.size());
 }
 
@@ -942,22 +942,22 @@ static bool do_json_encode_string_vkext(const char *s, int len) {
   return true;
 }
 
-bool do_json_encode(const var &v, int64_t options, bool simple_encode) {
+bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       static_SB.append("null", 4);
       return true;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       if (v.as_bool()) {
         static_SB.append("true", 4);
       } else {
         static_SB.append("false", 5);
       }
       return true;
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       static_SB << v.as_int();
       return true;
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       if (is_ok_float(v.as_double())) {
         static_SB << (simple_encode ? f$number_format(v.as_double(), 6, DOT, string()) : string(v.as_double()));
       } else {
@@ -969,18 +969,18 @@ bool do_json_encode(const var &v, int64_t options, bool simple_encode) {
         }
       }
       return true;
-    case var::type::STRING:
+    case mixed::type::STRING:
       if (simple_encode) {
         return do_json_encode_string_vkext(v.as_string().c_str(), v.as_string().size());
       }
 
       return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options);
-    case var::type::ARRAY: {
+    case mixed::type::ARRAY: {
       bool is_vector = v.as_array().is_vector();
       const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options);
       if (!force_object && !is_vector && v.as_array().size().string_size == 0) {
         int n = 0;
-        for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
+        for (array<mixed>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
           if (p.get_key().to_int() != n) {
             break;
           }
@@ -998,14 +998,14 @@ bool do_json_encode(const var &v, int64_t options, bool simple_encode) {
 
       static_SB << "{["[is_vector];
 
-      for (array<var>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
+      for (array<mixed>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
         if (p != v.as_array().begin()) {
           static_SB << ',';
         }
 
         if (!is_vector) {
-          const array<var>::key_type key = p.get_key();
-          if (array<var>::is_int_key(key)) {
+          const array<mixed>::key_type key = p.get_key();
+          if (array<mixed>::is_int_key(key)) {
             static_SB << '"' << key.to_int() << '"';
           } else {
             if (!do_json_encode(key, options, simple_encode)) {
@@ -1032,7 +1032,7 @@ bool do_json_encode(const var &v, int64_t options, bool simple_encode) {
   }
 }
 
-Optional<string> f$json_encode(const var &v, int64_t options, bool simple_encode) {
+Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_encode) {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
     php_warning("Wrong parameter options = %ld in function json_encode", options);
@@ -1048,7 +1048,7 @@ Optional<string> f$json_encode(const var &v, int64_t options, bool simple_encode
   return static_SB.str();
 }
 
-string f$vk_json_encode_safe(const var &v, bool simple_encode) {
+string f$vk_json_encode_safe(const mixed &v, bool simple_encode) {
   static_SB.clean();
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   do_json_encode(v, 0, simple_encode);
@@ -1069,7 +1069,7 @@ static void json_skip_blanks(const char *s, int &i) {
   }
 }
 
-static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
+static bool do_json_decode(const char *s, int s_len, int &i, mixed &v) {
   if (!v.is_null()) {
     v.destroy();
   }
@@ -1088,7 +1088,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
           s[i + 2] == 'u' &&
           s[i + 3] == 'e') {
         i += 4;
-        new(&v) var(true);
+        new(&v) mixed(true);
         return true;
       }
       break;
@@ -1098,7 +1098,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
           s[i + 3] == 's' &&
           s[i + 4] == 'e') {
         i += 5;
-        new(&v) var(false);
+        new(&v) mixed(false);
         return true;
       }
       break;
@@ -1215,19 +1215,19 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         }
         value.shrink(l);
 
-        new(&v) var(value);
+        new(&v) mixed(value);
         i++;
         return true;
       }
       break;
     }
     case '[': {
-      array<var> res;
+      array<mixed> res;
       i++;
       json_skip_blanks(s, i);
       if (s[i] != ']') {
         do {
-          var value;
+          mixed value;
           if (!do_json_decode(s, s_len, i, value)) {
             return false;
           }
@@ -1242,16 +1242,16 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         i++;
       }
 
-      new(&v) var(res);
+      new(&v) mixed(res);
       return true;
     }
     case '{': {
-      array<var> res;
+      array<mixed> res;
       i++;
       json_skip_blanks(s, i);
       if (s[i] != '}') {
         do {
-          var key;
+          mixed key;
           if (!do_json_decode(s, s_len, i, key) || !key.is_string()) {
             return false;
           }
@@ -1273,7 +1273,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         i++;
       }
 
-      new(&v) var(res);
+      new(&v) mixed(res);
       return true;
     }
     default: {
@@ -1285,7 +1285,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         int64_t intval = 0;
         if (php_try_to_int(s + i, j - i, &intval)) {
           i = j;
-          new(&v) var(intval);
+          new(&v) mixed(intval);
           return true;
         }
 
@@ -1293,7 +1293,7 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
         double floatval = strtod(s + i, &end_ptr);
         if (end_ptr == s + j) {
           i = j;
-          new(&v) var(floatval);
+          new(&v) mixed(floatval);
           return true;
         }
       }
@@ -1304,12 +1304,12 @@ static bool do_json_decode(const char *s, int s_len, int &i, var &v) {
   return false;
 }
 
-var f$json_decode(const string &v, bool assoc) {
+mixed f$json_decode(const string &v, bool assoc) {
   if (!assoc) {
 //    php_warning ("json_decode doesn't support decoding to class, returning array");
   }
 
-  var result;
+  mixed result;
   int i = 0;
   if (do_json_decode(v.c_str(), v.size(), i, result)) {
     json_skip_blanks(v.c_str(), i);
@@ -1318,39 +1318,39 @@ var f$json_decode(const string &v, bool assoc) {
     }
   }
 
-  return var();
+  return mixed();
 }
 
-void do_print_r(const var &v, int depth) {
+void do_print_r(const mixed &v, int depth) {
   if (depth == 10) {
     php_warning("Depth %d reached. Recursion?", depth);
     return;
   }
 
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       break;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       if (v.as_bool()) {
         *coub << '1';
       }
       break;
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       *coub << v.as_int();
       break;
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       *coub << v.as_double();
       break;
-    case var::type::STRING:
+    case mixed::type::STRING:
       *coub << v.as_string();
       break;
-    case var::type::ARRAY: {
+    case mixed::type::ARRAY: {
       *coub << "Array\n";
 
       string shift(depth << 3, ' ');
       *coub << shift << "(\n";
 
-      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
+      for (array<mixed>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         *coub << shift << "    [" << it.get_key() << "] => ";
         do_print_r(it.get_value(), depth + 1);
         *coub << '\n';
@@ -1364,7 +1364,7 @@ void do_print_r(const var &v, int depth) {
   }
 }
 
-void do_var_dump(const var &v, int depth) {
+void do_var_dump(const mixed &v, int depth) {
   if (depth == 10) {
     php_warning("Depth %d reached. Recursion?", depth);
     return;
@@ -1373,27 +1373,27 @@ void do_var_dump(const var &v, int depth) {
   string shift(depth * 2, ' ');
 
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       *coub << shift << "NULL";
       break;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       *coub << shift << "bool(" << (v.as_bool() ? "true" : "false") << ')';
       break;
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       *coub << shift << "int(" << v.as_int() << ')';
       break;
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       *coub << shift << "float(" << v.as_double() << ')';
       break;
-    case var::type::STRING:
+    case mixed::type::STRING:
       *coub << shift << "string(" << (int)v.as_string().size() << ") \"" << v.as_string() << '"';
       break;
-    case var::type::ARRAY: {
+    case mixed::type::ARRAY: {
       *coub << shift << (false && v.as_array().is_vector() ? "vector(" : "array(") << v.as_array().count() << ") {\n";
 
-      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
+      for (array<mixed>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         *coub << shift << "  [";
-        if (array<var>::is_int_key(it.get_key())) {
+        if (array<mixed>::is_int_key(it.get_key())) {
           *coub << it.get_key();
         } else {
           *coub << '"' << it.get_key() << '"';
@@ -1427,7 +1427,7 @@ void var_export_escaped_string(const string &s) {
   }
 }
 
-void do_var_export(const var &v, int depth, char endc = 0) {
+void do_var_export(const mixed &v, int depth, char endc = 0) {
   if (depth == 10) {
     php_warning("Depth %d reached. Recursion?", depth);
     return;
@@ -1436,31 +1436,31 @@ void do_var_export(const var &v, int depth, char endc = 0) {
   string shift(depth * 2, ' ');
 
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       *coub << shift << "NULL";
       break;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       *coub << shift << (v.as_bool() ? "true" : "false");
       break;
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       *coub << shift << v.as_int();
       break;
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       *coub << shift << v.as_double();
       break;
-    case var::type::STRING:
+    case mixed::type::STRING:
       *coub << shift << '\'';
       var_export_escaped_string(v.as_string());
       *coub << '\'';
       break;
-    case var::type::ARRAY: {
+    case mixed::type::ARRAY: {
       const bool is_vector = v.as_array().is_vector();
       *coub << shift << "array(\n";
 
-      for (array<var>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
+      for (array<mixed>::const_iterator it = v.as_array().begin(); it != v.as_array().end(); ++it) {
         if (!is_vector) {
           *coub << shift;
-          if (array<var>::is_int_key(it.get_key())) {
+          if (array<mixed>::is_int_key(it.get_key())) {
             *coub << it.get_key();
           } else {
             *coub << '\'' << it.get_key() << '\'';
@@ -1490,7 +1490,7 @@ void do_var_export(const var &v, int depth, char endc = 0) {
 }
 
 
-string f$print_r(const var &v, bool buffered) {
+string f$print_r(const mixed &v, bool buffered) {
   if (buffered) {
     f$ob_start();
     do_print_r(v, 0);
@@ -1505,7 +1505,7 @@ string f$print_r(const var &v, bool buffered) {
   return string();
 }
 
-void f$var_dump(const var &v) {
+void f$var_dump(const mixed &v) {
   do_var_dump(v, 0);
   if (run_once && f$ob_get_level() == 0) {
     const string &to_print = f$ob_get_contents();
@@ -1516,7 +1516,7 @@ void f$var_dump(const var &v) {
   }
 }
 
-string f$var_export(const var &v, bool buffered) {
+string f$var_export(const mixed &v, bool buffered) {
   if (buffered) {
     f$ob_start();
     do_var_export(v, 0);
@@ -1539,7 +1539,7 @@ int64_t f$system(const string &query) {
   return system(query.c_str());
 }
 
-void f$kphp_set_context_on_error(const array<var> &tags, const array<var> &extra_info, const string& env) {
+void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
   auto &context = KphpErrorContext::get();
   static_SB.clean();
 

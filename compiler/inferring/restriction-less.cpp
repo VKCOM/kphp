@@ -233,7 +233,7 @@ string RestrictionLess::get_actual_error_message() {
     return "Incorrect type of variable " + TermStringFormat::add_text_attribute(var_0->var_id->get_human_readable_name(), TermStringFormat::bold, false) + "\n";
   }
 
-  if (as_expr_0 && as_var_1 && as_type_2 && as_type_2->type_->ptype() == tp_var) {
+  if (as_expr_0 && as_var_1 && as_type_2 && as_type_2->type_->ptype() == tp_mixed) {
     return TermStringFormat::paint("Unexpected conversion to var one of the arguments of the following function:\n", TermStringFormat::red, false) + TermStringFormat::add_text_attribute(as_expr_0->get_location_text(), TermStringFormat::bold, false) + "\n";
   }
 

@@ -3,7 +3,7 @@
 #include "runtime/tl/rpc_function.h"
 
 struct tl_func_base : ManagedThroughDlAllocator {
-  virtual var fetch() = 0;
+  virtual mixed fetch() = 0;
 
   virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
     // all functions that are called in a typed way override this method with the generated code;
@@ -19,7 +19,7 @@ struct tl_func_base : ManagedThroughDlAllocator {
   }
 
   // every TL function in C++ also has:
-  // static std::unique_ptr<tl_func_base> store(const var &tl_object);
+  // static std::unique_ptr<tl_func_base> store(const mixed &tl_object);
   // static std::unique_ptr<tl_func_base> typed_store(const C$VK$TL$Functions$thisfunction *tl_object);
   // they are not virtual (as they're static), but the implementation is generated for every class
   // every one of them creates an instance of itself (fetcher) which is used to do a fetch()/typed_fetch() when the response is received

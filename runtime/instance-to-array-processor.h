@@ -3,14 +3,14 @@
 #include "runtime/kphp_core.h"
 
 template<class T>
-std::enable_if_t<std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &);
+std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &);
 
 template<class T>
-std::enable_if_t<!std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &c);
+std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c);
 
 class InstanceToArrayVisitor {
 public:
-  array<var> flush_result() {
+  array<mixed> flush_result() {
     return std::move(result_);
   }
 
@@ -33,7 +33,7 @@ private:
 
   template<class T>
   void process_impl(const char *field_name, const array<T> &value) {
-    array<var> converted_value(value.size());
+    array<mixed> converted_value(value.size());
     for (auto it = value.begin(); it != value.end(); ++it) {
       process_impl("", it.get_value());
       converted_value.set_value(it.get_key(), result_.pop());
@@ -44,7 +44,7 @@ private:
 
   template<class I>
   void process_impl(const char *field_name, const class_instance<I> &instance) {
-    add_value(field_name, instance.is_null() ? var{} : f$instance_to_array(instance));
+    add_value(field_name, instance.is_null() ? mixed{} : f$instance_to_array(instance));
   }
 
   template<class ...Args>
@@ -91,16 +91,16 @@ private:
   }
 
 private:
-  array<var> result_;
+  array<mixed> result_;
 };
 
 template<class T>
-std::enable_if_t<std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &) {
+std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &) {
   return {};
 }
 
 template<class T>
-std::enable_if_t<!std::is_empty<T>{}, array<var>> f$instance_to_array(const class_instance<T> &c) {
+std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c) {
   if (c.is_null()) {
     return {};
   }

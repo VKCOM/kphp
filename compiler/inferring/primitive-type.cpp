@@ -17,7 +17,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_float:         return "float";
     case tp_array:         return "array";
     case tp_string:        return "string";
-    case tp_var:           return "var";
+    case tp_mixed:         return "mixed";
     case tp_UInt:          return "UInt";
     case tp_Long:          return "Long";
     case tp_ULong:         return "ULong";
@@ -38,12 +38,12 @@ const char *ptype_name(PrimitiveType id) {
 
 bool can_store_false(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_bool, tp_var, tp_Any);
+  return vk::any_of_equal(tp, tp_bool, tp_mixed, tp_Any);
 }
 
 bool can_store_null(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_var, tp_Class, tp_Any);
+  return vk::any_of_equal(tp, tp_mixed, tp_Class, tp_Any);
 }
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
@@ -88,8 +88,8 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return tp_float;
   }
 
-  if (tp_bool <= a && a <= tp_var && tp_bool <= b && b <= tp_var) {
-    return tp_var;
+  if (tp_bool <= a && a <= tp_mixed && tp_bool <= b && b <= tp_mixed) {
+    return tp_mixed;
   }
 
   return std::max(a, b);

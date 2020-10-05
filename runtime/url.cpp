@@ -169,13 +169,13 @@ string f$base64url_encode_ulong_NN(ULong val) {
 }
 
 
-static void parse_str_set_array_value(var &arr, const char *left_br_pos, int key_len, const string &value) {
+static void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len, const string &value) {
   php_assert (*left_br_pos == '[');
   const char *right_br_pos = (const char *)memchr(left_br_pos + 1, ']', key_len - 1);
   if (right_br_pos != nullptr) {
     string next_key(left_br_pos + 1, static_cast<string::size_type>(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
-      arr = array<var>();
+      arr = array<mixed>();
     }
 
     if (next_key.empty()) {
@@ -192,7 +192,7 @@ static void parse_str_set_array_value(var &arr, const char *left_br_pos, int key
   }
 }
 
-void parse_str_set_value(var &arr, const string &key, const string &value) {
+void parse_str_set_value(mixed &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr(key_c, '[', key.size());
   if (left_br_pos != nullptr) {
@@ -202,8 +202,8 @@ void parse_str_set_value(var &arr, const string &key, const string &value) {
   arr.set_value(key, value);
 }
 
-void f$parse_str(const string &str, var &arr) {
-  arr = array<var>();
+void f$parse_str(const string &str, mixed &arr) {
+  arr = array<mixed>();
 
   array<string> par = explode('&', str, INT_MAX);
   int64_t len = par.count();
@@ -222,8 +222,8 @@ void f$parse_str(const string &str, var &arr) {
 }
 
 // returns associative array like [host=> path=>] or empty array if str is not a valid url
-array<var> php_url_parse_ex(const char *str, string::size_type length) {
-  array<var> result;
+array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
+  array<mixed> result;
   const char *s = str, *e, *p, *pp, *ue = str + length;
 
   /* parse scheme */
@@ -416,8 +416,8 @@ array<var> php_url_parse_ex(const char *str, string::size_type length) {
 }
 
 // returns var, as array|false|null (null if component doesn't exist)
-var f$parse_url(const string &s, int64_t component) {
-  array<var> url_as_array = php_url_parse_ex(s.c_str(), s.size());
+mixed f$parse_url(const string &s, int64_t component) {
+  array<mixed> url_as_array = php_url_parse_ex(s.c_str(), s.size());
 
   if (url_as_array.empty()) {
     return false;

@@ -8,7 +8,7 @@ class array;
 template<class T>
 class class_instance;
 
-class var;
+class mixed;
 
 class Unknown {
 };

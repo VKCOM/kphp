@@ -38,11 +38,11 @@ int64_t f$crc32_file(const string &file_name);
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key);
 
-bool f$openssl_public_encrypt(const string &data, var &result, const string &key);
+bool f$openssl_public_encrypt(const string &data, mixed &result, const string &key);
 
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key);
 
-bool f$openssl_private_decrypt(const string &data, var &result, const string &key);
+bool f$openssl_private_decrypt(const string &data, mixed &result, const string &key);
 
 Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase = string());
 
@@ -54,9 +54,9 @@ int64_t f$openssl_verify(const string &data, const string &signature, const stri
 
 Optional<string> f$openssl_random_pseudo_bytes(int64_t length);
 
-Optional<array<var>> f$openssl_x509_parse(const string &data, bool shortnames = true);
+Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames = true);
 
-var f$openssl_x509_checkpurpose(const string &data, int64_t purpose);
+mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose);
 
 bool f$openssl_pkcs7_sign(const string &infile, const string &outfile,
                           const string &sign_cert, const string &priv_key,

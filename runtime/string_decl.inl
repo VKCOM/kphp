@@ -109,7 +109,7 @@ public:
   inline string &append(int64_t i) __attribute__ ((always_inline));
   inline string &append(int32_t v) {return append(int64_t{v});}
   inline string &append(double d) __attribute__ ((always_inline));
-  inline string &append(const var &v) __attribute__ ((always_inline));
+  inline string &append(const mixed &v) __attribute__ ((always_inline));
 
   inline string &append_unsafe(bool b) __attribute__((always_inline));
   inline string &append_unsafe(int64_t i) __attribute__((always_inline));
@@ -117,7 +117,7 @@ public:
   inline string &append_unsafe(double d) __attribute__((always_inline));
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
   inline string &append_unsafe(const char *s, size_type n) __attribute__((always_inline));
-  inline string &append_unsafe(const var &v) __attribute__((always_inline));
+  inline string &append_unsafe(const mixed &v) __attribute__((always_inline));
   inline string &finish_append() __attribute__((always_inline));
 
   template<class T>
@@ -155,7 +155,7 @@ public:
   inline bool try_to_int(int64_t *val) const;
   inline bool try_to_float(double *val) const;
 
-  inline var to_numeric() const;
+  inline mixed to_numeric() const;
   inline bool to_bool() const;
   inline static int64_t to_int(const char *s, size_type l);
   inline int64_t to_int() const;
@@ -174,7 +174,7 @@ public:
   inline int64_t get_correct_index(int64_t index) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string &string_key) const;
-  inline const string get_value(const var &v) const;
+  inline const string get_value(const mixed &v) const;
 
   inline int64_t get_reference_counter() const;
 
@@ -209,7 +209,7 @@ inline string::size_type max_string_size(int64_t) __attribute__((always_inline))
 inline string::size_type max_string_size(int32_t) __attribute__((always_inline));
 inline string::size_type max_string_size(double) __attribute__((always_inline));
 inline string::size_type max_string_size(const string &s) __attribute__((always_inline));
-inline string::size_type max_string_size(const var &v) __attribute__((always_inline));
+inline string::size_type max_string_size(const mixed &v) __attribute__((always_inline));
 
 template<class T>
 inline string::size_type max_string_size(const array<T> &) __attribute__((always_inline));

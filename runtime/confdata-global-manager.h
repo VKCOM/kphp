@@ -11,7 +11,7 @@
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
-using confdata_sample_storage = memory_resource::stl::map<string, var, memory_resource::unsynchronized_pool_resource, stl_string_less>;
+using confdata_sample_storage = memory_resource::stl::map<string, mixed, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 
 enum class ConfdataGarbageDestroyWay {
   shallow_first,
@@ -19,7 +19,7 @@ enum class ConfdataGarbageDestroyWay {
 };
 
 struct ConfdataGarbageNode {
-  var value;
+  mixed value;
   ConfdataGarbageDestroyWay destroy_way;
 };
 

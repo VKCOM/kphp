@@ -35,8 +35,8 @@ void TlConstructorDecl::compile(CodeGenerator &W) const {
   W << "struct " << cpp_tl_struct_name("c_", constructor->name) << " " << BEGIN;
   auto params = get_optional_args_for_decl(constructor);
   if (G->get_untyped_rpc_tl_used()) {
-    FunctionSignatureGenerator(W) << "static void store(const var &tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "static array<var> fetch(" << params << ")" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static void store(const mixed &tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static array<mixed> fetch(" << params << ")" << SemicolonAndNL();
   }
 
   if (needs_typed_fetch_store) {
@@ -57,12 +57,12 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
 
   if (G->get_untyped_rpc_tl_used()) {
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const var& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const mixed& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
     W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
 
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "array<mixed> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
     W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
   }

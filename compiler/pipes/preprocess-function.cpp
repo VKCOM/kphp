@@ -90,7 +90,7 @@ public:
           current_function->type == FunctionData::func_switch ||
           current_function->disabled_warnings.count("return")) {
         if (return_op->has_expr()) {
-          return VertexAdaptor<op_return>::create(VertexAdaptor<op_conv_var>::create(return_op->expr()));
+          return VertexAdaptor<op_return>::create(VertexAdaptor<op_conv_mixed>::create(return_op->expr()));
         } else {
           return VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create());
         }

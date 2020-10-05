@@ -42,14 +42,14 @@ template<class ReturnType, class ValueType, class FallbackType>
 enable_if_t_is_not_optional<ReturnType, ReturnType>
 null_coalesce(const Optional<ValueType> &value, const FallbackType &fallback) noexcept {
   // keep in mind that ReturnType is not an optional here!
-  using result_can_be_false = vk::is_type_in_list<ReturnType, bool, var>;
+  using result_can_be_false = vk::is_type_in_list<ReturnType, bool, mixed>;
   using false_cast_immposible = std::integral_constant<bool, std::is_same<ValueType, bool>{} && !result_can_be_false{}>;
 
   php_assert((result_can_be_false{} || !value.is_false()));
   return impl_::null_coalesce_resolve_or_false<ReturnType>(false_cast_immposible{}, value, fallback);
 }
 
-template<class ReturnType, class ValueType, class KeyType, class FallbackType, class = vk::enable_if_constructible<var, KeyType>>
+template<class ReturnType, class ValueType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
 ReturnType null_coalesce(const array<ValueType> &arr, const KeyType &key, const FallbackType &fallback) noexcept {
   auto *value = arr.find_value(key);
   return value ? null_coalesce<ReturnType>(*value, fallback) : impl_::perform_fallback<ReturnType>(fallback);
@@ -61,21 +61,21 @@ ReturnType null_coalesce(const array<ValueType> &arr, const string &string_key, 
   return value ? null_coalesce<ReturnType>(*value, fallback) : impl_::perform_fallback<ReturnType>(fallback);
 }
 
-template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<var, KeyType>>
+template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
 ReturnType null_coalesce(const string &str, const KeyType &key, const FallbackType &fallback) noexcept {
   string value = str.get_value(key);
   return value.empty() ? impl_::perform_fallback<ReturnType>(fallback) : std::move(value);
 }
 
-template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<var, KeyType>>
-ReturnType null_coalesce(const var &v, const KeyType &key, const FallbackType &fallback) noexcept {
+template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
+ReturnType null_coalesce(const mixed &v, const KeyType &key, const FallbackType &fallback) noexcept {
   return v.is_string()
          ? null_coalesce<ReturnType>(v.as_string(), key, fallback)
          : null_coalesce<ReturnType>(v.get_value(key), fallback);
 }
 
 template<typename ReturnType, typename FallbackType>
-ReturnType null_coalesce(const var &v, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
+ReturnType null_coalesce(const mixed &v, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
   return v.is_string()
          ? null_coalesce<ReturnType>(v.as_string(), string_key, fallback)
          : null_coalesce<ReturnType>(v.get_value(string_key, precomuted_hash), fallback);

@@ -673,28 +673,28 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches __attrib
   return result;
 }
 
-Optional<int64_t> regexp::match(const string &subject, var &matches, bool all_matches, int64_t offset) const {
+Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    matches = array<var>();
+    matches = array<mixed>();
     return false;
   }
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<var>();
+    matches = array<mixed>();
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
 
   if (all_matches) {
-    matches = array<var>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+    matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
     for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
-        matches.set_value(subpattern_names[i], array<var>());
+        matches.set_value(subpattern_names[i], array<mixed>());
       }
-      matches.push_back(array<var>());
+      matches.push_back(array<mixed>());
     }
   }
 
@@ -715,7 +715,7 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, bool all_ma
       }
 
       if (!all_matches) {
-        matches = array<var>();
+        matches = array<mixed>();
       }
 
       break;
@@ -733,7 +733,7 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, bool all_ma
       }
     } else {
       int64_t size = fix_php_bugs ? subpatterns_count : count;
-      array<var> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
         for (int64_t i = 0; i < size; i++) {
@@ -763,17 +763,17 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, bool all_ma
   return result;
 }
 
-Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t flags, bool all_matches, int64_t offset) const {
+Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    matches = array<var>();
+    matches = array<mixed>();
     return false;
   }
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<var>();
+    matches = array<mixed>();
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
@@ -799,21 +799,21 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t fla
   }
 
   if (pattern_order) {
-    matches = array<var>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+    matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
     for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
-        matches.set_value(subpattern_names[i], array<var>());
+        matches.set_value(subpattern_names[i], array<mixed>());
       }
-      matches.push_back(array<var>());
+      matches.push_back(array<mixed>());
     }
   } else {
-    matches = array<var>();
+    matches = array<mixed>();
   }
 
   bool second_try = false;//set after matching an empty string
 
   int64_t result = 0;
-  auto empty_match = array<var>::create(string(), -1);
+  auto empty_match = array<mixed>::create(string(), -1);
   while (offset <= int64_t{subject.size()}) {
     int64_t count = exec(subject, offset, second_try);
 
@@ -835,7 +835,7 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t fla
       for (int32_t i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
         if (offset_capture && (fix_php_bugs || i < count)) {
-          auto match = array<var>::create(match_str, submatch[i + i]);
+          auto match = array<mixed>::create(match_str, submatch[i + i]);
 
           if (named_subpatterns_count && !subpattern_names[i].empty()) {
             matches[subpattern_names[i]].push_back(match);
@@ -850,14 +850,14 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t fla
       }
     } else {
       int64_t size = fix_php_bugs ? subpatterns_count : count;
-      array<var> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
         for (int64_t i = 0; i < size; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            preg_add_match(result_set, array<var>::create(match_str, submatch[i + i]), subpattern_names[i]);
+            preg_add_match(result_set, array<mixed>::create(match_str, submatch[i + i]), subpattern_names[i]);
           } else {
             preg_add_match(result_set, match_str, subpattern_names[i]);
           }
@@ -867,7 +867,7 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t fla
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            result_set.push_back(array<var>::create(match_str, submatch[i + i]));
+            result_set.push_back(array<mixed>::create(match_str, submatch[i + i]));
           } else {
             result_set.push_back(match_str);
           }
@@ -894,7 +894,7 @@ Optional<int64_t> regexp::match(const string &subject, var &matches, int64_t fla
   return result;
 }
 
-Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
+Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -923,7 +923,7 @@ Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t
   int64_t last_match = 0;
   bool second_try = false;
 
-  array<var> result;
+  array<mixed> result;
   while (offset <= int64_t{subject.size()} && limit > 1) {
     int64_t count = exec(subject, offset, second_try);
 
@@ -943,7 +943,7 @@ Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t
       string match_str(subject.c_str() + last_match, static_cast<string::size_type>(submatch[0] - last_match));
 
       if (offset_capture) {
-        result.push_back(array<var>::create(match_str, last_match));
+        result.push_back(array<mixed>::create(match_str, last_match));
       } else {
         result.push_back(match_str);
       }
@@ -961,7 +961,7 @@ Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t
           string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
-            result.push_back(array<var>::create(match_str, submatch[i + i]));
+            result.push_back(array<mixed>::create(match_str, submatch[i + i]));
           } else {
             result.push_back(match_str);
           }
@@ -978,7 +978,7 @@ Optional<array<var>> regexp::split(const string &subject, int64_t limit, int64_t
     string match_str(subject.c_str() + last_match, static_cast<string::size_type>(subject.size() - last_match));
 
     if (offset_capture) {
-      result.push_back(array<var>::create(match_str, last_match));
+      result.push_back(array<mixed>::create(match_str, last_match));
     } else {
       result.push_back(match_str);
     }

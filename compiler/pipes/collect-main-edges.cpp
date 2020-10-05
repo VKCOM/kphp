@@ -298,7 +298,7 @@ void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
   }
   create_set(x->var_id, params);
   if (key) {
-    create_set(key->var_id, tp_var);
+    create_set(key->var_id, tp_mixed);
   }
 }
 
@@ -346,7 +346,7 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
         continue;
       }
       if (ifi_tp == ifi_unset) {
-        create_set(var, tp_var);
+        create_set(var, tp_mixed);
       } else if (ifi_tp == ifi_isset && var->var_id->is_global_var()) {
         create_set(var, tp_Null);
       }
@@ -415,7 +415,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
   }
 
   if (function->is_extern()) {
-    auto ret_type = PrimitiveType::tp_var;
+    auto ret_type = PrimitiveType::tp_mixed;
     if (auto rule = function->root->type_rule.try_as<op_common_type_rule>()) {
       if (auto type_of_rule = rule->rule().try_as<op_type_expr_type>()) {
         ret_type = type_of_rule->type_help;

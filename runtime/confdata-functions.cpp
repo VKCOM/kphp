@@ -84,7 +84,7 @@ bool f$is_confdata_loaded() noexcept {
   return ConfdataLocalManager::get().is_initialized();
 }
 
-var f$confdata_get_value(const string &key) noexcept {
+mixed f$confdata_get_value(const string &key) noexcept {
   if (unlikely(!verify_confdata_key_param(key, "key"))) {
     return {};
   }
@@ -112,7 +112,7 @@ var f$confdata_get_value(const string &key) noexcept {
   return {};
 }
 
-array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcept {
+array<mixed> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcept {
   if (unlikely(!verify_confdata_key_param(wildcard, "wildcard"))) {
     return {};
   }
@@ -139,7 +139,7 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
     }
 
     // if the second key is not an empty string, then we need a prefix matching subset
-    array<var> result;
+    array<mixed> result;
     const auto second_key_prefix = key_maker.get_second_key().to_string();
     for (const auto &second_key_it : second_key_array) {
       const string key_str = second_key_it.get_key().to_string();
@@ -151,7 +151,7 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
   }
 
   // wildcard has a form of '\w+' and does not contain a predefined prefix
-  array<var> result;
+  array<mixed> result;
   auto merge_into_result = [&result, &wildcard](confdata_sample_storage::const_iterator iter) {
     const auto section_suffix = f$substr(iter->first, wildcard.size()).val();
     php_assert(iter->second.is_array());
@@ -193,7 +193,7 @@ array<var> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexcep
   return result;
 }
 
-array<var> f$confdata_get_values_by_predefined_wildcard(const string &wildcard) noexcept {
+array<mixed> f$confdata_get_values_by_predefined_wildcard(const string &wildcard) noexcept {
   if (unlikely(!verify_confdata_key_param(wildcard, "wildcard"))) {
     return {};
   }

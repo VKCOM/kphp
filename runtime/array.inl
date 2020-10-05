@@ -1082,19 +1082,19 @@ T &array<T>::operator[](const string &string_key) {
 }
 
 template<class T>
-T &array<T>::operator[](const var &v) {
+T &array<T>::operator[](const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return (*this)[string()];
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return (*this)[static_cast<int64_t>(v.as_bool())];
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return (*this)[v.as_int()];
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return (*this)[static_cast<int64_t>(v.as_double())];
-    case var::type::STRING:
+    case mixed::type::STRING:
       return (*this)[v.as_string()];
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return (*this)[v.as_array().to_int()];
     default:
@@ -1296,19 +1296,19 @@ void array<T>::set_value(const string &string_key, T &&v, int64_t precomuted_has
 
 template<class T>
 template<class ...Args>
-void array<T>::emplace_value(const var &var_key, Args &&... args) noexcept {
+void array<T>::emplace_value(const mixed &var_key, Args &&... args) noexcept {
   switch (var_key.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return emplace_value(string(), std::forward<Args>(args)...);
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return emplace_value(static_cast<int64_t>(var_key.as_bool()), std::forward<Args>(args)...);
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return emplace_value(var_key.as_int(), std::forward<Args>(args)...);
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return emplace_value(static_cast<int64_t>(var_key.as_double()), std::forward<Args>(args)...);
-    case var::type::STRING:
+    case mixed::type::STRING:
       return emplace_value(var_key.as_string(), std::forward<Args>(args)...);
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return emplace_value(var_key.as_array().to_int(), std::forward<Args>(args)...);
     default:
@@ -1317,12 +1317,12 @@ void array<T>::emplace_value(const var &var_key, Args &&... args) noexcept {
 }
 
 template<class T>
-void array<T>::set_value(const var &v, T &&value) noexcept {
+void array<T>::set_value(const mixed &v, T &&value) noexcept {
   emplace_value(v, std::move(value));
 }
 
 template<class T>
-void array<T>::set_value(const var &v, const T &value) noexcept {
+void array<T>::set_value(const mixed &v, const T &value) noexcept {
   emplace_value(v, value);
 }
 
@@ -1486,19 +1486,19 @@ const T *array<T>::find_value(const string &string_key, int64_t precomuted_hash)
 }
 
 template<class T>
-const T *array<T>::find_value(const var &v) const {
+const T *array<T>::find_value(const mixed &v) const {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return find_value(string());
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return find_value(static_cast<int64_t>(v.as_bool()));
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return find_value(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return find_value(static_cast<int64_t>(v.as_double()));
-    case var::type::STRING:
+    case mixed::type::STRING:
       return find_value(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return find_value(v.as_array().to_int());
     default:
@@ -1563,19 +1563,19 @@ typename array<T>::iterator array<T>::find_iterator_in_map_no_mutate(const Key &
 }
 
 template<class T>
-typename array<T>::iterator array<T>::find_no_mutate(const var &v) noexcept {
+typename array<T>::iterator array<T>::find_no_mutate(const mixed &v) noexcept {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return find_no_mutate(string());
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return find_no_mutate(static_cast<int64_t>(v.as_bool()));
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return find_no_mutate(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return find_no_mutate(static_cast<int64_t>(v.as_double()));
-    case var::type::STRING:
+    case mixed::type::STRING:
       return find_no_mutate(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return find_no_mutate(v.as_array().to_int());
     default:
@@ -1585,9 +1585,9 @@ typename array<T>::iterator array<T>::find_no_mutate(const var &v) noexcept {
 
 template<class T>
 template<class K>
-const var array<T>::get_var(const K &key) const {
+const mixed array<T>::get_var(const K &key) const {
   auto *value = find_value(key);
-  return value ? var{*value} : var{};
+  return value ? mixed{*value} : mixed{};
 }
 
 template<class T>
@@ -1650,19 +1650,19 @@ void array<T>::unset(const string &string_key) {
 }
 
 template<class T>
-void array<T>::unset(const var &v) {
+void array<T>::unset(const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return unset(string());
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return unset(static_cast<int64_t>(v.as_bool()));
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return unset(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return unset(static_cast<int64_t>(v.as_double()));
-    case var::type::STRING:
+    case mixed::type::STRING:
       return unset(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return unset(v.as_array().to_int());
     default:

@@ -4,7 +4,7 @@
 
 namespace {
 
-void recursively_destroy_confdata_element(var &element) noexcept {
+void recursively_destroy_confdata_element(mixed &element) noexcept {
   if (element.is_reference_counter(ExtraRefCnt::for_global_const)) {
     return;
   }

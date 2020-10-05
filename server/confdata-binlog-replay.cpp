@@ -413,7 +413,7 @@ private:
     if (first_key_it == updating_confdata_storage_->end()) {
       element_exists = false;
       // during the snapshot loading all keys are already sorted, so it makes sense to push it back
-      first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), var{});
+      first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), mixed{});
     }
 
     // for keys without '.'
@@ -466,7 +466,7 @@ private:
     return OperationStatus::ttl_update_only;
   }
 
-  void put_confdata_element_value_into_garbage(const var &element) noexcept {
+  void put_confdata_element_value_into_garbage(const mixed &element) noexcept {
     if (!last_element_in_garbage_.is_null()) {
       // if keys with 1 or 2 can refer the same element,
       // they should have identical internal pointers here as well
@@ -518,7 +518,7 @@ private:
     str.set_reference_counter_to(ExtraRefCnt::for_confdata);
   }
 
-  void mark_array_as_confdata_const(array<var> &arr) const noexcept {
+  void mark_array_as_confdata_const(array<mixed> &arr) const noexcept {
     if (arr.is_reference_counter(ExtraRefCnt::for_confdata) ||
         arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return;
@@ -590,7 +590,7 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  bool is_new_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E, const var &prev_value) noexcept {
+  bool is_new_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E, const mixed &prev_value) noexcept {
     if (E.get_flags()) {
       return !equals(get_processing_value(E), prev_value);
     }
@@ -603,18 +603,18 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  const var &get_processing_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
+  const mixed &get_processing_value(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     if (processing_value_.is_null()) {
       processing_value_ = E.get_value_as_var();
     }
     return processing_value_;
   }
 
-  array<var> prepare_array_for(vk::string_view key) const noexcept {
+  array<mixed> prepare_array_for(vk::string_view key) const noexcept {
     auto size_hint_it = size_hints_.find(key);
     return size_hint_it != size_hints_.end()
-           ? array<var>{size_hint_it->second}
-           : array<var>{};
+           ? array<mixed>{size_hint_it->second}
+           : array<mixed>{};
   }
 
   bool is_key_blacklisted(vk::string_view key) const noexcept {
@@ -629,13 +629,13 @@ private:
   confdata_sample_storage *updating_confdata_storage_{nullptr};
   std::forward_list<ConfdataGarbageNode> garbage_from_previous_confdata_sample_;
   size_t garbage_size_{0};
-  var last_element_in_garbage_;
+  mixed last_element_in_garbage_;
   bool confdata_has_any_updates_{false};
   std::unordered_map<vk::string_view, array_size> size_hints_;
   ConfdataStats::EventCounters event_counters_;
 
   ConfdataKeyMaker processing_key_;
-  var processing_value_;
+  mixed processing_value_;
 
   std::unordered_map<vk::string_view, int> element_delays_;
   std::multimap<int, std::string> expiration_trace_;

@@ -540,7 +540,7 @@ void finish(int64_t exit_code) {
   php_assert (0);
 }
 
-void f$exit(const var &v) {
+void f$exit(const mixed &v) {
   if (v.is_string()) {
     *coub << v;
     finish(0);
@@ -549,7 +549,7 @@ void f$exit(const var &v) {
   }
 }
 
-void f$die(const var &v) {
+void f$die(const mixed &v) {
   f$exit(v);
 }
 
@@ -700,16 +700,16 @@ string f$php_sapi_name() {
 }
 
 
-var v$_SERVER  __attribute__ ((weak));
-var v$_GET     __attribute__ ((weak));
-var v$_POST    __attribute__ ((weak));
-var v$_FILES   __attribute__ ((weak));
-var v$_COOKIE  __attribute__ ((weak));
-var v$_REQUEST __attribute__ ((weak));
-var v$_ENV     __attribute__ ((weak));
+mixed v$_SERVER  __attribute__ ((weak));
+mixed v$_GET     __attribute__ ((weak));
+mixed v$_POST    __attribute__ ((weak));
+mixed v$_FILES   __attribute__ ((weak));
+mixed v$_COOKIE  __attribute__ ((weak));
+mixed v$_REQUEST __attribute__ ((weak));
+mixed v$_ENV     __attribute__ ((weak));
 
-var v$argc  __attribute__ ((weak));
-var v$argv  __attribute__ ((weak));
+mixed v$argc  __attribute__ ((weak));
+mixed v$argv  __attribute__ ((weak));
 
 static std::aligned_storage_t<sizeof(array<bool>), alignof(array<bool>)> uploaded_files_storage;
 static array<bool> *uploaded_files = reinterpret_cast<array<bool> *> (&uploaded_files_storage);
@@ -1125,7 +1125,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     }
 
     if (name.size() >= 2 && name[name.size() - 2] == '[' && name[name.size() - 1] == ']') {
-      var &file = v$_FILES[name.substr(0, name.size() - 2)];
+      mixed &file = v$_FILES[name.substr(0, name.size() - 2)];
       if (file_size >= 0) {
         file[string("name", 4)].push_back(filename);
         file[string("type", 4)].push_back(content_type);
@@ -1140,7 +1140,7 @@ static int parse_multipart_one(post_reader &data, int i) {
         file[string("error", 5)].push_back(-file_size);
       }
     } else {
-      var &file = v$_FILES[name];
+      mixed &file = v$_FILES[name];
       if (file_size >= 0) {
         file.set_value(string("name", 4), filename);
         file.set_value(string("type", 4), content_type);
@@ -1194,7 +1194,7 @@ void f$parse_multipart(const string &post, const string &boundary) {
 static char arg_vars_storage[sizeof(array<string>)];
 static array<string> *arg_vars = nullptr;
 
-Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts) {
   if (!arg_vars) {
     return false;
   }
@@ -1226,7 +1226,7 @@ Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
   }
   real_longopts[longopts_count] = option();
 
-  array<var> result;
+  array<mixed> result;
 
   optind = 0;
   while (int i = getopt_long(php_argc, (char *const *)php_argv, real_options.c_str(), real_longopts, nullptr)) {
@@ -1234,7 +1234,7 @@ Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
       break;
     }
     string key = (i < 255 ? string(1, (char)i) : string(real_longopts[i - 300].name));
-    var value;
+    mixed value;
     if (optarg) {
       value = string(optarg);
     } else {
@@ -1243,7 +1243,7 @@ Optional<array<var>> f$getopt(const string &options, array<string> longopts) {
 
     if (result.has_key(key)) {
       if (!f$is_array(result.get_value(key))) {
-        result.set_value(key, array<var>::create(result.get_value(key), value));
+        result.set_value(key, array<mixed>::create(result.get_value(key), value));
       } else {
         result[key].push_back(value);
       }
@@ -1269,13 +1269,13 @@ void arg_add(const char *value) {
 static void reset_superglobals() {
   dl::enter_critical_section();
 
-  hard_reset_var(v$_SERVER, array<var>());
-  hard_reset_var(v$_GET, array<var>());
-  hard_reset_var(v$_POST, array<var>());
-  hard_reset_var(v$_FILES, array<var>());
-  hard_reset_var(v$_COOKIE, array<var>());
-  hard_reset_var(v$_REQUEST, array<var>());
-  hard_reset_var(v$_ENV, array<var>());
+  hard_reset_var(v$_SERVER, array<mixed>());
+  hard_reset_var(v$_GET, array<mixed>());
+  hard_reset_var(v$_POST, array<mixed>());
+  hard_reset_var(v$_FILES, array<mixed>());
+  hard_reset_var(v$_COOKIE, array<mixed>());
+  hard_reset_var(v$_REQUEST, array<mixed>());
+  hard_reset_var(v$_ENV, array<mixed>());
 
   dl::leave_critical_section();
 }
@@ -1535,13 +1535,13 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
 
   if (arg_vars == nullptr) {
     if (get_len > 0) {
-      array<var> argv_array(array_size(1, 0, true));
+      array<mixed> argv_array(array_size(1, 0, true));
       argv_array.push_back(get_str);
 
       v$argv = argv_array;
       v$argc = 1;
     } else {
-      v$argv = array<var>();
+      v$argv = array<mixed>();
       v$argc = 0;
     }
   } else {
@@ -2038,7 +2038,7 @@ static void reset_global_interface_vars() {
 
   hard_reset_var(http_status_line);
 
-  var::reset_empty_values();
+  mixed::reset_empty_values();
 
   hard_reset_var(v$argc);
   hard_reset_var(v$argv);

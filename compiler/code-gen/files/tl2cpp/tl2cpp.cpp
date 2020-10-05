@@ -136,7 +136,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << NL;
     // a pointer to the gen$tl_fetch_wrapper is forwarded to the runtime and called from the fetch_function();
     // we do this to avoid t_ReqResult-related dependencies inside the runtime
-    FunctionSignatureGenerator(W) << "array<var> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
+    FunctionSignatureGenerator(W) << "array<mixed> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
                                   << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
                                   << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
                                   << END << NL << NL;

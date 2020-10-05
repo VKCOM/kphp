@@ -47,10 +47,10 @@ __attribute__((noreturn))
 void finish(int64_t exit_code);
 
 __attribute__((noreturn))
-void f$exit(const var &v = 0);
+void f$exit(const mixed &v = 0);
 
 __attribute__((noreturn))
-void f$die(const var &v = 0);
+void f$die(const mixed &v = 0);
 
 Optional<int64_t> f$ip2long(const string &ip);
 
@@ -103,13 +103,13 @@ bool f$get_magic_quotes_gpc();
 string f$php_sapi_name();
 
 
-extern var v$_SERVER;
-extern var v$_GET;
-extern var v$_POST;
-extern var v$_FILES;
-extern var v$_COOKIE;
-extern var v$_REQUEST;
-extern var v$_ENV;
+extern mixed v$_SERVER;
+extern mixed v$_GET;
+extern mixed v$_POST;
+extern mixed v$_FILES;
+extern mixed v$_COOKIE;
+extern mixed v$_REQUEST;
+extern mixed v$_ENV;
 
 const int32_t UPLOAD_ERR_OK = 0;
 const int32_t UPLOAD_ERR_INI_SIZE = 1;
@@ -158,7 +158,7 @@ bool f$ini_set(const string &s, const string &value);
 
 Optional<string> f$ini_get(const string &s);
 
-Optional<array<var>> f$getopt(const string &options, array<string> longopts = array<string>());
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = array<string>());
 
 void global_init_runtime_libs();
 void global_init_script_allocator();

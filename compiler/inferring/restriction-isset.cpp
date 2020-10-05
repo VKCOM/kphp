@@ -46,7 +46,7 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
 
   const PrimitiveType ptp = tp->get_real_ptype();
   if (isset_flags & ifi_isset) {
-    return ptp != tp_var;
+    return ptp != tp_mixed;
   }
 
   int check_mask = ifi_is_null;

@@ -118,14 +118,14 @@ struct pack<array<T>> {
 
 // mixed
  template<>
- struct convert<var> {
-   const msgpack::object &operator()(const msgpack::object &obj, var& v) const {
+ struct convert<mixed> {
+   const msgpack::object &operator()(const msgpack::object &obj, mixed& v) const {
      switch (obj.type) {
        case msgpack::type::STR:
          v = obj.as<string>();
          break;
        case msgpack::type::ARRAY:
-         v = obj.as<array<var>>();
+         v = obj.as<array<mixed>>();
          break;
        case msgpack::type::NEGATIVE_INTEGER:
        case msgpack::type::POSITIVE_INTEGER:
@@ -139,10 +139,10 @@ struct pack<array<T>> {
          v = obj.as<bool>();
          break;
        case msgpack::type::MAP:
-         v = obj.as<array<var>>();
+         v = obj.as<array<mixed>>();
          break;
        case msgpack::type::NIL:
-         v = var{};
+         v = mixed{};
          break;
        default:
          throw msgpack::type_error();
@@ -153,26 +153,26 @@ struct pack<array<T>> {
  };
 
  template<>
- struct pack<var> {
+ struct pack<mixed> {
    template <typename Stream>
-   packer<Stream> &operator()(msgpack::packer<Stream> &packer, const var &v) const noexcept {
+   packer<Stream> &operator()(msgpack::packer<Stream> &packer, const mixed &v) const noexcept {
      switch (v.get_type()) {
-       case var::type::NUL:
+       case mixed::type::NUL:
          packer.pack_nil();
          break;
-       case var::type::BOOLEAN:
+       case mixed::type::BOOLEAN:
          packer.pack(v.as_bool());
          break;
-       case var::type::INTEGER:
+       case mixed::type::INTEGER:
          packer.pack(v.as_int());
          break;
-       case var::type::FLOAT:
+       case mixed::type::FLOAT:
          packer.pack(v.as_double());
          break;
-       case var::type::STRING:
+       case mixed::type::STRING:
          packer.pack(v.as_string());
          break;
-       case var::type::ARRAY:
+       case mixed::type::ARRAY:
          packer.pack(v.as_array());
          break;
        default:
@@ -355,7 +355,7 @@ inline Optional<string> f$instance_serialize(const class_instance<InstanceClass>
  * For better understanding exceptions please look through this article
  * https://monoinfinito.wordpress.com/series/exception-handling-in-c/
  */
-template<class ResultType = var>
+template<class ResultType = mixed>
 inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_msg = nullptr) noexcept {
   if (buffer.empty()) {
     return {};
@@ -395,7 +395,7 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
   return {};
 }
 
-template<class ResultType = var>
+template<class ResultType = mixed>
 inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
   string err_msg;
   auto res = f$msgpack_deserialize(buffer, &err_msg);

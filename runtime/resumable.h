@@ -89,7 +89,7 @@ inline bool f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) { retu
 
 inline bool f$wait_multiple(Optional<int64_t> resumable_id) { return f$wait_multiple(resumable_id.val());};
 
-inline bool f$wait_multiple(const var &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
+inline bool f$wait_multiple(const mixed &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
 
 
 void f$sched_yield();
@@ -117,11 +117,11 @@ Resumable *get_forked_resumable(int64_t resumable_id);
 int32_t get_resumable_stack(void **buffer, int32_t limit);
 
 int64_t f$wait_queue_create();
-int64_t f$wait_queue_create(const var &resumable_ids);
+int64_t f$wait_queue_create(const mixed &resumable_ids);
 int64_t wait_queue_create(const array<int64_t> &resumable_ids);
 void unregister_wait_queue(int64_t queue_id);
 
-int64_t f$wait_queue_push(int64_t queue_id, const var &resumable_ids);
+int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids);
 int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id);
 int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
 
@@ -136,7 +136,7 @@ void global_init_resumable_lib();
 void init_resumable_lib();
 
 int64_t f$get_running_fork_id();
-Optional<array<var>> f$get_fork_stat(int64_t fork_id);
+Optional<array<mixed>> f$get_fork_stat(int64_t fork_id);
 
 /*
  *

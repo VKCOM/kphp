@@ -86,25 +86,25 @@ public:
     convert_from(s);
   }
 
-  inline explicit LongNumber(const var &v) {
+  inline explicit LongNumber(const mixed &v) {
     switch (v.get_type()) {
-      case var::type::INTEGER: {
+      case mixed::type::INTEGER: {
         l = static_cast<LongT>(v.as_int());
         break;
       }
-      case var::type::STRING: {
+      case mixed::type::STRING: {
         convert_from(v.as_string());
         break;
       }
-      case var::type::FLOAT: {
+      case mixed::type::FLOAT: {
         l = static_cast<LongT>(v.as_double());
         break;
       }
-      case var::type::NUL: {
+      case mixed::type::NUL: {
         l = 0;
         break;
       }
-      case var::type::BOOLEAN: {
+      case mixed::type::BOOLEAN: {
         l = static_cast<LongT>(v.as_bool());
         break;
       }
@@ -215,7 +215,7 @@ inline Long f$longval(const string &val) {
   return Long(val);
 }
 
-inline Long f$longval(const var &val) {
+inline Long f$longval(const mixed &val) {
   return Long(val);
 }
 
@@ -345,7 +345,7 @@ inline ULong f$ulongval(const string &val) {
   return ULong(val);
 }
 
-inline ULong f$ulongval(const var &val) {
+inline ULong f$ulongval(const mixed &val) {
   return ULong(val);
 }
 
@@ -478,7 +478,7 @@ inline UInt f$uintval(const string &val) {
   return UInt(val);
 }
 
-inline UInt f$uintval(const var &val) {
+inline UInt f$uintval(const mixed &val) {
   return UInt(val);
 }
 

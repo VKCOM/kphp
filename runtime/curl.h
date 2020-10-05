@@ -8,13 +8,13 @@ curl_easy f$curl_init(const string &url = string{}) noexcept;
 
 void f$curl_reset(curl_easy easy_id) noexcept;
 
-bool f$curl_setopt(curl_easy easy_id, int64_t option, const var &value) noexcept;
+bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept;
 
-bool f$curl_setopt_array(curl_easy easy_id, const array<var> &options) noexcept;
+bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept;
 
-var f$curl_exec(curl_easy easy_id) noexcept;
+mixed f$curl_exec(curl_easy easy_id) noexcept;
 
-var f$curl_getinfo(curl_easy easy_id, int64_t option = 0) noexcept;
+mixed f$curl_getinfo(curl_easy easy_id, int64_t option = 0) noexcept;
 
 string f$curl_error(curl_easy easy_id) noexcept;
 

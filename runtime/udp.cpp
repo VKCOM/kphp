@@ -20,7 +20,7 @@ static array<int> *opened_udp_sockets = reinterpret_cast <array<int> *> (opened_
 static long long opened_udp_sockets_last_query_num = -1;
 
 static Stream udp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
-                                       int64_t flags __attribute__((unused)), const var &options __attribute__((unused))) {
+                                       int64_t flags __attribute__((unused)), const mixed &options __attribute__((unused))) {
 #define RETURN                                          \
   php_warning ("%s", error_description.c_str());        \
   if (sock_fd != -1) {                                  \
@@ -36,7 +36,7 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
 #define RETURN_ERROR_FORMAT(error_no, format, ...)                   \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    CONST_STRING(format), array<var>::create(__VA_ARGS__));          \
+    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));          \
   RETURN
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;

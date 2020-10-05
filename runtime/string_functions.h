@@ -33,7 +33,7 @@ string f$chr(int64_t v);
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s);
 
-var f$count_chars(const string &str, int64_t mode = 0);
+mixed f$count_chars(const string &str, int64_t mode = 0);
 
 string f$hex2bin(const string &str);
 
@@ -66,29 +66,29 @@ inline string f$number_format(double number, int64_t decimals = 0);
 
 inline string f$number_format(double number, int64_t decimals, const string &dec_point);
 
-inline string f$number_format(double number, int64_t decimals, const var &dec_point);
+inline string f$number_format(double number, int64_t decimals, const mixed &dec_point);
 
 string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep);
 
-inline string f$number_format(double number, int64_t decimals, const string &dec_point, const var &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const string &dec_point, const mixed &thousands_sep);
 
-inline string f$number_format(double number, int64_t decimals, const var &dec_point, const string &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const string &thousands_sep);
 
-inline string f$number_format(double number, int64_t decimals, const var &dec_point, const var &thousands_sep);
+inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const mixed &thousands_sep);
 
 int64_t f$ord(const string &s);
 
-string f$pack(const string &pattern, const array<var> &a);
+string f$pack(const string &pattern, const array<mixed> &a);
 
 string f$prepare_search_query(const string &query);
 
-int64_t f$printf(const string &format, const array<var> &a);
+int64_t f$printf(const string &format, const array<mixed> &a);
 
 string f$rtrim(const string &s, const string &what = WHAT);
 
 Optional<string> f$setlocale(int64_t category, const string &locale);
 
-string f$sprintf(const string &format, const array<var> &a);
+string f$sprintf(const string &format, const array<mixed> &a);
 
 string f$stripslashes(const string &str);
 
@@ -100,11 +100,11 @@ string f$strip_tags(const string &str, const string &allow = string());
 
 Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int64_t> f$stripos(const string &haystack, const var &needle, int64_t offset = 0);
+inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset = 0);
 
 Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false);
 
-inline Optional<string> f$stristr(const string &haystack, const var &needle, bool before_needle = false);
+inline Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle = false);
 
 Optional<string> f$strrchr(const string &haystack, const string &needle);
 
@@ -118,24 +118,24 @@ Optional<string> f$strpbrk(const string &haystack, const string &char_list);
 
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int64_t> f$strpos(const string &haystack, const var &needle, int64_t offset = 0);
+inline Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, int64_t offset = 0);
 
 template<class T>
 inline Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset = 0);
 
 Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int64_t> f$strrpos(const string &haystack, const var &needle, int64_t offset = 0);
+inline Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, int64_t offset = 0);
 
 Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset = 0);
 
-inline Optional<int64_t> f$strripos(const string &haystack, const var &needle, int64_t offset = 0);
+inline Optional<int64_t> f$strripos(const string &haystack, const mixed &needle, int64_t offset = 0);
 
 string f$strrev(const string &str);
 
 Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle = false);
 
-inline Optional<string> f$strstr(const string &haystack, const var &needle, bool before_needle = false);
+inline Optional<string> f$strstr(const string &haystack, const mixed &needle, bool before_needle = false);
 
 string f$strtolower(const string &str);
 
@@ -146,9 +146,9 @@ string f$strtr(const string &subject, const string &from, const string &to);
 template<class T>
 string f$strtr(const string &subject, const array<T> &replace_pairs);
 
-inline string f$strtr(const string &subject, const var &from, const var &to);
+inline string f$strtr(const string &subject, const mixed &from, const mixed &to);
 
-inline string f$strtr(const string &subject, const var &replace_pairs);
+inline string f$strtr(const string &subject, const mixed &replace_pairs);
 
 const int64_t STR_PAD_LEFT = 0;
 const int64_t STR_PAD_RIGHT = 1;
@@ -196,14 +196,14 @@ string f$str_replace(const array<T1> &search, const array<T2> &replace, const st
   return str_replace_string_array(search, replace, subject, replace_count);
 }
 
-string f$str_replace(const var &search, const var &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
+string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
 SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
-var f$str_replace(const var &search, const var &replace, const var &subject, int64_t &replace_count = str_replace_count_dummy);
+mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count = str_replace_count_dummy);
 
 array<string> f$str_split(const string &str, int64_t split_length = 1);
 
@@ -221,11 +221,11 @@ string f$ucfirst(const string &str);
 
 string f$ucwords(const string &str);
 
-array<var> f$unpack(const string &pattern, const string &data);
+array<mixed> f$unpack(const string &pattern, const string &data);
 
-int64_t f$vprintf(const string &format, const array<var> &args);
+int64_t f$vprintf(const string &format, const array<mixed> &args);
 
-string f$vsprintf(const string &format, const array<var> &args);
+string f$vsprintf(const string &format, const array<mixed> &args);
 
 string f$wordwrap(const string &str, int64_t width = 75, const string &brk = NEW_LINE, bool cut = false);
 
@@ -270,19 +270,19 @@ string f$number_format(double number, int64_t decimals, const string &dec_point)
   return f$number_format(number, decimals, dec_point, COLON);
 }
 
-string f$number_format(double number, int64_t decimals, const var &dec_point) {
+string f$number_format(double number, int64_t decimals, const mixed &dec_point) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), COLON);
 }
 
-string f$number_format(double number, int64_t decimals, const string &dec_point, const var &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const string &dec_point, const mixed &thousands_sep) {
   return f$number_format(number, decimals, dec_point, thousands_sep.is_null() ? COLON : thousands_sep.to_string());
 }
 
-string f$number_format(double number, int64_t decimals, const var &dec_point, const string &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const mixed &dec_point, const string &thousands_sep) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), thousands_sep);
 }
 
-string f$number_format(double number, int64_t decimals, const var &dec_point, const var &thousands_sep) {
+string f$number_format(double number, int64_t decimals, const mixed &dec_point, const mixed &thousands_sep) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), thousands_sep.is_null() ? COLON : thousands_sep.to_string());
 }
 
@@ -290,7 +290,7 @@ int64_t f$strlen(const string &s) {
   return s.size();
 }
 
-Optional<int64_t> f$stripos(const string &haystack, const var &needle, int64_t offset) {
+Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$stripos(haystack, needle.to_string(), offset);
   } else {
@@ -298,7 +298,7 @@ Optional<int64_t> f$stripos(const string &haystack, const var &needle, int64_t o
   }
 }
 
-Optional<string> f$stristr(const string &haystack, const var &needle, bool before_needle) {
+Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle) {
   if (needle.is_string()) {
     return f$stristr(haystack, needle.to_string(), before_needle);
   } else {
@@ -311,7 +311,7 @@ inline Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &nee
   return f$strpos(haystack, needle.val(), offset);
 }
 
-Optional<int64_t> f$strpos(const string &haystack, const var &needle, int64_t offset) {
+Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strpos(haystack, needle.to_string(), offset);
   } else {
@@ -319,7 +319,7 @@ Optional<int64_t> f$strpos(const string &haystack, const var &needle, int64_t of
   }
 }
 
-Optional<int64_t> f$strrpos(const string &haystack, const var &needle, int64_t offset) {
+Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strrpos(haystack, needle.to_string(), offset);
   } else {
@@ -327,7 +327,7 @@ Optional<int64_t> f$strrpos(const string &haystack, const var &needle, int64_t o
   }
 }
 
-Optional<int64_t> f$strripos(const string &haystack, const var &needle, int64_t offset) {
+Optional<int64_t> f$strripos(const string &haystack, const mixed &needle, int64_t offset) {
   if (needle.is_string()) {
     return f$strripos(haystack, needle.to_string(), offset);
   } else {
@@ -335,7 +335,7 @@ Optional<int64_t> f$strripos(const string &haystack, const var &needle, int64_t 
   }
 }
 
-Optional<string> f$strstr(const string &haystack, const var &needle, bool before_needle) {
+Optional<string> f$strstr(const string &haystack, const mixed &needle, bool before_needle) {
   if (needle.is_string()) {
     return f$strstr(haystack, needle.to_string(), before_needle);
   } else {
@@ -378,11 +378,11 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
   return result;
 }
 
-inline string f$strtr(const string &subject, const var &from, const var &to) {
+inline string f$strtr(const string &subject, const mixed &from, const mixed &to) {
   return f$strtr(subject, from.to_string(), to.to_string());
 }
 
-inline string f$strtr(const string &subject, const var &replace_pairs) {
+inline string f$strtr(const string &subject, const mixed &replace_pairs) {
   return f$strtr(subject, replace_pairs.as_array("strtr"));
 }
 

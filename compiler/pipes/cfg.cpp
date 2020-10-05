@@ -898,7 +898,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_conv_array:
     case op_conv_array_l:
     case op_conv_object:
-    case op_conv_var:
+    case op_conv_mixed:
     case op_conv_uint:
     case op_conv_long:
     case op_conv_ulong:

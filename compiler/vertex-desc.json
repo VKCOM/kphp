@@ -1460,13 +1460,13 @@
     }
   },
   {
-    "name": "op_conv_var",
+    "name": "op_conv_mixed",
     "base_name": "meta_op_unary",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "conv_op",
-      "str": "var"
+      "str": "mixed"
     }
   },
   {

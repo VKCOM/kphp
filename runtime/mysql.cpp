@@ -10,7 +10,7 @@ static string *error_ptr;
 static int *errno_ptr;
 static int *affected_rows_ptr;
 static int *insert_id_ptr;
-static array<array<var>> *query_result_ptr;
+static array<array<mixed>> *query_result_ptr;
 static bool *query_id_ptr;
 
 static int *field_cnt_ptr;
@@ -175,15 +175,15 @@ static void mysql_query_callback(const char *result_, int result_len) {
       break;
     case 3:
       if (result[0] != 254) {
-        array<var>
+        array<mixed>
         row(array_size(*field_cnt_ptr,
         *field_cnt_ptr, false));
         for (int i = 0; i < *field_cnt_ptr; i++) {
           is_null = false;
-          var value = mysql_read_string(result, result_len, is_null, true);
+          mixed value = mysql_read_string(result, result_len, is_null, true);
 //          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
           if (is_null) {
-            value = var();
+            value = mixed();
           }
           if (result_len < 0 || result > result_end) {
             *query_id_ptr = false;
@@ -231,7 +231,7 @@ static bool mysql_query(const class_instance<C$mysqli> &db, const string &query)
   db->affected_rows = 0;
 
   db->insert_id = 0;
-  array<array<var>> query_result;
+  array<array<mixed>> query_result;
   bool query_id = true;
 
   int packet_len = query.size() + 1;
@@ -283,24 +283,24 @@ int64_t f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
   return db->affected_rows;
 }
 
-Optional<array<var>> f$mysqli_fetch_array(int64_t query_id, int64_t result_type) {
+Optional<array<mixed>> f$mysqli_fetch_array(int64_t query_id, int64_t result_type) {
   if (result_type != 1) {
     php_warning("Only MYSQL_ASSOC result_type supported in mysqli_fetch_array");
   }
   if (query_id <= 0 || query_id > DB_Proxy->biggest_query_id) {
-    return Optional<array<var>>{};
+    return Optional<array<mixed>>{};
   }
 
-  array<array<var>> &query_result = DB_Proxy->query_results[query_id];
+  array<array<mixed>> &query_result = DB_Proxy->query_results[query_id];
   int &cur = DB_Proxy->cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
-    return Optional<array<var>>{};
+    return Optional<array<mixed>>{};
   }
-  array<var> result = query_result[cur++];
+  array<mixed> result = query_result[cur++];
   if (cur >= (int)query_result.count()) {
     query_result = DB_Proxy->query_results[0];
   }
-  return Optional<array<var>>{std::move(result)};
+  return Optional<array<mixed>>{std::move(result)};
 }
 
 int64_t f$mysqli_insert_id(const class_instance<C$mysqli> &db) {
@@ -326,7 +326,7 @@ int64_t f$mysqli_num_rows(int64_t query_id) {
   return DB_Proxy->query_results[static_cast<int64_t>(DB_Proxy->last_query_id)].count();
 }
 
-var f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
+mixed f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
   if (db.is_null()) {
     php_warning("DB object is NULL in mysql_query");
     return false;
@@ -343,7 +343,7 @@ class_instance<C$mysqli> f$vk_mysqli_connect(const string &host __attribute__((u
     DB_Proxy.alloc();
 
     DB_Proxy->cur_pos.push_back(0);
-    DB_Proxy->query_results.push_back(array<array<var>>{});
+    DB_Proxy->query_results.push_back(array<array<mixed>>{});
   }
 
   if (DB_Proxy->connection_id < 0 && !DB_Proxy->connected) {

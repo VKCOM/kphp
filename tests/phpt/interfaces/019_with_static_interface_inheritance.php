@@ -46,7 +46,7 @@ class ImplTwo implements ITwo {
   /**
    * @param int $x
    * @param int $y
-   * @return void|var
+   * @return void|mixed
    */
   public function two($x, $y) {
     var_dump($x + $y);
@@ -69,7 +69,7 @@ class ImplThree implements IThree {
   /**
    * @param int $x
    * @param int $y
-   * @return void|var
+   * @return void|mixed
    */
   public function three($x, $y) {
     var_dump($x + $y);

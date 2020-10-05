@@ -160,7 +160,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
         W << InitVar(var);
         auto type_data = var->tinf_node.get_type();
         PrimitiveType ptype = type_data->ptype();
-        if (vk::any_of_equal(ptype, tp_array, tp_var, tp_string)) {
+        if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
           W << VarName(var);
           if (type_data->use_optional()) {
             W << ".val()";

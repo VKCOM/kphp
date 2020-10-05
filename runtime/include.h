@@ -39,7 +39,7 @@ template<class T>
 inline bool f$is_null(const class_instance<T> &v);
 template<class T>
 inline bool f$is_null(const Optional<T> &v);
-inline bool f$is_null(const var &v);
+inline bool f$is_null(const mixed &v);
 
 using std::swap;
 using std::min;

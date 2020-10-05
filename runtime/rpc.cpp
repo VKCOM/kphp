@@ -66,7 +66,7 @@ static inline T store_parse_number(const string &v) {
 }
 
 template<class T>
-static inline T store_parse_number(const var &v) {
+static inline T store_parse_number(const mixed &v) {
   if (!v.is_string()) {
     if (v.is_float()) {
       return (T)v.to_float();
@@ -88,7 +88,7 @@ static inline T store_parse_number_unsigned(const string &v) {
 }
 
 template<class T>
-static inline T store_parse_number_unsigned(const var &v) {
+static inline T store_parse_number_unsigned(const mixed &v) {
   if (!v.is_string()) {
     if (v.is_float()) {
       return (T)v.to_float();
@@ -179,7 +179,7 @@ bool f$rpc_parse(const string &new_rpc_data) {
   return true;
 }
 
-bool f$rpc_parse(const var &new_rpc_data) {
+bool f$rpc_parse(const mixed &new_rpc_data) {
   if (!new_rpc_data.is_string()) {
     php_warning("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
     return false;
@@ -189,7 +189,7 @@ bool f$rpc_parse(const var &new_rpc_data) {
 }
 
 bool f$rpc_parse(bool new_rpc_data) {
-  return f$rpc_parse(var{new_rpc_data});
+  return f$rpc_parse(mixed{new_rpc_data});
 }
 
 bool f$rpc_parse(const Optional<string> &new_rpc_data) {
@@ -267,8 +267,8 @@ ULong f$fetch_ULong() {
   return ULong(result);
 }
 
-var f$fetch_unsigned_int() {
-  TRY_CALL_VOID(var, (check_rpc_data_len(1)));
+mixed f$fetch_unsigned_int() {
+  TRY_CALL_VOID(mixed, (check_rpc_data_len(1)));
   unsigned int result = *rpc_data++;
 
   if (result <= (unsigned int)INT_MAX) {
@@ -286,8 +286,8 @@ int64_t f$fetch_long() {
   return result;
 }
 
-var f$fetch_unsigned_long() {
-  TRY_CALL_VOID(var, (check_rpc_data_len(2)));
+mixed f$fetch_unsigned_long() {
+  TRY_CALL_VOID(mixed, (check_rpc_data_len(2)));
   unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
   rpc_data += 2;
 
@@ -389,7 +389,7 @@ int64_t f$fetch_string_as_int() {
   return string::to_int(str, static_cast<string::size_type>(result_len));
 }
 
-var f$fetch_memcache_value() {
+mixed f$fetch_memcache_value() {
   int res = TRY_CALL(int, bool, rpc_fetch_int());
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
@@ -399,7 +399,7 @@ var f$fetch_memcache_value() {
       return mc_get_value(value, value_len, flags);
     }
     case MEMCACHE_VALUE_LONG: {
-      var value = TRY_CALL(var, bool, f$fetch_long());
+      mixed value = TRY_CALL(mixed, bool, f$fetch_long());
       int flags = TRY_CALL(int, bool, rpc_fetch_int());
 
       if (flags != 0) {
@@ -414,7 +414,7 @@ var f$fetch_memcache_value() {
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
       THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Wrong memcache.Value constructor"), -1));
-      return var();
+      return mixed();
     }
   }
 }
@@ -440,7 +440,7 @@ C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout
   reconnect_timeout(reconnect_timeout) {
 }
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const var &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   int32_t host_num = rpc_connect_to(host_name.c_str(), static_cast<int32_t>(port));
   if (host_num < 0) {
     return {};
@@ -527,7 +527,7 @@ bool store_header(long long cluster_id, int64_t flags) {
   return true;
 }
 
-bool f$store_header(const var &cluster_id, int64_t flags) {
+bool f$store_header(const mixed &cluster_id, int64_t flags) {
   return store_header(store_parse_number<long long>(cluster_id), flags);
 }
 
@@ -635,7 +635,7 @@ bool f$store_string(const string &v) {
   return store_string(v.c_str(), (int)v.size());
 }
 
-bool f$store_many(const array<var> &a) {
+bool f$store_many(const array<mixed> &a) {
   int64_t n = a.count();
   if (n == 0) {
     php_warning("store_many must take at least 1 argument");
@@ -1132,16 +1132,16 @@ int64_t f$query_x2(int64_t x) {
 
 /*
  *
- *  var wrappers
+ *  mixed wrappers
  *
  */
 
 
-bool f$store_unsigned_int(const var &v) {
+bool f$store_unsigned_int(const mixed &v) {
   return store_unsigned_int(store_parse_number_unsigned<unsigned int>(v));
 }
 
-bool f$store_long(const var &v) {
+bool f$store_long(const mixed &v) {
   return store_long(store_parse_number<long long>(v));
 }
 
@@ -1149,7 +1149,7 @@ bool f$store_long(int64_t v) {
   return store_long(v);
 }
 
-bool f$store_unsigned_long(const var &v) {
+bool f$store_unsigned_long(const mixed &v) {
   return store_unsigned_long(store_parse_number_unsigned<unsigned long long>(v));
 }
 
@@ -1193,20 +1193,20 @@ bool tl_parse_restore_pos(int pos) {
   return rpc_set_pos(pos);
 }
 
-array<var> tl_fetch_error(const string &error, int error_code) {
-  array<var> result;
+array<mixed> tl_fetch_error(const string &error, int error_code) {
+  array<mixed> result;
   result.set_value(STR_ERROR, error);
   result.set_value(STR_ERROR_CODE, error_code);
   return result;
 }
 
-array<var> tl_fetch_error(const char *error, int error_code) {
+array<mixed> tl_fetch_error(const char *error, int error_code) {
   return tl_fetch_error(string(error), error_code);
 }
 
 static long long rpc_tl_results_last_query_num = -1;
 
-bool try_fetch_rpc_error(array<var> &out_if_error) {
+bool try_fetch_rpc_error(array<mixed> &out_if_error) {
   int x = rpc_lookup_int();
   if (x == TL_RPC_REQ_ERROR && CurException.is_null()) {
     php_assert (tl_parse_int() == TL_RPC_REQ_ERROR);
@@ -1232,7 +1232,7 @@ bool try_fetch_rpc_error(array<var> &out_if_error) {
   return false;
 }
 
-class_instance<RpcTlQuery> store_function(const var &tl_object) {
+class_instance<RpcTlQuery> store_function(const mixed &tl_object) {
   php_assert(CurException.is_null());
   if (!tl_object.is_array()) {
     CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
@@ -1253,8 +1253,8 @@ class_instance<RpcTlQuery> store_function(const var &tl_object) {
   return rpc_query;
 }
 
-array<var> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
-  array<var> new_tl_object;
+array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
+  array<mixed> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
 
     return new_tl_object;       // this object carries an error (see tl_fetch_error())
@@ -1266,7 +1266,7 @@ array<var> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
   CurrentProcessingQuery::get().reset();
   if (!CurException.is_null()) {
-    array<var> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
+    array<mixed> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
     CurException = Optional<bool>{};
     return result;
   }
@@ -1277,7 +1277,7 @@ array<var> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   return new_tl_object;
 }
 
-int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
+int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
 
   class_instance<RpcTlQuery> rpc_query = store_function(tl_object);
@@ -1311,7 +1311,7 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const var &t
   return query_id;
 }
 
-int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const var &tl_object, double timeout) {
+int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout) {
   size_t bytes_sent = 0;
   return rpc_tl_query_impl(c, tl_object, timeout, false, false, bytes_sent, true);
 }
@@ -1323,7 +1323,7 @@ int64_t f$rpc_tl_pending_queries_count() {
   return RpcPendingQueries::get().count();
 }
 
-bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<var> &result) {
+bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<mixed> &result) {
   if (raw_result.empty() || !f$rpc_parse(raw_result)) {
     return false;
   };
@@ -1347,7 +1347,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
       return false;
     }
 
-    var value = f$fetch_memcache_value();
+    mixed value = f$fetch_memcache_value();
 
     if (!CurException.is_null()) {
       return false;
@@ -1359,7 +1359,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   return true;
 }
 
-array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<var> &tl_objects, double timeout, bool ignore_answer) {
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout, bool ignore_answer) {
   array<int64_t> result(tl_objects.size());
   size_t bytes_sent = 0;
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
@@ -1375,7 +1375,7 @@ array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const ar
 
 
 class rpc_tl_query_result_one_resumable : public Resumable {
-  using ReturnT = array<var>;
+  using ReturnT = array<mixed>;
 
   int64_t query_id;
   class_instance<RpcTlQuery> rpc_query;
@@ -1395,7 +1395,7 @@ protected:
         RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
       }
 
-      array<var> tl_object = fetch_function(rpc_query);
+      array<mixed> tl_object = fetch_function(rpc_query);
       rpc_parse_restore_previous();
       RETURN(tl_object);
     RESUMABLE_END
@@ -1409,7 +1409,7 @@ public:
 };
 
 
-array<var> f$rpc_tl_query_result_one(int64_t query_id) {
+array<mixed> f$rpc_tl_query_result_one(int64_t query_id) {
   if (query_id <= 0) {
     resumable_finished = true;
     return tl_fetch_error("Wrong query_id", TL_ERROR_WRONG_QUERY_ID);
@@ -1426,15 +1426,15 @@ array<var> f$rpc_tl_query_result_one(int64_t query_id) {
     return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
   }
 
-  return start_resumable<array<var>>(new rpc_tl_query_result_one_resumable(query_id, std::move(rpc_query)));
+  return start_resumable<array<mixed>>(new rpc_tl_query_result_one_resumable(query_id, std::move(rpc_query)));
 }
 
 
 class rpc_tl_query_result_resumable : public Resumable {
-  using ReturnT = array<array<var>>;
+  using ReturnT = array<array<mixed>>;
 
   const array<int64_t> query_ids;
-  array<array<var>> tl_objects_unsorted;
+  array<array<mixed>> tl_objects_unsorted;
   int64_t queue_id;
   Optional<int64_t> query_id;
 
@@ -1445,7 +1445,7 @@ protected:
         query_id = query_ids.begin().get_value();
 
         tl_objects_unsorted[query_id] = f$rpc_tl_query_result_one(query_id.val());
-        TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array<var>);
+        TRY_WAIT(rpc_tl_query_result_resumable_label_0, tl_objects_unsorted[query_id], array<mixed>);
       } else {
         queue_id = wait_queue_create(query_ids);
 
@@ -1462,7 +1462,7 @@ protected:
         unregister_wait_queue(queue_id);
       }
 
-      array<array<var>> tl_objects(query_ids.size());
+      array<array<mixed>> tl_objects(query_ids.size());
       for (auto it = query_ids.begin(); it != query_ids.end(); ++it) {
         int64_t query_id = it.get_value();
         if (!tl_objects_unsorted.isset(query_id)) {
@@ -1490,12 +1490,12 @@ public:
   }
 };
 
-array<array<var>> f$rpc_tl_query_result(const array<int64_t> &query_ids) {
-  return start_resumable<array<array<var>>>(new rpc_tl_query_result_resumable(query_ids));
+array<array<mixed>> f$rpc_tl_query_result(const array<int64_t> &query_ids) {
+  return start_resumable<array<array<mixed>>>(new rpc_tl_query_result_resumable(query_ids));
 }
 
-array<array<var>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
-  array<array<var>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
+array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
+  array<array<mixed>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
   if (query_ids.count() == 1) {
     f$wait_synchronously(query_ids.begin().get_value());
     tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one(query_ids.begin().get_value());
@@ -1515,7 +1515,7 @@ array<array<var>> f$rpc_tl_query_result_synchronously(const array<int64_t> &quer
     unregister_wait_queue(queue_id);
   }
 
-  array<array<var>> tl_objects(query_ids.size());
+  array<array<mixed>> tl_objects(query_ids.size());
   for (auto it = query_ids.begin(); it != query_ids.end(); ++it) {
     int64_t query_id = it.get_value();
     if (!tl_objects_unsorted.isset(query_id)) {
@@ -1576,11 +1576,11 @@ int64_t f$rpc_queue_create() {
   return f$wait_queue_create();
 }
 
-int64_t f$rpc_queue_create(const var &request_ids) {
+int64_t f$rpc_queue_create(const mixed &request_ids) {
   return f$wait_queue_create(request_ids);
 }
 
-int64_t f$rpc_queue_push(int64_t queue_id, const var &request_ids) {
+int64_t f$rpc_queue_push(int64_t queue_id, const mixed &request_ids) {
   return f$wait_queue_push(queue_id, request_ids);
 }
 

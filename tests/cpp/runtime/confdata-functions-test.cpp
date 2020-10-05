@@ -20,26 +20,26 @@ void init_global_confdata_confdata() {
   confdata_sample_storage[string{"_key_1"}] = string{"value_1"};
   confdata_sample_storage[string{"_key_2"}] = string{"value_2"};
 
-  confdata_sample_storage[string{"_one dot."}] = array<var>{
-    std::make_pair(var{string{"one_1"}}, var{string{"one_value_1"}}),
-    std::make_pair(var{string{"one_2"}}, var{string{"one_value_2"}}),
-    std::make_pair(var{3}, var{string{"one_value_3"}}),
-    std::make_pair(var{string{"one_4"}}, var{string{"one_value_4"}})
+  confdata_sample_storage[string{"_one dot."}] = array<mixed>{
+    std::make_pair(mixed{string{"one_1"}}, mixed{string{"one_value_1"}}),
+    std::make_pair(mixed{string{"one_2"}}, mixed{string{"one_value_2"}}),
+    std::make_pair(mixed{3}, mixed{string{"one_value_3"}}),
+    std::make_pair(mixed{string{"one_4"}}, mixed{string{"one_value_4"}})
   };
 
-  confdata_sample_storage[string{"_two dot.a."}] = array<var>{
-    std::make_pair(var{string{"two_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{"two_2a"}}, var{string{"a_one_value_2"}}),
+  confdata_sample_storage[string{"_two dot.a."}] = array<mixed>{
+    std::make_pair(mixed{string{"two_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{"two_2a"}}, mixed{string{"a_one_value_2"}}),
   };
-  confdata_sample_storage[string{"_two dot.b."}] = array<var>{
-    std::make_pair(var{string{"two_1b"}}, var{string{"b_one_value_1"}}),
-    std::make_pair(var{string{"two_2b"}}, var{string{"b_one_value_2"}}),
+  confdata_sample_storage[string{"_two dot.b."}] = array<mixed>{
+    std::make_pair(mixed{string{"two_1b"}}, mixed{string{"b_one_value_1"}}),
+    std::make_pair(mixed{string{"two_2b"}}, mixed{string{"b_one_value_2"}}),
   };
-  confdata_sample_storage[string{"_two dot."}] = array<var>{
-    std::make_pair(var{string{"a.two_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{"a.two_2a"}}, var{string{"a_one_value_2"}}),
-    std::make_pair(var{string{"b.two_1b"}}, var{string{"b_one_value_1"}}),
-    std::make_pair(var{string{"b.two_2b"}}, var{string{"b_one_value_2"}}),
+  confdata_sample_storage[string{"_two dot."}] = array<mixed>{
+    std::make_pair(mixed{string{"a.two_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{"a.two_2a"}}, mixed{string{"a_one_value_2"}}),
+    std::make_pair(mixed{string{"b.two_1b"}}, mixed{string{"b_one_value_1"}}),
+    std::make_pair(mixed{string{"b.two_2b"}}, mixed{string{"b_one_value_2"}}),
   };
 
   global_manager.get_current().reset(std::move(confdata_sample_storage));
@@ -80,44 +80,44 @@ TEST(confdata_functions_test, test_confdata_get_values_by_unknown_wildcard) {
 
 TEST(confdata_functions_test, test_confdata_get_values_by_any_wildcard) {
   init_global_confdata_confdata();
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key_1"}), array<var>{
-    std::make_pair(var{string{""}}, var{string{"value_1"}})
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key_1"}), array<mixed>{
+    std::make_pair(mixed{string{""}}, mixed{string{"value_1"}})
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key"}), array<var>{
-    std::make_pair(var{string{"_1"}}, var{string{"value_1"}}),
-    std::make_pair(var{string{"_2"}}, var{string{"value_2"}})
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_key"}), array<mixed>{
+    std::make_pair(mixed{string{"_1"}}, mixed{string{"value_1"}}),
+    std::make_pair(mixed{string{"_2"}}, mixed{string{"value_2"}})
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_one dot."}), array<var>{
-    std::make_pair(var{string{"one_1"}}, var{string{"one_value_1"}}),
-    std::make_pair(var{string{"one_2"}}, var{string{"one_value_2"}}),
-    std::make_pair(var{3}, var{string{"one_value_3"}}),
-    std::make_pair(var{string{"one_4"}}, var{string{"one_value_4"}})
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_one dot."}), array<mixed>{
+    std::make_pair(mixed{string{"one_1"}}, mixed{string{"one_value_1"}}),
+    std::make_pair(mixed{string{"one_2"}}, mixed{string{"one_value_2"}}),
+    std::make_pair(mixed{3}, mixed{string{"one_value_3"}}),
+    std::make_pair(mixed{string{"one_4"}}, mixed{string{"one_value_4"}})
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a."}), array<var>{
-    std::make_pair(var{string{"two_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{"two_2a"}}, var{string{"a_one_value_2"}}),
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a."}), array<mixed>{
+    std::make_pair(mixed{string{"two_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{"two_2a"}}, mixed{string{"a_one_value_2"}}),
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot."}), array<var>{
-    std::make_pair(var{string{"a.two_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{"a.two_2a"}}, var{string{"a_one_value_2"}}),
-    std::make_pair(var{string{"b.two_1b"}}, var{string{"b_one_value_1"}}),
-    std::make_pair(var{string{"b.two_2b"}}, var{string{"b_one_value_2"}}),
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot."}), array<mixed>{
+    std::make_pair(mixed{string{"a.two_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{"a.two_2a"}}, mixed{string{"a_one_value_2"}}),
+    std::make_pair(mixed{string{"b.two_1b"}}, mixed{string{"b_one_value_1"}}),
+    std::make_pair(mixed{string{"b.two_2b"}}, mixed{string{"b_one_value_2"}}),
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a.t"}), array<var>{
-    std::make_pair(var{string{"wo_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{"wo_2a"}}, var{string{"a_one_value_2"}}),
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two dot.a.t"}), array<mixed>{
+    std::make_pair(mixed{string{"wo_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{"wo_2a"}}, mixed{string{"a_one_value_2"}}),
   }));
 
-  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two"}), array<var>{
-    std::make_pair(var{string{" dot.a.two_1a"}}, var{string{"a_one_value_1"}}),
-    std::make_pair(var{string{" dot.a.two_2a"}}, var{string{"a_one_value_2"}}),
-    std::make_pair(var{string{" dot.b.two_1b"}}, var{string{"b_one_value_1"}}),
-    std::make_pair(var{string{" dot.b.two_2b"}}, var{string{"b_one_value_2"}}),
+  ASSERT_TRUE(equals(f$confdata_get_values_by_any_wildcard(string{"_two"}), array<mixed>{
+    std::make_pair(mixed{string{" dot.a.two_1a"}}, mixed{string{"a_one_value_1"}}),
+    std::make_pair(mixed{string{" dot.a.two_2a"}}, mixed{string{"a_one_value_2"}}),
+    std::make_pair(mixed{string{" dot.b.two_1b"}}, mixed{string{"b_one_value_1"}}),
+    std::make_pair(mixed{string{" dot.b.two_2b"}}, mixed{string{"b_one_value_2"}}),
   }));
 }
 

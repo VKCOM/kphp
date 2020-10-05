@@ -27,11 +27,11 @@ void TypeTagger::compile(CodeGenerator &W) const {
     "Optional < int64_t >",
     "void",
     "thrown_exception",
-    "var",
-    "array< var >",
+    "mixed",
+    "array< mixed >",
     "Optional < string >",
-    "Optional < array< var > >",
-    "array< array< var > >",
+    "Optional < array< mixed > >",
+    "array< array< mixed > >",
     "class_instance<C$VK$TL$RpcResponse>",
     "array< class_instance<C$VK$TL$RpcResponse> >"
   };

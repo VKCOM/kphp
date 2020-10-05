@@ -229,7 +229,7 @@ int64_t f$get_running_fork_id() {
   return 0;
 }
 
-Optional<array<var>> f$get_fork_stat(int64_t fork_id) {
+Optional<array<mixed>> f$get_fork_stat(int64_t fork_id) {
   auto info = get_forked_resumable_info(fork_id);
   if (!info) {
     return false;
@@ -238,7 +238,7 @@ Optional<array<var>> f$get_fork_stat(int64_t fork_id) {
     return false;
   }
 
-  array<var> result;
+  array<mixed> result;
   result.set_value(string("id"), fork_id);
   result.set_value(string("name"), string(info->name));
   if (info->queue_id < 0) {
@@ -924,17 +924,17 @@ int64_t f$wait_queue_create() {
   return res_id;
 }
 
-int64_t f$wait_queue_create(const var &resumable_ids) {
+int64_t f$wait_queue_create(const mixed &resumable_ids) {
   return f$wait_queue_push(-1, resumable_ids);
 }
 
-int64_t f$wait_queue_push(int64_t queue_id, const var &resumable_ids) {
+int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
   if (queue_id == -1) {
     queue_id = f$wait_queue_create();
   }
 
   if (resumable_ids.is_array()) {
-    for (array<var>::const_iterator p = resumable_ids.begin(), p_end = resumable_ids.end(); p != p_end; ++p) {
+    for (array<mixed>::const_iterator p = resumable_ids.begin(), p_end = resumable_ids.end(); p != p_end; ++p) {
       wait_queue_push(queue_id, f$intval(p.get_value()));
     }
     return queue_id;

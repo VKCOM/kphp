@@ -102,7 +102,7 @@ static void merge_same_type(FunctionPtr function, const std::vector<std::vector<
 
 static void check_uninited(const std::vector<VertexAdaptor<op_var>> &uninited_vars) {
   for (auto v : uninited_vars) {
-    if (tinf::get_type(v)->ptype() == tp_var) {
+    if (tinf::get_type(v)->ptype() == tp_mixed) {
       continue;
     }
 

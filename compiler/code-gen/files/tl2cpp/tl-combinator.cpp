@@ -173,7 +173,7 @@ std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std:
 
 void CombinatorFetch::gen_before_args_processing(CodeGenerator &W) const {
   if (!typed_mode) {
-    W << "array<var> result;" << NL;
+    W << "array<mixed> result;" << NL;
   }
 };
 

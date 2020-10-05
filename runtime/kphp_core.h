@@ -18,13 +18,13 @@
 #include "string_decl.inl"
 #include "array_decl.inl"
 #include "class_instance_decl.inl"
-#include "variable_decl.inl"
+#include "mixed_decl.inl"
 #include "string_buffer_decl.inl"
 
 #include "string.inl"
 #include "array.inl"
 #include "class_instance.inl"
-#include "variable.inl"
+#include "mixed.inl"
 #include "string_buffer.inl"
 #include "conversions_types.inl"
 #include "comparison_operators.inl"
@@ -58,7 +58,7 @@ inline double divide(double lhs, int64_t rhs);
 
 inline double divide(const string &lhs, int64_t rhs);
 
-inline double divide(const var &lhs, int64_t rhs);
+inline double divide(const mixed &lhs, int64_t rhs);
 
 
 inline double divide(int64_t lhs, double rhs);
@@ -67,7 +67,7 @@ inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
 
 inline double divide(const string &lhs, double rhs);
 
-inline double divide(const var &lhs, double rhs);
+inline double divide(const mixed &lhs, double rhs);
 
 
 inline double divide(int64_t lhs, const string &rhs);
@@ -76,16 +76,16 @@ inline double divide(double lhs, const string &rhs);
 
 inline double divide(const string &lhs, const string &rhs);
 
-inline double divide(const var &lhs, const string &rhs);
+inline double divide(const mixed &lhs, const string &rhs);
 
 
-inline double divide(int64_t lhs, const var &rhs);
+inline double divide(int64_t lhs, const mixed &rhs);
 
-inline double divide(double lhs, const var &rhs);
+inline double divide(double lhs, const mixed &rhs);
 
-inline double divide(const string &lhs, const var &rhs);
+inline double divide(const string &lhs, const mixed &rhs);
 
-inline double divide(const var &lhs, const var &rhs);
+inline double divide(const mixed &lhs, const mixed &rhs);
 
 
 inline double divide(bool lhs, bool rhs);
@@ -180,7 +180,7 @@ inline double float_power(double base, int64_t exp) {
   return std::pow(base, exp);
 }
 
-inline var var_power(const var &base, const var &exp) {
+inline mixed var_power(const mixed &base, const mixed &exp) {
   if (base.is_int() && exp.is_int() && exp.to_int() >= 0) {
     return int_power(base.to_int(), exp.to_int());
   }
@@ -210,7 +210,7 @@ inline double &power_self(double &base, int64_t exp) {
   return base = float_power(base, exp);
 }
 
-inline var &power_self(var &base, const var &exp) {
+inline mixed &power_self(mixed &base, const mixed &exp) {
   return base = var_power(base, exp);
 }
 
@@ -230,44 +230,44 @@ inline void assign(T0 &dest, const T &from);
 
 inline bool &boolval_ref(bool &val);
 
-inline bool &boolval_ref(var &val);
+inline bool &boolval_ref(mixed &val);
 
 inline const bool &boolval_ref(const bool &val);
 
-inline const bool &boolval_ref(const var &val);
+inline const bool &boolval_ref(const mixed &val);
 
 
 inline int64_t &intval_ref(int64_t &val, const char *function);
 
-inline int64_t &intval_ref(var &val, const char *function);
+inline int64_t &intval_ref(mixed &val, const char *function);
 
 inline const int64_t &intval_ref(const int64_t &val, const char *function);
 
-inline const int64_t &intval_ref(const var &val, const char *function);
+inline const int64_t &intval_ref(const mixed &val, const char *function);
 
 
 inline double &floatval_ref(double &val);
 
-inline double &floatval_ref(var &val);
+inline double &floatval_ref(mixed &val);
 
 inline const double &floatval_ref(const double &val);
 
-inline const double &floatval_ref(const var &val);
+inline const double &floatval_ref(const mixed &val);
 
 
 inline string &strval_ref(string &val, const char *function);
 
-inline string &strval_ref(var &val, const char *function);
+inline string &strval_ref(mixed &val, const char *function);
 
 inline const string &strval_ref(const string &val, const char *function);
 
-inline const string &strval_ref(const var &val, const char *function);
+inline const string &strval_ref(const mixed &val, const char *function);
 
 
 template<class T>
 inline array<T> &arrayval_ref(array<T> &val, const char *function);
 
-inline array<var> &arrayval_ref(var &val, const char *function);
+inline array<mixed> &arrayval_ref(mixed &val, const char *function);
 
 template<class T>
 inline array<T> &arrayval_ref(Optional<array<T>> &val, const char *function);
@@ -275,7 +275,7 @@ inline array<T> &arrayval_ref(Optional<array<T>> &val, const char *function);
 template<class T>
 inline const array<T> &arrayval_ref(const array<T> &val, const char *function);
 
-inline const array<var> &arrayval_ref(const var &val, const char *function);
+inline const array<mixed> &arrayval_ref(const mixed &val, const char *function);
 
 template<class T>
 inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function);
@@ -283,7 +283,7 @@ inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *f
 template<class T, class = enable_for_bool_int_double<T>>
 inline bool f$empty(const T &v);
 inline bool f$empty(const string &v);
-inline bool f$empty(const var &v);
+inline bool f$empty(const mixed &v);
 template<class T>
 inline bool f$empty(const array<T> &);
 template<class T>
@@ -297,46 +297,46 @@ bool f$is_numeric(const T &);
 template<class T>
 inline bool f$is_numeric(const Optional<T> &v);
 inline bool f$is_numeric(const string &v);
-inline bool f$is_numeric(const var &v);
+inline bool f$is_numeric(const mixed &v);
 
 template<class T>
 inline bool f$is_bool(const T &v);
 template<class T>
 inline bool f$is_bool(const Optional<T> &v);
-inline bool f$is_bool(const var &v);
+inline bool f$is_bool(const mixed &v);
 
 template<class T>
 inline bool f$is_int(const T &);
 template<class T>
 inline bool f$is_int(const Optional<T> &v);
-inline bool f$is_int(const var &v);
+inline bool f$is_int(const mixed &v);
 
 template<class T>
 inline bool f$is_float(const T &v);
 template<class T>
 inline bool f$is_float(const Optional<T> &v);
-inline bool f$is_float(const var &v);
+inline bool f$is_float(const mixed &v);
 
 
 template<class T>
 inline bool f$is_scalar(const T &v);
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v);
-inline bool f$is_scalar(const var &v);
+inline bool f$is_scalar(const mixed &v);
 
 
 template<class T>
 inline bool f$is_string(const T &v);
 template<class T>
 inline bool f$is_string(const Optional<T> &v);
-inline bool f$is_string(const var &v);
+inline bool f$is_string(const mixed &v);
 
 
 template<class T>
 inline bool f$is_array(const T &v);
 template<class T>
 inline bool f$is_array(const Optional<T> &v);
-inline bool f$is_array(const var &v);
+inline bool f$is_array(const mixed &v);
 
 
 template<class T>
@@ -371,7 +371,7 @@ inline const char *get_type_c_str(bool);
 inline const char *get_type_c_str(int64_t);
 inline const char *get_type_c_str(double);
 inline const char *get_type_c_str(const string &v);
-inline const char *get_type_c_str(const var &v);
+inline const char *get_type_c_str(const mixed &v);
 template<class T>
 inline const char *get_type_c_str(const array<T> &v);
 template<class T>
@@ -384,7 +384,7 @@ inline string f$get_class(bool);
 inline string f$get_class(int64_t);
 inline string f$get_class(double);
 inline string f$get_class(const string &v);
-inline string f$get_class(const var &v);
+inline string f$get_class(const mixed &v);
 template<class T>
 inline string f$get_class(const array<T> &v);
 template<class T>
@@ -394,7 +394,7 @@ template<class T>
 inline int64_t f$get_hash_of_class(const class_instance<T> &klass);
 
 
-inline int64_t f$count(const var &v);
+inline int64_t f$count(const mixed &v);
 
 template<class T>
 inline int64_t f$count(const Optional<T> &a);
@@ -423,13 +423,13 @@ template<class T>
 inline string &append(string &dest, const T &from);
 
 template<class T>
-inline var &append(var &dest, const T &from);
+inline mixed &append(mixed &dest, const T &from);
 
 template<class T0, class T>
 inline T0 &append(T0 &dest, const T &from);
 
 
-inline string f$gettype(const var &v);
+inline string f$gettype(const mixed &v);
 
 template<class T>
 inline bool f$function_exists(const T &a1);
@@ -452,7 +452,7 @@ constexpr int32_t E_DEPRECATED = 8192;
 constexpr int32_t E_USER_DEPRECATED = 16384;
 constexpr int32_t E_ALL = 32767;
 
-inline var f$error_get_last();
+inline mixed f$error_get_last();
 
 inline int64_t f$error_reporting(int64_t level);
 
@@ -481,7 +481,7 @@ inline int64_t f$get_reference_counter(const class_instance<T> &v);
 
 inline int64_t f$get_reference_counter(const string &v);
 
-inline int64_t f$get_reference_counter(const var &v);
+inline int64_t f$get_reference_counter(const mixed &v);
 
 
 template<class T>
@@ -512,11 +512,11 @@ inline typename array<T>::const_iterator begin(const array<T> &x);
 template<class T>
 inline typename array<T>::const_iterator const_begin(const array<T> &x);
 
-inline array<var>::iterator begin(var &x);
+inline array<mixed>::iterator begin(mixed &x);
 
-inline array<var>::const_iterator begin(const var &x);
+inline array<mixed>::const_iterator begin(const mixed &x);
 
-inline array<var>::const_iterator const_begin(const var &x);
+inline array<mixed>::const_iterator const_begin(const mixed &x);
 
 template<class T>
 inline typename array<T>::iterator begin(Optional<array<T>> &x);
@@ -536,11 +536,11 @@ inline typename array<T>::const_iterator end(const array<T> &x);
 template<class T>
 inline typename array<T>::const_iterator const_end(const array<T> &x);
 
-inline array<var>::iterator end(var &x);
+inline array<mixed>::iterator end(mixed &x);
 
-inline array<var>::const_iterator end(const var &x);
+inline array<mixed>::const_iterator end(const mixed &x);
 
-inline array<var>::const_iterator const_end(const var &x);
+inline array<mixed>::const_iterator const_end(const mixed &x);
 
 template<class T>
 inline typename array<T>::iterator end(Optional<array<T>> &x);
@@ -552,7 +552,7 @@ template<class T>
 inline typename array<T>::const_iterator const_end(const Optional<array<T>> &x);
 
 
-inline void clear_array(var &v);
+inline void clear_array(mixed &v);
 
 template<class T>
 inline void clear_array(array<T> &a);
@@ -566,7 +566,7 @@ inline void unset(array<T> &x);
 template<class T>
 inline void unset(class_instance<T> &x);
 
-inline void unset(var &x);
+inline void unset(mixed &x);
 
 
 /*
@@ -587,7 +587,7 @@ double divide(const string &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const var &lhs, int64_t rhs) {
+double divide(const mixed &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
@@ -608,7 +608,7 @@ double divide(const string &lhs, double rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const var &lhs, double rhs) {
+double divide(const mixed &lhs, double rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
@@ -625,24 +625,24 @@ double divide(const string &lhs, const string &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
-double divide(const var &lhs, const string &rhs) {
+double divide(const mixed &lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
 
-double divide(int64_t lhs, const var &rhs) {
+double divide(int64_t lhs, const mixed &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(double lhs, const var &rhs) {
+double divide(double lhs, const mixed &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(const string &lhs, const var &rhs) {
+double divide(const string &lhs, const mixed &rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const var &lhs, const var &rhs) {
+double divide(const mixed &lhs, const mixed &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
@@ -805,7 +805,7 @@ bool &boolval_ref(bool &val) {
   return val;
 }
 
-bool &boolval_ref(var &val) {
+bool &boolval_ref(mixed &val) {
   return val.as_bool("unknown");
 }
 
@@ -813,7 +813,7 @@ const bool &boolval_ref(const bool &val) {
   return val;
 }
 
-const bool &boolval_ref(const var &val) {
+const bool &boolval_ref(const mixed &val) {
   return val.as_bool("unknown");
 }
 
@@ -822,7 +822,7 @@ int64_t &intval_ref(int64_t &val, const char *) {
   return val;
 }
 
-int64_t &intval_ref(var &val, const char *function) {
+int64_t &intval_ref(mixed &val, const char *function) {
   return val.as_int(function);
 }
 
@@ -830,7 +830,7 @@ const int64_t &intval_ref(const int64_t &val, const char *) {
   return val;
 }
 
-const int64_t &intval_ref(const var &val, const char *function) {
+const int64_t &intval_ref(const mixed &val, const char *function) {
   return val.as_int(function);
 }
 
@@ -839,7 +839,7 @@ double &floatval_ref(double &val) {
   return val;
 }
 
-double &floatval_ref(var &val) {
+double &floatval_ref(mixed &val) {
   return val.as_float("unknown");
 }
 
@@ -847,7 +847,7 @@ const double &floatval_ref(const double &val) {
   return val;
 }
 
-const double &floatval_ref(const var &val) {
+const double &floatval_ref(const mixed &val) {
   return val.as_float("unknown");
 }
 
@@ -856,7 +856,7 @@ string &strval_ref(string &val, const char *) {
   return val;
 }
 
-string &strval_ref(var &val, const char *function) {
+string &strval_ref(mixed &val, const char *function) {
   return val.as_string(function);
 }
 
@@ -864,7 +864,7 @@ const string &strval_ref(const string &val, const char *) {
   return val;
 }
 
-const string &strval_ref(const var &val, const char *function) {
+const string &strval_ref(const mixed &val, const char *function) {
   return val.as_string(function);
 }
 
@@ -874,7 +874,7 @@ array<T> &arrayval_ref(array<T> &val, const char *) {
   return val;
 }
 
-array<var> &arrayval_ref(var &val, const char *function) {
+array<mixed> &arrayval_ref(mixed &val, const char *function) {
   return val.as_array(function);
 }
 
@@ -891,7 +891,7 @@ const array<T> &arrayval_ref(const array<T> &val, const char *) {
   return val;
 }
 
-const array<var> &arrayval_ref(const var &val, const char *function) {
+const array<mixed> &arrayval_ref(const mixed &val, const char *function) {
   return val.as_array(function);
 }
 
@@ -950,14 +950,14 @@ string convert_to<string>::convert(T1 &&val) {
 
 template<>
 template<class T1, class, class>
-array<var> convert_to<array<var>>::convert(T1 &&val) {
+array<mixed> convert_to<array<mixed>>::convert(T1 &&val) {
   return f$arrayval(std::forward<T1>(val));
 }
 
 template<>
 template<class T1, class, class>
-var convert_to<var>::convert(T1 &&val) {
-  return var{std::forward<T1>(val)};
+mixed convert_to<mixed>::convert(T1 &&val) {
+  return mixed{std::forward<T1>(val)};
 }
 
 
@@ -981,7 +981,7 @@ bool f$empty(const class_instance<T> &o) {
   return o.is_null();   // false/null inside instance (in PHP, empty(false)=true behaves identically)
 }
 
-bool f$empty(const var &v) {
+bool f$empty(const mixed &v) {
   return v.empty();
 }
 
@@ -990,7 +990,7 @@ bool f$empty(const Optional<T> &a) {
   return a.has_value() ? f$empty(a.val()) : true;
 }
 
-int64_t f$count(const var &v) {
+int64_t f$count(const mixed &v) {
   return v.count();
 }
 
@@ -1033,7 +1033,7 @@ bool f$is_numeric(const string &v) {
   return v.is_numeric();
 }
 
-bool f$is_numeric(const var &v) {
+bool f$is_numeric(const mixed &v) {
   return v.is_numeric();
 }
 
@@ -1058,7 +1058,7 @@ inline bool f$is_null(const Optional<T> &v) {
   return v.has_value() ? f$is_null(v.val()) : v.value_state() == OptionalState::null_value;
 }
 
-bool f$is_null(const var &v) {
+bool f$is_null(const mixed &v) {
   return v.is_null();
 }
 
@@ -1073,7 +1073,7 @@ inline bool f$is_bool(const Optional<T> &v) {
   return v.has_value() ? f$is_bool(v.val()) : v.is_false();
 }
 
-bool f$is_bool(const var &v) {
+bool f$is_bool(const mixed &v) {
   return v.is_bool();
 }
 
@@ -1089,7 +1089,7 @@ inline bool f$is_int(const Optional<T> &v) {
   return v.has_value() ? f$is_int(v.val()) : false;
 }
 
-bool f$is_int(const var &v) {
+bool f$is_int(const mixed &v) {
   return v.is_int();
 }
 
@@ -1104,7 +1104,7 @@ inline bool f$is_float(const Optional<T> &v) {
   return v.has_value() ? f$is_float(v.val()) : false;
 }
 
-bool f$is_float(const var &v) {
+bool f$is_float(const mixed &v) {
   return v.is_float();
 }
 
@@ -1120,7 +1120,7 @@ inline bool f$is_scalar(const Optional<T> &v) {
   return call_fun_on_optional_value(is_scalar_lambda, v);
 }
 
-bool f$is_scalar(const var &v) {
+bool f$is_scalar(const mixed &v) {
   return v.is_scalar();
 }
 
@@ -1135,7 +1135,7 @@ inline bool f$is_string(const Optional<T> &v) {
   return v.has_value() ? f$is_string(v.val()) : false;
 }
 
-bool f$is_string(const var &v) {
+bool f$is_string(const mixed &v) {
   return v.is_string();
 }
 
@@ -1145,7 +1145,7 @@ inline bool f$is_array(const T &) {
   return is_array<T>::value;
 }
 
-bool f$is_array(const var &v) {
+bool f$is_array(const mixed &v) {
   return v.is_array();
 }
 
@@ -1201,7 +1201,7 @@ const char *get_type_c_str(const string &) {
   return "string";
 }
 
-const char *get_type_c_str(const var &v) {
+const char *get_type_c_str(const mixed &v) {
   return v.get_type_c_str();
 }
 
@@ -1243,7 +1243,7 @@ string f$get_class(const string &) {
   return string();
 }
 
-string f$get_class(const var &v) {
+string f$get_class(const mixed &v) {
   php_warning("Called get_class() on %s", v.get_type_c_str());
   return string();
 }
@@ -1283,7 +1283,7 @@ string &append(string &dest, const T &from) {
 }
 
 template<class T>
-var &append(var &dest, const T &from) {
+mixed &append(mixed &dest, const T &from) {
   return dest.append(f$strval(from));
 }
 
@@ -1294,7 +1294,7 @@ T0 &append(T0 &dest, const T &from) {
 }
 
 
-string f$gettype(const var &v) {
+string f$gettype(const mixed &v) {
   return v.get_type_str();
 }
 
@@ -1304,8 +1304,8 @@ bool f$function_exists(const T &) {
 }
 
 
-var f$error_get_last() {
-  return var();
+mixed f$error_get_last() {
+  return mixed();
 }
 
 int64_t f$error_reporting(int64_t level) {
@@ -1378,7 +1378,7 @@ int64_t f$get_reference_counter(const string &v) {
   return v.get_reference_counter();
 }
 
-int64_t f$get_reference_counter(const var &v) {
+int64_t f$get_reference_counter(const mixed &v) {
   return v.get_reference_counter();
 }
 
@@ -1430,15 +1430,15 @@ typename array<T>::const_iterator const_begin(const array<T> &x) {
 }
 
 
-array<var>::iterator begin(var &x) {
+array<mixed>::iterator begin(mixed &x) {
   return x.begin();
 }
 
-array<var>::const_iterator begin(const var &x) {
+array<mixed>::const_iterator begin(const mixed &x) {
   return x.begin();
 }
 
-array<var>::const_iterator const_begin(const var &x) {
+array<mixed>::const_iterator const_begin(const mixed &x) {
   return x.begin();
 }
 
@@ -1483,15 +1483,15 @@ typename array<T>::const_iterator const_end(const array<T> &x) {
   return x.end();
 }
 
-array<var>::iterator end(var &x) {
+array<mixed>::iterator end(mixed &x) {
   return x.end();
 }
 
-array<var>::const_iterator end(const var &x) {
+array<mixed>::const_iterator end(const mixed &x) {
   return x.end();
 }
 
-array<var>::const_iterator const_end(const var &x) {
+array<mixed>::const_iterator const_end(const mixed &x) {
   return x.end();
 }
 
@@ -1512,7 +1512,7 @@ typename array<T>::const_iterator const_end(const Optional<array<T>> &x) {
 }
 
 
-void clear_array(var &v) {
+void clear_array(mixed &v) {
   v.clear();
 }
 
@@ -1536,7 +1536,7 @@ void unset(class_instance<T> &x) {
   x = {};
 }
 
-void unset(var &x) {
+void unset(mixed &x) {
   x = {};
 }
 

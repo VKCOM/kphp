@@ -50,7 +50,7 @@ union small_obect_ptr {
 
 class Storage {
 private:
-  using storage_ptr = small_obect_ptr<sizeof(var)>;
+  using storage_ptr = small_obect_ptr<sizeof(mixed)>;
   storage_ptr storage_;
 
   template<class X, class Y, class Tag = typename std::is_convertible<X, Y>::type>

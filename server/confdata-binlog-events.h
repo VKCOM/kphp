@@ -80,10 +80,10 @@ struct lev_confdata_store_wrapper : impl_::confdata_event<BASE, impl_::select_st
 public:
   static_assert(vk::is_type_in_list<BASE, index_entry, lev_pmemcached_store, lev_pmemcached_store_forever>{}, "unexpected type");
 
-  var get_value_as_var() const noexcept {
+  mixed get_value_as_var() const noexcept {
     const char *mem = BASE::data + BASE::key_len;
     const int size = BASE::data_len;
-    return size <= 0 ? var{string{}} : mc_get_value(mem, size, get_flags());
+    return size <= 0 ? mixed{string{}} : mc_get_value(mem, size, get_flags());
   }
 
   vk::string_view get_value_as_string() const noexcept {

@@ -14,7 +14,7 @@ public:
   int32_t errno_ = 0;
   int32_t affected_rows = 0;
   int32_t insert_id = 0;
-  array<array<array<var>>> query_results;
+  array<array<array<mixed>>> query_results;
   array<int32_t> cur_pos;
   int32_t field_cnt = 0;
   array<string> field_names;
@@ -34,13 +34,13 @@ int64_t f$mysqli_errno(const class_instance<C$mysqli> &db);
 
 int64_t f$mysqli_affected_rows(const class_instance<C$mysqli> &db);
 
-Optional<array<var>> f$mysqli_fetch_array(int64_t query_id_var, int64_t result_type);
+Optional<array<mixed>> f$mysqli_fetch_array(int64_t query_id_var, int64_t result_type);
 
 int64_t f$mysqli_insert_id(const class_instance<C$mysqli> &db);
 
 int64_t f$mysqli_num_rows(int64_t query_id);
 
-var f$mysqli_query(const class_instance<C$mysqli> &dn, const string &query);
+mixed f$mysqli_query(const class_instance<C$mysqli> &dn, const string &query);
 
 class_instance<C$mysqli> f$vk_mysqli_connect(const string &host, int64_t port);
 

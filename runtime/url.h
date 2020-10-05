@@ -23,11 +23,11 @@ template<class T>
 string f$http_build_query(const array<T> &a, const string &numeric_prefix = {},
                           const string &arg_separator = AMPERSAND, int64_t enc_type = PHP_QUERY_RFC1738);
 
-void parse_str_set_value(var &arr, const string &key, const string &value);
+void parse_str_set_value(mixed &arr, const string &key, const string &value);
 
-void f$parse_str(const string &str, var &arr);
+void f$parse_str(const string &str, mixed &arr);
 
-var f$parse_url(const string &s, int64_t component = -1);
+mixed f$parse_url(const string &s, int64_t component = -1);
 
 string f$rawurldecode(const string &s);
 

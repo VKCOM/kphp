@@ -26,7 +26,7 @@ struct tl_exclamation_fetch_wrapper {
   tl_exclamation_fetch_wrapper() = default;
   tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper &&) = default;
 
-  var fetch() {
+  mixed fetch() {
     return fetcher->fetch();
   }
 
@@ -38,23 +38,23 @@ struct tl_exclamation_fetch_wrapper {
   }
 };
 
-using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const var &);
+using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
 
-inline var tl_arr_get(const var &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
+inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
     CurrentProcessingQuery::get().raise_storing_error("Array expected, when trying to access field #%ld : %s", num_key, str_key.c_str());
-    return var();
+    return mixed();
   }
-  const var &num_v = arr.get_value(num_key);
+  const mixed &num_v = arr.get_value(num_key);
   if (!num_v.is_null()) {
     return num_v;
   }
-  const var &str_v = (precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash));
+  const mixed &str_v = (precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash));
   if (!str_v.is_null()) {
     return str_v;
   }
   CurrentProcessingQuery::get().raise_storing_error("Field %s (#%ld) not found", str_key.c_str(), num_key);
-  return var();
+  return mixed();
 }
 
 inline void store_magic_if_not_bare(unsigned int inner_magic) {
@@ -93,7 +93,7 @@ inline void store_raw_vector_T<double>(const array<double> &v) {
 }
 
 struct t_Int {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_int(f$intval(tl_object));
   }
 
@@ -116,16 +116,16 @@ struct t_Int {
 
 template <bool new_tl_long>
 struct tl_Long_impl {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_long(tl_object);
   }
 
-  var fetch() {
-    CHECK_EXCEPTION(return var());
+  mixed fetch() {
+    CHECK_EXCEPTION(return mixed());
     return f$fetch_long();
   }
 
-  using PhpType = std::conditional_t<new_tl_long, int64_t, var>;
+  using PhpType = std::conditional_t<new_tl_long, int64_t, mixed>;
 
   void typed_store(const PhpType &v) {
     f$store_long(v);
@@ -138,7 +138,7 @@ struct tl_Long_impl {
 };
 
 struct t_Double {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_double(f$floatval(tl_object));
   }
 
@@ -160,7 +160,7 @@ struct t_Double {
 };
 
 struct t_Float {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_float(f$floatval(tl_object));
   }
 
@@ -182,7 +182,7 @@ struct t_Float {
 };
 
 struct t_String {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_string(f$strval(tl_object));
   }
 
@@ -204,7 +204,7 @@ struct t_String {
 };
 
 struct t_Bool {
-  void store(const var &tl_object) {
+  void store(const mixed &tl_object) {
     f$store_int(tl_object.to_bool() ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
@@ -243,10 +243,10 @@ struct t_Bool {
 struct t_True {
   using PhpType = bool;
 
-  void store(const var &__attribute__((unused))) {}
+  void store(const mixed &__attribute__((unused))) {}
 
-  array<var> fetch() {
-    return array<var>();
+  array<mixed> fetch() {
+    return array<mixed>();
   }
 
   void typed_store(const PhpType &__attribute__((unused))) {}
@@ -264,12 +264,12 @@ struct t_Vector {
   explicit t_Vector(T param_type) :
     elem_state(std::move(param_type)) {}
 
-  void store(const var &v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentProcessingQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
-    const array<var> &a = v.as_array();
+    const array<mixed> &a = v.as_array();
     int64_t n = v.count();
     f$store_int(n);
     for (int64_t i = 0; i < n; ++i) {
@@ -282,17 +282,17 @@ struct t_Vector {
     }
   }
 
-  array<var> fetch() {
-    CHECK_EXCEPTION(return array<var>());
+  array<mixed> fetch() {
+    CHECK_EXCEPTION(return array<mixed>());
     int n = rpc_fetch_int();
     if (n < 0) {
       CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
-      return array<var>();
+      return array<mixed>();
     }
-    array<var> result(array_size(std::min(n, 10000), 0, true));
+    array<mixed> result(array_size(std::min(n, 10000), 0, true));
     for (int i = 0; i < n; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Vector");
-      const var &cur_elem = elem_state.fetch();
+      const mixed &cur_elem = elem_state.fetch();
       CHECK_EXCEPTION(return result);
       result.push_back(cur_elem);
     }
@@ -354,7 +354,7 @@ struct t_Maybe {
   explicit t_Maybe(T param_type) :
     elem_state(std::move(param_type)) {}
 
-  void store(const var &v) {
+  void store(const mixed &v) {
     const string &name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
     if (name == tl_str_resultFalse) {
       f$store_int(TL_MAYBE_FALSE);
@@ -368,8 +368,8 @@ struct t_Maybe {
     }
   }
 
-  var fetch() {
-    CHECK_EXCEPTION(return var());
+  mixed fetch() {
+    CHECK_EXCEPTION(return mixed());
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
       case TL_MAYBE_FALSE: {
@@ -392,7 +392,7 @@ struct t_Maybe {
   // These types are not wrapped:
   //  1. class_instance<T>
   //  2. Optional<T>
-  //  3. var (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
+  //  3. mixed (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
 
   template<typename S>
   struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
@@ -474,7 +474,7 @@ struct tl_Dictionary_impl {
   explicit tl_Dictionary_impl(ValueT value_type) :
     value_state(std::move(value_type)) {}
 
-  void store(const var &v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentProcessingQuery::get().raise_storing_error("Expected array (dictionary), got something strange");
       return;
@@ -488,9 +488,9 @@ struct tl_Dictionary_impl {
     }
   }
 
-  array<var> fetch() {
-    CHECK_EXCEPTION(return array<var>());
-    array<var> result;
+  array<mixed> fetch() {
+    CHECK_EXCEPTION(return array<mixed>());
+    array<mixed> result;
     int32_t n = rpc_fetch_int();
     if (n < 0) {
       CurrentProcessingQuery::get().raise_fetching_error("Dictionary size is negative");
@@ -499,7 +499,7 @@ struct tl_Dictionary_impl {
     for (int32_t i = 0; i < n; ++i) {
       const auto &key = KeyT().fetch();
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
-      const var &value = value_state.fetch();
+      const mixed &value = value_state.fetch();
       CHECK_EXCEPTION(return result);
       result.set_value(key, value);
     }
@@ -551,12 +551,12 @@ struct t_Tuple {
     elem_state(std::move(param_type)),
     size(size) {}
 
-  void store(const var &v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentProcessingQuery::get().raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
       return;
     }
-    const array<var> &a = v.as_array();
+    const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
         CurrentProcessingQuery::get().raise_storing_error("Tuple[%ld] not set", i);
@@ -567,9 +567,9 @@ struct t_Tuple {
     }
   }
 
-  array<var> fetch() {
-    CHECK_EXCEPTION(return array<var>());
-    array<var> result(array_size(size, 0, true));
+  array<mixed> fetch() {
+    CHECK_EXCEPTION(return array<mixed>());
+    array<mixed> result(array_size(size, 0, true));
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
       result.push_back(elem_state.fetch());
@@ -623,12 +623,12 @@ struct tl_array {
     size(size),
     cell(std::move(cell)) {}
 
-  void store(const var &v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentProcessingQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
-    const array<var> &a = v.as_array();
+    const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
         CurrentProcessingQuery::get().raise_storing_error("Array[%ld] not set", i);
@@ -639,8 +639,8 @@ struct tl_array {
     }
   }
 
-  array<var> fetch() {
-    array<var> result(array_size(size, 0, true));
+  array<mixed> fetch() {
+    array<mixed> result(array_size(size, 0, true));
     CHECK_EXCEPTION(return result);
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");

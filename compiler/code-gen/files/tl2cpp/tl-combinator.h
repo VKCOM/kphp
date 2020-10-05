@@ -34,7 +34,7 @@ struct CombinatorGen {
 /* The code that is common for combinators (func/constructor) store method generation.
  *
  * 1) Field masks handling:
-    void c_hints_objectExt::store(const var& tl_object, int fields_mask) {
+    void c_hints_objectExt::store(const mixed& tl_object, int fields_mask) {
       (void)tl_object;
       t_Int().store(tl_arr_get(tl_object, tl_str$type, 2, -445613708));
       t_Int().store(tl_arr_get(tl_object, tl_str$object_id, 3, 65801733));
@@ -46,7 +46,7 @@ struct CombinatorGen {
       }
     }
  * 2) Exclamation mark handling (! modifier):
-    std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const var& tl_object) {
+    std::unique_ptr<tl_func_base> f_rpcProxy_diagonalTargets::store(const mixed& tl_object) {
       auto tl_func_state = make_unique_on_script_memory<f_rpcProxy_diagonalTargets>();
       (void)tl_object;
       f$store_int(0xee090e42);
@@ -80,8 +80,8 @@ private:
 
 /* The code that is common for combinators (func/constructor) fetch method generation.
  * 1) Field masks handling:
-    array<var> c_hints_objectExt::fetch(int fields_mask) {
-      array<var> result;
+    array<mixed> c_hints_objectExt::fetch(int fields_mask) {
+      array<mixed> result;
       result.set_value(tl_str$type, t_Int().fetch(), -445613708);
       result.set_value(tl_str$object_id, t_Int().fetch(), 65801733);
       if (fields_mask & (1 << 0)) {

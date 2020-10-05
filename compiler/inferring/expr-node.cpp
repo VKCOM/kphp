@@ -391,7 +391,7 @@ void ExprNodeRecalc::recalc_shape(VertexAdaptor<op_shape> shape) {
 void ExprNodeRecalc::recalc_plus_minus(VertexAdaptor<meta_op_unary> expr) {
   set_lca(drop_optional(as_rvalue(expr->expr())));
   if (new_type()->ptype() == tp_string) {
-    recalc_ptype<tp_var>();
+    recalc_ptype<tp_mixed>();
   }
 }
 
@@ -435,7 +435,7 @@ void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   }
 
   if (new_type()->ptype() == tp_string) {
-    recalc_ptype<tp_var>();
+    recalc_ptype<tp_mixed>();
   }
 }
 
@@ -447,7 +447,7 @@ void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
     recalc_ptype<tp_int>();
     set_lca(drop_optional(as_rvalue(base)));
   } else {
-    recalc_ptype<tp_var>();
+    recalc_ptype<tp_mixed>();
   }
 }
 
@@ -574,8 +574,8 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_shape(expr.as<op_shape>());
       break;
 
-    case op_conv_var:
-      recalc_ptype<tp_var>();
+    case op_conv_mixed:
+      recalc_ptype<tp_mixed>();
       break;
 
     case op_null:
@@ -638,7 +638,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     default:
-      recalc_ptype<tp_var>();
+      recalc_ptype<tp_mixed>();
       break;
   }
 }

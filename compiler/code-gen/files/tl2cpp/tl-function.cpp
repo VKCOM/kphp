@@ -18,10 +18,10 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
     }
   }
   if (G->get_untyped_rpc_tl_used()) {
-    FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> store(const var &tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "var fetch()" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> store(const mixed &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "mixed fetch()" << SemicolonAndNL();
   } else {
-    W << "var fetch() noexcept final { return {}; }" << NL;
+    W << "mixed fetch() noexcept final { return {}; }" << NL;
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object)" << SemicolonAndNL();
@@ -42,13 +42,13 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
   std::string struct_name = cpp_tl_struct_name("f_", f->name);
 
   if (G->get_untyped_rpc_tl_used()) {
-    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const var& tl_object) " << BEGIN;
+    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const mixed& tl_object) " << BEGIN;
     W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, false);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
 
-    FunctionSignatureGenerator(W) << "var " << struct_name << "::fetch() " << BEGIN;
+    FunctionSignatureGenerator(W) << "mixed " << struct_name << "::fetch() " << BEGIN;
     W << CombinatorFetch(f, CombinatorPart::RIGHT, false);
     W << END << NL << NL;
   }

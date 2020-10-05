@@ -13,7 +13,7 @@ namespace {
 bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
   const auto *variable_type = tinf::get_type(variable);
   if (variable_type->use_optional() ||
-      vk::any_of_equal(variable_type->ptype(), tp_Class, tp_var)) {
+      vk::any_of_equal(variable_type->ptype(), tp_Class, tp_mixed)) {
     return init_value->type() == op_null;
   }
 
@@ -46,7 +46,7 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
     return VarPtr{};
   }
 
-  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_var));
+  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   std::string name = ss.str();
@@ -90,7 +90,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     // '$s[] = ...' is forbidden for non-array types;
     // for arrays it's converted to push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
-    kphp_error (a_ptype == tp_array || a_ptype == tp_var,
+    kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
                 fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
 
     if (set_op->rl_type == val_none) {
@@ -205,11 +205,11 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
         res = expr;
       } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
         res = expr;
-      } else if (root->type() == op_conv_var) {
+      } else if (root->type() == op_conv_mixed) {
         if (tp->ptype() == tp_void) {
           expr->rl_type = val_none;
           res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
-        } else if (type_lca(tp->ptype(), tp_var) == tp_var) {
+        } else if (type_lca(tp->ptype(), tp_mixed) == tp_mixed) {
           res = expr;
         }
       }

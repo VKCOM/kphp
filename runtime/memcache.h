@@ -16,7 +16,7 @@ void free_memcache_lib();
 
 const string mc_prepare_key(const string &key);
 
-var mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags);
+mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags);
 
 bool mc_is_immediate_query(const string &key);
 
@@ -98,46 +98,46 @@ public:
 class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this);
 bool f$McMemcache$$addServer(const class_instance<C$McMemcache> &v$this, const string &host_name, int64_t port = 11211,
                              bool persistent = true, int64_t weight = 1, double timeout = 1, int64_t retry_interval = 15,
-                             bool status = true, const var &failure_callback = var(), int64_t timeoutms = 0);
-bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-var f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const var &key_var);
+                             bool status = true, const mixed &failure_callback = mixed(), int64_t timeoutms = 0);
+bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+mixed f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const mixed &key_var);
 bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this, const string &key);
-var f$McMemcache$$decrement(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
-var f$McMemcache$$increment(const class_instance<C$McMemcache> &v$this, const string &key, const var &v = 1);
-var f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
-bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int64_t port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+mixed f$McMemcache$$decrement(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &v = 1);
+mixed f$McMemcache$$increment(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &v = 1);
+mixed f$McMemcache$$getVersion(const class_instance<C$McMemcache> &v$this);
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &v$this, const string &host_name, int64_t port, const mixed &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 
 class_instance<C$RpcMemcache> f$RpcMemcache$$__construct(const class_instance<C$RpcMemcache> &v$this, bool fake = false);
-bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port = 11211, bool persistent = true, int64_t weight = 1, double timeout = 1, int64_t retry_interval = 15, bool status = true, const var &failure_callback = var(), int64_t timeoutms = 0);
-bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port, const var &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
-bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0);
-var f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &v$this, const var &key_var);
+bool f$RpcMemcache$$addServer(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port = 11211, bool persistent = true, int64_t weight = 1, double timeout = 1, int64_t retry_interval = 15, bool status = true, const mixed &failure_callback = mixed(), int64_t timeoutms = 0);
+bool f$RpcMemcache$$rpc_connect(const class_instance<C$RpcMemcache> &v$this, const string &host_name, int64_t port, const mixed &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
+mixed f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &v$this, const mixed &key_var);
 bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &v$this, const string &key);
-var f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &count = 1);
-var f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, const var &count = 1);
-var f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
+mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &count = 1);
+mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &count = 1);
+mixed f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
 
 
 
-var f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
+mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
 
 template<class T>
-Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
+Optional<array<mixed>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout = -1.0, bool return_false_if_not_found = false, bool run_synchronously = false);
 
-bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
-bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const var &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
+bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_increment(const class_instance<C$RpcConnection> &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
+mixed f$rpc_mc_increment(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v = 1, double timeout = -1.0, bool fake = false);
 
-var f$rpc_mc_decrement(const class_instance<C$RpcConnection> &conn, const string &key, const var &v = 1, double timeout = -1.0, bool fake = false);
+mixed f$rpc_mc_decrement(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v = 1, double timeout = -1.0, bool fake = false);
 
 bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
 
@@ -169,14 +169,14 @@ constexpr int32_t ENGINE_MC_GET_QUERY = 0x62408e9e;
 extern const char *mc_method;
 
 class rpc_mc_multiget_resumable : public Resumable {
-  using ReturnT = Optional<array<var>>;
+  using ReturnT = Optional<array<mixed>>;
 
   int64_t queue_id;
   int64_t first_request_id;
   uint32_t keys_n;
   Optional<int64_t> request_id;
   array<string> query_names;
-  array<var> result;
+  array<mixed> result;
   bool return_false_if_not_found;
 
 protected:
@@ -212,7 +212,7 @@ protected:
         } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
           TRY_CALL_VOID_(rpc_fetch_int(), RETURN(false)); // op
         } else {
-          var q_result = TRY_CALL_(var, f$fetch_memcache_value(), RETURN(false));
+          mixed q_result = TRY_CALL_(mixed, f$fetch_memcache_value(), RETURN(false));
           result.set_value(query_names.get_value(k), q_result);
         }
 
@@ -238,7 +238,7 @@ public:
 
 
 template<class T>
-Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
+Optional<array<mixed>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<T> &keys, double timeout, bool return_false_if_not_found, bool run_synchronously, bool fake = false) {
   mc_method = "multiget";
   resumable_finished = true;
 
@@ -281,11 +281,11 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
   }
 
   if (queue_id == -1) {
-    return array<var>();
+    return array<mixed>();
   }
 
   if (run_synchronously) {
-    array<var> result(array_size(0, keys_n, false));
+    array<mixed> result(array_size(0, keys_n, false));
 
     while (keys_n > 0) {
       int64_t request_id = wait_queue_next_synchronously(queue_id).val();
@@ -315,7 +315,7 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
       } else if (op == MEMCACHE_VALUE_NOT_FOUND && !return_false_if_not_found) {
         TRY_CALL_VOID(bool, rpc_fetch_int());//op
       } else {
-        var q_result = TRY_CALL(var, bool, f$fetch_memcache_value());
+        mixed q_result = TRY_CALL(mixed, bool, f$fetch_memcache_value());
         result.set_value(query_names.get_value(k), q_result);
       }
 
@@ -326,5 +326,5 @@ Optional<array<var>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &co
     return result;
   }
 
-  return start_resumable<Optional<array<var>>>(new rpc_mc_multiget_resumable(queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
+  return start_resumable<Optional<array<mixed>>>(new rpc_mc_multiget_resumable(queue_id, first_request_id, keys_n, query_names, return_false_if_not_found));
 }

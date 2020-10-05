@@ -89,7 +89,7 @@ private:
   template<class T1>
   using enable_if_allowed = std::enable_if_t<is_conversion_in_optional_allowed<T, T1>{}>;
 
-  static_assert(!std::is_same<T, var>{}, "Usage Optional<var> is forbidden");
+  static_assert(!std::is_same<T, mixed>{}, "Usage Optional<mixed> is forbidden");
   static_assert(!is_optional<T>{}, "Usage Optional<Optional> is forbidden");
 
   using Base = OptionalBase<T>;

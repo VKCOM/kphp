@@ -6,15 +6,15 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<var>)), "sizeof of array<var>, string and double must be equal");
+static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<mixed>)), "sizeof of array<mixed>, string and double must be equal");
 
-void var::copy_from(const var &other) {
+void mixed::copy_from(const mixed &other) {
   switch (other.get_type()) {
     case type::STRING:
       new(&as_string()) string(other.as_string());
       break;
     case type::ARRAY:
-      new(&as_array()) array<var>(other.as_array());
+      new(&as_array()) array<mixed>(other.as_array());
       break;
     default:
       storage_ = other.storage_;
@@ -22,13 +22,13 @@ void var::copy_from(const var &other) {
   type_ = other.get_type();
 }
 
-void var::copy_from(var &&other) {
+void mixed::copy_from(mixed &&other) {
   switch (other.get_type()) {
     case type::STRING:
       new(&as_string()) string(std::move(other.as_string()));
       break;
     case type::ARRAY:
-      new(&as_array()) array<var>(std::move(other.as_array()));
+      new(&as_array()) array<mixed>(std::move(other.as_array()));
       break;
     default:
       storage_ = other.storage_;
@@ -37,7 +37,7 @@ void var::copy_from(var &&other) {
 }
 
 template<typename T>
-void var::init_from(T &&v) {
+void mixed::init_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
   type_ = type_and_value_ref.first;
   auto *value_ptr = type_and_value_ref.second;
@@ -46,7 +46,7 @@ void var::init_from(T &&v) {
 }
 
 template<typename T>
-var &var::assign_from(T &&v) {
+mixed &mixed::assign_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
   if (get_type() == type_and_value_ref.first) {
     *type_and_value_ref.second = std::forward<T>(v);
@@ -58,39 +58,39 @@ var &var::assign_from(T &&v) {
 }
 
 template<typename T, typename>
-var::var(T &&v) noexcept {
+mixed::mixed(T &&v) noexcept {
   init_from(std::forward<T>(v));
 }
 
-var::var(const Unknown &u __attribute__((unused))) noexcept {
+mixed::mixed(const Unknown &u __attribute__((unused))) noexcept {
   php_assert ("Unknown used!!!" && 0);
 }
 
-var::var(const char *s, string::size_type len) noexcept :
-  var(string{s, len}){
+mixed::mixed(const char *s, string::size_type len) noexcept :
+  mixed(string{s, len}){
 }
 
 template<typename T, typename>
-var::var(const Optional<T> &v) noexcept {
+mixed::mixed(const Optional<T> &v) noexcept {
   auto init_from_lambda = [this](const auto &v) { this->init_from(v); };
   call_fun_on_optional_value(init_from_lambda, v);
 }
 
 template<typename T, typename>
-var::var(Optional<T> &&v) noexcept {
+mixed::mixed(Optional<T> &&v) noexcept {
    auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
    call_fun_on_optional_value(init_from_lambda, std::move(v));
 }
 
-var::var(const var &v) noexcept {
+mixed::mixed(const mixed &v) noexcept {
   copy_from(v);
 }
 
-var::var(var &&v) noexcept {
+mixed::mixed(mixed &&v) noexcept {
   copy_from(std::move(v));
 }
 
-var &var::operator=(const var &other) noexcept {
+mixed &mixed::operator=(const mixed &other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(other);
@@ -98,7 +98,7 @@ var &var::operator=(const var &other) noexcept {
   return *this;
 }
 
-var &var::operator=(var &&other) noexcept {
+mixed &mixed::operator=(mixed &&other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(std::move(other));
@@ -107,23 +107,23 @@ var &var::operator=(var &&other) noexcept {
 }
 
 template<typename T, typename>
-var &var::operator=(T &&v) noexcept {
+mixed &mixed::operator=(T &&v) noexcept {
   return assign_from(std::forward<T>(v));
 }
 
 template<typename T, typename>
-var &var::operator=(const Optional<T> &v) noexcept {
-  auto assign_from_lambda = [this](const auto &v) -> var& { return this->assign_from(v); };
+mixed &mixed::operator=(const Optional<T> &v) noexcept {
+  auto assign_from_lambda = [this](const auto &v) -> mixed& { return this->assign_from(v); };
   return call_fun_on_optional_value(assign_from_lambda, v);
 }
 
 template<typename T, typename>
-var &var::operator=(Optional<T> &&v) noexcept {
-  auto assign_from_lambda = [this](auto &&v) -> var& { return this->assign_from(std::move(v)); };
+mixed &mixed::operator=(Optional<T> &&v) noexcept {
+  auto assign_from_lambda = [this](auto &&v) -> mixed& { return this->assign_from(std::move(v)); };
   return call_fun_on_optional_value(assign_from_lambda, std::move(v));
 }
 
-var &var::assign(const char *other, string::size_type len) {
+mixed &mixed::assign(const char *other, string::size_type len) {
   if (get_type() == type::STRING) {
     as_string().assign(other, len);
   } else {
@@ -134,8 +134,8 @@ var &var::assign(const char *other, string::size_type len) {
   return *this;
 }
 
-const var var::operator-() const {
-  var arg1 = to_numeric();
+const mixed mixed::operator-() const {
+  mixed arg1 = to_numeric();
 
   if (arg1.get_type() == type::INTEGER) {
     arg1.as_int() = -arg1.as_int();
@@ -145,17 +145,17 @@ const var var::operator-() const {
   return arg1;
 }
 
-const var var::operator+() const {
+const mixed mixed::operator+() const {
   return to_numeric();
 }
 
 
-int64_t var::operator~() const {
+int64_t mixed::operator~() const {
   return ~to_int();
 }
 
 
-var &var::operator+=(const var &other) {
+mixed &mixed::operator+=(const mixed &other) {
   if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() += other.as_int();
     return *this;
@@ -171,7 +171,7 @@ var &var::operator+=(const var &other) {
   }
 
   convert_to_numeric();
-  const var arg2 = other.to_numeric();
+  const mixed arg2 = other.to_numeric();
 
   if (get_type() == type::INTEGER) {
     if (arg2.get_type() == type::INTEGER) {
@@ -191,14 +191,14 @@ var &var::operator+=(const var &other) {
   return *this;
 }
 
-var &var::operator-=(const var &other) {
+mixed &mixed::operator-=(const mixed &other) {
   if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() -= other.as_int();
     return *this;
   }
 
   convert_to_numeric();
-  const var arg2 = other.to_numeric();
+  const mixed arg2 = other.to_numeric();
 
   if (get_type() == type::INTEGER) {
     if (arg2.get_type() == type::INTEGER) {
@@ -218,14 +218,14 @@ var &var::operator-=(const var &other) {
   return *this;
 }
 
-var &var::operator*=(const var &other) {
+mixed &mixed::operator*=(const mixed &other) {
   if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() *= other.as_int();
     return *this;
   }
 
   convert_to_numeric();
-  const var arg2 = other.to_numeric();
+  const mixed arg2 = other.to_numeric();
 
   if (get_type() == type::INTEGER) {
     if (arg2.get_type() == type::INTEGER) {
@@ -245,7 +245,7 @@ var &var::operator*=(const var &other) {
   return *this;
 }
 
-var &var::operator/=(const var &other) {
+mixed &mixed::operator/=(const mixed &other) {
   if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     if (as_int() % other.as_int() == 0) {
       as_int() /= other.as_int();
@@ -257,7 +257,7 @@ var &var::operator/=(const var &other) {
   }
 
   convert_to_numeric();
-  const var arg2 = other.to_numeric();
+  const mixed arg2 = other.to_numeric();
 
   if (arg2.get_type() == type::INTEGER) {
     if (arg2.as_int() == 0) {
@@ -296,7 +296,7 @@ var &var::operator/=(const var &other) {
   return *this;
 }
 
-var &var::operator%=(const var &other) {
+mixed &mixed::operator%=(const mixed &other) {
   int64_t div = other.to_int();
   if (div == 0) {
     php_warning("Modulo by zero");
@@ -310,38 +310,38 @@ var &var::operator%=(const var &other) {
 }
 
 
-var &var::operator&=(const var &other) {
+mixed &mixed::operator&=(const mixed &other) {
   convert_to_int();
   as_int() &= other.to_int();
   return *this;
 }
 
-var &var::operator|=(const var &other) {
+mixed &mixed::operator|=(const mixed &other) {
   convert_to_int();
   as_int() |= other.to_int();
   return *this;
 }
 
-var &var::operator^=(const var &other) {
+mixed &mixed::operator^=(const mixed &other) {
   convert_to_int();
   as_int() ^= other.to_int();
   return *this;
 }
 
-var &var::operator<<=(const var &other) {
+mixed &mixed::operator<<=(const mixed &other) {
   convert_to_int();
   as_int() <<= other.to_int();
   return *this;
 }
 
-var &var::operator>>=(const var &other) {
+mixed &mixed::operator>>=(const mixed &other) {
   convert_to_int();
   as_int() >>= other.to_int();
   return *this;
 }
 
 
-var &var::operator++() {
+mixed &mixed::operator++() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -367,27 +367,27 @@ var &var::operator++() {
   }
 }
 
-const var var::operator++(int) {
+const mixed mixed::operator++(int) {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
       as_int() = 1;
-      return var();
+      return mixed();
     case type::BOOLEAN:
       php_warning("Can't apply operator ++ to boolean");
       return as_bool();
     case type::INTEGER: {
-      var res(as_int());
+      mixed res(as_int());
       ++as_int();
       return res;
     }
     case type::FLOAT: {
-      var res(as_double());
+      mixed res(as_double());
       as_double() += 1;
       return res;
     }
     case type::STRING: {
-      var res(as_string());
+      mixed res(as_string());
       *this = as_string().to_numeric();
       (*this)++;
       return res;
@@ -400,7 +400,7 @@ const var var::operator++(int) {
   }
 }
 
-var &var::operator--() {
+mixed &mixed::operator--() {
   if (likely (get_type() == type::INTEGER)) {
     --as_int();
     return *this;
@@ -430,9 +430,9 @@ var &var::operator--() {
   }
 }
 
-const var var::operator--(int) {
+const mixed mixed::operator--(int) {
   if (likely (get_type() == type::INTEGER)) {
-    var res(as_int());
+    mixed res(as_int());
     --as_int();
     return res;
   }
@@ -440,22 +440,22 @@ const var var::operator--(int) {
   switch (get_type()) {
     case type::NUL:
       php_warning("Can't apply operator -- to null");
-      return var();
+      return mixed();
     case type::BOOLEAN:
       php_warning("Can't apply operator -- to boolean");
       return as_bool();
     case type::INTEGER: {
-      var res(as_int());
+      mixed res(as_int());
       --as_int();
       return res;
     }
     case type::FLOAT: {
-      var res(as_double());
+      mixed res(as_double());
       as_double() -= 1;
       return res;
     }
     case type::STRING: {
-      var res(as_string());
+      mixed res(as_string());
       *this = as_string().to_numeric();
       (*this)--;
       return res;
@@ -469,12 +469,12 @@ const var var::operator--(int) {
 }
 
 
-bool var::operator!() const {
+bool mixed::operator!() const {
   return !to_bool();
 }
 
 
-var &var::append(const string &v) {
+mixed &mixed::append(const string &v) {
   if (unlikely (get_type() != type::STRING)) {
     convert_to_string();
   }
@@ -483,20 +483,20 @@ var &var::append(const string &v) {
 }
 
 
-void var::destroy() {
+void mixed::destroy() {
   switch (get_type()) {
     case type::STRING:
       as_string().~string();
       break;
     case type::ARRAY:
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       break;
     default: {
     }
   }
 }
 
-var::~var() {
+mixed::~mixed() {
   // do not remove copy-paste from clear.
   // It makes stacktraces unreadable
   destroy();
@@ -504,13 +504,13 @@ var::~var() {
 }
 
 
-void var::clear() {
+void mixed::clear() {
   destroy();
   type_ = type::NUL;
 }
 
 
-const var var::to_numeric() const {
+const mixed mixed::to_numeric() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -531,7 +531,7 @@ const var var::to_numeric() const {
 }
 
 
-bool var::to_bool() const {
+bool mixed::to_bool() const {
   switch (get_type()) {
     case type::NUL:
       return false;
@@ -550,7 +550,7 @@ bool var::to_bool() const {
   }
 }
 
-int64_t var::to_int() const {
+int64_t mixed::to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -570,7 +570,7 @@ int64_t var::to_int() const {
   }
 }
 
-double var::to_float() const {
+double mixed::to_float() const {
   switch (get_type()) {
     case type::NUL:
       return 0.0;
@@ -590,7 +590,7 @@ double var::to_float() const {
   }
 }
 
-const string var::to_string() const {
+const string mixed::to_string() const {
   switch (get_type()) {
     case type::NUL:
       return string();
@@ -610,15 +610,15 @@ const string var::to_string() const {
   }
 }
 
-const array<var> var::to_array() const {
+const array<mixed> mixed::to_array() const {
   switch (get_type()) {
     case type::NUL:
-      return array<var>();
+      return array<mixed>();
     case type::BOOLEAN:
     case type::INTEGER:
     case type::FLOAT:
     case type::STRING: {
-      array<var> res(array_size(1, 0, true));
+      array<mixed> res(array_size(1, 0, true));
       res.push_back(*this);
       return res;
     }
@@ -629,23 +629,23 @@ const array<var> var::to_array() const {
   }
 }
 
-bool &var::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
-const bool &var::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
+bool &mixed::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
+const bool &mixed::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
 
-int64_t &var::as_int() { return *reinterpret_cast<int64_t *>(&storage_); }
-const int64_t &var::as_int() const { return *reinterpret_cast<const int64_t *>(&storage_); }
+int64_t &mixed::as_int() { return *reinterpret_cast<int64_t *>(&storage_); }
+const int64_t &mixed::as_int() const { return *reinterpret_cast<const int64_t *>(&storage_); }
 
-double &var::as_double() { return *reinterpret_cast<double *>(&storage_); }
-const double &var::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
+double &mixed::as_double() { return *reinterpret_cast<double *>(&storage_); }
+const double &mixed::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
 
-string &var::as_string() { return *reinterpret_cast<string *>(&storage_); }
-const string &var::as_string() const { return *reinterpret_cast<const string *>(&storage_); }
+string &mixed::as_string() { return *reinterpret_cast<string *>(&storage_); }
+const string &mixed::as_string() const { return *reinterpret_cast<const string *>(&storage_); }
 
-array<var> &var::as_array() { return *reinterpret_cast<array<var> *>(&storage_); }
-const array<var> &var::as_array() const { return *reinterpret_cast<const array<var> *>(&storage_); }
+array<mixed> &mixed::as_array() { return *reinterpret_cast<array<mixed> *>(&storage_); }
+const array<mixed> &mixed::as_array() const { return *reinterpret_cast<const array<mixed> *>(&storage_); }
 
 
-int64_t var::safe_to_int() const {
+int64_t mixed::safe_to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -671,7 +671,7 @@ int64_t var::safe_to_int() const {
 }
 
 
-void var::convert_to_numeric() {
+void mixed::convert_to_numeric() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -690,7 +690,7 @@ void var::convert_to_numeric() {
     case type::ARRAY: {
       php_warning("Wrong convertion from array to number");
       const int64_t int_val = as_array().to_int();
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       type_ = type::INTEGER;
       as_int() = int_val;
       return;
@@ -700,7 +700,7 @@ void var::convert_to_numeric() {
   }
 }
 
-void var::convert_to_bool() {
+void mixed::convert_to_bool() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::BOOLEAN;
@@ -725,7 +725,7 @@ void var::convert_to_bool() {
     }
     case type::ARRAY: {
       const bool bool_val = as_array().to_bool();
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       type_ = type::BOOLEAN;
       as_bool() = bool_val;
       return;
@@ -735,7 +735,7 @@ void var::convert_to_bool() {
   }
 }
 
-void var::convert_to_int() {
+void mixed::convert_to_int() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -761,7 +761,7 @@ void var::convert_to_int() {
     case type::ARRAY: {
       php_warning("Wrong convertion from array to int");
       const int64_t int_val = as_array().to_int();
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       type_ = type::INTEGER;
       as_int() = int_val;
       return;
@@ -771,7 +771,7 @@ void var::convert_to_int() {
   }
 }
 
-void var::convert_to_float() {
+void mixed::convert_to_float() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::FLOAT;
@@ -797,7 +797,7 @@ void var::convert_to_float() {
     case type::ARRAY: {
       php_warning("Wrong convertion from array to float");
       const double float_val = as_array().to_float();
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       type_ = type::FLOAT;
       as_double() = float_val;
       return;
@@ -807,7 +807,7 @@ void var::convert_to_float() {
   }
 }
 
-void var::convert_to_string() {
+void mixed::convert_to_string() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::STRING;
@@ -833,7 +833,7 @@ void var::convert_to_string() {
       return;
     case type::ARRAY:
       php_warning("Converting from array to string");
-      as_array().~array<var>();
+      as_array().~array<mixed>();
       type_ = type::STRING;
       new(&as_string()) string("Array", 5);
       return;
@@ -842,7 +842,7 @@ void var::convert_to_string() {
   }
 }
 
-const bool &var::as_bool(const char *function) const {
+const bool &mixed::as_bool(const char *function) const {
   switch (get_type()) {
     case type::BOOLEAN:
       return as_bool();
@@ -852,7 +852,7 @@ const bool &var::as_bool(const char *function) const {
   }
 }
 
-const int64_t &var::as_int(const char *function) const {
+const int64_t &mixed::as_int(const char *function) const {
   switch (get_type()) {
     case type::INTEGER:
       return as_int();
@@ -862,7 +862,7 @@ const int64_t &var::as_int(const char *function) const {
   }
 }
 
-const double &var::as_float(const char *function) const {
+const double &mixed::as_float(const char *function) const {
   switch (get_type()) {
     case type::FLOAT:
       return as_double();
@@ -872,7 +872,7 @@ const double &var::as_float(const char *function) const {
   }
 }
 
-const string &var::as_string(const char *function) const {
+const string &mixed::as_string(const char *function) const {
   switch (get_type()) {
     case type::STRING:
       return as_string();
@@ -882,18 +882,18 @@ const string &var::as_string(const char *function) const {
   }
 }
 
-const array<var> &var::as_array(const char *function) const {
+const array<mixed> &mixed::as_array(const char *function) const {
   switch (get_type()) {
     case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      return empty_value<array<var>>();
+      return empty_value<array<mixed>>();
   }
 }
 
 
-bool &var::as_bool(const char *function) {
+bool &mixed::as_bool(const char *function) {
   switch (get_type()) {
     case type::NUL:
       convert_to_bool();
@@ -905,7 +905,7 @@ bool &var::as_bool(const char *function) {
   }
 }
 
-int64_t &var::as_int(const char *function) {
+int64_t &mixed::as_int(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -920,7 +920,7 @@ int64_t &var::as_int(const char *function) {
   }
 }
 
-double &var::as_float(const char *function) {
+double &mixed::as_float(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -935,7 +935,7 @@ double &var::as_float(const char *function) {
   }
 }
 
-string &var::as_string(const char *function) {
+string &mixed::as_string(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -950,18 +950,18 @@ string &var::as_string(const char *function) {
   }
 }
 
-array<var> &var::as_array(const char *function) {
+array<mixed> &mixed::as_array(const char *function) {
   switch (get_type()) {
     case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      return empty_value<array<var>>();
+      return empty_value<array<mixed>>();
   }
 }
 
 
-bool var::is_numeric() const {
+bool mixed::is_numeric() const {
   switch (get_type()) {
     case type::INTEGER:
     case type::FLOAT:
@@ -973,41 +973,41 @@ bool var::is_numeric() const {
   }
 }
 
-bool var::is_scalar() const {
+bool mixed::is_scalar() const {
   return get_type() != type::NUL && get_type() != type::ARRAY;
 }
 
 
-var::type var::get_type() const {
+mixed::type mixed::get_type() const {
   return type_;
 }
 
-bool var::is_null() const {
+bool mixed::is_null() const {
   return get_type() == type::NUL;
 }
 
-bool var::is_bool() const {
+bool mixed::is_bool() const {
   return get_type() == type::BOOLEAN;
 }
 
-bool var::is_int() const {
+bool mixed::is_int() const {
   return get_type() == type::INTEGER;
 }
 
-bool var::is_float() const {
+bool mixed::is_float() const {
   return get_type() == type::FLOAT;
 }
 
-bool var::is_string() const {
+bool mixed::is_string() const {
   return get_type() == type::STRING;
 }
 
-bool var::is_array() const {
+bool mixed::is_array() const {
   return get_type() == type::ARRAY;
 }
 
 
-inline const char *var::get_type_c_str() const {
+inline const char *mixed::get_type_c_str() const {
   switch (get_type()) {
     case type::NUL:
       return "NULL";
@@ -1026,16 +1026,16 @@ inline const char *var::get_type_c_str() const {
   }
 }
 
-inline const string var::get_type_str() const {
+inline const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
 
-bool var::empty() const {
+bool mixed::empty() const {
   return !to_bool();
 }
 
-int64_t var::count() const {
+int64_t mixed::count() const {
   switch (get_type()) {
     case type::NUL:
       php_warning("count(): Parameter is null, but an array expected");
@@ -1056,7 +1056,7 @@ int64_t var::count() const {
 template<class T1, class T2>
 inline bool eq2(const array<T1> &lhs, const array<T2> &rhs);
 
-int64_t var::compare(const var &rhs) const {
+int64_t mixed::compare(const mixed &rhs) const {
   if (unlikely(is_string())) {
     if (likely(rhs.is_string())) {
       return compare_strings_php_order(as_string(), rhs.as_string());
@@ -1089,50 +1089,50 @@ int64_t var::compare(const var &rhs) const {
   return three_way_comparison(to_float(), rhs.to_float());
 }
 
-void var::swap(var &other) {
+void mixed::swap(mixed &other) {
   ::swap(type_, other.type_);
   ::swap(as_double(), other.as_double());
 }
 
 
-var &var::operator[](int64_t int_key) {
+mixed &mixed::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      return empty_value<var>();
+      return empty_value<mixed>();
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
-      return empty_value<var>();
+      return empty_value<mixed>();
     }
   }
   return as_array()[int_key];
 }
 
-var &var::operator[](const string &string_key) {
+mixed &mixed::operator[](const string &string_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      return empty_value<var>();
+      return empty_value<mixed>();
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
-      return empty_value<var>();
+      return empty_value<mixed>();
     }
   }
 
   return as_array()[string_key];
 }
 
-var &var::operator[](const var &v) {
+mixed &mixed::operator[](const mixed &v) {
   switch (v.get_type()) {
     case type::NUL:
       return (*this)[string()];
@@ -1152,20 +1152,20 @@ var &var::operator[](const var &v) {
   }
 }
 
-var &var::operator[](double double_key) {
+mixed &mixed::operator[](double double_key) {
   return (*this)[static_cast<int64_t>(double_key)];
 }
 
-var &var::operator[](const array<var>::const_iterator &it) {
+mixed &mixed::operator[](const array<mixed>::const_iterator &it) {
   return as_array()[it];
 }
 
-var &var::operator[](const array<var>::iterator &it) {
+mixed &mixed::operator[](const array<mixed>::iterator &it) {
   return as_array()[it];
 }
 
 
-void var::set_value(int64_t int_key, const var &v) {
+void mixed::set_value(int64_t int_key, const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       auto rhs_string = v.to_string();
@@ -1193,7 +1193,7 @@ void var::set_value(int64_t int_key, const var &v) {
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
       return;
@@ -1202,7 +1202,7 @@ void var::set_value(int64_t int_key, const var &v) {
   return as_array().set_value(int_key, v);
 }
 
-void var::set_value(const string &string_key, const var &v) {
+void mixed::set_value(const string &string_key, const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int64_t int_val = 0;
@@ -1229,7 +1229,7 @@ void var::set_value(const string &string_key, const var &v) {
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
       return;
@@ -1239,11 +1239,11 @@ void var::set_value(const string &string_key, const var &v) {
   return as_array().set_value(string_key, v);
 }
 
-void var::set_value(const string &string_key, const var &v, int64_t precomuted_hash) {
+void mixed::set_value(const string &string_key, const mixed &v, int64_t precomuted_hash) {
   return get_type() == type::ARRAY ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
 }
 
-void var::set_value(const var &v, const var &value) {
+void mixed::set_value(const mixed &v, const mixed &value) {
   switch (v.get_type()) {
     case type::NUL:
       return set_value(string(), value);
@@ -1263,20 +1263,20 @@ void var::set_value(const var &v, const var &value) {
   }
 }
 
-void var::set_value(double double_key, const var &value) {
+void mixed::set_value(double double_key, const mixed &value) {
   set_value(static_cast<int64_t>(double_key), value);
 }
 
-void var::set_value(const array<var>::const_iterator &it) {
+void mixed::set_value(const array<mixed>::const_iterator &it) {
   return as_array().set_value(it);
 }
 
-void var::set_value(const array<var>::iterator &it) {
+void mixed::set_value(const array<mixed>::iterator &it) {
   return as_array().set_value(it);
 }
 
 
-const var var::get_value(int64_t int_key) const {
+const mixed mixed::get_value(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       if (int_key < 0 || int_key >= as_string().size()) {
@@ -1288,13 +1288,13 @@ const var var::get_value(int64_t int_key) const {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
     }
-    return var();
+    return mixed();
   }
 
   return as_array().get_value(int_key);
 }
 
-const var var::get_value(const string &string_key) const {
+const mixed mixed::get_value(const string &string_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int64_t int_val = 0;
@@ -1311,17 +1311,17 @@ const var var::get_value(const string &string_key) const {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
     }
-    return var();
+    return mixed();
   }
 
   return as_array().get_value(string_key);
 }
 
-const var var::get_value(const string &string_key, int64_t precomuted_hash) const {
+const mixed mixed::get_value(const string &string_key, int64_t precomuted_hash) const {
   return get_type() == type::ARRAY ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
 }
 
-const var var::get_value(const var &v) const {
+const mixed mixed::get_value(const mixed &v) const {
   switch (v.get_type()) {
     case type::NUL:
       return get_value(string());
@@ -1335,30 +1335,30 @@ const var var::get_value(const var &v) const {
       return get_value(v.as_string());
     case type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
-      return var();
+      return mixed();
     default:
       __builtin_unreachable();
   }
 }
 
-const var var::get_value(double double_key) const {
+const mixed mixed::get_value(double double_key) const {
   return get_value(static_cast<int64_t>(double_key));
 }
 
-const var var::get_value(const array<var>::const_iterator &it) const {
+const mixed mixed::get_value(const array<mixed>::const_iterator &it) const {
   return as_array().get_value(it);
 }
 
-const var var::get_value(const array<var>::iterator &it) const {
+const mixed mixed::get_value(const array<mixed>::iterator &it) const {
   return as_array().get_value(it);
 }
 
 
-void var::push_back(const var &v) {
+void mixed::push_back(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
       return;
@@ -1368,14 +1368,14 @@ void var::push_back(const var &v) {
   return as_array().push_back(v);
 }
 
-const var var::push_back_return(const var &v) {
+const mixed mixed::push_back_return(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<var>();
+      new(&as_array()) array<mixed>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
-      return empty_value<var>();
+      return empty_value<mixed>();
     }
   }
 
@@ -1383,7 +1383,7 @@ const var var::push_back_return(const var &v) {
 }
 
 
-bool var::isset(int64_t int_key) const {
+bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
@@ -1399,7 +1399,7 @@ bool var::isset(int64_t int_key) const {
   return as_array().isset(int_key);
 }
 
-bool var::isset(const string &string_key) const {
+bool mixed::isset(const string &string_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     int64_t int_key{std::numeric_limits<int64_t>::max()};
     if (get_type() == type::STRING) {
@@ -1415,7 +1415,7 @@ bool var::isset(const string &string_key) const {
   return as_array().isset(string_key);
 }
 
-bool var::isset(const var &v) const {
+bool mixed::isset(const mixed &v) const {
   switch (v.get_type()) {
     case type::NUL:
       return isset(string());
@@ -1435,11 +1435,11 @@ bool var::isset(const var &v) const {
   }
 }
 
-bool var::isset(double double_key) const {
+bool mixed::isset(double double_key) const {
   return isset(static_cast<int64_t>(double_key));
 }
 
-void var::unset(int64_t int_key) {
+void mixed::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
@@ -1450,7 +1450,7 @@ void var::unset(int64_t int_key) {
   return as_array().unset(int_key);
 }
 
-void var::unset(const string &string_key) {
+void mixed::unset(const string &string_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
@@ -1461,7 +1461,7 @@ void var::unset(const string &string_key) {
   return as_array().unset(string_key);
 }
 
-void var::unset(const var &v) {
+void mixed::unset(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
@@ -1488,43 +1488,43 @@ void var::unset(const var &v) {
   }
 }
 
-void var::unset(double double_key) {
+void mixed::unset(double double_key) {
   return unset(static_cast<int64_t>(double_key));
 }
 
-array<var>::const_iterator var::begin() const {
+array<mixed>::const_iterator mixed::begin() const {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
-  return array<var>::const_iterator();
+  return array<mixed>::const_iterator();
 }
 
-array<var>::const_iterator var::end() const {
+array<mixed>::const_iterator mixed::end() const {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().end();
   }
-  return array<var>::const_iterator();
+  return array<mixed>::const_iterator();
 }
 
 
-array<var>::iterator var::begin() {
+array<mixed>::iterator mixed::begin() {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
-  return array<var>::iterator();
+  return array<mixed>::iterator();
 }
 
-array<var>::iterator var::end() {
+array<mixed>::iterator mixed::end() {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().end();
   }
-  return array<var>::iterator();
+  return array<mixed>::iterator();
 }
 
 
-int64_t var::get_reference_counter() const {
+int64_t mixed::get_reference_counter() const {
   switch (get_type()) {
     case type::NUL:
       return -1;
@@ -1543,7 +1543,7 @@ int64_t var::get_reference_counter() const {
   }
 }
 
-void var::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
+void mixed::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1559,7 +1559,7 @@ void var::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   }
 }
 
-inline bool var::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+inline bool mixed::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1575,7 +1575,7 @@ inline bool var::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept 
   }
 }
 
-inline void var::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
+inline void mixed::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   switch (get_type()) {
     case type::STRING:
       as_string().force_destroy(expected_ref_cnt);
@@ -1588,7 +1588,7 @@ inline void var::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   }
 }
 
-size_t var::estimate_memory_usage() const {
+size_t mixed::estimate_memory_usage() const {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1604,18 +1604,18 @@ size_t var::estimate_memory_usage() const {
   }
 }
 
-void var::reset_empty_values() noexcept {
+void mixed::reset_empty_values() noexcept {
   empty_value<bool>();
   empty_value<int64_t>();
   empty_value<double>();
   empty_value<string>();
-  empty_value<var>();
-  empty_value<array<var>>();
+  empty_value<mixed>();
+  empty_value<array<mixed>>();
 }
 
 template<typename T>
-T &var::empty_value() noexcept {
-  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, var, array<var>>{}, "unsupported type");
+T &mixed::empty_value() noexcept {
+  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{}, "unsupported type");
   static T value;
   value = T{};
   return value;
@@ -1624,13 +1624,13 @@ T &var::empty_value() noexcept {
 namespace impl_ {
 
 template<class MathOperation>
-inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&math_op) {
+inline mixed do_math_op_on_vars(const mixed &lhs, const mixed &rhs, MathOperation &&math_op) {
   if (likely(lhs.is_int() && rhs.is_int())) {
     return math_op(lhs.as_int(), rhs.as_int());
   }
 
-  const var arg1 = lhs.to_numeric();
-  const var arg2 = rhs.to_numeric();
+  const mixed arg1 = lhs.to_numeric();
+  const mixed arg2 = rhs.to_numeric();
 
   if (arg1.is_int()) {
     if (arg2.is_int()) {
@@ -1649,7 +1649,7 @@ inline var do_math_op_on_vars(const var &lhs, const var &rhs, MathOperation &&ma
 
 } // namespace impl_
 
-inline var operator+(const var &lhs, const var &rhs) {
+inline mixed operator+(const mixed &lhs, const mixed &rhs) {
   if (lhs.is_array() && rhs.is_array()) {
     return lhs.as_array() + rhs.as_array();
   }
@@ -1657,16 +1657,16 @@ inline var operator+(const var &lhs, const var &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
 }
 
-inline var operator-(const var &lhs, const var &rhs) {
+inline mixed operator-(const mixed &lhs, const mixed &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
 }
 
-inline var operator*(const var &lhs, const var &rhs) {
+inline mixed operator*(const mixed &lhs, const mixed &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
 }
 
-inline var operator-(const string &lhs) {
-  var arg1 = lhs.to_numeric();
+inline mixed operator-(const string &lhs) {
+  mixed arg1 = lhs.to_numeric();
 
   if (arg1.is_int()) {
     arg1.as_int() = -arg1.as_int();
@@ -1676,47 +1676,47 @@ inline var operator-(const string &lhs) {
   return arg1;
 }
 
-inline var operator+(const string &lhs) {
+inline mixed operator+(const string &lhs) {
   return lhs.to_numeric();
 }
 
-inline int64_t operator&(const var &lhs, const var &rhs) {
+inline int64_t operator&(const mixed &lhs, const mixed &rhs) {
   return lhs.to_int() & rhs.to_int();
 }
 
-inline int64_t operator|(const var &lhs, const var &rhs) {
+inline int64_t operator|(const mixed &lhs, const mixed &rhs) {
   return lhs.to_int() | rhs.to_int();
 }
 
-inline int64_t operator^(const var &lhs, const var &rhs) {
+inline int64_t operator^(const mixed &lhs, const mixed &rhs) {
   return lhs.to_int() ^ rhs.to_int();
 }
 
-inline int64_t operator<<(const var &lhs, const var &rhs) {
+inline int64_t operator<<(const mixed &lhs, const mixed &rhs) {
   return lhs.to_int() << rhs.to_int();
 }
 
-inline int64_t operator>>(const var &lhs, const var &rhs) {
+inline int64_t operator>>(const mixed &lhs, const mixed &rhs) {
   return lhs.to_int() >> rhs.to_int();
 }
 
-inline bool operator<(const var &lhs, const var &rhs) {
+inline bool operator<(const mixed &lhs, const mixed &rhs) {
   return lhs.compare(rhs) < 0;
 }
 
-inline bool operator>(const var &lhs, const var &rhs) {
+inline bool operator>(const mixed &lhs, const mixed &rhs) {
   return rhs < lhs;
 }
 
-inline bool operator<=(const var &lhs, const var &rhs) {
+inline bool operator<=(const mixed &lhs, const mixed &rhs) {
   return !(rhs < lhs);
 }
 
-inline bool operator>=(const var &lhs, const var &rhs) {
+inline bool operator>=(const mixed &lhs, const mixed &rhs) {
   return rhs <= lhs;
 }
 
-inline void swap(var &lhs, var &rhs) {
+inline void swap(mixed &lhs, mixed &rhs) {
   lhs.swap(rhs);
 }
 
@@ -1726,19 +1726,19 @@ inline string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
   return call_fun_on_optional_value(write_lambda, v);
 }
 
-inline string_buffer &operator<<(string_buffer &sb, const var &v) {
+inline string_buffer &operator<<(string_buffer &sb, const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return sb;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return sb << v.as_bool();
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return sb << v.as_int();
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return sb << string(v.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return sb << v.as_string();
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Convertion from array to string");
       return sb.append("Array", 5);
     default:

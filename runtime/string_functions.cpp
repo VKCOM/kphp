@@ -195,7 +195,7 @@ string f$convert_cyr_string(const string &str, const string &from_s, const strin
   return result;
 }
 
-var f$count_chars(const string &str, int64_t mode) {
+mixed f$count_chars(const string &str, int64_t mode) {
   int64_t chars[256] = {0};
 
   if (static_cast<uint32_t>(mode) > 4u) {
@@ -209,7 +209,7 @@ var f$count_chars(const string &str, int64_t mode) {
   }
 
   if (mode <= 2) {
-    array<var> result;
+    array<mixed> result;
     for (int64_t i = 0; i < 256; i++) {
       if ((mode != 2 && chars[i] != 0) ||
           (mode != 1 && chars[i] == 0)) {
@@ -765,7 +765,7 @@ int64_t f$ord(const string &s) {
   return (unsigned char)s[0];
 }
 
-string f$pack(const string &pattern, const array<var> &a) {
+string f$pack(const string &pattern, const array<mixed> &a) {
   static_SB.clean();
   int cur_arg = 0;
   for (int i = 0; i < (int)pattern.size();) {
@@ -804,7 +804,7 @@ string f$pack(const string &pattern, const array<var> &a) {
     }
     cur_arg++;
 
-    var arg = a.get_value(arg_num);
+    mixed arg = a.get_value(arg_num);
 
     if (arg.is_array()) {
       php_warning("Argument %d of function pack is array", arg_num);
@@ -967,7 +967,7 @@ string f$prepare_search_query(const string &query) {
   return string(s);
 }
 
-int64_t f$printf(const string &format, const array<var> &a) {
+int64_t f$printf(const string &format, const array<mixed> &a) {
   string to_print = f$sprintf(format, a);
   print(to_print);
   return to_print.size();
@@ -1000,7 +1000,7 @@ Optional<string> f$setlocale(int64_t category, const string &locale) {
   return string(res);
 }
 
-string f$sprintf(const string &format, const array<var> &a) {
+string f$sprintf(const string &format, const array<mixed> &a) {
   string result;
   result.reserve_at_least(format.size());
   int cur_arg = 0;
@@ -1083,7 +1083,7 @@ string f$sprintf(const string &format, const array<var> &a) {
         return string();
       }
 
-      const var &arg = a.get_value(arg_num);
+      const mixed &arg = a.get_value(arg_num);
 
       if (arg.is_array()) {
         php_warning("Argument %d of function sprintf is array", arg_num);
@@ -2043,14 +2043,14 @@ string str_replace(const string &search, const string &replace, const string &su
   return string();
 }
 
-string str_replace_string(const var &search, const var &replace, const string &subject, int64_t &replace_count) {
+string str_replace_string(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) {
   if (search.is_array() && replace.is_array()) {
     return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count);
   } else if (search.is_array()) {
     string result = subject;
     const string &replace_value = replace.to_string();
 
-    for (array<var>::const_iterator it = search.begin(); it != search.end(); ++it) {
+    for (array<mixed>::const_iterator it = search.begin(); it != search.end(); ++it) {
       const string &search_string = f$strval(it.get_value());
       if (search_string.size() >= replace_value.size()) {
         str_replace_inplace(search_string, replace_value, result, replace_count);
@@ -2078,16 +2078,16 @@ string f$str_replace(const string &search, const string &replace, const string &
   }
 }
 
-string f$str_replace(const var &search, const var &replace, const string &subject, int64_t &replace_count) {
+string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) {
   return str_replace_string(search, replace, subject, replace_count);
 }
 
-var f$str_replace(const var &search, const var &replace, const var &subject, int64_t &replace_count) {
+mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) {
   replace_count = 0;
   if (subject.is_array()) {
-    array<var> result;
-    for (array<var>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
-      var cur_result = str_replace_string(search, replace, it.get_value().to_string(), replace_count);
+    array<mixed> result;
+    for (array<mixed>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
+      mixed cur_result = str_replace_string(search, replace, it.get_value().to_string(), replace_count);
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
       }
@@ -2323,8 +2323,8 @@ string f$ucwords(const string &str) {
   return res;
 }
 
-array<var> f$unpack(const string &pattern, const string &data) {
-  array<var> result;
+array<mixed> f$unpack(const string &pattern, const string &data) {
+  array<mixed> result;
 
   int data_len = data.size(), data_pos = 0;
   for (int i = 0; i < (int)pattern.size();) {
@@ -2439,7 +2439,7 @@ array<var> f$unpack(const string &pattern, const string &data) {
         }
         int counter = 1;
         do {
-          var value;
+          mixed value;
           int value_int;
           if (data_pos >= data_len) {
             php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
@@ -2584,11 +2584,11 @@ array<var> f$unpack(const string &pattern, const string &data) {
   return result;
 }
 
-int64_t f$vprintf(const string &format, const array<var> &args) {
+int64_t f$vprintf(const string &format, const array<mixed> &args) {
   return f$printf(format, args);
 }
 
-string f$vsprintf(const string &format, const array<var> &args) {
+string f$vsprintf(const string &format, const array<mixed> &args) {
   return f$sprintf(format, args);
 }
 

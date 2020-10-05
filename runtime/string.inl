@@ -450,22 +450,22 @@ string &string::append(double d) {
   return append(string(d));
 }
 
-string &string::append(const var &v) {
+string &string::append(const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return *this;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       if (v.as_bool()) {
         push_back('1');
       }
       return *this;
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return append(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return append(string(v.as_double()));
-    case var::type::STRING:
+    case mixed::type::STRING:
       return append(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Convertion from array to string");
       return append("Array", 5);
     default:
@@ -529,19 +529,19 @@ string &string::append_unsafe(const array<T> &a __attribute__((unused))) {
   return append_unsafe("Array", 5);
 }
 
-string &string::append_unsafe(const var &v) {
+string &string::append_unsafe(const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return *this;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return append_unsafe(v.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return append_unsafe(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return append_unsafe(v.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return append_unsafe(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       return append_unsafe(v.as_array());
     default:
       __builtin_unreachable();
@@ -708,7 +708,7 @@ bool string::try_to_float(double *val) const {
 }
 
 
-var string::to_numeric() const {
+mixed string::to_numeric() const {
   double res = to_float();
   constexpr double int_max = static_cast<double>(std::numeric_limits<int64_t>::max());
   constexpr double int_min = static_cast<double>(std::numeric_limits<int64_t>::min());
@@ -902,19 +902,19 @@ const string string::get_value(const string &string_key) const {
   return get_value(int_val);
 }
 
-const string string::get_value(const var &v) const {
+const string string::get_value(const mixed &v) const {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return get_value(0);
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return get_value(static_cast<int64_t>(v.as_bool()));
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return get_value(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return get_value(static_cast<int64_t>(v.as_double()));
-    case var::type::STRING:
+    case mixed::type::STRING:
       return get_value(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return string();
     default:
@@ -1045,19 +1045,19 @@ string::size_type max_string_size(const string &s) {
   return s.size();
 }
 
-string::size_type max_string_size(const var &v) {
+string::size_type max_string_size(const mixed &v) {
   switch (v.get_type()) {
-    case var::type::NUL:
+    case mixed::type::NUL:
       return 0;
-    case var::type::BOOLEAN:
+    case mixed::type::BOOLEAN:
       return max_string_size(v.as_bool());
-    case var::type::INTEGER:
+    case mixed::type::INTEGER:
       return max_string_size(v.as_int());
-    case var::type::FLOAT:
+    case mixed::type::FLOAT:
       return max_string_size(v.as_double());
-    case var::type::STRING:
+    case mixed::type::STRING:
       return max_string_size(v.as_string());
-    case var::type::ARRAY:
+    case mixed::type::ARRAY:
       return max_string_size(v.as_array());
     default:
       __builtin_unreachable();

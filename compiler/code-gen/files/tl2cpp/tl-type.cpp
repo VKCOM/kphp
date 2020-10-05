@@ -92,7 +92,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
       W << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
       W << "tl_object = result;" << NL;
     } else {
-      W << "CHECK_EXCEPTION(return array<var>());" << NL;
+      W << "CHECK_EXCEPTION(return array<mixed>());" << NL;
       W << "return " << cpp_tl_struct_name("c_", constructor->name, template_str) << "::" << fetch_call << NL;
     }
     return;
@@ -100,7 +100,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
 
   // polymorphic types are fetched differently: first 'magic', then switch (magic) for every constructor
   if (!typed_mode) {
-    W << "array<var> result;" << NL;
+    W << "array<mixed> result;" << NL;
   }
   W << "CHECK_EXCEPTION(return" << (typed_mode ? "" : " result") << ");" << NL;
   auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
@@ -193,8 +193,8 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     W << "explicit " << struct_name << "(" << vk::join(constructor_params, ", ") << ") : " << vk::join(constructor_inits, ", ") << " {}\n" << NL;
   }
   if (G->get_untyped_rpc_tl_used()) {
-    FunctionSignatureGenerator(W) << "void store(const var& tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "array<var> fetch()" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void store(const mixed& tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "array<mixed> fetch()" << SemicolonAndNL();
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W)  << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
@@ -214,12 +214,12 @@ void TlTypeDefinition::compile(CodeGenerator &W) const {
 
   if (G->get_untyped_rpc_tl_used()) {
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::store(const var &tl_object) " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::store(const mixed &tl_object) " << BEGIN;
     W << TypeStore(t, template_def);
     W << END << "\n\n";
 
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "array<var> " << full_struct_name + "::fetch() " << BEGIN;
+    FunctionSignatureGenerator(W) << "array<mixed> " << full_struct_name + "::fetch() " << BEGIN;
     W << TypeFetch(t, template_def);
     W << END << "\n\n";
   }
