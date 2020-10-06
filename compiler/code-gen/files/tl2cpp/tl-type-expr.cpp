@@ -1,6 +1,6 @@
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 
-#include "auto/TL/constants/common.h"
+#include "common/tl/constants/common.h"
 
 namespace tl2cpp {
 // Recursively traverse the type expression tree and return <type, value> pair

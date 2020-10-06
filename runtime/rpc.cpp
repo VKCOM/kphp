@@ -2,8 +2,8 @@
 
 #include <cstdarg>
 
-#include "auto/TL/constants/common.h"
 #include "common/rpc-error-codes.h"
+#include "common/tl/constants/common.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
@@ -13,9 +13,9 @@
 #include "runtime/resumable.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_server.h"
+#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/zlib.h"
 #include "server/php-queries.h"

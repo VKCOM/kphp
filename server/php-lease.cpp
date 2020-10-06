@@ -1,9 +1,9 @@
 #include "server/php-lease.h"
 
-#include "auto/TL/constants/common.h"
-#include "auto/TL/constants/kphp.h"
 #include "common/options.h"
 #include "common/precise-time.h"
+#include "common/tl/constants/common.h"
+#include "common/tl/constants/kphp.h"
 #include "common/tl/methods/string.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"

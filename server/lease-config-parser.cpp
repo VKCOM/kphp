@@ -2,8 +2,8 @@
 
 #include <algorithm>
 
-#include "auto/TL/constants/kphp.h"
 #include "common/kprintf.h"
+#include "common/tl/constants/kphp.h"
 
 #include "server/php-engine-vars.h"
 

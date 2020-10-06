@@ -1,7 +1,7 @@
 #include "runtime/tl/rpc_response.h"
 
-#include "auto/TL/constants/common.h"
 #include "common/rpc-error-codes.h"
+#include "common/tl/constants/common.h"
 
 #include "runtime/exception.h"
 #include "runtime/rpc.h"

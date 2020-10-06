@@ -1,6 +1,6 @@
 #include "compiler/code-gen/files/tl2cpp/tl-combinator.h"
 
-#include "auto/TL/constants/common.h"
+#include "common/tl/constants/common.h"
 
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 

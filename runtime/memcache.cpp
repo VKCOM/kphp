@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "auto/TL/constants/engine.h"
+#include "common/tl/constants/engine.h"
 #include "common/wrappers/gnu-builtins.h"
 
 static_assert(TL_ENGINE_MC_GET_QUERY == ENGINE_MC_GET_QUERY, "bad ENGINE_MC_GET_QUERY constant");

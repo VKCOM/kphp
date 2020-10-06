@@ -13,10 +13,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "auto/TL/constants/common.h"
-#include "auto/TL/constants/kphp.h"
 #include "common/allocators/zmalloc.h"
-#include "common/sanitizer.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
@@ -25,10 +22,13 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 #include "common/rpc-error-codes.h"
+#include "common/sanitizer.h"
 #include "common/server/limits.h"
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
 #include "common/server/sockets.h"
+#include "common/tl/constants/common.h"
+#include "common/tl/constants/kphp.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "db-proxy/passwd.h"
