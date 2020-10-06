@@ -1,8 +1,6 @@
 #include "compiler/compiler-settings.h"
 
-#include <fmt/format.h>
 #include <fstream>
-#include <iostream>
 #include <openssl/sha.h>
 #include <sstream>
 #include <thread>
@@ -12,6 +10,7 @@
 #include "common/algorithms/find.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
+#include "common/wrappers/to_array.h"
 
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
@@ -101,7 +100,8 @@ void KphpOption<std::vector<std::string>>::parse_arg_value() noexcept {
 }
 
 namespace {
-static void as_dir(std::string &path) {
+
+void as_dir(std::string &path) noexcept {
   if (path.empty()) {
     return;
   }
@@ -116,6 +116,30 @@ static void as_dir(std::string &path) {
     path.insert(0, "./");
   }
 }
+
+bool contains_lib(vk::string_view ld_flags, vk::string_view libname) noexcept {
+  const std::string static_lib_name = "lib" + libname + ".a";
+  if (vk::contains(ld_flags, static_lib_name)) {
+    return true;
+  }
+
+  std::string shared_lib_name = "-l" + libname + " ";
+  if (vk::contains(ld_flags, shared_lib_name)) {
+    return true;
+  }
+  shared_lib_name.pop_back();
+  return ld_flags.ends_with(shared_lib_name);
+}
+
+template<class T>
+void append_if_doesnt_contain(std::string &ld_flags, const T &libs, const char *prefix, const char *suffix = "") noexcept {
+  for (const char *lib : libs) {
+    if (!contains_lib(ld_flags, lib)) {
+      ld_flags.append(" ").append(prefix).append(lib).append(suffix);
+    }
+  }
+}
+
 } // namespace
 
 std::string CompilerSettings::get_home() noexcept {
@@ -157,6 +181,9 @@ void CompilerSettings::update_cxx_flags_sha256() {
 
 void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
+  functions_file.value_ = get_full_path(functions_file.get());
+  runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+  link_file.value_ = get_full_path(link_file.get());
 
   if (is_static_lib_mode()) {
     if (main_files.get().size() > 1) {
@@ -193,7 +220,7 @@ void CompilerSettings::init() {
     threads_count.value_ = std::max(std::thread::hardware_concurrency(), 1U);
   }
 
-  for (string &include : includes.value_) {
+  for (std::string &include : includes.value_) {
     as_dir(include);
   }
 
@@ -206,7 +233,6 @@ void CompilerSettings::init() {
   } else {
     kphp_assert(0);
   }
-
 
   // TODO REMOVE IT!
   if (const char *deprecated_cxx = getenv("CXX")) {
@@ -226,7 +252,9 @@ void CompilerSettings::init() {
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
   ss << extra_cxx_flags.get();
-  ss << " -iquote" << kphp_src_path.get() << " -iquote" << kphp_src_path.get() << "PHP/";
+  ss << " -iquote" << kphp_src_path.get()
+     << " -iquote" << kphp_src_path.get() << ""
+     << " -iquote " << kphp_src_path.get() << "objs/generated";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
   if (!no_pch.get()) {
@@ -259,10 +287,16 @@ void CompilerSettings::init() {
   incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
 
   remove_extra_spaces(extra_ld_flags.value_);
-  ld_flags.value_ = extra_ld_flags.get() + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -lyaml-cpp -lh3 -rdynamic";
+
+  auto external_shared_libs = {"pthread", "rt", "crypto", "m", "dl", "z", "pcre", "re2", "yaml-cpp", "h3", "ssl", "zstd", "lzma", "curl"};
+  auto external_static_libs = {"vk-flex-data"};
+  ld_flags.value_ = extra_ld_flags.get();
+  append_if_doesnt_contain(ld_flags.value_, external_shared_libs, "-l");
+  append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
+
+  ld_flags.value_ += " -rdynamic";
 
   option_as_dir(dest_dir);
-
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
   binary_path.value_ = dest_dir.get() + mode.get();

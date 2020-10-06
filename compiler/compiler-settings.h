@@ -1,6 +1,7 @@
 #pragma once
+#include <string>
+#include <vector>
 
-#include "compiler/common.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/string_view.h"
 
@@ -168,4 +169,3 @@ private:
 
   color_settings color_{auto_colored};
 };
-

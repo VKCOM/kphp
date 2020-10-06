@@ -8,6 +8,7 @@
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/compiler-settings.h"
+#include "compiler/common.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
