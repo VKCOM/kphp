@@ -25,8 +25,12 @@ LexerData::LexerData(vk::string_view new_code) :
   tokens.reserve(static_cast<size_t >(code_len * 0.3));
 }
 
-const char *LexerData::get_code() {
+const char *LexerData::get_code() const {
   return code;
+}
+
+vk::string_view LexerData::get_code_view() const {
+  return {code, code_end};
 }
 
 void LexerData::pass(int shift) {
@@ -871,29 +875,17 @@ bool TokenLexerComment::parse(LexerData *lexer_data) const {
 }
 
 bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
-  const char *s = lexer_data->get_code(),
-    *st = s;
-
-  assert (strncmp(s, "#ifndef KittenPHP", 17) == 0);
-  s += 17;
-  // looking for the \n\s*#endif
-  while (*s) {
-    if (*s != '\n') {
-      s++;
-      continue;
-    }
-    for (++s; *s == ' ' || *s == '\t'; ++s) {
-    }
-    if (!strncmp(s, "#endif", 6)) {
-      break;
-    }
-  }
-  if (*s) {
-    s += 6;
+  if (lexer_data->get_code_view().starts_with("#ifndef KittenPHP")) { // this branch will be removed later
   } else {
+    kphp_assert(lexer_data->get_code_view().starts_with("#ifndef KPHP"));
+  }
+
+  auto endif_pos = lexer_data->get_code_view().find("#endif");
+  if (endif_pos == vk::string_view::npos) {
     return TokenLexerError("Unclosed comment (#endif expected)").parse(lexer_data);
   }
-  lexer_data->pass((int)(s - st));
+
+  lexer_data->pass(endif_pos + strlen("#endif"));
   return true;
 }
 
@@ -994,7 +986,8 @@ void TokenLexerPHP::init() {
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
   h->add_rule("/*|//|#", &vk::singleton<TokenLexerComment>::get());
-  h->add_simple_rule("#ifndef KittenPHP", &vk::singleton<TokenLexerIfndefComment>::get());
+  h->add_simple_rule("#ifndef KittenPHP", &vk::singleton<TokenLexerIfndefComment>::get()); // rule will be removed later
+  h->add_simple_rule("#ifndef KPHP", &vk::singleton<TokenLexerIfndefComment>::get());
   h->add_simple_rule("\'", &vk::singleton<TokenLexerSimpleString>::get());
   h->add_simple_rule("\"", &vk::singleton<TokenLexerString>::get());
   h->add_simple_rule("<<<", &vk::singleton<TokenLexerHeredocString>::get());
