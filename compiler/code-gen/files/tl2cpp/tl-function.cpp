@@ -25,13 +25,13 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().get_tl_classname_prefix() << "RpcFunctionReturnResult> typed_fetch()" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> typed_fetch()" << SemicolonAndNL();
   }
   if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
     check_kphp_function(f);
     FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object)"
                                   << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "void rpc_server_typed_store(const class_instance<" << G->settings().get_tl_classname_prefix()
+    FunctionSignatureGenerator(W) << "void rpc_server_typed_store(const class_instance<" << G->settings().tl_classname_prefix.get()
                                   << "RpcFunctionReturnResult> &tl_object_)" << SemicolonAndNL();
   }
   W << END << ";" << NL << NL;
@@ -59,7 +59,7 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
 
-    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().get_tl_classname_prefix() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
+    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
     W << CombinatorFetch(f, CombinatorPart::RIGHT, true);
     W << END << NL << NL;
   }
@@ -71,7 +71,7 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
     W << "CurrentProcessingQuery::get().reset();" << NL;
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
-    FunctionSignatureGenerator(W) << "void " << struct_name << "::rpc_server_typed_store(const class_instance<" << G->settings().get_tl_classname_prefix()
+    FunctionSignatureGenerator(W) << "void " << struct_name << "::rpc_server_typed_store(const class_instance<" << G->settings().tl_classname_prefix.get()
                                   << "RpcFunctionReturnResult> &tl_object_) " << BEGIN;
     W << "CurrentProcessingQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
     W << "auto tl_object = tl_object_.template cast_to<" << get_php_runtime_type(f, false) << "_result>().get();" << NL;

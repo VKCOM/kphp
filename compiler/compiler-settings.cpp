@@ -50,7 +50,7 @@ void KphpRawOption::throw_param_exception(const std::string &reason) const {
 
 template<>
 void KphpOption<std::string>::dump_option(std::ostream &out) const noexcept {
-  out << (value_.empty() ? "<empty>" : value_);
+  out << value_;
 }
 
 template<>
@@ -65,7 +65,7 @@ void KphpOption<bool>::dump_option(std::ostream &out) const noexcept {
 
 template<>
 void KphpOption<std::vector<std::string>>::dump_option(std::ostream &out) const noexcept {
-  out << (value_.empty() ? "<empty>" : vk::join(value_, ", "));
+  out << vk::join(value_, ", ");
 }
 
 template<>
@@ -130,46 +130,6 @@ void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexc
   as_dir(path_option.value_);
 }
 
-const string &CompilerSettings::get_binary_path() const {
-  return binary_path_;
-}
-
-const std::string &CompilerSettings::get_static_lib_name() const {
-  return static_lib_name_;
-}
-
-const string &CompilerSettings::get_runtime_sha256() const {
-  return runtime_sha256_;
-}
-
-const string &CompilerSettings::get_cxx_flags_sha256() const {
-  return cxx_flags_sha256_;
-}
-
-const string &CompilerSettings::get_dest_cpp_dir() const {
-  return dest_cpp_dir_;
-}
-
-const string &CompilerSettings::get_dest_objs_dir() const {
-  return dest_objs_dir_;
-}
-
-const string &CompilerSettings::get_cxx_flags() const {
-  return cxx_flags_;
-}
-
-const string &CompilerSettings::get_ld_flags() const {
-  return ld_flags_;
-}
-
-const string &CompilerSettings::get_incremental_linker() const {
-  return incremental_linker_;
-}
-
-const string &CompilerSettings::get_incremental_linker_flags() const {
-  return incremental_linker_flags_;
-}
-
 bool CompilerSettings::is_static_lib_mode() const {
   return mode.get() == "lib";
 }
@@ -182,7 +142,7 @@ void CompilerSettings::update_cxx_flags_sha256() {
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
 
-  auto cxx_flags_full = cxx.get() + cxx_flags_ + debug_level.get();
+  auto cxx_flags_full = cxx.get() + cxx_flags.get() + debug_level.get();
   SHA256_Update(&sha256, cxx_flags_full.c_str(), cxx_flags_full.size());
 
   unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
@@ -192,7 +152,7 @@ void CompilerSettings::update_cxx_flags_sha256() {
   for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
     fmt_format_to(hash_str + (i * 2), "{:02x}", hash[i]);
   }
-  cxx_flags_sha256_.assign(hash_str, SHA256_DIGEST_LENGTH * 2);
+  cxx_flags_sha256.value_.assign(hash_str, SHA256_DIGEST_LENGTH * 2);
 }
 
 void CompilerSettings::init() {
@@ -210,8 +170,8 @@ void CompilerSettings::init() {
     if (last_slash == std::string::npos) {
       throw std::runtime_error{"Bad lib directory"};
     }
-    static_lib_name_ = lib_dir.substr(last_slash + 1);
-    if (static_lib_name_.empty()) {
+    static_lib_name.value_ = lib_dir.substr(last_slash + 1);
+    if (static_lib_name.get().empty()) {
       throw std::runtime_error{"Empty static lib name"};
     }
     as_dir(lib_dir);
@@ -274,23 +234,26 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
-  cxx_flags_ = ss.str();
+  cxx_flags.value_ = ss.str();
 
   update_cxx_flags_sha256();
-  runtime_sha256_ = read_runtime_sha256_file(runtime_sha256_file.get());
+  runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
 
-  incremental_linker_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
-  incremental_linker_flags_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
+  incremental_linker.value_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
+  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
 
   remove_extra_spaces(extra_ld_flags.value_);
-  ld_flags_ = extra_ld_flags.get() + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -lyaml-cpp -lh3 -rdynamic";
+  ld_flags.value_ = extra_ld_flags.get() + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -lyaml-cpp -lh3 -rdynamic";
 
   option_as_dir(dest_dir);
 
-  dest_cpp_dir_ = dest_dir.get() + "kphp/";
-  dest_objs_dir_ = dest_dir.get() + "objs/";
-  binary_path_ = dest_dir.get() + mode.get();
-  cxx_flags_ += " -iquote" + get_dest_cpp_dir();
+  dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
+  dest_objs_dir.value_ = dest_dir.get() + "objs/";
+  binary_path.value_ = dest_dir.get() + mode.get();
+  cxx_flags.value_ += " -iquote" + dest_cpp_dir.get();
+
+  tl_namespace_prefix.value_ = "VK\\TL\\";
+  tl_classname_prefix.value_ = "C$VK$TL$";
 }
 
 std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {
@@ -308,14 +271,4 @@ std::string CompilerSettings::read_runtime_sha256_file(const std::string &filena
 
 CompilerSettings::color_settings CompilerSettings::get_color_settings() const {
   return color_;
-}
-
-const std::string &CompilerSettings::get_tl_namespace_prefix() const {
-  static std::string tl_namespace_name("VK\\TL\\");
-  return tl_namespace_name;
-}
-
-const std::string &CompilerSettings::get_tl_classname_prefix() const {
-  static std::string tl_classname_prefix("C$VK$TL$");
-  return tl_classname_prefix;
 }

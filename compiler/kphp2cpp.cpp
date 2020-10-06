@@ -65,6 +65,10 @@ public:
     options_.emplace_back(&raw_option);
   }
 
+  void add_implicit_option(const char *description, KphpImplicitOption &implicit_option) {
+    implicit_options_.emplace_back(std::make_pair(vk::string_view{description}, &implicit_option));
+  }
+
   void process_args(int32_t argc, char **argv) {
     parse_engine_options_long(argc, argv, [](int32_t option_id) {
       if (option_id == 'h') {
@@ -98,10 +102,14 @@ public:
     out << other_options_description_ << ": ";
     other_options_->dump_option(out);
     out << std::endl << std::endl;
-    for (auto &raw_option : options_) {
+    for (const auto &raw_option : options_) {
       out << raw_option->get_option_full_name() << ": ";
       raw_option->dump_option(out);
       out << std::endl;
+    }
+    out << std::endl;
+    for (const auto &implicit_option : implicit_options_) {
+      out << implicit_option.first << ": " << implicit_option.second->get() << std::endl;
     }
     out << std::endl;
   }
@@ -126,6 +134,8 @@ private:
 
   std::vector<KphpRawOption *> options_;
   std::unordered_set<vk::string_view> envs_;
+
+  std::vector<std::pair<vk::string_view, KphpImplicitOption *>> implicit_options_;
 
   static constexpr int32_t version_and_first_option_id_{2000};
 };
@@ -255,6 +265,19 @@ int main(int argc, char *argv[]) {
   parser.add(
     "Hide transpilation progress", settings->hide_progress,
     "hide-progress", "KPHP_HIDE_PROGRESS");
+
+  parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
+  parser.add_implicit_option("Linker flags", settings->ld_flags);
+  parser.add_implicit_option("Incremental linker", settings->incremental_linker);
+  parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
+  parser.add_implicit_option("CPP destination directory", settings->dest_cpp_dir);
+  parser.add_implicit_option("Objs destination directory", settings->dest_objs_dir);
+  parser.add_implicit_option("Binary path", settings->binary_path);
+  parser.add_implicit_option("Static lib name", settings->static_lib_name);
+  parser.add_implicit_option("Runtime SHA256", settings->runtime_sha256);
+  parser.add_implicit_option("C++ compiler flags SHA256", settings->cxx_flags_sha256);
+  parser.add_implicit_option("TL namespace prefix", settings->tl_namespace_prefix);
+  parser.add_implicit_option("TL classname prefix", settings->tl_classname_prefix);
 
   try {
     parser.process_args(argc, argv);

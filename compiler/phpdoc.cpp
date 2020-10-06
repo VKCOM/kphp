@@ -211,7 +211,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       if (!cur_tok->str_val.starts_with("tl\\")) {
         throw std::runtime_error("Invalid magic namespace after '@'");
       }
-      return parse_classname(G->settings().get_tl_namespace_prefix() + std::string(cur_tok->str_val).substr(3));
+      return parse_classname(G->settings().tl_namespace_prefix.get() + std::string(cur_tok->str_val).substr(3));
     }
     case tok_xor:       // ^1, ^2[*] (for functions.txt)
       cur_tok++;

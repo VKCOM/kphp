@@ -48,7 +48,7 @@ const CompilerSettings &CompilerCore::settings() const {
 }
 
 const string &CompilerCore::get_global_namespace() const {
-  return settings().get_static_lib_name();
+  return settings().static_lib_name.get();
 }
 
 FunctionPtr CompilerCore::get_function(const string &name) {
@@ -417,7 +417,7 @@ void CompilerCore::del_extra_files() {
 }
 
 void CompilerCore::init_dest_dir() {
-  cpp_dir = settings().get_dest_cpp_dir();
+  cpp_dir = settings().dest_cpp_dir.get();
   cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();
 }

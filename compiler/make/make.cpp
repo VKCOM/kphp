@@ -86,11 +86,11 @@ public:
 
   void init_env(const CompilerSettings &settings) {
     env.cxx = settings.cxx.get();
-    env.cxx_flags = settings.get_cxx_flags();
-    env.ld_flags = settings.get_ld_flags();
+    env.cxx_flags = settings.cxx_flags.get();
+    env.ld_flags = settings.ld_flags.get();
     env.ar = settings.archive_creator.get();
-    env.incremental_linker = settings.get_incremental_linker();
-    env.incremental_linker_flags = settings.get_incremental_linker_flags();
+    env.incremental_linker = settings.incremental_linker.get();
+    env.incremental_linker_flags = settings.incremental_linker_flags.get();
     env.debug_level = settings.debug_level.get();
   }
 
@@ -110,12 +110,12 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   out_dir.del_extra_files();
 
   // copy static archive
-  LibData out_lib(G->settings().get_static_lib_name(), out_dir.get_dir());
+  LibData out_lib(G->settings().static_lib_name.get(), out_dir.get_dir());
   hard_link_or_copy(static_archive.path, out_lib.static_archive_path());
   static_archive.unlink();
 
   // copy functions.txt of this static archive
-  File functions_txt_tmp(G->settings().get_dest_cpp_dir() + LibData::functions_txt_tmp_file());
+  File functions_txt_tmp(G->settings().dest_cpp_dir.get() + LibData::functions_txt_tmp_file());
   hard_link_or_copy(functions_txt_tmp.path, out_lib.functions_txt_file());
   functions_txt_tmp.unlink();
 
@@ -124,7 +124,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   hard_link_or_copy(runtime_lib_sha256.path, out_lib.runtime_lib_sha256_file());
 
   Index headers_tmp_dir;
-  headers_tmp_dir.sync_with_dir(G->settings().get_dest_cpp_dir() + LibData::headers_tmp_dir());
+  headers_tmp_dir.sync_with_dir(G->settings().dest_cpp_dir.get() + LibData::headers_tmp_dir());
   Index out_headers_dir;
   out_headers_dir.set_dir(out_lib.headers_dir());
   // copy cpp header files of this static archive
@@ -135,7 +135,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
 }
 
 static std::forward_list<File> collect_imported_libs() {
-  const string &binary_runtime_sha256 = G->settings().get_runtime_sha256();
+  const string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
   stage::die_if_global_errors();
 
   std::forward_list<File> imported_libs;
@@ -173,10 +173,10 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSettings &kphp_env, FILE *stats_file) {
+static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSettings &settings, FILE *stats_file) {
   std::string gch_dir = "/tmp/kphp_gch/";
-  gch_dir.append(kphp_env.get_runtime_sha256()).append(1, '/');
-  gch_dir.append(kphp_env.get_cxx_flags_sha256()).append(1, '/');
+  gch_dir.append(settings.runtime_sha256.get()).append(1, '/');
+  gch_dir.append(settings.cxx_flags_sha256.get()).append(1, '/');
 
   const std::string header_filename = "php_functions.h";
   const std::string gch_filename = header_filename + ".gch";
@@ -186,17 +186,17 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSe
   }
 
   MakeSetup make{stats_file};
-  File php_functions_h(kphp_env.kphp_src_path.get() + header_filename);
+  File php_functions_h(settings.kphp_src_path.get() + header_filename);
   kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});
 
-  File *php_functions_h_gch = obj_dir->insert_file(kphp_env.get_dest_objs_dir() + gch_filename);
+  File *php_functions_h_gch = obj_dir->insert_file(settings.dest_objs_dir.get() + gch_filename);
   make.create_cpp2obj_target(&php_functions_h, php_functions_h_gch);
-  File sha256_version_file(kphp_env.runtime_sha256_file.get());
+  File sha256_version_file(settings.runtime_sha256_file.get());
   kphp_assert(sha256_version_file.read_stat() > 0);
   php_functions_h.target->force_changed(sha256_version_file.mtime);
-  make.init_env(kphp_env);
+  make.init_env(settings);
   if (!make.make_target(php_functions_h_gch, 1)) {
     return {};
   }
@@ -373,9 +373,9 @@ void run_make() {
   G->del_extra_files();
 
   Index obj_index;
-  obj_index.sync_with_dir(settings.get_dest_objs_dir());
+  obj_index.sync_with_dir(settings.dest_objs_dir.get());
 
-  File bin_file(settings.get_binary_path());
+  File bin_file(settings.binary_path.get());
   kphp_assert (bin_file.read_stat() >= 0);
 
   if (settings.force_make.get()) {

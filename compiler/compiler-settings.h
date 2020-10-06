@@ -68,6 +68,18 @@ private:
   T value_{};
 };
 
+class KphpImplicitOption : vk::not_copyable {
+public:
+  friend class CompilerSettings;
+
+  const std::string &get() const noexcept {
+    return value_;
+  }
+
+private:
+  std::string value_;
+};
+
 class CompilerSettings : vk::not_copyable {
 public:
   enum color_settings {
@@ -125,51 +137,35 @@ public:
   KphpOption<bool> no_index_file;
   KphpOption<bool> hide_progress;
 
-  static std::string get_home() noexcept;
+  KphpImplicitOption cxx_flags;
+  KphpImplicitOption ld_flags;
+  KphpImplicitOption incremental_linker;
+  KphpImplicitOption incremental_linker_flags;
 
-private:
-  static void option_as_dir(KphpOption<std::string> &path) noexcept;
+  KphpImplicitOption dest_cpp_dir;
+  KphpImplicitOption dest_objs_dir;
+  KphpImplicitOption binary_path;
+  KphpImplicitOption static_lib_name;
 
-  std::string cxx_flags_;
-  std::string ld_flags_;
-  std::string incremental_linker_;
-  std::string incremental_linker_flags_;
+  KphpImplicitOption runtime_sha256;
+  KphpImplicitOption cxx_flags_sha256;
 
-  std::string dest_cpp_dir_;
-  std::string dest_objs_dir_;
-  std::string binary_path_;
-  std::string static_lib_name_;
-
-  std::string runtime_sha256_;
-  std::string cxx_flags_sha256_;
-
-  color_settings color_{auto_colored};
-
-  void update_cxx_flags_sha256();
-
-public:
-  const std::string &get_binary_path() const;
-  const std::string &get_static_lib_name() const;
-  const std::string &get_runtime_sha256() const;
-  const std::string &get_cxx_flags_sha256() const;
-
-  const std::string &get_dest_cpp_dir() const;
-  const std::string &get_dest_objs_dir() const;
-
-  const std::string &get_cxx_flags() const;
-  const std::string &get_ld_flags() const;
-  const std::string &get_incremental_linker() const;
-  const std::string &get_incremental_linker_flags() const;
+  KphpImplicitOption tl_namespace_prefix;
+  KphpImplicitOption tl_classname_prefix;
 
   std::string get_version() const;
   bool is_static_lib_mode() const;
   color_settings get_color_settings() const;
 
-  const std::string &get_tl_namespace_prefix() const;
-  const std::string &get_tl_classname_prefix() const;
-
   void init();
 
+  static std::string get_home() noexcept;
   static std::string read_runtime_sha256_file(const std::string &filename);
+
+private:
+  static void option_as_dir(KphpOption<std::string> &path) noexcept;
+  void update_cxx_flags_sha256();
+
+  color_settings color_{auto_colored};
 };
 

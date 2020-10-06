@@ -1630,7 +1630,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   std::string full_class_name;
   if (processing_file->namespace_name.empty() && phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class)) {
     kphp_assert(processing_file->is_builtin());
-    full_class_name = G->settings().get_tl_namespace_prefix() + name_str;
+    full_class_name = G->settings().tl_namespace_prefix.get() + name_str;
   } else {
     full_class_name = processing_file->namespace_name.empty() ? std::string{name_str} : processing_file->namespace_name + "\\" + name_str;
   }
