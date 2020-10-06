@@ -417,7 +417,6 @@ void CompilerCore::del_extra_files() {
 }
 
 void CompilerCore::init_dest_dir() {
-  settings_->init_dest_dirs();
   cpp_dir = settings().get_dest_cpp_dir();
   cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();

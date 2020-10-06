@@ -271,14 +271,7 @@ void CompilerSettings::init() {
   ld_flags_ = extra_ld_flags.get() + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -lyaml-cpp -lh3 -rdynamic";
 
   option_as_dir(dest_dir);
-}
 
-void CompilerSettings::set_dest_dir_subdir(const std::string &s) {
-  dest_dir.value_ += s;
-  option_as_dir(dest_dir);
-}
-
-void CompilerSettings::init_dest_dirs() {
   dest_cpp_dir_ = dest_dir.get() + "kphp/";
   dest_objs_dir_ = dest_dir.get() + "objs/";
   binary_path_ = dest_dir.get() + mode.get();

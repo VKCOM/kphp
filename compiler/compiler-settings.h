@@ -154,9 +154,6 @@ public:
   void add_main_file(const std::string &main_file);
   const std::vector<std::string> &get_main_files() const;
 
-  void set_dest_dir_subdir(const std::string &s);
-  void init_dest_dirs();
-
   const std::string &get_dest_cpp_dir() const;
   const std::string &get_dest_objs_dir() const;
 
@@ -176,6 +173,5 @@ public:
   void debug() const;
 
   static std::string read_runtime_sha256_file(const std::string &filename);
-
 };
 
