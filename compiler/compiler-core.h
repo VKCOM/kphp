@@ -91,7 +91,6 @@ public:
   File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();
-  std::string get_subdir_name() const;
 
   void try_load_tl_classes();
   const TlClasses &get_tl_classes() const { return tl_classes; }

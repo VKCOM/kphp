@@ -86,7 +86,6 @@ public:
   KphpOption<std::string> dest_dir;
   KphpOption<std::string> user_binary_path;
   KphpOption<std::string> static_lib_out_dir;
-  KphpOption<bool> use_auto_dest;
 
   KphpOption<bool> force_make;
   KphpOption<bool> use_make;

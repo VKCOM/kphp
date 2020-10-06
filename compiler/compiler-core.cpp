@@ -417,30 +417,11 @@ void CompilerCore::del_extra_files() {
 }
 
 void CompilerCore::init_dest_dir() {
-  if (settings().use_auto_dest.get()) {
-    settings_->set_dest_dir_subdir(get_subdir_name());
-  }
   settings_->init_dest_dirs();
   cpp_dir = settings().get_dest_cpp_dir();
   cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();
 }
-
-std::string CompilerCore::get_subdir_name() const {
-  assert(settings().use_auto_dest.get());
-
-  const string &name = main_files[0]->short_file_name;
-  string hash_string;
-  for (auto main_file : main_files) {
-    hash_string += main_file->file_name;
-    hash_string += ";";
-  }
-  std::stringstream ss;
-  ss << "auto." << name << "-" << std::hex << vk::std_hash(hash_string);
-
-  return ss.str();
-}
-
 
 bool CompilerCore::try_require_file(SrcFilePtr file) {
   return __sync_bool_compare_and_swap(&file->is_required, false, true);

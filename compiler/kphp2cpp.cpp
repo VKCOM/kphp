@@ -143,9 +143,6 @@ int main(int argc, char *argv[]) {
     "Directory for placing out static lib and header. Compatible only with lib mode", settings->static_lib_out_dir,
     'O', "output-lib-dir", "KPHP_OUT_LIB_DIR");
   parser.add(
-    "Automatic destination dir", settings->use_auto_dest,
-    'S', "auto-dest-dir", "KPHP_AUTO_DEST");
-  parser.add(
     "Force make. Old object files and binary will be removed", settings->force_make,
     'F', "force-make", "KPHP_FORCE_MAKE");
   parser.add(

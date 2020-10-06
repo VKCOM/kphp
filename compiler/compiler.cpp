@@ -105,9 +105,6 @@ class lockf_wrapper {
 public:
   bool lock() {
     std::string dest_path = G->settings().dest_dir.get();
-    if (G->settings().use_auto_dest.get()) {
-      dest_path += G->get_subdir_name();
-    }
 
     std::stringstream ss;
     ss << "/tmp/" << std::hex << vk::std_hash(dest_path) << "_kphp_temp_lock";
@@ -191,8 +188,6 @@ bool compiler_execute(CompilerSettings *settings) {
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
-
-//  PhpDocTypeRuleParser::run_tipa_unit_tests_parsing_tags(); return true;
 
   DataStream<SrcFilePtr> src_file_stream;
 
