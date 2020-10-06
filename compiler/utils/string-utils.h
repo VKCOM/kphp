@@ -103,3 +103,17 @@ static inline std::string replace_non_alphanum(std::string s, char to = '_') {
 static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
 }
+
+static inline void remove_extra_spaces(std::string &str) {
+  bool space_before = false;
+  auto last_it = std::remove_if(str.begin(), str.end(), [&space_before] (char c) {
+    if (isspace(c)) {
+      const bool remove_char = space_before;
+      space_before = true;
+      return remove_char;
+    }
+    space_before = false;
+    return false;
+  });
+  str.erase(last_it, str.end());
+}

@@ -168,7 +168,6 @@ template<class PipeFunctionT>
 using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
 
 
-
 bool compiler_execute(CompilerSettings *settings) {
   double st = get_utime(CLOCK_MONOTONIC);
   G = new CompilerCore();
@@ -191,7 +190,7 @@ bool compiler_execute(CompilerSettings *settings) {
 
   DataStream<SrcFilePtr> src_file_stream;
 
-  for (const auto &main_file : settings->get_main_files()) {
+  for (const auto &main_file : settings->main_files.get()) {
     G->register_main_file(main_file, src_file_stream);
   }
   if (!G->settings().functions_file.get().empty()) {
@@ -293,7 +292,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
 
-  if (G->settings().hide_progress.get()) {
+  if (!G->settings().hide_progress.get()) {
     PipesProgress::get().enable();
   }
 

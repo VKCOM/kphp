@@ -17,12 +17,12 @@
 #include "compiler/utils/string-utils.h"
 
 void KphpRawOption::init(vk::string_view long_option, char short_option, vk::string_view env,
-                         vk::string_view default_value, std::vector<std::string> choices) noexcept {
+                         std::string default_value, std::vector<std::string> choices) noexcept {
   env_var_.assign(env.begin(), env.end());
   if (char *val = getenv(env_var_.c_str())) {
     raw_option_arg_ = val;
   } else {
-    raw_option_arg_.assign(default_value.begin(), default_value.end());
+    raw_option_arg_ = std::move(default_value);
   }
 
   cmd_option_full_name_.assign("--").append(long_option.begin(), long_option.end());
@@ -46,6 +46,26 @@ void KphpRawOption::verify_arg_value() const {
 
 void KphpRawOption::throw_param_exception(const std::string &reason) const {
   throw std::runtime_error{"Can't parse " + cmd_option_full_name_ + " option: " + reason};
+}
+
+template<>
+void KphpOption<std::string>::dump_option(std::ostream &out) const noexcept {
+  out << (value_.empty() ? "<empty>" : value_);
+}
+
+template<>
+void KphpOption<uint64_t>::dump_option(std::ostream &out) const noexcept {
+  out << value_;
+}
+
+template<>
+void KphpOption<bool>::dump_option(std::ostream &out) const noexcept {
+  out << (value_ ? "true" : "false");
+}
+
+template<>
+void KphpOption<std::vector<std::string>>::dump_option(std::ostream &out) const noexcept {
+  out << (value_.empty() ? "<empty>" : vk::join(value_, ", "));
 }
 
 template<>
@@ -126,14 +146,6 @@ const string &CompilerSettings::get_cxx_flags_sha256() const {
   return cxx_flags_sha256_;
 }
 
-void CompilerSettings::add_main_file(const string &main_file) {
-  main_files_.push_back(main_file);
-}
-
-const vector<string> &CompilerSettings::get_main_files() const {
-  return main_files_;
-}
-
 const string &CompilerSettings::get_dest_cpp_dir() const {
   return dest_cpp_dir_;
 }
@@ -187,13 +199,13 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
 
   if (is_static_lib_mode()) {
-    if (main_files_.size() > 1) {
+    if (main_files.get().size() > 1) {
       throw std::runtime_error{"Multiple main directories are forbidden for static lib mode"};
     }
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_option_full_name() + " is forbidden for static lib mode"};
     }
-    std::string lib_dir = get_full_path(main_files_.back());
+    std::string lib_dir = get_full_path(main_files.get().back());
     std::size_t last_slash = lib_dir.rfind('/');
     if (last_slash == std::string::npos) {
       throw std::runtime_error{"Bad lib directory"};
@@ -209,7 +221,7 @@ void CompilerSettings::init() {
     }
 
     option_as_dir(static_lib_out_dir);
-    main_files_.back().assign(lib_dir).append("/php/index.php");
+    main_files.value_.back().assign(lib_dir).append("/php/index.php");
   } else if (!static_lib_out_dir.get().empty()) {
     throw std::runtime_error{"Option " + static_lib_out_dir.get_option_full_name() + " is allowed only for static lib mode"};
   }
@@ -235,6 +247,7 @@ void CompilerSettings::init() {
     kphp_assert(0);
   }
 
+  remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
   ss << extra_cxx_flags.get();
   ss << " -iquote" << kphp_src_path.get() << " -iquote" << kphp_src_path.get() << "PHP/";
@@ -268,6 +281,8 @@ void CompilerSettings::init() {
 
   incremental_linker_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
   incremental_linker_flags_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
+
+  remove_extra_spaces(extra_ld_flags.value_);
   ld_flags_ = extra_ld_flags.get() + " -lm -lz -lpthread -lrt -lcrypto -lpcre -lre2 -lyaml-cpp -lh3 -rdynamic";
 
   option_as_dir(dest_dir);
@@ -276,71 +291,6 @@ void CompilerSettings::init() {
   dest_objs_dir_ = dest_dir.get() + "objs/";
   binary_path_ = dest_dir.get() + mode.get();
   cxx_flags_ += " -iquote" + get_dest_cpp_dir();
-}
-
-void CompilerSettings::debug() const {
-  //std::cerr <<
-  //          "HOME=[" << get_home() << "]\n" <<
-  //          "KPHP_DEST_DIR=[" << get_dest_dir() << "]\n" <<
-  //          "KPHP_FUNCTIONS=[" << get_functions() << "]\n" <<
-  //          "KPHP_JOBS_COUNT=[" << get_jobs_count() << "]\n" <<
-  //          "KPHP_MODE=[" << get_mode() << "]\n" <<
-  //          "KPHP_LINK_FILE=[" << get_link_file() << "]\n" <<
-  //          "KPHP_USE_MAKE=[" << get_use_make() << "]\n" <<
-  //          "KPHP_THREADS_COUNT=[" << get_threads_count() << "]\n" <<
-  //          "KPHP_PATH=[" << get_path() << "]\n" <<
-  //          "KPHP_USER_BINARY_PATH=[" << get_user_binary_path() << "]\n" <<
-  //          "KPHP_RUNTIME_SHA256_FILE=[" << get_runtime_sha256_file() << "]\n" <<
-  //          "KPHP_RUNTIME_SHA256=[" << get_runtime_sha256() << "]\n" <<
-  //          "KPHP_TL_SCHEMA=[" << get_tl_schema_file() << "]\n" <<
-  //          "KPHP_VERBOSITY=[" << get_verbosity() << "]\n" <<
-  //          "KPHP_PROFILER=[" << get_profiler_level() << "]\n" <<
-  //          "KPHP_NO_PCH=[" << get_no_pch() << "]\n" <<
-  //          "KPHP_NO_INDEX_FILE=[" << get_no_index_file() << "]\n" <<
-  //          "KPHP_CONTINUE_ON_TYPE_ERROR=[" << get_continue_on_type_error() << "]\n" <<
-  //          "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=[" << get_enable_global_vars_memory_stats() << "]\n" <<
-  //          "KPHP_GEN_TL_INTERNALS=[" << get_gen_tl_internals() << "]\n" <<
-  //          "KPHP_COMPILATION_METRICS_FILE=[" << get_compilation_metrics_filename() << "]\n" <<
-  //          "KPHP_DYNAMIC_INCREMENTAL_LINKAGE = [" << get_dynamic_incremental_linkage() << "]\n" <<
-  //          "KPHP_PHP_CODE_VERSION=[" << get_php_code_version() << "]\n" <<
-  //
-  //          "KPHP_AUTO_DEST=[" << get_use_auto_dest() << "]\n" <<
-  //          "KPHP_BINARY_PATH=[" << get_binary_path() << "]\n" <<
-  //          "KPHP_DEST_CPP_DIR=[" << get_dest_cpp_dir() << "]\n" <<
-  //          "KPHP_DEST_OBJS_DIR=[" << get_dest_objs_dir() << "]\n";
-  //
-  //if (is_static_lib_mode()) {
-  //  std::cerr << "KPHP_OUT_LIB_DIR=[" << get_static_lib_out_dir() << "]\n";
-  //}
-  //
-  //std::cerr << "CXX=[" << get_cxx() << "]\n" <<
-  //          "CXXFLAGS=[" << get_cxx_flags() << "]\n" <<
-  //          "LDFLAGS=[" << get_ld_flags() << "]\n" <<
-  //          "AR=[" << get_ar() << "]\n" <<
-  //          "KPHP_INCREMENTAL_LINKER=[" << get_incremental_linker() << "]\n" <<
-  //          "KPHP_INCREMENTAL_LINKER_FLAGS=[" << get_incremental_linker_flags() << "]\n";
-  //std::cerr << "KPHP_INCLUDES=[";
-  //bool is_first = true;
-  //for (const auto &include : get_includes()) {
-  //  if (is_first) {
-  //    is_first = false;
-  //  } else {
-  //    std::cerr << ";";
-  //  }
-  //  std::cerr << include;
-  //}
-  //std::cerr << "]\n";
-  //std::cerr << "KPHP_MAIN_FILES=[";
-  //is_first = true;
-  //for (const auto &main_file : get_main_files()) {
-  //  if (is_first) {
-  //    is_first = false;
-  //  } else {
-  //    std::cerr << ";";
-  //  }
-  //  std::cerr << main_file;
-  //}
-  //std::cerr << "]\n";
 }
 
 std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {

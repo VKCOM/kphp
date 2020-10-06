@@ -11,13 +11,14 @@ public:
   }
 
   void init(vk::string_view long_option, char short_option, vk::string_view env,
-            vk::string_view default_value, std::vector<std::string> choices) noexcept;
+            std::string default_value, std::vector<std::string> choices) noexcept;
 
   void substitute_depends(const KphpRawOption &other) noexcept;
   void verify_arg_value() const;
 
   virtual void set_option_arg_value(const char *optarg_value) noexcept = 0;
   virtual void parse_arg_value() noexcept = 0;
+  virtual void dump_option(std::ostream &out) const noexcept = 0;
   virtual ~KphpRawOption() = default;
 
 protected:
@@ -61,6 +62,7 @@ private:
     }
   }
 
+  void dump_option(std::ostream &out) const noexcept final;
   void parse_arg_value() noexcept final;
 
   T value_{};
@@ -73,6 +75,8 @@ public:
     not_colored,
     colored
   };
+
+  KphpOption<std::vector<std::string>> main_files;
 
   KphpOption<uint64_t> verbosity;
 
@@ -126,8 +130,6 @@ public:
 private:
   static void option_as_dir(KphpOption<std::string> &path) noexcept;
 
-  std::vector<std::string> main_files_;
-
   std::string cxx_flags_;
   std::string ld_flags_;
   std::string incremental_linker_;
@@ -151,9 +153,6 @@ public:
   const std::string &get_runtime_sha256() const;
   const std::string &get_cxx_flags_sha256() const;
 
-  void add_main_file(const std::string &main_file);
-  const std::vector<std::string> &get_main_files() const;
-
   const std::string &get_dest_cpp_dir() const;
   const std::string &get_dest_objs_dir() const;
 
@@ -170,7 +169,6 @@ public:
   const std::string &get_tl_classname_prefix() const;
 
   void init();
-  void debug() const;
 
   static std::string read_runtime_sha256_file(const std::string &filename);
 };

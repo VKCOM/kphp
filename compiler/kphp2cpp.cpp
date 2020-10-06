@@ -1,6 +1,6 @@
+#include <iostream>
 #include <memory>
 #include <thread>
-#include <unordered_map>
 #include <unordered_set>
 
 #include "common/algorithms/string-algorithms.h"
@@ -19,6 +19,18 @@ public:
   static OptionParser &get() noexcept {
     static OptionParser parser;
     return parser;
+  }
+
+  static void add_default_options() noexcept {
+    remove_all_options();
+    parse_option("help", no_argument, 'h', "Print help and exit.");
+    parse_option("version", no_argument, version_and_first_option_id_, "Print version and exit.");
+  }
+
+  void add_other_args(const char *description, KphpRawOption &raw_option) {
+    usage_set_other_args_desc(description);
+    other_options_ = &raw_option;
+    other_options_description_ = description;
   }
 
   template<class T>
@@ -42,76 +54,96 @@ public:
       choices_str = " {choices: " + vk::join(choices, ", ") + "}";
     }
 
-    int32_t option_id = next_option_id_++;
+    const auto option_id = static_cast<int32_t>(version_and_first_option_id_ + options_.size() + 1);
     parse_option(long_option, std::is_same<T, bool>{} ? no_argument : required_argument, option_id,
                  "[%s] %s%s%s.", env, description, choices_str.c_str(), default_str.c_str());
     if (short_option) {
       parse_option_alias(long_option, short_option);
     }
     KphpRawOption &raw_option = option;
-    raw_option.init(long_option, short_option, env, default_value, std::move(choices));
-    options_[option_id] = &raw_option;
+    raw_option.init(long_option, short_option, env, std::move(default_value), std::move(choices));
+    options_.emplace_back(&raw_option);
   }
 
-  int32_t parse(int32_t option_id, const char *optarg_value) noexcept {
-    auto it = options_.find(option_id);
-    if (it == options_.end()) {
-      return -1;
-    }
-    it->second->set_option_arg_value(optarg_value);
-    return 0;
-  }
-
-  void finalize() {
-    for (auto &raw_option : options_) {
-      for (auto &option_for_substitute : options_) {
-        raw_option.second->substitute_depends(*option_for_substitute.second);
+  void process_args(int32_t argc, char **argv) {
+    parse_engine_options_long(argc, argv, [](int32_t option_id) {
+      if (option_id == 'h') {
+        usage_and_exit();
       }
-      raw_option.second->verify_arg_value();
-      raw_option.second->parse_arg_value();
+      if (option_id == version_and_first_option_id_) {
+        printf("%s\n", get_version_string());
+        exit(0);
+      }
+      option_id -= version_and_first_option_id_ + 1;
+      auto &this_ = get();
+      if (option_id < 0 || option_id >= this_.options_.size()) {
+        return -1;
+      }
+      this_.options_[option_id]->set_option_arg_value(optarg);
+      return 0;
+    });
+
+    if (optind >= argc) {
+      usage_and_exit();
     }
-    options_.clear();
-    envs_.clear();
+
+    for (; optind < argc; ++optind) {
+      other_options_->set_option_arg_value(argv[optind]);
+    }
+
+    finalize();
+  }
+
+  void dump_options(std::ostream &out) const noexcept {
+    out << other_options_description_ << ": ";
+    other_options_->dump_option(out);
+    out << std::endl << std::endl;
+    for (auto &raw_option : options_) {
+      out << raw_option->get_option_full_name() << ": ";
+      raw_option->dump_option(out);
+      out << std::endl;
+    }
+    out << std::endl;
   }
 
 private:
+  void finalize() {
+    other_options_->parse_arg_value();
+
+    for (auto &raw_option : options_) {
+      for (auto &option_for_substitute : options_) {
+        raw_option->substitute_depends(*option_for_substitute);
+      }
+      raw_option->verify_arg_value();
+      raw_option->parse_arg_value();
+    }
+  }
+
   OptionParser() = default;
 
-  std::unordered_map<int32_t, KphpRawOption *> options_;
+  KphpRawOption *other_options_{nullptr};
+  vk::string_view other_options_description_;
+
+  std::vector<KphpRawOption *> options_;
   std::unordered_set<vk::string_view> envs_;
 
-  int32_t next_option_id_{2001};
+  static constexpr int32_t version_and_first_option_id_{2000};
 };
 
 } // namespace
 
-int32_t parse_args_f(int32_t i) {
-  switch (i) {
-    case 'h':
-      usage_and_exit();
-    case 2000:
-      printf("%s\n", get_version_string());
-      exit(0);
-    default:
-      return OptionParser::get().parse(i, optarg);
-  }
-}
-
 int main(int argc, char *argv[]) {
   init_version_string("kphp2cpp");
-  usage_set_other_args_desc("<main-files-list>");
   set_debug_handlers();
 
   const uint32_t system_threads = std::max(std::thread::hardware_concurrency(), 1U);
   const std::string home_dir = CompilerSettings::get_home();
 
   auto settings = std::make_unique<CompilerSettings>();
+
+  OptionParser::add_default_options();
   auto &parser = OptionParser::get();
-
-  remove_all_options();
-  parse_option("help", no_argument, 'h', "Print help and exit.");
-  parse_option("version", no_argument, 2000, "Print version and exit.");
-
+  parser.add_other_args("<main-files-list>", settings->main_files);
   parser.add(
     "Verbosity", settings->verbosity,
     'v', "verbosity", "KPHP_VERBOSITY", "0", {"0", "1", "2", "3"});
@@ -171,8 +203,7 @@ int main(int argc, char *argv[]) {
     "warnings-level", "KPHP_WARNINGS_LEVEL", "0", {"0", "1", "2"});
   parser.add(
     "Show all type errors", settings->show_all_type_errors,
-    "show-all-type-errors", "KPHP_SHOW_ALL_TYPE_ERRORS"
-  );
+    "show-all-type-errors", "KPHP_SHOW_ALL_TYPE_ERRORS");
   parser.add(
     "Colorize warnings output: yes, no, auto", settings->colorize,
     "colorize", "KPHP_COLORS", "auto", {"auto", "yes", "no"});
@@ -225,27 +256,16 @@ int main(int argc, char *argv[]) {
     "Hide transpilation progress", settings->hide_progress,
     "hide-progress", "KPHP_HIDE_PROGRESS");
 
-  parse_engine_options_long(argc, argv, parse_args_f);
-
-  if (optind >= argc) {
-    usage_and_exit();
-    return 2;
-  }
-
-  for (; optind < argc; ++optind) {
-    settings->add_main_file(argv[optind]);
-  }
-
   try {
-    parser.finalize();
+    parser.process_args(argc, argv);
     settings->init();
   } catch (const std::exception &ex) {
-    printf("%s\n", ex.what());
+    std::cout << ex.what() << std::endl;
     return 1;
   }
 
   if (settings->verbosity.get() >= 3) {
-    settings->debug();
+    parser.dump_options(std::cerr);
   }
 
   if (!compiler_execute(settings.release())) {

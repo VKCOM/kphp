@@ -399,7 +399,9 @@ void run_make() {
     kphp_error (ok, "Make failed");
   }
 
-  fclose(make_stats_file);
+  if (make_stats_file) {
+    fclose(make_stats_file);
+  }
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 
