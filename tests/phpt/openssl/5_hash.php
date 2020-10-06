@@ -1,6 +1,6 @@
 @ok benchmark
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
   function crc32_file ($x) {
     return crc32 (file_get_contents ($x));
   }

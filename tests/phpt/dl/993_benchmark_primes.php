@@ -1,6 +1,6 @@
 @ok benchmark
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
 function create_vector ($n, $x) {
   $res = array();
   for ($i = 0; $i < $n; $i++) {

@@ -168,11 +168,11 @@
   var_dump (trim(' ,', ', '));
   var_dump (trim(' , , test , , ,', ', '));
 
-#ifndef KittenPHP
+#ifndef KPHP
   if (0) {
 #endif
     warning ("test");
-#ifndef KittenPHP
+#ifndef KPHP
   }
 #endif
 

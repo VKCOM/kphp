@@ -27,7 +27,7 @@ function test_negative_numbers() {
     echo "\n";
     var_dump(decbin($n));
     var_dump(dechex($n));
-#ifndef KittenPHP
+#ifndef KPHP
     var_dump(is_float($n) ? (-PHP_INT_MAX - 1) : $n);
     var_dump(is_float($n) ? (-PHP_INT_MAX - 1) : $n);
     continue;
@@ -39,7 +39,7 @@ function test_negative_numbers() {
 }
 
 function test_bindec_overflow() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(-9223372036854775807 - 1);
   var_dump(-9223372036850581487);
   var_dump(108099585200619537);
@@ -52,7 +52,7 @@ function test_bindec_overflow() {
 }
 
 function test_hexdec_overflow() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(-1);
   var_dump(-1152921504606846976);
   var_dump(-2305843006529339392);

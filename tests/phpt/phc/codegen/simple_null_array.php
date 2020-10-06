@@ -1,6 +1,6 @@
 @ok
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
 var_dump([]);
 exit;
 ?>

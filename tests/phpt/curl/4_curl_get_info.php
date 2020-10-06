@@ -5,7 +5,7 @@ function test_get_info_all() {
   $c = curl_init();
 
   $info = curl_getinfo($c);
-#ifndef KittenPHP
+#ifndef KPHP
   unset($info["content_type"]);
   unset($info["redirect_url"]);
   unset($info["certinfo"]);
@@ -21,7 +21,7 @@ function test_get_info_all() {
 function test_get_info_header() {
   $c = curl_init();
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump("");
   if (0)
 #endif

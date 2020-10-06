@@ -8,7 +8,7 @@ $p2 = unpack("P", pack("P", 0));
 $j2 = unpack("J", pack("J", 0));
 $q2 = unpack("Q", pack("Q", 0));
 
-#ifndef KittenPHP
+#ifndef KPHP
 // KPHP вернёт строки, а не int-ы
 $p1 = [1 => '123', 2 => '8589934592'];
 $j1 = [1 => '123', 2 => '8589934592'];

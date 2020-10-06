@@ -12,7 +12,7 @@ header('Date: haha, date in tests');
 setcookie('test-cookie', 'blabla');
 $x = headers_list();
 
-#ifndef KittenPHP
+#ifndef KPHP
 // not working in console php
 $x = [
   'Server: nginx/0.3.33',

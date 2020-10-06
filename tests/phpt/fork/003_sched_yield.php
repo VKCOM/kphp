@@ -5,7 +5,7 @@ require_once 'kphp_tester_include.php';
 $fork_calls = 1000;
 $func_iterations = 10;
 
-#ifndef KittenPHP
+#ifndef KPHP
 for ($i = 0; $i <= $func_iterations; $i++) {
   for ($id = 0; $id <= $fork_calls; $id++) {
     echo "f $id $i\n";

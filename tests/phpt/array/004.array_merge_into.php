@@ -29,7 +29,7 @@ function test_array_merge_into_same_type() {
 
 function test_array_merge_into_changing_type() {
   $a = [1,2,3];
-  #ifndef KittenPHP
+  #ifndef KPHP
   $a = [1.0,2.0,3.0];
   #endif
   array_merge_into($a, [4.1, 5.2]);

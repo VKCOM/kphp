@@ -8,7 +8,7 @@
 function test_openssl_get_cipher_methods($aliases) {
     $methods = openssl_get_cipher_methods($aliases);
     $kphp_methods = $methods;
-#ifndef KittenPHP
+#ifndef KPHP
     $kphp_methods = array_filter($methods, function ($method) {
         return stristr($method, "gcm") === false && stristr($method, "ccm") === false;
     });

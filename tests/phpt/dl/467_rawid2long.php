@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
   function lor ($x, $y) {
     return $x | $y;
   }

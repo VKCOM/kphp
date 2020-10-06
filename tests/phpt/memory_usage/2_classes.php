@@ -6,7 +6,7 @@ function test_empty_class() {
     function __construct() {}
   }
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(0);
   var_dump(0);
   var_dump(0);
@@ -30,7 +30,7 @@ function test_class_with_simple_fields() {
     public $w = [1, 2, 3]; // 8
   } // total size = 48
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(48);
   var_dump(48);
   var_dump(0);
@@ -59,7 +59,7 @@ function test_class_with_dynamic_array() {
     public $x = []; // 8
   } // total size = 16
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(248);
   var_dump(16 + 248);
   return;

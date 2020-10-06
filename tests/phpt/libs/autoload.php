@@ -1,6 +1,6 @@
 <?php
 
-#ifndef KittenPHP // good
+#ifndef KPHP // good
 
 function ClassAutoLoader($class) {
     require_once str_replace('\\', '/', $class.'.php');

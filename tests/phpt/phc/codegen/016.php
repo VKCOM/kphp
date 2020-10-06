@@ -18,7 +18,7 @@
 		return 2;
 	}
 
-#ifndef KittenPHP
+#ifndef KPHP
   $value = g();
 	$a[f()] = $value;
   if (false) {
@@ -29,7 +29,7 @@
     } else {
 	    $a[f()] = g();
 	  }
-#ifndef KittenPHP
+#ifndef KPHP
   }
 #endif
 	var_dump($a);

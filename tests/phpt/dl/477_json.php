@@ -7,7 +7,7 @@
  */
 function test_json ($options) {
   $php_ver = 7;
-#ifndef KittenPHP
+#ifndef KPHP
     $php_ver = (int)phpversion();
 #endif
 

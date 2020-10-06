@@ -2,7 +2,7 @@
 <?php
 
 function test_primitive_types() {
-#ifndef KittenPHP
+#ifndef KPHP
   for ($i = 0; $i < 8; ++$i) {
     var_dump(0);
   }
@@ -19,7 +19,7 @@ function test_primitive_types() {
 }
 
 function test_string() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(0);
   var_dump(24);
   var_dump(0);
@@ -43,7 +43,7 @@ function test_string() {
 }
 
 function test_array() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(0);
   var_dump(192);
   var_dump(0);

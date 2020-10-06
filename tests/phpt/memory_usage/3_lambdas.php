@@ -6,7 +6,7 @@ function test_empty_lambda() {
     echo "hello world";
   };
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(0);
   return;
 #endif
@@ -23,7 +23,7 @@ function test_lambda_with_use() {
     echo "hello world";
   };
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(32);
   return;
 #endif

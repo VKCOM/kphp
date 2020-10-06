@@ -3,7 +3,7 @@
 
 require_once 'autoload.php';
 
-#ifndef KittenPHP
+#ifndef KPHP
 function require_lib($lib_name) {
     return require_once($lib_name . "/php/index.php");
 }

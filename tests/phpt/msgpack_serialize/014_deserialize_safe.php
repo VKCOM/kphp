@@ -9,7 +9,7 @@ try {
     var_dump($e->getMessage());
 }
 
-#ifndef KittenPHP
+#ifndef KPHP
 var_dump("msgpacke_serialize buffer overflow");
 #endif
 

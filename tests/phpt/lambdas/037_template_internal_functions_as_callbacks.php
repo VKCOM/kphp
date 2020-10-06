@@ -3,7 +3,7 @@
 
 require_once 'kphp_tester_include.php';
 
-#ifndef KittenPHP
+#ifndef KPHP
 function new_Long($x) { return floatval($x); }
 #endif
 

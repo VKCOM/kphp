@@ -139,7 +139,7 @@ function test_update_ttl() {
   var_dump(instance_cache_update_ttl("key_x_test_update_ttl", 2));
 
   var_dump(instance_cache_delete("key_x_test_update_ttl"));
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(true);
   if (0)
 #endif
@@ -174,13 +174,13 @@ function test_delete() {
 
 // delete на самом деле не удаляет элемент,
 // а лишь меняет ему ttl так, что бы следующий fetch вернул false
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(true);
   if (0)
 #endif
   var_dump(instance_cache_delete("key_x3"));
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(true);
   if (0)
 #endif
@@ -199,14 +199,14 @@ function test_loop_in_tree() {
   $root = new TreeX(0, [], true);
 
   $result = instance_cache_store("tree_root_loop", $root);
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(false);
   if (false)
 #endif
   var_dump($result);
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root_loop");
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(true);
   if (false)
 #endif
@@ -215,7 +215,7 @@ function test_loop_in_tree() {
 
 function test_same_instance_in_array() {
   $y = new Y(10, " <-first");
-#ifndef KittenPHP
+#ifndef KPHP
   $vector = new VectorY(0, [$y, clone $y, new Y(11, " <-second")]);
   if (false)
 #endif
@@ -230,7 +230,7 @@ function test_same_instance_in_array() {
 function test_memory_limit_exceed() {
   $vector = new VectorY(1000000);
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(false);
   if (false)
 #endif
@@ -244,7 +244,7 @@ function test_with_shape() {
 
   $a2 = instance_cache_fetch(HasShape::class, 'has_shape');
   $dump = instance_to_array($a2);
-#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
   $dump['sh'] = [19, 'y', null];
 #endif
   var_dump($dump);
@@ -256,7 +256,7 @@ function test_with_shape() {
   instance_cache_store('has_shape_more', $a);
   $a3 = instance_cache_fetch(HasShape::class, 'has_shape_more');
   $dump = instance_to_array($a3);
-#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
   $dump['sh'] = [2, 'y', [1,2,3]];
 #endif
   var_dump($dump);

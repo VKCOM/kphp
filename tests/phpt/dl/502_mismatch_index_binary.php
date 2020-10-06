@@ -1,7 +1,7 @@
 @kphp_should_fail
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 function tuple(...$args) { return $args; }
 #endif
 

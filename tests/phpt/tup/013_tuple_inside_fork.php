@@ -1,6 +1,6 @@
 @ok
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
 require_once 'kphp_tester_include.php';
 require_once 'kphp_tester_include.php';
 #endif

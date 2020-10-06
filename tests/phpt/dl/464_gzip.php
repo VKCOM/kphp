@@ -1,6 +1,6 @@
 @ok
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
 if(!function_exists('gzdecode')){
 function gzdecode($string) {
   $string = substr($string, 10);

@@ -11,7 +11,7 @@ function test_auto_memory_defragmentation() {
     $a .= "a";
   }
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(0);
   if (false)
 #endif
@@ -25,7 +25,7 @@ function test_auto_memory_defragmentation() {
     $a .= "a";
   }
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(1);
   if (false)
 #endif

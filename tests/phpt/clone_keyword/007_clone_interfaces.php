@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 function instance_cast($c, $s) { return $c; }
 function get_reference_counter($c) { return 0; }
 #endif
@@ -26,7 +26,7 @@ class A implements IPrintable {
      * @param int $value
      */
     function check_refcnt($value) {
-        #ifndef KittenPHP
+        #ifndef KPHP
         var_dump(true);
         return;
         #endif
@@ -46,7 +46,7 @@ class B implements IPrintable {
      * @param int $value
      */
     function check_refcnt($value) {
-        #ifndef KittenPHP
+        #ifndef KPHP
         var_dump(true);
         return;
         #endif

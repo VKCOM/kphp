@@ -9,7 +9,7 @@ function perform_test() {
     $reg .= "world/";
     $res = null;
     preg_match_all($reg, "hello world", $res);
-#ifndef KittenPHP
+#ifndef KPHP
     // in PHP it works fine
     return;
 #endif

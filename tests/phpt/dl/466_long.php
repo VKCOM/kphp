@@ -1,6 +1,6 @@
 @ok
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
   function ladd ($x, $y) {
     return longval (bcadd ($x, $y));
   }

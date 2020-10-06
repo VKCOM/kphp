@@ -4,7 +4,7 @@
 function test_array_combine_empty() {
   var_dump(array_combine([], []));
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump([]);
   var_dump([]);
   return;

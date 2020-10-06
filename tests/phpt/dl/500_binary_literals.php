@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 function tuple(...$args) { return $args; }
 #endif
 

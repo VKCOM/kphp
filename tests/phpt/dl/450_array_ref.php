@@ -19,7 +19,7 @@ $c = array (3, 4);
 foreach ($c as &$xx) {
   $d = $c;
   $xx = 5;
-#ifndef KittenPHP
+#ifndef KPHP
   $d = [$c[0], $c[1]];
 #endif
   var_dump ($d);

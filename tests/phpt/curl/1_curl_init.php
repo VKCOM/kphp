@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 $counter = 0;
 #endif
 
@@ -15,7 +15,7 @@ function test_init($url, $need_close) {
   if ($need_close) {
     curl_close($c);
   }
-#ifndef KittenPHP
+#ifndef KPHP
   global $counter;
   var_dump(++$counter);
   return;

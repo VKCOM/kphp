@@ -40,7 +40,7 @@ class C2 extends B2 {
 }
 
 function test_polymorphic_classes() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(16);
   var_dump(16);
   var_dump(32);
@@ -56,7 +56,7 @@ function test_polymorphic_classes() {
 }
 
 function test_polymorphic_classes_in_array() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(16);
   var_dump(16);
   var_dump(32);

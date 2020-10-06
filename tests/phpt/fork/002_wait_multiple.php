@@ -38,7 +38,7 @@ function h($id) {
 
 echo "-----------<stage 1>-----------\n";
 
-#ifndef KittenPHP
+#ifndef KPHP
   echo "f 1\n";
   var_dump("g", 1, false);
   echo "f 2\n";

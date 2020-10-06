@@ -11,7 +11,7 @@
 		return 1;
 	}
 
-#ifndef KittenPHP
+#ifndef KPHP
   $_6 = f("six");
   $_3 = f("three");
   $_1 = f("one");
@@ -25,7 +25,7 @@
     $x[f("one")][2][f("three")][4][5][f("six")] += 1;
   }
 
-#ifndef KittenPHP
+#ifndef KPHP
   }
 #endif
 	var_dump($x);

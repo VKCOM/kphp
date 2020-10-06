@@ -21,14 +21,14 @@ class A {
 
 $a = new A;
 $dump = instance_to_array($a);
-#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
 $dump['sh'] = [2, 'y', null];
 #endif
 var_dump($dump);
 
 $a->setZ();
 $dump = instance_to_array($a);
-#ifndef KittenPHP   // in KPHP shapes produce non-assoiative array at runtime
+#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
 $dump['sh'] = [2, 'y', [1,2,3]];
 #endif
 var_dump($dump);

@@ -1,6 +1,6 @@
 @ok
 <?php
-#ifndef KittenPHP
+#ifndef KPHP
 function f($n) {
   if ($n <= 0) {
     return 0;

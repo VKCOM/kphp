@@ -27,7 +27,7 @@
   var_dump(- -9223372036854775807);
   var_dump(- - -9223372036854775807);
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(-PHP_INT_MAX - 1);
   var_dump(-PHP_INT_MAX - 1);
   var_dump(-PHP_INT_MAX - 1);

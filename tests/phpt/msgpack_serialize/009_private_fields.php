@@ -42,7 +42,7 @@ function run() {
     $b_new = instance_deserialize($serialized, B::class);
 
     var_dump($b->equal_to($b_new));
-#ifndef KittenPHP
+#ifndef KPHP
     try {
         $b->y = 20;
     } catch (\Throwable $_) {

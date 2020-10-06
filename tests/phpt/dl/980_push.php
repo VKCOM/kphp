@@ -64,7 +64,7 @@ foreach ($scalar_array as $scalar) {
   var_dump ($scalar);
 
   $x = $scalar;
-#ifndef KittenPHP
+#ifndef KPHP
   if (!is_string($x))
 #endif
   @$x[] = 5;

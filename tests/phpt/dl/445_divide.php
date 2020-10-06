@@ -1,7 +1,7 @@
 @ok
 <?php
   $is_kphp = true;
-#ifndef KittenPHP
+#ifndef KPHP
   $is_kphp = false;
 #endif
 

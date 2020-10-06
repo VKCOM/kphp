@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 function get_reference_counter($a) {
     return $a->rcnt;
 }

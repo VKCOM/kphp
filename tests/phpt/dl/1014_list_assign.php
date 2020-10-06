@@ -6,14 +6,14 @@ function test_or_false_assign() {
   list($x1, $y1, $z1, ) = $xyz1;
   var_dump($x1);
   var_dump($y1);
-#ifndef KittenPHP
+#ifndef KPHP
   if (is_null($z1)) { $z1 = ""; }
 #endif
   var_dump($z1);
 
   $xyz2 = false ? ["hello", "world"] : false;
   list($x2, $y2, $z2, ) = $xyz2;
-#ifndef KittenPHP
+#ifndef KPHP
   if (is_null($x2)) { $x2 = ""; }
   if (is_null($y2)) { $y2 = ""; }
   if (is_null($z2)) { $z2 = ""; }
@@ -32,7 +32,7 @@ function test_var_assign() {
 
   $xyz2 = false ? ["hello", "world"] : "hello world";
   list($x2, $y2, $z2, ) = $xyz2;
-#ifndef KittenPHP
+#ifndef KPHP
   $x2 = "h";
   $y2 = "e";
   $z2 = "l";

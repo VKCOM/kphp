@@ -1,7 +1,7 @@
 @ok
 <?php
 
-#ifndef KittenPHP
+#ifndef KPHP
 if(0)
 #endif
 register_kphp_on_warning_callback(function ($message, $bt) {
@@ -10,6 +10,6 @@ register_kphp_on_warning_callback(function ($message, $bt) {
 
 echo sprintf( '%$s contains %1$d', 10);
 
-#ifndef KittenPHP
+#ifndef KPHP
 var_dump(true);
 #endif

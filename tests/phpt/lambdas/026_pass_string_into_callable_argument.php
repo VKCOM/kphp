@@ -21,7 +21,7 @@ function use_callback(callable $callback, $x) {
 
 function test_global_callbacks() {
     $php_ver = 7;
-#ifndef KittenPHP
+#ifndef KPHP
     $php_ver = (int)phpversion();
 #endif
 

@@ -7,7 +7,7 @@
 	var_dump($x);
 	
 	$y = $arr["d"];
-#ifndef KittenPHP
+#ifndef KPHP
   $y = 0;
 #endif
 	var_dump($y);

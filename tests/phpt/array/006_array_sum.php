@@ -7,7 +7,7 @@
  * @return float
  */
 function fix_php($x) {
-#ifndef KittenPHP
+#ifndef KPHP
   return $x * 1.0;
 #endif
   return $x;

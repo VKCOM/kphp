@@ -56,7 +56,7 @@ try {
   $x = fork (my_pow (5, 7));
   echo "OK!\n";
 } catch (Exception $e) {
-#ifndef KittenPHP
+#ifndef KPHP
   $x = fork (0);
   echo "OK!\n";
   $exception_from_fork = $e;
@@ -92,7 +92,7 @@ try {
 echo "-----------<stage 6>-----------\n";
 
 try {
-  #ifndef KittenPHP
+  #ifndef KPHP
     throw $exception_from_fork;
   #endif
   var_dump (wait_result ($x));

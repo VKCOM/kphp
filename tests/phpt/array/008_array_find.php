@@ -17,14 +17,14 @@ function run_test() {
 
   $ar = [1,2,3,4,6];
   [$key, $value] = array_find($ar, function($v) { return $v > 1000;});
-#ifndef KittenPHP
+#ifndef KPHP
   $value = 0;
 #endif
   var_dump($key, $value);
 
   $ar = ['a', 'b', 'c', 'd'];
   [$key, $value] = array_find($ar, function($v) { return $v === 'e';});
-#ifndef KittenPHP
+#ifndef KPHP
   $value = '';
 #endif
   var_dump($key, $value);

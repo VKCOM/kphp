@@ -31,7 +31,7 @@ class MyClass2 implements IMyClass {
 }
 
 function test_empty_class() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(16);
   return;
 #endif
@@ -39,7 +39,7 @@ function test_empty_class() {
 }
 
 function test_interfaces() {
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump(16);
   var_dump(40);
   var_dump(16);

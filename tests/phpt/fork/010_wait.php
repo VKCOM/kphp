@@ -22,7 +22,7 @@ $x = fork (my_usleep (3000000));
  */
 function wait_x ($x) {
   $ok = true;
-#ifndef KittenPHP
+#ifndef KPHP
   if (false)
 #endif
   for ($i = 0; $i < 6; $i++) {

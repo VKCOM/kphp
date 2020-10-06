@@ -25,7 +25,7 @@ function test_bin_to_hex() {
     }
   }
 
-#ifndef KittenPHP
+#ifndef KPHP
   var_dump (bin2hex (htmlentities($str, ENT_COMPAT | ENT_HTML401, 'cp1251')));
   var_dump (bin2hex (htmlspecialchars($str, ENT_COMPAT | ENT_HTML401, 'cp1251')));
   var_dump (bin2hex (htmlentities($s, ENT_COMPAT | ENT_HTML401, 'cp1251')));
@@ -35,7 +35,7 @@ function test_bin_to_hex() {
   var_dump (bin2hex (htmlentities($str)));
   var_dump (bin2hex (htmlspecialchars($str)));
   var_dump (bin2hex (htmlentities($s)));
-#ifndef KittenPHP
+#ifndef KPHP
   }
 #endif
 }

@@ -21,13 +21,13 @@ var_dump (setlocale (LC_ALL, "en_US.utf8"));
 $text = "This is the Euro symbol 'ˆ'.";
 
 echo 'Original : ', $text, PHP_EOL;
-#ifndef KittenPHP
+#ifndef KPHP
 echo 'TRANSLIT : This is the Euro symbol \'', PHP_EOL;
 if (false)
 #endif
 echo 'TRANSLIT : ', iconv("UTF-8", "ISO-8859-1//TRANSLIT", $text), PHP_EOL;
 echo 'IGNORE   : ', iconv("UTF-8", "ISO-8859-1//IGNORE", $text), PHP_EOL;
-#ifndef KittenPHP
+#ifndef KPHP
 echo 'Plain    : This is the Euro symbol \'', PHP_EOL;
 if (false)
 #endif

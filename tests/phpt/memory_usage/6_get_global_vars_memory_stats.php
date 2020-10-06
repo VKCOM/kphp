@@ -93,7 +93,7 @@ function class_static_vars() {
 }
 
 function test_get_global_vars_memory_stats() {
-#ifndef KittenPHP
+#ifndef KPHP
   $greater_than_16 = [
     "\$dynamic_array" => 72,
     "static_vars::\$dynamic_array" => 72,

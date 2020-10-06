@@ -3,7 +3,7 @@
 
 echo "A";
 
-#ifndef KittenPHP
+#ifndef KPHP
 
 class X { }
 
