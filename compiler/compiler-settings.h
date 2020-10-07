@@ -141,6 +141,7 @@ public:
   KphpImplicitOption incremental_linker;
   KphpImplicitOption incremental_linker_flags;
 
+  KphpImplicitOption base_dir;
   KphpImplicitOption dest_cpp_dir;
   KphpImplicitOption dest_objs_dir;
   KphpImplicitOption binary_path;

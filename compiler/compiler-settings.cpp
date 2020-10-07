@@ -280,6 +280,15 @@ void CompilerSettings::init() {
 
   ld_flags.value_ += " -rdynamic";
 
+  for (auto &main_file : main_files.value_) {
+    main_file = get_full_path(main_file);
+  }
+
+  const auto &first_main_file = main_files.get().front();
+  const size_t dir_pos = first_main_file.rfind('/');
+  kphp_assert (dir_pos != std::string::npos);
+  base_dir.value_ = first_main_file.substr(0, dir_pos + 1);
+
   option_as_dir(dest_dir);
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";

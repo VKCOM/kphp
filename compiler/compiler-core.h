@@ -30,7 +30,6 @@ private:
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
   bool is_untyped_rpc_tl_used{false};
-  std::string base_dir_;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -105,10 +104,6 @@ public:
 
   bool get_untyped_rpc_tl_used() const {
     return is_untyped_rpc_tl_used;
-  }
-
-  const std::string &get_base_dir() const noexcept {
-    return base_dir_;
   }
 
   Stats stats;

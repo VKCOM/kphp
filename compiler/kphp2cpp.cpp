@@ -282,6 +282,7 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker", settings->incremental_linker);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
+  parser.add_implicit_option("Base directory", settings->base_dir);
   parser.add_implicit_option("CPP destination directory", settings->dest_cpp_dir);
   parser.add_implicit_option("Objs destination directory", settings->dest_objs_dir);
   parser.add_implicit_option("Binary path", settings->binary_path);

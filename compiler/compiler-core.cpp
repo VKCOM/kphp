@@ -64,15 +64,10 @@ FunctionPtr CompilerCore::get_function(const string &name) {
 }
 
 string CompilerCore::unify_file_name(const string &file_name) {
-  if (base_dir_.empty()) { //hack: directory of first file will be used ad base_dir
-    size_t i = file_name.find_last_of("/");
-    kphp_assert (i != string::npos);
-    base_dir_ = file_name.substr(0, i + 1);
-  }
-  if (strncmp(file_name.c_str(), base_dir_.c_str(), base_dir_.size())) {
+  if (strncmp(file_name.c_str(), settings().base_dir.get().c_str(), settings().base_dir.get().size())) {
     return file_name;
   }
-  return file_name.substr(base_dir_.size());
+  return file_name.substr(settings().base_dir.get().size());
 }
 
 std::string CompilerCore::search_file_in_include_dirs(const std::string &file_name, size_t *dir_index) const {
