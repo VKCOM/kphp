@@ -237,7 +237,7 @@ if __name__ == "__main__":
     runner_dir = os.path.dirname(os.path.abspath(__file__))
     kphp_test_runner = make_relpath(runner_dir, "kphp_tester.py")
     functional_tests_dir = make_relpath(runner_dir, "python/tests")
-    zend_test_list = make_relpath(runner_dir, "ci/zend-test-list")
+    zend_test_list = make_relpath(runner_dir, "zend-test-list")
     kphp_repo_root = os.path.join(runner_dir, os.path.pardir)
     kphp_repo_root = os.path.relpath(kphp_repo_root, os.getcwd())
 
@@ -260,14 +260,12 @@ if __name__ == "__main__":
 
     distcc_options = ""
     distcc_cmake_option = ""
-    distcc_hosts_env_var = ""
+    distcc_hosts_file = ""
     if args.use_distcc:
         distributive_name = get_distributive_name()
-        distcc_hosts = "ci/distcc-host-list.{}".format(distributive_name)
-        distcc_host_list = make_relpath(runner_dir, distcc_hosts)
-        distcc_options = "--distcc-host-list {}".format(distcc_host_list)
-        distcc_hosts_env_var = "{} ".format(os.path.abspath(distcc_host_list))
-        os.environ.update(make_distcc_env(read_distcc_hosts(distcc_host_list), os.path.join(runner_dir, "tmp_distcc")))
+        distcc_hosts_file = "/etc/distcc/hosts"
+        distcc_options = "--distcc-host-list {}".format(distcc_hosts_file)
+        os.environ.update(make_distcc_env(read_distcc_hosts(distcc_hosts_file), os.path.join(runner_dir, "tmp_distcc")))
         distcc_cmake_option = "-DCMAKE_C_COMPILER_LAUNCHER=distcc -DCMAKE_CXX_COMPILER_LAUNCHER=distcc "
 
     runner.add_test_group(
@@ -277,11 +275,11 @@ if __name__ == "__main__":
             "mkdir {kphp_repo_root}/build && "
             "cmake "
             "-S {kphp_repo_root} -B {kphp_repo_root}/build "
-            "{distcc_option}"
+            "{distcc_cmake_option}"
             "-DCMAKE_C_COMPILER={cc} -DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
             "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test".format(
                 kphp_repo_root=kphp_repo_root,
-                distcc_option=distcc_cmake_option,
+                distcc_cmake_option=distcc_cmake_option,
                 cc=cc_compiler,
                 cxx=cxx_compiler,
                 cmake_options=cmake_options,
@@ -362,10 +360,10 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="functional-tests",
         description="run kphp functional tests in {} mode".format("gcc"),
-        cmd="KPHP_TESTS_DISTCC_FILE={distcc_hosts_env_var} "
+        cmd="KPHP_TESTS_DISTCC_FILE={distcc_hosts_file} "
             "python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
             functional_tests_dir=functional_tests_dir,
-            distcc_hosts_env_var=distcc_hosts_env_var
+            distcc_hosts_file=distcc_hosts_file
         ),
         skip=args.steps and "functional-tests" not in args.steps
     )
@@ -377,12 +375,12 @@ if __name__ == "__main__":
             cmd="PYTHONPATH={lib_dir} "
                 "KPHP_TESTS_ENGINE_REPO={engine_repo} "
                 "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
-                "KPHP_TESTS_DISTCC_FILE={distcc_hosts_env_var} "
+                "KPHP_TESTS_DISTCC_FILE={distcc_hosts_file} "
                 "python3 -m pytest --tb=native -n{{jobs}} {tests_dir}".format(
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
-                distcc_hosts_env_var=distcc_hosts_env_var,
+                distcc_hosts_file=distcc_hosts_file,
                 tests_dir=os.path.join(args.kphp_tests_repo, "python/tests"),
             ),
             skip=args.steps and "integration-tests" not in args.steps
