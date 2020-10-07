@@ -142,6 +142,10 @@ bool CompilerSettings::is_static_lib_mode() const {
   return mode.get() == "lib";
 }
 
+bool CompilerSettings::is_composer_enabled() const {
+  return !composer_root.get().empty();
+}
+
 std::string CompilerSettings::get_version() const {
   return override_kphp_version.get().empty() ? get_version_string() : override_kphp_version.get();
 }
@@ -297,6 +301,8 @@ void CompilerSettings::init() {
 
   tl_namespace_prefix.value_ = "VK\\TL\\";
   tl_classname_prefix.value_ = "C$VK$TL$";
+
+  option_as_dir(composer_root);
 }
 
 std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {

@@ -102,6 +102,9 @@ public:
   KphpOption<std::string> user_binary_path;
   KphpOption<std::string> static_lib_out_dir;
 
+  KphpOption<std::string> composer_root;
+  KphpOption<bool> composer_no_dev;
+
   KphpOption<bool> force_make;
   KphpOption<bool> use_make;
   KphpOption<uint64_t> jobs_count;
@@ -155,6 +158,7 @@ public:
 
   std::string get_version() const;
   bool is_static_lib_mode() const;
+  bool is_composer_enabled() const; // reports whether composer compatibility mode is on
   color_settings get_color_settings() const;
 
   void init();

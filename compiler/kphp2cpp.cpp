@@ -272,6 +272,12 @@ int main(int argc, char *argv[]) {
   parser.add(
     "Show transpilation progress", settings->show_progress,
     "show-progress", "KPHP_SHOW_PROGRESS");
+  parser.add(
+    "A folder that contains composer.json file", settings->composer_root,
+    "composer-root", "KPHP_COMPOSER_ROOT");
+  parser.add(
+    "Simulate the composer -no-dev flag behavior when handling composer files", settings->composer_no_dev,
+    "composer-no-dev", "KPHP_COMPOSER_NO_DEV");
 
   parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
   parser.add_implicit_option("Linker flags", settings->ld_flags);

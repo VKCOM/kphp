@@ -1,0 +1,9 @@
+{
+    "name": "vk/utils",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "VK\\Utils\\": "src/"
+        }
+    }
+}

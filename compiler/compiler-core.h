@@ -14,6 +14,7 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
+#include "compiler/composer.h"
 
 class CompilerCore {
 private:
@@ -25,6 +26,7 @@ private:
   TSHashTable<LibPtr> libs_ht;
   vector<SrcFilePtr> main_files;
   CompilerSettings *settings_;
+  ComposerClassLoader composer_class_loader;
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -84,6 +86,7 @@ public:
   vector<ClassPtr> get_classes();
   vector<DefinePtr> get_defines();
   vector<LibPtr> get_libs();
+  const ComposerClassLoader &get_composer_class_loader() const;
 
   void load_index();
   void save_index();
@@ -93,6 +96,7 @@ public:
   void init_dest_dir();
 
   void try_load_tl_classes();
+  void init_composer_class_loader();
   const TlClasses &get_tl_classes() const { return tl_classes; }
 
   void add_kphp_runtime_opt(std::string opt) { kphp_runtime_opts.emplace_back(std::move(opt)); }

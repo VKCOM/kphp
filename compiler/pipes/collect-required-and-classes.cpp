@@ -40,12 +40,24 @@ private:
   }
 
   void require_class(const string &class_name) {
+    if (G->get_class(class_name)) {
+      return; // no need to require extra files
+    }
+
+    if (G->settings().is_composer_enabled()) {
+      const auto &psr4_filename = G->get_composer_class_loader().psr4_lookup(class_name);
+      if (!psr4_filename.empty()) {
+        require_file(psr4_filename, false);
+        return; // required from the composer autoload PSR-4 path
+      }
+    }
+
+    // fallback to the default class autoloading scheme;
+    //
     // in case that PHP-file doesn't exist we don't give any error
     // as they'll be reported as missing classes errors later;
     // for builtin and non-autoloadable classes there will be no errors
-    if (!G->get_class(class_name)) {
-      require_file(class_name + ".php", false);
-    }
+    require_file(class_name + ".php", false);
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {

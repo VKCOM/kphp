@@ -212,6 +212,7 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   G->try_load_tl_classes();
+  G->init_composer_class_loader();
 
   PipeC<LoadFileF>::get()->set_input_stream(&src_file_stream);
 
