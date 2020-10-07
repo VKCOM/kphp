@@ -996,7 +996,7 @@ class rpc_get_resumable : public Resumable {
 protected:
   bool run() {
     RESUMABLE_BEGIN
-      ready = f$wait(resumable_id, timeout);
+      ready = wait_without_result(resumable_id, timeout);
       TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
@@ -1054,7 +1054,7 @@ Optional<string> f$rpc_get(int64_t request_id, double timeout) {
 }
 
 Optional<string> f$rpc_get_synchronously(int64_t request_id) {
-  wait_synchronously(request_id);
+  wait_without_result_synchronously(request_id);
   Optional<string> result = f$rpc_get(request_id);
   php_assert (resumable_finished);
   return result;
@@ -1069,7 +1069,7 @@ class rpc_get_and_parse_resumable : public Resumable {
 protected:
   bool run() {
     RESUMABLE_BEGIN
-      ready = f$wait(resumable_id, timeout);
+      ready = wait_without_result(resumable_id, timeout);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
@@ -1497,7 +1497,7 @@ array<array<mixed>> f$rpc_tl_query_result(const array<int64_t> &query_ids) {
 array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
   array<array<mixed>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
   if (query_ids.count() == 1) {
-    f$wait_synchronously(query_ids.begin().get_value());
+    wait_without_result_synchronously_safe(query_ids.begin().get_value());
     tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one(query_ids.begin().get_value());
     php_assert (resumable_finished);
   } else {
@@ -1597,9 +1597,9 @@ Optional<int64_t> f$rpc_queue_next_synchronously(int64_t queue_id) {
 }
 
 bool f$rpc_wait(int64_t request_id) {
-  return f$wait(request_id);
+  return wait_without_result(request_id);
 }
 
-bool f$rpc_wait_multiple(int64_t request_id) {
-  return f$wait_multiple(request_id);
+bool f$rpc_wait_concurrently(int64_t request_id) {
+  return f$wait_concurrently(request_id);
 }

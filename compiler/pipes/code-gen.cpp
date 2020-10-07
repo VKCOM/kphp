@@ -33,13 +33,15 @@ public:
   VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto call = root.try_as<op_func_call>()) {
       if (call->func_id->is_resumable) {
-        if (call->str_val == "wait_result") {
+        if (call->str_val == "wait") {
           waitable_types.push_back(tinf::get_type(root));
-        } else if (call->str_val == "wait_result_multi") {
+        } else if (call->str_val == "wait_multi") {
           forkable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
           waitable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
         }
         forkable_types.push_back(tinf::get_type(root));
+      } else if (call->str_val == "wait_synchronously") {
+        waitable_types.push_back(tinf::get_type(root));
       }
     }
     return root;

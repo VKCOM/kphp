@@ -22,14 +22,14 @@ $z = fork (my_pow (2));
 
 echo "-----------<stage 1>-----------\n";
 
-var_dump (wait ($x));
-var_dump (wait ($y));
-var_dump (wait ($z));
-var_dump (wait_result ($y));
-var_dump (wait_result ($y));
+var_dump (wait($x) != null);
+var_dump (wait($y) != null);
+var_dump (wait($z) != null);
+var_dump (wait($y));
+var_dump (wait($y));
 var_dump (rpc_get ($x));
-var_dump (wait_result ($x));
-var_dump (wait_result ($z));
+var_dump (wait($x));
+var_dump (wait($z));
 
 $x = fork (my_pow (3, 2));
 $y = fork (my_pow (5, 3));
@@ -40,7 +40,7 @@ echo "-----------<stage 2>-----------\n";
 $q = wait_queue_create (array ($x, $y, $z));
 $res_powers = [];
 while ($t = wait_queue_next ($q)) {
-  $res_powers[] = wait_result ($t);
+  $res_powers[] = wait($t);
 }
 sort ($res_powers);
 var_dump ($res_powers);
@@ -65,9 +65,9 @@ echo "-----------<stage 3>-----------\n";
 
 a_varg(3, 2, 1);
 $a = fork (a_varg(3, 2, 1));
-wait_result ($a);
+wait($a);
 
 echo "-----------<stage 4>-----------\n";
 
 $b = fork (b_varg(1, 2, 3));
-wait_result ($b);
+wait($b);

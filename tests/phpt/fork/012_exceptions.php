@@ -17,10 +17,7 @@ function my_pow ($x, $p = 5) {
   }
   if ($p == 2 || $p == 1) {
     $id = fork (my_pow ($x, $p - 1));
-    if (!wait_synchronously ($id)) {
-      echo "ERROR!\n";
-    }
-    $tmp = wait_result ($id);
+    $tmp = wait_synchronously($id);
   } else {
     $tmp = my_pow ($x, $p - 1);
   }
@@ -69,33 +66,13 @@ try {
 
 }
 
-echo "-----------<stage 4>-----------\n";
-
-try {
-  var_dump (wait ($x));
-  echo "OK!\n";
-} catch (Exception $e) {
-  processException ($e);  
-  echo "ERROR!\n";
-}
-
-echo "-----------<stage 5>-----------\n";
-
-try {
-  var_dump (wait_synchronously ($x));
-  echo "OK!\n";
-} catch (Exception $e) {
-  processException ($e);  
-  echo "ERROR!\n";
-}
-
 echo "-----------<stage 6>-----------\n";
 
 try {
   #ifndef KPHP
     throw $exception_from_fork;
   #endif
-  var_dump (wait_result ($x));
+  var_dump (wait_synchronously($x));
   echo "ERROR!\n";
 } catch (Exception $e) {
   processException ($e);  
@@ -106,8 +83,8 @@ echo "-----------<stage 7>-----------\n";
 
 try {
   $x = fork (my_pow (4));
-  var_dump (wait_result ($x));
-  var_dump (wait_result ($x));
+  var_dump (wait($x));
+  var_dump (wait($x));
   echo "OK!\n";
 } catch (Exception $e) {
   processException ($e);  

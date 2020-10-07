@@ -51,7 +51,7 @@ function hash3($n) {
     if (!$t) {
       break;
     }
-    wait_result ($t);
+    wait($t);
   }
 }
 
@@ -93,8 +93,8 @@ function hash4($n) {
 
 $id2 = fork(hash2(100));
 $id = fork(hash3(100));
-wait_result($id);
-wait_result($id2);
+wait($id);
+wait($id2);
 
 print "{$res}\n";
 
@@ -105,7 +105,7 @@ while (true) {
   if (!$t) {
     break;
   }
-  wait_result ($t);
+  wait($t);
 }
 
 print "{$res}\n";

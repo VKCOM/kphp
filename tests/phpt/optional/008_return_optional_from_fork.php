@@ -64,26 +64,26 @@ function return_false_null_array($x) {
 
 function test_return_null() {
   $x = fork(return_null());
-  $a = wait_result($x);
+  $a = wait($x);
   var_dump($a);
 }
 
 function test_return_true() {
   $x = fork(return_true());
-  $a = wait_result($x);
+  $a = wait($x);
   var_dump($a);
 }
 
 function test_return_false() {
   $x = fork(return_false());
-  $a = wait_result($x);
+  $a = wait($x);
   var_dump($a);
 }
 
 function test_return_true_false_null() {
   for ($i = 0; $i < 3; ++$i) {
     $x = fork(return_true_false_null($i));
-    $a = wait_result($x);
+    $a = wait($x);
     var_dump($a);
   }
 }
@@ -91,7 +91,7 @@ function test_return_true_false_null() {
 function test_return_false_null_array() {
   for ($i = 0; $i < 3; ++$i) {
     $x = fork(return_false_null_array($i));
-    $a = wait_result($x);
+    $a = wait($x);
     var_dump($a);
   }
 }

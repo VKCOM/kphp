@@ -875,10 +875,7 @@ bool TokenLexerComment::parse(LexerData *lexer_data) const {
 }
 
 bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
-  if (lexer_data->get_code_view().starts_with("#ifndef KittenPHP")) { // this branch will be removed later
-  } else {
-    kphp_assert(lexer_data->get_code_view().starts_with("#ifndef KPHP"));
-  }
+  kphp_assert(lexer_data->get_code_view().starts_with("#ifndef KPHP"));
 
   auto endif_pos = lexer_data->get_code_view().find("#endif");
   if (endif_pos == vk::string_view::npos) {
@@ -986,7 +983,6 @@ void TokenLexerPHP::init() {
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse"));
 
   h->add_rule("/*|//|#", &vk::singleton<TokenLexerComment>::get());
-  h->add_simple_rule("#ifndef KittenPHP", &vk::singleton<TokenLexerIfndefComment>::get()); // rule will be removed later
   h->add_simple_rule("#ifndef KPHP", &vk::singleton<TokenLexerIfndefComment>::get());
   h->add_simple_rule("\'", &vk::singleton<TokenLexerSimpleString>::get());
   h->add_simple_rule("\"", &vk::singleton<TokenLexerString>::get());

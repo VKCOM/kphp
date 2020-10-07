@@ -13,10 +13,10 @@ function throw_exception() {
   throw new Exception();
 }
 
-wait_result(fork(return_void()));
+wait(fork(return_void()));
 
 try {
-  wait_result(fork(throw_exception()));
+  wait(fork(throw_exception()));
   echo "Not catched!\n";
 } catch (Exception $e) {
   echo "Catched!\n";

@@ -27,4 +27,4 @@ function forkable_test() {
 if (0) { fork(forkable_ten()); };
 
 $id_test = fork(forkable_test());
-var_dump(wait_result($id_test));
+var_dump(wait($id_test));

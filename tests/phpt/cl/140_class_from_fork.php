@@ -23,7 +23,7 @@ function demo() {
 }
 
 $ii = fork(demo());
-$t = wait_result($ii);
+$t = wait($ii);
 echo "done\n";
 
 var_dump(instance_to_array($t));

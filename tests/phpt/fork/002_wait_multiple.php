@@ -21,7 +21,8 @@ function f() {
  */
 function g($id) {
   global $f_resumable; 
-  $res = wait($f_resumable);
+  wait($f_resumable);
+  $res = true;
   var_dump("g", $id, $res);
 }
 
@@ -31,7 +32,7 @@ function g($id) {
  */
 function h($id) {
   global $f_resumable, $f_finished; 
-  $res = wait_multiple($f_resumable);
+  $res = wait_concurrently($f_resumable);
   $res = true;
   var_dump("h", $id, $res);
 }
@@ -40,7 +41,7 @@ echo "-----------<stage 1>-----------\n";
 
 #ifndef KPHP
   echo "f 1\n";
-  var_dump("g", 1, false);
+  var_dump("g", 1, true);
   echo "f 2\n";
   echo "f 3\n";
   echo "f 4\n";

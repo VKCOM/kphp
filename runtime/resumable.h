@@ -75,21 +75,19 @@ void resumable_run_ready(int64_t resumable_id);
 
 bool wait_started_resumable(int64_t resumable_id);
 
-void wait_synchronously(int64_t resumable_id);
+void wait_without_result_synchronously(int64_t resumable_id);
 
-bool f$wait_synchronously(int64_t resumable_id);
+bool wait_without_result_synchronously_safe(int64_t resumable_id);
 
-bool f$wait(int64_t resumable_id, double timeout = -1.0);
+bool wait_without_result(int64_t resumable_id, double timeout = -1.0);
 
-bool f$wait_multiple(int64_t resumable_id);
+bool f$wait_concurrently(int64_t resumable_id);
 
-inline bool f$wait_synchronously(Optional<int64_t> resumable_id) { return f$wait_synchronously(resumable_id.val());}
+inline bool wait_without_result(Optional<int64_t> resumable_id, double timeout = -1.0) { return wait_without_result(resumable_id.val(), timeout); }
 
-inline bool f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) { return f$wait(resumable_id.val(), timeout); }
+inline bool f$wait_concurrently(Optional<int64_t> resumable_id) { return f$wait_concurrently(resumable_id.val());};
 
-inline bool f$wait_multiple(Optional<int64_t> resumable_id) { return f$wait_multiple(resumable_id.val());};
-
-inline bool f$wait_multiple(const mixed &resumable_id) { return f$wait_multiple(resumable_id.to_int());};
+inline bool f$wait_concurrently(const mixed &resumable_id) { return f$wait_concurrently(resumable_id.to_int());};
 
 
 void f$sched_yield();
@@ -190,11 +188,11 @@ class wait_result_resumable : public Resumable {
 protected:
   bool run() {
     RESUMABLE_BEGIN
-      ready = f$wait(resumable_id, timeout);
+      ready = wait_without_result(resumable_id, timeout);
       TRY_WAIT(wait_result_resumable_label_1, ready, bool);
       if (!ready) {
         if (last_wait_error == nullptr) {
-          last_wait_error = "Timeout in wait_result";
+          last_wait_error = "Timeout in wait";
         }
         RETURN(Optional<bool>{});
       }
@@ -220,11 +218,11 @@ public:
 template<>
 inline bool wait_result_resumable<void>::run() {
   RESUMABLE_BEGIN
-    ready = f$wait(resumable_id, timeout);
+    ready = wait_without_result(resumable_id, timeout);
     TRY_WAIT(wait_result_resumable_label_1, ready, bool);
     if (!ready) {
       if (last_wait_error == nullptr) {
-        last_wait_error = "Timeout in wait_result";
+        last_wait_error = "Timeout in wait";
       }
       RETURN_VOID();
     }
@@ -241,17 +239,28 @@ inline bool wait_result_resumable<void>::run() {
 }
 
 template<typename T>
-T f$wait_result(int64_t resumable_id, double timeout = -1) {
-  return start_resumable<T>(new wait_result_resumable<T>(resumable_id, timeout));
+T f$wait(int64_t resumable_id) {
+  return start_resumable<T>(new wait_result_resumable<T>(resumable_id, -1));
 }
 
 template<typename T>
-T f$wait_result(Optional<int64_t> resumable_id, double timeout = -1) {
-  return f$wait_result<T>(resumable_id.val(), timeout);
+T f$wait(Optional<int64_t> resumable_id) {
+  return f$wait<T>(resumable_id.val());
 }
 
 template<typename T>
-class wait_result_multi_resumable : public Resumable {
+T f$wait_synchronously(int64_t resumable_id) {
+  wait_without_result_synchronously(resumable_id);
+  return start_resumable<T>(new wait_result_resumable<T>(resumable_id, -1));
+}
+
+template<typename T>
+T f$wait_synchronously(Optional<int64_t> resumable_id) {
+  return f$wait_synchronously<T>(resumable_id.val());
+}
+
+template<typename T>
+class wait_multi_resumable : public Resumable {
   using ReturnT = T;
   array<int64_t> resumable_ids;
   T result;
@@ -263,9 +272,9 @@ protected:
   bool run() {
     RESUMABLE_BEGIN
       for (resumable_it = const_begin(resumable_ids); resumable_it != const_end(resumable_ids); ++resumable_it) {
-        next_waited_result = f$wait_result<typename T::value_type>(resumable_it.get_value());
+        next_waited_result = f$wait<typename T::value_type>(resumable_it.get_value());
 
-        TRY_WAIT(wait_result_multi_label, next_waited_result, typename T::value_type);
+        TRY_WAIT(wait_multi_label, next_waited_result, typename T::value_type);
         CHECK_EXCEPTION(RETURN(T()));
 
         result.set_value(resumable_it.get_key(), next_waited_result);
@@ -276,20 +285,19 @@ protected:
   }
 
 public:
-  explicit wait_result_multi_resumable(const array<int64_t> &resumable_ids) :
+  explicit wait_multi_resumable(const array<int64_t> &resumable_ids) :
     resumable_ids(resumable_ids),
     result(resumable_ids.size()) {
   }
 };
 
 template<typename T>
-T f$wait_result_multi(const array<Optional<int64_t>> &resumable_ids) {
+T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
   auto ids = array<int64_t>::convert_from(resumable_ids);
-  return f$wait_result_multi<T>(ids);
+  return f$wait_multi<T>(ids);
 }
 
 template<typename T>
-T f$wait_result_multi(const array<int64_t> &resumable_ids) {
-  return start_resumable<T>(new wait_result_multi_resumable<T>(resumable_ids));
+T f$wait_multi(const array<int64_t> &resumable_ids) {
+  return start_resumable<T>(new wait_multi_resumable<T>(resumable_ids));
 }
-

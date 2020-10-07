@@ -12,6 +12,6 @@ function demo() {
 }
 
 $ii = fork(demo());
-$t = wait_result($ii);
+$t = wait($ii);
 echo $t['i'], "\n";
 echo $t['s'], "\n";

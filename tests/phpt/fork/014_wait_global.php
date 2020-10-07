@@ -7,7 +7,7 @@ $a = array (0 => 1, 1 => 2);
 function f () {
   global $id;
 
-  wait ($id);
+  wait($id);
 }
 
 function i () {
@@ -35,7 +35,7 @@ function h (&$x) {
   global $id3;
   sched_yield();
   sched_yield();
-  wait ($id3, 0.001);
+  wait($id3, 0.001);
   $x = 6;
   sched_yield();
 }

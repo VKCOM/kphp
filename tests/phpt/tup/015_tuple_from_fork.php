@@ -12,5 +12,5 @@ function demo() {
 }
 
 $ii = fork(demo());
-$t = wait_result($ii);
+$t = wait($ii);
 echo count($t), "\n";

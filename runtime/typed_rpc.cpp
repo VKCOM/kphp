@@ -206,7 +206,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
 
   if (query_ids.count() == 1) {
     const int64_t query_id = query_ids.begin().get_value();
-    f$wait_synchronously(query_id);
+    wait_without_result_synchronously_safe(query_id);
     unsorted_results[query_id] = typed_rpc_tl_query_result_one_impl(query_id, error_factory);
     php_assert (resumable_finished);
   } else {

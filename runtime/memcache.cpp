@@ -751,7 +751,7 @@ mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &ke
     return true;
   }
 
-  wait_synchronously(request_id);
+  wait_without_result_synchronously(request_id);
   if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
@@ -817,7 +817,7 @@ bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, con
     return true;
   }
 
-  wait_synchronously(request_id);
+  wait_without_result_synchronously(request_id);
   if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
@@ -860,7 +860,7 @@ mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, 
     return 0;
   }
 
-  wait_synchronously(request_id);
+  wait_without_result_synchronously(request_id);
   if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;
@@ -902,7 +902,7 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
     return true;
   }
 
-  wait_synchronously(request_id);
+  wait_without_result_synchronously(request_id);
   if (!rpc_get_and_parse(request_id, timeout)) {
     php_assert (resumable_finished);
     return false;

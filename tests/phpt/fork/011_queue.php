@@ -72,7 +72,7 @@ function g ($x) {
 echo "-----------<stage 1>-----------\n";
 
 for ($i = -1; $i < 30; $i++) {
-  var_dump (wait_result (fork (g ($i))));
+  var_dump (wait(fork (g ($i))));
 }
 
 echo "-----------<stage 2>-----------\n";
@@ -84,7 +84,7 @@ for ($i = -1; $i < 30; $i++) {
 
 $res = [];
 while ($t = wait_queue_next ($q)) {
-  $res[] = wait_result ($t);
+  $res[] = wait($t);
 }
 sort ($res);
 var_dump ($res);

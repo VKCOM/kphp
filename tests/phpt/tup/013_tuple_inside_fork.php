@@ -60,4 +60,4 @@ function demo() {
 }
 
 $ii = fork(demo());
-wait_result($ii);
+wait($ii);

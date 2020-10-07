@@ -23,14 +23,14 @@ function throw_exception() {
 }
 
 try {
-  $x = wait_result(fork(return_exception()));
+  $x = wait(fork(return_exception()));
   echo "Not catched!\n";
 } catch (Exception $e) {
   echo "Catched!\n";
 }
 
 try {
-  $y = wait_result(fork(throw_exception()));
+  $y = wait(fork(throw_exception()));
 } catch (Exception $e) {
   echo "Catched!\n";
 }

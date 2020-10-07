@@ -95,17 +95,17 @@ function return_var($x) {
 }
 
 
-var_dump(wait_result(fork(return_int())));
-var_dump(wait_result(fork(return_double())));
-var_dump(wait_result(fork(return_string())));
-var_dump(wait_result(fork(return_array_int())));
-var_dump(wait_result(fork(return_array_string())));
+var_dump(wait(fork(return_int())));
+var_dump(wait(fork(return_double())));
+var_dump(wait(fork(return_string())));
+var_dump(wait(fork(return_array_int())));
+var_dump(wait(fork(return_array_string())));
 for ($i = 0; $i < 2; $i++) {
-  var_dump(wait_result(fork(return_int_or_double($i))));
-  var_dump(wait_result(fork(return_mixed_array($i))));
+  var_dump(wait(fork(return_int_or_double($i))));
+  var_dump(wait(fork(return_mixed_array($i))));
 }
 for ($i = 0; $i < 10; $i++) {
-  var_dump(wait_result(fork(return_var($i))));
+  var_dump(wait(fork(return_var($i))));
 }
 
 $qs = [];
@@ -123,5 +123,5 @@ for ($i = 0; $i < 10; $i++) {
 }
 
 foreach ($qs as $q) {
-  var_dump(wait_result($q));
+  var_dump(wait($q));
 }

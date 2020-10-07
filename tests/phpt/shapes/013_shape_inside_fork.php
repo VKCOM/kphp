@@ -54,4 +54,4 @@ function demo() {
 }
 
 $ff = fork(demo());
-wait_result($ff);
+wait($ff);

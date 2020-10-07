@@ -201,7 +201,7 @@ bool f$store_unsigned_int(const mixed &v);
 
 bool f$rpc_wait(int64_t request_id);
 
-bool f$rpc_wait_multiple(int64_t request_id);
+bool f$rpc_wait_concurrently(int64_t request_id);
 
 bool f$store_long(const mixed &v);
 

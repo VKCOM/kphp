@@ -50,20 +50,20 @@ function return_D() { return new D(5);}
 
 function test() {
   /** @var A */
-  $a = wait_result(fork(return_A()));
+  $a = wait(fork(return_A()));
   var_dump($a->x);
 
   /** @var B */
-  $c = wait_result(fork(return_C()));
+  $c = wait(fork(return_C()));
   $c->foo();
 
-  $c = wait_result(fork(return_D()));
+  $c = wait(fork(return_D()));
   $c->foo();
 
   $r = [fork(return_C()), fork(return_D())];
-  $c = wait_result($r[0]);
+  $c = wait($r[0]);
   $c->foo();
-  $c = wait_result($r[1]);
+  $c = wait($r[1]);
   $c->foo();
 }
 

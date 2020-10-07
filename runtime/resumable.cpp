@@ -573,7 +573,7 @@ void run_scheduler(double timeout) {
 }
 
 
-void wait_synchronously(int64_t resumable_id) {
+void wait_without_result_synchronously(int64_t resumable_id) {
   forked_resumable_info *resumable = get_forked_resumable_info(resumable_id);
 
   if (resumable->queue_id < 0) {
@@ -581,12 +581,12 @@ void wait_synchronously(int64_t resumable_id) {
   }
 
   update_precise_now();
-  while (wait_net(MAX_TIMEOUT * 1000) && resumable->queue_id >= 0) {
+  while (wait_net(MAX_TIMEOUT_MS) && resumable->queue_id >= 0) {
     update_precise_now();
   }
 }
 
-bool f$wait_synchronously(int64_t resumable_id) {
+bool wait_without_result_synchronously_safe(int64_t resumable_id) {
   last_wait_error = nullptr;
   if (!is_forked_resumable_id(resumable_id)) {
     last_wait_error = "Wrong resumable id";
@@ -604,7 +604,7 @@ bool f$wait_synchronously(int64_t resumable_id) {
     return false;
   }
 
-  wait_synchronously(resumable_id);
+  wait_without_result_synchronously(resumable_id);
   return true;
 }
 
@@ -708,7 +708,7 @@ public:
   }
 };
 
-class wait_multiple_resumable : public Resumable {
+class wait_concurrently_resumable : public Resumable {
   int64_t child_id;
   forked_resumable_info *info;
 protected:
@@ -735,7 +735,7 @@ protected:
   }
 
 public:
-  explicit wait_multiple_resumable(int64_t child_id) :
+  explicit wait_concurrently_resumable(int64_t child_id) :
     child_id(child_id),
     info(nullptr) {}
 };
@@ -748,7 +748,7 @@ void process_wait_timeout(event_timer *timer) {
   resumable_run_ready(wait_resumable_id);
 }
 
-bool f$wait(int64_t resumable_id, double timeout) {
+bool wait_without_result(int64_t resumable_id, double timeout) {
   resumable_finished = true;
 
   last_wait_error = nullptr;
@@ -806,7 +806,7 @@ bool f$wait(int64_t resumable_id, double timeout) {
   return false;
 }
 
-bool f$wait_multiple(int64_t resumable_id) {
+bool f$wait_concurrently(int64_t resumable_id) {
   resumable_finished = true;
 
   last_wait_error = nullptr;
@@ -824,10 +824,10 @@ bool f$wait_multiple(int64_t resumable_id) {
   }
 
   if (resumable->queue_id > 0) {
-    return start_resumable<bool>(new wait_multiple_resumable(resumable_id));
+    return start_resumable<bool>(new wait_concurrently_resumable(resumable_id));
   }
 
-  return f$wait(resumable_id);
+  return wait_without_result(resumable_id);
 }
 
 int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {

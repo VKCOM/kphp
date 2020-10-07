@@ -30,9 +30,9 @@ function to_array($x) {
   return [$x[0], $x[1], $x[2], $x[3]];
 }
 
-var_dump(to_array(wait_result(fork(return_tuple1()))));
-var_dump(to_array(wait_result(fork(return_tuple2()))));
+var_dump(to_array(wait(fork(return_tuple1()))));
+var_dump(to_array(wait(fork(return_tuple2()))));
 
 $q = [fork(return_tuple1()), fork(return_tuple2())];
-var_dump(to_array(wait_result($q[0])));
-var_dump(to_array(wait_result($q[1])));
+var_dump(to_array(wait($q[0])));
+var_dump(to_array(wait($q[1])));

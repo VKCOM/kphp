@@ -6,45 +6,40 @@ require_once 'kphp_tester_include.php';
  * @kphp-infer
  * @param int $t
  */
-function my_usleep ($t) {
+function my_usleep ($t): bool {
   $end_time = microtime (true) + $t * 1e-6;
   while (microtime (true) < $end_time) {
     sched_yield();
     usleep (min (($end_time - microtime (true)) * 1e6 + 1000, 77777));
   }
+  return true;
 }
 
 $x = fork (my_usleep (3000000));
 
 /**
  * @kphp-infer
- * @param future<void> $x
+ * @param future<bool> $x
  */
-function wait_x ($x) {
+function wait_x ($x): bool {
   $ok = true;
-#ifndef KPHP
-  if (false)
-#endif
   for ($i = 0; $i < 6; $i++) {
-    $res = wait ($x, 0.5);
-    if ($res ^ ($i == 5)) {
-      echo "ERROR! $i\n";
-      $ok = false;
-    }
+    $res_tmp = wait($x);
+    $res = $res_tmp != null;
+    var_dump("i = $i; res = $res");
   }
-  if ($ok) {
-    echo "OK\n";
-  }
+  return true;
 }
 
 wait_x ($x);
 
 function run () {
-  $y = fork (my_usleep (3000000));
+  $y = fork (my_usleep (1000000));
   $z = fork (wait_x ($y));
-  $t = wait ($z);
+  $t = wait($z);
+  $t = $t != null;
 }
 
 run();
 
-wait_result (fork (run()));
+wait(fork (run()));
