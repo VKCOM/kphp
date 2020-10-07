@@ -61,7 +61,7 @@ public:
       parse_option_alias(long_option, short_option);
     }
     KphpRawOption &raw_option = option;
-    raw_option.init(long_option, short_option, env, std::move(default_value), std::move(choices));
+    raw_option.init(env, std::move(default_value), std::move(choices));
     options_.emplace_back(&raw_option);
   }
 
@@ -103,13 +103,13 @@ public:
     other_options_->dump_option(out);
     out << std::endl << std::endl;
     for (const auto &raw_option : options_) {
-      out << raw_option->get_option_full_name() << ": ";
+      out << raw_option->get_env_var() << ": [";
       raw_option->dump_option(out);
-      out << std::endl;
+      out << "]" << std::endl;
     }
     out << std::endl;
     for (const auto &implicit_option : implicit_options_) {
-      out << implicit_option.first << ": " << implicit_option.second->get() << std::endl;
+      out << implicit_option.first << ": [" << implicit_option.second->get() << "]" << std::endl;
     }
     out << std::endl;
   }
@@ -140,6 +140,20 @@ private:
   static constexpr int32_t version_and_first_option_id_{2000};
 };
 
+std::string get_default_kphp_path() {
+  std::string this_file = __FILE__;
+  size_t deep = 2;
+  auto kphp_path_it = std::find_if(this_file.rbegin(), this_file.rend(), [&deep](char c) {
+    return c == '/' && !(deep--);
+  });
+  if (kphp_path_it != this_file.rend()) {
+    return this_file.substr(0, this_file.rend() - kphp_path_it);
+  }
+  auto *home = getenv("HOME");
+  assert(home);
+  return std::string{home} + "/kphp";
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -147,8 +161,6 @@ int main(int argc, char *argv[]) {
   set_debug_handlers();
 
   const uint32_t system_threads = std::max(std::thread::hardware_concurrency(), 1U);
-  const std::string home_dir = CompilerSettings::get_home();
-
   auto settings = std::make_unique<CompilerSettings>();
 
   OptionParser::add_default_options();
@@ -159,7 +171,7 @@ int main(int argc, char *argv[]) {
     'v', "verbosity", "KPHP_VERBOSITY", "0", {"0", "1", "2", "3"});
   parser.add(
     "Path to kphp source", settings->kphp_src_path,
-    's', "source-path", "KPHP_PATH", home_dir + "kphp/");
+    's', "source-path", "KPHP_PATH", get_default_kphp_path());
   parser.add(
     "Internal file with the list of supported PHP functions", settings->functions_file,
     'f', "functions-file", "KPHP_FUNCTIONS", "${KPHP_PATH}/functions.txt");

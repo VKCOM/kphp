@@ -15,26 +15,18 @@
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
 
-void KphpRawOption::init(vk::string_view long_option, char short_option, vk::string_view env,
-                         std::string default_value, std::vector<std::string> choices) noexcept {
-  env_var_.assign(env.begin(), env.end());
-  if (char *val = getenv(env_var_.c_str())) {
+void KphpRawOption::init(const char *env, std::string default_value, std::vector<std::string> choices) noexcept {
+  if (char *val = getenv(env)) {
     raw_option_arg_ = val;
   } else {
     raw_option_arg_ = std::move(default_value);
   }
-
-  cmd_option_full_name_.assign("--").append(long_option.begin(), long_option.end());
-  if (short_option) {
-    cmd_option_full_name_.append("/-").append(1, short_option);
-  }
-  cmd_option_full_name_.append(" [").append(env_var_).append("]");
+  env_var_ = env;
   choices_ = std::move(choices);
 }
 
 void KphpRawOption::substitute_depends(const KphpRawOption &other) noexcept {
-  std::string pattern_to_replace = "${" + other.env_var_ + "}";
-  raw_option_arg_ = vk::replace_all(raw_option_arg_, pattern_to_replace, other.raw_option_arg_);
+  raw_option_arg_ = vk::replace_all(raw_option_arg_, "${" + other.get_env_var() + "}", other.raw_option_arg_);
 }
 
 void KphpRawOption::verify_arg_value() const {
@@ -44,7 +36,7 @@ void KphpRawOption::verify_arg_value() const {
 }
 
 void KphpRawOption::throw_param_exception(const std::string &reason) const {
-  throw std::runtime_error{"Can't parse " + cmd_option_full_name_ + " option: " + reason};
+  throw std::runtime_error{"Can't parse " + get_env_var() + " option: " + reason};
 }
 
 template<>
@@ -142,14 +134,6 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, const char *
 
 } // namespace
 
-std::string CompilerSettings::get_home() noexcept {
-  const char *home = getenv("HOME");
-  kphp_assert(home);
-  std::string home_str = home;
-  as_dir(home_str);
-  return home_str;
-}
-
 void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexcept {
   as_dir(path_option.value_);
 }
@@ -190,7 +174,7 @@ void CompilerSettings::init() {
       throw std::runtime_error{"Multiple main directories are forbidden for static lib mode"};
     }
     if (!tl_schema_file.get().empty()) {
-      throw std::runtime_error{"Option " + tl_schema_file.get_option_full_name() + " is forbidden for static lib mode"};
+      throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }
     std::string lib_dir = get_full_path(main_files.get().back());
     std::size_t last_slash = lib_dir.rfind('/');
@@ -210,7 +194,7 @@ void CompilerSettings::init() {
     option_as_dir(static_lib_out_dir);
     main_files.value_.back().assign(lib_dir).append("/php/index.php");
   } else if (!static_lib_out_dir.get().empty()) {
-    throw std::runtime_error{"Option " + static_lib_out_dir.get_option_full_name() + " is allowed only for static lib mode"};
+    throw std::runtime_error{"Option " + static_lib_out_dir.get_env_var() + " is allowed only for static lib mode"};
   }
 
   if (!jobs_count.get()) {

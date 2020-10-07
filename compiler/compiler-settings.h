@@ -7,12 +7,11 @@
 
 struct KphpRawOption : vk::not_copyable {
 public:
-  const std::string &get_option_full_name() const noexcept {
-    return cmd_option_full_name_;
+  const std::string &get_env_var() const noexcept {
+    return env_var_;
   }
 
-  void init(vk::string_view long_option, char short_option, vk::string_view env,
-            std::string default_value, std::vector<std::string> choices) noexcept;
+  void init(const char *env, std::string default_value, std::vector<std::string> choices) noexcept;
 
   void substitute_depends(const KphpRawOption &other) noexcept;
   void verify_arg_value() const;
@@ -26,7 +25,6 @@ protected:
   void throw_param_exception(const std::string &reason) const;
 
   std::string env_var_;
-  std::string cmd_option_full_name_;
   std::string raw_option_arg_;
   std::vector<std::string> choices_;
 };
@@ -41,7 +39,7 @@ public:
   }
 
 private:
-  using KphpRawOption::get_option_full_name;
+  using KphpRawOption::get_env_var;
   using KphpRawOption::init;
   using KphpRawOption::substitute_depends;
   using KphpRawOption::verify_arg_value;
@@ -160,7 +158,6 @@ public:
 
   void init();
 
-  static std::string get_home() noexcept;
   static std::string read_runtime_sha256_file(const std::string &filename);
 
 private:
