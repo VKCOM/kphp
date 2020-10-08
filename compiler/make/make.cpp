@@ -317,7 +317,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
 }
 
 static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
-                      const std::forward_list<Index> &imported_headers, const CompilerSettings &kphp_env,
+                      const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
                       const std::string &gch_dir, FILE *stats_file) {
   MakeSetup make{stats_file};
   std::vector<File *> lib_objs;
@@ -328,11 +328,11 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   std::copy(lib_objs.begin(), lib_objs.end(), std::back_inserter(objs));
   make.create_objs2bin_target(objs, &bin);
-  make.init_env(kphp_env);
+  make.init_env(settings);
   if (!gch_dir.empty()) {
     make.add_gch_dir(gch_dir);
   }
-  return make.make_target(&bin, kphp_env.jobs_count.get());
+  return make.make_target(&bin, settings.jobs_count.get());
 }
 
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,

@@ -134,7 +134,7 @@ public:
 
   KphpOption<bool> no_pch;
   KphpOption<bool> no_index_file;
-  KphpOption<bool> hide_progress;
+  KphpOption<bool> show_progress;
 
   KphpImplicitOption cxx_flags;
   KphpImplicitOption ld_flags;

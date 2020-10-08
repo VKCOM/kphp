@@ -16,7 +16,7 @@ namespace {
 
 class OptionParser : vk::not_copyable {
 public:
-  static OptionParser &get() noexcept {
+  static OptionParser &get_instance() noexcept {
     static OptionParser parser;
     return parser;
   }
@@ -65,8 +65,8 @@ public:
     options_.emplace_back(&raw_option);
   }
 
-  void add_implicit_option(const char *description, KphpImplicitOption &implicit_option) {
-    implicit_options_.emplace_back(std::make_pair(vk::string_view{description}, &implicit_option));
+  void add_implicit_option(vk::string_view description, KphpImplicitOption &implicit_option) {
+    implicit_options_.emplace_back(description, &implicit_option);
   }
 
   void process_args(int32_t argc, char **argv) {
@@ -79,7 +79,7 @@ public:
         exit(0);
       }
       option_id -= version_and_first_option_id_ + 1;
-      auto &this_ = get();
+      auto &this_ = get_instance();
       if (option_id < 0 || option_id >= this_.options_.size()) {
         return -1;
       }
@@ -141,14 +141,9 @@ private:
 };
 
 std::string get_default_kphp_path() {
-  std::string this_file = __FILE__;
-  size_t deep = 2;
-  auto kphp_path_it = std::find_if(this_file.rbegin(), this_file.rend(), [&deep](char c) {
-    return c == '/' && !(deep--);
-  });
-  if (kphp_path_it != this_file.rend()) {
-    return this_file.substr(0, this_file.rend() - kphp_path_it);
-  }
+#ifdef DEFAULT_KPHP_PATH
+  return DEFAULT_KPHP_PATH;
+#endif
   auto *home = getenv("HOME");
   assert(home);
   return std::string{home} + "/kphp";
@@ -164,7 +159,7 @@ int main(int argc, char *argv[]) {
   auto settings = std::make_unique<CompilerSettings>();
 
   OptionParser::add_default_options();
-  auto &parser = OptionParser::get();
+  auto &parser = OptionParser::get_instance();
   parser.add_other_args("<main-files-list>", settings->main_files);
   parser.add(
     "Verbosity", settings->verbosity,
@@ -275,8 +270,8 @@ int main(int argc, char *argv[]) {
     "Forbid to use the index file", settings->no_index_file,
     "no-index-file", "KPHP_NO_INDEX_FILE");
   parser.add(
-    "Hide transpilation progress", settings->hide_progress,
-    "hide-progress", "KPHP_HIDE_PROGRESS");
+    "Show transpilation progress", settings->show_progress,
+    "show-progress", "KPHP_SHOW_PROGRESS");
 
   parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
   parser.add_implicit_option("Linker flags", settings->ld_flags);

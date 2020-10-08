@@ -105,16 +105,8 @@ static inline std::string replace_backslashes(const std::string &s) {
 }
 
 static inline void remove_extra_spaces(std::string &str) {
+  std::replace_if(str.begin(), str.end(), isspace, ' ');
   str = static_cast<std::string>(vk::trim(str));
-  bool space_before = false;
-  auto last_it = std::remove_if(str.begin(), str.end(), [&space_before] (char c) {
-    if (isspace(c)) {
-      const bool remove_char = space_before;
-      space_before = true;
-      return remove_char;
-    }
-    space_before = false;
-    return false;
-  });
-  str.erase(last_it, str.end());
+  auto new_end = std::unique(str.begin(), str.end(), [](char lhs, char rhs) { return (lhs == rhs) && lhs == ' '; });
+  str.erase(new_end, str.end());
 }
