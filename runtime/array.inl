@@ -1956,6 +1956,27 @@ const T array<T>::push_back_return(T &&v) {
 }
 
 template<class T>
+void array<T>::swap_int_keys(int64_t idx1, int64_t idx2) noexcept {
+  if (idx1 == idx2) {
+    return;
+  }
+
+  // this function is supposed to be used for vector optimization, else branch is just to be on the safe side
+  if (is_vector() && idx1 >= 0 && idx2 >= 0 && idx1 < p->int_size && idx2 < p->int_size) {
+    mutate_if_vector_shared();
+    std::swap(reinterpret_cast<T *>(p->int_entries)[idx1], reinterpret_cast<T *>(p->int_entries)[idx2]);
+  } else {
+    if (auto *v1 = find_value(idx1)) {
+      if (auto *v2 = find_value(idx2)) {
+        T tmp = std::move(*v1);
+        set_value(idx1, std::move(*v2));
+        set_value(idx2, std::move(tmp));
+      }
+    }
+  }
+}
+
+template<class T>
 void array<T>::fill_vector(int64_t num, const T &value) {
   php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
 

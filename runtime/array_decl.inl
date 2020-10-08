@@ -335,6 +335,8 @@ public:
   const T push_back_return(const T &v);
   const T push_back_return(T &&v);
 
+  void swap_int_keys(int64_t idx1, int64_t idx2) noexcept;
+
   inline void fill_vector(int64_t num, const T &value);
   inline void memcpy_vector(int64_t num, const void *src_buf);
 

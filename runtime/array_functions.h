@@ -259,6 +259,9 @@ mixed f$array_last_key(const array<T> &a);
 template<class T>
 T f$array_last_value(const array<T> &a);
 
+template<class T>
+inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept;
+
 
 /*
  *
@@ -1411,6 +1414,11 @@ mixed f$array_last_key(const array<T> &a) {
 template<class T>
 T f$array_last_value(const array<T> &a) {
   return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
+void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept {
+  a.swap_int_keys(idx1, idx2);
 }
 
 
