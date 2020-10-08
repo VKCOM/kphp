@@ -40,7 +40,7 @@ class TestFile:
 
 
 class KphpRunOnceRunner(KphpBuilder):
-    def __init__(self, test_file, kphp_path, tests_dir, distcc_hosts):
+    def __init__(self, test_file, kphp_path, distcc_hosts):
         super(KphpRunOnceRunner, self).__init__(
             php_script_path=test_file.file_path,
             artifacts_dir=os.path.join(test_file.test_tmp_dir, "artifacts"),
@@ -341,11 +341,11 @@ def run_ok_test(test, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(kphp_path, tests_dir, distcc_hosts, test):
+def run_test(kphp_path, distcc_hosts, test):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = KphpRunOnceRunner(test, kphp_path, tests_dir, distcc_hosts)
+    runner = KphpRunOnceRunner(test, kphp_path, distcc_hosts)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
@@ -376,7 +376,7 @@ def run_all_tests(tests_dir, kphp_path, jobs, test_tags, no_report, passed_list,
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, kphp_path, tests_dir, distcc_hosts), tests):
+        for test_result in pool.imap_unordered(partial(run_test, kphp_path, distcc_hosts), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break

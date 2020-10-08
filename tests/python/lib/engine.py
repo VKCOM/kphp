@@ -46,6 +46,9 @@ class Engine:
         if options:
             self.update_options(options)
 
+    def __del__(self):
+        self.stop()
+
     @property
     def rpc_port(self):
         """

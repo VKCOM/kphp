@@ -8,7 +8,7 @@ from .colors import blue
 
 
 class KphpServer(Engine):
-    def __init__(self, engine_bin, working_dir, options=None):
+    def __init__(self, engine_bin, working_dir, options=None, auto_start=False):
         """
         :param engine_bin: Путь до бинарника kphp сервера
         :param working_dir: Рабочая папка где будет запущен kphp сервер
@@ -26,6 +26,8 @@ class KphpServer(Engine):
         self._options["--workers-num"] = 2
         if options:
             self.update_options(options)
+        if auto_start:
+            self.start()
 
     def http_request(self, uri='/', method='GET', **kwargs):
         """

@@ -42,11 +42,7 @@ def _get_tmp_folder_path(test_script_file):
     return working_dir, tmp_dir_root, artifacts_dir, test_script_dir
 
 
-def _create_tmp_folders(test_script_file):
-    kphp_build_working_dir, tmp_dir_root, artifacts_dir, test_script_dir = _get_tmp_folder_path(test_script_file)
-    for test_dir in (kphp_build_working_dir, tmp_dir_root, artifacts_dir):
-        os.makedirs(test_dir, exist_ok=True)
-
+def _make_test_tmp_dir(tmp_dir_root):
     all_dirs = next(os.walk(tmp_dir_root))[1]
     ppid = str(os.getppid())
     for tmp_dir in all_dirs:
@@ -55,11 +51,19 @@ def _create_tmp_folders(test_script_file):
 
     current_tmp_dir = os.path.join(tmp_dir_root, ppid)
     os.makedirs(current_tmp_dir, exist_ok=True)
-    kphp_server_working_dir = os.path.join(current_tmp_dir, str(os.getpid()))
-    if os.path.isdir(kphp_server_working_dir):
-        shutil.rmtree(kphp_server_working_dir)
-    os.makedirs(kphp_server_working_dir)
+    test_tmp_dir = os.path.join(current_tmp_dir, str(os.getpid()))
+    if os.path.isdir(test_tmp_dir):
+        shutil.rmtree(test_tmp_dir)
+    os.makedirs(test_tmp_dir)
+    return test_tmp_dir
 
+
+def _create_tmp_folders(test_script_file):
+    kphp_build_working_dir, tmp_dir_root, artifacts_dir, test_script_dir = _get_tmp_folder_path(test_script_file)
+    for test_dir in (kphp_build_working_dir, tmp_dir_root, artifacts_dir):
+        os.makedirs(test_dir, exist_ok=True)
+
+    kphp_server_working_dir = _make_test_tmp_dir(tmp_dir_root)
     _sync_data(kphp_server_working_dir, test_script_dir)
     return kphp_build_working_dir, kphp_server_working_dir, artifacts_dir, test_script_dir
 
@@ -163,7 +167,7 @@ class KphpServerAutoTestCase(BaseTestCase):
             portalocker.lock(lock, portalocker.LOCK_EX)
             print("\nCompiling kphp server")
             # Специально выключаем KPHP_DYNAMIC_INCREMENTAL_LINKAGE, чтобы не было рейзов
-            if not cls.kphp_builder.compile_with_kphp(use_dynamic_incremental_linkage=False):
+            if not cls.kphp_builder.compile_with_kphp({"KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0"}):
                 raise RuntimeError("Can't compile php script")
             cls.kphp_server_bin = os.path.join(cls.kphp_server_working_dir, "kphp_server")
             os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)
@@ -224,3 +228,30 @@ class KphpServerAutoTestCase(BaseTestCase):
                 "post_data_loading_error": 0,
                 "unclassified": 0
             })
+
+
+class KphpCompilerAutoTestCase(BaseTestCase):
+    @classmethod
+    def extra_class_setup(cls):
+        """
+        Можно переопределять в тест кейсе.
+        Этот метод вызывается перед запуском тестов описанных в кейсе.
+        """
+        pass
+
+    @classmethod
+    def extra_class_teardown(cls):
+        """
+        Можно переопределять в тест кейсе.
+        Этот метод вызывается после завершения всех тестов описанных в кейсе.
+        """
+        pass
+
+    @classmethod
+    def custom_setup(cls):
+        cls.kphp_build_working_dir = _make_test_tmp_dir(cls.kphp_build_working_dir)
+        cls.extra_class_setup()
+
+    @classmethod
+    def custom_teardown(cls):
+        cls.extra_class_teardown()

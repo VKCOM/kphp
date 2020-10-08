@@ -107,21 +107,23 @@ class KphpBuilder:
                 return self._move_to_artifacts(sanitizer_log_name, proc.returncode, file=sanitizer_log)
         return None
 
-    def compile_with_kphp(self, use_dynamic_incremental_linkage=True):
+    def compile_with_kphp(self, kphp_env=None):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
 
         sanitizer_log_name = "kphp_build_sanitizer_log"
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name)
-        env["KPHP_THREADS_COUNT"] = "3"
-        env["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "1"
-        env["KPHP_PROFILER"] = "2"
-        env["GDB_OPTION"] = "-g0"
-        env["KPHP_DYNAMIC_INCREMENTAL_LINKAGE"] = use_dynamic_incremental_linkage and "1" or "0"
+        if kphp_env:
+            env.update(kphp_env)
+        env.setdefault("KPHP_THREADS_COUNT", "3")
+        env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
+        env.setdefault("KPHP_PROFILER", "2")
+        env.setdefault("GDB_OPTION", "-g0")
+        env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
         if self._distcc_hosts:
-            env["KPHP_JOBS_COUNT"] = "8"
+            env.setdefault("KPHP_JOBS_COUNT", "8")
             env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
         else:
-            env["KPHP_JOBS_COUNT"] = "2"
+            env.setdefault("KPHP_JOBS_COUNT", "2")
 
         include = " ".join("-I {}".format(include_dir) for include_dir in self._include_dirs)
         # TODO kphp writes error into stdout and info into stderr
