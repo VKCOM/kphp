@@ -716,13 +716,6 @@ function vk_sp_remove_repeats ($str ::: string) ::: string;
 function vk_sp_to_cyrillic ($str ::: string) ::: string;
 function vk_sp_words_only ($str ::: string) ::: string;
 
-function vk_stats_merge_deviation($n1 ::: int, $sum1 ::: Long, $nsigma21 ::: float,
-	                          $n2 ::: int, $sum2 ::: Long, $nsigma22 ::: float) ::: float;
-function vk_stats_add_deviation($count ::: int, $sum ::: Long, $nsigma2 ::: float, $val ::: int) ::: float;
-function vk_stats_decompress_sample($sample ::: string) ::: string | false;
-function vk_stats_merge_samples($samples ::: array) ::: string | false;
-function vk_stats_parse_sample($sample ::: string) ::: int[] | false;
-
 function vk_stats_hll_merge($str ::: mixed) ::: string | false;
 function vk_stats_hll_count($hll ::: string) ::: float | false;
 function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
