@@ -407,7 +407,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     }
 
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
-    bool is_value_sort_function = vk::any_of_equal(function_name, "sort", "rsort", "usort", "asort", "arsort", "uasort");
+    bool is_value_sort_function = vk::any_of_equal(function_name, "sort", "rsort", "asort", "arsort");
     if (is_value_sort_function) {
       // Forbid arrays with elements that would be rejected by check_comparisons().
       const TypeData *array_type = tinf::get_type(call->args()[0]);
