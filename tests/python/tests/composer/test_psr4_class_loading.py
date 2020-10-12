@@ -21,7 +21,7 @@ class TestPsr4ClassLoading(KphpCompilerAutoTestCase):
     def run_php(self):
         cwd = os.path.join(self.test_dir, "php")
         index_file = os.path.join(self.test_dir, "php/index.php")
-        return subprocess.check_output(["php", "-f", index_file], cwd=cwd)
+        return subprocess.check_output(["php", "-f", index_file], cwd=cwd).decode()
 
     def test_psr4_class_loading(self):
         compilation_result = self.kphp_builder.compile_with_kphp({

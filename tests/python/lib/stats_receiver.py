@@ -71,7 +71,7 @@ class StatsReceiver:
 
         if not new_stats:
             return False
-        if self._stats and len(self._stats) != len(new_stats):
+        if self._stats and len(self._stats) > len(new_stats):
             raise RuntimeError("Got inconsistent stats count: old={} new={}".format(len(self._stats), len(new_stats)))
         self._stats = new_stats
         return True
