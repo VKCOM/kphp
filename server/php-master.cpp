@@ -525,9 +525,9 @@ static void sigusr1_handler(const int sig) {
   local_pending_signals = local_pending_signals | (1ll << sig);
 }
 
-enum master_state_t {
-  mst_on,
-  mst_off
+enum class master_state {
+  on,
+  off
 };
 
 #define MAX_WORKER_STATS_LEN 10000
@@ -577,7 +577,7 @@ static double last_failed;
 static int *http_fd;
 static int http_fd_port;
 static int (*try_get_http_fd)();
-static master_state_t state;
+static master_state state;
 
 static int signal_fd;
 
@@ -689,7 +689,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   int attempts_to_start = 2;
   int is_inited = 0;
   while (attempts_to_start-- > 0) {
-    vkprintf(1, "attemt to init master. [left attempts = %d]\n", attempts_to_start);
+    vkprintf(1, "attempt to init master. [left attempts = %d]\n", attempts_to_start);
     shared_data_lock(shared_data);
 
     shared_data_update(shared_data);
@@ -1811,7 +1811,8 @@ void run_master_on() {
     }
   }
 
-  int need_http_fd = http_fd != nullptr && *http_fd == -1;
+  bool need_http_fd = http_fd != nullptr && *http_fd == -1;
+
   if (need_http_fd) {
     int can_ask_http_fd = other->valid_flag && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
@@ -2005,9 +2006,9 @@ void run_master() {
     dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
                                                               me->valid_flag, me->pid, getpid()));
     if (other->valid_flag == 0 || me->rate > other->rate) {
-      state = mst_on;
+      state = master_state::on;
     } else {
-      state = mst_off;
+      state = master_state::off;
     }
 
     //calc generation
@@ -2017,12 +2018,15 @@ void run_master() {
     }
     generation++;
 
-    if (state == mst_off) {
-      run_master_off();
-    } else if (state == mst_on) {
-      run_master_on();
-    } else {
-      dl_unreachable ("unknown master state\n");
+    switch(state) {
+      case master_state::off:
+        run_master_off();
+        break;
+      case master_state::on:
+        run_master_on();
+        break;
+      default:
+        dl_unreachable ("unknown master state\n");
     }
 
     me->generation = generation;
