@@ -31,7 +31,7 @@ static_assert(CURLM_ADDED_ALREADY == 7, "check value");
 
 namespace {
 
-constexpr int64_t BAD_CURL_OPTION = CURL_LAST + CURL_FORMADD_LAST;
+constexpr int64_t BAD_CURL_OPTION = static_cast<int>(CURL_LAST) + static_cast<int>(CURL_FORMADD_LAST);
 
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 

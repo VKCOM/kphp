@@ -160,11 +160,12 @@ void CompilerSettings::update_cxx_flags_sha256() {
   unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
   SHA256_Final(hash, &sha256);
 
-  char hash_str[SHA256_DIGEST_LENGTH * 2 + 1] = {0};
-  for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-    fmt_format_to(hash_str + (i * 2), "{:02x}", hash[i]);
+  std::string hash_str;
+  hash_str.reserve(SHA256_DIGEST_LENGTH * 2);
+  for (auto hash_symb : hash) {
+    fmt_format_to(std::back_inserter(hash_str), "{:02x}", hash_symb);
   }
-  cxx_flags_sha256.value_.assign(hash_str, SHA256_DIGEST_LENGTH * 2);
+  cxx_flags_sha256.value_ = std::move(hash_str);
 }
 
 void CompilerSettings::init() {
