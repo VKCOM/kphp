@@ -106,7 +106,7 @@ static sigset_t orig_mask;
 static sigset_t empty_mask;
 
 static shared_data_t *shared_data;
-static master_data_t *me, *other;
+static master_data_t *me, *other; // these are pointers to shared memory
 
 static double my_now;
 
@@ -525,9 +525,20 @@ static void sigusr1_handler(const int sig) {
   local_pending_signals = local_pending_signals | (1ll << sig);
 }
 
+/**
+ * Description of states:
+ * on                       - main working state: reruns terminated workers, communicates with old master during graceful restart
+ *                                                (manages killing old master's workers, ask resources, etc.).
+ * off_in_graceful_restart  - old master's state during graceful restart: gradually kills its workers, hands over resources (http_fd, etc.) to new master
+ *                                                                                      and terminates.
+ * off_in_graceful_shutdown - graceful shutdown state (FINAL state): gradually kills workers and terminates.
+ *
+ * See master_change_state about transitions between states.
+ */
 enum class master_state {
   on,
-  off
+  off_in_graceful_restart,
+  off_in_graceful_shutdown
 };
 
 #define MAX_WORKER_STATS_LEN 10000
@@ -578,6 +589,7 @@ static int *http_fd;
 static int http_fd_port;
 static int (*try_get_http_fd)();
 static master_state state;
+static bool in_sigterm;
 
 static int signal_fd;
 
@@ -668,13 +680,14 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   sigemptyset(&mask);
   sigaddset(&mask, SIGCHLD);
   sigaddset(&mask, SIGPOLL);
+  sigaddset(&mask, SIGTERM);
 
   signal_fd = signalfd(-1, &mask, SFD_NONBLOCK);
   dl_passert (signal_fd >= 0, "failed to create signalfd");
 
   ksignal(SIGUSR1, sigusr1_handler);
 
-  //allow all signals except SIGPOLL and SIGCHLD
+  //allow all signals except SIGPOLL, SIGCHLD and SIGTERM
   if (sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
     perror("sigprocmask");
     _exit(1);
@@ -1762,8 +1775,19 @@ int php_master_http_execute(struct connection *c, int op) {
 
 
 /*** Main loop functions ***/
-void run_master_off() {
-  vkprintf(2, "state: mst_off\n");
+
+void run_master_off_in_graceful_shutdown() {
+  vkprintf(2, "state: master_state::off_in_graceful_shutdown\n");
+  assert(state == master_state::off_in_graceful_shutdown);
+  to_kill = me_running_workers_n;
+  if (me_running_workers_n + me_dying_workers_n == 0) {
+    to_exit = 1;
+    me->valid_flag = 0;
+  }
+}
+
+void run_master_off_in_graceful_restart() {
+  vkprintf(2, "state: master_state::off_in_graceful_restart\n");
   assert (other->valid_flag);
   vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
@@ -1776,6 +1800,7 @@ void run_master_off() {
   }
 
   if (other->to_kill_generation > me->generation) {
+    // old master kills as many workers as new master told
     to_kill = other->to_kill;
   }
 
@@ -1787,7 +1812,7 @@ void run_master_off() {
 }
 
 void run_master_on() {
-  vkprintf(2, "state: mst_on\n");
+  vkprintf(2, "state: master_state::on\n");
 
   static double prev_attempt = 0;
   if (!master_sfd_inited && !other->valid_flag && prev_attempt + 1 < my_now) {
@@ -1865,6 +1890,7 @@ void run_master_on() {
       int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
 
       if (set_to_kill > 0) {
+        // new master tells to old master how many workers it must kill
         vkprintf(1, "[set_to_kill = %d]\n", set_to_kill);
         me->to_kill = set_to_kill;
         me->to_kill_generation = generation;
@@ -1877,7 +1903,7 @@ void run_master_on() {
 int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   //empty
   vkprintf(2, "signal_epoll_handler\n");
-  signalfd_siginfo fdsi;
+  signalfd_siginfo fdsi{};
   //fprintf (stderr, "A\n");
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
   //fprintf (stderr, "B\n");
@@ -1889,8 +1915,12 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
     dl_passert (0, "read signalfd_siginfo");
   }
   dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
-
-  vkprintf(2, "some signal received\n");
+  vkprintf(2, "signal %u received\n", fdsi.ssi_signo);
+  if (fdsi.ssi_signo == SIGTERM && !in_sigterm) {
+    const char *message = "master got SIGTERM, starting graceful shutdown.\n";
+    kwrite(2, message, strlen(message));
+    in_sigterm = true;
+  }
   return 0;
 }
 
@@ -1975,6 +2005,36 @@ auto get_steady_tp_ms_now() noexcept {
   return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 }
 
+static void master_change_state() {
+  master_state new_state;
+  if (in_sigterm) {
+    new_state = master_state::off_in_graceful_shutdown;
+  } else {
+    if (other->valid_flag == 0 || me->rate > other->rate) {
+      new_state = master_state::on;
+    } else {
+      new_state = master_state::off_in_graceful_restart;
+    }
+  }
+  switch (state) {
+    case master_state::on: {
+      // can go to any state
+      state = new_state;
+      break;
+    }
+    case master_state::off_in_graceful_restart: {
+      // can go to master_state::on if new master is crashed during graceful restart
+      if (new_state == master_state::on) {
+        state = new_state;
+      }
+      break;
+    }
+    case master_state::off_in_graceful_shutdown:
+      // FINAL state: can't go to any other state
+      break;
+  }
+}
+
 void run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
@@ -2005,11 +2065,7 @@ void run_master() {
     //calc state
     dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
                                                               me->valid_flag, me->pid, getpid()));
-    if (other->valid_flag == 0 || me->rate > other->rate) {
-      state = master_state::on;
-    } else {
-      state = master_state::off;
-    }
+    master_change_state();
 
     //calc generation
     generation = me->generation;
@@ -2018,12 +2074,15 @@ void run_master() {
     }
     generation++;
 
-    switch(state) {
-      case master_state::off:
-        run_master_off();
-        break;
+    switch (state) {
       case master_state::on:
         run_master_on();
+        break;
+      case master_state::off_in_graceful_restart:
+        run_master_off_in_graceful_restart();
+        break;
+      case master_state::off_in_graceful_shutdown:
+        run_master_off_in_graceful_shutdown();
         break;
       default:
         dl_unreachable ("unknown master state\n");
@@ -2047,9 +2106,11 @@ void run_master() {
     me->running_workers_n = me_running_workers_n;
     me->dying_workers_n = me_dying_workers_n;
 
-    if (changed && other->valid_flag) {
-      vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
-      kill(other->pid, SIGPOLL);
+    if (state != master_state::off_in_graceful_shutdown) {
+      if (changed && other->valid_flag) {
+        vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
+        kill(other->pid, SIGPOLL);
+      }
     }
 
     shared_data_unlock(shared_data);
