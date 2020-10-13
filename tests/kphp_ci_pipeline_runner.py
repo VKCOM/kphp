@@ -185,6 +185,15 @@ def parse_args():
     )
 
     parser.add_argument(
+        '--kphp-polyfills-repo',
+        metavar="DIR",
+        type=str,
+        dest="kphp_polyfills_repo",
+        default="",
+        help="specify path to cloned kphp-polyfills repository dir"
+    )
+
+    parser.add_argument(
         "--compiler",
         metavar="MODE",
         type=str,
@@ -258,6 +267,11 @@ if __name__ == "__main__":
     cmake_options = " ".join(cmake_options)
     env_vars = " ".join(env_vars)
 
+    kphp_polyfills_repo = args.kphp_polyfills_repo
+    if kphp_polyfills_repo == "":
+        print(red("empty --kphp-polyfills-repo argument"), flush=True)
+    kphp_polyfills_repo = os.path.abspath(kphp_polyfills_repo)
+
     distcc_options = ""
     distcc_cmake_option = ""
     distcc_hosts_file = ""
@@ -306,7 +320,9 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="kphp-tests",
         description="run kphp tests in {} mode".format("gcc"),
-        cmd="{kphp_runner} -j{{jobs}} {distcc_options}".format(
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+            "{kphp_runner} -j{{jobs}} {distcc_options}".format(
+            kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
             distcc_options=distcc_options
         ),
@@ -346,9 +362,11 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="typed-tl-tests",
         description="run typed tl tests in {} mode".format("gcc"),
-        cmd="KPHP_TL_SCHEMA={combined_tlo} "
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+            "KPHP_TL_SCHEMA={combined_tlo} "
             "KPHP_GEN_TL_INTERNALS=1 "
             "{kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
+            kphp_polyfills_repo=kphp_polyfills_repo,
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,

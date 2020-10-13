@@ -55,7 +55,7 @@ class KphpRunOnceRunner(KphpBuilder):
         self._kphp_server_stdout = None
         self._php_tmp_dir = os.path.join(self._working_dir, "php")
         self._kphp_runtime_tmp_dir = os.path.join(self._working_dir, "kphp_runtime")
-        self._include_dirs.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../php_polyfills")))
+        self._include_dirs.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "./php_include")))
 
     def run_with_php(self):
         self._clear_working_dir(self._php_tmp_dir)
