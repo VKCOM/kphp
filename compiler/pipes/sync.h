@@ -12,7 +12,7 @@ public:
   SyncPipeFBase() :
     tmp_stream(true) {}
 
-  void execute(In input, DataStream<Out> &) {
+  virtual void execute(In input, DataStream<Out> &) {
     tmp_stream << std::move(input);
   }
 

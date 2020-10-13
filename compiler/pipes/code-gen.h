@@ -22,6 +22,6 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
 
 public:
 
-  void execute(FunctionPtr function, DataStream<WriterData> &os);
+  void execute(FunctionPtr function, DataStream<WriterData> &os) final;
   void on_finish(DataStream<WriterData> &os) final;
 };
