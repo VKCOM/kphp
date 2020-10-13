@@ -276,10 +276,10 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_ld_flags.value_);
 
-  auto external_shared_libs = {"pthread", "rt", "crypto", "m", "dl", "z", "pcre", "re2", "yaml-cpp", "h3", "ssl", "zstd", "lzma", "curl"};
-  auto external_static_libs = {"vk-flex-data"};
+  auto external_libs = {"pthread", "rt", "crypto", "m", "curl"};
+  auto external_static_libs = {"vk-flex-data", "pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "lzma"};
   ld_flags.value_ = extra_ld_flags.get();
-  append_if_doesnt_contain(ld_flags.value_, external_shared_libs, "-l");
+  append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
 
   ld_flags.value_ += " -rdynamic";

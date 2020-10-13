@@ -119,6 +119,7 @@ class KphpBuilder:
         env.setdefault("KPHP_PROFILER", "2")
         env.setdefault("GDB_OPTION", "-g0")
         env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
+        env.setdefault("KPHP_EXTRA_LDFLAGS", "-lpcre -lre2 -lyaml-cpp -lh3 -lssl -lz -lzstd -llzma")
         if self._distcc_hosts:
             env.setdefault("KPHP_JOBS_COUNT", "8")
             env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
