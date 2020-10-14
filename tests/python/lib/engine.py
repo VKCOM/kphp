@@ -1,5 +1,6 @@
 import atexit
 import os
+
 import psutil
 import re
 import subprocess
@@ -142,23 +143,9 @@ class Engine:
 
         self._assert_availability()
         print("\nStopping engine: [{}]".format(cyan(self._engine_bin)))
-        self._engine_process.send_signal(signal.SIGTERM)
+        self.send_signal(signal.SIGTERM)
 
-        def raise_timeout(x, y):
-            raise RuntimeError("Can't wait process")
-
-        handler = signal.signal(signal.SIGALRM, raise_timeout)
-        engine_stopped_properly = True
-        try:
-            signal.alarm(30)
-            _, status = os.waitpid(self._engine_process.pid, 0)
-        except:
-            engine_stopped_properly = False
-            self._engine_process.send_signal(signal.SIGKILL)
-            _, status = os.waitpid(self._engine_process.pid, 0)
-
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(0)
+        engine_stopped_properly, status = self.wait_termination(30)
 
         self._assert_no_errors()
         self._log_file_read_fd.close()
@@ -246,6 +233,39 @@ class Engine:
                 if k not in got_added_stats or v != got_added_stats[k]:
                     done = False
                     break
+
+    def send_signal(self, signum):
+        """
+        Sends signal to engine
+        :param signum: Signal number
+        """
+        self._engine_process.send_signal(signum)
+
+    def wait_termination(self, timeout_sec):
+        """
+        Waits for engine termination via waitpid with given timeout
+        :param timeout_sec: Maximum number of seconds to wait. RuntimeError is thrown in case of timeout exceeding
+        :return: Tuple with: bool - is engine stopped properly
+                             int  - status from waitpid
+        """
+
+        def raise_timeout(x, y):
+            raise RuntimeError("Can't wait process")
+
+        handler = signal.signal(signal.SIGALRM, raise_timeout)
+        engine_stopped_properly = True
+        try:
+            signal.alarm(timeout_sec)
+            _, status = os.waitpid(self._engine_process.pid, 0)
+        except:
+            engine_stopped_properly = False
+            self.send_signal(signal.SIGKILL)
+            _, status = os.waitpid(self._engine_process.pid, 0)
+
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(0)
+
+        return (engine_stopped_properly, status)
 
     def rpc_request(self, request):
         """

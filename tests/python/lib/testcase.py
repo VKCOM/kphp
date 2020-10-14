@@ -136,7 +136,9 @@ def _check_if_tl_required(php_dir):
         for file in files:
             if file.endswith(".php"):
                 with open(os.path.join(directory, file)) as fp:
-                    if "rpc_tl_query" in fp.read():
+                    content = fp.read()
+                    if any(fun in content
+                           for fun in ["rpc_tl_query", "rpc_server_fetch_request", "rpc_server_store_response"]):
                         return True
     return False
 
