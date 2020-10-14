@@ -63,28 +63,13 @@ string f$gzcompress(const string &s, int64_t level) {
   return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_COMPRESS)->str();
 }
 
-const char *gzuncompress_raw(const char *s, int s_len, string::size_type *result_len) {
-  unsigned long res_len = PHP_BUF_LEN;
-
-  dl::enter_critical_section();//OK
-  int uncompress_res = uncompress(reinterpret_cast <unsigned char *> (php_buf), &res_len, reinterpret_cast <const unsigned char *> (s), (unsigned long)s_len);
-  if (uncompress_res == Z_OK) {
-    dl::leave_critical_section();
-    *result_len = static_cast<string::size_type>(res_len);
-    return php_buf;
+string f$gzdeflate(const string &s, int64_t level) {
+  if (level < -1 || level > 9) {
+    php_warning("Wrong parameter level = %ld in function gzcompress", level);
+    level = 6;
   }
-  dl::leave_critical_section();
 
-  php_warning("Error during unpack of string of length %d, msg: '%s'", (int)s_len, zError(uncompress_res));
-  *result_len = 0;
-  return "";
-}
-
-
-string f$gzuncompress(const string &s) {
-  string::size_type res_len;
-  const char *res = gzuncompress_raw(s.c_str(), s.size(), &res_len);
-  return string(res, res_len);
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_RAW)->str();
 }
 
 string f$gzencode(const string &s, int64_t level) {
@@ -95,7 +80,7 @@ string f$gzencode(const string &s, int64_t level) {
   return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODE)->str();
 }
 
-string f$gzdecode(const string &s) {
+static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
   dl::enter_critical_section();//OK
 
   z_stream strm;
@@ -103,14 +88,14 @@ string f$gzdecode(const string &s) {
   strm.zfree = Z_NULL;
   strm.opaque = Z_NULL;
   strm.avail_in = s.size();
-  strm.next_in = reinterpret_cast <Bytef *> (const_cast <char *> (s.c_str()));
+  strm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(s.data()));
   strm.avail_out = PHP_BUF_LEN;
   strm.next_out = reinterpret_cast <Bytef *> (php_buf);
 
-  int ret = inflateInit2 (&strm, 15 + 32);
+  int ret = inflateInit2 (&strm, encoding);
   if (ret != Z_OK) {
     dl::leave_critical_section();
-    return string();
+    return -1;
   }
 
   ret = inflate(&strm, Z_NO_FLUSH);
@@ -123,7 +108,7 @@ string f$gzdecode(const string &s) {
       dl::leave_critical_section();
 
       php_assert (ret != Z_STREAM_ERROR);
-      return string();
+      return -1;
   }
 
   int res_len = PHP_BUF_LEN - strm.avail_out;
@@ -133,11 +118,41 @@ string f$gzdecode(const string &s) {
     dl::leave_critical_section();
 
     php_critical_error ("size of unpacked data is greater then %d. Can't decode.", PHP_BUF_LEN);
-    return string();
+    return -1;
   }
 
   inflateEnd(&strm);
   dl::leave_critical_section();
-  return string(php_buf, res_len);
+  return res_len;
 }
 
+const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len) {
+  auto len = zlib_decode_raw(s, ZLIB_COMPRESS);
+  if (len == -1u) {
+    *result_len = 0;
+    return "";
+  }
+  *result_len = len;
+  return php_buf;
+}
+
+
+string zlib_decode(const string&s, int encoding) {
+  int len = zlib_decode_raw({s.c_str(), s.size()}, encoding);
+  if (len == -1u) {
+    return string();
+  }
+  return string(php_buf, len);
+}
+
+string f$gzdecode(const string &s) {
+  return zlib_decode(s, ZLIB_ENCODE);
+}
+
+string f$gzuncompress(const string &s) {
+  return zlib_decode(s, ZLIB_COMPRESS);
+}
+
+string f$gzinflate(const string &s) {
+  return zlib_decode(s, ZLIB_RAW);
+}

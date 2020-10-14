@@ -166,7 +166,7 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
     string::size_type uncompressed_len;
-    result_str = gzuncompress_raw(result_str, result_str_len, &uncompressed_len);
+    result_str = gzuncompress_raw({result_str, static_cast<size_t>(result_str_len)}, &uncompressed_len);
     result_str_len = uncompressed_len;
   }
 

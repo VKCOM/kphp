@@ -447,6 +447,8 @@ function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
 function gzuncompress ($str ::: string) ::: string;
+function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
+function gzinflate ($str ::: string) ::: string;
 function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
 function base64_encode ($str ::: string) ::: string;
 function base64url_decode_ulong ($str ::: string) ::: ULong;
