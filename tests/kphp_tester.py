@@ -17,10 +17,11 @@ from python.lib.file_utils import read_distcc_hosts, error_can_be_ignored
 
 
 class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, out_regexps=None):
+    def __init__(self, file_path, test_tmp_dir, tags, env_vars: dict, out_regexps=None):
         self.test_tmp_dir = test_tmp_dir
         self.file_path = file_path
         self.tags = tags
+        self.env_vars = env_vars
         self.out_regexps = out_regexps
 
     def is_ok(self):
@@ -40,7 +41,7 @@ class TestFile:
 
 
 class KphpRunOnceRunner(KphpBuilder):
-    def __init__(self, test_file, kphp_path, distcc_hosts):
+    def __init__(self, test_file: TestFile, kphp_path, distcc_hosts):
         super(KphpRunOnceRunner, self).__init__(
             php_script_path=test_file.file_path,
             artifacts_dir=os.path.join(test_file.test_tmp_dir, "artifacts"),
@@ -160,7 +161,7 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
         if not test_acceptable:
             return None
 
-        return TestFile(file_path, test_tmp_dir, ["ok"])
+        return TestFile(file_path, test_tmp_dir, {}, ["ok"])
 
     with open(file_path, 'rb') as f:
         first_line = f.readline().decode('utf-8')
@@ -178,14 +179,24 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
             return None
 
         out_regexps = []
+        env_vars = {}  # string -> string, e.g. {"KPHP_REQUIRE_FUNCTIONS_TYPING" -> "1"}
         while True:
             second_line = f.readline().decode('utf-8').strip()
             if len(second_line) > 1 and second_line.startswith("/") and second_line.endswith("/"):
                 out_regexps.append(re.compile(second_line[1:-1]))
-            else:
+            elif second_line.startswith("KPHP_") and "=" in second_line:
+                env_name, env_value = parse_env_var_from_test_header(file_path, second_line)
+                env_vars[env_name] = env_value
+            else:  # <?php
                 break
 
-        return TestFile(file_path, test_tmp_dir, tags, out_regexps)
+        return TestFile(file_path, test_tmp_dir, tags, env_vars, out_regexps)
+
+
+def parse_env_var_from_test_header(file_path, line):
+    env_name, env_value = line.split('=', 2)
+    # todo some placeholders in env_value? like {dir} for example
+    return env_name, env_value
 
 
 def test_files_from_dir(tests_dir):
@@ -286,8 +297,8 @@ class TestResult:
         return self.failed_stage_msg is not None
 
 
-def run_fail_test(test, runner):
-    if runner.compile_with_kphp():
+def run_fail_test(test: TestFile, runner):
+    if runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
 
     if test.out_regexps:
@@ -307,8 +318,8 @@ def run_fail_test(test, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_warn_test(test, runner):
-    if not runner.compile_with_kphp():
+def run_warn_test(test: TestFile, runner):
+    if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
     if not runner.kphp_build_stderr_artifact:
         return TestResult.failed(test, runner.artifacts, "kphp build finished without stderr")
@@ -328,10 +339,10 @@ def run_warn_test(test, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_ok_test(test, runner):
+def run_ok_test(test: TestFile, runner):
     if not runner.run_with_php():
         return TestResult.failed(test, runner.artifacts, "got php error")
-    if not runner.compile_with_kphp():
+    if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
     if not runner.run_with_kphp():
         return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
