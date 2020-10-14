@@ -2,9 +2,6 @@
 <?
   $a = array (0 => 1, 1 => 2);
 
-  /**
-   * @param int $x
-   */
   function f (&$x) {
     global $a;
     foreach ($a as $k => $v) {

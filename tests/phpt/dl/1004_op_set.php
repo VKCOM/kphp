@@ -1,9 +1,6 @@
 @ok
 <?php
 
-/**
- * @return int|false
- */
 function getBits() {
     return 1 ? 10 : false;
 }

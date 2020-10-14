@@ -1,10 +1,5 @@
 @ok
 <?php
-  /**
-   * @param mixed $a
-   * @param string $b
-   * @return mixed
-   */
   function inc_xor_str($a, $b) {
     $len = strlen($a);
     for ($i = 0; $i < $len; $i++) {

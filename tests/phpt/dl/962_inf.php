@@ -13,9 +13,6 @@ function f($x) {
 f (true);
 */
 
-/**
- * @param int $x
- */
 function print_int ($x) {
   print $x;
 }

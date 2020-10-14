@@ -10,18 +10,12 @@ jkflds
 onclick='prepareReport(\"" + type + "\", 1);'
 TAG;
 
-/**
- * @return string
- */
 function f1() {
   global $config;
   return <<<EOF
 EOF;
 }
 
-/**
- * @return string
- */
 function f2() {
 
   global $lang;

@@ -5,10 +5,6 @@ function _dechex($u) {
   return sprintf('%x', $u);
 }
 
-/**
- * @param mixed $ip
- * @return string
- */
 function get_geoip ($ip) {
   global $tt, $ttt, $eng;
   #if (is_string ($ip)) {

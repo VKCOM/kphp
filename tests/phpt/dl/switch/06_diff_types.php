@@ -1,9 +1,6 @@
 @ok
 <?php
 $a = 0;
-/**
- * @param mixed $x
- */
 function f($x) {
   global $a;
   switch ($x) {
@@ -28,9 +25,6 @@ f(2);
 f("2");
 f(3);
 
-/**
- * @param string $x
- */
 function g($x) {
   switch ($x) {
   case 'abc':

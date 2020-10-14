@@ -10,11 +10,6 @@ function g($g) {
 g(array());
 
 
-/**
- * @param mixed $x
- * @param int $z
- * @param mixed ...$args
- */
 function f($x, $z, ...$args) {
   var_dump($x);
   var_dump($z);

@@ -1,10 +1,6 @@
 @ok benchmark
 <?php
 
-/**
- * @param string $msg
- * @param int $code
- */
 function my_throw ($msg, $code) {
   throw new Exception ($msg, $code);
 }

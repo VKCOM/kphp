@@ -9,14 +9,6 @@
  */
 
 $last = 42;
-/**
- * @param int $last
- * @param float[] $randoms
- * @param int $max
- * @param int $ia
- * @param int $ic
- * @param int $im
- */
 function gen_random(&$last, &$randoms, $max = 1, $ia = 3877, $ic = 29573, $im = 139968) {
    foreach($randoms as &$r) {
       $r = $max * ($last = ($last * $ia + $ic) % $im) / $im;
@@ -25,9 +17,6 @@ function gen_random(&$last, &$randoms, $max = 1, $ia = 3877, $ic = 29573, $im = 
 
 /* Weighted selection from alphabet */
 
-/**
- * @param mixed[] $genelist
- */
 function makeCumulative(&$genelist) {
    $cumul = 0.0;
    foreach($genelist as $k=>&$v) {
@@ -38,10 +27,6 @@ function makeCumulative(&$genelist) {
 
 /* Generate and write FASTA format */
 
-/**
- * @param mixed[] $genelist
- * @param mixed $n
- */
 function makeRandomFasta(&$genelist, $n) {
    $width = 60;
    $lines = (int) ($n / $width);
@@ -85,10 +70,6 @@ function makeRandomFasta(&$genelist, $n) {
 }
 
 
-/**
- * @param string $s
- * @param mixed $n
- */
 function makeRepeatFasta($s, $n) {
    $i = 0; $sLength = strlen($s); $lineLength = 60;
    while ($n > 0) {

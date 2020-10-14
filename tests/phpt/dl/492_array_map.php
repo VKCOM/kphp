@@ -6,22 +6,12 @@
 /**
  * @kphp-required
  */
-/**
- * @kphp-required
- * @param int $n
- * @return int
- */
 function square ($n) {
   return $n * $n;
 }
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @param int $n
- * @return int
  */
 function sq ($n) {
   return $n * $n;
@@ -39,11 +29,6 @@ $a = array(1,2,3);
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @param mixed $var
- * @return mixed
  */
 function square_recur($var) {
    if (is_array($var))

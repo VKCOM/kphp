@@ -1,65 +1,30 @@
 @ok
 <?php
 
-/**
- * @param string $hint
- * @param int $key
- * @param string[] $arr
- */
 function test_int_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param string $key
- * @param string[] $arr
- */
 function test_string_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param double $key
- * @param string[] $arr
- */
 function test_double_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param bool $key
- * @param string[] $arr
- */
 function test_bool_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param string|false $key
- * @param string[] $arr
- */
 function test_or_false_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param int[] $key
- * @param string[] $arr
- */
 function test_array_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }
 
-/**
- * @param string $hint
- * @param mixed $key
- * @param string[] $arr
- */
 function test_mixed_keys($hint, $key, $arr) {
   echo "$hint: "; var_dump(array_key_exists($key, $arr));
 }

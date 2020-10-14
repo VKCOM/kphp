@@ -1,8 +1,5 @@
 @ok
 <?php
-/**
- * @param string $x
- */
 function f($x) {
   echo $x.": ";
   switch ($x) {
@@ -23,9 +20,6 @@ f('pr');
 
 echo "\n";
 
-/**
- * @param string $x
- */
 function g($x) {
   echo $x.": ";
   switch ($x) {

@@ -60,10 +60,6 @@ function test_OrFalse() {
 
 
   /** @param int|false $x */
-  /**
-   * @param int|false $x
-   * @return int|false
-   */
   function pass ($x) {
     return $x;
   }
@@ -83,10 +79,6 @@ function test_OrFalse() {
     $a = false;
   }
 
-  /**
-   * @param string|false $x
-   * @return string|false
-   */
   function def_bool ($x = false) {
     return $x;
   }

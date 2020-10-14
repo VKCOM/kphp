@@ -1,10 +1,6 @@
 @ok
 <?php
 
-  /**
-   * @param bool $flag
-   * @return int|false
-   */
   function regGenerateUniqueId($flag) {
     for ($i = 1; $i < 2; $i++) {
       $member_id = 1;

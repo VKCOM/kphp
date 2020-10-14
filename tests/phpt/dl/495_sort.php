@@ -17,12 +17,6 @@ $data = array(
 /**
  * @kphp-required
  */
-/**
- * @kphp-required
- * @param mixed $a
- * @param mixed $b
- * @return int
- */
 function cmp ($a, $b) {
     is_array ($a)
         and $a = array_sum ($a);

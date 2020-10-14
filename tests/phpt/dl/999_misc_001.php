@@ -1,9 +1,5 @@
 @ok
 <?php
-/**
- * @param int $x
- * @return int
- */
 function sq($x) {
   return $x * $x;
 }

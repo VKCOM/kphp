@@ -1,9 +1,5 @@
 @ok
 <?php
-  /**
-   * @param int[] $a
-   * @param int[] $b
-   */
   function test ($a, $b) {
     var_dump ($a + $b);
     var_dump ($b + $a);

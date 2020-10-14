@@ -1,10 +1,5 @@
 @ok benchmark
 <?php
-/**
- * @param int $item
- * @param int $depth
- * @return mixed[]
- */
 function bottomUpTree($item, $depth)
 {
    if (!$depth) return array(null,null,$item);
@@ -15,11 +10,7 @@ function bottomUpTree($item, $depth)
       bottomUpTree($item2,$depth),
       $item);
 }
-/**
- * @param mixed $treeNode
- * @return mixed
- */
-function itemCheck($treeNode) { 
+function itemCheck($treeNode) {
    return $treeNode[2]
       + ($treeNode[0][0] == null ? itemCheck($treeNode[0]) : $treeNode[0][2])
       - ($treeNode[1][0] == null ? itemCheck($treeNode[1]) : $treeNode[1][2]);

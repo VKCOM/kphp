@@ -2,10 +2,6 @@
 <?php  
 define("TICKETS_AUTHOR_TYPE_USER", 0);
 
-/**
- * @param int $ticket
- * @return bool
- */
 function checkTicketAccess($ticket) {
   $user_id = 1;
 

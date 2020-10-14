@@ -7,17 +7,11 @@ $arr2 = array("2");
 $arr1[] = array("3");
 $arr1 = $arr2;
 
-/**
- * @param string $a
- */
 function def_arg ($a = "test") {
 }
 
 def_arg ();
 
-/**
- * @return int
- */
 function test_ret() {
   return $a[10] = 123;
 }
@@ -28,26 +22,17 @@ $tmp = $matches[4];
 $str = "hello";
 $str = $matches[2];
 
-/**
- * @param mixed $a
- */
 function f_var($a) {
   $a[1] = "tests";
   f_string ($a[1]);
 }
 
-/**
- * @param mixed $a
- */
 function f_string($a) {
 }
 
 f_string ("hello");
 f_var ($_SERVER);
 
-/**
- * @param mixed $a
- */
 function g($a) {
   print $a;
 }

@@ -1,9 +1,6 @@
 @benchmark ok
 <?
 ob_start();
-/**
- * @param string $s
- */
 function f($s) {
   switch ($s) {
     case '_dummy_':

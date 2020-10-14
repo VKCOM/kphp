@@ -1,10 +1,5 @@
 @ok
 <?php
-  /**
-   * @param int $a
-   * @param int $b
-   * @param int $c
-   */
   function f($a, $b = 2, $c = 3) {
     echo ("$a $b $c\n");
   }

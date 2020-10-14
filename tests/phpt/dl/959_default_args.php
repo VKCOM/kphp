@@ -2,9 +2,6 @@
 <?php
 
 
-/**
- * @param string[] $a
- */
 function f($a = array ("a" => "b")) {
   print_r ($a);
   print "\n";

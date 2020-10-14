@@ -67,9 +67,6 @@ function test_deep_array() {
     var_dump($x);
 }
 
-/**
- * @param mixed[][] $x
- */
 function test_array_in_default_param($x = [
   "param1" => [
     "hello" => ["foo"."bar", 123, "1"."2" => "3"."2"],

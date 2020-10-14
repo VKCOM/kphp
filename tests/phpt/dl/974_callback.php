@@ -4,11 +4,6 @@
 /**
  * @kphp-required
  */
-/**
- * @kphp-required
- * @param int $x
- * @return int
- */
 function sq ($x) {
   return $x * $x;
 }

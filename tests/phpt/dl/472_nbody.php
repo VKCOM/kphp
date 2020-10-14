@@ -9,10 +9,6 @@ modified by Sergey Khripunov
 
 $n = 200000;
 
-/**
- * @param float[][] $b
- * @return float
- */
 function energy(&$b) {
    $e = 0.0;
    for ($i=0,$m=sizeof($b);$i<$m;$i++) {

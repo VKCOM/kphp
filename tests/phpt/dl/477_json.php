@@ -1,9 +1,6 @@
 @ok benchmark
 <?php
 
-/**
- * @param int $options
- */
 function test_json ($options) {
   $php_ver = 7;
 #ifndef KPHP

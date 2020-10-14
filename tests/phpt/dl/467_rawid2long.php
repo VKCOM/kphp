@@ -23,10 +23,6 @@
   }
 #endif
 
-  /**
-   * @param string $dec
-   * @return string
-   */
   function dec2hex($dec) {
     bcscale(0);
     $value = '';
@@ -43,11 +39,6 @@
     return (string)$value;
   }
 
-  /**
-   * @param string $int1
-   * @param string|false $int2
-   * @return Long
-   */
   function rawID2Long($int1, $int2 = false) {
     if ($int2 === false) {
       list($int1, $int2) = explode('_', $int1);

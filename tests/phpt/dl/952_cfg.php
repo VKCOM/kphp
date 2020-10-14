@@ -1,10 +1,5 @@
 @ok
 <?
-/**
- * @param string $key
- * @param mixed $fields
- * @return mixed
- */
 function apiWrapObject($key, $fields = array()) {
 return array('_' => $key) + $fields;
 }
@@ -77,9 +72,6 @@ function test3() {
   $a = 0;
 }
 
-/**
- * @param int $a
- */
 function test4($a = 123) {
   var_dump ($a);
   $a = "hello";
@@ -97,11 +89,6 @@ function test5() {
 
 }
 
-/**
- * @param int|false $longitude_degrees
- * @param int|false $latitude_degrees
- * @return int|false
- */
 function geoComputeGeoNum($longitude_degrees, $latitude_degrees) {
   $longitude_degrees = floatval($longitude_degrees);
   $latitude_degrees = floatval($latitude_degrees);
@@ -153,9 +140,6 @@ function test6() {
   echo "\n";
 }
 
-/**
- * @param int $x
- */
 function f(&$x) {
   $x = 123;
 }
@@ -166,10 +150,6 @@ f($x);
 echo $x;
 echo "\n";
 
-/**
- * @param string $response
- * @return string
- */
 function convertToJSON ($response) {
   return "json";
 }

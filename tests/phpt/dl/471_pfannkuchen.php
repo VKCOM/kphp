@@ -7,10 +7,6 @@
 
 $n = 9;
 
-/**
- * @param int $n
- * @return int[]
- */
 function Fannkuch($n){
    $p = $q = $s = array(); 
    $sign = 1; $maxflips = $sum = 0; $m = $n-1;

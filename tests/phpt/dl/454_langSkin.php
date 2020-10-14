@@ -1,10 +1,6 @@
 @ok
 <?php
 
-/**
- * @param int $langs
- * @return string
- */
 function sLangBecomeTranslatorScript($langs){
 return <<<EOF
 (){
@@ -15,10 +11,6 @@ return <<<EOF
 EOF;
 }
 
-/**
- * @param int $langs
- * @return string
- */
 function sLangAlBecomeTranslatorScript($langs){
 return <<<EOF
 {

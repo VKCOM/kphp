@@ -2,9 +2,6 @@
 <?php
 require_once 'kphp_tester_include.php';
 
-/**
- * @param mixed $a
- */
 function printAllOfArray($a) {
   var_dump(array_first_key($a));
   var_dump(array_first_value($a));
@@ -23,9 +20,6 @@ printAllOfArray($var1[2]);
 
 class AA {
   var $a = 0;
-  /**
-   * @param int $a
-   */
   function __construct($a) { $this->a = $a; }
 }
 
