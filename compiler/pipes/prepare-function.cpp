@@ -66,6 +66,9 @@ public:
 
     // does the user need to specify @param for all and @return unless void?
     bool needs_to_be_fully_typed =
+      // if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, only check types if given, typing everything is not mandatory
+      G->settings().require_functions_typing.get() &&
+      // if 1, typing is mandatory, except these conditions
       analyze_param_return &&                     // if we don't take @param into account at all — don't require typing of course
       !f_->is_lambda() &&                         // lambda functions don't require strict typing (it's inconvenient)
       !f_->disabled_warnings.count("return");     // "@kphp-disable-warnings return" in function phpdoc

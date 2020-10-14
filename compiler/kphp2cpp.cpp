@@ -278,6 +278,9 @@ int main(int argc, char *argv[]) {
   parser.add(
     "Simulate the composer -no-dev flag behavior when handling composer files", settings->composer_no_dev,
     "composer-no-dev", "KPHP_COMPOSER_NO_DEV");
+  parser.add(
+    "Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
+    "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
 
   parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
   parser.add_implicit_option("Linker flags", settings->ld_flags);
