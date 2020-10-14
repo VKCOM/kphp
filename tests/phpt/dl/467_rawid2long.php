@@ -24,7 +24,6 @@
 #endif
 
   /**
-   * @kphp-infer
    * @param string $dec
    * @return string
    */
@@ -45,7 +44,6 @@
   }
 
   /**
-   * @kphp-infer
    * @param string $int1
    * @param string|false $int2
    * @return Long
@@ -58,7 +56,6 @@
   }
 
   /**
-   * @kphp-infer
    * @param Long $num
    * @return string
    */

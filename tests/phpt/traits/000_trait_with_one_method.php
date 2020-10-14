@@ -3,7 +3,6 @@
 
 trait GetJSON {
     /**
-     * @kphp-infer
      * @return string
      */
     public function get_json() {

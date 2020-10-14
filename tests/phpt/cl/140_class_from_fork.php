@@ -11,7 +11,6 @@ class Temp {
 }
 
 /**
- * @kphp-infer
  * @return Temp
  */
 function demo() {

@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return tuple(int, string, mixed[][])
  */
 function getAll() {
@@ -18,7 +17,6 @@ function getAll() {
 }
 
 /**
- * @kphp-infer
  * @return shape(a:\Classes\A, all:tuple(int, string, mixed[][]))
  */
 function getAllAndA() {

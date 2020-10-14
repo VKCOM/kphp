@@ -8,7 +8,6 @@
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param int $n
  * @return int
  */
@@ -21,7 +20,6 @@ function square ($n) {
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param int $n
  * @return int
  */
@@ -44,7 +42,6 @@ $a = array(1,2,3);
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param mixed $var
  * @return mixed
  */

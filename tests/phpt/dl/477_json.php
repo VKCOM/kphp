@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int $options
  */
 function test_json ($options) {

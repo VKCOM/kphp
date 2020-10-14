@@ -4,7 +4,6 @@ namespace LibClasses\SUB;
 
 class S {
     /**
-     * @kphp-infer
      * @return string
      */
     static public function static_fun() {

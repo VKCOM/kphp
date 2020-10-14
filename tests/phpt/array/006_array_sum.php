@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param float $x
  * @return float
  */

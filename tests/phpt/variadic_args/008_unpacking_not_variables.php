@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param mixed $x
  * @param mixed[] $args
  */
@@ -12,7 +11,6 @@ function fun($x, ...$args) {
 }
 
 /**
- * @kphp-infer
  * @param mixed[] $args
  * @return mixed[]
  */

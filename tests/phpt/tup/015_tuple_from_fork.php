@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return tuple(int, string)
  */
 function demo() {

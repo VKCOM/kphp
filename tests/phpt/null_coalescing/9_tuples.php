@@ -5,7 +5,6 @@ require_once 'kphp_tester_include.php';
 
 
 /**
- * @kphp-infer
  * @param tuple(int|null, string|null, false|null, int[]|null) $tup
  */
 function test_tuple($tup) {

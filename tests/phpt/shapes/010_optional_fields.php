@@ -11,7 +11,6 @@ class A {
  * $sh как shape будет автовыведен из всего, что туда передаётся
  */
 /**
- * @kphp-infer
  * @param shape(a:A, x:int, y:mixed, z:int[]|null) $sh
  */
 function printAll($sh) {
@@ -27,7 +26,6 @@ function printAll($sh) {
 }
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, y?:string, z?:int[], a?:A) Это защищает shape, чекает обязательные параметры + даёт assumption на ['a']
  */
 function printAll_v2($sh) : void {
@@ -69,7 +67,6 @@ printAll_v2(shape(['y' => 's10', 'a' => new A, 'z' => [1,2,3], 'x' => 10]));
 printAll_v2(shape(['z' => [1,2,3], 'y' => 's11', 'a' => null, 'x' => 11]));
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, y?:int, z:string|null)
  */
 function printXY($sh) {

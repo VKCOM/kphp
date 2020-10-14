@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int $x
  * @param mixed[] $args
  */
@@ -12,7 +11,6 @@ function get_forwarded($x, ...$args) {
 }
 
 /**
- * @kphp-infer
  * @param string $y
  * @param int[] $args
  */

@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param mixed[] $ar
  * @param mixed $el
  */

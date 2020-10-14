@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param int $arg
  */
 	function f($arg)

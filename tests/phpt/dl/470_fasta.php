@@ -10,7 +10,6 @@
 
 $last = 42;
 /**
- * @kphp-infer
  * @param int $last
  * @param float[] $randoms
  * @param int $max
@@ -27,7 +26,6 @@ function gen_random(&$last, &$randoms, $max = 1, $ia = 3877, $ic = 29573, $im = 
 /* Weighted selection from alphabet */
 
 /**
- * @kphp-infer
  * @param mixed[] $genelist
  */
 function makeCumulative(&$genelist) {
@@ -41,7 +39,6 @@ function makeCumulative(&$genelist) {
 /* Generate and write FASTA format */
 
 /**
- * @kphp-infer
  * @param mixed[] $genelist
  * @param mixed $n
  */
@@ -89,7 +86,6 @@ function makeRandomFasta(&$genelist, $n) {
 
 
 /**
- * @kphp-infer
  * @param string $s
  * @param mixed $n
  */

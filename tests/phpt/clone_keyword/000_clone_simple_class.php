@@ -6,7 +6,6 @@ class A {
     public $y = "abc";
 
     /**
-     * @kphp-infer
      * @param int $x
      * @param string $y
      */

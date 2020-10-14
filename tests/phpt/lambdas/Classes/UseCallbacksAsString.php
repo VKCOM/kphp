@@ -12,7 +12,6 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
-     * @kphp-infer
      * @param int $x
      */
     public static function f_print_static($x) {
@@ -20,7 +19,6 @@ class UseCallbacksAsString
     }
 
     /**
-     * @kphp-infer
      * @return null
      */
     public static function run_static() {
@@ -29,7 +27,6 @@ class UseCallbacksAsString
     }
 
     /**
-     * @kphp-infer
      * @param int $x
      * @return int
      */
@@ -45,7 +42,6 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
-     * @kphp-infer
      * @return int
      */
     public function get_aaa() {
@@ -54,7 +50,6 @@ class UseCallbacksAsString
 
     /**
      * @kphp-required
-     * @kphp-infer
      * @return int
      */
     public function get_bbb() {

@@ -4,7 +4,6 @@ namespace Classes;
 
 class TestFieldClassParent {
     /**
-     * @kphp-infer
      * @return string
      */
     public static function getStaticClass() {
@@ -12,7 +11,6 @@ class TestFieldClassParent {
     }
 
     /**
-     * @kphp-infer
      * @return string
      */
     public static function getSelfClass() {

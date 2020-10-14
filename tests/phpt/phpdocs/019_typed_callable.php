@@ -3,7 +3,6 @@
 // todo пока что phpdoc просто парсится, типизация callable не валидируется
 
 /**
- * @kphp-infer
  * @param callable(int, int) : int $c
  */
 function invokator1(callable $c) {
@@ -16,7 +15,6 @@ invokator1(function($a, $b) { return $a * $b; });
 
 
 /**
- * @kphp-infer
  * @param callable(int, int) $c
  */
 function invokator2(callable $c) {
@@ -27,7 +25,6 @@ invokator2(function($a, $b) { echo $a + $b, "\n"; });
 invokator2(function($a, $b) { echo $a * $b, "\n"; });
 
 /**
- * @kphp-infer
  * @param callable() $c
  */
 function invokator3(callable $c) {
@@ -38,7 +35,6 @@ invokator3(function() { echo "cb1\n"; });
 invokator3(function() { echo "cb2\n"; });
 
 /**
- * @kphp-infer
  * @param callable():int $c
  */
 function invokator4(callable $c) {

@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return Exception
  */
 function return_exception() {
@@ -13,7 +12,6 @@ function return_exception() {
 }
 
 /**
- * @kphp-infer
  * @return int
  */
 function throw_exception() {

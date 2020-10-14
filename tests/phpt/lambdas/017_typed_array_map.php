@@ -33,7 +33,6 @@ function test_map_before_filter() {
 }
 
 /**
- * @kphp-infer
  * @param int[][] $arr
  */
 function test_recursive_array_map($arr) {

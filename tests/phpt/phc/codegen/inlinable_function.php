@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @return string
  */
 	function a () 
@@ -17,7 +16,6 @@
 
 
 /**
- * @kphp-infer
  * @return string
  */
 	function b ()

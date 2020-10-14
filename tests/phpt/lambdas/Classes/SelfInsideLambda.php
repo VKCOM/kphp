@@ -8,7 +8,6 @@ class SelfInsideLambda extends SelfInsideLambdaBase
     protected static $b = 10;
 
     /**
-     * @kphp-infer
      * @return int
      */
     public static function run()
@@ -27,7 +26,6 @@ class SelfInsideLambda extends SelfInsideLambdaBase
     }
 
     /**
-     * @kphp-infer
      * @return int
      */
     public static function get_ten()
@@ -36,7 +34,6 @@ class SelfInsideLambda extends SelfInsideLambdaBase
     }
 
     /**
-     * @kphp-infer
      * @param int $a
      * @param int $b
      * @return int
@@ -47,7 +44,6 @@ class SelfInsideLambda extends SelfInsideLambdaBase
     }
 
     /**
-     * @kphp-infer
      * @param int $a
      * @return int
      */

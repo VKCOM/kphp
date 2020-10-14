@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $x
  * @return int|null
  */

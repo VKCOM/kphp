@@ -9,7 +9,6 @@ class A {
 
   var $a = 0;
   /**
-   * @kphp-infer
    * @param int $a
    */
   public function __construct($a = 0) { $this->a = $a; }
@@ -20,7 +19,6 @@ class A {
 class B {
   var $a = 0;
   /**
-   * @kphp-infer
    * @param int $a
    */
   public function __construct($a = 0) { $this->a = $a; }

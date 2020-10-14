@@ -5,7 +5,6 @@ class A {
   public $x = 1;
 
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function __construct($x = 1) {
@@ -21,7 +20,6 @@ class B {
 }
 
 /**
- * @kphp-infer
  * @return A[]
  */
 function test_array_mixing() {
@@ -68,7 +66,6 @@ function accepts_instance_3(A $a = null) {
  * @return A
  */
 /**
- * @kphp-infer
  * @param int $init_v
  * @return A
  */
@@ -80,7 +77,6 @@ function returns_instance($init_v) {
  * @return A|null
  */
 /**
- * @kphp-infer
  * @param int $init_v
  * @return A
  */
@@ -114,7 +110,6 @@ accepts_instance_2(returns_instance_2(1));
 accepts_instance_2(returns_instance_2(0));
 
 /**
- * @kphp-infer
  * @param RpcConnection $c
  */
 function accepts_rpc_connection($c) {

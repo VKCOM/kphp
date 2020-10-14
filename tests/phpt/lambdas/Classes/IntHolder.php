@@ -7,7 +7,6 @@ class IntHolder
     var $a = 10;
 
     /**
-     * @kphp-infer
      * @param int $a
      */
     public function __construct($a = 0) {
@@ -16,7 +15,6 @@ class IntHolder
 
     /**
      * @kphp-required
-     * @kphp-infer
      * @param int $x
      * @return int
      */

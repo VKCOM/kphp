@@ -1,7 +1,6 @@
 @ok benchmark
 <?php
 /**
- * @kphp-infer
  * @param string $value
  * @param string ...$args
  */
@@ -11,7 +10,6 @@ function dLog($value, ...$args) {
 }
 
 /**
- * @kphp-infer
  * @param string $value
  * @return string
  */

@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int ...$args
  */
 function get_int_args(...$args) {
@@ -10,7 +9,6 @@ function get_int_args(...$args) {
 }
 
 /**
- * @kphp-infer
  * @param string[] ...$args
  */
 function get_array_args(...$args) {
@@ -22,7 +20,6 @@ class Stub {
 }
 
 /**
- * @kphp-infer
  * @param Stub ...$args
  */
 function get_instance_args(...$args) {
@@ -47,7 +44,6 @@ class StubImpl2 implements StubInterface {
 }
 
 /**
- * @kphp-infer
  * @param StubInterface ...$args
  */
 function get_interface_args(...$args) {
@@ -56,7 +52,6 @@ function get_interface_args(...$args) {
 }
 
 /**
- * @kphp-infer
  * @param int ...$args
  */
 function get_varg_in_phpdoc_but_array($args) {
@@ -64,7 +59,6 @@ function get_varg_in_phpdoc_but_array($args) {
 }
 
 /**
- * @kphp-infer
  * @param int $arg
  * @return int
  */

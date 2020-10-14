@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @return int|false
  */
 function getBits() {

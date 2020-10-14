@@ -3,7 +3,6 @@
 
 interface MyInterface2 {
     /**
-     * @kphp-infer
      * @return int
      */
     public function foo();
@@ -11,7 +10,6 @@ interface MyInterface2 {
 
 class A2 implements MyInterface2 {
     /**
-     * @kphp-infer
      * @return mixed
      */
     public function foo() { return true ? "asdf" : 10; }
@@ -19,7 +17,6 @@ class A2 implements MyInterface2 {
 
 class B2 implements MyInterface2 {
     /**
-     * @kphp-infer
      * @return int
      */
     public function foo() { return 10; }

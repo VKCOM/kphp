@@ -1,7 +1,6 @@
 @ok
 <?
 /**
- * @kphp-infer
  * @param string $key
  * @param mixed $fields
  * @return mixed
@@ -79,7 +78,6 @@ function test3() {
 }
 
 /**
- * @kphp-infer
  * @param int $a
  */
 function test4($a = 123) {
@@ -100,7 +98,6 @@ function test5() {
 }
 
 /**
- * @kphp-infer
  * @param int|false $longitude_degrees
  * @param int|false $latitude_degrees
  * @return int|false
@@ -157,7 +154,6 @@ function test6() {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  */
 function f(&$x) {
@@ -171,7 +167,6 @@ echo $x;
 echo "\n";
 
 /**
- * @kphp-infer
  * @param string $response
  * @return string
  */

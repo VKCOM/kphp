@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return tuple(int, string, mixed[][])
  */
 function getAll() {
@@ -18,7 +17,6 @@ function getAll() {
 }
 
 /**
- * @kphp-infer
  * @param bool $returnShort
  * @return tuple(int, string, mixed[][]|false)
  */
@@ -39,7 +37,6 @@ function multipleResult($returnShort) {
 }
 
 /**
- * @kphp-infer
  * @return tuple(mixed, mixed, mixed)
  */
 function badMixResult() {   // works, but infers tuple<var,var,var>
@@ -57,7 +54,6 @@ function demo() {
 }
 
 /**
- * @kphp-infer
  * @param bool $returnShort
  */
 function demo2($returnShort) {

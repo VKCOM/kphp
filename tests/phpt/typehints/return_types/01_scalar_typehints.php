@@ -33,7 +33,6 @@ function string_add_val(string $a = STRING_ADD_VAL): string {
 }
 
 /**
- * @kphp-infer
  * @param null $a
  * @return null
  */

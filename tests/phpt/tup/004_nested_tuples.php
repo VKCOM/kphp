@@ -4,7 +4,6 @@ require_once 'kphp_tester_include.php';
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $arg
  * @return tuple(int, int[])
  */
@@ -13,7 +12,6 @@ function getT1($arg) {
 }
 
 /**
- * @kphp-infer
  * @return tuple(tuple(int, int[]), string)
  */
 function getT2() {

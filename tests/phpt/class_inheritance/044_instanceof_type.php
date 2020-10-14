@@ -11,7 +11,6 @@ class B extends A {
 
 
 /**
- * @kphp-infer
  * @return bool
  */
 function f(A $x) {

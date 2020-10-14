@@ -12,7 +12,6 @@ class Common {
     private static $fp1 = 'Private1';
 
     /**
-     * @kphp-infer
      * @param string $f1
      */
     public static function test1($f1) {
@@ -26,7 +25,6 @@ class Common {
     }
 
     /**
-     * @kphp-infer
      * @param string $f1
      */
     public static function test2($f1) {

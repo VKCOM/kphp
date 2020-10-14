@@ -3,7 +3,6 @@
 
 $x = 20;
 /**
- * @kphp-infer
  * @param int $y
  */
 function foo($y) {

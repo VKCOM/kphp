@@ -3,7 +3,6 @@
   date_default_timezone_set ("Etc/GMT-3");
 
   /**
-   * @kphp-infer
    * @param string $x
    * @param int $y
    */

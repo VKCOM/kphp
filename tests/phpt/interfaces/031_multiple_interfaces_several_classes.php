@@ -9,7 +9,6 @@ class BarFoo implements IBar, IFoo {}
 function run_bar(IBar $ibar) { var_dump("bar;".get_class($ibar)); }
 
 /**
- * @kphp-infer
  * @param $ifoo IFoo
  */
 function run_foo($ifoo) { var_dump("foo;".get_class($ifoo)); }

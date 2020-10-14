@@ -2,7 +2,6 @@
 <?php
 
   /**
-   * @kphp-infer
    * @param bool $flag
    * @return int|false
    */

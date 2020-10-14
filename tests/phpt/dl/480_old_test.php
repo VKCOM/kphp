@@ -257,7 +257,6 @@
   var_dump (inet_pton('::1'));
 
   /**
-   * @kphp-infer
    * @param int $x
    * @return int
    */
@@ -302,7 +301,6 @@
   @var_dump (2 % 4e9);
 
   /**
-   * @kphp-infer
    * @param mixed $key
    * @param mixed $fields
    * @return mixed
@@ -357,10 +355,6 @@
 
   /**
    * @kphp-required
-   */
-  /**
-   * @kphp-required
-   * @kphp-infer
    * @param int $x
    * @return bool
    */
@@ -370,10 +364,6 @@
 
   /**
    * @kphp-required
-   */
-  /**
-   * @kphp-required
-   * @kphp-infer
    * @param int $x
    * @return bool
    */
@@ -791,7 +781,6 @@
   print_r ($a);
 
   /**
-   * @kphp-infer
    * @param mixed $item
    * @param mixed $depth
    * @return mixed[]
@@ -808,7 +797,6 @@
   }
 
   /**
-   * @kphp-infer
    * @param mixed $treeNode
    * @return mixed
    */

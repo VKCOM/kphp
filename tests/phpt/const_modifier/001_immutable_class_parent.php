@@ -6,7 +6,6 @@
  */
 class A {
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function __construct($x) {
@@ -21,7 +20,6 @@ class A {
  */
 class B extends A {
   /**
-   * @kphp-infer
    * @param int $y
    * @param int $x
    */
@@ -35,7 +33,6 @@ class B extends A {
 
 class C extends A {
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function __construct($x) {

@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param $x false
  */
 function test($x) {

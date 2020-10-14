@@ -6,7 +6,6 @@
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param int $x
  * @return int
  */

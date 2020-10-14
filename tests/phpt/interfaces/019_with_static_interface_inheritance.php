@@ -3,7 +3,6 @@
 
 interface IOne {
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function one($x);
@@ -36,7 +35,6 @@ interface IThree extends IOne {
 
 class ImplTwo implements ITwo {
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function one($x) {
@@ -59,7 +57,6 @@ class ImplTwo implements ITwo {
 
 class ImplThree implements IThree {
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function one($x) {

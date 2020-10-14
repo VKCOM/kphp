@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param mixed $array
  * @param false $force_array
  * @return bool
@@ -23,7 +22,6 @@ function isVector($array, $force_array = false) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $text
  * @return string
  */
@@ -41,7 +39,6 @@ function xmlStripInvalidCharacters($text) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $data
  * @param int $level
  * @return string

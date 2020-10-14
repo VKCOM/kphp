@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param shape(x:int, y?:string) $sh
  */
 function process($sh) {

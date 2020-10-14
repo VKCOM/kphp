@@ -1,7 +1,6 @@
 @ok benchmark
 <?php
 /**
- * @kphp-infer
  * @param int $item
  * @param int $depth
  * @return mixed[]
@@ -17,7 +16,6 @@ function bottomUpTree($item, $depth)
       $item);
 }
 /**
- * @kphp-infer
  * @param mixed $treeNode
  * @return mixed
  */

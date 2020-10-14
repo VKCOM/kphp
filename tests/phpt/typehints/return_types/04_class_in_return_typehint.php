@@ -6,7 +6,6 @@ class Test {
 }
 
 /**
- * @kphp-infer
  * @return Test
  */
 function foo(): Test {

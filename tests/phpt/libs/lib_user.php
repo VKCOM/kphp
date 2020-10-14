@@ -16,7 +16,6 @@ require_lib('lib_examples/example1');
 require_lib('lib_examples/example1');
 
 /**
- * @kphp-infer
  * @return int
  */
 function call_example1_lib_functions() {
@@ -45,7 +44,6 @@ use_class_new();
 echo "lib_user: pow2(): ", pow2(), "\n";
 
 /**
- * @kphp-infer
  * @return int
  */
 function use_other_lib() {

@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int|false|null $x
  */
 function test_switch_by_optional_int($x) {
@@ -23,7 +22,6 @@ function test_switch_by_optional_int($x) {
 }
 
 /**
- * @kphp-infer
  * @param false|null $x
  */
 function test_switch_by_optional_false($x) {
@@ -41,7 +39,6 @@ function test_switch_by_optional_false($x) {
 }
 
 /**
- * @kphp-infer
  * @param boolean|null $x
  */
 function test_switch_by_optional_bool($x) {

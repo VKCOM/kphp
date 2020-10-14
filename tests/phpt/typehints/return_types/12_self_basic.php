@@ -2,7 +2,6 @@
 <?php
 class Foo {
   /**
-   * @kphp-infer
    * @return Foo
    */
   public static function factory(): self {

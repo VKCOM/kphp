@@ -5,7 +5,6 @@ define('AB', 200);
 
 interface WithDefault2 {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int $y
      */
@@ -14,7 +13,6 @@ interface WithDefault2 {
 
 class B implements WithDefault2 {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int $y
      */
@@ -23,7 +21,6 @@ class B implements WithDefault2 {
 
 class A implements WithDefault2 {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int $y
      * @param int $z

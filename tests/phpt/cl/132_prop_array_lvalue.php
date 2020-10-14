@@ -4,7 +4,6 @@ require_once 'kphp_tester_include.php';
 use Classes\F;
 
 /**
- * @kphp-infer
  * @param int[] $intArr
  */
 function moreInt(&$intArr) {

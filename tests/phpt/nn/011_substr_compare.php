@@ -3,7 +3,6 @@
 
 error_reporting(0);
 /**
- * @kphp-infer
  * @param string $s1
  * @param string $s2
  * @param int $o

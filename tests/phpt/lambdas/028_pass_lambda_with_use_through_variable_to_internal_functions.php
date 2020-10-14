@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int[] $scores
  * @param int $mean
  * @return float
@@ -13,7 +12,6 @@ function calc_std($scores, $mean) {
 }
 
 /**
- * @kphp-infer
  * @param int $mean
  */
 function pow_of_diff($mean): callable {
@@ -21,7 +19,6 @@ function pow_of_diff($mean): callable {
 }
 
 /**
- * @kphp-infer
  * @param int[] $scores
  * @param int $mean
  * @return float

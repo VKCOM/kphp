@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param string $id
  * @param bool $x
  * @param bool $y

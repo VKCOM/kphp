@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return tuple(int, int, string, any[])
  */
 function return_tuple1() {
@@ -13,7 +12,6 @@ function return_tuple1() {
 }
 
 /**
- * @kphp-infer
  * @return tuple(int, int, int[], mixed[])
  */
 function return_tuple2() {
@@ -22,7 +20,6 @@ function return_tuple2() {
 }
 
 /**
- * @kphp-infer
  * @param tuple(int, int, mixed, mixed[])|null $x
  * @return mixed[]
  */

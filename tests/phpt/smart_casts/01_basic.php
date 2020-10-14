@@ -14,7 +14,6 @@ function f_array(array $x) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $x
  */
 function f($x) {

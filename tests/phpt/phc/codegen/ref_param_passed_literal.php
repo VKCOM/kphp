@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param mixed $x
  */
 	function f(&$x)

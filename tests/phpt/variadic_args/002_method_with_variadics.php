@@ -3,7 +3,6 @@
 
 class WithStaticVariadicFun {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int[] $args
      * @return float
@@ -17,7 +16,6 @@ class WithStaticVariadicFunDerived extends WithStaticVariadicFun {}
 
 class WithVariadicMethod {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int[] $args
      * @return float

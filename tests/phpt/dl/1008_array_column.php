@@ -123,7 +123,6 @@ function test_or_false_array() {
 class A {
     public $x = 0;
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {

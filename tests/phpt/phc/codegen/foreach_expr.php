@@ -7,7 +7,6 @@
 	$a = 0;
 	$a1 = 0;
 /**
- * @kphp-infer
  * @param mixed $x
  * @param mixed $y
  * @return int[]
@@ -21,7 +20,6 @@
 	}
 
 /**
- * @kphp-infer
  * @param int $x
  * @param int $y
  * @return int[]

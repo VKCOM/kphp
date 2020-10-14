@@ -9,7 +9,6 @@ class B {
   public static $b = [];
 
   /**
-   * @kphp-infer
    * @return bool
    */
   public static function foo() {

@@ -16,7 +16,6 @@ class ImplicitCapturingThis
     var $a;
 
     /**
-     * @kphp-infer
      * @param int $a
      */
     public function __construct($a = 0) {

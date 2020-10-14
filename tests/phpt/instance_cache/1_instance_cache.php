@@ -31,7 +31,6 @@ class Y {
   public $y_tuple;
 
   /**
-   * @kphp-infer
    * @param int $i
    * @param string $s
    * @param string|false $or_false_str
@@ -88,7 +87,6 @@ class HasShape {
   var $sh;
 
   /**
-   * @kphp-infer
    * @param int $sh_x
    * @param bool $with_z
    */

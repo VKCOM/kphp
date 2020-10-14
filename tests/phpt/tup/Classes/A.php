@@ -19,7 +19,6 @@ class A
   }
 
   /**
-   * @kphp-infer
    * @param int $a
    * @return A
    */

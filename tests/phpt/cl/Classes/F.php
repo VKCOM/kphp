@@ -10,7 +10,6 @@ class F
     var $stringArr = [];
 
     /**
-     * @kphp-infer
      * @param int $v
      */
     public function appendInt($v) {
@@ -18,7 +17,6 @@ class F
     }
 
     /**
-     * @kphp-infer
      * @param string $v
      */
     public function appendString($v) {

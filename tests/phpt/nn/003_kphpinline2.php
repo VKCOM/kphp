@@ -5,7 +5,6 @@
 define('TIME', 12 * 15 * 16);
 
 /** @kphp-inline
- * @kphp-infer
  * @param int $x
  * @return int
  */
@@ -14,7 +13,6 @@ function net($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return int
  */
@@ -26,7 +24,6 @@ function i($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return int
  */
@@ -36,7 +33,6 @@ function h($x) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $x
  * @return mixed
  */
@@ -50,7 +46,6 @@ function g($x) {
 
 /**
  * @kphp-inline
- * @kphp-infer
  * @param mixed $x
  * @return mixed
  * @abc
@@ -81,7 +76,6 @@ var_dump($qqq);
 * @inline
 */
   /**
-   * @kphp-infer
    * @param mixed $x
    * @return mixed
    */
@@ -91,7 +85,6 @@ var_dump($qqq);
 
 /** @kphp-inline */
   /**
-   * @kphp-infer
    * @param mixed $x
    * @return mixed
    */
@@ -101,7 +94,6 @@ var_dump($qqq);
 
 
   /**
-   * @kphp-infer
    * @param mixed $x
    * @return mixed
    */

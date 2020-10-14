@@ -10,7 +10,6 @@ modified by Sergey Khripunov
 $n = 200000;
 
 /**
- * @kphp-infer
  * @param float[][] $b
  * @return float
  */

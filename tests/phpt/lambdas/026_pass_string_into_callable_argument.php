@@ -8,7 +8,6 @@ require_once 'kphp_tester_include.php';
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param int $x
  */
 function my_callback($x) { 
@@ -51,7 +50,6 @@ function test_callbacks_in_static_classes() {
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @return int
  */
 function my_callback2() { 

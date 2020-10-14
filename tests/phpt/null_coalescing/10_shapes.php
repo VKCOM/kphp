@@ -5,7 +5,6 @@ require_once 'kphp_tester_include.php';
 
 
 /**
- * @kphp-infer
  * @param shape(w:int[]|null, x:int|null, y:string|null, z:false|null) $s
  */
 function test_shape($s) {

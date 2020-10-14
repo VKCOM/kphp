@@ -16,7 +16,6 @@ function f_bool(bool $x) {
 }
 
 /**
- * @kphp-infer
  * @param int|false $x
  */
 function f_int_or_false($x) {
@@ -42,7 +41,6 @@ function f_int_or_false($x) {
 }
 
 /**
- * @kphp-infer
  * @param int|null $x
  */
 function f_int_or_null($x) {
@@ -71,7 +69,6 @@ function f_int_or_null($x) {
 }
 
 /**
- * @kphp-infer
  * @param int|false|null $x
  */
 function f_int_or_false_or_null($x) {
@@ -97,7 +94,6 @@ function f_array(array $x) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $x
  */
 function f($x) {

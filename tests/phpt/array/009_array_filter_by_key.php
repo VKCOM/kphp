@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param mixed[] $a
  */
 function test_array_filter_by_key($a) {

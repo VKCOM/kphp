@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $y
  */
 function test_primitive_capturing($y) {
@@ -16,7 +15,6 @@ function test_primitive_capturing($y) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  */
 function test_returning_lambda_with_captured_values($x): callable {

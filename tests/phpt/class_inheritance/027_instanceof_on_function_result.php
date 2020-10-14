@@ -12,7 +12,6 @@ class B implements I {
 }
 
 /**
- * @kphp-infer
  * @return I
  */
 function foo() {

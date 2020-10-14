@@ -3,7 +3,6 @@
 define("TICKETS_AUTHOR_TYPE_USER", 0);
 
 /**
- * @kphp-infer
  * @param int $ticket
  * @return bool
  */

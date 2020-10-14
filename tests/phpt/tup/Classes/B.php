@@ -12,7 +12,6 @@ class B
   public static $BBB = 'bbb';
 
   /**
-   * @kphp-infer
    * @param int $b1Val
    * @param int $b2Val
    */
@@ -30,7 +29,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @param int $b1
    * @return B
    */

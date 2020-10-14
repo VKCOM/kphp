@@ -10,7 +10,6 @@ class FooBar implements IFoo, IBar {
     }
 
     /**
-     * @kphp-infer
      * @return int
      */
     public function bar() : int {
@@ -21,7 +20,6 @@ class FooBar implements IFoo, IBar {
 
 class Barr implements IBar {
     /**
-     * @kphp-infer
      * @return int
      */
     public function bar() : int {

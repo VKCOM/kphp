@@ -5,7 +5,6 @@ require_once 'kphp_tester_include.php';
 
 // $sh if auto-inferred as shape(a:int|null, b:int|null)
 /**
- * @kphp-infer
  * @param shape(a:int|null, b:int|null) $sh
  */
 function f($sh) {
@@ -19,7 +18,6 @@ f(shape(['b' => 3]));
 
 // same for f2, but more complex
 /**
- * @kphp-infer
  * @param shape(a:mixed, b:mixed, c:string|null, d:string|null) $sh
  */
 function f2($sh) {
@@ -37,7 +35,6 @@ f2(shape(['d' => 's', 'c' => 's']));
 
 // same for return of f3 (a?:int, b?:int, c:string)
 /**
- * @kphp-infer
  * @return shape(a:int|null, b:int|null, c:string)
  */
 function f3() {

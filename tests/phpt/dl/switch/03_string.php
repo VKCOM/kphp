@@ -2,7 +2,6 @@
 <?
 ob_start();
 /**
- * @kphp-infer
  * @param string $s
  */
 function f($s) {

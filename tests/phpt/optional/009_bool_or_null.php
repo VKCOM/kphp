@@ -16,7 +16,6 @@ function type_hint_arg(?bool $x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return bool|null $x
  */
@@ -31,7 +30,6 @@ function kphp_infer_return_bool_null($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return null|bool $x
  */
@@ -46,7 +44,6 @@ function kphp_infer_return_null_bool($x) {
 }
 
 /**
- * @kphp-infer
  * @param bool|null $x1
  * @param null|bool $x2
  */

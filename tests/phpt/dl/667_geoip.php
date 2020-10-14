@@ -6,7 +6,6 @@ function _dechex($u) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $ip
  * @return string
  */

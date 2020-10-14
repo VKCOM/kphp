@@ -6,7 +6,6 @@
 	 **/
 /**
  * @kphp-required
- * @kphp-infer
  * @param null $element1
  * @param any $element2
  * @return null

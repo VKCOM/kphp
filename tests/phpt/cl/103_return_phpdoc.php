@@ -8,7 +8,6 @@ use Classes\A;
  * @return A
  */
 /**
- * @kphp-infer
  * @param int $initAVal
  * @return A
  */
@@ -45,7 +44,6 @@ $config += array(
 );
 
 /**
- * @kphp-infer
  * @param any[][] $a
  */
 function ff($a) {
@@ -75,7 +73,6 @@ switch( /** @deprecated */ 3 ){
 }
 
 /**
- * @kphp-infer
  * @return string
  */
 function sss() {
@@ -97,7 +94,6 @@ $arrr = [
  * @return A | null
  */
 /**
- * @kphp-infer
  * @param bool $returnFalse
  * @return A
  */
@@ -109,7 +105,6 @@ function getAOrNull($returnFalse) {
  * @return A[] | false
  */
 /**
- * @kphp-infer
  * @param bool $returnFalse
  * @return A[]|false
  */

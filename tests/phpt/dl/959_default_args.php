@@ -3,7 +3,6 @@
 
 
 /**
- * @kphp-infer
  * @param string[] $a
  */
 function f($a = array ("a" => "b")) {

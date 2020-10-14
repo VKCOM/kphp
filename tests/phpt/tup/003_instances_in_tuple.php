@@ -15,7 +15,6 @@ function demo1Instance() {
 }
 
 /**
- * @kphp-infer
  * @return tuple(int, string, \Classes\A, \Classes\B)
  */
 function get2Instances() {

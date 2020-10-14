@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return int|false
  */
 function int_or_false() {
@@ -12,7 +11,6 @@ function int_or_false() {
 }
 
 /**
- * @kphp-infer
  * @return int|null
  */
 function int_or_null() {
@@ -20,7 +18,6 @@ function int_or_null() {
 }
 
 /**
- * @kphp-infer
  * @return int|null|false
  */
 function int_or_null_or_false() {
@@ -32,7 +29,6 @@ function f(int $x): int {
 }
 
 /**
- * @kphp-infer
  * @param int|false $x
  * @return int|false
  */

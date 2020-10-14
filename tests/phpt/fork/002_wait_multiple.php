@@ -16,7 +16,6 @@ function f() {
 }
 
 /**
- * @kphp-infer
  * @param int $id
  */
 function g($id) {
@@ -27,7 +26,6 @@ function g($id) {
 }
 
 /**
- * @kphp-infer
  * @param int $id
  */
 function h($id) {

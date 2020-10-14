@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $str
  * @return string|false
  */
@@ -11,7 +10,6 @@ function filesBinFromBase64($str) { // for storage-engine: secret packing
 }
 
 /**
- * @kphp-infer
  * @param mixed $str
  * @return string
  */
@@ -20,7 +18,6 @@ function filesBinToBase64($str) { // for storage-engine: secret packing
 }
 
 /**
- * @kphp-infer
  * @param string $val
  * @param string $key
  * @return string
@@ -49,7 +46,6 @@ function filesHashEncodedBase64($val, $key) {
 }
 
 /**
- * @kphp-infer
  * @param string $val
  * @param string $key
  * @return string|false
@@ -74,7 +70,6 @@ function filesHashDecodedBase64($val, $key) {
 }
 
 /**
- * @kphp-infer
  * @param mixed[] $extra_data
  * @param string $source
  * @param int $uid
@@ -91,7 +86,6 @@ function filesEncodeAudioExtra($extra_data, $source, $uid) {
 }
 
 /**
- * @kphp-infer
  * @param string $extra
  * @param string $source
  * @param int $uid

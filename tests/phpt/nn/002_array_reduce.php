@@ -7,7 +7,6 @@ $t = array(1, 2, 3, 4, 5);
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param int|null $carry
  * @param int $item
  * @return int
@@ -25,7 +24,6 @@ function multiply($carry, $item) {
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param mixed[]|null $carry
  * @param mixed[] $item
  * @return mixed[]|null

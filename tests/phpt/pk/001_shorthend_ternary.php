@@ -2,7 +2,6 @@
 <?php
 $x = 0;
 /**
- * @kphp-infer
  * @return int
  */
 function f(){

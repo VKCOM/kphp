@@ -12,7 +12,6 @@ class B
   static $BBB = 'bbb';
 
   /**
-   * @kphp-infer
    * @param int $b1Val
    * @param int $b2Val
    */
@@ -22,7 +21,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @param int $b1Val
    * @param int $b2Val
    * @return B
@@ -32,7 +30,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @return B
    */
   public function getThis() {
@@ -40,7 +37,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @param int $b1
    * @return B
    */
@@ -50,7 +46,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @param int $b2
    * @return B
    */
@@ -60,7 +55,6 @@ class B
   }
 
   /**
-   * @kphp-infer
    * @param int $b3
    * @return B
    */

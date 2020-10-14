@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param int[]|false|null $x
  */
@@ -13,7 +12,6 @@ function test_size_operations_optional_array($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param boolean|null $x
  */
@@ -24,7 +22,6 @@ function test_size_operations_optional_bool($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param false|null $x
  */
@@ -35,7 +32,6 @@ function test_size_operations_optional_false($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param int|false|null $x
  */
@@ -59,7 +55,6 @@ function test_is_operations_optional_int($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param int[]|false|null $x
  */
@@ -80,7 +75,6 @@ function test_is_operations_optional_array_int($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param boolean|null $x
  */
@@ -104,7 +98,6 @@ function test_is_operations_optional_bool($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param false|null $x
  */
@@ -128,7 +121,6 @@ function test_is_operations_optional_false($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param int|false|null $x
  */
@@ -137,7 +129,6 @@ function test_math_operations_optional_int($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param boolean|null $x
  */
@@ -146,7 +137,6 @@ function test_math_operations_optional_bool($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param false|null $x
  */
@@ -155,7 +145,6 @@ function test_math_operations_optional_false($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param string|false|null $x
  */
@@ -164,7 +153,6 @@ function test_gettype_operation_optional_string($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param boolean|null $x
  */
@@ -173,7 +161,6 @@ function test_gettype_operation_optional_bool($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param false|null $x
  */
@@ -182,7 +169,6 @@ function test_gettype_operation_optional_false($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param int|false|null $x
  */
@@ -200,7 +186,6 @@ function test_conv_operations_optional_int($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param boolean|null $x
  */
@@ -218,7 +203,6 @@ function test_conv_operations_optional_bool($hint, $x) {
 }
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param false|null $x
  */

@@ -12,7 +12,6 @@ class Common2 {
     private static $fp1 = 'PrivateC21';
 
     /**
-     * @kphp-infer
      * @param string $f1
      */
     public static function test1($f1) {

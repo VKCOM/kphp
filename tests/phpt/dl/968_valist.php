@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param any[] $g
  */
 function g($g) {
@@ -12,7 +11,6 @@ g(array());
 
 
 /**
- * @kphp-infer
  * @param mixed $x
  * @param int $z
  * @param mixed ...$args

@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return int
  */
 function return_int() {
@@ -13,7 +12,6 @@ function return_int() {
 }
 
 /**
- * @kphp-infer
  * @return float
  */
 function return_double() {
@@ -22,7 +20,6 @@ function return_double() {
 }
 
 /**
- * @kphp-infer
  * @return string
  */
 function return_string() {
@@ -31,7 +28,6 @@ function return_string() {
 }
 
 /**
- * @kphp-infer
  * @return int[]
  */
 function return_array_int() {
@@ -40,7 +36,6 @@ function return_array_int() {
 }
 
 /**
- * @kphp-infer
  * @return string[]
  */
 function return_array_string() {
@@ -49,7 +44,6 @@ function return_array_string() {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return float
  */
@@ -62,7 +56,6 @@ function return_int_or_double($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return mixed[]
  */
@@ -75,7 +68,6 @@ function return_mixed_array($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return mixed
  */

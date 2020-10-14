@@ -18,7 +18,6 @@ class Derived extends Base {
 }
 
 /**
- * @kphp-infer
  * @param Base $b
  * @return Base
  */

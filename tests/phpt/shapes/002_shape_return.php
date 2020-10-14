@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return shape(items:mixed[][], desc:string, count:int)
  */
 function getAll() {
@@ -18,7 +17,6 @@ function getAll() {
 }
 
 /**
- * @kphp-infer
  * @param bool $returnShort
  * @return shape(items:mixed[][]|false, desc:string, count:int)
  */
@@ -39,7 +37,6 @@ function multipleResult($returnShort) {
 }
 
 /**
- * @kphp-infer
  * @return shape(3:mixed, o:mixed, t:mixed)
  */
 function badMixResult() {   // works, but infers shape<var,var,var>
@@ -57,7 +54,6 @@ function demo() {
 }
 
 /**
- * @kphp-infer
  * @param bool $returnShort
  */
 function demo2($returnShort) {

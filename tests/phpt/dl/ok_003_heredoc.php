@@ -11,7 +11,6 @@ onclick='prepareReport(\"" + type + "\", 1);'
 TAG;
 
 /**
- * @kphp-infer
  * @return string
  */
 function f1() {
@@ -21,7 +20,6 @@ EOF;
 }
 
 /**
- * @kphp-infer
  * @return string
  */
 function f2() {

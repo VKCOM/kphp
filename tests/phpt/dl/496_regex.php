@@ -41,10 +41,6 @@ $text = preg_replace_callback('/'.RE_URL_PATTERN.'/', 'prcConvertHyperref', $tex
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @kphp-infer
  * @param string[] $matches
  * @return string
  */
@@ -290,10 +286,6 @@ print_r($m);
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @kphp-infer
  * @param string[] $param
  * @return string
  */
@@ -308,7 +300,6 @@ var_dump(preg_match_all('|(\w+)://([^\s"<]*[\w+#?/&=])|', "This is a text string
 var_dump($matches);
 
 /**
- * @kphp-infer
  * @return mixed
  */
 function func1(){
@@ -424,7 +415,6 @@ var_dump($result);
 $input = "plain [indent] deep [indent] [abcd]deeper[/abcd] [/indent] deep [/indent] plain"; 
 
 /**
- * @kphp-infer
  * @param mixed $input
  * @return string
  */
@@ -451,10 +441,6 @@ echo $output, "\n";
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @kphp-infer
  * @param string[] $x
  * @return string
  */
@@ -468,10 +454,6 @@ var_dump(preg_replace_callback('@\b\w{1,2}\b@', 'g', array('a b3 bcd', 'v' => 'a
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
- * @kphp-infer
  * @param string[] $m
  * @return string
  */

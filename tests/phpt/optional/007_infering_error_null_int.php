@@ -3,7 +3,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param $x null
  */
 function test($x) {

@@ -13,7 +13,6 @@ exit;
 #endif
 
 /**
- * @kphp-infer
  * @param float $x
  * @param int $y
  */

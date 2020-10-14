@@ -6,7 +6,6 @@ class GrandPa {
     public $grand_pa;
 
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {
@@ -24,7 +23,6 @@ class Parent_ extends GrandPa {
     public $parent;
 
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {
@@ -46,7 +44,6 @@ class Derived extends Parent_ {
     public $derived;
 
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {

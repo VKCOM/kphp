@@ -19,7 +19,6 @@ $data = array(
  */
 /**
  * @kphp-required
- * @kphp-infer
  * @param mixed $a
  * @param mixed $b
  * @return int

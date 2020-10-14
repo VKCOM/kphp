@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, ...)
  */
 function printX($sh) {

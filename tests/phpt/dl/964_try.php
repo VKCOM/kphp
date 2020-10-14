@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param string $desc
  * @return Exception
  */
@@ -25,7 +24,6 @@ try {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return float
  */
@@ -55,7 +53,6 @@ echo 'Hello World'."\n";
 //echo inverse(0) . "\n";
 
 /**
- * @kphp-infer
  * @return Exception
  */
 function f()  {

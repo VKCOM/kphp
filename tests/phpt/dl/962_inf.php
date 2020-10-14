@@ -14,7 +14,6 @@ f (true);
 */
 
 /**
- * @kphp-infer
  * @param int $x
  */
 function print_int ($x) {

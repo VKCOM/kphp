@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @return false
  */
 	function f()
@@ -11,7 +10,6 @@
 	}
 
 /**
- * @kphp-infer
  * @return bool
  */
 	function t()

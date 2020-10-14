@@ -3,7 +3,6 @@
   // Nested opeq
 
   /**
-   * @kphp-infer
    * @return int
    */
   function f()

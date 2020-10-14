@@ -2,7 +2,6 @@
 <?php
 $a = 0;
 /**
- * @kphp-infer
  * @param mixed $x
  */
 function f($x) {
@@ -30,7 +29,6 @@ f("2");
 f(3);
 
 /**
- * @kphp-infer
  * @param string $x
  */
 function g($x) {

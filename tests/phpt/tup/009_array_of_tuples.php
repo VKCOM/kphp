@@ -4,7 +4,6 @@ require_once 'kphp_tester_include.php';
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param string $str
  * @param int $int
  * @return tuple(string, int[], \Classes\A)
@@ -14,7 +13,6 @@ function constructT($str, $int) {
 }
 
 /**
- * @kphp-infer
  * @return tuple(string, int[], \Classes\A)[]
  */
 function getArrOfT() {

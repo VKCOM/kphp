@@ -3,7 +3,6 @@
 
 interface IA {
     /**
-     * @kphp-infer
      * @param int $x
      * @param mixed $y
      * @return int
@@ -13,7 +12,6 @@ interface IA {
 
 class A implements IA {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int $y
      * @param string $z

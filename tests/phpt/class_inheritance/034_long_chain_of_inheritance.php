@@ -2,7 +2,6 @@
 
 interface I {
     /**
-     * @kphp-infer
      * @return string
      */
     public function foo();

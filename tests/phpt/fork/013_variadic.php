@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $x
  * @param int $p
  * @return float
@@ -54,7 +53,6 @@ function a_varg(int $a, int $b, int $c = 7, int $d = 8) {
   b_varg(1, 2, 3);
 }
 /**
- * @kphp-infer
  * @param int ...$args
  */
 function b_varg(...$args) {

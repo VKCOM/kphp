@@ -3,7 +3,6 @@
   $a = array (0 => 1, 1 => 2);
 
   /**
-   * @kphp-infer
    * @param int $x
    */
   function f (&$x) {

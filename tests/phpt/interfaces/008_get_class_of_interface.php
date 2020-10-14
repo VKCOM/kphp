@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param \Classes\IDo $c
  */
 function get_class_name($c) {

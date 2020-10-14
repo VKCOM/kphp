@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return mixed[]|false
  */
 function getNextArray() {
@@ -20,7 +19,6 @@ function getNextArray() {
 }
 
 /**
- * @kphp-infer
  * @return tuple(int, string)|false
  */
 function getNextTuple() {

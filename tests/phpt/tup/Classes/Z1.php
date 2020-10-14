@@ -10,7 +10,6 @@ class Z1
     var $t;
 
     /**
-     * @kphp-infer
      * @return tuple(int, string, A[])
      */
     public function getInitial() {
@@ -18,7 +17,6 @@ class Z1
     }
 
     /**
-     * @kphp-infer
      * @param tuple(int, string, A[]) $t
      */
     public function setRawTuple($t) {

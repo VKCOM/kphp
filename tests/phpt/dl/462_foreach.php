@@ -1,7 +1,6 @@
 @ok benchmark
 <?php
   /**
-   * @kphp-infer
    * @param int $n
    */
   function hash2($n) {

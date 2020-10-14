@@ -22,7 +22,6 @@
   var_dump(unserialize('a:21:{s:2:"id";s:32:"0d4f6aa85fc99bea3c2835dc48219d4e";s:4:"date";i:1369798274;s:4:"lang";i:0;s:4:"page";s:6:"finish";s:7:"friends";a:0:{}s:6:"phones";a:1:{i:-79999999;a:3:{i:0;s:8:"75pinoho";i:1;i:1369778294;i:2;b:0;}}s:7:"site_id";i:-1;s:2:"ip";s:7:"8.8.8.8";s:7:"ip6norm";N;s:5:"front";N;s:4:"port";i:57817;s:7:"ua_hash";s:19:"9310425121950371247";s:10:"first_name";s:4:"Vasa";s:9:"last_name";s:5:"Babik";s:9:"nick_name";s:0:"";s:3:"sex";i:2;s:4:"from";s:0:"";s:4:"stat";i:1088050;s:7:"updated";i:1369778313;s:4:"code";s:2:"75";s:9:"validated";i:-2943;}'));
 
 /**
- * @kphp-infer
  * @param int $n
  * @return string
  */

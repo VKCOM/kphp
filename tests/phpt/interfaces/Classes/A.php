@@ -4,7 +4,6 @@ namespace Classes;
 
 class A implements IDo {
     /**
-     * @kphp-infer
      * @param int $a
      * @param int $b
      */

@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return shape(i:int, s:string)|false
  */
 function getT() {

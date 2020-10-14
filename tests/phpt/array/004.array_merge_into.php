@@ -6,7 +6,6 @@ class A {
   public $a = 0;
 
   /**
-   * @kphp-infer
    * @param int $a
    */
   function __construct($a = 0) {

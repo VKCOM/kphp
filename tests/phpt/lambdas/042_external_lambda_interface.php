@@ -8,7 +8,6 @@ class A {
   }
 
   /**
-   * @kphp-infer
    * @return (callable():void)[]
    **/
   function foo(int $x) {

@@ -7,7 +7,6 @@ class A {
   /** @var int */
   public $x;
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function __construct($x) { $this->x = $x; }
@@ -25,7 +24,6 @@ class D implements B {
   /** @var int */
   public $x;
   /**
-   * @kphp-infer
    * @param int $x
    */
   public function __construct($x) { $this->x = $x; }
@@ -33,17 +31,14 @@ class D implements B {
 }
 
 /**
- * @kphp-infer
  * @return A
  */
 function return_A() { return new A(4);}
 /**
- * @kphp-infer
  * @return C
  */
 function return_C() { return new C();}
 /**
- * @kphp-infer
  * @return D
  */
 function return_D() { return new D(5);}

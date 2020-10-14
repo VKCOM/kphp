@@ -2,7 +2,6 @@
 namespace Classes;
 
 /**
- * @kphp-infer
  */
 interface RestrictedInterface {
     /**

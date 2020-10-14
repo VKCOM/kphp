@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return shape(s:string, int:int)
  */
 function getT() {
@@ -12,7 +11,6 @@ function getT() {
 }
 
 /**
- * @kphp-infer
  * @return shape(1:int, a:\Classes\A, s:string, arr:int[], arr_a:\Classes\A[], first:int|false)
  */
 function getBigShape() {
@@ -22,7 +20,6 @@ function getBigShape() {
 }
 
 /**
- * @kphp-infer
  * @param bool $getFalse
  * @return shape(1:int, a:\Classes\A, s:string, arr:int[], arr_a:\Classes\A[], first:int|false)|false
  */

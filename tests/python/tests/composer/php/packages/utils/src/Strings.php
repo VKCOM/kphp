@@ -4,7 +4,6 @@ namespace VK\Utils;
 
 class Strings {
   /**
-   * @kphp-infer
    * @param mixed $string
    * @param mixed $prefix
    * @return bool

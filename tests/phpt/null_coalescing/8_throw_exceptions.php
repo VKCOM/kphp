@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int|null $x
  * @return int|null
  */
@@ -32,7 +31,6 @@ function test_exception_lhs_try_catch_wrap() {
 
 function test_exception_lhs_no_wrap() {
   /**
-   * @kphp-infer
    * @return string
    */
   function test_1() {
@@ -50,7 +48,6 @@ function test_exception_lhs_no_wrap() {
 
 
   /**
-   * @kphp-infer
    * @return string
    */
   function test_2() {
@@ -93,7 +90,6 @@ function test_exception_rhs_try_catch_wrap() {
 
 function test_exception_rhs_try_no_wrap() {
   /**
-   * @kphp-infer
    * @return string
    */
   function test_3() {
@@ -112,7 +108,6 @@ function test_exception_rhs_try_no_wrap() {
 
 
   /**
-   * @kphp-infer
    * @return string
    */
   function test_4() {
@@ -131,7 +126,6 @@ function test_exception_rhs_try_no_wrap() {
 
 
   /**
-   * @kphp-infer
    * @return string
    */
   function test_5() {

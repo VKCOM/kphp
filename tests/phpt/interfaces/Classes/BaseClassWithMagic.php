@@ -6,7 +6,6 @@ require_once 'kphp_tester_include.php';
 
 class BaseClassWithMagic {
     /**
-     * @kphp-infer
      * @return int
      */
     static public function do_magic() {
@@ -14,7 +13,6 @@ class BaseClassWithMagic {
     }
 
     /**
-     * @kphp-infer
      * @param string $key
      * @return int
      */

@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $arg
  * @return tuple(int, string[], int)
  */
@@ -12,7 +11,6 @@ function getTuple($arg) {
 }
 
 /**
- * @kphp-infer
  * @param int|false $arg
  * @return tuple(int, string[], int)|false
  */
@@ -24,7 +22,6 @@ function getTupleOrFalse($arg) {
 }
 
 /**
- * @kphp-infer
  * @return tuple(int, string[], int)|false
  */
 function getAlwaysFalse() {

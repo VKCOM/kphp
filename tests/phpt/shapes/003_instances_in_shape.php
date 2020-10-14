@@ -14,7 +14,6 @@ function demo1Instance() {
 }
 
 /**
- * @kphp-infer
  * @return shape(a:\Classes\A, b:\Classes\B, n:int, s:string)
  */
 function get2Instances() {

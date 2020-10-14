@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int $x
  * @param int $y
  * @param string[] $args

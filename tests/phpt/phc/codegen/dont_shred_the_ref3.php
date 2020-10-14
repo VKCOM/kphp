@@ -6,7 +6,6 @@
 	// get wrong code (nothing is added)
 
 /**
- * @kphp-infer
  * @param int $y
  */
 	function foo (&$y)

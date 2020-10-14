@@ -14,7 +14,6 @@ function test_base_str ($keys, $n) {
 }
 
 /**
- * @kphp-infer
  * @param int[] $keys
  * @param int $n
  */
@@ -48,7 +47,6 @@ function gen ($n) {
 
 
 /**
- * @kphp-infer
  * @param int $n
  * @return int[]
  */

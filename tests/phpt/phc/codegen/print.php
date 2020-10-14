@@ -6,7 +6,6 @@
 	// compare print and echo
 	$z = 2;
 /**
- * @kphp-infer
  * @return string
  */
 	function f () 
@@ -55,7 +54,6 @@
 
 	// This might fail if we moved print before we shredded.
 /**
- * @kphp-infer
  * @return int
  */
 	function x ()

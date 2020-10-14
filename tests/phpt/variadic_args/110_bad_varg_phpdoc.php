@@ -3,7 +3,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int $arg
  * @return int ...$
  */

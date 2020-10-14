@@ -14,7 +14,6 @@
 	}
 
 /**
- * @kphp-infer
  * @param int $x
  * @param mixed $y
  */

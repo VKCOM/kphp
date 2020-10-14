@@ -1,7 +1,6 @@
 @ok K.O.T.
 <?php
 /**
- * @kphp-infer
  * @param int $a
  * @param int $b
  * @return int
@@ -14,7 +13,6 @@ var_dump (gcd (34, 289));
 
 
 /**
- * @kphp-infer
  * @param mixed $x
  * @return mixed
  */

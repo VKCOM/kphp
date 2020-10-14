@@ -3,7 +3,6 @@
 
 interface MyInterface {
     /**
-     * @kphp-infer
      * @param int $a
      * @return mixed
      */
@@ -12,7 +11,6 @@ interface MyInterface {
 
 class CovariantImpl implements MyInterface {
     /**
-     * @kphp-infer
      * @param int $a
      * @return int
      */
@@ -23,7 +21,6 @@ class CovariantImpl implements MyInterface {
 
 class ControvariantImpl implements MyInterface {
     /**
-     * @kphp-infer
      * @param mixed $a
      * @return mixed
      */

@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param mixed $a
  */
 function printAllOfArray($a) {
@@ -25,7 +24,6 @@ printAllOfArray($var1[2]);
 class AA {
   var $a = 0;
   /**
-   * @kphp-infer
    * @param int $a
    */
   function __construct($a) { $this->a = $a; }

@@ -5,7 +5,6 @@ class A {
   /** @var any[] */
   public $args;
   /**
-   * @kphp-infer
    * @param int[] $args
    */
   public function __construct(...$args) {

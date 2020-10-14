@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $x
  * @return int
  */
@@ -15,7 +14,6 @@ function md5LastBits($x) {
 
 
 /**
- * @kphp-infer
  * @param string $ipv6
  * @return string[]|false
  */
@@ -84,7 +82,6 @@ function ipv6ToArray($ipv6) {
 
 
 /**
- * @kphp-infer
  * @param string $ipv6
  * @return string
  */
@@ -104,7 +101,6 @@ function ipv6ToIpv4($ipv6) {
 }
 
 /**
- * @kphp-infer
  * @param string $ipv6
  * @return string|false
  */

@@ -4,7 +4,6 @@
  * @kphp-warn-unused-result
  */
 /**
- * @kphp-infer
  * @return int
  */
 function test() {
@@ -14,7 +13,6 @@ function test() {
 class Foo {
   /**
    * @kphp-warn-unused-result
-   * @kphp-infer
    * @return int
    */
   public static function bar() {

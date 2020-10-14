@@ -10,7 +10,6 @@ class Z1
     var $t;
 
   /**
-   * @kphp-infer
    * @return shape<x:int, y:string, z:A[]>
    */
   public function getInitial() {
@@ -18,7 +17,6 @@ class Z1
     }
 
     /**
-     * @kphp-infer
      * @param shape(x:int, y:string, z:A[]) $t
      */
     public function setRawShape($t) {

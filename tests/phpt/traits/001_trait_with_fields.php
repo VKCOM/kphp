@@ -10,7 +10,6 @@ trait HasData {
     public $data;
 
     /**
-     * @kphp-infer
      * @param int $y
      */
     public function print_x_plus_y($y) {

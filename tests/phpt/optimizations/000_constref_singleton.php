@@ -14,7 +14,6 @@ function get_instance() {
 }
 
 /**
- * @kphp-infer
  * @param mixed $x
  */
 function run($x) {

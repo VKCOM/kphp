@@ -6,7 +6,6 @@ $counter = 0;
 #endif
 
 /**
- * @kphp-infer
  * @param string $url
  * @param bool $need_close
  */

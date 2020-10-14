@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @return null
  */
 function return_null() {
@@ -13,7 +12,6 @@ function return_null() {
 }
 
 /**
- * @kphp-infer
  * @return true
  */
 function return_true() {
@@ -22,7 +20,6 @@ function return_true() {
 }
 
 /**
- * @kphp-infer
  * @return false
  */
 function return_false() {
@@ -31,7 +28,6 @@ function return_false() {
 }
 
 /**
- * @kphp-infer
  * @param $x int
  * @return true|false|null
  */
@@ -47,7 +43,6 @@ function return_true_false_null($x) {
 }
 
 /**
- * @kphp-infer
  * @param $x int
  * @return false|null|string[]
  */

@@ -4,7 +4,6 @@ namespace Classes;
 
 class A {
     /**
-     * @kphp-infer
      * @return string
      */
     static public function some_function() {

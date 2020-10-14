@@ -61,7 +61,6 @@ function test_OrFalse() {
 
   /** @param int|false $x */
   /**
-   * @kphp-infer
    * @param int|false $x
    * @return int|false
    */
@@ -85,7 +84,6 @@ function test_OrFalse() {
   }
 
   /**
-   * @kphp-infer
    * @param string|false $x
    * @return string|false
    */

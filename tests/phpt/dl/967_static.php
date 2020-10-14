@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param int $x
  * @return int
  */
@@ -13,7 +12,6 @@ function f($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return int
  */
@@ -25,7 +23,6 @@ function g($x) {
 }
 
 /**
- * @kphp-infer
  * @param int $x
  * @return int
  */

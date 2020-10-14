@@ -3,7 +3,6 @@
 
 interface ITest {
   /**
-   * @kphp-infer
    * @param string[] $args
    */
   public function run(...$args);
@@ -11,7 +10,6 @@ interface ITest {
 
 class TestClass implements ITest {
   /**
-   * @kphp-infer
    * @param string[] $args
    */
   public function run(...$args) {

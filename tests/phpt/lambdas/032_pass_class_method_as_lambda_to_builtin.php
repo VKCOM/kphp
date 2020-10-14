@@ -8,7 +8,6 @@ class A {
     const METHOD_NAME = 'increment_by_value';
 
     /**
-     * @kphp-infer
      * @param int $x
      * @return int
      */

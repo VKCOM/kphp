@@ -4,7 +4,6 @@
 
 class X {
     /**
-     * @kphp-infer
      * @param X|false $x
      */
   function __construct($x) {

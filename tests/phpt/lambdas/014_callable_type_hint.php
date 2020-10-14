@@ -6,7 +6,6 @@ function callable_lower_f(callable $f) {
 }
 
 /**
- * @kphp-infer hint check
  * @param callable $f
  * @return int
  */

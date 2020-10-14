@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int $langs
  * @return string
  */
@@ -17,7 +16,6 @@ EOF;
 }
 
 /**
- * @kphp-infer
  * @param int $langs
  * @return string
  */

@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $arg
  * @return shape(a:string[], n:int, arg:int)
  */
@@ -12,7 +11,6 @@ function getShape($arg) {
 }
 
 /**
- * @kphp-infer
  * @param int|false $arg
  * @return shape(a:string[], n:int, arg:int)|false
  */
@@ -24,7 +22,6 @@ function getShapeOrFalse($arg) {
 }
 
 /**
- * @kphp-infer
  * @return shape(a:string[], n:int, arg:int)|false
  */
 function getAlwaysFalse() {

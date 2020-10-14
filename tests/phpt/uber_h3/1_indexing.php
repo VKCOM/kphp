@@ -21,7 +21,6 @@ function test_geoToH3() {
 }
 
 /**
- * @kphp-infer
  * @param $lhs tuple(float, float)
  * @param $rhs tuple(float, float)
  */

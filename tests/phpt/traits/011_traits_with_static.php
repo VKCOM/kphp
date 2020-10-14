@@ -3,7 +3,6 @@
 
 trait T {
     /**
-     * @kphp-infer
      * @return string
      */
     public static function foo() {
@@ -13,7 +12,6 @@ trait T {
 
 class B {
     /**
-     * @kphp-infer
      * @return string
      */
     public static function foo() {
@@ -21,7 +19,6 @@ class B {
     }
 
     /**
-     * @kphp-infer
      * @return string
      */
     public static function bar() {

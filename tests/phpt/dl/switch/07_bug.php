@@ -1,7 +1,6 @@
 @ok
 <?php
 /**
- * @kphp-infer
  * @param string $x
  */
 function f($x) {
@@ -25,7 +24,6 @@ f('pr');
 echo "\n";
 
 /**
- * @kphp-infer
  * @param string $x
  */
 function g($x) {

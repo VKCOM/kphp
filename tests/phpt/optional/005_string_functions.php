@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $str
  * @param string|false|null $opt_string1
  * @param string|false|null $opt_string2

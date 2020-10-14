@@ -29,7 +29,6 @@ print_r ($b);
 
 $a = array(array(array(array(array("hello", "world")))));
 /**
- * @kphp-infer
  * @param int $n
  * @return mixed[][][][][][]
  */

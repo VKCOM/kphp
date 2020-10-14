@@ -1,7 +1,6 @@
 @ok
 <?php
   /**
-   * @kphp-infer
    * @param mixed $a
    * @param string $b
    * @return mixed

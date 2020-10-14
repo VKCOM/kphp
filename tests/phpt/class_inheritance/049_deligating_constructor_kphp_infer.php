@@ -8,7 +8,6 @@ class B {
     public function __construct($x) {}
 }
 
-/**@kphp-infer*/
 class D extends B {
 }
 
@@ -19,7 +18,6 @@ class B2 {
     public function __construct($x) {}
 }
 
-/** @kphp-infer */
 class D2 extends B2 {
 }
 

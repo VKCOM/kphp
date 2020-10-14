@@ -3,7 +3,6 @@
 
 interface Foo {
   /**
-   * @kphp-infer
    * @param int $a
    * @return int|false
    */
@@ -12,7 +11,6 @@ interface Foo {
 
 class B implements Foo {
   /**
-   * @kphp-infer
    * @param int $a
    * @return int|false
    */
@@ -23,7 +21,6 @@ class B implements Foo {
 
 class D extends B {
   /**
-   * @kphp-infer
    * @param int $a
    * @return int|false
    */
@@ -34,7 +31,6 @@ class D extends B {
 
 class B2 implements Foo {
   /**
-   * @kphp-infer
    * @param int $a
    * @return int|false
    */

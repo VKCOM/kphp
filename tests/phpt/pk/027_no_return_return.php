@@ -12,7 +12,6 @@ function f() {
 }
 
 /**
- * @kphp-infer 
  * @return int
  */
 function g() {

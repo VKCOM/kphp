@@ -13,7 +13,6 @@ class PassCallbackInsideClass
     }
 
     /**
-     * @kphp-infer
      * @return int
      */
     public function use_callback()

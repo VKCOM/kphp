@@ -118,7 +118,6 @@ function test_local_arrays() {
 }
 
 /**
- * @kphp-infer
  * @param any[] $unknown_arr
  * @param int[] $int_arr1
  * @param int[] $int_arr2
@@ -253,7 +252,6 @@ function test_static_class_member_arrays() {
 }
 
 /**
- * @kphp-infer
  * @param any[] $unknown_arr
  * @param int[] $int_arr1
  * @param int[] $int_arr2

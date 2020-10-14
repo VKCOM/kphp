@@ -6,7 +6,6 @@ class A {
     static public $field = "static public field\n";
 
     /**
-     * @kphp-infer
      * @return string
      */
     static public function static_fun() {
@@ -18,7 +17,6 @@ class A {
     var $value = 'str';
 
     /**
-     * @kphp-infer
      * @param string $v
      */
     public function set_value($v) {
@@ -27,7 +25,6 @@ class A {
     }
 
     /**
-     * @kphp-infer
      * @return string
      */
     public function get_value() {

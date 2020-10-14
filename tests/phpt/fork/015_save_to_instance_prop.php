@@ -7,7 +7,6 @@ class A {
 }
 
 /**
- * @kphp-infer
  * @return int
  */
 function forkable_ten() {
@@ -15,7 +14,6 @@ function forkable_ten() {
 }
 
 /**
- * @kphp-infer
  * @return int
  */
 function forkable_test() {

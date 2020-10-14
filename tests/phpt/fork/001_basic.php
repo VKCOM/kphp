@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $value
  */
 function add_res($value) {
@@ -12,7 +11,6 @@ function add_res($value) {
   $res += $value;
 }
 /**
- * @kphp-infer
  * @param int $n
  */
 function hash2($n) {
@@ -31,7 +29,6 @@ function hash2($n) {
   }
 }
 /**
- * @kphp-infer
  * @param int $n
  */
 function hash3($n) {
@@ -56,7 +53,6 @@ function hash3($n) {
 }
 
 /**
- * @kphp-infer
  * @param int $n
  * @return future_queue<void>
  */

@@ -6,7 +6,6 @@ class Derived extends Base {}
 
 interface IA {
     /**
-     * @kphp-infer
      * @param Base $x
      * @return int
      */
@@ -15,7 +14,6 @@ interface IA {
 
 class A implements IA {
     /**
-     * @kphp-infer
      * @param Derived $x
      * @return int
      */

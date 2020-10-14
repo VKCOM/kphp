@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param string $str
  * @param int $int
  * @return shape(a:\Classes\A, str:string, ints:int[])
@@ -13,7 +12,6 @@ function constructT($str, $int) {
 }
 
 /**
- * @kphp-infer
  * @return shape(a:\Classes\A, str:string, ints:int[])[]
  */
 function getArrOfT() {

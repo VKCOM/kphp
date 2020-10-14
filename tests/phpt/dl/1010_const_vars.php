@@ -68,7 +68,6 @@ function test_deep_array() {
 }
 
 /**
- * @kphp-infer
  * @param mixed[][] $x
  */
 function test_array_in_default_param($x = [

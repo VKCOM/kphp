@@ -19,7 +19,6 @@ class A2 implements AI {
 
 class B {
   /**
-   * @kphp-infer
    * @param int $x
    * @return AI
    */

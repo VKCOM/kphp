@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param int|false|null $val
  */
 function test_unary_operations_optional_int($val) {
@@ -25,7 +24,6 @@ function test_unary_operations_optional_int($val) {
 }
 
 /**
- * @kphp-infer
  * @param null $val
  */
 function test_unary_operations_null($val) {
@@ -35,7 +33,6 @@ function test_unary_operations_null($val) {
 }
 
 /**
- * @kphp-infer
  * @param null|false $val
  */
 function test_unary_operations_null_false($val) {
@@ -45,7 +42,6 @@ function test_unary_operations_null_false($val) {
 }
 
 /**
- * @kphp-infer
  * @param int|false|null $lhs
  * @param int|false|null $rhs
  */
@@ -88,7 +84,6 @@ function test_binary_operations_optional_int($lhs, $rhs) {
 }
 
 /**
- * @kphp-infer
  * @param null|false $lhs
  * @param false|null $rhs
  */
@@ -127,7 +122,6 @@ function test_binary_operations_null_false($lhs, $rhs) {
 }
 
 /**
- * @kphp-infer
  * @param int|false|null $lhs
  * @param int|false|null $rhs
  */
@@ -173,7 +167,6 @@ function test_assign_binary_operations_optional_int($lhs, $rhs) {
 }
 
 /**
- * @kphp-infer
  * @param null|false $lhs
  * @param false|null $rhs
  */
@@ -211,7 +204,6 @@ function test_assign_binary_operations_null_false($lhs, $rhs) {
 }
 
 /**
- * @kphp-infer
  * @param null|false|int $lhs
  * @param mixed $rhs
  */
@@ -227,7 +219,6 @@ function test_cmp_operation_optional_int($lhs, $rhs) {
 }
 
 /**
- * @kphp-infer
  * @param null|false $lhs
  * @param mixed $rhs
  */
@@ -247,7 +238,6 @@ class A {
 }
 
 /**
- * @kphp-infer
  * @param A $lhs
  * @param null|false $rhs
  */

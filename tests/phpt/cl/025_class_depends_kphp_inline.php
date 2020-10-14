@@ -9,7 +9,6 @@ class A {
 
   /**
    * @kphp-inline
-   * @kphp-infer
    * @return bool
    */
   public static function foo() {

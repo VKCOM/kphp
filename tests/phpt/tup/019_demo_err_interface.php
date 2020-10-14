@@ -4,7 +4,6 @@ require_once 'kphp_tester_include.php';
 
 interface Err {
   /**
-   * @kphp-infer
    * @return string
    */
   public function getMessage() : string;
@@ -17,7 +16,6 @@ class GeneralErr implements Err {
   public function __construct(string $message) { $this->message = $message; }
 
   /**
-   * @kphp-infer
    * @return string
    */
   public function getMessage() : string {
@@ -42,7 +40,6 @@ class UserLoadErr implements \Err {
 	}
 
 /**
- * @kphp-infer
  * @return string
  */
 	public function getMessage() : string {
@@ -54,7 +51,6 @@ class UserLoadErr implements \Err {
 	}
 
 /**
- * @kphp-infer
  * @return int
  */
 	public function getUserId() {
@@ -84,7 +80,6 @@ function getCommonCount(int $with_user_id) {
 }
 
 /**
- * @kphp-infer
  * @param int $with_user_id
  */
 function demoCommonCount($with_user_id) {
@@ -108,7 +103,6 @@ function loadUser(int $user_id) {
 }
 
 /**
- * @kphp-infer
  * @param int $user_id
  */
 function demoLoadUser($user_id) {

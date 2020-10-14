@@ -16,7 +16,6 @@ class Photo {
   const DEFINES_NUMS_TO_DEFINES_A = [0 => self::DEFINE_A, 1 => self::DEFINE_B];
 
   /**
-   * @kphp-infer
    * @param string $wl
    * @return null
    */

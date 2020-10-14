@@ -3,7 +3,6 @@
 
 class TempA { 
     /**
-     * @kphp-infer
      * @param string $s
      */
     public function run($s) { var_dump("TempA::$s"); }
@@ -11,7 +10,6 @@ class TempA {
 
 class TempB {
     /**
-     * @kphp-infer
      * @param string $s
      */
     public function run($s) { var_dump("TempB::$s"); }

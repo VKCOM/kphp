@@ -3,7 +3,6 @@
 	$i = 0;
 
 /**
- * @kphp-infer
  * @return int
  */
 	function f()

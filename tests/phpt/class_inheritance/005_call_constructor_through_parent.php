@@ -3,7 +3,6 @@
 
 class Base {
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {
@@ -17,7 +16,6 @@ class Base {
 
 class Derived extends Base {
     /**
-     * @kphp-infer
      * @param int $x
      */
     public function __construct($x) {

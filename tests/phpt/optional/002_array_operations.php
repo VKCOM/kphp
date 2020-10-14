@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $hint
  * @param (string|false|null)[] $arr
  * @param string|false|null $opt_string

@@ -8,7 +8,6 @@
 	}
 
 /**
- * @kphp-infer
  * @param int $y
  * @return bool
  */

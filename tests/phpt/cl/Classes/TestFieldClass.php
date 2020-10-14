@@ -4,7 +4,6 @@ namespace Classes;
 
 class TestFieldClass extends TestFieldClassParent {
     /**
-     * @kphp-infer
      * @return string
      */
     static function getParentClass() {

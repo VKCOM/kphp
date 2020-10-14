@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @return tuple(int, int, int)
  */
 function f() {

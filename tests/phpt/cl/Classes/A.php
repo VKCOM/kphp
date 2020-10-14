@@ -19,7 +19,6 @@ class A
   }
 
   /**
-   * @kphp-infer
    * @param int $a
    * @return A
    */
@@ -29,7 +28,6 @@ class A
   }
 
   /**
-   * @kphp-infer
    * @param int $b1Val
    * @return B
    */

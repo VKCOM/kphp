@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param int $t
  */
 function my_usleep ($t): bool {
@@ -18,7 +17,6 @@ function my_usleep ($t): bool {
 $x = fork (my_usleep (3000000));
 
 /**
- * @kphp-infer
  * @param future<bool> $x
  */
 function wait_x ($x): bool {

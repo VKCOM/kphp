@@ -8,7 +8,6 @@ $arr1[] = array("3");
 $arr1 = $arr2;
 
 /**
- * @kphp-infer
  * @param string $a
  */
 function def_arg ($a = "test") {
@@ -17,7 +16,6 @@ function def_arg ($a = "test") {
 def_arg ();
 
 /**
- * @kphp-infer
  * @return int
  */
 function test_ret() {
@@ -31,7 +29,6 @@ $str = "hello";
 $str = $matches[2];
 
 /**
- * @kphp-infer
  * @param mixed $a
  */
 function f_var($a) {
@@ -40,7 +37,6 @@ function f_var($a) {
 }
 
 /**
- * @kphp-infer
  * @param mixed $a
  */
 function f_string($a) {
@@ -50,7 +46,6 @@ f_string ("hello");
 f_var ($_SERVER);
 
 /**
- * @kphp-infer
  * @param mixed $a
  */
 function g($a) {

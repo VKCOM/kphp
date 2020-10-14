@@ -25,7 +25,6 @@ class A {
 }
 
 /**
- * @kphp-infer
  * @param mixed[] $p
  */
 function test_duplicate_keys($p = ["A" => "y", "A" => "x", A::E => "E", 5 => 5]) {

@@ -16,7 +16,6 @@
 	//		$y =& $t1;
 
 /**
- * @kphp-infer
  * @param mixed $v
  */
 	function f(&$v) {

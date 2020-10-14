@@ -3,7 +3,6 @@
 
 
 /**
- * @kphp-infer
  * @param int $y
  */
 function f($y) {
@@ -16,7 +15,6 @@ function f($y) {
 }
 
 /**
- * @kphp-infer
  * @param int $y
  * @param bool $strict
  */

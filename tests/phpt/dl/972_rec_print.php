@@ -18,7 +18,6 @@ exit;
 #endif
 
 /**
- * @kphp-infer
  * @param int $n
  * @return int
  */

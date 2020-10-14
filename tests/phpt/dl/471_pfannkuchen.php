@@ -8,7 +8,6 @@
 $n = 9;
 
 /**
- * @kphp-infer
  * @param int $n
  * @return int[]
  */

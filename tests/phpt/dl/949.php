@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @param string $msg
  * @param int $code
  */

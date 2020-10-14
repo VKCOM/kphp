@@ -3,7 +3,6 @@
 $restore_link = 'blabla'; 
 
 /**
- * @kphp-infer
  * @param string $x
  */
 function f($x) {
@@ -28,7 +27,6 @@ f ("sgfd");
 
 
 /**
- * @kphp-infer
  * @param int $x
  */
 function g($x) {

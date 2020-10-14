@@ -4,7 +4,6 @@
 
 interface IA {
     /**
-     * @kphp-infer
      * @return int
      */
     public function foo();

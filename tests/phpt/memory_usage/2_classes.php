@@ -48,7 +48,6 @@ function test_class_with_simple_fields() {
 function test_class_with_dynamic_array() {
   class MyClass2 {
     /**
-     * @kphp-infer
      * @param int $size
      */
     public function __construct($size) {

@@ -4,7 +4,6 @@
 /** @kphp-inline */
 
 /**
- * @kphp-infer
  * @param int $x
  */
 function f($x = 1) {
@@ -41,7 +40,6 @@ z();
 
 /** @kphp-inline */
 /**
- * @kphp-infer
  * @param mixed[] $a
  */
 function complex_default_arg($a = ["hello", "world"]) {

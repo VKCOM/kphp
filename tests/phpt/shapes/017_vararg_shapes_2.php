@@ -3,7 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, ...)
  */
 function printX($sh) {
@@ -11,7 +10,6 @@ function printX($sh) {
 }
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, y:int, ...)
  */
 function printXY($sh) {
@@ -21,7 +19,6 @@ function printXY($sh) {
 }
 
 /**
- * @kphp-infer
  * @param $sh shape(x:int, y:int, z?:string)
  */
 function printXYZ($sh) {

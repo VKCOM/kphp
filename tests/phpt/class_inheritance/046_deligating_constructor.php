@@ -3,7 +3,6 @@
 
 abstract class BBB { 
     /**
-     * @kphp-infer
      * @param int $a
      */
     public function __construct($a) {
@@ -16,7 +15,6 @@ abstract class BB extends BBB {
 
 class B extends BB {
     /**
-     * @kphp-infer
      * @param int $x
      * @param int $y
      */

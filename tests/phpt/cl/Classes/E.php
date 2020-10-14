@@ -9,7 +9,6 @@ class E
   var $nextE;
 
   /**
-   * @kphp-infer
    * @param int $val
    * @return E
    */

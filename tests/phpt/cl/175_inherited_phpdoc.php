@@ -3,7 +3,6 @@
 
 require_once 'kphp_tester_include.php';
 
-/**@kphp-infer*/
 class Base {
     /**
      * @param int $x
@@ -20,7 +19,6 @@ class Base {
     }
 }
 
-/**@kphp-infer*/
 class Derived extends Base {
     public function foo($x, $y) {
         return true ? [$y[0]] : [$x];

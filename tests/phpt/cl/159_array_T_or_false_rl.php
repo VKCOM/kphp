@@ -21,7 +21,6 @@ class A {
 }
 
 /**
- * @kphp-infer
  * @param A[]|false $a
  */
 function run($a) {

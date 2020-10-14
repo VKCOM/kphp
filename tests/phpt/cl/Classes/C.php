@@ -16,7 +16,6 @@ class C
   private static $instances = [];
 
   /**
-   * @kphp-infer
    * @param int $b1Val
    * @param int $b2Val
    */
@@ -26,7 +25,6 @@ class C
   }
 
   /**
-   * @kphp-infer
    * @param int $c1
    * @return C
    */
@@ -36,7 +34,6 @@ class C
   }
 
   /**
-   * @kphp-infer
    * @param int $c2
    * @return C
    */

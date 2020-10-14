@@ -4,7 +4,6 @@
 require_once 'kphp_tester_include.php';
 
 /**
- * @kphp-infer hint check
  * @kphp-template $obj1, $obj2 comment here
  * @param int $obj1 
  */

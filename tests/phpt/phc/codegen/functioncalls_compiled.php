@@ -10,12 +10,10 @@
  */
 
 /**
- * @kphp-infer
  * @param mixed $x
  */
 	function fun($x) { $x = 'x'; }
 /**
- * @kphp-infer
  * @param mixed $x
  */
 	function fun_r(&$x) { $x = 'x'; }

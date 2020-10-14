@@ -9,7 +9,6 @@ class Z3Infer
   public function __construct() { }
 
   /**
-   * @kphp-infer hint check
    * @param int $x
    * @param int $y
    */

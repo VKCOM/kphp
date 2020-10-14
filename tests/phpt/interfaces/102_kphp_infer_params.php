@@ -3,7 +3,6 @@
 
 interface MyInterface {
     /**
-     * @kphp-infer
      * @param mixed $a
      * @return int
      */
@@ -12,7 +11,6 @@ interface MyInterface {
 
 class A implements MyInterface {
     /**
-     * @kphp-infer
      * @param int $a
      * @return int
      */
@@ -21,7 +19,6 @@ class A implements MyInterface {
 
 class B implements MyInterface {
     /**
-     * @kphp-infer
      * @param int $a
      * @return int
      */

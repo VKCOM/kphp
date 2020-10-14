@@ -19,7 +19,6 @@ class XY {
 }
 
 /**
- * @kphp-infer
  * @return XY
  */
 function test_interface_and_array_in_shape() {

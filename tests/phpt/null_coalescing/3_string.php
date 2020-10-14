@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @return string
  */
 function get_str() {
@@ -11,7 +10,6 @@ function get_str() {
 }
 
 /**
- * @kphp-infer
  * @return int
  */
 function get_one() {

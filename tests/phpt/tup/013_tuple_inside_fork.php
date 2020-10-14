@@ -6,7 +6,6 @@ require_once 'kphp_tester_include.php';
 #endif
 
 /**
- * @kphp-infer
  * @return tuple(int, string)
  */
 function getT() {
@@ -15,7 +14,6 @@ function getT() {
 }
 
 /**
- * @kphp-infer
  * @return tuple(int|false, int, int[], \Classes\A, string, \Classes\A[])
  */
 function getBigTuple() {
@@ -24,7 +22,6 @@ function getBigTuple() {
 }
 
 /**
- * @kphp-infer
  * @param bool $getFalse
  * @return tuple(int|false, int, int[], \Classes\A, string, \Classes\A[])|false
  */

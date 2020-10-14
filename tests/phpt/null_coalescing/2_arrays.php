@@ -2,7 +2,6 @@
 <?php
 
 /**
- * @kphp-infer
  * @return int[]
  */
 function get_arr() {
@@ -11,7 +10,6 @@ function get_arr() {
 }
 
 /**
- * @kphp-infer
  * @return int
  */
 function get_one() {

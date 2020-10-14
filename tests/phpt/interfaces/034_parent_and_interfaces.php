@@ -3,7 +3,6 @@
 
 interface IToArray {
     /**
-     * @kphp-infer
      * @return int[]
      */
     public function to_array(): array;
@@ -40,7 +39,6 @@ class Foo extends Printable implements IArrayConvertible, IRunnable {
     }
 
     /**
-     * @kphp-infer
      * @return int[]
      */
     public function to_array(): array {
@@ -64,7 +62,6 @@ class Bar implements IToArray, IFromArray {
     public $x = 777;
 
     /**
-     * @kphp-infer
      * @return int[]
      */
     public function to_array(): array {

@@ -6,7 +6,6 @@ class A {
   public $a = 0;
 
   /**
-   * @kphp-infer
    * @param int $a
    */
   function __construct($a = 0) { $this->a = $a; }
@@ -22,7 +21,6 @@ $a1 = f1(new A);
 echo $a1->a + 1, "\n";
 
 /**
- * @kphp-infer
  * @return A
  */
 function f2() : ?A {

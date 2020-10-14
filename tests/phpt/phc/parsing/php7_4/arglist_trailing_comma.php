@@ -4,7 +4,6 @@
 // See https://wiki.php.net/rfc/trailing-comma-function-calls
 
 /**
- * @kphp-infer
  * @param $xs array
  * @return int
  */
