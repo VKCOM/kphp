@@ -281,6 +281,9 @@ int main(int argc, char *argv[]) {
   parser.add(
     "Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
     "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
+  parser.add(
+    "Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
+    "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
 
   parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
   parser.add_implicit_option("Linker flags", settings->ld_flags);

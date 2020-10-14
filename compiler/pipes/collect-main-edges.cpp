@@ -379,12 +379,15 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
     return false;
   };
 
-  // If there is no /** @var ... */, we'll use the default field initializer expression to
-  // infer the class field type.
+  // If there is no /** @var ... */ but class typing is mandatory,
+  // we'll use the default field initializer expression to infer the class field type
   // public $a = 0; - $a is int
-  // public $a = []; - $a is Any[]
+  // public $a = []; - $a is any[]
   auto add_type_rule_from_phpdoc_or_default_value = [&](vk::string_view phpdoc_str, VertexAdaptor<op_var> field_root, VarPtr var) {
     if (add_type_rule_from_field_phpdoc(phpdoc_str, field_root)) {
+      return;
+    }
+    if (!G->settings().require_class_typing.get()) {
       return;
     }
     if (var->init_val) {
@@ -392,7 +395,7 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
       return;
     }
     kphp_error(klass->is_lambda(),
-               fmt_format("{} has no @var phpdoc and no default value", var->get_human_readable_name()));
+               fmt_format("Specify @var or default value to {}", var->get_human_readable_name()));
   };
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {

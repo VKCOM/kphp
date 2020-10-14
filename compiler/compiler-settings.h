@@ -111,6 +111,7 @@ public:
   KphpOption<uint64_t> threads_count;
 
   KphpOption<bool> require_functions_typing;
+  KphpOption<bool> require_class_typing;
 
   KphpOption<std::string> tl_schema_file;
   KphpOption<bool> gen_tl_internals;
