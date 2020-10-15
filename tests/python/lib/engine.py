@@ -32,7 +32,7 @@ class Engine:
         self._options = {
             "--log": self._log_file,
             "--statsd-port": self._stats_receiver.port,
-            "-p": self._rpc_port
+            "--port": self._rpc_port
         }
         if not os.getuid():
             self._options["--user"] = "root"
