@@ -103,7 +103,7 @@ static int unpack_hll(const string &hll, char *res) {
 }
 
 
-Optional<double> hll_count(const string &hll, int m) {
+static Optional<double> hll_count(const string &hll, int m) {
   double pow_2_32 = (1LL << 32);
   double alpha_m = 0.7213 / (1.0 + 1.079 / m);
   char const *s;
@@ -146,7 +146,57 @@ Optional<double> hll_count(const string &hll, int m) {
   return e;
 }
 
-extern "C" void hll_add_shifted(unsigned char *a, int hll_size, long long value);
+/**
+ * Do not change implementation of this hash function, because hashes may be saved in a permanent storage.
+ * A full copy of the same function exists in vkext-stats.c in vkext.
+ */
+static long long dl_murmur64a_hash (const void *data, size_t len) {
+  assert ((len & 7) == 0);
+  unsigned long long m = 0xc6a4a7935bd1e995;
+  int r = 47;
+  unsigned long long h = 0xcafebabeull ^ (m * len);
+
+  const unsigned char *start = (const unsigned char *)data;
+  const unsigned char *end = start + len;
+
+  while (start != end) {
+    unsigned long long k = *(unsigned long long *)start;
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+    h ^= k;
+    h *= m;
+    start += 8;
+  }
+
+  start = (const unsigned char *)data;
+
+  switch(len & 7) {
+    case 7: h ^= (unsigned long long)start[6] << 48; /* fallthrough */
+    case 6: h ^= (unsigned long long)start[5] << 40; /* fallthrough */
+    case 5: h ^= (unsigned long long)start[4] << 32; /* fallthrough */
+    case 4: h ^= (unsigned long long)start[3] << 24; /* fallthrough */
+    case 3: h ^= (unsigned long long)start[2] << 16; /* fallthrough */
+    case 2: h ^= (unsigned long long)start[1] << 8;  /* fallthrough */
+    case 1: h ^= (unsigned long long)start[0];
+      h *= m;
+  };
+
+  h ^= h >> r;
+  h *= m;
+  h ^= h >> r;
+  return h;
+}
+
+static void hll_add_shifted (unsigned char *hll, int hll_size, long long value) {
+  unsigned long long hash = dl_murmur64a_hash (&(value), sizeof (long long));
+  unsigned int idx = hash >> (64LL - hll_size);
+  unsigned char rank = (hash == 0) ? 0 : (unsigned char)fmin (__builtin_ctzll (hash) + 1, 64 - hll_size);
+  rank += HLL_FIRST_RANK_CHAR;
+  if (hll[idx] < rank) {
+    hll[idx] = rank;
+  }
+}
 
 Optional<string> f$vk_stats_hll_add(const string &hll, const array<mixed> &a) {
   if (!is_hll_unpacked(hll)) {
