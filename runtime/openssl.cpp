@@ -317,7 +317,11 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
   EVP_PKEY *evp_pkey = nullptr;
   dl::enter_critical_section(); // OK
   if (BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
-    evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
+    if (passphrase.empty()) {
+      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, nullptr);
+    } else {
+      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
+    }
     BIO_free(in);
   }
   dl::leave_critical_section();
