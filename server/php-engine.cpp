@@ -2627,7 +2627,6 @@ void parse_main_args(int argc, char *argv[]) {
 
   remove_parse_option("log");
   remove_parse_option("port");
-  remove_parse_option("clusters-config");
   always_enable_option("maximize-tcp-buffers", NULL);
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("json-log", no_argument, 'j', "enable json log");

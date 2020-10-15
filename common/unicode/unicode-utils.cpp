@@ -44,24 +44,6 @@ static int binary_search_ranges (const int *ranges, int r, int code) {
   }
 }
 
-/* Removes diacritics from unicode symbol */
-int remove_diacritics (int code) {
-  if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
-    return without_diacritics[code];
-  } else {
-    return binary_search_ranges (without_diacritics_ranges, without_diacritics_ranges_size, code);
-  }
-}
-
-/* Prepares unicode character for search */
-int prepare_search_character (int code) {
-  if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
-    return prepare_table[code];
-  } else {
-    return binary_search_ranges (prepare_table_ranges, prepare_table_ranges_size, code);
-  }
-}
-
 /* Convert character to upper case */
 int unicode_toupper (int code) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
@@ -79,17 +61,6 @@ int unicode_tolower (int code) {
     return binary_search_ranges (to_lower_table_ranges, to_lower_table_ranges_size, code);
   }
 }
-
-/* Convert character to title case */
-int unicode_totitle (int code) {
-  if ((unsigned int)(code - 0x1c4) < 9u ||
-      (unsigned int)(code - 0x1f1) < 3u) {
-    return ((code * 685) >> 11) * 3;
-  }
-
-  return unicode_toupper (code);
-}
-
 
 /* Prepares unicode 0-terminated string input for search,
    leaving only digits and letters with diacritics.
@@ -118,15 +89,7 @@ int prepare_search_string (int *input) {
   return output - input;
 }
 
-/* Differs prepare_search_* behaviour, forcing
-   replace of character 'from' by character 'to'. */
-void add_prepare_search_exception (int from, int to) {
-  assert ((unsigned int)from < (unsigned int)TABLE_SIZE);
-  assert (0 <= to && to <= 0x7fff);
-  prepare_table[from] = to;
-}
-
-
+#define MAX_NAME_SIZE 65536
 static char prep_buf[4 * MAX_NAME_SIZE + 4];
 int prep_ibuf[MAX_NAME_SIZE + 4];
 static int prep_ibuf_res[MAX_NAME_SIZE + 4];
@@ -140,8 +103,6 @@ int stricmp_void (const void *x, const void *y) {
     s1++, s2++;
   return *s1 - *s2;
 }
-
-int g_no_sort_utf = 0;
 
 int *prepare_str_unicode (const int *x) {
   int *v = prep_ibuf;
@@ -166,19 +127,17 @@ int *prepare_str_unicode (const int *x) {
     i++;
   }
 
-  if (!g_no_sort_utf) {
-    qsort (words_ibuf, (size_t)k, sizeof (int *), stricmp_void);
+  qsort (words_ibuf, (size_t)k, sizeof (int *), stricmp_void);
 
-    int j = 0;
-    for (i = 0; i < k; i++) {
-      if (j == 0 || stricmp_void (&words_ibuf[j - 1], &words_ibuf[i])) {
-        words_ibuf[j++] = words_ibuf[i];
-      } else {
-        words_ibuf[j - 1] = words_ibuf[i];
-      }
+  int j = 0;
+  for (i = 0; i < k; i++) {
+    if (j == 0 || stricmp_void (&words_ibuf[j - 1], &words_ibuf[i])) {
+      words_ibuf[j++] = words_ibuf[i];
+    } else {
+      words_ibuf[j - 1] = words_ibuf[i];
     }
-    k = j;
   }
+  k = j;
 
   int *res = prep_ibuf_res;
   for (i = 0; i < k; i++) {

@@ -670,8 +670,6 @@ int main (int argc, const char *argv[]) {
          "\n"
          , out);
 
-  output_table (out, "without_diacritics", without_diacritics, 0);
-
   for (i = 0; i < 0x110000; i++) {
     assert (len[i] <= 1);
     len[i] = convert_to[i][0];

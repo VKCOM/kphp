@@ -26,6 +26,6 @@ void set_script(const char *name, void (*run)(), void (*clear)()) {
   bool inserted __attribute__((unused)) = scripts.insert({name, script}).second;
   assert(inserted);
 
-  inserted = scripts.insert({std::string("#") + dl_int_to_str(cnt++), script}).second;
+  inserted = scripts.insert({"#" + std::to_string(cnt++), script}).second;
   assert(inserted);
 }
