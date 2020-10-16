@@ -1059,6 +1059,10 @@ bool TokenLexerGlobal::parse(LexerData *lexer_data) const {
 
   if (!strncmp(s + 2, "php", 3)) {
     lexer_data->pass_raw(strlen("<?php"));
+  } else if (s[2] == '=') {
+    // since we don't emit dedicated tokens for different <?php tags, generate a tok_echo for "="
+    lexer_data->pass_raw(strlen("<?"));
+    lexer_data->add_token(strlen("="), tok_echo);
   } else {
     lexer_data->pass_raw(strlen("<?"));
   }
