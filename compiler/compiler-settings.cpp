@@ -60,26 +60,29 @@ void KphpOption<std::vector<std::string>>::dump_option(std::ostream &out) const 
 }
 
 template<>
-void KphpOption<std::string>::parse_arg_value() noexcept {
+void KphpOption<std::string>::parse_arg_value() {
   // Don't move it, it can be used later
   value_ = raw_option_arg_;
 }
 
 template<>
-void KphpOption<uint64_t>::parse_arg_value() noexcept {
+void KphpOption<uint64_t>::parse_arg_value() {
   if (raw_option_arg_.empty()) {
     value_ = 0;
   } else {
     try {
+      if (raw_option_arg_[0] == '-') {
+        throw std::out_of_range{""};
+      }
       value_ = std::stoul(raw_option_arg_);
     } catch (...) {
-      throw_param_exception("unsigned integer is expected");
+      throw_param_exception(fmt_format("unsigned integer is expected but {} found", raw_option_arg_));
     }
   }
 }
 
 template<>
-void KphpOption<bool>::parse_arg_value() noexcept {
+void KphpOption<bool>::parse_arg_value() {
   if (vk::none_of_equal(raw_option_arg_, "1", "0", "")) {
     throw_param_exception("'0' or '1' are expected");
   }
@@ -87,7 +90,7 @@ void KphpOption<bool>::parse_arg_value() noexcept {
 }
 
 template<>
-void KphpOption<std::vector<std::string>>::parse_arg_value() noexcept {
+void KphpOption<std::vector<std::string>>::parse_arg_value() {
   value_ = split(raw_option_arg_, ':');
 }
 
@@ -207,6 +210,10 @@ void CompilerSettings::init() {
   }
   if (!threads_count.get()) {
     threads_count.value_ = std::max(std::thread::hardware_concurrency(), 1U);
+  }
+
+  if (globals_split_count.get() == 0) {
+    throw std::runtime_error{"globals-split-count may not be equal to zero"};
   }
 
   for (std::string &include : includes.value_) {

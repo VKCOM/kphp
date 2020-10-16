@@ -17,7 +17,7 @@ public:
   void verify_arg_value() const;
 
   virtual void set_option_arg_value(const char *optarg_value) noexcept = 0;
-  virtual void parse_arg_value() noexcept = 0;
+  virtual void parse_arg_value() = 0;
   virtual void dump_option(std::ostream &out) const noexcept = 0;
   virtual ~KphpRawOption() = default;
 
@@ -62,7 +62,7 @@ private:
   }
 
   void dump_option(std::ostream &out) const noexcept final;
-  void parse_arg_value() noexcept final;
+  void parse_arg_value() final;
 
   T value_{};
 };
@@ -109,6 +109,7 @@ public:
   KphpOption<bool> use_make;
   KphpOption<uint64_t> jobs_count;
   KphpOption<uint64_t> threads_count;
+  KphpOption<uint64_t> globals_split_count;
 
   KphpOption<bool> require_functions_typing;
   KphpOption<bool> require_class_typing;

@@ -204,6 +204,9 @@ int main(int argc, char *argv[]) {
     "Threads number for the transpilation", settings->threads_count,
     't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(system_threads * 2));
   parser.add(
+    "Count of global variables per dedicated .cpp file. Lowering it could decrease compilation time", settings->globals_split_count,
+    "globals-split-count", "KPHP_GLOBALS_SPLIT_COUNT", "1024");
+  parser.add(
     "Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,
     'T', "tl-schema", "KPHP_TL_SCHEMA");
   parser.add(
