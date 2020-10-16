@@ -10,4 +10,6 @@ return array(
     'VK\\Feed\\' => array($baseDir . '/src', $baseDir . '/tests'),
     'VK\\Common\\Pkg2\\' => array($vendorDir . '/vk/pkg2/src'),
     'VK\\Common\\Pkg1\\' => array($vendorDir . '/vk/pkg1/src'),
+    'MultiDir\\' => array($baseDir . '/multi1/src', $baseDir . '/multi2/src'),
+    '' => array($baseDir . '/fallback', $vendorDir . '/vk/utils/utils-fallback/src'),
 );

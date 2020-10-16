@@ -9,6 +9,10 @@
 std::string ComposerClassLoader::psr4_lookup_nocache(const std::string &class_name) const {
   std::string prefix = class_name;
 
+  auto file_exists = [](const std::string &filename) {
+    return access(filename.c_str(), F_OK) == 0;
+  };
+
   // we start from a longest prefix and then try to match it
   // against the psr4 map; if there is no match, the last prefix
   // part is dropped and the process is repeated until we
@@ -30,7 +34,18 @@ std::string ComposerClassLoader::psr4_lookup_nocache(const std::string &class_na
     // exists in VK\Feed\src\C.php, we return that, otherwise we try VK\Feed\tests\C.php
     for (const auto &dir : candidates->second) {
       const auto &psr4_filename = dir + class_name.substr(key.size()) + ".php";
-      if (access(psr4_filename.c_str(), F_OK) == 0) {
+      if (file_exists(psr4_filename)) {
+        return psr4_filename;
+      }
+    }
+  }
+
+  // "" key contains fallback directories
+  auto fallback_dirs = autoload_psr4_.find("");
+  if (fallback_dirs != autoload_psr4_.end()) {
+    for (const auto &dir : fallback_dirs->second) {
+      const auto &psr4_filename = dir + class_name + ".php";
+      if (file_exists(psr4_filename)) {
         return psr4_filename;
       }
     }
@@ -79,7 +94,9 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
   // {
   //   "autoload": {
   //     "psr-4": {
-  //       "prefix": "dir",
+  //       "prefix1": "dir",
+  //       "prefix2": ["dir/", ...],
+  //       "": "fallback-dir/",
   //       <...>
   //     }
   //   }
@@ -91,27 +108,39 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
   //   }
   // }
 
+  auto filename = pkg_root + "/composer.json";
+
+  auto add_autoload_dir = [&](const std::string &prefix, std::string dir) {
+    if (dir.empty()) {
+      dir = "./"; // composer interprets "" as "./" or "."
+    }
+    std::replace(dir.begin(), dir.end(), '\\', '/');
+    // ensure that dir always ends with '/'
+    if (dir.back() != '/') {
+      dir.push_back('/');
+    }
+
+    autoload_psr4_[prefix].emplace_back(pkg_root + "/" + dir);
+  };
+
   auto add_autoload_section = [&](YAML::Node autoload) {
     const auto psr4_src = autoload["psr-4"];
     for (const auto &kv : psr4_src) {
       std::string prefix = kv.first.as<std::string>();
       std::replace(prefix.begin(), prefix.end(), '\\', '/');
 
-      std::string dir = kv.second.as<std::string>();
-      if (dir.empty()) {
-        dir = "./"; // composer interprets "" as "./" or "."
+      if (kv.second.IsSequence()) {
+        for (const auto &dir : kv.second) {
+          add_autoload_dir(prefix, dir.as<std::string>());
+        }
+      } else if (kv.second.IsScalar()) {
+        add_autoload_dir(prefix, kv.second.as<std::string>());
+      } else {
+        kphp_error(false, fmt_format("load composer file {}: invalid autoload psr-4 item", filename.c_str()));
       }
-      std::replace(dir.begin(), dir.end(), '\\', '/');
-      // ensure that dir always ends with '/'
-      if (dir.back() != '/') {
-        dir.push_back('/');
-      }
-
-      autoload_psr4_[prefix].emplace_back(pkg_root + "/" + dir);
     }
   };
 
-  auto filename = pkg_root + "/composer.json";
   try {
     YAML::Node root = YAML::LoadFile(filename);
     if (auto autoload = root["autoload"]) {

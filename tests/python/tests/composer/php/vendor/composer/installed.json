@@ -45,14 +45,15 @@
         "dist": {
             "type": "path",
             "url": "./packages/utils",
-            "reference": "76619d055ded71f26e4d97791e0f9d45b10e671f",
+            "reference": "f08b32d3a2176e0de96c4e79383d1c950f39fc63",
             "shasum": null
         },
         "type": "library",
         "installation-source": "dist",
         "autoload": {
             "psr-4": {
-                "VK\\Utils\\": "src/"
+                "VK\\Utils\\": "src/",
+                "": "utils-fallback/src/"
             }
         }
     }

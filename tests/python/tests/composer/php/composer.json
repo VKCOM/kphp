@@ -21,7 +21,12 @@
     },
     "autoload": {
         "psr-4": {
-            "VK\\Feed\\": "src"
+            "VK\\Feed\\": "src",
+            "MultiDir\\": [
+                "multi1/src/",
+                "multi2/src/"
+            ],
+            "": "fallback"
         }
     },
     "autoload-dev": {
