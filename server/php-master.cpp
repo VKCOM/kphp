@@ -49,6 +49,7 @@
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-worker-stats.h"
+#include "server/php-master-tl-handlers.h"
 
 extern const char *engine_tag;
 
@@ -1230,7 +1231,7 @@ http_server_functions php_http_master_methods = [] {
 
 tcp_rpc_server_functions php_rpc_master_methods = [] {
   auto res = tcp_rpc_server_functions();
-  res.execute = default_tl_tcp_rpcs_execute;
+  res.execute = master_rpc_tl_execute;
   res.check_ready = server_check_ready;
   res.flush_packet = tcp_rpcs_flush_packet;
   res.rpc_check_perm = tcp_rpcs_default_check_perm;
