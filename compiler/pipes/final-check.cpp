@@ -388,7 +388,7 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   if (call->func_id->is_extern()) {
     auto &function_name = call->get_string();
-    if (function_name == "instance_cache_fetch" || function_name == "instance_cache_fetch_immutable") {
+    if (function_name == "instance_cache_fetch") {
       check_instance_cache_fetch_call(call);
     } else if (function_name == "instance_cache_store") {
       check_instance_cache_store_call(call);

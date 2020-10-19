@@ -355,10 +355,5 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
   return {};
 }
 
-template<typename ClassInstanceType>
-ClassInstanceType f$instance_cache_fetch_immutable(const string &class_name, const string &key, bool even_if_expired = false) {
-  return f$instance_cache_fetch<ClassInstanceType>(class_name, key, even_if_expired);
-}
-
 bool f$instance_cache_update_ttl(const string &key, int64_t ttl = 0);
 bool f$instance_cache_delete(const string &key);
