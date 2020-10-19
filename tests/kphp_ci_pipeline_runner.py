@@ -295,7 +295,7 @@ if __name__ == "__main__":
             name="make-engines",
             description="make engines",
             cmd="CC='{engine_cc}' CXX='{engine_cxx}' make -C {engine_repo_root} -j{{jobs}} "
-                "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached".format(
+                "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached memcached".format(
                     engine_repo_root=args.engine_repo,
                     engine_cc=engine_cc,
                     engine_cxx=engine_cxx
