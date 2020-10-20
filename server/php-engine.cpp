@@ -26,7 +26,6 @@
 #include "common/server/limits.h"
 #include "common/server/relogin.h"
 #include "common/server/signals.h"
-#include "common/server/sockets.h"
 #include "common/tl/constants/common.h"
 #include "common/tl/constants/kphp.h"
 #include "common/tl/methods/rwm.h"
@@ -2142,7 +2141,7 @@ void start_server() {
   }
 
   if (verbosity > 0 && http_sfd >= 0) {
-    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), port, http_sfd);
+    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
   }
 
   if (http_sfd >= 0) {
@@ -2445,11 +2444,6 @@ int main_args_handler(int i) {
       cluster_name = optarg;
       return 0;
     }
-    case 'T': {
-      // do nothing, tl schema is compiled, not provided in runtime
-      kprintf("Ignoring tl schema: kphp codegenerates and compiles it\n");
-      return 0;
-    }
     case 't': {
       script_timeout = static_cast<int>(normalize_script_timeout(atoi(optarg)));
       return 0;
@@ -2603,9 +2597,6 @@ void parse_main_args(int argc, char *argv[]) {
   option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOSITY, OPT_ENGINE_CUSTOM, OPT_ARRAY_END};
   init_parse_options(sections);
 
-  remove_parse_option("log");
-  remove_parse_option("port");
-  always_enable_option("maximize-tcp-buffers", NULL);
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
   parse_option("json-log", no_argument, 'j', "enable json log");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
@@ -2624,9 +2615,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("once", no_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
   parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
-  parse_option("tl-schema", required_argument, 'T', "(deprecated) name of file with TL config (will be ignored)");
   parse_option("time-limit", required_argument, 't', "time limit for script in seconds");
-  parse_option_alias("crc32c", 'C');
   parse_option("small-acsess-log", optional_argument, 'U', "don't write get data in log. If used twice (or with value 2), disables access log.");
   parse_option("fatal-warnings", no_argument, 'K', "script is killed, when warning happened");
   parse_option("worker-queries-to-reload", required_argument, 2000, "worker script is reloaded, when <queries> queries processed (default: 100)");
