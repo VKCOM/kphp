@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "common/algorithms/find.h"
-#include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
@@ -32,7 +31,6 @@
 #include "common/server/signals.h"
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
-#include "common/tl/act.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "drinkless/dl-utils-lite.h"
@@ -616,7 +614,7 @@ void worker_free(worker_info_t *w) {
 worker_info_t *new_worker() {
   worker_info_t *w = free_workers;
   if (w == nullptr) {
-    w = (worker_info_t *)zmalloc0(sizeof(worker_info_t));
+    w = (worker_info_t *)calloc(1, sizeof(worker_info_t));
   } else {
     free_workers = free_workers->next_worker;
   }
@@ -1266,12 +1264,12 @@ int delete_stats_query(conn_query *q) {
   vkprintf(2, "delete_stats_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
-  zfree(q, sizeof(*q));
+  free(q);
   return 0;
 }
 
 conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
+  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = &pipe_info->pending_stat_queue;
@@ -1552,7 +1550,7 @@ int php_master_version(connection *c) {
   return 0;
 }
 
-int php_master_rpc_stats(const vk::optional<vk::vector<vk::string>> &sorted_filter_keys) {
+int php_master_rpc_stats(const vk::optional<std::vector<std::string>> &sorted_filter_keys) {
   std::string res(64 * 1024, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;
@@ -2134,8 +2132,6 @@ void run_master() {
     using namespace std::chrono_literals;
     auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);
     epoll_work(static_cast<int>(std::max(wait_time, 0ms).count()));
-
-    tl_restart_all_ready();
 
     const auto new_tp = get_steady_tp_ms_now();
     if (new_tp - prev_cron_start_tp >= 1s) {

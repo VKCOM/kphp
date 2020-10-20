@@ -8,20 +8,27 @@
 
 #include "drinkless/dl-utils-lite.h"
 
+static void *memdup(const void *src, size_t x) {
+  void *res = malloc(x);
+  assert (res != NULL);
+  memcpy(res, src, x);
+  return res;
+}
+
 http_query_data *http_query_data_create(
             const char *qUri, int qUriLen,
             const char *qGet, int qGetLen,
             const char *qHeaders, int qHeadersLen,
             const char *qPost, int qPostLen,
             const char *request_method, int keep_alive, unsigned int ip, unsigned int port) {
-  http_query_data *d = (http_query_data *)dl_malloc(sizeof(http_query_data));
+  http_query_data *d = (http_query_data *)malloc(sizeof(http_query_data));
 
   //TODO remove memdup completely. We can just copy pointers
-  d->uri = (char *)dl_memdup(qUri, qUriLen);
-  d->get = (char *)dl_memdup(qGet, qGetLen);
-  d->headers = (char *)dl_memdup(qHeaders, qHeadersLen);
+  d->uri = (char *)memdup(qUri, qUriLen);
+  d->get = (char *)memdup(qGet, qGetLen);
+  d->headers = (char *)memdup(qHeaders, qHeadersLen);
   if (qPost != nullptr) {
-    d->post = (char *)dl_memdup(qPost, qPostLen);
+    d->post = (char *)memdup(qPost, qPostLen);
   } else {
     d->post = nullptr;
   }
@@ -31,7 +38,7 @@ http_query_data *http_query_data_create(
   d->headers_len = qHeadersLen;
   d->post_len = qPostLen;
 
-  d->request_method = (char *)dl_memdup(request_method, strlen(request_method));
+  d->request_method = (char *)memdup(request_method, strlen(request_method));
   d->request_method_len = (int)strlen(request_method);
 
   d->keep_alive = keep_alive;
@@ -47,20 +54,20 @@ void http_query_data_free(http_query_data *d) {
     return;
   }
 
-  dl_free(d->uri, d->uri_len);
-  dl_free(d->get, d->get_len);
-  dl_free(d->headers, d->headers_len);
-  dl_free(d->post, d->post_len);
+  free(d->uri);
+  free(d->get);
+  free(d->headers);
+  free(d->post);
 
-  dl_free(d->request_method, d->request_method_len);
+  free(d->request_method);
 
-  dl_free(d, sizeof(http_query_data));
+  free(d);
 }
 
 rpc_query_data *rpc_query_data_create(int *data, int len, long long req_id, unsigned int ip, short port, short pid, int utime) {
-  rpc_query_data *d = (rpc_query_data *)dl_malloc(sizeof(rpc_query_data));
+  rpc_query_data *d = (rpc_query_data *)malloc(sizeof(rpc_query_data));
 
-  d->data = (int *)dl_memdup(data, sizeof(int) * len);
+  d->data = (int *)memdup(data, sizeof(int) * len);
   d->len = len;
 
   d->req_id = req_id;
@@ -78,12 +85,12 @@ void rpc_query_data_free(rpc_query_data *d) {
     return;
   }
 
-  dl_free(d->data, d->len * sizeof(int));
-  dl_free(d, sizeof(rpc_query_data));
+  free(d->data);
+  free(d);
 }
 
 php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data) {
-  php_query_data *d = (php_query_data *)dl_malloc(sizeof(php_query_data));
+  php_query_data *d = (php_query_data *)malloc(sizeof(php_query_data));
 
   d->http_data = http_data;
   d->rpc_data = rpc_data;
@@ -95,5 +102,5 @@ void php_query_data_free(php_query_data *d) {
   http_query_data_free(d->http_data);
   rpc_query_data_free(d->rpc_data);
 
-  dl_free(d, sizeof(php_query_data));
+  free(d);
 }

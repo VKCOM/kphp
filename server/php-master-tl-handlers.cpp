@@ -7,10 +7,10 @@
 #include "common/tl/methods/network.h"
 #include "common/tl/query-header.h"
 #include "common/tl/methods/rwm.h"
+#include "common/tl/methods/tcp-rwm.h"
 #include "common/version-string.h"
 #include "common/server/stats.h"
 
-#include "net/net-rpc-targets.h"
 #include "net/net-msg.h"
 #include "server/php-master-tl-handlers.h"
 
@@ -149,7 +149,7 @@ static void tl_engine_stat_handler() {
 
 // @any engine.filteredStat stat_names:%(Vector string) = Stat;
 static void tl_engine_filtered_stat_handler() {
-  vk::vector<vk::string> sorted_filter_keys;
+  std::vector<std::string> sorted_filter_keys;
   bool ok = fetch_function([&]() {
     vk::tl::fetch_vector(sorted_filter_keys, 1 << 20);
     std::sort(sorted_filter_keys.begin(), sorted_filter_keys.end());
@@ -167,12 +167,10 @@ static void tl_engine_filtered_stat_handler() {
 
 // @any rpcInvokeReq#2374df3d {X:Type} query_id:long query:!X = RpcReqResult X;
 // entrypoint for any TL query
-static void tl_rpc_invoke_req_handler(network_tl_type tl_out_type, void *tl_out_out) {
+static void tl_rpc_invoke_req_handler(connection *connection) {
   tl_query_header_t header{};
 
-  const network_type &net_type = get_types().back();
-  assert(net_type.type == tl_out_type);
-  tl_store_init(net_type.init_by_out(tl_out_out), NETWORK_MAX_STORED_SIZE);
+  tl_store_init(std::make_unique<tl_out_methods_tcp_raw_msg>(connection), NETWORK_MAX_STORED_SIZE);
 
   tl_fetch_query_header(&header);
   tl_set_current_query_id(header.qid);
@@ -230,7 +228,6 @@ static void tl_rpc_invoke_req_handler(network_tl_type tl_out_type, void *tl_out_
 }
 
 int master_rpc_tl_execute(connection *c, int op, raw_message_t *raw) {
-  vk::net::tcp::rpc_target_insert_conn(c);
   raw_message_t r;
   rwm_clone(&r, raw);
   tl_fetch_init_raw_message(&r);
@@ -240,7 +237,7 @@ int master_rpc_tl_execute(connection *c, int op, raw_message_t *raw) {
     return -1;
   }
   if (op == TL_RPC_INVOKE_REQ) {
-    tl_rpc_invoke_req_handler(tl_type_tcp_raw_msg, c);
+    tl_rpc_invoke_req_handler(c);
   } else {
     return -1;
   }

@@ -158,19 +158,6 @@ void *qmem_malloc(size_t n) {
   return ptr;
 }
 
-void *qmem_malloc_tmp(size_t n) {
-  using namespace qmem;
-
-  std::multimap<size_t, void *>::iterator i = left.lower_bound(n);
-  if (i == left.end()) {
-    return alloc_at_least(n, 0);
-  }
-
-  void *ptr = i->second;
-
-  return ptr;
-}
-
 void *qmem_malloc0(size_t n) {
   void *res = qmem_malloc(n);
   if (res != nullptr) {

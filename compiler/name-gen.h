@@ -9,7 +9,6 @@ bool is_anonymous_function_name(vk::string_view name);
 string gen_unique_name(const string& prefix, FunctionPtr function = FunctionPtr{});
 string gen_const_string_name(const string &str);
 string gen_const_regexp_name(const string &str);
-inline long long array_hash(VertexPtr vertex);
 bool is_array_suitable_for_hashing(VertexPtr vertex);
 string gen_const_array_name(const VertexAdaptor<op_array> &array);
 

@@ -1,6 +1,5 @@
 #include "server/php-sql-connections.h"
 
-#include "common/allocators/zmalloc.h"
 #include "db-proxy/passwd.h"
 #include "net/net-connections.h"
 #include "net/net-mysql-client.h"
@@ -171,7 +170,7 @@ int sqlp_becomes_ready(connection *c) {
       create_pnet_query(q->requester, c, net_ansgen, q->timer.wakeup_time);
 
       delete_conn_query(q);
-      zfree(q, sizeof(*q));
+      free(q);
 
       auto ansgen = (sql_ansgen_t *)net_ansgen;
       ansgen->func->ready(ansgen, c);

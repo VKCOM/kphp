@@ -13,7 +13,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "common/allocators/zmalloc.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
@@ -199,7 +198,7 @@ int delete_pending_query(conn_query *q) {
   vkprintf (1, "delete_pending_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
-  zfree(q, sizeof(*q));
+  free(q);
   return 0;
 }
 
@@ -287,7 +286,7 @@ void *php_script;
 php_worker *active_worker = nullptr;
 
 php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
-  auto worker = reinterpret_cast<php_worker *>(dl_malloc(sizeof(php_worker)));
+  auto worker = reinterpret_cast<php_worker *>(malloc(sizeof(php_worker)));
 
   worker->data = php_query_data_create(http_data, rpc_data);
   worker->conn = c;
@@ -329,7 +328,7 @@ void php_worker_free(php_worker *worker) {
   php_query_data_free(worker->data);
   worker->data = nullptr;
 
-  dl_free(worker, sizeof(php_worker));
+  free(worker);
 }
 
 int has_pending_scripts() {
@@ -347,7 +346,7 @@ void php_worker_try_start(php_worker *worker) {
   if (php_worker_run_flag) { // put connection into pending_http_query
     vkprintf (2, "php script [req_id = %016llx] is waiting\n", worker->req_id);
 
-    auto pending_q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
+    auto pending_q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
     pending_q->custom_type = 0;
     pending_q->outbound = (connection *)&pending_http_queue;
@@ -1021,7 +1020,6 @@ double php_worker_main(php_worker *worker) {
 
 
 int hts_php_wakeup(connection *c);
-int hts_php_alarm(connection *c);
 
 conn_type_t ct_php_engine_http_server = [] {
   auto res = conn_type_t();
@@ -1053,16 +1051,6 @@ int hts_php_wakeup(connection *c) {
   }
   //c->generation = ++conn_generation;
   //c->pending_queries = 0;
-  return 0;
-}
-
-int hts_php_alarm(connection *c) {
-  HTS_FUNC(c)->ht_alarm(c);
-  if (c->Out.total_bytes > 0) {
-    c->flags |= C_WANTWR;
-  }
-  /*c->generation = ++conn_generation;*/
-  /*c->pending_queries = 0;*/
   return 0;
 }
 
@@ -1103,16 +1091,6 @@ void http_return(connection *c, const char *str, int len) {
 }
 
 #define MAX_POST_SIZE (1 << 18)
-
-void hts_my_func_finish(connection *c __attribute__((unused))) {
-/*  c->status = conn_expect_query;
-  clear_connection_timeout (c);
-
-  if (!(D->query_flags & QF_KEEPALIVE)) {
-    c->status = conn_write_close;
-    c->parse_state = -1;
-  }*/
-}
 
 int hts_stopped = 0;
 
@@ -1683,7 +1661,7 @@ void pnet_query_delete(conn_query *q) {
   q->extra = nullptr;
 
   delete_conn_query(q);
-  zfree(q, sizeof(*q));
+  free(q);
 }
 
 int pnet_query_timeout(conn_query *q) {
@@ -1735,7 +1713,7 @@ int delayed_send_term(conn_query *q) {
   }
 
   delete_conn_query(q);
-  zfree(q, sizeof(*q));
+  free(q);
   return 0;
 }
 
@@ -1777,7 +1755,7 @@ conn_query_functions delayed_send_cq_func = [] {
 
 
 void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
+  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = nullptr;
@@ -1794,7 +1772,7 @@ void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansg
 
 void create_delayed_send_query(conn_target_t *t, command_t *command,
                                double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
+  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->start_time = precise_now;
@@ -1810,7 +1788,7 @@ void create_delayed_send_query(conn_target_t *t, command_t *command,
 }
 
 conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(zmalloc(sizeof(conn_query)));
+  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = conn;
@@ -1929,7 +1907,7 @@ int rpcc_send_query(connection *c) {
     command->free(command);
     q->extra = nullptr;
     delete_conn_query(q);
-    zfree(q, sizeof(*q));
+    free(q);
   }
   return 0;
 }
@@ -2675,9 +2653,6 @@ void init_default() {
   pid = getpid();
   // RPC part
   PID.port = (short)rpc_port;
-
-  dynamic_data_buffer_size = (1 << 26);//26 for struct conn_query
-  init_dyn_data();
 
   if (!username && maxconn == MAX_CONNECTIONS && geteuid()) {
     maxconn = 1000; //not for root
