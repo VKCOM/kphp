@@ -1,0 +1,22 @@
+#pragma once
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int parse_ipv4(const char *str, uint32_t *ip, uint32_t *mask);
+unsigned get_my_ipv4(void);
+int get_my_ipv6(unsigned char ipv6[16]);
+
+#ifdef __cplusplus
+}
+
+constexpr uint32_t ip2uint(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+  return (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(c) << 8) | d;
+}
+
+constexpr uint32_t LOCALHOST = ip2uint(127, 0, 0, 1);
+
+#endif
