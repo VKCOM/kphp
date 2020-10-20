@@ -645,7 +645,6 @@ function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: mixed[]
 function mysqli_insert_id($dn :<=: \mysqli) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
 function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: mixed;
-function vk_mysqli_connect($host ::: string, $port ::: int) ::: \mysqli;  // todo del
 function mysqli_connect($host ::: string, $username ::: string, $password ::: string, $db_name ::: string, $port ::: int) ::: \mysqli;
 function mysqli_select_db($dn :<=: \mysqli, $name ::: string) ::: bool;
 

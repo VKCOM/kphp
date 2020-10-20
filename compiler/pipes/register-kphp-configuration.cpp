@@ -44,8 +44,10 @@ void RegisterKphpConfiguration::on_start() {
                                             configuration_class_name_, runtime_options_name_));
       if (*opt_key == confdata_blacklist_key_) {
         register_confdata_blacklist(opt_pair->value());
-      } else if (*opt_key == confdata_predefined_wildcard_) {
+      } else if (*opt_key == confdata_predefined_wildcard_key_) {
         register_confdata_predefined_wildcard(opt_pair->value());
+      } else if (*opt_key == mysql_db_name_key_) {
+        register_mysql_db_name(opt_pair->value());
       } else {
         kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
                                  configuration_class_name_, runtime_options_name_, *opt_key));
@@ -56,8 +58,8 @@ void RegisterKphpConfiguration::on_start() {
 
 void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) const noexcept {
   const auto *opt_value = GenTree::get_constexpr_string(value);
-  kphp_error_return(opt_value, fmt_format("{}::{} map values must be constexpr strings",
-                                          configuration_class_name_, runtime_options_name_));
+  kphp_error_return(opt_value, fmt_format("{}[{}] must be a constexpr string",
+                                          runtime_options_name_, confdata_blacklist_key_));
 
   re2::RE2 compiled_pattern{*opt_value, re2::RE2::CannedOptions::Quiet};
   kphp_error_return(compiled_pattern.ok(), fmt_format("Got bad regex pattern in {}::{}['{}']: {}",
@@ -69,16 +71,23 @@ void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) con
 
 void RegisterKphpConfiguration::register_confdata_predefined_wildcard(VertexPtr value) const noexcept {
   auto wildcards = value.try_as<op_array>();
-  kphp_error_return(wildcards, fmt_format("{}::{}['{}'] must be a constexpr array",
-                                          configuration_class_name_, runtime_options_name_,
-                                          confdata_predefined_wildcard_));
+  kphp_error_return(wildcards, fmt_format("{}[{}] must be a constexpr array",
+                                          runtime_options_name_, confdata_predefined_wildcard_key_));
   for (const auto &wildcard : wildcards->args()) {
     const auto *wildcard_str_value = GenTree::get_constexpr_string(wildcard);
     kphp_error_return(wildcard_str_value && !wildcard_str_value->empty(),
-                      fmt_format("{}::{}['{}'][] must be non empty constexpr string",
-                                 configuration_class_name_, runtime_options_name_,
-                                 confdata_predefined_wildcard_));
-    G->add_kphp_runtime_opt(static_cast<std::string>(confdata_predefined_wildcard_));
+                      fmt_format("{}[{}][] must be non empty constexpr string",
+                                 runtime_options_name_, confdata_predefined_wildcard_key_));
+    G->add_kphp_runtime_opt(static_cast<std::string>(confdata_predefined_wildcard_key_));
     G->add_kphp_runtime_opt(*wildcard_str_value);
   }
+}
+
+void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const noexcept {
+  const auto *opt_value = GenTree::get_constexpr_string(value);
+  kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
+                                          configuration_class_name_, runtime_options_name_));
+
+  G->add_kphp_runtime_opt(static_cast<std::string>(mysql_db_name_key_));
+  G->add_kphp_runtime_opt(*opt_value);
 }

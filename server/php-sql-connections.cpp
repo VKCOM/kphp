@@ -1,6 +1,5 @@
 #include "server/php-sql-connections.h"
 
-#include "db-proxy/passwd.h"
 #include "net/net-connections.h"
 #include "net/net-mysql-client.h"
 
@@ -18,11 +17,19 @@ command_t command_net_write_sql_base = {
   .free = command_net_write_free
 };
 
+static const char *mysql_db_name = "dbname_not_set";
+
+
 int proxy_client_execute(connection *c, int op);
 
 int sqlp_authorized(connection *c);
 int sqlp_becomes_ready(connection *c);
 int sqlp_check_ready(connection *c);
+
+bool set_mysql_db_name(const char *db_name) {
+  mysql_db_name = db_name;
+  return true;
+}
 
 mysql_client_functions db_client_outbound = [] {
   auto res = mysql_client_functions();
@@ -33,6 +40,12 @@ mysql_client_functions db_client_outbound = [] {
   res.sql_flush_packet = sqlc_flush_packet;
   res.sql_check_perm = sqlc_default_check_perm;
   res.sql_init_crypto = sqlc_init_crypto;
+  // when connecting to MySQL from PHP and KPHP, login credentials do not matter due to rpc proxy, only db name matters
+  res.sql_get_database = [](connection*) {
+    return mysql_db_name;
+  };
+  res.sql_get_password = [](connection*) { return "fake"; };
+  res.sql_get_username = [](connection*) { return "fake"; };
 
   return res;
 }();
@@ -216,6 +229,7 @@ int sqlp_authorized(connection *c) {
   int len = 0;
   char ptype = 2;
 
+  auto sql_database = SQLC_FUNC(c)->sql_get_database(c);
   if (!sql_database || !*sql_database) {
     SQLC_DATA(c)->auth_state = sql_auth_ok;
     c->status = conn_ready;

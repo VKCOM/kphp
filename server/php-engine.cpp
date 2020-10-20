@@ -30,7 +30,6 @@
 #include "common/tl/constants/kphp.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
-#include "db-proxy/passwd.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -2568,6 +2567,13 @@ int main_args_handler(int i) {
       kprintf("couldn't set profiler-log-prefix '%s'\n", optarg);
       return -1;
     }
+    case 2011: {
+      if (set_mysql_db_name(optarg)) {
+        return 0;
+      }
+      kprintf("couldn't set mysql-db-name '%s'\n", optarg);
+      return -1;
+    }
 
     default:
       return -1;
@@ -2626,6 +2632,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("php-version", no_argument, 2008, "show the compiled php code version and exit");
   parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
+  parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
