@@ -161,7 +161,7 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
         if not test_acceptable:
             return None
 
-        return TestFile(file_path, test_tmp_dir, {}, ["ok"])
+        return TestFile(file_path, test_tmp_dir, ["ok"], {})
 
     with open(file_path, 'rb') as f:
         first_line = f.readline().decode('utf-8')
