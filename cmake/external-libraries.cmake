@@ -1,0 +1,42 @@
+option(DOWNLOAD_MISSING_LIBRARIES "download and build missing libraries if needed" OFF)
+cmake_print_variables(DOWNLOAD_MISSING_LIBRARIES)
+function(handle_missing_library LIB_NAME)
+    message(STATUS "------${LIB_NAME}---------")
+    if(DOWNLOAD_MISSING_LIBRARIES)
+        message(STATUS "${LIB_NAME} library is not found and will be downloaded automatically")
+    else()
+        message(FATAL_ERROR "${LIB_NAME} library is not found. Install it or pass -DDOWNLOAD_MISSING_LIBRARIES=On during cmake generation")
+    endif()
+endfunction()
+
+find_package(fmt QUIET)
+if(NOT fmt_FOUND)
+    handle_missing_library("fmtlib")
+    FetchContent_Declare(
+            fmt
+            GIT_REPOSITORY https://github.com/fmtlib/fmt
+            GIT_TAG        7.0.3
+    )
+    FetchContent_MakeAvailable(fmt)
+    include_directories(${fmt_SOURCE_DIR}/include)
+    message(STATUS "---------------------")
+endif()
+
+if(KPHP_TESTS)
+    find_package(GTest QUIET)
+
+    if(GTest_FOUND)
+        include(GoogleTest)
+    else()
+        handle_missing_library("gtest")
+        FetchContent_Declare(
+                googletest
+                GIT_REPOSITORY https://github.com/google/googletest.git
+                GIT_TAG        release-1.10.0
+        )
+        FetchContent_MakeAvailable(googletest)
+        add_library(GTest::GTest ALIAS gtest)
+        add_library(GTest::Main ALIAS gtest_main)
+        message(STATUS "---------------------")
+    endif()
+endif()
