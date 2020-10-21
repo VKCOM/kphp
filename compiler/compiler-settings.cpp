@@ -284,7 +284,7 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_ld_flags.value_);
 
-  auto external_libs = {"pthread", "rt", "crypto", "m", "curl"};
+  auto external_libs = {"pthread", "rt", "crypto", "m"};
   auto external_static_libs = {"vk-flex-data", "pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "lzma"};
   ld_flags.value_ = extra_ld_flags.get();
   append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
