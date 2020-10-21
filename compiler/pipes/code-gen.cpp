@@ -178,6 +178,9 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   //TODO: use Async for that
   tl2cpp::write_tl_query_handlers(W);
   write_lib_version(W);
+  if (!G->settings().is_static_lib_mode()) {
+    write_main(W);
+  }
 }
 
 void CodeGenF::prepare_generate_function(FunctionPtr func) {
@@ -212,6 +215,16 @@ void CodeGenF::write_lib_version(CodeGenerator &W) {
   W << "// CXX: " << G->settings().cxx.get() << NL;
   W << "// CXXFLAGS: " << G->settings().cxx_flags.get() << NL;
   W << "// DEBUG: " << G->settings().debug_level.get() << NL;
+  W << CloseFile();
+}
+
+void CodeGenF::write_main(CodeGenerator &W) {
+  kphp_assert(G->settings().is_server_mode() || G->settings().is_cli_mode());
+  W << OpenFile("main.cpp");
+  W << ExternInclude("server/php-engine.h") << NL;
+  W << "int main(int argc, char *argv[]) " << BEGIN
+    << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
+    << END;
   W << CloseFile();
 }
 

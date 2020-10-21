@@ -145,6 +145,14 @@ bool CompilerSettings::is_static_lib_mode() const {
   return mode.get() == "lib";
 }
 
+bool CompilerSettings::is_server_mode() const {
+  return mode.get() == "server";
+}
+
+bool CompilerSettings::is_cli_mode() const {
+  return mode.get() == "cli";
+}
+
 bool CompilerSettings::is_composer_enabled() const {
   return !composer_root.get().empty();
 }
