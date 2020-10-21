@@ -1,28 +1,15 @@
 @ok
 <?php
 
-$php_openssl_cipher_tests = [
-  'aes-256-ccm' => [
-    [
-      'key' => '1bde3251d41a8b5ea013c195ae128b21' .
-                '8b3e0306376357077ef1c1c78548b92e',
-      'iv'  => '5b8e40746f6b98e00f1d13ff41',
-      'aad' => 'c17a32514eb6103f3249e076d4c871dc' .
-                '97e04b286699e54491dc18f6d734d4c0',
-      'tag' => '2024931d73bca480c24a24ece6b6c2bf',
-      'pt'  => '53bd72a97089e312422bf72e242377b3' .
-               'c6ee3e2075389b999c4ef7f28bd2b80a',
-      'ct'  => '9a5fcccdb4cf04e7293d2775cc76a488' .
-               'f042382d949b43b7d6bb2b9864786726',
-    ],
-  ],
-  'aes-128-gcm' => [
+function make_tests_data(): array {
+  $data = [
     [
       'key' => '00000000000000000000000000000000',
       'iv'  => '000000000000000000000000',
       'tag' => '58e2fccefa7e3061367f1d57a4e7455a',
       'pt'  => '',
       'ct'  => '',
+      'aad' => ''
     ],
     [
       'key' => '00000000000000000000000000000000',
@@ -30,6 +17,7 @@ $php_openssl_cipher_tests = [
       'tag' => 'ab6e47d42cec13bdf53a67b21257bddf',
       'pt'  => '00000000000000000000000000000000',
       'ct'  => '0388dace60b6a392f328c2b971b2fe78',
+      'aad' => ''
     ],
     [
       'key' => 'feffe9928665731c6d6a8f9467308308',
@@ -43,6 +31,7 @@ $php_openssl_cipher_tests = [
                'e3aa212f2c02a4e035c17e2329aca12e' .
                '21d514b25466931c7d8f6a5aac84aa05' .
                '1ba30b396a0aac973d58e091473f5985',
+      'aad' => ''
     ],
     [
       'key' => 'feffe9928665731c6d6a8f9467308308',
@@ -89,32 +78,23 @@ $php_openssl_cipher_tests = [
                '01e4a9a4fba43c90ccdcb281d48c7c6f' .
                'd62875d2aca417034c34aee5',
     ],
-  ]
-];
+  ];
 
-function openssl_get_cipher_tests(string $method) : array {
-  global $php_openssl_cipher_tests;
-
-  $tests = [];
-
-  foreach ($php_openssl_cipher_tests[$method] as $instance) {
-    $test = [];
-    foreach ($instance as $field_name => $field_value) {
-      $test[$field_name] = pack("H*", $field_value);
+  $result = [];
+  foreach ($data as $test) {
+    $encoded = [];
+    foreach ($test as $key => $value) {
+      $encoded[$key] = pack("H*", $value);
     }
-    if (!isset($test['aad'])) {
-      $test['aad'] = "";
-    }
-    $tests[] = $test;
+    $result[] = $encoded;
   }
-
-  return $tests;
+  return $result;
 }
 
-function test_decrypt(string $method) {
-  $tests = openssl_get_cipher_tests($method);
+function test_decrypt() {
+  $method = "aes-128-gcm";
 
-  foreach ($tests as $idx => $test) {
+  foreach (make_tests_data() as $idx => $test) {
     echo "TEST $idx\n";
     $pt = openssl_decrypt($test['ct'], $method, $test['key'], OPENSSL_RAW_DATA, $test['iv'], $test['tag'], $test['aad']);
     var_dump($test['pt'] === $pt);
@@ -128,10 +108,10 @@ function test_decrypt(string $method) {
   }
 }
 
-function test_encrypt(string $method) {
-  $tests = openssl_get_cipher_tests($method);
+function test_encrypt() {
+  $method = "aes-128-gcm";
 
-  foreach ($tests as $idx => $test) {
+  foreach (make_tests_data() as $idx => $test) {
     echo "TEST $idx\n";
     $tag = '';
     $ct = openssl_encrypt($test['pt'], $method, $test['key'], OPENSSL_RAW_DATA, $test['iv'], $tag, $test['aad'], strlen($test['tag']));
@@ -159,5 +139,5 @@ function test_encrypt(string $method) {
   }
 }
 
-test_encrypt("aes-128-gcm");
-test_decrypt("aes-128-gcm");
+test_decrypt();
+test_encrypt();
