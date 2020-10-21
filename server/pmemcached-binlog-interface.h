@@ -1,6 +1,6 @@
 #pragma once
 
-#include "binlog/kdb-binlog-common.h"
+#include "common/binlog/kdb-binlog-common.h"
 
 #pragma pack(push, 4)
 

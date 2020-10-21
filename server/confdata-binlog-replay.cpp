@@ -6,13 +6,13 @@
 #include <forward_list>
 #include <map>
 
-#include "binlog/binlog-replayer.h"
+#include "common/binlog/binlog-replayer.h"
 #include "common/precise-time.h"
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
 #include "common/server/init-snapshot.h"
 #include "common/wrappers/string_view.h"
-#include "kfs/kfs.h"
+#include "common/kfs/kfs.h"
 
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
