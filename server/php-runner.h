@@ -2,8 +2,8 @@
 
 #include <ucontext.h>
 
+#include "common/dl-utils-lite.h"
 #include "common/sanitizer.h"
-#include "drinkless/dl-utils-lite.h"
 
 #include "server/php-engine-vars.h"
 #include "server/php-query-data.h"

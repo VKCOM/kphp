@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 
-#include "drinkless/dl-utils-lite.h"
+#include "common/dl-utils-lite.h"
 
 static std::map<std::string, script_t *> scripts;
 

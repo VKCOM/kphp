@@ -24,6 +24,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/crc32c.h"
+#include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
 #include "common/precise-time.h"
@@ -33,7 +34,6 @@
 #include "common/server/statsd-client.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
-#include "drinkless/dl-utils-lite.h"
 #include "net/net-connections.h"
 #include "net/net-http-server.h"
 #include "net/net-memcache-server.h"

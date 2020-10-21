@@ -6,7 +6,7 @@
 #include <cstring>
 #include <unistd.h>
 
-#include "drinkless/dl-utils-lite.h"
+#include "common/dl-utils-lite.h"
 
 static void *memdup(const void *src, size_t x) {
   void *res = malloc(x);

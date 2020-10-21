@@ -1,6 +1,6 @@
 #include "compiler/stats.h"
 
-#include "drinkless/dl-utils-lite.h"
+#include "common/dl-utils-lite.h"
 
 #include "compiler/data/function-data.h"
 

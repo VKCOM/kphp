@@ -15,6 +15,7 @@
 
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
+#include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/options.h"
 #include "common/pipe-utils.h"
@@ -31,7 +32,6 @@
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "db-proxy/passwd.h"
-#include "drinkless/dl-utils-lite.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
