@@ -754,7 +754,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       if (one_case.goto_name.empty()) {
-        W << "case " << fmt_format("{:#x}", one_case.hash) << ":" << NL;
+        W << "case " << std::to_string(static_cast<long long>(one_case.hash)) << ":" << NL;
       } else {
         W << one_case.goto_name << ":;" << NL;
       }
