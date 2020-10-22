@@ -230,21 +230,6 @@ void CompilerSettings::init() {
     kphp_assert(0);
   }
 
-  // TODO REMOVE IT!
-  if (const char *deprecated_cxx = getenv("CXX")) {
-    cxx.value_ = deprecated_cxx;
-  }
-
-  // TODO REMOVE IT!
-  if (const char *deprecated_cxx_flags = getenv("CXXFLAGS")) {
-    extra_cxx_flags.value_ = deprecated_cxx_flags;
-  }
-
-  // TODO REMOVE IT!
-  if (const char *deprecated_ld_flags = getenv("LDFLAGS")) {
-    extra_ld_flags.value_ = deprecated_ld_flags;
-  }
-
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
   ss << extra_cxx_flags.get();
