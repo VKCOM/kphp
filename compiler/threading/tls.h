@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cassert>
+#include <thread>
+
+#include "common/algorithms/clamp.h"
 
 #include "compiler/threading/locks.h"
 #include "compiler/threading/thread-id.h"
@@ -9,6 +12,10 @@
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 const int MAX_THREADS_COUNT = 101;
+
+inline uint32_t get_default_threads_count() noexcept {
+  return vk::clamp(std::thread::hardware_concurrency(), 1U, static_cast<uint32_t>(MAX_THREADS_COUNT));
+}
 
 template<class T>
 struct TLS {

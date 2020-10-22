@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <thread>
 #include <unordered_set>
 
 #include "common/algorithms/string-algorithms.h"
@@ -11,6 +10,7 @@
 
 #include "compiler/compiler.h"
 #include "compiler/compiler-settings.h"
+#include "compiler/threading/tls.h"
 
 namespace {
 
@@ -155,7 +155,6 @@ int main(int argc, char *argv[]) {
   init_version_string("kphp2cpp");
   set_debug_handlers();
 
-  const uint32_t system_threads = std::max(std::thread::hardware_concurrency(), 1U);
   auto settings = std::make_unique<CompilerSettings>();
 
   OptionParser::add_default_options();
@@ -186,9 +185,9 @@ int main(int argc, char *argv[]) {
   parser.add("Make the output binary", settings->use_make,
              'm', "make", "KPHP_USE_MAKE");
   parser.add("Processes number for the compilation", settings->jobs_count,
-             'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(system_threads));
+             'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Threads number for the transpilation", settings->threads_count,
-             't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(system_threads * 2));
+             't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Count of global variables per dedicated .cpp file. Lowering it could decrease compilation time", settings->globals_split_count,
              "globals-split-count", "KPHP_GLOBALS_SPLIT_COUNT", "1024");
   parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,

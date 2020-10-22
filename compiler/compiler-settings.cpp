@@ -3,7 +3,6 @@
 #include <fstream>
 #include <openssl/sha.h>
 #include <sstream>
-#include <thread>
 #include <unistd.h>
 
 #include "common/algorithms/contains.h"
@@ -13,6 +12,7 @@
 #include "common/wrappers/to_array.h"
 
 #include "compiler/stage.h"
+#include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
 void KphpRawOption::init(const char *env, std::string default_value, std::vector<std::string> choices) noexcept {
@@ -206,10 +206,12 @@ void CompilerSettings::init() {
   }
 
   if (!jobs_count.get()) {
-    jobs_count.value_ = std::max(std::thread::hardware_concurrency(), 1U);
+    jobs_count.value_ = get_default_threads_count();
   }
   if (!threads_count.get()) {
-    threads_count.value_ = std::max(std::thread::hardware_concurrency(), 1U);
+    threads_count.value_ = get_default_threads_count();
+  } else if (threads_count.get() > MAX_THREADS_COUNT) {
+    throw std::runtime_error{"Option " + threads_count.get_env_var() + " is expected to be <= " + std::to_string(MAX_THREADS_COUNT)};
   }
 
   if (globals_split_count.get() == 0) {
