@@ -2370,9 +2370,6 @@ int main_args_handler(int i) {
       }
       return 0;
     }
-    case 'j': {
-      return 0;
-    }
     case 'l': {
       init_logname(optarg);
       return 0;
@@ -2598,7 +2595,6 @@ void parse_main_args(int argc, char *argv[]) {
   init_parse_options(sections);
 
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
-  parse_option("json-log", no_argument, 'j', "enable json log");
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
   parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");
