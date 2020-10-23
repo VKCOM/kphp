@@ -6,7 +6,7 @@ echo 2+2;
 ?>
 
 #################################################################################
-#@tags ; in the end can be ommited
+#@tags ; in the end can be omitted
 <?php
   echo 2+2;
   echo 2*2

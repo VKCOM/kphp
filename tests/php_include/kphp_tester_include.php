@@ -2,7 +2,7 @@
 
 /*
  * This file is included in every KPHP .php test (KPHP tests are: run php, compile and run kphp, compare results).
- * It contais autoload for PHP tests and kphp polyfills.
+ * It contains autoload for PHP tests and kphp polyfills.
  * Do not use it in your PHP project.
  */
 

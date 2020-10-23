@@ -990,7 +990,7 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
           if (v.as_array().get_next_key() == v.as_array().count()) {
             is_vector = true;
           } else {
-            php_warning("Corner case in json convertion, [] could be easy transformed to {}");
+            php_warning("Corner case in json conversion, [] could be easy transformed to {}");
           }
         }
       }

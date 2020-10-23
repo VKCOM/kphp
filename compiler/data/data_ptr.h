@@ -57,7 +57,7 @@ public:
   }
 
   void clear() {
-    delete ptr; //TODO: be very-very carefull with it
+    delete ptr; //TODO: be very-very careful with it
     ptr = nullptr;
   }
 

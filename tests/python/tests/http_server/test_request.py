@@ -33,7 +33,7 @@ class TestRequest(KphpServerAutoTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"Hello world!")
 
-    def test_send_request_with_fragmet(self):
+    def test_send_request_with_fragment(self):
         response = self.kphp_server.http_request_raw([b"GET /status?#something HTTP/1.1"])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"Hello world!")

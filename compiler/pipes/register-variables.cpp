@@ -48,8 +48,8 @@ void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex
   string name = var_vertex->str_val;
   var_vertex->var_id = create_global_var(name);
 
-  FunctionPtr function_where_global_keyword_occured = var_vertex->location.get_function();
-  if (function_where_global_keyword_occured && function_where_global_keyword_occured->is_main_function()) {
+  FunctionPtr function_where_global_keyword_occurred = var_vertex->location.get_function();
+  if (function_where_global_keyword_occurred && function_where_global_keyword_occurred->is_main_function()) {
     var_vertex->var_id->marked_as_global = true;
   }
 }

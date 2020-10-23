@@ -118,7 +118,7 @@ FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<
     }
   }
 
-  // TODO: need copy all lambdas inside template funciton
+  // TODO: need copy all lambdas inside template function
   //for (auto f : func->lambdas_inside) {
   //  f->function_in_which_lambda_was_created = new_function;
   //}

@@ -466,7 +466,7 @@ string &string::append(const mixed &v) {
     case mixed::type::STRING:
       return append(v.as_string());
     case mixed::type::ARRAY:
-      php_warning("Convertion from array to string");
+      php_warning("Conversion from array to string");
       return append("Array", 5);
     default:
       __builtin_unreachable();
@@ -525,7 +525,7 @@ string &string::append_unsafe(const char *s, size_type n) {
 
 template<class T>
 string &string::append_unsafe(const array<T> &a __attribute__((unused))) {
-  php_warning("Convertion from array to string");
+  php_warning("Conversion from array to string");
   return append_unsafe("Array", 5);
 }
 

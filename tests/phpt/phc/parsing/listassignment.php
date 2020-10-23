@@ -1,7 +1,7 @@
 @ok
 <?php
 
-	// it looks like refernce assignments to lists arent allowed
+	// it looks like reference assignments to lists aren't allowed
 
 	// note, weak references
 	list ($a, $b) = array ("0" => "x", "1" => "y");
@@ -22,7 +22,7 @@
 	var_dump ($b);
 	echo "-------------1----------------\n";
 
-	// swithcing the values doesnt work. $a and $b are switched before the array is evaluated
+	// switching the values doesnt work. $a and $b are switched before the array is evaluated
 	list ($a, $b) = array ($b, $a);
 	var_dump ($a);
 	var_dump ($b);

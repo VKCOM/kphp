@@ -14,7 +14,7 @@ function getT2() {
     return getT1(getT1(1));
 }
 
-funciton demo() {
+function demo() {
     $t = getT2();
 }
 

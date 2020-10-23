@@ -8,7 +8,7 @@
 #include "compiler/inferring/type-inferer.h"
 #include "compiler/stage.h"
 
-static void print_why_tinf_occured_error(
+static void print_why_tinf_occurred_error(
   const TypeData *errored_type,
   const TypeData *because_of_type,
   PrimitiveType ptype_before_error,
@@ -108,7 +108,7 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
   }
 
   if (unlikely(new_type_->error_flag())) {
-    print_why_tinf_occured_error(new_type_, type, ptype, node_, rvalue.node);
+    print_why_tinf_occurred_error(new_type_, type, ptype, node_, rvalue.node);
   }
 }
 

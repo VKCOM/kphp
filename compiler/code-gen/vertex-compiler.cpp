@@ -1092,7 +1092,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       } else {
         if (value_length & STRLEN_WARNING_FLAG) {
           value_length &= ~STRLEN_WARNING_FLAG;
-          kphp_warning (fmt_format("Suspicious convertion of type [{}] to string", type_out(type)));
+          kphp_warning (fmt_format("Suspicious conversion of type [{}] to string", type_out(type)));
         }
 
         kphp_assert (value_length >= 0);

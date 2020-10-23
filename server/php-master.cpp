@@ -54,7 +54,7 @@ extern const char *engine_tag;
 //do not kill more then MAX_KILL at the same time
 #define MAX_KILL 5
 
-//ATTENTION: the file has .cpp extention due to usage of "pthread_mutexattr_setrobust_np" which is by some strange reason unsupported for .c
+//ATTENTION: the file has .cpp extension due to usage of "pthread_mutexattr_setrobust_np" which is by some strange reason unsupported for .c
 //ATTENTION: do NOT change this structures without changing the magic
 #define SHARED_DATA_MAGIC 0x3b720002
 #define PHP_MASTER_VERSION "0.1"

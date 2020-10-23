@@ -70,7 +70,7 @@ inline  int64_t f$safe_intval(int64_t val) {
 inline int64_t f$safe_intval(double val) {
   constexpr auto max_int = static_cast<double>(static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1);
   if (fabs(val) > max_int) {
-    php_warning("Wrong convertion from double %.6lf to int", val);
+    php_warning("Wrong conversion from double %.6lf to int", val);
   }
   return static_cast<int64_t>(val);
 }

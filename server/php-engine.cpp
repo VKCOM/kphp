@@ -830,7 +830,7 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
 void php_worker_run_net_queue(php_worker *worker __attribute__((unused))) {
   net_query_t *query;
   while ((query = pop_net_query()) != nullptr) {
-    //no other types of query are currenly supported
+    //no other types of query are currently supported
     php_worker_run_rpc_send_query(query);
     free_net_query(query);
   }
@@ -2626,7 +2626,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
   parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
-  parse_option("confdata-predefined-wildcard", required_argument, 2007, "perdefine confdata wildcard for better perfomance");
+  parse_option("confdata-predefined-wildcard", required_argument, 2007, "perdefine confdata wildcard for better performance");
   parse_option("php-version", no_argument, 2008, "show the compiled php code version and exit");
   parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");

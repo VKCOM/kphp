@@ -523,7 +523,7 @@ const mixed mixed::to_numeric() const {
     case type::STRING:
       return as_string().to_numeric();
     case type::ARRAY:
-      php_warning("Wrong convertion from array to number");
+      php_warning("Wrong conversion from array to number");
       return as_array().to_int();
     default:
       __builtin_unreachable();
@@ -563,7 +563,7 @@ int64_t mixed::to_int() const {
     case type::STRING:
       return as_string().to_int();
     case type::ARRAY:
-      php_warning("Wrong convertion from array to int");
+      php_warning("Wrong conversion from array to int");
       return as_array().to_int();
     default:
       __builtin_unreachable();
@@ -583,7 +583,7 @@ double mixed::to_float() const {
     case type::STRING:
       return as_string().to_float();
     case type::ARRAY:
-      php_warning("Wrong convertion from array to float");
+      php_warning("Wrong conversion from array to float");
       return as_array().to_float();
     default:
       __builtin_unreachable();
@@ -603,7 +603,7 @@ const string mixed::to_string() const {
     case type::STRING:
       return as_string();
     case type::ARRAY:
-      php_warning("Convertion from array to string");
+      php_warning("Conversion from array to string");
       return string("Array", 5);
     default:
       __builtin_unreachable();
@@ -656,14 +656,14 @@ int64_t mixed::safe_to_int() const {
     case type::FLOAT: {
       constexpr auto max_int = static_cast<double>(static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1);
       if (fabs(as_double()) > max_int) {
-        php_warning("Wrong convertion from double %.6lf to int", as_double());
+        php_warning("Wrong conversion from double %.6lf to int", as_double());
       }
       return static_cast<int64_t>(as_double());
     }
     case type::STRING:
       return as_string().safe_to_int();
     case type::ARRAY:
-      php_warning("Wrong convertion from array to int");
+      php_warning("Wrong conversion from array to int");
       return as_array().to_int();
     default:
       __builtin_unreachable();
@@ -688,7 +688,7 @@ void mixed::convert_to_numeric() {
       *this = as_string().to_numeric();
       return;
     case type::ARRAY: {
-      php_warning("Wrong convertion from array to number");
+      php_warning("Wrong conversion from array to number");
       const int64_t int_val = as_array().to_int();
       as_array().~array<mixed>();
       type_ = type::INTEGER;
@@ -759,7 +759,7 @@ void mixed::convert_to_int() {
       return;
     }
     case type::ARRAY: {
-      php_warning("Wrong convertion from array to int");
+      php_warning("Wrong conversion from array to int");
       const int64_t int_val = as_array().to_int();
       as_array().~array<mixed>();
       type_ = type::INTEGER;
@@ -795,7 +795,7 @@ void mixed::convert_to_float() {
       return;
     }
     case type::ARRAY: {
-      php_warning("Wrong convertion from array to float");
+      php_warning("Wrong conversion from array to float");
       const double float_val = as_array().to_float();
       as_array().~array<mixed>();
       type_ = type::FLOAT;
@@ -1739,7 +1739,7 @@ inline string_buffer &operator<<(string_buffer &sb, const mixed &v) {
     case mixed::type::STRING:
       return sb << v.as_string();
     case mixed::type::ARRAY:
-      php_warning("Convertion from array to string");
+      php_warning("Conversion from array to string");
       return sb.append("Array", 5);
     default:
       __builtin_unreachable();

@@ -262,7 +262,7 @@
     test ('31 January 2010 next month', $t);
     test ('1 December 2010 next month', $t);
     test ('31 December 2010 next month', $t);
-#    test ('1 Janaury 2012', $t);
+    test ('1 January 2012', $t);
 //    test ("Monday, December 5, 2005 5:47:06 PM MSK", $t);
 //    test ('+45 years', $t);
     test ('20120902', $t);

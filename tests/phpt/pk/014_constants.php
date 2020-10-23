@@ -41,7 +41,7 @@ class B {
 class C extends B {}
 
 function f() {
-  echo "At funciton\n";
+  echo "At function\n";
   echo "__FILE__: |", __FILE__, "|\n";
   echo "__DIR__: |", __DIR__, "|\n";
   echo "__FUNCTION__: |", __FUNCTION__, "|\n";

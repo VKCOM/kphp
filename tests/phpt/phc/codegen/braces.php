@@ -37,7 +37,7 @@
 	}
 
 
-	// deeply nested varaibles
+	// deeply nested variables
 	$a = "a1";
 	$a1 = "a2";
 	$a2 = "a3";

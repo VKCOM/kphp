@@ -1,7 +1,7 @@
 @ok
 <?php
 
-// Function parameters and the same variable were infered separately.
+// Function parameters and the same variable were inferred separately.
 // function f(bool x) {x = new Memcached();}
 // Everything will be ok in parser, but c++ ce error will happen.
 // As a solution both xs may share TypeInf*

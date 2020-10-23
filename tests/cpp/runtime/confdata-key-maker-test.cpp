@@ -23,10 +23,10 @@ do {                                                                      \
 } // namespace
 
 
-TEST(confdata_key_maker_test, test_defualt) {
+TEST(confdata_key_maker_test, test_default) {
   ConfdataKeyMaker key_maker;
-  ExpectedKey expeced{ConfdataFirstKeyType::simple_key, "", mixed{}};
-  ASSERT_KEY(key_maker, expeced);
+  ExpectedKey expected{ConfdataFirstKeyType::simple_key, "", mixed{}};
+  ASSERT_KEY(key_maker, expected);
 }
 
 TEST(confdata_key_maker_test, test_first_key_zero_dots) {

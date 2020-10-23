@@ -137,7 +137,7 @@ echo "\n-- Testing sort() by supplying various integer/float arrays --\n";
 foreach ($various_arrays as $array) {
   echo "\n-- Iteration $count --\n";
 
-  echo "- With Defualt sort flag -\n"; 
+  echo "- With Default sort flag -\n";
   $temp_array = $array; 
   sort($temp_array);
   var_dump($temp_array);
@@ -274,7 +274,7 @@ foreach ($various_arrays as $array) {
  
   echo "\n-- Iteration $count --\n"; 
   // testing sort() function by supplying different arrays, flag value is default
-  echo "- With Defualt sort flag -\n";
+  echo "- With Default sort flag -\n";
   $temp_array = $array;
   sort($temp_array);
   var_dump($temp_array);
@@ -302,7 +302,7 @@ echo "\n-- Testing sort() by supplying various arrays with key values --\n";
 foreach ($various_arrays as $array) {
   echo "\n-- Iteration $count --\n";
 
-  echo "- With Defualt sort flag -\n";
+  echo "- With Default sort flag -\n";
   $temp_array = $array;
   sort($temp_array);
   var_dump($temp_array);
@@ -409,7 +409,7 @@ echo "\n-- Testing rsort() by supplying various integer/float arrays --\n";
 foreach ($various_arrays as $array) {
   echo "\n-- Iteration $count --\n";
 
-  echo "- With Defualt rsort flag -\n"; 
+  echo "- With Default rsort flag -\n";
   $temp_array = $array; 
   rsort($temp_array);
   var_dump($temp_array);
@@ -546,7 +546,7 @@ foreach ($various_arrays as $array) {
  
   echo "\n-- Iteration $count --\n"; 
   // testing rsort() function by supplying different arrays, flag value is default
-  echo "- With Defualt rsort flag -\n";
+  echo "- With Default rsort flag -\n";
   $temp_array = $array;
   rsort($temp_array);
   var_dump($temp_array);
@@ -574,7 +574,7 @@ echo "\n-- Testing rsort() by supplying various arrays with key values --\n";
 foreach ($various_arrays as $array) {
   echo "\n-- Iteration $count --\n";
 
-  echo "- With Defualt rsort flag -\n";
+  echo "- With Default rsort flag -\n";
   $temp_array = $array;
   rsort($temp_array);
   var_dump($temp_array);
