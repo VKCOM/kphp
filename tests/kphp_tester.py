@@ -55,10 +55,22 @@ class KphpRunOnceRunner(KphpBuilder):
         self._kphp_server_stdout = None
         self._php_tmp_dir = os.path.join(self._working_dir, "php")
         self._kphp_runtime_tmp_dir = os.path.join(self._working_dir, "kphp_runtime")
-        self._include_dirs.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "./php_include")))
+        self._tester_dir = os.path.abspath(os.path.dirname(__file__))
+        self._include_dirs.append(os.path.join(self._tester_dir, "php_include"))
+        self._vkext_dir = os.path.abspath(os.path.join(self._tester_dir, os.path.pardir, "objs", "vkext"))
 
     def run_with_php(self):
         self._clear_working_dir(self._php_tmp_dir)
+
+        options = [
+            ("extension", "json.so"),
+            ("extension", "bcmath.so"),
+            ("extension", "iconv.so"),
+            ("extension", "mbstring.so"),
+            ("extension", "curl.so"),
+            ("extension", "tokenizer.so"),
+            ("extension", "h3.so"),
+        ]
 
         if self._test_file.is_php5():
             php_bin = shutil.which("php5.6") or shutil.which("php5")
@@ -70,24 +82,20 @@ class KphpRunOnceRunner(KphpBuilder):
         if php_bin is None:
             raise RuntimeError("Can't find php executable")
 
-        options = [
+        if php_bin.endswith("php7.2"):
+            options.append(("extension", os.path.join(self._vkext_dir, "modules7.2", "vkext.so")))
+        elif php_bin.endswith("php7.4"):
+            options.append(("extension", os.path.join(self._vkext_dir, "modules7.4", "vkext.so")))
+
+        options.extend([
             ("display_errors", 0),
             ("log_errors", 1),
-            ("error_log", "/proc/self/fd/2"),
-            ("extension", "json.so"),
-            ("extension", "bcmath.so"),
-            ("extension", "iconv.so"),
-            ("extension", "mbstring.so"),
-            ("extension", "curl.so"),
-            ("extension", "vkext.so"),
-            ("extension", "tokenizer.so"),
-            ("extension", "h3.so"),
             ("memory_limit", "3072M"),
             ("xdebug.var_display_max_depth", -1),
             ("xdebug.var_display_max_children", -1),
             ("xdebug.var_display_max_data", -1),
             ("include_path", "{}:{}".format(*self._include_dirs))
-        ]
+        ])
 
         cmd = [php_bin, "-n"]
         for k, v in options:
@@ -123,7 +131,7 @@ class KphpRunOnceRunner(KphpBuilder):
         self._move_sanitizer_logs_to_artifacts(sanitizer_glob_mask, kphp_server_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
-                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ [.\w\d/_-]+/PHP/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
+                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ [.\w\d/_-]+/server/php\\-runner\\.cpp\\s+\\d+\\].+$"
             ],
             binary_error_text=kphp_runtime_stderr)
 

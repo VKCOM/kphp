@@ -291,7 +291,8 @@ if __name__ == "__main__":
             "-S {kphp_repo_root} -B {kphp_repo_root}/build "
             "{distcc_cmake_option}"
             "-DCMAKE_C_COMPILER={cc} -DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
-            "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test".format(
+            "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test && "
+            "{env_vars} make -C {kphp_repo_root}/build vkext7.2 vkext7.4".format(
                 kphp_repo_root=kphp_repo_root,
                 distcc_cmake_option=distcc_cmake_option,
                 cc=cc_compiler,
