@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Max preallocated size
 #define STRING_PROCESS_BUF_SIZE 1000000
 
@@ -52,7 +48,3 @@ char *sp_deunicode (const char *s);
 char *sp_remove_repeats (const char *s);
 char *sp_to_cyrillic (const char *s);
 char *sp_words_only (const char *s);
-
-#ifdef __cplusplus
-}
-#endif

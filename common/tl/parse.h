@@ -5,9 +5,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "common/pid.h"
 #include "common/rpc-error-codes.h"
+#include "common/wrappers/optional.h"
+#include "common/tl/methods/base.h"
+
 
 struct tl_query_header_t;
 
@@ -128,17 +135,6 @@ void tl_set_current_query_id(long long qid);
 long long tl_current_query_id();
 const struct process_id* tl_current_query_sender();
 
-
-#ifdef __cplusplus
-
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "common/wrappers/optional.h"
-#include "common/tl/methods/base.h"
-
 void tl_store_raw_msg(const struct raw_message &raw);
 
 void tl_fetch_chunked(int size, const std::function<void(const void*, int)> &callback);
@@ -167,4 +163,3 @@ public:
 };
 } // namespace tl
 } // namespace vk
-#endif

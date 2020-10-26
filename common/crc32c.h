@@ -6,10 +6,6 @@
 
 #include "common/crc32.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum crc32_type {
   CRC32, // Deprecated. Don't use this in new code.
   CRC32C
@@ -50,9 +46,5 @@ static inline crc32_combine_func_t get_crc32_combine_func (crc32_type_t crc32_ty
 
   return NULL;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

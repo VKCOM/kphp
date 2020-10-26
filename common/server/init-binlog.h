@@ -12,14 +12,5 @@
       when logevent isn't stored in one binlog buffer chunk.
 */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void engine_default_read_binlog(void);
 void binlog_try_read_events(void);
-
-
-#ifdef __cplusplus
-}
-#endif

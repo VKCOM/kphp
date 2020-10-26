@@ -42,7 +42,7 @@ public:
 
   template<size_t OPTION_OFFSET, size_t OPTIONS_COUNT>
   bool check_option_value(long opt_value, const char *what, const char *function, bool save_error = true) noexcept {
-    if (unlikely(opt_value < OPTION_OFFSET || opt_value - OPTION_OFFSET >= OPTIONS_COUNT)) {
+    if (unlikely(opt_value < static_cast<long>(OPTION_OFFSET) || opt_value - OPTION_OFFSET >= OPTIONS_COUNT)) {
       php_warning("Wrong %s %ld in function %s", what, opt_value, function);
       if (save_error) {
         error_num = BAD_CURL_OPTION;

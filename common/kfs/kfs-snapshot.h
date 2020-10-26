@@ -5,10 +5,6 @@
 
 #include "common/kfs/kfs-typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAGIC_SNAPSHOT_DIFF_HEADER 0xc66607dc
 
 struct engine_snapshot_descr {
@@ -22,8 +18,4 @@ kfs_file_handle_t open_recent_snapshot(kfs_replica_handle_t Replica);  // file p
 kfs_file_handle_t open_main_snapshot(kfs_file_handle_t snapshot_diff);
 int close_snapshot(kfs_file_handle_t F, bool close_handle);
 void init_engine_snapshot_descr(struct engine_snapshot_descr *_descr, kfs_file_handle_t _snapshot);
-#ifdef __cplusplus
-}; // extern "C"
-#endif
-
 #endif // ENGINE_KFS_SNAPSHOT_H

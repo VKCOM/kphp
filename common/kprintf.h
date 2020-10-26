@@ -5,10 +5,6 @@
 
 #include "common/pid.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int verbosity;
 extern const char *logname;
 
@@ -88,9 +84,5 @@ const char *ip_to_print(unsigned ip);
 const char *ipv6_to_print(const void *ip);
 const char *pid_to_print(const struct process_id *pid);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

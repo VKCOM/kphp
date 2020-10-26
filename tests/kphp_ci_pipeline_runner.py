@@ -280,7 +280,7 @@ if __name__ == "__main__":
         distcc_hosts_file = "/etc/distcc/hosts"
         distcc_options = "--distcc-host-list {}".format(distcc_hosts_file)
         os.environ.update(make_distcc_env(read_distcc_hosts(distcc_hosts_file), os.path.join(runner_dir, "tmp_distcc")))
-        distcc_cmake_option = "-DCMAKE_C_COMPILER_LAUNCHER=distcc -DCMAKE_CXX_COMPILER_LAUNCHER=distcc "
+        distcc_cmake_option = "-DCMAKE_CXX_COMPILER_LAUNCHER=distcc "
 
     runner.add_test_group(
         name="make-kphp",
@@ -290,7 +290,7 @@ if __name__ == "__main__":
             "cmake "
             "-S {kphp_repo_root} -B {kphp_repo_root}/build "
             "{distcc_cmake_option}"
-            "-DCMAKE_C_COMPILER={cc} -DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
+            "-DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
             "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test && "
             "{env_vars} make -C {kphp_repo_root}/build vkext7.2 vkext7.4".format(
                 kphp_repo_root=kphp_repo_root,

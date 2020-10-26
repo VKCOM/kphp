@@ -1,15 +1,12 @@
 #pragma once
 
 #include <sys/cdefs.h>
-
-void tl_store_init_str(char *s, int size);
-void tl_fetch_init_str(const char *s, int size);
-
-#ifdef __cplusplus
-
 #include <utility>
 #include "common/tl/fetch.h"
 #include "common/tl/store.h"
+
+void tl_store_init_str(char *s, int size);
+void tl_fetch_init_str(const char *s, int size);
 
 namespace vk {
 namespace tl {
@@ -46,4 +43,3 @@ int fetch_from_buffer(const char *buffer, int buffer_size, T &value, const Fetch
 
 } // namespace tl
 } // namespace vk
-#endif

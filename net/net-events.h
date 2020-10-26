@@ -9,10 +9,6 @@
 
 #include "net/net-reactor.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define        MAX_EVENTS                (1 << 19)
 #define        MAX_EVENT_TIMERS        (1 << 19)
 
@@ -147,9 +143,5 @@ static inline int remove_event_timer(event_timer_t *et) {
 static inline bool event_timer_active(const event_timer_t *et) {
   return et->h_idx;
 }
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #endif

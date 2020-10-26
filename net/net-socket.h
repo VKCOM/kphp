@@ -9,10 +9,6 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define PRIVILEGED_TCP_PORTS 1024
 
 extern struct in_addr settings_addr;
@@ -73,9 +69,5 @@ static inline int socket_get_queued_unread_data_size(int fd) {
 static inline int socket_get_queued_unsent_data_size(int fd) {
   return socket_ioctl(fd, SIOCOUTQ);
 }
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #endif // KDB_NET_NET_SOCKET_H

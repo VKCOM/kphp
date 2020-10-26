@@ -6,10 +6,6 @@
 
 #define MAX_OPTION_ID 10000
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum {
   OPT_GENERIC,
   OPT_NETWORK,
@@ -108,7 +104,3 @@ static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused __attribute__((unused))
     OPTION_PRINT_DEPRECATION_MESSAGE_("--%s/-%c", name, letter);    \
     return 0;                                                       \
   }
-
-#ifdef __cplusplus
-}
-#endif

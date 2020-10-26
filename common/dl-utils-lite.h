@@ -7,10 +7,6 @@
 #include "common/cycleclock.h"
 #include "common/wrappers/likely.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 double dl_get_utime (int clock_id);
 double dl_time (void);
 
@@ -63,7 +59,3 @@ int get_mem_stats (pid_t pid, mem_info_t *info);
 int get_pid_info (pid_t pid, pid_info_t *info);
 unsigned long long get_pid_start_time (pid_t pid);
 int get_cpu_total (unsigned long long *cpu_total);
-
-#ifdef __cplusplus
-}
-#endif

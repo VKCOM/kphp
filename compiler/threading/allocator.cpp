@@ -128,7 +128,7 @@ public:
   }
 };
 
-TLS<ZAllocatorRaw> zallocator;
+static TLS<ZAllocatorRaw> zallocator;
 
 void *malloc(size_t size) {
   assert (malloc != __libc_malloc);

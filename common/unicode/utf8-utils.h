@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void string_to_utf8 (const char *s, int *v);
 void string_to_utf8_len (const char *s, int s_len, int *v);
 void html_string_to_utf8 (const char *s, int *v);
@@ -17,11 +13,6 @@ int translit_string_utf8_from_en_to_ru (int *input, int *output);
 int translit_string_utf8_from_ru_to_en (int *input, int *output);
 int convert_language (int x);
 int has_bad_symbols (int *v_s);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 
 static inline int get_char_utf8 (int *x, const char *s) {

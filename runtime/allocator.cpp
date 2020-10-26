@@ -324,7 +324,6 @@ void operator delete[](void *mem, const std::nothrow_t &) noexcept {
   return std::free(mem);
 }
 
-#if __cplusplus >= 201402L
 void operator delete(void *mem, size_t) noexcept {
   return std::free(mem);
 }
@@ -332,4 +331,3 @@ void operator delete(void *mem, size_t) noexcept {
 void operator delete[](void *mem, size_t) noexcept {
   return std::free(mem);
 }
-#endif

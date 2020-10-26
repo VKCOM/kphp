@@ -3,15 +3,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/uio.h>
+#include <functional>
 
 #include "common/crc32.h"
 #include "common/crypto/aes256.h"
 
 #include "net/net-msg-part.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void init_msg(void);
 int rwm_total_msgs(void);
@@ -93,15 +90,5 @@ int rwm_encrypt_decrypt_cbc(raw_message_t *raw, int bytes, struct vk_aes_ctx *ct
 typedef void (*rwm_encrypt_decrypt_to_callback_t)(struct vk_aes_ctx *ctx, const void *src, void *dst, int l, unsigned char *iv);
 int rwm_encrypt_decrypt_to(raw_message_t *raw, raw_message_t *res, int bytes, struct vk_aes_ctx *ctx, rwm_encrypt_decrypt_to_callback_t crypt_cb, unsigned char *iv);
 
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-
-#include <functional>
-
 int rwm_process_and_advance(raw_message_t *raw, int bytes, const std::function<void(const void *, int)> &callback);
 int rwm_process(const raw_message_t *raw, int bytes, const std::function<int(const void *, int)> &callback);
-
-#endif

@@ -9,7 +9,6 @@
 #define                                              TL_KPHP_STOP_LEASE 0x183bf49dU
 #define                                              TL_KPHP_STOP_READY 0x59d86654U
 
-#ifdef __cplusplus
 #include <cstdint>
 namespace vk {
 namespace tl {
@@ -31,4 +30,3 @@ constexpr static uint32_t                                        worker_mode = 1
 } // namespace kphp
 } // namespace tl
 } // namespace vk
-#endif

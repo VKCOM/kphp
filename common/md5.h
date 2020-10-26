@@ -18,10 +18,6 @@ typedef struct
 }
 md5_context;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * \brief          MD5 context setup
  *
@@ -62,9 +58,5 @@ void md5( unsigned char *input, int ilen, unsigned char output[16] );
  * \return         0 if successful, or 1 if the test failed
  */
 int md5_self_test( int verbose );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* md5.h */

@@ -3,6 +3,7 @@
 
 #include <aio.h>
 #include <limits.h>
+#include <functional>
 
 #include "common/kfs/kfs.h"
 #include "net/net-msg.h"
@@ -155,28 +156,19 @@ extern bb_writer_type_t bbw_local_replica_functions;
 
 void bb_buffer_push_data (bb_buffer_t *B, void *data, int size) ;
 void bb_buffer_set_current_binlog (bb_buffer_t *B, bb_rotation_point_t *P) ;
-#endif
 
-#ifdef __cplusplus
+struct bb_replay_func {
+  std::function<int(const struct lev_generic *, int)> func;
 
-#ifndef __KDB_BINLOG_BUFFER_HPP__
-#define __KDB_BINLOG_BUFFER_HPP__
-  #include <functional>
+  explicit bb_replay_func(std::function<int(const struct lev_generic *, int)> func) : func(std::move(func)) {}
 
-  struct bb_replay_func {
-    std::function<int(const struct lev_generic *, int)> func;
+  int operator()(const struct lev_generic *E, int size) const {
+    return func(E, size);
+  }
+};
 
-    explicit bb_replay_func(std::function<int(const struct lev_generic *, int)> func) : func(std::move(func)) {}
+void bb_buffer_init(bb_buffer_t *B, bb_writer_t *W, bb_reader_t *R, std::function<int(const struct lev_generic *, int)> replay_logevent);
 
-    int operator()(const struct lev_generic *E, int size) const {
-      return func(E, size);
-    }
-  };
-
-  void bb_buffer_init(bb_buffer_t *B, bb_writer_t *W, bb_reader_t *R, std::function<int(const struct lev_generic *, int)> replay_logevent);
-
-  void bb_buffer_open_to_replay(bb_buffer_t *buffer, bb_writer_t *writer, bb_reader_t *reader,
-                                kfs_replica_t *replica, std::function<int(const struct lev_generic *, int)> replay_func);
-#endif
-
+void bb_buffer_open_to_replay(bb_buffer_t *buffer, bb_writer_t *writer, bb_reader_t *reader,
+                              kfs_replica_t *replica, std::function<int(const struct lev_generic *, int)> replay_func);
 #endif

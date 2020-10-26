@@ -3,10 +3,6 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #pragma	pack(push,4)
 /* if a KFS header is present, first four bytes will contain KFS_FILE_MAGIC; then 4Kbytes have to be skipped */
 
@@ -73,13 +69,11 @@ struct lev_generic {
 typedef struct lev_generic lev_generic_t;
 
 typedef struct lev_start {
-  #ifdef __cplusplus
   constexpr static lev_type_t MAGIC = LEV_START;
 
   int get_extra_bytes() const {
     return extra_bytes - static_cast<int>(sizeof(str));
   }
-  #endif
 
   lev_type_t type;
   int schema_id;
@@ -149,9 +143,5 @@ enum replay_binlog_result {
 };
 
 #pragma	pack(pop)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

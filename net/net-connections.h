@@ -10,10 +10,6 @@
 #include "net/net-msg.h"
 #include "net/net-sockaddr-storage.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAX_TARGETS 65536
 #define PRIME_TARGETS 99961
 
@@ -332,10 +328,5 @@ int out_total_unprocessed_bytes(struct connection *c);
 
 void init_connection_buffers(struct connection *c);
 void clean_connection_buffers(struct connection *c);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

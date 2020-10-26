@@ -10,10 +10,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define cast_sockaddr_storage_impl(storage, family, type)                                                                                                      \
   ({                                                                                                                                                           \
     assert((storage)->ss_family == family);                                                                                                                    \
@@ -113,9 +109,5 @@ static inline struct sockaddr_storage make_unix_sockaddr_storage(const char* add
 #define SOCKADDR_STORAGE_BUFFER_SIZE (UNIX_PATH_MAX)
 const char *sockaddr_storage_to_string(const struct sockaddr_storage *storage);
 const char *sockaddr_storage_to_buffer(const struct sockaddr_storage *storage, char buffer[UNIX_PATH_MAX]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KDB_NET_NET_SOCKADDR_STORAGE_H

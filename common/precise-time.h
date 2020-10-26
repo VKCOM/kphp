@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include <time.h>
 
-#ifndef __cplusplus
-#define thread_local _Thread_local
-#endif
-
 /* net-event.h */
 extern int now;
 extern thread_local double precise_now;

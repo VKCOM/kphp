@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define CRC32_POLY 0x04c11db7u
 #define CRC32_REFLECTED_POLY 0xedb88320u
 
@@ -74,9 +70,5 @@ static inline uint64_t compute_crc64 (const void *data, long len) {
 int crc32_check_and_repair (void *input, int l, unsigned *input_crc32, int force_exit);
 int crc32_find_corrupted_bit (int size, unsigned d);
 int crc32_repair_bit (unsigned char *input, int l, int k);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

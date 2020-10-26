@@ -29,7 +29,6 @@
 #define                                                       TL_VECTOR 0x1cb5c415U
 #define                                                 TL_VECTOR_TOTAL 0x10133f47U
 
-#ifdef __cplusplus
 #include <cstdint>
 namespace vk {
 namespace tl {
@@ -68,4 +67,3 @@ constexpr static uint32_t                                                ALL = 0
 } // namespace common
 } // namespace tl
 } // namespace vk
-#endif

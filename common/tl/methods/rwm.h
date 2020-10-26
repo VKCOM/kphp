@@ -2,13 +2,13 @@
 
 #include <sys/cdefs.h>
 
+#include "common/tl/methods/base.h"
+#include "common/tl/store.h"
+
 #include "net/net-msg.h"
 
-#ifdef __cplusplus
 void compress_rwm(raw_message_t &rwm, int version) noexcept;
 void decompress_rwm(raw_message_t &rwm, int version) noexcept;
-
-#include "common/tl/methods/base.h"
 
 struct tl_in_methods_raw_msg final : tl_in_methods {
   raw_message in{};
@@ -100,10 +100,4 @@ struct tl_out_methods_raw_msg_base : Base {
   }
 };
 
-#endif
-
 void tl_fetch_init_raw_message(raw_message_t *msg);
-
-#ifdef __cplusplus
-#include "common/tl/store.h"
-#endif

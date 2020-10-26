@@ -12,10 +12,6 @@
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int aes_crypto_init (struct connection *c, void *key_data, int key_data_len);  /* < 0 = error */
 int aes_crypto_free (struct connection *c);
 int aes_crypto_encrypt_output (struct connection *c);  /* 0 = all ok, >0 = so much more bytes needed to encrypt last block */
@@ -96,9 +92,5 @@ static inline int get_crypto_key_id(const aes_key_t *key) {
 
   return key->id;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,10 +3,6 @@
 
 #include "net/net-connections.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 struct memcache_server_functions {
   void *info;
   int (*execute)(struct connection *c, int op);		/* invoked from parse_execute() */
@@ -92,10 +88,6 @@ int return_one_key_flags_len (struct connection *c, const char *key, int key_len
 int return_one_key_list (struct connection *c, const char *key, int key_len, int res, int mode, const int *R, int R_cnt);
 int return_one_key_list_long (struct connection *c, const char *key, int key_len, int res, int mode, const long long *R, int R_cnt);
 int return_one_key_false (struct connection *c, const char *key, int key_len);
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 /* END */
 #endif

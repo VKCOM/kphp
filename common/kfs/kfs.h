@@ -7,10 +7,6 @@
 #include "common/kfs/kfs-common.h"
 #include "common/kfs/kfs-replica.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int kfs_classify_suffix(const char *suffix, long long *MMPos, const char *filename);
 int lock_whole_file(int fd, int mode);
 
@@ -40,9 +36,5 @@ long long kfs_read_file(kfs_file_handle_t F, void *buff, long long size);
   { \
     long long __saved_size_t1 = size; assert (kfs_read_file (F, buff, __saved_size_t1) == __saved_size_t1); \
   }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

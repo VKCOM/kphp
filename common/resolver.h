@@ -3,18 +3,10 @@
 
 #include <netdb.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int kdb_hosts_loaded;
 int kdb_load_hosts (void);
 
 struct hostent *kdb_gethostbyname (const char *name);
 const char *kdb_gethostname();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

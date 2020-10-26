@@ -2,10 +2,6 @@
 
 #include <signal.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void kill_main(void);
 
 typedef void (*extra_debug_handler_t)(void);
@@ -25,7 +21,3 @@ const char *signal_shortname(int sig);
 extern volatile long long pending_signals;
 
 static inline void empty_handler (int sig __attribute__((unused))) { }
-
-#ifdef __cplusplus
-}
-#endif
