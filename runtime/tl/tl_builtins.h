@@ -92,6 +92,48 @@ inline void store_raw_vector_T<double>(const array<double> &v) {
   f$store_raw_vector_double(v);
 }
 
+// Wrap into Optional that TL types which PhpType is:
+//  1. int, double, string, bool
+//  2. array<T>
+// These types are not wrapped:
+//  1. class_instance<T>
+//  2. Optional<T>
+//  3. mixed (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
+
+template<typename S>
+struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
+};
+
+template<typename S>
+struct need_Optional<array<S>> : std::true_type {
+};
+
+enum class FieldAccessType {
+  read,
+  write
+};
+
+// C++14 if constexpr
+template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::read,
+                                      const typename SerializerT::PhpType &>
+get_serialization_target_from_optional_field(const OptionalFieldT &v) {
+  return v.val();
+}
+
+template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::write,
+                                      typename SerializerT::PhpType &>
+get_serialization_target_from_optional_field(OptionalFieldT &v) {
+  return v.ref();
+}
+
+template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
+inline std::enable_if_t<!need_Optional<typename SerializerT::PhpType>::value, OptionalFieldT &>
+get_serialization_target_from_optional_field(OptionalFieldT &v) {
+  return v;
+}
+
 struct t_Int {
   void store(const mixed &tl_object) {
     f$store_int(f$intval(tl_object));
@@ -386,49 +428,8 @@ struct t_Maybe {
     }
   }
 
-  // Wrap into Optional that TL types which PhpType is:
-  //  1. int, double, string, bool
-  //  2. array<T>
-  // These types are not wrapped:
-  //  1. class_instance<T>
-  //  2. Optional<T>
-  //  3. mixed (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
-
-  template<typename S>
-  struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
-  };
-
-  template<typename S>
-  struct need_Optional<array<S>> : std::true_type {
-  };
-
   static constexpr bool inner_needs_Optional = need_Optional<typename T::PhpType>::value;
   using PhpType = typename std::conditional<inner_needs_Optional, Optional<typename T::PhpType>, typename T::PhpType>::type;
-
-  // C++11 if constexpr
-  template<typename S>
-  static std::enable_if_t<need_Optional<typename S::PhpType>::value, const typename S::PhpType &>
-  get_store_target(const PhpType &v) {
-    return v.val();
-  }
-
-  template<typename S>
-  static std::enable_if_t<!need_Optional<typename S::PhpType>::value, const typename S::PhpType &>
-  get_store_target(const PhpType &v) {
-    return v;
-  }
-
-  template<typename S>
-  static std::enable_if_t<need_Optional<typename S::PhpType>::value, typename S::PhpType &>
-  get_fetch_target(PhpType &v) {
-    return v.ref();
-  }
-
-  template<typename S>
-  static std::enable_if_t<!need_Optional<typename S::PhpType>::value, typename S::PhpType &>
-  get_fetch_target(PhpType &v) {
-    return v;
-  }
 
   static bool has_maybe_value(const PhpType &v) {
     return !v.is_null();
@@ -440,7 +441,7 @@ struct t_Maybe {
     } else {
       f$store_int(TL_MAYBE_TRUE);
       store_magic_if_not_bare(inner_magic);
-      elem_state.typed_store(get_store_target<T>(v));
+      elem_state.typed_store(get_serialization_target_from_optional_field<T, FieldAccessType::read>(v));
     }
   }
 
@@ -456,7 +457,7 @@ struct t_Maybe {
       }
       case TL_MAYBE_TRUE: {
         fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
-        elem_state.typed_fetch_to(get_fetch_target<T>(out));
+        elem_state.typed_fetch_to(get_serialization_target_from_optional_field<T, FieldAccessType::write>(out));
         break;
       }
       default: {
