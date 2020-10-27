@@ -309,8 +309,10 @@ if __name__ == "__main__":
         runner.add_test_group(
             name="make-engines",
             description="make engines",
-            cmd="CC='{engine_cc}' CXX='{engine_cxx}' make -C {engine_repo_root} -j{{jobs}} "
+            cmd="{env_vars} PATH=\"{kphp_repo_root}/objs/bin:$PATH\" CC='{engine_cc}' CXX='{engine_cxx}' make -C {engine_repo_root} -j{{jobs}} "
                 "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached memcached".format(
+                    env_vars=env_vars,
+                    kphp_repo_root=os.path.abspath(kphp_repo_root),
                     engine_repo_root=args.engine_repo,
                     engine_cc=engine_cc,
                     engine_cxx=engine_cxx
