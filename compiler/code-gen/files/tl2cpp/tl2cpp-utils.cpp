@@ -365,11 +365,21 @@ std::string get_php_runtime_type(const vk::tl::type *t) {
 
 std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, field_rw_type rw_type) {
   kphp_assert(!arg->name.empty());
-  std::string optional_inner_access;
-  if (arg->is_fields_mask_optional() && is_tl_type_wrapped_to_Optional(type_of(arg->type_expr))) {
-    optional_inner_access = rw_type == field_rw_type::READ ? ".val()" : ".ref()";
+  if (arg->is_fields_mask_optional()) {
+    if (auto type_var = arg->type_expr->as<vk::tl::type_var>()) {
+      std::string serializer_type_name = "T" + std::to_string(type_var->var_num);
+      std::string field_access_type = rw_type == field_rw_type::READ ? "read" : "write";
+      return fmt_format("get_serialization_target_from_optional_field<{}, FieldAccessType::{}>(tl_object->${})",
+                        serializer_type_name, field_access_type, arg->name);
+    } else {
+      vk::tl::type *type = type_of(arg->type_expr);
+      kphp_assert(type);
+      if (is_tl_type_wrapped_to_Optional(type)) {
+        return fmt_format("tl_object->${}.{}", arg->name, rw_type == field_rw_type::READ ? "val()" : "ref()");
+      }
+    }
   }
-  return fmt_format("tl_object->${}", arg->name) + optional_inner_access;
+  return fmt_format("tl_object->${}", arg->name);
 }
 
 bool is_type_dependent(const vk::tl::combinator *constructor, const vk::tl::tl_scheme *scheme) {
