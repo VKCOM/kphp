@@ -64,6 +64,10 @@ private:
     std::string inner_type_name;
 
     InnerParamTypeAccess() = default;
+
+    InnerParamTypeAccess(bool drop_class_instance, const string &inner_type_name) :
+        drop_class_instance(drop_class_instance),
+        inner_type_name(inner_type_name) {}
   };
 
   struct DeducingInfo {
@@ -74,6 +78,7 @@ private:
     DeducingInfo(std::string deduced_type, vector<TlDependentTypesUsings::InnerParamTypeAccess> path);
   };
 
+  vk::tl::type *tl_type;
   std::map<std::string, DeducingInfo> deduced_params;
   IncludesCollector dependencies;
   std::string specialization_suffix;
@@ -82,6 +87,7 @@ private:
   vk::tl::arg *cur_tl_arg{};
 
   void deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack);
+  bool check_deduction_result() const;
 };
 
 struct InterfaceDeclaration {

@@ -173,7 +173,7 @@ InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
   interface(interface) {
 }
 
-TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name) {
+TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name) : tl_type(tl_type) {
   int template_suf_start = php_tl_class_name.find("__");
   kphp_assert(template_suf_start != std::string::npos);
   specialization_suffix = php_tl_class_name.substr(template_suf_start);
@@ -182,12 +182,34 @@ TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std:
       if (arg->is_optional()) {
         continue;
       }
+      bool arg_wrapped_to_optional = false;
+      if (arg->is_fields_mask_optional()) {
+        if (arg->type_expr->as<vk::tl::type_var>()) {
+          // Can't deduce in cases like 'arg:fields_mask.1? t', where {t: Type}: don't know if 't' is wrapped to optional or not
+          continue;
+        }
+        auto *arg_type_expr = arg->type_expr->as<vk::tl::type_expr>();
+        kphp_assert(arg_type_expr); // .fields_mask.0?[int] is prohibited in TL
+        arg_wrapped_to_optional = tl2cpp::is_tl_type_wrapped_to_Optional(G->get_tl_classes().get_scheme()->get_type_by_magic(arg_type_expr->type_id));
+      }
       cur_tl_constructor = constructor.get();
       cur_tl_arg = arg.get();
-      std::vector<InnerParamTypeAccess> recursion_stack;
-      deduce_params_from_type_tree(arg->type_expr.get(), recursion_stack);
-      kphp_assert(recursion_stack.empty());
+      std::vector<InnerParamTypeAccess> path_to_inner;
+      if (arg_wrapped_to_optional) {
+        path_to_inner.emplace_back(InnerParamTypeAccess(false, "InnerType"));
+      }
+      deduce_params_from_type_tree(arg->type_expr.get(), path_to_inner);
+      if (arg_wrapped_to_optional) {
+        path_to_inner.pop_back();
+      }
+      kphp_assert(path_to_inner.empty());
     }
+  }
+  if (!check_deduction_result()) {
+    kphp_error(false,
+               fmt_format("Couldn't deduce generic type-parameters for TL type '{}'.\n"
+                             "Each type variable in this type must be used at least once "
+                             "NOT like '... Maybe t ... ' and '<arg> :fields_mask.<n>? t'", tl_type->name));
   }
 }
 
@@ -242,6 +264,10 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           inner_access.drop_class_instance = false;
           inner_access.inner_type_name = "ValueType";
         } else if (parent_tl_type->name == "Maybe") {
+          if (casted_child->as<vk::tl::type_var>() || casted_child->as<vk::tl::type_array>()) {
+            // Can't deduce in cases like 'Maybe t', where {t: Type}: don't know if 't' is wrapped to optional or not
+            continue;
+          }
           auto child_type_expr = dynamic_cast<vk::tl::type_expr *>(casted_child);
           kphp_assert(child_type_expr);
           vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
@@ -289,6 +315,13 @@ void TlDependentTypesUsings::compile(CodeGenerator &W) const {
 
 void TlDependentTypesUsings::compile_dependencies(CodeGenerator &W) {
   W << dependencies << NL;
+}
+
+bool TlDependentTypesUsings::check_deduction_result() const {
+  const auto &args = tl_type->constructors.front()->args;
+  return std::all_of(args.begin(), args.end(), [&](const auto &arg) {
+      return !arg->is_type() || deduced_params.count(arg->name);
+  });
 }
 
 std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl_usings() const {
