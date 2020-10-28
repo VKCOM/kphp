@@ -106,7 +106,7 @@ public:
   KphpOption<bool> composer_no_dev;
 
   KphpOption<bool> force_make;
-  KphpOption<bool> use_make;
+  KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;
   KphpOption<uint64_t> threads_count;
   KphpOption<uint64_t> globals_split_count;

@@ -323,7 +323,7 @@ bool compiler_execute(CompilerSettings *settings) {
     }
   }
 
-  if (G->settings().use_make.get()) {
+  if (!G->settings().no_make.get()) {
     std::cerr << "\nStarting make...\n";
     run_make();
   }

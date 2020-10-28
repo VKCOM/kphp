@@ -27,8 +27,8 @@ _DEFAULT_KPHP_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.realpa
 _KPHP_REPO = os.environ.get("KPHP_TESTS_KPHP_REPO", _DEFAULT_KPHP_REPO)
 
 
-def search_kphp_sh():
-    return _check_file("kphp.sh", _KPHP_REPO, _check_bin)
+def search_kphp2cpp():
+    return _check_file("objs/bin/kphp2cpp", _KPHP_REPO, _check_bin)
 
 
 def search_engine_bin(engine_name):

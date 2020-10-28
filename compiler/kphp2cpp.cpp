@@ -4,6 +4,8 @@
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/options.h"
+#include "common/sanitizer.h"
+#include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "common/version-string.h"
 #include "common/wrappers/string_view.h"
@@ -11,6 +13,7 @@
 #include "compiler/compiler.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/threading/tls.h"
+#include "compiler/utils/string-utils.h"
 
 namespace {
 
@@ -140,18 +143,56 @@ private:
   static constexpr int32_t version_and_first_option_id_{2000};
 };
 
-std::string get_default_kphp_path() {
+std::string get_default_kphp_path() noexcept {
 #ifdef DEFAULT_KPHP_PATH
-  return DEFAULT_KPHP_PATH;
+  return as_dir(DEFAULT_KPHP_PATH);
 #endif
   auto *home = getenv("HOME");
   assert(home);
-  return std::string{home} + "/kphp";
+  return std::string{home} + "/kphp/";
+}
+
+std::string get_default_cxx() noexcept {
+#ifdef __clang__
+  return "clang++";
+#else
+  return "g++";
+#endif
+}
+
+std::string with_extra_flag(std::string flags) {
+#ifdef KPHP_HAS_NO_PIE
+  if (strlen(KPHP_HAS_NO_PIE)) {
+    flags.append(" " KPHP_HAS_NO_PIE);
+  }
+#endif
+#if ASAN_ENABLED
+  flags.append(" -fsanitize=address");
+#endif
+#if USAN_ENABLED
+  flags.append(" -fsanitize=undefined -fno-sanitize-recover=undefined");
+#endif
+  return flags;
+}
+
+std::string get_default_extra_cxxflags() noexcept {
+  return with_extra_flag("-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
+}
+
+std::string get_default_extra_ldflags() noexcept {
+  return with_extra_flag("-L${KPHP_PATH}/objs/flex -ggdb");
 }
 
 } // namespace
 
 int main(int argc, char *argv[]) {
+#if ASAN_ENABLED
+  // asan adds redzones to the stack variables, which increases the footprint,
+  // therefore increase the system limit on the main thread stack
+  constexpr int asan_stack_limit = 81920;
+  raise_stack_rlimit(asan_stack_limit);
+#endif
+
   init_version_string("kphp2cpp");
   set_debug_handlers();
 
@@ -175,15 +216,15 @@ int main(int argc, char *argv[]) {
   parser.add("Directory where php files will be searched", settings->includes,
              'I', "include-dir", "KPHP_INCLUDE_DIR");
   parser.add("Destination directory", settings->dest_dir,
-             'd', "destination-directory", "KPHP_DEST_DIR", "${KPHP_PATH}/tests/kphp_tmp/default/");
+             'd', "destination-directory", "KPHP_DEST_DIR", "./kphp_out/");
   parser.add("Path for the output binary", settings->user_binary_path,
              'o', "output-file", "KPHP_USER_BINARY_PATH");
   parser.add("Directory for placing out static lib and header. Compatible only with lib mode", settings->static_lib_out_dir,
              'O', "output-lib-dir", "KPHP_OUT_LIB_DIR");
   parser.add("Force make. Old object files and binary will be removed", settings->force_make,
              'F', "force-make", "KPHP_FORCE_MAKE");
-  parser.add("Make the output binary", settings->use_make,
-             'm', "make", "KPHP_USE_MAKE");
+  parser.add("Code generation only, without making an output binary", settings->no_make,
+             "no-make", "KPHP_NO_MAKE");
   parser.add("Processes number for the compilation", settings->jobs_count,
              'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Threads number for the transpilation", settings->threads_count,
@@ -213,11 +254,11 @@ int main(int argc, char *argv[]) {
   parser.add("Specify the compiled php code version", settings->php_code_version,
              "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
   parser.add("C++ compiler for building the output binary", settings->cxx,
-             "cxx", "KPHP_CXX", "g++");
+             "cxx", "KPHP_CXX", get_default_cxx());
   parser.add("Extra C++ compiler flags for building the output binary", settings->extra_cxx_flags,
-             "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", "-Os -ggdb -march=core2 -mfpmath=sse -mssse3");
+             "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", get_default_extra_cxxflags());
   parser.add("Extra linker flags for building the output binary", settings->extra_ld_flags,
-             "extra-linker-flags", "KPHP_EXTRA_LDFLAGS", "-ggdb");
+             "extra-linker-flags", "KPHP_EXTRA_LDFLAGS", get_default_extra_ldflags());
   parser.add("C++ compiler debug level for building the output binary", settings->debug_level,
              "debug-level", "KPHP_DEBUG_LEVEL");
   parser.add("Archive creator for building the output binary", settings->archive_creator,

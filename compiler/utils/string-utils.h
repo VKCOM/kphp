@@ -17,6 +17,23 @@ inline std::string get_full_path(const std::string &file_name) {
   }
 }
 
+inline std::string as_dir(std::string path) noexcept {
+  if (path.empty()) {
+    return path;
+  }
+  auto full_path = get_full_path(path);
+  if (!full_path.empty()) {
+    path = std::move(full_path);
+  }
+  if (path.back() != '/') {
+    path += "/";
+  }
+  if (path.front() != '/') {
+    path.insert(0, "./");
+  }
+  return path;
+}
+
 static inline int is_alpha(int c) {
   return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }

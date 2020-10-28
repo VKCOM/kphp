@@ -5,7 +5,7 @@ import subprocess
 import shutil
 import multiprocessing
 
-from .file_utils import search_kphp_sh, error_can_be_ignored, can_ignore_sanitizer_log, make_distcc_env
+from .file_utils import search_kphp2cpp, error_can_be_ignored, can_ignore_sanitizer_log, make_distcc_env
 
 
 class Artifact:
@@ -15,13 +15,13 @@ class Artifact:
 
 
 class KphpBuilder:
-    def __init__(self, php_script_path, artifacts_dir, working_dir, kphp_path=None, distcc_hosts=None):
+    def __init__(self, php_script_path, artifacts_dir, working_dir, distcc_hosts=None):
         self.artifacts = {}
         self._kphp_build_stderr_artifact = None
         self._kphp_build_sanitizer_log_artifact = None
         self._artifacts_dir = artifacts_dir
 
-        self._kphp_path = os.path.abspath(kphp_path or search_kphp_sh())
+        self._kphp_path = os.path.abspath(search_kphp2cpp())
         self._test_file_path = os.path.abspath(php_script_path)
         self._working_dir = working_dir
         self._include_dirs = [os.path.dirname(self._test_file_path)]
@@ -117,19 +117,21 @@ class KphpBuilder:
         env.setdefault("KPHP_THREADS_COUNT", "3")
         env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
         env.setdefault("KPHP_PROFILER", "2")
-        env.setdefault("GDB_OPTION", "-g0")
         env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
-        env.setdefault("KPHP_EXTRA_LDFLAGS", "-lpcre -lre2 -lyaml-cpp -lh3 -lssl -lz -lzstd -llzma")
+        env.setdefault("KPHP_INCLUDE_DIR", ":".join(self._include_dirs))
+        env.setdefault("KPHP_DEST_DIR", os.path.abspath(self._kphp_build_tmp_dir))
+        env.setdefault("KPHP_WARNINGS_LEVEL", "2")
         if self._distcc_hosts:
             env.setdefault("KPHP_JOBS_COUNT", "8")
+            # TODO what about clang?
+            env.setdefault("KPHP_CXX", "distcc g++")
             env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
         else:
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
-        include = " ".join("-I {}".format(include_dir) for include_dir in self._include_dirs)
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
-            [self._kphp_path, include, "-d", os.path.abspath(self._kphp_build_tmp_dir), self._test_file_path],
+            [self._kphp_path, self._test_file_path],
             cwd=self._kphp_build_tmp_dir,
             env=env,
             stdout=subprocess.PIPE,

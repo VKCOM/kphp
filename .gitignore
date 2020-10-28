@@ -11,3 +11,5 @@ build
 *.iml
 /cmake-build-*
 
+dev
+kphp

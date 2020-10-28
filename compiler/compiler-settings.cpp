@@ -9,6 +9,7 @@
 #include "common/algorithms/find.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
+#include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/to_array.h"
 
 #include "compiler/stage.h"
@@ -96,22 +97,6 @@ void KphpOption<std::vector<std::string>>::parse_arg_value() {
 
 namespace {
 
-void as_dir(std::string &path) noexcept {
-  if (path.empty()) {
-    return;
-  }
-  auto full_path = get_full_path(path);
-  if (!full_path.empty()) {
-    path = std::move(full_path);
-  }
-  if (path.back() != '/') {
-    path += "/";
-  }
-  if (path.front() != '/') {
-    path.insert(0, "./");
-  }
-}
-
 bool contains_lib(vk::string_view ld_flags, vk::string_view libname) noexcept {
   const std::string static_lib_name = "lib" + libname + ".a";
   if (vk::contains(ld_flags, static_lib_name)) {
@@ -135,10 +120,19 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, const char *
   }
 }
 
+void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
+  if (!contains_lib(ld_flags, "curl")) {
+    // TODO make it as an option?
+    const std::string curl_dir = "/opt/curl7600";
+    cxx_flags += " -I" + curl_dir + "/include/";
+    ld_flags += " " + curl_dir + "/lib/libcurl.a";
+  }
+}
+
 } // namespace
 
 void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexcept {
-  as_dir(path_option.value_);
+  path_option.value_ = as_dir(path_option.value_);
 }
 
 bool CompilerSettings::is_static_lib_mode() const {
@@ -201,7 +195,7 @@ void CompilerSettings::init() {
     if (static_lib_name.get().empty()) {
       throw std::runtime_error{"Empty static lib name"};
     }
-    as_dir(lib_dir);
+    lib_dir = as_dir(lib_dir);
     includes.value_.emplace_back(lib_dir + "php/");
     if (static_lib_out_dir.get().empty()) {
       static_lib_out_dir.value_ = lib_dir + "lib/";
@@ -227,7 +221,7 @@ void CompilerSettings::init() {
   }
 
   for (std::string &include : includes.value_) {
-    as_dir(include);
+    include = as_dir(include);
   }
 
   if (colorize.get() == "auto") {
@@ -277,9 +271,11 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_ld_flags.value_);
 
-  auto external_libs = {"pthread", "rt", "crypto", "m"};
-  auto external_static_libs = {"vk-flex-data", "pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "lzma"};
   ld_flags.value_ = extra_ld_flags.get();
+  append_curl(cxx_flags.value_, ld_flags.value_);
+
+  auto external_libs = {"pthread", "rt", "crypto", "m"};
+  auto external_static_libs = {"vk-flex-data", "pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2"};
   append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
 
@@ -294,6 +290,7 @@ void CompilerSettings::init() {
   kphp_assert (dir_pos != std::string::npos);
   base_dir.value_ = first_main_file.substr(0, dir_pos + 1);
 
+  mkdir_recursive(dest_dir.get().c_str(), 0777);
   option_as_dir(dest_dir);
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
