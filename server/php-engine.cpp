@@ -2595,9 +2595,14 @@ void parse_main_args_till_option(int argc, char *argv[], const char *till_option
   }
 }
 
+DEPRECATED_OPTION("use-unix", no_argument);
+DEPRECATED_OPTION_SHORT("json-log", 'j', no_argument);
+DEPRECATED_OPTION_SHORT("crc32c", 'C', no_argument);
+DEPRECATED_OPTION_SHORT("tl-schema", 'T', required_argument);
+
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
-  option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOSITY, OPT_ENGINE_CUSTOM, OPT_ARRAY_END};
+  option_section_t sections[] = {OPT_GENERIC, OPT_NETWORK, OPT_RPC, OPT_VERBOSITY, OPT_ENGINE_CUSTOM, OPT_DEPRECATED, OPT_ARRAY_END};
   init_parse_options(sections);
 
   parse_option("log", required_argument, 'l', "set log name. %% can be used for log-file per worker");
