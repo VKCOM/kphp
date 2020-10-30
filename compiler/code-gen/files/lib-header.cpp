@@ -44,7 +44,7 @@ void LibHeaderH::compile(CodeGenerator &W) const {
   W << OpenFile(LibData::headers_tmp_dir() + exported_function->header_name, "", false);
 
   W << "#pragma once" << NL;
-  W << ExternInclude("php_functions.h") << NL;
+  W << ExternInclude("runtime-headers.h") << NL;
 
   W << OpenNamespace()
     << FunctionDeclaration(exported_function, true, gen_out_style::cpp) << ";" << NL

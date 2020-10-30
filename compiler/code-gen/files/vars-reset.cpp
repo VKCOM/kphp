@@ -93,13 +93,13 @@ void GlobalVarsReset::compile(CodeGenerator &W) const {
 
   for (int i = 0; i < used_vars.size(); i++) {
     W << OpenFile(src_names[i], "o_vars_reset", false);
-    W << ExternInclude("php_functions.h");
+    W << ExternInclude("runtime-headers.h");
     compile_part(main_func, used_vars[i], i, W);
     W << CloseFile();
   }
 
   W << OpenFile(vars_reset_src_prefix + main_func->src_name, "", false);
-  W << ExternInclude("php_functions.h");
+  W << ExternInclude("runtime-headers.h");
   compile_func(main_func, used_vars.size(), W);
   W << CloseFile();
 }

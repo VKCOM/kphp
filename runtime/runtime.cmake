@@ -84,9 +84,24 @@ set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OB
 
 set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static pcre ssl /opt/curl7600/lib/libcurl.a -l:libnghttp2.a)
 
+file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
+     RELATIVE ${BASE_DIR}
+     CONFIGURE_DEPENDS
+     "${BASE_DIR}/runtime/*.h")
+list(TRANSFORM KPHP_RUNTIME_ALL_HEADERS REPLACE "^(.+)$" [[#include "\1"]])
+list(JOIN KPHP_RUNTIME_ALL_HEADERS "\n" MERGED_RUNTIME_HEADERS)
+file(WRITE ${AUTO_DIR}/runtime/runtime-headers.h "\
+#ifndef MERGED_RUNTIME_HEADERS_H
+#define MERGED_RUNTIME_HEADERS_H
+
+${MERGED_RUNTIME_HEADERS}
+
+#endif
+")
+
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 [[
-#include "php_functions.h"
+#include "auto/runtime/runtime-headers.h"
 #include "server/php-script.h"
 ]])
 

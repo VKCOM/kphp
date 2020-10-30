@@ -17,7 +17,7 @@ TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vect
 void TypeTagger::compile(CodeGenerator &W) const {
   W << OpenFile("_tagger.cpp");
 
-  W << ExternInclude("php_functions.h");
+  W << ExternInclude("runtime-headers.h");
 
   // Be care, do not remove spaces from these types
   // TODO fix it?

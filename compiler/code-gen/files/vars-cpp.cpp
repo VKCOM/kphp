@@ -71,7 +71,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
   std::string file_name = "vars" + std::to_string(part) + ".cpp";
   W << OpenFile(file_name, "o_vars_" + std::to_string(part / 100), false);
  
-  W << ExternInclude("php_functions.h");
+  W << ExternInclude("runtime-headers.h");
 
   std::vector<VarPtr> const_raw_string_vars;
   std::vector<VarPtr> const_raw_array_vars;

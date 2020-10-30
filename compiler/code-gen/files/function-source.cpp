@@ -35,7 +35,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
     return;
   }
   W << OpenFile(function->src_name, function->subdir);
-  W << ExternInclude("php_functions.h");
+  W << ExternInclude("runtime-headers.h");
   W << Include(function->header_full_name);
 
   stage::set_function(function);

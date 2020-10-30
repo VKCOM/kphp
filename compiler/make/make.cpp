@@ -178,7 +178,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSe
   gch_dir.append(settings.runtime_sha256.get()).append(1, '/');
   gch_dir.append(settings.cxx_flags_sha256.get()).append(1, '/');
 
-  const std::string header_filename = "php_functions.h";
+  const std::string header_filename = "runtime-headers.h";
   const std::string gch_filename = header_filename + ".gch";
   const std::string gch_path = gch_dir + gch_filename;
   if (access(gch_path.c_str(), F_OK) != -1) {
@@ -186,7 +186,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSe
   }
 
   MakeSetup make{stats_file};
-  File php_functions_h(settings.kphp_src_path.get() + header_filename);
+  File php_functions_h(settings.kphp_src_path.get() + "/objs/generated/auto/runtime/" + header_filename);
   kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});

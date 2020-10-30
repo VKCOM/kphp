@@ -164,7 +164,7 @@ InitScriptsCpp::InitScriptsCpp(vector<SrcFilePtr> &&main_file_ids, vector<Functi
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
-  W << ExternInclude("php_functions.h") <<
+  W << ExternInclude("runtime-headers.h") <<
     ExternInclude("server/php-script.h");
 
   for (auto i : main_file_ids) {

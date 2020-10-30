@@ -54,7 +54,7 @@ void Module::compile_tl_h_file(CodeGenerator &W) const {
 
 void Module::compile_tl_cpp_file(CodeGenerator &W) const {
   W << OpenFile(name + ".cpp", "tl", false);
-  W << ExternInclude("php_functions.h");
+  W << ExternInclude("runtime-headers.h");
   W << Include("tl/" + name + ".h") << NL;
   W << cpp_includes;
 

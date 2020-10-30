@@ -14,7 +14,7 @@ FunctionH::FunctionH(FunctionPtr function) :
 
 void FunctionH::compile(CodeGenerator &W) const {
   W << OpenFile(function->header_name, function->subdir);
-  W << "#pragma once" << NL << ExternInclude("php_functions.h");
+  W << "#pragma once" << NL << ExternInclude("runtime-headers.h");
 
   IncludesCollector includes;
   includes.add_function_signature_depends(function);
