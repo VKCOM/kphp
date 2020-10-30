@@ -2,7 +2,7 @@
 
 #include "common/tl/constants/common.h"
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 
 namespace tl2cpp {
 const std::string T_TYPE = "Type";

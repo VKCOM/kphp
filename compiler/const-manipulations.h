@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
 #include "compiler/gentree.h"

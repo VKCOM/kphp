@@ -6,7 +6,7 @@
 
 #include "common/wrappers/likely.h"
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 #include "runtime/declarations.h"
 #include "runtime/kphp_type_traits.h"
 #include "runtime/optional.h"

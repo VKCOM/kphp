@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 
 bool php_is_int_wrapper(const std::string &s) {
   return php_is_int(s.c_str(), s.size());

@@ -8,7 +8,7 @@
 #include "common/algorithms/contains.h"
 #include "common/termformat/termformat.h"
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/data/class-data.h"
 #include "compiler/pipes/collect-main-edges.h"

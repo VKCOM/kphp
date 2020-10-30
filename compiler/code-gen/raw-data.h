@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-#include "common-php-functions.h"
+#include "common/php-functions.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/vertex.h"
