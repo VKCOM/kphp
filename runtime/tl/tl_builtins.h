@@ -59,7 +59,7 @@ inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key
 
 inline void store_magic_if_not_bare(unsigned int inner_magic) {
   if (inner_magic) {
-    f$store_int(inner_magic);
+    store_int(inner_magic);
   }
 }
 
@@ -247,7 +247,7 @@ struct t_String {
 
 struct t_Bool {
   void store(const mixed &tl_object) {
-    f$store_int(tl_object.to_bool() ? TL_BOOL_TRUE : TL_BOOL_FALSE);
+    store_int(tl_object.to_bool() ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
   bool fetch() {
@@ -268,7 +268,7 @@ struct t_Bool {
   using PhpType = bool;
 
   void typed_store(const PhpType &v) {
-    f$store_int(v ? TL_BOOL_TRUE : TL_BOOL_FALSE);
+    store_int(v ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
   void typed_fetch_to(PhpType &out) {
@@ -399,9 +399,9 @@ struct t_Maybe {
   void store(const mixed &v) {
     const string &name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
     if (name == tl_str_resultFalse) {
-      f$store_int(TL_MAYBE_FALSE);
+      store_int(TL_MAYBE_FALSE);
     } else if (name == tl_str_resultTrue) {
-      f$store_int(TL_MAYBE_TRUE);
+      store_int(TL_MAYBE_TRUE);
       store_magic_if_not_bare(inner_magic);
       elem_state.store(tl_arr_get(v, tl_str_result, 1, tl_str_result_hash));
     } else {
@@ -437,9 +437,9 @@ struct t_Maybe {
 
   void typed_store(const PhpType &v) {
     if (!has_maybe_value(v)) {
-      f$store_int(TL_MAYBE_FALSE);
+      store_int(TL_MAYBE_FALSE);
     } else {
-      f$store_int(TL_MAYBE_TRUE);
+      store_int(TL_MAYBE_TRUE);
       store_magic_if_not_bare(inner_magic);
       elem_state.typed_store(get_serialization_target_from_optional_field<T, FieldAccessType::read>(v));
     }

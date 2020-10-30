@@ -739,7 +739,7 @@ mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &ke
   bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int(fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
+  store_int(fake ? TL_ENGINE_MC_GET_QUERY : MEMCACHE_GET);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   int64_t request_id = rpc_send(conn, timeout, is_immediate);
@@ -802,7 +802,7 @@ bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, con
   bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int(op);
+  store_int(op);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
   f$store_int(flags);
   f$store_int(expire);
@@ -847,7 +847,7 @@ mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, 
   bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int(op);
+  store_int(op);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
   f$store_long(v);
 
@@ -890,7 +890,7 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
   bool is_immediate = mc_is_immediate_query(real_key);
 
   f$rpc_clean();
-  f$store_int(fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
+  store_int(fake ? TL_ENGINE_MC_DELETE_QUERY : MEMCACHE_DELETE);
   store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
   int64_t request_id = rpc_send(conn, timeout, is_immediate);

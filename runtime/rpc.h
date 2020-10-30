@@ -15,7 +15,6 @@ extern const string tl_str_result;
 extern const int64_t tl_str_underscore_hash;
 extern const int64_t tl_str_result_hash;
 
-extern const char *new_tl_current_function_name;
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
@@ -132,6 +131,8 @@ bool f$store_raw(const string &data);
 
 void f$store_raw_vector_double(const array<double> &vector);
 
+bool is_int32_overflow(int64_t v);
+bool store_int(int32_t v);
 bool f$store_int(int64_t v);
 
 bool f$store_UInt(UInt v);

@@ -486,7 +486,7 @@ void f$store_finish_gzip_pack(int64_t threshold) {
 
       if (compressed->size() + 2 * sizeof(int) < answer_size) {
         data_buf.set_pos(rpc_pack_from);
-        f$store_int(GZIP_PACKED);
+        store_int(GZIP_PACKED);
         store_string(compressed->buffer(), compressed->size());
       }
     }
@@ -497,7 +497,7 @@ void f$store_finish_gzip_pack(int64_t threshold) {
 
 template<class T>
 inline bool store_raw(T v) {
-  data_buf.append((char *)&v, sizeof(v));
+  data_buf.append(reinterpret_cast<char *>(&v), sizeof(v));
   return true;
 }
 
@@ -517,11 +517,11 @@ void f$store_raw_vector_double(const array<double> &vector) {
 
 bool store_header(long long cluster_id, int64_t flags) {
   if (flags) {
-    f$store_int(TL_RPC_DEST_ACTOR_FLAGS);
+    store_int(TL_RPC_DEST_ACTOR_FLAGS);
     store_long(cluster_id);
     f$store_int(flags);
   } else {
-    f$store_int(TL_RPC_DEST_ACTOR);
+    store_int(TL_RPC_DEST_ACTOR);
     store_long(cluster_id);
   }
   return true;
@@ -544,15 +544,24 @@ bool f$store_error(int64_t error_code, const string &error_text) {
   return store_error(error_code, error_text.c_str(), (int)error_text.size());
 }
 
-bool f$store_int(int64_t v) {
-  const auto v32 = static_cast<int32_t>(v);
-  // this function is used for int and 'magic' storing,
+bool is_int32_overflow(int64_t v) {
+  // f$store_int function is used for int and 'magic' storing,
   // 'magic' can he assigned via hex literals which may set the 32nd bit,
   // this is why we additionally check for the uint32_t here
-  if (unlikely(vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)}))) {
+  const auto v32 = static_cast<int32_t>(v);
+  return vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)});
+}
+
+bool store_int(int32_t v) {
+  return store_raw(v);
+}
+
+bool f$store_int(int64_t v) {
+  const auto v32 = static_cast<int32_t>(v);
+  if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%ld', the value will be casted to '%d'", v, v32);
   }
-  return store_raw(v32);
+  return store_int(v32);
 }
 
 bool f$store_UInt(UInt v) {
@@ -679,11 +688,11 @@ bool f$store_finish() {
 
 bool f$rpc_clean(bool is_error) {
   data_buf.clean();
-  f$store_int(-1); //reserve for TL_RPC_DEST_ACTOR
+  store_int(-1); //reserve for TL_RPC_DEST_ACTOR
   store_long(-1); //reserve for actor_id
-  f$store_int(-1); //reserve for length
-  f$store_int(-1); //reserve for num
-  f$store_int(-is_error); //reserve for type
+  store_int(-1); //reserve for length
+  store_int(-1); //reserve for num
+  store_int(-is_error); //reserve for type
   store_long(-1); //reserve for req_id
 
   rpc_pack_from = -1;
@@ -711,7 +720,7 @@ bool rpc_store(bool is_error) {
     f$store_finish_gzip_pack(rpc_pack_threshold);
   }
 
-  f$store_int(-1); // reserve for crc32
+  store_int(-1); // reserve for crc32
   rpc_stored = true;
   rpc_answer(data_buf.c_str() + data_buf_header_reserved_size, (int)(data_buf.size() - data_buf_header_reserved_size));
   return true;
@@ -839,7 +848,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
     timeout = conn.get()->timeout_ms * 0.001;
   }
 
-  f$store_int(-1); // reserve for crc32
+  store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
   int reserved = data_buf_header_reserved_size;
@@ -1247,8 +1256,8 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) {
   rpc_query.alloc();
   rpc_query.get()->tl_function_name = fun_name;
   CurrentProcessingQuery::get().set_current_tl_function(fun_name);
-  const auto &storer_kv = tl_storers_ht.get_value(fun_name);
-  rpc_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(storer_kv(tl_object));
+  const auto &untyped_storer = tl_storers_ht.get_value(fun_name);
+  rpc_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
   CurrentProcessingQuery::get().reset();
   return rpc_query;
 }

@@ -253,7 +253,7 @@ Optional<array<mixed>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &
     const bool is_immediate = mc_is_immediate_query(real_key);
 
     f$rpc_clean();
-    f$store_int(fake ? ENGINE_MC_GET_QUERY : MEMCACHE_GET);
+    store_int(fake ? ENGINE_MC_GET_QUERY : MEMCACHE_GET);
     store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
 
     size_t current_sent_size = real_key.size() + 32;//estimate
