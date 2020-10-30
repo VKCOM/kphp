@@ -31,6 +31,8 @@ const string tl_str_result("result");
 const int64_t tl_str_underscore_hash = string_hash("_", 1);
 const int64_t tl_str_result_hash = string_hash("result", 6);
 
+bool fail_rpc_on_int32_overflow = false;
+
 static const string STR_ERROR("__error", 7);
 static const string STR_ERROR_CODE("__error_code", 12);
 
@@ -542,6 +544,11 @@ bool store_error(int64_t error_code, const char *error_text, int error_text_len)
 
 bool f$store_error(int64_t error_code, const string &error_text) {
   return store_error(error_code, error_text.c_str(), (int)error_text.size());
+}
+
+bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc) {
+  fail_rpc_on_int32_overflow = fail_rpc;
+  return true;
 }
 
 bool is_int32_overflow(int64_t v) {
@@ -1553,6 +1560,7 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_data_copy);
   hard_reset_var(rpc_data_copy_backup);
   hard_reset_var(rpc_request_need_timer);
+  fail_rpc_on_int32_overflow = false;
 }
 
 void init_rpc_lib() {

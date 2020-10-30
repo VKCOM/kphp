@@ -43,6 +43,10 @@ public:
   void raise_fetching_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
   void raise_storing_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
 
+  const string &get_current_tl_function_name() const {
+    return current_tl_function_name_;
+  }
+
 private:
   string current_tl_function_name_;
 };

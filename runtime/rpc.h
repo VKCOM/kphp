@@ -15,6 +15,7 @@ extern const string tl_str_result;
 extern const int64_t tl_str_underscore_hash;
 extern const int64_t tl_str_result_hash;
 
+extern bool fail_rpc_on_int32_overflow;
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
@@ -130,6 +131,8 @@ bool f$store_error(int64_t error_code, const string &error_text);
 bool f$store_raw(const string &data);
 
 void f$store_raw_vector_double(const array<double> &vector);
+
+bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc); // TODO: remove when all RPC errors will be fixed
 
 bool is_int32_overflow(int64_t v);
 bool store_int(int32_t v);

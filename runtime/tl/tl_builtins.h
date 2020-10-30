@@ -136,7 +136,8 @@ get_serialization_target_from_optional_field(OptionalFieldT &v) {
 
 struct t_Int {
   void store(const mixed &tl_object) {
-    f$store_int(f$intval(tl_object));
+    int32_t v32 = prepare_int_for_storing(f$intval(tl_object));
+    store_int(v32);
   }
 
   int fetch() {
@@ -147,12 +148,26 @@ struct t_Int {
   using PhpType = int64_t;
 
   void typed_store(const PhpType &v) {
-    f$store_int(f$safe_intval(v));
+    int32_t v32 = prepare_int_for_storing(v);
+    store_int(v32);
   }
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = rpc_fetch_int();
+  }
+
+  static int32_t prepare_int_for_storing(int64_t v) {
+    auto v32 = static_cast<int32_t>(v);
+    if (unlikely(is_int32_overflow(v))) {
+      if (fail_rpc_on_int32_overflow) {
+        CurrentProcessingQuery::get().raise_storing_error("Got int32 overflow with value '%ld'. Serialization will fail.", v);
+      } else {
+        php_warning("Got int32 overflow on storing %s: the value '%ld' will be casted to '%d'. Serialization will succeed.",
+                    CurrentProcessingQuery::get().get_current_tl_function_name().c_str(), v, v32);
+      }
+    }
+    return v32;
   }
 };
 
