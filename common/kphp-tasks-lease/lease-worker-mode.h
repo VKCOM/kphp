@@ -3,7 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "common/wrappers/optional.h"
+namespace tl {
+    template <class T> class optional;
+}
+namespace vk {
+    using ::tl::optional;
+}
 
 // This mode is set from YAML config on KPHP server startup
 // and sent from KPHP to tasks in kphp.readyV2
@@ -32,6 +37,4 @@ inline const char *lease_worker_mode_str(LeaseWorkerMode mode) {
   return "unreachable";
 }
 
-inline LeaseWorkerMode get_lease_mode(const vk::optional<QueueTypesLeaseWorkerMode> &mode) {
-  return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
-}
+LeaseWorkerMode get_lease_mode(const vk::optional<QueueTypesLeaseWorkerMode> &mode);

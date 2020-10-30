@@ -4,6 +4,7 @@
 #include "common/tl/fetch.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
+#include "common/wrappers/optional.h"
 
 QueueTypesLeaseWorkerMode QueueTypesLeaseWorkerMode::tl_fetch() {
   QueueTypesLeaseWorkerMode mode;
@@ -21,4 +22,8 @@ void QueueTypesLeaseWorkerMode::tl_store() const {
     vk::tl::store_vector(queue_id);
   }
   vk::tl::store_vector(type_names);
+}
+
+LeaseWorkerMode get_lease_mode(const vk::optional<QueueTypesLeaseWorkerMode> &mode) {
+    return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
 }

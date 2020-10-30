@@ -4,6 +4,7 @@
 
 #include "common/kprintf.h"
 #include "common/tl/constants/kphp.h"
+#include "common/wrappers/optional.h"
 
 #include "server/php-engine-vars.h"
 

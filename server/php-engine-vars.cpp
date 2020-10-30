@@ -3,6 +3,8 @@
 #include <limits.h>
 #include <stdlib.h>
 
+#include "common/wrappers/optional.h"
+
 /***
  DEFAULT GLOBAL VARIABLES
  ***/
