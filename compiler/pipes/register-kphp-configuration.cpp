@@ -48,6 +48,8 @@ void RegisterKphpConfiguration::on_start() {
         register_confdata_predefined_wildcard(opt_pair->value());
       } else if (*opt_key == mysql_db_name_key_) {
         register_mysql_db_name(opt_pair->value());
+      } else if (*opt_key == net_dc_mask_key_) {
+        register_net_dc_mask(opt_pair->value());
       } else {
         kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
                                  configuration_class_name_, runtime_options_name_, *opt_key));
@@ -90,4 +92,18 @@ void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const no
 
   G->add_kphp_runtime_opt(static_cast<std::string>(mysql_db_name_key_));
   G->add_kphp_runtime_opt(*opt_value);
+}
+
+void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noexcept {
+  auto dc_masks = value.try_as<op_array>();
+  kphp_error_return(dc_masks, fmt_format("{}[{}] must be a constexpr array",
+                                         runtime_options_name_, net_dc_mask_key_));
+  for (const auto &dc_mask_v : dc_masks->args()) {
+    const auto *index_ipv4_subnet = GenTree::get_constexpr_string(dc_mask_v);
+    kphp_error_return(index_ipv4_subnet && !index_ipv4_subnet->empty(),
+                      fmt_format("{}[{}][] must be non empty constexpr string",
+                                 runtime_options_name_, net_dc_mask_key_));
+    G->add_kphp_runtime_opt(static_cast<std::string>(net_dc_mask_key_));
+    G->add_kphp_runtime_opt(*index_ipv4_subnet);
+  }
 }

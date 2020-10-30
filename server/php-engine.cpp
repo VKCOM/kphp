@@ -33,6 +33,7 @@
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
+#include "net/net-dc.h"
 #include "net/net-http-server.h"
 #include "net/net-memcache-client.h"
 #include "net/net-memcache-server.h"
@@ -2574,6 +2575,13 @@ int main_args_handler(int i) {
       kprintf("couldn't set mysql-db-name '%s'\n", optarg);
       return -1;
     }
+    case 2012: {
+      if (add_dc_by_ipv4_config(optarg)) {    // can appear multiple times, each adding a new dc config
+        return 0;
+      }
+      kprintf("couldn't set net-dc-mask '%s'\n", optarg);
+      return -1;
+    }
 
     default:
       return -1;
@@ -2638,6 +2646,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
   parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
+  parse_option("net-dc-mask", required_argument, 2012, "a string formatted like '8=1.2.3.4/12' to detect a datacenter by ipv4");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
