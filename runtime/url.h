@@ -7,14 +7,6 @@ Optional<string> f$base64_decode(const string &s, bool strict = false);
 
 string f$base64_encode(const string &s);
 
-ULong f$base64url_decode_ulong(const string &s);
-
-string f$base64url_encode_ulong(ULong val);
-
-ULong f$base64url_decode_ulong_NN(const string &s);
-
-string f$base64url_encode_ulong_NN(ULong val);
-
 constexpr int64_t PHP_QUERY_RFC1738 = 1;
 constexpr int64_t PHP_QUERY_RFC3986 = 2;
 extern string AMPERSAND;

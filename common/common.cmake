@@ -16,7 +16,6 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         crypto/aes256-generic.cpp
         crypto/aes256-${HOST}.cpp
 
-        base64.cpp
         fast-backtrace.cpp
         string-processing.cpp
         kphp-tasks-lease/lease-worker-mode.cpp)

@@ -567,29 +567,6 @@ string f$lcfirst(const string &str) {
   return res;
 }
 
-string f$lcwords(const string &str) {
-  int n = str.size();
-
-  bool in_word = false;
-  string res(n, false);
-  for (int i = 0; i < n; i++) {
-    int cur = str[i] | 0x20;
-    if ('a' <= cur && cur <= 'z') {
-      if (in_word) {
-        res[i] = str[i];
-      } else {
-        res[i] = (char)cur;
-        in_word = true;
-      }
-    } else {
-      res[i] = str[i];
-      in_word = false;
-    }
-  }
-
-  return res;
-}
-
 int64_t f$levenshtein(const string &str1, const string &str2) {
   string::size_type len1 = str1.size();
   string::size_type len2 = str2.size();

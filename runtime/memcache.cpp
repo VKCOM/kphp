@@ -35,6 +35,94 @@ static int mc_last_key_len{0};
 static mixed mc_res;
 static bool mc_bool_res{false};
 
+mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout);
+bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout);
+bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
+mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
+
+Optional<array<mixed>> f$rpc_mc_multiget(const class_instance<C$RpcConnection> &conn, const array<mixed> &keys, double timeout, bool fake = false) {
+  mc_method = "multiget";
+  resumable_finished = true;
+
+  array<string> query_names(array_size(keys.count(), 0, true));
+  int64_t queue_id = -1;
+  uint32_t keys_n = 0;
+  int64_t first_request_id = 0;
+  size_t bytes_sent = 0;
+  for (auto it = keys.begin(); it != keys.end(); ++it) {
+    const string key = f$strval(it.get_value());
+    const string real_key = mc_prepare_key(key);
+    const bool is_immediate = mc_is_immediate_query(real_key);
+
+    f$rpc_clean();
+    store_int(fake ? ENGINE_MC_GET_QUERY : MEMCACHE_GET);
+    store_string(real_key.c_str() + is_immediate, real_key.size() - is_immediate);
+
+    size_t current_sent_size = real_key.size() + 32;//estimate
+    bytes_sent += current_sent_size;
+    if (bytes_sent >= (1 << 15) && bytes_sent > current_sent_size) {
+      f$rpc_flush();
+      bytes_sent = current_sent_size;
+    }
+    int64_t request_id = rpc_send(conn, timeout, is_immediate);
+    if (request_id > 0) {
+      if (first_request_id == 0) {
+        first_request_id = request_id;
+      }
+      if (!is_immediate) {
+        queue_id = wait_queue_push_unsafe(queue_id, request_id);
+        keys_n++;
+      }
+      query_names.push_back(key);
+    } else {
+      return false;
+    }
+  }
+  if (bytes_sent > 0) {
+    f$rpc_flush();
+  }
+
+  if (queue_id == -1) {
+    return array<mixed>();
+  }
+
+  array<mixed> result(array_size(0, keys_n, false));
+
+  while (keys_n > 0) {
+    int64_t request_id = wait_queue_next_synchronously(queue_id).val();
+    if (request_id <= 0) {
+      break;
+    }
+    keys_n--;
+
+    int64_t k = request_id - first_request_id;
+    php_assert(static_cast<uint64_t>(k) < query_names.count());
+
+    bool parse_result = rpc_get_and_parse(request_id, -1);
+    php_assert (resumable_finished);
+    if (!parse_result) {
+      continue;
+    }
+
+    int32_t op = TRY_CALL(int32_t, bool, rpc_lookup_int());
+    if (op == MEMCACHE_ERROR) {
+      TRY_CALL_VOID(bool, rpc_fetch_int());//op
+      TRY_CALL_VOID(bool, f$fetch_long());//query_id
+      TRY_CALL_VOID(bool, rpc_fetch_int());
+      TRY_CALL_VOID(bool, f$fetch_string());
+    } else if (op == MEMCACHE_VALUE_NOT_FOUND) {
+      TRY_CALL_VOID(bool, rpc_fetch_int());//op
+    } else {
+      mixed q_result = TRY_CALL(mixed, bool, f$fetch_memcache_value());
+      result.set_value(query_names.get_value(k), q_result);
+    }
+
+    if (!f$fetch_eof()) {
+      php_warning("Not all data fetched during fetch memcache.Value");
+    }
+  }
+  return result;
+}
 
 const string mc_prepare_key(const string &key) {
   if (key.size() < 3) {
@@ -624,7 +712,8 @@ bool f$RpcMemcache$$add(const class_instance<C$RpcMemcache> &v$this, const strin
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  return catchException(f$rpc_mc_add(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
+  mc_method = "add";
+  return catchException(rpc_mc_run_set(v$this->fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, cur_host.conn, real_key, value, flags, expire, -1), false);
 }
 
 bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string &key, const mixed &value, int64_t flags, int64_t expire) {
@@ -635,7 +724,8 @@ bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  return catchException(f$rpc_mc_set(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
+  mc_method = "set";
+  return catchException(rpc_mc_run_set(v$this->fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, cur_host.conn, real_key, value, flags, expire, -1), false);
 }
 
 bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &value, int64_t flags, int64_t expire) {
@@ -646,7 +736,8 @@ bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const s
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(v$this->hosts);
-  return catchException(f$rpc_mc_replace(cur_host.conn, real_key, value, flags, expire, -1.0, v$this->fake), false);
+  mc_method = "replace";
+  return catchException(rpc_mc_run_set(v$this->fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, cur_host.conn, real_key, value, flags, expire, -1.0), false);
 }
 
 mixed f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const mixed &key_var) {
@@ -657,7 +748,7 @@ mixed f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &mc, const mixed &k
     }
 
     auto cur_host = get_host(mc->hosts);
-    mixed res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, false, true, mc->fake);
+    mixed res = f$rpc_mc_multiget(cur_host.conn, key_var.to_array(), -1.0, mc->fake);
     php_assert(resumable_finished);
     return catchException<mixed>(res, array<mixed>());
   } else {
@@ -693,7 +784,8 @@ mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &mc, const st
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(mc->hosts);
-  return catchException(f$rpc_mc_decrement(cur_host.conn, real_key, count, -1.0, mc->fake), false);
+  mc_method = "decrement";
+  return catchException(rpc_mc_run_increment(mc->fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, cur_host.conn, real_key, count, -1), false);
 }
 
 mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const string &key, const mixed &count) {
@@ -704,7 +796,8 @@ mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const st
 
   const string real_key = mc_prepare_key(key);
   auto cur_host = get_host(mc->hosts);
-  return catchException(f$rpc_mc_increment(cur_host.conn, real_key, count, -1.0, mc->fake), false);
+  mc_method = "increment";
+  return catchException(rpc_mc_run_increment(mc->fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, cur_host.conn, real_key, count, -1.0), false);
 }
 
 mixed f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& mc) {
@@ -827,21 +920,6 @@ bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, con
   return res == MEMCACHE_TRUE;
 }
 
-bool f$rpc_mc_set(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout, bool fake) {
-  mc_method = "set";
-  return rpc_mc_run_set(fake ? TL_ENGINE_MC_SET_QUERY : MEMCACHE_SET, conn, key, value, flags, expire, timeout);
-}
-
-bool f$rpc_mc_add(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout, bool fake) {
-  mc_method = "add";
-  return rpc_mc_run_set(fake ? TL_ENGINE_MC_ADD_QUERY : MEMCACHE_ADD, conn, key, value, flags, expire, timeout);
-}
-
-bool f$rpc_mc_replace(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout, bool fake) {
-  mc_method = "replace";
-  return rpc_mc_run_set(fake ? TL_ENGINE_MC_REPLACE_QUERY : MEMCACHE_REPLACE, conn, key, value, flags, expire, timeout);
-}
-
 mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout) {
   const string real_key = mc_prepare_key(key);
   bool is_immediate = mc_is_immediate_query(real_key);
@@ -874,16 +952,6 @@ mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, 
   return false;
 }
 
-mixed f$rpc_mc_increment(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout, bool fake) {
-  mc_method = "increment";
-  return rpc_mc_run_increment(fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, conn, key, v, timeout);
-}
-
-mixed f$rpc_mc_decrement(const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout, bool fake) {
-  mc_method = "decrement";
-  return rpc_mc_run_increment(fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, conn, key, v, timeout);
-}
-
 bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout, bool fake) {
   mc_method = "delete";
   const string real_key = mc_prepare_key(key);
@@ -911,7 +979,6 @@ bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &
   int32_t res = TRY_CALL(int32_t, bool, (rpc_fetch_int()));//TODO __FILE__ and __LINE__
   return res == MEMCACHE_TRUE;
 }
-
 
 static void reset_drivers_global_vars() {
   hard_reset_var(mc_method);

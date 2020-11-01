@@ -219,11 +219,6 @@ inline Long f$longval(const mixed &val) {
   return Long(val);
 }
 
-template<class T>
-inline Long f$new_Long(const T &val) {
-  return f$longval(val);
-}
-
 inline bool f$boolval(Long val) {
   return val.l;
 }
@@ -347,11 +342,6 @@ inline ULong f$ulongval(const string &val) {
 
 inline ULong f$ulongval(const mixed &val) {
   return ULong(val);
-}
-
-template<class T>
-inline ULong f$new_ULong(const T &val) {
-  return f$ulongval(val);
 }
 
 inline bool f$boolval(ULong val) {
@@ -480,11 +470,6 @@ inline UInt f$uintval(const string &val) {
 
 inline UInt f$uintval(const mixed &val) {
   return UInt(val);
-}
-
-template<class T>
-inline UInt f$new_UInt(const T &val) {
-  return f$uintval(val);
 }
 
 inline bool f$boolval(UInt val) {

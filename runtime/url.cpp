@@ -1,7 +1,5 @@
 #include "runtime/url.h"
 
-#include "common/base64.h"
-
 #include "runtime/array_functions.h"
 #include "runtime/regexp.h"
 
@@ -108,6 +106,49 @@ Optional<string> f$base64_decode(const string &s, bool strict) {
   return result;
 }
 
+int base64_encode(const unsigned char *const input, int ilen, char *output, int olen) {
+  static const char* const symbols64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+  auto next_input_uchar = [input, ilen](int &i) {
+    if (i >= ilen) return static_cast<unsigned char>(0);
+    return input[i++];
+  };
+
+  int i, j = 0;
+  char buf[4];
+  for (i = 0; i < ilen; ) {
+    int old_i = i;
+    int o = next_input_uchar(i);
+    o <<= 8;
+    o |= next_input_uchar(i);
+    o <<= 8;
+    o |= next_input_uchar(i);
+    int l = i - old_i;
+    assert (l > 0 && l <= 3);
+    int u;
+    for (u = 3; u >= 0; u--) {
+      buf[u] = symbols64[o & 63];
+      o >>= 6;
+    }
+    if (l == 1) {
+      buf[2] = buf[3] = '=';
+    }
+    else if (l == 2) {
+      buf[3] = '=';
+    }
+    if (j + 3 >= olen) {
+      return -1;
+    }
+    memcpy (&output[j], buf, 4);
+    j += 4;
+  }
+  if (j >= olen) {
+    return -1;
+  }
+  output[j++] = 0;
+  return 0;
+}
+
 string f$base64_encode(const string &s) {
   int result_len = (s.size() + 2) / 3 * 4;
   string res(result_len, false);
@@ -119,55 +160,6 @@ string f$base64_encode(const string &s) {
 
   return res;
 }
-
-ULong f$base64url_decode_ulong(const string &s) {
-  unsigned long long result;
-  int r = base64url_decode(s.c_str(), reinterpret_cast <unsigned char *> (&result), 8);
-  if (r != 8) {
-    php_warning("Can't convert to ULong from base64url string \"%s\"", s.c_str());
-    return 0;
-  }
-  return result;
-}
-
-string f$base64url_encode_ulong(ULong val) {
-  string res(11, false);
-  php_assert (base64url_encode(reinterpret_cast <const unsigned char *> (&val.l), 8, res.buffer(), 12) == 0);
-
-  return res;
-}
-
-ULong f$base64url_decode_ulong_NN(const string &s) {
-  unsigned char result[8];
-  int r = base64url_decode(s.c_str(), result, 8);
-  if (r != 8) {
-    php_warning("Can't convert to ULong from base64url string \"%s\"", s.c_str());
-    return 0;
-  }
-
-  return ((unsigned long long)result[0] << 24) | (result[1] << 16) | (result[2] << 8) | result[3] |
-         ((unsigned long long)result[4] << 56) | ((unsigned long long)result[5] << 48) | ((unsigned long long)result[6] << 40) | ((unsigned long long)result[7]
-    << 32);
-}
-
-string f$base64url_encode_ulong_NN(ULong val) {
-  unsigned long long l = val.l;
-  unsigned char str[8];
-  str[0] = static_cast<unsigned char>((l >> 24) & 255);
-  str[1] = static_cast<unsigned char>((l >> 16) & 255);
-  str[2] = static_cast<unsigned char>((l >> 8) & 255);
-  str[3] = static_cast<unsigned char>(l & 255);
-  str[4] = static_cast<unsigned char>(l >> 56);
-  str[5] = static_cast<unsigned char>((l >> 48) & 255);
-  str[6] = static_cast<unsigned char>((l >> 40) & 255);
-  str[7] = static_cast<unsigned char>((l >> 32) & 255);
-
-  string res(11, false);
-  php_assert (base64url_encode(str, 8, res.buffer(), 12) == 0);
-
-  return res;
-}
-
 
 static void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len, const string &value) {
   php_assert (*left_br_pos == '[');

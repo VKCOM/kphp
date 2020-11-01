@@ -1186,11 +1186,6 @@ static bool parse_multipart(const char *post, int post_len, const string &bounda
   return true;
 }
 
-void f$parse_multipart(const string &post, const string &boundary) {
-  parse_multipart(post.c_str(), (int)post.size(), boundary);
-}
-
-
 static char arg_vars_storage[sizeof(array<string>)];
 static array<string> *arg_vars = nullptr;
 
@@ -1589,12 +1584,6 @@ void init_superglobals(php_query_data *data) {
                     http_data->ip, http_data->port, http_data->keep_alive,
                     rpc_data->data, rpc_data->len, rpc_data->req_id, rpc_data->ip, rpc_data->port, rpc_data->pid, rpc_data->utime);
 }
-
-bool f$set_server_status(const string &status) {
-  set_server_status(status.c_str(), status.size());
-  return true;
-}
-
 
 double f$get_net_time() {
   return get_net_time();

@@ -217,33 +217,6 @@
   function base64url_decode($data) {
     return base64_decode(str_pad(strtr($data, '-_', '+/'), ceil(strlen($data) / 4) * 4, '=', STR_PAD_RIGHT));
   }
-
-  function base64url_decode_ulong ($secret_encoded) {
-    $secret_packed = base64url_decode($secret_encoded);
-    $secret_unpacked = unpack('Vlow/Vhigh', $secret_packed);
-    $secret = uladd(ulongval($secret_unpacked['low']), ulshl(ulongval($secret_unpacked['high']), 32));
-    return $secret;
-  }
-
-  function base64url_encode_ulong ($secret_long) {
-    $secret_long = ulongval(longval($secret_long));
-    $secret_encoded = pack('VV', intval(uland($secret_long, 0xFFFFFFFF)), intval(ulshr($secret_long, 32)));
-    return base64url_encode($secret_encoded);
-  }
-
-  function base64url_decode_ulong_NN ($secret_encoded) {
-    $secret_packed = base64url_decode($secret_encoded);
-    $secret_unpacked = unpack('Nlow/Nhigh', $secret_packed);
-    $secret = uladd(ulongval($secret_unpacked['low']), ulshl(ulongval($secret_unpacked['high']), 32));
-    return $secret;
-  }
-
-  function base64url_encode_ulong_NN ($secret_long) {
-    $secret_long = ulongval(longval($secret_long));
-    $secret_encoded = pack('NN', intval(uland($secret_long, 0xFFFFFFFF)), intval(ulshr($secret_long, 32)));
-    return base64url_encode($secret_encoded);
-  }
-
 #endif
 
 function test_long() {
@@ -353,10 +326,6 @@ function test_ulong() {
   var_dump(implode("\n", $ula));
 
   foreach ($ula as $ulva) {
-    var_dump (base64url_encode_ulong ($ulva));
-    var_dump (strval (base64url_decode_ulong (base64url_encode_ulong ($ulva))));
-    var_dump (base64url_encode_ulong_NN ($ulva));
-    var_dump (strval (base64url_decode_ulong_NN (base64url_encode_ulong_NN ($ulva))));
     var_dump (strval (ulpow ($ulva, 9)));
     var_dump (strval (ulnot ($ulva)));
     foreach ($ulb as $ulvb) {

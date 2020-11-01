@@ -183,27 +183,6 @@ static int tl_store_end_impl(int op, bool noheader) {
   return 0;
 }
 
-void tl_store_raw_msg(struct raw_message *raw, int dup) {
-  assert (tl_store_check(raw->total_bytes) >= 0);
-  int len = raw->total_bytes;
-  raw_message rwm;
-  if (dup) {
-    rwm_clone(&rwm, raw);
-  } else {
-    rwm_steal(&rwm, raw);
-  }
-  tl_in_methods_raw_msg methods(&rwm);
-  tlio->out_methods->copy_through(&methods, len, 1);
-  tlio->out_pos += len;
-  tlio->out_remaining -= len;
-}
-
-void tl_store_raw_msg(const struct raw_message &raw) {
-  raw_message_t r;
-  rwm_clone(&r, &raw);
-  tl_store_raw_msg(&r, false);
-}
-
 void tlio_push(void) {
   assert(tlio_v.size() <= 10);
   tlio_v.emplace_back();
@@ -214,19 +193,6 @@ void tlio_pop(void) {
   tlio_v.pop_back();
   tlio = &tlio_v.back();
 }
-
-void tlio_pop_forward_error(void) {
-  if (tl_fetch_error()) {
-    int error_code = tlio->errnum;
-    std::string error_string = std::move(*tlio->error);
-    tlio_pop();
-    tl_fetch_set_error(error_code, std::move(error_string));
-  } else {
-    tlio_pop();
-  }
-}
-
-
 
 void tl_compress_written(int version) {
   auto *methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
@@ -245,28 +211,6 @@ void tl_decompress_remaining(int version) {
 
 void tl_fetch_raw_data(void *buf, int size) {
   tlio->in_methods->fetch_raw_data(buf, size);
-  tlio->in_pos += size;
-  tlio->in_remaining -= size;
-}
-
-void tl_fetch_chunked(int size, const std::function<void(const void*, int)> &callback) {
-  if (tl_fetch_check(size) < 0) {
-    return;
-  }
-  tlio->in_methods->fetch_chunked(size, callback);
-  tlio->in_pos += size;
-  tlio->in_remaining -= size;
-}
-
-void tl_fetch_lookup_chunked(int size, const std::function<void(const void*, int)> &callback) {
-  if (tl_fetch_check(size) < 0) {
-    return;
-  }
-  tlio->in_methods->fetch_lookup_chunked(size, callback);
-}
-
-void tl_fetch_skip_raw_data(int size) {
-  tlio->in_methods->fetch_move(size);
   tlio->in_pos += size;
   tlio->in_remaining -= size;
 }
@@ -362,25 +306,6 @@ int tl_fetch_string_data(char *buf, int len) {
   return len;
 }
 
-int tl_fetch_skip_string_data(int len) {
-  if (tl_fetch_check(len) < 0) {
-    return -1;
-  }
-  tl_fetch_skip_raw_data(len);
-  if (tl_fetch_pad() < 0) {
-    return -1;
-  }
-  return len;
-}
-
-int tl_fetch_skip_string(int max_len) {
-  int l = tl_fetch_string_len(max_len);
-  if (l < 0) {
-    return -1;
-  }
-  return tl_fetch_skip_string_data(l);
-}
-
 int tl_fetch_string(char *buf, int max_len) {
   int l = tl_fetch_string_len(max_len);
   if (l < 0) {
@@ -448,18 +373,6 @@ bool tl_fetch_bool(void) {
   return false;
 }
 
-bool tl_fetch_maybe_magic() {
-  int x = tl_fetch_int();
-  if (x == TL_MAYBE_TRUE) {
-    return true;
-  }
-  if (x == TL_MAYBE_FALSE) {
-    return false;
-  }
-  tl_fetch_set_error_format(TL_ERROR_BAD_VALUE, "Expected Maybe, but 0x%08x found", x);
-  return false;
-}
-
 double tl_fetch_double(void) {
   if (__builtin_expect(tl_fetch_check(sizeof(double)) < 0, 0)) {
     return -1;
@@ -487,15 +400,6 @@ float tl_fetch_float(void) {
   return x;
 }
 
-float tl_fetch_float_in_range(float min, float max) {
-  float res = tl_fetch_float();
-  const float eps = 1e-9f;
-  if (!(min - eps <= res && res <= max + eps)) {
-    tl_fetch_set_error_format(TL_ERROR_VALUE_NOT_IN_RANGE, "Expected float in range [%.15f,%.15f], %.f presented", min, max, res);
-  }
-  return res;
-}
-
 long long tl_fetch_long(void) {
   if (__builtin_expect(tl_fetch_check(8) < 0, 0)) {
     return -1;
@@ -520,40 +424,8 @@ void tl_store_bool_stat(int x) {
   tl_store_bool_stat_bare(x);
 }
 
-void tl_store_bool_stat_full_bare(int x, int y, int z) {
-  tl_store_int(x);
-  tl_store_int(y);
-  tl_store_int(z);
-}
-
-void tl_store_bool_stat_full(int x, int y, int z) {
-  tl_store_int(TL_BOOL_STAT);
-  tl_store_bool_stat_full_bare(x, y, z);
-}
-
-int tl_store_end_noheader() {
-  return tl_store_end_impl(0, true);
-}
-
 int tl_store_end(void) {
   return tl_store_end_impl(TL_RPC_REQ_RESULT, false);
-}
-
-void tl_store_invoke_req(long long qid) {
-  tl_store_int(TL_RPC_INVOKE_REQ);
-  tl_store_long(qid);
-}
-
-int tl_store_empty_vector() {
-  tl_store_int(TL_VECTOR);
-  tl_store_int(0);
-  return 0;
-}
-
-void tl_store_int_forward(long long forward_id) {
-  tl_store_int(TL_RPC_DEST_FLAGS);
-  tl_store_int(vk::tl::common::rpc_invoke_req_extra_flags::int_forward);
-  tl_store_long(forward_id);
 }
 
 int tl_store_pad() {
@@ -578,16 +450,6 @@ static int tl_store_string_len(int len) {
     tl_store_int(get_tl_string_len(len));
   }
   return 0;
-}
-
-void tl_store_string_hex(const unsigned char *s, int len) {
-  tl_store_string_len(2 * len);
-  for (int i = 0; i < len; i++) {
-    char data[3];
-    sprintf(data, "%02x", s[i]);
-    tl_store_raw_data_nopad(data, 2);
-  }
-  tl_store_pad();
 }
 
 void tl_store_string(const char *s, int len) {
@@ -621,28 +483,6 @@ void tl_store_float(float x) {
   tl_store_raw_data_nopad(&x, sizeof(x));
 }
 
-
-void tl_copy_through(int len, int advance) {
-  if (tl_fetch_check(len) < 0 || tl_store_check(len) < 0) {
-    return ;
-  }
-  tlio->out_methods->copy_through(tlio->in_methods.get(), len, advance);
-  if (advance) {
-    tlio->in_pos += len;
-    tlio->in_remaining -= len;
-  }
-  tlio->out_pos += len;
-  tlio->out_remaining -= len;
-}
-
-int tl_fetch_attempt_num() {
-  return tlio->attempt_num;
-}
-
-int tl_set_attempt_num(int attempt) {
-  return tlio->attempt_num = attempt;
-}
-
 int tl_store_check(int size) {
   if (!tl_is_store_inited()) {
     return -1;
@@ -651,14 +491,6 @@ int tl_store_check(int size) {
     return -1;
   }
   return 0;
-}
-
-int tl_fetch_skip(int len) {
-  if (tl_fetch_check(len) < 0) {
-    return -1;
-  }
-  tl_fetch_skip_raw_data(len);
-  return len;
 }
 
 int64_t tl_fetch_unread(void) {
@@ -676,10 +508,6 @@ int tl_fetch_end(void) {
     return -1;
   }
   return 1;
-}
-
-int tl_fetch_check_eof(void) {
-  return !tlio->in_remaining;
 }
 
 bool tl_fetch_error() {
@@ -739,47 +567,6 @@ long long tl_current_query_id() {
 
 void tl_set_current_query_id(long long qid) {
   tlio->qid = qid;
-}
-
-
-const process_id* tl_current_query_sender() {
-  auto *network_methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
-  assert(network_methods);
-  return network_methods->get_pid();
-}
-
-
-long long tl_fetch_nonnegative_long(void) {
-  return tl_fetch_long_range(0, std::numeric_limits<long long>::max());
-}
-
-long long tl_fetch_positive_long(void) {
-  return tl_fetch_long_range(1, std::numeric_limits<long long>::max());
-}
-
-long long tl_fetch_long_range(long long int min, long long int max) {
-  long long x = tl_fetch_long();
-  if (x < min || x > max) {
-    tl_fetch_set_error_format(TL_ERROR_VALUE_NOT_IN_RANGE, "Expected int64 in range [%lld,%lld], %lld presented", min, max, x);
-  }
-  return x;
-}
-
-int tl_fetch_nonnegative_int(void) {
-  return tl_fetch_int_range(0, std::numeric_limits<int>::max());
-}
-
-int tl_fetch_positive_int(void) {
-  return tl_fetch_int_range (1, std::numeric_limits<int>::max());
-}
-
-int tl_fetch_int_range_with_error(int min, int max, const char *error) {
-  int x = tl_fetch_int ();
-  if (x < min || x > max) {
-    tl_fetch_set_error_format(TL_ERROR_VALUE_NOT_IN_RANGE, "%s. Expected int32 in range [%d,%d], %d presented", error, min, max, x);
-    return -1;
-  }
-  return x;
 }
 
 int tl_fetch_int_range(int min, int max) {

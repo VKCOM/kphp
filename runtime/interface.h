@@ -125,13 +125,8 @@ bool f$is_uploaded_file(const string &filename);
 
 bool f$move_uploaded_file(const string &oldname, const string &newname);
 
-void f$parse_multipart(const string &post, const string &boundary);
-
 
 void init_superglobals(php_query_data *data);
-
-
-bool f$set_server_status(const string &status);
 
 
 double f$get_net_time();

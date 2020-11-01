@@ -52,8 +52,6 @@ string f$htmlspecialchars_decode(const string &str, int64_t flags = ENT_COMPAT |
 
 string f$lcfirst(const string &str);
 
-string f$lcwords(const string &str);
-
 int64_t f$levenshtein(const string &str1, const string &str2);
 
 string f$ltrim(const string &s, const string &what = WHAT);

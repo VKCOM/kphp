@@ -2,6 +2,7 @@
 
 #include <sys/cdefs.h>
 #include <utility>
+#include "common/containers/final_action.h"
 #include "common/tl/fetch.h"
 #include "common/tl/store.h"
 
@@ -13,7 +14,9 @@ namespace tl {
 
 template<typename Storer>
 int save_to_buffer(char *buffer, int buffer_size, const Storer &store_func) {
-  vk::tl::push_guard guard;
+  tlio_push();
+  auto tlio_pop_finally = vk::finally(tlio_pop);
+
   tl_store_init_str(buffer, buffer_size);
   store_func();
   int size = static_cast<int>(tl_bytes_stored());

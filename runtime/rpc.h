@@ -50,12 +50,6 @@ int64_t f$fetch_int();
 int64_t f$fetch_lookup_int();
 string f$fetch_lookup_data(int64_t x4_bytes_length);
 
-UInt f$fetch_UInt();
-
-Long f$fetch_Long();
-
-ULong f$fetch_ULong();
-
 mixed f$fetch_unsigned_int();
 
 int64_t f$fetch_long();
@@ -138,12 +132,6 @@ bool is_int32_overflow(int64_t v);
 bool store_int(int32_t v);
 bool f$store_int(int64_t v);
 
-bool f$store_UInt(UInt v);
-
-bool f$store_Long(Long v);
-
-bool f$store_ULong(ULong v);
-
 bool f$store_unsigned_int(const string &v);
 
 bool store_long(long long v);
@@ -167,10 +155,6 @@ bool f$store_many(const array<mixed> &a);
 bool f$store_finish();
 
 bool f$rpc_clean(bool is_error = false);
-
-string f$rpc_get_contents();
-
-string f$rpc_get_clean();
 
 bool rpc_store(bool is_error = false);
 

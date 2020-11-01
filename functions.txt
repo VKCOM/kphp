@@ -129,8 +129,6 @@ define('E_DEPRECATED', 8192);
 define('E_USER_DEPRECATED', 16384);
 define('E_ALL', 32767);
 
-function set_server_status ($status ::: string) ::: bool;
-
 function error_get_last() ::: mixed;
 function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
@@ -451,10 +449,6 @@ function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
 function gzinflate ($str ::: string) ::: string;
 function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
 function base64_encode ($str ::: string) ::: string;
-function base64url_decode_ulong ($str ::: string) ::: ULong;
-function base64url_encode_ulong ($val ::: ULong) ::: string;
-function base64url_decode_ulong_NN ($str ::: string) ::: ULong;
-function base64url_encode_ulong_NN ($val ::: ULong) ::: string;
 function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
 function rawurldecode ($str ::: string) ::: string;
 function rawurlencode ($str ::: string) ::: string;
@@ -560,7 +554,6 @@ function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
 
 function lcfirst ($str ::: string) ::: string;
 function ucfirst ($str ::: string) ::: string;
-function lcwords ($str ::: string) ::: string;
 function ucwords ($str ::: string) ::: string;
 
 function vprintf ($format ::: string, $args ::: array) ::: int;
@@ -740,12 +733,6 @@ function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: strin
 /** @kphp-extern-func-info can_throw */
 function fetch_int () ::: int;
 /** @kphp-extern-func-info can_throw */
-function fetch_UInt () ::: UInt;
-/** @kphp-extern-func-info can_throw */
-function fetch_Long () ::: Long;
-/** @kphp-extern-func-info can_throw */
-function fetch_ULong () ::: ULong;
-/** @kphp-extern-func-info can_throw */
 function fetch_unsigned_int () ::: mixed;
 /** @kphp-extern-func-info can_throw */
 function fetch_long () ::: int;
@@ -790,16 +777,11 @@ function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
 function store_start_gzip_pack() ::: void;
 function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;
 function rpc_clean() ::: bool;
-function rpc_get_clean() ::: string;
-function rpc_get_contents() ::: string;
 function store_header ($actor_id ::: any, $flags ::: int = 0) ::: bool;
 function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
 function store_raw ($v ::: string) ::: bool;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 function store_int ($v ::: int) ::: bool;
-function store_UInt ($v ::: UInt) ::: bool;
-function store_Long ($v ::: Long) ::: bool;
-function store_ULong ($v ::: ULong) ::: bool;
 function store_unsigned_int ($v ::: any) ::: bool;
 function store_long ($v ::: any) ::: bool;
 function store_unsigned_long ($v ::: any) ::: bool;
@@ -829,22 +811,6 @@ function rpc_wait ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info resumable */
 function rpc_wait_concurrently ($request_id ::: int) ::: bool;
 
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_get ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: mixed;
-/** @kphp-extern-func-info can_throw resumable */
-function rpc_mc_multiget ($rpc_conn :<=: \RpcConnection, $key ::: array, $timeout ::: float = -1.0, $return_false_if_not_found = false) ::: mixed[] | false;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_delete ($rpc_conn :<=: \RpcConnection, $key ::: string, $timeout ::: float = -1.0) ::: bool;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_add ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_set ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_replace ($rpc_conn :<=: \RpcConnection, $key ::: string, $value, $flags ::: int = 0, $expire ::: int = 0, $timeout ::: float = -1.0) ::: bool;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_decrement ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: mixed;
-/** @kphp-extern-func-info can_throw */
-function rpc_mc_increment ($rpc_conn :<=: \RpcConnection, $key ::: string, $v ::: any = 1, $timeout ::: float = -1.0) ::: mixed;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
@@ -930,7 +896,6 @@ function strval ($v ::: any) ::: string;
 function uintval ($v ::: any) ::: UInt;
 function longval ($v ::: any) ::: Long;
 function ulongval ($v ::: any) ::: ULong;
-function arrayval ($v ::: array) ::: ^1;
 
 /** files **/
 define('STDIN', 'php://stdin');
@@ -985,7 +950,6 @@ function lor ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function land ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function lxor ($lhs ::: Long, $rhs ::: Long) ::: Long;
 function lcomp ($lhs ::: Long, $rhs ::: Long) ::: int;
-function new_Long ($val ::: any) ::: Long;
 
 /** ULong **/
 function uldiv ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
@@ -1001,7 +965,6 @@ function ulor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function uland ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function ulxor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
 function ulcomp ($lhs ::: ULong, $rhs ::: ULong) ::: int;
-function new_ULong ($val ::: any) ::: ULong;
 
 /** UInt **/
 function uidiv ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
@@ -1017,7 +980,6 @@ function uior ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uiand ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uixor ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
 function uicomp ($lhs ::: UInt, $rhs ::: UInt) ::: int;
-function new_UInt ($val ::: any) ::: UInt;
 
 
 define('UPLOAD_ERR_OK', 0);
@@ -1292,8 +1254,6 @@ define("CURLM_ADDED_ALREADY", 7);
 
 function get_reference_counter ($v) ::: int;
 function prepare_search_query ($query ::: string) ::: string;
-function parse_multipart ($post ::: string, $boundary ::: string) ::: void;
-function unimplemented_function ($a1 = "", $a2 = "", $a3 = "", $a4 = "", $a5 = "", $a6 = "", $a7 = "", $a8 = "", $a9 = "");
 
 /** For local usage only **/
 function system ($query ::: string) ::: int;

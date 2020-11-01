@@ -12,8 +12,7 @@ prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
         tl2php/constructor-to-php.cpp
         tl2php/function-to-php.cpp
         tl2php/php-classes.cpp
-        tl2php/tl-to-php-classes-converter.cpp
-        base64.cpp)
+        tl2php/tl-to-php-classes-converter.cpp)
 
 prepend(KPHP_COMPILER_THREADING_SOURCES threading/
         allocator.cpp

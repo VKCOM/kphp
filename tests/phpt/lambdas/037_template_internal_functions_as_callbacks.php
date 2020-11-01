@@ -3,10 +3,6 @@
 
 require_once 'kphp_tester_include.php';
 
-#ifndef KPHP
-function new_Long($x) { return floatval($x); }
-#endif
-
 class A { public $x = 10; }
 
 class B { public $y = 20; }
@@ -25,6 +21,3 @@ var_dump(array_map("array_filter", [[1, 0], [false], [2, NULL]]));
 $ints = [[1, 2], [3, 4]];
 $sums = array_map('intval', array_map('array_sum', $ints));
 var_dump($sums);
-
-$longs = array_map("new_Long", [1, "0", 2, 3]);
-var_dump((string)$longs[0]);

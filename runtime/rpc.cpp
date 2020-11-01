@@ -248,27 +248,6 @@ string f$fetch_lookup_data(int64_t x4_bytes_length) {
                 static_cast<string::size_type>(x4_bytes_length * 4));
 }
 
-UInt f$fetch_UInt() {
-  TRY_CALL_VOID(UInt, (check_rpc_data_len(1)));
-  return UInt((unsigned int)(*rpc_data++));
-}
-
-Long f$fetch_Long() {
-  TRY_CALL_VOID(Long, (check_rpc_data_len(2)));
-  long long result = *reinterpret_cast<const long long *>(rpc_data);
-  rpc_data += 2;
-
-  return Long(result);
-}
-
-ULong f$fetch_ULong() {
-  TRY_CALL_VOID(ULong, (check_rpc_data_len(2)));
-  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
-  rpc_data += 2;
-
-  return ULong(result);
-}
-
 mixed f$fetch_unsigned_int() {
   TRY_CALL_VOID(mixed, (check_rpc_data_len(1)));
   unsigned int result = *rpc_data++;
@@ -328,11 +307,19 @@ string f$fetch_unsigned_long_hex() {
 }
 
 string f$fetch_unsigned_int_str() {
-  return f$strval(TRY_CALL (UInt, string, (f$fetch_UInt())));
+  TRY_CALL_VOID(string, check_rpc_data_len(1));
+  auto result = *reinterpret_cast<const unsigned int *>(rpc_data);
+  rpc_data++;
+
+  return f$strval(UInt(result));
 }
 
 string f$fetch_unsigned_long_str() {
-  return f$strval(TRY_CALL (ULong, string, (f$fetch_ULong())));
+  TRY_CALL_VOID(string, check_rpc_data_len(2));
+  auto result = *reinterpret_cast<const unsigned long long *>(rpc_data);
+  rpc_data += 2;
+
+  return f$strval(ULong(result));
 }
 
 double f$fetch_double() {
@@ -571,18 +558,6 @@ bool f$store_int(int64_t v) {
   return store_int(v32);
 }
 
-bool f$store_UInt(UInt v) {
-  return store_raw(v.l);
-}
-
-bool f$store_Long(Long v) {
-  return store_raw(v.l);
-}
-
-bool f$store_ULong(ULong v) {
-  return store_raw(v.l);
-}
-
 bool store_unsigned_int(unsigned int v) {
   return store_raw(v);
 }
@@ -705,17 +680,6 @@ bool f$rpc_clean(bool is_error) {
   rpc_pack_from = -1;
   return true;
 }
-
-string f$rpc_get_clean() {
-  string data = string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
-  f$rpc_clean();
-  return data;
-}
-
-string f$rpc_get_contents() {
-  return string(data_buf.c_str() + data_buf_header_size, (int)(data_buf.size() - data_buf_header_size));
-}
-
 
 bool rpc_store(bool is_error) {
   if (rpc_stored) {
@@ -1182,7 +1146,11 @@ int32_t tl_parse_int() {
 }
 
 long long tl_parse_long() {
-  return TRY_CALL(long long, int, (f$fetch_Long().l));
+  TRY_CALL_VOID(int, check_rpc_data_len(2));
+  long long result = *reinterpret_cast<const long long *>(rpc_data);
+  rpc_data += 2;
+
+  return result;
 }
 
 double tl_parse_double() {
