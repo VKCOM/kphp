@@ -186,7 +186,7 @@ static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSe
   }
 
   MakeSetup make{stats_file};
-  File php_functions_h(settings.kphp_src_path.get() + "/objs/generated/auto/runtime/" + header_filename);
+  File php_functions_h(settings.generated_runtime_path.get() + header_filename);
   kphp_error_act(php_functions_h.read_stat() > 0,
                  fmt_format("Can't read mtime of '{}'", php_functions_h.path),
                  return {});

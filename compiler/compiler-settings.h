@@ -153,6 +153,7 @@ public:
   KphpImplicitOption dest_objs_dir;
   KphpImplicitOption binary_path;
   KphpImplicitOption static_lib_name;
+  KphpImplicitOption generated_runtime_path;
 
   KphpImplicitOption runtime_sha256;
   KphpImplicitOption cxx_flags_sha256;
