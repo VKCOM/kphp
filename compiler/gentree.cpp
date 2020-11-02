@@ -270,6 +270,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
   vector<VertexPtr> strings;
   bool after_simple_expression = false;
   while (cur != end && cur->type() != tok_str_end) {
+    CE (vk::any_of_equal(cur->type(), tok_str, tok_expr_begin)); // make sure we handle all possible tokens
     if (cur->type() == tok_str) {
       strings.push_back(get_string());
       if (after_simple_expression) {
@@ -280,6 +281,9 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
       }
       after_simple_expression = false;
     } else if (cur->type() == tok_expr_begin) {
+      // simple expressions produce artificial tok_expr_begin/tok_expr_end without
+      // having associated '{' and '}' inside the source code
+      after_simple_expression = cur->debug_str.empty();
       next_cur();
 
       VertexPtr add = get_expression();
@@ -287,12 +291,6 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
       strings.push_back(add);
 
       CE (expect(tok_expr_end, "'}'"));
-      after_simple_expression = false;
-    } else {
-      after_simple_expression = true;
-      VertexPtr add = get_expression();
-      CE (!kphp_error(add, "Bad expression in string"));
-      strings.push_back(add);
     }
   }
   CE (expect(tok_str_end, "'\"'"));

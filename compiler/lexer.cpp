@@ -622,6 +622,71 @@ bool TokenLexerHexChar::parse(LexerData *lexer_data) const {
   return true;
 }
 
+void TokenLexerStringSimpleExpr::init() {
+  kphp_assert(!h);
+  h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("Can't parse string expression"));
+
+  h->add_rule("[a-zA-Z_$\\]", &vk::singleton<TokenLexerName>::get());
+  h->add_rule("[0-9]|.[0-9]", &vk::singleton<TokenLexerNum>::get());
+  h->add_simple_rule("", &vk::singleton<TokenLexerCommon>::get());
+}
+
+bool TokenLexerStringSimpleExpr::parse_operand(LexerData *lexer_data, TokenType type = tok_func_name) const {
+  // in places where we expect a "name" we call this method instead of parse_with_helper
+  // as we don't want \\ to become a part of the name;
+  // in strings, $x->y\n should produce a tok_var_name($x) tok_arrow tok_func_name(y) tok_str(\n),
+  // not tok_var_name($x) tok_arrow tok_func_name(y\n) as it would do if we used
+  // a TokenLexerName for that.
+
+  const char *begin = lexer_data->get_code();
+  const char *s = begin;
+
+  if (!is_alpha(*s)) {
+    return parse_with_helper(lexer_data, h);
+  }
+
+  ++s;
+  while (is_alphanum(*s)) {
+    ++s;
+  }
+
+  vk::string_view name(begin, s);
+  lexer_data->add_token(name.size(), type, name);
+  return true;
+}
+
+bool TokenLexerStringSimpleExpr::parse(LexerData *lexer_data) const {
+  assert(h != nullptr);
+
+  lexer_data->add_token(0, tok_expr_begin);
+
+  if (!parse_operand(lexer_data)) {
+    return false;
+  }
+
+  const char *s = lexer_data->get_code();
+  bool ok = true;
+  if (*s == 0) {
+    ok = false;
+  } else if (*s == '[') {
+    // two forms:
+    // 1. '[' offset ']'
+    // 2. '[' '-' offset ']'
+    ok = parse_with_helper(lexer_data, h) && // tok_clbrk
+         parse_operand(lexer_data, tok_str); // offset expression (or tok_minus)
+    if (ok && lexer_data->are_last_tokens(tok_minus)) {
+      ok = parse_operand(lexer_data, tok_str); // offset expression
+    }
+    ok = ok && parse_with_helper(lexer_data, h); // tok_clbrk
+  } else if (s[0] == '-' && s[1] == '>') {
+    ok = parse_with_helper(lexer_data, h) && // tok_arrow
+         parse_operand(lexer_data);          // accessed instance member
+  }
+
+  lexer_data->add_token(0, tok_expr_end);
+
+  return ok;
+}
 
 void TokenLexerStringExpr::init() {
   assert(!h);
@@ -692,7 +757,7 @@ void TokenLexerString::init() {
   h->add_rule("\\[0-7]", &vk::singleton<TokenLexerOctChar>::get());
   h->add_rule("\\x[0-9A-Fa-f]", &vk::singleton<TokenLexerHexChar>::get());
 
-  h->add_rule("$[A-Za-z_{]", &vk::singleton<TokenLexerName>::get());
+  h->add_rule("$[A-Za-z_{]", &vk::singleton<TokenLexerStringSimpleExpr>::get());
   h->add_simple_rule("{$", &vk::singleton<TokenLexerStringExpr>::get());
 }
 
@@ -711,7 +776,7 @@ void TokenLexerHeredocString::init() {
   h->add_rule("\\[0-7]", &vk::singleton<TokenLexerOctChar>::get());
   h->add_rule("\\x[0-9A-Fa-f]", &vk::singleton<TokenLexerHexChar>::get());
 
-  h->add_rule("$[A-Za-z{]", &vk::singleton<TokenLexerName>::get());
+  h->add_rule("$[A-Za-z{]", &vk::singleton<TokenLexerStringSimpleExpr>::get());
   h->add_simple_rule("{$", &vk::singleton<TokenLexerStringExpr>::get());
 }
 
@@ -1100,6 +1165,7 @@ bool TokenLexerGlobal::parse(LexerData *lexer_data) const {
 
 void lexer_init() {
   vk::singleton<TokenLexerCommon>::get().init();
+  vk::singleton<TokenLexerStringSimpleExpr>::get().init();
   vk::singleton<TokenLexerStringExpr>::get().init();
   vk::singleton<TokenLexerString>::get().init();
   vk::singleton<TokenLexerHeredocString>::get().init();

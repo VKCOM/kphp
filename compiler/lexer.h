@@ -101,6 +101,14 @@ struct TokenLexerHexChar final : TokenLexer {
   bool parse(LexerData *lexer_data) const final;
 };
 
+struct TokenLexerStringSimpleExpr final : TokenLexer {
+  std::unique_ptr<Helper<TokenLexer>> h;
+
+  void init();
+  bool parse(LexerData *lexer_data) const final;
+  bool parse_operand(LexerData *lexer_data, TokenType type) const;
+};
+
 struct TokenLexerStringExpr final : TokenLexer {
   std::unique_ptr<Helper<TokenLexer>> h;
 

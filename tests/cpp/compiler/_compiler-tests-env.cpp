@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "compiler/compiler-core.h"
+#include "compiler/lexer.h"
 
 class CompilerTestsEnvironment final : public testing::Environment {
 public:
@@ -8,6 +9,7 @@ public:
 
   void SetUp() final {
     testing::Environment::SetUp();
+    lexer_init();
     G = new CompilerCore();
     G->register_settings(new CompilerSettings{});
   }
