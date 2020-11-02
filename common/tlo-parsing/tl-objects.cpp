@@ -381,6 +381,12 @@ bool type::is_builtin() const {
   return vk::any_of_equal(name, "#", "Type", "Int", "Long", "Float", "Double", "String");
 }
 
+bool type::has_fields_mask() const {
+  return std::all_of(constructors.begin(), constructors.end(), [](const std::unique_ptr<combinator> & c) {
+    return c->has_fields_mask();
+  });
+}
+
 std::string combinator::to_str() const {
   std::stringstream ss;
   ss.width(8);
@@ -405,6 +411,12 @@ bool combinator::is_generic() const {
 bool combinator::is_dependent() const {
   return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) {
     return arg->is_optional() && arg->is_sharp();
+  });
+}
+
+bool combinator::has_fields_mask() const {
+  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) {
+    return arg->is_fields_mask_optional();
   });
 }
 

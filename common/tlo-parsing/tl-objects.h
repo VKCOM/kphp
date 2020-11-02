@@ -220,6 +220,7 @@ struct combinator {
   bool is_kphp_rpc_server_function() const;
   bool is_generic() const;
   bool is_dependent() const;
+  bool has_fields_mask() const;
   std::string to_str() const;
 private:
   std::vector<std::pair<int, int>> var_num_to_arg_idx = {};
@@ -242,6 +243,7 @@ struct type {
   bool is_integer_variable() const;
   bool is_generic() const;
   bool is_dependent() const;
+  bool has_fields_mask() const;
   bool is_builtin() const;
   std::string to_str() const;
 };
