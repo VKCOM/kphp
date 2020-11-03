@@ -609,7 +609,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
   php_assert (pcre_regexp);
 
-  int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
+  int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
   dl::enter_critical_section();//OK
   int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(),
                             static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);

@@ -778,7 +778,8 @@ int nbit_ready_bytes (nb_iterator_t *I) {
 
   X = X->next;
   while (X != H) {
-    assert (--limit >= 0);
+    --limit;
+    assert (limit >= 0);
     v = X->wptr - X->rptr;
     assert ((unsigned) v <= NET_BUFFER_SIZE);
     if (v) {
@@ -810,7 +811,8 @@ void *nbit_get_ptr (nb_iterator_t *I) {
 
   X = X->next;
   while (X != H) {
-    assert (--limit >= 0);
+    --limit;
+    assert (limit >= 0);
     if (X->rptr < X->wptr) {
       I->cur = X;
       I->cptr = X->rptr;
@@ -839,7 +841,8 @@ int nbit_total_ready_bytes (nb_iterator_t *I) {
   assert (u <= NET_BUFFER_SIZE);
   X = X->next;
   while (X != H && X->pptr != X->rptr) {
-    assert (--limit >= 0);
+    --limit;
+    assert (limit >= 0);
     pptr = X->pptr ? X->pptr : X->wptr;
     v = pptr - X->rptr;
     assert (v >= 0 && v <= NET_BUFFER_SIZE);
