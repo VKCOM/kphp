@@ -1324,7 +1324,7 @@ class UberH3 {
   static public function uncompact($h3_indexes ::: int[], $resolution ::: int) ::: int[] | false;
   static public function maxUncompactSize($h3_indexes ::: int[], $resolution ::: int) ::: int;
 
-  // (TODO) Region functions: https://h3geo.org/docs/api/regions
-  static public function maxPolyfillSize($polygon_boundary ::: tuple(float, float)[], $holes ::: tuple(float, float)[][], $resolution ::: int) ::: int;
+  // Region functions: https://h3geo.org/docs/api/regions
   static public function polyfill($polygon_boundary ::: tuple(float, float)[], $holes ::: tuple(float, float)[][], $resolution ::: int) ::: int[] | false;
+  static public function maxPolyfillSize($polygon_boundary ::: tuple(float, float)[], $holes ::: tuple(float, float)[][], $resolution ::: int) ::: int;
 }

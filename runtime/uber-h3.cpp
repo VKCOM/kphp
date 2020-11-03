@@ -83,6 +83,8 @@ public:
       hole.get_value().verts = &holes_vertexes_[prev_offset];
       prev_offset = hole.get_value().numVerts;
     }
+    polygon.numHoles = static_cast<int32_t>(holes_.count());
+    polygon.holes = &holes_[0];
   }
 
   const GeoPolygon &getPolygon() const noexcept {
@@ -93,7 +95,7 @@ private:
   array<GeoCoord> polygon_boundary_;
   array<GeoCoord> holes_vertexes_;
   array<Geofence> holes_;
-  GeoPolygon polygon;
+  GeoPolygon polygon{};
 };
 
 } // namespace
@@ -402,11 +404,26 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
   }
 
   GeoPolygonOwner polygon_owner{polygon_boundary, holes};
-  auto hexagon_indexes = make_zeros_vector<int64_t>(maxPolyfillSize(&polygon_owner.getPolygon(), checked_resolution));
+  const int32_t max_size = maxPolyfillSize(&polygon_owner.getPolygon(), checked_resolution);
+  if (max_size < 0) {
+    return false;
+  }
+  auto hexagon_indexes = make_zeros_vector<int64_t>(max_size);
   if (!hexagon_indexes.empty()) {
     // polyfill() uses malloc
     auto malloc_replacer = make_malloc_replacement_with_script_allocator();
     polyfill(&polygon_owner.getPolygon(), checked_resolution, reinterpret_cast<H3Index *>(&hexagon_indexes[0]));
   }
-  return std::move(hexagon_indexes);
+  int64_t indexes_count = 0;
+  for (const auto &element : hexagon_indexes) {
+    indexes_count += element.get_value() ? 1 : 0;
+  }
+  array<int64_t> result_array{array_size{indexes_count, 0, true}};
+  for (const auto &element : hexagon_indexes) {
+    if (auto h3_index = element.get_value()) {
+      result_array.emplace_back(h3_index);
+    }
+  }
+
+  return std::move(result_array);
 }
