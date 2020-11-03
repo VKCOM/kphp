@@ -78,7 +78,7 @@ install(FILES ${BASE_DIR}/functions.txt ${COMMON_DIR}/php-functions.h
 
 install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}/objs/auto/generated/runtime/)
+        DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
 set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, curl-kphp-vk, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, libssl-dev, zlib1g-dev, \
                                        libzstd-dev, g++, libnghttp2-dev, libmsgpack-dev, libyaml-cpp-dev")
@@ -89,6 +89,5 @@ set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
 add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
                   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*)
-add_dependencies(force_clean_all clean_vkext)
 
 include(CPack)

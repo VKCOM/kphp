@@ -55,8 +55,8 @@ endif()
 include_directories(${GENERATED_DIR})
 add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer)
 if(HOST STREQUAL "x86_64")
-    add_compile_options(-mpclmul -march=nehalem -m64 -fno-common)
-    add_link_options(-m64 -fno-common)
+    add_compile_options(-mpclmul -march=nehalem -fno-common)
+    add_link_options(-fno-common)
 endif()
 
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
