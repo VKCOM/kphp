@@ -81,10 +81,16 @@ class KphpRunOnceRunner(KphpBuilder):
         if php_bin is None:
             raise RuntimeError("Can't find php executable")
 
+        vkext_so = None
         if php_bin.endswith("php7.2"):
-            options.append(("extension", os.path.join(self._vkext_dir, "modules7.2", "vkext.so")))
+            vkext_so = os.path.join(self._vkext_dir, "modules7.2", "vkext.so")
         elif php_bin.endswith("php7.4"):
-            options.append(("extension", os.path.join(self._vkext_dir, "modules7.4", "vkext.so")))
+            vkext_so = os.path.join(self._vkext_dir, "modules7.4", "vkext.so")
+
+        if not vkext_so or not os.path.exists(vkext_so):
+            vkext_so = "vkext.so"
+
+        options.append(("extension", vkext_so))
 
         options.extend([
             ("display_errors", 0),
