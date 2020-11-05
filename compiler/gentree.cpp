@@ -2225,8 +2225,15 @@ void GenTree::run() {
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_main));
   processing_file->main_function = cur_function;
 
+  if (test_expect(tok_phpdoc) && std::next(cur, 1)->type() == tok_declare) {
+    skip_phpdoc_tokens();
+  }
   if (test_expect(tok_declare)) {
     parse_declare_at_top_of_file();
+  }
+
+  if (test_expect(tok_phpdoc) && std::next(cur, 1)->type() == tok_namespace) {
+    skip_phpdoc_tokens();
   }
   if (test_expect(tok_namespace)) {
     parse_namespace_and_uses_at_top_of_file();
