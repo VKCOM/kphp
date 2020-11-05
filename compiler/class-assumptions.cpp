@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 /*
  * Assumptions — is a predicted type information that describes which variables belong to which classes.
  * Used to resolve the arrow method calls and find which actual function is being called.

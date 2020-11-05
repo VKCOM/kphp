@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #ifndef __TL_PARSER_NEW_H__
 #define __TL_PARSER_NEW_H__
 enum lex_type {

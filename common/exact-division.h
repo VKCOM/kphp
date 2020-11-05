@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #ifndef KDB_COMMON_EXACT_DIVISION_H
 #define KDB_COMMON_EXACT_DIVISION_H
 

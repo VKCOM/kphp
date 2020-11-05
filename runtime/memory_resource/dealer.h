@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 #include "runtime/memory_resource/heap_resource.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"

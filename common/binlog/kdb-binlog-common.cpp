@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #define _XOPEN_SOURCE 500
 
 #include "common/binlog/kdb-binlog-common.h"

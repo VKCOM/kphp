@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "common/parallel/limit-counter.h"
 
 static inline void parallel_limit_counter_globalize_count(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls) {
