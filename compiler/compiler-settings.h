@@ -158,6 +158,7 @@ public:
   KphpImplicitOption binary_path;
   KphpImplicitOption static_lib_name;
   KphpImplicitOption generated_runtime_path;
+  KphpImplicitOption performance_analyze_report_path;
 
   KphpImplicitOption runtime_sha256;
   KphpImplicitOption cxx_flags_sha256;

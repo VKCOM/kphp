@@ -114,6 +114,8 @@ public:
     return is_untyped_rpc_tl_used;
   }
 
+  vk::string_view get_base_relative_filename(SrcFilePtr file) const noexcept;
+
   Stats stats;
 };
 

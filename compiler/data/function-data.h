@@ -16,6 +16,7 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-modifiers.h"
+#include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
@@ -127,6 +128,10 @@ public:
     enable_as_inline_child,
   } profiler_state = profiler_status::disable;
 
+  PerformanceInspections performance_inspections_for_analyse;
+  PerformanceInspections performance_inspections_for_warning;
+  std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
+
   ClassPtr class_id;
   ClassPtr context_class;
   FunctionModifiers modifiers = FunctionModifiers::nonmember();
@@ -145,8 +150,9 @@ public:
 
   string get_resumable_path() const;
   string get_throws_call_chain() const;
-  static string get_human_readable_name(const std::string &name);
-  string get_human_readable_name() const;
+  std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
+  static string get_human_readable_name(const std::string &name, bool add_details = true);
+  string get_human_readable_name(bool add_details = true) const;
   void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
 
   bool has_implicit_this_arg() const {

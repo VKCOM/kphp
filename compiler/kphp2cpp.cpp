@@ -307,6 +307,7 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("TL namespace prefix", settings->tl_namespace_prefix);
   parser.add_implicit_option("TL classname prefix", settings->tl_classname_prefix);
   parser.add_implicit_option("Generated runtime path", settings->generated_runtime_path);
+  parser.add_implicit_option("Performance report path", settings->performance_analyze_report_path);
 
   try {
     parser.process_args(argc, argv);

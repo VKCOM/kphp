@@ -225,28 +225,51 @@ string FunctionData::get_throws_call_chain() const {
   return vk::join(names, " -> ") + (last.get_line() != -1 ? fmt_format(" (line {})", last.get_line()) : "");
 }
 
+std::string FunctionData::get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection) const noexcept {
+  const auto check_inspection = [search_disabled_inspection, inspection](FunctionPtr f) {
+    return search_disabled_inspection
+           ? (f->performance_inspections_for_warning.disabled_inspections() & inspection)
+           : (f->performance_inspections_for_warning.inspections() & inspection);
+  };
 
-std::string FunctionData::get_human_readable_name(const std::string &name) {
+  std::forward_list<std::string> chain;
+  FunctionPtr fun = get_self();
+  chain.emplace_front(fun->get_human_readable_name());
+  while (!fun->performance_inspections_for_warning.has_their_own_inspections()) {
+    auto caller_it = std::find_if(fun->performance_inspections_for_warning_parents.begin(), fun->performance_inspections_for_warning_parents.end(), check_inspection);
+    kphp_assert(caller_it != fun->performance_inspections_for_warning_parents.end());
+    fun = *caller_it;
+    chain.emplace_front(fun->get_human_readable_name());
+  }
+
+  return vk::join(chain, " -> ");
+}
+
+std::string FunctionData::get_human_readable_name(const std::string &name, bool add_details) {
   std::smatch matched;
   if (std::regex_match(name, matched, std::regex(R"((.+)\$\$(.+)\$\$(.+))"))) {
     string base_class = matched[1].str(), actual_class = matched[3].str();
     base_class = replace_characters(base_class, '$', '\\');
     actual_class = replace_characters(actual_class, '$', '\\');
-    return actual_class + "::" + matched[2].str() + " (" + "inherited from " + base_class + ")";
+    std::string result = actual_class + "::" + matched[2].str();
+    if (add_details) {
+      result += " (inherited from " + base_class + ")";
+    }
+    return result;
   }
   // Modify with caution! Some symbols are analyzed with regexps during the stack trace printing
   return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), "::"), std::regex("\\$"), "\\");
 }
 
-string FunctionData::get_human_readable_name() const {
+string FunctionData::get_human_readable_name(bool add_details) const {
   std::string result_name;
   if (modifiers.is_nonmember()) {
     result_name = name;
   } else {
-    result_name = is_lambda() ? "anonymous(...)" : get_human_readable_name(name);
+    result_name = is_lambda() ? "anonymous(...)" : get_human_readable_name(name, add_details);
   }
 
-  if (instantiation_of_template_function_location.get_line() != -1) {
+  if (add_details && instantiation_of_template_function_location.get_line() != -1) {
     auto &file = instantiation_of_template_function_location.get_file()->file_name;
     auto line = std::to_string(instantiation_of_template_function_location.line);
     result_name += "(instantiated at: " + file + ":" + line + ")";

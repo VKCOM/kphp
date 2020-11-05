@@ -542,6 +542,17 @@ void CompilerCore::init_composer_class_loader() {
   }
 }
 
+vk::string_view CompilerCore::get_base_relative_filename(SrcFilePtr file) const noexcept {
+  if (!file) {
+    return "unknown";
+  }
+  vk::string_view file_name{file->file_name};
+  if (file_name.starts_with(settings().base_dir.get())) {
+    file_name.remove_prefix(settings().base_dir.get().size());
+  }
+  return file_name;
+}
+
 CompilerCore *G;
 
 bool try_optimize_var(VarPtr var) {

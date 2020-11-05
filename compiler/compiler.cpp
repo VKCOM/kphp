@@ -27,6 +27,7 @@
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
 #include "compiler/pipes/analyzer.h"
+#include "compiler/pipes/analyze-performance.h"
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
@@ -278,6 +279,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CommonAnalyzerPass>{}
     >> PassC<CheckTlClasses>{}
     >> PassC<CheckAccessModifiersPass>{}
+    >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
     >> SyncC<CodeGenF>{}
@@ -310,6 +312,13 @@ bool compiler_execute(CompilerSettings *settings) {
 
   if (G->settings().error_on_warns.get() && stage::warnings_count > 0) {
     stage::error();
+  }
+
+  if (!PerformanceIssuesReport::get().empty()) {
+    if (auto *report_file = fopen(G->settings().performance_analyze_report_path.get().c_str(), "w")) {
+      PerformanceIssuesReport::get().flush_to(report_file);
+      fclose(report_file);
+    }
   }
 
   stage::die_if_global_errors();

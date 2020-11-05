@@ -276,6 +276,23 @@ private:
         break;
       }
 
+      case php_doc_tag::kphp_warn_performance: {
+        try {
+          f_->performance_inspections_for_warning.add_from_php_doc(tag.value);
+        } catch (const std::exception &ex) {
+          kphp_error(false, fmt_format("@kphp-warn-performance bad tag: {}", ex.what()));
+        }
+        break;
+      }
+      case php_doc_tag::kphp_analyze_performance: {
+        try {
+          f_->performance_inspections_for_analyse.add_from_php_doc(tag.value);
+        } catch (const std::exception &ex) {
+          kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
+        }
+        break;
+      }
+
       default:
         break;
     }

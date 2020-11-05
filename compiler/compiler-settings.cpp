@@ -297,6 +297,7 @@ void CompilerSettings::init() {
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
   binary_path.value_ = dest_dir.get() + mode.get();
+  performance_analyze_report_path.value_ = dest_dir.get() + "performance_issues.json";
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
   cxx_flags.value_ += " -iquote" + dest_cpp_dir.get();
 
