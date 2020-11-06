@@ -6,7 +6,7 @@
 
 #include "common/crypto/aes256.h"
 
-bool crypto_aarch64_has_aes_extension(void);
+bool crypto_aarch64_has_aes_extension();
 
 void crypto_aarch64_aes256_set_encrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]);
 void crypto_aarch64_aes256_set_decrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]);

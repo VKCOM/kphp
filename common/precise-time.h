@@ -7,10 +7,10 @@
 /* net-event.h */
 extern int now;
 extern thread_local double precise_now;
-double get_utime_monotonic (void);
+double get_utime_monotonic ();
 
 // get CLOCK_MONOTONIC nanoseconds integer
-uint64_t get_ntime_mono(void);
+uint64_t get_ntime_mono();
 
 /* common/server-functions.h */
 double get_utime (int clock_id);
@@ -19,11 +19,11 @@ extern long long precise_time_rdtsc; // when precise_time was obtained
 long long get_precise_time (unsigned precision);
 
 /* ??? */
-double get_double_time (void);
+double get_double_time ();
 
-double get_network_time(void);
+double get_network_time();
 
-int get_uptime(void);
-void init_uptime(void);
+int get_uptime();
+void init_uptime();
 
 #endif

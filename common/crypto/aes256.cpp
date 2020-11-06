@@ -14,9 +14,9 @@
 
 static bool use_hw_acceleration = true;
 
-static void check_settings(void) __attribute__((constructor));
+static void check_settings() __attribute__((constructor));
 
-static void check_settings(void) {
+static void check_settings() {
   if (getenv("KDB_CRYPTO_DONT_USE_HW_ACCELERATION")) {
     use_hw_acceleration = false;
   }

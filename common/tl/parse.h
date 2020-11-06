@@ -38,37 +38,37 @@ void tl_decompress_remaining(int version);
 int tl_fetch_check(int nbytes);
 
 void tl_fetch_raw_data(void *buf, int size);
-int tl_fetch_lookup_int(void);
+int tl_fetch_lookup_int();
 int tl_fetch_lookup_data(char *data, int len);
 
-int tl_fetch_int(void);
-bool tl_fetch_bool(void);
-double tl_fetch_double(void);
+int tl_fetch_int();
+bool tl_fetch_bool();
+double tl_fetch_double();
 double tl_fetch_double_in_range(double min, double max);
 float tl_fetch_float();
-long long tl_fetch_long(void);
+long long tl_fetch_long();
 
-void tl_fetch_mark(void);
-void tl_fetch_mark_restore(void);
-void tl_fetch_mark_delete(void);
+void tl_fetch_mark();
+void tl_fetch_mark_restore();
+void tl_fetch_mark_delete();
 
 
 int tl_fetch_string_len(int max_len);
-int tl_fetch_pad(void);
+int tl_fetch_pad();
 int tl_fetch_data(void *buf, int len);
 int tl_fetch_string_data(char *buf, int len);
 int tl_fetch_string(char *buf, int max_len);
 int tl_fetch_string0(char *buf, int max_len);
 
-bool tl_fetch_error(void);
-int tl_fetch_error_code(void);
-const char* tl_fetch_error_string(void);
+bool tl_fetch_error();
+int tl_fetch_error_code();
+const char* tl_fetch_error_string();
 
-int tl_fetch_end(void);
+int tl_fetch_end();
 
-void tl_fetch_reset_error(void);
+void tl_fetch_reset_error();
 
-int64_t tl_fetch_unread(void);
+int64_t tl_fetch_unread();
 int64_t tl_bytes_fetched();
 int64_t tl_bytes_stored();
 
@@ -91,13 +91,13 @@ void tl_store_raw_data_nopad(const void *s, int len);
 int tl_store_pad();
 void  tl_store_string(const char *s, int len);
 void tl_store_string0(const char *s);
-int tl_store_clear(void);
-int tl_store_end(void);
+int tl_store_clear();
+int tl_store_end();
 
 int tl_fetch_int_range(int min, int max);
 
-void tlio_push(void);
-void tlio_pop(void);
+void tlio_push();
+void tlio_pop();
 
 bool tl_is_store_inited();
 bool tl_is_fetch_inited();

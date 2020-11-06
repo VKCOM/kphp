@@ -10,9 +10,7 @@ static __thread lockfree_slab_cache_tls_t msg_part_cache_tls;
 
 PARALLEL_COUNTER(rwm_total_msg_parts);
 
-static void msg_part_constructor(void) __attribute__((constructor));
-
-static void msg_part_constructor(void) {
+static void __attribute__((constructor)) msg_part_constructor() {
   lockfree_slab_cache_init(&msg_part_cache, sizeof(msg_part_t));
 }
 
@@ -32,7 +30,7 @@ msg_part_t *new_msg_part(msg_buffer_t *X) {
   return mp;
 }
 
-void init_msg_part(void) {
+void init_msg_part() {
   PARALLEL_COUNTER_REGISTER_THREAD(rwm_total_msg_parts);
   lockfree_slab_cache_register_thread(&msg_part_cache, &msg_part_cache_tls);
 }
@@ -42,6 +40,6 @@ void free_msg_part(msg_part_t *mp) {
   lockfree_slab_cache_free(&msg_part_cache_tls, mp);
 }
 
-int rwm_total_msg_parts(void) {
+int rwm_total_msg_parts() {
   return PARALLEL_COUNTER_READ(rwm_total_msg_parts);
 }

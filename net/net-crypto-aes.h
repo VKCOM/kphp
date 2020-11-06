@@ -47,7 +47,7 @@ struct aes_crypto {
 extern int allocated_aes_crypto;
 extern int aes_initialized;
 
-int aes_load_keys(void);
+int aes_load_keys();
 int aes_generate_nonce (char res[16]);
 
 int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, const char nonce_server[16], const char nonce_client[16], int client_timestamp,

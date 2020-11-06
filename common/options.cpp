@@ -55,7 +55,7 @@ static std::string format_help_arg_name(int val) {
   return result.str();
 }
 
-void parse_usage(void) {
+void parse_usage() {
   int max_len = 0;
   std::vector<option_section_t> sections;
   for (int i = 1; i < MAX_OPTION_ID; i++) {
@@ -310,7 +310,7 @@ void usage_set_other_args_desc(const char *s) {
   usage_other_args_desc = s;
 }
 
-void usage_and_exit(void) {
+void usage_and_exit() {
   printf("%s\n", get_version_string());
   printf("usage: %s %s\n", usage_progname ?: "", usage_other_args_desc);
   if (usage_options_desc) {

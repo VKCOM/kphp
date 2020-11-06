@@ -60,7 +60,7 @@ void reopen_logs_ext (int slave_mode) {
   }
 }
 
-void reopen_logs (void) {
+void reopen_logs () {
   reopen_logs_ext (0);
 }
 
@@ -167,7 +167,7 @@ int kwrite (int fd, const void *buf, int count) {
 #undef S_BUF_SIZE
 }
 
-void kprintf_multiprocessing_mode_enable (void) {
+void kprintf_multiprocessing_mode_enable () {
   kprintf_multiprocessing_mode = 1;
 }
 

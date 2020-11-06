@@ -5,10 +5,10 @@
 
 #define NR_THREADS 256
 
-void parallel_register_thread(void);
-void parallel_unregister_thread(void);
-int parallel_online_threads_count(void);
+void parallel_register_thread();
+void parallel_unregister_thread();
+int parallel_online_threads_count();
 
-int parallel_thread_id(void);
+int parallel_thread_id();
 
 #endif // KDB_COMMON_PARALLEL_THREAD_ID_H

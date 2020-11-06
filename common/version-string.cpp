@@ -36,7 +36,7 @@ void init_version_string(const char* version) {
       " after commit " COMMIT, version, date_str);
 }
 
-const char* get_version_string(void) {
+const char* get_version_string() {
   return FullVersionStr;
 }
 

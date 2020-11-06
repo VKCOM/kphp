@@ -7,7 +7,7 @@
 
 #include "common/crypto/aes256.h"
 
-bool crypto_x86_64_has_aesni_extension(void);
+bool crypto_x86_64_has_aesni_extension();
 
 void crypto_x86_64_aesni256_set_encrypt_key(vk_aes_ctx_t *ctx, const uint8_t key[32]);
 void crypto_x86_64_aesni256_set_decrypt_key(vk_aes_ctx_t *ctx, const uint8_t key[32]);

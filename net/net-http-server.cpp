@@ -766,7 +766,7 @@ int gen_http_time (char *date_buffer, int *time) {
   return 0;
 }
 
-char *cur_http_date (void) {
+char *cur_http_date () {
   if (now_date_utime != now) {
     gen_http_date (now_date_string, now_date_utime = now);
   }

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static __inline__ uint64_t cycleclock_now(void) {
+static __inline__ uint64_t cycleclock_now() {
 #if defined(__x86_64__)
   uint32_t hi, lo;
   __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));

@@ -169,7 +169,7 @@ struct tl_var {
 
 int tl_init_parse_file(const char *fname, struct parse *save);
 struct tree *tl_parse_lex(struct parse *parse_files, int files_count);
-void tl_print_parse_error(void);
+void tl_print_parse_error();
 struct tl_program *tl_parse(struct tree *T);
 
 void write_types(int f);

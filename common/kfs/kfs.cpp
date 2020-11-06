@@ -495,7 +495,7 @@ static unsigned char *alloc_buffer(size_t size) {
 }
 
 __attribute__((destructor))
-static void free_decode_buffers(void) {
+static void free_decode_buffers() {
   for (int i = 0; i < bz_decode_buffers_size; i++) {
     free(bz_decode_buffers[i]);
   }

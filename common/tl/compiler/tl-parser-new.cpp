@@ -35,7 +35,7 @@ int total_functions_num;
 char curch;
 struct parse parse;
 
-struct tree *tree_alloc(void) {
+struct tree *tree_alloc() {
   tree *T = reinterpret_cast<tree *>(malloc(sizeof(tree)));
   assert (T);
   memset(T, 0, sizeof(*T));
@@ -74,7 +74,7 @@ void tree_del_child(struct tree *P) {
 }
 
 
-char nextch(void) {
+char nextch() {
   if (parse.pos < parse.len - 1) {
     curch = parse.text[++parse.pos];
   } else {
@@ -92,7 +92,7 @@ char nextch(void) {
 }
 
 
-struct parse save_parse(void) {
+struct parse save_parse() {
   return parse;
 }
 
@@ -148,11 +148,11 @@ void parse_error(const char *e) {
   }
 }
 
-void tl_print_parse_error(void) {
+void tl_print_parse_error() {
   fprintf(stderr, "Error near %s:%d pos %d: `%s`\n", last_schema_file, last_error_line + 1, last_error_line_pos + 1, last_error);
 }
 
-char *parse_lex(void) {
+char *parse_lex() {
   while (1) {
     while (curch && is_whitespace(curch)) {
       nextch();
@@ -346,10 +346,10 @@ int tl_init_parse_file(const char *fname, struct parse *save) {
 #define PARSE_ADD(_type) S = tree_alloc (); S->type = _type; tree_add_child (T, S);
 #define EXPECT(s) if (expect (s) < 0) { PARSE_FAIL; }
 #define LEX_CHAR(c) (parse.lex.type == lex_char && *parse.lex.ptr == c)
-struct tree *parse_args(void);
-struct tree *parse_expr(void);
+struct tree *parse_args();
+struct tree *parse_expr();
 
-struct tree *parse_boxed_type_ident(void) {
+struct tree *parse_boxed_type_ident() {
   PARSE_INIT (type_boxed_type_ident);
   if (parse.lex.type != lex_uc_ident) {
     parse_error("Can not parse boxed type");
@@ -363,7 +363,7 @@ struct tree *parse_boxed_type_ident(void) {
   }
 }
 
-struct tree *parse_full_combinator_id(void) {
+struct tree *parse_full_combinator_id() {
   PARSE_INIT (type_full_combinator_id);
   if (parse.lex.type == lex_lc_ident || LEX_CHAR('_')) {
     T->text = parse.lex.ptr;
@@ -377,7 +377,7 @@ struct tree *parse_full_combinator_id(void) {
   }
 }
 
-struct tree *parse_combinator_id(void) {
+struct tree *parse_combinator_id() {
   PARSE_INIT (type_combinator_id);
   if (parse.lex.type == lex_lc_ident && !(parse.lex.flags & 2)) {
     T->text = parse.lex.ptr;
@@ -391,7 +391,7 @@ struct tree *parse_combinator_id(void) {
   }
 }
 
-struct tree *parse_var_ident(void) {
+struct tree *parse_var_ident() {
   PARSE_INIT (type_var_ident);
   if ((parse.lex.type == lex_lc_ident || parse.lex.type == lex_uc_ident) && !(parse.lex.flags & 3)) {
     T->text = parse.lex.ptr;
@@ -405,7 +405,7 @@ struct tree *parse_var_ident(void) {
   }
 }
 
-struct tree *parse_var_ident_opt(void) {
+struct tree *parse_var_ident_opt() {
   PARSE_INIT (type_var_ident_opt);
   if ((parse.lex.type == lex_lc_ident || parse.lex.type == lex_uc_ident) && !(parse.lex.flags & 3)) {
     T->text = parse.lex.ptr;
@@ -425,7 +425,7 @@ struct tree *parse_var_ident_opt(void) {
   }
 }
 
-struct tree *parse_nat_const(void) {
+struct tree *parse_nat_const() {
   PARSE_INIT (type_nat_const);
   if (parse.lex.type == lex_num) {
     T->text = parse.lex.ptr;
@@ -439,7 +439,7 @@ struct tree *parse_nat_const(void) {
   }
 }
 
-struct tree *parse_type_ident(void) {
+struct tree *parse_type_ident() {
   PARSE_INIT (type_type_ident);
   if (parse.lex.type == lex_uc_ident && !(parse.lex.flags & 2)) {
     T->text = parse.lex.ptr;
@@ -465,7 +465,7 @@ struct tree *parse_type_ident(void) {
   }
 }
 
-struct tree *parse_term(void) {
+struct tree *parse_term() {
   PARSE_INIT (type_term);
   while (LEX_CHAR ('%')) {
     EXPECT ("%")
@@ -499,13 +499,13 @@ struct tree *parse_term(void) {
   PARSE_FAIL;
 }
 
-struct tree *parse_nat_term(void) {
+struct tree *parse_nat_term() {
   PARSE_INIT (type_nat_term);
   PARSE_TRY_PES (parse_term);
   PARSE_OK;
 }
 
-struct tree *parse_subexpr(void) {
+struct tree *parse_subexpr() {
   PARSE_INIT (type_subexpr);
   int was_term = 0;
   int cc = 0;
@@ -536,7 +536,7 @@ struct tree *parse_subexpr(void) {
   }
 }
 
-struct tree *parse_expr(void) {
+struct tree *parse_expr() {
   PARSE_INIT (type_expr);
   int cc = 0;
   while (1) {
@@ -555,20 +555,20 @@ struct tree *parse_expr(void) {
 }
 
 
-struct tree *parse_multiplicity(void) {
+struct tree *parse_multiplicity() {
   PARSE_INIT (type_multiplicity);
   PARSE_TRY_PES (parse_nat_term);
   PARSE_OK;
 }
 
 
-struct tree *parse_type_term(void) {
+struct tree *parse_type_term() {
   PARSE_INIT (type_type_term);
   PARSE_TRY_PES (parse_term);
   PARSE_OK;
 }
 
-struct tree *parse_optional_arg_def(void) {
+struct tree *parse_optional_arg_def() {
   PARSE_INIT (type_optional_arg_def);
   PARSE_TRY_PES (parse_var_ident);
   EXPECT (".");
@@ -577,7 +577,7 @@ struct tree *parse_optional_arg_def(void) {
   PARSE_OK;
 }
 
-struct tree *parse_args4(void) {
+struct tree *parse_args4() {
   PARSE_INIT (type_args4);
   struct parse so = save_parse();
   PARSE_TRY (parse_optional_arg_def);
@@ -594,7 +594,7 @@ struct tree *parse_args4(void) {
   PARSE_OK;
 }
 
-struct tree *parse_args3(void) {
+struct tree *parse_args3() {
   PARSE_INIT (type_args3);
   PARSE_TRY_PES (parse_var_ident_opt);
   EXPECT (":");
@@ -613,7 +613,7 @@ struct tree *parse_args3(void) {
   PARSE_OK;
 }
 
-struct tree *parse_args2(void) {
+struct tree *parse_args2() {
   PARSE_INIT (type_args2);
   PARSE_TRY (parse_var_ident_opt);
   if (S && LEX_CHAR (':')) {
@@ -648,7 +648,7 @@ struct tree *parse_args2(void) {
   PARSE_OK;
 }
 
-struct tree *parse_args1(void) {
+struct tree *parse_args1() {
   PARSE_INIT (type_args1);
   EXPECT ("(");
   while (1) {
@@ -674,7 +674,7 @@ struct tree *parse_args1(void) {
   PARSE_OK;
 }
 
-struct tree *parse_args(void) {
+struct tree *parse_args() {
   PARSE_INIT (type_args);
   PARSE_TRY_OPT (parse_args1);
   PARSE_TRY_OPT (parse_args2);
@@ -683,7 +683,7 @@ struct tree *parse_args(void) {
   PARSE_FAIL;
 }
 
-struct tree *parse_opt_args(void) {
+struct tree *parse_opt_args() {
   PARSE_INIT (type_opt_args);
   while (1) {
     PARSE_TRY_PES (parse_var_ident);
@@ -696,7 +696,7 @@ struct tree *parse_opt_args(void) {
   PARSE_OK;
 }
 
-struct tree *parse_result_type(void) {
+struct tree *parse_result_type() {
   PARSE_INIT (type_result_type);
   PARSE_TRY_PES (parse_boxed_type_ident);
   if (LEX_CHAR ('<')) {
@@ -720,7 +720,7 @@ struct tree *parse_result_type(void) {
   }
 }
 
-struct tree *parse_combinator_decl(void) {
+struct tree *parse_combinator_decl() {
   PARSE_INIT (type_combinator_decl);
   while (parse.lex.type == lex_attribute) {
     PARSE_ADD(type_attribute);
@@ -755,7 +755,7 @@ struct tree *parse_combinator_decl(void) {
   PARSE_OK;
 }
 
-struct tree *parse_builtin_combinator_decl(void) {
+struct tree *parse_builtin_combinator_decl() {
   PARSE_INIT (type_builtin_combinator_decl);
   PARSE_TRY_PES (parse_full_combinator_id)
   EXPECT ("?");
@@ -764,14 +764,14 @@ struct tree *parse_builtin_combinator_decl(void) {
   PARSE_OK;
 }
 
-struct tree *parse_declaration(void) {
+struct tree *parse_declaration() {
   PARSE_INIT (type_declaration);
   PARSE_TRY_OPT (parse_combinator_decl);
   PARSE_TRY_OPT (parse_builtin_combinator_decl);
   PARSE_FAIL;
 }
 
-struct tree *parse_constr_declarations(void) {
+struct tree *parse_constr_declarations() {
   PARSE_INIT (type_constr_declarations);
   if (parse.lex.type == lex_triple_minus || parse.lex.type == lex_eof) {
     PARSE_OK;
@@ -785,7 +785,7 @@ struct tree *parse_constr_declarations(void) {
   }
 }
 
-struct tree *parse_fun_declarations(void) {
+struct tree *parse_fun_declarations() {
   PARSE_INIT (type_fun_declarations);
   if (parse.lex.type == lex_triple_minus || parse.lex.type == lex_eof) {
     PARSE_OK;
@@ -799,7 +799,7 @@ struct tree *parse_fun_declarations(void) {
   }
 }
 
-struct tree *parse_program(void) {
+struct tree *parse_program() {
   PARSE_INIT (type_tl_program);
 
   if (parse.lex.type != lex_triple_minus) {
@@ -952,7 +952,7 @@ int tl_add_field(char *id) {
   return 1;
 }
 
-void tl_clear_fields(void) {
+void tl_clear_fields() {
 //  tree_act_tl_field (fields[namespace_level], (void *)free); 
   fields[namespace_level] = tree_clear_tl_field(fields[namespace_level]);
 }
@@ -979,13 +979,13 @@ void tl_del_var(struct tl_var *v) {
   free(v);
 }
 
-void tl_clear_vars(void) {
+void tl_clear_vars() {
   tree_act_tl_var(vars[namespace_level], tl_del_var);
   vars[namespace_level] = tree_clear_tl_var(vars[namespace_level]);
   last_num_var[namespace_level] = 0;
 }
 
-struct tl_var *tl_get_last_num_var(void) {
+struct tl_var *tl_get_last_num_var() {
   return last_num_var[namespace_level];
 }
 
@@ -1004,14 +1004,14 @@ struct tl_var *tl_get_var(char *_id, int len) {
   return 0;
 }
 
-void namespace_push(void) {
+void namespace_push() {
   namespace_level++;
   assert (namespace_level < 10);
   tl_clear_vars();
   tl_clear_fields();
 }
 
-void namespace_pop(void) {
+void namespace_pop() {
   namespace_level--;
   assert (namespace_level >= 0);
 }
@@ -1226,7 +1226,7 @@ struct tl_constructor *tl_add_function(struct tl_type *a, const char *_id, int l
 static char buf[(1 << 20)];
 int buf_pos;
 
-struct tl_combinator_tree *alloc_ctree_node(void) {
+struct tl_combinator_tree *alloc_ctree_node() {
   tl_combinator_tree *T = reinterpret_cast<tl_combinator_tree *>(malloc(sizeof(*T)));
   assert (T);
   memset(T, 0, sizeof(*T));
@@ -1273,7 +1273,7 @@ void tl_tree_set_len(struct tl_combinator_tree *T) {
   assert (H->type_len == t->params_num);
 }
 
-void tl_buf_reset(void) {
+void tl_buf_reset() {
   buf_pos = 0;
 }
 

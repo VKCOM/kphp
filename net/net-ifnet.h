@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 int parse_ipv4(const char *str, uint32_t *ip, uint32_t *mask);
-unsigned get_my_ipv4(void);
+unsigned get_my_ipv4();
 int get_my_ipv6(unsigned char ipv6[16]);
 
 constexpr uint32_t ip2uint(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {

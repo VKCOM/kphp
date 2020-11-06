@@ -8,19 +8,19 @@
 #include "common/wrappers/likely.h"
 
 double dl_get_utime (int clock_id);
-double dl_time (void);
+double dl_time ();
 
-sigset_t dl_get_empty_sigset (void);
+sigset_t dl_get_empty_sigset ();
 void dl_sigaction (int sig, void (*handler) (int), sigset_t mask, int flags, void (*action) (int, siginfo_t *, void *));
 void dl_signal (int sig, void (*handler) (int));
-void dl_restore_signal_mask (void);
-void dl_block_all_signals (void);
-void dl_allow_all_signals (void);
+void dl_restore_signal_mask ();
+void dl_block_all_signals ();
+void dl_allow_all_signals ();
 
-void dl_print_backtrace (void);
-void dl_print_backtrace_gdb (void);
+void dl_print_backtrace ();
+void dl_print_backtrace_gdb ();
 
-void dl_set_default_handlers (void);
+void dl_set_default_handlers ();
 
 char* dl_pstr (char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 

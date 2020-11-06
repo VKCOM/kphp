@@ -245,7 +245,7 @@ static inline int init_listening_tcpv6_connection(int fd, conn_type_t *type, voi
   return init_listening_connection_mode(fd, type, extra, mode);
 }
 
-connection_t* lock_fake_connection(void);
+connection_t* lock_fake_connection();
 void unlock_fake_connection(connection_t *c);
 
 
@@ -298,7 +298,7 @@ int clean_unused_target(conn_target_t *S);
 struct connection *get_default_target_connection(conn_target_t *target);
 
 int create_new_connections(conn_target_t *S);
-int create_all_outbound_connections(void);
+int create_all_outbound_connections();
 void install_client_connection(conn_target_t *S, int fd);
 
 int force_clear_connection(struct connection *c);
@@ -316,12 +316,12 @@ extern long long netw_queries, netw_update_queries;
 int free_tmp_buffers(struct connection *c);
 
 int write_out_chk(struct connection *c, const void *data, int len);
-void cond_dump_connection_buffers_stats(void);
-void dump_connection_buffers_stats(void);
+void cond_dump_connection_buffers_stats();
+void dump_connection_buffers_stats();
 
 static inline int is_ipv6_localhost(unsigned char ipv6[16]) { return !*(long long *)ipv6 && ((long long *)ipv6)[1] == 1LL << 56; }
 
-double get_recent_idle_percent(void);
+double get_recent_idle_percent();
 
 int out_total_processed_bytes(struct connection *c);
 int out_total_unprocessed_bytes(struct connection *c);

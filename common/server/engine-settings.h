@@ -27,7 +27,7 @@ typedef struct {
    * Should return negative value on failure.
    * You need to setup jump_log_{pos,crc32,ts} global vars inside.
    */
-  int (*load_index)(void);
+  int (*load_index)();
 
   /**
    * By default engine tries to connect to statsd at ports {8125, 14880} and send stats there
@@ -49,7 +49,7 @@ engine_settings_t *get_engine_settings();
 // this is a way to avoid linkage errors,
 // when some part like kfs is not linked
 typedef struct {
-  const char* (*char_stats)(void);
+  const char* (*char_stats)();
 } engine_settings_handlers_t;
 
 extern engine_settings_handlers_t engine_settings_handlers;

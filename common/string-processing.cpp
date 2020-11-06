@@ -10,7 +10,7 @@ static __thread char str_buf[STRING_PROCESS_BUF_SIZE];
 static __thread int str_buf_n = 0;
 __thread int sp_errno = 0;
 
-void sp_init (void) {
+void sp_init () {
   str_buf_n = 0;
 }
 

@@ -59,7 +59,7 @@ static int replay_logevent_wrapper(const struct lev_generic *E, int size) {
   }
 }
 
-static void engine_read_binlog_new(void) {
+static void engine_read_binlog_new() {
   binlog_load_time = -get_utime_monotonic();
   bb_buffer_open_to_replay(&BinlogBuffer, &BinlogBufferWriter, &BinlogBufferReader, engine_replica, replay_logevent);
 
@@ -85,7 +85,7 @@ void engine_default_read_binlog() {
   engine_read_binlog_new();
 }
 
-void binlog_try_read_events(void) {
+void binlog_try_read_events() {
   if (BinlogBuffer.replay_func) {
     bb_buffer_replay_log(&BinlogBuffer, true);
   }

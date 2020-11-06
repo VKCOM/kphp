@@ -10,8 +10,8 @@
 
 #include "net/net-msg-part.h"
 
-void init_msg(void);
-int rwm_total_msgs(void);
+void init_msg();
+int rwm_total_msgs();
 
 /*
  *	RAW MESSAGES (struct raw_message) = chains of MESSAGE PARTs

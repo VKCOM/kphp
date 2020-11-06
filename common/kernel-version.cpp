@@ -5,7 +5,7 @@
 #include "common/kprintf.h"
 #include "common/stats/provider.h"
 
-static struct utsname* cached_uname(void) {
+static struct utsname* cached_uname() {
   static struct utsname kernel_version;
   static int got_kernel_version = 0;
   if (got_kernel_version == 0) {
@@ -27,7 +27,7 @@ static int kernel_x;
 static int kernel_y;
 static int kernel_z;
 
-static inline void parse_kernel_version(void) {
+static inline void parse_kernel_version() {
   if (kernel_x) {
     return;
   }
@@ -44,12 +44,12 @@ STATS_PROVIDER(kernel, 1000) {
   }
 }
 
-int epoll_exclusive_supported(void) {
+int epoll_exclusive_supported() {
   parse_kernel_version();
   return kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5);
 }
 
-int madvise_madv_free_supported(void) {
+int madvise_madv_free_supported() {
   parse_kernel_version();
   return kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5);
 }

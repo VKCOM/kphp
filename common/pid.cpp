@@ -12,7 +12,7 @@
 
 process_id_t PID;
 
-void init_common_PID (void) {
+void init_common_PID () {
   if (!PID.pid) {
     PID.pid = getpid ();
   }

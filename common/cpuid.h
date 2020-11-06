@@ -13,6 +13,6 @@ typedef struct {
   };
 } kdb_cpuid_t;
 
-const kdb_cpuid_t *kdb_cpuid (void);
+const kdb_cpuid_t *kdb_cpuid ();
 
 #endif

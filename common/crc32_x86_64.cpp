@@ -8,7 +8,7 @@
 
 #ifdef __clang__
 __attribute__((constructor(101)))
-void crc32_init(void) {
+void crc32_init() {
   crc32_partial = crc32_partial_generic;
   crc64_partial = crc64_partial_one_table;
   compute_crc32_combine = compute_crc32_combine_generic;
@@ -301,8 +301,7 @@ static uint64_t compute_crc64_combine_clmul (uint64_t crc1, uint64_t crc2, int64
 }
 
 
-void crc32_init(void) __attribute__((constructor (101)));
-void crc32_init(void) {
+void __attribute__((constructor (101))) crc32_init() {
   const kdb_cpuid_t *p = kdb_cpuid();
   assert(p->type == KDB_CPUID_X86_64);
 

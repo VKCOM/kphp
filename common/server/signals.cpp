@@ -40,7 +40,7 @@ static void write_to_stderr(const char *str, bool first = false) {
 extra_debug_handler_t extra_debug_handler;
 static volatile int double_print_backtrace_guard;
 
-void print_backtrace(void) {
+void print_backtrace() {
   if (double_print_backtrace_guard) {
     kwrite(STDERR_FILENO, "\n---Ignoring recursive print backtrace---\n", 42);
     return;
@@ -65,7 +65,7 @@ void print_backtrace(void) {
 
 static pthread_t debug_main_pthread_id;
 
-void kill_main(void) {
+void kill_main() {
   if (debug_main_pthread_id && debug_main_pthread_id != pthread_self()) {
     pthread_kill(debug_main_pthread_id, SIGABRT);
   }
@@ -215,7 +215,7 @@ void ksignal_intr(int sig, void (*info)(int, siginfo_t *, void *)) {
 }
 
 
-void set_debug_handlers(void) {
+void set_debug_handlers() {
   stack_t stack;
   int res = sigaltstack(nullptr, &stack);
   if (res < 0) {
@@ -284,7 +284,7 @@ static void generic_counting_handler(int sig, siginfo_t *info, void *) {
 }
 
 
-void set_signals_handlers(void) {
+void set_signals_handlers() {
   ksignal(SIGUSR1, generic_counting_handler);
   ksignal(SIGUSR2, generic_counting_handler);
   if (getenv("KDB_VALGRIND") == nullptr) {

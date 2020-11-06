@@ -40,7 +40,7 @@ static const char *user_to_switch(const char *username) {
   return username;
 }
 
-const char *engine_username(void) {
+const char *engine_username() {
   const uid_t uid = getuid();
   const uid_t euid = geteuid();
   if (!uid || !euid) {
@@ -65,7 +65,7 @@ const char *engine_username(void) {
   return cached_username;
 }
 
-const char *engine_groupname(void) {
+const char *engine_groupname() {
   if (getgid() == 0 || getegid() == 0) {
     if (groupname) {
       struct group *group = getgrnam(groupname);

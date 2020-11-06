@@ -44,10 +44,10 @@ typedef struct nb_process_iterator {
 
 extern int NB_used, NB_alloc, NB_free, NB_max, NB_size;
 
-void init_netbuffers (void);
+void init_netbuffers ();
 
-netbuffer_t *alloc_buffer (void);
-netbuffer_t *alloc_head_buffer (void);
+netbuffer_t *alloc_buffer ();
+netbuffer_t *alloc_head_buffer ();
 int free_buffer (netbuffer_t *R);
 
 netbuffer_t *init_builtin_buffer (netbuffer_t *H, char *buf, int len);

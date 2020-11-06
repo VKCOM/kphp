@@ -10,14 +10,14 @@ extern const char *logname;
 
 extern long long log_not_too_much_total;
 
-void reopen_logs (void);
+void reopen_logs ();
 void reopen_logs_ext (int slave_mode);
 int hexdump(FILE* file, const void *start, const void *end);
 
 // write message with timestamp and pid, safe to call inside handler
 int kwrite (int fd, const void *buf, int count);
 
-void kprintf_multiprocessing_mode_enable (void);
+void kprintf_multiprocessing_mode_enable ();
 #ifdef __CLION_IDE__
 void kprintf (const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 void vkprintf (int verbosity, const char *format, ...) __attribute__ ((format (printf, 2, 3)));

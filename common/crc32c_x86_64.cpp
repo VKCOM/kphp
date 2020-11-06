@@ -193,8 +193,8 @@ static unsigned crc32c_partial_sse42_clmul (const void *data, long len, unsigned
   return crc;
 }
 
-void crc32c_init (void) __attribute__ ((constructor(101)));
-void crc32c_init (void) {
+void crc32c_init () __attribute__ ((constructor(101)));
+void crc32c_init () {
   const kdb_cpuid_t *p = kdb_cpuid ();
   assert(p->type == KDB_CPUID_X86_64);
 

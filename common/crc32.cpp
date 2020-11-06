@@ -510,7 +510,7 @@ uint64_t gf64_mul (uint64_t a, uint64_t b) {
 
 uint64_t crc64_power_buf[126] __attribute__ ((aligned(16)));
 
-void crc64_init_power_buf (void) {
+void crc64_init_power_buf () {
   int n;
   uint64_t *p = crc64_power_buf;
   assert (!((uintptr_t) p & 15l));

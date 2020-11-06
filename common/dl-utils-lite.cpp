@@ -53,11 +53,11 @@ long long dl_get_utime_ns (int clock_id) {
 #endif
 }
 
-double dl_time (void) {
+double dl_time () {
   return dl_get_utime (CLOCK_MONOTONIC);
 }
 
-void dl_print_backtrace (void) {
+void dl_print_backtrace () {
   void *buffer[64];
   int nptrs = backtrace (buffer, 64);
   write (2, "\n------- Stack Backtrace -------\n", 33);
@@ -65,7 +65,7 @@ void dl_print_backtrace (void) {
   write (2, "-------------------------------\n", 32);
 }
 
-void dl_print_backtrace_gdb (void) {
+void dl_print_backtrace_gdb () {
   char * const envp[] = {NULL};
   char pid_buf[30];
   sprintf (pid_buf, "%d", getpid());
@@ -104,7 +104,7 @@ void dl_assert__ (const char *expr __attribute__((unused)), const char *file_nam
 static sigset_t old_mask;
 static int old_mask_inited = 0;
 
-sigset_t dl_get_empty_sigset (void) {
+sigset_t dl_get_empty_sigset () {
   sigset_t mask;
   sigemptyset (&mask);
   return mask;
@@ -133,13 +133,13 @@ void dl_signal (int sig, void (*handler) (int)) {
   dl_sigaction (sig, handler, dl_get_empty_sigset(), SA_ONSTACK | SA_RESTART, NULL);
 }
 
-void dl_restore_signal_mask (void) {
+void dl_restore_signal_mask () {
   dl_assert (old_mask_inited != 0, "old_mask in not inited");
   int err = sigprocmask (SIG_SETMASK, &old_mask, NULL);
   dl_passert (err != -1, "failed to restore signal mask");
 }
 
-void dl_block_all_signals (void) {
+void dl_block_all_signals () {
   sigset_t mask;
   sigfillset (&mask);
   int err = sigprocmask (SIG_SETMASK, &mask, &old_mask);
@@ -147,7 +147,7 @@ void dl_block_all_signals (void) {
   dl_passert (err != -1, "failed to block all signals");
 }
 
-void dl_allow_all_signals (void) {
+void dl_allow_all_signals () {
   sigset_t mask;
   sigemptyset (&mask);
   int err = sigprocmask (SIG_SETMASK, &mask, &old_mask);
@@ -162,7 +162,7 @@ static void runtime_handler (const int sig) {
   _exit (EXIT_FAILURE);
 }
 
-void dl_set_default_handlers (void) {
+void dl_set_default_handlers () {
   dl_signal (SIGSEGV, runtime_handler);
   dl_signal (SIGABRT, runtime_handler);
 }

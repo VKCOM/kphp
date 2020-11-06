@@ -17,7 +17,7 @@ typedef struct process_id process_id_t;
 
 extern process_id_t PID;
 
-void init_common_PID (void);
+void init_common_PID ();
 void init_client_PID (unsigned ip);
 void init_server_PID (unsigned ip, int port);
 void reset_PID();

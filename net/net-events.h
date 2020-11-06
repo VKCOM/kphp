@@ -26,15 +26,15 @@ static inline void set_timer_operation(event_timer_t *timer, const char *operati
   timer->operation = operation;
 }
 
-static inline int epoll_event_heap_size(void) {
+static inline int epoll_event_heap_size() {
   return net_reactor_events(&main_thread_reactor);
 }
 
-static inline int epoll_timer_heap_size(void) {
+static inline int epoll_timer_heap_size() {
   return net_reactor_timers(&main_thread_reactor);
 }
 
-static inline int epoll_fd(void) {
+static inline int epoll_fd() {
   return main_thread_reactor.epoll_fd;
 }
 
@@ -42,26 +42,26 @@ static inline event_t* epoll_fd_event(int fd) {
   return net_reactor_fd_event(&main_thread_reactor, fd);
 }
 
-static inline double epoll_total_idle_time(void) {
+static inline double epoll_total_idle_time() {
   return main_thread_reactor.total_idle_time;
 }
 
-static inline double epoll_average_idle_time(void) {
+static inline double epoll_average_idle_time() {
   return main_thread_reactor.average_idle_time;
 }
 
-static inline double epoll_average_idle_quotient(void) {
+static inline double epoll_average_idle_quotient() {
   return main_thread_reactor.average_idle_quotient;
 }
 
-static inline void init_epoll(void) {
+static inline void init_epoll() {
   if (main_thread_reactor.epoll_fd == -1) {
     const bool ok = net_reactor_init(&main_thread_reactor);
     assert(ok);
   }
 }
 
-static inline void close_epoll(void) {
+static inline void close_epoll() {
   net_reactor_destroy(&main_thread_reactor);
   main_thread_reactor.epoll_fd = -1;
 }

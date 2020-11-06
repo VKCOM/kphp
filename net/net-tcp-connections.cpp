@@ -81,7 +81,7 @@ int tcp_recv_buffers_total_size;
 struct iovec tcp_recv_iovec[MAX_TCP_RECV_BUFFERS + 1];
 msg_buffer_t *tcp_recv_buffers[MAX_TCP_RECV_BUFFERS];
 
-int prealloc_tcp_buffers(void) {
+int prealloc_tcp_buffers() {
   assert(!tcp_recv_buffers_num);
 
   int i;

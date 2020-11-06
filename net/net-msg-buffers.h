@@ -27,16 +27,16 @@ static inline uint32_t msg_buffer_size(const msg_buffer_t *msg_buffer) {
 
 double msg_buffers_usage();
 
-void msg_buffers_register_thread(void);
-void preallocate_msg_buffers(void);
+void msg_buffers_register_thread();
+void preallocate_msg_buffers();
 
 msg_buffer_t *alloc_msg_buffer(int size_hint);
 
 void free_msg_buffer(msg_buffer_t *buffer);
 
 void decrease_msg_buffers_size(int factor);
-long long max_allocated_buffer_bytes(void);
-int is_under_network_pressure(void);
+long long max_allocated_buffer_bytes();
+int is_under_network_pressure();
 bool is_allocated_buffers_overflow();
 
 static inline void msg_buffer_inc_ref(msg_buffer_t *buffer) {

@@ -228,7 +228,7 @@ static int parse_hosts (struct resolver_conf *R, char *data, int mode) {
 }
 
 
-static int kdb_load_hosts_internal (void) {
+static int kdb_load_hosts_internal () {
   static struct stat s;
   long long r;
   int fd;
@@ -302,7 +302,7 @@ static int do_not_use_hosts;
 
 FLAG_OPTION_PARSER(OPT_NETWORK, "do-not-use-hosts", do_not_use_hosts, "always use system gethostbyname, don't try to use hosts");
 
-int kdb_load_hosts (void) {
+int kdb_load_hosts () {
   if (do_not_use_hosts) {
     return kdb_hosts_loaded = -1;
   }

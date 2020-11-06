@@ -64,8 +64,8 @@ SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "unix-socket-directory", unix_socket_dire
 
 long long netw_queries, netw_update_queries, total_failed_connections, total_connect_failures, unused_connections_closed;
 
-static void connections_constructor(void) __attribute__((constructor));
-static void connections_constructor(void) {
+static void connections_constructor() __attribute__((constructor));
+static void connections_constructor() {
   // Second half is used for fake connections
   Connections = static_cast<connection*>(calloc(2 * MAX_CONNECTIONS, sizeof(Connections[0])));
   assert(Connections && "Cannot allocate memory for Connections");
@@ -95,7 +95,7 @@ int client_init_outbound(struct connection *c __attribute__((unused))) { return 
  * client
  */
 
-double get_recent_idle_percent(void) {
+double get_recent_idle_percent() {
   const double a_idle_time = epoll_average_idle_time();
   const double a_idle_quotient = epoll_average_idle_quotient();
   return a_idle_quotient > 0 ? a_idle_time / a_idle_quotient * 100 : a_idle_time;
@@ -1305,7 +1305,7 @@ int init_listening_connection_mode(int fd, conn_type_t *type, void *extra, int m
   return init_listening_connection_ext(fd, type, extra, mode, -10);
 }
 
-connection_t *lock_fake_connection(void) {
+connection_t *lock_fake_connection() {
   assert(!fd_fake_connection || fd_fake_connection >= MAX_CONNECTIONS);
 
   if (!fd_fake_connection) {
@@ -1802,7 +1802,7 @@ int create_new_connections(conn_target_t *S) {
 double conn_close_intensivity = 0.01;
 static double prev_close_time;
 
-int close_some_unneeded_connections(void) {
+int close_some_unneeded_connections() {
   if (prev_close_time == 0) {
     prev_close_time = precise_now;
     return 0;
@@ -1839,7 +1839,7 @@ int close_some_unneeded_connections(void) {
   return res;
 }
 
-int create_all_outbound_connections(void) {
+int create_all_outbound_connections() {
   int count = 0;
   get_utime_monotonic();
   close_some_unneeded_connections();
@@ -2041,7 +2041,7 @@ static void stat_heap_push(long long x) {
   }
 }
 
-static long long stat_heap_pop(void) {
+static long long stat_heap_pop() {
   if (!SHN) {
     return -1;
   }
@@ -2062,7 +2062,7 @@ static long long stat_heap_pop(void) {
   return x;
 }
 
-void dump_connection_buffers_stats(void) {
+void dump_connection_buffers_stats() {
   int s;
   SHN = 0;
   for (s = 1; s <= max_connection; s++) {
@@ -2087,7 +2087,7 @@ void dump_connection_buffers_stats(void) {
   }
 }
 
-void cond_dump_connection_buffers_stats(void) {
+void cond_dump_connection_buffers_stats() {
   static int dump_buff_stats_last;
   if (dump_buff_stats_last != now) {
     dump_buff_stats_last = now;

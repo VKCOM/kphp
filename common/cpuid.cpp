@@ -2,7 +2,7 @@
 
 #include <assert.h>
 
-const kdb_cpuid_t *kdb_cpuid(void) {
+const kdb_cpuid_t *kdb_cpuid() {
   static kdb_cpuid_t cached = {.type = KDB_CPUID_UNKNOWN};
 
 #if defined(__x86_64__)

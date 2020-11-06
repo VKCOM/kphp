@@ -14,12 +14,12 @@ struct msg_part {
 };
 typedef struct msg_part msg_part_t;
 
-void init_msg_part(void);
+void init_msg_part();
 
 msg_part_t *new_msg_part(msg_buffer_t *X);
 void free_msg_part(msg_part_t *mp);
 
-int rwm_total_msg_parts(void);
+int rwm_total_msg_parts();
 
 static inline void msg_part_inc_ref(msg_part_t *mp) {
   ++mp->refcnt;

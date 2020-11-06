@@ -17,7 +17,7 @@ static inline void storedqu(char *out, v16qi v) {
   _mm_storeu_si128((v2di *)out, (v2di)v);
 }
 
-bool crypto_x86_64_has_aesni_extension(void) {
+bool crypto_x86_64_has_aesni_extension() {
   const kdb_cpuid_t *cpuid = kdb_cpuid();
   assert(cpuid->type == KDB_CPUID_X86_64);
 

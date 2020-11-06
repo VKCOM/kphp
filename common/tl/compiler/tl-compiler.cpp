@@ -16,7 +16,7 @@
 
 int output_expressions_fd = -1;
 int schema_version = 4;
-static void usage_and_exit(void) {
+static void usage_and_exit() {
   printf("%s\n", get_version_string());
   printf("usage: tl-compiler [-v] [-h] <TL-schema-file-list>\n"
          "\tTL compiler\n"

@@ -183,13 +183,13 @@ static int tl_store_end_impl(int op, bool noheader) {
   return 0;
 }
 
-void tlio_push(void) {
+void tlio_push() {
   assert(tlio_v.size() <= 10);
   tlio_v.emplace_back();
   tlio = &tlio_v.back();
 }
 
-void tlio_pop(void) {
+void tlio_pop() {
   tlio_v.pop_back();
   tlio = &tlio_v.back();
 }
@@ -215,7 +215,7 @@ void tl_fetch_raw_data(void *buf, int size) {
   tlio->in_remaining -= size;
 }
 
-int tl_fetch_lookup_int(void) {
+int tl_fetch_lookup_int() {
   if (tl_fetch_check(4) < 0) {
     return -1;
   }
@@ -232,19 +232,19 @@ int tl_fetch_lookup_data(char *data, int len) {
   return len;
 }
 
-void tl_fetch_mark(void) {
+void tl_fetch_mark() {
   tlio->in_methods->fetch_mark();
   tlio->in_mark_pos = tlio->in_pos;
 }
 
-void tl_fetch_mark_restore(void) {
+void tl_fetch_mark_restore() {
   tlio->in_methods->fetch_mark_restore();
   int64_t x = tlio->in_pos - tlio->in_mark_pos;
   tlio->in_pos -= x;
   tlio->in_remaining += x;
 }
 
-void tl_fetch_mark_delete(void) {
+void tl_fetch_mark_delete() {
   tlio->in_methods->fetch_mark_delete();
 }
 
@@ -272,7 +272,7 @@ int tl_fetch_string_len(int max_len) {
   return x;
 }
 
-int tl_fetch_pad(void) {
+int tl_fetch_pad() {
   if (tl_fetch_check(0) < 0) {
     return -1;
   }
@@ -347,12 +347,12 @@ void *tl_store_get_ptr(int size) {
   return x;
 }
 
-int tl_store_clear(void) {
+int tl_store_clear() {
   tlio->out_methods = nullptr;
   return 0;
 }
 
-int tl_fetch_int(void) {
+int tl_fetch_int() {
   if (__builtin_expect(tl_fetch_check(4) < 0, 0)) {
     return -1;
   }
@@ -361,7 +361,7 @@ int tl_fetch_int(void) {
   return x;
 }
 
-bool tl_fetch_bool(void) {
+bool tl_fetch_bool() {
   int x = tl_fetch_int();
   if (x == TL_BOOL_TRUE) {
     return true;
@@ -373,7 +373,7 @@ bool tl_fetch_bool(void) {
   return false;
 }
 
-double tl_fetch_double(void) {
+double tl_fetch_double() {
   if (__builtin_expect(tl_fetch_check(sizeof(double)) < 0, 0)) {
     return -1;
   }
@@ -391,7 +391,7 @@ double tl_fetch_double_in_range(double min, double max) {
   return res;
 }
 
-float tl_fetch_float(void) {
+float tl_fetch_float() {
   if (__builtin_expect(tl_fetch_check(sizeof(float)) < 0, 0)) {
     return -1;
   }
@@ -400,7 +400,7 @@ float tl_fetch_float(void) {
   return x;
 }
 
-long long tl_fetch_long(void) {
+long long tl_fetch_long() {
   if (__builtin_expect(tl_fetch_check(8) < 0, 0)) {
     return -1;
   }
@@ -424,7 +424,7 @@ void tl_store_bool_stat(int x) {
   tl_store_bool_stat_bare(x);
 }
 
-int tl_store_end(void) {
+int tl_store_end() {
   return tl_store_end_impl(TL_RPC_REQ_RESULT, false);
 }
 
@@ -493,16 +493,16 @@ int tl_store_check(int size) {
   return 0;
 }
 
-int64_t tl_fetch_unread(void) {
+int64_t tl_fetch_unread() {
   return tlio->in_remaining;
 }
 
-void tl_fetch_reset_error(void) {
+void tl_fetch_reset_error() {
   tlio->error = vk::nullopt;
   tlio->errnum = 0;
 }
 
-int tl_fetch_end(void) {
+int tl_fetch_end() {
   if (tlio->in_remaining) {
     tl_fetch_set_error_format(TL_ERROR_EXTRA_DATA, "extra %ld bytes after query", tlio->in_remaining);
     return -1;

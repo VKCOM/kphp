@@ -6,7 +6,7 @@
 
 #include "common/cpuid.h"
 
-bool crypto_aarch64_has_aes_extension(void) {
+bool crypto_aarch64_has_aes_extension() {
   const kdb_cpuid_t *cpuid = kdb_cpuid();
   assert(cpuid->type == KDB_CPUID_AARCH64);
 

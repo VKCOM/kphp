@@ -15,7 +15,7 @@ struct stack_frame {
   void *ip;
 };
 
-static __inline__ void *get_bp (void) {
+static __inline__ void *get_bp () {
   void *bp;
   __asm__ volatile ("movq %%rbp, %[r]" : [r] "=r" (bp));
   return bp;

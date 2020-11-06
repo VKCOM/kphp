@@ -51,7 +51,7 @@ OPTION_PARSER(OPT_NETWORK, "force-ipv4", required_argument, "in form [iface:]ip[
   return parse_ipv4(str, &force_ipv4_ip, &force_ipv4_mask);
 }
 
-unsigned get_my_ipv4(void) {
+unsigned get_my_ipv4() {
   struct ifaddrs *ifa_first, *ifa;
   unsigned my_ip = 0, my_netmask = -1;
   const char *my_iface = NULL;

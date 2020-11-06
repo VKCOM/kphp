@@ -12,5 +12,5 @@
       when logevent isn't stored in one binlog buffer chunk.
 */
 
-void engine_default_read_binlog(void);
-void binlog_try_read_events(void);
+void engine_default_read_binlog();
+void binlog_try_read_events();

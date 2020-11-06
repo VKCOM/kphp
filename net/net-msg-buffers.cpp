@@ -50,11 +50,11 @@ void decrease_msg_buffers_size(int factor) {
   allocated_buffer_bytes_limit = (allocated_buffer_bytes_limit + factor - 1) / factor;
 }
 
-long long max_allocated_buffer_bytes(void) {
+long long max_allocated_buffer_bytes() {
   return allocated_buffer_bytes_limit;
 }
 
-int is_under_network_pressure(void) {
+int is_under_network_pressure() {
   return PARALLEL_LIMIT_COUNTER_READ_APPROX(allocated_buffer_bytes) * 4LL > allocated_buffer_bytes_limit * 3LL;
 }
 
@@ -67,15 +67,15 @@ static const int default_buffer_sizes[BUFFER_SIZE_NUM] = {48, 512, 2048, 16384, 
 static lockfree_slab_cache_t slab_caches[BUFFER_SIZE_NUM];
 static __thread lockfree_slab_cache_tls_t slab_caches_tls[BUFFER_SIZE_NUM];
 
-static void msg_buffers_constructor(void) __attribute__((constructor));
-static void msg_buffers_constructor(void) {
+static void msg_buffers_constructor() __attribute__((constructor));
+static void msg_buffers_constructor() {
   for (int i = 0; i < BUFFER_SIZE_NUM; ++i) {
     lockfree_slab_cache_init(&slab_caches[i], default_buffer_sizes[i] + sizeof(struct msg_buffer));
     assert(!i || default_buffer_sizes[i] > default_buffer_sizes[i - 1]);
   }
 }
 
-static void init_slab_caches(void) {
+static void init_slab_caches() {
   for (int i = 0; i < BUFFER_SIZE_NUM; ++i) {
     lockfree_slab_cache_register_thread(&slab_caches[i], &slab_caches_tls[i]);
     slab_caches_tls[i].extra = default_buffer_sizes[i];
@@ -95,7 +95,7 @@ void msg_buffers_register_thread() {
   init_msg();
 }
 
-void preallocate_msg_buffers(void) {
+void preallocate_msg_buffers() {
   if (!buffer_size_values) {
     msg_buffers_register_thread();
     assert(allocated_buffer_bytes_limit >= 0 && allocated_buffer_bytes_limit <= MSG_MAX_ALLOCATED_BYTES);

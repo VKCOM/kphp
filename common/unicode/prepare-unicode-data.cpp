@@ -8,7 +8,7 @@
 #define MAX_LINE_LENGTH 500
 char s[MAX_LINE_LENGTH];
 
-static void usage_and_exit(void) {
+static void usage_and_exit() {
   fprintf (stderr, "usage: prepare-unicode-data [-c<c1,c2,...>] [-a] <filename> <output-filename>\n"
                    "removes comments and other unnecessary information from unicode data file\n"
                    "[-c<c1,c2,...>]\toutput only specified list of columns\n"

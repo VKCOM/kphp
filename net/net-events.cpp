@@ -24,8 +24,8 @@ net_reactor_ctx_t main_thread_reactor = {.epoll_fd = -1,
                                          .average_idle_time = 0,
                                          .average_idle_quotient = 0};
 
-static void main_thread_reactor_alloc(void) __attribute__((constructor));
+static void main_thread_reactor_alloc() __attribute__((constructor));
 
-static void main_thread_reactor_alloc(void) {
+static void main_thread_reactor_alloc() {
   net_reactor_alloc(&main_thread_reactor, MAX_EVENTS, MAX_EVENT_TIMERS);
 }

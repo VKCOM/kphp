@@ -19,12 +19,12 @@
 
 PARALLEL_COUNTER(rwm_total_msgs);
 
-void init_msg(void) {
+void init_msg() {
   PARALLEL_COUNTER_REGISTER_THREAD(rwm_total_msgs);
   init_msg_part();
 }
 
-int rwm_total_msgs(void) {
+int rwm_total_msgs() {
   return PARALLEL_COUNTER_READ(rwm_total_msgs);
 }
 

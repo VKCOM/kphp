@@ -27,7 +27,7 @@
 #define EVA_ERROR     -8
 #define EVA_FATAL     -666
 
-typedef void (*epoll_func_vector_t)(void);
+typedef void (*epoll_func_vector_t)();
 extern epoll_func_vector_t epoll_pre_runqueue, epoll_post_runqueue, epoll_pre_event;
 
 typedef struct event_descr event_t;

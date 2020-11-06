@@ -81,7 +81,7 @@ int get_http_header (const char *qHeaders, const int qHeadersLen, char *buffer, 
 
 void gen_http_date (char date_buffer[29], int time);
 int gen_http_time (char *date_buffer, int *time);
-char *cur_http_date (void);
+char *cur_http_date ();
 int write_basic_http_header (struct connection *c, int code, int date, int len, const char *add_header, const char *content_type);
 int write_http_error (struct connection *c, int code);
 int format_http_error_page(int code, char *buff);

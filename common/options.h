@@ -39,7 +39,7 @@ static inline const char *get_option_section_name(option_section_t section) {
 
 typedef int (*options_parser)(int);
 
-void parse_usage(void);
+void parse_usage();
 void remove_all_options();
 void init_parse_options(const option_section_t *sections);
 int parse_engine_options_long(int argc, char **argv, options_parser execute);
@@ -48,7 +48,7 @@ void parse_common_option(option_section_t section, options_parser parser, const 
 void parse_option_alias(const char *name, char val);
 void remove_parse_option(const char *name);
 void always_enable_option(const char *name, char *arg);
-void usage_and_exit(void) __attribute__((noreturn));
+void usage_and_exit() __attribute__((noreturn));
 
 long long parse_memory_limit(const char *s);
 long long parse_memory_limit_default(const char *s, char def_size);

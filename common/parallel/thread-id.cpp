@@ -15,7 +15,7 @@ static thread_state_t thread_id_map_[NR_THREADS];
 static pthread_mutex_t thread_id_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static int parallel_online_threads_count_;
 
-void parallel_register_thread(void) {
+void parallel_register_thread() {
   assert(!thread_id_);
 
   const pthread_t tid = pthread_self();
@@ -34,7 +34,7 @@ void parallel_register_thread(void) {
   assert(thread_id_ && "Parallel thread limit exceeded");
 }
 
-void parallel_unregister_thread(void) {
+void parallel_unregister_thread() {
   assert(thread_id_);
 
   pthread_mutex_lock(&thread_id_map_lock);
@@ -43,11 +43,11 @@ void parallel_unregister_thread(void) {
   pthread_mutex_unlock(&thread_id_map_lock);
 }
 
-int parallel_online_threads_count(void) {
+int parallel_online_threads_count() {
   return parallel_online_threads_count_;
 }
 
-int parallel_thread_id(void) {
+int parallel_thread_id() {
   assert(thread_id_);
 
   return thread_id_;

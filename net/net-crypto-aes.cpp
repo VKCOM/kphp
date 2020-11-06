@@ -130,7 +130,7 @@ int aes_crypto_needed_output_bytes (struct connection *c) {
 
 int aes_initialized;
 
-static int initialize_pseudo_random(void) {
+static int initialize_pseudo_random() {
   int fd = open("/dev/random", O_RDONLY | O_NONBLOCK);
   int r = 0;
 
@@ -167,7 +167,7 @@ static const char* aes_pwd_path = NULL;
 
 SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "aes-pwd", aes_pwd_path, "sets pwd file");
 
-int aes_load_keys(void) {
+int aes_load_keys() {
   if (initialize_pseudo_random() < 0) {
     assert(!default_aes_key);
     return -1;

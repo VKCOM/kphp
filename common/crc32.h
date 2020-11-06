@@ -28,7 +28,7 @@ extern const unsigned int crc32_table1[256];
 extern const unsigned int crc32_table2[256];
 extern const unsigned int crc32_table[256];
 extern uint64_t crc64_power_buf[126] __attribute__((aligned(16)));
-void crc64_init_power_buf(void);
+void crc64_init_power_buf();
 
 unsigned gf32_mul(unsigned a, unsigned b) __attribute__((pure));
 unsigned gf32_mulx(unsigned a) __attribute__((pure));

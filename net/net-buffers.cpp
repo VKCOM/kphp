@@ -22,13 +22,13 @@ int NB_used, NB_free, NB_alloc, NB_max, NB_size = NET_BUFFER_SIZE;
 
 char *NB_Alloc, *NetBufferSpace;
 
-static void net_buffer_space_constructor(void) __attribute__((constructor));
-static void net_buffer_space_constructor(void) {
+static void net_buffer_space_constructor() __attribute__((constructor));
+static void net_buffer_space_constructor() {
   NetBufferSpace = static_cast<char*>(calloc(NET_BUFFER_ALIGN + NET_BUFFER_SIZE * NET_BUFFERS, sizeof(NetBufferSpace[0])));
   assert(NetBufferSpace && "Cannot allocate memory for net buffer space");
 }
 
-void init_netbuffers (void) {
+void init_netbuffers () {
   if (NB_Head.state) return;
   NB_max = NET_BUFFERS;
   NB_Head.state = NB_MAGIC_ALLOCA;
@@ -52,7 +52,7 @@ netbuffer_t *init_builtin_buffer (netbuffer_t *H, char *buf, int len) {
   return H;
 }
 
-netbuffer_t *alloc_buffer (void) {
+netbuffer_t *alloc_buffer () {
   netbuffer_t *R;
   if (!NB_Head.state) { 
     init_netbuffers(); 
@@ -86,7 +86,7 @@ netbuffer_t *alloc_buffer (void) {
   return R;
 }
 
-netbuffer_t *alloc_head_buffer (void) {
+netbuffer_t *alloc_head_buffer () {
   netbuffer_t *R = alloc_buffer();
   if (!R) {
     return 0;

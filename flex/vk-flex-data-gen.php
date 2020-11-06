@@ -35,4 +35,4 @@ for ($lang_id = 0; $lang_id < 256; $lang_id++) {
 print_cases();
 print_langs();
 
-echo "extern \"C\" void vk_flex_data_dummy(void) {}\n";
+echo "extern \"C\" void vk_flex_data_dummy() {}\n";

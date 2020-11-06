@@ -141,8 +141,8 @@ static uint32_t aarch64_native_crc_pmull(const void *buf, long int size,
   return crc;
 }
 
-void crc32c_init(void) __attribute__((constructor));
-void crc32c_init(void) {
+void crc32c_init() __attribute__((constructor));
+void crc32c_init() {
   const kdb_cpuid_t *p = kdb_cpuid();
   assert(p->type == KDB_CPUID_AARCH64);
 

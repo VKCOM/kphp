@@ -15,7 +15,7 @@ thread_local double precise_now;
 long long precise_time;
 long long precise_time_rdtsc;
 
-double get_utime_monotonic (void) {
+double get_utime_monotonic () {
   struct timespec T;
   double res;
 #if _POSIX_TIMERS
@@ -29,7 +29,7 @@ double get_utime_monotonic (void) {
   return precise_now;
 }
 
-uint64_t get_ntime_mono(void) {
+uint64_t get_ntime_mono() {
   struct timespec T;
   uint64_t res = 0;
   #if _POSIX_TIMERS
@@ -56,7 +56,7 @@ static inline double get_cached_time(T get_time, int cycles_cache) {
   return last_cached_time;
 }
 
-double get_double_time(void) {
+double get_double_time() {
   auto get_time = [](double last_cached_time) {
     struct timeval tv;
     if (!gettimeofday(&tv, NULL)) {
@@ -109,11 +109,11 @@ long long get_precise_time (unsigned precision) {
 }
 
 static int start_time;
-void init_uptime(void) {
+void init_uptime() {
   start_time = time(NULL);
 }
 
-int get_uptime(void) {
+int get_uptime() {
   if (unlikely(start_time == 0)) {
     init_uptime();
   }

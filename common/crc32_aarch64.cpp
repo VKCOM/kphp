@@ -3,8 +3,7 @@
 #include "common/cpuid.h"
 #include "common/crc32.h"
 
-void crc32_init(void) __attribute__((constructor(101)));
-void crc32_init(void) {
+void __attribute__((constructor(101))) crc32_init() {
   const kdb_cpuid_t *p = kdb_cpuid();
   assert(p->type == KDB_CPUID_AARCH64);
 

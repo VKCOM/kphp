@@ -12,7 +12,7 @@ extern __thread int sp_errno;
 
 // Sets pool pointer to the begin. "frees" all allocated memory.
 // Must be called before allocating functions.
-void sp_init (void);
+void sp_init ();
 
 // Preallocates 'len + 1' bytes. In fact, doesn't allocates anything,
 // just checks whether there is enough available memory.

@@ -32,7 +32,7 @@ static inline void *OPENSSL_zalloc(size_t num) {
   return ret;
 }
 
-static inline EVP_MD_CTX *EVP_MD_CTX_new(void) {
+static inline EVP_MD_CTX *EVP_MD_CTX_new() {
   return (EVP_MD_CTX *)OPENSSL_zalloc(sizeof(EVP_MD_CTX));
 }
 
