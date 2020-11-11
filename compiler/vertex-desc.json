@@ -1384,6 +1384,19 @@
     }
   },
   {
+    "comment": "lhs() ??= rhs(); where lhs() does not contain op_func_call",
+    "name": "op_set_null_coalesce",
+    "base_name": "op_set_modify",
+    "props": {
+      "base_op": "op_null_coalesce",
+      "cnst": "cnst_nonconst_func",
+      "fixity": "right_opp",
+      "rl": "rl_set",
+      "type": "binary_op",
+      "str": "\\?\\?="
+    }
+  },
+  {
     "comment": "cond() ? true_expr() : false_expr()",
     "sons": {
       "true_expr": 1,

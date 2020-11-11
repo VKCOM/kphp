@@ -64,6 +64,7 @@ void OpInfo::init_static() {
   add_binary_op(curP, tok_set_dot, op_set_dot);
   add_binary_op(curP, tok_set_shr, op_set_shr);
   add_binary_op(curP, tok_set_shl, op_set_shl);
+  add_binary_op(curP, tok_set_null_coalesce, op_set_null_coalesce);
   curP++;
 
   add_binary_op(curP, tok_question, op_ternary);
