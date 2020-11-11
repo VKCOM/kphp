@@ -1,0 +1,41 @@
+title: KPHP — a PHP compiler
+lang: en
+description: KPHP compiles a limited subset of PHP, making it run faster than plain PHP
+
+remote_theme: rundocs/jekyll-rtd-theme@v1.1.7
+edit: false
+
+url_github_kphp: https://github.com/VKCOM/kphp
+url_github_kphp_polyfills: https://github.com/VKCOM/kphp-polyfills
+url_github_kphp_snippets: https://github.com/VKCOM/kphp-snippets
+url_github_kphp_tools: https://github.com/VKCOM/kphp-tools
+url_github_issues: https://github.com/VKCOM/kphp/issues
+url_functions_txt: https://github.com/VKCOM/kphp/blob/master/functions.txt
+url_dockerfile: https://github.com/VKCOM/kphp/blob/master/Dockerfile
+url_license_file: https://github.com/VKCOM/kphp/blob/master/LICENSE
+url_vertex_desc_json: https://github.com/VKCOM/kphp/blob/master/compiler/vertex-desc.json
+url_website_kphp: https://vkcom.github.io/kphp/
+url_website_kphpstorm: https://unserialize.github.io/kphpstorm/
+url_package_curl: https://github.com/VKCOM/curl/tree/dpkg-build-7.60.0
+url_package_h3: https://github.com/VKCOM/uber-h3/tree/dpkg-build
+
+copyright:
+  revision: false
+author: LLC «V Kontakte»
+github_metadata: false
+
+addons: []
+
+readme_index:
+  with_frontmatter: true
+
+sass:
+  style: compressed
+
+exclude:
+  - Makefile
+  - Gemfile
+  - Gemfile.lock
+  - .idea
+
+plugins: []
