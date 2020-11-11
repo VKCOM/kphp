@@ -45,7 +45,7 @@ KPHP isn't *always* faster than PHP, but it can be used to speed up your code by
 
 This situation is quite common. KPHP rarely compiles already existing code without errors. It usually takes some time to rewrite PHP code for it to be compilable with KPHP.
 
-Read more about this in [compiling an existing project](https://vkcom.github.io/kphp/compile-existing-project.html).
+Read more about this in [compiling an existing project](https://vkcom.github.io/kphp/kphp-basics/compile-existing-project.html).
 
 
 ## The License
