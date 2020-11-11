@@ -285,7 +285,12 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -rdynamic";
 
   for (auto &main_file : main_files.value_) {
-    main_file = get_full_path(main_file);
+    auto full_path = get_full_path(main_file);
+    if (full_path.empty()) {
+      // get_full_path() calls realpath() which will set the errno in case of failure
+      throw std::runtime_error{fmt_format("Failed to open file [{}] : {}", main_file, strerror(errno))};
+    }
+    main_file = full_path;
   }
 
   const auto &first_main_file = main_files.get().front();
