@@ -23,7 +23,7 @@ This package is listed in recommended of the `kphp` package, that's why you may 
 
 How to check if vkext is installed:
 ```bash
-php -r 'var_dump(get_loaded_extensions());' | grep vk_ext
+php -m | grep vk_ext
 ```
 
 If you see nothing, *vkext* is not installed.
