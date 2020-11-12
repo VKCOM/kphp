@@ -60,7 +60,7 @@ echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" | sudo tee -a /etc
 
 ```bash
 sudo apt update
-sudo apt install kphp
+sudo apt install kphp vk-tl-tools
 
 sudo mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/
 sudo tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/tl-files/common.tl /usr/share/vkontakte/tl-files/tl.tl
