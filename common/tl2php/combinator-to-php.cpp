@@ -88,7 +88,7 @@ bool CombinatorToPhp::try_as_primitive_builtin_type(const vk::string_view &tl_ty
     {"String", PhpTypeName{"string", php_field_type::t_string}},
     {"Int",    PhpTypeName{"int", php_field_type::t_int}},
     {"#",      PhpTypeName{"int", php_field_type::t_int}},
-    {"Long",   PhpTypeName{"mixed", php_field_type::t_mixed}},
+    {"Long",   PhpTypeName{"int", php_field_type::t_int}},
     {"Double", PhpTypeName{"float", php_field_type::t_double}},
     {"Float",  PhpTypeName{"float", php_field_type::t_double}},
     {"Bool",   PhpTypeName{"boolean", php_field_type::t_bool}},
