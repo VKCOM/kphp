@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <set>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
@@ -39,12 +40,6 @@ struct TLNode {
 
 struct DependencyGraphBuilder;
 
-struct Dependencies {
-  std::vector<const vk::tl::type *> deps;
-  // Зависимости, для которых необходим forward declaration. Т.е. все которые являются параметрами шаблонов, кроме Maybe.
-  std::vector<const vk::tl::type *> weak_deps;
-};
-
 class DependencyGraph {
 public:
   DependencyGraph() = default;
@@ -64,9 +59,11 @@ public:
   // Находит все вершины, которые зависят от !
   std::vector<int> find_excl_nodes() const;
 
-  Dependencies get_type_dependencies(const type *t) const;
-  Dependencies get_function_dependencies(const combinator *f) const;
+  std::vector<const vk::tl::type *> get_type_dependencies(const type *t) const;
+  std::vector<const vk::tl::type *> get_function_dependencies(const combinator *f) const;
 
+  std::set<const vk::tl::type *> get_weak_self_cyclic_types() const;
+  bool is_type_weak_self_cyclic(const type *t) const;
 private:
   tl_scheme *scheme{};
   std::unordered_map<std::string, int> tl_name_to_id;
@@ -74,13 +71,13 @@ private:
   std::vector<std::unordered_set<int>> edges;
   std::vector<std::unordered_set<int>> inv_edges;
 
-  std::unordered_map<const combinator *, std::unordered_set<const type *>> combinator_weak_dependencies;
+  std::set<const type *> weak_self_cyclic_types;
 
   void dfs(int node, std::vector<int> &used, bool use_inv_edges, std::vector<bool> *reachable_from_cycles = nullptr) const;
   void collect_combinator_edges(combinator *c);
   void add_edge(const TLNode &from, const TLNode &to);
   int register_node(const TLNode &node);
-  Dependencies get_combinator_dependencies(const combinator *c) const;
+  std::vector<const vk::tl::type *> get_combinator_dependencies(const combinator *c) const;
 
   friend DependencyGraphBuilder;
 };
