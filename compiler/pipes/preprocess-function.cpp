@@ -27,7 +27,7 @@ public:
   }
 
   bool check_function(FunctionPtr function) const override {
-    return !function->is_extern() && !function->is_template;
+    return !function->is_extern();
   }
 
   VertexPtr on_exit_vertex(VertexPtr root) final {
@@ -543,6 +543,9 @@ private:
 };
 
 void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
+  if (function->is_template) {
+    return;
+  }
   DataStream<FunctionPtr> tmp_stream{true};
   PreprocessFunctionPass pass(tmp_stream);
 
@@ -552,7 +555,7 @@ void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
     *os.project_to_nth_data_stream<1>() << fun;
   }
 
-  if (!stage::has_error() && !function->is_template) {
+  if (!stage::has_error()) {
     (*os.project_to_nth_data_stream<0>()) << function;
   }
 }

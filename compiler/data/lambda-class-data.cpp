@@ -40,6 +40,10 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
 }
 
 void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
+  auto expected = AssumptionStatus::unknown;
+  if (!assumption_vars_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
+    return;
+  }
   members.for_each([this, parent_function](const ClassMemberInstanceField &field) {
     vk::intrusive_ptr<Assumption> assumption;
     auto local_name = field.local_name();
@@ -53,6 +57,7 @@ void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
     assumptions_for_vars.emplace_back(std::string{field.local_name()},
                                       assumption ?: calc_assumption_for_var(parent_function, local_name));
   });
+  assumption_vars_status = AssumptionStatus::initialized;
 }
 
 void LambdaClassData::implement_interface(InterfacePtr interface) {
