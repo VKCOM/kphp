@@ -1,0 +1,18 @@
+FROM debian:buster
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget && \
+    echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \ 
+    wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add - && \
+    echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" >> /etc/apt/sources.list && \
+    wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
+    echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
+      curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+      libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -ms /bin/bash kitten

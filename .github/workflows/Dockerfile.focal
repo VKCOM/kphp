@@ -1,0 +1,18 @@
+FROM ubuntu:20.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget && \
+    wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add - && \
+    echo "deb https://repo.vkpartner.ru/kphp-focal/ focal main" >> /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      git cmake make clang g++ g++-10 gperf python3-minimal python3-jsonschema \
+      curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+      libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -ms /bin/bash kitten
+
+ENV ASAN_OPTIONS=detect_leaks=0
+ENV UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1

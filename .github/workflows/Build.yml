@@ -1,0 +1,115 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: buster
+            compiler: g++
+            cpp: 14
+            asan: off
+            ubsan: off
+          - os: focal
+            compiler: g++
+            cpp: 14
+            asan: off
+            ubsan: off
+          - os: focal
+            compiler: clang++
+            cpp: 17
+            asan: off
+            ubsan: on
+          - os: focal
+            compiler: g++-10
+            cpp: 20
+            asan: on
+            ubsan: off
+
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      id: docker-image-cache
+      with:
+        path: kphp-build-env-${{matrix.os}}.tar
+        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*') }}
+          
+    - name: Buld and save docker image
+      if: steps.docker-image-cache.outputs.cache-hit != 'true'
+      run: |
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
+        docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
+        
+    - name: Load docker image from cache
+      if: steps.docker-image-cache.outputs.cache-hit == 'true'
+      run: docker load --input kphp-build-env-${{matrix.os}}.tar
+      
+    - name: Start docker container
+      run: docker run -dt --name kphp-build-container-${{matrix.os}} --volume $GITHUB_WORKSPACE:$GITHUB_WORKSPACE kphp-build-img-${{matrix.os}}
+      
+    - name: Build all
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build && make -C ${{runner.workspace}}/build -j$(nproc) all"
+
+    - name: Run unit tests
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+              "make -C ${{runner.workspace}}/build -j$(nproc) test"
+
+    - name: Compile dummy PHP script
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+              "cd ${{runner.workspace}}/build && echo 'hello world' > demo.php && $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o"
+
+    - name: Remove docker container
+      run: docker rm -f kphp-build-container-${{matrix.os}}
+
+  build-macos:
+    runs-on: ${{matrix.os}}-latest
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            compiler: clang++
+            cpp: 14
+
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Environment
+      run: |
+        brew install cmake glib-openssl re2 ccache fmt googletest
+        pip3 install jsonschema
+        
+    # when we fix build for mac, don't forget to combine this step with "Build step"
+    - name: Run cmake
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+        
+    - name: Build all
+      continue-on-error: true
+      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+      
+    - name: Run unit tests
+      continue-on-error: true
+      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+
+    - name: Compile dummy PHP script
+      working-directory: ${{runner.workspace}}/build
+      continue-on-error: true
+      run: |
+        echo 'hello world' > demo.php 
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+        kphp_out/server -o
