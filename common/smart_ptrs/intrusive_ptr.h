@@ -141,7 +141,7 @@ public:
     }
   }
 
-//private:
+protected:
   Refcnt refcnt{};
 };
 
