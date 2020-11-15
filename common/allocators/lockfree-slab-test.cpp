@@ -35,7 +35,7 @@ TEST(lockfree_slab, basic) {
       pointers.push_back(lockfree_slab_cache_alloc(&cache_tls));
     }
 
-    std::random_shuffle(pointers.begin(), pointers.end());
+    std::shuffle(pointers.begin(), pointers.end(), std::mt19937{});
     for(auto pointer : pointers) {
       lockfree_slab_cache_free(&cache_tls, pointer);
     }

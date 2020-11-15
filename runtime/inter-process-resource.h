@@ -4,6 +4,7 @@
 
 #pragma once
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <cstring>
 #include <sys/mman.h>
