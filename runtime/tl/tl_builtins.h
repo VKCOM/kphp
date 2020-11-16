@@ -175,8 +175,7 @@ struct t_Int {
   }
 };
 
-template <bool new_tl_long>
-struct tl_Long_impl {
+struct t_Long {
   void store(const mixed &tl_object) {
     f$store_long(tl_object);
   }
@@ -186,7 +185,7 @@ struct tl_Long_impl {
     return f$fetch_long();
   }
 
-  using PhpType = std::conditional_t<new_tl_long, int64_t, mixed>;
+  using PhpType = int64_t;
 
   void typed_store(const PhpType &v) {
     f$store_long(v);
@@ -487,7 +486,7 @@ struct t_Maybe {
   }
 };
 
-template<typename KeyT, typename ValueT, unsigned int inner_value_magic, bool new_tl_long>
+template<typename KeyT, typename ValueT, unsigned int inner_value_magic>
 struct tl_Dictionary_impl {
   ValueT value_state;
 
@@ -534,10 +533,7 @@ struct tl_Dictionary_impl {
     for (auto it = v.begin(); it != v.end(); ++it) {
       KeyT().typed_store(vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_String>::value>{},
                                           [&] { return it.get_key().as_string(); },
-                                          [&] { return vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_Int>::value || new_tl_long>{},
-                                                               [&]() { return it.get_key().as_int(); },
-                                                               [&]() { return it.get_key(); }); }
-                                                               ));
+                                          [&] { return it.get_key().as_int(); }));
       store_magic_if_not_bare(inner_value_magic);
       value_state.typed_store(it.get_value());
     }
@@ -561,6 +557,15 @@ struct tl_Dictionary_impl {
     }
   }
 };
+
+template<typename T, unsigned int inner_magic>
+using t_Dictionary = tl_Dictionary_impl<t_String, T, inner_magic>;
+
+template<typename T, unsigned int inner_magic>
+using t_IntKeyDictionary = tl_Dictionary_impl<t_Int, T, inner_magic>;
+
+template<typename T, unsigned int inner_magic>
+using t_LongKeyDictionary = tl_Dictionary_impl<t_Long, T, inner_magic>;
 
 template<typename T, unsigned int inner_magic>
 struct t_Tuple {

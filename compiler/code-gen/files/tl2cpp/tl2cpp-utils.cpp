@@ -244,7 +244,7 @@ bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
   // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- with Optional
   // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- without Optional
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool" || type->is_integer_variable()
-                                      || (type->id == TL_LONG && TlClasses::new_tl_long);
+                                      || type->id == TL_LONG;
 }
 
 // classes VK\TL\*\Types\* are a non-interface types that correspond to the TL-constructors

@@ -11,8 +11,6 @@
 
 class TlClasses {
 public:
-  static bool new_tl_long;
-
   void load_from(const std::string &tlo_schema, bool generate_tl_internals);
 
   const std::unique_ptr<const vk::tl::tl_scheme> &get_scheme() const { return scheme_; }

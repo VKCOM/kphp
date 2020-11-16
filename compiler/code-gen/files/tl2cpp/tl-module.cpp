@@ -19,19 +19,6 @@ void Module::compile_tl_h_file(CodeGenerator &W) const {
   W << ExternInclude("tl/tl_const_vars.h");
   W << h_includes;
   W << NL;
-  if (name == "common") {
-    std::string is_new_tl_long = TlClasses::new_tl_long ? "true" : "false";
-    W << "using t_Long = tl_Long_impl<" << is_new_tl_long << ">;\n"
-         "\n"
-         "template<typename T, unsigned int inner_magic>\n"
-         "using t_LongKeyDictionary = tl_Dictionary_impl<t_Long, T, inner_magic, " << is_new_tl_long << ">;\n"
-         "\n"
-         "template<typename T, unsigned int inner_magic>\n"
-         "using t_Dictionary = tl_Dictionary_impl<t_String, T, inner_magic, " << is_new_tl_long << ">;\n"
-         "\n"
-         "template<typename T, unsigned int inner_magic>\n"
-         "using t_IntKeyDictionary = tl_Dictionary_impl<t_Int, T, inner_magic, " << is_new_tl_long << ">;" << NL << NL;
-  }
   for (const auto &t : target_types) {
     for (const auto &constructor : t->constructors) {
       W << TlConstructorDecl(constructor.get());
