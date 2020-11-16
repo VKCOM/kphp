@@ -159,22 +159,20 @@ string f$md5(const string &s, bool raw_output) {
 }
 
 Optional<string> f$md5_file(const string &file_name, bool raw_output) {
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
   if (read_fd < 0) {
-    dl::leave_critical_section();
     return false;
   }
   if (fstat(read_fd, &stat_buf) < 0) {
     close(read_fd);
-    dl::leave_critical_section();
     return false;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
     close(read_fd);
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Regular file expected in function md5_file, \"%s\" is given", file_name.c_str());
     return false;
   }
@@ -193,7 +191,7 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   }
   close(read_fd);
   php_assert (MD5_Final(reinterpret_cast <unsigned char *> (php_buf), &c) == 1);
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
 
   if (size > 0) {
     php_warning("Error while reading file \"%s\"", file_name.c_str());
@@ -217,22 +215,20 @@ int64_t f$crc32(const string &s) {
 }
 
 int64_t f$crc32_file(const string &file_name) {
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
   if (read_fd < 0) {
-    dl::leave_critical_section();
     return -1;
   }
   if (fstat(read_fd, &stat_buf) < 0) {
     close(read_fd);
-    dl::leave_critical_section();
     return -1;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
     close(read_fd);
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Regular file expected in function crc32_file, \"%s\" is given", file_name.c_str());
     return -1;
   }
@@ -248,7 +244,6 @@ int64_t f$crc32_file(const string &file_name) {
     size -= len;
   }
   close(read_fd);
-  dl::leave_critical_section();
 
   if (size > 0) {
     return -1;
@@ -319,7 +314,7 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::enter_critical_section(); // OK
+  dl::CriticalSectionGuard critical_section;
   if (BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
     if (passphrase.empty()) {
       evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, nullptr);
@@ -328,7 +323,6 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
     }
     BIO_free(in);
   }
-  dl::leave_critical_section();
   return evp_pkey;
 }
 
@@ -340,10 +334,9 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::enter_critical_section(); // OK
+  dl::CriticalSectionGuard critical_section;
   BIO *cert_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
   if (cert_in == nullptr) {
-    dl::leave_critical_section();
     return nullptr;
   }
   X509 *cert = reinterpret_cast<X509 *>(PEM_ASN1_read_bio(
@@ -357,27 +350,24 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
     BIO_free(key_in);
   }
 
-  dl::leave_critical_section();
   return evp_pkey;
 }
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
-  dl::enter_critical_section();//OK
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache);
   if (pkey == nullptr) {
-    dl::leave_critical_section();
-
     php_warning("Parameter key is not a valid public key");
     result = string();
     return false;
   }
+
+  dl::CriticalSectionSmartGuard critical_section;
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
-
+    critical_section.leave_critical_section();
     php_warning("Key type is neither RSA nor RSA2");
     result = string();
     return false;
@@ -391,8 +381,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
-
+    critical_section.leave_critical_section();
     php_warning("RSA public encrypt failed");
     result = string();
     return false;
@@ -401,8 +390,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
-
+  critical_section.leave_critical_section();
   result = string(php_buf, key_size);
   return true;
 }
@@ -418,19 +406,19 @@ bool f$openssl_public_encrypt(const string &data, mixed &result, const string &k
 }
 
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key) {
-  dl::enter_critical_section();//OK
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_private_evp(key, string(), from_cache);
   if (pkey == nullptr) {
-    dl::leave_critical_section();
     php_warning("Parameter key is not a valid private key");
     return false;
   }
+
+  dl::CriticalSectionSmartGuard critical_section;
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Key type is not an RSA nor RSA2");
     return false;
   }
@@ -443,9 +431,9 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
   if (len == -1) {
-    //php_warning ("RSA private decrypt failed"); 
+    //php_warning ("RSA private decrypt failed");
     result = string();
     return false;
   }
@@ -466,27 +454,25 @@ bool f$openssl_private_decrypt(const string &data, mixed &result, const string &
 
 Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
   Optional<string> result = false;
-  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  dl::CriticalSectionGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_private_evp(key, passphrase, from_cache)) {
     result = from_cache ? key : private_keys.register_resource(pkey);
   } else {
     php_warning("Parameter key is not a valid key or passphrase is not a valid password");
   }
-  dl::leave_critical_section();
   return result;
 }
 
 Optional<string> f$openssl_pkey_get_public(const string &key) {
   Optional<string> result = false;
-  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  dl::CriticalSectionGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache)) {
     result = from_cache ? key : public_keys.register_resource(pkey);
   } else {
     php_warning("Parameter key is not a valid key");
   }
-  dl::leave_critical_section();
   return result;
 }
 
@@ -537,19 +523,19 @@ static const char *ssl_get_error_string() {
 }
 
 bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int64_t algo) {
-  dl::enter_critical_section();
+  dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
   if (!mdtype) {
+    critical_section.leave_critical_section();
     php_warning("Unknown signature algorithm");
-    dl::leave_critical_section();
     return false;
   }
 
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_private_evp(priv_key_id, string{}, from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key cannot be converted into a private key");
-    dl::leave_critical_section();
     return false;
   }
 
@@ -577,31 +563,30 @@ bool f$openssl_sign(const string &data, string &signature, const string &priv_ke
     EVP_PKEY_free(pkey);
   }
 
-  dl::leave_critical_section();
   return result;
 }
 
 int64_t f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int64_t algo) {
-  dl::enter_critical_section();
+  dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
 
   if (!mdtype) {
+    critical_section.leave_critical_section();
     php_warning("Unknown signature algorithm");
-    dl::leave_critical_section();
     return 0;
   }
 
   if (signature.size() > UINT_MAX) {
+    critical_section.leave_critical_section();
     php_warning("Signature is too long");
-    dl::leave_critical_section();
     return 0;
   }
 
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_public_evp(pub_key_id, from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key cannot be converted into a public key");
-    dl::leave_critical_section();
     return 0;
   }
 
@@ -616,7 +601,6 @@ int64_t f$openssl_verify(const string &data, const string &signature, const stri
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
   return err;
 }
 
@@ -669,7 +653,6 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   if (sock != -1) {                                     \
     close (sock);                                       \
   }                                                     \
-  dl::leave_critical_section();                         \
   return false
 
 #define RETURN_ERROR(dump_error_stack, error_no, error) \
@@ -746,8 +729,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
       php_assert (0);
   }
 
-
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   sock = socket(h->h_addrtype, SOCK_STREAM, 0);
   if (sock == -1) {
     RETURN_ERROR(false, -4, "Can't create tcp socket");
@@ -863,7 +845,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   }
 
   php_assert (fcntl(sock, F_SETFL, 0) == 0);
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
 
   if (dl::query_num != ssl_connections_last_query_num) {
     new(ssl_connections_storage) array<ssl_connection>();
@@ -897,10 +879,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
     }
   }
 
-  dl::enter_critical_section();//NOT OK: ssl_connections
-  ssl_connections->set_value(stream_key, result);
-  dl::leave_critical_section();
-
+  dl::critical_section_call([&] { ssl_connections->set_value(stream_key, result); });
   return stream_key;
 #undef RETURN
 #undef RETURN_ERROR
@@ -1013,21 +992,20 @@ static Optional<int64_t> ssl_fwrite(const Stream &stream, const string &data) {
     return 0;
   }
 
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   ERR_clear_error();
   int written = SSL_write(c->ssl_handle, data_ptr, data_len);
 
   if (written <= 0) {
     bool ok = process_ssl_error(c, written);
     if (ok) {
-      dl::leave_critical_section();
+      critical_section.leave_critical_section();
       php_assert (!c->is_blocking);//because of SSL_MODE_AUTO_RETRY
       return 0;
     }
-    dl::leave_critical_section();
     return false;
   } else {
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     if (c->is_blocking) {
       php_assert (written == data_len);
     } else {
@@ -1053,21 +1031,19 @@ static Optional<string> ssl_fread(const Stream &stream, int64_t length) {
   }
 
   string res(static_cast<string::size_type>(length), false);
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   ERR_clear_error();
   int res_size = SSL_read(c->ssl_handle, &res[0], static_cast<int32_t>(length));
   if (res_size <= 0) {
     bool ok = process_ssl_error(c, res_size);
     if (ok) {
-      dl::leave_critical_section();
+      critical_section.leave_critical_section();
       php_assert (!c->is_blocking);//because of SSL_MODE_AUTO_RETRY
-
       return string();
     }
-    dl::leave_critical_section();
     return false;
   } else {
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_assert (res_size <= length);
     res.shrink(static_cast<string::size_type>(res_size));
     return res;
@@ -1088,22 +1064,13 @@ static bool ssl_feof(const Stream &stream) {
     return false;//nothing to read for now
   }
 
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionGuard critical_section;
   char b;
   ERR_clear_error();
   int res_size = SSL_peek(c->ssl_handle, &b, 1);
   if (res_size <= 0) {
-    bool ok = process_ssl_error(c, res_size);
-    if (ok) {
-      dl::leave_critical_section();
-      return false;
-    }
-    dl::leave_critical_section();
-
-    return true;
+    return !process_ssl_error(c, res_size);
   } else {
-    dl::leave_critical_section();
-
     return false;
   }
 }
@@ -1114,10 +1081,9 @@ static bool ssl_fclose(const Stream &stream) {
     return false;
   }
 
-  dl::enter_critical_section();//NOT OK: ssl_connections
+  dl::CriticalSectionGuard critical_section;
   ssl_do_shutdown(&(*ssl_connections)[stream_key]);
   ssl_connections->unset(stream_key);
-  dl::leave_critical_section();
   return true;
 }
 
@@ -1131,14 +1097,8 @@ bool ssl_stream_set_option(const Stream &stream, int64_t option, int64_t value) 
     case STREAM_SET_BLOCKING_OPTION: {
       bool is_blocking = value;
       if (c->is_blocking != is_blocking) {
-        dl::enter_critical_section();//OK
-        if (is_blocking) {
-          php_assert (fcntl(c->sock, F_SETFL, 0) == 0);
-        } else {
-          php_assert (fcntl(c->sock, F_SETFL, O_NONBLOCK) == 0);
-        }
-        dl::leave_critical_section();
-
+        const int res = dl::critical_section_call(fcntl, c->sock, F_SETFL, is_blocking ? 0 : O_NONBLOCK);
+        php_assert(res == 0);
         c->is_blocking = is_blocking;
       }
       return true;
@@ -1213,7 +1173,7 @@ void reinit_openssl_lib_hack() {
 }
 
 void free_openssl_lib() {
-  dl::enter_critical_section(); //OK
+  dl::CriticalSectionGuard critical_section;
   public_keys.free_resources();
   private_keys.free_resources();
 
@@ -1225,7 +1185,6 @@ void free_openssl_lib() {
     }
     ssl_connections_last_query_num--;
   }
-  dl::leave_critical_section();
 }
 
 namespace {
