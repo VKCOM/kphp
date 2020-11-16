@@ -27,6 +27,7 @@
 #include "common/wrappers/openssl.h"
 #include "common/wrappers/string_view.h"
 
+#include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/files.h"
@@ -63,7 +64,7 @@ string f$hash(const string &algo, const string &s, bool raw_output) {
       res.assign(64, false);
     }
 
-    SHA256(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+    dl::critical_section_call(SHA256, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
     if (!raw_output) {
       for (int i = 31; i >= 0; i--) {
@@ -100,10 +101,10 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
       res.assign(hash_len * 2, false);
     }
 
-    unsigned int md_len;
-    HMAC(evp_md, static_cast <const void *> (key.c_str()), (int)key.size(),
-         reinterpret_cast <const unsigned char *> (data.c_str()), (int)data.size(),
-         reinterpret_cast <unsigned char *> (res.buffer()), &md_len);
+    unsigned int md_len = 0;
+    dl::critical_section_call(HMAC, evp_md, key.c_str(), static_cast<int>(key.size()),
+                              reinterpret_cast<const unsigned char *> (data.c_str()), static_cast<int>(data.size()),
+                              reinterpret_cast<unsigned char *> (res.buffer()), &md_len);
     php_assert (md_len == hash_len);
 
     if (!raw_output) {
@@ -127,7 +128,7 @@ string f$sha1(const string &s, bool raw_output) {
     res.assign(40, false);
   }
 
-  SHA1(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+  dl::critical_section_call(SHA1, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
   if (!raw_output) {
     for (int i = 19; i >= 0; i--) {
@@ -147,7 +148,7 @@ string f$md5(const string &s, bool raw_output) {
     res.assign(32, false);
   }
 
-  MD5(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+  dl::critical_section_call(MD5, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
   if (!raw_output) {
     for (int i = 15; i >= 0; i--) {
@@ -573,13 +574,6 @@ int64_t f$openssl_verify(const string &data, const string &signature, const stri
     php_warning("Unknown signature algorithm");
     return 0;
   }
-
-  if (signature.size() > UINT_MAX) {
-    critical_section.leave_critical_section();
-    php_warning("Signature is too long");
-    return 0;
-  }
-
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_public_evp(pub_key_id, from_cache);
   if (pkey == nullptr) {
@@ -607,15 +601,15 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
     return false;
   }
   string buffer(static_cast<string::size_type>(length), ' ');
-  struct timeval tv;
-
+  timeval tv{};
   gettimeofday(&tv, nullptr);
-  RAND_add(&tv, sizeof(tv), 0.0);
 
+  dl::CriticalSectionGuard critical_section;
+  RAND_add(&tv, sizeof(tv), 0.0);
   if (RAND_bytes(reinterpret_cast<unsigned char *>(buffer.buffer()), static_cast<int32_t>(length)) <= 0) {
     return false;
   }
-  return buffer;
+  return std::move(buffer);
 }
 
 
@@ -642,10 +636,10 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   } else {                                              \
     php_warning ("%s", error_description.c_str());      \
   }                                                     \
-  if (ssl_handle != nullptr) {                             \
+  if (ssl_handle != nullptr) {                          \
     SSL_free (ssl_handle);                              \
   }                                                     \
-  if (ssl_ctx != nullptr) {                                \
+  if (ssl_ctx != nullptr) {                             \
     SSL_CTX_free (ssl_ctx);                             \
   }                                                     \
   if (sock != -1) {                                     \
@@ -661,7 +655,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
 #define RETURN_ERROR_FORMAT(dump_error_stack, error_no, format, ...) \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));          \
+    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));        \
   RETURN(dump_error_stack)
 
   if (timeout < 0) {
@@ -1275,18 +1269,18 @@ public:
     return version;
   }
 
-  int get_time_not_before() const {
+  int64_t get_time_not_before() const {
     php_assert(x509_.get());
 
     auto asn_time_not_before = X509_getm_notBefore(x509_.get());
-    return (int)convert_asn1_time(asn_time_not_before);
+    return convert_asn1_time(asn_time_not_before);
   }
 
-  int get_time_not_after() const {
+  int64_t get_time_not_after() const {
     php_assert(x509_.get());
 
     auto asn_time_not_after = X509_getm_notAfter(x509_.get());
-    return (int)convert_asn1_time(asn_time_not_after);
+    return convert_asn1_time(asn_time_not_after);
   }
 
   array<mixed> get_purposes(bool shortnames = true) const {
@@ -1770,9 +1764,11 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data
 
 array<string> f$openssl_get_cipher_methods(bool aliases) {
   array<string> return_value;
-  OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
-                         aliases ? openssl_add_method<true> : openssl_add_method<false>,
-                         &return_value);
+  // Don't use OBJ_NAME_do_all_sorted, because it implicitly allocates memory on heap
+  OBJ_NAME_do_all(OBJ_NAME_TYPE_CIPHER_METH,
+                  aliases ? openssl_add_method<true> : openssl_add_method<false>,
+                  &return_value);
+  f$sort(return_value, SORT_STRING);
   return return_value;
 }
 
@@ -1781,12 +1777,12 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) {
     php_warning("Unknown cipher algorithm");
     return false;
   }
-  const EVP_CIPHER *cipher_type = EVP_get_cipherbyname(method.c_str());
+  const EVP_CIPHER *cipher_type = dl::critical_section_call(EVP_get_cipherbyname, method.c_str());
   if (!cipher_type) {
     php_warning("Unknown cipher algorithm");
     return false;
   }
-  return EVP_CIPHER_iv_length(cipher_type);
+  return dl::critical_section_call(EVP_CIPHER_iv_length, cipher_type);
 }
 
 namespace impl_ {
