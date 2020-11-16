@@ -39,7 +39,7 @@ static int mc_last_key_len{0};
 static mixed mc_res;
 static bool mc_bool_res{false};
 
-mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout);
+mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, int64_t v, double timeout);
 bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout);
 bool f$rpc_mc_delete(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
 mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &key, double timeout = -1.0, bool fake = false);
@@ -780,28 +780,28 @@ bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &mc, const string
   return catchException(f$rpc_mc_delete(cur_host.conn, real_key, -1.0, mc->fake), false);
 }
 
-mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &mc, const string &key, const mixed &count) {
-  if (mc->hosts.count() <= 0) {
+mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, int64_t count) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::decrement with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  auto cur_host = get_host(mc->hosts);
+  auto cur_host = get_host(v$this->hosts);
   mc_method = "decrement";
-  return catchException(rpc_mc_run_increment(mc->fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, cur_host.conn, real_key, count, -1), false);
+  return catchException(rpc_mc_run_increment(v$this->fake ? TL_ENGINE_MC_DECR_QUERY : MEMCACHE_DECR, cur_host.conn, real_key, count, -1), false);
 }
 
-mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &mc, const string &key, const mixed &count) {
-  if (mc->hosts.count() <= 0) {
+mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, int64_t count) {
+  if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run RpcMemcache::increment with key \"%s\"", key.c_str());
     return false;
   }
 
   const string real_key = mc_prepare_key(key);
-  auto cur_host = get_host(mc->hosts);
+  auto cur_host = get_host(v$this->hosts);
   mc_method = "increment";
-  return catchException(rpc_mc_run_increment(mc->fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, cur_host.conn, real_key, count, -1.0), false);
+  return catchException(rpc_mc_run_increment(v$this->fake ? TL_ENGINE_MC_INCR_QUERY : MEMCACHE_INCR, cur_host.conn, real_key, count, -1.0), false);
 }
 
 mixed f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& mc) {
@@ -924,7 +924,7 @@ bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, con
   return res == MEMCACHE_TRUE;
 }
 
-mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &v, double timeout) {
+mixed rpc_mc_run_increment(int op, const class_instance<C$RpcConnection> &conn, const string &key, int64_t v, double timeout) {
   const string real_key = mc_prepare_key(key);
   bool is_immediate = mc_is_immediate_query(real_key);
 

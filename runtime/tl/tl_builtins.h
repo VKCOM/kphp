@@ -177,7 +177,7 @@ struct t_Int {
 
 struct t_Long {
   void store(const mixed &tl_object) {
-    f$store_long(tl_object);
+    store_long(tl_object);
   }
 
   mixed fetch() {

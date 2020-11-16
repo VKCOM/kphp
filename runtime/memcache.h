@@ -122,8 +122,8 @@ bool f$RpcMemcache$$set(const class_instance<C$RpcMemcache> &v$this,const string
 bool f$RpcMemcache$$replace(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &value, int64_t flags = 0, int64_t expire = 0);
 mixed f$RpcMemcache$$get(const class_instance<C$RpcMemcache> &v$this, const mixed &key_var);
 bool f$RpcMemcache$$delete(const class_instance<C$RpcMemcache> &v$this, const string &key);
-mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &count = 1);
-mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, const mixed &count = 1);
+mixed f$RpcMemcache$$decrement(const class_instance<C$RpcMemcache> &v$this, const string &key, int64_t count = 1);
+mixed f$RpcMemcache$$increment(const class_instance<C$RpcMemcache> &v$this, const string &key, int64_t count = 1);
 mixed f$RpcMemcache$$getVersion(const class_instance<C$RpcMemcache>& v$this);
 
 /*
