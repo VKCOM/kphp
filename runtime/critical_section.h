@@ -30,6 +30,11 @@ public:
     in_critical_section_ = false;
   }
 
+  void enter_critical_section() noexcept {
+    dl::enter_critical_section();
+    in_critical_section_ = true;
+  }
+
   ~CriticalSectionSmartGuard() noexcept {
     if (in_critical_section_) {
       dl::leave_critical_section();

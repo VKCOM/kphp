@@ -1153,37 +1153,6 @@ void global_init_openssl_lib() {
   reinit_openssl_lib_hack();
 }
 
-// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
-void reinit_openssl_lib_hack() {
-  OPENSSL_config(nullptr);
-  SSL_library_init();
-  OpenSSL_add_all_ciphers();
-  OpenSSL_add_all_digests();
-  OpenSSL_add_all_algorithms();
-
-  SSL_load_error_strings();
-}
-
-void init_openssl_lib() {
-  public_keys.init_resources();
-  private_keys.init_resources();
-}
-
-void free_openssl_lib() {
-  dl::CriticalSectionGuard critical_section;
-  public_keys.free_resources();
-  private_keys.free_resources();
-
-  if (dl::query_num == ssl_connections_last_query_num) {
-    const array<ssl_connection> *const_ssl_connections = ssl_connections;
-    for (array<ssl_connection>::const_iterator p = const_ssl_connections->begin(); p != const_ssl_connections->end(); ++p) {
-      ssl_connection c = p.get_value();
-      ssl_do_shutdown(&c);
-    }
-    ssl_connections_last_query_num--;
-  }
-}
-
 namespace {
 
 void x509_stack_pop_free(STACK_OF(X509) *stack) {
@@ -1222,93 +1191,11 @@ private:
   using X509_STORE_CTX_ptr = vk::unique_ptr_with_delete_function<X509_STORE_CTX, X509_STORE_CTX_free>;
 
 public:
-  explicit X509_parser(const string &data) :
-    x509_(get_x509_from_data(data)) {}
-
-  array<mixed> get_subject(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    X509_NAME *subj = X509_get_subject_name(x509_.get());
-
-    return get_entries_of(subj, shortnames);
+  explicit X509_parser(const string &data) noexcept:
+    x509_(get_x509_from_data(data)) {
   }
 
-  string get_subject_name() const {
-    php_assert(x509_.get());
-
-    auto issuer_name = X509_get_subject_name(x509_.get());
-    auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
-
-    string res(issuer);
-    OPENSSL_free(issuer);
-
-    return res;
-  }
-
-  string get_hash() const {
-    php_assert(x509_.get());
-
-    static char buf[9];
-    snprintf(buf, sizeof(buf), "%08lx", X509_subject_name_hash(x509_.get()));
-
-    return string(buf, 8);
-  }
-
-  array<mixed> get_issuer(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    X509_NAME *issuer_name = X509_get_issuer_name(x509_.get());
-
-    return get_entries_of(issuer_name, shortnames);
-  }
-
-  int get_version() const {
-    php_assert(x509_.get());
-
-    auto version = static_cast<int>(X509_get_version(x509_.get()));
-    return version;
-  }
-
-  int64_t get_time_not_before() const {
-    php_assert(x509_.get());
-
-    auto asn_time_not_before = X509_getm_notBefore(x509_.get());
-    return convert_asn1_time(asn_time_not_before);
-  }
-
-  int64_t get_time_not_after() const {
-    php_assert(x509_.get());
-
-    auto asn_time_not_after = X509_getm_notAfter(x509_.get());
-    return convert_asn1_time(asn_time_not_after);
-  }
-
-  array<mixed> get_purposes(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    array<mixed> res;
-    for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
-      array<mixed> purposes;
-
-      X509_PURPOSE *purp = X509_PURPOSE_get0(i);
-      int id = X509_PURPOSE_get_id(purp);
-
-      auto purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 0));
-      purposes.push_back(purpset);
-
-      purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 1));
-      purposes.push_back(purpset);
-
-      char *pname = shortnames ? X509_PURPOSE_get0_sname(purp) : X509_PURPOSE_get0_name(purp);
-      purposes.push_back(string(pname));
-
-      res.set_value(id, purposes);
-    }
-
-    return res;
-  }
-
-  Optional<array<mixed>> parse(bool shortnames = true) const {
+  Optional<array<mixed>> parse(bool shortnames = true) const noexcept {
     if (!x509_) {
       return false;
     }
@@ -1324,13 +1211,13 @@ public:
        {string("purposes"),         get_purposes(shortnames)}};
   }
 
-  mixed check_purpose(int64_t purpose) const {
+  mixed check_purpose(int64_t purpose) const noexcept {
     if (!x509_) {
       return -1;
     }
 
+    dl::CriticalSectionGuard critical_section;
     X509_STORE_CTX_ptr csc{X509_STORE_CTX_new()};
-
     if (csc == nullptr) {
       return -1;
     }
@@ -1340,8 +1227,7 @@ public:
     }
 
     X509_STORE_set_default_paths(store.get());
-
-    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_.get(), nullptr)) {
+    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_, nullptr)) {
       return -1;
     }
     // return value is not checked, as in php
@@ -1353,28 +1239,112 @@ public:
     return static_cast<bool>(ret);
   }
 
-private:
-  X509_ptr get_x509_from_data(const string &data) {
-    BIO_ptr certBio{BIO_new(BIO_s_mem())};
-
-    if (!certBio) {
-      return nullptr;
-    }
-
-    bool write_success = BIO_write(certBio.get(), data.c_str(), static_cast<int>(data.size())) != 0;
-
-    if (!write_success) {
-      return nullptr;
-    }
-
-    return X509_ptr(PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr));
+  ~X509_parser() noexcept {
+    dl::CriticalSectionGuard critical_section;
+    stop_x509_processing(x509_);
   }
 
-  array<mixed> get_entries_of(X509_NAME *name, bool shortnames = true) const {
+  static void free_leaked_x509() noexcept {
+    processing_x509_.reset();
+  }
+
+private:
+  static X509 *get_x509_from_data(const string &data) noexcept {
+    dl::CriticalSectionGuard critical_section;
+    if (BIO_ptr certBio{BIO_new(BIO_s_mem())}) {
+      if (BIO_write(certBio.get(), data.c_str(), static_cast<int>(data.size()))) {
+        return start_x509_processing(X509_ptr{PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr)});
+      }
+    }
+    return nullptr;
+  }
+
+  static X509 *start_x509_processing(X509_ptr x509) noexcept {
+    php_assert(!processing_x509_);
+    processing_x509_ = std::move(x509);
+    return processing_x509_.get();
+  }
+
+  static void stop_x509_processing(X509 *raw_x509) noexcept {
+    php_assert(raw_x509 == processing_x509_.get());
+    processing_x509_.reset();
+  }
+
+  string get_subject_name() const noexcept {
+    char *issuer_copy = nullptr;
+    {
+      dl::CriticalSectionGuard critical_section;
+      auto issuer_name = X509_get_subject_name(x509_);
+      auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
+      issuer_copy = dl::script_allocator_strdup(issuer);
+      OPENSSL_free(issuer);
+    }
+    // issuer_copy can't be nullptr, because after critical section in case of OOM processing is terminated
+    php_assert(issuer_copy);
+    string res{issuer_copy};
+    dl::script_allocator_free(issuer_copy);
+    return res;
+  }
+
+  array<mixed> get_subject(bool shortnames = true) const noexcept {
+    return get_entries_of([](X509 *a) { return X509_get_subject_name(a); }, shortnames);
+  }
+
+  string get_hash() const noexcept {
+    string result{8, '0'};
+    dl::CriticalSectionGuard critical_section;
+    snprintf(result.buffer(), result.size() + 1, "%08lx", X509_subject_name_hash(x509_));
+    return result;
+  }
+
+  array<mixed> get_issuer(bool shortnames = true) const {
+    return get_entries_of([](X509 *a) { return X509_get_issuer_name(a); }, shortnames);
+  }
+
+  int64_t get_version() const {
+    dl::CriticalSectionGuard critical_section;
+    return X509_get_version(x509_);
+  }
+
+  int64_t get_time_not_before() const {
+    dl::CriticalSectionGuard critical_section;
+    auto asn_time_not_before = X509_getm_notBefore(x509_);
+    return convert_asn1_time(asn_time_not_before);
+  }
+
+  int64_t get_time_not_after() const {
+    dl::CriticalSectionGuard critical_section;
+    auto asn_time_not_after = X509_getm_notAfter(x509_);
+    return convert_asn1_time(asn_time_not_after);
+  }
+
+  array<mixed> get_purposes(bool shortnames = true) const {
     array<mixed> res;
 
-    int count_of_entries = X509_NAME_entry_count(name);
+    dl::CriticalSectionSmartGuard critical_section;
+    for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
+      X509_PURPOSE *purp = X509_PURPOSE_get0(i);
+      int id = X509_PURPOSE_get_id(purp);
 
+      auto purpset_0 = static_cast<bool>(X509_check_purpose(x509_, id, 0));
+      auto purpset_1 = static_cast<bool>(X509_check_purpose(x509_, id, 1));
+      char *pname = shortnames ? X509_PURPOSE_get0_sname(purp) : X509_PURPOSE_get0_name(purp);
+
+      critical_section.leave_critical_section();
+      res.set_value(id, array<mixed>::create(purpset_0, purpset_1, string{pname}));
+      critical_section.enter_critical_section();
+    }
+
+    return res;
+  }
+
+  template<class F>
+  array<mixed> get_entries_of(const F &name_getter, bool shortnames) const {
+    array<mixed> res;
+
+    dl::CriticalSectionSmartGuard critical_section;
+    X509_NAME *name = name_getter(x509_);
+    const int count_of_entries = X509_NAME_entry_count(name);
     for (int i = 0; i < count_of_entries; i++) {
       X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
 
@@ -1387,33 +1357,36 @@ private:
       auto value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
       int value_len = ASN1_STRING_length(value);
 
+      critical_section.leave_critical_section();
       res.set_value(string(key_str), string(value_str, value_len));
+      critical_section.enter_critical_section();
     }
 
     return res;
   }
 
-  time_t convert_asn1_time(ASN1_TIME *expires) const {
+  static time_t convert_asn1_time(ASN1_TIME *expires) noexcept {
     ASN1_TIME_ptr epoch{ASN1_TIME_new()};
     ASN1_TIME_set(epoch.get(), 0);
     int days = 0;
     int seconds = 0;
     ASN1_TIME_diff(&days, &seconds, epoch.get(), expires);
-
     return (days * 24 * 60 * 60) + seconds;
   }
 
+  static X509_ptr processing_x509_;
 
-private:
-  X509_ptr x509_;
+  X509 *x509_{nullptr};
 };
 
-Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
-  return X509_parser(data).parse(shortnames);
+X509_ptr X509_parser::processing_x509_;
+
+Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* = true */) {
+  return X509_parser{data}.parse(shortnames);
 }
 
 mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
-  return X509_parser(data).check_purpose(purpose);
+  return X509_parser{data}.check_purpose(purpose);
 }
 
 namespace {
@@ -1817,4 +1790,36 @@ Optional<string> f$openssl_decrypt(string data, const string &method, const stri
     data = std::move(decoding_data.val());
   }
   return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv, tag, aad);
+}
+
+// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
+void reinit_openssl_lib_hack() {
+  OPENSSL_config(nullptr);
+  SSL_library_init();
+  OpenSSL_add_all_ciphers();
+  OpenSSL_add_all_digests();
+  OpenSSL_add_all_algorithms();
+
+  SSL_load_error_strings();
+}
+
+void init_openssl_lib() {
+  public_keys.init_resources();
+  private_keys.init_resources();
+}
+
+void free_openssl_lib() {
+  dl::CriticalSectionGuard critical_section;
+  X509_parser::free_leaked_x509();
+  public_keys.free_resources();
+  private_keys.free_resources();
+
+  if (dl::query_num == ssl_connections_last_query_num) {
+    const array<ssl_connection> *const_ssl_connections = ssl_connections;
+    for (array<ssl_connection>::const_iterator p = const_ssl_connections->begin(); p != const_ssl_connections->end(); ++p) {
+      ssl_connection c = p.get_value();
+      ssl_do_shutdown(&c);
+    }
+    ssl_connections_last_query_num--;
+  }
 }
