@@ -252,59 +252,59 @@ int64_t f$crc32_file(const string &file_name) {
   return res ^ std::numeric_limits<uint32_t>::max();
 }
 
+template<char PREFIX_CHAR>
 struct EVPKeyResourceStorage {
 public:
-  EVPKeyResourceStorage (char prefixChar)
-    : registered_keys_(reinterpret_cast<KeysArray *>(&storage_)),
-      last_query_num_(-1),
-      prefixChar_(prefixChar)
-    {}
+  string register_resource_and_leave_critical_section(EVP_PKEY *pkey, dl::CriticalSectionSmartGuard &critical_section) {
+    php_assert(registered_keys_);
+    const int64_t elements = registered_keys_->count();
+    php_assert(elements > 0);
+    auto &reserved_place = (*registered_keys_)[elements - 1];
+    php_assert(!reserved_place);
+    reserved_place = pkey;
 
-  string register_resource(EVP_PKEY *pkey) {
-    if (dl::query_num != last_query_num_) {
-      new(&storage_) KeysArray();
-      last_query_num_ = dl::query_num;
-    }
-
-    string result(2, prefixChar_);
-    result.append(int64_t{registered_keys_->count()});
-    registered_keys_->push_back(pkey);
+    critical_section.leave_critical_section();
+    // reserve place for next key
+    registered_keys_->emplace_back(nullptr);
+    string result(2, PREFIX_CHAR);
+    result.append(elements - 1);
     return result;
   }
 
   EVP_PKEY *find_resource(const string &key) {
-    int num = 0;
-    if (last_query_num_ == dl::query_num &&
-        key.size() > 2 && key[0] == prefixChar_ && key[1] == prefixChar_ &&
-        sscanf(key.c_str() + 2, "%d", &num) == 1 &&
-        static_cast <unsigned int> (num) < static_cast <unsigned int> (registered_keys_->count())) {
+    php_assert(registered_keys_);
+    int64_t num = 0;
+    if (key.size() > 2 && key[0] == PREFIX_CHAR && key[1] == PREFIX_CHAR &&
+        php_try_to_int(key.c_str() + 2, key.size() - 2, &num)) {
       return registered_keys_->get_value(num);
     }
     return nullptr;
   }
 
+  void init_resources() {
+    registered_keys_ = reinterpret_cast<KeysArray *>(&storage_);
+    new(registered_keys_) KeysArray();
+    registered_keys_->emplace_back(nullptr);
+  }
+
   void free_resources() {
-    if (dl::query_num == last_query_num_) {
-      for (auto keyIt = registered_keys_->begin(); keyIt != registered_keys_->end(); ++keyIt) {
-        EVP_PKEY_free(keyIt.get_value());
-      }
-      last_query_num_--;
+    for (auto keyIt : *registered_keys_) {
+      EVP_PKEY_free(keyIt.get_value());
     }
+    registered_keys_ = nullptr;
   }
 
 private:
   using KeysArray = array<EVP_PKEY *>;
   using KeysArrayStorage = std::aligned_storage<sizeof(KeysArray), alignof(KeysArray)>::type;
 
-  KeysArrayStorage storage_;
-  KeysArray *registered_keys_;
-  long long last_query_num_;
-  const char prefixChar_;
+  KeysArrayStorage storage_{};
+  KeysArray *registered_keys_{nullptr};
 };
 
 // uses different prefixes for avoid of resource identifier collisions
-static EVPKeyResourceStorage public_keys{';'};
-static EVPKeyResourceStorage private_keys{':'};
+static EVPKeyResourceStorage<';'> public_keys;
+static EVPKeyResourceStorage<':'> private_keys;
 
 static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passphrase, bool &from_cache) {
   if (EVP_PKEY *evp_pkey = private_keys.find_resource(key)) {
@@ -314,13 +314,8 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::CriticalSectionGuard critical_section;
-  if (BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
-    if (passphrase.empty()) {
-      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, nullptr);
-    } else {
-      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
-    }
+  if (BIO *in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size())) {
+    evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, passphrase.empty() ? nullptr : const_cast<char *>(passphrase.c_str()));
     BIO_free(in);
   }
   return evp_pkey;
@@ -334,8 +329,7 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::CriticalSectionGuard critical_section;
-  BIO *cert_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
+  BIO *cert_in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size());
   if (cert_in == nullptr) {
     return nullptr;
   }
@@ -345,7 +339,7 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
   if (cert) {
     evp_pkey = X509_get_pubkey(cert);
     X509_free(cert);
-  } else if (BIO *key_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
+  } else if (BIO *key_in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size())) {
     evp_pkey = PEM_read_bio_PUBKEY(key_in, nullptr, nullptr, nullptr);
     BIO_free(key_in);
   }
@@ -355,14 +349,15 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
   bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid public key");
     result = string();
     return false;
   }
 
-  dl::CriticalSectionSmartGuard critical_section;
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
@@ -407,13 +402,14 @@ bool f$openssl_public_encrypt(const string &data, mixed &result, const string &k
 
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key) {
   bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY *pkey = openssl_get_private_evp(key, string(), from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid private key");
     return false;
   }
 
-  dl::CriticalSectionSmartGuard critical_section;
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
@@ -454,11 +450,12 @@ bool f$openssl_private_decrypt(const string &data, mixed &result, const string &
 
 Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
   Optional<string> result = false;
-  dl::CriticalSectionGuard critical_section;
+  dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_private_evp(key, passphrase, from_cache)) {
-    result = from_cache ? key : private_keys.register_resource(pkey);
+    result = from_cache ? key : private_keys.register_resource_and_leave_critical_section(pkey, critical_section);
   } else {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid key or passphrase is not a valid password");
   }
   return result;
@@ -466,11 +463,12 @@ Optional<string> f$openssl_pkey_get_private(const string &key, const string &pas
 
 Optional<string> f$openssl_pkey_get_public(const string &key) {
   Optional<string> result = false;
-  dl::CriticalSectionGuard critical_section;
+  dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache)) {
-    result = from_cache ? key : public_keys.register_resource(pkey);
+    result = from_cache ? key : public_keys.register_resource_and_leave_critical_section(pkey, critical_section);
   } else {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid key");
   }
   return result;
@@ -1170,6 +1168,11 @@ void reinit_openssl_lib_hack() {
   OpenSSL_add_all_algorithms();
 
   SSL_load_error_strings();
+}
+
+void init_openssl_lib() {
+  public_keys.init_resources();
+  private_keys.init_resources();
 }
 
 void free_openssl_lib() {
