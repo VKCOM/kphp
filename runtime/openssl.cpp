@@ -1527,6 +1527,7 @@ struct CipherCtx {
   CipherCtx(const string &method, int64_t options, cipher_action action) :
     options_(options),
     action_(action) {
+    dl::CriticalSectionGuard critical_section;
     type_ = EVP_get_cipherbyname(method.c_str());
     if (!type_) {
       php_warning("Unknown cipher algorithm '%s'", method.c_str());
@@ -1551,6 +1552,8 @@ struct CipherCtx {
     if (!ctx_) {
       php_warning("Failed to create cipher context");
     }
+    php_assert(!processing_ctx_);
+    processing_ctx_ = ctx_;
   }
 
   string flush_result() {
@@ -1560,6 +1563,7 @@ struct CipherCtx {
   explicit operator bool() const { return type_ && ctx_; }
 
   bool init(string key, string iv, string &tag) {
+    dl::CriticalSectionSmartGuard critical_section;
     const size_t max_iv_len = static_cast<size_t>(EVP_CIPHER_iv_length(type_));
     if (action_ == encrypt && iv.empty() && max_iv_len > 0) {
       php_warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
@@ -1570,7 +1574,7 @@ struct CipherCtx {
       return false;
     }
 
-    if (!align_iv(iv, max_iv_len)) {
+    if (!align_iv(iv, max_iv_len, critical_section)) {
       return false;
     }
 
@@ -1594,7 +1598,9 @@ struct CipherCtx {
         php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
         return false;
       }
+      critical_section.leave_critical_section();
       key.append(cipher_key_len - key.size(), '\0');
+      critical_section.enter_critical_section();
     } else if (key.size() > cipher_key_len && !EVP_CIPHER_CTX_set_key_length(ctx_, key.size())) {
       php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
     }
@@ -1612,6 +1618,7 @@ struct CipherCtx {
   }
 
   bool update(const string &data, const string &aad) {
+    dl::CriticalSectionSmartGuard critical_section;
     if (is_single_run_aead_ && !EVP_CipherUpdate(ctx_, nullptr, &out_len_, nullptr, static_cast<int32_t>(data.size()))) {
       php_warning("Setting of data length failed:\n%s", ssl_get_error_string());
       return false;
@@ -1622,7 +1629,9 @@ struct CipherCtx {
       return false;
     }
 
+    critical_section.leave_critical_section();
     out_.assign(data.size() + EVP_CIPHER_block_size(type_), '\0');
+    critical_section.enter_critical_section();
     if (!EVP_CipherUpdate(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()), &out_len_,
                           reinterpret_cast<const unsigned char *>(data.c_str()), static_cast<int>(data.size()))) {
       php_warning("Cipher update error:\n%s", ssl_get_error_string());
@@ -1633,9 +1642,11 @@ struct CipherCtx {
 
   bool finalize() {
     int i = 0;
-    const int is_ok = action_ == encrypt
-                      ? EVP_EncryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i)
-                      : EVP_DecryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i);
+    const int is_ok = dl::critical_section_call([&] {
+      return action_ == encrypt
+             ? EVP_EncryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i)
+             : EVP_DecryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i);
+    });
     if (is_ok > 0) {
       out_.shrink(i + out_len_);
     } else {
@@ -1645,6 +1656,7 @@ struct CipherCtx {
   }
 
   bool make_tag(string &tag) {
+    dl::CriticalSectionGuard critical_section;
     if (is_aead_ && !tag.empty()) {
       if (EVP_CIPHER_CTX_ctrl(ctx_, aead_get_tag_flag_, static_cast<int32_t>(tag.size()), tag.buffer()) == 1) {
         return true;
@@ -1661,15 +1673,21 @@ struct CipherCtx {
     return true;
   }
 
-  ~CipherCtx() {
-    if (ctx_) {
-      EVP_CIPHER_CTX_cleanup(ctx_);
-      EVP_CIPHER_CTX_free(ctx_);
+  static void free_leaked_ctx() {
+    if (processing_ctx_) {
+      EVP_CIPHER_CTX_cleanup(processing_ctx_);
+      EVP_CIPHER_CTX_free(processing_ctx_);
+      processing_ctx_ = nullptr;
     }
   }
 
+  ~CipherCtx() {
+    php_assert(processing_ctx_ == ctx_);
+    dl::critical_section_call(CipherCtx::free_leaked_ctx);
+  }
+
 private:
-  bool align_iv(string &iv, size_t iv_required_len) {
+  bool align_iv(string &iv, size_t iv_required_len, dl::CriticalSectionSmartGuard &critical_section) {
     if (iv.size() == iv_required_len) {
       return true;
     }
@@ -1683,19 +1701,25 @@ private:
     }
 
     if (iv.empty()) {
+      critical_section.leave_critical_section();
       iv.assign(static_cast<std::uint32_t>(iv_required_len), '\0');
+      critical_section.enter_critical_section();
       return true;
     }
     if (iv.size() < iv_required_len) {
       php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
                   iv.size(), iv_required_len);
+      critical_section.leave_critical_section();
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
+      critical_section.enter_critical_section();
       return true;
     }
     // iv.size() > iv_required_len
     php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
                 iv.size(), iv_required_len);
+    critical_section.leave_critical_section();
     iv.shrink(static_cast<string::size_type>(iv_required_len));
+    critical_section.enter_critical_section();
     return true;
   }
 
@@ -1713,7 +1737,11 @@ private:
   int aead_get_tag_flag_{0};
   int aead_set_tag_flag_{0};
   int aead_ivlen_flag_{0};
+
+  static EVP_CIPHER_CTX *processing_ctx_;
 };
+
+EVP_CIPHER_CTX *CipherCtx::processing_ctx_{nullptr};
 
 template<bool allow_alias>
 void openssl_add_method(const OBJ_NAME *name, void *arg) {
@@ -1811,6 +1839,7 @@ void init_openssl_lib() {
 void free_openssl_lib() {
   dl::CriticalSectionGuard critical_section;
   X509_parser::free_leaked_x509();
+  CipherCtx::free_leaked_ctx();
   public_keys.free_resources();
   private_keys.free_resources();
 
