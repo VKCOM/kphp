@@ -5,8 +5,10 @@
 #include "common/tlo-parsing/tl-dependency-graph.h"
 
 #include <algorithm>
+#include <set>
 #include <unordered_set>
 
+#include "common/algorithms/find.h"
 #include "common/tlo-parsing/tl-utils.h"
 
 vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(scheme) {
@@ -76,16 +78,14 @@ int vk::tl::DependencyGraph::register_node(const TLNode &node) {
 struct vk::tl::DependencyGraphBuilder : private vk::tl::expr_visitor {
   DependencyGraph &graph;
   combinator *expr_owner_combinator;
-  bool weak_dependencies{false};
-  bool is_parent_weak{false};
+  std::set<const type *> weak_self_cyclic_types;
+  bool treat_dep_as_weak{false}; // it means that pointer is used => forward declaration is enough
 
   DependencyGraphBuilder(DependencyGraph &graph, combinator *expr_owner) :
     graph(graph),
     expr_owner_combinator(expr_owner) {}
 
   void collect_edges(vk::tl::expr_base *expr) {
-    weak_dependencies = false;
-    is_parent_weak = false;
     expr->visit(*this);
   };
 private:
@@ -94,28 +94,21 @@ private:
     if (t->is_builtin()) {
       return;
     }
-    if (!weak_dependencies) {
+    if (treat_dep_as_weak && expr_owner_combinator->is_constructor() && get_type_of(expr_owner_combinator, graph.scheme)->name == t->name) {
+      weak_self_cyclic_types.insert(t);
+    } else {
       graph.add_edge(TLNode{expr_owner_combinator}, TLNode{t});
-    } else {
-      graph.combinator_weak_dependencies[expr_owner_combinator].insert(t);
     }
-    bool prev_weak_dependencies = weak_dependencies;
-    bool prev_is_parent_weak = is_parent_weak;
-    if (expr.type_id == TL_MAYBE_ID) {
-      weak_dependencies = is_parent_weak;
-    } else {
-      weak_dependencies = true;
-    }
-    is_parent_weak = weak_dependencies;
+    bool new_treat_dep_as_weak = treat_dep_as_weak || is_pointer_used_in_child(t);
+    std::swap(treat_dep_as_weak, new_treat_dep_as_weak);
     for (const auto &child : expr.children) {
       child->visit(*this);
     }
-    weak_dependencies = prev_weak_dependencies;
-    is_parent_weak = prev_is_parent_weak;
+    std::swap(new_treat_dep_as_weak, treat_dep_as_weak);
   }
 
   void apply(vk::tl::type_array &array) final {
-    weak_dependencies = true;
+    treat_dep_as_weak = true;
     for (const auto &arg : array.args) {
       arg->type_expr->visit(*this);
     }
@@ -124,6 +117,10 @@ private:
   void apply(vk::tl::type_var &) final {}
   void apply(vk::tl::nat_const &) final {}
   void apply(vk::tl::nat_var &) final {}
+
+  static bool is_pointer_used_in_child(const type *t) {
+    return vk::any_of_equal(t->name, "Vector", "Dictionary", "IntKeyDictionary", "LongKeyDictionary");
+  }
 };
 
 void vk::tl::DependencyGraph::collect_combinator_edges(vk::tl::combinator *c) {
@@ -134,6 +131,7 @@ void vk::tl::DependencyGraph::collect_combinator_edges(vk::tl::combinator *c) {
   if (c->is_function()) {
     builder.collect_edges(c->result.get());;
   }
+  weak_self_cyclic_types.insert(builder.weak_self_cyclic_types.begin(), builder.weak_self_cyclic_types.end());
 }
 
 const std::vector<vk::tl::TLNode> &vk::tl::DependencyGraph::get_nodes() const {
@@ -238,57 +236,51 @@ void vk::tl::DependencyGraph::dfs(int node, std::vector<int> &used, bool use_inv
   used.at(node) = NODE_EXITED;
 }
 
-static void normalize_dependencies(vk::tl::Dependencies &deps) {
+static void normalize_dependencies(std::vector<const vk::tl::type *> &deps) {
   static const auto &distinct_vector = [](std::vector<const vk::tl::type *> &vec) {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
   };
-  distinct_vector(deps.deps);
-  distinct_vector(deps.weak_deps);
-  std::vector<const vk::tl::type *> normalised_weak_deps = deps.weak_deps;
-  for (const auto &t : deps.deps) {
-    auto it = std::find(normalised_weak_deps.begin(), normalised_weak_deps.end(), t);
-    if (it != normalised_weak_deps.end()) {
-      normalised_weak_deps.erase(it);
-    }
-  }
-  deps.weak_deps = std::move(normalised_weak_deps);
+  distinct_vector(deps);
 }
 
-vk::tl::Dependencies vk::tl::DependencyGraph::get_type_dependencies(const type *t) const {
-  Dependencies res;
+std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_type_dependencies(const type *t) const {
+  std::vector<const vk::tl::type *> deps;
   for (const auto &constructor : t->constructors) {
     const auto &ctor_deps = get_combinator_dependencies(constructor.get());
-    res.deps.insert(res.deps.end(), ctor_deps.deps.begin(), ctor_deps.deps.end());
-    res.weak_deps.insert(res.weak_deps.end(), ctor_deps.weak_deps.begin(), ctor_deps.weak_deps.end());
+    deps.insert(deps.end(), ctor_deps.begin(), ctor_deps.end());
   }
-  normalize_dependencies(res);
-  return res;
+  normalize_dependencies(deps);
+  return deps;
 }
 
-vk::tl::Dependencies vk::tl::DependencyGraph::get_function_dependencies(const combinator *f) const {
+std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_function_dependencies(const combinator *f) const {
   assert(f->is_function());
   return get_combinator_dependencies(f);
 }
 
-vk::tl::Dependencies vk::tl::DependencyGraph::get_combinator_dependencies(const combinator *c) const {
+std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_combinator_dependencies(const combinator *c) const {
   auto it = tl_name_to_id.find(c->name);
   if (it == tl_name_to_id.end()) {
     return {};
   }
-  Dependencies res_deps;
+  std::vector<const vk::tl::type *>  deps;
   int node_id = it->second;
   const auto &node_deps = edges[node_id];
-  res_deps.deps.resize(node_deps.size());
-  std::transform(node_deps.begin(), node_deps.end(), res_deps.deps.begin(), [&](int dep_node_id) {
+  deps.resize(node_deps.size());
+  std::transform(node_deps.begin(), node_deps.end(), deps.begin(), [&](int dep_node_id) {
     const auto &dep_node = get_node_info(dep_node_id);
     assert(dep_node.is_type());
     return dep_node.get_type();
   });
-  auto ctor_weak_deps_it = combinator_weak_dependencies.find(c);
-  if (ctor_weak_deps_it != combinator_weak_dependencies.end()) {
-    res_deps.weak_deps.insert(res_deps.weak_deps.end(), ctor_weak_deps_it->second.begin(), ctor_weak_deps_it->second.end());
-  }
-  normalize_dependencies(res_deps);
-  return res_deps;
+  normalize_dependencies(deps);
+  return deps;
+}
+
+std::set<const vk::tl::type *> vk::tl::DependencyGraph::get_weak_self_cyclic_types() const {
+  return weak_self_cyclic_types;
+}
+
+bool vk::tl::DependencyGraph::is_type_weak_self_cyclic(const vk::tl::type *t) const {
+  return weak_self_cyclic_types.count(t);
 }
