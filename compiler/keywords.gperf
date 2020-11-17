@@ -20,6 +20,7 @@ continue, tok_continue
 echo, tok_echo
 dbg_echo, tok_dbg_echo
 function, tok_function
+fn, tok_fn
 array, tok_array
 tuple, tok_tuple
 shape, tok_shape

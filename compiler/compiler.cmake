@@ -39,6 +39,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lambda-class-data.cpp
         lambda-generator.cpp
         lambda-interface-generator.cpp
+        lambda-implicit-uses.cpp
         lib-data.cpp
         src-file.cpp
         var-data.cpp

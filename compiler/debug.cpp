@@ -48,6 +48,7 @@ std::string debugTokenName(TokenType t) {
     {tok_dbg_echo, "tok_dbg_echo"},
     {tok_var_dump, "tok_var_dump"},
     {tok_function, "tok_function"},
+    {tok_fn, "tok_fn"},
     {tok_varg, "tok_varg"},
     {tok_array, "tok_array"},
     {tok_tuple, "tok_tuple"},

@@ -42,6 +42,9 @@ public:
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function, PrimitiveType tp = tp_Unknown);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
+  static bool is_superglobal(const string &s);
+
+
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
@@ -133,8 +136,8 @@ public:
   VertexAdaptor<op_shape> get_shape();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
-  VertexAdaptor<op_func_call> get_anonymous_function(bool is_static = false);
-  VertexAdaptor<op_function> get_function(vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  VertexAdaptor<op_func_call> get_anonymous_function(TokenType tok = tok_function, bool is_static = false);
+  VertexAdaptor<op_function> get_function(TokenType tok, vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(vk::string_view phpdoc_str);
