@@ -127,7 +127,6 @@ int config_list_pos;
 
 int typed_mode = 0;
 const char *tl_current_function_name;
-int new_tl_long = 0;
 
 static int is_tl_type_flat(const struct tl_type *t, int *arg_idx) {
   int _arg_idx = -1;
@@ -229,47 +228,6 @@ void check_buffer_overflow(int len) {
 }
 
 #define MAX_DEPTH 10000
-
-int read_new_tl_long_toggle() {
-  const char *field_name = "_enable_new_tl_long";
-
-  int exists_toggle = -1;
-
-  VK_MAKE_ZARG(func_name);
-  VK_MAKE_ZARG(class_name);
-  VK_MAKE_ZARG(property_name);
-
-  VK_ZVAL_STRING_DUP(VK_ZARG_TO_P(func_name), "property_exists");
-  VK_ZVAL_STRING_DUP(VK_ZARG_TO_P(class_name), reqResult_header_class_name);
-  VK_ZVAL_STRING_DUP(VK_ZARG_TO_P(property_name), field_name);
-
-  VK_ZARG_T args[] = {class_name, property_name};
-
-  zval* return_value;
-  VK_ALLOC_INIT_ZVAL(return_value);
-  if (call_user_function(CG(function_table), NULL, VK_ZARG_TO_P(func_name), return_value, 2, args TSRMLS_CC) != SUCCESS) {
-    exists_toggle = 0;
-  }
-  if (exists_toggle == -1) {
-    if (vk_is_bool(return_value) && vk_get_bool_value(return_value)) {
-      exists_toggle = 1;
-    } else {
-      exists_toggle = 0;
-    }
-  }
-  VK_ZARG_FREE(func_name);
-  VK_ZARG_FREE(class_name);
-  VK_ZARG_FREE(property_name);
-  zval_ptr_dtor(VK_ZVALP_TO_API_ZVALP(return_value));
-  if (!exists_toggle) {
-    return 0;
-  }
-  zval* field_val = zend_read_static_property(vk_get_class(reqResult_header_class_name), field_name, strlen(field_name), 0);
-  if (vk_is_bool(field_val) && vk_get_bool_value(field_val)) {
-    return 1;
-  }
-  return 0;
-}
 
 struct tl_type *tl_type_get_by_id(const char *s) {
   assert (cur_config);
@@ -459,7 +417,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       // 2) T::PhpType          -- T::PhpType
       struct tl_tree_type *child = (struct tl_tree_type *)tree->children[0];
       if (is_php_array(child->type) || cur_type->name == TL_INT || cur_type->name == TL_DOUBLE || cur_type->name == TL_FLOAT || cur_type->name == TL_STRING
-                                    || (new_tl_long && cur_type->name == TL_LONG)) {
+                                    || cur_type->name == TL_LONG) {
         // php_field_type::t_int    || php_field_type::t_double
         // php_field_type::t_string || php_field_type::t_array
         dst += make_tl_class_name(dst, "", "maybe", "", '\0');
@@ -477,7 +435,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       } else if (cur_type->name == TL_DOUBLE) {
         dst += make_tl_class_name(dst, "", "float", "", '\0');
       } else if (cur_type->name == TL_LONG) {
-        dst += make_tl_class_name(dst, "", new_tl_long ? "int" : "mixed", "", '\0');
+        dst += make_tl_class_name(dst, "", "int", "", '\0');
       } else if (!strcmp(cur_type->id, "Bool")) {
         dst += make_tl_class_name(dst, "", "bool", "", '\0');
       } else {

@@ -1073,9 +1073,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result_one) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
-  new_tl_long = read_new_tl_long_toggle();
   vk_memcache_query_result1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  new_tl_long = 0;
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
@@ -1085,9 +1083,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
-  new_tl_long = read_new_tl_long_toggle();
   vk_memcache_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  new_tl_long = 0;
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
