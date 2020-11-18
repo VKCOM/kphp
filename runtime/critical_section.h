@@ -23,26 +23,30 @@ struct CriticalSectionGuard : private vk::not_copyable {
 
 class CriticalSectionSmartGuard : private vk::not_copyable {
 public:
-  CriticalSectionSmartGuard() noexcept { enter_critical_section(); }
-
-  void leave_critical_section() noexcept {
-    dl::leave_critical_section();
-    in_critical_section_ = false;
+  CriticalSectionSmartGuard() noexcept {
+    this->enter_critical_section();
   }
 
   void enter_critical_section() noexcept {
-    dl::enter_critical_section();
-    in_critical_section_ = true;
-  }
-
-  ~CriticalSectionSmartGuard() noexcept {
-    if (in_critical_section_) {
-      dl::leave_critical_section();
+    if (!in_critical_section_) {
+      dl::enter_critical_section();
+      in_critical_section_ = true;
     }
   }
 
+  void leave_critical_section() noexcept {
+    if (in_critical_section_) {
+      dl::leave_critical_section();
+      in_critical_section_ = false;
+    }
+  }
+
+  ~CriticalSectionSmartGuard() noexcept {
+    this->leave_critical_section();
+  }
+
 private:
-  bool in_critical_section_{true};
+  bool in_critical_section_{false};
 };
 
 template<class F, class ...Args>
