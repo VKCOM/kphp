@@ -32,6 +32,9 @@
 		exit();
 		#exit(1);
 
+		die;
+		die();
+
 		#$x = new C;
 		#$x = new C();
 		#$x = new C(0);

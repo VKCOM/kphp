@@ -203,18 +203,6 @@ void LexerData::hack_last_tokens() {
     tokens.back().type_ = tok_func_name;
   }
 
-  if (are_last_tokens(tok_func_name, except_token_tag<tok_oppar>{})) {
-    if (vk::any_of_equal(tokens[tokens.size() - 2].str_val, "exit", "die")) {
-      Token t = tokens.back();
-      tokens.pop_back();
-      tokens.emplace_back(tok_oppar);
-      tokens.emplace_back(tok_clpar);
-      tokens.push_back(t);
-      return;
-    }
-  }
-
-
   if (are_last_tokens(except_token_tag<tok_function>{}, tok_func_name, tok_oppar, any_token_tag{})) {
     if (tokens[tokens.size() - 3].str_val == "err") {
       Token t = tokens.back();
