@@ -141,6 +141,8 @@ public:
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(vk::string_view phpdoc_str);
 
+  std::string get_identifier();
+
   static LambdaGenerator generate_anonymous_class(VertexAdaptor<op_function> function,
                                                   FunctionPtr parent_function,
                                                   bool is_static,

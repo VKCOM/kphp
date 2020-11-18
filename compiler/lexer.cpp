@@ -155,10 +155,48 @@ void LexerData::hack_last_tokens() {
     }
   }
 
+  /**
+   * To properly handle these cases:
+   *   \VK\Foo::array
+   *   \VK\Foo::try
+   *   \VK\Foo::$static_field
+   * after tok_double_colon we'll get tok_array or tok_try, but we would like to get tok_func_name
+   * as these are valid class member names;
+   * we check whether a first char of the next token with is_alpha to filter-out things like tok_opbrk etc.
+   */
+  if (are_last_tokens(tok_static, tok_double_colon, any_token_tag{}) || are_last_tokens(tok_func_name, tok_double_colon, any_token_tag{})) {
+    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
+      string val = static_cast<std::string>(tokens[tokens.size() - 3].str_val);
+      val += "::";
+      val += static_cast<std::string>(tokens[tokens.size() - 1].str_val);
+      Token back = tokens.back();
+      remove_last_tokens(3);
+      tokens.emplace_back(back.type() == tok_var_name ? tok_var_name : tok_func_name, string_view_dup(val));
+      tokens.back().line_num = back.line_num;
+      return;
+    }
+  }
+
+  /**
+   * For a case when we encounter a keyword after the '->' it should be a tok_func_name,
+   * not tok_array, tok_try, etc.
+   * For example: $c->array, $c->try
+   */
+  if (are_last_tokens(tok_arrow, any_token_tag{})) {
+    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
+      tokens.back().type_ = tok_func_name;
+      return;
+    }
+  }
+
+  // replace elseif with else+if, but not if the previous token can cause elseif
+  // to be interpreted as identifier (class const and method)
   if (are_last_tokens(tok_elseif)) {
-    tokens.back() = Token{tok_else};
-    tokens.emplace_back(tok_if);
-    return;
+    if (!are_last_tokens(tok_function, tok_elseif) && !are_last_tokens(tok_const, tok_elseif)) {
+      tokens.back() = Token{tok_else};
+      tokens.emplace_back(tok_if);
+      return;
+    }
   }
 
   if (are_last_tokens(tok_str_begin, tok_str_end)) {
@@ -218,48 +256,11 @@ void LexerData::hack_last_tokens() {
   }
 
   /**
-   * To properly handle these cases:
-   *   \VK\Foo::array
-   *   \VK\Foo::try
-   *   \VK\Foo::$static_field
-   * after tok_double_colon we'll get tok_array or tok_try, but we would like to get tok_func_name
-   * as these are valid class member names;
-   * we check whether a first char of the next token with is_alpha to filter-out things like tok_opbrk etc.
-   */
-  if (are_last_tokens(tok_static, tok_double_colon, any_token_tag{}) || are_last_tokens(tok_func_name, tok_double_colon, any_token_tag{})) {
-    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
-      string val = static_cast<std::string>(tokens[tokens.size() - 3].str_val);
-      val += "::";
-      val += static_cast<std::string>(tokens[tokens.size() - 1].str_val);
-      Token back = tokens.back();
-      remove_last_tokens(3);
-      tokens.emplace_back(back.type() == tok_var_name ? tok_var_name : tok_func_name, string_view_dup(val));
-      tokens.back().line_num = back.line_num;
-      return;
-    }
-  }
-
-  /**
    * A kludge to parse functions with such names correctly in functions.txt;
    * but keep them as a separate token kinds as they need a slightly different parsing
    */
   if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print) || are_last_tokens(tok_function, tok_echo)) {
     tokens.back() = {tok_func_name, tokens.back().str_val};
-  }
-
-  /**
-   * For cases when we encounter a keyword after the '->' and 'const', they should be a tok_func_name,
-   * not tok_array, tok_try, etc.
-   * For example:
-   *     $c->array, $c->try
-   *     class U { const array = [1, 2]; }
-   *     class U { const try = [1, 2]; }
-   */
-  if (are_last_tokens(tok_const, any_token_tag{}) || are_last_tokens(tok_arrow, any_token_tag{})) {
-    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
-      tokens.back().type_ = tok_func_name;
-      return;
-    }
   }
 }
 

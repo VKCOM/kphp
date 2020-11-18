@@ -14,6 +14,23 @@ TEST(lexer_test, test_php_tokens) {
     {"die", {"tok_func_name(die)"}},
     {"die()", {"tok_func_name(die)", "tok_oppar(()", "tok_clpar())"}},
 
+    {"$obj->exit", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(exit)"}},
+    {"$obj->exit()", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
+    {"$obj->throw", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(throw)"}},
+    {"Example::for", {"tok_func_name(Example::for)"}},
+    {"Example::for()", {"tok_func_name(Example::for)", "tok_oppar(()", "tok_clpar())"}},
+
+    // elseif is turned into else+if pair
+    {"elseif", {"tok_else", "tok_if"}},
+    {"} elseif", {"tok_clbrc(})", "tok_else", "tok_if"}},
+
+    // elseif is not replaced with else+if if it preceded by `const` or `function`
+    {"function elseif()", {"tok_function(function)", "tok_elseif(elseif)", "tok_oppar(()", "tok_clpar())"}},
+    {"public function elseif()", {"tok_public(public)", "tok_function(function)", "tok_elseif(elseif)", "tok_oppar(()", "tok_clpar())"}},
+    {"private static function elseif", {"tok_private(private)", "tok_static(static)", "tok_function(function)", "tok_elseif(elseif)"}},
+    {"const elseif", {"tok_const(const)", "tok_elseif(elseif)"}},
+    {"const true", {"tok_const(const)", "tok_true(true)"}},
+
     {";", {"tok_semicolon(;)"}},
 
     {"'abc'", {"tok_str(abc)"}},

@@ -533,7 +533,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_func_name: {
       cur++;
       if (!test_expect(tok_oppar)) {
-        if (vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
+        if (!was_arrow && vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
           res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<string>(op->str_val));
         } else {
           res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<string>(op->str_val));
@@ -1412,6 +1412,22 @@ ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
   return modifiers;
 }
 
+// get_identifier consumes tok_func_name and returns its string value;
+// for classes it can also consume the semi-reserved keywords like "else"
+std::string GenTree::get_identifier() {
+  bool ok = test_expect(tok_func_name);
+
+  if (!ok && cur_class && !cur->str_val.empty()) {
+    // check whether it could be a semi-reserved keyword
+    ok = is_alpha(cur->str_val[0]);
+  }
+
+  kphp_error(ok, expect_msg("identifier"));
+
+  next_cur();
+  return static_cast<string>(std::prev(cur)->str_val);
+}
+
 VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   auto modifiers = parse_class_member_modifier_mask();
   if (!modifiers.is_static()) {
@@ -1475,7 +1491,8 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   if (is_lambda) {
     func_name = gen_anonymous_function_name(cur_function); // cur_function is a parent function here
   } else {
-    CE(expect(tok_func_name, "'tok_func_name'"));
+    func_name = get_identifier();
+    CE(!func_name.empty());
     func_name = static_cast<string>(std::prev(cur)->str_val);
     if (cur_class) { // fname inside a class is full$class$name$$fname
       func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
@@ -2160,10 +2177,11 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
 
   bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
   bool const_in_class = !!cur_class;
-  std::string const_name{cur->str_val};
 
   CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
-  CE (expect(tok_func_name, "constant name"));
+  std::string const_name = get_identifier();
+  CE (!const_name.empty());
+  kphp_error(const_name != "class", "A class constant must not be called 'class'; it is reserved for class name fetching");
 
   CE (expect(tok_eq1, "'='"));
   VertexPtr v = get_expression();
