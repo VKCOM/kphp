@@ -189,7 +189,7 @@ def parse_args():
         metavar="DIR",
         type=str,
         dest="kphp_polyfills_repo",
-        default="",
+        default=os.environ.get("KPHP_TESTS_POLYFILLS_REPO", ""),
         help="specify path to cloned kphp-polyfills repository dir"
     )
 
