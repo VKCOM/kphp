@@ -8,16 +8,8 @@
 namespace vk {
 
 template<class Struct, class Field>
-struct field_getter {
-  const Field Struct::*field;
-  const Field &operator()(const Struct &s) {
-    return s.*field;
-  }
-};
-
-template<class Struct, class Field>
-field_getter<Struct, Field> make_field_getter(Field Struct::*field) {
-  return field_getter<Struct, Field>{field};
+auto make_field_getter(Field Struct::*field) {
+  return std::mem_fn(field);
 }
 
 } // namespace vk
