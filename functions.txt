@@ -58,8 +58,8 @@ class RpcMemcache implements Memcache {
     public function add ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function set ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
     public function replace ($key ::: string, $value ::: any, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: any = 1) ::: mixed;
-    public function increment ($key ::: string, $v ::: any = 1) ::: mixed;
+    public function decrement ($key ::: string, $v ::: int = 1) ::: mixed;
+    public function increment ($key ::: string, $v ::: int = 1) ::: mixed;
 
     public function getVersion () ::: mixed;
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: any = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
@@ -783,7 +783,7 @@ function store_raw ($v ::: string) ::: bool;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 function store_int ($v ::: int) ::: bool;
 function store_unsigned_int ($v ::: any) ::: bool;
-function store_long ($v ::: any) ::: bool;
+function store_long ($v ::: int) ::: bool;
 function store_unsigned_long ($v ::: any) ::: bool;
 function store_unsigned_int_hex ($v ::: string) ::: bool;
 function store_unsigned_long_hex ($v ::: string) ::: bool;

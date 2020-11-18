@@ -578,10 +578,6 @@ bool f$store_unsigned_int(const string &v) {
   return store_raw(store_parse_number_unsigned<unsigned int>(v));
 }
 
-bool f$store_long(const string &v) {
-  return store_raw(store_parse_number<long long>(v));
-}
-
 bool f$store_unsigned_long(const string &v) {
   return store_raw(store_parse_number_unsigned<unsigned long long>(v));
 }
@@ -649,7 +645,7 @@ bool f$store_many(const array<mixed> &a) {
         f$store_string(a.get_value(i).to_string());
         break;
       case 'l':
-        f$store_long(a.get_value(i));
+        f$store_long(a.get_value(i).to_int());
         break;
       case 'd':
       case 'i':
@@ -1125,7 +1121,7 @@ bool f$store_unsigned_int(const mixed &v) {
   return store_unsigned_int(store_parse_number_unsigned<unsigned int>(v));
 }
 
-bool f$store_long(const mixed &v) {
+bool store_long(const mixed &v) {
   return store_long(store_parse_number<long long>(v));
 }
 

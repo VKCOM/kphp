@@ -169,7 +169,7 @@ std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std:
   auto *type = tl2cpp::type_of(arg->type_expr);
   kphp_assert(type);
   std::string check_target = "tl_object->$" + arg->name;
-  if (tl2cpp::is_tl_type_wrapped_to_Optional(type) || (type->id == TL_LONG && !TlClasses::new_tl_long) || !tl2cpp::CUSTOM_IMPL_TYPES.count(type->name)) {
+  if (tl2cpp::is_tl_type_wrapped_to_Optional(type) || !tl2cpp::CUSTOM_IMPL_TYPES.count(type->name)) {
     // if it's Optional OR var OR class_instance<T>
     return check_target + ".is_null()";
   } else {
