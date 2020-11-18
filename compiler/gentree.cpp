@@ -225,7 +225,6 @@ VertexAdaptor<op_require> GenTree::get_require(bool once) {
   return require.set_location(location);
 }
 
-
 template<Operation Op, Operation EmptyOp>
 VertexAdaptor<Op> GenTree::get_func_call() {
   auto location = auto_location();
@@ -540,7 +539,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_func_name: {
       cur++;
       if (!test_expect(tok_oppar)) {
-        res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<string>(op->str_val));
+        if (vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
+          res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<string>(op->str_val));
+        } else {
+          res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<string>(op->str_val));
+        }
         return_flag = was_arrow;
         break;
       }

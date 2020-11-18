@@ -9,6 +9,11 @@ TEST(lexer_test, test_php_tokens) {
     std::vector<std::string> expected;
   };
   std::vector<testCase> tests = {
+    {"exit", {"tok_func_name(exit)"}},
+    {"exit()", {"tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
+    {"die", {"tok_func_name(die)"}},
+    {"die()", {"tok_func_name(die)", "tok_oppar(()", "tok_clpar())"}},
+
     {";", {"tok_semicolon(;)"}},
 
     {"'abc'", {"tok_str(abc)"}},
@@ -86,6 +91,6 @@ TEST(lexer_test, test_php_tokens) {
         return tok_str;
       });
 
-    ASSERT_EQ(expected, actual);
+    ASSERT_EQ(expected, actual) << "input was: " << test.input;
   }
 }
