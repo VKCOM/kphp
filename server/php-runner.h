@@ -100,8 +100,6 @@ void idle_server_status();
 void wait_net_server_status();
 void running_server_status();
 
-class PHPScriptBase;
-
 class PHPScriptBase {
   double cur_timestamp, net_time, script_time;
   int queries_cnt;
