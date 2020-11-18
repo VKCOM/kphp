@@ -26,6 +26,10 @@ function(install_vkext PHP_VERSION)
     set(CPACK_DEBIAN_${COMPONENT_NAME}_PACKAGE_DEPENDS "${PHP}-cli, vk-flex-data, ${PHP}-mbstring, ${PHP}-bcmath, ${PHP}-curl" PARENT_SCOPE)
     set(CPACK_DEBIAN_${COMPONENT_NAME}_DESCRIPTION "${PHP} extension for supporting kphp-specific functions in PHP" PARENT_SCOPE)
     set(CPACK_DEBIAN_${COMPONENT_NAME}_PACKAGE_NAME "${PHP}-vkext" PARENT_SCOPE)
+
+    set(CONFFILES_FILE "${CMAKE_CURRENT_BINARY_DIR}/conffiles${PHP_VERSION}/conffiles")
+    file(WRITE "${CONFFILES_FILE}" "${CMAKE_INSTALL_PREFIX}/etc/php/${PHP_VERSION}/mods-available/vkext.ini\n")
+    set(CPACK_DEBIAN_${COMPONENT_NAME}_PACKAGE_CONTROL_EXTRA "${CONFFILES_FILE}" PARENT_SCOPE)
 endfunction()
 
 prepend(VKEXT_COMMON_SOURCES ${COMMON_DIR}/
