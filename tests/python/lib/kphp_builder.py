@@ -118,8 +118,10 @@ class KphpBuilder:
         env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
         env.setdefault("KPHP_PROFILER", "2")
         env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
-        env.setdefault("KPHP_INCLUDE_DIR", ":".join(self._include_dirs))
-        env.setdefault("KPHP_DEST_DIR", os.path.abspath(self._kphp_build_tmp_dir))
+        if "KPHP_INCLUDE_DIR" in env:
+            self._include_dirs.append(env["KPHP_INCLUDE_DIR"])
+        env["KPHP_INCLUDE_DIR"] = ":".join(self._include_dirs)
+        env["KPHP_DEST_DIR"] = os.path.abspath(self._kphp_build_tmp_dir)
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")
         if self._distcc_hosts:
             env.setdefault("KPHP_JOBS_COUNT", "8")
