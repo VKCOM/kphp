@@ -14,9 +14,6 @@ void vk_memcache_query_result(INTERNAL_FUNCTION_PARAMETERS);
 void vk_memcache_query_result1(INTERNAL_FUNCTION_PARAMETERS);
 extern int typed_mode;
 extern const char *tl_current_function_name;
-extern int new_tl_long;
-
-int read_new_tl_long_toggle();
 
 struct tl_type {
 //  struct tl_type_methods *methods;
