@@ -2055,6 +2055,7 @@ static void init_runtime_libs() {
   init_resumable_lib();
   init_streams_lib();
   init_rpc_lib();
+  init_openssl_lib();
   init_math_functions();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));

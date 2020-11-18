@@ -83,4 +83,5 @@ Optional<string> f$openssl_decrypt(string data, const string &method,
 void global_init_openssl_lib();
 void reinit_openssl_lib_hack();
 
+void init_openssl_lib();
 void free_openssl_lib();

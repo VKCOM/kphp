@@ -27,6 +27,7 @@
 #include "common/wrappers/openssl.h"
 #include "common/wrappers/string_view.h"
 
+#include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/files.h"
@@ -63,7 +64,7 @@ string f$hash(const string &algo, const string &s, bool raw_output) {
       res.assign(64, false);
     }
 
-    SHA256(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+    dl::critical_section_call(SHA256, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
     if (!raw_output) {
       for (int i = 31; i >= 0; i--) {
@@ -100,10 +101,10 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
       res.assign(hash_len * 2, false);
     }
 
-    unsigned int md_len;
-    HMAC(evp_md, static_cast <const void *> (key.c_str()), (int)key.size(),
-         reinterpret_cast <const unsigned char *> (data.c_str()), (int)data.size(),
-         reinterpret_cast <unsigned char *> (res.buffer()), &md_len);
+    unsigned int md_len = 0;
+    dl::critical_section_call(HMAC, evp_md, key.c_str(), static_cast<int>(key.size()),
+                              reinterpret_cast<const unsigned char *> (data.c_str()), static_cast<int>(data.size()),
+                              reinterpret_cast<unsigned char *> (res.buffer()), &md_len);
     php_assert (md_len == hash_len);
 
     if (!raw_output) {
@@ -127,7 +128,7 @@ string f$sha1(const string &s, bool raw_output) {
     res.assign(40, false);
   }
 
-  SHA1(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+  dl::critical_section_call(SHA1, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
   if (!raw_output) {
     for (int i = 19; i >= 0; i--) {
@@ -147,7 +148,7 @@ string f$md5(const string &s, bool raw_output) {
     res.assign(32, false);
   }
 
-  MD5(reinterpret_cast <const unsigned char *> (s.c_str()), (unsigned long)s.size(), reinterpret_cast <unsigned char *> (res.buffer()));
+  dl::critical_section_call(MD5, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
 
   if (!raw_output) {
     for (int i = 15; i >= 0; i--) {
@@ -159,22 +160,20 @@ string f$md5(const string &s, bool raw_output) {
 }
 
 Optional<string> f$md5_file(const string &file_name, bool raw_output) {
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
   if (read_fd < 0) {
-    dl::leave_critical_section();
     return false;
   }
   if (fstat(read_fd, &stat_buf) < 0) {
     close(read_fd);
-    dl::leave_critical_section();
     return false;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
     close(read_fd);
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Regular file expected in function md5_file, \"%s\" is given", file_name.c_str());
     return false;
   }
@@ -193,7 +192,7 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   }
   close(read_fd);
   php_assert (MD5_Final(reinterpret_cast <unsigned char *> (php_buf), &c) == 1);
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
 
   if (size > 0) {
     php_warning("Error while reading file \"%s\"", file_name.c_str());
@@ -217,22 +216,20 @@ int64_t f$crc32(const string &s) {
 }
 
 int64_t f$crc32_file(const string &file_name) {
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   struct stat stat_buf;
   int read_fd = open(file_name.c_str(), O_RDONLY);
   if (read_fd < 0) {
-    dl::leave_critical_section();
     return -1;
   }
   if (fstat(read_fd, &stat_buf) < 0) {
     close(read_fd);
-    dl::leave_critical_section();
     return -1;
   }
 
   if (!S_ISREG (stat_buf.st_mode)) {
     close(read_fd);
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Regular file expected in function crc32_file, \"%s\" is given", file_name.c_str());
     return -1;
   }
@@ -248,7 +245,6 @@ int64_t f$crc32_file(const string &file_name) {
     size -= len;
   }
   close(read_fd);
-  dl::leave_critical_section();
 
   if (size > 0) {
     return -1;
@@ -257,59 +253,59 @@ int64_t f$crc32_file(const string &file_name) {
   return res ^ std::numeric_limits<uint32_t>::max();
 }
 
+template<char PREFIX_CHAR>
 struct EVPKeyResourceStorage {
 public:
-  EVPKeyResourceStorage (char prefixChar)
-    : registered_keys_(reinterpret_cast<KeysArray *>(&storage_)),
-      last_query_num_(-1),
-      prefixChar_(prefixChar)
-    {}
+  string register_resource_and_leave_critical_section(EVP_PKEY *pkey, dl::CriticalSectionSmartGuard &critical_section) {
+    php_assert(registered_keys_);
+    const int64_t elements = registered_keys_->count();
+    php_assert(elements > 0);
+    auto &reserved_place = (*registered_keys_)[elements - 1];
+    php_assert(!reserved_place);
+    reserved_place = pkey;
 
-  string register_resource(EVP_PKEY *pkey) {
-    if (dl::query_num != last_query_num_) {
-      new(&storage_) KeysArray();
-      last_query_num_ = dl::query_num;
-    }
-
-    string result(2, prefixChar_);
-    result.append(int64_t{registered_keys_->count()});
-    registered_keys_->push_back(pkey);
+    critical_section.leave_critical_section();
+    // reserve place for next key
+    registered_keys_->emplace_back(nullptr);
+    string result(2, PREFIX_CHAR);
+    result.append(elements - 1);
     return result;
   }
 
   EVP_PKEY *find_resource(const string &key) {
-    int num = 0;
-    if (last_query_num_ == dl::query_num &&
-        key.size() > 2 && key[0] == prefixChar_ && key[1] == prefixChar_ &&
-        sscanf(key.c_str() + 2, "%d", &num) == 1 &&
-        static_cast <unsigned int> (num) < static_cast <unsigned int> (registered_keys_->count())) {
+    php_assert(registered_keys_);
+    int64_t num = 0;
+    if (key.size() > 2 && key[0] == PREFIX_CHAR && key[1] == PREFIX_CHAR &&
+        php_try_to_int(key.c_str() + 2, key.size() - 2, &num)) {
       return registered_keys_->get_value(num);
     }
     return nullptr;
   }
 
+  void init_resources() {
+    registered_keys_ = reinterpret_cast<KeysArray *>(&storage_);
+    new(registered_keys_) KeysArray();
+    registered_keys_->emplace_back(nullptr);
+  }
+
   void free_resources() {
-    if (dl::query_num == last_query_num_) {
-      for (auto keyIt = registered_keys_->begin(); keyIt != registered_keys_->end(); ++keyIt) {
-        EVP_PKEY_free(keyIt.get_value());
-      }
-      last_query_num_--;
+    for (auto keyIt : *registered_keys_) {
+      EVP_PKEY_free(keyIt.get_value());
     }
+    registered_keys_ = nullptr;
   }
 
 private:
   using KeysArray = array<EVP_PKEY *>;
   using KeysArrayStorage = std::aligned_storage<sizeof(KeysArray), alignof(KeysArray)>::type;
 
-  KeysArrayStorage storage_;
-  KeysArray *registered_keys_;
-  long long last_query_num_;
-  const char prefixChar_;
+  KeysArrayStorage storage_{};
+  KeysArray *registered_keys_{nullptr};
 };
 
 // uses different prefixes for avoid of resource identifier collisions
-static EVPKeyResourceStorage public_keys{';'};
-static EVPKeyResourceStorage private_keys{':'};
+static EVPKeyResourceStorage<';'> public_keys;
+static EVPKeyResourceStorage<':'> private_keys;
 
 static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passphrase, bool &from_cache) {
   if (EVP_PKEY *evp_pkey = private_keys.find_resource(key)) {
@@ -319,16 +315,10 @@ static EVP_PKEY *openssl_get_private_evp(const string &key, const string &passph
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::enter_critical_section(); // OK
-  if (BIO *in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
-    if (passphrase.empty()) {
-      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, nullptr);
-    } else {
-      evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, static_cast <void *> (const_cast <char *> (passphrase.c_str())));
-    }
+  if (BIO *in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size())) {
+    evp_pkey = PEM_read_bio_PrivateKey(in, nullptr, nullptr, passphrase.empty() ? nullptr : const_cast<char *>(passphrase.c_str()));
     BIO_free(in);
   }
-  dl::leave_critical_section();
   return evp_pkey;
 }
 
@@ -340,10 +330,8 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
 
   from_cache = false;
   EVP_PKEY *evp_pkey = nullptr;
-  dl::enter_critical_section(); // OK
-  BIO *cert_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size());
+  BIO *cert_in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size());
   if (cert_in == nullptr) {
-    dl::leave_critical_section();
     return nullptr;
   }
   X509 *cert = reinterpret_cast<X509 *>(PEM_ASN1_read_bio(
@@ -352,32 +340,30 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
   if (cert) {
     evp_pkey = X509_get_pubkey(cert);
     X509_free(cert);
-  } else if (BIO *key_in = BIO_new_mem_buf(static_cast <void *> (const_cast <char *> (key.c_str())), key.size())) {
+  } else if (BIO *key_in = BIO_new_mem_buf(const_cast<char *>(key.c_str()), key.size())) {
     evp_pkey = PEM_read_bio_PUBKEY(key_in, nullptr, nullptr, nullptr);
     BIO_free(key_in);
   }
 
-  dl::leave_critical_section();
   return evp_pkey;
 }
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
-  dl::enter_critical_section();//OK
   bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache);
   if (pkey == nullptr) {
-    dl::leave_critical_section();
-
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid public key");
     result = string();
     return false;
   }
+
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
-
+    critical_section.leave_critical_section();
     php_warning("Key type is neither RSA nor RSA2");
     result = string();
     return false;
@@ -391,8 +377,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
-
+    critical_section.leave_critical_section();
     php_warning("RSA public encrypt failed");
     result = string();
     return false;
@@ -401,8 +386,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
-
+  critical_section.leave_critical_section();
   result = string(php_buf, key_size);
   return true;
 }
@@ -418,19 +402,20 @@ bool f$openssl_public_encrypt(const string &data, mixed &result, const string &k
 }
 
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key) {
-  dl::enter_critical_section();//OK
   bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
   EVP_PKEY *pkey = openssl_get_private_evp(key, string(), from_cache);
   if (pkey == nullptr) {
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid private key");
     return false;
   }
+
   if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_warning("Key type is not an RSA nor RSA2");
     return false;
   }
@@ -443,9 +428,9 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
   if (len == -1) {
-    //php_warning ("RSA private decrypt failed"); 
+    //php_warning ("RSA private decrypt failed");
     result = string();
     return false;
   }
@@ -466,27 +451,27 @@ bool f$openssl_private_decrypt(const string &data, mixed &result, const string &
 
 Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase) {
   Optional<string> result = false;
-  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_private_evp(key, passphrase, from_cache)) {
-    result = from_cache ? key : private_keys.register_resource(pkey);
+    result = from_cache ? key : private_keys.register_resource_and_leave_critical_section(pkey, critical_section);
   } else {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid key or passphrase is not a valid password");
   }
-  dl::leave_critical_section();
   return result;
 }
 
 Optional<string> f$openssl_pkey_get_public(const string &key) {
   Optional<string> result = false;
-  dl::enter_critical_section(); // NOT OK: openssl_pkey
+  dl::CriticalSectionSmartGuard critical_section;
   bool from_cache = false;
   if (EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache)) {
-    result = from_cache ? key : public_keys.register_resource(pkey);
+    result = from_cache ? key : public_keys.register_resource_and_leave_critical_section(pkey, critical_section);
   } else {
+    critical_section.leave_critical_section();
     php_warning("Parameter key is not a valid key");
   }
-  dl::leave_critical_section();
   return result;
 }
 
@@ -537,19 +522,19 @@ static const char *ssl_get_error_string() {
 }
 
 bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int64_t algo) {
-  dl::enter_critical_section();
+  dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
   if (!mdtype) {
+    critical_section.leave_critical_section();
     php_warning("Unknown signature algorithm");
-    dl::leave_critical_section();
     return false;
   }
 
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_private_evp(priv_key_id, string{}, from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key cannot be converted into a private key");
-    dl::leave_critical_section();
     return false;
   }
 
@@ -577,31 +562,23 @@ bool f$openssl_sign(const string &data, string &signature, const string &priv_ke
     EVP_PKEY_free(pkey);
   }
 
-  dl::leave_critical_section();
   return result;
 }
 
 int64_t f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int64_t algo) {
-  dl::enter_critical_section();
+  dl::CriticalSectionSmartGuard critical_section;
   const EVP_MD *mdtype = openssl_algo_to_evp_md(static_cast<openssl_algo>(algo));
 
   if (!mdtype) {
+    critical_section.leave_critical_section();
     php_warning("Unknown signature algorithm");
-    dl::leave_critical_section();
     return 0;
   }
-
-  if (signature.size() > UINT_MAX) {
-    php_warning("Signature is too long");
-    dl::leave_critical_section();
-    return 0;
-  }
-
   bool from_cache = false;
   EVP_PKEY *pkey = openssl_get_public_evp(pub_key_id, from_cache);
   if (pkey == nullptr) {
+    critical_section.leave_critical_section();
     php_warning("Parameter key cannot be converted into a public key");
-    dl::leave_critical_section();
     return 0;
   }
 
@@ -616,7 +593,6 @@ int64_t f$openssl_verify(const string &data, const string &signature, const stri
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  dl::leave_critical_section();
   return err;
 }
 
@@ -625,15 +601,15 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
     return false;
   }
   string buffer(static_cast<string::size_type>(length), ' ');
-  struct timeval tv;
-
+  timeval tv{};
   gettimeofday(&tv, nullptr);
-  RAND_add(&tv, sizeof(tv), 0.0);
 
+  dl::CriticalSectionGuard critical_section;
+  RAND_add(&tv, sizeof(tv), 0.0);
   if (RAND_bytes(reinterpret_cast<unsigned char *>(buffer.buffer()), static_cast<int32_t>(length)) <= 0) {
     return false;
   }
-  return buffer;
+  return std::move(buffer);
 }
 
 
@@ -660,16 +636,15 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   } else {                                              \
     php_warning ("%s", error_description.c_str());      \
   }                                                     \
-  if (ssl_handle != nullptr) {                             \
+  if (ssl_handle != nullptr) {                          \
     SSL_free (ssl_handle);                              \
   }                                                     \
-  if (ssl_ctx != nullptr) {                                \
+  if (ssl_ctx != nullptr) {                             \
     SSL_CTX_free (ssl_ctx);                             \
   }                                                     \
   if (sock != -1) {                                     \
     close (sock);                                       \
   }                                                     \
-  dl::leave_critical_section();                         \
   return false
 
 #define RETURN_ERROR(dump_error_stack, error_no, error) \
@@ -680,7 +655,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
 #define RETURN_ERROR_FORMAT(dump_error_stack, error_no, format, ...) \
   error_number = error_no;                                           \
   error_description = f$sprintf (                                    \
-    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));          \
+    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));        \
   RETURN(dump_error_stack)
 
   if (timeout < 0) {
@@ -746,8 +721,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
       php_assert (0);
   }
 
-
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   sock = socket(h->h_addrtype, SOCK_STREAM, 0);
   if (sock == -1) {
     RETURN_ERROR(false, -4, "Can't create tcp socket");
@@ -863,7 +837,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
   }
 
   php_assert (fcntl(sock, F_SETFL, 0) == 0);
-  dl::leave_critical_section();
+  critical_section.leave_critical_section();
 
   if (dl::query_num != ssl_connections_last_query_num) {
     new(ssl_connections_storage) array<ssl_connection>();
@@ -897,10 +871,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
     }
   }
 
-  dl::enter_critical_section();//NOT OK: ssl_connections
-  ssl_connections->set_value(stream_key, result);
-  dl::leave_critical_section();
-
+  dl::critical_section_call([&] { ssl_connections->set_value(stream_key, result); });
   return stream_key;
 #undef RETURN
 #undef RETURN_ERROR
@@ -1013,21 +984,20 @@ static Optional<int64_t> ssl_fwrite(const Stream &stream, const string &data) {
     return 0;
   }
 
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   ERR_clear_error();
   int written = SSL_write(c->ssl_handle, data_ptr, data_len);
 
   if (written <= 0) {
     bool ok = process_ssl_error(c, written);
     if (ok) {
-      dl::leave_critical_section();
+      critical_section.leave_critical_section();
       php_assert (!c->is_blocking);//because of SSL_MODE_AUTO_RETRY
       return 0;
     }
-    dl::leave_critical_section();
     return false;
   } else {
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     if (c->is_blocking) {
       php_assert (written == data_len);
     } else {
@@ -1053,21 +1023,19 @@ static Optional<string> ssl_fread(const Stream &stream, int64_t length) {
   }
 
   string res(static_cast<string::size_type>(length), false);
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionSmartGuard critical_section;
   ERR_clear_error();
   int res_size = SSL_read(c->ssl_handle, &res[0], static_cast<int32_t>(length));
   if (res_size <= 0) {
     bool ok = process_ssl_error(c, res_size);
     if (ok) {
-      dl::leave_critical_section();
+      critical_section.leave_critical_section();
       php_assert (!c->is_blocking);//because of SSL_MODE_AUTO_RETRY
-
       return string();
     }
-    dl::leave_critical_section();
     return false;
   } else {
-    dl::leave_critical_section();
+    critical_section.leave_critical_section();
     php_assert (res_size <= length);
     res.shrink(static_cast<string::size_type>(res_size));
     return res;
@@ -1088,22 +1056,13 @@ static bool ssl_feof(const Stream &stream) {
     return false;//nothing to read for now
   }
 
-  dl::enter_critical_section();//OK
+  dl::CriticalSectionGuard critical_section;
   char b;
   ERR_clear_error();
   int res_size = SSL_peek(c->ssl_handle, &b, 1);
   if (res_size <= 0) {
-    bool ok = process_ssl_error(c, res_size);
-    if (ok) {
-      dl::leave_critical_section();
-      return false;
-    }
-    dl::leave_critical_section();
-
-    return true;
+    return !process_ssl_error(c, res_size);
   } else {
-    dl::leave_critical_section();
-
     return false;
   }
 }
@@ -1114,10 +1073,9 @@ static bool ssl_fclose(const Stream &stream) {
     return false;
   }
 
-  dl::enter_critical_section();//NOT OK: ssl_connections
+  dl::CriticalSectionGuard critical_section;
   ssl_do_shutdown(&(*ssl_connections)[stream_key]);
   ssl_connections->unset(stream_key);
-  dl::leave_critical_section();
   return true;
 }
 
@@ -1131,14 +1089,8 @@ bool ssl_stream_set_option(const Stream &stream, int64_t option, int64_t value) 
     case STREAM_SET_BLOCKING_OPTION: {
       bool is_blocking = value;
       if (c->is_blocking != is_blocking) {
-        dl::enter_critical_section();//OK
-        if (is_blocking) {
-          php_assert (fcntl(c->sock, F_SETFL, 0) == 0);
-        } else {
-          php_assert (fcntl(c->sock, F_SETFL, O_NONBLOCK) == 0);
-        }
-        dl::leave_critical_section();
-
+        const int res = dl::critical_section_call(fcntl, c->sock, F_SETFL, is_blocking ? 0 : O_NONBLOCK);
+        php_assert(res == 0);
         c->is_blocking = is_blocking;
       }
       return true;
@@ -1201,33 +1153,6 @@ void global_init_openssl_lib() {
   reinit_openssl_lib_hack();
 }
 
-// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
-void reinit_openssl_lib_hack() {
-  OPENSSL_config(nullptr);
-  SSL_library_init();
-  OpenSSL_add_all_ciphers();
-  OpenSSL_add_all_digests();
-  OpenSSL_add_all_algorithms();
-
-  SSL_load_error_strings();
-}
-
-void free_openssl_lib() {
-  dl::enter_critical_section(); //OK
-  public_keys.free_resources();
-  private_keys.free_resources();
-
-  if (dl::query_num == ssl_connections_last_query_num) {
-    const array<ssl_connection> *const_ssl_connections = ssl_connections;
-    for (array<ssl_connection>::const_iterator p = const_ssl_connections->begin(); p != const_ssl_connections->end(); ++p) {
-      ssl_connection c = p.get_value();
-      ssl_do_shutdown(&c);
-    }
-    ssl_connections_last_query_num--;
-  }
-  dl::leave_critical_section();
-}
-
 namespace {
 
 void x509_stack_pop_free(STACK_OF(X509) *stack) {
@@ -1266,93 +1191,11 @@ private:
   using X509_STORE_CTX_ptr = vk::unique_ptr_with_delete_function<X509_STORE_CTX, X509_STORE_CTX_free>;
 
 public:
-  explicit X509_parser(const string &data) :
-    x509_(get_x509_from_data(data)) {}
-
-  array<mixed> get_subject(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    X509_NAME *subj = X509_get_subject_name(x509_.get());
-
-    return get_entries_of(subj, shortnames);
+  explicit X509_parser(const string &data) noexcept:
+    x509_(get_x509_from_data(data)) {
   }
 
-  string get_subject_name() const {
-    php_assert(x509_.get());
-
-    auto issuer_name = X509_get_subject_name(x509_.get());
-    auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
-
-    string res(issuer);
-    OPENSSL_free(issuer);
-
-    return res;
-  }
-
-  string get_hash() const {
-    php_assert(x509_.get());
-
-    static char buf[9];
-    snprintf(buf, sizeof(buf), "%08lx", X509_subject_name_hash(x509_.get()));
-
-    return string(buf, 8);
-  }
-
-  array<mixed> get_issuer(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    X509_NAME *issuer_name = X509_get_issuer_name(x509_.get());
-
-    return get_entries_of(issuer_name, shortnames);
-  }
-
-  int get_version() const {
-    php_assert(x509_.get());
-
-    auto version = static_cast<int>(X509_get_version(x509_.get()));
-    return version;
-  }
-
-  int get_time_not_before() const {
-    php_assert(x509_.get());
-
-    auto asn_time_not_before = X509_getm_notBefore(x509_.get());
-    return (int)convert_asn1_time(asn_time_not_before);
-  }
-
-  int get_time_not_after() const {
-    php_assert(x509_.get());
-
-    auto asn_time_not_after = X509_getm_notAfter(x509_.get());
-    return (int)convert_asn1_time(asn_time_not_after);
-  }
-
-  array<mixed> get_purposes(bool shortnames = true) const {
-    php_assert(x509_.get());
-
-    array<mixed> res;
-    for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
-      array<mixed> purposes;
-
-      X509_PURPOSE *purp = X509_PURPOSE_get0(i);
-      int id = X509_PURPOSE_get_id(purp);
-
-      auto purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 0));
-      purposes.push_back(purpset);
-
-      purpset = static_cast<bool>(X509_check_purpose(x509_.get(), id, 1));
-      purposes.push_back(purpset);
-
-      char *pname = shortnames ? X509_PURPOSE_get0_sname(purp) : X509_PURPOSE_get0_name(purp);
-      purposes.push_back(string(pname));
-
-      res.set_value(id, purposes);
-    }
-
-    return res;
-  }
-
-  Optional<array<mixed>> parse(bool shortnames = true) const {
+  Optional<array<mixed>> parse(bool shortnames = true) const noexcept {
     if (!x509_) {
       return false;
     }
@@ -1368,13 +1211,13 @@ public:
        {string("purposes"),         get_purposes(shortnames)}};
   }
 
-  mixed check_purpose(int64_t purpose) const {
+  mixed check_purpose(int64_t purpose) const noexcept {
     if (!x509_) {
       return -1;
     }
 
+    dl::CriticalSectionGuard critical_section;
     X509_STORE_CTX_ptr csc{X509_STORE_CTX_new()};
-
     if (csc == nullptr) {
       return -1;
     }
@@ -1384,8 +1227,7 @@ public:
     }
 
     X509_STORE_set_default_paths(store.get());
-
-    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_.get(), nullptr)) {
+    if (!X509_STORE_CTX_init(csc.get(), store.get(), x509_, nullptr)) {
       return -1;
     }
     // return value is not checked, as in php
@@ -1397,28 +1239,112 @@ public:
     return static_cast<bool>(ret);
   }
 
-private:
-  X509_ptr get_x509_from_data(const string &data) {
-    BIO_ptr certBio{BIO_new(BIO_s_mem())};
-
-    if (!certBio) {
-      return nullptr;
-    }
-
-    bool write_success = BIO_write(certBio.get(), data.c_str(), static_cast<int>(data.size())) != 0;
-
-    if (!write_success) {
-      return nullptr;
-    }
-
-    return X509_ptr(PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr));
+  ~X509_parser() noexcept {
+    dl::CriticalSectionGuard critical_section;
+    stop_x509_processing(x509_);
   }
 
-  array<mixed> get_entries_of(X509_NAME *name, bool shortnames = true) const {
+  static void free_leaked_x509() noexcept {
+    processing_x509_.reset();
+  }
+
+private:
+  static X509 *get_x509_from_data(const string &data) noexcept {
+    dl::CriticalSectionGuard critical_section;
+    if (BIO_ptr certBio{BIO_new(BIO_s_mem())}) {
+      if (BIO_write(certBio.get(), data.c_str(), static_cast<int>(data.size()))) {
+        return start_x509_processing(X509_ptr{PEM_read_bio_X509(certBio.get(), nullptr, nullptr, nullptr)});
+      }
+    }
+    return nullptr;
+  }
+
+  static X509 *start_x509_processing(X509_ptr x509) noexcept {
+    php_assert(!processing_x509_);
+    processing_x509_ = std::move(x509);
+    return processing_x509_.get();
+  }
+
+  static void stop_x509_processing(X509 *raw_x509) noexcept {
+    php_assert(raw_x509 == processing_x509_.get());
+    processing_x509_.reset();
+  }
+
+  string get_subject_name() const noexcept {
+    char *issuer_copy = nullptr;
+    {
+      dl::CriticalSectionGuard critical_section;
+      auto issuer_name = X509_get_subject_name(x509_);
+      auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
+      issuer_copy = dl::script_allocator_strdup(issuer);
+      OPENSSL_free(issuer);
+    }
+    // issuer_copy can't be nullptr, because after critical section in case of OOM processing is terminated
+    php_assert(issuer_copy);
+    string res{issuer_copy};
+    dl::script_allocator_free(issuer_copy);
+    return res;
+  }
+
+  array<mixed> get_subject(bool shortnames = true) const noexcept {
+    return get_entries_of([](X509 *a) { return X509_get_subject_name(a); }, shortnames);
+  }
+
+  string get_hash() const noexcept {
+    string result{8, '0'};
+    dl::CriticalSectionGuard critical_section;
+    snprintf(result.buffer(), result.size() + 1, "%08lx", X509_subject_name_hash(x509_));
+    return result;
+  }
+
+  array<mixed> get_issuer(bool shortnames = true) const {
+    return get_entries_of([](X509 *a) { return X509_get_issuer_name(a); }, shortnames);
+  }
+
+  int64_t get_version() const {
+    dl::CriticalSectionGuard critical_section;
+    return X509_get_version(x509_);
+  }
+
+  int64_t get_time_not_before() const {
+    dl::CriticalSectionGuard critical_section;
+    auto asn_time_not_before = X509_getm_notBefore(x509_);
+    return convert_asn1_time(asn_time_not_before);
+  }
+
+  int64_t get_time_not_after() const {
+    dl::CriticalSectionGuard critical_section;
+    auto asn_time_not_after = X509_getm_notAfter(x509_);
+    return convert_asn1_time(asn_time_not_after);
+  }
+
+  array<mixed> get_purposes(bool shortnames = true) const {
     array<mixed> res;
 
-    int count_of_entries = X509_NAME_entry_count(name);
+    dl::CriticalSectionSmartGuard critical_section;
+    for (int i = 0; i < X509_PURPOSE_get_count(); i++) {
+      X509_PURPOSE *purp = X509_PURPOSE_get0(i);
+      int id = X509_PURPOSE_get_id(purp);
 
+      auto purpset_0 = static_cast<bool>(X509_check_purpose(x509_, id, 0));
+      auto purpset_1 = static_cast<bool>(X509_check_purpose(x509_, id, 1));
+      char *pname = shortnames ? X509_PURPOSE_get0_sname(purp) : X509_PURPOSE_get0_name(purp);
+
+      critical_section.leave_critical_section();
+      res.set_value(id, array<mixed>::create(purpset_0, purpset_1, string{pname}));
+      critical_section.enter_critical_section();
+    }
+
+    return res;
+  }
+
+  template<class F>
+  array<mixed> get_entries_of(const F &name_getter, bool shortnames) const {
+    array<mixed> res;
+
+    dl::CriticalSectionSmartGuard critical_section;
+    X509_NAME *name = name_getter(x509_);
+    const int count_of_entries = X509_NAME_entry_count(name);
     for (int i = 0; i < count_of_entries; i++) {
       X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
 
@@ -1431,33 +1357,36 @@ private:
       auto value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
       int value_len = ASN1_STRING_length(value);
 
+      critical_section.leave_critical_section();
       res.set_value(string(key_str), string(value_str, value_len));
+      critical_section.enter_critical_section();
     }
 
     return res;
   }
 
-  time_t convert_asn1_time(ASN1_TIME *expires) const {
+  static time_t convert_asn1_time(ASN1_TIME *expires) noexcept {
     ASN1_TIME_ptr epoch{ASN1_TIME_new()};
     ASN1_TIME_set(epoch.get(), 0);
     int days = 0;
     int seconds = 0;
     ASN1_TIME_diff(&days, &seconds, epoch.get(), expires);
-
     return (days * 24 * 60 * 60) + seconds;
   }
 
+  static X509_ptr processing_x509_;
 
-private:
-  X509_ptr x509_;
+  X509 *x509_{nullptr};
 };
 
-Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* =true */) {
-  return X509_parser(data).parse(shortnames);
+X509_ptr X509_parser::processing_x509_;
+
+Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* = true */) {
+  return X509_parser{data}.parse(shortnames);
 }
 
 mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
-  return X509_parser(data).check_purpose(purpose);
+  return X509_parser{data}.check_purpose(purpose);
 }
 
 namespace {
@@ -1598,6 +1527,7 @@ struct CipherCtx {
   CipherCtx(const string &method, int64_t options, cipher_action action) :
     options_(options),
     action_(action) {
+    dl::CriticalSectionGuard critical_section;
     type_ = EVP_get_cipherbyname(method.c_str());
     if (!type_) {
       php_warning("Unknown cipher algorithm '%s'", method.c_str());
@@ -1622,6 +1552,8 @@ struct CipherCtx {
     if (!ctx_) {
       php_warning("Failed to create cipher context");
     }
+    php_assert(!processing_ctx_);
+    processing_ctx_ = ctx_;
   }
 
   string flush_result() {
@@ -1631,6 +1563,7 @@ struct CipherCtx {
   explicit operator bool() const { return type_ && ctx_; }
 
   bool init(string key, string iv, string &tag) {
+    dl::CriticalSectionSmartGuard critical_section;
     const size_t max_iv_len = static_cast<size_t>(EVP_CIPHER_iv_length(type_));
     if (action_ == encrypt && iv.empty() && max_iv_len > 0) {
       php_warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
@@ -1641,7 +1574,7 @@ struct CipherCtx {
       return false;
     }
 
-    if (!align_iv(iv, max_iv_len)) {
+    if (!align_iv(iv, max_iv_len, critical_section)) {
       return false;
     }
 
@@ -1665,7 +1598,9 @@ struct CipherCtx {
         php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
         return false;
       }
+      critical_section.leave_critical_section();
       key.append(cipher_key_len - key.size(), '\0');
+      critical_section.enter_critical_section();
     } else if (key.size() > cipher_key_len && !EVP_CIPHER_CTX_set_key_length(ctx_, key.size())) {
       php_warning("Key length cannot be set for the cipher method:\n%s", ssl_get_error_string());
     }
@@ -1683,6 +1618,7 @@ struct CipherCtx {
   }
 
   bool update(const string &data, const string &aad) {
+    dl::CriticalSectionSmartGuard critical_section;
     if (is_single_run_aead_ && !EVP_CipherUpdate(ctx_, nullptr, &out_len_, nullptr, static_cast<int32_t>(data.size()))) {
       php_warning("Setting of data length failed:\n%s", ssl_get_error_string());
       return false;
@@ -1693,7 +1629,9 @@ struct CipherCtx {
       return false;
     }
 
+    critical_section.leave_critical_section();
     out_.assign(data.size() + EVP_CIPHER_block_size(type_), '\0');
+    critical_section.enter_critical_section();
     if (!EVP_CipherUpdate(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()), &out_len_,
                           reinterpret_cast<const unsigned char *>(data.c_str()), static_cast<int>(data.size()))) {
       php_warning("Cipher update error:\n%s", ssl_get_error_string());
@@ -1704,9 +1642,11 @@ struct CipherCtx {
 
   bool finalize() {
     int i = 0;
-    const int is_ok = action_ == encrypt
-                      ? EVP_EncryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i)
-                      : EVP_DecryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i);
+    const int is_ok = dl::critical_section_call([&] {
+      return action_ == encrypt
+             ? EVP_EncryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i)
+             : EVP_DecryptFinal(ctx_, reinterpret_cast<unsigned char *>(out_.buffer()) + out_len_, &i);
+    });
     if (is_ok > 0) {
       out_.shrink(i + out_len_);
     } else {
@@ -1716,6 +1656,7 @@ struct CipherCtx {
   }
 
   bool make_tag(string &tag) {
+    dl::CriticalSectionGuard critical_section;
     if (is_aead_ && !tag.empty()) {
       if (EVP_CIPHER_CTX_ctrl(ctx_, aead_get_tag_flag_, static_cast<int32_t>(tag.size()), tag.buffer()) == 1) {
         return true;
@@ -1732,15 +1673,21 @@ struct CipherCtx {
     return true;
   }
 
-  ~CipherCtx() {
-    if (ctx_) {
-      EVP_CIPHER_CTX_cleanup(ctx_);
-      EVP_CIPHER_CTX_free(ctx_);
+  static void free_leaked_ctx() {
+    if (processing_ctx_) {
+      EVP_CIPHER_CTX_cleanup(processing_ctx_);
+      EVP_CIPHER_CTX_free(processing_ctx_);
+      processing_ctx_ = nullptr;
     }
   }
 
+  ~CipherCtx() {
+    php_assert(processing_ctx_ == ctx_);
+    dl::critical_section_call(CipherCtx::free_leaked_ctx);
+  }
+
 private:
-  bool align_iv(string &iv, size_t iv_required_len) {
+  bool align_iv(string &iv, size_t iv_required_len, dl::CriticalSectionSmartGuard &critical_section) {
     if (iv.size() == iv_required_len) {
       return true;
     }
@@ -1754,19 +1701,25 @@ private:
     }
 
     if (iv.empty()) {
+      critical_section.leave_critical_section();
       iv.assign(static_cast<std::uint32_t>(iv_required_len), '\0');
+      critical_section.enter_critical_section();
       return true;
     }
     if (iv.size() < iv_required_len) {
       php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
                   iv.size(), iv_required_len);
+      critical_section.leave_critical_section();
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
+      critical_section.enter_critical_section();
       return true;
     }
     // iv.size() > iv_required_len
     php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
                 iv.size(), iv_required_len);
+    critical_section.leave_critical_section();
     iv.shrink(static_cast<string::size_type>(iv_required_len));
+    critical_section.enter_critical_section();
     return true;
   }
 
@@ -1784,7 +1737,11 @@ private:
   int aead_get_tag_flag_{0};
   int aead_set_tag_flag_{0};
   int aead_ivlen_flag_{0};
+
+  static EVP_CIPHER_CTX *processing_ctx_;
 };
+
+EVP_CIPHER_CTX *CipherCtx::processing_ctx_{nullptr};
 
 template<bool allow_alias>
 void openssl_add_method(const OBJ_NAME *name, void *arg) {
@@ -1808,9 +1765,11 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string &data
 
 array<string> f$openssl_get_cipher_methods(bool aliases) {
   array<string> return_value;
-  OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH,
-                         aliases ? openssl_add_method<true> : openssl_add_method<false>,
-                         &return_value);
+  // Don't use OBJ_NAME_do_all_sorted, because it implicitly allocates memory on heap
+  OBJ_NAME_do_all(OBJ_NAME_TYPE_CIPHER_METH,
+                  aliases ? openssl_add_method<true> : openssl_add_method<false>,
+                  &return_value);
+  f$sort(return_value, SORT_STRING);
   return return_value;
 }
 
@@ -1819,12 +1778,12 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) {
     php_warning("Unknown cipher algorithm");
     return false;
   }
-  const EVP_CIPHER *cipher_type = EVP_get_cipherbyname(method.c_str());
+  const EVP_CIPHER *cipher_type = dl::critical_section_call(EVP_get_cipherbyname, method.c_str());
   if (!cipher_type) {
     php_warning("Unknown cipher algorithm");
     return false;
   }
-  return EVP_CIPHER_iv_length(cipher_type);
+  return dl::critical_section_call(EVP_CIPHER_iv_length, cipher_type);
 }
 
 namespace impl_ {
@@ -1859,4 +1818,37 @@ Optional<string> f$openssl_decrypt(string data, const string &method, const stri
     data = std::move(decoding_data.val());
   }
   return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv, tag, aad);
+}
+
+// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
+void reinit_openssl_lib_hack() {
+  OPENSSL_config(nullptr);
+  SSL_library_init();
+  OpenSSL_add_all_ciphers();
+  OpenSSL_add_all_digests();
+  OpenSSL_add_all_algorithms();
+
+  SSL_load_error_strings();
+}
+
+void init_openssl_lib() {
+  public_keys.init_resources();
+  private_keys.init_resources();
+}
+
+void free_openssl_lib() {
+  dl::CriticalSectionGuard critical_section;
+  X509_parser::free_leaked_x509();
+  CipherCtx::free_leaked_ctx();
+  public_keys.free_resources();
+  private_keys.free_resources();
+
+  if (dl::query_num == ssl_connections_last_query_num) {
+    const array<ssl_connection> *const_ssl_connections = ssl_connections;
+    for (array<ssl_connection>::const_iterator p = const_ssl_connections->begin(); p != const_ssl_connections->end(); ++p) {
+      ssl_connection c = p.get_value();
+      ssl_do_shutdown(&c);
+    }
+    ssl_connections_last_query_num--;
+  }
 }
