@@ -524,7 +524,7 @@ void forcibly_stop_and_flush_profiler() noexcept {
   const int len = snprintf(profiler_log_path, sizeof(profiler_log_path) - 1,
                            "%s%s%" PRIX64 ".%d",
                            profiler_config.log_path_mask, context.profiler_log_suffix,
-                           std::chrono::system_clock::now().time_since_epoch().count(), getpid());
+                           static_cast<uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()), getpid());
   php_assert(len > 0 && sizeof(profiler_log_path) >= static_cast<size_t>(len + 1));
   FILE *profiler_log = fopen(profiler_log_path, "w");
   fprintf(profiler_log,

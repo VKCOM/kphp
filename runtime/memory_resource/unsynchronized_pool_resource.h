@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "runtime/memory_resource/details/memory_chunk_list.h"
 #include "runtime/memory_resource/details/memory_chunk_tree.h"
 #include "runtime/memory_resource/details/universal_reallocate.h"
