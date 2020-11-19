@@ -128,9 +128,6 @@ void OpInfo::init_static() {
 
   add_unary_op(curP, tok_conv_int, op_conv_int);
   add_unary_op(curP, tok_conv_float, op_conv_float);
-  add_unary_op(curP, tok_conv_uint, op_conv_uint);
-  add_unary_op(curP, tok_conv_long, op_conv_long);
-  add_unary_op(curP, tok_conv_ulong, op_conv_ulong);
   add_unary_op(curP, tok_conv_string, op_conv_string);
   add_unary_op(curP, tok_conv_array, op_conv_array);
   add_unary_op(curP, tok_conv_object, op_conv_object);
