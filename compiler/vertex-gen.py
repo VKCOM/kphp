@@ -54,11 +54,12 @@ def output_include_directive(f, name):
         f.write('#include "%s/vertex-%s.h"\n' % (REL_DIR, name))
 
 
-def output_class_header(f, base_name, name, final_specifier=""):
-    f.write("""
+def output_class_header(f, base_name, name, final_specifier="", comment=""):
+    comment_line = f"\n// {comment}" if comment else ""
+    f.write("""{comment_line}
 template<>
 class vertex_inner<{name}> {final_specifier}: public vertex_inner<{base_name}> {{
-public:""".format(name=name, base_name=base_name, final_specifier=final_specifier))
+public:""".format(comment_line=comment_line, name=name, base_name=base_name, final_specifier=final_specifier))
 
 
 def get_string_extra():
@@ -287,7 +288,8 @@ def output_vertex_type(type_data, data, schema):
             if "base_name" in v and type_data["name"] == v["base_name"]:
                 final_specifier = ""
                 break
-        output_class_header(f, base_name, name, final_specifier)
+        comment = type_data.get("comment", "")
+        output_class_header(f, base_name, name, final_specifier, comment)
 
         output_extras(f, type_data)
         output_extra_fields(f, type_data)
