@@ -1054,7 +1054,7 @@ int64_t mixed::count() const {
 }
 
 template<class T1, class T2>
-inline bool eq2(const array<T1> &lhs, const array<T2> &rhs);
+inline int64_t spaceship(const T1 &lhs, const T2 &rhs);
 
 int64_t mixed::compare(const mixed &rhs) const {
   if (unlikely(is_string())) {
@@ -1074,12 +1074,7 @@ int64_t mixed::compare(const mixed &rhs) const {
 
   if (unlikely(is_array() || rhs.is_array())) {
     if (likely(is_array() && rhs.is_array())) {
-      if (eq2(as_array(), rhs.as_array())) {
-        return 0;
-      }
-
-      // TODO: Here is bug, but it was before. Fix it later
-      return three_way_comparison(as_array().count(), rhs.as_array().count());
+      return spaceship(as_array(), rhs.as_array());
     }
 
     php_warning("Unsupported operand types for operator < or <= (%s and %s)", get_type_c_str(), rhs.get_type_c_str());
