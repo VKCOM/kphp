@@ -61,6 +61,15 @@ VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_
   return var_id;
 }
 
+void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const TypeData *required_type) noexcept {
+  if (required_type->get_real_ptype() == tp_mixed) {
+    required_type = TypeData::get_type(tp_array, tp_mixed);
+  } else if (required_type->use_optional()) {
+    required_type = TypeData::create_type_data(required_type->lookup_at(Key::any_key()));
+  }
+  op_array_vertex->tinf_node.set_type(required_type);
+}
+
 template<typename T>
 VarPtr explicit_cast_array_type(VertexPtr &type_acceptor, const T &type_donor) noexcept {
   auto required_type = tinf::get_type(type_donor);
@@ -73,7 +82,9 @@ VarPtr explicit_cast_array_type(VertexPtr &type_acceptor, const T &type_donor) n
   if (type_acceptor->extra_type == op_ex_var_const) {
     return cast_const_array_type(type_acceptor, required_type);
   }
-
+  if (auto op_array_vertex = type_acceptor.try_as<op_array>()) {
+    cast_array_creation_type(op_array_vertex, required_type);
+  }
   return VarPtr{};
 }
 } // namespace
