@@ -1223,7 +1223,7 @@ VertexAdaptor<op_do> GenTree::get_do() {
   auto location = auto_location();
   next_cur();
   VertexPtr body = get_statement();
-  CE (!kphp_error(body, "Failed to parser 'do' condition"));
+  CE (!kphp_error(body, "Failed to parser 'do' statement"));
 
   CE (expect(tok_while, "'while'"));
   CE (expect(tok_oppar, "'('"));
@@ -1231,7 +1231,7 @@ VertexAdaptor<op_do> GenTree::get_do() {
 
   VertexPtr condition = get_expression();
 
-  CE (!kphp_error(condition, "Failed to parse 'do' statement"));
+  CE (!kphp_error(condition, "Failed to parse 'do' condition"));
   condition = conv_to<tp_bool>(condition);
   CE (expect(tok_clpar, "')'"));
   CE (expect(tok_semicolon, "';'"));
