@@ -257,10 +257,11 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
     }
   } else if (auto func_call = root.try_as<op_func_call>()) {
     auto func = func_call->func_id;
-    if (!func->has_variadic_param && !func->is_extern()) {
+    if (!func->is_extern()) {
       auto args = func_call->args();
       const auto &params = func->param_ids;
-      for (size_t index = 0; index < args.size(); ++index) {
+      const size_t elements = std::min(static_cast<size_t>(args.size()), params.size());
+      for (size_t index = 0; index < elements; ++index) {
         if (auto var_id = explicit_cast_array_type(args[index], params[index])) {
           current_function->explicit_const_var_ids.emplace(var_id);
         }
