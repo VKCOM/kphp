@@ -40,22 +40,12 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
   }
 }
 
-template<typename T>
-VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
-  auto required_type = tinf::get_type(type_donor);
-  auto existed_type = tinf::get_type(type_acceptor);
-  if (existed_type->get_real_ptype() != tp_array ||
-      type_acceptor->extra_type != op_ex_var_const ||
-      are_equal_types(existed_type, required_type)) {
-    return VarPtr{};
-  }
-
-  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
+VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_type) noexcept {
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   std::string name = ss.str();
   bool is_new = true;
-  VarPtr var_id  = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
+  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
     var_id->tinf_node.copy_type_from(required_type);
@@ -69,6 +59,22 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   casted_var->var_id = var_id;
   type_acceptor = casted_var;
   return var_id;
+}
+
+template<typename T>
+VarPtr explicit_cast_array_type(VertexPtr &type_acceptor, const T &type_donor) noexcept {
+  auto required_type = tinf::get_type(type_donor);
+  auto existed_type = tinf::get_type(type_acceptor);
+  if (existed_type->get_real_ptype() != tp_array ||
+      !is_implicit_array_conversion(existed_type, required_type)) {
+    return VarPtr{};
+  }
+  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
+  if (type_acceptor->extra_type == op_ex_var_const) {
+    return cast_const_array_type(type_acceptor, required_type);
+  }
+
+  return VarPtr{};
 }
 } // namespace
 
@@ -204,7 +210,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   root = remove_extra_conversions(root);
 
   if (auto set_vertex = root.try_as<op_set>()) {
-    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs())) {
+    if (auto var_id = explicit_cast_array_type(set_vertex->rhs(), set_vertex->lhs())) {
       current_function->explicit_const_var_ids.emplace(var_id);
     }
     root = optimize_set_push_back(set_vertex);
@@ -234,7 +240,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
 VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
   if (auto param = root.try_as<op_func_param>()) {
     if (param->has_default_value() && param->default_value()) {
-      if (auto var_id = cast_const_array(param->default_value(), param->var())) {
+      if (auto var_id = explicit_cast_array_type(param->default_value(), param->var())) {
         current_function->explicit_header_const_var_ids.emplace(var_id);
       }
     }
@@ -244,7 +250,7 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
       auto args = func_call->args();
       const auto &params = func->param_ids;
       for (size_t index = 0; index < args.size(); ++index) {
-        if (auto var_id = cast_const_array(args[index], params[index])) {
+        if (auto var_id = explicit_cast_array_type(args[index], params[index])) {
           current_function->explicit_const_var_ids.emplace(var_id);
         }
       }
@@ -261,7 +267,7 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
       if (try_optimize_var(var)) {
         run_function_pass(var->init_val, this);
         if (!var->is_constant()) {
-          cast_const_array(var->init_val, var);
+          explicit_cast_array_type(var->init_val, var);
         }
       }
     }
@@ -281,7 +287,7 @@ void OptimizationPass::on_finish() {
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
           class_field.var->init_val = {};
         } else {
-          cast_const_array(class_field.var->init_val, class_field.var);
+          explicit_cast_array_type(class_field.var->init_val, class_field.var);
         }
       }
     });
