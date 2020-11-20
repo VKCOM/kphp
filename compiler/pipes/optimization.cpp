@@ -203,8 +203,11 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   root = remove_extra_conversions(root);
 
-  if (root->type() == op_set) {
-    root = optimize_set_push_back(root.as<op_set>());
+  if (auto set_vertex = root.try_as<op_set>()) {
+    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs())) {
+      current_function->explicit_const_var_ids.emplace(var_id);
+    }
+    root = optimize_set_push_back(set_vertex);
   } else if (root->type() == op_string_build || root->type() == op_concat) {
     root = optimize_string_building(root);
   } else if (root->type() == op_postfix_inc) {
@@ -235,10 +238,6 @@ VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
         current_function->explicit_header_const_var_ids.emplace(var_id);
       }
     }
-  } else if (auto set_vertex = root.try_as<op_set>()) {
-    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs())) {
-      current_function->explicit_const_var_ids.emplace(var_id);
-    }
   } else if (auto func_call = root.try_as<op_func_call>()) {
     auto func = func_call->func_id;
     if (!func->has_variadic_param && !func->is_extern()) {
@@ -261,7 +260,9 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
     if (var->init_val) {
       if (try_optimize_var(var)) {
         run_function_pass(var->init_val, this);
-        cast_const_array(var->init_val, var);
+        if (!var->is_constant()) {
+          cast_const_array(var->init_val, var);
+        }
       }
     }
   }
