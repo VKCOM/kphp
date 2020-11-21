@@ -161,8 +161,8 @@ void LibGlobalVarsReset::compile(CodeGenerator &W) const {
 }
 
 
-InitScriptsCpp::InitScriptsCpp(vector<SrcFilePtr> &&main_file_ids, vector<FunctionPtr> &&all_functions) :
-  main_file_ids(std::move(main_file_ids)),
+InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id, vector<FunctionPtr> &&all_functions) :
+  main_file_id(main_file_id),
   all_functions(std::move(all_functions)) {}
 
 void InitScriptsCpp::compile(CodeGenerator &W) const {
@@ -171,9 +171,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << ExternInclude("runtime-headers.h") <<
     ExternInclude("server/php-script.h");
 
-  for (auto i : main_file_ids) {
-    W << Include(i->main_function->header_full_name);
-  }
+  W << Include(main_file_id->main_function->header_full_name);
 
   if (!G->settings().is_static_lib_mode()) {
     W << NL;
@@ -184,28 +182,21 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << NL << StaticInit(all_functions) << NL;
 
   if (G->settings().is_static_lib_mode()) {
-    // only one main file is allowed for static lib mode
-    kphp_assert(main_file_ids.size() == 1);
-    W << LibGlobalVarsReset(main_file_ids.back()->main_function);
+    W << LibGlobalVarsReset(main_file_id->main_function);
     W << CloseFile();
     return;
   }
 
-  for (auto i : main_file_ids) {
-    W << RunFunction(i->main_function) << NL;
-    W << GlobalResetFunction(i->main_function) << NL;
-  }
+  W << RunFunction(main_file_id->main_function) << NL;
+  W << GlobalResetFunction(main_file_id->main_function) << NL;
 
   FunctionSignatureGenerator(W) << "void init_php_scripts() " << BEGIN;
 
-  for (auto i : main_file_ids) {
-    W << FunctionName(i->main_function) << "$global_reset();" << NL;
+  W << FunctionName(main_file_id->main_function) << "$global_reset();" << NL;
 
-    W << "set_script (" <<
-      "\"@" << i->short_file_name << "\", " <<
-      FunctionName(i->main_function) << "$run, " <<
-      FunctionName(i->main_function) << "$global_reset);" << NL;
-  }
+  W << "set_script ("
+    << FunctionName(main_file_id->main_function) << "$run, "
+    << FunctionName(main_file_id->main_function) << "$global_reset);" << NL;
 
   W << END;
 

@@ -194,9 +194,8 @@ bool compiler_execute(CompilerSettings *settings) {
 
   DataStream<SrcFilePtr> src_file_stream;
 
-  for (const auto &main_file : settings->main_files.get()) {
-    G->register_main_file(main_file, src_file_stream);
-  }
+  G->register_main_file(settings->main_file.get(), src_file_stream);
+
   if (!G->settings().functions_file.get().empty()) {
     G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream);
   }

@@ -10,8 +10,8 @@
 #include "compiler/data/data_ptr.h"
 
 struct InitScriptsCpp {
-  std::vector<SrcFilePtr> main_file_ids;
+  SrcFilePtr main_file_id;
   std::vector<FunctionPtr> all_functions;
-  InitScriptsCpp(std::vector<SrcFilePtr> &&main_file_ids, std::vector<FunctionPtr> &&all_functions);
+  InitScriptsCpp(SrcFilePtr main_file_id, std::vector<FunctionPtr> &&all_functions);
   void compile(CodeGenerator &W) const;
 };

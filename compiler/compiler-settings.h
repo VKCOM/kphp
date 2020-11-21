@@ -91,7 +91,7 @@ public:
     colored
   };
 
-  KphpOption<std::vector<std::string>> main_files;
+  KphpOption<std::string> main_file;
 
   KphpOption<uint64_t> verbosity;
 

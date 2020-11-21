@@ -12,8 +12,8 @@ struct script_t {
   void (*clear)();
 };
 
-script_t *get_script(const char *name);
-void set_script(const char *name, void (*run)(), void (*clear)());
+script_t *get_script();
+void set_script(void (*run)(), void (*clear)());
 
 /** script result **/
 
