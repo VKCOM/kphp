@@ -493,15 +493,6 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_conv_string:
       res = get_conv<op_conv_string>();
       break;
-    case tok_conv_long:
-      res = get_conv<op_conv_long>();
-      break;
-    case tok_conv_uint:
-      res = get_conv<op_conv_uint>();
-      break;
-    case tok_conv_ulong:
-      res = get_conv<op_conv_ulong>();
-      break;
     case tok_conv_array:
       res = get_conv<op_conv_array>();
       break;

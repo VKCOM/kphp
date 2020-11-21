@@ -157,9 +157,6 @@ enum TokenType {
   tok_conv_object,
   tok_conv_bool,
   tok_conv_var,
-  tok_conv_uint,
-  tok_conv_long,
-  tok_conv_ulong,
 
   tok_false,
   tok_true,
