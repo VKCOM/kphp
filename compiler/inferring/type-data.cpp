@@ -388,6 +388,13 @@ TypeData::lookup_iterator TypeData::lookup_end() const {
   return subkeys_values.end();
 }
 
+const TypeData *TypeData::get_deepest_type_of_array() const {
+  if (ptype() == tp_array) {
+    return lookup_at(Key::any_key())->get_deepest_type_of_array();
+  }
+  return this;
+}
+
 void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null) {
   if (rhs == nullptr) {
     return;

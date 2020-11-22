@@ -148,6 +148,8 @@ public:
   lookup_iterator lookup_begin() const;
   lookup_iterator lookup_end() const;
 
+  const TypeData *get_deepest_type_of_array() const;
+
   const TypeData *const_read_at(const Key &key) const;
   const TypeData *const_read_at(const MultiKey &multi_key) const;
   void set_lca(const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);

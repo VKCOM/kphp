@@ -166,7 +166,6 @@ std::string debugTokenName(TokenType t) {
     {tok_conv_array, "tok_conv_array"},
     {tok_conv_object, "tok_conv_object"},
     {tok_conv_bool, "tok_conv_bool"},
-    {tok_conv_var, "tok_conv_var"},
     {tok_false, "tok_false"},
     {tok_true, "tok_true"},
     {tok_define, "tok_define"},

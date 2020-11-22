@@ -66,9 +66,6 @@ TEST(lexer_test, test_php_tokens) {
     // strings: simple syntax doesn't support indexing of the accessed instance member
     {R"("$x->y[0]")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end", "tok_str([0])", "tok_str_end(\")"}},
 
-    // TODO: shouldn't it be (mixed)$x? It's converted to op_conv_mixed
-    {"(var)$x", {"tok_conv_var", "tok_var_name($x)"}},
-
     {"[1]", {"tok_opbrk([)", "tok_int_const(1)", "tok_clbrk(])"}},
     {"array(1)", {"tok_array(array)", "tok_oppar(()", "tok_int_const(1)", "tok_clpar())"}},
 
