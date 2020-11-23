@@ -25,6 +25,7 @@ private:
   void analyze_set_array_value(VertexAdaptor<op_set_value> op_set_value_vertex) noexcept;
   template<Operation op>
   void analyze_array_insertion(VertexAdaptor<op> vertex) noexcept;
+  void analyze_op_array(VertexAdaptor<op_array> op_array_vertex) noexcept;
 
   void check_implicit_array_conversion(VertexPtr expr, const TypeData *to) noexcept;
 

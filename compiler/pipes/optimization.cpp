@@ -253,6 +253,17 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
         explicit_cast_array_type(args[index], tinf::get_type(params[index]), &current_function->explicit_const_var_ids);
       }
     }
+  } else if (auto op_array_vertex = root.try_as<op_array>()) {
+    if (!var_init_expression_optimization_depth_) {
+      for (auto &array_element : *op_array_vertex) {
+        const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at(Key::any_key());
+        if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
+          explicit_cast_array_type(array_element, required_type, &current_function->explicit_const_var_ids);
+        } else if (auto array_key_value = array_element.try_as<op_double_arrow>()) {
+          explicit_cast_array_type(array_key_value->value(), required_type, &current_function->explicit_const_var_ids);
+        }
+      }
+    }
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
@@ -267,7 +278,10 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
     kphp_assert (var);
     if (var->init_val) {
       if (try_optimize_var(var)) {
+        ++var_init_expression_optimization_depth_;
         run_function_pass(var->init_val, this);
+        kphp_assert(var_init_expression_optimization_depth_ > 0);
+        --var_init_expression_optimization_depth_;
         if (!var->is_constant()) {
           explicit_cast_array_type(var->init_val, tinf::get_type(var));
         }

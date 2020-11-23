@@ -29,4 +29,6 @@ public:
   bool user_recursion(VertexPtr root) override;
 
   void on_finish() override;
+
+  size_t var_init_expression_optimization_depth_{0};
 };
