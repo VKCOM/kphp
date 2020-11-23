@@ -176,6 +176,12 @@ void AnalyzePerformance::analyze_op_array(VertexAdaptor<op_array> op_array_verte
   }
 }
 
+void AnalyzePerformance::analyze_op_return(VertexAdaptor<op_return> op_return_vertex) noexcept {
+  if (is_enabled<PerformanceInspections::implicit_array_cast>() && op_return_vertex->has_expr()) {
+    check_implicit_array_conversion(op_return_vertex->expr(), tinf::get_type(current_function, -1));
+  }
+}
+
 void AnalyzePerformance::check_implicit_array_conversion(VertexPtr expr, const TypeData *to) noexcept {
   const auto *from = tinf::get_type(expr);
   if (is_implicit_array_conversion(from, to)) {
@@ -233,7 +239,10 @@ VertexPtr AnalyzePerformance::on_enter_vertex(VertexPtr vertex) {
       break;
     case op_array:
       analyze_op_array(vertex.as<op_array>());
-      break;;
+      break;
+    case op_return:
+      analyze_op_return(vertex.as<op_return>());
+      break;
     default:
       break;
   }
