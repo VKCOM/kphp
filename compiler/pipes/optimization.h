@@ -25,7 +25,6 @@ public:
   bool check_function(FunctionPtr function) const override;
 
   VertexPtr on_enter_vertex(VertexPtr root) override;
-  VertexPtr on_exit_vertex(VertexPtr root) override;
 
   bool user_recursion(VertexPtr root) override;
 
