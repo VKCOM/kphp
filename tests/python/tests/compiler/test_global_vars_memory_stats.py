@@ -37,7 +37,7 @@ class TestGlobalVarsMemoryStats(KphpCompilerAutoTestCase):
             'initial': [],
             'static': {
                 '$arr': 104, '$result': 1536, '$str': 24,
-                'function_with_static_var::$static_array': 272,
+                'function_with_static_var::$static_array': 184,
                 'function_with_static_var::$static_str': 24
             }
         })

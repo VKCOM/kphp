@@ -45,7 +45,7 @@ function test_string() {
 function test_array() {
 #ifndef KPHP
   var_dump(0);
-  var_dump(192);
+  var_dump(104);
   var_dump(0);
   var_dump(72);
   var_dump(0);
