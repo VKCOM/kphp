@@ -1,5 +1,6 @@
 [
   {
+    "comment": "artificial op that represents a part of code that we failed to parse",
     "name": "op_err",
     "base_name": "meta_op_base"
   },
@@ -7,6 +8,7 @@
     "name": "meta_op_base"
   },
   {
+    "comment": "a base type for all unary operators: <op>expr(); or expr()<op>",
     "sons": {
       "expr": 0
     },
@@ -17,6 +19,7 @@
     }
   },
   {
+    "comment": "a base type for all binary operators: lhs() <op> rhs()",
     "sons": {
       "lhs": 0,
       "rhs": 1
@@ -38,6 +41,7 @@
     }
   },
   {
+    "comment": "op that holds a function params and its body",
     "sons": {
       "params": {
         "id": 0,
@@ -64,6 +68,7 @@
     }
   },
   {
+    "comment": "a base type for all loops (and switch, which is apparently a loop in PHP)",
     "name": "meta_op_cycle",
     "base_name": "meta_op_base",
     "props": {
@@ -83,6 +88,7 @@
     }
   },
   {
+    "comment": "a base type for op_isset and op_unset",
     "name": "meta_op_xset",
     "base_name": "meta_op_unary",
     "props": {
@@ -104,6 +110,7 @@
     }
   },
   {
+    "comment": "require expr(); if once is true, it's require_once",
     "name": "op_require",
     "base_name": "meta_op_unary",
     "props": {
@@ -132,6 +139,7 @@
     "base_name": "meta_op_base"
   },
   {
+    "comment": "define(name(), value())",
     "sons": {
       "name": 0,
       "value": 1
@@ -261,6 +269,7 @@
     "base_name": "meta_op_type_rule"
   },
   {
+    "comment": "artificial placeholder expression op",
     "name": "op_empty",
     "base_name": "meta_op_base",
     "props": {
@@ -271,6 +280,7 @@
     }
   },
   {
+    "comment": "integer value literal, like 32",
     "name": "op_int_const",
     "base_name": "meta_op_num",
     "props": {
@@ -278,6 +288,7 @@
     }
   },
   {
+    "comment": "artificial op that can be created during the op_conv_uint processing",
     "name": "op_uint_const",
     "base_name": "meta_op_num",
     "props": {
@@ -285,6 +296,7 @@
     }
   },
   {
+    "comment": "artificial op that can be created during the op_conv_long processing",
     "name": "op_long_const",
     "base_name": "meta_op_num",
     "props": {
@@ -292,6 +304,7 @@
     }
   },
   {
+    "comment": "artificial op that can be created during the op_conv_ulong processing",
     "name": "op_ulong_const",
     "base_name": "meta_op_num",
     "props": {
@@ -299,6 +312,7 @@
     }
   },
   {
+    "comment": "floating point value literal, like 32.5",
     "name": "op_float_const",
     "base_name": "meta_op_num",
     "props": {
@@ -306,6 +320,7 @@
     }
   },
   {
+    "comment": "a simple var, like $foo; variable name is stored in str_val",
     "extras": [
       "string"
     ],
@@ -329,6 +344,7 @@
     }
   },
   {
+    "comment": "string literal expression; str_val holds literal value",
     "extras": [
       "string"
     ],
@@ -342,6 +358,7 @@
     }
   },
   {
+    "comment": "a function name (or property name during gentree)",
     "extras": [
       "string"
     ],
@@ -355,6 +372,7 @@
     }
   },
   {
+    "comment": "a set of operations that construct the interpolated string result",
     "name": "op_string_build",
     "base_name": "meta_op_varg",
     "props": {
@@ -371,6 +389,7 @@
     }
   },
   {
+    "comment": "any function (or method) call",
     "extras": [
       "string"
     ],
@@ -420,6 +439,7 @@
     }
   },
   {
+    "comment": "instance()->prop; string field holds the name of the accessed member",
     "extras": [
       "string"
     ],
@@ -442,6 +462,7 @@
     }
   },
   {
+    "comment": "a list of statements",
     "name": "op_seq",
     "base_name": "meta_op_varg",
     "props": {
@@ -452,6 +473,7 @@
     }
   },
   {
+    "comment": "a comma-separated list of expressions",
     "name": "op_seq_comma",
     "base_name": "meta_op_varg",
     "props": {
@@ -462,6 +484,7 @@
     }
   },
   {
+    "comment": "an op_seq that returns its last statement expression result",
     "name": "op_seq_rval",
     "base_name": "meta_op_varg",
     "props": {
@@ -472,6 +495,7 @@
     }
   },
   {
+    "comment": "holds op_function params in params()",
     "name": "op_func_param_list",
     "base_name": "meta_op_varg",
     "ranges": {
@@ -482,6 +506,7 @@
     }
   },
   {
+    "comment": "variadic argument: array()...",
     "name": "op_varg",
     "base_name": "meta_op_base",
     "sons": {
@@ -489,10 +514,12 @@
     }
   },
   {
+    "comment": "var(); or var() = default_value(); type hints are stored in type_declaration",
     "name": "op_func_param",
     "base_name": "meta_op_func_param"
   },
   {
+    "comment": "a typed callback-type in functions.txt, like callback ($x ::: var)",
     "sons": {
       "params": {
         "id": 1,
@@ -508,6 +535,7 @@
     "base_name": "meta_op_func_param"
   },
   {
+    "comment": "isset(expr())",
     "name": "op_isset",
     "base_name": "meta_op_xset",
     "props": {
@@ -516,6 +544,7 @@
     }
   },
   {
+    "comment": "unset(expr())",
     "name": "op_unset",
     "base_name": "meta_op_xset",
     "props": {
@@ -524,6 +553,7 @@
     }
   },
   {
+    "comment": "while (cond()) cmd()",
     "sons": {
       "cond": 0,
       "cmd": {
@@ -538,6 +568,7 @@
     }
   },
   {
+    "comment": "do cmd() while (cond())",
     "sons": {
       "cond": 0,
       "cmd": {
@@ -552,6 +583,7 @@
     }
   },
   {
+    "comment": "for (pre_cond(); cond(); post_cond()) cmd()",
     "sons": {
       "pre_cond": {
         "id": 0,
@@ -574,6 +606,7 @@
     }
   },
   {
+    "comment": "foreach (params()) cmd()",
     "sons": {
       "params": {
         "type": "op_foreach_param",
@@ -591,6 +624,7 @@
     }
   },
   {
+    "comment": "foreach header: xs() as x(); or xs() as key() => x()",
     "sons": {
       "xs": 0,
       "x": {
@@ -614,6 +648,7 @@
     }
   },
   {
+    "comment": "switch (condition()) { cases()... }",
     "sons": {
       "condition": 0,
       "condition_on_switch" : {
@@ -638,6 +673,7 @@
     }
   },
   {
+    "comment": "if (cond()) true_cmd(); or if (cond()) true_cmd() else false_cmd()",
     "sons": {
       "cond": 0,
       "true_cmd": {
@@ -660,6 +696,7 @@
     }
   },
   {
+    "comment": "break; or break level()",
     "name": "op_break",
     "base_name": "meta_op_goto",
     "props": {
@@ -670,6 +707,7 @@
     }
   },
   {
+    "comment": "continue; or continue level()",
     "name": "op_continue",
     "base_name": "meta_op_goto",
     "props": {
@@ -680,6 +718,7 @@
     }
   },
   {
+    "comment": "case expr(): cmd()...",
     "sons": {
       "expr": 0,
       "cmd": {
@@ -697,6 +736,7 @@
     }
   },
   {
+    "comment": "default case of the switch with cmd() holding its statement list",
     "sons": {
       "cmd": {
         "id": 0,
@@ -713,6 +753,7 @@
     }
   },
   {
+    "comment": "array(args()...); or [args()...]",
     "name": "op_array",
     "base_name": "meta_op_varg",
     "props": {
@@ -723,6 +764,7 @@
     }
   },
   {
+    "comment": "tuple type constructor call",
     "name": "op_tuple",
     "base_name": "meta_op_varg",
     "props": {
@@ -733,6 +775,7 @@
     }
   },
   {
+    "comment": "shape type constructor call",
     "name": "op_shape",
     "base_name": "meta_op_varg",
     "props": {
@@ -743,6 +786,7 @@
     }
   },
   {
+    "comment": "post-processed op_set with op_list_ce (or op_array) LHS",
     "name": "op_list",
     "base_name": "meta_op_base",
     "props": {
@@ -762,10 +806,12 @@
     }
   },
   {
+    "comment": "list() assignment LHS before it was post-processed",
     "name": "op_list_ce",
     "base_name": "meta_op_base"
   },
   {
+    "comment": "global statement that binds global vars to the current scope",
     "name": "op_global",
     "base_name": "meta_op_varg",
     "props": {
@@ -776,6 +822,7 @@
     }
   },
   {
+    "comment": "static fields or vars list",
     "name": "op_static",
     "base_name": "meta_op_varg",
     "props": {
@@ -786,6 +833,7 @@
     }
   },
   {
+    "comment": "return expr()",
     "name": "op_return",
     "base_name": "meta_op_base",
     "sons": {
@@ -802,6 +850,7 @@
     }
   },
   {
+    "comment": "lsh() == rhs()",
     "name": "op_eq2",
     "base_name": "meta_op_binary",
     "props": {
@@ -813,6 +862,7 @@
     }
   },
   {
+    "comment": "lsh() != rhs()",
     "name": "op_neq2",
     "base_name": "meta_op_binary",
     "props": {
@@ -824,6 +874,7 @@
     }
   },
   {
+    "comment": "lsh() === rhs()",
     "name": "op_eq3",
     "base_name": "meta_op_binary",
     "props": {
@@ -835,6 +886,7 @@
     }
   },
   {
+    "comment": "lsh() !== rhs()",
     "name": "op_neq3",
     "base_name": "meta_op_binary",
     "props": {
@@ -846,6 +898,7 @@
     }
   },
   {
+    "comment": "lsh() <= rhs()",
     "name": "op_le",
     "base_name": "meta_op_binary",
     "props": {
@@ -857,6 +910,7 @@
     }
   },
   {
+    "comment": "lsh() >= rhs()",
     "name": "op_ge",
     "base_name": "meta_op_binary",
     "props": {
@@ -868,6 +922,7 @@
     }
   },
   {
+    "comment": "lsh() < rhs()",
     "name": "op_lt",
     "base_name": "meta_op_binary",
     "props": {
@@ -879,6 +934,7 @@
     }
   },
   {
+    "comment": "lsh() > rhs()",
     "name": "op_gt",
     "base_name": "meta_op_binary",
     "props": {
@@ -890,6 +946,7 @@
     }
   },
   {
+    "comment": "lsh() <=> rhs()",
     "name": "op_spaceship",
     "base_name": "meta_op_binary",
     "props": {
@@ -901,6 +958,7 @@
     }
   },
   {
+    "comment": "lsh() + rhs()",
     "name": "op_add",
     "base_name": "meta_op_binary",
     "props": {
@@ -911,6 +969,7 @@
     }
   },
   {
+    "comment": "lsh() - rhs()",
     "name": "op_sub",
     "base_name": "meta_op_binary",
     "props": {
@@ -921,6 +980,7 @@
     }
   },
   {
+    "comment": "lsh() . rhs()",
     "name": "op_concat",
     "base_name": "meta_op_binary",
     "props": {
@@ -931,6 +991,7 @@
     }
   },
   {
+    "comment": "lsh() * rhs()",
     "name": "op_mul",
     "base_name": "meta_op_binary",
     "props": {
@@ -941,6 +1002,7 @@
     }
   },
   {
+    "comment": "lsh() / rhs()",
     "name": "op_div",
     "base_name": "meta_op_binary",
     "props": {
@@ -951,6 +1013,7 @@
     }
   },
   {
+    "comment": "lsh() % rhs()",
     "name": "op_mod",
     "base_name": "meta_op_binary",
     "props": {
@@ -961,6 +1024,7 @@
     }
   },
   {
+    "comment": "lsh() ** rhs()",
     "name": "op_pow",
     "base_name": "meta_op_binary",
     "props": {
@@ -972,6 +1036,7 @@
     }
   },
   {
+    "comment": "lsh() xor rhs()",
     "name": "op_log_xor_let",
     "base_name": "meta_op_binary",
     "props": {
@@ -982,6 +1047,7 @@
     }
   },
   {
+    "comment": "lsh() and rhs()",
     "name": "op_log_and_let",
     "base_name": "meta_op_binary",
     "props": {
@@ -992,6 +1058,7 @@
     }
   },
   {
+    "comment": "lsh() or rhs()",
     "name": "op_log_or_let",
     "base_name": "meta_op_binary",
     "props": {
@@ -1002,6 +1069,7 @@
     }
   },
   {
+    "comment": "lsh() && rhs()",
     "name": "op_log_and",
     "base_name": "meta_op_binary",
     "props": {
@@ -1012,6 +1080,7 @@
     }
   },
   {
+    "comment": "lsh() || rhs()",
     "name": "op_log_or",
     "base_name": "meta_op_binary",
     "props": {
@@ -1022,6 +1091,7 @@
     }
   },
   {
+    "comment": "lsh() ^ rhs()",
     "name": "op_xor",
     "base_name": "meta_op_binary",
     "props": {
@@ -1032,6 +1102,7 @@
     }
   },
   {
+    "comment": "lsh() | rhs()",
     "name": "op_or",
     "base_name": "meta_op_binary",
     "props": {
@@ -1042,6 +1113,7 @@
     }
   },
   {
+    "comment": "lsh() & rhs()",
     "name": "op_and",
     "base_name": "meta_op_binary",
     "props": {
@@ -1052,6 +1124,7 @@
     }
   },
   {
+    "comment": "lsh() >> rhs()",
     "name": "op_shr",
     "base_name": "meta_op_binary",
     "props": {
@@ -1062,6 +1135,7 @@
     }
   },
   {
+    "comment": "lsh() << rhs()",
     "name": "op_shl",
     "base_name": "meta_op_binary",
     "props": {
@@ -1072,6 +1146,7 @@
     }
   },
   {
+    "comment": "error suppression operator: @expr()",
     "name": "op_noerr",
     "base_name": "meta_op_unary",
     "props": {
@@ -1082,6 +1157,7 @@
     }
   },
   {
+    "comment": "-expr()",
     "name": "op_minus",
     "base_name": "meta_op_unary",
     "props": {
@@ -1092,6 +1168,7 @@
     }
   },
   {
+    "comment": "+expr()",
     "name": "op_plus",
     "base_name": "meta_op_unary",
     "props": {
@@ -1102,6 +1179,7 @@
     }
   },
   {
+    "comment": "lhs() => rhs()",
     "alias": {
       "value": "rhs",
       "key": "lhs"
@@ -1117,6 +1195,7 @@
     }
   },
   {
+    "comment": "LHS list(...) elements: key() => var(); for implicit keys the key() is auto-calculated op_int_const",
     "alias": {
       "var": "rhs",
       "key": "lhs"
@@ -1132,10 +1211,12 @@
     }
   },
   {
+    "comment": "a base type for all modifying assignment operations",
     "name": "op_set_modify",
     "base_name": "meta_op_binary"
   },
   {
+    "comment": "a simple assignment: lhs() = rhs()",
     "name": "op_set",
     "base_name": "op_set_modify",
     "props": {
@@ -1147,6 +1228,7 @@
     }
   },
   {
+    "comment": "lhs() += rhs()",
     "name": "op_set_add",
     "base_name": "op_set_modify",
     "props": {
@@ -1159,6 +1241,7 @@
     }
   },
   {
+    "comment": "lhs() -= rhs()",
     "name": "op_set_sub",
     "base_name": "op_set_modify",
     "props": {
@@ -1171,6 +1254,7 @@
     }
   },
   {
+    "comment": "lhs() *= rhs()",
     "name": "op_set_mul",
     "base_name": "op_set_modify",
     "props": {
@@ -1183,6 +1267,7 @@
     }
   },
   {
+    "comment": "lhs() /= rhs()",
     "name": "op_set_div",
     "base_name": "op_set_modify",
     "props": {
@@ -1195,6 +1280,7 @@
     }
   },
   {
+    "comment": "lhs() %= rhs()",
     "name": "op_set_mod",
     "base_name": "op_set_modify",
     "props": {
@@ -1207,6 +1293,7 @@
     }
   },
   {
+    "comment": "lhs() **= rhs()",
     "name": "op_set_pow",
     "base_name": "op_set_modify",
     "props": {
@@ -1219,6 +1306,7 @@
     }
   },
   {
+    "comment": "lhs() &= rhs()",
     "name": "op_set_and",
     "base_name": "op_set_modify",
     "props": {
@@ -1231,6 +1319,7 @@
     }
   },
   {
+    "comment": "lhs() |= rhs()",
     "name": "op_set_or",
     "base_name": "op_set_modify",
     "props": {
@@ -1243,6 +1332,7 @@
     }
   },
   {
+    "comment": "lhs() ^= rhs()",
     "name": "op_set_xor",
     "base_name": "op_set_modify",
     "props": {
@@ -1255,6 +1345,7 @@
     }
   },
   {
+    "comment": "lhs() .= rhs()",
     "name": "op_set_dot",
     "base_name": "op_set_modify",
     "props": {
@@ -1267,6 +1358,7 @@
     }
   },
   {
+    "comment": "lhs() >>= rhs()",
     "name": "op_set_shr",
     "base_name": "op_set_modify",
     "props": {
@@ -1279,6 +1371,7 @@
     }
   },
   {
+    "comment": "lhs() <<= rhs()",
     "name": "op_set_shl",
     "base_name": "op_set_modify",
     "props": {
@@ -1291,6 +1384,7 @@
     }
   },
   {
+    "comment": "cond() ? true_expr() : false_expr()",
     "sons": {
       "true_expr": 1,
       "cond": 0,
@@ -1308,6 +1402,7 @@
     }
   },
   {
+    "comment": "lhs() ?? rhs()",
     "name": "op_null_coalesce",
     "base_name": "meta_op_binary",
     "props": {
@@ -1320,6 +1415,7 @@
     }
   },
   {
+    "comment": "~expr()",
     "name": "op_not",
     "base_name": "meta_op_unary",
     "props": {
@@ -1330,6 +1426,7 @@
     }
   },
   {
+    "comment": "!expr()",
     "name": "op_log_not",
     "base_name": "meta_op_unary",
     "props": {
@@ -1340,6 +1437,7 @@
     }
   },
   {
+    "comment": "++expr()",
     "name": "op_prefix_inc",
     "base_name": "meta_op_unary",
     "props": {
@@ -1350,6 +1448,7 @@
     }
   },
   {
+    "comment": "--expr()",
     "name": "op_prefix_dec",
     "base_name": "meta_op_unary",
     "props": {
@@ -1360,6 +1459,7 @@
     }
   },
   {
+    "comment": "&expr()",
     "name": "op_addr",
     "base_name": "meta_op_unary",
     "props": {
@@ -1370,6 +1470,7 @@
     }
   },
   {
+    "comment": "(int)expr(); or intval(expr())",
     "name": "op_conv_int",
     "base_name": "meta_op_unary",
     "props": {
@@ -1380,6 +1481,7 @@
     }
   },
   {
+    "comment": "lvalue form of op_conv_int",
     "name": "op_conv_int_l",
     "base_name": "meta_op_unary",
     "props": {
@@ -1390,6 +1492,7 @@
     }
   },
   {
+    "comment": "(float)expr(); or (double)expr(); or floatval(expr())",
     "name": "op_conv_float",
     "base_name": "meta_op_unary",
     "props": {
@@ -1400,6 +1503,7 @@
     }
   },
   {
+    "comment": "(string)expr(); or strval(expr())",
     "name": "op_conv_string",
     "base_name": "meta_op_unary",
     "props": {
@@ -1410,6 +1514,7 @@
     }
   },
   {
+    "comment": "lvalue form of op_conv_string",
     "name": "op_conv_string_l",
     "base_name": "meta_op_unary",
     "props": {
@@ -1420,6 +1525,7 @@
     }
   },
   {
+    "comment": "(array)expr(); or arrayval(expr())",
     "name": "op_conv_array",
     "base_name": "meta_op_unary",
     "props": {
@@ -1430,6 +1536,7 @@
     }
   },
   {
+    "comment": "lvalue form of op_conv_array",
     "name": "op_conv_array_l",
     "base_name": "meta_op_unary",
     "props": {
@@ -1440,6 +1547,7 @@
     }
   },
   {
+    "comment": "(object)expr()",
     "name": "op_conv_object",
     "base_name": "meta_op_unary",
     "props": {
@@ -1450,6 +1558,7 @@
     }
   },
   {
+    "comment": "(bool)expr(); or boolval(expr())",
     "name": "op_conv_bool",
     "base_name": "meta_op_unary",
     "props": {
@@ -1460,6 +1569,7 @@
     }
   },
   {
+    "comment": "(var)expr()",
     "name": "op_conv_mixed",
     "base_name": "meta_op_unary",
     "props": {
@@ -1470,6 +1580,7 @@
     }
   },
   {
+    "comment": "artificial op that converts expr() to tp_UInt",
     "name": "op_conv_uint",
     "base_name": "meta_op_unary",
     "props": {
@@ -1480,6 +1591,7 @@
     }
   },
   {
+    "comment": "longval(expr())",
     "name": "op_conv_long",
     "base_name": "meta_op_unary",
     "props": {
@@ -1490,6 +1602,7 @@
     }
   },
   {
+    "comment": "ulongval(expr())",
     "name": "op_conv_ulong",
     "base_name": "meta_op_unary",
     "props": {
@@ -1500,6 +1613,7 @@
     }
   },
   {
+    "comment": "artificial op that converts expr() to tp_regexp",
     "name": "op_conv_regexp",
     "base_name": "meta_op_unary",
     "props": {
@@ -1510,6 +1624,7 @@
     }
   },
   {
+    "comment": "not_false(expr())",
     "name": "op_conv_drop_false",
     "base_name": "meta_op_unary",
     "props": {
@@ -1520,6 +1635,7 @@
     }
   },
   {
+    "comment": "not_null(expr())",
     "name": "op_conv_drop_null",
     "base_name": "meta_op_unary",
     "props": {
@@ -1530,6 +1646,7 @@
     }
   },
   {
+    "comment": "expr()++",
     "name": "op_postfix_inc",
     "base_name": "meta_op_unary",
     "props": {
@@ -1540,6 +1657,7 @@
     }
   },
   {
+    "comment": "expr()--",
     "name": "op_postfix_dec",
     "base_name": "meta_op_unary",
     "props": {
@@ -1550,6 +1668,7 @@
     }
   },
   {
+    "comment": "array()[key()]; or array()[]",
     "sons": {
       "array": 0,
       "key": {
@@ -1567,6 +1686,7 @@
     }
   },
   {
+    "comment": "optimized form of array()[] = value()",
     "name": "op_push_back",
     "base_name": "meta_op_push_back",
     "props": {
@@ -1574,6 +1694,7 @@
     }
   },
   {
+    "comment": "like meta_op_push_back, but the result is not being discarded",
     "name": "op_push_back_return",
     "base_name": "meta_op_push_back",
     "props": {
@@ -1581,6 +1702,7 @@
     }
   },
   {
+    "comment": "lowered form of array()[key()] = value()",
     "sons": {
       "array": 0,
       "key": 1,
@@ -1596,6 +1718,7 @@
     }
   },
   {
+    "comment": "false literal",
     "name": "op_false",
     "base_name": "meta_op_base",
     "props": {
@@ -1606,6 +1729,7 @@
     }
   },
   {
+    "comment": "true literal",
     "name": "op_true",
     "base_name": "meta_op_base",
     "props": {
@@ -1616,6 +1740,7 @@
     }
   },
   {
+    "comment": "null literal",
     "name": "op_null",
     "base_name": "meta_op_base",
     "props": {
@@ -1626,6 +1751,7 @@
     }
   },
   {
+    "comment": "a placeholder op for an empty lvalue",
     "name": "op_lvalue_null",
     "base_name": "meta_op_base",
     "props": {
@@ -1636,6 +1762,7 @@
     }
   },
   {
+    "comment": "artificial op that performs std::move(expr())",
     "name": "op_move",
     "base_name": "meta_op_unary",
     "props": {
@@ -1646,6 +1773,7 @@
     }
   },
   {
+    "comment": "defined(expr())",
     "name": "op_defined",
     "base_name": "meta_op_base",
     "sons": {
@@ -1659,6 +1787,7 @@
     }
   },
   {
+    "comment": "try { try_cmd()... } catch (exception()) { catch_cmd()... }",
     "sons": {
       "try_cmd": {
         "id": 0,
@@ -1683,6 +1812,7 @@
     }
   },
   {
+    "comment": "artificial op for a fork call; func_call() contains a fork argument",
     "sons": {
       "func_call": {
         "id": 0,
@@ -1699,6 +1829,7 @@
     }
   },
   {
+    "comment": "artificial op that wraps async function call, optionally with save_var() for LHS",
     "sons": {
       "func_call": {
         "id": 0,
@@ -1718,6 +1849,7 @@
     }
   },
   {
+    "comment": "throw exception()",
     "name": "op_throw",
     "base_name": "meta_op_base",
     "sons": {
@@ -1731,10 +1863,12 @@
     }
   },
   {
+    "comment": "artificial op that doesn't produce any code",
     "name": "op_none",
     "base_name": "meta_op_base"
   },
   {
+    "comment": "clone expr()",
     "name": "op_clone",
     "base_name": "meta_op_unary",
     "props": {
@@ -1745,6 +1879,7 @@
     }
   },
   {
+    "comment": "artificial op that holds allocated class info",
     "name": "op_alloc",
     "base_name": "meta_op_base",
     "props": {
@@ -1763,6 +1898,7 @@
     }
   },
   {
+    "comment": "lhs() instanceof rhs()",
     "name": "op_instanceof",
     "base_name": "meta_op_binary",
     "props": {
@@ -1778,6 +1914,7 @@
     }
   },
   {
+    "comment": "partially parsed phpdoc comment",
     "name": "op_phpdoc_raw",
     "base_name": "meta_op_base",
     "props": {
@@ -1796,6 +1933,7 @@
     }
   },
   {
+    "comment": "artificial op that holds phpdoc var info",
     "sons": {
       "var": {
         "id": 0,
