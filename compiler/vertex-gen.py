@@ -55,7 +55,7 @@ def output_include_directive(f, name):
 
 
 def output_class_header(f, base_name, name, final_specifier="", comment=""):
-    comment_line = f"\n// {comment}" if comment else ""
+    comment_line = "\n// " + comment if comment else ""
     f.write("""{comment_line}
 template<>
 class vertex_inner<{name}> {final_specifier}: public vertex_inner<{base_name}> {{
