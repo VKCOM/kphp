@@ -17,7 +17,7 @@ TEST(performance_inspections_test, test_parse) {
 
   inspections = PI{};
   inspections.add_from_php_doc("all !implicit-array-cast");
-  ASSERT_EQ(inspections.inspections(), PI::array_merge_into);
+  ASSERT_EQ(inspections.inspections(), PI::array_merge_into | PI::array_reserve | PI::constant_execution_in_loop);
 
   inspections = PI{};
   inspections.add_from_php_doc("!all implicit-array-cast");
@@ -62,7 +62,7 @@ TEST(performance_inspections_test, test_merge) {
   inspections = {};
   caller_inspections.add_from_php_doc("all !implicit-array-cast");
   ASSERT_EQ(inspections.merge_with_caller(caller_inspections), std::make_pair(PI::InheritStatus::ok, PI::no_inspections));
-  ASSERT_EQ(inspections.inspections(), PI::array_merge_into);
+  ASSERT_EQ(inspections.inspections(), PI::array_merge_into | PI::array_reserve | PI::constant_execution_in_loop);
 
   caller_inspections = {};
   caller_inspections.add_from_php_doc("all");

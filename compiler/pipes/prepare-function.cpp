@@ -286,7 +286,7 @@ private:
       }
       case php_doc_tag::kphp_analyze_performance: {
         try {
-          f_->performance_inspections_for_analyse.add_from_php_doc(tag.value);
+          f_->performance_inspections_for_analysis.add_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
         }

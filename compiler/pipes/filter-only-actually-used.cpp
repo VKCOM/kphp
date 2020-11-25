@@ -113,7 +113,7 @@ struct DfsException : std::runtime_error {
 void mark_performance_inspections_dfs(FunctionPtr caller, const IdMap<std::vector<EdgeInfo>> &call_graph) {
   for (const auto &edge: call_graph[caller]) {
     if (!edge.called_f->is_extern()) {
-      const auto analyse_inherit_res = edge.called_f->performance_inspections_for_analyse.merge_with_caller(caller->performance_inspections_for_analyse);
+      const auto analyse_inherit_res = edge.called_f->performance_inspections_for_analysis.merge_with_caller(caller->performance_inspections_for_analysis);
       if (analyse_inherit_res.first == PerformanceInspections::InheritStatus::conflict) {
         throw DfsException{edge.called_f,
                            fmt_format("@kphp-analyze-performance conflict, one caller enables '{}' while other disables it",
@@ -164,7 +164,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
         if (G->settings().profiler_level.get()) {
           mark_profiler_dfs(fun, call_graph);
         }
-        if (fun->performance_inspections_for_analyse.has_their_own_inspections() || fun->performance_inspections_for_warning.has_their_own_inspections()) {
+        if (fun->performance_inspections_for_analysis.has_their_own_inspections() || fun->performance_inspections_for_warning.has_their_own_inspections()) {
           mark_performance_inspections_dfs(fun, call_graph);
         }
       }

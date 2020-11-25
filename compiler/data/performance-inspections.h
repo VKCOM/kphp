@@ -10,9 +10,11 @@ class PerformanceInspections {
 public:
   enum Inspections : uint8_t {
     no_inspections = 0,
-    implicit_array_cast = (1 << 0),
-    array_merge_into = (1 << 1),
-    all_inspections = implicit_array_cast | array_merge_into,
+    array_merge_into = (1 << 0),
+    array_reserve = (1 << 1),
+    constant_execution_in_loop = (1 << 2),
+    implicit_array_cast = (1 << 3),
+    all_inspections = array_merge_into | array_reserve | constant_execution_in_loop | implicit_array_cast,
   };
 
   void add_from_php_doc(vk::string_view php_doc_tag);

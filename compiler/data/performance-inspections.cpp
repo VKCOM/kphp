@@ -11,9 +11,11 @@ namespace {
 constexpr auto get_all_inspections() noexcept {
   return vk::to_array<std::pair<PerformanceInspections::Inspections, const char *>>(
     {
-      {PerformanceInspections::implicit_array_cast, "implicit-array-cast"},
-      {PerformanceInspections::array_merge_into,    "array-merge-into"},
-      {PerformanceInspections::all_inspections,     "all"},
+      {PerformanceInspections::array_merge_into,           "array-merge-into"},
+      {PerformanceInspections::array_reserve,              "array-reserve"},
+      {PerformanceInspections::constant_execution_in_loop, "constant-execution-in-loop"},
+      {PerformanceInspections::implicit_array_cast,        "implicit-array-cast"},
+      {PerformanceInspections::all_inspections,            "all"},
     });
 }
 

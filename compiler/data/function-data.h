@@ -128,7 +128,7 @@ public:
     enable_as_inline_child,
   } profiler_state = profiler_status::disable;
 
-  PerformanceInspections performance_inspections_for_analyse;
+  PerformanceInspections performance_inspections_for_analysis;
   PerformanceInspections performance_inspections_for_warning;
   std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
 
