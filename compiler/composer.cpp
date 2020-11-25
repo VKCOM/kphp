@@ -85,12 +85,15 @@ void ComposerClassLoader::set_use_dev(bool v) {
   use_dev_ = v;
 }
 
-void ComposerClassLoader::load_root_file(const std::string &filename) {
-  load_file(filename, true);
+void ComposerClassLoader::load_root_file(const std::string &pkg_root) {
+  kphp_assert(!pkg_root.empty() && pkg_root.back() == '/');
+  kphp_assert(autoload_filename_.empty());
+  autoload_filename_ = pkg_root + "vendor/autoload.php";
+  load_file(pkg_root, true);
 }
 
-void ComposerClassLoader::load_file(const std::string &filename) {
-  load_file(filename, false);
+void ComposerClassLoader::load_file(const std::string &pkg_root) {
+  load_file(pkg_root, false);
 }
 
 void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_file) {
@@ -128,6 +131,7 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
   };
 
   auto add_autoload_section = [&](YAML::Node autoload) {
+    // https://getcomposer.org/doc/04-schema.md#psr-4
     const auto psr4_src = autoload["psr-4"];
     for (const auto &kv : psr4_src) {
       std::string prefix = kv.first.as<std::string>();
@@ -142,6 +146,12 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
       } else {
         kphp_error(false, fmt_format("load composer file {}: invalid autoload psr-4 item", filename.c_str()));
       }
+    }
+
+    // files that are required by the composer-generated autoload.php
+    // https://getcomposer.org/doc/04-schema.md#files
+    for (const auto &autoload_filename : autoload["files"]) {
+      files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
     }
   };
 

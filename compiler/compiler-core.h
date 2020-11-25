@@ -49,6 +49,10 @@ public:
   const CompilerSettings &settings() const;
   const string &get_global_namespace() const;
 
+  // search_required_file resolves the file_name like it would be expanded when user as require() argument;
+  // it uses search_file_in_include_dirs as well as the current file relative search
+  std::string search_required_file(const std::string &file_name) const;
+
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const string &file_name, LibPtr owner_lib);
 

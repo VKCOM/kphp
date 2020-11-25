@@ -159,16 +159,13 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
   return full_file_name;
 }
 
-SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib) {
-  if (file_name.empty()) {
-    return SrcFilePtr();
-  }
-
-  //search file
+std::string CompilerCore::search_required_file(const std::string &file_name) const {
   string full_file_name = search_file_in_include_dirs(file_name);
   if (file_name[0] == '/') {
-    full_file_name = get_full_path(file_name);
-  } else if (full_file_name.empty()) {
+    return get_full_path(file_name);
+  }
+
+  if (full_file_name.empty()) {
     vector<string> cur_include_dirs;
     SrcFilePtr from_file = stage::get_file();
     if (from_file) {
@@ -189,6 +186,16 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
       full_file_name = get_full_path(cur_include_dirs[i] + file_name);
     }
   }
+
+  return full_file_name;
+}
+
+SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib) {
+  if (file_name.empty()) {
+    return SrcFilePtr();
+  }
+
+  string full_file_name = search_required_file(file_name);
 
   if (full_file_name.empty()) {
     return {};
@@ -531,7 +538,7 @@ void CompilerCore::init_composer_class_loader() {
   // files that we can reach. To avoid that problem, we scan the vendor
   // folder in order to collect all dependencies (both direct and indirect).
 
-  std::string vendor = settings().composer_root.get() + "/vendor";
+  std::string vendor = settings().composer_root.get() + "vendor";
   bool vendor_folder_exists = access(vendor.c_str(), F_OK) == 0;
   if (vendor_folder_exists) {
     for (const auto &composer_root : find_composer_folders(vendor)) {
