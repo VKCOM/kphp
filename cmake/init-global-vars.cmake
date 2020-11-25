@@ -11,7 +11,7 @@ set(HOST "x86_64")
 find_package(Git REQUIRED)
 find_package (Python3 COMPONENTS Interpreter REQUIRED)
 
-find_program(CCACHE_FOUND ccache REQUIRED)
+find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
