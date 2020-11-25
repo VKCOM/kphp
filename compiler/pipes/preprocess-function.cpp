@@ -470,6 +470,14 @@ private:
       auto assum = infer_class_of_expr(current_function, call_args[0]).try_as<AssumInstance>();
       kphp_error_act(assum && assum->klass, "You may not use instance_serialize with primitives", return call);
       kphp_error(assum->klass->is_serializable, fmt_format("You may not serialize class without @kphp-serializable tag {}", assum->klass->name));
+    } else if (func->name == "instance_deserialize" && call_args.size() == 2) {
+      auto *class_name = GenTree::get_constexpr_string(call_args[1]);
+      kphp_error_act(class_name && !class_name->empty(), "bad second parameter: expected constant nonempty string with class name", return call);
+
+      auto klass = G->get_class(*class_name);
+      kphp_error_act(klass, fmt_format("bad second parameter: can't find the class {}", *class_name), return call);
+
+      kphp_error(klass->is_serializable, fmt_format("You may not deserialize class without @kphp-serializable tag {}", klass->name));
     }
 
     return call;
