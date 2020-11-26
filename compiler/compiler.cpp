@@ -37,6 +37,7 @@
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg-end.h"
 #include "compiler/pipes/cfg.h"
+#include "compiler/pipes/check-abstract-function-defaults.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-conversions.h"
@@ -237,6 +238,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> SyncC<GenerateVirtualMethods>{}
+    >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe

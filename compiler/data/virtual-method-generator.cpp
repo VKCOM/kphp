@@ -79,26 +79,6 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     return false;
   }
 
-  auto get_string_repr = [] (VertexPtr v) {
-    auto param = v.try_as<op_func_param>();
-    kphp_assert(param);
-    if (!param->has_default_value()) {
-      return std::string{"NoDefault"};
-    }
-    return VertexPtrFormatter::to_string(param->default_value());
-  };
-
-  for (auto arg_id = interface_function->get_min_argn(); arg_id < i_argn; ++arg_id) {
-    auto interface_repr = get_string_repr(interface_params[arg_id]);
-    auto derived_repr = get_string_repr(derived_params[arg_id]);
-
-    kphp_error(interface_repr == derived_repr,
-      fmt_format("default value of interface parameter:`{}` may not differ from value of derived parameter: `{}`, in function: {}",
-                 TermStringFormat::paint(interface_repr, TermStringFormat::green),
-                 TermStringFormat::paint(derived_repr, TermStringFormat::green),
-                 TermStringFormat::paint(derived_method->get_human_readable_name(), TermStringFormat::red)));
-  }
-
   return true;
 }
 
