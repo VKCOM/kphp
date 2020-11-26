@@ -247,11 +247,20 @@ private:
     const std::vector<VertexPtr> &cur_call_args = call->get_next();
     auto positional_args_start = cur_call_args.begin();
 
+    int min_args = func_args_n - 1; // variadic param may accept 0 args, so subtract 1
+    int explicit_args = call_args_n;
+    if (func->modifiers.is_instance()) {
+      // subtract the implicit $this argument
+      --min_args;
+      --explicit_args;
+    }
+
     auto variadic_args_start = positional_args_start;
     kphp_assert(func_args_n > 0);
 
     kphp_error_act(func_args_n - 1 <= call_args_n,
-                   fmt_format("function takes: {} arguments; passed only {}", func_args_n, call_args_n),
+                   fmt_format("Not enough arguments in function call [{} : {}] [found {}] [expected at least {}]",
+                              func->file_id->file_name, func->get_human_readable_name(), explicit_args, min_args),
                    return {});
     std::advance(variadic_args_start, func_args_n - 1);
 
