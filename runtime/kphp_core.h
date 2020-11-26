@@ -151,11 +151,8 @@ template<class T1, class T2>
 inline int64_t spaceship(const T1 &lhs, const T2 &rhs) {
   if (lt(lhs, rhs)) {
     return -1;
-  } else if (gt(lhs, rhs)) {
-    return 1;
-  } else {
-    return 0;
   }
+  return eq2(lhs, rhs) ? 0 : 1;
 }
 
 inline int64_t modulo(int64_t lhs, int64_t rhs);

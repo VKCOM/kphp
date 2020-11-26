@@ -559,6 +559,25 @@ inline bool lt(const Optional<T> &lhs, const bool &rhs) {
 }
 
 template<class T1, class T2>
+inline bool lt(const array<T1> &lhs, const array<T2> &rhs) {
+  if (lhs.count() != rhs.count()) {
+    return lhs.count() < rhs.count();
+  }
+
+  for (auto lhs_it = lhs.begin(); lhs_it != lhs.end(); ++lhs_it) {
+    auto key = lhs_it.get_key();
+    if (!rhs.has_key(key)) {
+      return false;
+    }
+    if (lt(lhs_it.get_value(), rhs.get_value(key))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+template<class T1, class T2>
 inline bool gt(const T1 &lhs, const T2 &rhs) {
   return lt(rhs, lhs);
 }
