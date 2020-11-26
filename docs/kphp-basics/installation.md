@@ -44,16 +44,16 @@ And that's it, you can now proceed to [the next step](./compile-sample-script.md
 If you don't want to use Docker at all, feel free to use .deb packages available at the vk.com artifactory.  
 This is the preferred way to set up KPHP on production servers.
 
-**Add *repo.vkpartner.ru* to sources.list**
+**Add *repo.vkpartner.ru* to sources.list.d**
 
 ```bash
 # for Ubuntu
-wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | sudo apt-key add -
-echo "deb https://repo.vkpartner.ru/kphp-focal/ focal main" | sudo tee -a /etc/apt/sources.list
+sudo wget -O /etc/apt/trusted.gpg.d/vkpartner.asc https://repo.vkpartner.ru/GPG-KEY.pub
+echo "deb [arch=amd64] https://repo.vkpartner.ru/kphp-focal focal main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
 
 # for Debian Buster
-wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | sudo apt-key add -
-echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" | sudo tee -a /etc/apt/sources.list
+sudo wget -O /etc/apt/trusted.gpg.d/vkpartner.asc https://repo.vkpartner.ru/GPG-KEY.pub
+echo "deb [arch=amd64] https://repo.vkpartner.ru/kphp-buster buster main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
 ```
 
 **Install KPHP packages**
