@@ -142,6 +142,7 @@ std::string debugTokenName(TokenType t) {
     {tok_set_shr, "tok_set_shr"},
     {tok_set_shl, "tok_set_shl"},
     {tok_set_dot, "tok_set_dot"},
+    {tok_set_null_coalesce, "tok_set_null_coalesce"},
     {tok_double_arrow, "tok_double_arrow"},
     {tok_double_colon, "tok_double_colon"},
     {tok_arrow, "tok_arrow"},

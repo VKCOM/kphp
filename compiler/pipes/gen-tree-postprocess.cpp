@@ -11,6 +11,35 @@
 #include "compiler/gentree.h"
 
 namespace {
+template <typename F>
+bool contains_vertex(const VertexPtr &root, F fn) {
+  if (fn(root)) {
+    return true;
+  }
+  for (const auto &v : *root) {
+    if (contains_vertex(v, fn)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+VertexAdaptor<op_set> convert_set_null_coalesce(VertexAdaptor<op_set_null_coalesce> v) {
+  // forbid any lhs that contains a function/method calls for now as PHP
+  // behavior is not well-documented in this case;
+  // it seems like this will be good enough even for the time when __get and __set
+  // magic methods will be implemented
+  bool has_call = contains_vertex(v->lhs(), [](VertexPtr v) {
+    return v->type() == op_func_call;
+  });
+  kphp_error(!has_call, "Function calls on the left-hand side of \?\?= are not supported");
+
+  // lhs() is cloned to make it possible for the compiler to split
+  // variables and make null coalesce result better typed
+  auto rhs = VertexAdaptor<op_null_coalesce>::create(v->lhs(), v->rhs()).set_location(v);
+  return VertexAdaptor<op_set>::create(v->lhs().clone(), rhs).set_location(v);
+}
+
 VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
   bool has_explicit_keys = false;
   bool has_empty_entries = false; // To give the same error message as PHP
@@ -141,6 +170,10 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   }
   if (root->type() == op_list_ce) {
     kphp_error(0, "Unexpected list() not as left side of assignment\n");
+  }
+
+  if (auto set_coalesce = root.try_as<op_set_null_coalesce>()) {
+    return convert_set_null_coalesce(set_coalesce);
   }
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
