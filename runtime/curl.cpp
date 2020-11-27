@@ -12,7 +12,6 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/global_storage.h"
-#include "runtime/integer_types.h"
 #include "runtime/interface.h"
 #include "runtime/openssl.h"
 #include "common/smart_ptrs/singleton.h"
@@ -259,7 +258,7 @@ int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_l
 }
 
 void long_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  easy_context->set_option_safe(option, static_cast<long>(f$longval(value).l));
+  easy_context->set_option_safe(option, static_cast<long>(value.to_int()));
 }
 
 void string_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -267,7 +266,7 @@ void string_option_setter(EasyContext *easy_context, CURLoption option, const mi
 }
 
 void off_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  easy_context->set_option_safe(option, static_cast<curl_off_t>(f$longval(value).l));
+  easy_context->set_option_safe(option, static_cast<curl_off_t>(value.to_int()));
 }
 
 void linked_list_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -303,7 +302,7 @@ void private_option_setter(EasyContext *easy_context, CURLoption option, const m
 
 template<size_t OPTION_OFFSET, typename T, size_t N>
 void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_context, CURLoption option, const mixed &value) noexcept {
-  long val = static_cast<long>(f$longval(value).l);
+  long val = static_cast<long>(value.to_int());
   if (easy_context->check_option_value<OPTION_OFFSET, N>(val, "parameter value", "curl_setopt")) {
     val = options[val - OPTION_OFFSET];
     easy_context->set_option_safe(option, val);
@@ -338,7 +337,7 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
 }
 
 void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  long val = static_cast<long>(f$longval(value).l);
+  long val = static_cast<long>(value.to_int());
   constexpr size_t OPTION_OFFSET = 600000;
   if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val, "parameter value", "curl_setopt")) {
     val -= OPTION_OFFSET;
@@ -418,7 +417,7 @@ constexpr int64_t CURLOPT_INFO_HEADER_OUT = 7654321;
 
 bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) noexcept {
   if (option == CURLOPT_INFO_HEADER_OUT) {
-    if (f$longval(value).l == 1ll) {
+    if (value.to_int() == 1ll) {
       easy_context->set_option(CURLOPT_DEBUGFUNCTION, curl_info_header_out);
       easy_context->set_option(CURLOPT_DEBUGDATA, static_cast<void *>(easy_context));
       easy_context->set_option(CURLOPT_VERBOSE, 1);
@@ -431,7 +430,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
   }
 
   if (option == CURLOPT_RETURNTRANSFER) {
-    easy_context->return_transfer = (f$longval(value).l == 1ll);
+    easy_context->return_transfer = (value.to_int() == 1ll);
     return true;
   }
 

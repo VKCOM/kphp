@@ -9,7 +9,6 @@
 
 #include "common/unicode/unicode-utils.h"
 
-#include "runtime/integer_types.h"
 #include "runtime/interface.h"
 
 const string COLON(",", 1);
@@ -892,7 +891,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             case 'P':
             case 'Q': {
               // stored in the host machine order by the default (Q flag)
-              unsigned long long value_byteordered = ULong(arg.to_string()).l;
+              unsigned long long value_byteordered = static_cast<unsigned long long>(arg.to_string().to_int());
               if (format == 'P') {
                 // for P encode in little endian order
                 value_byteordered = htole64(value_byteordered);
@@ -905,7 +904,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
               break;
             }
             case 'q': {
-              long long value = Long(arg.to_string()).l;
+              int64_t value = arg.to_string().to_int();
               static_SB.append((const char *)&value, sizeof(long long));
               break;
             }
@@ -2528,7 +2527,8 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
                 value_byteordered = be64toh(value_byteordered);
               }
 
-              value = f$strval(ULong(value_byteordered));
+              char buf[20];
+              value = string{buf, static_cast<string::size_type>(simd_uint64_to_string(value_byteordered, buf) - buf)};
               data_pos += (int)sizeof(unsigned long long);
               break;
             }
@@ -2537,7 +2537,8 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
-              value = f$strval(Long(*(long long *)(data.c_str() + data_pos)));
+              long long value_ll = *reinterpret_cast<const long long *>(data.c_str() + data_pos);
+              value = f$strval(static_cast<int64_t>(value_ll));
               data_pos += (int)sizeof(long long);
               break;
             }

@@ -749,12 +749,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_STRING;
     case tp_mixed:
       return STRLEN_VAR;
-    case tp_UInt:
-      return STRLEN_UINT;
-    case tp_Long:
-      return STRLEN_LONG;
-    case tp_ULong:
-      return STRLEN_ULONG;
     case tp_Class:
       return STRLEN_CLASS;
     case tp_void:

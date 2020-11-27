@@ -909,9 +909,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_conv_object:
     case op_conv_mixed:
     case op_force_mixed:
-    case op_conv_uint:
-    case op_conv_long:
-    case op_conv_ulong:
     case op_conv_regexp:
     case op_conv_bool: {
       create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);

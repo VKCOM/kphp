@@ -244,18 +244,6 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_Any);
       }
-      if (cur_tok->str_val == "UInt") {
-        cur_tok++;
-        return GenTree::create_type_help_vertex(tp_UInt);
-      }
-      if (cur_tok->str_val == "Long") {
-        cur_tok++;
-        return GenTree::create_type_help_vertex(tp_Long);
-      }
-      if (cur_tok->str_val == "ULong") {
-        cur_tok++;
-        return GenTree::create_type_help_vertex(tp_ULong);
-      }
       if (cur_tok->str_val == "regexp") {
         cur_tok++;
         return GenTree::create_type_help_vertex(tp_regexp);

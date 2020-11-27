@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 
 Optional<string> f$base64_decode(const string &s, bool strict = false);

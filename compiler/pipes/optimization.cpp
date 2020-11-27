@@ -156,37 +156,6 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   }
   return index;
 }
-template<Operation FromOp, Operation ToOp>
-VertexPtr OptimizationPass::fix_int_const(VertexPtr from, vk::string_view from_func) {
-  VertexPtr *tmp = nullptr;
-  if (from->type() == FromOp) {
-    tmp = &from.as<FromOp>()->expr();
-  } else if (from->type() == op_func_call &&
-             from.as<op_func_call>()->str_val == from_func) {
-    tmp = &from.as<op_func_call>()->args()[0];
-  } else {
-    return from;
-  }
-  if ((*tmp)->type() == op_minus) {
-    tmp = &(*tmp).as<op_minus>()->expr();
-  }
-  if ((*tmp)->type() != op_int_const) {
-    return from;
-  }
-
-  auto res = VertexAdaptor<ToOp>::create();
-  res->str_val = (*tmp)->get_string();
-  //FIXME: it should be a copy
-  res->rl_type = from->rl_type;
-  *tmp = res;
-  return from;
-}
-VertexPtr OptimizationPass::fix_int_const(VertexPtr root) {
-  root = fix_int_const<op_conv_uint, op_uint_const>(root, "uintval");
-  root = fix_int_const<op_conv_long, op_long_const>(root, "longval");
-  root = fix_int_const<op_conv_ulong, op_ulong_const>(root, "ulongval");
-  return root;
-}
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   while (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     VertexPtr expr = root.as<meta_op_unary>()->expr();
@@ -202,12 +171,6 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
       } else if (vk::any_of_equal(root->type(), op_conv_string, op_conv_string_l) && tp->ptype() == tp_string) {
         res = expr;
       } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
-        res = expr;
-      } else if (root->type() == op_conv_uint && tp->ptype() == tp_UInt) {
-        res = expr;
-      } else if (root->type() == op_conv_long && tp->ptype() == tp_Long) {
-        res = expr;
-      } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
         res = expr;
       } else if (root->type() == op_force_mixed && tp->ptype() == tp_void) {
           expr->rl_type = val_none;
@@ -258,8 +221,6 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
       }
     }
   }
-
-  root = fix_int_const(root);
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
     tinf::get_type(root);

@@ -8,8 +8,6 @@
 #include <limits.h>
 #include <string.h>
 
-#include "runtime/integer_types.h"
-
 #define HLL_FIRST_RANK_CHAR 0x30
 #define HLL_PACK_CHAR '!'
 #define HLL_PACK_CHAR_V2 '$'

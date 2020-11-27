@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "runtime/integer_types.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
 
@@ -54,19 +53,7 @@ int64_t f$fetch_int();
 int64_t f$fetch_lookup_int();
 string f$fetch_lookup_data(int64_t x4_bytes_length);
 
-mixed f$fetch_unsigned_int();
-
 int64_t f$fetch_long();
-
-mixed f$fetch_unsigned_long();
-
-string f$fetch_unsigned_int_hex();
-
-string f$fetch_unsigned_long_hex();
-
-string f$fetch_unsigned_int_str();
-
-string f$fetch_unsigned_long_str();
 
 double f$fetch_double();
 
