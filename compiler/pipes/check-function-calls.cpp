@@ -28,12 +28,16 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   VertexRange func_params = f->get_params();
   VertexRange call_params = call.as<op_func_call>()->args();
 
+  auto actual_params_n = [f](int n) {
+    // instance methods always have implicit $this param which we don't want to mention
+    return f->modifiers.is_instance() ? n - 1 : n;
+  };
+
   int func_params_n = static_cast<int>(func_params.size());
   int call_params_n = static_cast<int>(call_params.size());
-
   kphp_error_return(call_params_n >= f->get_min_argn(),
                     fmt_format("Not enough arguments in function call [{} : {}] [found {}] [expected at least {}]",
-                            f->file_id->file_name, f->get_human_readable_name(), call_params_n, f->get_min_argn())
+                            f->file_id->file_name, f->get_human_readable_name(), actual_params_n(call_params_n), actual_params_n(f->get_min_argn()))
   );
 
   kphp_error(call_params.begin() == call_params.end() || call_params[0]->type() != op_varg,
@@ -42,7 +46,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
 
   kphp_error_return(func_params_n >= call_params_n,
                     fmt_format("Too much arguments in function call [{} : {}] [found {}] [expected {}]",
-                               f->file_id->file_name, f->get_human_readable_name(), call_params_n, func_params_n)
+                               f->file_id->file_name, f->get_human_readable_name(), actual_params_n(call_params_n), actual_params_n(func_params_n))
   );
 
   for (int i = 0; i < call_params.size(); i++) {
