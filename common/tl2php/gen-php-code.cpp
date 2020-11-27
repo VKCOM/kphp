@@ -595,11 +595,6 @@ struct ClassDefinition {
     }
     os << " {" << SkipLine{};
 
-
-    if (self.class_repr.php_class_name == "rpcResponseHeader") {
-      os << "  private static $_enable_new_tl_long = true; // toggle for switching to int64_t TL long, will be deleted" << SkipLine{};
-    }
-
     for (const auto &field : self.class_repr.class_fields) {    // биты филд масок
       if (!field.field_mask_name.empty()) {
         os << ClassFieldBitMask{field};
