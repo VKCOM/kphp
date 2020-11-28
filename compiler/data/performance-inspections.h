@@ -17,6 +17,8 @@ public:
     all_inspections = array_merge_into | array_reserve | constant_execution_in_loop | implicit_array_cast,
   };
 
+  explicit PerformanceInspections(Inspections enabled = Inspections::no_inspections) noexcept;
+
   void add_from_php_doc(vk::string_view php_doc_tag);
 
   bool has_their_own_inspections() const noexcept {

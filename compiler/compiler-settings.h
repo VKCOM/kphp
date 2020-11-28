@@ -141,6 +141,7 @@ public:
 
   KphpOption<uint64_t> profiler_level;
   KphpOption<bool> enable_global_vars_memory_stats;
+  KphpOption<bool> enable_full_performance_analyze;
   KphpOption<bool> print_resumable_graph;
 
   KphpOption<bool> no_pch;

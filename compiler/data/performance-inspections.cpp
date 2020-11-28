@@ -30,6 +30,10 @@ PerformanceInspections::Inspections string2inspection(vk::string_view str_inspec
 
 } // namespace
 
+PerformanceInspections::PerformanceInspections(Inspections enabled) noexcept
+  : enabled_inspections_(enabled) {
+}
+
 void PerformanceInspections::add_from_php_doc(vk::string_view php_doc_tag) {
   const auto raw_inspections = split_skipping_delimeters(php_doc_tag);
   if (raw_inspections.empty()) {

@@ -197,8 +197,10 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
 
 void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   if (G->settings().profiler_level.get() == 2) {
-    auto main_file = G->get_main_file();
-    main_file->main_function->profiler_state = FunctionData::profiler_status::enable_as_root;
+    G->get_main_file()->main_function->profiler_state = FunctionData::profiler_status::enable_as_root;
+  }
+  if (G->settings().enable_full_performance_analyze.get()) {
+    G->get_main_file()->main_function->performance_inspections_for_analysis = PerformanceInspections{PerformanceInspections::all_inspections};
   }
 
   auto all = tmp_stream.flush_as_vector();
