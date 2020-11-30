@@ -96,26 +96,27 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 
   static const int BUF_SIZE = 1000;
   static char buf[BUF_SIZE];
-  static const int warnings_time_period = 300;
+  static const int64_t warnings_time_period = 300;
   static const int warnings_time_limit = 1000;
 
   static int warnings_printed = 0;
-  static int warnings_count_time = 0;
+  static int64_t warnings_count_time = 0;
   static int skipped = 0;
-  int cur_time = (int)time(nullptr);
+  const int64_t cur_time = time(nullptr);
 
   if (cur_time >= warnings_count_time + warnings_time_period) {
     warnings_printed = 0;
     warnings_count_time = cur_time;
     if (skipped > 0) {
-      fprintf(stderr, "[time=%d] Resuming writing warnings: %d skipped\n", (int)time(nullptr), skipped);
+      fprintf(stderr, "[time=%" PRIi64 "] Resuming writing warnings: %d skipped\n", cur_time, skipped);
       skipped = 0;
     }
   }
 
   if (++warnings_printed >= warnings_time_limit) {
     if (warnings_printed == warnings_time_limit) {
-      fprintf(stderr, "[time=%d] Warnings limit reached. No more will be printed till %d\n", cur_time, warnings_count_time + warnings_time_period);
+      fprintf(stderr, "[time=% " PRIi64 "] Warnings limit reached. No more will be printed till %" PRIi64 "\n",
+              cur_time, warnings_count_time + warnings_time_period);
     }
     ++skipped;
     return;
@@ -124,43 +125,37 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   const bool allocations_allowed = !out_of_memory && !dl::in_critical_section;
   dl::enter_critical_section();//OK
 
-  fprintf(stderr, "%s%d%sWarning: ", engine_tag, cur_time, engine_pid);
+  fprintf(stderr, "%s%" PRIi64 "%sWarning: ", engine_tag, cur_time, engine_pid);
   vsnprintf(buf, BUF_SIZE, message, args);
   fprintf(stderr, "%s\n", buf);
 
-  bool need_stacktrace = php_warning_level >= 1;
   int nptrs = 0;
   void *buffer[64];
-  if (need_stacktrace) {
-    fprintf(stderr, "------- Stack Backtrace -------\n");
-    nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-    if (php_warning_level == 1) {
-      nptrs -= 2;
-      if (nptrs < 0) {
-        nptrs = 0;
-      }
-    }
-
-    int scheduler_id = static_cast<int>(std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer);
-    if (scheduler_id == nptrs) {
-      print_demangled_adresses(buffer, nptrs, 0, true);
-    } else {
-      print_demangled_adresses(buffer, scheduler_id, 0, true);
-      void *buffer2[64];
-      int res_ptrs = get_resumable_stack(buffer2, sizeof(buffer2) / sizeof(buffer2[0]));
-      print_demangled_adresses(buffer2, res_ptrs, scheduler_id, false);
-      print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, false);
-    }
-
-    fprintf(stderr, "-------------------------------\n\n");
+  fprintf(stderr, "------- Stack Backtrace -------\n");
+  nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
+  if (php_warning_level == 1) {
+    nptrs = std::max(nptrs - 2, 0);
   }
+
+  int scheduler_id = static_cast<int>(std::find_if(buffer, buffer + nptrs, is_address_inside_run_scheduler) - buffer);
+  if (scheduler_id == nptrs) {
+    print_demangled_adresses(buffer, nptrs, 0, true);
+  } else {
+    print_demangled_adresses(buffer, scheduler_id, 0, true);
+    void *buffer2[64];
+    int res_ptrs = get_resumable_stack(buffer2, sizeof(buffer2) / sizeof(buffer2[0]));
+    print_demangled_adresses(buffer2, res_ptrs, scheduler_id, false);
+    print_demangled_adresses(buffer + scheduler_id, nptrs - scheduler_id, scheduler_id + res_ptrs, false);
+  }
+
+  fprintf(stderr, "-------------------------------\n\n");
 
   dl::leave_critical_section();
   if (allocations_allowed) {
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
 
-  if (need_stacktrace && json_log_file_ptr != nullptr) {
+  if (json_log_file_ptr) {
     JsonLogger::get().write_to(json_log_file_ptr, buf, release_version, error_type, buffer, nptrs);
   }
 
