@@ -5,41 +5,37 @@
 
 #include "server/json-logger.h"
 
+namespace {
 
-JsonLogger &JsonLogger::get() {
+template<size_t N>
+void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<char, N> &buffer) noexcept {
+  if (src.size() <= buffer.size()) {
+    std::copy(src.begin(), src.end(), buffer.begin());
+    dest = {buffer.data(), src.size()};
+  }
+}
+
+} // namespace
+
+JsonLogger &JsonLogger::get() noexcept {
   static JsonLogger logger;
   return logger;
 }
 
-void JsonLogger::set_tags(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(tags_buffer)) {
-    return;
-  }
-
-  memcpy(tags_buffer, ptr, size);
-  tags_buffer[size] = '\0';
+void JsonLogger::set_tags(vk::string_view tags) noexcept {
+  copy_if_enough_size(tags, tags_, tags_buffer_);
 }
 
-void JsonLogger::set_extra_info(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(extra_info_buffer)) {
-    return;
-  }
-
-  memcpy(extra_info_buffer, ptr, size);
-  extra_info_buffer[size] = '\0';
+void JsonLogger::set_extra_info(vk::string_view extra_info) noexcept {
+  copy_if_enough_size(extra_info, extra_info_, extra_info_buffer_);
 }
 
-void JsonLogger::set_env(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(env_buffer)) {
-    return;
-  }
-
-  memcpy(env_buffer, ptr, size);
-  env_buffer[size] = '\0';
+void JsonLogger::set_env(vk::string_view env) noexcept {
+  copy_if_enough_size(env, env_, env_buffer_);
 }
 
-void JsonLogger::reset() {
-  extra_info_buffer[0] = '\0';
-  tags_buffer[0] = '\0';
-  env_buffer[0] = '\0';
+void JsonLogger::reset() noexcept {
+  tags_ = {};
+  extra_info_ = {};
+  env_ = {};
 }

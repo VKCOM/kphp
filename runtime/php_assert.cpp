@@ -225,7 +225,7 @@ void write_json_error_to_log(int version, char *msg, int type, int nptrs, void**
   const auto &json_logger = JsonLogger::get();
 
   const auto format = R"({"version":%d,"type":%d,"created_at":%ld,"msg":"%s","env":"%s")";
-  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, json_logger.env_c_str());
+  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, json_logger.get_env().data()); // TODO FIX THIS BUG
 
   fprintf(json_log_file_ptr, R"(,"trace":[)");
   for (int i = 0; i < nptrs; i++) {
@@ -237,11 +237,11 @@ void write_json_error_to_log(int version, char *msg, int type, int nptrs, void**
   fprintf(json_log_file_ptr, "]");
 
   if (json_logger.tags_are_set()) {
-    fprintf(json_log_file_ptr, R"(,"tags":%s)", json_logger.tags_c_str());
+    fprintf(json_log_file_ptr, R"(,"tags":%s)", json_logger.get_tags().data()); // TODO FIX THIS BUG
   }
 
   if (json_logger.extra_info_is_set()) {
-    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", json_logger.extra_info_c_str());
+    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", json_logger.get_extra_info().data()); // TODO FIX THIS BUG
   }
 
   fprintf(json_log_file_ptr, "}\n");

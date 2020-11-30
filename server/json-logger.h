@@ -6,38 +6,45 @@
 #include <array>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 
-class JsonLogger: vk::not_copyable {
+class JsonLogger : vk::not_copyable {
 public:
-  static JsonLogger& get();
+  static JsonLogger &get() noexcept;
 
-  bool tags_are_set() const {
-    return tags_buffer[0] != '\0';
+  bool tags_are_set() const noexcept {
+    return !tags_.empty();
   }
 
-  bool extra_info_is_set() const {
-    return extra_info_buffer[0] != '\0';
+  bool extra_info_is_set() const noexcept {
+    return !extra_info_.empty();
   }
 
-  void set_extra_info(const char *ptr, size_t size);
-  void set_tags(const char *ptr, size_t size);
-  void set_env(const char *ptr, size_t size);
-  void reset();
+  void set_tags(vk::string_view tags) noexcept;
+  void set_extra_info(vk::string_view extra_info) noexcept;
+  void set_env(vk::string_view env) noexcept;
+  void reset() noexcept;
 
-  const char *tags_c_str() const {
-    return tags_buffer;
+  vk::string_view get_tags() const noexcept {
+    return tags_;
   }
 
-  const char *extra_info_c_str() const {
-    return extra_info_buffer;
+  vk::string_view get_extra_info() const noexcept {
+    return extra_info_;
   }
 
-  const char *env_c_str() const {
-    return env_buffer;
+  vk::string_view get_env() const noexcept {
+    return env_;
   }
+
 private:
   JsonLogger() = default;
-  char tags_buffer[10 * 1024]{0};
-  char extra_info_buffer[10 * 1024]{0};
-  char env_buffer[128]{0};
+
+  vk::string_view tags_;
+  vk::string_view extra_info_;
+  vk::string_view env_;
+
+  std::array<char, 10 * 1024> tags_buffer_{0};
+  std::array<char, 10 * 1024> extra_info_buffer_{0};
+  std::array<char, 128> env_buffer_{0};
 };

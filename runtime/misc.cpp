@@ -1549,14 +1549,14 @@ void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &e
   static_SB.clean();
 
   if (do_json_encode(tags, 0, false)) {
-    context.set_tags(static_SB.c_str(), static_SB.size());
+    context.set_tags({static_SB.c_str(), static_SB.size()});
   }
   static_SB.clean();
 
   if (do_json_encode(extra_info, 0, false)) {
-    context.set_extra_info(static_SB.c_str(), static_SB.size());
+    context.set_extra_info({static_SB.c_str(), static_SB.size()});
   }
   static_SB.clean();
 
-  context.set_env(env.c_str(), env.size());
+  context.set_env({env.c_str(), env.size()});
 }
