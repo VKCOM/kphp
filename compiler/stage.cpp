@@ -49,7 +49,7 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
     file = warning_file;
   }
-  fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} [gen by {} at {}]\n", get_assert_level_desc(assert_level), file_name, line_number);
+  fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} [gen by {}:{}]\n", get_assert_level_desc(assert_level), file_name, line_number);
   stage::print(file);
   string correct_description;
   if (!stage::should_be_colored(file)) {
