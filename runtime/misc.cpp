@@ -1545,18 +1545,21 @@ int64_t f$system(const string &query) {
 }
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
-  auto &context = JsonLogger::get();
+  auto &json_logger = JsonLogger::get();
   static_SB.clean();
 
   if (do_json_encode(tags, 0, false)) {
-    context.set_tags({static_SB.c_str(), static_SB.size()});
+    dl::CriticalSectionGuard critical_section;
+    json_logger.set_tags({static_SB.c_str(), static_SB.size()});
   }
   static_SB.clean();
 
   if (do_json_encode(extra_info, 0, false)) {
-    context.set_extra_info({static_SB.c_str(), static_SB.size()});
+    dl::CriticalSectionGuard critical_section;
+    json_logger.set_extra_info({static_SB.c_str(), static_SB.size()});
   }
   static_SB.clean();
 
-  context.set_env({env.c_str(), env.size()});
+  dl::CriticalSectionGuard critical_section;
+  json_logger.set_env({env.c_str(), env.size()});
 }

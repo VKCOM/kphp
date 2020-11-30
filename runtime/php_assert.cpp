@@ -45,8 +45,6 @@ static bool is_address_inside_run_scheduler(void *address) {
   return &__start_run_scheduler_section <= address && address <= &__stop_run_scheduler_section;
 };
 
-void write_json_error_to_log(int version, char *msg, int type, int nptrs, void** buffer);
-
 static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bool allow_gdb) {
   if (php_warning_level == 1) {
     for (int i = 0; i < nptrs; i++) {
@@ -163,7 +161,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   }
 
   if (need_stacktrace && json_log_file_ptr != nullptr) {
-    write_json_error_to_log(release_version, buf, error_type, nptrs, buffer);
+    JsonLogger::get().write_to(json_log_file_ptr, buf, release_version, error_type, buffer, nptrs);
   }
 
   if (die_on_fail) {
@@ -210,40 +208,4 @@ void php_assert__(const char *msg, const char *file, int line) {
 
 void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
-}
-
-// type is one of the error E_* constants (E_ERROR, E_WARNING, etc.)
-void write_json_error_to_log(int version, char *msg, int type, int nptrs, void** buffer) {
-  for (char *c = msg; *c; ++c) {
-    if (*c == '"') {
-      *c = '\'';
-    } else if (*c == '\n') {
-      *c = ' ';
-    }
-  }
-
-  const auto &json_logger = JsonLogger::get();
-
-  const auto format = R"({"version":%d,"type":%d,"created_at":%ld,"msg":"%s","env":"%s")";
-  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, json_logger.get_env().data()); // TODO FIX THIS BUG
-
-  fprintf(json_log_file_ptr, R"(,"trace":[)");
-  for (int i = 0; i < nptrs; i++) {
-    if (i != 0) {
-      fprintf(json_log_file_ptr, ",");
-    }
-    fprintf(json_log_file_ptr, R"("%p")", buffer[i]);
-  }
-  fprintf(json_log_file_ptr, "]");
-
-  if (json_logger.tags_are_set()) {
-    fprintf(json_log_file_ptr, R"(,"tags":%s)", json_logger.get_tags().data()); // TODO FIX THIS BUG
-  }
-
-  if (json_logger.extra_info_is_set()) {
-    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", json_logger.get_extra_info().data()); // TODO FIX THIS BUG
-  }
-
-  fprintf(json_log_file_ptr, "}\n");
-  fflush(json_log_file_ptr);
 }
