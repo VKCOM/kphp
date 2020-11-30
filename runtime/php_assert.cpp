@@ -23,6 +23,7 @@
 #include "runtime/misc.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
 const char *engine_tag = "[";
@@ -221,10 +222,10 @@ void write_json_error_to_log(int version, char *msg, int type, int nptrs, void**
     }
   }
 
-  const auto &err_context = KphpErrorContext::get();
+  const auto &json_logger = JsonLogger::get();
 
   const auto format = R"({"version":%d,"type":%d,"created_at":%ld,"msg":"%s","env":"%s")";
-  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, err_context.env_c_str());
+  fprintf(json_log_file_ptr, format, version, type, time(nullptr), msg, json_logger.env_c_str());
 
   fprintf(json_log_file_ptr, R"(,"trace":[)");
   for (int i = 0; i < nptrs; i++) {
@@ -235,52 +236,14 @@ void write_json_error_to_log(int version, char *msg, int type, int nptrs, void**
   }
   fprintf(json_log_file_ptr, "]");
 
-  if (err_context.tags_are_set()) {
-    fprintf(json_log_file_ptr, R"(,"tags":%s)", err_context.tags_c_str());
+  if (json_logger.tags_are_set()) {
+    fprintf(json_log_file_ptr, R"(,"tags":%s)", json_logger.tags_c_str());
   }
 
-  if (err_context.extra_info_is_set()) {
-    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", err_context.extra_info_c_str());
+  if (json_logger.extra_info_is_set()) {
+    fprintf(json_log_file_ptr, R"(,"extra_info":%s)", json_logger.extra_info_c_str());
   }
 
   fprintf(json_log_file_ptr, "}\n");
   fflush(json_log_file_ptr);
-}
-
-KphpErrorContext &KphpErrorContext::get() {
-  static KphpErrorContext context;
-  return context;
-}
-
-void KphpErrorContext::set_tags(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(tags_buffer)) {
-    return;
-  }
-
-  memcpy(tags_buffer, ptr, size);
-  tags_buffer[size] = '\0';
-}
-
-void KphpErrorContext::set_extra_info(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(extra_info_buffer)) {
-    return;
-  }
-
-  memcpy(extra_info_buffer, ptr, size);
-  extra_info_buffer[size] = '\0';
-}
-
-void KphpErrorContext::set_env(const char *ptr, size_t size) {
-  if ((size + 1) > sizeof(env_buffer)) {
-    return;
-  }
-
-  memcpy(env_buffer, ptr, size);
-  env_buffer[size] = '\0';
-}
-
-void KphpErrorContext::reset() {
-  extra_info_buffer[0] = '\0';
-  tags_buffer[0] = '\0';
-  env_buffer[0] = '\0';
 }

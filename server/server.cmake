@@ -1,6 +1,7 @@
 prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         confdata-binlog-replay.cpp
         confdata-stats.cpp
+        json-logger.cpp
         lease-config-parser.cpp
         lease-rpc-client.cpp
         php-engine-vars.cpp

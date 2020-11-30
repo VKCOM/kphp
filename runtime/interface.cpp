@@ -42,6 +42,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
@@ -2106,7 +2107,7 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
-  KphpErrorContext::get().reset();
+  JsonLogger::get().reset();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();

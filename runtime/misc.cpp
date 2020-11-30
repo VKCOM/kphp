@@ -19,6 +19,7 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "runtime/vkext.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
 string f$uniqid(const string &prefix, bool more_entropy) {
@@ -1544,7 +1545,7 @@ int64_t f$system(const string &query) {
 }
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
-  auto &context = KphpErrorContext::get();
+  auto &context = JsonLogger::get();
   static_SB.clean();
 
   if (do_json_encode(tags, 0, false)) {
