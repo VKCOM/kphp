@@ -16,11 +16,13 @@ struct C$Exception : refcountable_php_classes<C$Exception> {
   int64_t code = 0;
   string file;
   int64_t line = 0;
+  array<void *> raw_trace;
   array<array<string>> trace;
 
   void accept(InstanceMemoryEstimateVisitor &visitor) {
     visitor("", message);
     visitor("", file);
+    visitor("", raw_trace);
     visitor("", trace);
   }
 };

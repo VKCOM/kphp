@@ -17,7 +17,7 @@ void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<
     availability_flag = false;
     std::copy(src.begin(), src.end(), buffer.begin());
     dest = {buffer.data(), src.size()};
-    availability_flag = true;
+    availability_flag = !dest.empty();
   }
 }
 
@@ -78,16 +78,18 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_key(vk::string_view key) 
   return *this;
 }
 
-JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::start_array() noexcept {
-  *last_++ = '[';
+template<char BRACKET>
+JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::start() noexcept {
+  *last_++ = BRACKET;
   return *this;
 }
 
-JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::finish_array() noexcept {
+template<char BRACKET>
+JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::finish() noexcept {
   if (*(last_ - 1) == ',') {
-    *(last_ - 1) = ']';
+    *(last_ - 1) = BRACKET;
   } else {
-    *last_++ = ']';
+    *last_++ = BRACKET;
   }
   *last_++ = ',';
   return *this;
@@ -160,7 +162,7 @@ bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
   return json_log_fd_ > 0;
 }
 
-void JsonLogger::fsync_log_file() noexcept {
+void JsonLogger::fsync_log_file() const noexcept {
   if (json_log_fd_ > 0) {
     fsync(json_log_fd_);
   }
@@ -178,7 +180,7 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   copy_if_enough_size(env, env_, env_buffer_, env_available_);
 }
 
-void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void **trace, int trace_size) noexcept {
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught_exception) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -192,18 +194,26 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->append_key("type").append_integer(type);
   json_out_it->append_key("created_at").append_integer(created_at);
   json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});
-  if (tags_available_) {
-    json_out_it->append_key("tags").append_raw(tags_);
+
+  if (uncaught_exception || tags_available_) {
+    json_out_it->append_key("tags").start<'{'>();
+    if (uncaught_exception) {
+      json_out_it->append_raw(R"json("uncaught":true)json");
+    }
+    if (tags_available_) {
+      json_out_it->append_raw(tags_);
+    }
+    json_out_it->finish<'}'>();
   }
   if (extra_info_available_) {
-    json_out_it->append_key("extra_info").append_raw(extra_info_);
+    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
   }
 
-  json_out_it->append_key("trace").start_array();
-  for (int i = 0; i < trace_size; i++) {
+  json_out_it->append_key("trace").start<'['>();
+  for (int64_t i = 0; i < trace_size; i++) {
     json_out_it->append_hex_as_string(reinterpret_cast<int64_t>(trace[i]));
   }
-  json_out_it->finish_array();
+  json_out_it->finish<']'>();
 
   json_out_it->append_key("msg").append_string_safe(message, [](char c) {
     return c == '"' ? '\'' : (c == '\n' ? ' ' : c);

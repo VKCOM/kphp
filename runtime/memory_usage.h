@@ -13,7 +13,7 @@ int64_t f$estimate_memory_usage(const string &value);
 int64_t f$estimate_memory_usage(const mixed &value);
 
 template<typename T,
-  typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown>>>
+  typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void *>>>
 int64_t f$estimate_memory_usage(const T &);
 
 template<typename T>

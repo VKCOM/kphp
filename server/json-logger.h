@@ -19,7 +19,7 @@ public:
 
   bool reopen_log_file(const char *log_file_name) noexcept;
 
-  void fsync_log_file() noexcept;
+  void fsync_log_file() const noexcept;
 
   void set_tags(vk::string_view tags) noexcept;
   void set_extra_info(vk::string_view extra_info) noexcept;
@@ -27,7 +27,7 @@ public:
 
   // ATTENTION: this function is used in signal handlers, therefore it is expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
-  void write_log(vk::string_view message, int type, int64_t created_at, void **trace, int trace_size) noexcept;
+  void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught_exception = false) noexcept;
 
   void reset_buffers() noexcept;
 
@@ -50,17 +50,19 @@ private:
   vk::string_view extra_info_;
   vk::string_view env_;
 
-  std::array<char, 10 * 1024> tags_buffer_{0};
-  std::array<char, 10 * 1024> extra_info_buffer_{0};
-  std::array<char, 128> env_buffer_{0};
+  std::array<char, 10 * 1024> tags_buffer_{{0}};
+  std::array<char, 10 * 1024> extra_info_buffer_{{0}};
+  std::array<char, 128> env_buffer_{{0}};
 
   class JsonBuffer : vk::not_copyable {
   public:
     bool try_start_json() noexcept;
     void finish_json_and_flush(int out_fd) noexcept;
     JsonBuffer &append_key(vk::string_view key) noexcept;
-    JsonBuffer &start_array() noexcept;
-    JsonBuffer &finish_array() noexcept;
+    template<char BRACKET>
+    JsonBuffer &start() noexcept;
+    template<char BRACKET>
+    JsonBuffer &finish() noexcept;
     JsonBuffer &append_string(vk::string_view value) noexcept;
     JsonBuffer &append_raw(vk::string_view raw_element) noexcept;
     JsonBuffer &append_integer(int64_t value) noexcept;
@@ -75,7 +77,7 @@ private:
     // it is used if signal is raised during the buffer filling
     volatile std::atomic<bool> busy_{false};
     char *last_{nullptr};
-    std::array<char, 32 * 1024> buffer_{0};
+    std::array<char, 32 * 1024> buffer_{{0}};
   };
   std::array<JsonBuffer, 8> buffers_;
 };

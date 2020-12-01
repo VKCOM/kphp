@@ -9,26 +9,37 @@
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
-array<array<string>> f$debug_backtrace() {
-  dl::enter_critical_section();//OK
-  void *buffer[64];
-  int nptrs = fast_backtrace(buffer, 64);
-  dl::leave_critical_section();
+namespace {
 
-  const string function_key("function", 8);
+array<array<string>> make_backtrace(void **trace, int trace_size) noexcept {
+  const string function_key{"function"};
 
-  array<array<string>> res(array_size(nptrs - 4, 0, true));
+  array<array<string>> res{array_size{trace_size - 4, 0, true}};
   char buf[20];
-  for (int i = 1; i < nptrs; i++) {
-    array<string> current(array_size(0, 1, false));
+  for (int i = 1; i < trace_size; i++) {
     dl::enter_critical_section();//OK
-    snprintf(buf, 19, "%p", buffer[i]);
+    snprintf(buf, 19, "%p", trace[i]);
     dl::leave_critical_section();
-    current.set_value(function_key, string(buf));
-    res.push_back(current);
+    array<string> current{array_size{0, 1, false}};
+    current.set_value(function_key, string{buf});
+    res.emplace_back(std::move(current));
   }
-
   return res;
+}
+
+int get_backtrace(void **buffer, int size) noexcept {
+  dl::CriticalSectionGuard critical_section;
+  return fast_backtrace(buffer, size);
+}
+
+constexpr int backtrace_size_limit = 64;
+
+} // namsepace
+
+array<array<string>> f$debug_backtrace() {
+  void *buffer[backtrace_size_limit];
+  const int nptrs = get_backtrace(buffer, backtrace_size_limit);
+  return make_backtrace(buffer, nptrs);
 }
 
 Exception CurException;
@@ -58,7 +69,13 @@ Exception f$Exception$$__construct(const Exception &v$this, const string &file, 
   v$this->line = line;
   v$this->message = message;
   v$this->code = code;
-  v$this->trace = f$debug_backtrace();
+
+  void *buffer[backtrace_size_limit];
+  const int trace_size = get_backtrace(buffer, backtrace_size_limit);
+  v$this->raw_trace = array<void *>{array_size{trace_size, 0, true}};
+  v$this->raw_trace.memcpy_vector(trace_size, buffer);
+
+  v$this->trace = make_backtrace(buffer, trace_size);
   return v$this;
 }
 
