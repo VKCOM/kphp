@@ -12,10 +12,12 @@
 namespace {
 
 template<size_t N>
-void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<char, N> &buffer) noexcept {
+void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<char, N> &buffer, volatile std::atomic<bool> &availability_flag) noexcept {
   if (src.size() <= buffer.size()) {
+    availability_flag = false;
     std::copy(src.begin(), src.end(), buffer.begin());
     dest = {buffer.data(), src.size()};
+    availability_flag = true;
   }
 }
 
@@ -146,6 +148,10 @@ JsonLogger &JsonLogger::get() noexcept {
   return logger;
 }
 
+void JsonLogger::init(int64_t release_version) noexcept {
+  release_version_ = release_version;
+}
+
 bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
   if (json_log_fd_ > 0) {
     close(json_log_fd_);
@@ -161,18 +167,18 @@ void JsonLogger::fsync_log_file() noexcept {
 }
 
 void JsonLogger::set_tags(vk::string_view tags) noexcept {
-  copy_if_enough_size(tags, tags_, tags_buffer_);
+  copy_if_enough_size(tags, tags_, tags_buffer_, tags_available_);
 }
 
 void JsonLogger::set_extra_info(vk::string_view extra_info) noexcept {
-  copy_if_enough_size(extra_info, extra_info_, extra_info_buffer_);
+  copy_if_enough_size(extra_info, extra_info_, extra_info_buffer_, extra_info_available_);
 }
 
 void JsonLogger::set_env(vk::string_view env) noexcept {
-  copy_if_enough_size(env, env_, env_buffer_);
+  copy_if_enough_size(env, env_, env_buffer_, env_available_);
 }
 
-void JsonLogger::write_log(vk::string_view message, int version, int type, void **trace, int trace_size) noexcept {
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void **trace, int trace_size) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -182,14 +188,14 @@ void JsonLogger::write_log(vk::string_view message, int version, int type, void 
   }
   assert(json_out_it != buffers_.end());
 
-  json_out_it->append_key("version").append_integer(version);
+  json_out_it->append_key("version").append_integer(release_version_);
   json_out_it->append_key("type").append_integer(type);
-  json_out_it->append_key("created_at").append_integer(time(nullptr));
-  json_out_it->append_key("env").append_string(env_);
-  if (!tags_.empty()) {
+  json_out_it->append_key("created_at").append_integer(created_at);
+  json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});
+  if (tags_available_) {
     json_out_it->append_key("tags").append_raw(tags_);
   }
-  if (!extra_info_.empty()) {
+  if (extra_info_available_) {
     json_out_it->append_key("extra_info").append_raw(extra_info_);
   }
 
@@ -206,6 +212,9 @@ void JsonLogger::write_log(vk::string_view message, int version, int type, void 
 }
 
 void JsonLogger::reset_buffers() noexcept {
+  tags_available_ = false;
+  extra_info_available_ = false;
+  env_available_ = false;
   tags_ = {};
   extra_info_ = {};
   env_ = {};

@@ -15,6 +15,8 @@ class JsonLogger : vk::not_copyable {
 public:
   static JsonLogger &get() noexcept;
 
+  void init(int64_t release_version) noexcept;
+
   bool reopen_log_file(const char *log_file_name) noexcept;
 
   void fsync_log_file() noexcept;
@@ -23,13 +25,26 @@ public:
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
 
-  void write_log(vk::string_view message, int version, int type, void **trace, int trace_size) noexcept;
+  // ATTENTION: this function is used in signal handlers, therefore it is expected to be safe for them
+  // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
+  void write_log(vk::string_view message, int type, int64_t created_at, void **trace, int trace_size) noexcept;
+
   void reset_buffers() noexcept;
 
 private:
   JsonLogger() = default;
 
+  int64_t release_version_{0};
   int json_log_fd_{-1};
+
+#if __cplusplus >= 201703
+  static_assert(std::atomic<bool>::is_always_lock_free);
+#endif
+
+  // This flags help avoid of undefined state of corresponding strings in signal handlers
+  volatile std::atomic<bool> tags_available_{false};
+  volatile std::atomic<bool> extra_info_available_{false};
+  volatile std::atomic<bool> env_available_{false};
 
   vk::string_view tags_;
   vk::string_view extra_info_;
@@ -56,9 +71,8 @@ private:
     void force_reset() noexcept;
 
   private:
-#if __cplusplus >= 201703
-  static_assert(std::atomic<bool>::is_always_lock_free);
-#endif
+    // This flag shows that buffer is used right now,
+    // it is used if signal is raised during the buffer filling
     volatile std::atomic<bool> busy_{false};
     char *last_{nullptr};
     std::array<char, 32 * 1024> buffer_{0};

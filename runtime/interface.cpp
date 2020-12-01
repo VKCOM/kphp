@@ -2207,7 +2207,7 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
-  release_version = static_cast<int32_t>(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
+  JsonLogger::get().init(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
 }
 
 void f$raise_sigsegv() {

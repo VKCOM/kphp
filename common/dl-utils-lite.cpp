@@ -61,15 +61,19 @@ double dl_time () {
   return dl_get_utime (CLOCK_MONOTONIC);
 }
 
-void dl_print_backtrace () {
-  void *buffer[64];
-  int nptrs = backtrace (buffer, 64);
+void dl_print_backtrace(void **trace, int trace_size) {
   write (2, "\n------- Stack Backtrace -------\n", 33);
-  backtrace_symbols_fd (buffer, nptrs, 2);
+  backtrace_symbols_fd (trace, trace_size, 2);
   write (2, "-------------------------------\n", 32);
 }
 
-void dl_print_backtrace_gdb () {
+void dl_print_backtrace() {
+  void *buffer[64];
+  int nptrs = backtrace (buffer, 64);
+  dl_print_backtrace(buffer, nptrs);
+}
+
+void dl_print_backtrace_gdb() {
   char * const envp[] = {NULL};
   char pid_buf[30];
   sprintf (pid_buf, "%d", getpid());

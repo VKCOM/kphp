@@ -27,7 +27,6 @@
 
 const char *engine_tag = "[";
 const char *engine_pid = "] ";
-int release_version = 0;
 
 int php_disable_warnings = 0;
 int php_warning_level = 2;
@@ -152,7 +151,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
 
-  JsonLogger::get().write_log(buf, release_version, error_type, buffer, nptrs);
+  JsonLogger::get().write_log(buf, error_type, cur_time, buffer, nptrs);
 
   if (die_on_fail) {
     raise_php_assert_signal__();

@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <execinfo.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <ucontext.h>
@@ -27,6 +28,7 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
 
@@ -403,25 +405,12 @@ volatile bool PHPScriptBase::ml_flag = false;
 
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
-inline void kwrite_str(int fd, const char *s) {
-  const char *t = s;
-  while (*t) {
-    t++;
-  }
-  int len = (int)(t - s);
-  kwrite(fd, s, len);
+void kwrite_str(int fd, const char *s) noexcept {
+  kwrite(fd, s, static_cast<int>(strlen(s)));
 }
 
-inline void write_str(int fd, const char *s) {
-  const char *t = s;
-  while (*t) {
-    t++;
-  }
-  int len = (int)(t - s);
-  if (len > 1000) {
-    len = 1000;
-  }
-  write(fd, s, len);
+void write_str(int fd, const char *s) noexcept {
+  write(fd, s, std::min(strlen(s), size_t{1000}));
 }
 
 namespace kphp_runtime_signal_handlers {
@@ -501,37 +490,40 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
   crash_dump_write(static_cast<ucontext_t *>(ucontext));
 
   write_str(2, engine_tag);
-  char buf[13], *s = buf + 13;
-  int t = (int)time(nullptr);
+  const int64_t cur_time = time(nullptr);
+  char buf[13];
+  char *s = buf + 13;
+  auto t = static_cast<int>(cur_time);
   *--s = 0;
   do {
-    *--s = (char)(t % 10 + '0');
+    *--s = static_cast<char>(t % 10 + '0');
     t /= 10;
   } while (t > 0);
   write_str(2, s);
   write_str(2, engine_pid);
 
+  void *trace[64];
+  const int trace_size = backtrace(trace, 64);
+
   void *addr = info->si_addr;
-  if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected((char *)addr)) {
+  if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
+    JsonLogger::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size);
     write_str(2, "Error -1: Callstack overflow");
-/*    if (regex_ptr != nullptr) {
-      write_str (2, " regex = [");
-      write_str (2, regex_ptr->c_str());
-      write_str (2, "]\n");
-    }*/
     print_http_data();
-    dl_print_backtrace();
+    dl_print_backtrace(trace, trace_size);
     if (dl::in_critical_section) {
+      JsonLogger::get().fsync_log_file();
       kwrite_str(2, "In critical section: calling _exit (124)\n");
       _exit(124);
     } else {
       PHPScriptBase::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
     }
   } else {
+    JsonLogger::get().write_log("Segmentation fault", -1, cur_time, trace, trace_size);
+    JsonLogger::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
-    //dl_runtime_handler (signum);
     print_http_data();
-    dl_print_backtrace();
+    dl_print_backtrace(trace, trace_size);
     raise(SIGQUIT); // hack for generate core dump
     _exit(123);
   }

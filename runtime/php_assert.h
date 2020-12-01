@@ -14,7 +14,6 @@ extern int die_on_fail;
 
 extern const char *engine_tag;
 extern const char *engine_pid;
-extern int release_version;
 
 extern int php_disable_warnings;
 extern int php_warning_level;
