@@ -2,6 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 #include <cstring>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
@@ -51,12 +52,17 @@ bool JsonLogger::JsonBuffer::try_start_json() noexcept {
   return acquired;
 }
 
-void JsonLogger::JsonBuffer::finish_json_and_flush(FILE *out) noexcept {
+void JsonLogger::JsonBuffer::finish_json_and_flush(int out_fd) noexcept {
   assert(*(last_ - 1) == ',');
   *(last_ - 1) = '}';
   *last_++ = '\n';
-  fwrite(buffer_.data(), 1, static_cast<size_t>(last_ - buffer_.data()), out);
-  fflush(out);
+  const auto r = write(out_fd, buffer_.data(), static_cast<size_t>(last_ - buffer_.data()));
+  // TODO assert?
+  static_cast<void>(r);
+  force_reset();
+}
+
+void JsonLogger::JsonBuffer::force_reset() noexcept {
   last_ = nullptr;
   busy_ = false;
 }
@@ -140,6 +146,20 @@ JsonLogger &JsonLogger::get() noexcept {
   return logger;
 }
 
+bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
+  if (json_log_fd_ > 0) {
+    close(json_log_fd_);
+  }
+  json_log_fd_ = open(log_file_name, O_WRONLY | O_APPEND | O_CREAT, 0640);
+  return json_log_fd_ > 0;
+}
+
+void JsonLogger::fsync_log_file() noexcept {
+  if (json_log_fd_ > 0) {
+    fsync(json_log_fd_);
+  }
+}
+
 void JsonLogger::set_tags(vk::string_view tags) noexcept {
   copy_if_enough_size(tags, tags_, tags_buffer_);
 }
@@ -152,7 +172,11 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   copy_if_enough_size(env, env_, env_buffer_);
 }
 
-void JsonLogger::write_to(FILE *out, vk::string_view message, int version, int type, void **trace, int trace_size) noexcept {
+void JsonLogger::write_log(vk::string_view message, int version, int type, void **trace, int trace_size) noexcept {
+  if (json_log_fd_ <= 0) {
+    return;
+  }
+
   auto json_out_it = buffers_.begin();
   for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
   }
@@ -178,11 +202,14 @@ void JsonLogger::write_to(FILE *out, vk::string_view message, int version, int t
   json_out_it->append_key("msg").append_string_safe(message, [](char c) {
     return c == '"' ? '\'' : (c == '\n' ? ' ' : c);
   });
-  json_out_it->finish_json_and_flush(out);
+  json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::reset() noexcept {
+void JsonLogger::reset_buffers() noexcept {
   tags_ = {};
   extra_info_ = {};
   env_ = {};
+  for (auto &buffer: buffers_) {
+    buffer.force_reset();
+  }
 }

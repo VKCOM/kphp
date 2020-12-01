@@ -20,7 +20,6 @@
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
 #include "runtime/kphp-backtrace.h"
-#include "runtime/misc.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
 #include "server/json-logger.h"
@@ -33,8 +32,6 @@ int release_version = 0;
 int php_disable_warnings = 0;
 int php_warning_level = 2;
 int php_warning_minimum_level = 0;
-
-extern FILE* json_log_file_ptr;
 
 // linker magic: run_scheduler function is declared in separate section.
 // their addresses could be used to check if address is inside run_scheduler
@@ -155,12 +152,10 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
 
-  if (json_log_file_ptr) {
-    JsonLogger::get().write_to(json_log_file_ptr, buf, release_version, error_type, buffer, nptrs);
-  }
+  JsonLogger::get().write_log(buf, release_version, error_type, buffer, nptrs);
 
   if (die_on_fail) {
-    raise(SIGPHPASSERT);
+    raise_php_assert_signal__();
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
     _exit(1);
   }
@@ -196,11 +191,12 @@ void php_out_of_memory_warning(char const *message, ...) {
 
 void php_assert__(const char *msg, const char *file, int line) {
   php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
-  raise(SIGPHPASSERT);
+  raise_php_assert_signal__();
   fprintf(stderr, "_exiting in php_assert\n");
   _exit(1);
 }
 
 void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
+  JsonLogger::get().fsync_log_file();
 }

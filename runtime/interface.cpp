@@ -2107,7 +2107,7 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
-  JsonLogger::get().reset();
+  JsonLogger::get().reset_buffers();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();

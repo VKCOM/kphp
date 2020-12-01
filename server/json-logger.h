@@ -15,15 +15,21 @@ class JsonLogger : vk::not_copyable {
 public:
   static JsonLogger &get() noexcept;
 
+  bool reopen_log_file(const char *log_file_name) noexcept;
+
+  void fsync_log_file() noexcept;
+
   void set_tags(vk::string_view tags) noexcept;
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
 
-  void write_to(FILE *out, vk::string_view message, int version, int type, void **trace, int trace_size) noexcept;
-  void reset() noexcept;
+  void write_log(vk::string_view message, int version, int type, void **trace, int trace_size) noexcept;
+  void reset_buffers() noexcept;
 
 private:
   JsonLogger() = default;
+
+  int json_log_fd_{-1};
 
   vk::string_view tags_;
   vk::string_view extra_info_;
@@ -36,7 +42,7 @@ private:
   class JsonBuffer : vk::not_copyable {
   public:
     bool try_start_json() noexcept;
-    void finish_json_and_flush(FILE *out) noexcept;
+    void finish_json_and_flush(int out_fd) noexcept;
     JsonBuffer &append_key(vk::string_view key) noexcept;
     JsonBuffer &start_array() noexcept;
     JsonBuffer &finish_array() noexcept;
@@ -46,6 +52,8 @@ private:
     JsonBuffer &append_hex_as_string(int64_t value) noexcept;
     template<class Mapper = vk::identity>
     JsonBuffer &append_string_safe(vk::string_view value, Mapper value_mapper = {}) noexcept;
+
+    void force_reset() noexcept;
 
   private:
 #if __cplusplus >= 201703

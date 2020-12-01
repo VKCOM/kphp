@@ -35,7 +35,7 @@ void raise_php_assert_signal__();
 } while(0)
 
 #define php_critical_error(format, ...) do {                                                              \
-  php_error ("Critical error \"" format "\" in file %s on line %d", ##__VA_ARGS__, __FILE__, __LINE__); \
+  php_error ("Critical error \"" format "\" in file %s on line %d", ##__VA_ARGS__, __FILE__, __LINE__);   \
   raise_php_assert_signal__();                                                                            \
   fprintf (stderr, "_exiting in php_critical_error\n");                                                   \
   _exit (1);                                                                                              \

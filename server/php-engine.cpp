@@ -51,6 +51,7 @@
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
@@ -101,8 +102,6 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
  ***/
 
 static int db_port = 3306;
-
-FILE* json_log_file_ptr = nullptr;
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
   auto res = get_default_tcp_rpc_client_conn_type();
@@ -2073,20 +2072,14 @@ int try_get_http_fd() {
   return server_socket(http_port, settings_addr, backlog, 0);
 }
 
-void open_json_log() {
-  char worker_json_log_file_name[PATH_MAX];
-  sprintf(worker_json_log_file_name, "%s.json", logname);
-  json_log_file_ptr = fopen(worker_json_log_file_name, "ab+");
-  if (json_log_file_ptr == nullptr) {
-    vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
-  }
-}
-
 void reopen_json_log() {
-  if (json_log_file_ptr != nullptr) {
-    fclose(json_log_file_ptr);
+  if (logname) {
+    char worker_json_log_file_name[PATH_MAX];
+    sprintf(worker_json_log_file_name, "%s.json", logname);
+    if (!JsonLogger::get().reopen_log_file(worker_json_log_file_name)) {
+      vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+    }
   }
-  open_json_log();
 }
 
 void start_server() {
