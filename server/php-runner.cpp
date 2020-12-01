@@ -472,8 +472,7 @@ void print_http_data() {
   if (!PHPScriptBase::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
   } else if (PHPScriptBase::current_script->data) {
-    http_query_data *data = PHPScriptBase::current_script->data->http_data;
-    if (data) {
+    if (http_query_data *data = PHPScriptBase::current_script->data->http_data) {
       write_str(2, "\nuri\n");
       write(2, data->uri, data->uri_len);
       write_str(2, "\nget\n");
@@ -486,11 +485,9 @@ void print_http_data() {
   }
 }
 
-void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *ucontext) {
-  crash_dump_write(static_cast<ucontext_t *>(ucontext));
-
+void print_prologue(int64_t cur_time) noexcept {
   write_str(2, engine_tag);
-  const int64_t cur_time = time(nullptr);
+
   char buf[13];
   char *s = buf + 13;
   auto t = static_cast<int>(cur_time);
@@ -501,6 +498,13 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
   } while (t > 0);
   write_str(2, s);
   write_str(2, engine_pid);
+}
+
+void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
+  crash_dump_write(static_cast<ucontext_t *>(ucontext));
+
+  const int64_t cur_time = time(nullptr);
+  print_prologue(cur_time);
 
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
@@ -519,7 +523,9 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
       PHPScriptBase::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
     }
   } else {
-    JsonLogger::get().write_log("Segmentation fault", -1, cur_time, trace, trace_size);
+    char message[32];
+    strcpy(message, signum == SIGBUS ? "SIGBUS" : "SIGSEGV");
+    JsonLogger::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size);
     JsonLogger::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
     print_http_data();
@@ -527,6 +533,20 @@ void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *
     raise(SIGQUIT); // hack for generate core dump
     _exit(123);
   }
+}
+
+void sigabrt_handler(int) {
+  const int64_t cur_time = time(nullptr);
+  void *trace[64];
+  const int trace_size = backtrace(trace, 64);
+  JsonLogger::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size);
+  JsonLogger::get().fsync_log_file();
+
+  print_prologue(cur_time);
+  write_str(2, "SIGABRT terminating program\n");
+  dl_print_backtrace(trace, trace_size);
+  print_http_data();
+  _exit(EXIT_FAILURE);
 }
 
 static __inline__ void *get_sp() {
@@ -562,6 +582,7 @@ void init_handlers() {
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_signal(SIGABRT, sigabrt_handler);
 }
 
 void php_script_finish(void *ptr) {
