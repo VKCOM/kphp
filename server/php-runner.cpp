@@ -475,6 +475,9 @@ static void stack_overflow_handler(int signum) {
 }
 
 void print_http_data() {
+  if (!PHPScriptBase::is_running) {
+    return;
+  }
   if (!PHPScriptBase::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
   } else if (PHPScriptBase::current_script->data) {
