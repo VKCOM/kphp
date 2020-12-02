@@ -40,10 +40,15 @@ protected:
 
 class RpcRequestResult : public ManagedThroughDlAllocator {
 public:
-  explicit RpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
-    : result_fetcher_(std::move(result_fetcher)) {}
+  const bool is_typed{};
 
-  bool empty() const { return !result_fetcher_; }
+  RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base> &&result_fetcher)
+    : is_typed(is_typed)
+    , result_fetcher_(std::move(result_fetcher)) {}
+
+  bool empty() const {
+    return !result_fetcher_;
+  }
 
   virtual class_instance<C$VK$TL$RpcResponse> fetch_typed_response() = 0;
   virtual std::unique_ptr<tl_func_base> extract_untyped_fetcher() = 0;
@@ -56,6 +61,9 @@ protected:
 class RpcRequestResultUntyped final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
+
+  explicit RpcRequestResultUntyped(std::unique_ptr<tl_func_base> &&result_fetcher)
+    : RpcRequestResult(false, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     php_assert(!"Forbidden to call for non typed rpc requests");
@@ -73,6 +81,9 @@ template<template<typename, unsigned int> class t_ReqResult_>
 class KphpRpcRequestResult final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
+
+  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
+    : RpcRequestResult(true, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     class_instance<C$VK$TL$RpcResponse> $response;
