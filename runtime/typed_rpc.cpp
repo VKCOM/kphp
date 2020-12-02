@@ -167,7 +167,9 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
   if (ignore_answer) {
     return -1;
   }
-
+  if (dl::query_num != rpc_tl_results_last_query_num) {
+    rpc_tl_results_last_query_num = dl::query_num;
+  }
   class_instance<RpcTlQuery> query;
   query.alloc();
   query.get()->query_id = query_id;
@@ -184,6 +186,10 @@ class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t q
 
   if (query_id <= 0) {
     return error_factory.make_error("Rpc query has incorrect query id", TL_ERROR_WRONG_QUERY_ID);
+  }
+
+  if (dl::query_num != rpc_tl_results_last_query_num) {
+    return error_factory.make_error("There were no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
   auto query = RpcPendingQueries::get().withdraw(query_id);

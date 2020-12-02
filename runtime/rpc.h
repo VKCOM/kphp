@@ -10,6 +10,8 @@
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
 
+extern long long rpc_tl_results_last_query_num;
+
 extern const string tl_str_;
 extern const string tl_str_underscore;
 extern const string tl_str_resultFalse;

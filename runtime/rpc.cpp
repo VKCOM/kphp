@@ -1188,7 +1188,7 @@ array<mixed> tl_fetch_error(const char *error, int error_code) {
   return tl_fetch_error(string(error), error_code);
 }
 
-static long long rpc_tl_results_last_query_num = -1;
+long long rpc_tl_results_last_query_num = -1;
 
 bool try_fetch_rpc_error(array<mixed> &out_if_error) {
   int x = rpc_lookup_int();
@@ -1401,7 +1401,7 @@ array<mixed> f$rpc_tl_query_result_one(int64_t query_id) {
 
   if (dl::query_num != rpc_tl_results_last_query_num) {
     resumable_finished = true;
-    return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
+    return tl_fetch_error("There were no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
   class_instance<RpcTlQuery> rpc_query = RpcPendingQueries::get().withdraw(query_id);
