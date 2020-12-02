@@ -445,21 +445,21 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
       create_set(function->param_ids[i], as_rvalue(function, i));
     }
 
-    using infer_mask = FunctionData::InferHint::infer_mask;
+    using InferType = FunctionData::InferHint::InferType;
     // @kphp-infer hint/check for @param/@return — is less/set on the associated tinf_node(s) function.
     for (const FunctionData::InferHint &hint : function->infer_hints) {
       switch (hint.infer_type) {
-        case infer_mask::hint_check:
-          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_rule));
-          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_rule));
+        case InferType::hint_check:
+          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
+          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
           break;
-        case infer_mask::check:
-          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_rule));
+        case InferType::check:
+          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
           break;
-        case infer_mask::hint:
-          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_rule));
+        case InferType::hint:
+          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
           break;
-        case infer_mask::cast:
+        case InferType::cast:
           // do nothing: cast is a type_help attached in parse_and_apply_function_kphp_phpdoc()
           break;
       }

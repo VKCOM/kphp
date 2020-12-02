@@ -23,7 +23,7 @@
 // Note that @kphp-required is analyzed inside gentree.
 class ParseAndApplyPHPDoc {
 private:
-  using infer_mask = FunctionData::InferHint::infer_mask;
+  using InferType = FunctionData::InferHint::InferType;
 
 public:
   ParseAndApplyPHPDoc(FunctionPtr f) :
@@ -128,7 +128,7 @@ private:
         f_->is_template = true;
       } else if (!op_func_param->type_declaration.empty()) {
         auto parsed = phpdoc_parse_type_and_var_name(op_func_param->type_declaration, f_);
-        f_->add_kphp_infer_hint(infer_mask::hint_check, param_i, parsed.type_expr);
+        f_->add_kphp_infer_hint(InferType::hint_check, param_i, parsed.type_expr);
       }
     }
   }
@@ -136,7 +136,7 @@ private:
   void apply_return_type_hint() {
     if (!f_->return_typehint.empty()) {
       auto parsed = phpdoc_parse_type_and_var_name(f_->return_typehint, f_);
-      f_->add_kphp_infer_hint(infer_mask::hint_check, -1, parsed.type_expr);
+      f_->add_kphp_infer_hint(InferType::hint_check, -1, parsed.type_expr);
     }
   }
 
@@ -305,7 +305,7 @@ private:
     }
 
     // todo better to add hint_check here, but vk.com has lots of errors, maybe will be fixed later
-    f_->add_kphp_infer_hint(infer_mask::check, -1, doc_parsed.type_expr);
+    f_->add_kphp_infer_hint(InferType::check, -1, doc_parsed.type_expr);
     has_return_php_doc_ = true;
   }
 
@@ -336,7 +336,7 @@ private:
       }
     }
 
-    f_->add_kphp_infer_hint(infer_mask::hint_check, param_i, doc_parsed.type_expr);
+    f_->add_kphp_infer_hint(InferType::hint_check, param_i, doc_parsed.type_expr);
 
     if (infer_cast_) {
       auto expr_type_v = doc_parsed.type_expr.try_as<op_type_expr_type>();
@@ -367,7 +367,7 @@ private:
       bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return;
 
       if (assume_return_void) {
-        f_->add_kphp_infer_hint(infer_mask::check, -1, GenTree::create_type_help_vertex(tp_void));
+        f_->add_kphp_infer_hint(InferType::check, -1, GenTree::create_type_help_vertex(tp_void));
       }
     }
   }
