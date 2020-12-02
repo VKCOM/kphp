@@ -98,7 +98,7 @@ static int tl_fetch_query_flags(tl_query_header_t *header) {
   return 0;
 }
 
-bool tl_fetch_query_header(tl_query_header_t *header) {
+bool tl_fetch_query_header(tl_query_header_t *header, bool increment_queries_counter) {
   assert (header);
   if (vk::tl::fetch_magic(TL_RPC_INVOKE_REQ)) {
     header->qid = tl_fetch_long();
@@ -125,7 +125,7 @@ bool tl_fetch_query_header(tl_query_header_t *header) {
   if (tl_fetch_error()) {
     return false;
   }
-  rpc_queries_received++;
+  rpc_queries_received += increment_queries_counter;
   return true;
 }
 

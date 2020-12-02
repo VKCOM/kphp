@@ -54,7 +54,7 @@ struct tl_query_answer_header_t {
   }
 };
 
-bool tl_fetch_query_header(tl_query_header_t *header);
+bool tl_fetch_query_header(tl_query_header_t *header, bool increment_queries_counter = true);
 bool tl_fetch_query_answer_header(tl_query_answer_header_t *header);
 void tl_store_header(const tl_query_header_t *header);
 void tl_store_answer_header(const tl_query_answer_header_t *header);
