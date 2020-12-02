@@ -72,6 +72,10 @@ jobs:
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{runner.workspace}}/build && echo 'hello world' > demo.php && $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o"
 
+    - name: Run python tests
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c
+              "KPHP_CXX=${{matrix.compiler}} python3 -m pytest --tb=native -n$(nproc) $GITHUB_WORKSPACE/tests/python/"
+
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
