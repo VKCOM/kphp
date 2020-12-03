@@ -2093,6 +2093,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       CE (!kphp_error(try_body, "Cannot parse try block"));
       CE (expect(tok_catch, "'catch'"));
       CE (expect(tok_oppar, "'('"));
+      auto exception_class = cur->str_val;
       CE (expect(tok_func_name, "'Exception'"));
       auto exception_var_name = get_expression();
       CE (!kphp_error(exception_var_name, "Cannot parse catch ( ??? )"));
@@ -2101,7 +2102,9 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       CE (expect(tok_clpar, "')'"));
       auto catch_body = get_statement();
       CE (!kphp_error(catch_body, "Cannot parse catch block"));
-      return VertexAdaptor<op_try>::create(embrace(try_body), exception_var_name.as<op_var>(), embrace(catch_body)).set_location(location);
+      auto try_op = VertexAdaptor<op_try>::create(embrace(try_body), exception_var_name.as<op_var>(), embrace(catch_body)).set_location(location);
+      try_op->exception_type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
+      return try_op;
     }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create().set_location(auto_location());

@@ -193,6 +193,11 @@ public:
   VertexPtr on_enter_vertex(VertexPtr root) override {
     stage::set_line(root->location.line);
 
+    if (auto try_op = root.try_as<op_try>()) {
+      require_class(replace_characters(try_op->exception_type_declaration, '\\', '/'));
+      return root;
+    }
+
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
       auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);
       if (!full_static_name.empty()) {

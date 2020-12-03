@@ -1751,7 +1751,7 @@
     }
   },
   {
-    "comment": "try { try_cmd()... } catch (exception()) { catch_cmd()... }",
+    "comment": "try { try_cmd()... } catch (type_description exception()) { catch_cmd()... }",
     "sons": {
       "try_cmd": {
         "id": 0,
@@ -1773,6 +1773,11 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "try"
+    },
+    "extra_fields": {
+      "exception_type_declaration": {
+        "type": "std::string"
+      }
     }
   },
   {
