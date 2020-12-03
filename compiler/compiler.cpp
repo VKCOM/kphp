@@ -74,6 +74,7 @@
 #include "compiler/pipes/prepare-function.h"
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
+#include "compiler/pipes/preprocess-exceptions.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-kphp-configuration.h"
@@ -232,6 +233,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<CheckRequires>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
+    >> PassC<PreprocessExceptions>{}
     >> PassC<RegisterDefinesPass>{}
     >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}

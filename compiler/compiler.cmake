@@ -138,6 +138,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         prepare-function.cpp
         preprocess-break.cpp
         preprocess-eq3.cpp
+        preprocess-exceptions.cpp
         preprocess-function.cpp
         register-defines.cpp
         register-kphp-configuration.cpp

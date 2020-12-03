@@ -55,7 +55,14 @@ extern Exception CurException;
 #define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error (message))
 #define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error (message))
 
-Exception f$Exception$$__construct(const Exception &v$this, const string &file, int64_t line, const string &message = string(), int64_t code = 0);
+Exception f$Exception$$__construct(const Exception &v$this, const string &message = string(), int64_t code = 0);
+
+template<typename T>
+T f$__exception_set_location(const T &e, const string &file, int64_t line) {
+  e->file = file;
+  e->line = line;
+  return e;
+}
 
 Exception new_Exception(const string &file, int64_t line, const string &message = string(), int64_t code = 0);
 

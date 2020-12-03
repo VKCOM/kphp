@@ -64,9 +64,7 @@ array<array<string>> f$Exception$$getTrace(const Exception &e) {
   return e->trace;
 }
 
-Exception f$Exception$$__construct(const Exception &v$this, const string &file, int64_t line, const string &message, int64_t code) {
-  v$this->file = file;
-  v$this->line = line;
+Exception f$Exception$$__construct(const Exception &v$this, const string &message, int64_t code) {
   v$this->message = message;
   v$this->code = code;
 
@@ -80,7 +78,7 @@ Exception f$Exception$$__construct(const Exception &v$this, const string &file, 
 }
 
 Exception new_Exception(const string &file, int64_t line, const string &message, int64_t code) {
-  return f$Exception$$__construct(Exception().alloc(), file, line, message, code);
+  return f$__exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
 

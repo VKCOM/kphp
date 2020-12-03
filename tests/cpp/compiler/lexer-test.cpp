@@ -33,6 +33,10 @@ TEST(lexer_test, test_php_tokens) {
 
     {";", {"tok_semicolon(;)"}},
 
+    {"new Exception()", {"tok_new(new)", "tok_func_name(Exception)", "tok_oppar(()", "tok_clpar())"}},
+    {"new \\Exception()", {"tok_new(new)", "tok_func_name(\\Exception)", "tok_oppar(()", "tok_clpar())"}},
+    {"new Exception('test')", {"tok_new(new)", "tok_func_name(Exception)", "tok_oppar(()", "tok_str(test)", "tok_clpar())"}},
+
     {"'abc'", {"tok_str(abc)"}},
     {"12 + 4", {"tok_int_const(12)", "tok_plus(+)", "tok_int_const(4)"}},
     {"$x['a']", {"tok_var_name($x)", "tok_opbrk([)", "tok_str(a)", "tok_clbrk(])"}},

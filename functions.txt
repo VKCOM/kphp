@@ -9,7 +9,7 @@ if (0) {
 }
 
 class Exception {
-    public function __construct($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
     public function getMessage () ::: string;
     public function getCode () ::: int;
     public function getFile () ::: string;
@@ -1219,6 +1219,9 @@ function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: mi
 function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
+
+// TODO: $e should be Exception-typed
+function __exception_set_location($e ::: any, $file ::: string, $line ::: int) ::: ^1;
 
 // uber h3 bindings https://h3geo.org/docs
 class UberH3 {
