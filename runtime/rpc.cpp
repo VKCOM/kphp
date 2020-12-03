@@ -1067,7 +1067,7 @@ bool try_fetch_rpc_error(array<mixed> &out_if_error) {
     }
   }
   if (!CurException.is_null()) {
-    out_if_error = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
+    out_if_error = tl_fetch_error(CurException->$message, TL_ERROR_SYNTAX);
     CurException = Optional<bool>{};
     return true;
   }
@@ -1107,7 +1107,7 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
   CurrentProcessingQuery::get().reset();
   if (!CurException.is_null()) {
-    array<mixed> result = tl_fetch_error(CurException->message, TL_ERROR_SYNTAX);
+    array<mixed> result = tl_fetch_error(CurException->$message, TL_ERROR_SYNTAX);
     CurException = Optional<bool>{};
     return result;
   }

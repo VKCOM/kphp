@@ -45,19 +45,19 @@ array<array<string>> f$debug_backtrace() {
 Exception CurException;
 
 string f$Exception$$getMessage(const Exception &e) {
-  return e->message;
+  return e->$message;
 }
 
 int64_t f$Exception$$getCode(const Exception &e) {
-  return e->code;
+  return e->$code;
 }
 
 string f$Exception$$getFile(const Exception &e) {
-  return e->file;
+  return e->$file;
 }
 
 int64_t f$Exception$$getLine(const Exception &e) {
-  return e->line;
+  return e->$line;
 }
 
 array<array<string>> f$Exception$$getTrace(const Exception &e) {
@@ -65,8 +65,8 @@ array<array<string>> f$Exception$$getTrace(const Exception &e) {
 }
 
 Exception f$Exception$$__construct(const Exception &v$this, const string &message, int64_t code) {
-  v$this->message = message;
-  v$this->code = code;
+  v$this->$message = message;
+  v$this->$code = code;
 
   void *buffer[backtrace_size_limit];
   const int trace_size = get_backtrace(buffer, backtrace_size_limit);
