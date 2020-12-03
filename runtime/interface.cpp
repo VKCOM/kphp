@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include "common/tl/constants/common.h"
 #include "common/algorithms/string-algorithms.h"
 
 #include "runtime/array_functions.h"
@@ -1306,29 +1307,74 @@ static void parse_http_authorization_header(const string &header_value) {
   v$_SERVER.set_value(string("AUTH_TYPE"), auth_scheme);
 }
 
-static void init_superglobals(const http_query_data *http_data, const rpc_query_data *rpc_data) {
-  rpc_parse(rpc_data->data, rpc_data->len);
+static void save_rpc_query_headers(const tl_query_header_t &header) {
+  namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
+
+  if (header.actor_id) {
+    v$_SERVER.set_value(string("RPC_ACTOR_ID"), static_cast<int64_t>(header.actor_id));
+  }
+  if (header.flags) {
+    v$_SERVER.set_value(string("RPC_EXTRA_FLAGS"), header.flags);
+  }
+  if (header.flags & flag::wait_binlog_pos) {
+    v$_SERVER.set_value(string("RPC_EXTRA_WAIT_BINLOG_POS"), static_cast<int64_t>(header.wait_binlog_pos));
+  }
+  if (header.flags & flag::string_forward_keys) {
+    array<string> string_forward_keys;
+    string_forward_keys.reserve(header.string_forward_keys.size(), 0, true);
+    for (const auto &str_key : header.string_forward_keys) {
+      string_forward_keys.emplace_back(string(str_key.c_str()));
+    }
+    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD_KEYS"), std::move(string_forward_keys));
+  }
+  if (header.flags & flag::int_forward_keys) {
+    array<int64_t> int_forward_keys;
+    int_forward_keys.reserve(header.int_forward_keys.size(), 0, true);
+    for (int int_key : header.int_forward_keys) {
+      int_forward_keys.emplace_back(int_key);
+    }
+    v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD_KEYS"), std::move(int_forward_keys));
+  }
+  if (header.flags & flag::string_forward) {
+    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD"), string(header.string_forward.c_str()));
+  }
+  if (header.flags & flag::int_forward) {
+    v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD"), static_cast<int64_t>(header.int_forward));
+  }
+  if (header.flags & flag::custom_timeout_ms) {
+    v$_SERVER.set_value(string("RPC_EXTRA_CUSTOM_TIMEOUT_MS"), header.custom_timeout);
+  }
+  if (header.flags & flag::supported_compression_version) {
+    v$_SERVER.set_value(string("RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION"), header.supported_compression_version);
+  }
+  if (header.flags & flag::random_delay) {
+    v$_SERVER.set_value(string("RPC_EXTRA_RANDOM_DELAY"), header.random_delay);
+  }
+}
+
+static void init_superglobals(const http_query_data &http_data, const rpc_query_data &rpc_data) {
+  rpc_parse(rpc_data.data, rpc_data.len);
 
   reset_superglobals();
 
   string uri_str;
-  if (http_data->uri_len) {
-    uri_str.assign(http_data->uri, http_data->uri_len);
+  if (http_data.uri_len) {
+    uri_str.assign(http_data.uri, http_data.uri_len);
     v$_SERVER.set_value(string("PHP_SELF"), uri_str);
     v$_SERVER.set_value(string("SCRIPT_URL"), uri_str);
     v$_SERVER.set_value(string("SCRIPT_NAME"), uri_str);
   }
 
   string get_str;
-  if (http_data->get_len) {
-    get_str.assign(http_data->get, http_data->get_len);
+  if (http_data.get_len) {
+    get_str.assign(http_data.get, http_data.get_len);
     f$parse_str(get_str, v$_GET);
 
     v$_SERVER.set_value(string("QUERY_STRING"), get_str);
   }
 
-  if (http_data->uri) {
-    if (http_data->get_len) {
+  if (http_data.uri) {
+    if (http_data.get_len) {
       v$_SERVER.set_value(string("REQUEST_URI"), (static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
       v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
@@ -1338,30 +1384,30 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
   http_need_gzip = 0;
   string content_type("application/x-www-form-urlencoded", 33);
   string content_type_lower = content_type;
-  if (http_data->headers_len) {
+  if (http_data.headers_len) {
     int i = 0;
-    while (i < http_data->headers_len && 33 <= http_data->headers[i] && http_data->headers[i] <= 126) {
+    while (i < http_data.headers_len && 33 <= http_data.headers[i] && http_data.headers[i] <= 126) {
       int j;
-      for (j = i; j < http_data->headers_len && 33 <= http_data->headers[j] && http_data->headers[j] <= 126 && http_data->headers[j] != ':'; j++) {
+      for (j = i; j < http_data.headers_len && 33 <= http_data.headers[j] && http_data.headers[j] <= 126 && http_data.headers[j] != ':'; j++) {
       }
-      if (http_data->headers[j] != ':') {
+      if (http_data.headers[j] != ':') {
         break;
       }
 
-      string header_name = f$strtolower(string(http_data->headers + i, j - i));
+      string header_name = f$strtolower(string(http_data.headers + i, j - i));
       i = j + 1;
 
       string header_value;
       do {
-        while (i < http_data->headers_len && http_data->headers[i] != '\r' && http_data->headers[i] != '\n') {
-          header_value.push_back(http_data->headers[i++]);
+        while (i < http_data.headers_len && http_data.headers[i] != '\r' && http_data.headers[i] != '\n') {
+          header_value.push_back(http_data.headers[i++]);
         }
 
-        while (i < http_data->headers_len && (http_data->headers[i] == '\r' || http_data->headers[i] == '\n')) {
+        while (i < http_data.headers_len && (http_data.headers[i] == '\r' || http_data.headers[i] == '\n')) {
           i++;
         }
 
-        if (i == http_data->headers_len || (33 <= http_data->headers[i] && http_data->headers[i] <= 126)) {
+        if (i == http_data.headers_len || (33 <= http_data.headers[i] && http_data.headers[i] <= 126)) {
           break;
         }
       } while (true);
@@ -1392,7 +1438,7 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
         content_type = header_value;
         content_type_lower = f$strtolower(header_value);
       } else if (!strcmp(header_name.c_str(), "content-length")) {
-        //must be equal to http_data->post_len, ignored
+        //must be equal to http_data.post_len, ignored
       } else {
         string key(header_name.size() + 5, false);
         bool good_name = true;
@@ -1433,13 +1479,13 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
     v$_SERVER.set_value(string("SCRIPT_URI"), script_uri);
   }
 
-  if (http_data->post_len > 0) {
-    bool is_parsed = (http_data->post != nullptr);
-//    fprintf (stderr, "!!!%.*s!!!\n", http_data->post_len, http_data->post);
+  if (http_data.post_len > 0) {
+    bool is_parsed = (http_data.post != nullptr);
+//    fprintf (stderr, "!!!%.*s!!!\n", http_data.post_len, http_data.post);
     if (strstr(content_type_lower.c_str(), "application/x-www-form-urlencoded")) {
-      if (http_data->post != nullptr) {
+      if (http_data.post != nullptr) {
         dl::enter_critical_section();//OK
-        raw_post_data.assign(http_data->post, http_data->post_len);
+        raw_post_data.assign(http_data.post, http_data.post_len);
         dl::leave_critical_section();
 
         f$parse_str(raw_post_data, v$_POST);
@@ -1458,21 +1504,21 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
             end_p--;
           }
 //          fprintf (stderr, "!%s!\n", p);
-          is_parsed |= parse_multipart(http_data->post, http_data->post_len, string(p, static_cast<string::size_type>(end_p - p)));
+          is_parsed |= parse_multipart(http_data.post, http_data.post_len, string(p, static_cast<string::size_type>(end_p - p)));
         }
       }
     } else {
-      if (http_data->post != nullptr) {
+      if (http_data.post != nullptr) {
         dl::enter_critical_section();//OK
-        raw_post_data.assign(http_data->post, http_data->post_len);
+        raw_post_data.assign(http_data.post, http_data.post_len);
         dl::leave_critical_section();
       }
     }
 
     if (!is_parsed) {
       int loaded = 0;
-      while (loaded < http_data->post_len) {
-        int to_load = min(PHP_BUF_LEN, http_data->post_len - loaded);
+      while (loaded < http_data.post_len) {
+        int to_load = min(PHP_BUF_LEN, http_data.post_len - loaded);
         http_load_long_query(php_buf, to_load, to_load);
         loaded += to_load;
       }
@@ -1483,23 +1529,24 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
 
   double cur_time = microtime();
   v$_SERVER.set_value(string("GATEWAY_INTERFACE"), string("CGI/1.1"));
-  if (http_data->ip) {
-    v$_SERVER.set_value(string("REMOTE_ADDR"), f$long2ip(static_cast<int>(http_data->ip)));
+  if (http_data.ip) {
+    v$_SERVER.set_value(string("REMOTE_ADDR"), f$long2ip(static_cast<int>(http_data.ip)));
   }
-  if (http_data->port) {
-    v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data->port));
+  if (http_data.port) {
+    v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data.port));
   }
-  if (rpc_data->req_id) {
-    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data->req_id)));
-    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data->ip));
-    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data->port));
-    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data->pid));
-    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data->utime);
+  if (rpc_data.header.qid) {
+    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data.header.qid)));
+    save_rpc_query_headers(rpc_data.header);
+    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.ip));
+    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.port));
+    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.pid));
+    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.utime);
   }
   is_head_query = false;
-  if (http_data->request_method_len) {
-    v$_SERVER.set_value(string("REQUEST_METHOD"), string(http_data->request_method, http_data->request_method_len));
-    if (http_data->request_method_len == 4 && !strncmp(http_data->request_method, "HEAD", http_data->request_method_len)) {
+  if (http_data.request_method_len) {
+    v$_SERVER.set_value(string("REQUEST_METHOD"), string(http_data.request_method, http_data.request_method_len));
+    if (http_data.request_method_len == 4 && !strncmp(http_data.request_method, "HEAD", http_data.request_method_len)) {
       is_head_query = true;
     }
   }
@@ -1523,8 +1570,8 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
   v$_REQUEST.as_array("") += v$_POST.to_array();
   v$_REQUEST.as_array("") += v$_COOKIE.to_array();
 
-  if (http_data->uri != nullptr) {
-    if (http_data->keep_alive) {
+  if (http_data.uri != nullptr) {
+    if (http_data.keep_alive) {
       header("Connection: keep-alive", 22);
     } else {
       header("Connection: close", 17);
@@ -1532,7 +1579,7 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
   }
 
   if (arg_vars == nullptr) {
-    if (http_data->get_len > 0) {
+    if (http_data.get_len > 0) {
       array<mixed> argv_array(array_size(1, 0, true));
       argv_array.push_back(get_str);
 
@@ -1582,7 +1629,7 @@ void init_superglobals(php_query_data *data) {
     rpc_data = &empty_rpc_data;
   }
 
-  init_superglobals(http_data, rpc_data);
+  init_superglobals(*http_data, *rpc_data);
 }
 
 double f$get_net_time() {

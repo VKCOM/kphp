@@ -1558,7 +1558,11 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       int64_t left_bytes_with_headers = tl_fetch_unread();
       tl_query_header_t header{};
-      assert(tl_fetch_query_header(&header, false) && "Can't fetch RPC query headers, terminate worker");
+      bool header_fetched_successfully = tl_fetch_query_header(&header, false);
+      if (!header_fetched_successfully) {
+        send_rpc_error(c, header.qid, tl_fetch_error_code(), tl_fetch_error_string());
+        return 0;
+      }
       int64_t left_bytes_without_headers = tl_fetch_unread();
 
       len -= (left_bytes_with_headers - left_bytes_without_headers);
@@ -1592,9 +1596,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       assert(fetched_bytes == len);
       auto D = TCP_RPC_DATA(c);
-      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)),
-                                                       req_id, D->remote_pid.ip, D->remote_pid.port,
-                                                       D->remote_pid.pid, D->remote_pid.utime);
+      rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
+                                                       D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
       php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data,
                                              actual_script_timeout, req_id);
