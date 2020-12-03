@@ -121,12 +121,6 @@ vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_name) {
-  const std::string &class_name = resolve_uses(current_function, phpdoc_class_name, '\\');
-  ClassPtr klass = G->get_class(class_name);
-  if (!klass) {
-    unknown_classes_list.push_back(class_name);
-  }
-
   cur_tok++;
   // we return an op_type_expr_class with a _relative_ class_name inside (it may also be "self" or similar)
   // later on, this string class_name will be resolved to a class_ptr (see phpdoc_prepare_type_rule_resolving_classes)

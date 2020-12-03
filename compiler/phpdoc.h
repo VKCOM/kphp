@@ -80,12 +80,9 @@ public:
   VertexPtr parse_from_tokens(std::vector<Token>::const_iterator &tok_iter);
   VertexPtr parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept;
 
-  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
-
 private:
   FunctionPtr current_function;
   std::vector<Token>::const_iterator cur_tok;
-  std::vector<std::string> unknown_classes_list;
 
   VertexPtr parse_classname(const std::string &phpdoc_class_name);
   VertexPtr parse_simple_type();

@@ -105,11 +105,22 @@ private:
     std::vector<Token> tokens = phpdoc_to_tokens(type_str);
     std::vector<Token>::const_iterator cur_tok = tokens.begin();
     PhpDocTypeRuleParser parser(current_function);
-    parser.parse_from_tokens_silent(cur_tok);
+    auto type_expr = parser.parse_from_tokens_silent(cur_tok);
 
-    for (const auto &class_name : parser.get_unknown_classes()) {
-      require_class(replace_characters(class_name, '\\', '/'));
-    }
+    std::function<void(VertexPtr)> find_unknown_and_require = [this, &find_unknown_and_require](VertexPtr type_expr) {
+      if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
+        const std::string &class_name = resolve_uses(current_function, as_op_class->class_name, '\\');
+        if (!G->get_class(class_name)) {
+          require_class(replace_characters(class_name, '\\', '/'));
+        }
+      }
+
+      for (auto i : *type_expr) {
+        find_unknown_and_require(i);
+      }
+    };
+
+    find_unknown_and_require(type_expr);
   }
 
   // Collect classes to require from the function prototype.

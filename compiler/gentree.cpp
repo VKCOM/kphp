@@ -1498,10 +1498,6 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->modifiers = modifiers;
-  if (!is_lambda) { // todo delete this after resolve_uses() is not needed in phpdoc
-    cur_function->class_id = cur_class;
-    cur_function->context_class = cur_class;
-  }
 
   // function params follow the function name, followed by the 'use' list for closures
   CE(cur_function->root->params_ref() = parse_cur_function_param_list());
