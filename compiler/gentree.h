@@ -70,8 +70,7 @@ public:
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
-  VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(vk::string_view klass_name);
-  static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(ClassPtr klass);
+  static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(const std::string &unresolved_class_name);
   template<Operation op = meta_op_base>
   static VertexAdaptor<op_type_expr_type> create_type_help_vertex(PrimitiveType type, const std::vector<VertexAdaptor<op>> &children = {}) {
     auto type_rule = VertexAdaptor<op_type_expr_type>::create(children);
@@ -161,6 +160,7 @@ public:
 
 private:
   std::string get_typehint();
+  VertexPtr get_typehint_as_type_expr();
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 

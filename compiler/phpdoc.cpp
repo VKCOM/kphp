@@ -110,12 +110,8 @@ vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
 
     if (line_num_of_function_declaration > 0 && !result.empty()) {
       int new_line_num = line_num_of_function_declaration - (static_cast<int>(lines.size()) - i);
-      // We have one line with closing php-doc before function declaration
-      // e.g. ....
-      //      * @param int $a
-      //      */
-      //      function f() {}
-      result.back().line_num = std::min(new_line_num, line_num_of_function_declaration - 2);
+      bool is_singleline = lines.size() < 2;  // if /** ... */ as a single line, otherwise assume */ to be on a separate line
+      result.back().line_num = std::min(new_line_num, line_num_of_function_declaration - (is_singleline ? 1 : 2));
     }
   }
 //  for (int i = 0; i < result.size(); i++) {
@@ -130,12 +126,11 @@ VertexPtr PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_
   if (!klass) {
     unknown_classes_list.push_back(class_name);
   }
-  if (klass && klass->is_trait()) {
-    throw std::runtime_error("You may not use trait as a type-hint");
-  }
 
   cur_tok++;
-  return GenTree::create_type_help_class_vertex(klass);
+  // we return an op_type_expr_class with a _relative_ class_name inside (it may also be "self" or similar)
+  // later on, this string class_name will be resolved to a class_ptr (see phpdoc_prepare_type_rule_resolving_classes)
+  return GenTree::create_type_help_class_vertex(phpdoc_class_name);
 }
 
 VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
@@ -539,11 +534,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
                              ex.what()));
   }
 
-  if (!parser.get_unknown_classes().empty()) {
-    stage::set_location(current_function->root->location);
-    kphp_error(0, fmt_format("{}: {}",
-                             TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not find class in phpdoc", TermStringFormat::bold)),
-                             TermStringFormat::add_text_attribute(*parser.get_unknown_classes().begin(), TermStringFormat::underline)));
+  if (!phpdoc_prepare_type_expr_resolving_classes(current_function, doc_type)) {
     return {VertexPtr{}, std::move(var_name)};
   }
 
@@ -617,4 +608,38 @@ std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc,
 
 bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   return static_cast<bool>(phpdoc_find_tag_as_string(phpdoc, tag_type));
+}
+
+/*
+ * Sets class_ptr of all nested op_type_expr_class — converting a string class_name to ClassPtr by resolving.
+ * 'class_name' is a relative class name to be resolved on the context of cur_function, it may be "self" or similar also.
+ * We store class_name when parsing phpdoc / type hints, as classes may have not been loaded at the time of parsing.
+ * So, this function must be called for every type rule at some point, where all classes and contexts exist.
+ */
+bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, VertexPtr type_expr) {
+  bool all_resolved = true;
+
+  if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
+    if (!as_op_class->class_ptr) {
+      stage::set_location(as_op_class->get_location());
+      const std::string &class_name = resolve_uses(cur_function, as_op_class->class_name, '\\');
+      ClassPtr klass = G->get_class(class_name);
+      as_op_class->class_ptr = klass;
+      if (!klass) {
+        all_resolved = false;
+        kphp_error(0, fmt_format("{}: {}",
+                                 TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not find class", TermStringFormat::bold)),
+                                 TermStringFormat::add_text_attribute(class_name, TermStringFormat::underline)));
+      }
+      else {
+        kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
+      }
+    }
+  }
+
+  for (auto i : *type_expr) {
+    all_resolved &= phpdoc_prepare_type_expr_resolving_classes(cur_function, i);
+  }
+
+  return all_resolved;
 }

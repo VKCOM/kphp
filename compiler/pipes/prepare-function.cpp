@@ -134,9 +134,8 @@ private:
   }
 
   void apply_return_type_hint() {
-    if (!f_->return_typehint.empty()) {
-      auto parsed = phpdoc_parse_type_and_var_name(f_->return_typehint, f_);
-      f_->add_kphp_infer_hint(InferType::hint_check, -1, parsed.type_expr);
+    if (f_->return_typehint) {
+      f_->add_kphp_infer_hint(InferType::hint_check, -1, f_->return_typehint);
     }
   }
 
@@ -363,7 +362,7 @@ private:
   void check_function_has_return_or_type_hint() {
     // at this point, all phpdocs have been parsed, and has_return_php_doc_ is true if @return found
     // if we have no @return and no return hint, assume @return void
-    if (f_->return_typehint.empty() && !has_return_php_doc_) {
+    if (!f_->return_typehint && !has_return_php_doc_) {
       bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return;
 
       if (assume_return_void) {

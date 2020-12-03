@@ -12,6 +12,8 @@
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
+#include "compiler/phpdoc.h"
+
 
 void ResolveSelfStaticParentPass::on_start() {
   // replace self::, parent:: and accesses to other classes like Classes\A::CONST
@@ -29,6 +31,10 @@ void ResolveSelfStaticParentPass::on_start() {
         run_function_pass(f.var->init_val, this);
       }
     });
+  }
+
+  if (current_function->return_typehint) {
+    phpdoc_prepare_type_expr_resolving_classes(current_function, current_function->return_typehint);
   }
 }
 
@@ -99,6 +105,10 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
                      fmt_format("Cannot instantiate abstract class {}", alloc->allocated_class_name), return v);
       check_access_to_class_from_this_file(alloc->allocated_class);
     }
+  }
+
+  if (v->type_rule) {
+    phpdoc_prepare_type_expr_resolving_classes(current_function, v->type_rule->rule());
   }
 
   return v;

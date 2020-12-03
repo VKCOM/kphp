@@ -108,3 +108,5 @@ std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, 
 std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
 
 bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
+
+bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, VertexPtr type_expr);

@@ -42,6 +42,7 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
   res->name = new_name;
   res->update_location_in_body();
   res->name_gen_map = {};
+  res->return_typehint = other->return_typehint.clone();
 
   res->assumptions_for_vars = {};
   res->assumption_args_status = AssumptionStatus::unknown;

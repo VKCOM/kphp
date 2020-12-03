@@ -640,14 +640,11 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
   return VertexAdaptor<op_ternary>::create(cond, left_var_move, false_expr);
 }
 
-VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
-  return create_type_help_class_vertex(G->get_class(resolve_uses(cur_function, static_cast<std::string>(klass_name))));
-}
-
-VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(ClassPtr klass) {
+VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(const std::string &unresolved_class_name) {
   auto type_rule = VertexAdaptor<op_type_expr_class>::create();
   type_rule->type_help = tp_Class;
-  type_rule->class_ptr = klass;
+  type_rule->class_ptr = ClassPtr{}; // this will be set later, see phpdoc_prepare_type_rule_resolving_classes()
+  type_rule->class_name = unresolved_class_name;
   return type_rule;
 }
 
@@ -1501,6 +1498,10 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->modifiers = modifiers;
+  if (!is_lambda) { // todo delete this after resolve_uses() is not needed in phpdoc
+    cur_function->class_id = cur_class;
+    cur_function->context_class = cur_class;
+  }
 
   // function params follow the function name, followed by the 'use' list for closures
   CE(cur_function->root->params_ref() = parse_cur_function_param_list());
@@ -1518,8 +1519,8 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
 
   if (test_expect(tok_colon)) {
     next_cur();
-    cur_function->return_typehint = get_typehint();
-    kphp_error(!cur_function->return_typehint.empty(), "Expected return typehint after :");
+    cur_function->return_typehint = get_typehint_as_type_expr();
+    kphp_error(cur_function->return_typehint, "Expected return typehint after :");
   }
 
   if (is_arrow) {
@@ -1918,6 +1919,21 @@ std::string GenTree::get_typehint() {
   }
 
   return typehint;
+}
+
+VertexPtr GenTree::get_typehint_as_type_expr() {
+  // optimization: don't start the lexer if it's 100% not a type hint here (so it wouldn't be parsed, and it's okay)
+  // without this, everything still works, just a bit slower
+  if (vk::any_of_equal(cur->type(), TokenType::tok_var_name, TokenType::tok_clpar, TokenType::tok_and, TokenType::tok_varg)) {
+    return {};
+  }
+
+  auto start = cur;
+  PhpDocTypeRuleParser parser(cur_function);
+  VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
+  CE(!kphp_error(cur == start || type_expr, "Cannot parse type hint"));
+
+  return type_expr;
 }
 
 VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {

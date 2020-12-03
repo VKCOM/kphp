@@ -239,6 +239,9 @@
     "extra_fields": {
       "class_ptr": {
         "type": "ClassPtr"
+      },
+      "class_name": {
+        "type": "std::string"
       }
     }
   },

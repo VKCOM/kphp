@@ -100,7 +100,7 @@ public:
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check for param/return
-  std::string return_typehint;
+  VertexPtr return_typehint;
 
   bool has_variadic_param = false;
   bool should_be_sync = false;
