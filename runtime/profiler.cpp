@@ -617,7 +617,3 @@ void f$profiler_set_function_label(const string &label) noexcept {
     top->use_function_label(label_view);
   }
 }
-
-bool f$profiler_is_enabled() noexcept {
-  return ProfilerContext::get().call_stack.get_top();
-}

@@ -152,8 +152,8 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
-    if (!G->settings().profiler_level.get() && name == "profiler_is_enabled") {
-      return {op_false, 0};
+    if (name == "profiler_is_enabled") {
+      return {G->settings().profiler_level.get() ? op_true : op_false, 0};
     }
     return {op_err, -1};
   }
@@ -245,6 +245,13 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
     if (fork_call->size() != 1 || fork_call->back()->type() != op_func_call) {
       kphp_error(0, "Fork argument must be function call");
       return root;
+    }
+  }
+
+  if (auto call = root.try_as<op_func_call>()) {
+    if (!G->settings().profiler_level.get() && call->size() == 1 &&
+        vk::any_of_equal(call->get_string(), "profiler_set_log_suffix", "profiler_set_function_label")) {
+      return VertexAdaptor<op_if>::create(VertexAdaptor<op_false>::create(), GenTree::embrace(call)).set_location_recursively(root);
     }
   }
 
