@@ -98,7 +98,7 @@ void f$ob_start(const string &callback) {
     return;
   }
   if (!callback.empty()) {
-    if (ob_cur_buffer == 0 && callback == string("ob_gzhandler", 12)) {
+    if (ob_cur_buffer == 0 && callback == string("ob_gzhandler")) {
       http_need_gzip |= 4;
     } else {
       php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), ob_cur_buffer + 1);
@@ -685,14 +685,14 @@ string v$d$PHP_SAPI __attribute__ ((weak));
 static string php_sapi_name() {
   switch (query_type) {
     case QUERY_TYPE_CONSOLE:
-      return string("cli", 3);
+      return string("cli");
     case QUERY_TYPE_HTTP:
-      return string("Kitten PHP", 10);
+      return string("Kitten PHP");
     case QUERY_TYPE_RPC:
       if (run_once) {
-        return string("cli", 3);
+        return string("cli");
       } else {
-        return string("Kitten PHP", 10);
+        return string("Kitten PHP");
       }
     default:
       php_assert (0);
@@ -1132,30 +1132,30 @@ static int parse_multipart_one(post_reader &data, int i) {
     if (name.size() >= 2 && name[name.size() - 2] == '[' && name[name.size() - 1] == ']') {
       mixed &file = v$_FILES[name.substr(0, name.size() - 2)];
       if (file_size >= 0) {
-        file[string("name", 4)].push_back(filename);
-        file[string("type", 4)].push_back(content_type);
-        file[string("size", 4)].push_back(file_size);
-        file[string("tmp_name", 8)].push_back(tmp_name.val());
-        file[string("error", 5)].push_back(UPLOAD_ERR_OK);
+        file[string("name")].push_back(filename);
+        file[string("type")].push_back(content_type);
+        file[string("size")].push_back(file_size);
+        file[string("tmp_name")].push_back(tmp_name.val());
+        file[string("error")].push_back(UPLOAD_ERR_OK);
       } else {
-        file[string("name", 4)].push_back(string());
-        file[string("type", 4)].push_back(string());
-        file[string("size", 4)].push_back(0);
-        file[string("tmp_name", 8)].push_back(string());
-        file[string("error", 5)].push_back(-file_size);
+        file[string("name")].push_back(string());
+        file[string("type")].push_back(string());
+        file[string("size")].push_back(0);
+        file[string("tmp_name")].push_back(string());
+        file[string("error")].push_back(-file_size);
       }
     } else {
       mixed &file = v$_FILES[name];
       if (file_size >= 0) {
-        file.set_value(string("name", 4), filename);
-        file.set_value(string("type", 4), content_type);
-        file.set_value(string("size", 4), file_size);
-        file.set_value(string("tmp_name", 8), tmp_name.val());
-        file.set_value(string("error", 5), UPLOAD_ERR_OK);
+        file.set_value(string("name"), filename);
+        file.set_value(string("type"), content_type);
+        file.set_value(string("size"), file_size);
+        file.set_value(string("tmp_name"), tmp_name.val());
+        file.set_value(string("error"), UPLOAD_ERR_OK);
       } else {
-        file.set_value(string("size", 4), 0);
-        file.set_value(string("tmp_name", 8), string());
-        file.set_value(string("error", 5), -file_size);
+        file.set_value(string("size"), 0);
+        file.set_value(string("tmp_name"), string());
+        file.set_value(string("error"), -file_size);
       }
     }
   }
@@ -1198,7 +1198,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts) {
   if (!arg_vars) {
     return false;
   }
-  string real_options = string("+", 1);
+  string real_options = string("+");
   real_options.append(options);
   const char *php_argv[arg_vars->count()];
   int php_argc = 0;
@@ -1306,64 +1306,62 @@ static void parse_http_authorization_header(const string &header_value) {
   v$_SERVER.set_value(string("AUTH_TYPE"), auth_scheme);
 }
 
-static void init_superglobals(const char *uri, int uri_len, const char *get, int get_len, const char *headers, int headers_len, const char *post, int post_len,
-                              const char *request_method, int request_method_len, int remote_ip, int remote_port, int keep_alive,
-                              const int *serialized_data, int serialized_data_len, long long rpc_request_id, int rpc_remote_ip, int rpc_remote_port, int rpc_remote_pid, int rpc_remote_utime) {
-  rpc_parse(serialized_data, serialized_data_len);
+static void init_superglobals(const http_query_data *http_data, const rpc_query_data *rpc_data) {
+  rpc_parse(rpc_data->data, rpc_data->len);
 
   reset_superglobals();
 
   string uri_str;
-  if (uri_len) {
-    uri_str.assign(uri, uri_len);
-    v$_SERVER.set_value(string("PHP_SELF", 8), uri_str);
-    v$_SERVER.set_value(string("SCRIPT_URL", 10), uri_str);
-    v$_SERVER.set_value(string("SCRIPT_NAME", 11), uri_str);
+  if (http_data->uri_len) {
+    uri_str.assign(http_data->uri, http_data->uri_len);
+    v$_SERVER.set_value(string("PHP_SELF"), uri_str);
+    v$_SERVER.set_value(string("SCRIPT_URL"), uri_str);
+    v$_SERVER.set_value(string("SCRIPT_NAME"), uri_str);
   }
 
   string get_str;
-  if (get_len) {
-    get_str.assign(get, get_len);
+  if (http_data->get_len) {
+    get_str.assign(http_data->get, http_data->get_len);
     f$parse_str(get_str, v$_GET);
 
-    v$_SERVER.set_value(string("QUERY_STRING", 12), get_str);
+    v$_SERVER.set_value(string("QUERY_STRING"), get_str);
   }
 
-  if (uri) {
-    if (get_len) {
-      v$_SERVER.set_value(string("REQUEST_URI", 11), (static_SB.clean() << uri_str << '?' << get_str).str());
+  if (http_data->uri) {
+    if (http_data->get_len) {
+      v$_SERVER.set_value(string("REQUEST_URI"), (static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
-      v$_SERVER.set_value(string("REQUEST_URI", 11), uri_str);
+      v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
   }
 
   http_need_gzip = 0;
   string content_type("application/x-www-form-urlencoded", 33);
   string content_type_lower = content_type;
-  if (headers_len) {
+  if (http_data->headers_len) {
     int i = 0;
-    while (i < headers_len && 33 <= headers[i] && headers[i] <= 126) {
+    while (i < http_data->headers_len && 33 <= http_data->headers[i] && http_data->headers[i] <= 126) {
       int j;
-      for (j = i; j < headers_len && 33 <= headers[j] && headers[j] <= 126 && headers[j] != ':'; j++) {
+      for (j = i; j < http_data->headers_len && 33 <= http_data->headers[j] && http_data->headers[j] <= 126 && http_data->headers[j] != ':'; j++) {
       }
-      if (headers[j] != ':') {
+      if (http_data->headers[j] != ':') {
         break;
       }
 
-      string header_name = f$strtolower(string(headers + i, j - i));
+      string header_name = f$strtolower(string(http_data->headers + i, j - i));
       i = j + 1;
 
       string header_value;
       do {
-        while (i < headers_len && headers[i] != '\r' && headers[i] != '\n') {
-          header_value.push_back(headers[i++]);
+        while (i < http_data->headers_len && http_data->headers[i] != '\r' && http_data->headers[i] != '\n') {
+          header_value.push_back(http_data->headers[i++]);
         }
 
-        while (i < headers_len && (headers[i] == '\r' || headers[i] == '\n')) {
+        while (i < http_data->headers_len && (http_data->headers[i] == '\r' || http_data->headers[i] == '\n')) {
           i++;
         }
 
-        if (i == headers_len || (33 <= headers[i] && headers[i] <= 126)) {
+        if (i == http_data->headers_len || (33 <= http_data->headers[i] && http_data->headers[i] <= 126)) {
           break;
         }
       } while (true);
@@ -1385,7 +1383,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
           }
         }
       } else if (!strcmp(header_name.c_str(), "host")) {
-        v$_SERVER.set_value(string("SERVER_NAME", 11), header_value);
+        v$_SERVER.set_value(string("SERVER_NAME"), header_value);
       } else if (!strcmp(header_name.c_str(), "authorization")) {
         parse_http_authorization_header(header_value);
       }
@@ -1394,7 +1392,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
         content_type = header_value;
         content_type_lower = f$strtolower(header_value);
       } else if (!strcmp(header_name.c_str(), "content-length")) {
-        //must be equal to post_len, ignored
+        //must be equal to http_data->post_len, ignored
       } else {
         string key(header_name.size() + 5, false);
         bool good_name = true;
@@ -1432,16 +1430,16 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     script_uri.append("://", 3);
     script_uri.append(v$_SERVER.get_value(HTTP_X_REAL_HOST).to_string());
     script_uri.append(v$_SERVER.get_value(HTTP_X_REAL_REQUEST).to_string());
-    v$_SERVER.set_value(string("SCRIPT_URI", 10), script_uri);
+    v$_SERVER.set_value(string("SCRIPT_URI"), script_uri);
   }
 
-  if (post_len > 0) {
-    bool is_parsed = (post != nullptr);
-//    fprintf (stderr, "!!!%.*s!!!\n", post_len, post);
+  if (http_data->post_len > 0) {
+    bool is_parsed = (http_data->post != nullptr);
+//    fprintf (stderr, "!!!%.*s!!!\n", http_data->post_len, http_data->post);
     if (strstr(content_type_lower.c_str(), "application/x-www-form-urlencoded")) {
-      if (post != nullptr) {
+      if (http_data->post != nullptr) {
         dl::enter_critical_section();//OK
-        raw_post_data.assign(post, post_len);
+        raw_post_data.assign(http_data->post, http_data->post_len);
         dl::leave_critical_section();
 
         f$parse_str(raw_post_data, v$_POST);
@@ -1460,58 +1458,58 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
             end_p--;
           }
 //          fprintf (stderr, "!%s!\n", p);
-          is_parsed |= parse_multipart(post, post_len, string(p, static_cast<string::size_type>(end_p - p)));
+          is_parsed |= parse_multipart(http_data->post, http_data->post_len, string(p, static_cast<string::size_type>(end_p - p)));
         }
       }
     } else {
-      if (post != nullptr) {
+      if (http_data->post != nullptr) {
         dl::enter_critical_section();//OK
-        raw_post_data.assign(post, post_len);
+        raw_post_data.assign(http_data->post, http_data->post_len);
         dl::leave_critical_section();
       }
     }
 
     if (!is_parsed) {
       int loaded = 0;
-      while (loaded < post_len) {
-        int to_load = min(PHP_BUF_LEN, post_len - loaded);
+      while (loaded < http_data->post_len) {
+        int to_load = min(PHP_BUF_LEN, http_data->post_len - loaded);
         http_load_long_query(php_buf, to_load, to_load);
         loaded += to_load;
       }
     }
 
-    v$_SERVER.set_value(string("CONTENT_TYPE", 12), content_type);
+    v$_SERVER.set_value(string("CONTENT_TYPE"), content_type);
   }
 
   double cur_time = microtime();
-  v$_SERVER.set_value(string("GATEWAY_INTERFACE", 17), string("CGI/1.1", 7));
-  if (remote_ip) {
-    v$_SERVER.set_value(string("REMOTE_ADDR", 11), f$long2ip(remote_ip));
+  v$_SERVER.set_value(string("GATEWAY_INTERFACE"), string("CGI/1.1"));
+  if (http_data->ip) {
+    v$_SERVER.set_value(string("REMOTE_ADDR"), f$long2ip(static_cast<int>(http_data->ip)));
   }
-  if (remote_port) {
-    v$_SERVER.set_value(string("REMOTE_PORT", 11), remote_port);
+  if (http_data->port) {
+    v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data->port));
   }
-  if (rpc_request_id) {
-    v$_SERVER.set_value(string("RPC_REQUEST_ID", 14), f$strval(static_cast<int64_t>(rpc_request_id)));
-    v$_SERVER.set_value(string("RPC_REMOTE_IP", 13), rpc_remote_ip);
-    v$_SERVER.set_value(string("RPC_REMOTE_PORT", 15), rpc_remote_port);
-    v$_SERVER.set_value(string("RPC_REMOTE_PID", 14), rpc_remote_pid);
-    v$_SERVER.set_value(string("RPC_REMOTE_UTIME", 16), rpc_remote_utime);
+  if (rpc_data->req_id) {
+    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data->req_id)));
+    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data->ip));
+    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data->port));
+    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data->pid));
+    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data->utime);
   }
   is_head_query = false;
-  if (request_method_len) {
-    v$_SERVER.set_value(string("REQUEST_METHOD", 14), string(request_method, request_method_len));
-    if (request_method_len == 4 && !strncmp(request_method, "HEAD", request_method_len)) {
+  if (http_data->request_method_len) {
+    v$_SERVER.set_value(string("REQUEST_METHOD"), string(http_data->request_method, http_data->request_method_len));
+    if (http_data->request_method_len == 4 && !strncmp(http_data->request_method, "HEAD", http_data->request_method_len)) {
       is_head_query = true;
     }
   }
-  v$_SERVER.set_value(string("REQUEST_TIME", 12), int(cur_time));
-  v$_SERVER.set_value(string("REQUEST_TIME_FLOAT", 18), cur_time);
-  v$_SERVER.set_value(string("SERVER_PORT", 11), string("80", 2));
-  v$_SERVER.set_value(string("SERVER_PROTOCOL", 15), string("HTTP/1.1", 8));
-  v$_SERVER.set_value(string("SERVER_SIGNATURE", 16), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
-                                                                         << v$_SERVER[string("SERVER_NAME", 11)] << " Port 80").str());
-  v$_SERVER.set_value(string("SERVER_SOFTWARE", 15), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch", 60));
+  v$_SERVER.set_value(string("REQUEST_TIME"), int(cur_time));
+  v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
+  v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
+  v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
+  v$_SERVER.set_value(string("SERVER_SIGNATURE"), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
+                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
+  v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
   if (environ != nullptr) {
     for (int i = 0; environ[i] != nullptr; i++) {
@@ -1525,8 +1523,8 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
   v$_REQUEST.as_array("") += v$_POST.to_array();
   v$_REQUEST.as_array("") += v$_COOKIE.to_array();
 
-  if (uri != nullptr) {
-    if (keep_alive) {
+  if (http_data->uri != nullptr) {
+    if (http_data->keep_alive) {
       header("Connection: keep-alive", 22);
     } else {
       header("Connection: close", 17);
@@ -1534,7 +1532,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
   }
 
   if (arg_vars == nullptr) {
-    if (get_len > 0) {
+    if (http_data->get_len > 0) {
       array<mixed> argv_array(array_size(1, 0, true));
       argv_array.push_back(get_str);
 
@@ -1549,8 +1547,8 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     v$argv = *arg_vars;
   }
 
-  v$_SERVER.set_value(string("argv", 4), v$argv);
-  v$_SERVER.set_value(string("argc", 4), v$argc);
+  v$_SERVER.set_value(string("argv"), v$argv);
+  v$_SERVER.set_value(string("argc"), v$argc);
 
   v$d$PHP_SAPI = php_sapi_name();
 
@@ -1584,10 +1582,7 @@ void init_superglobals(php_query_data *data) {
     rpc_data = &empty_rpc_data;
   }
 
-  init_superglobals(http_data->uri, http_data->uri_len, http_data->get, http_data->get_len, http_data->headers, http_data->headers_len,
-                    http_data->post, http_data->post_len, http_data->request_method, http_data->request_method_len,
-                    http_data->ip, http_data->port, http_data->keep_alive,
-                    rpc_data->data, rpc_data->len, rpc_data->req_id, rpc_data->ip, rpc_data->port, rpc_data->pid, rpc_data->utime);
+  init_superglobals(http_data, rpc_data);
 }
 
 double f$get_net_time() {
@@ -1661,7 +1656,7 @@ Optional<string> f$ini_get(const string &s) {
   }
 
   if (!strcmp(s.c_str(), "sendmail_path")) {
-    return string("/usr/sbin/sendmail -ti", 22);
+    return string("/usr/sbin/sendmail -ti");
   } else if (!strcmp(s.c_str(), "max_execution_time")) {
     return string(script_timeout);
   } else if (!strcmp(s.c_str(), "memory_limit")) {
@@ -1701,7 +1696,7 @@ const Stream STDERR("php://stderr", 12);
 
 static Stream php_fopen(const string &stream, const string &mode) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
-    if (neq2(mode, string("w", 1)) && neq2(mode, string("a", 1))) {
+    if (neq2(mode, string("w")) && neq2(mode, string("a"))) {
       php_warning("%s should be opened in write or append mode", stream.to_string().c_str());
       return false;
     }
@@ -1709,7 +1704,7 @@ static Stream php_fopen(const string &stream, const string &mode) {
   }
 
   if (eq2(stream, INPUT)) {
-    if (neq2(mode, string("r", 1))) {
+    if (neq2(mode, string("r"))) {
       php_warning("%s should be opened in read mode", stream.to_string().c_str());
       return false;
     }
@@ -2003,7 +1998,7 @@ static bool php_fclose(const Stream &stream) {
 static void global_init_interface_lib() {
   static stream_functions php_stream_functions;
 
-  php_stream_functions.name = string("php", 3);
+  php_stream_functions.name = string("php");
   php_stream_functions.fopen = php_fopen;
   php_stream_functions.fwrite = php_fwrite;
   php_stream_functions.fseek = php_fseek;
