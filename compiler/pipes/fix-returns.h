@@ -12,9 +12,7 @@ public:
     return "Fix returns";
   }
 
-  VertexPtr on_enter_vertex(VertexPtr root) override;
+  VertexPtr on_enter_vertex(VertexPtr root) final;
 
-  bool user_recursion(VertexPtr root) override {
-    return root->type() == op_fork;
-  }
+  bool user_recursion(VertexPtr root) final;
 };

@@ -47,3 +47,13 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
 
   return root;
 }
+
+bool FixReturnsPass::user_recursion(VertexPtr root) {
+  if (auto fork_vertex = root.try_as<op_fork>()) {
+    for (auto arg : fork_vertex->func_call()->args()) {
+      run_function_pass(arg, this);
+    }
+    return true;
+  }
+  return false;
+}
