@@ -1,6 +1,7 @@
 // Compiler for PHP (aka KPHP)
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
@@ -180,7 +181,7 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   copy_if_enough_size(env, env_, env_buffer_, env_available_);
 }
 
-void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught_exception) noexcept {
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -195,16 +196,13 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->append_key("created_at").append_integer(created_at);
   json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});
 
-  if (uncaught_exception || tags_available_) {
-    json_out_it->append_key("tags").start<'{'>();
-    if (uncaught_exception) {
-      json_out_it->append_raw(R"json("uncaught":true)json");
-    }
-    if (tags_available_) {
-      json_out_it->append_raw(tags_);
-    }
-    json_out_it->finish<'}'>();
+  json_out_it->append_key("tags").start<'{'>();
+  if (tags_available_) {
+    json_out_it->append_raw(tags_);
   }
+  json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
+  json_out_it->finish<'}'>();
+
   if (extra_info_available_) {
     json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
   }

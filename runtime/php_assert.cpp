@@ -151,7 +151,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
 
-  JsonLogger::get().write_log(buf, error_type, cur_time, buffer, nptrs);
+  JsonLogger::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
 
   if (die_on_fail) {
     raise_php_assert_signal__();

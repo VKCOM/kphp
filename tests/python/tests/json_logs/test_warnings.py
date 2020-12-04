@@ -15,17 +15,18 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
             expect=[
-                {"version": 0, "type": 2, "env": "", "msg": "hello"},
-                {"version": 0, "type": 2, "env": "", "msg": "world"}
+                {"version": 0, "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}},
+                {"version": 0, "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}
             ])
 
     def test_warning_with_special_chars(self):
         resp = self.kphp_server.http_post(json=[{"op": "warning", "msg": 'aaa"bbb"\nccc'}])
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
-            expect=[
-                {"version": 0, "type": 2, "env": "", "msg": "aaa'bbb' ccc"}
-            ])
+            expect=[{
+                "version": 0, "type": 2, "env": "", "msg": "aaa'bbb' ccc",
+                "tags": {"uncaught": False}
+            }])
 
     def test_warning_with_tags(self):
         resp = self.kphp_server.http_post(
@@ -35,7 +36,10 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
-            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "", "tags": {"a": "b"}}])
+            expect=[{
+                "version": 0, "type": 2, "msg": "aaa", "env": "",
+                "tags": {"uncaught": False, "a": "b"}
+            }])
 
     def test_warning_with_extra_info(self):
         resp = self.kphp_server.http_post(
@@ -45,7 +49,10 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
-            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "", "extra_info": {"a": "b"}}])
+            expect=[{
+                "version": 0, "type": 2, "msg": "aaa", "env": "",
+                "tags": {"uncaught": False}, "extra_info": {"a": "b"}
+            }])
 
     def test_warning_with_env(self):
         resp = self.kphp_server.http_post(
@@ -55,7 +62,7 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
-            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "abc"}])
+            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "abc", "tags": {"uncaught": False}}])
 
     def test_warning_with_full_context(self):
         resp = self.kphp_server.http_post(
@@ -65,9 +72,10 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
-            expect=[
-                {"version": 0, "type": 2, "msg": "aaa", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}}
-            ])
+            expect=[{
+                "version": 0, "type": 2, "msg": "aaa", "env": "efg",
+                "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
+            }])
 
     def test_warning_override_context(self):
         resp = self.kphp_server.http_post(
@@ -86,11 +94,17 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
             expect=[
-                {"version": 0, "type": 2, "msg": "aaa", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
-                {"version": 0, "type": 2, "msg": "bbb", "env": ""},
-                {"version": 0, "type": 2, "msg": "ccc", "env": "xxx"},
-                {"version": 0, "type": 2, "msg": "ddd", "env": "", "tags": {"aa": "bb"}},
-                {"version": 0, "type": 2, "msg": "eee", "env": "", "extra_info": {"cc": "dd"}}
+                {
+                    "version": 0, "type": 2, "msg": "aaa", "env": "efg",
+                    "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
+                },
+                {"version": 0, "type": 2, "msg": "bbb", "env": "", "tags": {"uncaught": False}},
+                {"version": 0, "type": 2, "msg": "ccc", "env": "xxx", "tags": {"uncaught": False}},
+                {"version": 0, "type": 2, "msg": "ddd", "env": "", "tags": {"uncaught": False, "aa": "bb"}},
+                {
+                    "version": 0, "type": 2, "msg": "eee", "env": "",
+                    "tags": {"uncaught": False}, "extra_info": {"cc": "dd"}
+                }
             ])
 
     def test_warning_vector_context(self):
@@ -103,7 +117,7 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": 2, "msg": "aaa", "env": "efg",
-                "tags": {"0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
+                "tags": {"uncaught": False, "0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
             }], timeout=1)
 
     def test_error_tag_context(self):
@@ -111,6 +125,9 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.kphp_server.restart()
         resp = self.kphp_server.http_post(json=[{"op": "warning", "msg": "hello"}])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(expect=[{"version": 100500, "type": 2, "env": "", "msg": "hello"}])
+        self.kphp_server.assert_json_log(
+            expect=[{
+                "version": 100500, "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}
+            }])
         self.kphp_server.set_error_tag(None)
         self.kphp_server.restart()

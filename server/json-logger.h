@@ -27,7 +27,7 @@ public:
 
   // ATTENTION: this function is used in signal handlers, therefore it is expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
-  void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught_exception = false) noexcept;
+  void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
 
   void reset_buffers() noexcept;
 

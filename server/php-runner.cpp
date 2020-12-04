@@ -520,7 +520,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
 
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
-    JsonLogger::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size);
+    JsonLogger::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size, true);
     write_str(2, "Error -1: Callstack overflow");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
@@ -534,7 +534,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   } else {
     char message[32];
     strcpy(message, signum == SIGBUS ? "SIGBUS" : "SIGSEGV");
-    JsonLogger::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size);
+    JsonLogger::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size, true);
     JsonLogger::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
     print_http_data();
@@ -548,7 +548,7 @@ void sigabrt_handler(int) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
-  JsonLogger::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size);
+  JsonLogger::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size, true);
   JsonLogger::get().fsync_log_file();
 
   print_prologue(cur_time);
