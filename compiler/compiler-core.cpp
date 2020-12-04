@@ -159,6 +159,8 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
   return full_file_name;
 }
 
+// search_required_file resolves the file_name like it would be expanded when user as require() argument;
+// it uses search_file_in_include_dirs as well as the current file relative search
 std::string CompilerCore::search_required_file(const std::string &file_name) const {
   string full_file_name = search_file_in_include_dirs(file_name);
   if (file_name[0] == '/') {
@@ -474,7 +476,7 @@ vector<LibPtr> CompilerCore::get_libs() {
   return libs_ht.get_all();
 }
 
-const ComposerClassLoader &CompilerCore::get_composer_class_loader() const {
+const ComposerAutoloader &CompilerCore::get_composer_autoloader() const {
   return composer_class_loader;
 }
 

@@ -2,6 +2,8 @@
 
 var_dump('printed before any files are required');
 
+$global_map = [];
+
 // note: not using require_once here on purpose;
 // composer will not require autoload files again;
 // using the convoluted path on purpose
@@ -16,7 +18,13 @@ require 'vendor/autoload.php'; // same as above
 // should do nothing: file is already required by autoload.php
 require_once './vendor/vk/api/functions.php';
 
-echo json_encode([
+var_dump(z_test());
+
+ksort($global_map);
+
+var_dump(
+  $global_map,
+
   array_key_first([]),
   array_key_first([1, 2]),
   array_key_first(['first' => 1, 'second' => 2]),
@@ -28,6 +36,4 @@ echo json_encode([
   str_contains('foo', 'bar'),
 
   vk_api_version(),
-
-  z_test(),
-]);
+);

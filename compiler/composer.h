@@ -5,18 +5,17 @@
 #pragma once
 
 #include <map>
-#include <unordered_map>
-#include <string>
-#include <vector>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/string_view.h"
 
 // TODO: reminder: use string_view here instead of const string refs
 
-// TODO: rename to ComposerAutoload?
-class ComposerClassLoader : private vk::not_copyable {
+class ComposerAutoloader : private vk::not_copyable {
 public:
   // whether to load dev autoloading settings;
   // inverse of the `composer --no-dev` option
@@ -25,12 +24,12 @@ public:
   // load_file parses the "$pkg_root/composer.json" file and saves
   // all relevant definitions inside loader;
   // this method is not thread-safe and should be called only during the compiler init
-  void load_file(const std::string& pkg_root);
+  void load_file(const std::string &pkg_root);
 
   // load_root_file is like load_file, but should be only used
   // for the main composer file;
   // this method is not thread-safe and should be called only during the compiler init
-  void load_root_file(const std::string& pkg_root);
+  void load_root_file(const std::string &pkg_root);
 
   // psr4_lookup tries to find a filename that should contain
   // a class class_name; the lookup is based on the loaded
@@ -43,11 +42,13 @@ public:
     return filename == autoload_filename_;
   }
 
-  const std::vector<std::string> &get_files_to_require() const noexcept { return files_to_require_; }
+  const std::vector<std::string> &get_files_to_require() const noexcept {
+    return files_to_require_;
+  }
 
 private:
-  void load_file(const std::string& filename, bool root);
-  std::string psr4_lookup_nocache(const std::string& class_name) const;
+  void load_file(const std::string &filename, bool root);
+  std::string psr4_lookup_nocache(const std::string &class_name) const;
 
   bool use_dev_;
   std::map<std::string, std::vector<std::string>, std::less<>> autoload_psr4_;

@@ -10,6 +10,8 @@ from python.lib.kphp_server import KphpServer
 # test that composer-based project can reference autoloadable
 # classes with psr4 prefixes defined in composer.json files
 class TestComposer(KphpCompilerAutoTestCase):
+    maxDiff = None
+
     def new_kphp_builder(self, php_script_path = "php/index.php"):
         return KphpBuilder(
             php_script_path=os.path.join(self.test_dir, php_script_path),

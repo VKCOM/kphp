@@ -28,6 +28,10 @@ std::string join(const Container &v, const std::string &delim, Mapper mapper = {
   return res;
 }
 
+inline bool ends_with(const std::string &s, const std::string &suffix) {
+  return s.size() >= suffix.size() && s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 inline std::string to_lower(std::string s) {
   std::transform(s.begin(), s.end(), s.begin(), ::tolower);
   return s;

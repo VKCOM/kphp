@@ -1,6 +1,7 @@
 <?php
 
-var_dump(__FILE__ . " required");
+global $global_map;
+$global_map[__FILE__] = true;
 
 function vk_api_version() {
   return "1.5.0";

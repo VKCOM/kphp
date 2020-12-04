@@ -1,6 +1,7 @@
 <?php
 
-var_dump(__FILE__ . " required");
+global $global_map;
+$global_map[__FILE__] = true;
 
 if (!function_exists('array_key_first')) {
     function array_key_first(array $a) {

@@ -2,7 +2,8 @@
 
 require "vendor/" . "autoload.php";
 
-var_dump(__FILE__ . " required");
+global $global_map;
+$global_map[__FILE__] = true;
 
 function z_test() {
   var_dump("z" . vk_api_version());

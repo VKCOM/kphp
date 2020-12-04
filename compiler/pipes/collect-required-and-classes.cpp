@@ -5,7 +5,6 @@
 #include "compiler/pipes/collect-required-and-classes.h"
 
 #include "common/wrappers/likely.h"
-#include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -50,7 +49,7 @@ private:
     }
 
     if (G->settings().is_composer_enabled()) {
-      const auto &psr4_filename = G->get_composer_class_loader().psr4_lookup(class_name);
+      const auto &psr4_filename = G->get_composer_autoloader().psr4_lookup(class_name);
       if (!psr4_filename.empty()) {
         require_file(psr4_filename, false);
         return; // required from the composer autoload PSR-4 path
@@ -148,14 +147,14 @@ private:
   }
 
   // whether required file name refers to the composer-generated autoload file
-  static bool is_composer_autoload(const std::string &name) {
+  static bool is_composer_autoload(const std::string &required_path) {
     // fast path: it there is no "/autoload.php", then we don't
     // need to bother and expand the filename
-    if (!vk::contains(name, "/autoload.php")) {
+    if (!vk::ends_with(required_path, "/autoload.php")) {
       return false;
     }
-    auto full_name = G->search_required_file(name);
-    return G->get_composer_class_loader().is_autoload_file(full_name);
+    auto full_name = G->search_required_file(required_path);
+    return G->get_composer_autoloader().is_autoload_file(full_name);
   }
 
   VertexPtr require_composer_autoload(VertexPtr root) {
@@ -164,7 +163,7 @@ private:
     //
     // note that we use once=true all the time since composer would
     // do the same (it uses require+inclusion map to perform the inclusion exactly once)
-    const auto &files_to_require = G->get_composer_class_loader().get_files_to_require();
+    const auto &files_to_require = G->get_composer_autoloader().get_files_to_require();
     std::vector<VertexPtr> list;
     list.reserve(files_to_require.size());
     for (const auto &file : files_to_require) {
