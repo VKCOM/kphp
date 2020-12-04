@@ -166,7 +166,7 @@
         "type": "int",
         "default": -1
       },
-      "type_declaration": {
+      "type_hint": {
         "type": "VertexPtr"
       },
       "is_callable": {
@@ -493,7 +493,7 @@
     }
   },
   {
-    "comment": "var(); or var() = default_value(); type hints are stored in type_declaration",
+    "comment": "var(); or var() = default_value(); type hints are stored in type_hint",
     "name": "op_func_param",
     "base_name": "meta_op_func_param"
   },

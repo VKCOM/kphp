@@ -121,13 +121,13 @@ private:
     for (int param_i = 0; param_i < func_params_.size(); ++param_i) {
       auto op_func_param = func_params_[param_i].as<meta_op_func_param>();
 
-      if (op_func_param->type_declaration && op_func_param->type_declaration->type() == op_type_expr_callable) {
+      if (op_func_param->type_hint && op_func_param->type_hint->type() == op_type_expr_callable) {
         op_func_param->is_callable = true;
         op_func_param->template_type_id = id_of_kphp_template_++;
-        op_func_param->type_declaration = {};
+        op_func_param->type_hint = {};
         f_->is_template = true;
-      } else if (op_func_param->type_declaration) {
-        f_->add_kphp_infer_hint(InferType::hint_check, param_i, op_func_param->type_declaration);
+      } else if (op_func_param->type_hint) {
+        f_->add_kphp_infer_hint(InferType::hint_check, param_i, op_func_param->type_hint);
       }
     }
   }
@@ -352,7 +352,7 @@ private:
     for (auto name_and_param_id : name_to_function_param_) {
       auto op_func_param = func_params_[name_and_param_id.second].as<meta_op_func_param>();
 
-      if (!op_func_param->type_declaration) {
+      if (!op_func_param->type_hint) {
         kphp_error(false, fmt_format("Specify @param or type hint for ${}", name_and_param_id.first));
       }
     }

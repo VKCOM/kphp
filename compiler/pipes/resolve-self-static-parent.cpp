@@ -37,8 +37,8 @@ void ResolveSelfStaticParentPass::on_start() {
     phpdoc_prepare_type_expr_resolving_classes(current_function, current_function->return_typehint);
   }
   for (auto param : current_function->get_params()) {
-    if (param->type() == op_func_param && param.as<op_func_param>()->type_declaration) {
-      phpdoc_prepare_type_expr_resolving_classes(current_function, param.as<op_func_param>()->type_declaration);
+    if (param->type() == op_func_param && param.as<op_func_param>()->type_hint) {
+      phpdoc_prepare_type_expr_resolving_classes(current_function, param.as<op_func_param>()->type_hint);
     }
   }
 }

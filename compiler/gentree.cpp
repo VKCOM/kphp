@@ -829,7 +829,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     if (def_val && def_val->type() == op_null) {
       type_hint = VertexAdaptor<op_type_expr_lca>::create(type_hint, GenTree::create_type_help_vertex(tp_Null));
     }
-    v->type_declaration = type_hint;
+    v->type_hint = type_hint;
   }
 
   if (type_rule) {

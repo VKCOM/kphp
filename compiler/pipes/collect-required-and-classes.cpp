@@ -128,8 +128,8 @@ private:
   //          TODO: fix this when we'll parse the phpdoc once.
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
     for (const auto &p: f->get_params()) {
-      if (p.as<op_func_param>()->type_declaration) {
-        require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_declaration);
+      if (p.as<op_func_param>()->type_hint) {
+        require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_hint);
       }
     }
     // f->return_typehint is ignored;
