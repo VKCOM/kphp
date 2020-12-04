@@ -786,7 +786,7 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   auto location = auto_location();
 
-  VertexPtr type_hint = get_typehint_as_type_expr();
+  VertexPtr type_hint = get_typehint();
   bool is_varg = false;
 
   // if the argument is vararg and has a type hint — e.g. int ...$a — then cur points to $a, as ... were consumed by the type lexer
@@ -1515,7 +1515,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
 
   if (test_expect(tok_colon)) {
     next_cur();
-    cur_function->return_typehint = get_typehint_as_type_expr();
+    cur_function->return_typehint = get_typehint();
     kphp_error(cur_function->return_typehint, "Expected return typehint after :");
   }
 
@@ -1898,26 +1898,7 @@ VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_st
   return VertexAdaptor<op_empty>::create();
 }
 
-std::string GenTree::get_typehint() {
-  std::string typehint;
-  bool is_nullable = false;
-
-  if (test_expect(tok_question)) {
-    is_nullable = true;
-    next_cur();
-  }
-
-  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array, tok_string, tok_int, tok_float, tok_bool, tok_callable, tok_void)) {
-    typehint = std::string(cur->str_val) + (is_nullable ? "|null" : "");
-    next_cur();
-  } else {
-    kphp_error(!is_nullable, "Syntax error: question token without type specifier");
-  }
-
-  return typehint;
-}
-
-VertexPtr GenTree::get_typehint_as_type_expr() {
+VertexPtr GenTree::get_typehint() {
   // optimization: don't start the lexer if it's 100% not a type hint here (so it wouldn't be parsed, and it's okay)
   // without this, everything still works, just a bit slower
   if (vk::any_of_equal(cur->type(), TokenType::tok_var_name, TokenType::tok_clpar, TokenType::tok_and, TokenType::tok_varg)) {

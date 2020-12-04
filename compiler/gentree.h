@@ -159,8 +159,7 @@ public:
   static VertexAdaptor<op_func_call> generate_critical_error(std::string msg);
 
 private:
-  std::string get_typehint();
-  VertexPtr get_typehint_as_type_expr();
+  VertexPtr get_typehint();
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
