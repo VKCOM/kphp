@@ -786,21 +786,24 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   auto location = auto_location();
 
-  std::string type_declaration = get_typehint();
+  VertexPtr type_hint = get_typehint_as_type_expr();
   bool is_varg = false;
 
-  if (test_expect(tok_varg)) {
+  // if the argument is vararg and has a type hint — e.g. int ...$a — then cur points to $a, as ... were consumed by the type lexer
+  if (type_hint && std::prev(cur, 1)->type() == tok_varg) {
+    is_varg = true;
+  } else if (test_expect(tok_varg)) {
     next_cur();
     is_varg = true;
-    if (!from_callback) {
-      kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
-      cur_function->has_variadic_param = true;
-    }
+  }
+  if (is_varg && !from_callback) {
+    kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+    cur_function->has_variadic_param = true;
   }
 
   VertexAdaptor<op_var> name = get_var_name_ref();
   if (!name) {
-    kphp_error(type_declaration.empty(), "Syntax error: missing varname after typehint");
+    kphp_error(!type_hint, "Syntax error: missing varname after typehint");
     return {};
   }
 
@@ -821,15 +824,12 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     v = VertexAdaptor<op_func_param>::create(name);
   }
   v.set_location(location);
-  if (!type_declaration.empty()) {
-    // nullable argument with an explicit ?T type hint or with default value of null
+  if (type_hint) {
+    // if "T $a = null" (default argument null), then type of $a is ?T (strange, but PHP works this way)
     if (def_val && def_val->type() == op_null) {
-      type_declaration += "|null";
+      type_hint = VertexAdaptor<op_type_expr_lca>::create(type_hint, GenTree::create_type_help_vertex(tp_Null));
     }
-    if (is_varg) {
-      type_declaration = "(" + type_declaration + ")[]";
-    }
-    v->type_declaration = std::move(type_declaration);
+    v->type_declaration = type_hint;
   }
 
   if (type_rule) {

@@ -77,7 +77,7 @@ private:
         run_function_pass(f.var->init_val, this);
       }
       if (!f.phpdoc_str.empty()) {
-        require_all_classes_in_phpdoc(f.phpdoc_str);
+        require_all_classes_in_field_phpdoc(f.phpdoc_str);
       }
     });
     cur_class->members.for_each([&](ClassMemberInstanceField &f) {
@@ -85,28 +85,27 @@ private:
         run_function_pass(f.var->init_val, this);
       }
       if (!f.phpdoc_str.empty()) {
-        require_all_classes_in_phpdoc(f.phpdoc_str);
+        require_all_classes_in_field_phpdoc(f.phpdoc_str);
       }
     });
   }
 
   // When looking at /** @var Photo */ under the instance field, assume that we
   // need to load the Photo class even if there is no explicit constructor call
-  inline void require_all_classes_in_phpdoc(vk::string_view phpdoc_str) {
+  inline void require_all_classes_in_field_phpdoc(vk::string_view phpdoc_str) {
     if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-      require_all_classes_in_phpdoc_type(*type_and_var_name);
+      // we don't use phpdoc_parse_type_and_var_name() here since classes
+      // are not available at this point and we need to fetch these unknown classes
+      std::vector<Token> tokens = phpdoc_to_tokens(*type_and_var_name);
+      std::vector<Token>::const_iterator cur_tok = tokens.begin();
+      PhpDocTypeRuleParser parser(current_function);
+      auto type_expr = parser.parse_from_tokens_silent(cur_tok);
+      require_all_classes_in_phpdoc_type(type_expr);
     }
   }
 
-  // Searching for classes inside @var/@param phpdoc as well as inside the type hints.
-  inline void require_all_classes_in_phpdoc_type(const std::string &type_str) {
-    // we don't use phpdoc_parse_type_and_var_name() here since classes
-    // are not available at this point and we need to fetch these unknown classes.
-    std::vector<Token> tokens = phpdoc_to_tokens(type_str);
-    std::vector<Token>::const_iterator cur_tok = tokens.begin();
-    PhpDocTypeRuleParser parser(current_function);
-    auto type_expr = parser.parse_from_tokens_silent(cur_tok);
-
+  // Searching for classes inside @var/@param phpdoc as well as inside type hints
+  inline void require_all_classes_in_phpdoc_type(VertexPtr type_expr) {
     std::function<void(VertexPtr)> find_unknown_and_require = [this, &find_unknown_and_require](VertexPtr type_expr) {
       if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
         const std::string &class_name = resolve_uses(current_function, as_op_class->class_name, '\\');
@@ -129,7 +128,7 @@ private:
   //          TODO: fix this when we'll parse the phpdoc once.
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
     for (const auto &p: f->get_params()) {
-      if (!p.as<op_func_param>()->type_declaration.empty()) {
+      if (p.as<op_func_param>()->type_declaration) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_declaration);
       }
     }

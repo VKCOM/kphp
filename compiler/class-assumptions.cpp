@@ -415,9 +415,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   VertexRange params = root->params()->args();
   for (auto i : params.get_reversed_range()) {
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
-    if (!param->type_declaration.empty()) {
-      auto result = phpdoc_parse_type_and_var_name(param->type_declaration, f);
-      auto a = assumption_create_from_phpdoc(result.type_expr);
+    if (param->type_declaration) {
+      auto a = assumption_create_from_phpdoc(param->type_declaration);
       if (!a->is_primitive()) {
         assumption_add_for_var(f, param->var()->get_string(), a);
       }

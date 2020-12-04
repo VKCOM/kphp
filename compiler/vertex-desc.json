@@ -167,7 +167,7 @@
         "default": -1
       },
       "type_declaration": {
-        "type": "std::string"
+        "type": "VertexPtr"
       },
       "is_callable": {
         "type": "bool",

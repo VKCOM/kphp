@@ -184,11 +184,11 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
   // every parameter (excluding $this) could be any class_instance
   for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
     auto param = func_parameters[i].as<op_func_param>();
-    if (param->type_declaration == "callable") {
+    if (param->type_declaration && param->type_declaration->type() == op_type_expr_callable) {
       param->template_type_id = static_cast<int>(id);
       param->is_callable = true;
       id++;
-    } else if (param->type_declaration.empty()) {
+    } else if (!param->type_declaration) {
       param->template_type_id = static_cast<int>(id);
       id++;
     }

@@ -297,10 +297,6 @@ VertexPtr PhpDocTypeRuleParser::parse_type_array() {
     res = GenTree::create_type_help_vertex(tp_array, {res});
     cur_tok += 2;
   }
-  if (cur_tok->type() == tok_varg) {      // "int ...$args" is identical to "int [] $args"; can also handle "(int|false) ..."
-    cur_tok++;
-    res = GenTree::create_type_help_vertex(tp_array, {res});
-  }
 
   return res;
 }
@@ -485,6 +481,13 @@ VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
 VertexPtr PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
   VertexPtr v = parse_type_expression();      // could throw an exception
+
+  // "?int ...$args" == "(?int)[] $args", "int|false ...$a" == "(int|false)[] $a"; handle "..." after all has been parsed
+  if (cur_tok->type() == tok_varg) {
+    cur_tok++;
+    v = GenTree::create_type_help_vertex(tp_array, {v});
+  }
+
   tok_iter = cur_tok;
   return v;                                   // not null if an exception was not thrown
 }
