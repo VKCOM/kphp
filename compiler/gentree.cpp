@@ -1905,12 +1905,13 @@ VertexPtr GenTree::get_typehint() {
     return {};
   }
 
-  auto start = cur;
-  PhpDocTypeRuleParser parser(cur_function);
-  VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
-  CE(!kphp_error(cur == start || type_expr, "Cannot parse type hint"));
-
-  return type_expr;
+  try {
+    PhpDocTypeRuleParser parser(cur_function);
+    return parser.parse_from_tokens(cur);
+  } catch (std::runtime_error &) {
+    kphp_error(0, "Cannot parse type hint");
+    return {};
+  }
 }
 
 VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
