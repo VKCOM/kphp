@@ -23,6 +23,8 @@ class Exception {
     final public function getLine () ::: int;
     final public function getTrace () ::: string[][];
     final public function getTraceAsString () ::: string;
+
+     final private function __clone() ::: void;
 };
 
 interface Memcache {
@@ -1227,7 +1229,6 @@ function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
 
-// TODO: $e should be Exception-typed
 function __exception_set_location($e ::: any, $file ::: string, $line ::: int) ::: ^1;
 
 // uber h3 bindings https://h3geo.org/docs
