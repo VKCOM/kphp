@@ -10,14 +10,25 @@
 
 array<array<string>> f$debug_backtrace();
 
-
-struct C$Exception : refcountable_php_classes<C$Exception> {
+struct C$Exception : public refcountable_polymorphic_php_classes_virt<> {
   string $message;
   int64_t $code = 0;
   string $file;
   int64_t $line = 0;
   array<void *> raw_trace;
   array<array<string>> trace;
+
+  static int classname_hash;
+
+  virtual ~C$Exception() = default;
+
+  virtual const char *get_class() const noexcept {
+    return "Exception";
+  }
+
+  virtual int get_hash() const noexcept {
+    return classname_hash;
+  }
 
   void accept(InstanceMemoryEstimateVisitor &visitor) {
     visitor("", $message);

@@ -296,11 +296,10 @@ void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr 
 }
 
 /*
- * Deduce that $ex is an Exception from `catch ($ex)`
- * We don't have custom exception classes (and we don't plan to add them yet).
+ * Deduce that $ex is T-typed from `catch (T $ex)`
  */
-void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root __attribute__((unused))) {
-  assumption_add_for_var(f, var_name, AssumInstance::create(G->get_class("Exception")));
+void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root) {
+  assumption_add_for_var(f, var_name, AssumInstance::create(G->get_class(root->exception_type_declaration)));
 }
 
 /*

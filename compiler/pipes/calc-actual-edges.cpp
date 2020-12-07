@@ -13,16 +13,16 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
       ClassPtr lambda_class = ptr->func_id->class_id;
       lambda_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
         if (!m.function->is_template) {
-          edges.emplace_back(m.function, inside_try, inside_fork);
+          edges.emplace_back(m.function, try_kind, inside_fork);
         }
       });
     } else {
-      edges.emplace_back(ptr->func_id, inside_try, inside_fork);
+      edges.emplace_back(ptr->func_id, try_kind, inside_fork);
     }
   } else if (auto call = v.try_as<op_func_call>()) {
-    edges.emplace_back(call->func_id, inside_try, inside_fork);
+    edges.emplace_back(call->func_id, try_kind, inside_fork);
   }
-  if (v->type() == op_throw && !inside_try) {
+  if (v->type() == op_throw && try_kind != TryKind::CatchesAll) {
     current_function->can_throw = true;
     current_function->throws_location = v->location;
   }
@@ -31,9 +31,13 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
 
 bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v) {
   if (auto try_v = v.try_as<op_try>()) {
-    inside_try++;
+    // we could do a better job at tracking whether a block is CatchesAll,
+    // but this simple approach is good enough for now;
+    // at least it keeps the current code as efficient as it was
+    auto prev_try_kind = try_kind;
+    try_kind = (try_v->exception_type_declaration == "Exception") ? TryKind::CatchesAll : TryKind::CatchesSome;
     run_function_pass(try_v->try_cmd_ref(), this);
-    inside_try--;
+    try_kind = prev_try_kind;
     run_function_pass(try_v->catch_cmd_ref(), this);
     return true;
   }

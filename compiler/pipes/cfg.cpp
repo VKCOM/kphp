@@ -419,7 +419,6 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
   add_subtree(*res_start, tree_node, false);
 }
 
-
 void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag, bool weak_write_flag) {
   stage::set_location(tree_node->location);
   bool recursive_flag = false;
@@ -882,7 +881,16 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       Node try_start, try_finish;
       create_cfg_begin_try();
       create_cfg(try_op->try_cmd(), &try_start, &try_finish);
+      std::vector<Node> propagated;
+      bool catches_all = try_op->exception_type_declaration == "Exception";
+      if (!catches_all) {
+        propagated = exception_nodes.back();
+      }
       create_cfg_end_try(exception_start);
+
+      for (Node n : propagated) {
+        create_cfg_register_exception(n);
+      }
 
       Node catch_start, catch_finish;
       create_cfg(try_op->catch_cmd(), &catch_start, &catch_finish);

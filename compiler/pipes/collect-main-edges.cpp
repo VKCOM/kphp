@@ -274,12 +274,11 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
 }
 
 void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
-  create_less(as_rvalue(G->get_class("Exception")), throw_op->exception());
   create_less(as_rvalue(throw_op->exception()), G->get_class("Exception"));
 }
 
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
-  create_set(as_lvalue(try_op->exception()), G->get_class("Exception"));
+  create_set(as_lvalue(try_op->exception()), G->get_class(try_op->exception_type_declaration));
 }
 
 void CollectMainEdgesPass::on_set_op(VertexPtr v) {

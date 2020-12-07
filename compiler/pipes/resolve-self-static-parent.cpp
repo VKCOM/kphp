@@ -58,7 +58,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
         kphp_error(current_function->class_id && current_function->class_id->is_trait(), fmt_format("you may not use trait directly: {}", ref_class->get_name()));
       }
 
-      if (ref_class && !ref_class->is_builtin() && current_function->class_id) {
+      if (ref_class && current_function->class_id) {
         if (auto found_method = ref_class->get_instance_method(original_name.substr(pos + 2))) {
           auto method = found_method->function;
           kphp_error(ref_class->is_parent_of(current_function->get_this_or_topmost_if_lambda()->class_id),

@@ -4,6 +4,7 @@
 
 #include "runtime/exception.h"
 
+#include "common/algorithms/hashes.h"
 #include "common/fast-backtrace.h"
 
 #include "runtime/critical_section.h"
@@ -43,6 +44,8 @@ array<array<string>> f$debug_backtrace() {
 }
 
 Exception CurException;
+
+int C$Exception::classname_hash = vk::std_hash(std::string("Exception"));
 
 string f$Exception$$getMessage(const Exception &e) {
   return e->$message;

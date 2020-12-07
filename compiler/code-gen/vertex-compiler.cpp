@@ -123,6 +123,43 @@ struct CycleBody {
   }
 };
 
+struct EmptyReturn {
+  //TODO: it's copypasted to compile_return
+  void compile(CodeGenerator &W) const {
+    CGContext &context = W.get_context();
+    const TypeData *tp = tinf::get_type(context.parent_func, -1);
+    if (context.resumable_flag) {
+      kphp_assert(!context.inside_null_coalesce_fallback);
+      if (tp->ptype() != tp_void) {
+        W << "RETURN (";
+      } else {
+        W << "RETURN_VOID (";
+      }
+    } else {
+      W << "return ";
+    }
+    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
+      W << "{}";
+    }
+    if (context.resumable_flag) {
+      W << ")";
+    }
+  }
+};
+
+struct ThrowAction {
+  //TODO: some interface for context?
+  static void compile(CodeGenerator &W) {
+    CGContext &context = W.get_context();
+    if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
+      W << EmptyReturn();
+    } else {
+      W << "goto " << context.catch_labels.back();
+      context.catch_label_used.back() = 1;
+    }
+  }
+};
+
 void compile_prefix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << OpInfo::str(root->type()) << Operand{root->expr(), root->type(), true};
 }
@@ -153,39 +190,10 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   }
 }
 
-//TODO: some interface for context?
-//TODO: it's copypasted to compile_return
-void compile_throw_action(CodeGenerator &W) {
-  CGContext &context = W.get_context();
-  if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
-    const TypeData *tp = tinf::get_type(context.parent_func, -1);
-    if (context.resumable_flag) {
-      kphp_assert(!context.inside_null_coalesce_fallback);
-      if (tp->ptype() != tp_void) {
-        W << "RETURN (";
-      } else {
-        W << "RETURN_VOID (";
-      }
-    } else {
-      W << "return ";
-    }
-    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
-      W << "{}";
-    }
-    if (context.resumable_flag) {
-      W << ")";
-    }
-  } else {
-    W << "goto " << context.catch_labels.back();
-    context.catch_label_used.back() = 1;
-  }
-}
-
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
-    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL;
-  compile_throw_action(W);
-  W << ";" << NL <<
+    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL <<
+    ThrowAction() << ";" << NL <<
     END << NL;
 }
 
@@ -202,13 +210,41 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   context.catch_label_used.pop_back();
 
   if (used) {
-    W << "/""*** CATCH ***""/" << NL <<
-      "if (0) " <<
-      BEGIN <<
-      catch_label << ":;" << NL << //TODO: Label (lable_id) ?
-      root->exception() << " = std::move(CurException);" << NL <<
-      root->catch_cmd() << NL <<
+    ClassPtr caught_class = G->get_class(root->exception_type_declaration);
+
+    W << "/""*** CATCH ***""/" << NL;
+    W << "if (0) " << BEGIN <<
+      catch_label << ":;" << NL; // TODO: Label (label_id) ?
+
+    W << UpdateLocation(root->exception()->location);
+
+    if (caught_class->name == "Exception") {
+      // catches everything; just move the exception and execute the catch block
+      W << root->exception() << " = std::move(CurException);" << NL <<
+        root->catch_cmd() << NL;
+    } else if (caught_class->derived_classes.empty()) {
+      // compare the type hash and move exception if it has the same hash
+      std::string e = gen_unique_name("e");
+      W << "if (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") " << BEGIN <<
+        "auto " << e << " = std::move(CurException);" << NL <<
+        root->exception() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
+        root->catch_cmd() << NL <<
+      END << " else " << BEGIN <<
+        ThrowAction() << ";" << NL <<
       END << NL;
+    } else {
+      // a slower path: do a dynamic cast via is_a() call
+      std::string e = gen_unique_name("e");
+      W << "if (f$is_a<" << caught_class->src_name << ">(CurException)) " << BEGIN <<
+        "auto " << e << " = std::move(CurException);" << NL <<
+        root->exception() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
+        root->catch_cmd() << NL <<
+      END << " else " << BEGIN <<
+        ThrowAction() << ";" << NL <<
+      END << NL;
+    }
+
+    W << END << NL;
   }
 }
 
@@ -297,9 +333,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
 
   W << ")";
   if (rhs->throw_flag) {
-    W << ", ";
-    compile_throw_action(W);
-    W << MacroEnd{};
+    W << ", " << ThrowAction{} << MacroEnd{};
   }
 }
 
@@ -548,9 +582,7 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   compile_func_call(root, W);
   W.get_context().catch_labels.pop_back();
 
-  W << ", ";
-  compile_throw_action(W);
-  W << MacroEnd{};
+  W << ", " << ThrowAction{} << MacroEnd{};
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
@@ -573,9 +605,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   if (func->can_throw) {
     W << NL;
-    W << "CHECK_EXCEPTION" << MacroBegin{};
-    compile_throw_action(W);
-    W << MacroEnd{};
+    W << "CHECK_EXCEPTION" << MacroBegin{} << ThrowAction{} << MacroEnd{};
   }
 }
 
