@@ -32,6 +32,7 @@ enum TokenType {
   tok_dbg_echo,
   tok_var_dump,
   tok_function,
+  tok_fn,
   tok_varg,
   tok_array,
   tok_tuple,

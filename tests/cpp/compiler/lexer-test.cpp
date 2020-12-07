@@ -21,6 +21,14 @@ TEST(lexer_test, test_php_tokens) {
     {"$x['a']", {"tok_var_name($x)", "tok_opbrk([)", "tok_str(a)", "tok_clbrk(])"}},
     {"$x[-40]", {"tok_var_name($x)", "tok_opbrk([)", "tok_minus(-)", "tok_int_const(40)", "tok_clbrk(])"}},
     {"$x->y->z", {"tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_arrow(->)", "tok_func_name(z)"}},
+    {"fn() => 1", {"tok_fn(fn)", "tok_oppar(()", "tok_clpar())", "tok_double_arrow(=>)", "tok_int_const(1)"}},
+
+    // check that "fn" keyword is lexed correctly inside class member context
+    {"$fn", {"tok_var_name($fn)"}},
+    {"$x->fn", {"tok_var_name($x)", "tok_arrow(->)", "tok_func_name(fn)"}},
+    {"C::fn", {"tok_func_name(C::fn)"}},
+    {"C::$fn", {"tok_var_name(C::fn)"}},
+    {"C::fn()", {"tok_func_name(C::fn)", "tok_oppar(()", "tok_clpar())"}},
 
     // strings: non-interpolated forms
     {"'$x $y->z'", {"tok_str($x $y->z)"}},

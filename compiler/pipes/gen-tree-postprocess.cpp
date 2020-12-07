@@ -237,7 +237,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
-    if (is_superglobal(root->get_string())) {
+    if (GenTree::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
     }
   }
@@ -250,17 +250,3 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
 
   return root;
 }
-
-bool GenTreePostprocessPass::is_superglobal(const string &s) {
-  static std::set<string> names = {
-    "_SERVER",
-    "_GET",
-    "_POST",
-    "_FILES",
-    "_COOKIE",
-    "_REQUEST",
-    "_ENV"
-  };
-  return names.find(s) != names.end();
-}
-

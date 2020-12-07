@@ -12,7 +12,6 @@ class GenTreePostprocessPass final : public FunctionPassBase {
     int args;
   };
 
-  static bool is_superglobal(const string &s);
   builtin_fun get_builtin_function(const std::string &name);
 
 public:
