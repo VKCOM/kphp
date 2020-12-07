@@ -209,14 +209,13 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
         res = expr;
       } else if (root->type() == op_conv_ulong && tp->ptype() == tp_ULong) {
         res = expr;
-      } else if (root->type() == op_conv_mixed) {
-        if (tp->ptype() == tp_void) {
+      } else if (root->type() == op_force_mixed && tp->ptype() == tp_void) {
           expr->rl_type = val_none;
           res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
-        } else if (type_lca(tp->ptype(), tp_mixed) == tp_mixed) {
-          res = expr;
-        }
       }
+    }
+    if (root->type() == op_conv_mixed) {
+      res = expr;
     }
     if (root->type() == op_conv_drop_null){
       if (!tp->can_store_null()) {

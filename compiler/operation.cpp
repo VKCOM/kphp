@@ -133,7 +133,6 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_conv_array, op_conv_array);
   add_unary_op(curP, tok_conv_object, op_conv_object);
   add_unary_op(curP, tok_conv_bool, op_conv_bool);
-  add_unary_op(curP, tok_conv_var, op_conv_mixed);
   add_unary_op(curP, tok_at, op_noerr);
   ++curP;
 

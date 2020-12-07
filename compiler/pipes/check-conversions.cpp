@@ -63,18 +63,22 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
 VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
   if (forbidden_conversions.count(vertex->type())) {
     auto range = forbidden_conversions.equal_range(vertex->type());
-    auto converted_expr_type = tinf::get_type(vertex.as<meta_op_unary>()->expr());
-    if (std::count_if(range.first, range.second, [converted_expr_type](const std::pair<Operation, PrimitiveType> &r) -> bool {
-      // we do this so the op_conv_bool doesn't report T|false and T|null, but report T.
-      if (r.first == op_conv_bool && converted_expr_type->use_optional()) {
-        return false;
-      }
-      return converted_expr_type->ptype() == r.second;
-    })) {
-      kphp_error(false, fmt_format("{} conversion of type {} is forbidden",
-                                   TermStringFormat::paint_green(OpInfo::str(vertex->type())),
-                                   colored_type_out(converted_expr_type)));
+    const auto *converted_expr_type = tinf::get_type(vertex.as<meta_op_unary>()->expr());
+
+    if (vertex->type() == op_conv_mixed) {
+      converted_expr_type = converted_expr_type->get_deepest_type_of_array();
     }
+
+    auto is_forbidden_conversion = std::any_of(range.first, range.second, [=](auto &operation_and_type) {
+      // we do this so the op_conv_bool doesn't report T|false and T|null, but report T.
+      bool is_conversion_of_optional = operation_and_type.first == op_conv_bool && converted_expr_type->use_optional();
+
+      return !is_conversion_of_optional && converted_expr_type->ptype() == operation_and_type.second;
+    });
+
+    kphp_error(!is_forbidden_conversion, fmt_format("conversion from {} to {} is forbidden",
+                                                    colored_type_out(converted_expr_type),
+                                                    TermStringFormat::paint_green(OpInfo::str(vertex->type()))));
   }
   return vertex;
 }

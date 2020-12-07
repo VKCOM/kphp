@@ -232,6 +232,9 @@ VertexPtr GenTree::conv_to(VertexPtr x) {
     case tp_regexp:
       return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
 
+    case tp_mixed:
+      return VertexAdaptor<op_conv_mixed>::create(x).set_location(x);
+
     default:
       return x;
   }

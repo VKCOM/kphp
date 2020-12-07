@@ -359,7 +359,12 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
       if (auto call = tree_node.try_as<op_func_call>()) {
         is_func_id_t type = get_ifi_id(tree_node);
         if (type != ifi_error) {
-          if (auto var = call->args()[0].try_as<op_var>()) {
+          auto var = call->args()[0].try_as<op_var>();
+          if (auto mixed_conv = call->args()[0].try_as<op_conv_mixed>()) {
+            // we're going to analyze internal var, instead of fake cast to mixed
+            var = mixed_conv->expr().try_as<op_var>();
+          }
+          if (var) {
             is_func_id_t true_type{};
             if (type == ifi_is_bool) {
               true_type = static_cast<is_func_id_t>(ifi_is_bool | ifi_is_false);
@@ -903,6 +908,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_conv_array_l:
     case op_conv_object:
     case op_conv_mixed:
+    case op_force_mixed:
     case op_conv_uint:
     case op_conv_long:
     case op_conv_ulong:

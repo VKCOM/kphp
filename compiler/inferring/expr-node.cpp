@@ -579,6 +579,11 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     case op_conv_mixed:
+      // we don't want to spoil types and need this vertex just for further checks
+      recalc_expr(expr.as<op_conv_mixed>()->expr());
+      break;
+
+    case op_force_mixed:
       recalc_ptype<tp_mixed>();
       break;
 

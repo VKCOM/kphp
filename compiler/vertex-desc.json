@@ -1582,7 +1582,7 @@
     }
   },
   {
-    "comment": "(var)expr()",
+    "comment": "fake vertex we need it to forbid casts of classes to mixed in context of internal functions(from functions.txt)",
     "name": "op_conv_mixed",
     "base_name": "meta_op_unary",
     "props": {
@@ -1591,6 +1591,11 @@
       "type": "conv_op",
       "str": "mixed"
     }
+  },
+  {
+    "comment": "converts expression to mixed as (mixed) $x, used only for returns of global switches/main functions/disable return warning",
+    "name": "op_force_mixed",
+    "base_name": "op_conv_mixed"
   },
   {
     "comment": "artificial op that converts expr() to tp_UInt",

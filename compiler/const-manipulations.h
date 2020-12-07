@@ -66,6 +66,7 @@ protected:
       case op_conv_object:
       case op_conv_bool:
       case op_conv_mixed:
+      case op_force_mixed:
       case op_conv_uint:
       case op_conv_long:
       case op_conv_ulong:
