@@ -1751,20 +1751,38 @@
     }
   },
   {
-    "comment": "try { try_cmd()... } catch (type_description exception()) { catch_cmd()... }",
+    "comment": "catch (type_declaration var()) { cmd() }",
+    "sons": {
+      "var": {
+        "id": 0,
+        "type": "op_var"
+      },
+      "cmd": {
+        "id": 1,
+        "type": "op_seq"
+      }
+    },
+    "name": "op_catch",
+    "base_name": "meta_op_base",
+    "extra_fields": {
+      "type_declaration": {
+        "type": "std::string"
+      }
+    }
+  },
+  {
+    "comment": "try { try_cmd()... } catch_list<op_catch>()...;",
     "sons": {
       "try_cmd": {
         "id": 0,
         "type": "op_seq"
-      },
-      "exception": {
-        "id": 1,
-        "type": "op_var"
-      },
-      "catch_cmd": {
-        "id": 2,
-        "type": "op_seq"
       }
+    },
+    "ranges": {
+      "catch_list": [
+        1,
+        0
+      ]
     },
     "name": "op_try",
     "base_name": "meta_op_base",
@@ -1773,11 +1791,6 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "try"
-    },
-    "extra_fields": {
-      "exception_type_declaration": {
-        "type": "std::string"
-      }
     }
   },
   {

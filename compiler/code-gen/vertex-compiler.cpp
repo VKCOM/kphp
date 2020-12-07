@@ -210,25 +210,27 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   context.catch_label_used.pop_back();
 
   if (used) {
-    ClassPtr caught_class = G->get_class(root->exception_type_declaration);
+    auto catch_op = root->catch_list()[0].as<op_catch>();
+
+    ClassPtr caught_class = G->get_class(catch_op->type_declaration);
 
     W << "/""*** CATCH ***""/" << NL;
     W << "if (0) " << BEGIN <<
       catch_label << ":;" << NL; // TODO: Label (label_id) ?
 
-    W << UpdateLocation(root->exception()->location);
+    W << UpdateLocation(catch_op->var()->location);
 
     if (caught_class->name == "Exception") {
       // catches everything; just move the exception and execute the catch block
-      W << root->exception() << " = std::move(CurException);" << NL <<
-        root->catch_cmd() << NL;
+      W << catch_op->var() << " = std::move(CurException);" << NL <<
+        catch_op->cmd() << NL;
     } else if (caught_class->derived_classes.empty()) {
       // compare the type hash and move exception if it has the same hash
       std::string e = gen_unique_name("e");
       W << "if (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") " << BEGIN <<
         "auto " << e << " = std::move(CurException);" << NL <<
-        root->exception() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
-        root->catch_cmd() << NL <<
+        catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
+        catch_op->cmd() << NL <<
       END << " else " << BEGIN <<
         ThrowAction() << ";" << NL <<
       END << NL;
@@ -237,8 +239,8 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
       std::string e = gen_unique_name("e");
       W << "if (f$is_a<" << caught_class->src_name << ">(CurException)) " << BEGIN <<
         "auto " << e << " = std::move(CurException);" << NL <<
-        root->exception() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
-        root->catch_cmd() << NL <<
+        catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
+        catch_op->cmd() << NL <<
       END << " else " << BEGIN <<
         ThrowAction() << ";" << NL <<
       END << NL;

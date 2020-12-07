@@ -114,7 +114,14 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_unset: //TODO: fix it (???)
       rl_calc_all<val_l>(root);
       break;
-    case op_try:
+    case op_try: {
+      auto v = root.as<op_try>();
+      rl_calc(v->try_cmd(), val_none);
+      auto catch_op = v->catch_list()[0].as<op_catch>();
+      rl_calc(catch_op->var(), val_none);
+      rl_calc(catch_op->cmd(), val_none);
+      break;
+    }
     case op_seq:
     case op_foreach:
     case op_default:

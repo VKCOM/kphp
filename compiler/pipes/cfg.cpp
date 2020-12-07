@@ -875,14 +875,15 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_try: {
       auto try_op = tree_node.as<op_try>();
+      auto catch_op = try_op->catch_list()[0].as<op_catch>();
       Node exception_start, exception_finish;
-      create_cfg(try_op->exception(), &exception_start, &exception_finish, true);
+      create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
 
       Node try_start, try_finish;
       create_cfg_begin_try();
       create_cfg(try_op->try_cmd(), &try_start, &try_finish);
       std::vector<Node> propagated;
-      bool catches_all = try_op->exception_type_declaration == "Exception";
+      bool catches_all = catch_op->type_declaration == "Exception";
       if (!catches_all) {
         propagated = exception_nodes.back();
       }
@@ -893,7 +894,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       }
 
       Node catch_start, catch_finish;
-      create_cfg(try_op->catch_cmd(), &catch_start, &catch_finish);
+      create_cfg(catch_op->cmd(), &catch_start, &catch_finish);
 
       add_edge(exception_finish, catch_start);
 
@@ -904,8 +905,9 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_start = try_start;
       *res_finish = finish;
 
-      add_subtree(exception_start, try_op->exception(), false);
-      add_subtree(catch_start, try_op->catch_cmd(), true);
+      confirm_usage(catch_op, false); // TODO: add_subtree
+      add_subtree(exception_start, catch_op->var(), false);
+      add_subtree(catch_start, catch_op->cmd(), true);
       break;
     }
 
@@ -1219,8 +1221,9 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr v) override {
     if (auto try_op = v.try_as<op_try>()) {
-      if (!vertex_usage[try_op->exception()].used) {
-        kphp_assert(!vertex_usage[try_op->catch_cmd()].used);
+      auto catch_op = try_op->catch_list()[0].as<op_catch>();
+      if (!vertex_usage[catch_op->var()].used) {
+        kphp_assert(!vertex_usage[catch_op->cmd()].used);
         return try_op->try_cmd();
       }
     }

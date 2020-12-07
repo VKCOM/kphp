@@ -194,7 +194,8 @@ public:
     stage::set_line(root->location.line);
 
     if (auto try_op = root.try_as<op_try>()) {
-      require_class(replace_characters(try_op->exception_type_declaration, '\\', '/'));
+      auto catch_op = try_op->catch_list()[0].as<op_catch>();
+      require_class(replace_characters(catch_op->type_declaration, '\\', '/'));
       return root;
     }
 
