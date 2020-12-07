@@ -208,6 +208,22 @@ public:
     return v;
   }
 
+    static bool deep_equal(VertexPtr lhs, VertexPtr rhs) {
+      if (lhs == rhs) {
+        return true;
+      }
+      if (!lhs || !rhs) {
+        return false;
+      }
+
+      auto get_string_def = [](VertexPtr v) {
+        return v->has_get_string() ? v->get_string() : "";
+      };
+
+      return lhs->type() == rhs->type() &&
+             get_string_def(lhs) == get_string_def(rhs) &&
+             std::equal(lhs->begin(), lhs->end(), rhs->begin(), rhs->end(), deep_equal);
+    }
 };
 
 using Vertex = vertex_inner<meta_op_base>;

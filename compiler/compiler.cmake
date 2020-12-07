@@ -103,6 +103,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         calc-val-ref.cpp
         cfg-end.cpp
         cfg.cpp
+        check-abstract-function-defaults.cpp
         check-access-modifiers.cpp
         check-classes.cpp
         check-conversions.cpp
