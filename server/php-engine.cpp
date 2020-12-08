@@ -400,7 +400,7 @@ void php_worker_init_script(php_worker *worker) {
   //init memory allocator for queries
   php_queries_start();
 
-  script_t *script = get_script("#0");
+  script_t *script = get_script();
   dl_assert (script != nullptr, "failed to get script");
   if (php_script == nullptr) {
     php_script = php_script_create((size_t)max_memory, (size_t)(8 << 20));

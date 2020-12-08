@@ -86,18 +86,11 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   CodeGenerator *W_ptr = new CodeGenerator(os);
   CodeGenerator &W = *W_ptr;
 
-  vector<SrcFilePtr> main_files = G->get_main_files();
-  std::unordered_set<FunctionPtr> main_functions(main_files.size());
-  for (const SrcFilePtr &main_file : main_files) {
-    main_functions.emplace(main_file->main_function);
-  }
+  FunctionPtr main_function = G->get_main_file()->main_function;
 
   auto should_gen_function = [&](FunctionPtr fun) {
     return fun->type != FunctionData::func_class_holder &&
-           (
-             fun->body_seq != FunctionData::body_value::empty ||
-             main_functions.count(fun)
-           );
+           (fun->body_seq != FunctionData::body_value::empty || main_function == fun);
   };
 
   //TODO: parallelize;
@@ -152,14 +145,11 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     }
   }
 
-  for (const auto &main_file : main_files) {
-    W << Async(GlobalVarsReset(main_file));
-  }
-
+  W << Async(GlobalVarsReset(G->get_main_file()));
   if (G->settings().enable_global_vars_memory_stats.get()) {
-    W << Async(GlobalVarsMemoryStats{main_files});
+    W << Async(GlobalVarsMemoryStats{G->get_main_file()});
   }
-  W << Async(InitScriptsCpp(std::move(main_files), std::move(all_functions)));
+  W << Async(InitScriptsCpp(G->get_main_file(), std::move(all_functions)));
 
   std::vector<VarPtr> vars = G->get_global_vars();
   for (FunctionPtr fun: xall) {

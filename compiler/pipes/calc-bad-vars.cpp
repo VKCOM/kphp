@@ -243,9 +243,7 @@ private:
       return;
     }
 
-    auto &main_files = G->get_main_files();
-    kphp_assert(main_files.size() == 1u);
-    auto &main_dep = main_files.back()->main_function->dep;
+    auto &main_dep = G->get_main_file()->main_function->dep;
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr fun = call_graph.functions[i];
       if (fun->kphp_lib_export) {

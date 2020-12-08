@@ -98,9 +98,12 @@ public:
       usage_and_exit();
     }
 
-    for (; optind < argc; ++optind) {
-      other_options_->set_option_arg_value(argv[optind]);
+    int num_optargs = argc - optind;
+    if (num_optargs != 1) {
+      printf("error: expected exactly 1 positional argument: main PHP file\n");
+      usage_and_exit();
     }
+    other_options_->set_option_arg_value(argv[optind]);
 
     finalize();
   }
@@ -204,7 +207,7 @@ int main(int argc, char *argv[]) {
 
   OptionParser::add_default_options();
   auto &parser = OptionParser::get_instance();
-  parser.add_other_args("<main-files-list>", settings->main_files);
+  parser.add_other_args("<main-file>", settings->main_file);
   parser.add("Verbosity", settings->verbosity,
              'v', "verbosity", "KPHP_VERBOSITY", "0", {"0", "1", "2", "3"});
   parser.add("Path to kphp source", settings->kphp_src_path,

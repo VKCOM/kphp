@@ -184,13 +184,10 @@ void CompilerSettings::init() {
   link_file.value_ = get_full_path(link_file.get());
 
   if (is_static_lib_mode()) {
-    if (main_files.get().size() > 1) {
-      throw std::runtime_error{"Multiple main directories are forbidden for static lib mode"};
-    }
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }
-    std::string lib_dir = get_full_path(main_files.get().back());
+    std::string lib_dir = get_full_path(main_file.get());
     std::size_t last_slash = lib_dir.rfind('/');
     if (last_slash == std::string::npos) {
       throw std::runtime_error{"Bad lib directory"};
@@ -206,7 +203,7 @@ void CompilerSettings::init() {
     }
 
     option_as_dir(static_lib_out_dir);
-    main_files.value_.back().assign(lib_dir).append("/php/index.php");
+    main_file.value_.assign(lib_dir).append("/php/index.php");
   } else if (!static_lib_out_dir.get().empty()) {
     throw std::runtime_error{"Option " + static_lib_out_dir.get_env_var() + " is allowed only for static lib mode"};
   }
@@ -284,19 +281,16 @@ void CompilerSettings::init() {
 
   ld_flags.value_ += " -rdynamic";
 
-  for (auto &main_file : main_files.value_) {
-    auto full_path = get_full_path(main_file);
-    if (full_path.empty()) {
-      // get_full_path() calls realpath() which will set the errno in case of failure
-      throw std::runtime_error{fmt_format("Failed to open file [{}] : {}", main_file, strerror(errno))};
-    }
-    main_file = full_path;
+  auto full_path = get_full_path(main_file.get());
+  if (full_path.empty()) {
+    // get_full_path() calls realpath() which will set the errno in case of failure
+    throw std::runtime_error{fmt_format("Failed to open file [{}] : {}", main_file.get(), strerror(errno))};
   }
+  main_file.value_.assign(full_path);
 
-  const auto &first_main_file = main_files.get().front();
-  const size_t dir_pos = first_main_file.rfind('/');
+  const size_t dir_pos = main_file.get().rfind('/');
   kphp_assert (dir_pos != std::string::npos);
-  base_dir.value_ = first_main_file.substr(0, dir_pos + 1);
+  base_dir.value_ = main_file.get().substr(0, dir_pos + 1);
 
   mkdir_recursive(dest_dir.get().c_str(), 0777);
   option_as_dir(dest_dir);

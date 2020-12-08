@@ -28,7 +28,7 @@ private:
   TSHashTable<DefinePtr> defines_ht;
   TSHashTable<VarPtr> global_vars_ht;
   TSHashTable<LibPtr> libs_ht;
-  vector<SrcFilePtr> main_files;
+  SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerClassLoader composer_class_loader;
   TSHashTable<ClassPtr> classes_ht;
@@ -85,7 +85,7 @@ public:
   VarPtr get_global_var(const string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
   VarPtr create_local_var(FunctionPtr function, const string &name, VarData::Type type);
 
-  const vector<SrcFilePtr> &get_main_files();
+  SrcFilePtr get_main_file();
   vector<VarPtr> get_global_vars();
   vector<ClassPtr> get_classes();
   vector<DefinePtr> get_defines();

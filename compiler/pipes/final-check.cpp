@@ -92,9 +92,7 @@ void mark_global_vars_for_memory_stats() {
     tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
     return false;
   }};
-  for (const auto &main_file : G->get_main_files()) {
-    vars_collector.collect_global_and_static_vars_from(main_file->main_function);
-  }
+  vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
   for (auto klass: classes_inside) {
     klass->deeply_require_instance_memory_estimate_visitor();
   }

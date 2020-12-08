@@ -300,11 +300,13 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFilePtr> &os) {
+  kphp_assert(!main_file);
+
   SrcFilePtr res = register_file(file_name, LibPtr{});
   kphp_error (file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
 
   if (res && try_require_file(res)) {
-    main_files.push_back(res);
+    main_file = res;
     os << res;
   }
 }
@@ -443,8 +445,8 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
   return var;
 }
 
-const vector<SrcFilePtr> &CompilerCore::get_main_files() {
-  return main_files;
+SrcFilePtr CompilerCore::get_main_file() {
+  return main_file;
 }
 
 vector<VarPtr> CompilerCore::get_global_vars() {

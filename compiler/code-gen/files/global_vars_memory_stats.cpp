@@ -13,8 +13,8 @@
 #include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
 
-GlobalVarsMemoryStats::GlobalVarsMemoryStats(const std::vector<SrcFilePtr> &main_files) :
-  main_files_(main_files) {
+GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file) :
+  main_file_{main_file} {
 }
 
 void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
@@ -22,9 +22,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
     return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_Unknown);
   }};
 
-  for (auto main_file: main_files_) {
-    vars_collector.collect_global_and_static_vars_from(main_file->main_function);
-  }
+  vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
 
   auto global_var_parts = vars_collector.flush();
   size_t global_vars_count = 0;
