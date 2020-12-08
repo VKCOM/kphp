@@ -534,8 +534,11 @@ void CompilerCore::init_composer_class_loader() {
   // folder in order to collect all dependencies (both direct and indirect).
 
   std::string vendor = settings().composer_root.get() + "/vendor";
-  for (const auto &composer_root : find_composer_folders(vendor)) {
-    composer_class_loader.load_file(composer_root);
+  bool vendor_folder_exists = access(vendor.c_str(), F_OK) == 0;
+  if (vendor_folder_exists) {
+    for (const auto &composer_root : find_composer_folders(vendor)) {
+      composer_class_loader.load_file(composer_root);
+    }
   }
 }
 
