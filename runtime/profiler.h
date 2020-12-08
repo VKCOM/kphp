@@ -267,4 +267,3 @@ void global_init_profiler() noexcept;
 
 void f$profiler_set_log_suffix(const string &suffix) noexcept;
 void f$profiler_set_function_label(const string &label) noexcept;
-bool f$profiler_is_enabled() noexcept;
