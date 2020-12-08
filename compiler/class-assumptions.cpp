@@ -298,9 +298,8 @@ void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr 
 /*
  * Deduce that $ex is T-typed from `catch (T $ex)`
  */
-void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_try> root) {
-  auto catch_op = root->catch_list()[0].as<op_catch>();
-  assumption_add_for_var(f, var_name, AssumInstance::create(G->get_class(catch_op->type_declaration)));
+void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_catch> root) {
+  assumption_add_for_var(f, var_name, AssumInstance::create(G->get_class(root->type_declaration)));
 }
 
 /*
@@ -368,7 +367,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
       auto t = root.as<op_try>();
       auto c = t->catch_list()[0].as<op_catch>();
       if (c->var()->type() == op_var && c->var()->get_string() == var_name) {
-        analyze_catch_of_var(f, var_name, t);
+        analyze_catch_of_var(f, var_name, c);
       }
       break;    // break instead of return so we enter the 'try' block
     }
