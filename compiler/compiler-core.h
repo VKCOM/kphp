@@ -48,7 +48,7 @@ public:
   void register_settings(CompilerSettings *settings);
   const CompilerSettings &settings() const;
   const string &get_global_namespace() const;
-  string unify_file_name(const string &file_name);
+
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const string &file_name, LibPtr owner_lib);
 
@@ -113,8 +113,6 @@ public:
   bool get_untyped_rpc_tl_used() const {
     return is_untyped_rpc_tl_used;
   }
-
-  vk::string_view get_base_relative_filename(SrcFilePtr file) const noexcept;
 
   Stats stats;
 };

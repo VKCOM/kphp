@@ -573,7 +573,7 @@ void PerformanceIssuesReport::add_issues(FunctionPtr function, std::vector<Analy
     return;
   }
   FunctionPerformanceIssues function_issues{
-    static_cast<std::string>(G->get_base_relative_filename(function->file_id)),
+    function->file_id->unified_file_name,
     prepare_for_json(function->get_human_readable_name(false)),
     std::move(issues)
   };

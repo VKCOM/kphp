@@ -143,13 +143,6 @@ FunctionPtr CompilerCore::get_function(const string &name) {
   return f;
 }
 
-string CompilerCore::unify_file_name(const string &file_name) {
-  if (strncmp(file_name.c_str(), settings().base_dir.get().c_str(), settings().base_dir.get().size())) {
-    return file_name;
-  }
-  return file_name.substr(settings().base_dir.get().size());
-}
-
 std::string CompilerCore::search_file_in_include_dirs(const std::string &file_name, size_t *dir_index) const {
   if (file_name.empty() || file_name[0] == '/' || file_name[0] == '.') {
     return {};
@@ -222,10 +215,13 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
-      string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(full_file_name));
-      func_name = replace_non_alphanum(func_name);
-      new_file->main_func_name = func_name;
-      new_file->unified_file_name = unify_file_name(new_file->file_name);
+      std::string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(full_file_name));
+      new_file->main_func_name = replace_non_alphanum(std::move(func_name));
+      vk::string_view unified_file_name{new_file->file_name};
+      if (unified_file_name.starts_with(settings().base_dir.get())) {
+        unified_file_name.remove_prefix(settings().base_dir.get().size());
+      }
+      new_file->unified_file_name = static_cast<std::string>(unified_file_name);
       size_t last_slash = new_file->unified_file_name.rfind('/');
       new_file->unified_dir_name = last_slash == string::npos ? "" : new_file->unified_file_name.substr(0, last_slash);
       node->data = new_file;
@@ -542,16 +538,6 @@ void CompilerCore::init_composer_class_loader() {
   }
 }
 
-vk::string_view CompilerCore::get_base_relative_filename(SrcFilePtr file) const noexcept {
-  if (!file) {
-    return "unknown";
-  }
-  vk::string_view file_name{file->file_name};
-  if (file_name.starts_with(settings().base_dir.get())) {
-    file_name.remove_prefix(settings().base_dir.get().size());
-  }
-  return file_name;
-}
 
 CompilerCore *G;
 
