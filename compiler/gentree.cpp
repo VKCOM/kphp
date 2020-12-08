@@ -1931,6 +1931,25 @@ VertexPtr GenTree::get_typehint() {
   }
 }
 
+VertexAdaptor<op_catch> GenTree::get_catch() {
+  CE (expect(tok_catch, "'catch'"));
+  CE (expect(tok_oppar, "'('"));
+  auto exception_class = cur->str_val;
+  CE (expect(tok_func_name, "'Exception'"));
+  auto exception_var_name = get_expression();
+  CE (!kphp_error(exception_var_name, "Cannot parse catch"));
+  CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
+
+  CE (expect(tok_clpar, "')'"));
+  auto catch_body = get_statement();
+  CE (!kphp_error(catch_body, "Cannot parse catch block"));
+
+  auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), embrace(catch_body));
+  catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
+
+  return catch_op;
+}
+
 VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
   TokenType type = cur->type();
 
@@ -2091,21 +2110,28 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       next_cur();
       auto try_body = get_statement();
       CE (!kphp_error(try_body, "Cannot parse try block"));
-      CE (expect(tok_catch, "'catch'"));
-      CE (expect(tok_oppar, "'('"));
-      auto exception_class = cur->str_val;
-      CE (expect(tok_func_name, "'Exception'"));
-      auto exception_var_name = get_expression();
-      CE (!kphp_error(exception_var_name, "Cannot parse catch ( ??? )"));
-      CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
 
-      CE (expect(tok_clpar, "')'"));
-      auto catch_body = get_statement();
-      CE (!kphp_error(catch_body, "Cannot parse catch block"));
+      // since catch over \Exception will always succeed,
+      // we discard all catch clauses that follow it, so we don't
+      // need to eliminate them later; while we're at it,
+      // save the catches_all flag to avoid redundant catch_list traversals later
+      std::vector<VertexPtr> catch_list;
+      bool seen_base_exception = false;
+      while (test_expect(tok_catch)) {
+        auto catch_op = get_catch();
+        CE (!kphp_error(catch_op, "Cannot parse catch statement"));
+        catch_op.set_location(location);
+        if (!seen_base_exception) {
+          catch_list.emplace_back(catch_op);
+        }
+        if (catch_op->type_declaration == "Exception") {
+          seen_base_exception = true;
+        }
+      }
+      CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
-      auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), embrace(catch_body)).set_location(location);
-      catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
-      auto try_op = VertexAdaptor<op_try>::create(embrace(try_body), catch_op).set_location(location);
+      auto try_op = VertexAdaptor<op_try>::create(embrace(try_body), std::move(catch_list)).set_location(location);
+      try_op->catches_all = seen_base_exception;
       return try_op;
     }
     case tok_inline_html: {

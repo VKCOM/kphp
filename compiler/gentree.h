@@ -96,6 +96,7 @@ public:
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(vk::string_view phpdoc_str = vk::string_view{});
+  VertexAdaptor<op_catch> get_catch();
   void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
   void get_traits_uses();
   void get_use();

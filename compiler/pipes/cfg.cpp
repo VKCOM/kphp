@@ -102,7 +102,7 @@ class CFG {
 
   std::vector<std::vector<Node>> exception_nodes;
   void create_cfg_begin_try();
-  void create_cfg_end_try(Node to);
+  void create_cfg_end_try();
   void create_cfg_register_exception(Node from);
 
   Node new_node();
@@ -279,10 +279,7 @@ void CFG::create_cfg_begin_try() {
   exception_nodes.resize(exception_nodes.size() + 1);
 }
 
-void CFG::create_cfg_end_try(Node to) {
-  for (Node i : exception_nodes.back()) {
-    add_edge(i, to);
-  }
+void CFG::create_cfg_end_try() {
   exception_nodes.pop_back();
 }
 
@@ -875,39 +872,46 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_try: {
       auto try_op = tree_node.as<op_try>();
-      auto catch_op = try_op->catch_list()[0].as<op_catch>();
-      Node exception_start, exception_finish;
-      create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
 
       Node try_start, try_finish;
       create_cfg_begin_try();
       create_cfg(try_op->try_cmd(), &try_start, &try_finish);
-      std::vector<Node> propagated;
-      bool catches_all = catch_op->type_declaration == "Exception";
-      if (!catches_all) {
-        propagated = exception_nodes.back();
-      }
-      create_cfg_end_try(exception_start);
-
-      for (Node n : propagated) {
-        create_cfg_register_exception(n);
-      }
-
-      Node catch_start, catch_finish;
-      create_cfg(catch_op->cmd(), &catch_start, &catch_finish);
-
-      add_edge(exception_finish, catch_start);
+      std::vector<Node> exceptions = exception_nodes.back();
+      create_cfg_end_try();
 
       Node finish = new_node();
       add_edge(try_finish, finish);
-      add_edge(catch_finish, finish);
+
+      // connect every exception coming from a try block with every catch block
+      for (auto c : try_op->catch_list()) {
+        auto catch_op = c.as<op_catch>();
+        Node exception_start, exception_finish;
+        create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
+
+        for (Node e : exceptions) {
+          add_edge(e, exception_start);
+        }
+
+        Node catch_start, catch_finish;
+        create_cfg(catch_op->cmd(), &catch_start, &catch_finish);
+
+        add_edge(exception_finish, catch_start);
+        add_edge(catch_finish, finish);
+
+        confirm_usage(catch_op, false);
+        add_subtree(exception_start, catch_op->var(), false);
+        add_subtree(catch_start, catch_op->cmd(), true);
+      }
+
+      if (!try_op->catches_all) {
+        // propagate all thrown exceptions
+        for (Node n : exceptions) {
+          create_cfg_register_exception(n);
+        }
+      }
 
       *res_start = try_start;
       *res_finish = finish;
-
-      confirm_usage(catch_op, false); // TODO: add_subtree
-      add_subtree(exception_start, catch_op->var(), false);
-      add_subtree(catch_start, catch_op->cmd(), true);
       break;
     }
 

@@ -1791,6 +1791,12 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "try"
+    },
+    "extra_fields": {
+      "catches_all": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
   {

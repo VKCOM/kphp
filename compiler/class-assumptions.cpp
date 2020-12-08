@@ -365,9 +365,11 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
 
     case op_try: {
       auto t = root.as<op_try>();
-      auto c = t->catch_list()[0].as<op_catch>();
-      if (c->var()->type() == op_var && c->var()->get_string() == var_name) {
-        analyze_catch_of_var(f, var_name, c);
+      for (auto c : t->catch_list()) {
+        auto catch_op = c.as<op_catch>();
+        if (catch_op->var()->type() == op_var && catch_op->var()->get_string() == var_name) {
+          analyze_catch_of_var(f, var_name, catch_op);
+        }
       }
       break;    // break instead of return so we enter the 'try' block
     }

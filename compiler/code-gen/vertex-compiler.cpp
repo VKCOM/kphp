@@ -210,40 +210,71 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   context.catch_label_used.pop_back();
 
   if (used) {
-    auto catch_op = root->catch_list()[0].as<op_catch>();
-
-    ClassPtr caught_class = G->get_class(catch_op->type_declaration);
+    // A catch list produces a series of if/elseif statements ending with else.
+    //
+    // Every if condition tries to match an exception against the type being
+    // handled by the catch clause.
+    // The last "else" contains the ThrowAction (return) that makes exception
+    // escape the current function.
+    //
+    // As a special case, catch on \Exception doesn't generate any check;
+    // it also doesn't need the "else" statement.
 
     W << "/""*** CATCH ***""/" << NL;
     W << "if (0) " << BEGIN <<
       catch_label << ":;" << NL; // TODO: Label (label_id) ?
 
-    W << UpdateLocation(catch_op->var()->location);
+    bool need_else = root->catch_list().size() > 1 || !root->catches_all;
+    bool is_first_catch = true;
+    for (auto c : root->catch_list()) {
+      auto catch_op = c.as<op_catch>();
 
-    if (caught_class->name == "Exception") {
-      // catches everything; just move the exception and execute the catch block
-      W << catch_op->var() << " = std::move(CurException);" << NL <<
-        catch_op->cmd() << NL;
-    } else if (caught_class->derived_classes.empty()) {
-      // compare the type hash and move exception if it has the same hash
-      std::string e = gen_unique_name("e");
-      W << "if (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") " << BEGIN <<
-        "auto " << e << " = std::move(CurException);" << NL <<
-        catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
-        catch_op->cmd() << NL <<
-      END << " else " << BEGIN <<
+      ClassPtr caught_class = G->get_class(catch_op->type_declaration);
+
+      // do not generate code for catches on unused classes;
+      // they would produce C++ compilation errors
+      // TODO: should we remove such catch vertices during the DropUnusedPass?
+      if (!caught_class->really_used) {
+        continue;
+      }
+
+      W << UpdateLocation(catch_op->var()->location);
+
+      if (caught_class->name == "Exception") {
+        // note: this catch can only be the *last* one;
+        // if source code had any following clauses, they are unreachable
+        // and should be removed by this point
+        if (!is_first_catch) {
+          W << "else " << BEGIN << NL;
+        }
+        need_else = false;
+        W << catch_op->var() << " = std::move(CurException);" << NL <<
+          catch_op->cmd() << NL;
+        if (!is_first_catch) {
+          W << END << NL;
+        }
+      } else {
+        std::string e = gen_unique_name("e");
+        W << (is_first_catch ? "if" : "else if");
+        if (caught_class->derived_classes.empty()) {
+          W << " (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") ";
+        } else {
+          W << " (f$is_a<" << caught_class->src_name << ">(CurException)) ";
+        }
+        W << BEGIN <<
+          "auto " << e << " = std::move(CurException);" << NL <<
+          catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
+          catch_op->cmd() << NL <<
+          END << NL;
+      }
+
+      is_first_catch = false;
+    }
+
+    if (need_else) {
+      W << "else " << BEGIN <<
         ThrowAction() << ";" << NL <<
-      END << NL;
-    } else {
-      // a slower path: do a dynamic cast via is_a() call
-      std::string e = gen_unique_name("e");
-      W << "if (f$is_a<" << caught_class->src_name << ">(CurException)) " << BEGIN <<
-        "auto " << e << " = std::move(CurException);" << NL <<
-        catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
-        catch_op->cmd() << NL <<
-      END << " else " << BEGIN <<
-        ThrowAction() << ";" << NL <<
-      END << NL;
+        END << NL;
     }
 
     W << END << NL;

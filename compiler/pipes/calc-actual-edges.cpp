@@ -34,12 +34,14 @@ bool CalcActualCallsEdgesPass::user_recursion(VertexPtr v) {
     // we could do a better job at tracking whether a block is CatchesAll,
     // but this simple approach is good enough for now;
     // at least it keeps the current code as efficient as it was
-    auto catch_op = try_v->catch_list()[0].as<op_catch>();
     auto prev_try_kind = try_kind;
-    try_kind = (catch_op->type_declaration == "Exception") ? TryKind::CatchesAll : TryKind::CatchesSome;
+    try_kind = try_v->catches_all ? TryKind::CatchesAll : TryKind::CatchesSome;
     run_function_pass(try_v->try_cmd_ref(), this);
     try_kind = prev_try_kind;
-    run_function_pass(catch_op->cmd_ref(), this);
+    for (auto c : try_v->catch_list()) {
+      auto catch_op = c.as<op_catch>();
+      run_function_pass(catch_op->cmd_ref(), this);
+    }
     return true;
   }
   if (auto fork_v = v.try_as<op_fork>()) {

@@ -278,8 +278,10 @@ void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
 }
 
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
-  auto catch_op = try_op->catch_list()[0].as<op_catch>();
-  create_set(as_lvalue(catch_op->var()), G->get_class(catch_op->type_declaration));
+  for (auto c : try_op->catch_list()) {
+    auto catch_op = c.as<op_catch>();
+    create_set(as_lvalue(catch_op->var()), G->get_class(catch_op->type_declaration));
+  }
 }
 
 void CollectMainEdgesPass::on_set_op(VertexPtr v) {

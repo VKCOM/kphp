@@ -194,8 +194,10 @@ public:
     stage::set_line(root->location.line);
 
     if (auto try_op = root.try_as<op_try>()) {
-      auto catch_op = try_op->catch_list()[0].as<op_catch>();
-      require_class(replace_characters(catch_op->type_declaration, '\\', '/'));
+      for (auto v : try_op->catch_list()) {
+        auto catch_op = v.as<op_catch>();
+        require_class(replace_characters(catch_op->type_declaration, '\\', '/'));
+      }
       return root;
     }
 
