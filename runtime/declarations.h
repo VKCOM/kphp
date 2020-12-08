@@ -25,11 +25,3 @@ template<typename T>
 class Optional;
 
 struct C$RpcConnection;
-
-template<class LongT>
-class LongNumber;
-
-using ULong = LongNumber<unsigned long long>;
-using Long  = LongNumber<long long>;
-using UInt  = LongNumber<unsigned int>;
-

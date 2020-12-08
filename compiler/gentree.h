@@ -223,15 +223,6 @@ VertexPtr GenTree::conv_to(VertexPtr x) {
     case tp_array:
       return VertexAdaptor<op_conv_array>::create(x).set_location(x);
 
-    case tp_UInt:
-      return VertexAdaptor<op_conv_uint>::create(x).set_location(x);
-
-    case tp_Long:
-      return VertexAdaptor<op_conv_long>::create(x).set_location(x);
-
-    case tp_ULong:
-      return VertexAdaptor<op_conv_ulong>::create(x).set_location(x);
-
     case tp_regexp:
       return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
 

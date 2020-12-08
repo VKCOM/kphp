@@ -15,9 +15,6 @@ private:
   VertexPtr optimize_postfix_inc(VertexPtr root);
   VertexPtr optimize_postfix_dec(VertexPtr root);
   VertexPtr optimize_index(VertexAdaptor<op_index> index);
-  template<Operation FromOp, Operation ToOp>
-  VertexPtr fix_int_const(VertexPtr from, vk::string_view from_func);
-  VertexPtr fix_int_const(VertexPtr root);
   VertexPtr remove_extra_conversions(VertexPtr root);
 
 public:

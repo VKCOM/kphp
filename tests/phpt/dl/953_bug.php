@@ -50,13 +50,6 @@ function test2() {
 var_dump ("test2");
 test2();
 */
-/*function test1() {
-  $v ::: LONG;
-  $v = longval (1000000000);
-  longval (-8843848384838483448);
-}
-var_dump ("test1");
-test1();*/
 
 /*function test3() {
   print "abc\0def" == "abc";

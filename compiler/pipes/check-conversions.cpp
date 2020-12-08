@@ -18,9 +18,6 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_array_l,  tp_Class},
   {op_conv_object,   tp_Class},
   {op_conv_mixed,    tp_Class},
-  {op_conv_uint,     tp_Class},
-  {op_conv_long,     tp_Class},
-  {op_conv_ulong,    tp_Class},
   {op_conv_regexp,   tp_Class},
 
   {op_conv_int,      tp_array},
@@ -29,9 +26,6 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_string,   tp_array},
   {op_conv_string_l, tp_array},
   {op_conv_object,   tp_array},
-  {op_conv_uint,     tp_array},
-  {op_conv_long,     tp_array},
-  {op_conv_ulong,    tp_array},
 
   {op_conv_bool,     tp_tuple},
   {op_conv_int,      tp_tuple},
@@ -40,9 +34,6 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_string,   tp_tuple},
   {op_conv_string_l, tp_tuple},
   {op_conv_object,   tp_tuple},
-  {op_conv_uint,     tp_tuple},
-  {op_conv_long,     tp_tuple},
-  {op_conv_ulong,    tp_tuple},
 
   {op_conv_bool,     tp_shape},
   {op_conv_int,      tp_shape},
@@ -54,9 +45,6 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_array_l,  tp_shape},
   {op_conv_object,   tp_shape},
   {op_conv_mixed,    tp_shape},
-  {op_conv_uint,     tp_shape},
-  {op_conv_long,     tp_shape},
-  {op_conv_ulong,    tp_shape},
   {op_conv_regexp,   tp_shape},
 };
 

@@ -1491,7 +1491,7 @@ static void init_superglobals(const char *uri, int uri_len, const char *get, int
     v$_SERVER.set_value(string("REMOTE_PORT", 11), remote_port);
   }
   if (rpc_request_id) {
-    v$_SERVER.set_value(string("RPC_REQUEST_ID", 14), f$strval(Long(rpc_request_id)));
+    v$_SERVER.set_value(string("RPC_REQUEST_ID", 14), f$strval(static_cast<int64_t>(rpc_request_id)));
     v$_SERVER.set_value(string("RPC_REMOTE_IP", 13), rpc_remote_ip);
     v$_SERVER.set_value(string("RPC_REMOTE_PORT", 15), rpc_remote_port);
     v$_SERVER.set_value(string("RPC_REMOTE_PID", 14), rpc_remote_pid);
@@ -1668,7 +1668,7 @@ Optional<string> f$ini_get(const string &s) {
   } else if (!strcmp(s.c_str(), "include_path")) {
     return string();//TODO
   } else if (!strcmp(s.c_str(), "static-buffers-size")) {
-    return f$strval(Long(static_buffer_length_limit));
+    return f$strval(static_cast<int64_t>(static_buffer_length_limit));
   }
 
   php_warning("Unrecognized option %s in ini_get", s.c_str());

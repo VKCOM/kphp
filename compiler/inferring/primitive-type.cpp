@@ -22,9 +22,6 @@ const char *ptype_name(PrimitiveType id) {
     case tp_array:         return "array";
     case tp_string:        return "string";
     case tp_mixed:         return "mixed";
-    case tp_UInt:          return "UInt";
-    case tp_Long:          return "Long";
-    case tp_ULong:         return "ULong";
     case tp_tuple:         return "tuple";
     case tp_shape:         return "shape";
     case tp_future:        return "future";
@@ -81,10 +78,6 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
   }
 
   if (b >= tp_void) { // instances, future, etc — can mix only with false
-    return tp_Error;
-  }
-
-  if ((b == tp_UInt || b == tp_Long || b == tp_ULong) && a != tp_int) { // UInt, Long and ULong can store only int
     return tp_Error;
   }
 

@@ -539,18 +539,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_ptype<tp_float>();
       break;
 
-    case op_conv_uint:
-      recalc_ptype<tp_UInt>();
-      break;
-
-    case op_conv_long:
-      recalc_ptype<tp_Long>();
-      break;
-
-    case op_conv_ulong:
-      recalc_ptype<tp_ULong>();
-      break;
-
     case op_conv_regexp:
       recalc_ptype<tp_regexp>();
       break;

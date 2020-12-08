@@ -67,16 +67,10 @@ protected:
       case op_conv_bool:
       case op_conv_mixed:
       case op_force_mixed:
-      case op_conv_uint:
-      case op_conv_long:
-      case op_conv_ulong:
       case op_conv_regexp:
         return on_conv(v.as<meta_op_unary>());
 
       case op_int_const:
-      case op_uint_const:
-      case op_long_const:
-      case op_ulong_const:
       case op_float_const:
       case op_string:
       case op_false:

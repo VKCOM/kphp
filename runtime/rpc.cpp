@@ -83,50 +83,6 @@ static inline T store_parse_number(const mixed &v) {
 }
 
 
-template<class T>
-static inline T store_parse_number_unsigned(const string &v) {
-  T result = 0;
-  const char *s = v.c_str();
-  while ('0' <= *s && *s <= '9') {
-    result = result * 10 + (*s++ - '0');
-  }
-  return result;
-}
-
-template<class T>
-static inline T store_parse_number_unsigned(const mixed &v) {
-  if (!v.is_string()) {
-    if (v.is_float()) {
-      return (T)v.to_float();
-    }
-    return (T)v.to_int();
-  }
-  return store_parse_number_unsigned<T>(v.to_string());
-}
-
-template<class T>
-static inline T store_parse_number_hex(const string &v) {
-  T result = 0;
-  const char *s = v.c_str();
-  while (true) {
-    T next = -1;
-    if ('0' <= *s && *s <= '9') {
-      next = *s - '0';
-    } else if ('A' <= *s && *s <= 'F') {
-      next = *s - ('A' - 10);
-    } else if ('a' <= *s && *s <= 'f') {
-      next = *s - ('a' - 10);
-    }
-    if (next == (T)-1) {
-      break;
-    }
-
-    result = result * 16 + next;
-    s++;
-  }
-  return result;
-}
-
 
 static void rpc_parse_save_backup() {
   dl::enter_critical_section();//OK
@@ -252,78 +208,12 @@ string f$fetch_lookup_data(int64_t x4_bytes_length) {
                 static_cast<string::size_type>(x4_bytes_length * 4));
 }
 
-mixed f$fetch_unsigned_int() {
-  TRY_CALL_VOID(mixed, (check_rpc_data_len(1)));
-  unsigned int result = *rpc_data++;
-
-  if (result <= (unsigned int)INT_MAX) {
-    return (int)result;
-  }
-
-  return f$strval(UInt(result));
-}
-
 int64_t f$fetch_long() {
   TRY_CALL_VOID(int64_t, (check_rpc_data_len(2)));
   long long result = *reinterpret_cast<const long long *>(rpc_data);
   rpc_data += 2;
 
   return result;
-}
-
-mixed f$fetch_unsigned_long() {
-  TRY_CALL_VOID(mixed, (check_rpc_data_len(2)));
-  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
-  rpc_data += 2;
-
-  if (result <= (unsigned long long)INT_MAX) {
-    return (int)result;
-  }
-
-  return f$strval(ULong(result));
-}
-
-string f$fetch_unsigned_int_hex() {
-  TRY_CALL_VOID(string, (check_rpc_data_len(1)));
-  unsigned int result = *rpc_data++;
-
-  char buf[8], *end_buf = buf + 8;
-  for (int i = 0; i < 8; i++) {
-    *--end_buf = lhex_digits[result & 15];
-    result >>= 4;
-  }
-
-  return string(end_buf, 8);
-}
-
-string f$fetch_unsigned_long_hex() {
-  TRY_CALL_VOID(string, (check_rpc_data_len(2)));
-  unsigned long long result = *reinterpret_cast<const unsigned long long *>(rpc_data);
-  rpc_data += 2;
-
-  char buf[16], *end_buf = buf + 16;
-  for (int i = 0; i < 16; i++) {
-    *--end_buf = lhex_digits[result & 15];
-    result >>= 4;
-  }
-
-  return string(end_buf, 16);
-}
-
-string f$fetch_unsigned_int_str() {
-  TRY_CALL_VOID(string, check_rpc_data_len(1));
-  auto result = *reinterpret_cast<const unsigned int *>(rpc_data);
-  rpc_data++;
-
-  return f$strval(UInt(result));
-}
-
-string f$fetch_unsigned_long_str() {
-  TRY_CALL_VOID(string, check_rpc_data_len(2));
-  auto result = *reinterpret_cast<const unsigned long long *>(rpc_data);
-  rpc_data += 2;
-
-  return f$strval(ULong(result));
 }
 
 double f$fetch_double() {
@@ -562,32 +452,8 @@ bool f$store_int(int64_t v) {
   return store_int(v32);
 }
 
-bool store_unsigned_int(unsigned int v) {
-  return store_raw(v);
-}
-
 bool store_long(long long v) {
   return store_raw(v);
-}
-
-bool store_unsigned_long(unsigned long long v) {
-  return store_raw(v);
-}
-
-bool f$store_unsigned_int(const string &v) {
-  return store_raw(store_parse_number_unsigned<unsigned int>(v));
-}
-
-bool f$store_unsigned_long(const string &v) {
-  return store_raw(store_parse_number_unsigned<unsigned long long>(v));
-}
-
-bool f$store_unsigned_int_hex(const string &v) {
-  return store_raw(store_parse_number_hex<unsigned int>(v));
-}
-
-bool f$store_unsigned_long_hex(const string &v) {
-  return store_raw(store_parse_number_hex<unsigned long long>(v));
 }
 
 bool f$store_double(double v) {
@@ -1117,20 +983,12 @@ int64_t f$query_x2(int64_t x) {
  */
 
 
-bool f$store_unsigned_int(const mixed &v) {
-  return store_unsigned_int(store_parse_number_unsigned<unsigned int>(v));
-}
-
 bool store_long(const mixed &v) {
   return store_long(store_parse_number<long long>(v));
 }
 
 bool f$store_long(int64_t v) {
   return store_long(v);
-}
-
-bool f$store_unsigned_long(const mixed &v) {
-  return store_unsigned_long(store_parse_number_unsigned<unsigned long long>(v));
 }
 
 

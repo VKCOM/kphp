@@ -733,19 +733,7 @@ function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: strin
 /** @kphp-extern-func-info can_throw */
 function fetch_int () ::: int;
 /** @kphp-extern-func-info can_throw */
-function fetch_unsigned_int () ::: mixed;
-/** @kphp-extern-func-info can_throw */
 function fetch_long () ::: int;
-/** @kphp-extern-func-info can_throw */
-function fetch_unsigned_long () ::: mixed;
-/** @kphp-extern-func-info can_throw */
-function fetch_unsigned_int_hex () ::: string;
-/** @kphp-extern-func-info can_throw */
-function fetch_unsigned_long_hex () ::: string;
-/** @kphp-extern-func-info can_throw */
-function fetch_unsigned_int_str () ::: string;
-/** @kphp-extern-func-info can_throw */
-function fetch_unsigned_long_str () ::: string;
 /** @kphp-extern-func-info can_throw */
 function fetch_double () ::: float;
 /** @kphp-extern-func-info can_throw */
@@ -782,11 +770,7 @@ function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
 function store_raw ($v ::: string) ::: bool;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 function store_int ($v ::: int) ::: bool;
-function store_unsigned_int ($v ::: mixed) ::: bool;
 function store_long ($v ::: int) ::: bool;
-function store_unsigned_long ($v ::: mixed) ::: bool;
-function store_unsigned_int_hex ($v ::: string) ::: bool;
-function store_unsigned_long_hex ($v ::: string) ::: bool;
 function store_double ($v ::: float) ::: bool;
 function store_float ($v ::: float) ::: bool;
 function store_string ($v ::: string) ::: bool;
@@ -893,9 +877,6 @@ function boolval ($v ::: any) ::: bool;
 function intval ($v ::: mixed) ::: int;
 function floatval ($v ::: mixed) ::: float;
 function strval ($v ::: mixed) ::: string;
-function uintval ($v ::: mixed) ::: UInt;
-function longval ($v ::: mixed) ::: Long;
-function ulongval ($v ::: mixed) ::: ULong;
 
 /** files **/
 define('STDIN', 'php://stdin');
@@ -934,53 +915,6 @@ function stream_select (&$read, &$write, &$except, $tv_sec, $tv_usec ::: int = 0
 
 function is_uploaded_file ($filename ::: string) ::: bool;
 function move_uploaded_file ($oldname ::: string, $newname ::: string) ::: bool;
-
-/** Long **/
-function labs ($lhs ::: Long) ::: Long;
-function ldiv ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lmod ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lpow ($lhs ::: Long, $rhs ::: int) ::: Long;
-function ladd ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lsub ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lmul ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lshl ($lhs ::: Long, $rhs ::: int) ::: Long;
-function lshr ($lhs ::: Long, $rhs ::: int) ::: Long;
-function lnot ($lhs ::: Long) ::: Long;
-function lor ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function land ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lxor ($lhs ::: Long, $rhs ::: Long) ::: Long;
-function lcomp ($lhs ::: Long, $rhs ::: Long) ::: int;
-
-/** ULong **/
-function uldiv ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulmod ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulpow ($lhs ::: ULong, $rhs ::: int) ::: ULong;
-function uladd ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulsub ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulmul ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulshl ($lhs ::: ULong, $rhs ::: int) ::: ULong;
-function ulshr ($lhs ::: ULong, $rhs ::: int) ::: ULong;
-function ulnot ($lhs ::: ULong) ::: ULong;
-function ulor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function uland ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulxor ($lhs ::: ULong, $rhs ::: ULong) ::: ULong;
-function ulcomp ($lhs ::: ULong, $rhs ::: ULong) ::: int;
-
-/** UInt **/
-function uidiv ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uimod ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uipow ($lhs ::: UInt, $rhs ::: int) ::: UInt;
-function uiadd ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uisub ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uimul ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uishl ($lhs ::: UInt, $rhs ::: int) ::: UInt;
-function uishr ($lhs ::: UInt, $rhs ::: int) ::: UInt;
-function uinot ($lhs ::: UInt) ::: UInt;
-function uior ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uiand ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uixor ($lhs ::: UInt, $rhs ::: UInt) ::: UInt;
-function uicomp ($lhs ::: UInt, $rhs ::: UInt) ::: int;
-
 
 define('UPLOAD_ERR_OK', 0);
 define('UPLOAD_ERR_INI_SIZE', 1);

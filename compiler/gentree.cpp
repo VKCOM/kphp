@@ -946,12 +946,6 @@ VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
       return conv_to<tp_float>(x);
     case tp_array:
       return conv_to<tp_array>(x);
-    case tp_UInt:
-      return conv_to<tp_UInt>(x);
-    case tp_Long:
-      return conv_to<tp_Long>(x);
-    case tp_ULong:
-      return conv_to<tp_ULong>(x);
     case tp_regexp:
       return conv_to<tp_regexp>(x);
     case tp_mixed:
@@ -1595,12 +1589,6 @@ bool GenTree::check_statement_end() {
   return expect (tok_semicolon, "';'");
 }
 
-static inline bool is_class_name_allowed(vk::string_view name) {
-  static std::set<vk::string_view> disallowed_names{"Long", "ULong", "UInt"};
-
-  return disallowed_names.find(name) == disallowed_names.end();
-}
-
 void GenTree::parse_extends_implements() {
   if (test_expect(tok_extends)) {     // extends comes before 'implements', the order is fixed
     do {
@@ -1656,10 +1644,6 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
 
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
-
-  if (!is_class_name_allowed(name_str)) {
-    kphp_error (false, fmt_format("Sorry, kPHP doesn't support class name {}", name_str));
-  }
 
   cur_class->modifiers = modifiers;
   cur_class->class_type = class_type;

@@ -1577,27 +1577,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       }
       W << str << "L";
       break;
-    case op_uint_const:
-      str = root.as<op_uint_const>()->str_val;
-      if (str.size() > 9) {
-        W << "(unsigned int)";
-      }
-      W << str << "u";
-      break;
-    case op_long_const:
-      str = root.as<op_long_const>()->str_val;
-      if (str.size() > 18) {
-        W << "(long long)";
-      }
-      W << str << "ll";
-      break;
-    case op_ulong_const:
-      str = root.as<op_ulong_const>()->str_val;
-      if (str.size() > 18) {
-        W << "(unsigned long long)";
-      }
-      W << str << "ull";
-      break;
     case op_float_const:
       str = root.as<op_float_const>()->str_val;
       W << "(double)" << str;

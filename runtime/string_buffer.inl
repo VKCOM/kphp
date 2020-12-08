@@ -102,20 +102,10 @@ string_buffer &operator<<(string_buffer &sb, unsigned int x) {
   return sb;
 }
 
-string_buffer &operator<<(string_buffer &sb, long long x) {
+string_buffer &operator<<(string_buffer &sb, int64_t x) {
   sb.reserve_at_least(20);
   sb.buffer_end = simd_int64_to_string(x, sb.buffer_end);
   return sb;
-}
-
-string_buffer &operator<<(string_buffer &sb, unsigned long long x) {
-  sb.reserve_at_least(20);
-  sb.buffer_end = simd_uint64_to_string(x, sb.buffer_end);
-  return sb;
-}
-
-string_buffer &operator<<(string_buffer &sb, int64_t x) {
-  return sb << static_cast<long long>(x);
 }
 
 string::size_type string_buffer::size() const {
