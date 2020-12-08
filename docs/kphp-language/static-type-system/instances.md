@@ -163,7 +163,6 @@ class B {
 Main limitations are:
 * instances **are not compatible with mixed**; you can't return an instance or a string from function; an array can't contain both instances and primitives
 * you can only **access fields by a constant name**; `$a->$some_prop` is prohibited, calling a method by name can't be compiled also
-* **exception inheritance** is not supported
 * **no magic methods** like *__get()*, *__call()* and others
 * **reflection** is not supported 
 * **serialize(), var_dump(), json_encode() and others** can't be used with instances, as they accept *mixed* 

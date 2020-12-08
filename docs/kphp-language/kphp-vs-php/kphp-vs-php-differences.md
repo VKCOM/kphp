@@ -113,7 +113,6 @@ For now, KPHP has the absence of:
 * anonymous classes
 * negative string offsets
 * finally
-* exceptions inheritance
 * having a common interface more than once in parents chain
 * insteadof and traits renaming
 * func_get_args
