@@ -43,7 +43,7 @@ interface Memcache {
 }
 
 
-class McMemcache implements Memcache {
+final class McMemcache implements Memcache {
     public function __construct() ::: McMemcache;
 
     public function get ($key) ::: mixed;
@@ -59,7 +59,7 @@ class McMemcache implements Memcache {
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
-class RpcMemcache implements Memcache {
+final class RpcMemcache implements Memcache {
     public function __construct($fake ::: bool = false) ::: RpcMemcache;
 
     public function get ($key) ::: mixed;
@@ -77,7 +77,7 @@ class RpcMemcache implements Memcache {
 }
 
 
-class mysqli {
+final class mysqli {
     private function __construct() ::: \mysqli;
 }
 
@@ -765,7 +765,7 @@ function fetch_lookup_data ($x4_bytes_length ::: int) ::: string;
 
 function rpc_parse ($data) ::: bool;
 
-class RpcConnection {
+final class RpcConnection {
     private function __construct();
 }
 
@@ -1232,7 +1232,7 @@ function profiler_is_enabled() ::: bool;
 function __exception_set_location($e ::: any, $file ::: string, $line ::: int) ::: ^1;
 
 // uber h3 bindings https://h3geo.org/docs
-class UberH3 {
+final class UberH3 {
   // Indexing functions: https://h3geo.org/docs/api/indexing
   static public function geoToH3($latitude ::: float, $longitude ::: float, $resolution ::: int) ::: int;
   static public function h3ToGeo($h3_index ::: int) ::: tuple(float, float);
