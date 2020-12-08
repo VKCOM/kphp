@@ -1,3 +1,4 @@
+@ok
 <?php
 
 class MyException1 extends Exception {}
