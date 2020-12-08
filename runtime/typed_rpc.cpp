@@ -168,6 +168,10 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
     return -1;
   }
 
+  if (dl::query_num != rpc_tl_results_last_query_num) {
+    rpc_tl_results_last_query_num = dl::query_num;
+  }
+
   class_instance<RpcTlQuery> query;
   query.alloc();
   query.get()->query_id = query_id;
@@ -186,6 +190,10 @@ class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t q
     return error_factory.make_error("Rpc query has incorrect query id", TL_ERROR_WRONG_QUERY_ID);
   }
 
+  if (dl::query_num != rpc_tl_results_last_query_num) {
+    return error_factory.make_error("There were no TL queries in current script run", TL_ERROR_INTERNAL);
+  }
+
   auto query = RpcPendingQueries::get().withdraw(query_id);
   if (query.is_null()) {
     return error_factory.make_error("Unknown query_id", TL_ERROR_WRONG_QUERY_ID);
@@ -193,6 +201,10 @@ class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t q
 
   if (!query.get()->result_fetcher || query.get()->result_fetcher->empty()) {
     return error_factory.make_error("Rpc query has empty result fetcher", TL_ERROR_INTERNAL);
+  }
+
+  if (!query.get()->result_fetcher->is_typed) {
+    return error_factory.make_error("Can't get typed result from untyped TL query. Use consistent API for that", TL_ERROR_INTERNAL);
   }
 
   resumable_finalizer.disable();

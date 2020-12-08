@@ -1188,7 +1188,7 @@ array<mixed> tl_fetch_error(const char *error, int error_code) {
   return tl_fetch_error(string(error), error_code);
 }
 
-static long long rpc_tl_results_last_query_num = -1;
+long long rpc_tl_results_last_query_num = -1;
 
 bool try_fetch_rpc_error(array<mixed> &out_if_error) {
   int x = rpc_lookup_int();
@@ -1240,7 +1240,6 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) {
 array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   array<mixed> new_tl_object;
   if (try_fetch_rpc_error(new_tl_object)) {
-
     return new_tl_object;       // this object carries an error (see tl_fetch_error())
   }
   php_assert(!rpc_query.is_null());
@@ -1394,22 +1393,30 @@ public:
 
 
 array<mixed> f$rpc_tl_query_result_one(int64_t query_id) {
+  auto resumable_finalizer = vk::finally([] { resumable_finished = true; });
+
   if (query_id <= 0) {
-    resumable_finished = true;
     return tl_fetch_error("Wrong query_id", TL_ERROR_WRONG_QUERY_ID);
   }
 
   if (dl::query_num != rpc_tl_results_last_query_num) {
-    resumable_finished = true;
-    return tl_fetch_error("There was no TL queries in current script run", TL_ERROR_INTERNAL);
+    return tl_fetch_error("There were no TL queries in current script run", TL_ERROR_INTERNAL);
   }
 
   class_instance<RpcTlQuery> rpc_query = RpcPendingQueries::get().withdraw(query_id);
   if (rpc_query.is_null()) {
-    resumable_finished = true;
     return tl_fetch_error("Can't use rpc_tl_query_result for non-TL query", TL_ERROR_INTERNAL);
   }
 
+  if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) {
+    return tl_fetch_error("Rpc query has empty result fetcher", TL_ERROR_INTERNAL);
+  }
+
+  if (rpc_query.get()->result_fetcher->is_typed) {
+    return tl_fetch_error("Can't get untyped result from typed TL query. Use consistent API for that", TL_ERROR_INTERNAL);
+  }
+
+  resumable_finalizer.disable();
   return start_resumable<array<mixed>>(new rpc_tl_query_result_one_resumable(query_id, std::move(rpc_query)));
 }
 
