@@ -1,5 +1,5 @@
 @kphp_should_fail
-/@kphp-analyze-performance conflict, one caller enables 'implicit-array-cast' while other disables it\
+/@kphp-analyze-performance conflict, one caller enables 'implicit-array-cast' while other disables it/
 <?php
 
 function ab() { var_dump("ab"); }

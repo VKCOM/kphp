@@ -1,5 +1,5 @@
 @kphp_should_fail
-/@kphp-analyze-performance bad tag: there are no any inspection\
+/@kphp-analyze-performance bad tag: there are no any inspection/
 <?php
 
 /**

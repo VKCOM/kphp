@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 #include "compiler/pipes/analyze-performance.h"
 
+#include "common/algorithms/sorting.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
 #include "compiler/compiler-core.h"
@@ -13,8 +14,7 @@
 namespace {
 
 VertexPtr remove_conv_wrap(VertexPtr vertex) noexcept {
-  if (vk::any_of_equal(vertex->type(), op_conv_int, op_conv_float, op_conv_string, op_conv_array,
-                       op_conv_bool, op_conv_mixed, op_conv_drop_false, op_conv_drop_null)) {
+  if (OpInfo::type(vertex->type()) == conv_op) {
     return remove_conv_wrap(vertex.as<meta_op_unary>()->expr());
   }
   return vertex;
@@ -198,7 +198,7 @@ void AnalyzePerformance::analyze_set(VertexAdaptor<op_set> op_set_vertex) noexce
   if (is_enabled<PerformanceInspections::array_merge_into>()) {
     const auto first_arg = get_first_arg_from_array_merge_call(op_set_vertex->rhs().try_as<op_func_call>());
     if (is_same_var_expression(op_set_vertex->lhs(), first_arg)) {
-      on_array_merge(first_arg);
+      trigger_array_merge(first_arg);
     }
   }
   if (is_enabled<PerformanceInspections::implicit_array_cast>()) {
@@ -213,7 +213,7 @@ void AnalyzePerformance::analyze_set_array_value(VertexAdaptor<op_set_value> op_
     if (first_arg_array_index && first_arg_array_index->has_key() &&
         is_same_var_expression(op_set_value_vertex->key(), first_arg_array_index->key()) &&
         is_same_var_expression(op_set_value_vertex->array(), first_arg_array_index->array())) {
-      on_array_merge(first_arg);
+      trigger_array_merge(first_arg);
     }
   }
 
@@ -280,7 +280,7 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
   if (enabled_inspections & PerformanceInspections::constant_execution_in_loop) {
     if (vk::any_of_equal(vertex->type(), op_index, op_func_call)) {
       if (is_constant_expression_in_this_loop(vertex) && is_op_index_sequence_with_non_int_keys(vertex)) {
-        auto message = get_description_for_help(vertex) + " can be saved in separate variable out of loop";
+        auto message = get_description_for_help(vertex) + " can be saved in a separate variable out of loop";
         trigger_inspection_on_second_pass(vertex, PerformanceInspections::constant_execution_in_loop, std::move(message));
         enabled_inspections &= ~PerformanceInspections::constant_execution_in_loop;
       }
@@ -294,7 +294,7 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
                                       [this](VertexPtr vertex) { return is_constant_expression_in_this_loop(vertex); });
       VertexRange constant_expressions_range{first_it, last_it};
       if (!constant_expressions_range.empty()) {
-        auto message = "string building " + join_string_build_elements(constant_expressions_range) + " can be saved in separate variable out of loop";
+        auto message = "string building " + join_string_build_elements(constant_expressions_range) + " can be saved in a separate variable out of loop";
         trigger_inspection_on_second_pass(op_string_build_vertex, PerformanceInspections::constant_execution_in_loop, std::move(message));
         enabled_inspections &= ~PerformanceInspections::constant_execution_in_loop;
       }
@@ -401,7 +401,7 @@ bool AnalyzePerformance::is_constant_expression_in_this_loop(VertexPtr vertex) c
   return false;
 }
 
-void AnalyzePerformance::on_array_merge(VertexPtr first_arg) noexcept {
+void AnalyzePerformance::trigger_array_merge(VertexPtr first_arg) noexcept {
   auto first_arg_help = get_description_for_help_impl<false>(first_arg);
   auto message = "expression " + first_arg_help + " = array_merge(" + first_arg_help + ", <...>) " +
                  "can be replaced with array_merge_into(" + first_arg_help + ", <...>)";
@@ -565,10 +565,13 @@ VertexPtr AnalyzePerformance::on_exit_vertex(VertexPtr vertex) {
 }
 
 void AnalyzePerformance::on_finish() {
-  PerformanceIssuesReport::get().add_issues(current_function, std::move(performance_issues_for_analysis_));
+  if (current_function->performance_inspections_for_analysis.inspections()) {
+    vk::singleton<PerformanceIssuesReport>::get().add_issues_and_require_flush(current_function, std::move(performance_issues_for_analysis_));
+  }
 }
 
-void PerformanceIssuesReport::add_issues(FunctionPtr function, std::vector<AnalyzePerformance::Issue> &&issues) noexcept {
+void PerformanceIssuesReport::add_issues_and_require_flush(FunctionPtr function, std::vector<AnalyzePerformance::Issue> &&issues) noexcept {
+  is_flush_required_ = true;
   if (issues.empty()) {
     return;
   }
@@ -586,9 +589,8 @@ void PerformanceIssuesReport::add_issues(FunctionPtr function, std::vector<Analy
   report_.emplace_back(std::move(function_issues));
 }
 
-bool PerformanceIssuesReport::empty() noexcept {
-  std::lock_guard<std::mutex> lock{mutex_};
-  return report_.empty();
+bool PerformanceIssuesReport::is_flush_required() const noexcept {
+  return is_flush_required_;
 }
 
 void PerformanceIssuesReport::flush_to(FILE *out) noexcept {
@@ -621,9 +623,7 @@ void PerformanceIssuesReport::flush_to(FILE *out) noexcept {
     report_.clear();
   }
 
-  std::sort(full_report.begin(), full_report.end());
-  full_report.erase(std::unique(full_report.begin(), full_report.end()), full_report.end());
-
+  vk::sort_and_unique(full_report);
   fprintf(out, "[");
   const char *line_begin = "\n";
   for (const auto &record : full_report) {

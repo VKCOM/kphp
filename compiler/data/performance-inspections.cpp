@@ -1,6 +1,7 @@
 // Compiler for PHP (aka KPHP)
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "compiler/data/performance-inspections.h"
 
 #include "common/wrappers/to_array.h"

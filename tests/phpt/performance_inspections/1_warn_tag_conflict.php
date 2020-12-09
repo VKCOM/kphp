@@ -1,5 +1,5 @@
 @kphp_should_fail
-/@kphp-warn-performance conflict, one caller enables 'implicit-array-cast' while other disables it\nEnabled by: a1 -> a2 -> ab\nDisabled by: b1 -> b2 -> ab\
+/@kphp-warn-performance conflict, one caller enables 'implicit-array-cast' while other disables it\nEnabled by: a1 -> a2 -> ab\nDisabled by: b1 -> b2 -> ab/
 <?php
 
 function ab() { var_dump("ab"); }

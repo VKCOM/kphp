@@ -1,8 +1,13 @@
 // Compiler for PHP (aka KPHP)
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
+
+#include "common/smart_ptrs/singleton.h"
+
 #include "compiler/function-pass.h"
+
 
 class AnalyzePerformance final : public FunctionPassBase {
 public:
@@ -53,7 +58,7 @@ private:
     return get_function_inspections(current_function) & inspection;
   }
 
-  void on_array_merge(VertexPtr first_arg) noexcept;
+  void trigger_array_merge(VertexPtr first_arg) noexcept;
   void trigger_inspection(PerformanceInspections::Inspections inspection, std::string message) noexcept;
   void trigger_inspection_on_second_pass(VertexPtr inspected_vertex, PerformanceInspections::Inspections inspection, std::string message) noexcept;
 
@@ -73,14 +78,11 @@ private:
 
 class PerformanceIssuesReport : vk::not_copyable {
 public:
-  static PerformanceIssuesReport &get() noexcept {
-    static PerformanceIssuesReport self;
-    return self;
-  }
+  friend class vk::singleton<PerformanceIssuesReport>;
 
-  void add_issues(FunctionPtr function, std::vector<AnalyzePerformance::Issue> &&issues) noexcept;
+  void add_issues_and_require_flush(FunctionPtr function, std::vector<AnalyzePerformance::Issue> &&issues) noexcept;
 
-  bool empty() noexcept;
+  bool is_flush_required() const noexcept;
   void flush_to(FILE *out) noexcept;
 
 private:
@@ -91,6 +93,8 @@ private:
     std::string function_name;
     std::vector<AnalyzePerformance::Issue> issues;
   };
+
+  std::atomic<bool> is_flush_required_{false};
 
   std::mutex mutex_;
   std::vector<FunctionPerformanceIssues> report_;

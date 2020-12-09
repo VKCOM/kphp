@@ -314,11 +314,15 @@ bool compiler_execute(CompilerSettings *settings) {
     stage::error();
   }
 
-  if (!PerformanceIssuesReport::get().empty()) {
+  if (vk::singleton<PerformanceIssuesReport>::get().is_flush_required()) {
     if (auto *report_file = fopen(G->settings().performance_analyze_report_path.get().c_str(), "w")) {
-      PerformanceIssuesReport::get().flush_to(report_file);
+      vk::singleton<PerformanceIssuesReport>::get().flush_to(report_file);
       fclose(report_file);
+    } else {
+      std::cerr << "Can't open " << G->settings().performance_analyze_report_path.get() << " file: " << std::strerror(errno) << "\n";
     }
+  } else {
+    unlink(G->settings().performance_analyze_report_path.get().c_str());
   }
 
   stage::die_if_global_errors();
