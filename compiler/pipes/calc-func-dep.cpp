@@ -35,6 +35,16 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     current_function->class_dep.insert(instanceof->derived_class);
   }
 
+  if (auto catch_op = vertex.try_as<op_catch>()) {
+    // since only used functions make it to this point, we may
+    // mark class as used even if it was not explicitly instantiated
+    // anywhere, so we can compile the try/catch successfully
+    auto klass = catch_op->exception_class;
+    kphp_assert(klass);
+    klass->mark_as_used();
+    current_function->class_dep.insert(klass);
+  }
+
   //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;

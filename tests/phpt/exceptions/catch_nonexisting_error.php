@@ -1,11 +1,11 @@
 @kphp_should_fail
-/Unknown function ->getFile\(\)/
-/Unknown function ->getLine\(\)/
+/Can't find class: Foo\\Bar/
+/Can't find class: Poof/
 <?php
 
 try {
   throw new Exception();
-} catch (\Blah\Blah $e) {
+} catch (\Foo\Bar $e) {
   var_dump($e->getFile());
 }
 
@@ -13,7 +13,7 @@ class Foo {
   public static function f() {
     try {
       throw new Exception();
-    } catch (Throwable $e) {
+    } catch (Poof $e) {
       var_dump($e->getLine());
     }
   }

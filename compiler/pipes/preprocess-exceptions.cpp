@@ -10,6 +10,12 @@
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   static const ClassPtr exception_class = G->get_class("Exception");
 
+  if (auto catch_op = root.try_as<op_catch>()) {
+    catch_op->exception_class = G->get_class(catch_op->type_declaration);
+    kphp_error(catch_op->exception_class, fmt_format("Can't find class: {}", catch_op->type_declaration));
+    return root;
+  }
+
   auto call = root.try_as<op_func_call>();
   if (!call || !is_constructor_call(call)) {
     return root;

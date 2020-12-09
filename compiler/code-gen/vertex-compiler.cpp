@@ -229,18 +229,11 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
     for (auto c : root->catch_list()) {
       auto catch_op = c.as<op_catch>();
 
-      ClassPtr caught_class = G->get_class(catch_op->type_declaration);
-
-      // do not generate code for catches on unused classes;
-      // they would produce C++ compilation errors
-      // TODO: should we remove such catch vertices during the DropUnusedPass?
-      if (!caught_class->really_used) {
-        continue;
-      }
+      ClassPtr caught_class = catch_op->exception_class;
 
       W << UpdateLocation(catch_op->var()->location);
 
-      if (caught_class->name == "Exception") {
+      if (catch_op->catches_all) {
         // note: this catch can only be the *last* one;
         // if source code had any following clauses, they are unreachable
         // and should be removed by this point

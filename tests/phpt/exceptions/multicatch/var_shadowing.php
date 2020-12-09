@@ -7,9 +7,9 @@ class MyException2 extends Exception {}
 function test($x) {
   try {
     if ($x) {
-      throw new MyException1();
+      throw new MyException1('a');
     } else {
-      throw new MyException2();
+      throw new MyException2('b');
     }
   } catch (MyException1 $e) {
     var_dump($e->getLine());
@@ -18,6 +18,7 @@ function test($x) {
   } catch (Exception $e) {
     var_dump($e->getLine());
   }
+  var_dump([__LINE__ => $e->getMessage()]);
 }
 
 test(true);

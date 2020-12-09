@@ -299,9 +299,8 @@ void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr 
  * Deduce that $ex is T-typed from `catch (T $ex)`
  */
 void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_catch> root) {
-  if (auto caught_class = G->get_class(root->type_declaration)) {
-    assumption_add_for_var(f, var_name, AssumInstance::create(caught_class));
-  }
+  kphp_assert(root->exception_class);
+  assumption_add_for_var(f, var_name, AssumInstance::create(root->exception_class));
 }
 
 /*

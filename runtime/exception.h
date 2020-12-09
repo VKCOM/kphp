@@ -10,7 +10,17 @@
 
 array<array<string>> f$debug_backtrace();
 
-struct C$Exception : public refcountable_polymorphic_php_classes_virt<> {
+struct C$Throwable : public virtual abstract_refcountable_php_interface {
+  virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
+
+  virtual const char *get_class() const noexcept = 0;
+  virtual int32_t get_hash() const noexcept = 0;
+
+  C$Throwable() __attribute__((always_inline)) = default;
+  ~C$Throwable() __attribute__((always_inline)) = default;
+};
+
+struct C$Exception : public refcountable_polymorphic_php_classes<C$Throwable> {
   string $message;
   int64_t $code = 0;
   string $file;
@@ -22,15 +32,15 @@ struct C$Exception : public refcountable_polymorphic_php_classes_virt<> {
 
   virtual ~C$Exception() = default;
 
-  virtual const char *get_class() const noexcept {
+  virtual const char *get_class() const noexcept override {
     return "Exception";
   }
 
-  virtual int get_hash() const noexcept {
+  virtual int get_hash() const noexcept override {
     return classname_hash;
   }
 
-  void accept(InstanceMemoryEstimateVisitor &visitor) {
+  void accept(InstanceMemoryEstimateVisitor &visitor) override {
     visitor("", $message);
     visitor("", $file);
     visitor("", raw_trace);

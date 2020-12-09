@@ -1,18 +1,18 @@
 @kphp_should_fail
-/Could not find catch class Blah\\Blah/
-/Could not find catch class Throwable/
+/Can't find class: Foo\\Bar/
+/Can't find class: Poof/
 <?php
 
 try {
   throw new Exception();
-} catch (\Blah\Blah $e) {
+} catch (\Foo\Bar $e) {
 }
 
 class Foo {
   public static function f() {
     try {
       throw new Exception();
-    } catch (Throwable $e) {
+    } catch (Poof $e) {
     }
   }
 }

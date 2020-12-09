@@ -1751,7 +1751,7 @@
     }
   },
   {
-    "comment": "catch (type_declaration var()) { cmd() }",
+    "comment": "catch (type_declaration var()) { cmd() }; catches_all is true if it catches Exception or Throwable",
     "sons": {
       "var": {
         "id": 0,
@@ -1767,11 +1767,18 @@
     "extra_fields": {
       "type_declaration": {
         "type": "std::string"
+      },
+      "exception_class": {
+        "type": "ClassPtr"
+      },
+      "catches_all": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },
   {
-    "comment": "try { try_cmd()... } catch_list<op_catch>()...;",
+    "comment": "try { try_cmd()... } catch_list<op_catch>()...; catches_all is true if at least 1 op_catch is catches_all",
     "sons": {
       "try_cmd": {
         "id": 0,

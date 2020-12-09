@@ -274,16 +274,16 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
 }
 
 void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
+  // may change from Exception to Throwable when CurException type is changed;
+  // see throw_throwable_error.php
   create_less(as_rvalue(throw_op->exception()), G->get_class("Exception"));
 }
 
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
   for (auto c : try_op->catch_list()) {
     auto catch_op = c.as<op_catch>();
-    auto exception_class = G->get_class(catch_op->type_declaration);
-    if (!kphp_error(exception_class, fmt_format("Could not find catch class {}", catch_op->type_declaration))) {
-      create_set(as_lvalue(catch_op->var()), exception_class);
-    }
+    kphp_assert(catch_op->exception_class);
+    create_set(as_lvalue(catch_op->var()), catch_op->exception_class);
   }
 }
 

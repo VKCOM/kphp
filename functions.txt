@@ -8,7 +8,16 @@ if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
 }
 
-class Exception {
+interface Throwable {
+  public function getMessage () ::: string;
+  public function getCode () ::: int;
+  public function getFile () ::: string;
+  public function getLine () ::: int;
+  public function getTrace () ::: string[][];
+  public function getTraceAsString () ::: string;
+}
+
+class Exception implements Throwable {
     protected $message = '';
     protected $code = 0;
     /** @var string */
@@ -24,7 +33,7 @@ class Exception {
     final public function getTrace () ::: string[][];
     final public function getTraceAsString () ::: string;
 
-     final private function __clone() ::: void;
+    final private function __clone() ::: void;
 };
 
 interface Memcache {
