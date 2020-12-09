@@ -2107,7 +2107,7 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
-  JsonLogger::get().reset_buffers();
+  vk::singleton<JsonLogger>::get().reset_buffers();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
@@ -2207,7 +2207,7 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
-  JsonLogger::get().init(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
+  vk::singleton<JsonLogger>::get().init(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
 }
 
 void f$raise_sigsegv() {

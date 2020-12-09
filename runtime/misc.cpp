@@ -1545,7 +1545,7 @@ int64_t f$system(const string &query) {
 }
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
-  auto &json_logger = JsonLogger::get();
+  auto &json_logger = vk::singleton<JsonLogger>::get();
   static_SB.clean();
 
   const auto get_json_string_from_SB_without_brackets = [] {

@@ -2076,7 +2076,7 @@ void reopen_json_log() {
   if (logname) {
     char worker_json_log_file_name[PATH_MAX];
     sprintf(worker_json_log_file_name, "%s.json", logname);
-    if (!JsonLogger::get().reopen_log_file(worker_json_log_file_name)) {
+    if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }
   }

@@ -146,11 +146,6 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_string_safe(vk::string_vi
   return *this;
 }
 
-JsonLogger &JsonLogger::get() noexcept {
-  static JsonLogger logger;
-  return logger;
-}
-
 void JsonLogger::init(int64_t release_version) noexcept {
   release_version_ = release_version;
 }

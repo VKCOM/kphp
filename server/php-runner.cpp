@@ -369,7 +369,7 @@ void PHPScriptBase::run() {
     const Exception &e = CurException;
     const int64_t current_time = time(nullptr);
     const char *message = e->message.empty() ? "(empty)" : e->message.c_str();
-    JsonLogger::get().write_log(
+    vk::singleton<JsonLogger>::get().write_log(
       dl_pstr("Unhandled exception from %s:%ld; Error %ld; Message: %s", e->file.c_str(), e->line, e->code, message),
       E_ERROR, current_time, e->raw_trace.get_const_vector_pointer(), e->raw_trace.count(), true);
 
@@ -520,12 +520,12 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
 
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
-    JsonLogger::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size, true);
+    vk::singleton<JsonLogger>::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size, true);
     write_str(2, "Error -1: Callstack overflow");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
     if (dl::in_critical_section) {
-      JsonLogger::get().fsync_log_file();
+      vk::singleton<JsonLogger>::get().fsync_log_file();
       kwrite_str(2, "In critical section: calling _exit (124)\n");
       _exit(124);
     } else {
@@ -534,8 +534,8 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   } else {
     char message[32];
     strcpy(message, signum == SIGBUS ? "SIGBUS" : "SIGSEGV");
-    JsonLogger::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size, true);
-    JsonLogger::get().fsync_log_file();
+    vk::singleton<JsonLogger>::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size, true);
+    vk::singleton<JsonLogger>::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
@@ -548,8 +548,8 @@ void sigabrt_handler(int) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
-  JsonLogger::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size, true);
-  JsonLogger::get().fsync_log_file();
+  vk::singleton<JsonLogger>::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size, true);
+  vk::singleton<JsonLogger>::get().fsync_log_file();
 
   print_prologue(cur_time);
   write_str(2, "SIGABRT terminating program\n");

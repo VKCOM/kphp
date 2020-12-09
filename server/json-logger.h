@@ -8,12 +8,13 @@
 
 #include "common/functional/identity.h"
 #include "common/mixin/not_copyable.h"
+#include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/string_view.h"
 
 
 class JsonLogger : vk::not_copyable {
 public:
-  static JsonLogger &get() noexcept;
+  friend class vk::singleton<JsonLogger>;
 
   void init(int64_t release_version) noexcept;
 
