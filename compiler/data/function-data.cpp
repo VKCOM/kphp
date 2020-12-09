@@ -284,7 +284,7 @@ void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::InferType infer_
     return;
   }
   type_expr.set_location(root);
-  infer_hints.emplace_back(InferHint{infer_type, param_i, type_expr});
+  infer_hints.emplace_back(infer_type, param_i, type_expr);
 }
 
 bool FunctionData::is_lambda_with_uses() const {
