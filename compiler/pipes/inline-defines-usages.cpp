@@ -50,6 +50,9 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
 }
 
 void InlineDefinesUsagesPass::on_start() {
+  class_id = current_function->class_id;
+  lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
+
   if (current_function->type == FunctionData::func_class_holder) {
     current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
@@ -62,6 +65,4 @@ void InlineDefinesUsagesPass::on_start() {
       }
     });
   }
-  class_id = current_function->class_id;
-  lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
 }
