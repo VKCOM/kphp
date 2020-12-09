@@ -68,13 +68,13 @@ void http_query_data_free(http_query_data *d) {
   free(d);
 }
 
-rpc_query_data *rpc_query_data_create(int *data, int len, long long req_id, unsigned int ip, short port, short pid, int utime) {
-  rpc_query_data *d = (rpc_query_data *)malloc(sizeof(rpc_query_data));
+rpc_query_data *rpc_query_data_create(tl_query_header_t &&header, int *data, int len, unsigned int ip, short port, short pid, int utime) {
+  auto *d = new rpc_query_data;
 
-  d->data = (int *)memdup(data, sizeof(int) * len);
+  d->header = std::move(header);
+
+  d->data = static_cast<int *>(memdup(data, sizeof(int) * len));
   d->len = len;
-
-  d->req_id = req_id;
 
   d->ip = ip;
   d->port = port;
@@ -90,7 +90,7 @@ void rpc_query_data_free(rpc_query_data *d) {
   }
 
   free(d->data);
-  free(d);
+  delete d;
 }
 
 php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data) {

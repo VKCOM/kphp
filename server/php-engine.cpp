@@ -34,6 +34,7 @@
 #include "common/tl/constants/kphp.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
+#include "common/tl/query-header.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -1362,7 +1363,7 @@ tcp_rpc_server_functions rpc_methods = [] {
   return res;
 }();
 
-// For tasks engine and rpc-proxy task-related communication
+// For tasks engine, rpc-proxy task-related communication and RPC microservice requests processing
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
   res.execute = rpcx_execute; //replaced
@@ -1486,6 +1487,14 @@ static double normalize_script_timeout(double timeout_sec) {
   return timeout_sec;
 }
 
+static void send_rpc_error(connection *c, long long req_id, int error_code, const char *error_msg) {
+  if (c->type == &ct_php_engine_rpc_server) {
+    server_rpc_error(c, req_id, error_code, error_msg);
+  } else {
+    client_rpc_error(c, req_id, error_code, error_msg);
+  }
+}
+
 int rpcx_execute(connection *c, int op, raw_message *raw) {
   vkprintf(1, "rpcx_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
@@ -1544,25 +1553,27 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       if (in_sigterm) {
         return 0;
       }
-      // got a new task from the tasks engine
+      // got a new task from the tasks engine or a request from RPC microservice client
       tl_fetch_init_raw_message(raw);
-      auto op_from_tl = tl_fetch_int();
-      len -= static_cast<int>(sizeof(op_from_tl));
-      assert(op_from_tl == op);
-      assert(len % sizeof(int) == 0);
 
-      auto req_id = tl_fetch_long();
-      len -= static_cast<int>(sizeof(req_id));
+      int64_t left_bytes_with_headers = tl_fetch_unread();
+      tl_query_header_t header{};
+      bool header_fetched_successfully = tl_fetch_query_header(&header);
+      if (!header_fetched_successfully) {
+        send_rpc_error(c, header.qid, tl_fetch_error_code(), tl_fetch_error_string());
+        return 0;
+      }
+      int64_t left_bytes_without_headers = tl_fetch_unread();
+
+      len -= (left_bytes_with_headers - left_bytes_without_headers);
+      assert(len % 4 == 0);
+
+      long long req_id = header.qid;
 
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
       if (!check_tasks_invoker_pid(remote_pid)) {
-        const char *msg = "Task invoker is invalid";
-        if (c->type == &ct_php_engine_rpc_server) {
-          server_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg);
-        } else {
-          client_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg);
-        }
+        send_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, "Task invoker is invalid");
         return 0;
       }
       if (c->type != &ct_php_rpc_client && c->type != &ct_php_engine_rpc_server) {
@@ -1585,9 +1596,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       assert(fetched_bytes == len);
       auto D = TCP_RPC_DATA(c);
-      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)),
-                                                       req_id, D->remote_pid.ip, D->remote_pid.port,
-                                                       D->remote_pid.pid, D->remote_pid.utime);
+      rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
+                                                       D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
       php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data,
                                              actual_script_timeout, req_id);

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/tl/query-header.h"
+
 /** http_query_data **/
 struct http_query_data {
   char *uri, *get, *headers, *post, *request_method;
@@ -19,9 +21,9 @@ void http_query_data_free(http_query_data *d);
 
 /** rpc_query_data **/
 struct rpc_query_data {
-  int *data, len;
+  tl_query_header_t header;
 
-  long long req_id;
+  int *data, len;
 
   /** PID **/
   unsigned ip;
@@ -30,7 +32,7 @@ struct rpc_query_data {
   int utime;
 };
 
-rpc_query_data *rpc_query_data_create(int *data, int len, long long req_id, unsigned int ip, short port, short pid, int utime);
+rpc_query_data *rpc_query_data_create(tl_query_header_t &&header, int *data, int len, unsigned int ip, short port, short pid, int utime);
 void rpc_query_data_free(rpc_query_data *d);
 
 /** php_query_data **/

@@ -21,11 +21,6 @@
 #include "common/tl/store.h"
 #include "common/wrappers/optional.h"
 
-static long long rpc_queries_received;
-static long long rpc_answers_received;
-static long long rpc_answers_error;
-
-
 static int tl_fetch_query_flags(tl_query_header_t *header) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
   int flags = tl_fetch_int();
@@ -125,7 +120,6 @@ bool tl_fetch_query_header(tl_query_header_t *header) {
   if (tl_fetch_error()) {
     return false;
   }
-  rpc_queries_received++;
   return true;
 }
 
@@ -261,11 +255,9 @@ bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
     return false;
   }
   if (header->is_error()) {
-    rpc_answers_error++;
     header->error_code = tl_fetch_int();
     vk::tl::fetch_string(header->error);
   } else {
-    rpc_answers_received++;
   }
   return true;
 }
@@ -411,12 +403,4 @@ void set_result_header_values(tl_query_answer_header_t *header, int flags) {
   //  header->flags |= result_flag::stats;
   //  header->stats_result = ...???;
   //}
-}
-
-
-
-STATS_PROVIDER(tl_headers, 2000) {
-  add_general_stat(stats, "rpc_queries_received", "%lld", rpc_queries_received);
-  add_general_stat(stats, "rpc_answers_received", "%lld", rpc_answers_received);
-  add_general_stat(stats, "rpc_answers_error", "%lld", rpc_answers_error);
 }
