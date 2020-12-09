@@ -643,7 +643,7 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
 VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(const std::string &unresolved_class_name) {
   auto type_rule = VertexAdaptor<op_type_expr_class>::create();
   type_rule->type_help = tp_Class;
-  type_rule->class_ptr = ClassPtr{}; // this will be set later, see phpdoc_prepare_type_rule_resolving_classes()
+  type_rule->class_ptr = {}; // this will be set later, see phpdoc_prepare_type_rule_resolving_classes()
   type_rule->class_name = unresolved_class_name;
   return type_rule;
 }
