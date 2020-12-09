@@ -882,15 +882,18 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       Node finish = new_node();
       add_edge(try_finish, finish);
 
-      // connect every exception coming from a try block with every catch block
+      Node catch_list_start = new_node();
+      for (Node e : exceptions) {
+        add_edge(e, catch_list_start);
+      }
+
+      // connect catch_list_start to every catch block
       for (auto c : try_op->catch_list()) {
         auto catch_op = c.as<op_catch>();
         Node exception_start, exception_finish;
         create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
 
-        for (Node e : exceptions) {
-          add_edge(e, exception_start);
-        }
+        add_edge(catch_list_start, exception_start);
 
         Node catch_start, catch_finish;
         create_cfg(catch_op->cmd(), &catch_start, &catch_finish);
@@ -898,7 +901,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         add_edge(exception_finish, catch_start);
         add_edge(catch_finish, finish);
 
-        confirm_usage(catch_op, false);
+        add_subtree(catch_list_start, catch_op, false);
         add_subtree(exception_start, catch_op->var(), false);
         add_subtree(catch_start, catch_op->cmd(), true);
       }
