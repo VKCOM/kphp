@@ -69,7 +69,6 @@ struct stats stats;
 double ping_timeout = PING_TIMEOUT;
 
 static int use_unix;
-static const char *unix_socket_directory;
 
 #define IP_PRINT_STR "%u.%u.%u.%u"
 #define IP_TO_PRINT(a) ((unsigned)(a)) >> 24, (((unsigned)(a)) >> 16) & 0xff, (((unsigned)(a)) >> 8) & 0xff, (((unsigned)(a))) & 0xff
@@ -157,7 +156,9 @@ rpc_connection *rpc_connection_get(int fd) {
 }
 
 static int rpc_sock_connect_unix(int port) {
-  assert(use_unix && unix_socket_directory);
+  assert(use_unix);
+  const char* unix_socket_directory = VK_INI_STR("vkext.unix_socket_directory");
+  assert(unix_socket_directory && unix_socket_directory[0] && "Incorrect unix_socket_directory is set");
 
   const int fd = socket(AF_FILE, SOCK_STREAM, 0);
   if (fd != -1) {
@@ -3406,9 +3407,6 @@ void rpc_on_minit(int module_number) { /* {{{ */
   if (VK_INI_STR("vkext.use_unix")) {
     use_unix = atoi(VK_INI_STR("vkext.use_unix"));
   }
-
-  unix_socket_directory = VK_INI_STR("vkext.unix_socket_directory");
-  assert(unix_socket_directory && unix_socket_directory[0]);
 
   END_TIMER (minit);
 }
