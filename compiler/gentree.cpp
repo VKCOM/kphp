@@ -8,6 +8,7 @@
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
+#include "common/algorithms/contains.h"
 #include "common/type_traits/constexpr_if.h"
 
 #include "common/php-functions.h"
@@ -541,7 +542,17 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
         break;
       }
       cur--;
-      res = get_func_call<op_func_call, op_none>();
+
+      // we don't support namespaces for functions yet, but we
+      // permit \func() syntax and interpret it as func();
+      // this logic is compatible with what we'll get after the
+      // function namespaces will be implemented
+      auto func_call = get_func_call<op_func_call, op_none>();
+      if (func_call->str_val[0] == '\\' && !vk::contains(func_call->str_val, "::")) {
+        func_call->str_val.erase(0, 1);
+      }
+
+      res = func_call;
       return_flag = was_arrow;
       break;
     }
