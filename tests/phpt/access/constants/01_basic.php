@@ -12,11 +12,14 @@ class A {
 
 class B {
 	private const privateConst = 'privateConst';
+    private $a = self::privateConst;
+    private $b = [self::privateConst];
 	static function staticConstDump() {
 		var_dump(self::privateConst);
 	}
 	function constDump() {
 		var_dump(self::privateConst);
+		var_dump($this->a, $this->b);
 	}
 }
 
