@@ -46,6 +46,11 @@ TEST(lexer_test, test_php_tokens) {
     {R"("$x->y")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end", "tok_str_end(\")"}},
     {R"("{$x->y}")", {"tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")"}},
 
+    // strings: ${var} syntax
+    // note that debug_str for vars is "${x}", but str_val is just "x"
+    {R"("${x}")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name(${x})", "tok_expr_end", "tok_str_end(\")"}},
+    {R"("a${foo}b")", {"tok_str_begin(\")", "tok_str(a)", "tok_expr_begin", "tok_var_name(${foo})", "tok_expr_end", "tok_str(b)", "tok_str_end(\")"}},
+
     // strings: $x[int] syntax
     {R"("$x[0]")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name($x)", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])", "tok_expr_end", "tok_str_end(\")"}},
     {R"("{$x[0]}")", {"tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])", "tok_expr_end(})", "tok_str_end(\")"}},

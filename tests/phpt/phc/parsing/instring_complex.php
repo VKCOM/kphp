@@ -12,4 +12,8 @@
 	echo "g {$y[$z]} h\n";
 	echo "i {$y[1][2]} j\n";
 	echo "{$y[1][2]} k\n";
+
+	echo "a ${x} b\n";
+	echo "a${x}b\n";
+	echo "${x}${z}\n";
 ?>

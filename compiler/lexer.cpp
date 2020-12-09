@@ -302,9 +302,12 @@ bool TokenLexerName::parse(LexerData *lexer_data) const {
   }
 
   const char *t = s;
+  bool closing_curly = false; // whether it's a ${varname} and we need to find matching '}'
   if (type == tok_var_name) {
     if (t[0] == '{') {
-      return TokenLexerError("${ is not supported by kPHP").parse(lexer_data);
+      s++; // string value should start after the '{'
+      t++; // consume '{'
+      closing_curly = true;
     }
     if (is_alpha(t[0])) {
       t++;
@@ -341,6 +344,13 @@ bool TokenLexerName::parse(LexerData *lexer_data) const {
   }
 
   vk::string_view name(s, t);
+
+  if (closing_curly) {
+    if (t[0] != '}') {
+      return TokenLexerError("Expected '}' after " + string(s, t)).parse(lexer_data);
+    }
+    t++; // consume '}'
+  }
 
   if (type == tok_func_name) {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.size());

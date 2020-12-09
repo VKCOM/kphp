@@ -36,7 +36,7 @@
 
   unset ($bc);
 	echo "a $bc\n";
-#	echo "a ${b}c\n";
+  echo "a ${b}c\n";
   echo "a $arr[0] c\n";
   echo "a $arr[-1] c\n";
   echo "a $arr[$b] c\n";
@@ -48,9 +48,9 @@
 	echo <<<END
 a $bc d
 END;
-#  echo <<<END
-#a ${b}c d
-#END;
+  echo <<<END
+a ${b}c d
+END;
 	 echo <<<END
 a $arr[0] d
 END;
