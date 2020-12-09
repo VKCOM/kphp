@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <execinfo.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <ucontext.h>
@@ -27,6 +28,7 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
 
@@ -365,10 +367,16 @@ void PHPScriptBase::run() {
     set_script_result(nullptr);
   } else {
     const Exception &e = CurException;
+    const int64_t current_time = time(nullptr);
+    const char *message = e->message.empty() ? "(empty)" : e->message.c_str();
+    vk::singleton<JsonLogger>::get().write_log(
+      dl_pstr("Unhandled exception from %s:%ld; Error %ld; Message: %s", e->file.c_str(), e->line, e->code, message),
+      E_ERROR, current_time, e->raw_trace.get_const_vector_pointer(), e->raw_trace.count(), true);
+
     const char *msg = dl_pstr("%s%ld%sError %ld: %s.\nUnhandled Exception caught in file %s at line %ld.\n"
                               "Backtrace:\n%s",
-                              engine_tag, time(nullptr), engine_pid,
-                              e->code, e->message.c_str(), e->file.c_str(), e->line,
+                              engine_tag, current_time, engine_pid,
+                              e->code, message, e->file.c_str(), e->line,
                               f$Exception$$getTraceAsString(e).c_str());
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "-------------------------------\n\n");
@@ -403,25 +411,12 @@ volatile bool PHPScriptBase::ml_flag = false;
 
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
-inline void kwrite_str(int fd, const char *s) {
-  const char *t = s;
-  while (*t) {
-    t++;
-  }
-  int len = (int)(t - s);
-  kwrite(fd, s, len);
+void kwrite_str(int fd, const char *s) noexcept {
+  kwrite(fd, s, static_cast<int>(strlen(s)));
 }
 
-inline void write_str(int fd, const char *s) {
-  const char *t = s;
-  while (*t) {
-    t++;
-  }
-  int len = (int)(t - s);
-  if (len > 1000) {
-    len = 1000;
-  }
-  write(fd, s, len);
+void write_str(int fd, const char *s) noexcept {
+  write(fd, s, std::min(strlen(s), size_t{1000}));
 }
 
 namespace kphp_runtime_signal_handlers {
@@ -480,11 +475,13 @@ static void stack_overflow_handler(int signum) {
 }
 
 void print_http_data() {
+  if (!PHPScriptBase::is_running) {
+    return;
+  }
   if (!PHPScriptBase::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
   } else if (PHPScriptBase::current_script->data) {
-    http_query_data *data = PHPScriptBase::current_script->data->http_data;
-    if (data) {
+    if (http_query_data *data = PHPScriptBase::current_script->data->http_data) {
       write_str(2, "\nuri\n");
       write(2, data->uri, data->uri_len);
       write_str(2, "\nget\n");
@@ -497,44 +494,68 @@ void print_http_data() {
   }
 }
 
-void sigsegv_handler(int signum __attribute__((unused)), siginfo_t *info, void *ucontext) {
-  crash_dump_write(static_cast<ucontext_t *>(ucontext));
-
+void print_prologue(int64_t cur_time) noexcept {
   write_str(2, engine_tag);
-  char buf[13], *s = buf + 13;
-  int t = (int)time(nullptr);
+
+  char buf[13];
+  char *s = buf + 13;
+  auto t = static_cast<int>(cur_time);
   *--s = 0;
   do {
-    *--s = (char)(t % 10 + '0');
+    *--s = static_cast<char>(t % 10 + '0');
     t /= 10;
   } while (t > 0);
   write_str(2, s);
   write_str(2, engine_pid);
+}
+
+void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
+  crash_dump_write(static_cast<ucontext_t *>(ucontext));
+
+  const int64_t cur_time = time(nullptr);
+  print_prologue(cur_time);
+
+  void *trace[64];
+  const int trace_size = backtrace(trace, 64);
 
   void *addr = info->si_addr;
-  if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected((char *)addr)) {
+  if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
+    vk::singleton<JsonLogger>::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size, true);
     write_str(2, "Error -1: Callstack overflow");
-/*    if (regex_ptr != nullptr) {
-      write_str (2, " regex = [");
-      write_str (2, regex_ptr->c_str());
-      write_str (2, "]\n");
-    }*/
     print_http_data();
-    dl_print_backtrace();
+    dl_print_backtrace(trace, trace_size);
     if (dl::in_critical_section) {
+      vk::singleton<JsonLogger>::get().fsync_log_file();
       kwrite_str(2, "In critical section: calling _exit (124)\n");
       _exit(124);
     } else {
       PHPScriptBase::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
     }
   } else {
+    char message[32];
+    strcpy(message, signum == SIGBUS ? "SIGBUS" : "SIGSEGV");
+    vk::singleton<JsonLogger>::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size, true);
+    vk::singleton<JsonLogger>::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
-    //dl_runtime_handler (signum);
     print_http_data();
-    dl_print_backtrace();
+    dl_print_backtrace(trace, trace_size);
     raise(SIGQUIT); // hack for generate core dump
     _exit(123);
   }
+}
+
+void sigabrt_handler(int) {
+  const int64_t cur_time = time(nullptr);
+  void *trace[64];
+  const int trace_size = backtrace(trace, 64);
+  vk::singleton<JsonLogger>::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size, true);
+  vk::singleton<JsonLogger>::get().fsync_log_file();
+
+  print_prologue(cur_time);
+  write_str(2, "SIGABRT terminating program\n");
+  dl_print_backtrace(trace, trace_size);
+  print_http_data();
+  _exit(EXIT_FAILURE);
 }
 
 static __inline__ void *get_sp() {
@@ -570,6 +591,7 @@ void init_handlers() {
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_signal(SIGABRT, sigabrt_handler);
 }
 
 void php_script_finish(void *ptr) {

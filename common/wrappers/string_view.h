@@ -69,6 +69,10 @@ public:
     return *begin();
   }
 
+  char back() const noexcept {
+    return *rbegin();
+  }
+
   size_t size() const noexcept {
     return _count;
   }

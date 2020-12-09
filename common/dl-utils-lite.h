@@ -21,8 +21,9 @@ void dl_restore_signal_mask ();
 void dl_block_all_signals ();
 void dl_allow_all_signals ();
 
-void dl_print_backtrace ();
-void dl_print_backtrace_gdb ();
+void dl_print_backtrace(void **trace, int trace_size);
+void dl_print_backtrace();
+void dl_print_backtrace_gdb();
 
 void dl_set_default_handlers ();
 

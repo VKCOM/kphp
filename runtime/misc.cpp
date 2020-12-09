@@ -19,6 +19,7 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "runtime/vkext.h"
+#include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
 string f$uniqid(const string &prefix, bool more_entropy) {
@@ -1544,18 +1545,31 @@ int64_t f$system(const string &query) {
 }
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
-  auto &context = KphpErrorContext::get();
+  auto &json_logger = vk::singleton<JsonLogger>::get();
   static_SB.clean();
 
-  if (do_json_encode(tags, 0, false)) {
-    context.set_tags(static_SB.c_str(), static_SB.size());
+  const auto get_json_string_from_SB_without_brackets = [] {
+    vk::string_view json_str{static_SB.c_str(), static_SB.size()};
+    php_assert(json_str.size() >= 2 && json_str.front() == '{' && json_str.back() == '}');
+    json_str.remove_prefix(1);
+    json_str.remove_suffix(1);
+    return json_str;
+  };
+
+  if (do_json_encode(tags, JSON_FORCE_OBJECT, false)) {
+    auto tags_json = get_json_string_from_SB_without_brackets();
+    dl::CriticalSectionGuard critical_section;
+    json_logger.set_tags(tags_json);
   }
   static_SB.clean();
 
-  if (do_json_encode(extra_info, 0, false)) {
-    context.set_extra_info(static_SB.c_str(), static_SB.size());
+  if (do_json_encode(extra_info, JSON_FORCE_OBJECT, false)) {
+    auto extra_info_json = get_json_string_from_SB_without_brackets();
+    dl::CriticalSectionGuard critical_section;
+    json_logger.set_extra_info(extra_info_json);
   }
   static_SB.clean();
 
-  context.set_env(env.c_str(), env.size());
+  dl::CriticalSectionGuard critical_section;
+  json_logger.set_env({env.c_str(), env.size()});
 }

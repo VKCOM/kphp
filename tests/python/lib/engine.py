@@ -44,6 +44,7 @@ class Engine:
         self._log_file_read_fd = None
         self._engine_logs = []
         self._binlog_path = None
+        self._ignore_log_errors = False
         if options:
             self.update_options(options)
 
@@ -73,6 +74,9 @@ class Engine:
                 option: None - удалить дефолтно проставляемую опцию
         """
         self._options.update(options)
+
+    def ignore_log_errors(self):
+        self._ignore_log_errors = True
 
     def create_binlog(self):
         """
@@ -111,6 +115,7 @@ class Engine:
         if self._binlog_path:
             cmd.append(self._binlog_path)
 
+        self._engine_logs = []
         self._log_file_write_fd = open(self._log_file, 'ab')
         self._log_file_read_fd = open(self._log_file, 'r')
         print("\nStarting engine: [{}]".format(cyan(" ".join(cmd))))
@@ -128,7 +133,7 @@ class Engine:
         self._stats_receiver.wait_next_stats()
         if start_msgs:
             self.assert_log(start_msgs, message="Engine expected start message cannot be found!")
-        else:
+        elif not self._ignore_log_errors:
             self._assert_no_errors()
 
         self._assert_availability()
@@ -147,7 +152,8 @@ class Engine:
 
         engine_stopped_properly, status = self.wait_termination(30)
 
-        self._assert_no_errors()
+        if not self._ignore_log_errors:
+            self._assert_no_errors()
         self._log_file_read_fd.close()
         self._log_file_write_fd.close()
         self._stats_receiver.stop()

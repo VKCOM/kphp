@@ -13,8 +13,12 @@
 #include "common/dl-utils-lite.h"
 
 static void *memdup(const void *src, size_t x) {
+  if (!src) {
+    assert(!x);
+    return nullptr;
+  }
   void *res = malloc(x);
-  assert (res != NULL);
+  assert(res);
   memcpy(res, src, x);
   return res;
 }
@@ -31,11 +35,7 @@ http_query_data *http_query_data_create(
   d->uri = (char *)memdup(qUri, qUriLen);
   d->get = (char *)memdup(qGet, qGetLen);
   d->headers = (char *)memdup(qHeaders, qHeadersLen);
-  if (qPost != nullptr) {
-    d->post = (char *)memdup(qPost, qPostLen);
-  } else {
-    d->post = nullptr;
-  }
+  d->post = (char *)memdup(qPost, qPostLen);
 
   d->uri_len = qUriLen;
   d->get_len = qGetLen;
