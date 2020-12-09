@@ -280,7 +280,10 @@ void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
   for (auto c : try_op->catch_list()) {
     auto catch_op = c.as<op_catch>();
-    create_set(as_lvalue(catch_op->var()), G->get_class(catch_op->type_declaration));
+    auto exception_class = G->get_class(catch_op->type_declaration);
+    if (!kphp_error(exception_class, fmt_format("Could not find catch class {}", catch_op->type_declaration))) {
+      create_set(as_lvalue(catch_op->var()), exception_class);
+    }
   }
 }
 
