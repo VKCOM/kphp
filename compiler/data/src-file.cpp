@@ -60,14 +60,6 @@ vk::string_view SrcFile::get_line(int id) {
   return lines[id];
 }
 
-std::string SrcFile::get_short_name() {
-  const std::string &root_path = G->settings().base_dir.get();
-  if (vk::string_view(file_name).starts_with(root_path)) {
-    return file_name.substr(root_path.length());
-  }
-  return file_name;
-}
-
 bool SrcFile::is_builtin() const {
   if (file_name == G->settings().functions_file.get()) {
     return true;

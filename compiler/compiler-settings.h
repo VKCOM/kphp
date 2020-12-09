@@ -141,6 +141,7 @@ public:
 
   KphpOption<uint64_t> profiler_level;
   KphpOption<bool> enable_global_vars_memory_stats;
+  KphpOption<bool> enable_full_performance_analyze;
   KphpOption<bool> print_resumable_graph;
 
   KphpOption<bool> no_pch;
@@ -158,6 +159,7 @@ public:
   KphpImplicitOption binary_path;
   KphpImplicitOption static_lib_name;
   KphpImplicitOption generated_runtime_path;
+  KphpImplicitOption performance_analyze_report_path;
 
   KphpImplicitOption runtime_sha256;
   KphpImplicitOption cxx_flags_sha256;

@@ -899,13 +899,9 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
 
   const auto &location = func->root->get_location();
   const char *is_root = func->profiler_state == FunctionData::profiler_status::enable_as_root ? "true" : "false";
-  vk::string_view file_name = location.file ? vk::string_view{location.file->file_name} : vk::string_view{"unknown"};
-  if (file_name.starts_with(G->settings().base_dir.get())) {
-    file_name.remove_prefix(G->settings().base_dir.get().size());
-  }
   W << "struct TracingProfilerTraits " << BEGIN
-    << "static constexpr const char *file_name() noexcept { return " << RawString(file_name) << "; }" << NL
-    << "static constexpr const char *function_name() noexcept { return " << RawString(func->get_human_readable_name()) << "; }" << NL
+    << "static constexpr const char *file_name() noexcept { return " << RawString(location.file->unified_file_name) << "; }" << NL
+    << "static constexpr const char *function_name() noexcept { return " << RawString(func->get_human_readable_name(false)) << "; }" << NL
     << "static constexpr size_t function_line() noexcept { return " << std::max(location.line, 0) << "; }" << NL
     << "static constexpr size_t profiler_level() noexcept { return " << G->settings().profiler_level.get() << "; }" << NL
     << "static constexpr bool is_root() noexcept { return " << is_root << "; }" << NL

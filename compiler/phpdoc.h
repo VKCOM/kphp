@@ -37,6 +37,8 @@ struct php_doc_tag {
     kphp_const,
     kphp_noreturn,
     kphp_warn_unused_result,
+    kphp_warn_performance,
+    kphp_analyze_performance,
     kphp_flatten,
     kphp_serializable,
     kphp_reserved_fields,

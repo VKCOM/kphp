@@ -1,4 +1,5 @@
 @ok
+KPHP_ERROR_ON_WARNINGS=1
 <?php
 
 class MyClass1 {
@@ -9,6 +10,9 @@ class MyClass2 {
     public $y = 1;
 }
 
+/**
+ * @kphp-warn-performance implicit-array-cast
+ */
 function test_static_arrays() {
     static $unknown_arr = [];
     var_dump($unknown_arr);
@@ -63,6 +67,9 @@ function test_static_arrays() {
     var_dump(get_class($arr_class2[0]));
 }
 
+/**
+ * @kphp-warn-performance implicit-array-cast
+ */
 function test_local_arrays() {
     $unknown_arr = [];
     var_dump($unknown_arr);
@@ -118,6 +125,9 @@ function test_local_arrays() {
 }
 
 /**
+ *
+ * @kphp-warn-performance implicit-array-cast
+ *
  * @param any[] $unknown_arr
  * @param int[] $int_arr1
  * @param int[] $int_arr2
@@ -210,6 +220,9 @@ class VarPack {
     static public $arr_class2 = [];
 }
 
+/**
+ * @kphp-warn-performance implicit-array-cast
+ */
 function test_static_class_member_arrays() {
     var_dump(VarPack::$unknown_arr);
 
@@ -252,6 +265,9 @@ function test_static_class_member_arrays() {
 }
 
 /**
+ *
+ * @kphp-warn-performance implicit-array-cast
+ *
  * @param any[] $unknown_arr
  * @param int[] $int_arr1
  * @param int[] $int_arr2
@@ -321,6 +337,9 @@ function dummy_func(
     var_dump(get_class($arr_class2[0]));
 }
 
+/**
+ * @kphp-warn-performance implicit-array-cast
+ */
 function test_func_arg_arrays() {
     dummy_func(
    /* $unknown_arr, */ [],

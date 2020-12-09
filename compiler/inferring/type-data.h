@@ -189,6 +189,7 @@ std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool are_equal_types(const TypeData *type1, const TypeData *type2);
+bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept;
 
 template<TypeData::flag_id_t FLAG>
 void TypeData::set_flag() {

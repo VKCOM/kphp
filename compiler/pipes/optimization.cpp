@@ -40,22 +40,12 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
   }
 }
 
-template<typename T>
-VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
-  auto required_type = tinf::get_type(type_donor);
-  auto existed_type = tinf::get_type(type_acceptor);
-  if (existed_type->get_real_ptype() != tp_array ||
-      type_acceptor->extra_type != op_ex_var_const ||
-      are_equal_types(existed_type, required_type)) {
-    return VarPtr{};
-  }
-
-  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
+VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_type) noexcept {
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   std::string name = ss.str();
   bool is_new = true;
-  VarPtr var_id  = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
+  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
     var_id->tinf_node.copy_type_from(required_type);
@@ -70,6 +60,34 @@ VarPtr cast_const_array(VertexPtr &type_acceptor, const T &type_donor) {
   type_acceptor = casted_var;
   return var_id;
 }
+
+void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const TypeData *required_type) noexcept {
+  if (required_type->get_real_ptype() == tp_mixed) {
+    required_type = TypeData::get_type(tp_array, tp_mixed);
+  } else if (required_type->use_optional()) {
+    required_type = TypeData::create_type_data(required_type->lookup_at(Key::any_key()));
+  }
+  op_array_vertex->tinf_node.set_type(required_type);
+}
+
+void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required_type, std::set<VarPtr> *new_var_out = nullptr) noexcept {
+  auto existed_type = tinf::get_type(type_acceptor);
+  if (existed_type->get_real_ptype() != tp_array ||
+      !is_implicit_array_conversion(existed_type, required_type)) {
+    return;
+  }
+  kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
+  if (type_acceptor->extra_type == op_ex_var_const) {
+    auto var_id = cast_const_array_type(type_acceptor, required_type);
+    if (new_var_out) {
+      new_var_out->emplace(var_id);
+    }
+  }
+  if (auto op_array_vertex = type_acceptor.try_as<op_array>()) {
+    cast_array_creation_type(op_array_vertex, required_type);
+  }
+}
+
 } // namespace
 
 VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
@@ -203,8 +221,9 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   root = remove_extra_conversions(root);
 
-  if (root->type() == op_set) {
-    root = optimize_set_push_back(root.as<op_set>());
+  if (auto set_vertex = root.try_as<op_set>()) {
+    explicit_cast_array_type(set_vertex->rhs(), tinf::get_type(set_vertex->lhs()), &current_function->explicit_const_var_ids);
+    root = optimize_set_push_back(set_vertex);
   } else if (root->type() == op_string_build || root->type() == op_concat) {
     root = optimize_string_building(root);
   } else if (root->type() == op_postfix_inc) {
@@ -220,36 +239,39 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
         temp_var->var_id->needs_const_iterator_flag = true;
       }
     }
+  } else if (auto func_param = root.try_as<op_func_param>()) {
+    if (func_param->has_default_value() && func_param->default_value()) {
+      explicit_cast_array_type(func_param->default_value(), tinf::get_type(func_param->var()), &current_function->explicit_header_const_var_ids);
+    }
+  } else if (auto func_call = root.try_as<op_func_call>()) {
+    auto func = func_call->func_id;
+    if (!func->is_extern()) {
+      auto args = func_call->args();
+      const auto &params = func->param_ids;
+      const size_t elements = std::min(static_cast<size_t>(args.size()), params.size());
+      for (size_t index = 0; index < elements; ++index) {
+        explicit_cast_array_type(args[index], tinf::get_type(params[index]), &current_function->explicit_const_var_ids);
+      }
+    }
+  } else if (auto op_array_vertex = root.try_as<op_array>()) {
+    if (!var_init_expression_optimization_depth_) {
+      for (auto &array_element : *op_array_vertex) {
+        const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at(Key::any_key());
+        if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
+          explicit_cast_array_type(array_element, required_type, &current_function->explicit_const_var_ids);
+        } else if (auto array_key_value = array_element.try_as<op_double_arrow>()) {
+          explicit_cast_array_type(array_key_value->value(), required_type, &current_function->explicit_const_var_ids);
+        }
+      }
+    }
+  } else if (auto op_return_vertex = root.try_as<op_return>()) {
+    if (op_return_vertex->has_expr()) {
+      explicit_cast_array_type(op_return_vertex->expr(), tinf::get_type(current_function, -1), &current_function->explicit_const_var_ids);
+    }
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
     tinf::get_type(root);
-  }
-  return root;
-}
-
-VertexPtr OptimizationPass::on_exit_vertex(VertexPtr root) {
-  if (auto param = root.try_as<op_func_param>()) {
-    if (param->has_default_value() && param->default_value()) {
-      if (auto var_id = cast_const_array(param->default_value(), param->var())) {
-        current_function->explicit_header_const_var_ids.emplace(var_id);
-      }
-    }
-  } else if (auto set_vertex = root.try_as<op_set>()) {
-    if (auto var_id = cast_const_array(set_vertex->rhs(), set_vertex->lhs())) {
-      current_function->explicit_const_var_ids.emplace(var_id);
-    }
-  } else if (auto func_call = root.try_as<op_func_call>()) {
-    auto func = func_call->func_id;
-    if (!func->has_variadic_param && !func->is_extern()) {
-      auto args = func_call->args();
-      const auto &params = func->param_ids;
-      for (size_t index = 0; index < args.size(); ++index) {
-        if (auto var_id = cast_const_array(args[index], params[index])) {
-          current_function->explicit_const_var_ids.emplace(var_id);
-        }
-      }
-    }
   }
   return root;
 }
@@ -260,8 +282,13 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
     kphp_assert (var);
     if (var->init_val) {
       if (try_optimize_var(var)) {
+        ++var_init_expression_optimization_depth_;
         run_function_pass(var->init_val, this);
-        cast_const_array(var->init_val, var);
+        kphp_assert(var_init_expression_optimization_depth_ > 0);
+        --var_init_expression_optimization_depth_;
+        if (!var->is_constant()) {
+          explicit_cast_array_type(var->init_val, tinf::get_type(var));
+        }
       }
     }
   }
@@ -280,7 +307,7 @@ void OptimizationPass::on_finish() {
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
           class_field.var->init_val = {};
         } else {
-          cast_const_array(class_field.var->init_val, class_field.var);
+          explicit_cast_array_type(class_field.var->init_val, tinf::get_type(class_field.var));
         }
       }
     });

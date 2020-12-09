@@ -838,6 +838,27 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   return true;
 }
 
+bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept {
+  if (!from || !to) {
+    return false;
+  }
+  if (from->get_real_ptype() == tp_array) {
+    auto from_array_value_type = from->lookup_at(Key::any_key());
+    if (from_array_value_type->get_real_ptype() == tp_Unknown) {
+      return false;
+    }
+    if (to->get_real_ptype() == tp_mixed) {
+      return from_array_value_type->get_real_ptype() != tp_mixed;
+    }
+    return !are_equal_types(from_array_value_type, to->lookup_at(Key::any_key()));
+  }
+
+  const auto implicit_cast_pred = [to](const TypeData::KeyValue &key_value) {
+    return is_implicit_array_conversion(key_value.second, to->lookup_at(key_value.first));
+  };
+  return std::find_if(from->lookup_begin(), from->lookup_end(), implicit_cast_pred) != from->lookup_end();
+}
+
 size_t TypeData::get_tuple_max_index() const {
   kphp_assert(ptype() == tp_tuple);
   return subkeys_values.size();

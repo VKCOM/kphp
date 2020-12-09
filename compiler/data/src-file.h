@@ -40,7 +40,6 @@ public:
   bool load();
 
   vk::string_view get_line(int id);
-  std::string get_short_name();
 
   bool is_builtin() const;
   std::string get_main_func_run_var_name() const;

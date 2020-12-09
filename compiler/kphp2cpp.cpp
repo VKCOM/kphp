@@ -276,6 +276,8 @@ int main(int argc, char *argv[]) {
              'g', "profiler", "KPHP_PROFILER", "0", {"0", "1", "2"});
   parser.add("Enable an ability to get global vars memory stats", settings->enable_global_vars_memory_stats,
              "enable-global-vars-memory-stats", "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS");
+  parser.add("Enable all performance analyze inspections for all reachable functions", settings->enable_full_performance_analyze,
+             "enable-full-performance-analyze", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE");
   parser.add("Print graph of resumable calls to stderr", settings->print_resumable_graph,
              'p', "print-graph", "KPHP_PRINT_RESUMABLE_GRAPH");
   parser.add("Forbid to use the precompile header", settings->no_pch,
@@ -307,6 +309,7 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("TL namespace prefix", settings->tl_namespace_prefix);
   parser.add_implicit_option("TL classname prefix", settings->tl_classname_prefix);
   parser.add_implicit_option("Generated runtime path", settings->generated_runtime_path);
+  parser.add_implicit_option("Performance report path", settings->performance_analyze_report_path);
 
   try {
     parser.process_args(argc, argv);

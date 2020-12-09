@@ -27,6 +27,7 @@
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
 #include "compiler/pipes/analyzer.h"
+#include "compiler/pipes/analyze-performance.h"
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
@@ -278,6 +279,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CommonAnalyzerPass>{}
     >> PassC<CheckTlClasses>{}
     >> PassC<CheckAccessModifiersPass>{}
+    >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
     >> SyncC<CodeGenF>{}
@@ -310,6 +312,17 @@ bool compiler_execute(CompilerSettings *settings) {
 
   if (G->settings().error_on_warns.get() && stage::warnings_count > 0) {
     stage::error();
+  }
+
+  if (vk::singleton<PerformanceIssuesReport>::get().is_flush_required()) {
+    if (auto *report_file = fopen(G->settings().performance_analyze_report_path.get().c_str(), "w")) {
+      vk::singleton<PerformanceIssuesReport>::get().flush_to(report_file);
+      fclose(report_file);
+    } else {
+      std::cerr << "Can't open " << G->settings().performance_analyze_report_path.get() << " file: " << std::strerror(errno) << "\n";
+    }
+  } else {
+    unlink(G->settings().performance_analyze_report_path.get().c_str());
   }
 
   stage::die_if_global_errors();

@@ -283,7 +283,7 @@ string stage::to_str(const Location &new_location) {
   std::stringstream ss;
 
   // modify with caution! Some symbols are analyzed with regexps during the stack trace printing
-  ss << (get_file() ? get_file()->get_short_name() : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << ":" << get_line();
+  ss << (get_file() ? get_file()->unified_file_name : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << ":" << get_line();
   std::string out = ss.str();
 
   // removing the class name from the path to that class to avoid the duplication
