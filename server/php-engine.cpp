@@ -1558,7 +1558,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       int64_t left_bytes_with_headers = tl_fetch_unread();
       tl_query_header_t header{};
-      bool header_fetched_successfully = tl_fetch_query_header(&header, false);
+      bool header_fetched_successfully = tl_fetch_query_header(&header);
       if (!header_fetched_successfully) {
         send_rpc_error(c, header.qid, tl_fetch_error_code(), tl_fetch_error_string());
         return 0;

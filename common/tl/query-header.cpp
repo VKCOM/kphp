@@ -93,7 +93,7 @@ static int tl_fetch_query_flags(tl_query_header_t *header) {
   return 0;
 }
 
-bool tl_fetch_query_header(tl_query_header_t *header, bool increment_queries_counter) {
+bool tl_fetch_query_header(tl_query_header_t *header) {
   assert (header);
   if (vk::tl::fetch_magic(TL_RPC_INVOKE_REQ)) {
     header->qid = tl_fetch_long();

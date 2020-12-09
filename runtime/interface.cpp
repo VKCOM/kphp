@@ -1323,7 +1323,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
     array<string> string_forward_keys;
     string_forward_keys.reserve(header.string_forward_keys.size(), 0, true);
     for (const auto &str_key : header.string_forward_keys) {
-      string_forward_keys.emplace_back(string(str_key.c_str()));
+      string_forward_keys.emplace_back(string(str_key.data(), str_key.size()));
     }
     v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD_KEYS"), std::move(string_forward_keys));
   }
@@ -1336,7 +1336,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
     v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD_KEYS"), std::move(int_forward_keys));
   }
   if (header.flags & flag::string_forward) {
-    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD"), string(header.string_forward.c_str()));
+    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD"), string(header.string_forward.data(), header.string_forward.size()));
   }
   if (header.flags & flag::int_forward) {
     v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD"), static_cast<int64_t>(header.int_forward));
