@@ -58,12 +58,12 @@ public:
   char profiler_log_suffix[PATH_MAX]{'\0'};
 
   uint64_t get_memory_used_monotonic(const memory_resource::MemoryStats &memory_stats) noexcept {
-    last_memory_used_ = std::max(last_memory_used_, memory_stats.memory_used);
+    last_memory_used_ = std::max(last_memory_used_, uint64_t{memory_stats.memory_used});
     return last_memory_used_;
   }
 
   uint64_t get_real_memory_used_monotonic(const memory_resource::MemoryStats &memory_stats) noexcept {
-    last_real_memory_used_ = std::max(last_real_memory_used_, memory_stats.real_memory_used);
+    last_real_memory_used_ = std::max(last_real_memory_used_, uint64_t{memory_stats.real_memory_used});
     return last_real_memory_used_;
   }
 
@@ -195,7 +195,7 @@ void FunctionStatsBase::flush(FILE *out, long double nanoseconds_to_tsc_rate) no
     for (const auto &callee: callees_) {
       fprintf(out, "cfl=%s\ncfn=", callee.first->file_name);
       callee.first->write_function_name_with_label(out);
-      fprintf(out, "\ncalls=%zu\n%zu ", callee.second.calls, function_line);
+      fprintf(out, "\ncalls=%" PRIu64 "\n%zu ", callee.second.calls, function_line);
       callee.second.write_to(out, nanoseconds_to_tsc_rate);
     }
   }

@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "common/algorithms/hashes.h"
+#include "common/dl-utils-lite.h"
 #include "common/crc32.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
@@ -175,7 +176,7 @@ using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
 
 
 bool compiler_execute(CompilerSettings *settings) {
-  double st = get_utime(CLOCK_MONOTONIC);
+  double st = dl_time();
   G = new CompilerCore();
   G->register_settings(settings);
   G->start();
@@ -308,7 +309,7 @@ bool compiler_execute(CompilerSettings *settings) {
   get_scheduler()->execute();
 
   PipesProgress::get().transpiling_process_finish();
-  G->stats.transpilation_time = get_utime(CLOCK_MONOTONIC) - st;
+  G->stats.transpilation_time = dl_time() - st;
 
   if (G->settings().error_on_warns.get() && stage::warnings_count > 0) {
     stage::error();
@@ -350,7 +351,7 @@ bool compiler_execute(CompilerSettings *settings) {
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();
-  G->stats.total_time = get_utime(CLOCK_MONOTONIC) - st;
+  G->stats.total_time = dl_time() - st;
   if (verbosity >= 1) {
     profiler_print_all(profiler_stats);
     std::cerr << std::endl;

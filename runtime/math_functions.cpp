@@ -241,11 +241,11 @@ double f$abs(const Optional<double> &v) {
 
 string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   if (frombase < 2 || frombase > 36) {
-    php_warning("Wrong parameter frombase (%ld) in function base_convert", frombase);
+    php_warning("Wrong parameter frombase (%" PRIi64 ") in function base_convert", frombase);
     return number;
   }
   if (tobase < 2 || tobase > 36) {
-    php_warning("Wrong parameter tobase (%ld) in function base_convert", tobase);
+    php_warning("Wrong parameter tobase (%" PRIi64 ") in function base_convert", tobase);
     return number;
   }
 
@@ -302,7 +302,7 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
 
 double f$round(double v, int64_t precision) {
   if (std::abs(precision) > 100) {
-    php_warning("Wrong parameter precision (%ld) in function round", precision);
+    php_warning("Wrong parameter precision (%" PRIi64 ") in function round", precision);
     return v;
   }
 

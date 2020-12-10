@@ -370,10 +370,10 @@ void PHPScriptBase::run() {
     const int64_t current_time = time(nullptr);
     const char *message = e->message.empty() ? "(empty)" : e->message.c_str();
     vk::singleton<JsonLogger>::get().write_log(
-      dl_pstr("Unhandled exception from %s:%ld; Error %ld; Message: %s", e->file.c_str(), e->line, e->code, message),
+      dl_pstr("Unhandled exception from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", e->file.c_str(), e->line, e->code, message),
       E_ERROR, current_time, e->raw_trace.get_const_vector_pointer(), e->raw_trace.count(), true);
 
-    const char *msg = dl_pstr("%s%ld%sError %ld: %s.\nUnhandled Exception caught in file %s at line %ld.\n"
+    const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled Exception caught in file %s at line %" PRIi64 ".\n"
                               "Backtrace:\n%s",
                               engine_tag, current_time, engine_pid,
                               e->code, message, e->file.c_str(), e->line,
@@ -420,7 +420,6 @@ void write_str(int fd, const char *s) noexcept {
 }
 
 namespace kphp_runtime_signal_handlers {
-static const int max_realtime_sig_num = SIGRTMIN + 2;
 namespace {
 bool check_signal_critical_section(int sig_num, const char *sig_name) {
   if (dl::in_critical_section) {
@@ -511,6 +510,14 @@ void print_prologue(int64_t cur_time) noexcept {
   write_str(2, engine_pid);
 }
 
+void kill_workers() noexcept {
+#if defined(__APPLE__)
+  if (master_flag == 1) {
+    killpg(getpgid(pid), SIGKILL);
+  }
+#endif
+}
+
 void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   crash_dump_write(static_cast<ucontext_t *>(ucontext));
 
@@ -541,6 +548,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
     write_str(2, "Error -2: Segmentation fault");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
+    kill_workers();
     raise(SIGQUIT); // hack for generate core dump
     _exit(123);
   }
@@ -557,6 +565,7 @@ void sigabrt_handler(int) {
   write_str(2, "SIGABRT terminating program\n");
   dl_print_backtrace(trace, trace_size);
   print_http_data();
+  kill_workers();
   _exit(EXIT_FAILURE);
 }
 
@@ -585,7 +594,6 @@ void init_handlers() {
   segv_stack.ss_size = SEGV_STACK_SIZE;
   sigaltstack(&segv_stack, nullptr);
 
-  assert(kphp_runtime_signal_handlers::max_realtime_sig_num <= SIGRTMAX);
   ksignal(SIGALRM, kphp_runtime_signal_handlers::sigalrm_handler);
   ksignal(SIGUSR2, kphp_runtime_signal_handlers::sigusr2_handler);
   ksignal(SIGPHPASSERT, kphp_runtime_signal_handlers::php_assert_handler);

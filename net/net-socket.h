@@ -5,7 +5,6 @@
 #ifndef KDB_NET_NET_SOCKET_H
 #define KDB_NET_NET_SOCKET_H
 
-#include <linux/sockios.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -64,14 +63,6 @@ static inline int socket_ioctl(int fd, unsigned long request) {
   }
 
   return value;
-}
-
-static inline int socket_get_queued_unread_data_size(int fd) {
-  return socket_ioctl(fd, SIOCINQ);
-}
-
-static inline int socket_get_queued_unsent_data_size(int fd) {
-  return socket_ioctl(fd, SIOCOUTQ);
 }
 
 #endif // KDB_NET_NET_SOCKET_H

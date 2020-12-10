@@ -5,8 +5,7 @@
 #include "common/kfs/kfs-internal.h"
 
 #include <assert.h>
-#include <malloc.h>
-#include <stdio.h>
+#include <cstdio>
 #include <string.h>
 
 #include "common/kprintf.h"

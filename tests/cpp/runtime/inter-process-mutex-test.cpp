@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <mutex>
 #include <thread>
-#include <syscall.h>
+#include <sys/syscall.h>
 
 #include "runtime/inter-process-mutex.h"
 #include "server/php-engine-vars.h"

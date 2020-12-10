@@ -11,7 +11,6 @@
 #include "common/cycleclock.h"
 #include "common/wrappers/likely.h"
 
-double dl_get_utime (int clock_id);
 double dl_time ();
 
 sigset_t dl_get_empty_sigset ();

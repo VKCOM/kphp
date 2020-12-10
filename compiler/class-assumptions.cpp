@@ -355,7 +355,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
     case op_list: {
       auto list = root.as<op_list>();
 
-      for (const auto x : list->list()) {
+      for (auto x : list->list()) {
         const auto kv = x.as<op_list_keyval>();
         auto as_var = kv->var().try_as<op_var>();
         if (as_var && as_var->get_string() == var_name) {

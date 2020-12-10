@@ -4,11 +4,12 @@
 
 #include "compiler/index.h"
 
+#include <climits>
 #include <fcntl.h>
 #include <ftw.h>
-#include <linux/limits.h>
 #include <sys/stat.h>
 
+#include "common/macos-ports.h"
 #include "common/containers/final_action.h"
 #include "common/wrappers/mkdir_recursive.h"
 #include "compiler/kphp_assert.h"

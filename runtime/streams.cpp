@@ -134,7 +134,7 @@ mixed error_description_dummy;
 mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &error_description,
                            double timeout, int64_t flags, const mixed &context) {
   if (flags != STREAM_CLIENT_CONNECT) {
-    php_warning("Wrong parameter flags = %ld in function stream_socket_client", flags);
+    php_warning("Wrong parameter flags = %" PRIi64 " in function stream_socket_client", flags);
     error_number = -1001;
     error_description = string("Wrong parameter flags", 21);
     return false;
@@ -292,11 +292,11 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
   if (!tv_sec_var.is_null()) {
     int64_t tv_sec = tv_sec_var.to_int();
     if (tv_sec < 0) {
-      php_warning("Wrong parameter tv_sec = %ld\n", tv_sec);
+      php_warning("Wrong parameter tv_sec = %" PRIi64 "\n", tv_sec);
       return false;
     }
     if (tv_usec < 0 || tv_usec >= 1000000) {
-      php_warning("Wrong parameter tv_usec = %ld\n", tv_usec);
+      php_warning("Wrong parameter tv_usec = %" PRIi64 "\n", tv_usec);
       return false;
     }
 

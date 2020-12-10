@@ -32,13 +32,21 @@ bool socket_disable_linger(int socket) {
 }
 
 bool socket_disable_tcp_quickack(int socket) {
+#if defined(TCP_QUICKACK)
   int disable = 0;
   return !setsockopt(socket, IPPROTO_TCP, TCP_QUICKACK, &disable, sizeof(disable));
+#else
+  return false && socket;
+#endif
 }
 
 bool socket_disable_unix_passcred(int socket) {
+#if defined(SO_PASSCRED)
   int disable = 0;
   return !setsockopt(socket, SOL_SOCKET, SO_PASSCRED, &disable, sizeof(disable));
+#else
+  return false && socket;
+#endif
 }
 
 bool socket_enable_keepalive(int socket) {
@@ -52,13 +60,21 @@ bool socket_enable_ip_receive_packet_info(int socket) {
 }
 
 bool socket_enable_ip_receive_errors(int socket) {
+#if defined(SOL_IP) && defined(IP_RECVERR)
   int enable = 1;
   return !setsockopt(socket, SOL_IP, IP_RECVERR, &enable, sizeof(enable));
+#else
+  return false && socket;
+#endif
 }
 
 bool socket_enable_ip_v6_receive_packet_info(int socket) {
+#if defined(IPV6_RECVPKTINFO)
   int enable = 1;
   return !setsockopt(socket, IPPROTO_IPV6, IPV6_RECVPKTINFO, &enable, sizeof(enable));
+#else
+  return false && socket;
+#endif
 }
 
 bool socket_enable_ip_v6_only(int socket) {
@@ -72,12 +88,11 @@ bool socket_enable_reuseaddr(int socket) {
 }
 
 bool socket_enable_reuseport(int socket) {
-#ifdef SO_REUSEPORT
+#if defined(SO_REUSEPORT)
   int enable = 1;
   return !setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
 #else
-  (void) socket;
-  return false;
+  return false && socket;
 #endif
 }
 
@@ -87,12 +102,20 @@ bool socket_enable_tcp_nodelay(int socket) {
 }
 
 bool socket_enable_unix_passcred(int socket) {
+#if defined(SO_PASSCRED)
   int enable = 1;
   return !setsockopt(socket, SOL_SOCKET, SO_PASSCRED, &enable, sizeof(enable));
+#else
+  return false && socket;
+#endif
 }
 
 bool socket_set_tcp_window_clamp(int socket, int size) {
+#if defined(TCP_WINDOW_CLAMP)
   return !setsockopt(socket, IPPROTO_TCP, TCP_WINDOW_CLAMP, &size, sizeof(size));
+#else
+  return false && socket && size;
+#endif
 }
 
 void socket_maximize_sndbuf(int socket, int max) {
@@ -163,9 +186,4 @@ void socket_maximize_rcvbuf(int socket, int max) {
   }
 
   vkprintf(2, ">%d receive buffer was %d, now %d\n", socket, old_size, last_good);
-}
-
-bool socket_get_domain(int socket, int *domain) {
-  socklen_t optlen = sizeof(*domain);
-  return !getsockopt(socket, SOL_SOCKET, SO_DOMAIN, domain, &optlen);
 }

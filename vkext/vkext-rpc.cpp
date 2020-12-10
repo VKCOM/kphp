@@ -9,6 +9,7 @@
 #include "vkext/vkext-rpc.h"
 
 #include <assert.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
@@ -24,6 +25,7 @@
 
 #include "common/crc32.h"
 #include "common/c-tree.h"
+#include "common/macos-ports.h"
 
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-rpc-include.h"
@@ -2044,7 +2046,7 @@ char *parse_zend_string(VK_ZVAL_API_P z, int *l) { /* {{{ */
   zval value_copy;
   switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      sprintf(s, "%ld", Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
+      sprintf(s, "%" PRIi64, static_cast<int64_t>(Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z))));
       if (l) {
         *l = strlen(s);
       }

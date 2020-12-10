@@ -6,6 +6,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <cstring>
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -18,6 +19,7 @@
 #include <unistd.h>
 
 #include "common/kprintf.h"
+#include "common/macos-ports.h"
 #include "common/options.h"
 #include "net/net-socket-options.h"
 

@@ -107,9 +107,16 @@ extern vk::optional<QueueTypesLeaseWorkerMode> cur_lease_mode;
 #define SIGTERM_MAX_TIMEOUT 10
 #define SIGTERM_WAIT_TIMEOUT 0.1
 
+#if defined(__APPLE__)
+#define SIGSTAT (SIGINFO)
+#define SIGPHPASSERT (SIGCONT)
+#define SIGSTACKOVERFLOW (SIGTSTP)
+#else
 #define SIGSTAT (SIGRTMIN)
 #define SIGPHPASSERT (SIGRTMIN + 1)
 #define SIGSTACKOVERFLOW (SIGRTMIN + 2)
+#endif
+
 #define MAX_WORKERS 999
 
 /***

@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #include "common/algorithms/fastmod.h"
@@ -237,8 +241,8 @@ size_t array<T>::array_inner::sizeof_map(uint32_t int_size, uint32_t string_size
 
 template<class T>
 size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, int64_t &new_string_size, bool is_vector) {
-  new_int_size = std::max(new_int_size, 0L);
-  new_string_size = std::max(new_string_size, 0L);
+  new_int_size = std::max(new_int_size, int64_t{0});
+  new_string_size = std::max(new_string_size, int64_t{0});
 
   if (new_int_size + new_string_size > MAX_HASHTABLE_SIZE) {
     php_critical_error ("max array size exceeded");

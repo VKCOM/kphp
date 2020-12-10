@@ -23,4 +23,5 @@ prepend(NET_SOURCES ${BASE_DIR}/net/
         net-msg.cpp
         net-msg-part.cpp)
 
+allow_deprecated_declarations_for_apple(${BASE_DIR}/net/net-crypto-aes.cpp ${BASE_DIR}/net/net-aes-keys.cpp)
 vk_add_library(net_src OBJECT ${NET_SOURCES})

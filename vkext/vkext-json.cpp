@@ -18,7 +18,7 @@ static int json_determine_array_type(VK_ZVAL_API_P val) {
   i = myht ? zend_hash_num_elements (myht) : 0;
   if (i > 0) {
     NEW_INIT_Z_STR_P(key);
-    ulong index, idx = 0;
+    unsigned long int index, idx = 0;
     VK_ZEND_HASH_FOREACH_KEY(myht, index, key){
       if (VK_ZSTR_P_NON_EMPTY(key) || (index != idx)) {
         return 1;
@@ -53,7 +53,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
   if (i > 0) {
     NEW_INIT_Z_STR_P(key);
     VK_ZVAL_API_P data;
-    ulong index;
+    unsigned long int index;
     int need_comma = 0;
 
     VK_ZEND_HASH_FOREACH_KEY_VAL(myht, index, key, data) {

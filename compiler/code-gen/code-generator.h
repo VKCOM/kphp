@@ -79,22 +79,30 @@ std::enable_if_t<std::is_constructible<vk::string_view, T>::value, CodeGenerator
   return c;
 }
 
-inline CodeGenerator &operator<<(CodeGenerator &c, int64_t value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, long long value) {
   char buf[32];
   return c << vk::string_view{buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf)};
 }
 
-inline CodeGenerator &operator<<(CodeGenerator &c, uint64_t value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, long value) {
+  return c << static_cast<long long>(value);
+}
+
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned long long value) {
   char buf[32];
   return c << vk::string_view{buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf)};
 }
 
-inline CodeGenerator &operator<<(CodeGenerator &c, int32_t value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned long value) {
+  return c << static_cast<unsigned long long>(value);
+}
+
+inline CodeGenerator &operator<<(CodeGenerator &c, int value) {
   char buf[16];
   return c << vk::string_view{buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf)};
 }
 
-inline CodeGenerator &operator<<(CodeGenerator &c, uint32_t value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned int value) {
   char buf[16];
   return c << vk::string_view{buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf)};
 }

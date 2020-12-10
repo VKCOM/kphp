@@ -4,6 +4,7 @@
 
 #include "common/tl/parse.h"
 
+#include <cinttypes>
 #include <functional>
 #include <memory>
 
@@ -150,7 +151,7 @@ static int tl_store_end_impl(int op, bool noheader) {
       tlio->out_remaining += tlio->out_pos;
       tlio->out_pos = 0;
       out_methods->store_reset();
-      vkprintf(1, "tl_store_end: writing error %s, errnum %d, tl.out_pos = %ld\n", tlio->error->c_str(), tlio->errnum, tlio->out_pos);
+      vkprintf(1, "tl_store_end: writing error %s, errnum %d, tl.out_pos = %" PRIi64 "\n", tlio->error->c_str(), tlio->errnum, tlio->out_pos);
       header.type = result_header_type::wrapped_error;
       header.error_code = tlio->errnum;
       header.error = *tlio->error;
@@ -270,7 +271,7 @@ int tl_fetch_string_len(int max_len) {
     return -1;
   }
   if (x > tlio->in_remaining) {
-    tl_fetch_set_error_format(TL_ERROR_SYNTAX, "string is too long: remaining_bytes = %ld, len = %d", tlio->in_remaining, x);
+    tl_fetch_set_error_format(TL_ERROR_SYNTAX, "string is too long: remaining_bytes = %" PRIi64 ", len = %d", tlio->in_remaining, x);
     return -1;
   }
   return x;
@@ -508,7 +509,7 @@ void tl_fetch_reset_error() {
 
 int tl_fetch_end() {
   if (tlio->in_remaining) {
-    tl_fetch_set_error_format(TL_ERROR_EXTRA_DATA, "extra %ld bytes after query", tlio->in_remaining);
+    tl_fetch_set_error_format(TL_ERROR_EXTRA_DATA, "extra %" PRIi64 " bytes after query", tlio->in_remaining);
     return -1;
   }
   return 1;
@@ -534,12 +535,12 @@ int tl_fetch_check(int nbytes) {
   }
   if (nbytes >= 0) {
     if (tlio->in_remaining < nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %ld (size = %ld)", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   } else {
     if (tlio->in_pos < -nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %ld (size = %ld)", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   }

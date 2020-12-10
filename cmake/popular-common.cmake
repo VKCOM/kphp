@@ -24,4 +24,9 @@ prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         parallel/thread-id.cpp
         parallel/limit-counter.cpp
         version-string.cpp)
+
+if(APPLE)
+    list(APPEND POPULAR_COMMON_SOURCES ${COMMON_DIR}/macos-ports.cpp)
+endif()
+
 vk_add_library(popular_common OBJECT ${POPULAR_COMMON_SOURCES})

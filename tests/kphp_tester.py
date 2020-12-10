@@ -58,28 +58,22 @@ class KphpRunOnceRunner(KphpBuilder):
         self._include_dirs.append(os.path.join(self._tester_dir, "php_include"))
         self._vkext_dir = os.path.abspath(os.path.join(self._tester_dir, os.path.pardir, "objs", "vkext"))
 
-    def run_with_php(self):
-        self._clear_working_dir(self._php_tmp_dir)
-
-        options = [
-            ("extension", "json.so"),
-            ("extension", "bcmath.so"),
-            ("extension", "iconv.so"),
-            ("extension", "mbstring.so"),
-            ("extension", "curl.so"),
-            ("extension", "tokenizer.so"),
-            ("extension", "h3.so"),
-        ]
-
+    def _get_php_bin(self):
+        if sys.platform == "darwin":
+            return shutil.which("php")
         if self._test_file.is_php5():
-            php_bin = shutil.which("php5.6") or shutil.which("php5")
-        elif self._test_file.is_php7_4():
-            php_bin = shutil.which("php7.4")
-        else:
-            php_bin = shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
+            return shutil.which("php5.6") or shutil.which("php5")
+        if self._test_file.is_php7_4():
+            return shutil.which("php7.4")
+        return shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
 
+    def _get_extensions_and_php_path(self):
+        php_bin = self._get_php_bin()
         if php_bin is None:
             raise RuntimeError("Can't find php executable")
+
+        if sys.platform == "darwin":
+            return php_bin, []
 
         vkext_so = None
         if php_bin.endswith("php7.2"):
@@ -90,8 +84,21 @@ class KphpRunOnceRunner(KphpBuilder):
         if not vkext_so or not os.path.exists(vkext_so):
             vkext_so = "vkext.so"
 
-        options.append(("extension", vkext_so))
+        extensions = [
+            ("extension", "json.so"),
+            ("extension", "bcmath.so"),
+            ("extension", "iconv.so"),
+            ("extension", "mbstring.so"),
+            ("extension", "curl.so"),
+            ("extension", "tokenizer.so"),
+            ("extension", "h3.so"),
+            ("extension", vkext_so)
+        ]
+        return php_bin, extensions
 
+    def run_with_php(self):
+        self._clear_working_dir(self._php_tmp_dir)
+        php_bin, options = self._get_extensions_and_php_path()
         options.extend([
             ("display_errors", 0),
             ("log_errors", 1),

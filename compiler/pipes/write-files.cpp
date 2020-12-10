@@ -34,11 +34,11 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
       unsigned long long old_crc = 0;
       unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
 
-      if (fscanf(old_file, "//crc64:%Lx", &old_crc) != 1) {
+      if (fscanf(old_file, "//crc64:%llx", &old_crc) != 1) {
         kphp_warning (fmt_format("can't read crc64 from [{}]\n", file->path));
         old_crc = static_cast<unsigned long long>(-1);
       } else {
-        if (fscanf(old_file, " //crc64_with_comments:%Lx", &old_crc_with_comments) != 1) {
+        if (fscanf(old_file, " //crc64_with_comments:%llx", &old_crc_with_comments) != 1) {
           old_crc_with_comments = static_cast<unsigned long long>(-1);
         }
       }
@@ -87,13 +87,13 @@ void WriteFilesF::execute(WriterData data, EmptyStream &) {
                 fmt_format("Failed to open [{}] for write : {}\n", file->path, strerror(errno)));
 
     if (data.compile_with_crc()) {
-      kphp_assert(fprintf(dest_file, "//crc64:%016Lx\n", ~crc) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016Lx\n", ~crc_with_comments) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", ~crc) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", ~crc_with_comments) >= 0);
       kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
       kphp_assert(fflush(dest_file) >= 0);
       kphp_assert(fseek(dest_file, 0, SEEK_SET) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64:%016Lx\n", crc) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016Lx\n", crc_with_comments) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", crc) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", crc_with_comments) >= 0);
     }
     else {
       kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);

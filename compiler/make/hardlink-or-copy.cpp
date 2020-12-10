@@ -7,10 +7,10 @@
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 
 #include "common/algorithms/find.h"
+#include "common/macos-ports.h"
 
 #include "compiler/stage.h"
 #include "common/wrappers/fmt_format.h"

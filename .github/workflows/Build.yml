@@ -95,24 +95,21 @@ jobs:
     
     - name: Setup Environment
       run: |
-        brew install cmake glib-openssl re2 ccache fmt googletest
+        brew install cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
+        brew link --overwrite php@7.4
         pip3 install jsonschema
         
-    # when we fix build for mac, don't forget to combine this step with "Build step"
     - name: Run cmake
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
         
     - name: Build all
-      continue-on-error: true
       run: make -C ${{runner.workspace}}/build -j$(nproc) all
       
     - name: Run unit tests
-      continue-on-error: true
       run: make -C ${{runner.workspace}}/build -j$(nproc) test
 
     - name: Compile dummy PHP script
       working-directory: ${{runner.workspace}}/build
-      continue-on-error: true
       run: |
         echo 'hello world' > demo.php 
         $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php

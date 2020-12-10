@@ -96,7 +96,7 @@ string_buffer &operator<<(string_buffer &sb, int32_t x) {
   return sb;
 }
 
-string_buffer &operator<<(string_buffer &sb, unsigned int x) {
+string_buffer &operator<<(string_buffer &sb, uint32_t x) {
   sb.reserve_at_least(10);
   sb.buffer_end = simd_uint32_to_string(x, sb.buffer_end);
   return sb;

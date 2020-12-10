@@ -12,6 +12,7 @@
 
 #undef basename
 
+#include "common/macos-ports.h"
 #include "common/wrappers/mkdir_recursive.h"
 
 #include "runtime/critical_section.h"

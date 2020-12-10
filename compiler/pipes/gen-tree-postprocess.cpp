@@ -52,7 +52,7 @@ VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
 
   int implicit_key = -1;
 
-  for (const auto x : *list) {
+  for (auto x : *list) {
     if (const auto arrow = x.try_as<op_double_arrow>()) {
       has_explicit_keys = true;
       mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));

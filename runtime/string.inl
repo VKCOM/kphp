@@ -978,7 +978,7 @@ bool operator!=(const string &lhs, const string &rhs) {
 }
 
 bool is_ok_float(double v) {
-  return v == 0.0 || (__fpclassify(v) == FP_NORMAL && v < 1e100 && v > -1e100);
+  return v == 0.0 || (std::fpclassify(v) == FP_NORMAL && v < 1e100 && v > -1e100);
 }
 
 inline bool is_all_digits(const string &s) {

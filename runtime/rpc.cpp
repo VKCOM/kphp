@@ -447,7 +447,7 @@ bool store_int(int32_t v) {
 bool f$store_int(int64_t v) {
   const auto v32 = static_cast<int32_t>(v);
   if (unlikely(is_int32_overflow(v))) {
-    php_warning("Got int32 overflow on storing '%ld', the value will be casted to '%d'", v, v32);
+    php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, v32);
   }
   return store_int(v32);
 }
@@ -521,7 +521,7 @@ bool f$store_many(const array<mixed> &a) {
         f$store_double(a.get_value(i).to_float());
         break;
       default:
-        php_warning("Wrong symbol '%c' at position %ld in first argument of store_many", pattern[static_cast<string::size_type>(i - 1)], i - 1);
+        php_warning("Wrong symbol '%c' at position %" PRIi64 " in first argument of store_many", pattern[static_cast<string::size_type>(i - 1)], i - 1);
         break;
     }
   }
@@ -886,7 +886,7 @@ public:
 bool drop_tl_query_info(int64_t query_id) {
   auto query = RpcPendingQueries::get().withdraw(query_id);
   if (query.is_null()) {
-    php_warning("Result of TL query with id %ld has already been taken or id is incorrect", query_id);
+    php_warning("Result of TL query with id %" PRIi64 " has already been taken or id is incorrect", query_id);
     return false;
   }
   return true;

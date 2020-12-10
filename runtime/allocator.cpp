@@ -7,11 +7,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
-#include <malloc.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
 #include "common/containers/final_action.h"
+#include "common/macos-ports.h"
 #include "common/wrappers/likely.h"
 
 #include "runtime/critical_section.h"

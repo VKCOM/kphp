@@ -6,8 +6,8 @@
 
 #include <cassert>
 #include <cstring>
+#include <cstdlib>
 #include <fcntl.h>
-#include <malloc.h>
 #include <openssl/rand.h>
 #include <sys/stat.h>
 #include <unistd.h>

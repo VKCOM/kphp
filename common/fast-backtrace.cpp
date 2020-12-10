@@ -11,7 +11,11 @@
 
 char *stack_end;
 
-#if defined(__x86_64__)
+#if defined(__aarch64__) || defined(__APPLE__)
+int fast_backtrace (void **buffer, int size) {
+  return backtrace(buffer, size);
+}
+#elif defined(__x86_64__)
 extern void *__libc_stack_end;
 
 struct stack_frame {
@@ -43,12 +47,6 @@ int fast_backtrace (void **buffer, int size) {
   }
   return i;
 }
-#elif defined(__aarch64__)
-
-int fast_backtrace (void **buffer, int size) {
-  return backtrace(buffer, size);
-}
-
 #else
 #error "Unsupported arch"
 #endif

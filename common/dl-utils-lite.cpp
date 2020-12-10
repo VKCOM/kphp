@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -31,34 +32,11 @@
 #endif
 
 
-
-double dl_get_utime (int clock_id) {
-  struct timespec T;
-#if _POSIX_TIMERS
-  assert (clock_gettime (clock_id, &T) >= 0);
-  return (double)T.tv_sec + (double)T.tv_nsec * 1e-9;
-#else
-#error "No high-precision clock"
-  return (double)time();
-#endif
-}
-
-#define NSEC_IN_SEC 1000000000LL
-#define NSEC_IN_MSEC 1000000LL
-
-long long dl_get_utime_ns (int clock_id) {
-  struct timespec T;
-#if _POSIX_TIMERS
-  assert (clock_gettime (clock_id, &T) >= 0);
-  return T.tv_sec * NSEC_IN_SEC + T.tv_nsec;
-#else
-#error "No high-precision clock"
-  return time() * NSEC_IN_SEC;
-#endif
-}
-
-double dl_time () {
-  return dl_get_utime (CLOCK_MONOTONIC);
+double dl_time() {
+  timespec T;
+  const int res = clock_gettime(CLOCK_MONOTONIC, &T);
+  assert(res >= 0);
+  return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
 void dl_print_backtrace(void **trace, int trace_size) {

@@ -33,7 +33,7 @@ array<string> explode(char delimiter, const string &str, int64_t limit) {
 
 array<string> f$explode(const string &delimiter, const string &str, int64_t limit) {
   if (limit < 1) {
-    php_warning("Wrong limit %ld specified in function explode", limit);
+    php_warning("Wrong limit %" PRIi64 " specified in function explode", limit);
     limit = 1;
   }
   int64_t d_len = delimiter.size();
@@ -78,7 +78,7 @@ array<string> f$explode(const string &delimiter, const string &str, int64_t limi
 array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
   if (from < to) {
     if (step <= 0) {
-      php_warning("Wrong parameters from = %ld, to = %ld, step = %ld in function range", from, to, step);
+      php_warning("Wrong parameters from = %" PRIi64 ", to = %" PRIi64 ", step = %" PRIi64 " in function range", from, to, step);
       return array<mixed>();
     }
     array<mixed> res(array_size((to - from + step) / step, 0, true));
@@ -88,7 +88,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
     return res;
   } else {
     if (step == 0) {
-      php_warning("Wrong parameters from = %ld, to = %ld, step = %ld in function range", from, to, step);
+      php_warning("Wrong parameters from = %" PRIi64 ", to = %" PRIi64 ", step = %" PRIi64 " in function range", from, to, step);
       return array<mixed>();
     }
     if (step < 0) {
@@ -108,7 +108,7 @@ array<mixed> range_string(const string &from_s, const string &to_s, int64_t step
     return array<mixed>();
   }
   if (step != 1) {
-    php_critical_error ("unsupported step = %ld in function range", step);
+    php_critical_error ("unsupported step = %" PRIi64 " in function range", step);
   }
   const int64_t from = static_cast<unsigned char>(from_s[0]);
   const int64_t to = static_cast<unsigned char>(to_s[0]);

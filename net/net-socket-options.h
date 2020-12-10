@@ -26,6 +26,5 @@ bool socket_enable_unix_passcred(int socket);
 bool socket_set_tcp_window_clamp(int socket, int size);
 void socket_maximize_rcvbuf(int socket, int max);
 void socket_maximize_sndbuf(int socket, int max);
-bool socket_get_domain(int socket, int *domain);
 
 #endif // KDB_NET_NET_SOCKET_OPTIONS_H

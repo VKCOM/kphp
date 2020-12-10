@@ -4,6 +4,8 @@
 
 #include "runtime/url.h"
 
+#include "common/macos-ports.h"
+
 #include "runtime/array_functions.h"
 #include "runtime/regexp.h"
 
@@ -438,7 +440,7 @@ mixed f$parse_url(const string &s, int64_t component) {
       case 7:             // PHP_URL_FRAGMENT
         return url_as_array.get_value(string("fragment", 8));
       default:
-        php_warning("Wrong parameter component = %ld in function parse_url", component);
+        php_warning("Wrong parameter component = %" PRIi64 " in function parse_url", component);
         return false;
     }
   }

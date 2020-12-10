@@ -4,8 +4,8 @@
 
 #include "common/binlog/binlog-buffer-replay.h"
 
+#include <cstdlib>
 #include <fcntl.h>
-#include <malloc.h>
 #include <sys/stat.h>
 #include <unistd.h>
 

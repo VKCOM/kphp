@@ -283,7 +283,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
       kphp_error (list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
-      for (const auto cur : list->list()) {
+      for (auto cur : list->list()) {
         const auto kv = cur.as<op_list_keyval>();
         if (GenTree::get_actual_value(kv->key())->type() != op_int_const) {
           const TypeData *key_type = tinf::get_type(kv->key());
@@ -291,7 +291,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         }
       }
     } else if (arrayType->ptype() == tp_shape) {
-      for (const auto cur : list->list()) {
+      for (auto cur : list->list()) {
         const auto kv = cur.as<op_list_keyval>();
         if (GenTree::get_actual_value(kv->key())->type() != op_string) {
           const TypeData *key_type = tinf::get_type(kv->key());

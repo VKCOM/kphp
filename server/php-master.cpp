@@ -16,7 +16,6 @@
 #include <semaphore.h>
 #include <string>
 #include <sys/mman.h>
-#include <sys/prctl.h>
 #include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -30,6 +29,7 @@
 #include "common/crc32c.h"
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
+#include "common/macos-ports.h"
 #include "common/pipe-utils.h"
 #include "common/precise-time.h"
 #include "common/server/limits.h"
@@ -393,6 +393,9 @@ void shared_data_init(shared_data_t *data) {
 shared_data_t *get_shared_data(const char *name) {
   int ret;
   vkprintf(2, "Get shared data: begin\n");
+#if defined(__APPLE__)
+  shm_unlink(name);
+#endif
   int fid = shm_open(name, O_RDWR, 0777);
   int init_flag = 0;
   if (fid == -1) {
@@ -496,8 +499,9 @@ void master_init(master_data_t *me, master_data_t *other) {
 
   me->pid = getpid();
   me->start_time = get_pid_start_time(me->pid);
+#if !defined(__APPLE__)
   assert (me->start_time != 0);
-
+#endif
   if (other->valid_flag) {
     me->generation = other->generation + 1;
   } else {
@@ -1294,6 +1298,9 @@ conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
 void create_stats_queries(connection *c, int op, int worker_pid) {
   int i;
 
+#if defined(__APPLE__)
+  op |= SPOLL_SEND_IMMEDIATE_STATS | SPOLL_SEND_FULL_STATS;
+#endif
   sigval to_send;
   to_send.sival_int = op;
   for (i = 0; i < me_workers_n; i++) {
@@ -1306,7 +1313,11 @@ void create_stats_queries(connection *c, int op, int worker_pid) {
         pipe_info = &workers[i]->pipes[0];
       }
       dl_assert (pipe_info != nullptr, "bug in code");
+#if defined(__APPLE__)
+      kill(workers[i]->pid, SIGSTAT);
+#else
       sigqueue(workers[i]->pid, SIGSTAT, to_send);
+#endif
       pipe_info->pipe_out_packet_num++;
       vkprintf(1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
       if (c != nullptr) {
@@ -1963,9 +1974,10 @@ static void cron() {
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
   unsigned long long stime = 0;
+#if !defined(__APPLE__)
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
-
+#endif
   server_stats.worker_stats.copy_internal_from(dead_worker_stats);
   server_stats.worker_stats.reset_memory_and_percentiles_stats();
   int running_workers = 0;

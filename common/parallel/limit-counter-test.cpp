@@ -50,6 +50,8 @@ TEST(parallel_limit_counter, basic) {
   EXPECT_EQ(expected_sum, PARALLEL_LIMIT_COUNTER_READ(limit_counter));
 }
 
+#if !defined(__APPLE__)
+
 TEST(parallel_limit_counter, accuracy) {
   constexpr std::size_t global_max = 100000000;
   constexpr std::size_t thread_max = 1000;
@@ -90,3 +92,5 @@ TEST(parallel_limit_counter, accuracy) {
   const std::size_t sum = std::accumulate(thread_counters.begin(), thread_counters.end(), UINT64_C(0));
   EXPECT_NEAR(sum, PARALLEL_LIMIT_COUNTER_READ(limit_counter), nr_threads * thread_max);
 }
+
+#endif

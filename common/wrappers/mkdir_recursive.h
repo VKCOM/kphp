@@ -5,8 +5,8 @@
 #pragma once
 
 #include <assert.h>
+#include <climits>
 #include <errno.h>
-#include <linux/limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>

@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <cassert>
-#include <malloc.h>
+#include <cstdlib>
 #include <memory.h>
 
 #include "common/sanitizer.h"
