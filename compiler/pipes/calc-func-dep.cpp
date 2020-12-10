@@ -38,7 +38,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   if (auto catch_op = vertex.try_as<op_catch>()) {
     // since only used functions make it to this point, we may
     // mark class as used even if it was not explicitly instantiated
-    // anywhere, so we can compile the try/catch successfully
+    // anywhere, so we can compile the try/catch successfully;
+    // (if we don't do so, we'll get a crash for unused classes see #68)
     auto klass = catch_op->exception_class;
     kphp_assert(klass);
     klass->mark_as_used();
