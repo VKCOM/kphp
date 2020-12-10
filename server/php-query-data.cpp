@@ -35,8 +35,11 @@ http_query_data *http_query_data_create(
   d->uri = (char *)memdup(qUri, qUriLen);
   d->get = (char *)memdup(qGet, qGetLen);
   d->headers = (char *)memdup(qHeaders, qHeadersLen);
-  d->post = (char *)memdup(qPost, qPostLen);
-
+  if (qPost) {
+    d->post = (char *)memdup(qPost, qPostLen);
+  } else {
+    d->post = nullptr;
+  }
   d->uri_len = qUriLen;
   d->get_len = qGetLen;
   d->headers_len = qHeadersLen;

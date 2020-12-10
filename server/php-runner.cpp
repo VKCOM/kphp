@@ -489,7 +489,9 @@ void print_http_data() {
       write_str(2, "\nheaders\n");
       write(2, data->headers, data->headers_len);
       write_str(2, "\npost\n");
-      write(2, data->post, data->post_len);
+      if (data->post && data->post_len > 0) {
+        write(2, data->post, data->post_len);
+      }
     }
   }
 }
