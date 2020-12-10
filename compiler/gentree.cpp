@@ -2127,6 +2127,8 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
         catch_op.set_location(location);
         if (!seen_base_exception) {
           catch_list.emplace_back(catch_op);
+        } else {
+          // TODO: delete catch_op when we'll have a way of doing so?
         }
         if (catch_op->type_declaration == "Exception" || catch_op->type_declaration == "Throwable") {
           catch_op->catches_all = true;
