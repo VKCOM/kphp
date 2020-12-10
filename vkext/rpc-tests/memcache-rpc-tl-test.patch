@@ -1,11 +1,26 @@
-diff --git a/memcached/memcache.tl b/memcached/memcache.tl
-index c2037570e5..f065806435 100644
---- a/memcached/memcache.tl
-+++ b/memcached/memcache.tl
-@@ -117,3 +117,86 @@ memcache.oneSetWithTimes
- @write @internal memcache.multiSetWithTimes values:%(Vector %memcache.OneSetWithTimes) = Vector Bool;
+diff --git a/common/tl/schemas/memcache.tl b/common/tl/schemas/memcache.tl
+index cdf774eeb2..7bdd716d4c 100644
+--- a/common/tl/schemas/memcache.tl
++++ b/common/tl/schemas/memcache.tl
+@@ -93,10 +93,10 @@ memcache.oneSetWithTimes
+ // returns all entries. The prefix is removed from keys
+ @read memcache.getWildcard prefix:string = Vector %(Map string string);
+ @read memcache.getWildcardDict prefix:string = Dictionary string;
+-@read memcache.getWildcardDictWithLimit prefix:string limit:int = Dictionary string;  // any negative limit is equal to +inf
++@read memcache.getWildcardDictWithLimit prefix:string limit:int = Dictionary string;  // any negative limit is equal to inf
+ // list of keys
+ @read memcache.getWildcardList prefix:string = Vector string;
+-@read memcache.getWildcardListWithLimit prefix:string limit:int = Vector string;      // any negative limit is equal to +inf
++@read memcache.getWildcardListWithLimit prefix:string limit:int = Vector string;      // any negative limit is equal to inf
+ @read memcache.getWildcardWithFlags prefix:string = Dictionary memcache.Value;
+ 
+ // -1 for no expire, time before key is expired, false for no key
+@@ -118,3 +118,88 @@ memcache.oneSetWithTimes
  // keys[keys_len - 1] - most recent used, keys[0] was used a long time ago
  @any @internal memcache.updateLRU keys:%(Vector string) = Bool;
+ @read @internal memcache.multiExists keys:%(Vector string) = Vector Bool;
++
++
 +
 +
 +// ~~~~~~~~~~~~~~~~~~~~ FOR VKEXT TEST ONLY ~~~~~~~~~~~~~~~~~~~
@@ -189,10 +204,10 @@ index f5e599c4ee..4003574eab 100644
    unsigned int op = tl_fetch_int();
    if (tl_fetch_error()) {
 diff --git a/memcached/memcached.mk b/memcached/memcached.mk
-index d23f76f1c2..9ea1b76aa0 100644
+index 35227ac23d..e35d5693d3 100644
 --- a/memcached/memcached.mk
 +++ b/memcached/memcached.mk
-@@ -4,11 +4,16 @@ $(foreach file, ${MEMCACHE_PARTS}, \
+@@ -4,8 +4,12 @@ $(foreach file, ${MEMCACHE_PARTS}, \
    $(eval $(call ObjWithFlagsCPP, ${OBJ}/memcached/memcached-with-times-$(file).o, memcached/memcached-$(file).cpp, -DWITH_MODIFICATION_TIME)) \
  )
  
@@ -202,13 +217,8 @@ index d23f76f1c2..9ea1b76aa0 100644
 +MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_COMMON_CXX}
 +MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_SEARCH_CXX}
 +
-+${EXE}/memcached-with-times: ${MEMCACHE_AUTOGEN_TL_DEPS} ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-with-times-%.o} ${TL_ENGINE_OBJS}
-+
-+${EXE}/memcached: ${MEMCACHE_AUTOGEN_TL_DEPS} ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-%.o} ${TL_ENGINE_OBJS}
++${EXE}/memcached-with-times: ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-with-times-%.o} ${TL_ENGINE_OBJS} ${MEMCACHE_AUTOGEN_TL_DEPS}
++${EXE}/memcached: ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-%.o} ${TL_ENGINE_OBJS} ${MEMCACHE_AUTOGEN_TL_DEPS}
  
  ENGINES += memcached
  C_EXE_LIST += memcached memcached-with-times
--OBJECTS_CXX += ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-%.o}
-+OBJECTS_CXX += ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-%.o} ${MEMCACHE_AUTOGEN_TL_DEPS}
- TL_SCHEMA_LIST += memcached/memcache.tl
- RPC_PROXY_SCHEMA_OBJS_CXX += ${OBJ}/memcached/rpc-proxy-memcached.o
