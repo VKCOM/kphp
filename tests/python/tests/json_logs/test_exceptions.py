@@ -13,7 +13,7 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": 1, "env": "",  "tags": {"uncaught": True},
-                "msg": "Unhandled exception from .+index.php:\\d+; Error 123; Message: hello",
+                "msg": "Unhandled ServerException from .+index.php:\\d+; Error 123; Message: hello",
             }])
 
     def test_exception_with_context(self):
@@ -27,7 +27,7 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
-                "msg": "Unhandled exception from .+index.php:\\d+; Error 3456; Message: world",
+                "msg": "Unhandled ServerException from .+index.php:\\d+; Error 3456; Message: world",
             }])
 
     def test_exception_with_special_chars(self):

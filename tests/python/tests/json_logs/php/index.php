@@ -1,11 +1,13 @@
 <?php
 
+class ServerException extends Exception {}
+
 function do_sigsegv() {
   raise_sigsegv();
 }
 
 function do_exception(string $message, int $code) {
-  throw new Exception($message, $code);
+  throw new ServerException($message, $code);
 }
 
 function do_warning(string $message) {
