@@ -12,9 +12,8 @@ struct IdGen {
 
   vector<IdMapBase *> id_maps;
   IdMap<IdType> ids;
-  int n;
+  int n{0};
 
-  IdGen();
   void add_id_map(IdMapBase *to_add);
 
   int init_id(IdType *to_add);
@@ -23,11 +22,6 @@ struct IdGen {
   iterator end();
   void clear();
 };
-
-template<class IdType>
-IdGen<IdType>::IdGen() :
-  n(0) {
-}
 
 template<class IdType>
 void IdGen<IdType>::add_id_map(IdMapBase *to_add) {

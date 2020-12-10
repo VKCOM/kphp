@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/cfg.h"
 
+#include <stack>
+
 #include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
@@ -1176,15 +1178,23 @@ void CFG::confirm_usage(VertexPtr v, bool recursive_flag) {
 }
 
 void CFG::calc_used(Node v) {
-  node_was[v] = cur_dfs_mark;
-  //fprintf (stdout, "calc_used %d\n", get_index (v));
+  std::stack<Node> node_stack;
+  node_stack.push(v);
 
-  for (const auto &node_subtree : node_subtrees[v]) {
-    confirm_usage(node_subtree.v, node_subtree.recursive_flag);
-  }
-  for (Node i : node_next[v]) {
-    if (node_was[i] != cur_dfs_mark) {
-      calc_used(i);
+  while (!node_stack.empty()) {
+    v = node_stack.top();
+    node_stack.pop();
+
+    node_was[v] = cur_dfs_mark;
+    //fprintf (stdout, "calc_used %d\n", get_index (v));
+
+    for (const auto &node_subtree : node_subtrees[v]) {
+      confirm_usage(node_subtree.v, node_subtree.recursive_flag);
+    }
+    for (Node i : node_next[v]) {
+      if (node_was[i] != cur_dfs_mark) {
+        node_stack.push(i);
+      }
     }
   }
 }
