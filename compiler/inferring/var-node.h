@@ -12,17 +12,20 @@ namespace tinf {
 class VarNode : public Node {
 public:
   enum {
+    e_uninited = -3,
     e_variable = -2,
     e_return_value = -1
   };
 
   VarPtr var_;
-  int param_i;
+  int param_i{e_uninited};
   FunctionPtr function_;
 
-  explicit VarNode(VarPtr var = VarPtr()) :
-    var_(var),
-    param_i(e_variable) {}
+  VarNode() = default;
+
+  void init_as_variable(VarPtr var);
+  void init_as_argument(VarPtr var);
+  void init_as_return_value(FunctionPtr function);
 
   void copy_type_from(const TypeData *from) {
     type_ = from;

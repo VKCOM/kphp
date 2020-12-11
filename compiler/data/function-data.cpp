@@ -30,6 +30,7 @@ FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_fun
   function->root = root;
   function->file_id = stage::get_file();
   function->type = type;
+  function->tinf_node.init_as_return_value(function);
   //function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
 
   return function;

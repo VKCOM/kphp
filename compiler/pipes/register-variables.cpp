@@ -82,15 +82,14 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
   var_vertex->var_id = var;
 }
 
-void RegisterVariablesPass::register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value) {
-  auto var_vertex = param->var();
+void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;
   var->marked_as_const = var_vertex->is_const;
   kphp_assert (var);
   if (default_value) {
-    kphp_error_return(is_const(default_value), fmt_format("Default value of [{}] is not constant", name));
+    kphp_error_return(is_const(default_value) || current_function->is_extern(), fmt_format("Default value of [{}] is not constant", name));
     var->init_val = default_value;
   }
   var_vertex->var_id = var;
@@ -210,15 +209,18 @@ VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root) {
 
 void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_list> list) {
   for (auto i : list->params()) {
-    kphp_assert (i);
-    kphp_assert (i->type() == op_func_param);
-    auto param = i.as<op_func_param>();
-    VertexPtr default_value;
-    if (param->has_default_value() && param->default_value()) {
-      default_value = param->default_value();
-      run_function_pass(param->default_value(), this);
+    if (auto param = i.try_as<op_func_param>()) {
+      VertexPtr default_value;
+      if (param->has_default_value() && param->default_value()) {
+        default_value = param->default_value();
+        run_function_pass(param->default_value(), this);
+      }
+      register_param_var(param->var(), default_value);
+    } else if (auto param_cb = i.try_as<op_func_param_typed_callback>()) {
+      register_param_var(param_cb->var(), {});
+    } else {
+      kphp_error(0, "Strange vertex type in op_func_param_list");
     }
-    register_param_var(param, default_value);
   }
 }
 

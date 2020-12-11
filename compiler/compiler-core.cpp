@@ -358,6 +358,7 @@ DefinePtr CompilerCore::get_define(const string &name) {
 VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
   VarPtr var = VarPtr(new VarData(type));
   var->name = name;
+  var->tinf_node.init_as_variable(var);
   stats.on_var_inserting(type);
   return var;
 }
@@ -433,6 +434,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
       break;
     case VarData::var_param_t:
       var->param_i = (int)function->param_ids.size();
+      var->tinf_node.init_as_argument(var);
       function->param_ids.push_back(var);
       break;
     default:

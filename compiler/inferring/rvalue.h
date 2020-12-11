@@ -54,8 +54,8 @@ inline RValue as_rvalue(VertexPtr v, const MultiKey *key = nullptr) {
   return RValue(tinf::get_tinf_node(v), key);
 }
 
-inline RValue as_rvalue(FunctionPtr function, int id) {
-  return RValue(tinf::get_tinf_node(function, id));
+inline RValue as_rvalue(FunctionPtr function, int param_i) {
+  return RValue(tinf::get_tinf_node(function, param_i));
 }
 
 inline RValue as_rvalue(VarPtr var) {

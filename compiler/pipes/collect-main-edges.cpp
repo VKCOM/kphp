@@ -267,10 +267,13 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
       if (!function->is_extern()) {
         create_set(as_lvalue(function, i), arg);
       }
+    }
 
-      if (param->var()->ref_flag) {
-        create_set(arg, as_rvalue(function, i));
-      }
+    // if a param is passed by reference, function body affects the type of the caller argument:
+    // function f(&$a) { $a = 'str'; }     $i = 0; f($i);     - $i will be mixed (string + int)
+    // to achieve this, create a reversed edge
+    if (param->var()->ref_flag) {
+      create_set(as_lvalue(arg), as_rvalue(function, i));
     }
   }
 }
@@ -414,66 +417,54 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
 }
 
 void CollectMainEdgesPass::on_function(FunctionPtr function) {
-  VertexRange params = function->get_params();
-  int params_n = static_cast<int>(params.size());
-
-  for (int i = -1; i < params_n; i++) {
-    require_node(as_rvalue(function, i));
-  }
-
+  // make initial sets to extern functions tinf nodes
   if (function->is_extern()) {
-    auto ret_type = PrimitiveType::tp_mixed;
+    // f(...) ::: string — set the return value to a return tinf node
+    // (if a return value is not a type, but ^1 for example, don't do it, it will be calculated for each invocation)
     if (auto rule = function->root->type_rule.try_as<op_common_type_rule>()) {
       if (auto type_of_rule = rule->rule().try_as<op_type_expr_type>()) {
-        ret_type = type_of_rule->type_help;
+        create_set(as_lvalue(function, -1), type_of_rule->type_help);
       }
     }
-    create_set(as_lvalue(function, -1), ret_type);
 
-    for (int i = 0; i < params_n; i++) {
+    // f($x ::: string) — set the param tinf node; if array, it means array<any>
+    // (for not-cast params — with type hints — it will be done not here, but in infer hints)
+    VertexRange params = function->get_params();
+    for (int i = 0; i < params.size(); i++) {
       PrimitiveType ptype = params[i]->type_help;
-      if (ptype == tp_Unknown) {
-        ptype = tp_Any;
-      }
-      //FIXME: type is const...
-      create_set(as_lvalue(function, i), TypeData::get_type(ptype, tp_Any));
-    }
-  } else {
-    for (int i = 0; i < params_n; i++) {
-      //FIXME?.. just use pointer to node?..
-      create_set(as_lvalue(function, i), function->param_ids[i]);
-      create_set(function->param_ids[i], as_rvalue(function, i));
-    }
-
-    using InferType = FunctionData::InferHint::InferType;
-    // @kphp-infer hint/check for @param/@return — is less/set on the associated tinf_node(s) function.
-    for (const FunctionData::InferHint &hint : function->infer_hints) {
-      switch (hint.infer_type) {
-        case InferType::hint_check:
-          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
-          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
-          break;
-        case InferType::check:
-          create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
-          break;
-        case InferType::hint:
-          create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
-          break;
-        case InferType::cast:
-          // do nothing: cast is a type_help attached in parse_and_apply_function_kphp_phpdoc()
-          break;
+      if (ptype != tp_Unknown) {
+        create_set(as_lvalue(function, i), TypeData::get_type(ptype, tp_Any));
       }
     }
+  }
 
-    if (function->assumption_for_return) {
-      create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
+  // @kphp-infer hint/check for @param/@return — is less/set on the associated tinf_node(s) function.
+  for (const FunctionData::InferHint &hint : function->infer_hints) {
+    switch (hint.infer_type) {
+      case FunctionData::InferHint::InferType::hint_check:
+        create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
+        create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
+        break;
+      case FunctionData::InferHint::InferType::check:
+        create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
+        break;
+      case FunctionData::InferHint::InferType::hint:
+        create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
+        break;
+      case FunctionData::InferHint::InferType::cast:
+        // do nothing: cast is a type_help attached in parse_and_apply_function_kphp_phpdoc()
+        break;
     }
+  }
 
-    if (function->has_variadic_param) {
-      auto id_of_last_param = function->get_params().size() - 1;
-      RValue array_of_any{TypeData::get_type(tp_array, tp_Any)};
-      create_less(as_rvalue(function, id_of_last_param), array_of_any);
-    }
+  if (function->assumption_for_return) {
+    create_less(as_rvalue(function, -1), function->assumption_for_return->get_type_data());
+  }
+
+  if (function->has_variadic_param) {
+    auto id_of_last_param = function->get_params().size() - 1;
+    RValue array_of_any{TypeData::get_type(tp_array, tp_Any)};
+    create_less(as_rvalue(function, id_of_last_param), array_of_any);
   }
 }
 

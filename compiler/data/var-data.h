@@ -25,7 +25,7 @@ public:
 
   Type type_ = var_unknown_t;
   int id = -1;
-  int param_i = 0;
+  int param_i = -1;
   std::string name;
   tinf::VarNode tinf_node;
   VertexPtr init_val;
@@ -46,7 +46,7 @@ public:
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
 
-  explicit VarData(Type type = var_unknown_t);
+  explicit VarData(Type type);
 
   inline Type &type() { return type_; }
 

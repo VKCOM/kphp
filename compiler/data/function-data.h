@@ -97,10 +97,9 @@ public:
   std::set<string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
-  int tinf_state = 0;
-  vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check for param/return
   VertexPtr return_typehint;
+  tinf::VarNode tinf_node;              // tinf node for return
 
   bool has_variadic_param = false;
   bool should_be_sync = false;
