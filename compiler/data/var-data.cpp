@@ -8,9 +8,7 @@
 #include "compiler/stage.h"
 
 VarData::VarData(VarData::Type type_) :
-  type_(type_),
-  tinf_node(VarPtr(this))
-{}
+  type_(type_) {}
 
 void VarData::set_uninited_flag(bool f) {
   uninited_flag = f;

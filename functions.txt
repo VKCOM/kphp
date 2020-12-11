@@ -293,7 +293,7 @@ function date_default_timezone_get() ::: string;
 function getdate ($timestamp ::: int = INT_MIN) ::: mixed[];
 function gmdate ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function gmmktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
-function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = false);
+function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 function microtime ($get_as_float ::: bool = false) ::: mixed;//TODO
 function mktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
 function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
@@ -887,7 +887,7 @@ define('SEEK_SET', 0);
 define('SEEK_END', 1);
 define('SEEK_CUR', 2);
 
-function fopen ($filename ::: string, $mode ::: string);
+function fopen ($filename ::: string, $mode ::: string) ::: mixed;
 function fwrite ($stream, $text ::: string) ::: int | false;
 function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
 function rewind ($stream) ::: bool;
@@ -900,13 +900,13 @@ function fflush ($stream) ::: bool;
 function feof ($stream) ::: bool;
 function fclose ($stream) ::: bool;
 
-function stream_context_create ($options ::: mixed = array());
+function stream_context_create ($options ::: mixed = array()) ::: mixed;
 function stream_context_set_option (&$context, $options_or_wrapper_name ::: mixed, $option ::: string = TODO, $value ::: mixed = TODO) ::: bool;
 
 define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
 
-function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null);
+function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null) ::: mixed;
 function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
 function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
 function stream_set_read_buffer ($stream, $size ::: int) ::: bool;

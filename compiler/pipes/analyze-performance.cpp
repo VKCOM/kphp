@@ -177,7 +177,7 @@ std::string prepare_for_json(std::string str) noexcept {
 } // namespace
 
 void AnalyzePerformance::analyze_func_call(VertexAdaptor<op_func_call> func_call) noexcept {
-  if (is_enabled<PerformanceInspections::implicit_array_cast>()) {
+  if (is_enabled<PerformanceInspections::implicit_array_cast>() && !func_call->func_id->is_extern()) {
     const auto &func_params = func_call->func_id->param_ids;
     VertexRange call_params = func_call->args();
     const size_t params_count = std::min(func_params.size(), static_cast<size_t>(call_params.size()));

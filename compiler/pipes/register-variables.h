@@ -30,7 +30,7 @@ private:
   bool is_const(VertexPtr v);
   bool is_global_var(VertexPtr v);
   void register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
-  void register_param_var(VertexAdaptor<op_func_param> param, VertexPtr default_value);
+  void register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value);
   void register_var(VertexAdaptor<op_var> var_vertex);
   void visit_global_vertex(VertexAdaptor<op_global> global);
   void visit_static_vertex(VertexAdaptor<op_static> stat);
@@ -43,10 +43,6 @@ public:
 
   string get_description() override {
     return "Register variables";
-  }
-
-  bool check_function(FunctionPtr function) const override {
-    return !function->is_extern();
   }
 
   void on_start() override {

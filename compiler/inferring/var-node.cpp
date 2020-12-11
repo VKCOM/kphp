@@ -36,6 +36,7 @@ void VarNodeRecalc::do_recalc() {
 }
 
 void tinf::VarNode::recalc(tinf::TypeInferer *inferer) {
+  kphp_assert(param_i != e_uninited);
   VarNodeRecalc(this, inferer).run();
 }
 
@@ -86,4 +87,20 @@ string tinf::VarNode::get_description() {
   }
   ss << "  " << "at " + get_function_name();
   return ss.str();
+}
+
+void tinf::VarNode::init_as_variable(VarPtr var) {
+  var_ = var;
+  param_i = e_variable;
+}
+
+void tinf::VarNode::init_as_argument(VarPtr var) {
+  kphp_assert(var->param_i >= 0);
+  var_ = var;
+  param_i = var->param_i;
+}
+
+void tinf::VarNode::init_as_return_value(FunctionPtr function) {
+  function_ = function;
+  param_i = e_return_value;
 }

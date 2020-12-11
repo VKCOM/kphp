@@ -62,8 +62,9 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
 }
 
 void IncludesCollector::add_function_signature_depends(const FunctionPtr &function) {
-  for (const auto &tinf_node : function->tinf_nodes) {
-    add_all_class_types(*tinf_node.get_type());
+  add_all_class_types(*function->tinf_node.get_type());
+  for (const auto &param : function->param_ids) {
+    add_all_class_types(*param->tinf_node.get_type());
   }
 }
 
