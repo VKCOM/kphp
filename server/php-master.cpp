@@ -36,6 +36,7 @@
 #include "common/server/signals.h"
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
+#include "common/time-utils.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "net/net-connections.h"
@@ -2021,10 +2022,6 @@ static void cron() {
   confdata_binlog_update_cron();
 }
 
-auto get_steady_tp_ms_now() noexcept {
-  return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
-}
-
 static master_state master_change_state() {
   master_state new_state;
   if (in_sigterm) {
@@ -2069,7 +2066,7 @@ void run_master() {
 
   preallocate_msg_buffers();
 
-  auto prev_cron_start_tp = get_steady_tp_ms_now();
+  auto prev_cron_start_tp = vk::time::get_steady_tp_ms_now();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
     my_now = dl_time();
@@ -2154,10 +2151,10 @@ void run_master() {
     vkprintf(2, "run_master iteration: end\n");
 
     using namespace std::chrono_literals;
-    auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);
+    auto wait_time = 1s - (vk::time::get_steady_tp_ms_now() - prev_cron_start_tp);
     epoll_work(static_cast<int>(std::max(wait_time, 0ms).count()));
 
-    const auto new_tp = get_steady_tp_ms_now();
+    const auto new_tp = vk::time::get_steady_tp_ms_now();
     if (new_tp - prev_cron_start_tp >= 1s) {
       prev_cron_start_tp = new_tp;
       cron();
