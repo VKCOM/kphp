@@ -65,10 +65,10 @@ private:
 
   // There is a bug in GCC before 8.4 where we can't declare underlying type of the enum PrimitiveType
   // due-to vertex-meta-op_base.h:33, where the PrimiviteType used as a bit field
-  // GCC produces a false positive warning, which you may not disable; later we need to remove PrimitiveType_
+  // GCC produces a false positive warning, which you may not disable;
+  // Later we need to add uint8_t underlying type for the enum PrimitiveType
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
-  using PrimitiveType_ = uint8_t;
-  PrimitiveType_ ptype_{tp_Unknown};
+  PrimitiveType ptype_ : 8;
   flags_t flags_{0};
   generation_t generation_;
 
