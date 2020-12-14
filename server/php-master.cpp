@@ -66,7 +66,7 @@ extern const char *engine_tag;
 static int save_verbosity;
 
 struct master_data_t {
-  int valid_flag;
+  bool is_alive;
 
   pid_t pid;
   unsigned long long start_time;
@@ -113,6 +113,13 @@ static master_data_t *me, *other; // these are pointers to shared memory
 
 static double my_now;
 
+static bool in_new_master_on_restart() {
+  return other->is_alive && me->rate > other->rate;
+}
+
+static bool in_old_master_on_restart() {
+  return other->is_alive && me->rate < other->rate;
+}
 
 /*** Shared data functions ***/
 void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
@@ -460,10 +467,10 @@ void shared_data_unlock(shared_data_t *data) {
 }
 
 void master_data_remove_if_dead(master_data_t *master) {
-  if (master->valid_flag) {
+  if (master->is_alive) {
     unsigned long long start_time = get_pid_start_time(master->pid);
     if (start_time != master->start_time) {
-      master->valid_flag = 0;
+      master->is_alive = false;
       dl_assert (me == nullptr || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
                                                         start_time, master->start_time));
     }
@@ -478,10 +485,10 @@ void shared_data_update(shared_data_t *shared_data) {
 void shared_data_get_masters(shared_data_t *shared_data, master_data_t **me, master_data_t **other) {
   *me = nullptr;
 
-  if (shared_data->masters[0].valid_flag == 0) {
+  if (!shared_data->masters[0].is_alive) {
     *me = &shared_data->masters[0];
     *other = &shared_data->masters[1];
-  } else if (shared_data->masters[1].valid_flag == 0) {
+  } else if (!shared_data->masters[1].is_alive) {
     *me = &shared_data->masters[1];
     *other = &shared_data->masters[0];
   }
@@ -491,7 +498,7 @@ void master_init(master_data_t *me, master_data_t *other) {
   assert (me != nullptr);
   memset(me, 0, sizeof(*me));
 
-  if (other->valid_flag) {
+  if (other->is_alive) {
     me->rate = other->rate + 1;
   } else {
     me->rate = 1;
@@ -502,7 +509,7 @@ void master_init(master_data_t *me, master_data_t *other) {
 #if !defined(__APPLE__)
   assert (me->start_time != 0);
 #endif
-  if (other->valid_flag) {
+  if (other->is_alive) {
     me->generation = other->generation + 1;
   } else {
     me->generation = 1;
@@ -518,7 +525,7 @@ void master_init(master_data_t *me, master_data_t *other) {
   me->ask_http_fd_generation = 0;
   me->sent_http_fd_generation = 0;
 
-  me->valid_flag = 1; //NB: must be the last operation.
+  me->is_alive = true; //NB: must be the last operation.
 }
 
 void run_master();
@@ -769,11 +776,9 @@ int kill_worker() {
 #define MAX_HANGING_TIME 65.0
 
 void kill_hanging_workers() {
-  int i;
-
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
-    for (i = 0; i < me_workers_n; i++) {
+    for (int i = 0; i < me_workers_n; i++) {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
@@ -784,7 +789,7 @@ void kill_hanging_workers() {
     }
   }
 
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       kill(workers[i]->pid, SIGKILL);
@@ -1796,16 +1801,16 @@ void run_master_off_in_graceful_shutdown() {
   to_kill = me_running_workers_n;
   if (me_running_workers_n + me_dying_workers_n == 0) {
     to_exit = 1;
-    me->valid_flag = 0;
+    me->is_alive = false;
   }
 }
 
 void run_master_off_in_graceful_restart() {
   vkprintf(2, "state: master_state::off_in_graceful_restart\n");
-  assert (other->valid_flag);
+  assert (other->is_alive);
   vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
-  if (other->valid_flag && other->ask_http_fd_generation > me->generation) {
+  if (other->is_alive && other->ask_http_fd_generation > me->generation) {
     vkprintf(1, "send http fd\n");
     send_fd_via_socket(*http_fd);
     //TODO: process errors
@@ -1821,7 +1826,7 @@ void run_master_off_in_graceful_restart() {
   if (me_running_workers_n + me_dying_workers_n == 0) {
     to_exit = 1;
     changed = 1;
-    me->valid_flag = 0;
+    me->is_alive = false;
   }
 }
 
@@ -1829,7 +1834,7 @@ void run_master_on() {
   vkprintf(2, "state: master_state::on\n");
 
   static double prev_attempt = 0;
-  if (!master_sfd_inited && !other->valid_flag && prev_attempt + 1 < my_now) {
+  if (!master_sfd_inited && !other->is_alive && prev_attempt + 1 < my_now) {
     prev_attempt = my_now;
     if (master_port > 0 && master_sfd < 0) {
       master_sfd = server_socket(master_port, settings_addr, backlog, 0);
@@ -1853,7 +1858,7 @@ void run_master_on() {
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
 
   if (need_http_fd) {
-    int can_ask_http_fd = other->valid_flag && other->own_http_fd && other->http_fd_port == me->http_fd_port;
+    int can_ask_http_fd = other->is_alive && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
       vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
@@ -1897,10 +1902,10 @@ void run_master_on() {
   }
 
   if (!need_http_fd) {
-    int total_workers = me_running_workers_n + me_dying_workers_n + (other->valid_flag ? other->running_workers_n + other->dying_workers_n : 0);
+    int total_workers = me_running_workers_n + me_dying_workers_n + (other->is_alive ? other->running_workers_n + other->dying_workers_n : 0);
     to_run = std::max(0, workers_n - total_workers);
 
-    if (other->valid_flag) {
+    if (other->is_alive) {
       int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
 
       if (set_to_kill > 0) {
@@ -2020,17 +2025,19 @@ auto get_steady_tp_ms_now() noexcept {
   return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 }
 
-static void master_change_state() {
+static master_state master_change_state() {
   master_state new_state;
   if (in_sigterm) {
     new_state = master_state::off_in_graceful_shutdown;
   } else {
-    if (other->valid_flag == 0 || me->rate > other->rate) {
+    if (!other->is_alive || in_new_master_on_restart()) {
       new_state = master_state::on;
     } else {
       new_state = master_state::off_in_graceful_restart;
     }
   }
+
+  master_state prev_state = state;
   switch (state) {
     case master_state::on: {
       // can go to any state
@@ -2048,6 +2055,7 @@ static void master_change_state() {
       // FINAL state: can't go to any other state
       break;
   }
+  return prev_state;
 }
 
 void run_master() {
@@ -2078,13 +2086,13 @@ void run_master() {
     shared_data_update(shared_data);
 
     //calc state
-    dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
-                                                              me->valid_flag, me->pid, getpid()));
+    dl_assert (me->is_alive && me->pid == getpid(), dl_pstr("[me->is_alive = %d] [me->pid = %d] [getpid() = %d]",
+                                                              me->is_alive, me->pid, getpid()));
     master_change_state();
 
     //calc generation
     generation = me->generation;
-    if (other->valid_flag && other->generation > generation) {
+    if (other->is_alive && other->generation > generation) {
       generation = other->generation;
     }
     generation++;
@@ -2122,7 +2130,7 @@ void run_master() {
     me->dying_workers_n = me_dying_workers_n;
 
     if (state != master_state::off_in_graceful_shutdown) {
-      if (changed && other->valid_flag) {
+      if (changed && other->is_alive) {
         vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
         kill(other->pid, SIGPOLL);
       }
