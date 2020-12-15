@@ -11,6 +11,55 @@
 #include "common/algorithms/find.h"
 #include "common/tlo-parsing/tl-utils.h"
 
+namespace vk {
+namespace tl {
+
+struct TLNode {
+  enum {
+    holds_combinator,
+    holds_type,
+  } node_type;
+
+  explicit TLNode(const combinator *c) :
+    node_type(holds_combinator) {
+    tl_object_ptr_.combinator_ptr = c;
+  }
+
+  explicit TLNode(const type *t) :
+    node_type(holds_type) {
+    tl_object_ptr_.type_ptr = t;
+  }
+
+  bool is_type() const {
+    return node_type == holds_type;
+  }
+
+  bool is_combinator() const {
+    return node_type == holds_combinator;
+  }
+
+  const type *get_type() const {
+    return tl_object_ptr_.type_ptr;
+  }
+
+  const combinator *get_combinator() const {
+    return tl_object_ptr_.combinator_ptr;
+  }
+
+private:
+  // TODO when we switch to C++17, use std::variant
+  union {
+    const combinator *combinator_ptr;
+    const type *type_ptr;
+  } tl_object_ptr_;
+};
+
+} // namespace tl
+} // namespace vk
+
+vk::tl::DependencyGraph::DependencyGraph() {}
+vk::tl::DependencyGraph::~DependencyGraph() {}
+
 vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(scheme) {
   const size_t approximate_nodes_cnt = 2 * scheme->types.size() + scheme->functions.size();
   nodes.reserve(approximate_nodes_cnt);
@@ -45,13 +94,13 @@ int vk::tl::DependencyGraph::register_node(const TLNode &node) {
   std::string tl_name;
   const combinator *c = nullptr;
   const type *t = nullptr;
-  switch (node.tl_object.index()) {
-    case 0:
-      c = vk::get<0>(node.tl_object);
+  switch (node.node_type) {
+    case TLNode::holds_combinator:
+      c = node.get_combinator();
       tl_name = c->name;
       break;
-    case 1:
-      t = vk::get<1>(node.tl_object);
+    case TLNode::holds_type:
+      t = node.get_type();
       tl_name = t->name;
       break;
     default:
@@ -134,10 +183,6 @@ void vk::tl::DependencyGraph::collect_combinator_edges(vk::tl::combinator *c) {
   weak_self_cyclic_types.insert(builder.weak_self_cyclic_types.begin(), builder.weak_self_cyclic_types.end());
 }
 
-const std::vector<vk::tl::TLNode> &vk::tl::DependencyGraph::get_nodes() const {
-  return nodes;
-}
-
 const std::vector<std::unordered_set<int>> &vk::tl::DependencyGraph::get_edges() const {
   return edges;
 }
@@ -149,6 +194,22 @@ const std::vector<std::unordered_set<int>> &vk::tl::DependencyGraph::get_inv_edg
 const vk::tl::TLNode &vk::tl::DependencyGraph::get_node_info(int node_id) const {
   assert(node_id < nodes.size());
   return nodes[node_id];
+}
+
+void vk::tl::DependencyGraph::copy_node_internals_to(int node_id, std::unordered_set<const vk::tl::type *> &types_out,
+                                                     std::unordered_set<const vk::tl::combinator *> &functions_out) const {
+  const vk::tl::TLNode &node = get_node_info(node_id);
+  if (node.is_combinator()) {
+    auto *c = node.get_combinator();
+    if (c->is_function()) {
+      functions_out.insert(c);
+    } else if (c->is_constructor()) {
+      vk::tl::type *t = get_type_of(c, scheme);
+      types_out.insert(t);
+    }
+  } else if (node.is_type()) {
+    types_out.insert(node.get_type());
+  }
 }
 
 std::vector<int> vk::tl::DependencyGraph::find_cycles_nodes() const {
