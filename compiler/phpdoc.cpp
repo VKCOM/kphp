@@ -635,7 +635,7 @@ bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, Vertex
   }
 
   for (auto i : *type_expr) {
-    all_resolved &= phpdoc_prepare_type_expr_resolving_classes(cur_function, i);
+    all_resolved = all_resolved && phpdoc_prepare_type_expr_resolving_classes(cur_function, i);
   }
 
   return all_resolved;

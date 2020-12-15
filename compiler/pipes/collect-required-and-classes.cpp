@@ -106,20 +106,16 @@ private:
 
   // Searching for classes inside @var/@param phpdoc as well as inside type hints
   inline void require_all_classes_in_phpdoc_type(VertexPtr type_expr) {
-    std::function<void(VertexPtr)> find_unknown_and_require = [this, &find_unknown_and_require](VertexPtr type_expr) {
-      if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
-        const std::string &class_name = resolve_uses(current_function, as_op_class->class_name, '\\');
-        if (!G->get_class(class_name)) {
-          require_class(replace_characters(class_name, '\\', '/'));
-        }
+    if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
+      const std::string &class_name = resolve_uses(current_function, as_op_class->class_name, '\\');
+      if (!G->get_class(class_name)) {
+        require_class(replace_characters(class_name, '\\', '/'));
       }
+    }
 
-      for (auto i : *type_expr) {
-        find_unknown_and_require(i);
-      }
-    };
-
-    find_unknown_and_require(type_expr);
+    for (auto i : *type_expr) {
+      require_all_classes_in_phpdoc_type(i);
+    }
   }
 
   // Collect classes to require from the function prototype.
