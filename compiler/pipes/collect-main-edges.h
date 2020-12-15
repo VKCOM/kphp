@@ -14,8 +14,6 @@ private:
   bool have_returns = false;
 
   static tinf::Node *node_from_rvalue(const RValue &rvalue);
-  template<class RestrictionT>
-  static void create_restriction(const RValue &lhs, const RValue &rhs);
   static RValue as_set_value(VertexPtr v);
 
 
@@ -23,8 +21,6 @@ private:
   static void create_set(const LValue &lhs, const R &rhs);
   template<class R>
   static void create_less(const RValue &lhs, const R &rhs);
-  template<class R>
-  static void create_greater(const RValue &lhs, const R &rhs);
   static void create_non_void(const RValue &lhs);
   static void create_isset_check(const RValue &rvalue);
   static void require_node(const RValue &rvalue);

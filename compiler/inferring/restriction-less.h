@@ -56,8 +56,4 @@ public:
 
 protected:
   bool check_broken_restriction_impl() final;
-
-  virtual bool is_less_virt(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr) {
-    return RestrictionLess::is_less(given, expected, from_at);
-  }
 };
