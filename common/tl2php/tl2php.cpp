@@ -10,7 +10,7 @@
 #include "common/tlo-parsing/flat-optimization.h"
 #include "common/tlo-parsing/replace-anonymous-args.h"
 #include "common/tlo-parsing/tl-scheme-final-check.h"
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/version-string.h"
 
 namespace vk {

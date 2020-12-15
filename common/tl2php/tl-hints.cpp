@@ -9,7 +9,7 @@
 #include <cstring>
 #include <fstream>
 
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
 namespace tl {
