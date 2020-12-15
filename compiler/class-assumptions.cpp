@@ -415,9 +415,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   VertexRange params = root->params()->args();
   for (auto i : params.get_reversed_range()) {
     VertexAdaptor<op_func_param> param = i.as<op_func_param>();
-    if (!param->type_declaration.empty()) {
-      auto result = phpdoc_parse_type_and_var_name(param->type_declaration, f);
-      auto a = assumption_create_from_phpdoc(result.type_expr);
+    if (param->type_hint) {
+      auto a = assumption_create_from_phpdoc(param->type_hint);
       if (!a->is_primitive()) {
         assumption_add_for_var(f, param->var()->get_string(), a);
       }
@@ -508,12 +507,10 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       return;
     }
   }
-  if (!f->return_typehint.empty()) {
-    if (auto parsed = phpdoc_parse_type_and_var_name(f->return_typehint, f)) {
-      if (parsed.type_expr->type() != op_type_expr_callable) {
-        assumption_add_for_return(f, assumption_create_from_phpdoc(parsed.type_expr));
-        return;
-      }
+  if (f->return_typehint) {
+    if (f->return_typehint->type() != op_type_expr_callable) {
+      assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
+      return;
     }
   }
 

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Syntax error: question token without type specifier/
+/Cannot parse type hint/
 <?php
 function foo(?) {
 }

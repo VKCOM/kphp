@@ -80,12 +80,9 @@ public:
   VertexPtr parse_from_tokens(std::vector<Token>::const_iterator &tok_iter);
   VertexPtr parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept;
 
-  const std::vector<std::string> &get_unknown_classes() const { return unknown_classes_list; }
-
 private:
   FunctionPtr current_function;
   std::vector<Token>::const_iterator cur_tok;
-  std::vector<std::string> unknown_classes_list;
 
   VertexPtr parse_classname(const std::string &phpdoc_class_name);
   VertexPtr parse_simple_type();
@@ -108,3 +105,5 @@ std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, 
 std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
 
 bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
+
+bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, VertexPtr type_expr);

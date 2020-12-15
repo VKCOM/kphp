@@ -161,7 +161,8 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   function->class_id = klass;
   function->context_class = klass;
 
-  auto rule_this_var = GenTree::create_type_help_class_vertex(klass);
+  auto rule_this_var = GenTree::create_type_help_class_vertex(klass->name);
+  rule_this_var->class_ptr = klass;
   auto this_var = function->root->params()->args()[0].as<op_func_param>()->var();
   this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
 

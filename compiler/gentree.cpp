@@ -640,14 +640,11 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
   return VertexAdaptor<op_ternary>::create(cond, left_var_move, false_expr);
 }
 
-VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(vk::string_view klass_name) {
-  return create_type_help_class_vertex(G->get_class(resolve_uses(cur_function, static_cast<std::string>(klass_name))));
-}
-
-VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(ClassPtr klass) {
+VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(const std::string &unresolved_class_name) {
   auto type_rule = VertexAdaptor<op_type_expr_class>::create();
   type_rule->type_help = tp_Class;
-  type_rule->class_ptr = klass;
+  type_rule->class_ptr = {}; // this will be set later, see phpdoc_prepare_type_rule_resolving_classes()
+  type_rule->class_name = unresolved_class_name;
   return type_rule;
 }
 
@@ -789,21 +786,24 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   auto location = auto_location();
 
-  std::string type_declaration = get_typehint();
+  VertexPtr type_hint = get_typehint();
   bool is_varg = false;
 
-  if (test_expect(tok_varg)) {
+  // if the argument is vararg and has a type hint — e.g. int ...$a — then cur points to $a, as ... were consumed by the type lexer
+  if (type_hint && std::prev(cur, 1)->type() == tok_varg) {
+    is_varg = true;
+  } else if (test_expect(tok_varg)) {
     next_cur();
     is_varg = true;
-    if (!from_callback) {
-      kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
-      cur_function->has_variadic_param = true;
-    }
+  }
+  if (is_varg && !from_callback) {
+    kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+    cur_function->has_variadic_param = true;
   }
 
   VertexAdaptor<op_var> name = get_var_name_ref();
   if (!name) {
-    kphp_error(type_declaration.empty(), "Syntax error: missing varname after typehint");
+    kphp_error(!type_hint, "Syntax error: missing varname after typehint");
     return {};
   }
 
@@ -824,15 +824,12 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     v = VertexAdaptor<op_func_param>::create(name);
   }
   v.set_location(location);
-  if (!type_declaration.empty()) {
-    // nullable argument with an explicit ?T type hint or with default value of null
+  if (type_hint) {
+    // if "T $a = null" (default argument null), then type of $a is ?T (strange, but PHP works this way)
     if (def_val && def_val->type() == op_null) {
-      type_declaration += "|null";
+      type_hint = VertexAdaptor<op_type_expr_lca>::create(type_hint, GenTree::create_type_help_vertex(tp_Null));
     }
-    if (is_varg) {
-      type_declaration = "(" + type_declaration + ")[]";
-    }
-    v->type_declaration = std::move(type_declaration);
+    v->type_hint = type_hint;
   }
 
   if (type_rule) {
@@ -1519,7 +1516,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   if (test_expect(tok_colon)) {
     next_cur();
     cur_function->return_typehint = get_typehint();
-    kphp_error(!cur_function->return_typehint.empty(), "Expected return typehint after :");
+    kphp_error(cur_function->return_typehint, "Expected return typehint after :");
   }
 
   if (is_arrow) {
@@ -1901,23 +1898,20 @@ VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_st
   return VertexAdaptor<op_empty>::create();
 }
 
-std::string GenTree::get_typehint() {
-  std::string typehint;
-  bool is_nullable = false;
-
-  if (test_expect(tok_question)) {
-    is_nullable = true;
-    next_cur();
+VertexPtr GenTree::get_typehint() {
+  // optimization: don't start the lexer if it's 100% not a type hint here (so it wouldn't be parsed, and it's okay)
+  // without this, everything still works, just a bit slower
+  if (vk::any_of_equal(cur->type(), TokenType::tok_var_name, TokenType::tok_clpar, TokenType::tok_and, TokenType::tok_varg)) {
+    return {};
   }
 
-  if (vk::any_of_equal(cur->type(), tok_func_name, tok_array, tok_string, tok_int, tok_float, tok_bool, tok_callable, tok_void)) {
-    typehint = std::string(cur->str_val) + (is_nullable ? "|null" : "");
-    next_cur();
-  } else {
-    kphp_error(!is_nullable, "Syntax error: question token without type specifier");
+  try {
+    PhpDocTypeRuleParser parser(cur_function);
+    return parser.parse_from_tokens(cur);
+  } catch (std::runtime_error &) {
+    kphp_error(0, "Cannot parse type hint");
+    return {};
   }
-
-  return typehint;
 }
 
 VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {

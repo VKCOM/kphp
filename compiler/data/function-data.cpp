@@ -42,6 +42,7 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
   res->name = new_name;
   res->update_location_in_body();
   res->name_gen_map = {};
+  res->return_typehint = other->return_typehint.clone();
 
   res->assumptions_for_vars = {};
   res->assumption_args_status = AssumptionStatus::unknown;
@@ -278,12 +279,12 @@ string FunctionData::get_human_readable_name(bool add_details) const {
   return result_name;
 }
 
-void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule) {
-  if (!type_rule) {
+void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::InferType infer_type, int param_i, VertexPtr type_expr) {
+  if (!type_expr) {
     return;
   }
-  type_rule.set_location(root);
-  infer_hints.emplace_back(InferHint{infer_mask, param_i, type_rule});
+  type_expr.set_location(root);
+  infer_hints.emplace_back(infer_type, param_i, type_expr);
 }
 
 bool FunctionData::is_lambda_with_uses() const {

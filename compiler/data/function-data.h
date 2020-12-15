@@ -33,23 +33,23 @@ private:
 
 public:
   struct InferHint {
-    enum infer_mask {
-      check         = 0b00001,
-      hint          = 0b00010,
-      hint_check    = 0b00100,
-      cast          = 0b01000,
+    enum class InferType {
+      check,
+      hint,
+      hint_check,
+      cast,
     };
 
-    InferHint(infer_mask infer_type, int param_i, VertexPtr type_rule) :
+    InferHint(InferType infer_type, int param_i, VertexPtr type_expr) :
       infer_type(infer_type),
       param_i(param_i),
-      type_rule(type_rule) {
+      type_expr(type_expr) {
     }
 
 
-    infer_mask infer_type;
+    InferType infer_type;
     int param_i;            // 0..N — arguments, -1 return (just like in tinf)
-    VertexPtr type_rule;    // op_lt_type_rule / op_common_type_rule / etc
+    VertexPtr type_expr;    // not op_lt_type_rule/etc, but what's inside (the type representation itself)
   };
 
   int id = -1;
@@ -100,7 +100,7 @@ public:
   int tinf_state = 0;
   vector<tinf::VarNode> tinf_nodes;
   vector<InferHint> infer_hints;        // kphp-infer hint/check for param/return
-  std::string return_typehint;
+  VertexPtr return_typehint;
 
   bool has_variadic_param = false;
   bool should_be_sync = false;
@@ -153,7 +153,7 @@ public:
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
   static string get_human_readable_name(const std::string &name, bool add_details = true);
   string get_human_readable_name(bool add_details = true) const;
-  void add_kphp_infer_hint(InferHint::infer_mask infer_mask, int param_i, VertexPtr type_rule);
+  void add_kphp_infer_hint(InferHint::InferType infer_type, int param_i, VertexPtr type_expr);
 
   bool has_implicit_this_arg() const {
     return modifiers.is_instance();

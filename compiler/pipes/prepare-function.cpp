@@ -23,7 +23,7 @@
 // Note that @kphp-required is analyzed inside gentree.
 class ParseAndApplyPHPDoc {
 private:
-  using infer_mask = FunctionData::InferHint::infer_mask;
+  using InferType = FunctionData::InferHint::InferType;
 
 public:
   ParseAndApplyPHPDoc(FunctionPtr f) :
@@ -121,22 +121,20 @@ private:
     for (int param_i = 0; param_i < func_params_.size(); ++param_i) {
       auto op_func_param = func_params_[param_i].as<meta_op_func_param>();
 
-      if (op_func_param->type_declaration == "callable") {
+      if (op_func_param->type_hint && op_func_param->type_hint->type() == op_type_expr_callable) {
         op_func_param->is_callable = true;
         op_func_param->template_type_id = id_of_kphp_template_++;
-        op_func_param->type_declaration.clear();
+        op_func_param->type_hint = {};
         f_->is_template = true;
-      } else if (!op_func_param->type_declaration.empty()) {
-        auto parsed = phpdoc_parse_type_and_var_name(op_func_param->type_declaration, f_);
-        f_->add_kphp_infer_hint(infer_mask::hint_check, param_i, parsed.type_expr);
+      } else if (op_func_param->type_hint) {
+        f_->add_kphp_infer_hint(InferType::hint_check, param_i, op_func_param->type_hint);
       }
     }
   }
 
   void apply_return_type_hint() {
-    if (!f_->return_typehint.empty()) {
-      auto parsed = phpdoc_parse_type_and_var_name(f_->return_typehint, f_);
-      f_->add_kphp_infer_hint(infer_mask::hint_check, -1, parsed.type_expr);
+    if (f_->return_typehint) {
+      f_->add_kphp_infer_hint(InferType::hint_check, -1, f_->return_typehint);
     }
   }
 
@@ -305,7 +303,7 @@ private:
     }
 
     // todo better to add hint_check here, but vk.com has lots of errors, maybe will be fixed later
-    f_->add_kphp_infer_hint(infer_mask::check, -1, doc_parsed.type_expr);
+    f_->add_kphp_infer_hint(InferType::check, -1, doc_parsed.type_expr);
     has_return_php_doc_ = true;
   }
 
@@ -336,7 +334,7 @@ private:
       }
     }
 
-    f_->add_kphp_infer_hint(infer_mask::hint_check, param_i, doc_parsed.type_expr);
+    f_->add_kphp_infer_hint(InferType::hint_check, param_i, doc_parsed.type_expr);
 
     if (infer_cast_) {
       auto expr_type_v = doc_parsed.type_expr.try_as<op_type_expr_type>();
@@ -354,7 +352,7 @@ private:
     for (auto name_and_param_id : name_to_function_param_) {
       auto op_func_param = func_params_[name_and_param_id.second].as<meta_op_func_param>();
 
-      if (op_func_param->type_declaration.empty()) {
+      if (!op_func_param->type_hint) {
         kphp_error(false, fmt_format("Specify @param or type hint for ${}", name_and_param_id.first));
       }
     }
@@ -363,11 +361,11 @@ private:
   void check_function_has_return_or_type_hint() {
     // at this point, all phpdocs have been parsed, and has_return_php_doc_ is true if @return found
     // if we have no @return and no return hint, assume @return void
-    if (f_->return_typehint.empty() && !has_return_php_doc_) {
+    if (!f_->return_typehint && !has_return_php_doc_) {
       bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return;
 
       if (assume_return_void) {
-        f_->add_kphp_infer_hint(infer_mask::check, -1, GenTree::create_type_help_vertex(tp_void));
+        f_->add_kphp_infer_hint(InferType::check, -1, GenTree::create_type_help_vertex(tp_void));
       }
     }
   }
