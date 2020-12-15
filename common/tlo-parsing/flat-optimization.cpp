@@ -11,7 +11,7 @@
 #include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 namespace {
 
 struct InlineArg {
@@ -302,5 +302,5 @@ void perform_flat_optimization(tl_scheme &scheme) {
   }
 }
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk

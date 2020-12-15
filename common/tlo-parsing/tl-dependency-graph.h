@@ -11,7 +11,7 @@
 #include <unordered_set>
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 
 struct tl_scheme;
 struct type;
@@ -22,6 +22,7 @@ struct DependencyGraphBuilder;
 
 class DependencyGraph {
 public:
+  DependencyGraph();
   // Во время использования этого класса необходимо, чтобы *scheme не изменялось
   explicit DependencyGraph(tl_scheme *scheme);
   ~DependencyGraph();
@@ -29,8 +30,8 @@ public:
   // a -> b === a зависит от b
   const std::vector<std::unordered_set<int>> &get_edges() const;
   const std::vector<std::unordered_set<int>> &get_inv_edges() const;
-  void copy_node_internals_to(int node_id, std::unordered_set<const vk::tl::type *> &types_out,
-                              std::unordered_set<const vk::tl::combinator *> &functions_out) const;
+  void copy_node_internals_to(int node_id, std::unordered_set<const vk::tlo_parsing::type *> &types_out,
+                              std::unordered_set<const vk::tlo_parsing::combinator *> &functions_out) const;
 
   // Находит все вершины, которые зависят от циклов
   std::vector<int> find_cycles_nodes() const;
@@ -38,10 +39,10 @@ public:
   // Находит все вершины, которые зависят от !
   std::vector<int> find_excl_nodes() const;
 
-  std::vector<const vk::tl::type *> get_type_dependencies(const type *t) const;
-  std::vector<const vk::tl::type *> get_function_dependencies(const combinator *f) const;
+  std::vector<const vk::tlo_parsing::type *> get_type_dependencies(const type *t) const;
+  std::vector<const vk::tlo_parsing::type *> get_function_dependencies(const combinator *f) const;
 
-  std::set<const vk::tl::type *> get_weak_self_cyclic_types() const;
+  std::set<const vk::tlo_parsing::type *> get_weak_self_cyclic_types() const;
   bool is_type_weak_self_cyclic(const type *t) const;
 
 private:
@@ -58,9 +59,10 @@ private:
   void collect_combinator_edges(combinator *c);
   void add_edge(const TLNode &from, const TLNode &to);
   int register_node(const TLNode &node);
-  std::vector<const vk::tl::type *> get_combinator_dependencies(const combinator *c) const;
+  std::vector<const vk::tlo_parsing::type *> get_combinator_dependencies(const combinator *c) const;
 
   friend DependencyGraphBuilder;
 };
-}
-}
+
+} // namespace tlo_parsing
+} // namespace vk

@@ -12,7 +12,7 @@
 #include "common/tlo-parsing/tl-objects.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 
 struct TLNode {
   enum {
@@ -54,10 +54,12 @@ private:
   } tl_object_ptr_;
 };
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk
 
-vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(scheme) {
+vk::tlo_parsing::DependencyGraph::DependencyGraph() = default;
+
+vk::tlo_parsing::DependencyGraph::DependencyGraph(vk::tlo_parsing::tl_scheme *scheme) : scheme(scheme) {
   const size_t approximate_nodes_cnt = 2 * scheme->types.size() + scheme->functions.size();
   nodes.reserve(approximate_nodes_cnt);
   edges.reserve(approximate_nodes_cnt);
@@ -77,9 +79,9 @@ vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(sch
   }
 }
 
-vk::tl::DependencyGraph::~DependencyGraph() = default;
+vk::tlo_parsing::DependencyGraph::~DependencyGraph() = default;
 
-void vk::tl::DependencyGraph::add_edge(const TLNode &from, const TLNode &to) {
+void vk::tlo_parsing::DependencyGraph::add_edge(const TLNode &from, const TLNode &to) {
   int from_id = register_node(from);
   int to_id = register_node(to);
   if (from_id == to_id) {
@@ -89,7 +91,7 @@ void vk::tl::DependencyGraph::add_edge(const TLNode &from, const TLNode &to) {
   inv_edges[to_id].insert(from_id);
 }
 
-int vk::tl::DependencyGraph::register_node(const TLNode &node) {
+int vk::tlo_parsing::DependencyGraph::register_node(const TLNode &node) {
   std::string tl_name;
   const combinator *c = nullptr;
   const type *t = nullptr;
@@ -123,7 +125,7 @@ int vk::tl::DependencyGraph::register_node(const TLNode &node) {
   return node_id;
 }
 
-struct vk::tl::DependencyGraphBuilder : private vk::tl::expr_visitor {
+struct vk::tlo_parsing::DependencyGraphBuilder : private vk::tlo_parsing::expr_visitor {
   DependencyGraph &graph;
   combinator *expr_owner_combinator;
   std::set<const type *> weak_self_cyclic_types;
@@ -133,11 +135,11 @@ struct vk::tl::DependencyGraphBuilder : private vk::tl::expr_visitor {
     graph(graph),
     expr_owner_combinator(expr_owner) {}
 
-  void collect_edges(vk::tl::expr_base *expr) {
+  void collect_edges(vk::tlo_parsing::expr_base *expr) {
     expr->visit(*this);
   };
 private:
-  void apply(vk::tl::type_expr &expr) final {
+  void apply(vk::tlo_parsing::type_expr &expr) final {
     type *t = get_type_of(&expr, graph.scheme);
     if (t->is_builtin()) {
       return;
@@ -155,23 +157,23 @@ private:
     std::swap(new_treat_dep_as_weak, treat_dep_as_weak);
   }
 
-  void apply(vk::tl::type_array &array) final {
+  void apply(vk::tlo_parsing::type_array &array) final {
     treat_dep_as_weak = true;
     for (const auto &arg : array.args) {
       arg->type_expr->visit(*this);
     }
   }
 
-  void apply(vk::tl::type_var &) final {}
-  void apply(vk::tl::nat_const &) final {}
-  void apply(vk::tl::nat_var &) final {}
+  void apply(vk::tlo_parsing::type_var &) final {}
+  void apply(vk::tlo_parsing::nat_const &) final {}
+  void apply(vk::tlo_parsing::nat_var &) final {}
 
   static bool is_pointer_used_in_child(const type *t) {
     return vk::any_of_equal(t->name, "Vector", "Dictionary", "IntKeyDictionary", "LongKeyDictionary");
   }
 };
 
-void vk::tl::DependencyGraph::collect_combinator_edges(vk::tl::combinator *c) {
+void vk::tlo_parsing::DependencyGraph::collect_combinator_edges(vk::tlo_parsing::combinator *c) {
   DependencyGraphBuilder builder{*this, c};
   for (const auto &arg : c->args) {
     builder.collect_edges(arg->type_expr.get());
@@ -182,28 +184,28 @@ void vk::tl::DependencyGraph::collect_combinator_edges(vk::tl::combinator *c) {
   weak_self_cyclic_types.insert(builder.weak_self_cyclic_types.begin(), builder.weak_self_cyclic_types.end());
 }
 
-const std::vector<std::unordered_set<int>> &vk::tl::DependencyGraph::get_edges() const {
+const std::vector<std::unordered_set<int>> &vk::tlo_parsing::DependencyGraph::get_edges() const {
   return edges;
 }
 
-const std::vector<std::unordered_set<int>> &vk::tl::DependencyGraph::get_inv_edges() const {
+const std::vector<std::unordered_set<int>> &vk::tlo_parsing::DependencyGraph::get_inv_edges() const {
   return inv_edges;
 }
 
-const vk::tl::TLNode &vk::tl::DependencyGraph::get_node_info(int node_id) const {
+const vk::tlo_parsing::TLNode &vk::tlo_parsing::DependencyGraph::get_node_info(int node_id) const {
   assert(node_id < nodes.size());
   return nodes[node_id];
 }
 
-void vk::tl::DependencyGraph::copy_node_internals_to(int node_id, std::unordered_set<const vk::tl::type *> &types_out,
-                                                     std::unordered_set<const vk::tl::combinator *> &functions_out) const {
-  const vk::tl::TLNode &node = get_node_info(node_id);
+void vk::tlo_parsing::DependencyGraph::copy_node_internals_to(int node_id, std::unordered_set<const vk::tlo_parsing::type *> &types_out,
+                                                     std::unordered_set<const vk::tlo_parsing::combinator *> &functions_out) const {
+  const vk::tlo_parsing::TLNode &node = get_node_info(node_id);
   if (node.is_combinator()) {
     auto *c = node.get_combinator();
     if (c->is_function()) {
       functions_out.insert(c);
     } else if (c->is_constructor()) {
-      vk::tl::type *t = get_type_of(c, scheme);
+      vk::tlo_parsing::type *t = get_type_of(c, scheme);
       types_out.insert(t);
     }
   } else if (node.is_type()) {
@@ -211,7 +213,7 @@ void vk::tl::DependencyGraph::copy_node_internals_to(int node_id, std::unordered
   }
 }
 
-std::vector<int> vk::tl::DependencyGraph::find_cycles_nodes() const {
+std::vector<int> vk::tlo_parsing::DependencyGraph::find_cycles_nodes() const {
   std::vector<int> used(nodes.size());
   std::vector<bool> reachable_from_cycles(nodes.size());
   for (int v = 0; v < nodes.size(); ++v) {
@@ -237,7 +239,7 @@ std::vector<int> vk::tl::DependencyGraph::find_cycles_nodes() const {
   return res_ids;
 }
 
-std::vector<int> vk::tl::DependencyGraph::find_excl_nodes() const {
+std::vector<int> vk::tlo_parsing::DependencyGraph::find_excl_nodes() const {
   static auto is_node_exclamation = [&](int node_id) {
     auto node = get_node_info(node_id);
     if (node.is_combinator()) {
@@ -270,7 +272,7 @@ std::vector<int> vk::tl::DependencyGraph::find_excl_nodes() const {
   return res_ids;
 }
 
-void vk::tl::DependencyGraph::dfs(int node, std::vector<int> &used, bool use_inv_edges, std::vector<bool> *reachable_from_cycles) const {
+void vk::tlo_parsing::DependencyGraph::dfs(int node, std::vector<int> &used, bool use_inv_edges, std::vector<bool> *reachable_from_cycles) const {
   static constexpr int NODE_UNVISITED = 0;
   static constexpr int NODE_ENTERED = 1;
   static constexpr int NODE_EXITED = 2;
@@ -296,16 +298,16 @@ void vk::tl::DependencyGraph::dfs(int node, std::vector<int> &used, bool use_inv
   used.at(node) = NODE_EXITED;
 }
 
-static void normalize_dependencies(std::vector<const vk::tl::type *> &deps) {
-  static const auto &distinct_vector = [](std::vector<const vk::tl::type *> &vec) {
+static void normalize_dependencies(std::vector<const vk::tlo_parsing::type *> &deps) {
+  static const auto &distinct_vector = [](std::vector<const vk::tlo_parsing::type *> &vec) {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
   };
   distinct_vector(deps);
 }
 
-std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_type_dependencies(const type *t) const {
-  std::vector<const vk::tl::type *> deps;
+std::vector<const vk::tlo_parsing::type *> vk::tlo_parsing::DependencyGraph::get_type_dependencies(const type *t) const {
+  std::vector<const vk::tlo_parsing::type *> deps;
   for (const auto &constructor : t->constructors) {
     const auto &ctor_deps = get_combinator_dependencies(constructor.get());
     deps.insert(deps.end(), ctor_deps.begin(), ctor_deps.end());
@@ -314,17 +316,17 @@ std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_type_dependencies
   return deps;
 }
 
-std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_function_dependencies(const combinator *f) const {
+std::vector<const vk::tlo_parsing::type *> vk::tlo_parsing::DependencyGraph::get_function_dependencies(const combinator *f) const {
   assert(f->is_function());
   return get_combinator_dependencies(f);
 }
 
-std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_combinator_dependencies(const combinator *c) const {
+std::vector<const vk::tlo_parsing::type *> vk::tlo_parsing::DependencyGraph::get_combinator_dependencies(const combinator *c) const {
   auto it = tl_name_to_id.find(c->name);
   if (it == tl_name_to_id.end()) {
     return {};
   }
-  std::vector<const vk::tl::type *>  deps;
+  std::vector<const vk::tlo_parsing::type *>  deps;
   int node_id = it->second;
   const auto &node_deps = edges[node_id];
   deps.resize(node_deps.size());
@@ -337,10 +339,10 @@ std::vector<const vk::tl::type *> vk::tl::DependencyGraph::get_combinator_depend
   return deps;
 }
 
-std::set<const vk::tl::type *> vk::tl::DependencyGraph::get_weak_self_cyclic_types() const {
+std::set<const vk::tlo_parsing::type *> vk::tlo_parsing::DependencyGraph::get_weak_self_cyclic_types() const {
   return weak_self_cyclic_types;
 }
 
-bool vk::tl::DependencyGraph::is_type_weak_self_cyclic(const vk::tl::type *t) const {
+bool vk::tlo_parsing::DependencyGraph::is_type_weak_self_cyclic(const vk::tlo_parsing::type *t) const {
   return weak_self_cyclic_types.count(t);
 }

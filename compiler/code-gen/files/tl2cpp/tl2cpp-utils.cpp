@@ -15,8 +15,8 @@ const std::unordered_set<std::string> CUSTOM_IMPL_TYPES
    "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
 
 static const std::string VK_name_prefix = "VK\\";
-vk::tl::tl_scheme *tl;
-const vk::tl::combinator *cur_combinator;
+vk::tlo_parsing::tl_scheme *tl;
+const vk::tlo_parsing::combinator *cur_combinator;
 
 std::set<std::string> tl_const_vars;
 
@@ -39,25 +39,25 @@ std::string cpp_tl_struct_name(const char *prefix, std::string tl_name, const st
   return std::string(prefix) + tl_name + template_args_postfix;
 }
 
-std::string get_magic_storing(const vk::tl::type_expr_base *arg_type_expr) {
-  if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
+std::string get_magic_storing(const vk::tlo_parsing::type_expr_base *arg_type_expr) {
+  if (auto arg_as_type_expr = arg_type_expr->template as<vk::tlo_parsing::type_expr>()) {
     if (is_magic_processing_needed(arg_as_type_expr)) {
       return fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(type_of(arg_as_type_expr)->id));
     }
-  } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tl::type_var>()) {
+  } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tlo_parsing::type_var>()) {
     return fmt_format("store_magic_if_not_bare(inner_magic{});", arg_as_type_var->var_num);
   }
   return "";
 }
 
-std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, const std::string &error_msg) {
-  if (auto arg_as_type_expr = arg_type_expr->template as<vk::tl::type_expr>()) {
+std::string get_magic_fetching(const vk::tlo_parsing::type_expr_base *arg_type_expr, const std::string &error_msg) {
+  if (auto arg_as_type_expr = arg_type_expr->template as<vk::tlo_parsing::type_expr>()) {
     if (is_magic_processing_needed(arg_as_type_expr)) {
       return fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "{}");)", static_cast<unsigned int>(type_of(arg_as_type_expr)->id), error_msg);
     }
-  } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tl::type_var>()) {
+  } else if (auto arg_as_type_var = arg_type_expr->template as<vk::tlo_parsing::type_var>()) {
     for (const auto &arg : cur_combinator->args) {
-      if (auto casted = arg->type_expr->as<vk::tl::type_var>()) {
+      if (auto casted = arg->type_expr->as<vk::tlo_parsing::type_var>()) {
         if (arg->is_forwarded_function() && casted->var_num == arg_as_type_var->var_num) {
           return "";
         }
@@ -73,11 +73,11 @@ std::string get_magic_fetching(const vk::tl::type_expr_base *arg_type_expr, cons
 // 1) TlTemplateTypeHelpers
 // 2) get_php_runtime_type(...)
 // 3) get_php_class_of_tl_*(...)
-vk::tl::type *get_this_from_renamed_tl_scheme(const vk::tl::type *t) {
+vk::tlo_parsing::type *get_this_from_renamed_tl_scheme(const vk::tlo_parsing::type *t) {
   return G->get_tl_classes().get_scheme()->get_type_by_magic(t->id);
 }
 
-vk::tl::combinator *get_this_from_renamed_tl_scheme(const vk::tl::combinator *c) {
+vk::tlo_parsing::combinator *get_this_from_renamed_tl_scheme(const vk::tlo_parsing::combinator *c) {
   return c->is_constructor() ?
          G->get_tl_classes().get_scheme()->get_constructor_by_magic(c->id) : G->get_tl_classes().get_scheme()->get_function_by_magic(c->id);
 }
@@ -90,7 +90,7 @@ std::string get_php_namespace(const std::string &tl_name) {
 // find the TL constructor by the PHP-class
 // for example, class VK\TL\messages\Types\messages_chatInfo => messages.chatInfo
 // it could be a specialization of the dependent type constructor: Types\vectorTotal__int => vectorTotal
-vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
+vk::tlo_parsing::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
 
   const auto &php_representations = G->get_tl_classes().get_php_classes().all_classes;
@@ -100,7 +100,7 @@ vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
   const auto &constructor_magic_iter = tl_scheme->magics.find(constructor_php_repr_iter->second.get().tl_name);
   kphp_assert(constructor_magic_iter != tl_scheme->magics.end());
 
-  vk::tl::combinator *res = tl_scheme->get_constructor_by_magic(constructor_magic_iter->second);
+  vk::tlo_parsing::combinator *res = tl_scheme->get_constructor_by_magic(constructor_magic_iter->second);
   kphp_assert(res);
   return res;
 }
@@ -108,7 +108,7 @@ vk::tl::combinator *get_tl_constructor_of_php_class(ClassPtr klass) {
 // find the TL polymorphic type by the PHP-interface;
 // it won't work for non-polymorphic types as we'll have constructors instead of types for them (e.g. class messages_chatInfo);
 // therefore, this function works only for polymorphic types (e.g. interface memcache_Value)
-vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
+vk::tlo_parsing::type *get_tl_type_of_php_class(ClassPtr interface) {
   kphp_assert(is_php_class_a_tl_polymorphic_type(interface));
   const auto &tl_scheme = G->get_tl_classes().get_scheme();
 
@@ -127,7 +127,7 @@ vk::tl::type *get_tl_type_of_php_class(ClassPtr interface) {
 // for dependent type constructors, like vectorTotal {t:Type},
 // there can be multiple PHP-specializations like vectorTotal__int, etc per one TL constructor.
 // this function accepts the concrete specialization of such constructor with the raw suffix of the PHP class (e.g. "__int")
-ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tl::combinator *c, const std::string &specialization_suffix) {
+ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tlo_parsing::combinator *c, const std::string &specialization_suffix) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string php_namespace = get_php_namespace(c_from_renamed->name);
   std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
@@ -149,14 +149,14 @@ std::vector<ClassPtr> _get_all_php_classes_by_tl_magic(int magic, bool need_only
 
 // For every TL constructor there can be one PHP-class (in case of the simple constructors like likes.item)
 // or more if it's a constructor with dependent types (then we'll have vectorTotal__int and other specializations)
-std::vector<ClassPtr> get_all_php_classes_of_tl_constructor(const vk::tl::combinator *c) {
+std::vector<ClassPtr> get_all_php_classes_of_tl_constructor(const vk::tlo_parsing::combinator *c) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c); // For the sake of consistency
   return _get_all_php_classes_by_tl_magic(c_from_renamed->id, false);
 }
 
 // For every TL type there can be one class/interface (in case of the simple types like likes.Item)
 // or more if it's a type with dependent types (then we'll have Either_string_Vertex and other specializations)
-std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tl::type *t) {
+std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tlo_parsing::type *t) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t); // For the sake of consistency
   return _get_all_php_classes_by_tl_magic(t_from_renamed->id, t_from_renamed->is_polymorphic());
 }
@@ -164,7 +164,7 @@ std::vector<ClassPtr> get_all_php_classes_of_tl_type(const vk::tl::type *t) {
 // If type has dependent types, VectorTotal<t> for example, then one TL type will have
 // many PHP-specializations vectorTotal__int, etc
 // (non-polymorphic types are combined with constructors into a single class as usual)
-ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const std::string &specialization_suffix) {
+ClassPtr get_php_class_of_tl_type_specialization(const vk::tlo_parsing::type *t, const std::string &specialization_suffix) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t);
   kphp_assert(is_type_dependent(t_from_renamed, G->get_tl_classes().get_scheme().get()));
   std::string php_namespace = get_php_namespace(t_from_renamed->name);
@@ -176,7 +176,7 @@ ClassPtr get_php_class_of_tl_type_specialization(const vk::tl::type *t, const st
 // For the 'messages.getChatInfo' TL function there is a PHP class VK\TL\messages\Functions\messages_getChatInfo
 // if that class is reachable by the compiler, typed form of the 'messages.getChatInfo' should be generated
 // (otherwise, that typed TL function is guaranteed not to be called, hence we don't need it)
-ClassPtr get_php_class_of_tl_function(const vk::tl::combinator *f) {
+ClassPtr get_php_class_of_tl_function(const vk::tlo_parsing::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
   std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_');
@@ -207,7 +207,7 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
 
 // 'messages.getChatInfo' TL function has a typed result in form of the PHP class VK\TL\messages\Functions\messages_getChatInfo_result
 // If it's reachable <=> the result is reachable
-ClassPtr get_php_class_of_tl_function_result(const vk::tl::combinator *f) {
+ClassPtr get_php_class_of_tl_function_result(const vk::tlo_parsing::combinator *f) {
   auto f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
   std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
@@ -235,12 +235,12 @@ bool is_php_class_a_tl_array_item(ClassPtr klass) {
          klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
 }
 
-bool is_tl_type_a_php_array(const vk::tl::type *t) {
+bool is_tl_type_a_php_array(const vk::tlo_parsing::type *t) {
   return t->id == TL_VECTOR || t->id == TL_TUPLE || t->id == TL_DICTIONARY ||
          t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
 }
 
-bool is_tl_type_wrapped_to_Optional(const vk::tl::type *type) {
+bool is_tl_type_wrapped_to_Optional(const vk::tlo_parsing::type *type) {
   // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- with Optional
   // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- without Optional
   return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool" || type->is_integer_variable()
@@ -255,7 +255,7 @@ bool is_php_class_a_tl_polymorphic_type(ClassPtr klass) {
   return klass->is_tl_class && klass->is_interface() && klass->name.find("Types\\") != std::string::npos;
 }
 
-bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
+bool is_magic_processing_needed(const vk::tlo_parsing::type_expr *type_expr) {
   const auto &type = tl->types[type_expr->type_id];
   // polymorphic types do the 'magic' processing internally; '#' never needs to process 'magic'
   bool handles_magic_inside = type->is_integer_variable() ? true : type->is_polymorphic();
@@ -264,8 +264,8 @@ bool is_magic_processing_needed(const vk::tl::type_expr *type_expr) {
   return !(handles_magic_inside || is_used_as_bare);
 }
 
-vk::tl::type *type_of(const std::unique_ptr<vk::tl::type_expr_base> &type_expr, const vk::tl::tl_scheme *scheme) {
-  if (auto casted = type_expr->template as<vk::tl::type_expr>()) {
+vk::tlo_parsing::type *type_of(const std::unique_ptr<vk::tlo_parsing::type_expr_base> &type_expr, const vk::tlo_parsing::tl_scheme *scheme) {
+  if (auto casted = type_expr->template as<vk::tlo_parsing::type_expr>()) {
     auto type_it = scheme->types.find(casted->type_id);
     if (type_it != scheme->types.end()) {
       return type_it->second.get();
@@ -274,7 +274,7 @@ vk::tl::type *type_of(const std::unique_ptr<vk::tl::type_expr_base> &type_expr, 
   return nullptr;
 }
 
-vk::tl::type *type_of(const vk::tl::type_expr *type, const vk::tl::tl_scheme *scheme) {
+vk::tlo_parsing::type *type_of(const vk::tlo_parsing::type_expr *type, const vk::tlo_parsing::tl_scheme *scheme) {
   auto type_it = scheme->types.find(type->type_id);
   if (type_it != scheme->types.end()) {
     return type_it->second.get();
@@ -282,7 +282,7 @@ vk::tl::type *type_of(const vk::tl::type_expr *type, const vk::tl::tl_scheme *sc
   return nullptr;
 }
 
-std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl::combinator> &constructor) {
+std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tlo_parsing::combinator> &constructor) {
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
     if (arg->is_optional()) {
@@ -297,7 +297,7 @@ std::vector<std::string> get_optional_args_for_call(const std::unique_ptr<vk::tl
   return res;
 }
 
-std::vector<std::string> get_template_params(const vk::tl::combinator *constructor) {
+std::vector<std::string> get_template_params(const vk::tlo_parsing::combinator *constructor) {
   std::vector<std::string> typenames;
   for (const auto &arg : constructor->args) {
     if (arg->var_num != -1 && type_of(arg->type_expr)->name == T_TYPE) {
@@ -309,7 +309,7 @@ std::vector<std::string> get_template_params(const vk::tl::combinator *construct
   return typenames;
 }
 
-std::string get_template_declaration(const vk::tl::combinator *constructor) {
+std::string get_template_declaration(const vk::tlo_parsing::combinator *constructor) {
   std::vector<std::string> typenames = get_template_params(constructor);
   if (typenames.empty()) {
     return "";
@@ -324,7 +324,7 @@ std::string get_template_declaration(const vk::tl::combinator *constructor) {
   return "template<" + vk::join(typenames, ", ") + ">";
 }
 
-std::string get_template_definition(const vk::tl::combinator *constructor) {
+std::string get_template_definition(const vk::tlo_parsing::combinator *constructor) {
   std::vector<std::string> typenames = get_template_params(constructor);
   if (typenames.empty()) {
     return "";
@@ -333,7 +333,7 @@ std::string get_template_definition(const vk::tl::combinator *constructor) {
 }
 
 
-std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class_instance, const std::string &type_name) {
+std::string get_php_runtime_type(const vk::tlo_parsing::combinator *c, bool wrap_to_class_instance, const std::string &type_name) {
   auto c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string res;
   std::string name = type_name.empty() ? c_from_renamed->name : type_name;
@@ -359,7 +359,7 @@ std::string get_php_runtime_type(const vk::tl::combinator *c, bool wrap_to_class
   return res;
 }
 
-std::string get_php_runtime_type(const vk::tl::type *t) {
+std::string get_php_runtime_type(const vk::tlo_parsing::type *t) {
   auto t_from_renamed = get_this_from_renamed_tl_scheme(t);
   if (t_from_renamed->is_polymorphic()) {    // then we'll use a type name instead of the constructor name
     return get_php_runtime_type(t_from_renamed->constructors[0].get(), true, t_from_renamed->name);
@@ -367,16 +367,16 @@ std::string get_php_runtime_type(const vk::tl::type *t) {
   return get_php_runtime_type(t_from_renamed->constructors[0].get(), true);
 }
 
-std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, field_rw_type rw_type) {
+std::string get_tl_object_field_access(const std::unique_ptr<vk::tlo_parsing::arg> &arg, field_rw_type rw_type) {
   kphp_assert(!arg->name.empty());
   if (arg->is_fields_mask_optional()) {
-    if (auto type_var = arg->type_expr->as<vk::tl::type_var>()) {
+    if (auto type_var = arg->type_expr->as<vk::tlo_parsing::type_var>()) {
       std::string serializer_type_name = "T" + std::to_string(type_var->var_num);
       std::string field_access_type = rw_type == field_rw_type::READ ? "read" : "write";
       return fmt_format("get_serialization_target_from_optional_field<{}, FieldAccessType::{}>(tl_object->${})",
                         serializer_type_name, field_access_type, arg->name);
     } else {
-      vk::tl::type *type = type_of(arg->type_expr);
+      vk::tlo_parsing::type *type = type_of(arg->type_expr);
       kphp_assert(type);
       if (is_tl_type_wrapped_to_Optional(type)) {
         return fmt_format("tl_object->${}.{}", arg->name, rw_type == field_rw_type::READ ? "val()" : "ref()");
@@ -386,7 +386,7 @@ std::string get_tl_object_field_access(const std::unique_ptr<vk::tl::arg> &arg, 
   return fmt_format("tl_object->${}", arg->name);
 }
 
-bool is_type_dependent(const vk::tl::combinator *constructor, const vk::tl::tl_scheme *scheme) {
+bool is_type_dependent(const vk::tlo_parsing::combinator *constructor, const vk::tlo_parsing::tl_scheme *scheme) {
   kphp_assert(constructor->is_constructor());
   for (const auto &arg : constructor->args) {
     auto arg_type = type_of(arg->type_expr, scheme);
@@ -397,7 +397,7 @@ bool is_type_dependent(const vk::tl::combinator *constructor, const vk::tl::tl_s
   return false;
 }
 
-bool is_type_dependent(const vk::tl::type *type, const vk::tl::tl_scheme *scheme) {
+bool is_type_dependent(const vk::tlo_parsing::type *type, const vk::tlo_parsing::tl_scheme *scheme) {
   return is_type_dependent(type->constructors[0].get(), scheme);
 }
 }

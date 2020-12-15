@@ -46,23 +46,23 @@ namespace tl2cpp {
 /* Bundle all combinators and types by modules while collecting all their dependencies along the way.
  * */
 static void collect_target_objects() {
-  auto should_exclude_tl_type = [](const std::unique_ptr<vk::tl::type> &t) {
+  auto should_exclude_tl_type = [](const std::unique_ptr<vk::tlo_parsing::type> &t) {
     return CUSTOM_IMPL_TYPES.find(t->name) != CUSTOM_IMPL_TYPES.end()
            || t->name == "engine.Query";                        // it's the only type with !X; can we get rid of it in the future?
   };
-  auto should_exclude_tl_function = [](const std::unique_ptr<vk::tl::combinator> &f) {
+  auto should_exclude_tl_function = [](const std::unique_ptr<vk::tlo_parsing::combinator> &f) {
     return !G->settings().gen_tl_internals.get() && f->is_internal_function();
   };
 
   for (const auto &e : tl->types) {
-    const std::unique_ptr<vk::tl::type> &t = e.second;
+    const std::unique_ptr<vk::tlo_parsing::type> &t = e.second;
     if (!should_exclude_tl_type(t)) {
       Module::add_to_module(t);
     }
   }
 
   for (const auto &e : tl->functions) {
-    const std::unique_ptr<vk::tl::combinator> &f = e.second;
+    const std::unique_ptr<vk::tlo_parsing::combinator> &f = e.second;
     if (!should_exclude_tl_function(f)) {
       Module::add_to_module(f);
     }
@@ -71,7 +71,7 @@ static void collect_target_objects() {
 
 void write_rpc_server_functions(CodeGenerator &W) {
   W << OpenFile("rpc_server_fetch_request.cpp", "tl", false);
-  std::vector<vk::tl::combinator *> kphp_functions;
+  std::vector<vk::tlo_parsing::combinator *> kphp_functions;
   IncludesCollector deps;
   deps.add_raw_filename_include("tl/common.h"); // to make it successfully compile even if there are no @kphp functions
   for (const auto &item : tl->functions) {
@@ -112,15 +112,15 @@ void write_tl_query_handlers(CodeGenerator &W) {
     return;
   }
 
-  auto parsing_result = vk::tl::parse_tlo(G->settings().tl_schema_file.get().c_str(), false);
+  auto parsing_result = vk::tlo_parsing::parse_tlo(G->settings().tl_schema_file.get().c_str(), false);
   kphp_error_return(parsing_result.parsed_schema,
                     fmt_format("Error while reading tlo: {}", parsing_result.error));
 
   tl = parsing_result.parsed_schema.get();
   try {
-    vk::tl::replace_anonymous_args(*tl);
-    vk::tl::perform_flat_optimization(*tl);
-    vk::tl::tl_scheme_final_check(*tl);
+    vk::tlo_parsing::replace_anonymous_args(*tl);
+    vk::tlo_parsing::perform_flat_optimization(*tl);
+    vk::tlo_parsing::tl_scheme_final_check(*tl);
   } catch (const std::exception &ex) {
     kphp_error_return(false, ex.what());
   }

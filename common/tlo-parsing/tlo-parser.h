@@ -9,7 +9,7 @@
 #include <string>
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 
 struct type_expr_base;
 struct nat_expr_base;
@@ -51,5 +51,6 @@ struct tlo_parser {
   std::unique_ptr<tl_scheme> tl_sch;
   char data[MAX_SCHEMA_LEN + 1];
 };
-}
-}
+
+} // namespace tlo_parsing
+} // namespace vk

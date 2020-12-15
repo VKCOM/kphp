@@ -11,7 +11,7 @@ namespace tl {
 
 class FunctionToPhp final : public CombinatorToPhp {
 public:
-  FunctionToPhp(TlToPhpClassesConverter &tl_to_php, const combinator &tl_function);
+  FunctionToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_function);
 
   PhpClassField return_type_to_php_field();
 
@@ -20,7 +20,7 @@ private:
   const PhpClassRepresentation &update_exclamation_interface(const PhpClassRepresentation &interface) final;
 
   using CombinatorToPhp::apply;
-  void apply(const type_var &tl_type_var) final;
+  void apply(const tlo_parsing::type_var &tl_type_var) final;
 
   std::reference_wrapper<const PhpClassRepresentation> exclamation_interface_;
 };

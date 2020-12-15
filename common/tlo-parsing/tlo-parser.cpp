@@ -16,7 +16,7 @@
 #include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 tlo_parser::tlo_parser(const char *tlo_path) :
   pos(0) {
   FILE *f = std::fopen(tlo_path, "rb");
@@ -232,5 +232,5 @@ void rename_tl_name_if_forbidden(std::string &tl_name) {
   }
 }
 
-}
-}
+} // namespace tlo_parsing
+} // namespace vk

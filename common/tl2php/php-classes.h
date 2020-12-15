@@ -11,8 +11,12 @@
 #include "common/wrappers/string_view.h"
 
 namespace vk {
-namespace tl {
+
+namespace tlo_parsing {
 struct tl_scheme;
+}
+
+namespace tl {
 
 enum class php_field_type {
   t_string,
@@ -65,7 +69,7 @@ bool is_php_code_gen_allowed(const TlTypePhpRepresentation &type_repr) noexcept;
 bool is_php_code_gen_allowed(const TlFunctionPhpRepresentation &func_repr) noexcept;
 
 struct PhpClasses {
-  void load_from(const vk::tl::tl_scheme &scheme, bool generate_tl_internals);
+  void load_from(const vk::tlo_parsing::tl_scheme &scheme, bool generate_tl_internals);
 
   std::unordered_map<std::string, TlFunctionPhpRepresentation> functions;
   std::unordered_map<std::string, TlTypePhpRepresentation> types;

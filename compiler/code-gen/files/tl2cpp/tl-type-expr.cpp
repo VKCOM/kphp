@@ -8,14 +8,14 @@
 
 namespace tl2cpp {
 // Recursively traverse the type expression tree and return <type, value> pair
-std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *type_expr, const std::string &var_num_access) {
-  if (auto as_nat_var = type_expr->as<vk::tl::nat_var>()) {
+std::pair<std::string, std::string> get_full_type_expr_str(vk::tlo_parsing::expr_base *type_expr, const std::string &var_num_access) {
+  if (auto as_nat_var = type_expr->as<vk::tlo_parsing::nat_var>()) {
     return {"", var_num_access + cur_combinator->get_var_num_arg(as_nat_var->var_num)->name};
   }
-  if (auto as_nat_const = type_expr->as<vk::tl::nat_const>()) {
+  if (auto as_nat_const = type_expr->as<vk::tlo_parsing::nat_const>()) {
     return {"", std::to_string(as_nat_const->num)};
   }
-  if (auto as_type_var = type_expr->as<vk::tl::type_var>()) {
+  if (auto as_type_var = type_expr->as<vk::tlo_parsing::type_var>()) {
     std::string expr = "std::move(" + cur_combinator->get_var_num_arg(as_type_var->var_num)->name + ")";
     if (cur_combinator->is_constructor()) {
       return {"T" + std::to_string(as_type_var->var_num), expr};
@@ -23,13 +23,13 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
       return {"tl_exclamation_fetch_wrapper", expr};
     }
   }
-  if (auto as_type_array = type_expr->as<vk::tl::type_array>()) {
+  if (auto as_type_array = type_expr->as<vk::tlo_parsing::type_array>()) {
     std::string inner_magic = "0";
     // after the replace_anonymous_args TL array that had multiple items now has only one item
     // that became a named type that contains all data from the original item;
     // size*[A B] -> size*[T] where T has A and B as its fields
     kphp_assert(as_type_array->args.size() == 1);
-    if (auto casted = as_type_array->args[0]->type_expr->as<vk::tl::type_expr>()) {
+    if (auto casted = as_type_array->args[0]->type_expr->as<vk::tlo_parsing::type_expr>()) {
       if (is_magic_processing_needed(casted)) {
         inner_magic = fmt_format("{:#010x}", static_cast<unsigned int>(type_of(casted)->id));
       }
@@ -42,7 +42,7 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
                                     get_full_value(as_type_array->multiplicity.get(), var_num_access),
                                     array_item_type_name)};
   }
-  auto as_type_expr = type_expr->as<vk::tl::type_expr>();
+  auto as_type_expr = type_expr->as<vk::tlo_parsing::type_expr>();
   kphp_assert(as_type_expr);
   const auto &type = tl->types[as_type_expr->type_id];
   std::vector<std::string> template_params;
@@ -53,22 +53,22 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tl::expr_base *ty
     std::string child_type_value = child_type_str.second;
     constructor_params.emplace_back(child_type_value);
     if (!child_type_name.empty()) {
-      kphp_assert(child->as<vk::tl::type_expr_base>());
+      kphp_assert(child->as<vk::tlo_parsing::type_expr_base>());
       template_params.emplace_back(child_type_name);
-      if (auto child_as_type_expr = child->as<vk::tl::type_expr>()) {
+      if (auto child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
         if (is_magic_processing_needed(child_as_type_expr)) {
           template_params.emplace_back(fmt_format("{:#010x}", static_cast<unsigned int>(type_of(child_as_type_expr)->id)));
         } else {
           template_params.emplace_back("0");
         }
-      } else if (auto child_as_type_var = child->as<vk::tl::type_var>()) {
+      } else if (auto child_as_type_var = child->as<vk::tlo_parsing::type_var>()) {
         if (vk::string_view(child_type_name).starts_with("T")) {
           template_params.emplace_back(fmt_format("inner_magic{}", child_as_type_var->var_num));
         } else {
           template_params.emplace_back("0");
         }
       } else {
-        kphp_assert(child->as<vk::tl::type_array>());
+        kphp_assert(child->as<vk::tlo_parsing::type_array>());
         template_params.emplace_back("0");
       }
     }

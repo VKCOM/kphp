@@ -16,7 +16,7 @@
 #include "common/tlo-parsing/tlo-parser.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 static combinator *cur_parsed_combinator;
 
 type_expr::type_expr(tlo_parser *reader) {
@@ -238,7 +238,7 @@ type::type(tlo_parser *reader) {
 }
 
 bool arg::is_type() const {
-  if (auto casted = type_expr->as<vk::tl::type_expr>()) {
+  if (auto casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
     if (casted->type_id == TL_TYPE_ID) {
       return true;
     }
@@ -247,7 +247,7 @@ bool arg::is_type() const {
 }
 
 bool arg::is_sharp() const {
-  if (auto casted = type_expr->as<vk::tl::type_expr>()) {
+  if (auto casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
     if (casted->type_id == TL_SHARP_ID) {
       return true;
     }
@@ -261,7 +261,7 @@ static inline std::string to_hex_str(unsigned int x) {
   return {buf, 8};
 }
 
-vk::tl::combinator *tl_scheme::get_constructor_by_magic(int magic) const {
+vk::tlo_parsing::combinator *tl_scheme::get_constructor_by_magic(int magic) const {
   auto magic_iter = owner_type_magics.find(magic);
   if (magic_iter == owner_type_magics.end()) {
     return nullptr;
@@ -325,7 +325,7 @@ std::string tl_scheme::to_str() const {
   return ss.str();
 }
 
-vk::tl::type *tl_scheme::get_type_by_magic(int magic) const {
+vk::tlo_parsing::type *tl_scheme::get_type_by_magic(int magic) const {
   auto type_iter = types.find(magic);
   if (type_iter == types.end()) {
     return nullptr;
@@ -333,7 +333,7 @@ vk::tl::type *tl_scheme::get_type_by_magic(int magic) const {
   return type_iter->second.get();
 }
 
-vk::tl::combinator *vk::tl::tl_scheme::get_function_by_magic(int magic) const {
+vk::tlo_parsing::combinator *vk::tlo_parsing::tl_scheme::get_function_by_magic(int magic) const {
   auto function_iter = functions.find(magic);
   if (function_iter == functions.end()) {
     return nullptr;
@@ -490,7 +490,7 @@ bool arg::is_forwarded_function() const {
 }
 
 bool arg::is_named_fields_mask_bit() const {
-  if (auto expr = type_expr->as<vk::tl::type_expr>()) {
+  if (auto expr = type_expr->as<vk::tlo_parsing::type_expr>()) {
     return is_fields_mask_optional() && expr->type_id == TL_TRUE_ID && expr->is_bare();
   }
   return false;
@@ -548,5 +548,5 @@ void tl_scheme::remove_function(const combinator *&f) {
   f = nullptr; // destroyed after erasing
 }
 
-}
-}
+} // namespace tlo_parsing
+} // namespace vk

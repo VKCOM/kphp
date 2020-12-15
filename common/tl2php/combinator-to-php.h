@@ -12,11 +12,11 @@ namespace tl {
 
 class TlToPhpClassesConverter;
 
-class CombinatorToPhp : protected const_expr_visitor {
+class CombinatorToPhp : protected tlo_parsing::const_expr_visitor {
 public:
-  CombinatorToPhp(TlToPhpClassesConverter &tl_to_php, const combinator &tl_combinator);
+  CombinatorToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_combinator);
 
-  std::vector<PhpClassField> args_to_php_class_fields(const std::vector<std::unique_ptr<arg>> &args);
+  std::vector<PhpClassField> args_to_php_class_fields(const std::vector<std::unique_ptr<tlo_parsing::arg>> &args);
 
   void apply_state(const CombinatorToPhp &other);
 
@@ -26,18 +26,18 @@ public:
 protected:
   friend class AutoPushPop;
 
-  PhpClassField arg_type_to_php_field(const arg &combinator_arg);
+  PhpClassField arg_type_to_php_field(const tlo_parsing::arg &combinator_arg);
 
   bool try_as_primitive_builtin_type(const vk::string_view &tl_type_name);
-  bool try_as_array_type(const type_expr &tl_type_expr, const vk::string_view &tl_type_name);
-  void as_array_type(const expr_base &array_item);
-  bool try_as_maybe_type(const type_expr &tl_type_expr, const vk::string_view &tl_type_name);
-  void as_complex_type(const type_expr &tl_type_expr, const type &tl_type);
+  bool try_as_array_type(const tlo_parsing::type_expr &tl_type_expr, const vk::string_view &tl_type_name);
+  void as_array_type(const tlo_parsing::expr_base &array_item);
+  bool try_as_maybe_type(const tlo_parsing::type_expr &tl_type_expr, const vk::string_view &tl_type_name);
+  void as_complex_type(const tlo_parsing::type_expr &tl_type_expr, const tlo_parsing::type &tl_type);
 
-  void apply(const type_expr &tl_type_expr) final;
-  void apply(const type_array &tl_type_array) final;
-  void apply(const nat_const &) final {}
-  void apply(const nat_var &) final {}
+  void apply(const tlo_parsing::type_expr &tl_type_expr) final;
+  void apply(const tlo_parsing::type_array &tl_type_array) final;
+  void apply(const tlo_parsing::nat_const &) final {}
+  void apply(const tlo_parsing::nat_var &) final {}
 
   bool is_template_instantiating() const;
   bool is_array_instantiating() const;
@@ -48,7 +48,7 @@ protected:
   std::vector<php_field_type> type_stack_;
 
   TlToPhpClassesConverter &tl_to_php_;
-  const combinator &tl_combinator_;
+  const tlo_parsing::combinator &tl_combinator_;
   bool has_class_inside_{false};
 };
 } // namespace tl

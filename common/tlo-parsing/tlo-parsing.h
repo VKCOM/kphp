@@ -8,7 +8,7 @@
 #include <string>
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 
 struct tl_scheme;
 
@@ -30,5 +30,5 @@ void replace_anonymous_args(tl_scheme &scheme);
 void perform_flat_optimization(tl_scheme &scheme);
 void tl_scheme_final_check(const tl_scheme &scheme);
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk

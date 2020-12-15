@@ -35,7 +35,7 @@ int convert_tlo_to_php(const char *tlo_file_path,
     if (!combined2_tl_file.empty()) {
       hints.load_from_combined2_tl_file(combined2_tl_file);
     }
-    auto parsing_result = parse_tlo(tlo_file_path, true);
+    auto parsing_result = tlo_parsing::parse_tlo(tlo_file_path, true);
     if (!parsing_result.parsed_schema) {
       throw std::runtime_error{"Error while reading tlo: " + parsing_result.error};
     }
@@ -43,15 +43,15 @@ int convert_tlo_to_php(const char *tlo_file_path,
     total_functions = schema.functions.size();
     total_types = schema.types.size();
 
-    replace_anonymous_args(schema);
+    tlo_parsing::replace_anonymous_args(schema);
     assert(schema.types.size() >= total_types);
     anonymous_types = schema.types.size() - total_types;
 
-    perform_flat_optimization(schema);
+    tlo_parsing::perform_flat_optimization(schema);
     assert(anonymous_types + total_types >= schema.types.size());
     unused_and_flatted_types = anonymous_types + total_types - schema.types.size();
 
-    tl_scheme_final_check(schema);
+    tlo_parsing::tl_scheme_final_check(schema);
 
     total_classes = gen_php_code(schema, hints, out_php_dir, forcibly_overwrite_dir, generate_tests, generate_tl_internals);
   } catch (const std::exception &ex) {

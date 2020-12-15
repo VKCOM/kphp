@@ -7,16 +7,16 @@
 
 namespace tl2cpp {
 struct TlFunctionDecl {
-  const vk::tl::combinator *f;
+  const vk::tlo_parsing::combinator *f;
 
-  explicit TlFunctionDecl(const vk::tl::combinator *f) :
+  explicit TlFunctionDecl(const vk::tlo_parsing::combinator *f) :
     f(f) {}
 
-  static bool does_tl_function_need_typed_fetch_store(const vk::tl::combinator *f) {
+  static bool does_tl_function_need_typed_fetch_store(const vk::tlo_parsing::combinator *f) {
     return !!get_php_class_of_tl_function(f);
   }
 
-  static void check_kphp_function(const vk::tl::combinator *f) {
+  static void check_kphp_function(const vk::tlo_parsing::combinator *f) {
     for (const auto &arg : f->args) {
       kphp_error(!arg->is_forwarded_function(), fmt_format("In TL function {}: Exclamation is not allowed in @kphp TL functions", f->name));
     }
@@ -26,10 +26,10 @@ struct TlFunctionDecl {
 };
 
 class TlFunctionDef {
-  const vk::tl::combinator *f;
+  const vk::tlo_parsing::combinator *f;
 
 public:
-  explicit TlFunctionDef(const vk::tl::combinator *f) :
+  explicit TlFunctionDef(const vk::tlo_parsing::combinator *f) :
     f(f) {}
 
   void compile(CodeGenerator &W) const;

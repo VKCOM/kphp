@@ -9,7 +9,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl-type-expr.h"
 
 namespace tl2cpp {
-inline std::vector<std::string> get_not_optional_fields_masks(const vk::tl::combinator *constructor) {
+inline std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_parsing::combinator *constructor) {
   std::vector<std::string> res;
   for (const auto &arg : constructor->args) {
     if (arg->var_num != -1 && type_of(arg->type_expr)->is_integer_variable() && !arg->is_optional()) {
@@ -19,7 +19,7 @@ inline std::vector<std::string> get_not_optional_fields_masks(const vk::tl::comb
   return res;
 }
 
-CombinatorGen::CombinatorGen(const vk::tl::combinator *combinator, CombinatorPart part, bool typed_mode) :
+CombinatorGen::CombinatorGen(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
   combinator(combinator),
   part(part),
   typed_mode(typed_mode) {
@@ -69,7 +69,7 @@ void CombinatorStore::gen_before_args_processing(CodeGenerator &W) const {
   }
 }
 
-void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tl::arg> &arg) const {
+void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const {
   if (arg->is_named_fields_mask_bit()) {
     return;
   }
@@ -96,7 +96,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
   // Exclamation mark "!" handling
   if (arg->is_forwarded_function()) {
     kphp_assert(combinator->is_function());
-    auto as_type_var = arg->type_expr->as<vk::tl::type_var>();
+    auto as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
     kphp_assert(as_type_var);
     if (!typed_mode) {
       W << "auto _cur_arg = "
@@ -161,9 +161,9 @@ void CombinatorStore::gen_result_expr_processing(CodeGenerator &W) const {
     NL;
 }
 
-std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tl::arg> &arg) {
+std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tlo_parsing::arg> &arg) {
   kphp_assert(arg->is_fields_mask_optional());
-  if (arg->type_expr->as<vk::tl::type_var>()) {
+  if (arg->type_expr->as<vk::tlo_parsing::type_var>()) {
     return "";
   }
   auto *type = tl2cpp::type_of(arg->type_expr);
@@ -185,7 +185,7 @@ void CombinatorFetch::gen_before_args_processing(CodeGenerator &W) const {
   }
 };
 
-void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tl::arg> &arg) const {
+void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const {
   if (arg->is_fields_mask_optional()) {
     W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
                     combinator->get_var_num_arg(arg->exist_var_num)->name,
@@ -232,7 +232,7 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
     W << "return " << tl2cpp::get_full_value(combinator->result.get(), "") << ".fetch();" << NL;
     return;
   }
-  if (auto type_var = combinator->result->as<vk::tl::type_var>()) {
+  if (auto type_var = combinator->result->as<vk::tlo_parsing::type_var>()) {
     // multiexclamation optimization
     W << "return " << tl2cpp::cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
     return;

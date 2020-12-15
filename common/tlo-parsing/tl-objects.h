@@ -11,7 +11,8 @@
 #include <vector>
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
+
 constexpr int NODE_TYPE_TYPE = 1;
 constexpr int NODE_TYPE_NAT_CONST = 2;
 constexpr int NODE_TYPE_VAR_TYPE = 3;
@@ -261,27 +262,27 @@ struct tl_scheme {
   std::unordered_map<std::string, int> magics;      // tl type or function name => magic
   std::unordered_map<int, int> owner_type_magics;   // constructor magic        => magic of its owner type
 
-  vk::tl::combinator *get_constructor_by_magic(int magic) const;
-  vk::tl::type *get_type_by_magic(int magic) const;
-  vk::tl::combinator *get_function_by_magic(int magic) const;
+  vk::tlo_parsing::combinator *get_constructor_by_magic(int magic) const;
+  vk::tlo_parsing::type *get_type_by_magic(int magic) const;
+  vk::tlo_parsing::combinator *get_function_by_magic(int magic) const;
   std::string to_str() const;
 
   void remove_type(const type *&t);
   void remove_function(const combinator *&f);
 };
 
-inline vk::tl::type *get_type_of(const type_expr *expr, const vk::tl::tl_scheme *scheme) {
-  vk::tl::type *res = scheme->get_type_by_magic(expr->type_id);
+inline vk::tlo_parsing::type *get_type_of(const type_expr *expr, const vk::tlo_parsing::tl_scheme *scheme) {
+  vk::tlo_parsing::type *res = scheme->get_type_by_magic(expr->type_id);
   assert(res);
   return res;
 }
 
-inline vk::tl::type *get_type_of(const combinator *constructor, const vk::tl::tl_scheme *scheme) {
+inline vk::tlo_parsing::type *get_type_of(const combinator *constructor, const vk::tlo_parsing::tl_scheme *scheme) {
   assert(constructor->is_constructor());
-  vk::tl::type *res = scheme->get_type_by_magic(constructor->type_id);
+  vk::tlo_parsing::type *res = scheme->get_type_by_magic(constructor->type_id);
   assert(res);
   return res;
 }
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk
