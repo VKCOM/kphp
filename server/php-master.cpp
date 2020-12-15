@@ -1835,6 +1835,47 @@ void run_master_off_in_graceful_restart() {
   }
 }
 
+struct WarmUpContext {
+  const double workers_part_for_warm_up;
+  const double target_instance_cache_elements_part;
+  const vk::time::Sec warm_up_max_time;
+
+  static WarmUpContext &get() {
+    using namespace std::chrono_literals;
+    static WarmUpContext ctx(0.1, 0.5, 5s);
+    return ctx;
+  }
+
+  void try_start_warmup() {
+    if (me_running_workers_n > 0 && !timer.is_started()) {
+      timer.start();
+    }
+  }
+
+  void reset() {
+    timer.reset();
+  }
+
+  bool need_more_workers_for_warmup() const {
+    return me_running_workers_n < workers_part_for_warm_up * workers_n;
+  }
+
+  bool is_instance_cache_hot_enough() const {
+    return me->instance_cache_elements_stored >= target_instance_cache_elements_part * other->instance_cache_elements_stored;
+  }
+
+  bool warmup_timeout_expired() const {
+    return timer.time() > warm_up_max_time;
+  }
+private:
+  vk::time::SteadyTimer timer;
+
+  WarmUpContext(const double workers_part_for_warmup, const double target_instance_cache_elements_part, const vk::time::Sec &warm_up_time)
+    : workers_part_for_warm_up(workers_part_for_warmup)
+    , target_instance_cache_elements_part(target_instance_cache_elements_part)
+    , warm_up_max_time(warm_up_time) {}
+};
+
 void run_master_on() {
   vkprintf(2, "state: master_state::on\n");
 
@@ -1911,11 +1952,17 @@ void run_master_on() {
     to_run = std::max(0, workers_n - total_workers);
 
     if (other->is_alive) {
-      int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
+      auto &warm_up_ctx = WarmUpContext::get();
+      warm_up_ctx.try_start_warmup();
 
-      if (set_to_kill > 0) {
+      int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
+      bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
+      bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
+      bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();
+      if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
-        vkprintf(1, "[set_to_kill = %d]\n", set_to_kill);
+        vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [warmup_timeout_expired = %d]\n",
+                     set_to_kill, need_more_workers_for_warmup, is_instance_cache_hot_enough, warmup_timeout_expired);
         me->to_kill = set_to_kill;
         me->to_kill_generation = generation;
         changed = 1;
@@ -2071,6 +2118,7 @@ void run_master() {
   preallocate_msg_buffers();
 
   auto prev_cron_start_tp = vk::time::get_steady_tp_ms_now();
+  WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
     my_now = dl_time();
@@ -2089,7 +2137,11 @@ void run_master() {
     //calc state
     dl_assert (me->is_alive && me->pid == getpid(), dl_pstr("[me->is_alive = %d] [me->pid = %d] [getpid() = %d]",
                                                               me->is_alive, me->pid, getpid()));
-    master_change_state();
+    master_state prev_state = master_change_state();
+
+    if (state != prev_state && state == master_state::on) {
+      WarmUpContext::get().reset();
+    }
 
     //calc generation
     generation = me->generation;
