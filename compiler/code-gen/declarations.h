@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/tlo-parsing/tl-objects.h"
+
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/code-gen/naming.h"

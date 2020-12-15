@@ -4,9 +4,7 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 
-#include "common/tlo-parsing/flat-optimization.h"
-#include "common/tlo-parsing/replace-anonymous-args.h"
-#include "common/tlo-parsing/tl-scheme-final-check.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"

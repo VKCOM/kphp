@@ -2,14 +2,13 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/replace-anonymous-args.h"
-
 #include <cassert>
 #include <limits>
 #include <stdexcept>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
 namespace tl {

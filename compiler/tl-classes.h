@@ -5,7 +5,7 @@
 #pragma once
 
 #include "common/tl2php/php-classes.h"
-#include "common/tlo-parsing/tlo-parsing.h"
+#include "common/tlo-parsing/tl-objects.h"
 
 #include "compiler/data/data_ptr.h"
 

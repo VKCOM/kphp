@@ -7,10 +7,8 @@
 #include "common/options.h"
 #include "common/tl2php/gen-php-code.h"
 #include "common/tl2php/tl-hints.h"
-#include "common/tlo-parsing/flat-optimization.h"
-#include "common/tlo-parsing/replace-anonymous-args.h"
-#include "common/tlo-parsing/tl-scheme-final-check.h"
 #include "common/tlo-parsing/tlo-parsing.h"
+#include "common/tlo-parsing/tl-objects.h"
 #include "common/version-string.h"
 
 namespace vk {

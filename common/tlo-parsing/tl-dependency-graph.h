@@ -5,23 +5,26 @@
 #pragma once
 
 #include <set>
+#include <string>
+#include <vector>
+#include <unordered_map>
 #include <unordered_set>
-
-#include "common/tlo-parsing/tl-objects.h"
 
 namespace vk {
 namespace tl {
+
+struct tl_scheme;
+struct type;
+struct combinator;
 
 struct TLNode;
 struct DependencyGraphBuilder;
 
 class DependencyGraph {
 public:
-  DependencyGraph();
-  ~DependencyGraph();
-
   // Во время использования этого класса необходимо, чтобы *scheme не изменялось
   explicit DependencyGraph(tl_scheme *scheme);
+  ~DependencyGraph();
 
   // a -> b === a зависит от b
   const std::vector<std::unordered_set<int>> &get_edges() const;

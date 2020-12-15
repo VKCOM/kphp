@@ -2,12 +2,12 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/remove-odd-types.h"
-
 #include <algorithm>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-dependency-graph.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 static void remove_node_types(vk::tl::tl_scheme &scheme, const vk::tl::DependencyGraph &graph, const std::vector<int> &nodes_to_delete) {
   std::unordered_set<const vk::tl::type *> types_to_delete;

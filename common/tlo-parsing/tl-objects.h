@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -268,5 +269,19 @@ struct tl_scheme {
   void remove_type(const type *&t);
   void remove_function(const combinator *&f);
 };
+
+inline vk::tl::type *get_type_of(const type_expr *expr, const vk::tl::tl_scheme *scheme) {
+  vk::tl::type *res = scheme->get_type_by_magic(expr->type_id);
+  assert(res);
+  return res;
 }
+
+inline vk::tl::type *get_type_of(const combinator *constructor, const vk::tl::tl_scheme *scheme) {
+  assert(constructor->is_constructor());
+  vk::tl::type *res = scheme->get_type_by_magic(constructor->type_id);
+  assert(res);
+  return res;
 }
+
+} // namespace tl
+} // namespace vk

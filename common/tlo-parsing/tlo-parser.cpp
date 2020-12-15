@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include "common/tl/tls.h"
+#include "common/tlo-parsing/tl-objects.h"
 #include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
@@ -31,6 +32,8 @@ tlo_parser::tlo_parser(const char *tlo_path) :
   }
   tl_sch = std::make_unique<tl_scheme>();
 }
+
+tlo_parser::~tlo_parser() = default;
 
 std::string tlo_parser::get_string() {
   check_pos(4);
@@ -184,11 +187,14 @@ void tlo_parser::error(const char *format, ...) {
   throw std::runtime_error(error_msg + "\n");
 }
 
+TLOParsingResult::TLOParsingResult() = default;
+TLOParsingResult::TLOParsingResult(TLOParsingResult &&) = default;
+TLOParsingResult::~TLOParsingResult() = default;
 
 TLOParsingResult parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
   TLOParsingResult result;
   try {
-    tlo_parser reader = tlo_parser(tlo_path);
+    tlo_parser reader{tlo_path};
     reader.get_schema_version();
     reader.get_value<int>();
     reader.get_value<int>();

@@ -8,15 +8,20 @@
 #include <memory>
 #include <string>
 
-#include "common/tlo-parsing/tl-objects.h"
-
 namespace vk {
 namespace tl {
+
+struct type_expr_base;
+struct nat_expr_base;
+struct expr_base;
+struct tl_scheme;
+
 struct tlo_parser {
   static constexpr unsigned int MAX_SCHEMA_LEN = 1024 * 1024;
 
   tlo_parser() = default;
   explicit tlo_parser(const char *tlo_path);
+  ~tlo_parser();
 
   template<typename T>
   T get_value() {

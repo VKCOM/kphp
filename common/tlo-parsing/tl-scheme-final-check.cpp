@@ -2,13 +2,12 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/tl-scheme-final-check.h"
-
 #include <cassert>
 #include <set>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/wrappers/string_view.h"
 
 namespace vk {

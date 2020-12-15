@@ -9,7 +9,7 @@
 #include <unordered_set>
 
 #include "common/algorithms/find.h"
-#include "common/tlo-parsing/tl-utils.h"
+#include "common/tlo-parsing/tl-objects.h"
 
 namespace vk {
 namespace tl {
@@ -57,9 +57,6 @@ private:
 } // namespace tl
 } // namespace vk
 
-vk::tl::DependencyGraph::DependencyGraph() {}
-vk::tl::DependencyGraph::~DependencyGraph() {}
-
 vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(scheme) {
   const size_t approximate_nodes_cnt = 2 * scheme->types.size() + scheme->functions.size();
   nodes.reserve(approximate_nodes_cnt);
@@ -79,6 +76,8 @@ vk::tl::DependencyGraph::DependencyGraph(vk::tl::tl_scheme *scheme) : scheme(sch
     collect_combinator_edges(function);
   }
 }
+
+vk::tl::DependencyGraph::~DependencyGraph() = default;
 
 void vk::tl::DependencyGraph::add_edge(const TLNode &from, const TLNode &to) {
   int from_id = register_node(from);
