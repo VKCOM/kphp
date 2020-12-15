@@ -27,7 +27,6 @@ include(cmake/popular-common.cmake)
 include(cmake/external-libraries.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
-include_directories(third_party/expected/include/tl)
 include_directories(third_party/optional/include/tl)
 include_directories(.)
 

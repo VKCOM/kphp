@@ -37,11 +37,11 @@ int convert_tlo_to_php(const char *tlo_file_path,
     if (!combined2_tl_file.empty()) {
       hints.load_from_combined2_tl_file(combined2_tl_file);
     }
-    auto parsed_tlo_schema = parse_tlo(tlo_file_path, true);
-    if (!parsed_tlo_schema.has_value()) {
-      throw std::runtime_error{"Error while reading tlo: " + parsed_tlo_schema.error()};
+    auto parsing_result = parse_tlo(tlo_file_path, true);
+    if (!parsing_result.parsed_schema) {
+      throw std::runtime_error{"Error while reading tlo: " + parsing_result.error};
     }
-    auto &schema = *parsed_tlo_schema.value();
+    auto &schema = *parsing_result.parsed_schema;
     total_functions = schema.functions.size();
     total_types = schema.types.size();
 

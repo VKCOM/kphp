@@ -114,11 +114,11 @@ void write_tl_query_handlers(CodeGenerator &W) {
     return;
   }
 
-  auto tl_ptr = vk::tl::parse_tlo(G->settings().tl_schema_file.get().c_str(), false);
-  kphp_error_return(tl_ptr.has_value(),
-                    fmt_format("Error while reading tlo: {}", tl_ptr.error()));
+  auto parsing_result = vk::tl::parse_tlo(G->settings().tl_schema_file.get().c_str(), false);
+  kphp_error_return(parsing_result.parsed_schema,
+                    fmt_format("Error while reading tlo: {}", parsing_result.error));
 
-  tl = tl_ptr.value().get();
+  tl = parsing_result.parsed_schema.get();
   try {
     vk::tl::replace_anonymous_args(*tl);
     vk::tl::perform_flat_optimization(*tl);

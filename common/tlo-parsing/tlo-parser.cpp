@@ -185,10 +185,10 @@ void tlo_parser::error(const char *format, ...) {
 }
 
 
-vk::expected<std::unique_ptr<tl_scheme>, std::string> parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
-  tlo_parser reader;
+TLOParsingResult parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
+  TLOParsingResult result;
   try {
-    reader = tlo_parser(tlo_path);
+    tlo_parser reader = tlo_parser(tlo_path);
     reader.get_schema_version();
     reader.get_value<int>();
     reader.get_value<int>();
@@ -205,10 +205,11 @@ vk::expected<std::unique_ptr<tl_scheme>, std::string> parse_tlo(const char *tlo_
     for (auto &item : reader.tl_sch->functions) {
       reader.tl_sch->magics[item.second->name] = item.first;
     }
+    result.parsed_schema = std::move(reader.tl_sch);
   } catch (const std::exception &e) {
-    return vk::make_unexpected(e.what());
+    result.error = e.what();
   }
-  return std::move(reader.tl_sch);
+  return result;
 }
 
 void rename_tl_name_if_forbidden(std::string &tl_name) {
