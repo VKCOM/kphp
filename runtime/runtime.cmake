@@ -69,20 +69,20 @@ set(KPHP_RUNTIME_ALL_SOURCES
     ${KPHP_RUNTIME_SOURCES}
     ${KPHP_SERVER_SOURCES})
 
-set_source_files_properties(${BASE_DIR}/runtime/allocator.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
-set_source_files_properties(${BASE_DIR}/runtime/openssl.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
+allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
 
-set(RUNTIME_LIBS
-        vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src
-        -l:libyaml-cpp.a -l:libre2.a -l:libzstd.a -l:libh3.a m rt crypto z pthread)
+prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3)
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static pcre ssl /opt/curl7600/lib/libcurl.a -l:libnghttp2.a)
+prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2)
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
      RELATIVE ${BASE_DIR}

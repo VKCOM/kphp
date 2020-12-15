@@ -87,7 +87,7 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
 
 void f$sleep(int64_t seconds) {
   if (seconds <= 0 || seconds > 1800) {
-    php_warning("Wrong parameter seconds (%ld) specified in function sleep, must be in seconds", seconds);
+    php_warning("Wrong parameter seconds (%" PRIi64 ") specified in function sleep, must be in seconds", seconds);
     return;
   }
 
@@ -97,7 +97,7 @@ void f$sleep(int64_t seconds) {
 void f$usleep(int64_t micro_seconds) {
   int64_t sleep_time = micro_seconds;
   if (sleep_time <= 0) {
-    php_warning("Wrong parameter micro_seconds (%ld) specified in function usleep", sleep_time);
+    php_warning("Wrong parameter micro_seconds (%" PRIi64 ") specified in function usleep", sleep_time);
     return;
   }
 
@@ -1040,7 +1040,7 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
 Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_encode) {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
-    php_warning("Wrong parameter options = %ld in function json_encode", options);
+    php_warning("Wrong parameter options = %" PRIi64 " in function json_encode", options);
     return false;
   }
 

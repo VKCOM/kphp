@@ -116,21 +116,41 @@ bool contains_lib(vk::string_view ld_flags, vk::string_view libname) noexcept {
 }
 
 template<class T>
-void append_if_doesnt_contain(std::string &ld_flags, const T &libs, const char *prefix, const char *suffix = "") noexcept {
-  for (const char *lib : libs) {
+void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_view prefix, vk::string_view suffix = {}) noexcept {
+  for (vk::string_view lib : libs) {
     if (!contains_lib(ld_flags, lib)) {
-      ld_flags.append(" ").append(prefix).append(lib).append(suffix);
+      ld_flags.append(" ").append(prefix.begin(), prefix.end());
+      ld_flags.append(lib.begin(), lib.end()).append(suffix.begin(), suffix.end());
     }
   }
 }
 
 void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
   if (!contains_lib(ld_flags, "curl")) {
+#if defined(__APPLE__)
+    static_cast<void>(cxx_flags);
+    ld_flags += " -lcurl";
+#else
     // TODO make it as an option?
     const std::string curl_dir = "/opt/curl7600";
     cxx_flags += " -I" + curl_dir + "/include/";
     ld_flags += " " + curl_dir + "/lib/libcurl.a";
+#endif
   }
+}
+
+void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
+#if defined(__APPLE__)
+  cxx_flags += " -I/usr/local/include"
+               " -I/usr/local/opt/openssl/include";
+  ld_flags += " -liconv"
+              " -lepoll-shim"
+              " -L/usr/local/opt/openssl/lib"
+              " -L" EPOLL_SHIM_LIB_DIR;
+#else
+  static_cast<void>(cxx_flags);
+  static_cast<void>(ld_flags);
+#endif
 }
 
 } // namespace
@@ -273,12 +293,20 @@ void CompilerSettings::init() {
 
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_flags.value_, ld_flags.value_);
-
-  auto external_libs = {"pthread", "rt", "crypto", "m"};
-  auto external_static_libs = {"vk-flex-data", "pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2"};
-  append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
+  append_apple_options(cxx_flags.value_, ld_flags.value_);
+  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2"};
+  std::vector<vk::string_view> external_libs{"pthread", "crypto", "m"};
+#if defined(__APPLE__)
+  append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l");
+  auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";
+  append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
+  external_libs.emplace_back("iconv");
+#else
+  external_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
-
+  external_libs.emplace_back("rt");
+#endif
+  append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
   ld_flags.value_ += " -rdynamic";
 
   auto full_path = get_full_path(main_file.get());

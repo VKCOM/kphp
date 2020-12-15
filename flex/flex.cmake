@@ -7,7 +7,7 @@ set(FLEX_DATA_SRC ${AUTO_FLEX_DIR}/vk-flex-data.cpp)
 file(MAKE_DIRECTORY ${AUTO_FLEX_DIR})
 add_custom_command(
         OUTPUT ${FLEX_DATA_SRC}
-        COMMAND php -n -d extension=iconv.so ${FLEX_DIR}/vk-flex-data-gen.php > ${FLEX_DATA_SRC}
+        COMMAND ${PHP_BIN} ${FLEX_DIR}/vk-flex-data-gen.php > ${FLEX_DATA_SRC}
         DEPENDS ${FLEX_DIR}/vk-flex-data-gen.php
                 ${FLEX_DIR}/lib/vkext-flex-generate.lib.php
                 ${FLEX_DIR}/lib/configs/flex-config.php

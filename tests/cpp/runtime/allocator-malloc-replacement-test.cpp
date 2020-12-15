@@ -41,8 +41,8 @@ TEST(allocator_malloc_replacement_test, test_replace_and_alloc) {
     ASSERT_TRUE(dl::is_malloc_replaced());
     void *mem = alloc_no_inline(128);
     ASSERT_TRUE(mem);
-#if !ASAN_ENABLED
-    // asan заменяет malloc, и хуки перестают работать
+#if !ASAN_ENABLED and !defined(__APPLE__)
+    // asan replaces malloc and hooks doens't work, on macos hooks doesn't work at all
     ASSERT_EQ(memory_stats_before.memory_used + 128 + 8, dl::get_script_memory_stats().memory_used);
 #endif
     std::free(mem);

@@ -466,7 +466,7 @@ string f$vk_flex(const string &name, const string &case_name, int64_t sex, const
   }
 
   if ((unsigned int)lang_id >= (unsigned int)LANG_NUM) {
-    php_warning("Unknown lang id %ld in function vk_flex", lang_id);
+    php_warning("Unknown lang id %" PRIi64 " in function vk_flex", lang_id);
     return name;
   }
 

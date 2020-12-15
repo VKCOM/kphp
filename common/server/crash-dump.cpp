@@ -60,7 +60,28 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
 
 static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, ucontext_t *uc) {
-#if defined(__x86_64__)
+#if defined(__APPLE__)
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext->__ss.__rsp, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext->__ss.__rbp, buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RDI=0x"), uc->uc_mcontext->__ss.__rdi, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RSI=0x"), uc->uc_mcontext->__ss.__rsi, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RDX=0x"), uc->uc_mcontext->__ss.__rdx, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RCX=0x"), uc->uc_mcontext->__ss.__rcx, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R8=0x"), uc->uc_mcontext->__ss.__r8, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R9=0x"), uc->uc_mcontext->__ss.__r9, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R10=0x"), uc->uc_mcontext->__ss.__r10, buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RBX=0x"), uc->uc_mcontext->__ss.__rbx, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("RAX=0x"), uc->uc_mcontext->__ss.__rax, buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R11=0x"), uc->uc_mcontext->__ss.__r11, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R12=0x"), uc->uc_mcontext->__ss.__r12, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext->__ss.__r13, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
+#elif defined(__x86_64__)
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext.gregs[REG_RSP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext.gregs[REG_RBP], buffer);

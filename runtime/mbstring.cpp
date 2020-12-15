@@ -261,7 +261,7 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
 
 Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset, const string &encoding) {
   if (offset < 0) {
-    php_warning("Wrong offset = %ld in function mb_strpos", offset);
+    php_warning("Wrong offset = %" PRIi64 " in function mb_strpos", offset);
     return false;
   }
   if (needle.size() == 0) {

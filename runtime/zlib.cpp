@@ -60,7 +60,7 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
 
 string f$gzcompress(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
-    php_warning("Wrong parameter level = %ld in function gzcompress", level);
+    php_warning("Wrong parameter level = %" PRIi64 " in function gzcompress", level);
     level = 6;
   }
 
@@ -69,7 +69,7 @@ string f$gzcompress(const string &s, int64_t level) {
 
 string f$gzdeflate(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
-    php_warning("Wrong parameter level = %ld in function gzcompress", level);
+    php_warning("Wrong parameter level = %" PRIi64 " in function gzcompress", level);
     level = 6;
   }
 
@@ -78,7 +78,7 @@ string f$gzdeflate(const string &s, int64_t level) {
 
 string f$gzencode(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
-    php_warning("Wrong parameter level = %ld in function gzencode", level);
+    php_warning("Wrong parameter level = %" PRIi64 " in function gzencode", level);
   }
 
   return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODE)->str();

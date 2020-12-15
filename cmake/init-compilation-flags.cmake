@@ -6,6 +6,16 @@ set(CMAKE_CXX_EXTENSIONS ON)
 
 cmake_print_variables(CMAKE_CXX_STANDARD)
 
+if(APPLE)
+    include_directories(/usr/local/include)
+    add_definitions(-D_XOPEN_SOURCE)
+
+    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
+endif()
+
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(COMPILER_CLANG True)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -49,7 +59,11 @@ endif()
 
 if(NOT DEFINED ENV{ENABLE_GRPROF})
     add_compile_options(-fdata-sections -ffunction-sections)
-    add_link_options(-Wl,--gc-sections)
+    if(APPLE)
+        add_link_options(-Wl,-dead_strip)
+    else()
+        add_link_options(-Wl,--gc-sections)
+    endif()
 endif()
 
 include_directories(${GENERATED_DIR})
@@ -62,11 +76,12 @@ endif()
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 
-
-check_cxx_compiler_flag(-gz=zlib DEBUG_COMPRESSION_IS_FOUND)
-if (DEBUG_COMPRESSION_IS_FOUND)
-    add_compile_options(-gz=zlib)
-    add_link_options(-Wl,--compress-debug-sections=zlib)
+if(NOT APPLE)
+    check_cxx_compiler_flag(-gz=zlib DEBUG_COMPRESSION_IS_FOUND)
+    if (DEBUG_COMPRESSION_IS_FOUND)
+        add_compile_options(-gz=zlib)
+        add_link_options(-Wl,--compress-debug-sections=zlib)
+    endif()
 endif()
 
 add_link_options(-rdynamic -L/usr/local/lib -ggdb)

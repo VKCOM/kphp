@@ -341,6 +341,10 @@ int net_reactor_insert(net_reactor_ctx_t *ctx, int fd, int flags) {
               ee.events);
 
     if (epoll_ctl(ctx->epoll_fd, (ev->state & EVT_IN_EPOLL) ? EPOLL_CTL_MOD : EPOLL_CTL_ADD, fd, &ee) < 0) {
+#if defined(__APPLE__)
+      // TODO understand why
+      if (errno != ENOENT)
+#endif
       tvkprintf(net_events, 0, "epoll_ctl(): %m\n");
     }
     ev->state |= EVT_IN_EPOLL;

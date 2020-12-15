@@ -51,6 +51,11 @@ template<typename T, typename ...Args>
 void hard_reset_var(T &var, Args &&... args) noexcept {
   new(&var) T(std::forward<Args>(args)...);
 }
+
+inline constexpr int64_t operator "" _i64(unsigned long long int v) noexcept {
+  return static_cast<int64_t>(v);
+}
+
 inline double divide(int64_t lhs, int64_t rhs);
 
 inline double divide(double lhs, int64_t rhs);

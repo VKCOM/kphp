@@ -175,6 +175,10 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         tl-classes.cpp
         vertex.cpp)
 
+if(APPLE)
+    set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)
+endif()
+
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET})
@@ -194,7 +198,7 @@ prepend(VERTEX_AUTO_GENERATED ${KPHP_COMPILER_AUTO_DIR}/vertex/
         is-base-of.h)
 
 add_custom_command(OUTPUT ${VERTEX_AUTO_GENERATED}
-                   COMMAND ${PYTHON_EXECUTABLE} ${KPHP_COMPILER_DIR}/vertex-gen.py --auto ${AUTO_DIR} --config ${KPHP_COMPILER_DIR}/vertex-desc.json
+                   COMMAND ${Python3_EXECUTABLE} ${KPHP_COMPILER_DIR}/vertex-gen.py --auto ${AUTO_DIR} --config ${KPHP_COMPILER_DIR}/vertex-desc.json
                    DEPENDS ${KPHP_COMPILER_DIR}/vertex-gen.py ${KPHP_COMPILER_DIR}/vertex-desc.json
                    COMMENT "vertices generation")
 add_custom_target(auto_vertices_generation_target DEPENDS ${VERTEX_AUTO_GENERATED})
@@ -207,7 +211,10 @@ set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
 
 add_executable(kphp2cpp ${KPHP_COMPILER_DIR}/kphp2cpp.cpp)
 target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
-set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src vk::popular_common -l:libyaml-cpp.a fmt::fmt -l:libre2.a crypto pthread)
+
+prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp re2)
+set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src vk::popular_common ${COMPILER_LIBS} fmt::fmt OpenSSL::Crypto pthread)
+
 target_link_libraries(kphp2cpp PRIVATE ${COMPILER_LIBS})
 target_link_options(kphp2cpp PRIVATE ${NO_PIE})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})

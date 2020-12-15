@@ -5,6 +5,7 @@
 #include "net/net-tcp-connections.h"
 
 #include <assert.h>
+#include <cinttypes>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -241,7 +242,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
         struct msghdr msg = {.msg_name = NULL,
                              .msg_namelen = 0,
                              .msg_iov = tcp_recv_iovec + p,
-                             .msg_iovlen = static_cast<size_t>(tcp_buffers_number + 1 - p),
+                             .msg_iovlen = static_cast<decltype(std::declval<msghdr>().msg_iovlen)>(tcp_buffers_number + 1 - p),
                              .msg_control = buffer,
                              .msg_controllen = sizeof(buffer),
                              .msg_flags = 0};
@@ -250,7 +251,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
         if (r >= 0) {
           assert(!(msg.msg_flags & MSG_TRUNC || msg.msg_flags & MSG_CTRUNC));
 
-          vkprintf(4, "Ancillary data size: %zu\n", msg.msg_controllen);
+          vkprintf(4, "Ancillary data size: %" PRIu64 "\n", static_cast<int64_t>(msg.msg_controllen));
 
           if (c->type->ancillary_data_received) {
             for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {

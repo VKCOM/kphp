@@ -9,11 +9,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <csignal>
 #include <ctime>
 #include <cxxabi.h>
 #include <execinfo.h>
 #include <unistd.h>
-#include <wait.h>
+#include <sys/wait.h>
 
 #include "common/fast-backtrace.h"
 

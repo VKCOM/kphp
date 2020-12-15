@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <sys/socket.h>
 
+#include "common/macos-ports.h"
+
 #include "net/net-buffers.h"
 #include "net/net-events.h"
 #include "net/net-msg.h"
@@ -16,8 +18,6 @@
 
 #define MAX_TARGETS 65536
 #define PRIME_TARGETS 99961
-
-#define MAX_NET_RES (1L << 16)
 
 #define BUFF_SIZE 2048
 

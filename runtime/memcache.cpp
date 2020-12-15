@@ -449,12 +449,12 @@ static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, c
   const string real_key = mc_prepare_key(key);
 
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning("Wrong parameter flags = %ld in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %" PRIi64 " in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning("Wrong parameter expire = %ld in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %" PRIi64 " in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 
@@ -869,12 +869,12 @@ mixed f$rpc_mc_get(const class_instance<C$RpcConnection> &conn, const string &ke
 
 bool rpc_mc_run_set(int32_t op, const class_instance<C$RpcConnection> &conn, const string &key, const mixed &value, int64_t flags, int64_t expire, double timeout) {
   if (flags & ~MEMCACHE_COMPRESSED) {
-    php_warning("Wrong parameter flags = %ld in Memcache::%s", flags, mc_method);
+    php_warning("Wrong parameter flags = %" PRIi64 " in Memcache::%s", flags, mc_method);
     flags &= MEMCACHE_COMPRESSED;
   }
 
   if ((unsigned int)expire > (unsigned int)(30 * 24 * 60 * 60)) {
-    php_warning("Wrong parameter expire = %ld in Memcache::%s", expire, mc_method);
+    php_warning("Wrong parameter expire = %" PRIi64 " in Memcache::%s", expire, mc_method);
     expire = 0;
   }
 

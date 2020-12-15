@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 
 #ifdef __x86_64__
 #include <emmintrin.h>
@@ -28,7 +28,7 @@ static inline double __dot_product(const double *x, const double *y, const int s
   }
   _mm_storeu_pd(temp, result);
   temp[0] += temp[1] + (i < size ? x[size - 1] * y[size - 1] : 0.0);
-  return __fpclassify(temp[0]) == FP_SUBNORMAL ? 0.0 : temp[0];
+  return std::fpclassify(temp[0]) == FP_SUBNORMAL ? 0.0 : temp[0];
 #elif defined(__arch64__)
   float64x2_t xf, yf, result;
   double temp[2] = {0.0, 0.0};
@@ -44,13 +44,13 @@ static inline double __dot_product(const double *x, const double *y, const int s
   vst1q_f64(temp, result);
   temp[0] += temp[1] + (i < size ? x[size - 1] * y[size - 1] : 0.0);
 
-  return __fpclassify(temp[0]) == FP_SUBNORMAL ? 0.0 : temp[0];
+  return std::fpclassify(temp[0]) == FP_SUBNORMAL ? 0.0 : temp[0];
 #else // __arch64__
   double result = 0.0;
 
   for (int i = 0; i < size; ++i) {
     result += x[i] * y[i];
   }
-  return __fpclassify(result) == FP_SUBNORMAL ? 0.0 : result;
+  return std::fpclassify(result) == FP_SUBNORMAL ? 0.0 : result;
 #endif
 }

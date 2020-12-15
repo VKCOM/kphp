@@ -46,7 +46,7 @@ using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
 
 inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
-    CurrentProcessingQuery::get().raise_storing_error("Array expected, when trying to access field #%ld : %s", num_key, str_key.c_str());
+    CurrentProcessingQuery::get().raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
     return mixed();
   }
   const mixed &num_v = arr.get_value(num_key);
@@ -57,7 +57,7 @@ inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key
   if (!str_v.is_null()) {
     return str_v;
   }
-  CurrentProcessingQuery::get().raise_storing_error("Field %s (#%ld) not found", str_key.c_str(), num_key);
+  CurrentProcessingQuery::get().raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
   return mixed();
 }
 
@@ -165,9 +165,9 @@ struct t_Int {
     auto v32 = static_cast<int32_t>(v);
     if (unlikely(is_int32_overflow(v))) {
       if (fail_rpc_on_int32_overflow) {
-        CurrentProcessingQuery::get().raise_storing_error("Got int32 overflow with value '%ld'. Serialization will fail.", v);
+        CurrentProcessingQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
       } else {
-        php_warning("Got int32 overflow on storing %s: the value '%ld' will be casted to '%d'. Serialization will succeed.",
+        php_warning("Got int32 overflow on storing %s: the value '%" PRIi64 "' will be casted to '%d'. Serialization will succeed.",
                     CurrentProcessingQuery::get().get_current_tl_function_name().c_str(), v, v32);
       }
     }

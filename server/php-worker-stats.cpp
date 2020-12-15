@@ -64,8 +64,8 @@ void PhpWorkerStats::add_stats(double script_time, double net_time, long script_
   internal_.net_time_ += net_time;
   internal_.script_time_ += script_time;
   internal_.tot_script_queries_ += script_queries;
-  internal_.script_max_memory_used_ = std::max(internal_.script_max_memory_used_, max_memory_used);
-  internal_.script_max_real_memory_used_ = std::max(internal_.script_max_real_memory_used_, max_real_memory_used);
+  internal_.script_max_memory_used_ = std::max(internal_.script_max_memory_used_, int64_t{max_memory_used});
+  internal_.script_max_real_memory_used_ = std::max(internal_.script_max_real_memory_used_, int64_t{max_real_memory_used});
   ++internal_.errors_[static_cast<size_t>(error)];
 
   const size_t sample = circular_percentiles_counter_++;
@@ -144,7 +144,7 @@ std::string PhpWorkerStats::to_string(const std::string &pid_s) const noexcept {
 
   const int cnt = std::max(internal_.accumulated_stats_, 1U);
 
-  sprintf(buf, "tot_queries%s\t%ld\n", pid_s.c_str(), internal_.tot_queries_);
+  sprintf(buf, "tot_queries%s\t%" PRIi64 "\n", pid_s.c_str(), internal_.tot_queries_);
   res += buf;
   sprintf(buf, "worked_time%s\t%.3lf\n", pid_s.c_str(), internal_.script_time_ + internal_.net_time_);
   res += buf;
@@ -152,7 +152,7 @@ std::string PhpWorkerStats::to_string(const std::string &pid_s) const noexcept {
   res += buf;
   sprintf(buf, "script_time%s\t%.3lf\n", pid_s.c_str(), internal_.script_time_);
   res += buf;
-  sprintf(buf, "tot_script_queries%s\t%ld\n", pid_s.c_str(), internal_.tot_script_queries_);
+  sprintf(buf, "tot_script_queries%s\t%" PRIi64 "\n", pid_s.c_str(), internal_.tot_script_queries_);
   res += buf;
   sprintf(buf, "tot_idle_time%s\t%.3lf\n", pid_s.c_str(), internal_.tot_idle_time_);
   res += buf;

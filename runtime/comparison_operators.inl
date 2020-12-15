@@ -222,7 +222,7 @@ inline bool eq2(const mixed &lhs, double rhs) {
 inline bool eq2(int64_t lhs, const mixed &rhs) {
   switch (rhs.get_type()) {
     case mixed::type::NUL:
-      return eq2(lhs, 0L);
+      return eq2(lhs, int64_t{0});
     case mixed::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
     case mixed::type::INTEGER:

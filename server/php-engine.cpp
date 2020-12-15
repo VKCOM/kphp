@@ -13,7 +13,6 @@
 #include <poll.h>
 #include <re2/re2.h>
 #include <sys/mman.h>
-#include <sys/prctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -21,6 +20,7 @@
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
+#include "common/macos-ports.h"
 #include "common/options.h"
 #include "common/pipe-utils.h"
 #include "common/precise-time.h"
@@ -2058,6 +2058,12 @@ void write_immediate_stats_to_pipe() {
 int spoll_send_stats;
 
 static void sigstats_handler(int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
+#if defined(__APPLE__)
+  siginfo_t signal_info_stub;
+  signal_info_stub.si_code = SI_QUEUE;
+  signal_info_stub.si_value.sival_int =  SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS | SPOLL_SEND_IMMEDIATE_STATS;
+  info = &signal_info_stub;
+#endif
   dl_assert (info != nullptr, "SIGPOLL with no info");
   if (info->si_code == SI_QUEUE) {
     int code = info->si_value.sival_int;
@@ -2203,7 +2209,6 @@ void start_server() {
   ksignal(SIGPOLL, SIG_IGN);
 
   //using sigaction for SIGSTAT
-  assert (SIGRTMIN <= SIGSTAT && SIGSTAT <= SIGRTMAX);
   dl_sigaction(SIGSTAT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigstats_handler);
 
   dl_allow_all_signals();

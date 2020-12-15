@@ -18,7 +18,6 @@ void ksignal_intr(int sig, void (*handler)(int));
 void set_debug_handlers();
 void setup_delayed_handlers();
 int is_signal_pending(int sig);
-void set_signals_handlers ();
 
 const char *signal_shortname(int sig);
 

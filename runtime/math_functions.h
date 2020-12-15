@@ -214,16 +214,16 @@ double f$fmod(double x, double y) {
 }
 
 bool f$is_finite(double v) {
-  int v_class = __fpclassify(v);
+  int v_class = std::fpclassify(v);
   return (v_class != FP_NAN && v_class != FP_INFINITE);
 }
 
 bool f$is_infinite(double v) {
-  return (__fpclassify(v) == FP_INFINITE);
+  return (std::fpclassify(v) == FP_INFINITE);
 }
 
 bool f$is_nan(double v) {
-  return (__fpclassify(v) == FP_NAN);
+  return (std::fpclassify(v) == FP_NAN);
 }
 
 double f$log(double v) {

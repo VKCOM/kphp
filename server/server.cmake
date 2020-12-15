@@ -17,4 +17,5 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-sql-connections.cpp
         php-worker-stats.cpp)
 
+allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 vk_add_library(kphp_server OBJECT ${KPHP_SERVER_SOURCES})

@@ -296,7 +296,7 @@ int64_t register_started_resumable(Resumable *resumable) {
     if (is_started_resumable_id(runned_resumable_id)) {
       started_resumable_info *parent = get_started_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %ld->son from %ld to %ld\n", runned_resumable_id, parent->son, res_id);
+        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %" PRIi64 "\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
@@ -304,7 +304,7 @@ int64_t register_started_resumable(Resumable *resumable) {
     } else {
       forked_resumable_info *parent = get_forked_resumable_info(runned_resumable_id);
       if (parent->son != 0) {
-        kprintf("Tring to change %ld->son from %ld to %ld\n", runned_resumable_id, parent->son, res_id);
+        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %" PRIi64 "\n", runned_resumable_id, parent->son, res_id);
         debug_print_resumables();
         php_assert(parent->son == 0);
       }
@@ -383,7 +383,7 @@ void unregister_started_resumable(int64_t resumable_id) {
     if (is_started_resumable_id(res->parent_id)) {
       started_resumable_info *parent = get_started_resumable_info(res->parent_id);
       if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %ld->son from %ld to %d\n", res->parent_id, resumable_id, 0);
+        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %d\n", res->parent_id, resumable_id, 0);
         debug_print_resumables();
         php_assert(parent->son == resumable_id || parent->son == 0);
       }
@@ -391,7 +391,7 @@ void unregister_started_resumable(int64_t resumable_id) {
     } else if (is_forked_resumable_id(res->fork_id)) {
       forked_resumable_info *parent = get_forked_resumable_info(res->parent_id);
       if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %ld->son from %ld to %d\n", res->parent_id, resumable_id, 0);
+        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %d\n", res->parent_id, resumable_id, 0);
         debug_print_resumables();
         php_assert(parent->son == resumable_id || parent->son == 0);
       }
@@ -464,20 +464,20 @@ static void resumable_get_finished(int64_t *resumable_id, bool *is_yielded) {
 }
 
 void debug_print_resumables() {
-  fprintf(stderr, "first free resumable id: %ld\n", first_free_started_resumable_id);
+  fprintf(stderr, "first free resumable id: %" PRIi64 "\n", first_free_started_resumable_id);
   fprintf(stderr, "finished:");
   for (uint32_t i = 0; i < finished_resumables_count; i++) {
-    fprintf(stderr, " %ld", finished_resumables[i]);
+    fprintf(stderr, " %" PRIi64, finished_resumables[i]);
   }
   fprintf(stderr, "\n");
   for (int64_t i = first_started_resumable_id; i < current_started_resumable_id; i++) {
     started_resumable_info *info = get_started_resumable_info(i);
-    fprintf(stderr, "started id = %ld, parent = %ld, fork = %ld, son = %ld, continuation = %s, name = %s\n", i, info->parent_id, info->fork_id, info->son,
+    fprintf(stderr, "started id = %" PRIi64 ", parent = %" PRIi64 ", fork = %" PRIi64 ", son = %" PRIi64 ", continuation = %s, name = %s\n", i, info->parent_id, info->fork_id, info->son,
             info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
   }
   for (int64_t i = first_forked_resumable_id; i < current_forked_resumable_id; i++) {
     forked_resumable_info *info = get_forked_resumable_info(i);
-    fprintf(stderr, "forked id = %ld, queue_id = %ld, son = %ld, continuation = %s, name = %s\n", i, info->queue_id, info->son,
+    fprintf(stderr, "forked id = %" PRIi64 ", queue_id = %" PRIi64 ", son = %" PRIi64 ", continuation = %s, name = %s\n", i, info->queue_id, info->son,
             info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
   }
 }
@@ -506,7 +506,11 @@ void resumable_run_ready(int64_t resumable_id) {
   }
 }
 
+#if defined(__APPLE__)
+void run_scheduler(double timeout);
+#else
 void run_scheduler(double timeout) __attribute__((section("run_scheduler_section")));
+#endif
 
 static int64_t scheduled_resumable_id = 0;
 
@@ -543,7 +547,7 @@ void run_scheduler(double timeout) {
     if (parent_id < 1000000000) {
       started_resumable_info *parent = get_started_resumable_info(parent_id);
       if (parent->continuation == nullptr || parent->son != resumable_id) {
-        kprintf("Will fail assert with resumbale_id = %ld\n", resumable_id);
+        kprintf("Will fail assert with resumbale_id = %" PRIi64 "\n", resumable_id);
         debug_print_resumables();
       }
       php_assert (parent->son == resumable_id);
@@ -559,7 +563,7 @@ void run_scheduler(double timeout) {
     } else {
       forked_resumable_info *parent = get_forked_resumable_info(parent_id);
       if (parent->continuation == nullptr || parent->son != resumable_id) {
-        kprintf("Will fail assert with resumbale_id = %ld\n", resumable_id);
+        kprintf("Will fail assert with resumbale_id = %" PRIi64 "\n", resumable_id);
         debug_print_resumables();
       }
       php_assert (parent->son == resumable_id);
@@ -836,13 +840,13 @@ bool f$wait_concurrently(int64_t resumable_id) {
 
 int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   if (!is_forked_resumable_id(resumable_id)) {
-    php_warning("Wrong resumable_id %ld in function wait_queue_push", resumable_id);
+    php_warning("Wrong resumable_id %" PRIi64 " in function wait_queue_push", resumable_id);
 
     return queue_id;
   }
   forked_resumable_info *resumable = get_forked_resumable_info(resumable_id);
   if (resumable->queue_id != 0 && resumable->queue_id != -1) {
-    php_warning("Someone already waits resumable %ld", resumable_id);
+    php_warning("Someone already waits resumable %" PRIi64, resumable_id);
 
     return queue_id;
   }
@@ -854,7 +858,7 @@ int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
     queue_id = f$wait_queue_create();
   } else {
     if (!is_wait_queue_id(queue_id)) {
-      php_warning("Wrong queue_id %ld", queue_id);
+      php_warning("Wrong queue_id %" PRIi64, queue_id);
 
       return queue_id;
     }
@@ -977,7 +981,7 @@ static void wait_queue_skip_gotten(wait_queue *q) {
 bool f$wait_queue_empty(int64_t queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %ld in function wait_queue_empty", queue_id);
+      php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_empty", queue_id);
     }
     return true;
   }
@@ -1093,7 +1097,7 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
 //  fprintf (stderr, "Waiting for queue %d\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %ld in function wait_queue_next", queue_id);
+      php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next", queue_id);
     }
 
     return false;
@@ -1149,7 +1153,7 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
 Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
-      php_warning("Wrong queue_id %ld in function wait_queue_next_synchronously", queue_id);
+      php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next_synchronously", queue_id);
     }
 
     return false;

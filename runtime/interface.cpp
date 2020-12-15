@@ -16,6 +16,7 @@
 
 #include "common/tl/constants/common.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/macos-ports.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"

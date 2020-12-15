@@ -15,6 +15,7 @@
 #include <unordered_set>
 
 #include "common/kprintf.h"
+#include "common/macos-ports.h"
 #include "common/options.h"
 #include "common/server/crash-dump.h"
 #include "common/server/engine-settings.h"
@@ -102,7 +103,6 @@ const char *signal_shortname(int sig) {
     case SIGPIPE: return "SIGPIPE";
     case SIGALRM: return "SIGALRM";
     case SIGTERM: return "SIGTERM";
-    case SIGSTKFLT: return "SIGSTKFLT";
     case SIGCHLD: return "SIGCHLD";
     case SIGCONT: return "SIGCONT";
     case SIGSTOP: return "SIGSTOP";
@@ -116,20 +116,26 @@ const char *signal_shortname(int sig) {
     case SIGPROF: return "SIGPROF";
     case SIGWINCH: return "SIGWINCH";
     case SIGIO: return "SIGIO";
-    case SIGPWR: return "SIGPWR";
     case SIGSYS: return "SIGSYS";
+    default: {
+#if !defined(__APPLE__)
+      if (sig == SIGPWR) { return "SIGPWR"; }
+      if (sig == SIGSTKFLT) { return "SIGSTKFLT"; }
+      if (sig == SIGRTMAX - 0) { return "SIGRTMAX"; }
+      if (sig == SIGRTMAX - 1) { return "SIGRTMAX-1"; }
+      if (sig == SIGRTMAX - 2) { return "SIGRTMAX-2"; }
+      if (sig == SIGRTMAX - 3) { return "SIGRTMAX-3"; }
+      if (sig == SIGRTMAX - 4) { return "SIGRTMAX-4"; }
+      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
+      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
+      if (sig == SIGRTMAX - 6) { return "SIGRTMAX-6"; }
+      if (sig == SIGRTMAX - 7) { return "SIGRTMAX-7"; }
+      if (sig == SIGRTMAX - 8) { return "SIGRTMAX-8"; }
+      if (sig == SIGRTMAX - 9) { return "SIGRTMAX-9"; }
+#endif
+      break;
+    }
   }
-  if (sig == SIGRTMAX - 0) { return "SIGRTMAX"; }
-  if (sig == SIGRTMAX - 1) { return "SIGRTMAX-1"; }
-  if (sig == SIGRTMAX - 2) { return "SIGRTMAX-2"; }
-  if (sig == SIGRTMAX - 3) { return "SIGRTMAX-3"; }
-  if (sig == SIGRTMAX - 4) { return "SIGRTMAX-4"; }
-  if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
-  if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
-  if (sig == SIGRTMAX - 6) { return "SIGRTMAX-6"; }
-  if (sig == SIGRTMAX - 7) { return "SIGRTMAX-7"; }
-  if (sig == SIGRTMAX - 8) { return "SIGRTMAX-8"; }
-  if (sig == SIGRTMAX - 9) { return "SIGRTMAX-9"; }
   return strsignal(sig);
 }
 
@@ -285,26 +291,6 @@ static void generic_counting_handler(int sig, siginfo_t *info, void *) {
   }
   write_to_stderr(".\n");
   count_signal(sig);
-}
-
-
-void set_signals_handlers() {
-  ksignal(SIGUSR1, generic_counting_handler);
-  ksignal(SIGUSR2, generic_counting_handler);
-  if (getenv("KDB_VALGRIND") == nullptr) {
-    ksignal(SIGRTMAX, generic_counting_handler);
-  } else {
-    kprintf("SIGRTMAX handler is not set, KDB_VALGRIND env variable found\n");
-  }
-  ksignal(SIGRTMAX - 1, generic_counting_handler);
-  ksignal(SIGRTMAX - 2, generic_counting_handler);
-  ksignal(SIGRTMAX - 4, generic_counting_handler);
-  ksignal(SIGRTMAX - 8, generic_counting_handler);
-  ksignal_ext(SIGCHLD, generic_counting_handler, SA_NOCLDSTOP | SA_ONSTACK | SA_RESTART);
-  ksignal(SIGINT, generic_immediate_stop_handler);
-  ksignal(SIGTERM, generic_immediate_stop_handler);
-
-  set_debug_handlers();
 }
 
 int is_signal_pending(int sig) {

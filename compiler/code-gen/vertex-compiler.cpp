@@ -274,7 +274,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << index->array() << ", " << index->key() << ", ";
     if (vk::any_of_equal(array_ptype, tp_array, tp_mixed)) {
       if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
-        W << precomputed_hash << "L, ";
+        W << precomputed_hash << "_i64, ";
       }
     }
   } else {
@@ -1184,7 +1184,7 @@ void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
     // if it's a const string key access like $a['somekey'],
     // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
     if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
-      W << ", " << precomputed_hash << "L";
+      W << ", " << precomputed_hash << "_i64";
     }
     W << ")";
   }
@@ -1261,7 +1261,7 @@ void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   PrimitiveType ptype = tinf::get_type(arr)->get_real_ptype();
   kphp_assert(vk::any_of_equal(ptype, tp_array, tp_mixed, tp_tuple, tp_shape));
 
-  for (const auto x : list) {
+  for (auto x : list) {
     const auto kv = x.as<op_list_keyval>();
 
     if (ptype == tp_tuple) {
@@ -1341,7 +1341,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     if (auto arrow = cur.try_as<op_double_arrow>()) {
       W << ".set_value (" << arrow->key() << ", " << arrow->value();
       if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key())) {
-        W << ", " << precomputed_hash << "L";
+        W << ", " << precomputed_hash << "_i64";
       }
       W << ")";
     } else {
@@ -1472,7 +1472,7 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
 void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
   W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
   if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
-    W << ", " << precomputed_hash << "L";
+    W << ", " << precomputed_hash << "_i64";
   }
   W << ")";
   // there is no dedicated string/tuple overloadings for the set_value() (unlike in compile_index()),
@@ -1567,11 +1567,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
 
     case op_int_const:
-      str = root.as<op_int_const>()->str_val;
-      if (str.size() > 9) {
-        W << "(int64_t)";
-      }
-      W << str << "L";
+      W << root.as<op_int_const>()->str_val << "_i64";
       break;
     case op_float_const:
       str = root.as<op_float_const>()->str_val;

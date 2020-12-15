@@ -27,14 +27,18 @@ static struct utsname* cached_uname() {
   return &kernel_version;
 }
 
-static int kernel_x;
-static int kernel_y;
-static int kernel_z;
+static int kernel_x = 0;
+static int kernel_y = 0;
+static int kernel_z = 0;
+static bool is_macos = false;
 
 static inline void parse_kernel_version() {
   if (kernel_x) {
     return;
   }
+#if defined(__APPLE__)
+  is_macos = true;
+#endif
   struct utsname *uname_val = cached_uname();
   if (!uname_val || sscanf(uname_val->release, "%d.%d.%d", &kernel_x, &kernel_y, &kernel_z) != 3) {
     kernel_x = kernel_y = kernel_z = -1;
@@ -50,10 +54,10 @@ STATS_PROVIDER(kernel, 1000) {
 
 int epoll_exclusive_supported() {
   parse_kernel_version();
-  return kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5);
+  return !is_macos && (kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5));
 }
 
 int madvise_madv_free_supported() {
   parse_kernel_version();
-  return kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5);
+  return !is_macos && (kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5));
 }

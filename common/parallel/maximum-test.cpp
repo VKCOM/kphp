@@ -18,6 +18,8 @@
 
 #include <gtest/gtest.h>
 
+#if !defined(__APPLE__)
+
 TEST(parallel_maximum, basic) {
   for(int i = 0; i < 1000; ++i) {
     constexpr std::size_t thread_max = 1 * 1024 * 1024;
@@ -72,6 +74,8 @@ TEST(parallel_maximum, basic) {
     EXPECT_NEAR(expected_max, PARALLEL_MAXIMUM_READ(maximum), nr_threads * thread_max + 1);
   }
 }
+
+#endif
 
 TEST(parallel_maximum, add_in_one_thread_sub_in_another) {
   constexpr std::size_t thread_max = 1 * 1024 * 1024;

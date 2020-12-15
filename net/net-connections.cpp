@@ -6,6 +6,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <cinttypes>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -355,7 +356,7 @@ int server_reader(struct connection *c) {
         if (r >= 0) {
           assert(!(msg.msg_flags & MSG_TRUNC || msg.msg_flags & MSG_CTRUNC));
 
-          vkprintf(3, "Ancillary data size: %zu\n", msg.msg_controllen);
+          vkprintf(3, "Ancillary data size: %" PRIu64 "\n", static_cast<int64_t>(msg.msg_controllen));
 
           if (c->type->ancillary_data_received) {
             for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {

@@ -5,8 +5,9 @@
 #include "runtime/string_functions.h"
 
 #include <clocale>
-#include <endian.h>
+#include <sys/types.h>
 
+#include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
 
 #include "runtime/interface.h"
@@ -202,7 +203,7 @@ mixed f$count_chars(const string &str, int64_t mode) {
   int64_t chars[256] = {0};
 
   if (static_cast<uint32_t>(mode) > 4u) {
-    php_warning("Unknown mode %ld", mode);
+    php_warning("Unknown mode %" PRIi64, mode);
     return false;
   }
 
@@ -373,7 +374,7 @@ string f$htmlentities(const string &str) {
 
 string f$html_entity_decode(const string &str, int64_t flags, const string &encoding) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %ld in function html_entity_decode", flags);
+    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function html_entity_decode", flags);
   }
 
   bool utf8 = memchr(encoding.c_str(), '8', encoding.size()) != nullptr;
@@ -459,7 +460,7 @@ string f$html_entity_decode(const string &str, int64_t flags, const string &enco
 
 string f$htmlspecialchars(const string &str, int64_t flags) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %ld in function htmlspecialchars", flags);
+    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars", flags);
   }
 
   const string::size_type len = str.size();
@@ -520,7 +521,7 @@ string f$htmlspecialchars(const string &str, int64_t flags) {
 
 string f$htmlspecialchars_decode(const string &str, int64_t flags) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %ld in function htmlspecialchars_decode", flags);
+    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars_decode", flags);
   }
 
   int len = str.size();
@@ -672,7 +673,7 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
   char *result_begin = php_buf + PHP_BUF_LEN;
 
   if (decimals < 0 || decimals > 100) {
-    php_warning("Wrong parameter decimals (%ld) in function number_format", decimals);
+    php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
     return string();
   }
   bool negative = false;
@@ -1232,7 +1233,7 @@ int64_t f$strcmp(const string &lhs, const string &rhs) {
 
 Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset) {
   if (offset < 0) {
-    php_warning("Wrong offset = %ld in function stripos", offset);
+    php_warning("Wrong offset = %" PRIi64 " in function stripos", offset);
     return false;
   }
   if (offset >= haystack.size()) {
@@ -1698,7 +1699,7 @@ Optional<string> f$strpbrk(const string &haystack, const string &char_list) {
 
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset) {
   if (offset < 0) {
-    php_warning("Wrong offset = %ld in function strpos", offset);
+    php_warning("Wrong offset = %" PRIi64 " in function strpos", offset);
     return false;
   }
   if (offset > int64_t{haystack.size()}) {
@@ -1853,7 +1854,7 @@ string f$str_pad(const string &input, int64_t len, const string &pad_str, int64_
     return input;
   }
   if (len > string::max_size()) {
-    php_critical_error ("tried to allocate too big string of size %ld", len);
+    php_critical_error ("tried to allocate too big string of size %" PRIi64, len);
   }
 
   const auto strlen = static_cast<string::size_type>(len);
@@ -1898,7 +1899,7 @@ string f$str_repeat(const string &s, int64_t multiplier) {
 
   auto mult = static_cast<string::size_type>(multiplier);
   if (string::max_size() / len < mult) {
-    php_critical_error ("tried to allocate too big string of size %ld", multiplier * len);
+    php_critical_error ("tried to allocate too big string of size %" PRIi64, multiplier * len);
   }
 
   if (len == 1) {
@@ -2080,7 +2081,7 @@ mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subj
 
 array<string> f$str_split(const string &str, int64_t split_length) {
   if (split_length <= 0) {
-    php_warning ("Wrong parameter split_length = %ld in function str_split", split_length);
+    php_warning ("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
     array<string> result(array_size(1, 0, true));
     result.set_value(0, str);
     return result;
@@ -2576,7 +2577,7 @@ string f$vsprintf(const string &format, const array<mixed> &args) {
 
 string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut) {
   if (width <= 0) {
-    php_warning("Wrong parameter width = %ld in function wordwrap", width);
+    php_warning("Wrong parameter width = %" PRIi64 " in function wordwrap", width);
     return str;
   }
 

@@ -8,6 +8,14 @@ set(GENERATED_DIR "${OBJS_DIR}/generated")
 set(AUTO_DIR "${GENERATED_DIR}/auto")
 set(HOST "x86_64")
 
+if(APPLE)
+    set(CURL_LIB curl)
+    set(ICONV_LIB iconv)
+else()
+    set(CURL_LIB /opt/curl7600/lib/libcurl.a)
+    set(RT_LIB rt)
+endif()
+
 find_package(Git REQUIRED)
 find_package (Python3 COMPONENTS Interpreter REQUIRED)
 
@@ -17,9 +25,13 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif()
 
-check_cxx_compiler_flag(-no-pie NO_PIE_IS_FOUND)
-if(NO_PIE_IS_FOUND)
-    set(NO_PIE -no-pie)
+find_program(PHP_BIN php REQUIRED)
+
+if(NOT APPLE)
+    check_cxx_compiler_flag(-no-pie NO_PIE_IS_FOUND)
+    if(NO_PIE_IS_FOUND)
+        set(NO_PIE -no-pie)
+    endif()
 endif()
 
 # add extra build type release without NDEBUG flag

@@ -40,3 +40,24 @@ if(KPHP_TESTS)
         message(STATUS "---------------------")
     endif()
 endif()
+
+if(APPLE)
+    if (DEFINED ENV{EPOLL_SHIM_REPO})
+        FetchContent_Declare(
+                epoll
+                URL $ENV{EPOLL_SHIM_REPO}
+        )
+    else()
+        handle_missing_library("epoll-shim")
+        FetchContent_Declare(
+                epoll
+                GIT_REPOSITORY https://github.com/VKCOM/epoll-shim
+                GIT_TAG osx-platform
+        )
+        message(STATUS "---------------------")
+    endif()
+    FetchContent_MakeAvailable(epoll)
+    include_directories(${epoll_SOURCE_DIR}/include)
+    add_definitions(-DEPOLL_SHIM_LIB_DIR="${epoll_BINARY_DIR}/src")
+    set(EPOLL_SHIM_LIB epoll-shim)
+endif()

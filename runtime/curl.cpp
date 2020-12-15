@@ -94,7 +94,7 @@ public:
       case CURLINFO_LONG: {
         long value = 0;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        return res == CURLE_OK ? mixed{value} : mixed{false};
+        return res == CURLE_OK ? mixed{int64_t{value}} : mixed{false};
       }
       case CURLINFO_DOUBLE: {
         double value = 0;
@@ -643,7 +643,7 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexce
     if (curl_setopt(easy_context, option, value)) {
       return true;
     }
-    php_warning("Can't set curl option %ld", option);
+    php_warning("Can't set curl option %" PRIi64, option);
   }
   return false;
 }

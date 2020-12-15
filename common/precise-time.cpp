@@ -33,18 +33,6 @@ double get_utime_monotonic () {
   return precise_now;
 }
 
-uint64_t get_ntime_mono() {
-  struct timespec T;
-  uint64_t res = 0;
-  #if _POSIX_TIMERS
-  assert (clock_gettime (CLOCK_MONOTONIC, &T) >= 0);
-  res = T.tv_sec * 1000LL * 1000LL * 1000LL + T.tv_nsec;
-  #else
-  #error "No high-precision clock"
-  res = time() * 1e9;
-  #endif
-  return res;
-}
 
 template<typename T>
 static inline double get_cached_time(T get_time, int cycles_cache) {
@@ -88,26 +76,15 @@ double get_network_time() {
   return precise_now;
 }
 
-double get_utime (int clock_id) {
-  struct timespec T;
-#if _POSIX_TIMERS
-  assert (clock_gettime (clock_id, &T) >= 0);
-  double res = T.tv_sec + (double) T.tv_nsec * 1e-9;
-#else
-#error "No high-precision clock"
-  double res = time ();
-#endif
-  if (clock_id == CLOCK_REALTIME) {
-    precise_time = (long long) (res * (1LL << 32));
-    precise_time_rdtsc = cycleclock_now();
-  }
-  return res;
-}
-
 long long get_precise_time (unsigned precision) {
   unsigned long long diff = cycleclock_now() - precise_time_rdtsc;
   if (diff > precision) {
-    get_utime (CLOCK_REALTIME);
+    timespec T;
+    int r = clock_gettime(CLOCK_REALTIME, &T);
+    assert(r >= 0);
+    double res = static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
+    precise_time = static_cast<long long>(res * (1LL << 32));
+    precise_time_rdtsc = cycleclock_now();
   }
   return precise_time;
 }

@@ -5,6 +5,7 @@
 #include "net/net-aes-keys.h"
 
 #include <assert.h>
+#include <climits>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>

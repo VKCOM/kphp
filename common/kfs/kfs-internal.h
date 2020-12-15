@@ -6,7 +6,7 @@
 #define ENGINE_KFS_INTERNAL_H
 
 #include <assert.h>
-#include <malloc.h>
+#include <cstdlib>
 
 #include "common/kfs/kfs-common.h"
 

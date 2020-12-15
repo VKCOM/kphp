@@ -4,10 +4,10 @@
 
 #include <aio.h>
 #include <assert.h>
+#include <cstdlib>
 #include <errno.h>
 #include <fcntl.h>
 #include <float.h>
-#include <malloc.h>
 #include <unistd.h>
 
 #include "common/kprintf.h"

@@ -6,8 +6,9 @@
 
 #include <cerrno>
 #include <cstring>
-#include <linux/futex.h>
-#include <syscall.h>
+#include <sys/syscall.h>
+
+#include "common/macos-ports.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/php_assert.h"
@@ -24,7 +25,14 @@ void __attribute__ ((noinline)) check_that_tid_and_cached_pid_same() noexcept {
 }
 
 long __attribute__ ((noinline)) futex(pid_t *lock, int command) noexcept {
+#if defined(__APPLE__)
+  static_cast<void>(lock);
+  static_cast<void>(command);
+  errno = EAGAIN;
+  return -1;
+#else
   return syscall(SYS_futex, lock, command, 0, nullptr, nullptr, 0);
+#endif
 }
 
 void handle_lock_error(pid_t *lock, const char *what) noexcept {

@@ -487,7 +487,7 @@ string f$bcdiv(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %ld in function bcdiv", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcdiv", scale);
     scale = 0;
   }
   if (lhs.empty()) {
@@ -631,7 +631,7 @@ string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %ld in function bcadd", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcadd", scale);
     scale = 0;
   }
 
@@ -664,7 +664,7 @@ string f$bcsub(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %ld in function bcsub", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsub", scale);
     scale = 0;
   }
 
@@ -699,7 +699,7 @@ string f$bcmul(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %ld in function bcmul", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmul", scale);
     scale = 0;
   }
 
@@ -732,7 +732,7 @@ int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %ld in function bccomp", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bccomp", scale);
     scale = 0;
   }
 

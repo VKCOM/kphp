@@ -4,9 +4,9 @@
 
 #include "compiler/make/make-runner.h"
 
-#include <wait.h>
+#include <sys/wait.h>
 
-#include "common/precise-time.h"
+#include "common/dl-utils-lite.h"
 #include "common/server/signals.h"
 
 #include "compiler/compiler-core.h"
@@ -113,7 +113,7 @@ static int run_cmd(const string &cmd) {
 }
 
 bool MakeRunner::start_job(Target *target) {
-  target->start_time = get_utime(CLOCK_MONOTONIC);
+  target->start_time = dl_time();
   string cmd = target->get_cmd();
 
   int pid = run_cmd(cmd);
@@ -129,7 +129,7 @@ bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
   assert (it != jobs.end());
   Target *target = it->second;
   if (stats_file_) {
-    double passed = get_utime(CLOCK_MONOTONIC) - target->start_time;
+    double passed = dl_time() - target->start_time;
     fmt_fprintf(stats_file_, "{}s {}\n", passed, target->get_name());
   }
   jobs.erase(it);

@@ -32,9 +32,7 @@ public:
   friend inline string_buffer &operator<<(string_buffer &sb, const string &s);
   friend inline string_buffer &operator<<(string_buffer &sb, bool x);
   friend inline string_buffer &operator<<(string_buffer &sb, int32_t x);
-  friend inline string_buffer &operator<<(string_buffer &sb, unsigned int x);
-  friend inline string_buffer &operator<<(string_buffer &sb, long long x);
-  friend inline string_buffer &operator<<(string_buffer &sb, unsigned long long x);
+  friend inline string_buffer &operator<<(string_buffer &sb, uint32_t x);
   friend inline string_buffer &operator<<(string_buffer &sb, int64_t x);
 
   inline string_buffer &append(const char *str, size_t len);

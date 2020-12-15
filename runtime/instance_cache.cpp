@@ -407,7 +407,7 @@ public:
 
   bool update_ttl(const string &key, int64_t ttl) {
     php_assert(current_ && context_);
-    ic_debug("update_ttl '%s', new ttl '%ld'\n", key.c_str(), ttl);
+    ic_debug("update_ttl '%s', new ttl '%" PRIi64 "'\n", key.c_str(), ttl);
     sync_delayed();
     // storing_delayed_ uses a script memory
     // it's not obvious what to do with the storing_delayed_;

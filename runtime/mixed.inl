@@ -1101,7 +1101,7 @@ mixed &mixed::operator[](int64_t int_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
       return empty_value<mixed>();
     }
   }
@@ -1165,7 +1165,7 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
     if (get_type() == type::STRING) {
       auto rhs_string = v.to_string();
       if (rhs_string.empty()) {
-        php_warning("Cannot assign an empty string to a string offset, index = %ld", int_key);
+        php_warning("Cannot assign an empty string to a string offset, index = %" PRIi64, int_key);
         return;
       }
 
@@ -1181,7 +1181,7 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
 
         as_string()[static_cast<string::size_type>(int_key)] = c;
       } else {
-        php_warning("%ld is illegal offset for string", int_key);
+        php_warning("%" PRIi64 " is illegal offset for string", int_key);
       }
       return;
     }
@@ -1190,7 +1190,7 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
       return;
     }
   }
@@ -1281,7 +1281,7 @@ const mixed mixed::get_value(int64_t int_key) const {
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %ld", to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
     }
     return mixed();
   }

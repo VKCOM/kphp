@@ -5,6 +5,7 @@
 #include "vkext/vkext-schema-memcache.h"
 
 #include <errno.h>
+#include <cinttypes>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -2054,7 +2055,7 @@ void *tlcomb_store_int(void **IP, void **Data, zval **arr, struct tl_tree **vars
 #endif
   if (fail_rpc_on_int32_overflow && is_int32_overflow(v)) {
     vkext_reset_error();
-    vkext_error_format(VKEXT_ERROR_WRONG_VALUE, "Got int32 overflow on storing TL function %s: the value '%ld' will be casted to '%d'",
+    vkext_error_format(VKEXT_ERROR_WRONG_VALUE, "Got int32 overflow on storing TL function %s: the value '%" PRIi64 "' will be casted to '%d'",
                        tl_current_function_name, v, v32);
     return nullptr;
   }
@@ -2618,14 +2619,14 @@ void *tlcomb_store_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
   int i = 0;
   VK_ZVAL_API_P zkey = 0;
   NEW_INIT_Z_STR_P(key);
-  unsigned long index;
+  zend_ulong index;
 
   VK_ZEND_HASHES_FOREACH_KEY_VAL(Z_ARRVAL_P(*arr), index, key, zkey) {
     if (VK_ZSTR_P_NON_EMPTY(key)) {
       do_rpc_store_string(key->val, VK_HASH_KEY_LEN(key->len));
     } else {
       static char buf[30];
-      sprintf(buf, "%ld", index);
+      sprintf(buf, "%" PRIu64, static_cast<uint64_t>(index));
       do_rpc_store_string(buf, strlen(buf));
     }
 
@@ -2662,7 +2663,7 @@ void *tlcomb_store_int_key_dictionary(void **IP, void **Data, zval **arr, struct
   int i = 0;
   VK_ZVAL_API_P zkey = 0;
   NEW_INIT_Z_STR_P(key);
-  unsigned long index;
+  zend_ulong index;
   VK_ZEND_HASHES_FOREACH_KEY_VAL(Z_ARRVAL_P(*arr), index, key, zkey) {
         do_rpc_store_int((int)index);
 
@@ -2699,7 +2700,7 @@ void *tlcomb_store_long_key_dictionary(void **IP, void **Data, zval **arr, struc
   int i = 0;
   VK_ZVAL_API_P zkey = 0;
   NEW_INIT_Z_STR_P(key);
-  unsigned long index;
+  zend_ulong index;
 
   VK_ZEND_HASHES_FOREACH_KEY_VAL(Z_ARRVAL_P(*arr), index, key, zkey) {
         do_rpc_store_long((long long)index);
