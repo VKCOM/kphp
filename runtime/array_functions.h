@@ -597,15 +597,6 @@ inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed 
   return array_column_helper(a, column_key, index_key, std::move(element_transformer));
 }
 
-inline Optional<array<mixed>> f$array_column(const mixed &a, const mixed &column_key, const mixed &index_key = {}) {
-  if (!a.is_array()) {
-    php_warning("first parameter of array_column must be array");
-    return false;
-  }
-
-  return f$array_column(a.as_array(), column_key, index_key);
-}
-
 template<class T>
 inline auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {

@@ -13,7 +13,6 @@
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/public.h"
-#include "compiler/inferring/restriction-greater.h"
 #include "compiler/inferring/restriction-isset.h"
 #include "compiler/inferring/restriction-less.h"
 #include "compiler/inferring/restriction-non-void.h"
@@ -34,15 +33,6 @@ void CollectMainEdgesPass::require_node(const RValue &rvalue) {
   if (rvalue.node != nullptr) {
     tinf::get_inferer()->add_node(rvalue.node);
   }
-}
-
-template<class RestrictionT>
-void CollectMainEdgesPass::create_restriction(const RValue &lhs, const RValue &rhs) {
-  tinf::Node *a = node_from_rvalue(lhs);
-  tinf::Node *b = node_from_rvalue(rhs);
-  tinf::get_inferer()->add_node(a);
-  tinf::get_inferer()->add_node(b);
-  tinf::get_inferer()->add_restriction(new RestrictionT(a, b));
 }
 
 
@@ -87,12 +77,11 @@ void CollectMainEdgesPass::create_set(const LValue &lhs, const R &rhs) {
 
 template<class R>
 void CollectMainEdgesPass::create_less(const RValue &lhs, const R &rhs) {
-  create_restriction<RestrictionLess>(lhs, as_rvalue(rhs));
-}
-
-template<class R>
-void CollectMainEdgesPass::create_greater(const RValue &lhs, const R &rhs) {
-  create_restriction<RestrictionGreater>(lhs, as_rvalue(rhs));
+  tinf::Node *a = node_from_rvalue(lhs);
+  tinf::Node *b = node_from_rvalue(as_rvalue(rhs));
+  tinf::get_inferer()->add_node(a);
+  tinf::get_inferer()->add_node(b);
+  tinf::get_inferer()->add_restriction(new RestrictionLess(a, b));
 }
 
 void CollectMainEdgesPass::create_non_void(const RValue &lhs) {
@@ -110,7 +99,7 @@ void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
       create_set(as_lvalue(v), v->type_rule);
       break;
     case op_gt_type_rule:
-      create_greater(as_rvalue(v), v->type_rule);
+      kphp_assert(0 && "greater type rule to be deleted");
       break;
     case op_lt_type_rule:
       create_less(as_rvalue(v), v->type_rule);

@@ -325,16 +325,17 @@ void RestrictionLess::remove_duplicates_from_stacktrace(vector<row> &rows) const
 }
 
 bool RestrictionLess::check_broken_restriction_impl() {
-  if (!is_less_virt(actual_->get_type(), expected_->get_type())) {
-    find_call_trace_with_error(actual_, expected_->get_type());
-    desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
-    desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
-    desc += "Expected type:\t" + colored_type_out(expected_->get_type()) + "\nActual type:\t" + colored_type_out(actual_->get_type()) + "\n";
-    desc += TermStringFormat::add_text_attribute("+-------------+\n| STACKTRACE: |\n+-------------+", TermStringFormat::bold);
-    desc += "\n";
-    desc += get_stacktrace_text();
-    return true;
+  if (is_less(actual_->get_type(), expected_->get_type())) {
+    return false;
   }
 
-  return false;
+  find_call_trace_with_error(actual_, expected_->get_type());
+  desc = TermStringFormat::add_text_attribute("\n+----------------------+\n| TYPE INFERENCE ERROR |\n+----------------------+\n", TermStringFormat::bold);
+  desc += TermStringFormat::paint(get_actual_error_message(), TermStringFormat::red);
+  desc += "Expected type:\t" + colored_type_out(expected_->get_type()) + "\nActual type:\t" + colored_type_out(actual_->get_type()) + "\n";
+  desc += TermStringFormat::add_text_attribute("+-------------+\n| STACKTRACE: |\n+-------------+", TermStringFormat::bold);
+  desc += "\n";
+  desc += get_stacktrace_text();
+
+  return true;
 }
