@@ -36,15 +36,6 @@ void CollectMainEdgesPass::require_node(const RValue &rvalue) {
   }
 }
 
-void CollectMainEdgesPass::create_set(const LValue &lvalue, const RValue &rvalue) {
-  tinf::Edge *edge = new tinf::Edge();
-  edge->from = lvalue.value;
-  edge->from_at = lvalue.key;
-  edge->to = node_from_rvalue(rvalue);
-  tinf::get_inferer()->add_edge(edge);
-  tinf::get_inferer()->add_node(edge->from);
-}
-
 template<class RestrictionT>
 void CollectMainEdgesPass::create_restriction(const RValue &lhs, const RValue &rhs) {
   tinf::Node *a = node_from_rvalue(lhs);
@@ -52,20 +43,6 @@ void CollectMainEdgesPass::create_restriction(const RValue &lhs, const RValue &r
   tinf::get_inferer()->add_node(a);
   tinf::get_inferer()->add_node(b);
   tinf::get_inferer()->add_restriction(new RestrictionT(a, b));
-}
-
-void CollectMainEdgesPass::create_less(const RValue &lhs, const RValue &rhs) {
-  create_restriction<RestrictionLess>(lhs, rhs);
-}
-
-void CollectMainEdgesPass::create_greater(const RValue &lhs, const RValue &rhs) {
-  create_restriction<RestrictionGreater>(lhs, rhs);
-}
-
-void CollectMainEdgesPass::create_non_void(const RValue &lhs) {
-  tinf::Node *a = node_from_rvalue(lhs);
-  tinf::get_inferer()->add_node(a);
-  tinf::get_inferer()->add_restriction(new RestrictionNonVoid(a));
 }
 
 
@@ -98,29 +75,30 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
   return RValue();
 }
 
-template<class A, class B>
-void CollectMainEdgesPass::create_set(const A &a, const B &b) {
-  create_set(as_lvalue(a), as_rvalue(b));
+template<class R>
+void CollectMainEdgesPass::create_set(const LValue &lhs, const R &rhs) {
+  tinf::Edge *edge = new tinf::Edge();
+  edge->from = lhs.value;
+  edge->from_at = lhs.key;
+  edge->to = node_from_rvalue(as_rvalue(rhs));
+  tinf::get_inferer()->add_edge(edge);
+  tinf::get_inferer()->add_node(edge->from);
 }
 
-template<class A, class B>
-void CollectMainEdgesPass::create_less(const A &a, const B &b) {
-  create_less(as_rvalue(a), as_rvalue(b));
+template<class R>
+void CollectMainEdgesPass::create_less(const RValue &lhs, const R &rhs) {
+  create_restriction<RestrictionLess>(lhs, as_rvalue(rhs));
 }
 
-template<class A, class B>
-void CollectMainEdgesPass::create_greater(const A &a, const B &b) {
-  create_greater(as_rvalue(a), as_rvalue(b));
+template<class R>
+void CollectMainEdgesPass::create_greater(const RValue &lhs, const R &rhs) {
+  create_restriction<RestrictionGreater>(lhs, as_rvalue(rhs));
 }
 
-template<class A>
-void CollectMainEdgesPass::require_node(const A &a) {
-  require_node(as_rvalue(a));
-}
-
-template<class A>
-void CollectMainEdgesPass::create_non_void(const A &a) {
-  create_non_void(as_rvalue(a));
+void CollectMainEdgesPass::create_non_void(const RValue &lhs) {
+  tinf::Node *a = node_from_rvalue(lhs);
+  tinf::get_inferer()->add_node(a);
+  tinf::get_inferer()->add_restriction(new RestrictionNonVoid(a));
 }
 
 
@@ -129,17 +107,17 @@ void CollectMainEdgesPass::add_type_rule(VertexPtr v) {
 
   switch (v->type_rule->type()) {
     case op_common_type_rule:
-      create_set(v, v->type_rule);
+      create_set(as_lvalue(v), v->type_rule);
       break;
     case op_gt_type_rule:
-      create_greater(v, v->type_rule);
+      create_greater(as_rvalue(v), v->type_rule);
       break;
     case op_lt_type_rule:
-      create_less(v, v->type_rule);
+      create_less(as_rvalue(v), v->type_rule);
       break;
     case op_set_check_type_rule:
-      create_set(v, v->type_rule);
-      create_less(v, v->type_rule);
+      create_set(as_lvalue(v), v->type_rule);
+      create_less(as_rvalue(v), v->type_rule);
       break;
     default:
       __builtin_unreachable();
@@ -150,61 +128,49 @@ void CollectMainEdgesPass::add_type_help(VertexPtr v) {
   if (v->type() != op_var) {
     return;
   }
-  create_set(v, v->type_help);
+  create_set(as_lvalue(v), v->type_help);
 }
 
-void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int id) {
+// handle calls to built-in functions with callbacks:
+// array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
+// (not to php functions with callable arguments! built-in only, having a callback type rule)
+void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int param_i) {
   const FunctionPtr call_function = call->func_id;
-  const VertexPtr ith_argument_of_call = call->args()[id];
-  auto callback_param = call_function->get_params()[id].as<op_func_param_typed_callback>();
+  const VertexPtr ith_argument_of_call = call->args()[param_i];
+  auto callback_param = call_function->get_params()[param_i].as<op_func_param_typed_callback>();
 
-  FunctionPtr callback_function;
-  if (auto ptr = ith_argument_of_call.try_as<op_func_ptr>()) {
-    callback_function = ptr->func_id;
-  }
+  kphp_assert(ith_argument_of_call->type() == op_func_ptr);
+  FunctionPtr provided_callback = ith_argument_of_call.as<op_func_ptr>()->func_id;
+  kphp_assert(provided_callback);
 
-  kphp_assert(callback_function);
-
-  // // restriction on return type
-  bool is_any = false;
-  if (auto rule = callback_param->type_rule.try_as<op_common_type_rule>()) {
-    if (auto son = rule->rule().try_as<op_type_expr_type>()) {
-      is_any = son->type_help == tp_Any;
-
-      if (!is_any && callback_function && callback_function->is_extern()) {
-        if (auto rule_of_callback = callback_function->root->type_rule.try_as<op_common_type_rule>()) {
-          if (auto son_of_callback_rule = rule_of_callback->rule().try_as<op_type_expr_type>()) {
-            is_any = son_of_callback_rule->type_help == son->type_help;
-          }
-        }
-      }
-    }
-  }
-
-  if (!is_any) {
-    auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
-    fake_func_call->type_rule = callback_param->type_rule;
-    fake_func_call->func_id = call_function;
-    create_less(as_rvalue(callback_function, -1), fake_func_call);
+  // set restriction of return type of provided callback
+  // built-in functions are declared as 'callback(...) ::: any' or 'callback(...) ::: bool'
+  // if 'any', it must return anything but void; otherwise, the type rule must be satisfied
+  kphp_assert(callback_param->type_rule && callback_param->type_rule->rule()->type() == op_type_expr_type);
+  if (callback_param->type_rule->rule()->type_help == tp_Any) {
+    create_non_void(as_rvalue(provided_callback, -1));
   } else {
-    create_non_void(as_rvalue(callback_function, -1));
+    auto type_rule = VertexAdaptor<op_lt_type_rule>::create(callback_param->type_rule->rule());
+    create_less(as_rvalue(provided_callback, -1), type_rule);
   }
 
-  if (callback_function->is_extern()) {
+  // extern functions passed as string-callbacks don't need to be handled further
+  // (as we assume that they all use cast-params)
+  if (provided_callback->is_extern()) {
     return;
   }
 
+  // here we do the following: having PHP code 'array_map(function($v) { ... }, $arr)'
+  // with callback_param declared as 'callback ($x ::: ^2[*]) ::: any',
+  // create set-edges to infer $v as ^2[*] of $arr on this exact call
   VertexRange callback_args = get_function_params(callback_param);
   for (int i = 0; i < callback_args.size(); ++i) {
-    auto callback_ith_arg = callback_args[i].as<op_func_param>();
-
-    if (auto type_rule = callback_ith_arg->type_rule) {
-      auto fake_func_call = VertexAdaptor<op_func_call>::create(call->get_next());
-      fake_func_call->type_rule = type_rule;
-      fake_func_call->func_id = call_function;
-
-      int id_of_callbak_argument = callback_function->is_lambda() ? i + 1 : i;
-      create_set(as_lvalue(callback_function, id_of_callbak_argument), fake_func_call);
+    auto callback_ith_arg = callback_args[i].as<op_func_param>(); // $x above
+    if (auto type_rule = callback_ith_arg->type_rule) {           // ^2[*] above
+      auto call_clone = call.clone();     // in case we have built-ins accepting more than 1 callback
+      call_clone->type_rule = type_rule;  // see ExprNodeRecalc::apply_type_rule
+      int id_of_callback_argument = provided_callback->is_lambda() ? i + 1 : i;
+      create_set(as_lvalue(provided_callback, id_of_callback_argument), call_clone);
     }
   }
 }
@@ -298,14 +264,14 @@ void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
   if (x->ref_flag) {
     LValue xs_tinf = as_lvalue(xs);
     create_set(xs_tinf, tp_array);
-    create_set(params, x->var_id);
+    create_set(as_lvalue(params), x->var_id);
   } else {
     auto temp_var = params->temp_var().as<op_var>();
-    create_set(temp_var->var_id, xs);
+    create_set(as_lvalue(temp_var->var_id), xs);
   }
-  create_set(x->var_id, params);
+  create_set(as_lvalue(x->var_id), params);
   if (key) {
-    create_set(key->var_id, tp_mixed);
+    create_set(as_lvalue(key->var_id), tp_mixed);
   }
 }
 
@@ -318,17 +284,17 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
     // see the comment above build_real_multikey()
     auto new_v = VertexAdaptor<op_index>::create(list->array(), kv->key());
     new_v.set_location(stage::get_location());
-    create_set(kv->var(), new_v);
+    create_set(as_lvalue(kv->var()), new_v);
   }
 }
 
 void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
-  create_less(G->get_class("Exception"), throw_op->exception());
-  create_less(throw_op->exception(), G->get_class("Exception"));
+  create_less(as_rvalue(G->get_class("Exception")), throw_op->exception());
+  create_less(as_rvalue(throw_op->exception()), G->get_class("Exception"));
 }
 
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
-  create_set(try_op->exception(), G->get_class("Exception"));
+  create_set(as_lvalue(try_op->exception()), G->get_class("Exception"));
 }
 
 void CollectMainEdgesPass::on_set_op(VertexPtr v) {
@@ -340,7 +306,7 @@ void CollectMainEdgesPass::on_set_op(VertexPtr v) {
   } else {
     kphp_fail();
   }
-  create_set(lval, as_set_value(v));
+  create_set(as_lvalue(lval), as_set_value(v));
 }
 void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
   is_func_id_t ifi_tp = get_ifi_id(v);
@@ -353,9 +319,9 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
         continue;
       }
       if (ifi_tp == ifi_unset) {
-        create_set(var, tp_mixed);
+        create_set(as_lvalue(var), tp_mixed);
       } else if (ifi_tp == ifi_isset && var->var_id->is_global_var()) {
-        create_set(var, tp_Null);
+        create_set(as_lvalue(var), tp_Null);
       }
     }
 
@@ -398,7 +364,7 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
       return;
     }
     if (var->init_val) {
-      create_less(var, var->init_val);
+      create_less(as_rvalue(var), var->init_val);
       return;
     }
     kphp_error(klass->is_lambda(),
@@ -532,9 +498,9 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
   if (!__sync_bool_compare_and_swap(&var->tinf_flag, false, true)) {
     return;
   }
-  require_node(var);
+  require_node(as_rvalue(var));
   if (var->init_val) {
-    create_set(var, var->init_val);
+    create_set(as_lvalue(var), var->init_val);
   }
 
   // for all variables that are instances (local vars, params, etc.) we add a restrictions that
@@ -549,7 +515,7 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
 
   const auto *assum_type_data = assum->get_type_data();
   if (!assum->is_primitive()) {
-    create_set(var, assum_type_data);
+    create_set(as_lvalue(var), assum_type_data);
     // $x = get_instance_arr();
     // $x = null
     // $x will have assumption `Instance[]`
@@ -560,10 +526,10 @@ void CollectMainEdgesPass::on_var(VarPtr var) {
       tmp_td->set_or_null_flag();
       assum_type_data = tmp_td;
     }
-    create_less(var, assum_type_data);
+    create_less(as_rvalue(var), assum_type_data);
   } else if (assum_instance && assum_instance->klass->get_namespace() == LambdaClassData::get_lambda_namespace()) {
-    create_set(var, assum_type_data);
-    create_less(var, assum_type_data);
+    create_set(as_lvalue(var), assum_type_data);
+    create_less(as_rvalue(var), assum_type_data);
   }
 }
 

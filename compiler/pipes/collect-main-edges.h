@@ -14,31 +14,24 @@ private:
   bool have_returns = false;
 
   static tinf::Node *node_from_rvalue(const RValue &rvalue);
-  static void require_node(const RValue &rvalue);
-  static void create_set(const LValue &lvalue, const RValue &rvalue);
   template<class RestrictionT>
   static void create_restriction(const RValue &lhs, const RValue &rhs);
-  static void create_less(const RValue &lhs, const RValue &rhs);
-  static void create_greater(const RValue &lhs, const RValue &rhs);
-  static void create_non_void(const RValue &lhs);
-  static void create_isset_check(const RValue &rvalue);
   static RValue as_set_value(VertexPtr v);
 
 
-  template<class A, class B>
-  static void create_set(const A &a, const B &b);
-  template<class A, class B>
-  static void create_less(const A &a, const B &b);
-  template<class A, class B>
-  static void create_greater(const A &a, const B &b);
-  template<class A>
-  static void create_non_void(const A &a);
-  template<class A>
-  static void require_node(const A &a);
+  template<class R>
+  static void create_set(const LValue &lhs, const R &rhs);
+  template<class R>
+  static void create_less(const RValue &lhs, const R &rhs);
+  template<class R>
+  static void create_greater(const RValue &lhs, const R &rhs);
+  static void create_non_void(const RValue &lhs);
+  static void create_isset_check(const RValue &rvalue);
+  static void require_node(const RValue &rvalue);
 
   static void add_type_rule(VertexPtr v);
   static void add_type_help(VertexPtr v);
-  static void on_func_param_callback(VertexAdaptor<op_func_call> call, int id);
+  static void on_func_param_callback(VertexAdaptor<op_func_call> call, int param_i);
   static void on_func_call(VertexAdaptor<op_func_call> call);
   void on_return(VertexAdaptor<op_return> v);
   static void on_foreach(VertexAdaptor<op_foreach> foreach_op);
