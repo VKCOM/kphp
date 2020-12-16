@@ -2023,8 +2023,10 @@ void check_and_instance_cache_try_swap_memory() {
 }
 
 static void cron() {
-  // write stats at the beginning to avoid spikes in graphs
-  send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  if (!other->is_alive || in_old_master_on_restart()) {
+    // write stats at the beginning to avoid spikes in graphs
+    send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  }
   create_all_outbound_connections();
 
   unsigned long long cpu_total = 0;
