@@ -778,13 +778,13 @@ int kill_worker() {
   return 0;
 }
 
-#define MAX_HANGING_TIME 65.0
+static const int MAX_HANGING_TIME_SEC = max(2 * script_timeout, 65);
 
 void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
     for (int i = 0; i < me_workers_n; i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME <= my_now) {
+      if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME_SEC <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
         terminate_worker(workers[i]);
