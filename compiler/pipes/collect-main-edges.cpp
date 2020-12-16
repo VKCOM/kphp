@@ -333,8 +333,9 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", field_root->var_id->get_human_readable_name()))) {
         parsed.type_expr->location = field_root->location;
-        field_root->type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
-        add_type_rule(field_root);
+        auto type_rule = VertexAdaptor<op_set_check_type_rule>::create(parsed.type_expr).set_location(field_root->location);
+        create_set(as_lvalue(field_root), type_rule);
+        create_less(as_rvalue(field_root->var_id), type_rule);
         return true;
       }
     }
@@ -353,7 +354,9 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
       return;
     }
     if (var->init_val) {
-      create_less(as_rvalue(var), var->init_val);
+      auto type_expr = phpdoc_convert_default_value_to_type_expr(var->init_val);
+      kphp_error_return(type_expr, fmt_format("Specify @var to {}", var->get_human_readable_name()));
+      create_less(as_rvalue(var), VertexAdaptor<op_lt_type_rule>::create(type_expr));
       return;
     }
     kphp_error(klass->is_lambda(),
