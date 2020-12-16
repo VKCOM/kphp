@@ -54,7 +54,7 @@ class Engine:
     @property
     def rpc_port(self):
         """
-        :return: rpc порт, который слушает движек
+        :return: rpc порт, который слушает движок
         """
         return self._rpc_port
 
@@ -65,11 +65,18 @@ class Engine:
         """
         return self._binlog_path
 
+    @property
+    def pid(self):
+        """
+        :return: pid запущенного процесса
+        """
+        return self._engine_process.pid
+
     def update_options(self, options):
         """
         Обновить опции движка
         :param options: Словарь с доп опциями
-            Специальная значения:
+            Специальные значения:
                 option: True - передавать опцию без значения
                 option: None - удалить дефолтно проставляемую опцию
         """
