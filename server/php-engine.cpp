@@ -2594,7 +2594,30 @@ int main_args_handler(int i) {
       kprintf("couldn't set net-dc-mask '%s'\n", optarg);
       return -1;
     }
-
+    case 2013: {
+      warmup_workers_part = atof(optarg);
+      if (0 <= warmup_workers_part && warmup_workers_part <= 1) {
+        return 0;
+      }
+      kprintf("--warmup-workers-part should be in [0; 1]");
+      return -1;
+    }
+    case 2014: {
+      warmup_instance_cache_elements_part = atof(optarg);
+      if (0 <= warmup_instance_cache_elements_part && warmup_instance_cache_elements_part <= 1) {
+        return 0;
+      }
+      kprintf("--warmup-instance-cache-elements-part should be in [0; 1]");
+      return -1;
+    }
+    case 2015: {
+      warmup_timeout_sec = atoi(optarg);
+      if (0 <= warmup_timeout_sec && warmup_timeout_sec <= DEFAULT_SCRIPT_TIMEOUT) {
+        return 0;
+      }
+      kprintf("--warmup-timeout-sec should be in [0; %d]", DEFAULT_SCRIPT_TIMEOUT);
+      return -1;
+    }
     default:
       return -1;
   }
@@ -2659,6 +2682,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
   parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
   parse_option("net-dc-mask", required_argument, 2012, "a string formatted like '8=1.2.3.4/12' to detect a datacenter by ipv4");
+  parse_option("warmup-workers-part", required_argument, 2013, "configures master graceful restart: workers part (with respect to -f workers count) used for warm up on master graceful restart");
+  parse_option("warmup-instance-cache-elements-part", required_argument, 2014, "configures master graceful restart: part of stored elements in instance cache (with respect to old master instance cache elements count) used to identify whether the instance cache is hot enough");
+  parse_option("warmup-timeout-sec", required_argument, 2015, "configures master graceful restart: max time of instance cache warm up");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

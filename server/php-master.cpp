@@ -1841,8 +1841,7 @@ struct WarmUpContext {
   const vk::time::Sec warm_up_max_time;
 
   static WarmUpContext &get() {
-    using namespace std::chrono_literals;
-    static WarmUpContext ctx(0.1, 0.5, 5s);
+    static WarmUpContext ctx(warmup_workers_part, warmup_instance_cache_elements_part, warmup_timeout_sec);
     return ctx;
   }
 
@@ -1870,10 +1869,10 @@ struct WarmUpContext {
 private:
   vk::time::SteadyTimer timer;
 
-  WarmUpContext(const double workers_part_for_warmup, const double target_instance_cache_elements_part, const vk::time::Sec &warm_up_time)
+  WarmUpContext(const double workers_part_for_warmup, const double target_instance_cache_elements_part, const int warm_up_timeout_sec)
     : workers_part_for_warm_up(workers_part_for_warmup)
     , target_instance_cache_elements_part(target_instance_cache_elements_part)
-    , warm_up_max_time(warm_up_time) {}
+    , warm_up_max_time(warm_up_timeout_sec) {}
 };
 
 void run_master_on() {
