@@ -201,6 +201,34 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
       return;
   }
 }
+
+void check_function_test_throws(FunctionPtr f) {
+  std::vector<ClassPtr> throws_expected;
+  for (const auto &class_name : f->test_data->check_throws) {
+    throws_expected.push_back(G->get_class(class_name));
+  }
+  std::vector<ClassPtr> throws_actual;
+  for (auto c : f->exceptions_thrown) {
+    throws_actual.push_back(c);
+  }
+  kphp_error_act(throws_expected.size() == throws_actual.size(), "throws count mismatch", return);
+  auto sort_classes = [](std::vector<ClassPtr> &classes) {
+    std::sort(classes.begin(), classes.end(), [](ClassPtr x, ClassPtr y) {
+      return x->name < y->name;
+    });
+  };
+  sort_classes(throws_expected);
+  sort_classes(throws_actual);
+  for (int i = 0; i < throws_expected.size(); i++) {
+    auto x = throws_expected[i];
+    auto y = throws_actual[i];
+    kphp_error_act(x == y, fmt_format("throws[{}] mismatch: {} != {}", i, x->name, y->name), return);
+  }
+}
+
+void check_function_test(FunctionPtr f) {
+  check_function_test_throws(f);
+}
 } // namespace
 
 void FinalCheckPass::on_start() {
@@ -212,10 +240,10 @@ void FinalCheckPass::on_start() {
 
   if (current_function->modifiers.is_instance() && current_function->local_name() == ClassData::NAME_OF_CLONE) {
     kphp_error(!current_function->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE));
-    kphp_error(!current_function->can_throw, fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE));
+    kphp_error(!current_function->can_throw(), fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE));
   }
 
-  if (current_function->should_not_throw && current_function->can_throw) {
+  if (current_function->should_not_throw && current_function->can_throw()) {
     kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}",
                              current_function->get_human_readable_name(), current_function->get_throws_call_chain()));
   }
@@ -226,6 +254,10 @@ void FinalCheckPass::on_start() {
 
   if (current_function->kphp_lib_export) {
     check_lib_exported_function(current_function);
+  }
+
+  if (current_function->test_data != nullptr) {
+    check_function_test(current_function);
   }
 }
 
@@ -346,7 +378,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_return && current_function->is_no_return) {
     kphp_error(false, "Return is done from no return function");
   }
-  if (current_function->can_throw && current_function->is_no_return) {
+  if (current_function->can_throw() && current_function->is_no_return) {
     kphp_error(false, "Exception is thrown from no return function");
   }
   if (vertex->type() == op_instance_prop) {

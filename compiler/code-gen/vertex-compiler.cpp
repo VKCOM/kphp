@@ -198,6 +198,16 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 }
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
+  auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {
+    if (caught_class->name == "Exception") {
+      W << dst << " = std::move(CurException);" << NL;
+      return;
+    }
+    std::string e = gen_unique_name("e");
+    W << "auto " << e << " = std::move(CurException);" << NL <<
+         dst << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL;
+  };
+
   CGContext &context = W.get_context();
 
   string catch_label = gen_unique_name("catch_label");
@@ -214,51 +224,55 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
     //
     // Every if condition tries to match an exception against the type being
     // handled by the catch clause.
-    // The last "else" contains the ThrowAction (return) that makes exception
+    // The "else" contains the ThrowAction (return) that makes exception
     // escape the current function.
     //
-    // As a special case, catch on \Exception doesn't generate any check;
-    // it also doesn't need the "else" statement.
+    // If try block is marked with catches_all=true, then instead of the
+    // normal else branch with ThrowAction we'll generate an unconditional exception move.
 
     W << "/""*** CATCH ***""/" << NL;
     W << "if (0) " << BEGIN <<
       catch_label << ":;" << NL; // TODO: Label (label_id) ?
 
-    bool need_else = root->catch_list().size() > 1 || !root->catches_all;
+    bool need_else = !root->catches_all;
     bool is_first_catch = true;
-    for (auto c : root->catch_list()) {
+    auto last_catch = root->catch_list().back();
+    for (auto &c : root->catch_list()) {
       auto catch_op = c.as<op_catch>();
+      bool is_last_catch = c == last_catch;
 
       ClassPtr caught_class = catch_op->exception_class;
 
       W << UpdateLocation(catch_op->var()->location);
 
-      if (catch_op->catches_all) {
-        // note: this catch can only be the *last* one;
-        // if source code had any following clauses, they are unreachable
-        // and should be removed by this point
+      if (is_last_catch && root->catches_all) {
+        // the last catch in a try statement that "catches all" is guaranteed not to fail;
+        //
+        // imagine this case:
+        //     try {
+        //       // something that throws \Exception
+        //     } catch (\Exception $e) {}
+        // the \Exception handling catch is both last and first catch and try.catches_all=true,
+        // so we can generate the move assignment without any checks
         if (!is_first_catch) {
           W << "else " << BEGIN << NL;
         }
-        need_else = false;
-        W << catch_op->var() << " = std::move(CurException);" << NL <<
-          catch_op->cmd() << NL;
+        move_exception(caught_class, catch_op->var());
+        W << catch_op->cmd() << NL;
         if (!is_first_catch) {
           W << END << NL;
         }
       } else {
-        std::string e = gen_unique_name("e");
         W << (is_first_catch ? "if" : "else if");
         if (caught_class->derived_classes.empty()) {
           W << " (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") ";
         } else {
           W << " (f$is_a<" << caught_class->src_name << ">(CurException)) ";
         }
-        W << BEGIN <<
-          "auto " << e << " = std::move(CurException);" << NL <<
-          catch_op->var() << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL <<
-          catch_op->cmd() << NL <<
-          END << NL;
+        std::string e = gen_unique_name("e");
+        W << BEGIN;
+        move_exception(caught_class, catch_op->var());
+        W << catch_op->cmd() << NL << END << NL;
       }
 
       is_first_catch = false;
@@ -591,7 +605,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
-  if (!root->func_id->can_throw) {
+  if (!root->func_id->can_throw()) {
     compile_func_call(root, W);
     return;
   }
@@ -629,7 +643,7 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
     W << root->save_var() << ", ";
   }
   W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
-  if (func->can_throw) {
+  if (func->can_throw()) {
     W << NL;
     W << "CHECK_EXCEPTION" << MacroBegin{} << ThrowAction{} << MacroEnd{};
   }

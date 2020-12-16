@@ -1,17 +1,19 @@
 @kphp_should_fail
-/nothrow marked as @kphp-should-not-throw, but really can throw/
+/test marked as @kphp-should-not-throw, but really can throw/
 <?php
 
 class MyException extends Exception {}
 class MyException2 extends MyException {}
 
+function does_throw() {
+  throw new MyException();
+}
+
 /** @kphp-should-not-throw */
-function nothrow() {
-  try {
-    throw new MyException();
-  } catch (MyException2 $e) {
-  } catch (MyException $e2) {
+function test($cond) {
+  if ($cond) {
+    does_throw();
   }
 }
 
-nothrow();
+test(false);

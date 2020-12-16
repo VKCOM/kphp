@@ -187,7 +187,8 @@ private:
         std::string token;
         while (is >> token) {
           if (token == "can_throw") {
-            f_->can_throw = true;
+            // since we don't know which exceptions it can throw, mark is as \Exception
+            f_->exceptions_thrown.insert(G->get_class("Exception"));
           } else if (token == "resumable") {
             f_->is_resumable = true;
           } else if (token == "cpp_template_call") {
@@ -271,6 +272,18 @@ private:
           f_->performance_inspections_for_analysis.add_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
+        }
+        break;
+      }
+
+      case php_doc_tag::kphp_test_throws: {
+        if (f_->test_data == nullptr) {
+          f_->test_data = new FunctionTestData();
+        }
+        std::istringstream is(tag.value);
+        std::string klass;
+        while (is >> klass) {
+          f_->test_data->check_throws.push_back(klass);
         }
         break;
       }

@@ -59,7 +59,7 @@ function test4(Exception $e) {
     var_dump([__LINE__ => $e4->getLine()]);
   } catch (DerivedException2 $e2) {
     var_dump([__LINE__ => $e2->getLine()]);
-  } catch (DerivedException3 $e3) {
+  } catch (DerivedException1 $e3) {
     var_dump([__LINE__ => $e3->getLine()]);
   }
   var_dump(__LINE__);

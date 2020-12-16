@@ -90,7 +90,7 @@ bool InlineSimpleFunctions::user_recursion(VertexPtr) {
 bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
   return !function->is_resumable &&
          !function->is_inline &&
-         !function->can_throw &&
+         !function->can_throw() &&
          !function->has_variadic_param &&
          !function->is_main_function() &&
          function->type != FunctionData::func_class_holder &&

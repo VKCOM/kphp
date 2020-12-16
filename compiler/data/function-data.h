@@ -22,6 +22,15 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
+// FunctionTestData contains all kphp-test-* related fields.
+//
+// We move these fields to a separate struct so the FunctionData
+// is not cluttered by things we don't need during the normal compilation.
+struct FunctionTestData {
+  // kphp-test-throws checks that a function throws only specified exceptions
+  std::vector<std::string> check_throws;
+};
+
 class FunctionData {
   // code outside of the data/ should use FunctionData::create_function()
   FunctionData() = default;
@@ -53,8 +62,13 @@ public:
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
+  std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
   FunctionPtr function_in_which_lambda_was_created;
+
+  // test_data is is non-null if there are any kphp-test-* attributes attached to this function;
+  // see FunctionTestData documentation for more info
+  FunctionTestData *test_data;
 
   // TODO: find usages when we'll allow lambdas inside template functions.
   //std::vector<FunctionPtr> lambdas_inside;
@@ -87,7 +101,6 @@ public:
   bool is_template = false;
   bool is_auto_inherited = false;
   bool is_inline = false;
-  bool can_throw = false;
   bool cpp_template_call = false;
   bool cpp_variadic_call = false;
   bool is_resumable = false;
@@ -131,6 +144,10 @@ public:
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
   static string get_human_readable_name(const std::string &name, bool add_details = true);
   string get_human_readable_name(bool add_details = true) const;
+
+  bool can_throw() const noexcept  {
+    return !exceptions_thrown.empty();
+  }
 
   bool has_implicit_this_arg() const {
     return modifiers.is_instance();

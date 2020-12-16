@@ -30,6 +30,7 @@ struct php_doc_tag {
     kphp_sync,
     kphp_should_not_throw,
     kphp_template,
+    kphp_test_throws,
     kphp_return,
     kphp_memcache_class,
     kphp_immutable_class,

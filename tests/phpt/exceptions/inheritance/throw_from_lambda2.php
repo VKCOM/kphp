@@ -1,8 +1,6 @@
 @ok
 <?php
 
-// Test throwing from anonymous functions.
-
 class MyException1 extends \Exception {}
 class MyException2 extends MyException1 {}
 
@@ -13,11 +11,11 @@ function test() {
 
   try {
     try {
-      $throw(new Exception());
+      $throw(new MyException1());
     } catch (MyException2 $e1) {
       var_dump(__LINE__, 'should never happen');
     }
-  } catch (Exception $e2) {
+  } catch (MyException1 $e2) {
     var_dump(__LINE__, 'ok', $e2->getLine());
   }
 
@@ -25,4 +23,3 @@ function test() {
 }
 
 test();
-

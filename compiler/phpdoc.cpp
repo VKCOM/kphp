@@ -37,6 +37,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-extern-func-info",     kphp_extern_func_info},
   {"@kphp-pure-function",        kphp_pure_function},
   {"@kphp-template",             kphp_template},
+  {"@kphp-test-throws",          kphp_test_throws},
   {"@kphp-return",               kphp_return},
   {"@kphp-memcache-class",       kphp_memcache_class},
   {"@kphp-immutable-class",      kphp_immutable_class},

@@ -1751,7 +1751,7 @@
     }
   },
   {
-    "comment": "catch (type_declaration var()) { cmd() }; catches_all is true if it catches Exception or Throwable",
+    "comment": "catch (type_declaration var()) { cmd() }",
     "sons": {
       "var": {
         "id": 0,
@@ -1770,10 +1770,6 @@
       },
       "exception_class": {
         "type": "ClassPtr"
-      },
-      "catches_all": {
-        "type": "bool",
-        "default": "false"
       }
     },
     "props": {
@@ -1784,7 +1780,7 @@
     }
   },
   {
-    "comment": "try { try_cmd()... } catch_list<op_catch>()...; catches_all is true if at least 1 op_catch is catches_all",
+    "comment": "try { try_cmd()... } catch_list<op_catch>()...; catches_all is true if all exceptions are handled by this try statement",
     "sons": {
       "try_cmd": {
         "id": 0,
@@ -1808,7 +1804,7 @@
     "extra_fields": {
       "catches_all": {
         "type": "bool",
-        "default": "false"
+        "default": "true"
       }
     }
   },

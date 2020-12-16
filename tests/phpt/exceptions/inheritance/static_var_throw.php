@@ -3,7 +3,7 @@
 
 class MyException extends Exception {}
 
-function get_static_exception() {
+function get_static_exception(): Exception {
   /** @var Exception $e */
   static $e = null;
   if (!$e) {

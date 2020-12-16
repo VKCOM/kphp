@@ -227,7 +227,7 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
   }
   //TODO: only if function has throws flag
   if (auto call = tree_node.try_as<op_func_call>()) {
-    *can_throw = call->func_id->can_throw;
+    *can_throw = call->func_id->can_throw();
   }
 
   if (auto set_op = tree_node.try_as<op_set>()) {
@@ -523,7 +523,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         *res_finish = start;
       }
 
-      if (func->can_throw) {
+      if (func->can_throw()) {
         create_cfg_register_exception(*res_finish);
       }
       break;

@@ -2,4 +2,8 @@
 /Throw expression is not an instance or it can't be detected/
 <?php
 
-throw 1;
+function get_exception() {
+  return new Exception();
+}
+
+throw get_exception();

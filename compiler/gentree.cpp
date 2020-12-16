@@ -2111,35 +2111,16 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       auto try_body = get_statement();
       CE (!kphp_error(try_body, "Cannot parse try block"));
 
-      // since catch over \Exception or \Throwable will always succeed,
-      // we discard all catch clauses that follow it, so we don't
-      // need to eliminate them later; while we're at it,
-      // save the catches_all flag to avoid redundant catch_list traversals later
-      //
-      // note: \Throwable interface can't be extended and it has only 1
-      // derived class: \Exception. So they're identical for us;
-      // in PHP there is also a second derived class, \Error, but we don't have that
       std::vector<VertexPtr> catch_list;
-      bool seen_base_exception = false;
       while (test_expect(tok_catch)) {
         auto catch_op = get_catch();
         CE (!kphp_error(catch_op, "Cannot parse catch statement"));
         catch_op.set_location(location);
-        if (!seen_base_exception) {
-          catch_list.emplace_back(catch_op);
-        } else {
-          // TODO: delete catch_op when we'll have a way of doing so?
-        }
-        if (catch_op->type_declaration == "Exception" || catch_op->type_declaration == "Throwable") {
-          catch_op->catches_all = true;
-          seen_base_exception = true;
-        }
+        catch_list.emplace_back(catch_op);
       }
       CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
-      auto try_op = VertexAdaptor<op_try>::create(embrace(try_body), std::move(catch_list)).set_location(location);
-      try_op->catches_all = seen_base_exception;
-      return try_op;
+      return VertexAdaptor<op_try>::create(embrace(try_body), std::move(catch_list)).set_location(location);
     }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create().set_location(auto_location());
