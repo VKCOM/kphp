@@ -640,3 +640,48 @@ bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, Vertex
 
   return all_resolved;
 }
+
+// when a field has neither @var not type hint, we use the default value initializer like a type guard
+// here we convert this value initializer (init_val) to a type_expr, like a phpdoc was actually written
+VertexPtr phpdoc_convert_default_value_to_type_expr(VertexPtr init_val) {
+  init_val = GenTree::get_actual_value(init_val);
+  switch (init_val->type()) {
+    case op_int_const:
+    case op_conv_int:
+      return GenTree::create_type_help_vertex(tp_int);
+    case op_string:
+    case op_string_build:
+    case op_concat:
+      return GenTree::create_type_help_vertex(tp_string);
+    case op_float_const:
+    case op_conv_float:
+      return GenTree::create_type_help_vertex(tp_float);
+    case op_array:
+    case op_conv_array:
+      // an array as a default => like "array" as a type hint, meaning "array of any", regardless of elements values
+      return GenTree::create_type_help_vertex(tp_array);
+    case op_true:
+    case op_false:
+      return GenTree::create_type_help_vertex(tp_bool);
+    case op_mul:
+    case op_sub:
+    case op_plus: {
+      auto lhs_type_expr = phpdoc_convert_default_value_to_type_expr(init_val.as<meta_op_binary>()->lhs());
+      auto rhs_type_expr = phpdoc_convert_default_value_to_type_expr(init_val.as<meta_op_binary>()->rhs());
+      if (lhs_type_expr && rhs_type_expr) {
+        if (lhs_type_expr->type_help == tp_float || rhs_type_expr->type_help == tp_float) {
+          return GenTree::create_type_help_vertex(tp_float);
+        } else if (lhs_type_expr->type_help == tp_int && rhs_type_expr->type_help == tp_int) {
+          return GenTree::create_type_help_vertex(tp_int);
+        }
+      }
+      return {};
+    }
+    case op_div:
+      return GenTree::create_type_help_vertex(tp_float);
+      
+    default:
+      // 'null' or something strange as a default — can't detect, will report "specify @var manually"
+      return {};
+  }
+}
