@@ -62,6 +62,15 @@ void RegisterKphpConfiguration::on_start() {
   });
 }
 
+void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept {
+  const auto *opt_value = GenTree::get_constexpr_string(value);
+  kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
+                                          configuration_class_name_, runtime_options_name_));
+
+  G->add_kphp_runtime_opt(static_cast<std::string>(opt_key));
+  G->add_kphp_runtime_opt(*opt_value);
+}
+
 void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) const noexcept {
   const auto *opt_value = GenTree::get_constexpr_string(value);
   kphp_error_return(opt_value, fmt_format("{}[{}] must be a constexpr string",
@@ -90,12 +99,7 @@ void RegisterKphpConfiguration::register_confdata_predefined_wildcard(VertexPtr 
 }
 
 void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const noexcept {
-  const auto *opt_value = GenTree::get_constexpr_string(value);
-  kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
-                                          configuration_class_name_, runtime_options_name_));
-
-  G->add_kphp_runtime_opt(static_cast<std::string>(mysql_db_name_key_));
-  G->add_kphp_runtime_opt(*opt_value);
+  generic_register_simple_option(value, mysql_db_name_key_);
 }
 
 void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noexcept {

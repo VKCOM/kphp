@@ -17,6 +17,8 @@ public:
   void on_start() final;
 
 private:
+  void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
+
   void register_confdata_blacklist(VertexPtr value) const noexcept;
   void register_confdata_predefined_wildcard(VertexPtr value) const noexcept;
   void register_mysql_db_name(VertexPtr value) const noexcept;
