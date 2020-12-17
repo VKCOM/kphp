@@ -2,14 +2,15 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_PATHNAME_H
-#define KDB_COMMON_PATHNAME_H
+#pragma once
 
-#include <string.h>
+#include <cstring>
 
-static inline const char *kbasename(const char *path) {
-  const char *p = strrchr(path, '/');
-  return p ? p + 1 : path;
+inline const char *kbasename(const char *path) noexcept {
+  if (const char *file_short = strrchr(path, '/')) {
+    if (file_short[1]) {
+      path = file_short + 1;
+    }
+  }
+  return path;
 }
-
-#endif // KDB_COMMON_PATHNAME_H

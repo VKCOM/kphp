@@ -2,9 +2,10 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "dl-utils-lite.h"
+#include "common/dl-utils-lite.h"
 
-#include <assert.h>
+#include <array>
+#include <cassert>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -18,6 +19,7 @@
 #include <unistd.h>
 
 #include "common/stats/provider.h"
+#include "common/wrappers/pathname.h"
 
 #if DL_DEBUG_MEM >= 1
 #  define MEM_POS  {\
@@ -31,6 +33,7 @@
 #  define MEM_POS
 #endif
 
+static std::array<char, 1024> assert_message{{0}};
 
 double dl_time() {
   timespec T;
@@ -77,12 +80,23 @@ void dl_print_backtrace_gdb() {
   }
 }
 
-void dl_assert__ (const char *expr __attribute__((unused)), const char *file_name, const char *func_name,
-                  int line, const char *desc, int use_perror) {
-  fprintf (stderr, "dl_assert failed [%s : %s : %d]: ", file_name, func_name, line);
-  fprintf (stderr, "%s\n", desc);
+const char *dl_get_assert_message() noexcept {
+  return assert_message.data();
+}
+
+// This function redefines glibc __assert_fail, so we can track assert messages
+void __assert_fail(const char *assertion, const char *file, unsigned int line, const char *function) {
+  dl_assert__(assertion, file, function, line, assertion, false);
+  __builtin_unreachable();
+}
+
+void dl_assert__(const char *expr __attribute__((unused)), const char *file_name, const char *func_name,
+                 int line, const char *desc, int use_perror) {
+  snprintf(assert_message.data(), assert_message.size(),
+           "dl_assert failed [%s:%d: %s]: %s", kbasename(file_name), line, func_name, desc);
+  fprintf(stderr, "%s\n", assert_message.data());
   if (use_perror) {
-    perror ("perror description");
+    perror("perror description");
   }
   abort();
 }

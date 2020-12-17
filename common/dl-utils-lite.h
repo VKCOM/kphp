@@ -28,6 +28,8 @@ void dl_set_default_handlers ();
 
 char* dl_pstr (char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
+const char *dl_get_assert_message() noexcept;
+
 void dl_assert__ (const char *expr, const char *file_name, const char *func_name,
                   int line, const char *desc, int use_perror);
 
@@ -39,8 +41,6 @@ void dl_assert__ (const char *expr, const char *file_name, const char *func_name
 #define dl_assert(f, str) dl_assert_impl (f, str, 0)
 #define dl_passert(f, str) dl_assert_impl (f, str, 1)
 #define dl_unreachable(str) dl_assert (0, str)
-#define dl_fail(str) dl_assert (0, str); exit(1);
-#define dl_pcheck(cmd) dl_passert (cmd >= 0, "call failed : "  #cmd)
 
 typedef struct {
   unsigned long long utime;
