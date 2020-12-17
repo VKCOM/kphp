@@ -561,7 +561,11 @@ void sigabrt_handler(int) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
-  vk::singleton<JsonLogger>::get().write_log("SIGABRT terminating program", -1, cur_time, trace, trace_size, true);
+  vk::string_view msg{dl_get_assert_message()};
+  if (msg.empty()) {
+    msg = "SIGABRT terminating program";
+  }
+  vk::singleton<JsonLogger>::get().write_log(msg, -1, cur_time, trace, trace_size, true);
   vk::singleton<JsonLogger>::get().fsync_log_file();
 
   print_prologue(cur_time);

@@ -24,6 +24,7 @@
 #include "common/options.h"
 #include "common/precise-time.h"
 #include "common/stats/provider.h"
+#include "common/wrappers/pathname.h"
 
 typedef struct {
   const char *name;
@@ -180,11 +181,7 @@ void kprintf_ (const char *file, int line, const char *format, ...) {
   struct tm t;
   struct timeval tv;
 
-  if (const char *file_short = strrchr(file, '/')) {
-    if (file_short[1]) {
-      file = file_short + 1;
-    }
-  }
+  file = kbasename(file);
   if (gettimeofday (&tv, NULL) || !localtime_r (&tv.tv_sec, &t)) {
     memset (&t, 0, sizeof (t));
   }
