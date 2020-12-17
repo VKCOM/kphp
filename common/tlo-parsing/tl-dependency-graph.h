@@ -17,8 +17,47 @@ struct tl_scheme;
 struct type;
 struct combinator;
 
-struct TLNode;
 struct DependencyGraphBuilder;
+
+struct TLNode {
+  enum {
+    holds_combinator,
+    holds_type,
+  } node_type;
+
+  explicit TLNode(const combinator *c) :
+    node_type(holds_combinator) {
+    tl_object_ptr_.combinator_ptr = c;
+  }
+
+  explicit TLNode(const type *t) :
+    node_type(holds_type) {
+    tl_object_ptr_.type_ptr = t;
+  }
+
+  bool is_type() const {
+    return node_type == holds_type;
+  }
+
+  bool is_combinator() const {
+    return node_type == holds_combinator;
+  }
+
+  const type *get_type() const {
+    return tl_object_ptr_.type_ptr;
+  }
+
+  const combinator *get_combinator() const {
+    return tl_object_ptr_.combinator_ptr;
+  }
+
+private:
+  // TODO when we switch to C++17, use std::variant
+  union {
+    const combinator *combinator_ptr;
+    const type *type_ptr;
+  } tl_object_ptr_;
+};
 
 class DependencyGraph {
 public:
