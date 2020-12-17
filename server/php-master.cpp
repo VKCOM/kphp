@@ -36,7 +36,7 @@
 #include "common/server/signals.h"
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
-#include "common/time-utils.h"
+#include "common/timer.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "net/net-connections.h"
@@ -1838,7 +1838,7 @@ void run_master_off_in_graceful_restart() {
 struct WarmUpContext {
   const double workers_part_for_warm_up;
   const double target_instance_cache_elements_part;
-  const vk::time::Sec warm_up_max_time;
+  const std::chrono::milliseconds warm_up_max_time;
 
   static WarmUpContext &get() {
     static WarmUpContext ctx(warmup_workers_part, warmup_instance_cache_elements_part, warmup_timeout_sec);
@@ -1867,7 +1867,7 @@ struct WarmUpContext {
     return timer.time() > warm_up_max_time;
   }
 private:
-  vk::time::SteadyTimer timer;
+  vk::SteadyTimer<std::chrono::milliseconds> timer;
 
   WarmUpContext(const double workers_part_for_warmup, const double target_instance_cache_elements_part, const int warm_up_timeout_sec)
     : workers_part_for_warm_up(workers_part_for_warmup)
@@ -2074,6 +2074,10 @@ static void cron() {
   confdata_binlog_update_cron();
 }
 
+auto get_steady_tp_ms_now() noexcept {
+  return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+}
+
 static master_state master_change_state() {
   master_state new_state;
   if (in_sigterm) {
@@ -2118,7 +2122,7 @@ void run_master() {
 
   preallocate_msg_buffers();
 
-  auto prev_cron_start_tp = vk::time::get_steady_tp_ms_now();
+  auto prev_cron_start_tp = get_steady_tp_ms_now();
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
@@ -2209,10 +2213,10 @@ void run_master() {
     vkprintf(2, "run_master iteration: end\n");
 
     using namespace std::chrono_literals;
-    auto wait_time = 1s - (vk::time::get_steady_tp_ms_now() - prev_cron_start_tp);
+    auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);
     epoll_work(static_cast<int>(std::max(wait_time, 0ms).count()));
 
-    const auto new_tp = vk::time::get_steady_tp_ms_now();
+    const auto new_tp = get_steady_tp_ms_now();
     if (new_tp - prev_cron_start_tp >= 1s) {
       prev_cron_start_tp = new_tp;
       cron();
