@@ -8,7 +8,7 @@
 #define SHARED_DATA_MAGIC 0x3b720002
 
 struct master_data_t {
-  bool is_alive;
+  int is_alive;
 
   pid_t pid;
   unsigned long long start_time;
@@ -27,9 +27,9 @@ struct master_data_t {
   int ask_http_fd_generation;
   int sent_http_fd_generation;
 
-  uint64_t instance_cache_elements_stored;
+  uint32_t instance_cache_elements_stored;
 
-  int reserved[50];
+  int reserved[50 - 1];
 };
 
 struct shared_data_t {
@@ -43,6 +43,18 @@ struct shared_data_t {
   int id;
   master_data_t masters[2];
 };
+
+#if !defined(__APPLE__)
+
+static constexpr size_t MASTER_DATA_T_SIZEOF = 272;
+static constexpr size_t SHARED_DATA_T_SIZEOF = 656;
+
+static_assert(sizeof(master_data_t) == MASTER_DATA_T_SIZEOF, "Layout of this struct must be the same in any KPHP version unless shared data magic is used, "
+                                                             "otherwise restart won't work");
+static_assert(sizeof(shared_data_t) == SHARED_DATA_T_SIZEOF, "Layout of this struct must be the same in any KPHP version unless shared data magic is used, "
+                                                             "otherwise restart won't work");
+#endif
+
 
 extern shared_data_t *shared_data;
 extern master_data_t *me, *other; // these are pointers to shared memory

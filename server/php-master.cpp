@@ -1935,7 +1935,7 @@ void run_master() {
 
     me->running_workers_n = me_running_workers_n;
     me->dying_workers_n = me_dying_workers_n;
-    me->instance_cache_elements_stored = instance_cache_get_stats().elements_stored.load(std::memory_order_relaxed);
+    me->instance_cache_elements_stored = static_cast<uint32_t>(instance_cache_get_stats().elements_stored.load(std::memory_order_relaxed));
 
     if (state != master_state::off_in_graceful_shutdown) {
       if (changed && other->is_alive) {
