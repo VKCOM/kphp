@@ -2250,7 +2250,6 @@ void read_engine_tag(const char *file_name) {
   buf[j] = 0;
 
   engine_tag = strdup(buf);
-  vk::singleton<JsonLogger>::get().init(string::to_int(engine_tag, static_cast<string::size_type>(strlen(engine_tag))));
 }
 
 void f$raise_sigsegv() {

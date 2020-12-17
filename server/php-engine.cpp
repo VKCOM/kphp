@@ -2295,6 +2295,8 @@ void init_all() {
   if (script_timeout == 0) {
     script_timeout = run_once ? 1e6 : DEFAULT_SCRIPT_TIMEOUT;
   }
+  const auto *tag = engine_tag ?: "0";
+  vk::singleton<JsonLogger>::get().init(string::to_int(tag, static_cast<string::size_type>(strlen(tag))), script_timeout);
 
   global_init_runtime_libs();
   global_init_php_scripts();

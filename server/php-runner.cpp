@@ -446,6 +446,9 @@ static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PHPScriptBase::tl_flag = true;
+    if (PHPScriptBase::is_running) {
+      vk::singleton<JsonLogger>::get().write_script_timeout_log(E_ERROR, true);
+    }
     perform_error_if_running("timeout exit\n", script_error_t::timeout);
   }
 }
@@ -529,7 +532,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
 
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
-    vk::singleton<JsonLogger>::get().write_log("Stack overflow", E_ERROR, cur_time, trace, trace_size, true);
+    vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR, true);
     write_str(2, "Error -1: Callstack overflow");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
@@ -578,7 +581,8 @@ void check_stack_overflow() __attribute__ ((noinline));
 void check_stack_overflow() {
   if (PHPScriptBase::is_running) {
     void *sp = get_sp();
-    if (PHPScriptBase::current_script->check_stack_overflow((char *)sp)) {
+    if (PHPScriptBase::current_script->check_stack_overflow(static_cast<char *>(sp))) {
+      vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR, true);
       raise(SIGSTACKOVERFLOW);
       fprintf(stderr, "_exiting in check_stack_overflow\n");
       _exit(1);

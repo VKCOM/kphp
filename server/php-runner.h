@@ -92,7 +92,6 @@ const char *php_script_get_error(void *ptr);
 long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/
-php_immediate_stats_t *get_immediate_stats();
 php_immediate_stats_t *get_imm_stats();
 void custom_server_status(const char *status, int status_len);
 void server_status_rpc(int port, long long actor_id, double start_time);

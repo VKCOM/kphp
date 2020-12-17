@@ -26,6 +26,12 @@ function do_stack_overflow(int $x): int {
   return $z;
 }
 
+function do_long_work(int $duration) {
+  $s = time();
+  while(time() - $s <= $duration) {
+  }
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -43,6 +49,9 @@ function main() {
         break;
       case "stack_overflow":
         do_stack_overflow(1);
+        break;
+      case "long_work":
+        do_long_work((int)$action["duration"]);
         break;
       default:
         echo "unknown operation";
