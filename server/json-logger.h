@@ -16,7 +16,7 @@ class JsonLogger : vk::not_copyable {
 public:
   friend class vk::singleton<JsonLogger>;
 
-  void init(int64_t release_version) noexcept;
+  void init(int64_t release_version, int32_t script_timeout_seconds) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
 
@@ -26,9 +26,11 @@ public:
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
 
-  // ATTENTION: this function is used in signal handlers, therefore it is expected to be safe for them
+  // ATTENTION: this functions are used in signal handlers, therefore they are expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
   void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
+  void write_stack_overflow_log(int type, bool uncaught) noexcept;
+  void write_script_timeout_log(int type, bool uncaught) noexcept;
 
   void reset_buffers() noexcept;
 
@@ -81,5 +83,7 @@ private:
     std::array<char, 32 * 1024> buffer_{{0}};
   };
   std::array<JsonBuffer, 8> buffers_;
+
+  std::array<char, 64> script_timeout_message_{{0}};
 };
 

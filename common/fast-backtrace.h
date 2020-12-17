@@ -14,5 +14,6 @@ extern char *stack_end;
 }
 
 int fast_backtrace (void **buffer, int size) __attribute__ ((noinline));
+int fast_backtrace_without_recursions(void **buffer, int size) noexcept;
 
 #endif

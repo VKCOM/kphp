@@ -4,7 +4,8 @@
 
 #include "common/fast-backtrace.h"
 
-#include <assert.h>
+#include <algorithm>
+#include <cassert>
 #include <execinfo.h>
 
 #include "common/sanitizer.h"
@@ -34,12 +35,12 @@ int fast_backtrace (void **buffer, int size) {
     stack_end = static_cast<char *>(__libc_stack_end);
   }
 
-  struct stack_frame *bp = (struct stack_frame *)get_bp ();
+  auto *bp = static_cast<stack_frame *>(get_bp());
   int i = 0;
-  while (i < size && (char *) bp <= stack_end && !((long) bp & (sizeof (long) - 1))) {
+  while (i < size && reinterpret_cast<char *>(bp) <= stack_end && !(reinterpret_cast<long>(bp) & (sizeof(long) - 1))) {
     void *ip = bp->ip;
     buffer[i++] = ip;
-    struct stack_frame *p = bp->bp;
+    stack_frame *p = bp->bp;
     if (p <= bp) {
       break;
     }
@@ -47,6 +48,38 @@ int fast_backtrace (void **buffer, int size) {
   }
   return i;
 }
+
 #else
 #error "Unsupported arch"
+#endif
+
+#if defined(__APPLE__)
+int fast_backtrace_without_recursions(void **, int) noexcept {
+  return 0;
+}
+#else
+int fast_backtrace_without_recursions(void **buffer, int size) noexcept {
+  if (!stack_end) {
+    stack_end = static_cast<char *>(__libc_stack_end);
+  }
+
+  auto *bp = static_cast<stack_frame *>(get_bp());
+  int i = 0;
+  while (i < size && reinterpret_cast<char *>(bp) <= stack_end && !(reinterpret_cast<long>(bp) & (sizeof(long) - 1))) {
+    buffer[i++] = bp->ip;
+    for (int possible_recursion_len = 1; i >= 2 * possible_recursion_len; ++possible_recursion_len) {
+      if (std::equal(buffer + i - possible_recursion_len, buffer + i, buffer + i - possible_recursion_len * 2)) {
+        i -= possible_recursion_len;
+        break;
+      }
+    }
+
+    stack_frame *p = bp->bp;
+    if (p <= bp) {
+      break;
+    }
+    bp = p;
+  }
+  return i;
+}
 #endif

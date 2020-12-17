@@ -3,10 +3,13 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstring>
+#include <cinttypes>
+#include <execinfo.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
+#include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
 #include "server/json-logger.h"
 
@@ -146,8 +149,10 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_string_safe(vk::string_vi
   return *this;
 }
 
-void JsonLogger::init(int64_t release_version) noexcept {
+void JsonLogger::init(int64_t release_version, int32_t script_timeout_seconds) noexcept {
   release_version_ = release_version;
+  snprintf(script_timeout_message_.data(), script_timeout_message_.size(),
+           "Maximum execution time of %" PRIi32 " second%s exceeded", script_timeout_seconds, script_timeout_seconds == 1 ? "" : "s");
 }
 
 bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
@@ -212,6 +217,18 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
     return c == '"' ? '\'' : (c == '\n' ? ' ' : c);
   });
   json_out_it->finish_json_and_flush(json_log_fd_);
+}
+
+void JsonLogger::write_stack_overflow_log(int type, bool uncaught) noexcept {
+  std::array<void *, 64> trace{};
+  const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
+  write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, uncaught);
+}
+
+void JsonLogger::write_script_timeout_log(int type, bool uncaught) noexcept {
+  std::array<void *, 64> trace{};
+  const int trace_size = backtrace(trace.data(), trace.size());
+  write_log(script_timeout_message_.data(), type, time(nullptr), trace.data(), trace_size, uncaught);
 }
 
 void JsonLogger::reset_buffers() noexcept {
