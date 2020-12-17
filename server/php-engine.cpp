@@ -63,6 +63,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/php-master-warmup.h"
 
 static void turn_sigterm_on();
 
@@ -2595,24 +2596,45 @@ int main_args_handler(int i) {
       return -1;
     }
     case 2013: {
-      warmup_workers_part = atof(optarg);
+      double warmup_workers_part = -1;
+      try {
+        warmup_workers_part = std::stod(optarg);
+      } catch (const std::exception &e) {
+        kprintf("--warmup-workers-part option parse error: %s", e.what());
+        return -1;
+      }
       if (0 <= warmup_workers_part && warmup_workers_part <= 1) {
+        WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
         return 0;
       }
       kprintf("--warmup-workers-part should be in [0; 1]");
       return -1;
     }
     case 2014: {
-      warmup_instance_cache_elements_part = atof(optarg);
+      double warmup_instance_cache_elements_part = -1;
+      try {
+        warmup_instance_cache_elements_part = std::stod(optarg);
+      } catch (const std::exception &e) {
+        kprintf("--warmup-instance-cache-elements-part option parse error: %s", e.what());
+        return -1;
+      }
       if (0 <= warmup_instance_cache_elements_part && warmup_instance_cache_elements_part <= 1) {
+        WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
         return 0;
       }
       kprintf("--warmup-instance-cache-elements-part should be in [0; 1]");
       return -1;
     }
     case 2015: {
-      warmup_timeout_sec = atoi(optarg);
+      int warmup_timeout_sec = -1;
+      try {
+        warmup_timeout_sec = std::stoi(optarg);
+      } catch (const std::exception &e) {
+        kprintf("--warmup-timeout-sec option parse error: %s", e.what());
+        return -1;
+      }
       if (0 <= warmup_timeout_sec && warmup_timeout_sec <= DEFAULT_SCRIPT_TIMEOUT) {
+        WarmUpContext::get().set_warm_up_max_time(warmup_timeout_sec);
         return 0;
       }
       kprintf("--warmup-timeout-sec should be in [0; %d]", DEFAULT_SCRIPT_TIMEOUT);

@@ -57,11 +57,6 @@ int master_sfd_inited = 0;
 int master_pipe_write = -1;
 int master_pipe_fast_write = -1;
 
-double warmup_workers_part = 1;
-double warmup_instance_cache_elements_part = 0;
-int warmup_timeout_sec = 5;
-
-
 /***
   GLOBAL VARIABLES
  ***/

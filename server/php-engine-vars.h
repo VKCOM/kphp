@@ -62,10 +62,6 @@ extern int master_sfd_inited;
 extern int master_pipe_write;
 extern int master_pipe_fast_write;
 
-extern double warmup_workers_part;
-extern double warmup_instance_cache_elements_part;
-extern int warmup_timeout_sec;
-
 /** sigterm **/
 extern double sigterm_time;
 extern int sigterm_on;
