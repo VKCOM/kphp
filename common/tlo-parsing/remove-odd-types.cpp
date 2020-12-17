@@ -13,8 +13,19 @@ static void remove_node_types(vk::tlo_parsing::tl_scheme &scheme, const vk::tlo_
   std::unordered_set<const vk::tlo_parsing::type *> types_to_delete;
   std::unordered_set<const vk::tlo_parsing::combinator *> functions_to_delete;
 
-  for (int node_id : nodes_to_delete) {
-    graph.copy_node_internals_to(node_id, types_to_delete, functions_to_delete);
+  for (const auto &node_id : nodes_to_delete) {
+    auto &node = graph.get_node_info(node_id);
+    if (node.is_combinator()) {
+      auto *c = node.get_combinator();
+      if (c->is_function()) {
+        functions_to_delete.insert(c);
+      } else if (c->is_constructor()) {
+        vk::tlo_parsing::type *t = get_type_of(c, &scheme);
+        types_to_delete.insert(t);
+      }
+    } else if (node.is_type()) {
+      types_to_delete.insert(node.get_type());
+    }
   }
 
   std::for_each(types_to_delete.begin(), types_to_delete.end(), [&](const vk::tlo_parsing::type *t) {

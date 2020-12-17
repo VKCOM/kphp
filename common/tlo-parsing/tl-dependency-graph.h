@@ -66,11 +66,11 @@ public:
   explicit DependencyGraph(tl_scheme *scheme);
   ~DependencyGraph();
 
+  const std::vector<TLNode> &get_nodes() const;
   // a -> b === a зависит от b
   const std::vector<std::unordered_set<int>> &get_edges() const;
   const std::vector<std::unordered_set<int>> &get_inv_edges() const;
-  void copy_node_internals_to(int node_id, std::unordered_set<const vk::tlo_parsing::type *> &types_out,
-                              std::unordered_set<const vk::tlo_parsing::combinator *> &functions_out) const;
+  const TLNode &get_node_info(int node_id) const;
 
   // Находит все вершины, которые зависят от циклов
   std::vector<int> find_cycles_nodes() const;
@@ -93,7 +93,6 @@ private:
 
   std::set<const type *> weak_self_cyclic_types;
 
-  const TLNode &get_node_info(int node_id) const;
   void dfs(int node, std::vector<int> &used, bool use_inv_edges, std::vector<bool> *reachable_from_cycles = nullptr) const;
   void collect_combinator_edges(combinator *c);
   void add_edge(const TLNode &from, const TLNode &to);
