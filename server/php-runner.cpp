@@ -373,7 +373,7 @@ void PHPScriptBase::run() {
       dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", e->get_class(), e->$file.c_str(), e->$line, e->$code, message),
       E_ERROR, current_time, e->raw_trace.get_const_vector_pointer(), e->raw_trace.count(), true);
 
-    const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled Exception caught in file %s at line %" PRIi64 ".\n"
+    const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s caught in file %s at line %" PRIi64 ".\n"
                               "Backtrace:\n%s",
                               engine_tag, current_time, engine_pid,
                               e->$code, message, e->get_class(), e->$file.c_str(), e->$line,
