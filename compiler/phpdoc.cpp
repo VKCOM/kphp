@@ -531,7 +531,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
                              ex.what()));
   }
 
-  if (!phpdoc_prepare_type_expr_resolving_classes(current_function, doc_type)) {
+  if (!doc_type || !phpdoc_prepare_type_expr_resolving_classes(current_function, doc_type)) {
     return {VertexPtr{}, std::move(var_name)};
   }
 

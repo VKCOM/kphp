@@ -32,26 +32,6 @@ private:
   int min_argn = -1;
 
 public:
-  struct InferHint {
-    enum class InferType {
-      check,
-      hint,
-      hint_check,
-      cast,
-    };
-
-    InferHint(InferType infer_type, int param_i, VertexPtr type_expr) :
-      infer_type(infer_type),
-      param_i(param_i),
-      type_expr(type_expr) {
-    }
-
-
-    InferType infer_type;
-    int param_i;            // 0..N — arguments, -1 return (just like in tinf)
-    VertexPtr type_expr;    // not op_lt_type_rule/etc, but what's inside (the type representation itself)
-  };
-
   int id = -1;
 
   string name;        // full function name; when it belongs to a class it looks like VK$Namespace$funcname
@@ -97,7 +77,6 @@ public:
   std::set<string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
-  vector<InferHint> infer_hints;        // kphp-infer hint/check for param/return
   VertexPtr return_typehint;
   tinf::VarNode tinf_node;              // tinf node for return
 
@@ -152,7 +131,6 @@ public:
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
   static string get_human_readable_name(const std::string &name, bool add_details = true);
   string get_human_readable_name(bool add_details = true) const;
-  void add_kphp_infer_hint(InferHint::InferType infer_type, int param_i, VertexPtr type_expr);
 
   bool has_implicit_this_arg() const {
     return modifiers.is_instance();

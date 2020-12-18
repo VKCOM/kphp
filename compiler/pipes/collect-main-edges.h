@@ -27,7 +27,7 @@ private:
 
   static void add_type_rule(VertexPtr v);
   static void add_type_help(VertexPtr v);
-  static void on_func_param_callback(VertexAdaptor<op_func_call> call, int param_i);
+  static void on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback);
   static void on_func_call(VertexAdaptor<op_func_call> call);
   void on_return(VertexAdaptor<op_return> v);
   static void on_foreach(VertexAdaptor<op_foreach> foreach_op);

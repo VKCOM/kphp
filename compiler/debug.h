@@ -13,6 +13,7 @@
 std::string debugOperationName(Operation o);
 std::string debugTokenName(TokenType t);
 void debugPrintVertexTree(VertexPtr root, int level = 0);
+void debugPrintLocation(VertexPtr v);
 void debugPrintFunction(FunctionPtr function);
 std::string debugVertexMore(VertexPtr v);
 
