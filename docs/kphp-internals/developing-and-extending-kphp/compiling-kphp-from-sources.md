@@ -17,6 +17,7 @@ These are sources of KPHP, vkext, flex data (for Russian declensions), and all T
 KPHP linkage depends on some custom packages, that are also compiled from source:
 * patched curl build [on Github]({{site.url_package_curl}}) (branch *dpkg-build-7.60.0*)
 * custom uber-h3 build [on Github]({{site.url_package_h3}}) (branch *dpkg-build*)
+* epoll implementation for MacOS [on Github]({{site.url_package_epoll_shim}}) (branch *osx-platform*) 
 
 KPHP compilation depends on some third-party libraries, which are just copied to the `third_party/` folder as is, containing all references to originals. 
 
@@ -25,23 +26,80 @@ KPHP is compiled with CMake and packed with CPack.
 
 ## Prerequisites
 
-KPHP compilation, runtime, and linkage depend on the following packages:
+
+##### Debian 10 (Buster)
+Add external repositories 
 ```bash
-apt install \
-        build-essential ccache cmake g++ git gperf \
-        libfmt-dev libmsgpack-dev libnghttp2-dev libpcre3-dev libre2-dev \
-        libssl-dev libyaml-cpp-dev libzstd-dev lld make \
-        php7.4-dev python3-jsonschema python3-minimal unzip zlib1g-dev
+apt-get update
+# utils for adding repositories
+apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
+# for newest cmake package
+echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
+# for curl-kphp-vk and libuber-h3-dev packages
+wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add -
+echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" >> /etc/apt/sources.list 
+# for php7.4-dev package
+wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add -
+echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list 
+```
+Install packages
+```bash
+apt-get update
+apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
+            curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
 ```
 
-It's also recommended having a `libfmt >= 7` installed (if not, pass `-DDOWNLOAD_MISSING_LIBRARIES=On` to CMake). 
+
+##### Ubuntu 20.04 (Focal Fossa)
+Add external repositories
+```bash
+apt-get update
+# utils for adding repositories
+apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
+# for curl-kphp-vk and libuber-h3-dev packages
+wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add -
+echo "deb https://repo.vkpartner.ru/kphp-focal/ focal main" >> /etc/apt/sources.list
+```
+Install packages
+```bash
+apt-get update
+apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
+            curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
+```
+
+
+##### MacOS
+Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
+```bash
+brew install cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
+brew link --overwrite php@7.4
+pip3 install jsonschema
+```
+Clone somewhere local [epoll-shim from Github]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
+Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of cloning `epoll-shim` on each clean cmake call.
+```bash
+git clone https://github.com/VKCOM/epoll-shim.git
+cd epoll-shim
+git checkout osx-platform
+echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile
+```
+
+
+##### Other Linux
+Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving. `uber-h3` must be installed from sources.
+
+
+### Recommendations
+It's also recommended having a `libfmt >= 7` installed (if not, pass `-DDOWNLOAD_MISSING_LIBRARIES=On` to CMake) and `ccache`, it may speed up compilation time.  
 
 
 ## CMake configuration
 
 Here are available variables, that can be modified during the `cmake` invocation:
 ```
-DOWNLOAD_MISSING_LIBRARIES when libfmt / gtest / etc not found, downloads them to a local folder [Off]
+DOWNLOAD_MISSING_LIBRARIES when libfmt / gtest / epoll-shim / etc not found, downloads them to a local folder [Off]
 ADDRESS_SANITIZER enables the address sanitizer [Off]
 UNDEFINED_SANITIZER enables the undefined sanitizer [Off]
 KPHP_TESTS include tests to default target [On]
@@ -121,8 +179,3 @@ tl-compiler -e /path/to/output.tlo input1.tl input2.tl ...
 # in build/ folder
 cpack -D CPACK_COMPONENTS_ALL="KPHP;FLEX" .
 ```
-
-
-## Compiling for Mac OS
-
-We believe that KPHP will be compiled on Mac OS soon (just for local testing without Docker, not for production).
