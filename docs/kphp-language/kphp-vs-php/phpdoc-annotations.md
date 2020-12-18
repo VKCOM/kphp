@@ -61,6 +61,12 @@ See [embedded profiler](../best-practices/embedded-profiler.md).
 
 Makes assembler code of this function aggressively inline _everything_, avoiding `callq`. Do not use it without examining assembler output!  
 
+<aside>@kphp-warn-performance {inspections}</aside>
+<aside>@kphp-analyze-performance {inspections}</aside>
+Available inspections: `array-merge-into`, `array-reserve`, `constant-execution-in-loop`, `implicit-array-cast`.
+These annotation are propagated to all reachable functions by the callstack.
+See [TODO](../TODD.md).  
+
 
 ## @kphp-... tags for classes
 
