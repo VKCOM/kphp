@@ -9,6 +9,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 #include "common/wrappers/to_array.h"
@@ -218,7 +219,8 @@ std::string debugVertexMore(VertexPtr v) {
     case op_alloc:
       return "new " + v.as<op_alloc>()->allocated_class_name;
     case op_func_call:
-      return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") + v->get_string() + "()";
+      return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") +
+             (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->get_human_readable_name(false) : v->get_string()) + "()";
     case op_func_name:
       return v->get_string();
     case op_function:
@@ -256,6 +258,11 @@ void debugPrintVertexTree(VertexPtr root, int level) {
   for (auto i : *root) {
     debugPrintVertexTree(i, level + 1);
   }
+}
+
+void debugPrintLocation(VertexPtr v) {
+  const Location &l = v->location;
+  fmt_print("{}:{} {}\n", l.file ? l.file->unified_file_name : "unknown file", l.line, l.function ? l.function->get_human_readable_name() : "unknown funtion");
 }
 
 void debugPrintFunction(FunctionPtr function) {

@@ -280,14 +280,6 @@ string FunctionData::get_human_readable_name(bool add_details) const {
   return result_name;
 }
 
-void FunctionData::add_kphp_infer_hint(FunctionData::InferHint::InferType infer_type, int param_i, VertexPtr type_expr) {
-  if (!type_expr) {
-    return;
-  }
-  type_expr.set_location(root);
-  infer_hints.emplace_back(infer_type, param_i, type_expr);
-}
-
 bool FunctionData::is_lambda_with_uses() const {
   return is_lambda() && class_id && class_id->members.has_any_instance_var();
 }

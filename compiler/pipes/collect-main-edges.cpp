@@ -123,14 +123,9 @@ void CollectMainEdgesPass::add_type_help(VertexPtr v) {
 // handle calls to built-in functions with callbacks:
 // array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
 // (not to php functions with callable arguments! built-in only, having a callback type rule)
-void CollectMainEdgesPass::on_func_param_callback(VertexAdaptor<op_func_call> call, int param_i) {
-  const FunctionPtr call_function = call->func_id;
-  const VertexPtr ith_argument_of_call = call->args()[param_i];
+void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback) {
+  const FunctionPtr call_function = call->func_id;  // array_filter, etc
   auto callback_param = call_function->get_params()[param_i].as<op_func_param_typed_callback>();
-
-  kphp_assert(ith_argument_of_call->type() == op_func_ptr);
-  FunctionPtr provided_callback = ith_argument_of_call.as<op_func_ptr>()->func_id;
-  kphp_assert(provided_callback);
 
   // set restriction of return type of provided callback
   // built-in functions are declared as 'callback(...) ::: any' or 'callback(...) ::: bool'
@@ -217,7 +212,8 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     auto param = function_params[i].as<meta_op_func_param>();
 
     if (param->type() == op_func_param_typed_callback) {
-      on_func_param_callback(call, i);
+      kphp_assert(arg->type() == op_func_ptr);
+      on_func_call_param_callback(call, i, arg.as<op_func_ptr>()->func_id);
     } else {
       if (!function->is_extern()) {
         create_set(as_lvalue(function, i), arg);
@@ -375,19 +371,19 @@ void CollectMainEdgesPass::on_class(ClassPtr klass) {
 }
 
 void CollectMainEdgesPass::on_function(FunctionPtr function) {
-  // make initial sets to extern functions tinf nodes
+  VertexRange params = function->get_params();
+
+  // f(...) ::: string — set the return value to a return tinf node
+  // (if a return value is not a type, but ^1 for example, don't do it, it will be calculated for each invocation)
   if (function->is_extern()) {
-    // f(...) ::: string — set the return value to a return tinf node
-    // (if a return value is not a type, but ^1 for example, don't do it, it will be calculated for each invocation)
     if (auto rule = function->root->type_rule.try_as<op_common_type_rule>()) {
       if (auto type_of_rule = rule->rule().try_as<op_type_expr_type>()) {
         create_set(as_lvalue(function, -1), type_of_rule->type_help);
       }
     }
 
-    // f($x ::: string) — set the param tinf node; if array, it means array<any>
-    // (for not-cast params — with type hints — it will be done not here, but in infer hints)
-    VertexRange params = function->get_params();
+    // f($x ::: string) — set the param tinf node for cast params; if array, it means array<any>
+    // (for not-cast params — with type hints — it will be done after)
     for (int i = 0; i < params.size(); i++) {
       PrimitiveType ptype = params[i]->type_help;
       if (ptype != tp_Unknown) {
@@ -396,23 +392,20 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
     }
   }
 
-  // @kphp-infer hint/check for @param/@return — is less/set on the associated tinf_node(s) function.
-  for (const FunctionData::InferHint &hint : function->infer_hints) {
-    switch (hint.infer_type) {
-      case FunctionData::InferHint::InferType::hint_check:
-        create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
-        create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
-        break;
-      case FunctionData::InferHint::InferType::check:
-        create_less(as_rvalue(function, hint.param_i), VertexAdaptor<op_lt_type_rule>::create(hint.type_expr));
-        break;
-      case FunctionData::InferHint::InferType::hint:
-        create_set(as_lvalue(function, hint.param_i), VertexAdaptor<op_common_type_rule>::create(hint.type_expr));
-        break;
-      case FunctionData::InferHint::InferType::cast:
-        // do nothing: cast is a type_help attached in parse_and_apply_function_kphp_phpdoc()
-        break;
+  // all arguments having a type hint or @param create both set and restriction edges
+  for (int i = 0; i < params.size(); i++) {
+    if (auto param = params[i].try_as<op_func_param>()) {
+      if (param->type_hint) {
+        create_set(as_lvalue(function, i), VertexAdaptor<op_common_type_rule>::create(param->type_hint));
+        create_less(as_rvalue(function, i), VertexAdaptor<op_lt_type_rule>::create(param->type_hint));
+      }
     }
+  }
+
+  // if a function has a @return or type hint — also take this into account while inferring
+  if (function->return_typehint) {
+    create_set(as_lvalue(function, -1), VertexAdaptor<op_common_type_rule>::create(function->return_typehint));
+    create_less(as_rvalue(function, -1), VertexAdaptor<op_lt_type_rule>::create(function->return_typehint));
   }
 
   if (function->assumption_for_return) {

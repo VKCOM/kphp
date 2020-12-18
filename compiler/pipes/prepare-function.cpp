@@ -12,7 +12,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
@@ -22,9 +21,6 @@
 // Inspects @kphp-infer, @kphp-inline and other @kphp-* inside the function phpdoc.
 // Note that @kphp-required is analyzed inside gentree.
 class ParseAndApplyPHPDoc {
-private:
-  using InferType = FunctionData::InferHint::InferType;
-
 public:
   ParseAndApplyPHPDoc(FunctionPtr f) :
     f_(f),
@@ -36,35 +32,31 @@ public:
     stage::set_location(f_->root->get_location());
     const auto &phpdoc_tags = parse_php_doc(phpdoc_str_);
 
-    generate_name_to_param_id();
-    apply_arguments_type_hints();   // type hints are applied always, even if @param/@return are not
-    apply_return_type_hint();
-
     // first, search for @kphp-... tags
     // @param/@return will be scanned later, as @kphp- annotations can affect their behavior
-    bool analyze_kphp_tags = vk::contains(phpdoc_str_, "@kphp");
-
-    if (analyze_kphp_tags) {
+    if (vk::contains(phpdoc_str_, "@kphp")) {
       for (const auto &tag : phpdoc_tags) {
         stage::set_line(tag.line_num);
         parse_kphp_doc_tag(tag);
       }
     }
 
-    // do we analyze @param / @return? typically, yes, but...
-    bool analyze_param_return =
-      f_->type == FunctionData::func_local &&   // don't parse @param for extern functions (@tl classes might not exist, it's ok)
-      !f_->is_template;                         // template functions can have anything in these tags, don't take them into account
-
-    if (analyze_param_return) {
-      for (const auto &tag : phpdoc_tags) {
+    // at first, parse @param tags: do it before @return
+    for (const auto &tag : phpdoc_tags) {
+      if (tag.type == php_doc_tag::param) {
         stage::set_line(tag.line_num);
+        parse_param_doc_tag(tag);
+      }
+    }
 
-        if (tag.type == php_doc_tag::returns) {
-          parse_return_doc_tag(tag);
-        } else if (tag.type == php_doc_tag::param) {
-          parse_param_doc_tag(tag);
-        }
+    // 'callable' or typed callable params act like @kphp-template
+    convert_to_template_function_if_callable_arg();
+
+    // now, parse @return tags
+    for (const auto &tag : phpdoc_tags) {
+      if (tag.type == php_doc_tag::returns && f_->type == FunctionData::func_local) {  // @return @tl\... in functions.txt will be parsed only by assumptions
+        stage::set_line(tag.line_num);
+        parse_return_doc_tag(tag);
       }
     }
 
@@ -73,7 +65,7 @@ public:
       // if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, only check types if given, typing everything is not mandatory
       G->settings().require_functions_typing.get() &&
       // if 1, typing is mandatory, except these conditions
-      analyze_param_return &&                     // if we don't take @param into account at all — don't require typing of course
+      f_->type == FunctionData::func_local &&
       !f_->is_lambda() &&                         // lambda functions don't require strict typing (it's inconvenient)
       !f_->disabled_warnings.count("return");     // "@kphp-disable-warnings return" in function phpdoc
 
@@ -110,31 +102,29 @@ private:
     return {f_->phpdoc_str, f_};
   }
 
-  void generate_name_to_param_id() {
-    for (int param_i = f_->has_implicit_this_arg(); param_i < func_params_.size(); ++param_i) {
-      auto op_func_param = func_params_[param_i].as<meta_op_func_param>();
-      name_to_function_param_[op_func_param->var()->str_val] = param_i;
-    }
-  }
-
-  void apply_arguments_type_hints() {
-    for (int param_i = 0; param_i < func_params_.size(); ++param_i) {
-      auto op_func_param = func_params_[param_i].as<meta_op_func_param>();
-
-      if (op_func_param->type_hint && op_func_param->type_hint->type() == op_type_expr_callable) {
-        op_func_param->is_callable = true;
-        op_func_param->template_type_id = id_of_kphp_template_++;
-        op_func_param->type_hint = {};
-        f_->is_template = true;
-      } else if (op_func_param->type_hint) {
-        f_->add_kphp_infer_hint(InferType::hint_check, param_i, op_func_param->type_hint);
+  VertexAdaptor<op_func_param> find_param_by_name(vk::string_view name) {
+    for (auto v : func_params_) {
+      if (auto param = v.try_as<op_func_param>()) {
+        if (param->var()->get_string() == name) {
+          return param;
+        }
       }
     }
+    return {};
   }
 
-  void apply_return_type_hint() {
-    if (f_->return_typehint) {
-      f_->add_kphp_infer_hint(InferType::hint_check, -1, f_->return_typehint);
+  void convert_to_template_function_if_callable_arg() {
+    for (auto p : func_params_) {
+      auto cur_func_param = p.as<meta_op_func_param>();
+      if (auto type_callable = cur_func_param->type_hint.try_as<op_type_expr_callable>()) {
+        cur_func_param->is_callable = type_callable->has_params();
+        // we will generate common interface for typed callables later
+        if (!cur_func_param->is_callable) {
+          cur_func_param->template_type_id = id_of_kphp_template_++;
+          cur_func_param->is_callable = true;
+          f_->is_template = true;
+        }
+      }
     }
   }
 
@@ -244,13 +234,9 @@ private:
           }
           is_first_time = false;
 
-          auto func_param_it = name_to_function_param_.find(var_name.substr(1));
-          kphp_error_return(func_param_it != name_to_function_param_.end(), fmt_format("@kphp-template tag var name mismatch. found {}.", var_name));
-
-          auto cur_func_param = func_params_[func_param_it->second].as<op_func_param>();
-          name_to_function_param_.erase(func_param_it);
-
-          cur_func_param->template_type_id = id_of_kphp_template_;
+          auto param = find_param_by_name(var_name.substr(1));
+          kphp_error_return(param, fmt_format("@kphp-template tag var name mismatch. found {}.", var_name));
+          param->template_type_id = id_of_kphp_template_;
         }
         id_of_kphp_template_++;
 
@@ -259,11 +245,9 @@ private:
 
       case php_doc_tag::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
-          auto func_param_it = name_to_function_param_.find(var_name.substr(1));
-          kphp_error_return(func_param_it != name_to_function_param_.end(), fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
-
-          auto cur_func_param = func_params_[func_param_it->second].as<op_func_param>();
-          cur_func_param->var()->is_const = true;
+          auto param = find_param_by_name(var_name.substr(1));
+          kphp_error_return(param, fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
+          param->var()->is_const = true;
         }
 
         break;
@@ -302,9 +286,15 @@ private:
       return;
     }
 
-    // todo better to add hint_check here, but vk.com has lots of errors, maybe will be fixed later
-    f_->add_kphp_infer_hint(InferType::check, -1, doc_parsed.type_expr);
-    has_return_php_doc_ = true;
+    // if @return exists, it overrides a return type hint in code (unless a @return is from a parent phpdoc)
+    if (f_->return_typehint && phpdoc_from_fun_ != f_) {
+      return;
+    }
+    // @param for a template parameter can contain anything, skip (note: only @return in phpdoc! as a type hint, it remains)
+    if (f_->is_template) {
+      return;
+    }
+    f_->return_typehint = doc_parsed.type_expr.set_location(f_->root);
   }
 
   void parse_param_doc_tag(const php_doc_tag &tag) {
@@ -313,59 +303,49 @@ private:
       return;
     }
 
-    auto func_param_it = name_to_function_param_.find(doc_parsed.var_name);
-    kphp_error_return(func_param_it != name_to_function_param_.end(),
-                      fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
-    int param_i = func_param_it->second;
+    auto param = find_param_by_name(doc_parsed.var_name);
+    kphp_error_return(param, fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
 
-    auto cur_func_param = func_params_[func_param_it->second].as<op_func_param>();
-    name_to_function_param_.erase(func_param_it);
-
-    // if phpdoc mentions "callable" inside this @param
-    if (auto type_callable = doc_parsed.type_expr.try_as<op_type_expr_callable>()) {
-      cur_func_param->is_callable = type_callable->has_params();
-      // we will generate common interface for typed callables later
-      if (!cur_func_param->is_callable) {
-        f_->is_template = true;
-        cur_func_param->template_type_id = id_of_kphp_template_;
-        cur_func_param->is_callable = true;
-        id_of_kphp_template_++;
-        return;
-      }
+    // if @param exists, it overrides an argument type hint in code (unless a @param is from a parent phpdoc)
+    if (param->type_hint && phpdoc_from_fun_ != f_) {
+      return;
     }
-
-    f_->add_kphp_infer_hint(InferType::hint_check, param_i, doc_parsed.type_expr);
+    // @param for a template parameter can contain anything, skip (but callable + @param typed callable is ok)
+    if (param->template_type_id != -1) {
+      return;
+    }
+    param->type_hint = doc_parsed.type_expr.set_location(f_->root);
 
     if (infer_cast_) {
       auto expr_type_v = doc_parsed.type_expr.try_as<op_type_expr_type>();
       kphp_error(expr_type_v && expr_type_v->args().empty(), "Too hard rule for cast");
-      kphp_error(cur_func_param->type_help == tp_Unknown, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
+      kphp_error(param->type_help == tp_Unknown, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
 
-      cur_func_param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
+      param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
     }
   }
 
   void check_all_arguments_have_param_or_type_hint() {
-    // at this point, all phpdocs have been parsed, and name_to_function_param_ contains arguments that have no @param tag
-    // show error if they don't have type hint either
+    // at this point, all phpdocs and type hints have been parsed
+    // show error if any param doesn't have type declared type
     // missing type hint and phpdoc for one of the parameters
-    for (auto name_and_param_id : name_to_function_param_) {
-      auto op_func_param = func_params_[name_and_param_id.second].as<meta_op_func_param>();
-
-      if (!op_func_param->type_hint) {
-        kphp_error(false, fmt_format("Specify @param or type hint for ${}", name_and_param_id.first));
+    for (auto v : func_params_) {
+      if (auto param = v.try_as<op_func_param>()) {
+        if (!param->type_hint && param->var()->extra_type != op_ex_var_this && param->template_type_id == -1) {
+          kphp_error(false, fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
+        }
       }
     }
   }
 
   void check_function_has_return_or_type_hint() {
-    // at this point, all phpdocs have been parsed, and has_return_php_doc_ is true if @return found
+    // at this point, all phpdocs and type hints have been parsed
     // if we have no @return and no return hint, assume @return void
-    if (!f_->return_typehint && !has_return_php_doc_) {
-      bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return;
+    if (!f_->return_typehint) {
+      bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return && !f_->is_template;
 
       if (assume_return_void) {
-        f_->add_kphp_infer_hint(InferType::check, -1, GenTree::create_type_help_vertex(tp_void));
+        f_->return_typehint = GenTree::create_type_help_vertex(tp_void);
       }
     }
   }
@@ -378,8 +358,6 @@ private:
   FunctionPtr phpdoc_from_fun_;
   VertexRange func_params_;
   std::size_t id_of_kphp_template_{0};
-  std::unordered_map<vk::string_view, int> name_to_function_param_;
-  bool has_return_php_doc_{false};
 };
 
 static void check_default_args(FunctionPtr fun) {
