@@ -9,12 +9,12 @@ if (0) {
 }
 
 interface Throwable {
-  public function getMessage () ::: string;
-  public function getCode () ::: int;
-  public function getFile () ::: string;
-  public function getLine () ::: int;
-  public function getTrace () ::: string[][];
-  public function getTraceAsString () ::: string;
+    public function getMessage () ::: string;
+    public function getCode () ::: int;
+    public function getFile () ::: string;
+    public function getLine () ::: int;
+    public function getTrace () ::: string[][];
+    public function getTraceAsString () ::: string;
 }
 
 class Exception implements Throwable {
@@ -34,7 +34,7 @@ class Exception implements Throwable {
     final public function getTraceAsString () ::: string;
 
     final private function __clone() ::: void;
-};
+}
 
 class Error implements Throwable {
     protected $message = '';
@@ -53,7 +53,32 @@ class Error implements Throwable {
     final public function getTraceAsString () ::: string;
 
     final private function __clone() ::: void;
-};
+}
+
+class ArithmeticError extends Error {}
+class DivisionByZeroError extends ArithmeticError {}
+class AssertionError extends Error {}
+class CompileError extends Error {}
+class ParseError extends CompileError {}
+class TypeError extends Error {}
+class ArgumentCountError extends TypeError {}
+class ValueError extends Error {}
+class UnhandledMatchError extends Error {}
+
+class LogicException extends Exception {}
+class BadFunctionCallException extends LogicException {}
+class BadMethodCallException extends BadFunctionCallException {}
+class DomainException extends LogicException {}
+class InvalidArgumentException extends LogicException {}
+class LengthException extends LogicException {}
+class OutOfRangeException extends LogicException {}
+
+class RuntimeException extends Exception {}
+class OutOfBoundsException extends RuntimeException {}
+class OverflowException extends RuntimeException {}
+class RangeException extends RuntimeException {}
+class UnderflowException extends RuntimeException {}
+class UnexpectedValueException extends RuntimeException {}
 
 interface Memcache {
     public function get ($key) ::: mixed;

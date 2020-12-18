@@ -4,7 +4,6 @@
 
 #include "runtime/exception.h"
 
-#include "common/algorithms/hashes.h"
 #include "common/fast-backtrace.h"
 
 #include "runtime/critical_section.h"
@@ -35,18 +34,6 @@ int get_backtrace(void **buffer, int size) noexcept {
 
 constexpr int backtrace_size_limit = 64;
 
-void init_throwable(Throwable e, const string &message, int64_t code) {
-  e->$message = message;
-  e->$code = code;
-
-  void *buffer[backtrace_size_limit];
-  const int trace_size = get_backtrace(buffer, backtrace_size_limit);
-  e->raw_trace = array<void *>{array_size{trace_size, 0, true}};
-  e->raw_trace.memcpy_vector(trace_size, buffer);
-
-  e->trace = make_backtrace(buffer, trace_size);
-}
-
 } // namespace
 
 array<array<string>> f$debug_backtrace() {
@@ -57,8 +44,20 @@ array<array<string>> f$debug_backtrace() {
 
 Throwable CurException;
 
-int C$Exception::classname_hash = vk::std_hash(std::string("Exception"));
-int C$Error::classname_hash = vk::std_hash(std::string("Error"));
+int C$Exception::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("Exception")));
+int C$LogicException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("LogicException")));
+int C$BadFunctionCallException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("BadFunctionCallException")));
+int C$BadMethodCallException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("BadMethodCallException")));
+int C$DomainException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("DomainException")));
+int C$InvalidArgumentException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("InvalidArgumentException")));
+int C$LengthException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("LengthException")));
+int C$OutOfRangeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OutOfRangeException")));
+int C$RuntimeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("RuntimeException")));
+int C$OutOfBoundsException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OutOfBoundsException")));
+int C$OverflowException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OverflowException")));
+int C$RangeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("RangeException")));
+int C$UnderflowException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("UnderflowException")));
+int C$UnexpectedValueException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("UnexpectedValueException")));
 
 string f$Exception$$getMessage(const Exception &e) { return e->$message; }
 string f$Error$$getMessage(const Error &e) { return e->$message; }
@@ -76,12 +75,12 @@ array<array<string>> f$Exception$$getTrace(const Exception &e) { return e->trace
 array<array<string>> f$Error$$getTrace(const Error &e) { return e->trace; }
 
 Exception f$Exception$$__construct(const Exception &v$this, const string &message, int64_t code) {
-  init_throwable(v$this, message, code);
+  exception_initialize(v$this, message, code);
   return v$this;
 }
 
 Error f$Error$$__construct(const Error &v$this, const string &message, int64_t code) {
-  init_throwable(v$this, message, code);
+  exception_initialize(v$this, message, code);
   return v$this;
 }
 
@@ -101,6 +100,18 @@ string exception_trace_as_string(const Throwable &e) {
     static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
   }
   return static_SB.str();
+}
+
+void exception_initialize(const Throwable &e, const string &message, int64_t code) {
+  e->$message = message;
+  e->$code = code;
+
+  void *buffer[backtrace_size_limit];
+  const int trace_size = get_backtrace(buffer, backtrace_size_limit);
+  e->raw_trace = array<void *>{array_size{trace_size, 0, true}};
+  e->raw_trace.memcpy_vector(trace_size, buffer);
+
+  e->trace = make_backtrace(buffer, trace_size);
 }
 
 string f$Exception$$getTraceAsString(const Exception &e) { return exception_trace_as_string(e); }

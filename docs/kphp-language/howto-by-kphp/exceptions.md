@@ -22,13 +22,6 @@ try {
 
 Traces are not identical to PHP, but more or less readable.
 
-KPHP doesn't include SPL Exceptions, but they can be easily added.
-```php
-class LogicException extends Exception {}
-class InvalidArgumentException extends LogicException {}
-// ...and so on
-```
-
 ## How exceptions are implemented
 
 Internally, KPHP doesn't translate this code to C++ exceptions for several reasons.  
