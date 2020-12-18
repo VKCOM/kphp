@@ -8,7 +8,7 @@
 #include "compiler/gentree.h"
 
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
-  static const ClassPtr exception_class = G->get_class("Exception");
+  static const ClassPtr exception_class = G->get_class("Throwable");
 
   if (auto catch_op = root.try_as<op_catch>()) {
     catch_op->exception_class = G->get_class(catch_op->type_declaration);
@@ -31,7 +31,7 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
     return root;
   }
 
-  // root is a call to the Exception-derived class;
+  // root is a call to the Exception-derived (or Error-derived) class;
   // we want to add source location info into the object being created
   //
   // new T(args...)

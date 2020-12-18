@@ -1,12 +1,5 @@
-@kphp_should_fail
-/Expected type:	Exception/
-/Actual type:	Throwable/
+@ok
 <?php
-
-// We only allow \Exception argument for the throw statement,
-// so passing \Throwable there will give an error.
-// This is valid PHP code so eventually we may want to
-// allow such code.
 
 interface CustomException {
   public function toString(): string;

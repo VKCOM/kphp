@@ -701,7 +701,7 @@ bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const strin
 template <typename T1, typename T2, typename RetT = T1>
 RetT catchException(T1 result, T2 def, const char *function = __builtin_FUNCTION()) {
   if (!CurException.is_null()) {
-    class_instance<C$Exception> e = std::move(CurException);
+    class_instance<C$Throwable> e = std::move(CurException);
     php_warning("Exception caught in %s: %s", function, e->$message.c_str());
     return def;
   }

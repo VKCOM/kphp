@@ -366,7 +366,7 @@ void PHPScriptBase::run() {
   if (CurException.is_null()) {
     set_script_result(nullptr);
   } else {
-    const Exception &e = CurException;
+    const Throwable &e = CurException;
     const int64_t current_time = time(nullptr);
     const char *message = e->$message.empty() ? "(empty)" : e->$message.c_str();
     vk::singleton<JsonLogger>::get().write_log(
@@ -377,7 +377,7 @@ void PHPScriptBase::run() {
                               "Backtrace:\n%s",
                               engine_tag, current_time, engine_pid,
                               e->$code, message, e->get_class(), e->$file.c_str(), e->$line,
-                              f$Exception$$getTraceAsString(e).c_str());
+                              exception_trace_as_string(e).c_str());
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "-------------------------------\n\n");
     error(msg, script_error_t::exception);

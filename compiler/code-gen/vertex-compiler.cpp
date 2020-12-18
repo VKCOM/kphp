@@ -199,7 +199,7 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {
-    if (caught_class->name == "Exception") {
+    if (caught_class->name == "Throwable") {
       W << dst << " = std::move(CurException);" << NL;
       return;
     }

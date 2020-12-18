@@ -36,6 +36,25 @@ class Exception implements Throwable {
     final private function __clone() ::: void;
 };
 
+class Error implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    final public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
+    final public function getMessage () ::: string;
+    final public function getCode () ::: int;
+    final public function getFile () ::: string;
+    final public function getLine () ::: int;
+    final public function getTrace () ::: string[][];
+    final public function getTraceAsString () ::: string;
+
+    final private function __clone() ::: void;
+};
+
 interface Memcache {
     public function get ($key) ::: mixed;
     public function delete ($key ::: string) ::: bool;
