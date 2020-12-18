@@ -87,7 +87,7 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
 
     kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
     if (vk::string_view(*kphp_serialized_field_str).starts_with("none")) {
-        return;
+      return;
     }
 
     try {
@@ -103,6 +103,7 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
         kphp_error_return(false, fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
       }
       f.serialization_tag = kphp_serialized_field;
+      f.serialize_as_float32 = phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_float32);
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
     } catch (std::logic_error &) {
       kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", *kphp_serialized_field_str));
@@ -110,7 +111,8 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
   });
 
   klass->members.for_each([&](ClassMemberStaticField &f) {
-    kphp_error_return(!phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_field),
+    kphp_error_return(!phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_field) &&
+                      !phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_float32),
                       fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
   });
 }

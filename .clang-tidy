@@ -2,6 +2,7 @@
 Checks: |-
   *,
   -android-*,
+  -altera-*,
   -*-bool-pointer-implicit-conversion,
   -cert-dcl50-cpp,
   -cert-dcl59-cpp,

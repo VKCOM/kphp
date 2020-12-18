@@ -4,6 +4,8 @@
 
 #include "runtime/msgpack-serialization.h"
 
+uint32_t serialize_as_float32{0};
+
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
