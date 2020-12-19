@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "common/wrappers/mkdir_recursive.h"
+#include "common/wrappers/pathname.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lib-data.h"
@@ -25,7 +26,7 @@
 class MakeSetup {
 private:
   MakeRunner make;
-  KphpMakeEnv env;
+  const CompilerSettings &settings;
 
   void target_set_file(Target *target, File *file) {
     assert (file->target == nullptr);
@@ -34,7 +35,7 @@ private:
   }
 
   void target_set_env(Target *target) {
-    target->set_env(&env);
+    target->set_settings(&settings);
   }
 
   Target *to_target(File *file) {
@@ -64,8 +65,9 @@ private:
   }
 
 public:
-  explicit MakeSetup(FILE *stats_file) noexcept:
-    make(stats_file) {
+  MakeSetup(FILE *stats_file, const CompilerSettings &compiler_settings) noexcept:
+    make(stats_file),
+    settings(compiler_settings) {
   }
 
   Target *create_cpp_target(File *cpp) {
@@ -88,22 +90,12 @@ public:
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
-  void init_env(const CompilerSettings &settings) {
-    env.cxx = settings.cxx.get();
-    env.cxx_flags = settings.cxx_flags.get();
-    env.ld_flags = settings.ld_flags.get();
-    env.ar = settings.archive_creator.get();
-    env.incremental_linker = settings.incremental_linker.get();
-    env.incremental_linker_flags = settings.incremental_linker_flags.get();
-    env.debug_level = settings.debug_level.get();
-  }
-
-  void add_gch_dir(const std::string &gch_dir) {
-    env.add_gch_dir(gch_dir);
-  }
-
   bool make_target(File *bin, int jobs_count = 32) {
-    return make.make_target(to_target(bin), jobs_count);
+    return make.make_targets(to_targets(bin), jobs_count);
+  }
+
+  bool make_targets(const std::vector<File *> &bins, int jobs_count = 32) {
+    return make.make_targets(to_targets(bins), jobs_count);
   }
 };
 
@@ -177,45 +169,65 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-static std::string kphp_make_precompiled_header(Index *obj_dir, const CompilerSettings &settings, FILE *stats_file) {
-  std::string gch_dir = "/tmp/kphp_gch/";
-  gch_dir.append(settings.runtime_sha256.get()).append(1, '/');
-  gch_dir.append(settings.cxx_flags_sha256.get()).append(1, '/');
-
-  const std::string header_filename = "runtime-headers.h";
-  const std::string gch_filename = header_filename + ".gch";
-  const std::string gch_path = gch_dir + gch_filename;
-  if (access(gch_path.c_str(), F_OK) != -1) {
-    return gch_dir;
+File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_headers_h, const CompilerSettings &settings, bool with_debug) {
+  const auto &flags = with_debug ? settings.cxx_flags_with_debug : settings.cxx_flags_default;
+  if (with_debug && flags == settings.cxx_flags_default) {
+    return nullptr;
   }
+  const std::string pch_filename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
+  std::string pch_path = flags.pch_dir.get() + pch_filename;
+  if (access(pch_path.c_str(), F_OK) != -1) {
+    return nullptr;
+  }
+  auto *runtime_header_h_pch = obj_dir->insert_file(settings.dest_objs_dir.get() + pch_filename + "." + flags.flags_sha256.get());
+  runtime_header_h_pch->compile_with_debug_info_flag = with_debug;
+  make.create_cpp2obj_target(&runtime_headers_h, runtime_header_h_pch);
+  return runtime_header_h_pch;
+}
 
-  MakeSetup make{stats_file};
-  File php_functions_h(settings.generated_runtime_path.get() + header_filename);
-  kphp_error_act(php_functions_h.read_stat() > 0,
-                 fmt_format("Can't read mtime of '{}'", php_functions_h.path),
-                 return {});
+bool finalize_precompiled_header(File &runtime_headers_h, File &runtime_header_pch_file, const std::string &pch_dir) {
+  const mode_t old_mask = umask(0);
+  const bool dir_created = mkdir_recursive(pch_dir.c_str(), 0777);
+  umask(old_mask);
+  kphp_error_act(dir_created, fmt_format("Can't create tmp dir '{}': {}", pch_dir, strerror(errno)), return false);
 
-  File *php_functions_h_gch = obj_dir->insert_file(settings.dest_objs_dir.get() + gch_filename);
-  make.create_cpp2obj_target(&php_functions_h, php_functions_h_gch);
+  hard_link_or_copy(runtime_headers_h.path, pch_dir + kbasename(runtime_headers_h.path.c_str()), false);
+  hard_link_or_copy(runtime_header_pch_file.path, pch_dir + runtime_header_pch_file.name_without_ext, false);
+  runtime_header_pch_file.unlink();
+  return true;
+}
+
+static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings &settings, FILE *stats_file) {
+  MakeSetup make{stats_file, settings};
   File sha256_version_file(settings.runtime_sha256_file.get());
   kphp_assert(sha256_version_file.read_stat() > 0);
-  php_functions_h.target->force_changed(sha256_version_file.mtime);
-  make.init_env(settings);
-  if (!make.make_target(php_functions_h_gch, 1)) {
-    return {};
+
+  const std::string header_filename = "runtime-headers.h";
+  File runtime_headers_h{settings.generated_runtime_path.get() + header_filename};
+  kphp_assert(runtime_headers_h.read_stat() > 0);
+  make.create_cpp_target(&runtime_headers_h);
+  runtime_headers_h.target->force_changed(sha256_version_file.mtime);
+
+  std::vector<File *> runtime_header_pch_files;
+  std::vector<std::string> pch_dirs;
+  for (auto with_debug : {false, true}) {
+    if (File *runtime_header_gch_file = prepare_precompiled_header(obj_dir, make, runtime_headers_h, settings, with_debug)) {
+      pch_dirs.emplace_back(with_debug ? settings.cxx_flags_with_debug.pch_dir.get() : settings.cxx_flags_default.pch_dir.get());
+      runtime_header_pch_files.emplace_back(runtime_header_gch_file);
+    }
+  }
+  if (runtime_header_pch_files.empty()) {
+    return true;
+  }
+  if (!make.make_targets(runtime_header_pch_files, runtime_header_pch_files.size())) {
+    return false;
   }
 
-  const mode_t old_mask = umask(0);
-  const bool dir_created = mkdir_recursive(gch_dir.c_str(), 0777);
-  umask(old_mask);
-  kphp_error_act(dir_created,
-                 fmt_format("Can't create tmp dir '{}': {}", gch_dir, strerror(errno)),
-                 return {});
-
-  hard_link_or_copy(php_functions_h.path, gch_dir + header_filename, false);
-  hard_link_or_copy(php_functions_h_gch->path, gch_path, false);
-  php_functions_h_gch->unlink();
-  return gch_dir;
+  bool is_ok = true;
+  for (size_t i = 0; i != runtime_header_pch_files.size(); ++i) {
+    is_ok = finalize_precompiled_header(runtime_headers_h, *runtime_header_pch_files[i], pch_dirs[i]) && is_ok;
+  }
+  return is_ok;
 }
 
 static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
@@ -322,8 +334,8 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
 
 static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
                       const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
-                      const std::string &gch_dir, FILE *stats_file) {
-  MakeSetup make{stats_file};
+                      FILE *stats_file) {
+  MakeSetup make{stats_file, settings};
   std::vector<File *> lib_objs;
   for (File &link_file: imported_libs) {
     make.create_cpp_target(&link_file);
@@ -332,23 +344,15 @@ static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forw
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   std::copy(lib_objs.begin(), lib_objs.end(), std::back_inserter(objs));
   make.create_objs2bin_target(objs, &bin);
-  make.init_env(settings);
-  if (!gch_dir.empty()) {
-    make.add_gch_dir(gch_dir);
-  }
   return make.make_target(&bin, settings.jobs_count.get());
 }
 
 static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
                                  const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
-                                 const std::string &gch_dir, FILE *stats_file) {
-  MakeSetup make{stats_file};
+                                 FILE *stats_file) {
+  MakeSetup make{stats_file, settings};
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
-  make.init_env(settings);
-  if (!gch_dir.empty()) {
-    make.add_gch_dir(gch_dir);
-  }
   return make.make_target(&static_lib, static_cast<int32_t>(settings.jobs_count.get()));
 }
 
@@ -387,19 +391,16 @@ void run_make() {
     bin_file.unlink();
   }
 
-  std::string gch_dir;
   bool ok = true;
   const bool pch_allowed = !settings.no_pch.get();
   if (pch_allowed) {
-    gch_dir = kphp_make_precompiled_header(&obj_index, settings, make_stats_file);
-    ok = !gch_dir.empty();
-    kphp_error (ok, "Make precompiled header failed");
+    kphp_error (kphp_make_precompiled_headers(&obj_index, settings, make_stats_file), "Make precompiled header failed");
   }
   if (ok) {
     auto lib_header_dirs = collect_imported_headers();
     ok = settings.is_static_lib_mode()
-         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, settings, gch_dir, make_stats_file)
-         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, settings, gch_dir, make_stats_file);
+         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, settings, make_stats_file)
+         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, settings, make_stats_file);
     kphp_error (ok, "Make failed");
   }
 

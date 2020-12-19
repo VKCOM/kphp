@@ -15,7 +15,7 @@ public:
     vk::string_view close_dep{" -Wl,--end-group -Wl,--no-whole-archive "};
 #endif
     std::stringstream ss;
-    ss << env->cxx << " -o " << target() << open_dep << dep_list() << close_dep << env->ld_flags;
+    ss << settings->cxx.get() << " -o " << target() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
     return ss.str();
   }
 };

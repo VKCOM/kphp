@@ -16,14 +16,14 @@ public:
     std::stringstream ss;
     const auto cpp_list = dep_list();
     const char *cpp_type = vk::contains(cpp_list, ".h") ? "-x c++-header " : "";
-    ss << env->cxx <<
+    ss << settings->cxx.get() <<
        " -c -o " << target() <<
-       " " << cpp_type << cpp_list <<
-       " " << env->cxx_flags;
-
-    if (get_file()->compile_with_debug_info_flag) {
-      ss << " " << env->debug_level;
+       " " << cpp_type << cpp_list;
+    const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
+    if (!settings->no_pch.get()) {
+      ss << " -iquote" << cxx_flags.pch_dir.get();
     }
+    ss << " " << cxx_flags.flags.get();
 
     return ss.str();
   }

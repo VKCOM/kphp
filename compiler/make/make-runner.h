@@ -43,7 +43,7 @@ private:
 
 public:
   void register_target(Target *target, std::vector<Target *> &&deps);
-  bool make_target(Target *target, int jobs_count = 32);
+  bool make_targets(std::vector<Target *> target, int jobs_count = 32);
   explicit MakeRunner(FILE *stats_file) noexcept;
   ~MakeRunner();
 };

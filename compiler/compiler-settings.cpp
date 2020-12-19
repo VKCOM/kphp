@@ -153,7 +153,36 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #endif
 }
 
+std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags_line) noexcept {
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+
+  SHA256_Update(&sha256, cxx.data(), cxx.size());
+  SHA256_Update(&sha256, cxx_flags_line.data(), cxx_flags_line.size());
+
+  unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
+  SHA256_Final(hash, &sha256);
+
+  std::string hash_str;
+  hash_str.reserve(SHA256_DIGEST_LENGTH * 2);
+  for (auto hash_symb : hash) {
+    fmt_format_to(std::back_inserter(hash_str), "{:02x}", hash_symb);
+  }
+  return hash_str;
+}
+
 } // namespace
+
+void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
+                    std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept {
+  remove_extra_spaces(cxx_flags_line);
+  flags.value_ = std::move(cxx_flags_line);
+  flags_sha256.value_ = calc_cxx_flags_sha256(cxx, flags.get());
+  flags.value_.append(" -iquote").append(dest_cpp_dir);
+  if (enable_pch) {
+    pch_dir.value_.append("/tmp/kphp_gch/").append(runtime_sha256).append("/").append(flags_sha256.get()).append("/");
+  }
+}
 
 void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexcept {
   path_option.value_ = as_dir(path_option.value_);
@@ -177,24 +206,6 @@ bool CompilerSettings::is_composer_enabled() const {
 
 std::string CompilerSettings::get_version() const {
   return override_kphp_version.get().empty() ? get_version_string() : override_kphp_version.get();
-}
-
-void CompilerSettings::update_cxx_flags_sha256() {
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-
-  auto cxx_flags_full = cxx.get() + cxx_flags.get() + debug_level.get();
-  SHA256_Update(&sha256, cxx_flags_full.c_str(), cxx_flags_full.size());
-
-  unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
-  SHA256_Final(hash, &sha256);
-
-  std::string hash_str;
-  hash_str.reserve(SHA256_DIGEST_LENGTH * 2);
-  for (auto hash_symb : hash) {
-    fmt_format_to(std::back_inserter(hash_str), "{:02x}", hash_symb);
-  }
-  cxx_flags_sha256.value_ = std::move(hash_str);
 }
 
 void CompilerSettings::init() {
@@ -281,10 +292,7 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
-  cxx_flags.value_ = ss.str();
-
-  update_cxx_flags_sha256();
-  runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
+  std::string cxx_default_flags = ss.str();
 
   incremental_linker.value_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
   incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
@@ -292,8 +300,8 @@ void CompilerSettings::init() {
   remove_extra_spaces(extra_ld_flags.value_);
 
   ld_flags.value_ = extra_ld_flags.get();
-  append_curl(cxx_flags.value_, ld_flags.value_);
-  append_apple_options(cxx_flags.value_, ld_flags.value_);
+  append_curl(cxx_default_flags, ld_flags.value_);
+  append_apple_options(cxx_default_flags, ld_flags.value_);
   std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2"};
   std::vector<vk::string_view> external_libs{"pthread", "crypto", "m"};
 #if defined(__APPLE__)
@@ -308,6 +316,8 @@ void CompilerSettings::init() {
 #endif
   append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
   ld_flags.value_ += " -rdynamic";
+
+  runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
 
   auto full_path = get_full_path(main_file.get());
   if (full_path.empty()) {
@@ -327,7 +337,10 @@ void CompilerSettings::init() {
   binary_path.value_ = dest_dir.get() + mode.get();
   performance_analyze_report_path.value_ = dest_dir.get() + "performance_issues.json";
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
-  cxx_flags.value_ += " -iquote" + dest_cpp_dir.get();
+
+  cxx_flags_default.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
+  cxx_default_flags.append(" ").append(extra_cxx_debug_level.get());
+  cxx_flags_with_debug.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
 
   tl_namespace_prefix.value_ = "VK\\TL\\";
   tl_classname_prefix.value_ = "C$VK$TL$";
