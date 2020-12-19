@@ -170,12 +170,12 @@ public:
 
     ConfdataUpdateResult result{
       std::move(*updating_confdata_storage_),
-      std::move(garbage_from_previous_confdata_sample_),
+      std::move(*garbage_from_previous_confdata_sample_),
       garbage_size_
     };
     // do an explicit clear() as a container is left in "a valid but unspecified state" after the move
     updating_confdata_storage_->clear();
-    garbage_from_previous_confdata_sample_.clear();
+    garbage_from_previous_confdata_sample_->clear();
     garbage_size_ = 0;
     confdata_has_any_updates_ = false;
     return result;
@@ -183,7 +183,7 @@ public:
 
   void try_use_previous_confdata_storage_as_init(const confdata_sample_storage &previous_confdata_storage) noexcept {
     if (!confdata_has_any_updates_) {
-      assert(garbage_from_previous_confdata_sample_.empty());
+      assert(garbage_from_previous_confdata_sample_->empty());
       if (updating_confdata_storage_->empty()) {
         *updating_confdata_storage_ = previous_confdata_storage;
       } else {
@@ -223,6 +223,7 @@ public:
 
 private:
   ConfdataBinlogReplayer() noexcept:
+    garbage_from_previous_confdata_sample_(new(&garbage_mem_) GarbageList{}),
     key_blacklist_(ConfdataGlobalManager::get().get_key_blacklist()),
     predefined_wildcards_(ConfdataGlobalManager::get().get_predefined_wildcards()) {
     add_handler([this](const lev_confdata_delete &E) {
@@ -495,7 +496,7 @@ private:
   template<typename T>
   void put_confdata_var_into_garbage(const T &v, ConfdataGarbageDestroyWay destroy_way) noexcept {
     if (v.is_reference_counter(ExtraRefCnt::for_confdata)) {
-      garbage_from_previous_confdata_sample_.emplace_front(ConfdataGarbageNode{v, destroy_way});
+      garbage_from_previous_confdata_sample_->emplace_front(ConfdataGarbageNode{v, destroy_way});
       ++garbage_size_;
       return;
     }
@@ -629,9 +630,12 @@ private:
   // It looks like "yes" in practice, but it looks weird ¯\_(ツ)_/¯
   static int get_now() noexcept { return now; }
 
+  using GarbageList = std::forward_list<ConfdataGarbageNode>;
+
   std::aligned_storage_t<sizeof(confdata_sample_storage), alignof(confdata_sample_storage)> confdata_mem_;
   confdata_sample_storage *updating_confdata_storage_{nullptr};
-  std::forward_list<ConfdataGarbageNode> garbage_from_previous_confdata_sample_;
+  std::aligned_storage_t<sizeof(GarbageList), alignof(GarbageList)> garbage_mem_;
+  GarbageList *garbage_from_previous_confdata_sample_{nullptr};
   size_t garbage_size_{0};
   mixed last_element_in_garbage_;
   bool confdata_has_any_updates_{false};
