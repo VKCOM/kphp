@@ -4,8 +4,6 @@
 
 #include "compiler/pipes/filter-only-actually-used.h"
 
-#include "common/algorithms/contains.h"
-
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
@@ -27,20 +25,19 @@ struct ThrowGraphNode {
   {}
 };
 
-void calc_throws_dfs(FunctionPtr callee, IdMap<std::vector<ThrowGraphNode>> &throws_graph, std::set<FunctionPtr> &visited) {
-  if (vk::contains(visited, callee)) {
-    return;
-  }
-  visited.insert(callee);
-
+void calc_throws_dfs(FunctionPtr callee, IdMap<std::vector<ThrowGraphNode>> &throws_graph) {
   for (ThrowGraphNode &n : throws_graph[callee]) {
     FunctionPtr caller = n.f;
 
     for (auto e : callee->exceptions_thrown) {
       if (!CalcActualCallsEdgesPass::handle_exception(n.try_stack, e)) {
-        caller->exceptions_thrown.insert(e);
-        caller->throws_reason = callee;
-        calc_throws_dfs(caller, throws_graph, visited);
+        bool exception_added = caller->exceptions_thrown.insert(e).second;
+        if (exception_added) {
+          caller->throws_reason = callee;
+        }
+        if ((caller != callee) && exception_added) {
+          calc_throws_dfs(caller, throws_graph);
+        }
       }
     }
   }
@@ -84,8 +81,7 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
     if (fun->can_throw()) {
-      std::set<FunctionPtr> visited;
-      calc_throws_dfs(fun, throws_graph, visited);
+      calc_throws_dfs(fun, throws_graph);
     }
     if (fun->body_seq == FunctionData::body_value::non_empty) {
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
