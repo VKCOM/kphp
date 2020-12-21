@@ -2612,7 +2612,7 @@ int main_args_handler(int i) {
       return -1;
     }
     case 2013: {
-      double warmup_workers_part = parse_double_option("--warmup-workers-part", 0, 1);
+      double warmup_workers_part = parse_double_option("--warmup-workers-ratio", 0, 1);
       if (std::isnan(warmup_workers_part)) {
         return -1;
       }
@@ -2620,7 +2620,7 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2014: {
-      double warmup_instance_cache_elements_part = parse_double_option("--warmup-instance-cache-elements-part", 0, 1);
+      double warmup_instance_cache_elements_part = parse_double_option("--warmup-instance-cache-elements-ratio", 0, 1);
       if (std::isnan(warmup_instance_cache_elements_part)) {
         return -1;
       }
@@ -2628,7 +2628,7 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2015: {
-      double warmup_timeout_sec = parse_double_option("--warmup-timeout-sec", 0, DEFAULT_SCRIPT_TIMEOUT);
+      double warmup_timeout_sec = parse_double_option("--warmup-timeout", 0, DEFAULT_SCRIPT_TIMEOUT);
       if (std::isnan(warmup_timeout_sec)) {
         return -1;
       }
@@ -2699,9 +2699,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
   parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
   parse_option("net-dc-mask", required_argument, 2012, "a string formatted like '8=1.2.3.4/12' to detect a datacenter by ipv4");
-  parse_option("warmup-workers-part", required_argument, 2013, "configures master graceful restart: workers part (with respect to -f workers count) used for warm up on master graceful restart");
-  parse_option("warmup-instance-cache-elements-part", required_argument, 2014, "configures master graceful restart: part of stored elements in instance cache (with respect to old master instance cache elements count) used to identify whether the instance cache is hot enough");
-  parse_option("warmup-timeout-sec", required_argument, 2015, "configures master graceful restart: max time of instance cache warm up");
+  parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
+  parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
+  parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

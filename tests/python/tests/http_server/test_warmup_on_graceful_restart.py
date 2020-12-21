@@ -14,9 +14,9 @@ class TestWarmUpOnGracefulRestart(KphpServerAutoTestCase):
 
     def prepare_for_test(self, *, workers_part, instance_cache_part, timeout_sec):
         self.kphp_server.update_options({
-            "--warmup-workers-part": workers_part,
-            "--warmup-instance-cache-elements-part": instance_cache_part,
-            "--warmup-timeout-sec": timeout_sec,
+            "--warmup-workers-ratio": workers_part,
+            "--warmup-instance-cache-elements-ratio": instance_cache_part,
+            "--warmup-timeout": timeout_sec,
         })
         self.kphp_server.restart()
         return self.kphp_server.pid

@@ -36,7 +36,7 @@ private:
   const vk::string_view mysql_db_name_key_{"--mysql-db-name"};
   const vk::string_view net_dc_mask_key_{"--net-dc-mask"};
 
-  const vk::string_view warmup_workers_part_key_{"--warmup-workers-part"};
-  const vk::string_view warmup_instance_cache_elements_part_key_{"--warmup-instance-cache-elements-part"};
-  const vk::string_view warmup_timeout_sec_key_{"--warmup-timeout-sec"};
+  const vk::string_view warmup_workers_part_key_{"--warmup-workers-ratio"};
+  const vk::string_view warmup_instance_cache_elements_part_key_{"--warmup-instance-cache-elements-ratio"};
+  const vk::string_view warmup_timeout_sec_key_{"--warmup-timeout"};
 };
