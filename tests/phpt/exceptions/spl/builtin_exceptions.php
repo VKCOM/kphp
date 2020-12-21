@@ -1,4 +1,5 @@
 @ok
+KPHP_REQUIRE_FUNCTIONS_TYPING=1
 <?php
 
 /*

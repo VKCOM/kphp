@@ -1,4 +1,5 @@
 @ok
+KPHP_REQUIRE_FUNCTIONS_TYPING=1
 <?php
 
 interface CustomExceptionInterface {
@@ -8,7 +9,7 @@ interface CustomExceptionInterface {
 class HypeOverflowException extends OverflowException implements CustomExceptionInterface {
   public $secret = 0;
 
-  public function __construct($message) {
+  public function __construct(string $message) {
     parent::__construct($message);
     $this->code = 5023;
     $this->secret = 40;
