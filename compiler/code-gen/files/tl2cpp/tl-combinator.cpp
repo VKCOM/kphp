@@ -143,22 +143,13 @@ void CombinatorStore::gen_result_expr_processing(CodeGenerator &W) const {
   kphp_assert(typed_mode);
   if (!combinator->original_result_constructor_id) {
     const auto &magic_storing = tl2cpp::get_magic_storing(combinator->result.get());
-    if (!magic_storing.
-                        empty()
-      ) {
-      W << magic_storing <<
-        NL;
+    if (!magic_storing.empty()) {
+      W << magic_storing << NL;
     }
   } else {
-    W << fmt_format("f$store_int({:#010x});", combinator->original_result_constructor_id) <<
-      NL;
+    W << fmt_format("f$store_int({:#010x});", combinator->original_result_constructor_id) << NL;
   }
-  W <<
-    tl2cpp::get_full_value(combinator
-                             ->result.
-      get(), var_num_access
-    ) << ".typed_store(tl_object->$value);" <<
-    NL;
+  W << tl2cpp::get_full_value(combinator->result.get(), var_num_access) << ".typed_store(tl_object->$value);" << NL;
 }
 
 std::string CombinatorStore::get_value_absence_check_for_optional_arg(const std::unique_ptr<vk::tl::arg> &arg) {
