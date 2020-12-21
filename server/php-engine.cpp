@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -2355,6 +2356,21 @@ void init_logname(const char *src) {
   logname_pattern = strdup(pattern_buf);
 }
 
+static double parse_double_option(const char *option_name, const double min_value, const double max_value) {
+  double result{};
+  try {
+    result = std::stod(optarg);
+  } catch (const std::exception &e) {
+    kprintf("%s option parse error: %s", option_name, e.what());
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  if (min_value <= result && result <= max_value) {
+    return result;
+  }
+  kprintf("%s should be in [%f; %f]", option_name, min_value, max_value);
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
 /** main arguments parsing **/
 int main_args_handler(int i) {
   switch (i) {
@@ -2596,49 +2612,28 @@ int main_args_handler(int i) {
       return -1;
     }
     case 2013: {
-      double warmup_workers_part = -1;
-      try {
-        warmup_workers_part = std::stod(optarg);
-      } catch (const std::exception &e) {
-        kprintf("--warmup-workers-part option parse error: %s", e.what());
+      double warmup_workers_part = parse_double_option("--warmup-workers-part", 0, 1);
+      if (std::isnan(warmup_workers_part)) {
         return -1;
       }
-      if (0 <= warmup_workers_part && warmup_workers_part <= 1) {
-        WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
-        return 0;
-      }
-      kprintf("--warmup-workers-part should be in [0; 1]");
-      return -1;
+      WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
+      return 0;
     }
     case 2014: {
-      double warmup_instance_cache_elements_part = -1;
-      try {
-        warmup_instance_cache_elements_part = std::stod(optarg);
-      } catch (const std::exception &e) {
-        kprintf("--warmup-instance-cache-elements-part option parse error: %s", e.what());
+      double warmup_instance_cache_elements_part = parse_double_option("--warmup-instance-cache-elements-part", 0, 1);
+      if (std::isnan(warmup_instance_cache_elements_part)) {
         return -1;
       }
-      if (0 <= warmup_instance_cache_elements_part && warmup_instance_cache_elements_part <= 1) {
-        WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
-        return 0;
-      }
-      kprintf("--warmup-instance-cache-elements-part should be in [0; 1]");
-      return -1;
+      WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
+      return 0;
     }
     case 2015: {
-      int warmup_timeout_sec = -1;
-      try {
-        warmup_timeout_sec = std::stoi(optarg);
-      } catch (const std::exception &e) {
-        kprintf("--warmup-timeout-sec option parse error: %s", e.what());
+      double warmup_timeout_sec = parse_double_option("--warmup-timeout-sec", 0, DEFAULT_SCRIPT_TIMEOUT);
+      if (std::isnan(warmup_timeout_sec)) {
         return -1;
       }
-      if (0 <= warmup_timeout_sec && warmup_timeout_sec <= DEFAULT_SCRIPT_TIMEOUT) {
-        WarmUpContext::get().set_warm_up_max_time(warmup_timeout_sec);
-        return 0;
-      }
-      kprintf("--warmup-timeout-sec should be in [0; %d]", DEFAULT_SCRIPT_TIMEOUT);
-      return -1;
+      WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
+      return 0;
     }
     default:
       return -1;

@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "common/algorithms/clamp.h"
 #include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/dl-utils-lite.h"
@@ -567,13 +568,16 @@ int kill_worker() {
   return 0;
 }
 
-static const int MAX_HANGING_TIME_SEC = max(2 * script_timeout, 65);
+static int get_max_hanging_time_sec() {
+  // + 1 sec for terminating
+  return max(script_timeout + 1, 65);
+}
 
 void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
     for (int i = 0; i < me_workers_n; i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME_SEC <= my_now) {
+      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec() <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
         terminate_worker(workers[i]);
@@ -1703,7 +1707,7 @@ void run_master_on() {
       auto &warm_up_ctx = WarmUpContext::get();
       warm_up_ctx.try_start_warmup();
 
-      int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
+      int set_to_kill = vk::clamp(MAX_KILL - other->dying_workers_n, 0, other->running_workers_n);
       bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
       bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
       bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();

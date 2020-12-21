@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #include <chrono>
@@ -9,13 +13,13 @@
 class WarmUpContext : public vk::singleton<WarmUpContext> {
 public:
   void try_start_warmup() {
-    if (me_running_workers_n > 0 && !timer.is_started()) {
-      timer.start();
+    if (me_running_workers_n > 0 && !timer_.is_started()) {
+      timer_.start();
     }
   }
 
   void reset() {
-    timer.reset();
+    timer_.reset();
   }
 
   bool need_more_workers_for_warmup() const {
@@ -27,7 +31,7 @@ public:
   }
 
   bool warmup_timeout_expired() const {
-    return timer.time() > warm_up_max_time_;
+    return timer_.time() > warm_up_max_time_;
   }
 
   void set_workers_part_for_warm_up(double workers_part_for_warm_up) {
@@ -38,13 +42,17 @@ public:
     this->target_instance_cache_elements_part_ = target_instance_cache_elements_part;
   }
 
-  void set_warm_up_max_time(int warm_up_max_time) {
-    this->warm_up_max_time_ = std::chrono::seconds{warm_up_max_time};
+  void set_warm_up_max_time(const std::chrono::duration<double> &warm_up_max_time) {
+    this->warm_up_max_time_ = warm_up_max_time;
   }
 private:
   double workers_part_for_warm_up_{1};
   double target_instance_cache_elements_part_{0};
-  std::chrono::milliseconds warm_up_max_time_{5};
+  std::chrono::duration<double> warm_up_max_time_{5.0};
 
-  vk::SteadyTimer<std::chrono::milliseconds> timer{};
+  vk::SteadyTimer<std::chrono::milliseconds> timer_{};
+
+  WarmUpContext() = default;
+
+  friend vk::singleton<WarmUpContext>;
 };
