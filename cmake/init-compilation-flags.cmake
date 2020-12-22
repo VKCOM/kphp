@@ -86,3 +86,5 @@ endif()
 
 add_link_options(-rdynamic -L/usr/local/lib -ggdb)
 add_definitions(-D_GNU_SOURCE)
+# prevents the `build` directory to be appeared in symbols, it's necessary for remote debugging with path mappings
+add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}")
