@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <poll.h>
-#include <pthread.h>
 #include <semaphore.h>
 #include <string>
 #include <sys/mman.h>
@@ -25,6 +24,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "common/algorithms/clamp.h"
 #include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/dl-utils-lite.h"
@@ -36,6 +36,7 @@
 #include "common/server/signals.h"
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
+#include "common/timer.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "net/net-connections.h"
@@ -53,53 +54,17 @@
 #include "server/php-worker-stats.h"
 #include "server/php-master-tl-handlers.h"
 
+#include "server/php-master-restart.h"
+#include "server/php-master-warmup.h"
+
 extern const char *engine_tag;
 
 //do not kill more then MAX_KILL at the same time
 #define MAX_KILL 5
 
-//ATTENTION: the file has .cpp extension due to usage of "pthread_mutexattr_setrobust_np" which is by some strange reason unsupported for .c
-//ATTENTION: do NOT change this structures without changing the magic
-#define SHARED_DATA_MAGIC 0x3b720002
 #define PHP_MASTER_VERSION "0.1"
 
 static int save_verbosity;
-
-struct master_data_t {
-  int valid_flag;
-
-  pid_t pid;
-  unsigned long long start_time;
-
-  long long rate;
-  long long generation;
-
-  int running_workers_n;
-  int dying_workers_n;
-
-  int to_kill;
-  long long to_kill_generation;
-
-  int own_http_fd;
-  int http_fd_port;
-  int ask_http_fd_generation;
-  int sent_http_fd_generation;
-
-  int reserved[50];
-};
-
-struct shared_data_t {
-  int magic;
-  int is_inited;
-  int init_owner;
-
-  pthread_mutex_t main_mutex;
-  pthread_cond_t main_cond;
-
-  int id;
-  master_data_t masters[2];
-};
-
 
 static std::string socket_name, shmem_name;
 static int cpu_cnt;
@@ -108,11 +73,7 @@ static sigset_t mask;
 static sigset_t orig_mask;
 static sigset_t empty_mask;
 
-static shared_data_t *shared_data;
-static master_data_t *me, *other; // these are pointers to shared memory
-
 static double my_now;
-
 
 /*** Shared data functions ***/
 void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
@@ -365,162 +326,6 @@ struct Stats {
   }
 };
 
-void init_mutex(pthread_mutex_t *mutex) {
-  pthread_mutexattr_t attr;
-
-  int err;
-  err = pthread_mutexattr_init(&attr);
-  assert (err == 0 && "failed to init mutexattr");
-  err = pthread_mutexattr_setrobust_np(&attr, PTHREAD_MUTEX_ROBUST_NP);
-  assert (err == 0 && "failed to setrobust_np for mutex");
-  err = pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-  assert (err == 0 && "failed to setpshared for mutex");
-
-  err = pthread_mutex_init(mutex, &attr);
-  assert (err == 0 && "failed to init mutex");
-}
-
-void shared_data_init(shared_data_t *data) {
-  vkprintf(2, "Init shared data: begin\n");
-  init_mutex(&data->main_mutex);
-
-  data->magic = SHARED_DATA_MAGIC;
-  data->is_inited = 1;
-  vkprintf(2, "Init shared data: end\n");
-}
-
-
-shared_data_t *get_shared_data(const char *name) {
-  int ret;
-  vkprintf(2, "Get shared data: begin\n");
-#if defined(__APPLE__)
-  shm_unlink(name);
-#endif
-  int fid = shm_open(name, O_RDWR, 0777);
-  int init_flag = 0;
-  if (fid == -1) {
-    if (errno == ENOENT) {
-      vkprintf(1, "shared memory entry is not exists\n");
-      vkprintf(1, "create shared memory\n");
-      fid = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0777);
-      if (fid == -1) {
-        vkprintf(1, "failed to create shared memory\n");
-        assert (errno == EEXIST && "failed to created shared memory for unknown reason");
-        vkprintf(1, "somebody created it before us! so lets just open it\n");
-        fid = shm_open(name, O_RDWR, 0777);
-        assert (fid != -1 && "failed to open shared memory");
-      } else {
-        init_flag = 1;
-      }
-    }
-  }
-  assert (fid != -1);
-
-  size_t mem_len = sizeof(shared_data_t);
-  ret = ftruncate(fid, mem_len);
-  assert (ret == 0 && "failed to ftruncate shared memory");
-
-  auto data = reinterpret_cast<shared_data_t *>(mmap(0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0));
-  assert (data != MAP_FAILED && "failed to mmap shared memory");
-
-  if (init_flag) {
-    shared_data_init(data);
-  } else {
-    if (data->is_inited == 0) {
-      vkprintf(1, "somebody is trying to init shared data right now. lets wait for a second\n");
-      sleep(1);
-    }
-    assert (data->is_inited == 1 && "shared data is not inited yet");
-
-    //TODO: handle this without assert. Use magic in shared_data_t
-    assert (data->magic == SHARED_DATA_MAGIC && "wrong magic in shared data");
-  }
-
-  vkprintf(1, "Get shared data: end\n");
-  return data;
-}
-
-void shared_data_lock(shared_data_t *data) {
-  int err = pthread_mutex_lock(&data->main_mutex);
-  if (err != 0) {
-    if (err == EOWNERDEAD) {
-      vkprintf(1, "owner of shared memory mutex is dead. trying to make mutex and memory consitent\n");
-
-      err = pthread_mutex_consistent_np(&data->main_mutex);
-      assert (err == 0 && "failed to make mutex constistent_np");
-    } else {
-      assert (0 && "unknown mutex lock error");
-    }
-  }
-}
-
-void shared_data_unlock(shared_data_t *data) {
-  int err = pthread_mutex_unlock(&data->main_mutex);
-  assert (err == 0 && "unknown mutex unlock error");
-}
-
-void master_data_remove_if_dead(master_data_t *master) {
-  if (master->valid_flag) {
-    unsigned long long start_time = get_pid_start_time(master->pid);
-    if (start_time != master->start_time) {
-      master->valid_flag = 0;
-      dl_assert (me == nullptr || master != me, dl_pstr("[start_time = %llu] [master->start_time = %llu]",
-                                                        start_time, master->start_time));
-    }
-  }
-}
-
-void shared_data_update(shared_data_t *shared_data) {
-  master_data_remove_if_dead(&shared_data->masters[0]);
-  master_data_remove_if_dead(&shared_data->masters[1]);
-}
-
-void shared_data_get_masters(shared_data_t *shared_data, master_data_t **me, master_data_t **other) {
-  *me = nullptr;
-
-  if (shared_data->masters[0].valid_flag == 0) {
-    *me = &shared_data->masters[0];
-    *other = &shared_data->masters[1];
-  } else if (shared_data->masters[1].valid_flag == 0) {
-    *me = &shared_data->masters[1];
-    *other = &shared_data->masters[0];
-  }
-}
-
-void master_init(master_data_t *me, master_data_t *other) {
-  assert (me != nullptr);
-  memset(me, 0, sizeof(*me));
-
-  if (other->valid_flag) {
-    me->rate = other->rate + 1;
-  } else {
-    me->rate = 1;
-  }
-
-  me->pid = getpid();
-  me->start_time = get_pid_start_time(me->pid);
-#if !defined(__APPLE__)
-  assert (me->start_time != 0);
-#endif
-  if (other->valid_flag) {
-    me->generation = other->generation + 1;
-  } else {
-    me->generation = 1;
-  }
-
-  me->running_workers_n = 0;
-  me->dying_workers_n = 0;
-  me->to_kill = 0;
-
-  me->own_http_fd = 0;
-  me->http_fd_port = -1;
-
-  me->ask_http_fd_generation = 0;
-  me->sent_http_fd_generation = 0;
-
-  me->valid_flag = 1; //NB: must be the last operation.
-}
-
 void run_master();
 
 static volatile long long local_pending_signals = 0;
@@ -588,9 +393,6 @@ static int worker_ids_n;
 static Stats server_stats;
 static unsigned long long dead_stime, dead_utime;
 static PhpWorkerStats dead_worker_stats;
-static int me_workers_n;
-static int me_running_workers_n;
-static int me_dying_workers_n;
 static double last_failed;
 static int *http_fd;
 static int http_fd_port;
@@ -766,15 +568,16 @@ int kill_worker() {
   return 0;
 }
 
-#define MAX_HANGING_TIME 65.0
+static int get_max_hanging_time_sec() {
+  // + 1 sec for terminating
+  return max(script_timeout + 1, 65);
+}
 
 void kill_hanging_workers() {
-  int i;
-
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
-    for (i = 0; i < me_workers_n; i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + MAX_HANGING_TIME <= my_now) {
+    for (int i = 0; i < me_workers_n; i++) {
+      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec() <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         workers_hung++;
         terminate_worker(workers[i]);
@@ -784,7 +587,7 @@ void kill_hanging_workers() {
     }
   }
 
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       kill(workers[i]->pid, SIGKILL);
@@ -1796,16 +1599,16 @@ void run_master_off_in_graceful_shutdown() {
   to_kill = me_running_workers_n;
   if (me_running_workers_n + me_dying_workers_n == 0) {
     to_exit = 1;
-    me->valid_flag = 0;
+    me->is_alive = false;
   }
 }
 
 void run_master_off_in_graceful_restart() {
   vkprintf(2, "state: master_state::off_in_graceful_restart\n");
-  assert (other->valid_flag);
+  assert (other->is_alive);
   vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
-  if (other->valid_flag && other->ask_http_fd_generation > me->generation) {
+  if (other->is_alive && other->ask_http_fd_generation > me->generation) {
     vkprintf(1, "send http fd\n");
     send_fd_via_socket(*http_fd);
     //TODO: process errors
@@ -1821,7 +1624,7 @@ void run_master_off_in_graceful_restart() {
   if (me_running_workers_n + me_dying_workers_n == 0) {
     to_exit = 1;
     changed = 1;
-    me->valid_flag = 0;
+    me->is_alive = false;
   }
 }
 
@@ -1829,7 +1632,7 @@ void run_master_on() {
   vkprintf(2, "state: master_state::on\n");
 
   static double prev_attempt = 0;
-  if (!master_sfd_inited && !other->valid_flag && prev_attempt + 1 < my_now) {
+  if (!master_sfd_inited && !other->is_alive && prev_attempt + 1 < my_now) {
     prev_attempt = my_now;
     if (master_port > 0 && master_sfd < 0) {
       master_sfd = server_socket(master_port, settings_addr, backlog, 0);
@@ -1853,7 +1656,7 @@ void run_master_on() {
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
 
   if (need_http_fd) {
-    int can_ask_http_fd = other->valid_flag && other->own_http_fd && other->http_fd_port == me->http_fd_port;
+    int can_ask_http_fd = other->is_alive && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
       vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
@@ -1897,15 +1700,21 @@ void run_master_on() {
   }
 
   if (!need_http_fd) {
-    int total_workers = me_running_workers_n + me_dying_workers_n + (other->valid_flag ? other->running_workers_n + other->dying_workers_n : 0);
+    int total_workers = me_running_workers_n + me_dying_workers_n + (other->is_alive ? other->running_workers_n + other->dying_workers_n : 0);
     to_run = std::max(0, workers_n - total_workers);
 
-    if (other->valid_flag) {
-      int set_to_kill = std::max(std::min(MAX_KILL - other->dying_workers_n, other->running_workers_n), 0);
+    if (other->is_alive) {
+      auto &warm_up_ctx = WarmUpContext::get();
+      warm_up_ctx.try_start_warmup();
 
-      if (set_to_kill > 0) {
+      int set_to_kill = vk::clamp(MAX_KILL - other->dying_workers_n, 0, other->running_workers_n);
+      bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
+      bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
+      bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();
+      if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
-        vkprintf(1, "[set_to_kill = %d]\n", set_to_kill);
+        vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [warmup_timeout_expired = %d]\n",
+                     set_to_kill, need_more_workers_for_warmup, is_instance_cache_hot_enough, warmup_timeout_expired);
         me->to_kill = set_to_kill;
         me->to_kill_generation = generation;
         changed = 1;
@@ -1967,8 +1776,10 @@ void check_and_instance_cache_try_swap_memory() {
 }
 
 static void cron() {
-  // write stats at the beginning to avoid spikes in graphs
-  send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  if (!other->is_alive || in_old_master_on_restart()) {
+    // write stats at the beginning to avoid spikes in graphs
+    send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+  }
   create_all_outbound_connections();
 
   unsigned long long cpu_total = 0;
@@ -2020,17 +1831,19 @@ auto get_steady_tp_ms_now() noexcept {
   return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 }
 
-static void master_change_state() {
+static master_state master_change_state() {
   master_state new_state;
   if (in_sigterm) {
     new_state = master_state::off_in_graceful_shutdown;
   } else {
-    if (other->valid_flag == 0 || me->rate > other->rate) {
+    if (!other->is_alive || in_new_master_on_restart()) {
       new_state = master_state::on;
     } else {
       new_state = master_state::off_in_graceful_restart;
     }
   }
+
+  master_state prev_state = state;
   switch (state) {
     case master_state::on: {
       // can go to any state
@@ -2048,6 +1861,7 @@ static void master_change_state() {
       // FINAL state: can't go to any other state
       break;
   }
+  return prev_state;
 }
 
 void run_master() {
@@ -2062,6 +1876,7 @@ void run_master() {
   preallocate_msg_buffers();
 
   auto prev_cron_start_tp = get_steady_tp_ms_now();
+  WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
     my_now = dl_time();
@@ -2078,13 +1893,17 @@ void run_master() {
     shared_data_update(shared_data);
 
     //calc state
-    dl_assert (me->valid_flag && me->pid == getpid(), dl_pstr("[me->valid_flag = %d] [me->pid = %d] [getpid() = %d]",
-                                                              me->valid_flag, me->pid, getpid()));
-    master_change_state();
+    dl_assert (me->is_alive && me->pid == getpid(), dl_pstr("[me->is_alive = %d] [me->pid = %d] [getpid() = %d]",
+                                                              me->is_alive, me->pid, getpid()));
+    master_state prev_state = master_change_state();
+
+    if (state != prev_state && state == master_state::on) {
+      WarmUpContext::get().reset();
+    }
 
     //calc generation
     generation = me->generation;
-    if (other->valid_flag && other->generation > generation) {
+    if (other->is_alive && other->generation > generation) {
       generation = other->generation;
     }
     generation++;
@@ -2120,9 +1939,10 @@ void run_master() {
 
     me->running_workers_n = me_running_workers_n;
     me->dying_workers_n = me_dying_workers_n;
+    me->instance_cache_elements_stored = static_cast<uint32_t>(instance_cache_get_stats().elements_stored.load(std::memory_order_relaxed));
 
     if (state != master_state::off_in_graceful_shutdown) {
-      if (changed && other->valid_flag) {
+      if (changed && other->is_alive) {
         vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
         kill(other->pid, SIGPOLL);
       }

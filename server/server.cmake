@@ -8,6 +8,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-engine.cpp
         php-lease.cpp
         php-master.cpp
+        php-master-restart.cpp
         php-master-tl-handlers.cpp
         php-mc-connections.cpp
         php-queries.cpp

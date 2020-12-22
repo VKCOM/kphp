@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -63,6 +64,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/php-master-warmup.h"
 
 static void turn_sigterm_on();
 
@@ -2356,6 +2358,21 @@ void init_logname(const char *src) {
   logname_pattern = strdup(pattern_buf);
 }
 
+static double parse_double_option(const char *option_name, const double min_value, const double max_value) {
+  double result{};
+  try {
+    result = std::stod(optarg);
+  } catch (const std::exception &e) {
+    kprintf("%s option parse error: %s", option_name, e.what());
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  if (min_value <= result && result <= max_value) {
+    return result;
+  }
+  kprintf("%s should be in [%f; %f]", option_name, min_value, max_value);
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
 /** main arguments parsing **/
 int main_args_handler(int i) {
   switch (i) {
@@ -2596,7 +2613,30 @@ int main_args_handler(int i) {
       kprintf("couldn't set net-dc-mask '%s'\n", optarg);
       return -1;
     }
-
+    case 2013: {
+      double warmup_workers_part = parse_double_option("--warmup-workers-ratio", 0, 1);
+      if (std::isnan(warmup_workers_part)) {
+        return -1;
+      }
+      WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
+      return 0;
+    }
+    case 2014: {
+      double warmup_instance_cache_elements_part = parse_double_option("--warmup-instance-cache-elements-ratio", 0, 1);
+      if (std::isnan(warmup_instance_cache_elements_part)) {
+        return -1;
+      }
+      WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
+      return 0;
+    }
+    case 2015: {
+      double warmup_timeout_sec = parse_double_option("--warmup-timeout", 0, DEFAULT_SCRIPT_TIMEOUT);
+      if (std::isnan(warmup_timeout_sec)) {
+        return -1;
+      }
+      WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2661,6 +2701,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("profiler-log-prefix", required_argument, 2010, "set profier log path perfix");
   parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
   parse_option("net-dc-mask", required_argument, 2012, "a string formatted like '8=1.2.3.4/12' to detect a datacenter by ipv4");
+  parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
+  parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
+  parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

@@ -1,5 +1,12 @@
 <?php
 
+/** @kphp-immutable-class */
+class A {
+  /** @var int */
+  public $a = 42;
+  /** @var string */
+  public $b = "hello";
+}
 
 if ($_SERVER["PHP_SELF"] === "/ini_get") {
   echo ini_get($_SERVER["QUERY_STRING"]);
@@ -10,6 +17,8 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
   sleep($sleep_time);
   fwrite(STDERR, "wake up!");
   echo "after sleep";
-}  else {
+} else if ($_SERVER["PHP_SELF"] === "/store-in-instance-cache") {
+  echo instance_cache_store("test_key" . rand(), new A);
+} else {
   echo "Hello world!";
 }

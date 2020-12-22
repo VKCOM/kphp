@@ -54,12 +54,27 @@ void RegisterKphpConfiguration::on_start() {
         register_mysql_db_name(opt_pair->value());
       } else if (*opt_key == net_dc_mask_key_) {
         register_net_dc_mask(opt_pair->value());
+      }  else if (*opt_key == warmup_workers_part_key_) {
+        register_warmup_workers_part(opt_pair->value());
+      }  else if (*opt_key == warmup_instance_cache_elements_part_key_) {
+        register_warmup_instance_cache_elements_part(opt_pair->value());
+      }  else if (*opt_key == warmup_timeout_sec_key_) {
+        register_warmup_timeout_sec(opt_pair->value());
       } else {
         kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
                                  configuration_class_name_, runtime_options_name_, *opt_key));
       }
     }
   });
+}
+
+void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept {
+  const auto *opt_value = GenTree::get_constexpr_string(value);
+  kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
+                                          configuration_class_name_, runtime_options_name_));
+
+  G->add_kphp_runtime_opt(static_cast<std::string>(opt_key));
+  G->add_kphp_runtime_opt(*opt_value);
 }
 
 void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) const noexcept {
@@ -90,12 +105,7 @@ void RegisterKphpConfiguration::register_confdata_predefined_wildcard(VertexPtr 
 }
 
 void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const noexcept {
-  const auto *opt_value = GenTree::get_constexpr_string(value);
-  kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
-                                          configuration_class_name_, runtime_options_name_));
-
-  G->add_kphp_runtime_opt(static_cast<std::string>(mysql_db_name_key_));
-  G->add_kphp_runtime_opt(*opt_value);
+  generic_register_simple_option(value, mysql_db_name_key_);
 }
 
 void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noexcept {
@@ -110,4 +120,16 @@ void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noex
     G->add_kphp_runtime_opt(static_cast<std::string>(net_dc_mask_key_));
     G->add_kphp_runtime_opt(*index_ipv4_subnet);
   }
+}
+
+void RegisterKphpConfiguration::register_warmup_workers_part(VertexPtr value) const noexcept {
+  generic_register_simple_option(value, warmup_workers_part_key_);
+}
+
+void RegisterKphpConfiguration::register_warmup_instance_cache_elements_part(VertexPtr value) const noexcept {
+  generic_register_simple_option(value, warmup_instance_cache_elements_part_key_);
+}
+
+void RegisterKphpConfiguration::register_warmup_timeout_sec(VertexPtr value) const noexcept {
+  generic_register_simple_option(value, warmup_timeout_sec_key_);
 }
