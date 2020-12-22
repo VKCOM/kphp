@@ -17,6 +17,12 @@ VertexPtr remove_conv_wrap(VertexPtr vertex) noexcept {
   if (OpInfo::type(vertex->type()) == conv_op) {
     return remove_conv_wrap(vertex.as<meta_op_unary>()->expr());
   }
+  if (auto func_call = vertex.try_as<op_func_call>()) {
+    if (func_call->str_val == "make_clone") {
+      kphp_assert(func_call->args().size() == 1);
+      return remove_conv_wrap(func_call->args().front());
+    }
+  }
   return vertex;
 }
 

@@ -7,12 +7,14 @@
 /variable \$b3 is implicitly converted from array< string > to mixed/
 /variable \$a4 is implicitly converted from array< int > to mixed/
 /variable \$b4 is implicitly converted from array< string > to mixed/
+/variable A::\$b is implicitly converted from array< int > to array< mixed >/
 /expresion <...> is implicitly converted from tuple<int , array< int >> to tuple<float , array< mixed >>/
 <?php
 
 class A {
     /** @var tuple(float, mixed[]) */
     public $a;
+    public $b = [1, 2, 3, 4];
 }
 
 function call_with_implicit_array_cast(array $x) {
@@ -49,7 +51,9 @@ function test() {
     }
   }
 
-  (new A)->a = tuple(4, [1,2,3]);
+  $a = new A;
+  call_with_implicit_array_cast($a->b);
+  $a->a = tuple(4, [1, 2, 3]);
 
   return $c;
 }
