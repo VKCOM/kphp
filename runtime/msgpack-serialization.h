@@ -14,6 +14,57 @@
 #include "runtime/kphp_core.h"
 #include "runtime/string_functions.h"
 
+extern uint32_t serialize_as_float32;
+
+template<class StreamT, class T>
+inline void pack_value(msgpack::packer<StreamT> &packer, const T& value) {
+  packer.pack(value);
+}
+
+template<class StreamT>
+inline void pack_value(msgpack::packer<StreamT> &packer, double value) {
+  if (serialize_as_float32 > 0) {
+    packer.pack(static_cast<float>(value));
+  } else {
+    packer.pack(value);
+  }
+}
+
+template<class StreamT, class ...Args>
+inline void pack_value(msgpack::packer<StreamT> &packer, const std::tuple<Args...>& value);
+
+template<size_t N>
+struct PackValueHelper {
+  template<class StreamT, class TupleT>
+  static void convert(msgpack::packer<StreamT> &packer, const TupleT &value) {
+    PackValueHelper<N - 1>::convert(packer, value);
+    pack_value(packer, std::get<N - 1>(value));
+  }
+};
+
+template<>
+struct PackValueHelper<0> {
+  template<class StreamT, class TupleT>
+  static void convert(msgpack::packer<StreamT> &, const TupleT &) {}
+};
+
+template<class StreamT, class ...Args>
+inline void pack_value(msgpack::packer<StreamT> &packer, const std::tuple<Args...>& value) {
+  packer.pack_array(sizeof...(Args));
+  PackValueHelper<sizeof...(Args)>::convert(packer, value);
+}
+
+template<class StreamT, class T>
+inline void pack_value(bool as_float32, msgpack::packer<StreamT> &packer, const T& value) {
+  if (as_float32) {
+    serialize_as_float32++;
+    pack_value(packer, value);
+    serialize_as_float32--;
+  } else {
+    pack_value(packer, value);
+  }
+}
+
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
@@ -101,7 +152,7 @@ struct pack<array<T>> {
     if (arr.is_vector()) {
       packer.pack_array(static_cast<uint32_t>(arr.count()));
       for (const auto &it : arr) {
-        packer.pack(it.get_value());
+        pack_value(packer, it.get_value());
       }
       return packer;
     }
@@ -113,7 +164,7 @@ struct pack<array<T>> {
       } else {
         packer.pack(it.get_int_key());
       }
-      packer.pack(it.get_value());
+      pack_value(packer, it.get_value());
     }
 
     return packer;
@@ -171,7 +222,7 @@ struct pack<array<T>> {
          packer.pack(v.as_int());
          break;
        case mixed::type::FLOAT:
-         packer.pack(v.as_double());
+         pack_value(packer, v.as_double());
          break;
        case mixed::type::STRING:
          packer.pack(v.as_string());
@@ -219,7 +270,7 @@ struct pack<Optional<T>> {
   packer<Stream> &operator()(msgpack::packer<Stream> &packer, const Optional<T> &v) const noexcept {
     switch (v.value_state()) {
       case OptionalState::has_value:
-        packer.pack(v.val());
+        pack_value(packer, v.val());
         break;
       case OptionalState::false_value:
         packer.pack_false();
@@ -338,6 +389,7 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
 
 template<class InstanceClass>
 inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
+  serialize_as_float32 = 0;
   msgpack::adaptor::CheckInstanceDepth::depth = 0;
   string err_msg;
   auto result = f$msgpack_serialize(instance, &err_msg);

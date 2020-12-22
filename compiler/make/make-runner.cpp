@@ -88,7 +88,7 @@ void MakeRunner::require_target(Target *target) {
 }
 
 static int run_cmd(const string &cmd) {
-  //fprintf (stdout, "%s\n", cmd.c_str());
+  // fmt_print("{}\n", cmd);
   vector<string> args = split(cmd);
   vector<char *> argv(args.size() + 1);
   for (int i = 0; i < (int)args.size(); i++) {

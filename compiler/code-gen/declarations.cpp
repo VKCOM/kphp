@@ -591,7 +591,7 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
 
   klass->members.for_each([&](ClassMemberInstanceField &field) {
     if (field.serialization_tag != -1) {
-      body += fmt_format("packer.pack({}); packer.pack(${});\n", field.serialization_tag, field.var->name);
+      body += fmt_format("packer.pack({}); pack_value({}, packer, ${});\n", field.serialization_tag, field.serialize_as_float32, field.var->name);
       cnt_fields += 2;
     }
   });

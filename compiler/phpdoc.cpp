@@ -49,6 +49,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-serializable",         kphp_serializable},
   {"@kphp-reserved-fields",      kphp_reserved_fields},
   {"@kphp-serialized-field",     kphp_serialized_field},
+  {"@kphp-serialized-float32",   kphp_serialized_float32},
   {"@kphp-profile",              kphp_profile},
   {"@kphp-profile-allow-inline", kphp_profile_allow_inline},
 };

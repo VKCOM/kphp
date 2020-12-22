@@ -168,11 +168,6 @@ std::string get_default_cxx() noexcept {
 }
 
 std::string with_extra_flag(std::string flags) {
-#ifdef KPHP_HAS_NO_PIE
-  if (strlen(KPHP_HAS_NO_PIE)) {
-    flags.append(" " KPHP_HAS_NO_PIE);
-  }
-#endif
 #if ASAN_ENABLED
   flags.append(" -fsanitize=address");
 #endif
@@ -187,7 +182,11 @@ std::string get_default_extra_cxxflags() noexcept {
 }
 
 std::string get_default_extra_ldflags() noexcept {
-  return with_extra_flag("-L${KPHP_PATH}/objs/flex -ggdb");
+  std::string flags{"-L${KPHP_PATH}/objs/flex -ggdb"};
+#ifdef KPHP_HAS_NO_PIE
+  flags += " " KPHP_HAS_NO_PIE;
+#endif
+  return with_extra_flag(std::move(flags));
 }
 
 } // namespace

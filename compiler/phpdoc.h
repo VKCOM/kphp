@@ -43,6 +43,7 @@ struct php_doc_tag {
     kphp_serializable,
     kphp_reserved_fields,
     kphp_serialized_field,
+    kphp_serialized_float32,
     kphp_profile,
     kphp_profile_allow_inline
   };
