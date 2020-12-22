@@ -9,9 +9,9 @@
 #include "compiler/code-gen/naming.h"
 
 namespace tl2cpp {
-const vk::tl::combinator *constructor;
+const vk::tlo_parsing::combinator *constructor;
 
-std::string TlConstructorDecl::get_optional_args_for_decl(const vk::tl::combinator *c) {
+std::string TlConstructorDecl::get_optional_args_for_decl(const vk::tlo_parsing::combinator *c) {
   std::vector<std::string> res;
   for (const auto &arg : c->args) {
     if (arg->is_optional()) {

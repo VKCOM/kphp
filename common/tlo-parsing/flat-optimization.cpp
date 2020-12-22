@@ -2,17 +2,16 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/flat-optimization.h"
-
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 namespace {
 
 struct InlineArg {
@@ -303,5 +302,5 @@ void perform_flat_optimization(tl_scheme &scheme) {
   }
 }
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk

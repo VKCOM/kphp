@@ -8,8 +8,8 @@
 #include "compiler/code-gen/naming.h"
 
 namespace tl2cpp {
-using vk::tl::FLAG_DEFAULT_CONSTRUCTOR;
-using vk::tl::FLAG_NOCONS;
+using vk::tlo_parsing::FLAG_DEFAULT_CONSTRUCTOR;
+using vk::tlo_parsing::FLAG_NOCONS;
 
 void TypeStore::compile(CodeGenerator &W) const {
   // todo: CHECK_EXCEPTION(return); ??? Should we interrupt storing if the exception was thrown? (Right now it's inconsistent with fetching)

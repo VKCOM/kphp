@@ -17,8 +17,8 @@ extern std::set<std::string> modules_with_functions;
 // A module is a two (.cpp+.h) files that correspond to one TL scheme module.
 class Module {
 public:
-  std::vector<vk::tl::type *> target_types;
-  std::vector<vk::tl::combinator *> target_functions;
+  std::vector<vk::tlo_parsing::type *> target_types;
+  std::vector<vk::tlo_parsing::combinator *> target_functions;
   IncludesCollector h_includes;
   IncludesCollector cpp_includes;
   std::string name;
@@ -39,20 +39,20 @@ public:
 
   void compile_tl_cpp_file(CodeGenerator &W) const;
 
-  void add_obj(const std::unique_ptr<vk::tl::combinator> &f);
+  void add_obj(const std::unique_ptr<vk::tlo_parsing::combinator> &f);
 
-  void add_obj(const std::unique_ptr<vk::tl::type> &t);
+  void add_obj(const std::unique_ptr<vk::tlo_parsing::type> &t);
 
   static std::string get_module_name(const std::string &type_or_comb_name) {
     auto pos = type_or_comb_name.find('.');
     return pos == std::string::npos ? "common" : type_or_comb_name.substr(0, pos);
   }
 
-  static void add_to_module(const std::unique_ptr<vk::tl::type> &t) {
+  static void add_to_module(const std::unique_ptr<vk::tlo_parsing::type> &t) {
     ensure_existence(get_module_name(t->name)).add_obj(t);
   }
 
-  static void add_to_module(const std::unique_ptr<vk::tl::combinator> &c) {
+  static void add_to_module(const std::unique_ptr<vk::tlo_parsing::combinator> &c) {
     ensure_existence(get_module_name(c->name)).add_obj(c);
   }
 
@@ -66,11 +66,11 @@ private:
     return modules[module_name];
   }
 
-  void update_dependencies(const std::unique_ptr<vk::tl::combinator> &combinator);
+  void update_dependencies(const std::unique_ptr<vk::tlo_parsing::combinator> &combinator);
 
-  void update_dependencies(const std::unique_ptr<vk::tl::type> &t);
+  void update_dependencies(const std::unique_ptr<vk::tlo_parsing::type> &t);
 
-  void collect_deps_from_type_tree(vk::tl::expr_base *expr);
+  void collect_deps_from_type_tree(vk::tlo_parsing::expr_base *expr);
 };
 
 }

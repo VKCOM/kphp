@@ -12,10 +12,11 @@
 #include <unordered_map>
 
 #include "common/tl/tls.h"
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 tlo_parser::tlo_parser(const char *tlo_path) :
   pos(0) {
   FILE *f = std::fopen(tlo_path, "rb");
@@ -31,6 +32,8 @@ tlo_parser::tlo_parser(const char *tlo_path) :
   }
   tl_sch = std::make_unique<tl_scheme>();
 }
+
+tlo_parser::~tlo_parser() = default;
 
 std::string tlo_parser::get_string() {
   check_pos(4);
@@ -184,11 +187,14 @@ void tlo_parser::error(const char *format, ...) {
   throw std::runtime_error(error_msg + "\n");
 }
 
+TLOParsingResult::TLOParsingResult() = default;
+TLOParsingResult::TLOParsingResult(TLOParsingResult &&) = default;
+TLOParsingResult::~TLOParsingResult() = default;
 
-vk::expected<std::unique_ptr<tl_scheme>, std::string> parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
-  tlo_parser reader;
+TLOParsingResult parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
+  TLOParsingResult result;
   try {
-    reader = tlo_parser(tlo_path);
+    tlo_parser reader{tlo_path};
     reader.get_schema_version();
     reader.get_value<int>();
     reader.get_value<int>();
@@ -205,10 +211,11 @@ vk::expected<std::unique_ptr<tl_scheme>, std::string> parse_tlo(const char *tlo_
     for (auto &item : reader.tl_sch->functions) {
       reader.tl_sch->magics[item.second->name] = item.first;
     }
+    result.parsed_schema = std::move(reader.tl_sch);
   } catch (const std::exception &e) {
-    return vk::make_unexpected(e.what());
+    result.error = e.what();
   }
-  return std::move(reader.tl_sch);
+  return result;
 }
 
 void rename_tl_name_if_forbidden(std::string &tl_name) {
@@ -225,5 +232,5 @@ void rename_tl_name_if_forbidden(std::string &tl_name) {
   }
 }
 
-}
-}
+} // namespace tlo_parsing
+} // namespace vk

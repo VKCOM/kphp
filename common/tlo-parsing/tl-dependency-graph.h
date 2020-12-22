@@ -5,47 +5,66 @@
 #pragma once
 
 #include <set>
+#include <string>
+#include <vector>
+#include <unordered_map>
 #include <unordered_set>
 
-#include "common/tlo-parsing/tl-objects.h"
-#include "common/wrappers/variant.h"
-
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 
-struct TLNode {
-  vk::variant<const combinator *, const type *> tl_object;
-
-  explicit TLNode(const combinator *c) :
-    tl_object(c) {}
-  explicit TLNode(const type *t) :
-    tl_object(t) {}
-
-  bool is_type() const {
-    return vk::holds_alternative<const type *>(tl_object);
-  }
-
-  bool is_combinator() const {
-    return vk::holds_alternative<const combinator *>(tl_object);
-  }
-
-  const type *get_type() const {
-    return vk::get<const type *>(tl_object);
-  }
-
-  const combinator *get_combinator() const {
-    return vk::get<const combinator *>(tl_object);
-  }
-};
+struct tl_scheme;
+struct type;
+struct combinator;
 
 struct DependencyGraphBuilder;
 
+struct TLNode {
+  enum {
+    holds_combinator,
+    holds_type,
+  } node_type;
+
+  explicit TLNode(const combinator *c) :
+    node_type(holds_combinator) {
+    tl_object_ptr_.combinator_ptr = c;
+  }
+
+  explicit TLNode(const type *t) :
+    node_type(holds_type) {
+    tl_object_ptr_.type_ptr = t;
+  }
+
+  bool is_type() const {
+    return node_type == holds_type;
+  }
+
+  bool is_combinator() const {
+    return node_type == holds_combinator;
+  }
+
+  const type *get_type() const {
+    return tl_object_ptr_.type_ptr;
+  }
+
+  const combinator *get_combinator() const {
+    return tl_object_ptr_.combinator_ptr;
+  }
+
+private:
+  // TODO when we switch to C++17, use std::variant
+  union {
+    const combinator *combinator_ptr;
+    const type *type_ptr;
+  } tl_object_ptr_;
+};
+
 class DependencyGraph {
 public:
-  DependencyGraph() = default;
-
+  DependencyGraph();
   // Во время использования этого класса необходимо, чтобы *scheme не изменялось
   explicit DependencyGraph(tl_scheme *scheme);
+  ~DependencyGraph();
 
   const std::vector<TLNode> &get_nodes() const;
   // a -> b === a зависит от b
@@ -59,11 +78,12 @@ public:
   // Находит все вершины, которые зависят от !
   std::vector<int> find_excl_nodes() const;
 
-  std::vector<const vk::tl::type *> get_type_dependencies(const type *t) const;
-  std::vector<const vk::tl::type *> get_function_dependencies(const combinator *f) const;
+  std::vector<const vk::tlo_parsing::type *> get_type_dependencies(const type *t) const;
+  std::vector<const vk::tlo_parsing::type *> get_function_dependencies(const combinator *f) const;
 
-  std::set<const vk::tl::type *> get_weak_self_cyclic_types() const;
+  std::set<const vk::tlo_parsing::type *> get_weak_self_cyclic_types() const;
   bool is_type_weak_self_cyclic(const type *t) const;
+
 private:
   tl_scheme *scheme{};
   std::unordered_map<std::string, int> tl_name_to_id;
@@ -77,9 +97,10 @@ private:
   void collect_combinator_edges(combinator *c);
   void add_edge(const TLNode &from, const TLNode &to);
   int register_node(const TLNode &node);
-  std::vector<const vk::tl::type *> get_combinator_dependencies(const combinator *c) const;
+  std::vector<const vk::tlo_parsing::type *> get_combinator_dependencies(const combinator *c) const;
 
   friend DependencyGraphBuilder;
 };
-}
-}
+
+} // namespace tlo_parsing
+} // namespace vk

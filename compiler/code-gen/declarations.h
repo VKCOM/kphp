@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/tlo-parsing/tl-objects.h"
+
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/code-gen/naming.h"
@@ -58,7 +60,7 @@ private:
 
 struct TlDependentTypesUsings {
   TlDependentTypesUsings() = default;
-  explicit TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name);
+  explicit TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, const std::string &php_tl_class_name);
 
   void compile(CodeGenerator &W) const;
   void compile_dependencies(CodeGenerator &W);
@@ -82,15 +84,15 @@ private:
     DeducingInfo(std::string deduced_type, vector<TlDependentTypesUsings::InnerParamTypeAccess> path);
   };
 
-  vk::tl::type *tl_type;
+  vk::tlo_parsing::type *tl_type;
   std::map<std::string, DeducingInfo> deduced_params;
   IncludesCollector dependencies;
   std::string specialization_suffix;
   // Deducing context
-  vk::tl::combinator *cur_tl_constructor{};
-  vk::tl::arg *cur_tl_arg{};
+  vk::tlo_parsing::combinator *cur_tl_constructor{};
+  vk::tlo_parsing::arg *cur_tl_arg{};
 
-  void deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack);
+  void deduce_params_from_type_tree(vk::tlo_parsing::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack);
   bool check_deduction_result() const;
 };
 

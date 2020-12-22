@@ -9,7 +9,7 @@
 #include <cstring>
 #include <fstream>
 
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
 namespace tl {
@@ -75,7 +75,7 @@ void TlHints::load_from_combined2_tl_file(const std::string &combined2_tl_file, 
     std::string name = line.substr(0, name_end_pos);
     trim(name);
     if (rename_all_forbidden_names) {
-      rename_tl_name_if_forbidden(name);
+      tlo_parsing::rename_tl_name_if_forbidden(name);
     }
 
     size_t magic_end_pos = line.find(' ', name_end_pos + 1);

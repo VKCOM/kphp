@@ -7,10 +7,8 @@
 #include "common/options.h"
 #include "common/tl2php/gen-php-code.h"
 #include "common/tl2php/tl-hints.h"
-#include "common/tlo-parsing/flat-optimization.h"
-#include "common/tlo-parsing/replace-anonymous-args.h"
-#include "common/tlo-parsing/tl-scheme-final-check.h"
-#include "common/tlo-parsing/tlo-parsing-tools.h"
+#include "common/tlo-parsing/tlo-parsing.h"
+#include "common/tlo-parsing/tl-objects.h"
 #include "common/version-string.h"
 
 namespace vk {
@@ -37,23 +35,23 @@ int convert_tlo_to_php(const char *tlo_file_path,
     if (!combined2_tl_file.empty()) {
       hints.load_from_combined2_tl_file(combined2_tl_file);
     }
-    auto parsed_tlo_schema = parse_tlo(tlo_file_path, true);
-    if (!parsed_tlo_schema.has_value()) {
-      throw std::runtime_error{"Error while reading tlo: " + parsed_tlo_schema.error()};
+    auto parsing_result = tlo_parsing::parse_tlo(tlo_file_path, true);
+    if (!parsing_result.parsed_schema) {
+      throw std::runtime_error{"Error while reading tlo: " + parsing_result.error};
     }
-    auto &schema = *parsed_tlo_schema.value();
+    auto &schema = *parsing_result.parsed_schema;
     total_functions = schema.functions.size();
     total_types = schema.types.size();
 
-    replace_anonymous_args(schema);
+    tlo_parsing::replace_anonymous_args(schema);
     assert(schema.types.size() >= total_types);
     anonymous_types = schema.types.size() - total_types;
 
-    perform_flat_optimization(schema);
+    tlo_parsing::perform_flat_optimization(schema);
     assert(anonymous_types + total_types >= schema.types.size());
     unused_and_flatted_types = anonymous_types + total_types - schema.types.size();
 
-    tl_scheme_final_check(schema);
+    tlo_parsing::tl_scheme_final_check(schema);
 
     total_classes = gen_php_code(schema, hints, out_php_dir, forcibly_overwrite_dir, generate_tests, generate_tl_internals);
   } catch (const std::exception &ex) {

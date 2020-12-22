@@ -177,7 +177,7 @@ InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
   interface(interface) {
 }
 
-TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std::string &php_tl_class_name) : tl_type(tl_type) {
+TlDependentTypesUsings::TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, const std::string &php_tl_class_name) : tl_type(tl_type) {
   int template_suf_start = php_tl_class_name.find("__");
   kphp_assert(template_suf_start != std::string::npos);
   specialization_suffix = php_tl_class_name.substr(template_suf_start);
@@ -188,11 +188,11 @@ TlDependentTypesUsings::TlDependentTypesUsings(vk::tl::type *tl_type, const std:
       }
       bool arg_wrapped_to_optional = false;
       if (arg->is_fields_mask_optional()) {
-        if (arg->type_expr->as<vk::tl::type_var>()) {
+        if (arg->type_expr->as<vk::tlo_parsing::type_var>()) {
           // Can't deduce in cases like 'arg:fields_mask.1? t', where {t: Type}: don't know if 't' is wrapped to optional or not
           continue;
         }
-        auto *arg_type_expr = arg->type_expr->as<vk::tl::type_expr>();
+        auto *arg_type_expr = arg->type_expr->as<vk::tlo_parsing::type_expr>();
         kphp_assert(arg_type_expr); // .fields_mask.0?[int] is prohibited in TL
         arg_wrapped_to_optional = tl2cpp::is_tl_type_wrapped_to_Optional(G->get_tl_classes().get_scheme()->get_type_by_magic(arg_type_expr->type_id));
       }
@@ -221,7 +221,7 @@ TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, vec
   deduced_type(std::move(deduced_type)),
   path_to_inner_param(std::move(path)) {}
 
-// Traverse a tree while ignoring all vertices except vk::tl::type_var and vk::tl::type_expr.
+// Traverse a tree while ignoring all vertices except vk::tlo_parsing::type_var and vk::tlo_parsing::type_expr.
 // Collect a path to a type_var to get the type.
 // An example of what we want to do:
 // ********************** TL scheme **********************
@@ -239,8 +239,8 @@ TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, vec
 // Assume that TL arrays won't have any type vars, i.e. this case is impossible:
 //  test {t:Type} [x:t] = Test;
 // All such cases (vector, tuple) are implemented manually in tl_builtins.h
-void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack) {
-  if (auto type_var = dynamic_cast<vk::tl::type_var *>(type_tree)) {
+void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tlo_parsing::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack) {
+  if (auto type_var = dynamic_cast<vk::tlo_parsing::type_var *>(type_tree)) {
     std::string type_var_name = cur_tl_constructor->get_var_num_arg(type_var->var_num)->name;
     if (!deduced_params.count(type_var_name)) {
       ClassPtr tl_constructor_php_class = tl2cpp::get_php_class_of_tl_constructor_specialization(cur_tl_constructor, specialization_suffix);
@@ -255,11 +255,11 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
     }
     return;
   }
-  if (auto type_expr = dynamic_cast<vk::tl::type_expr *>(type_tree)) {
+  if (auto type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(type_tree)) {
     int i = 0;
     for (const auto &child : type_expr->children) {
-      if (auto casted_child = dynamic_cast<vk::tl::type_expr_base *>(child.get())) {
-        vk::tl::type *parent_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(type_expr->type_id);
+      if (auto casted_child = dynamic_cast<vk::tlo_parsing::type_expr_base *>(child.get())) {
+        vk::tlo_parsing::type *parent_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(type_expr->type_id);
         kphp_assert(parent_tl_type);
 
         InnerParamTypeAccess inner_access;
@@ -268,13 +268,13 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tl::type_expr_base
           inner_access.drop_class_instance = false;
           inner_access.inner_type_name = "ValueType";
         } else if (parent_tl_type->name == "Maybe") {
-          if (casted_child->as<vk::tl::type_var>() || casted_child->as<vk::tl::type_array>()) {
+          if (casted_child->as<vk::tlo_parsing::type_var>() || casted_child->as<vk::tlo_parsing::type_array>()) {
             // Can't deduce in cases like 'Maybe t', where {t: Type}: don't know if 't' is wrapped to optional or not
             continue;
           }
-          auto child_type_expr = dynamic_cast<vk::tl::type_expr *>(casted_child);
+          auto child_type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(casted_child);
           kphp_assert(child_type_expr);
-          vk::tl::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
+          vk::tlo_parsing::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
           kphp_assert(child_tl_type);
           if (tl2cpp::is_tl_type_wrapped_to_Optional(child_tl_type)) {
             inner_access.drop_class_instance = false;
@@ -330,7 +330,7 @@ bool TlDependentTypesUsings::check_deduction_result() const {
 
 std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl_usings() const {
   if (tl2cpp::is_php_class_a_tl_polymorphic_type(interface)) {
-    vk::tl::type *cur_tl_type = tl2cpp::get_tl_type_of_php_class(interface);
+    vk::tlo_parsing::type *cur_tl_type = tl2cpp::get_tl_type_of_php_class(interface);
 
     bool needs_tl_usings = tl2cpp::is_type_dependent(cur_tl_type, G->get_tl_classes().get_scheme().get());
     if (needs_tl_usings) {
@@ -402,8 +402,8 @@ void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W)
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
   if (tl2cpp::is_php_class_a_tl_constructor(klass) && !tl2cpp::is_php_class_a_tl_array_item(klass)) {
     const auto &scheme = G->get_tl_classes().get_scheme();
-    vk::tl::combinator *cur_tl_constructor = tl2cpp::get_tl_constructor_of_php_class(klass);
-    vk::tl::type *cur_tl_type = scheme->get_type_by_magic(cur_tl_constructor->type_id);
+    vk::tlo_parsing::combinator *cur_tl_constructor = tl2cpp::get_tl_constructor_of_php_class(klass);
+    vk::tlo_parsing::type *cur_tl_type = scheme->get_type_by_magic(cur_tl_constructor->type_id);
 
     bool needs_tl_usings = tl2cpp::is_type_dependent(cur_tl_constructor, scheme.get()) && !cur_tl_type->is_polymorphic();
     if (needs_tl_usings) {

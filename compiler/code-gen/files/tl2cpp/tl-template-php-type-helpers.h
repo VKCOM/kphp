@@ -7,18 +7,18 @@
 
 namespace tl2cpp {
 struct TlTemplatePhpTypeHelpers {
-  explicit TlTemplatePhpTypeHelpers(const vk::tl::type *type) :
+  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::type *type) :
     type(get_this_from_renamed_tl_scheme(type)),
     constructor(nullptr) {}
 
-  explicit TlTemplatePhpTypeHelpers(const vk::tl::combinator *constructor) :
+  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::combinator *constructor) :
     type(nullptr),
     constructor(get_this_from_renamed_tl_scheme(constructor)) {}
 
   void compile(CodeGenerator &W) const {
     size_t cnt = 0;
     std::vector<std::string> type_var_names;
-    const vk::tl::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
+    const vk::tlo_parsing::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
     for (const auto &arg : target_constructor->args) {
       if (arg->is_type()) {
         ++cnt;
@@ -58,7 +58,7 @@ struct TlTemplatePhpTypeHelpers {
     }
   }
 private:
-  const vk::tl::type *type;
-  const vk::tl::combinator *constructor;
+  const vk::tlo_parsing::type *type;
+  const vk::tlo_parsing::combinator *constructor;
 };
 }

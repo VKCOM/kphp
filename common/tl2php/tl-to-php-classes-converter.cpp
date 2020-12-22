@@ -54,7 +54,7 @@ struct PhpName {
   std::string class_namespace;
 };
 
-TlToPhpClassesConverter::TlToPhpClassesConverter(const tl_scheme &scheme, PhpClasses &load_into) :
+TlToPhpClassesConverter::TlToPhpClassesConverter(const tlo_parsing::tl_scheme &scheme, PhpClasses &load_into) :
   php_classes_(load_into),
   scheme_(scheme) {
   php_classes_.functions.reserve(scheme_.functions.size());
@@ -64,7 +64,7 @@ TlToPhpClassesConverter::TlToPhpClassesConverter(const tl_scheme &scheme, PhpCla
   register_builtin_classes();
 }
 
-void TlToPhpClassesConverter::register_function(const combinator &tl_function) {
+void TlToPhpClassesConverter::register_function(const tlo_parsing::combinator &tl_function) {
   PhpName function_name{tl_function.name, PhpClasses::functions_namespace()};
   FunctionToPhp function_to_php_doc{*this, tl_function};
   auto &tl_function_php_repr = php_classes_.functions[function_name.class_full_name];
@@ -85,10 +85,10 @@ void TlToPhpClassesConverter::register_function(const combinator &tl_function) {
   tl_function_php_repr.is_kphp_rpc_server_function = tl_function.is_kphp_rpc_server_function();
 }
 
-void TlToPhpClassesConverter::register_type(const type &tl_type,
+void TlToPhpClassesConverter::register_type(const tlo_parsing::type &tl_type,
                                             std::string type_postfix,
                                             CombinatorToPhp &outer_converter,
-                                            const type_expr &outer_type_expr,
+                                            const tlo_parsing::type_expr &outer_type_expr,
                                             bool is_builtin) {
   PhpName type_name{tl_type.name, is_builtin ? "" : PhpClasses::types_namespace(), type_postfix};
   auto types_it = php_classes_.types.find(type_name.class_full_name);
@@ -126,7 +126,7 @@ void TlToPhpClassesConverter::register_type(const type &tl_type,
   }
 }
 
-const tl_scheme &TlToPhpClassesConverter::get_sheme() const {
+const tlo_parsing::tl_scheme &TlToPhpClassesConverter::get_sheme() const {
   return scheme_;
 }
 

@@ -2,17 +2,16 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/replace-anonymous-args.h"
-
 #include <cassert>
 #include <limits>
 #include <stdexcept>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 namespace {
 
 class SchemaManager {
@@ -154,7 +153,7 @@ private:
     anonymous_ctr->type_id = anonymous_type_id;
     anonymous_ctr->args = std::move(tl_type_array.args);
     anonymous_ctr->kind = combinator::combinator_type::CONSTRUCTOR;
-    anonymous_ctr->result = std::make_unique<vk::tl::type_expr>(anonymous_type_id);
+    anonymous_ctr->result = std::make_unique<vk::tlo_parsing::type_expr>(anonymous_type_id);
 
     auto anonymous_type = std::make_unique<type>();
     anonymous_type->name = std::move(anonymous_name);
@@ -204,5 +203,5 @@ void replace_anonymous_args(tl_scheme &scheme) {
   }
 }
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk

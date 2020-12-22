@@ -2,17 +2,16 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/tlo-parsing/tl-scheme-final-check.h"
-
 #include <cassert>
 #include <set>
 #include <unordered_set>
 
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/wrappers/string_view.h"
 
 namespace vk {
-namespace tl {
+namespace tlo_parsing {
 namespace {
 
 struct CaseInsensitiveLess {
@@ -67,7 +66,7 @@ private:
     if (tl_type->name == "Maybe") {
       assert(tl_type_expr.children.size() == 1);
       const auto &child = tl_type_expr.children.back();
-      if (auto child_as_type_expr = child->as<vk::tl::type_expr>()) {
+      if (auto child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
         auto *child_type = scheme_.get_type_by_magic(child_as_type_expr->type_id);
         assert(child_type);
         if (child_type->name == "True") {
@@ -97,7 +96,7 @@ private:
   void apply(const nat_const &) final {}
   void apply(const nat_var &) final {}
 
-  void check_constructor(const vk::tl::combinator &c) {
+  void check_constructor(const vk::tlo_parsing::combinator &c) {
     // Проверяем, что порядок неявных аргументов конструктора совпадает с их порядком в типе
     std::vector<int> var_nums;
     for (const auto &arg : c.args) {
@@ -106,12 +105,12 @@ private:
       }
     }
     std::vector<int> params_order;
-    auto as_type_expr = c.result->as<vk::tl::type_expr>();
+    auto as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
     int idx = 0;
     for (const auto &child : as_type_expr->children) {
-      if (auto as_nat_var = child->as<vk::tl::nat_var>()) {
+      if (auto as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
         params_order.push_back(as_nat_var->var_num);
-      } else if (auto as_type_var = child->as<vk::tl::type_var>()) {
+      } else if (auto as_type_var = child->as<vk::tlo_parsing::type_var>()) {
         params_order.push_back(as_type_var->var_num);
       }
       idx += 1;
@@ -131,7 +130,7 @@ private:
     std::vector<int> indices_in_type_tree;
     int i = 0;
     for (const auto &child : as_type_expr->children) {
-      if (dynamic_cast<vk::tl::type_var *>(child.get())) {
+      if (dynamic_cast<vk::tlo_parsing::type_var *>(child.get())) {
         indices_in_type_tree.push_back(i);
       }
       ++i;
@@ -170,5 +169,5 @@ void tl_scheme_final_check(const tl_scheme &scheme) {
   }
 }
 
-} // namespace tl
+} // namespace tlo_parsing
 } // namespace vk

@@ -11,10 +11,10 @@
 namespace vk {
 namespace tl {
 
-void PhpClasses::load_from(const vk::tl::tl_scheme &scheme, bool generate_tl_internals) {
+void PhpClasses::load_from(const vk::tlo_parsing::tl_scheme &scheme, bool generate_tl_internals) {
   TlToPhpClassesConverter tl_to_php_doc_converter{scheme, *this};
   for (const auto &func : scheme.functions) {
-    const combinator &tl_combinator = *func.second;
+    const tlo_parsing::combinator &tl_combinator = *func.second;
     if (generate_tl_internals || !tl_combinator.is_internal_function()) {
       tl_to_php_doc_converter.register_function(tl_combinator);
     }
