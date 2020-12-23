@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Expected type:.+int/
+/assign array< int > to A::\$a/
 <?php
 
 // if KPHP_REQUIRE_CLASS_TYPING = 0, when @var is set, it is checked

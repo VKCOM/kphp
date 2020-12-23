@@ -372,6 +372,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
                fmt_format("Accessing ->property of non-instance {}", colored_type_out(lhs_type)));
   }
 
+  if (vertex->type() == op_throw) {
+    const TypeData *thrown_type = tinf::get_type(vertex.as<op_throw>()->exception());
+    kphp_error(thrown_type->ptype() == tp_Class && G->get_class("Throwable")->is_parent_of(thrown_type->class_type()),
+               fmt_format("Throw not Throwable, but {}", colored_type_out(thrown_type)));
+  }
+
   if (vertex->type() == op_fork) {
     const VertexAdaptor<op_func_call> &func_call = vertex.as<op_fork>()->func_call();
     kphp_error(!func_call->func_id->is_extern(), "fork of builtin function is forbidden");

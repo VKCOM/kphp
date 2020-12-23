@@ -43,11 +43,11 @@ public:
   void add_edge(Edge *edge);
   void add_rev_edge(Edge *edge);
 
-  inline std::vector<Edge *> &get_next() {
+  inline const std::vector<Edge *> &get_next() const {
     return next_;
   }
 
-  inline std::vector<Edge *> &get_rev_next() {
+  inline const std::vector<Edge *> &get_rev_next() const {
     return rev_next_;
   }
 

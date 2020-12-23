@@ -36,12 +36,6 @@ void ClassData::set_name_and_src_name(const string &name, vk::string_view phpdoc
   this->src_name = std::string("C$").append(replace_backslashes(name));
   this->header_name = replace_characters(src_name + ".h", '$', '@');
   this->phpdoc_str = phpdoc_str;
-  if (!phpdoc_str.empty()) {
-    is_serializable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_serializable);
-    kphp_error(!is_serializable || is_class(), "@kphp-serialize is allowed only for classes");
-    is_tl_class = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class);
-    has_kphp_infer = is_serializable || phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_infer);
-  }
 
   size_t pos = name.find_last_of('\\');
   std::string namespace_name = pos == std::string::npos ? "" : name.substr(0, pos);

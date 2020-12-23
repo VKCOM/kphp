@@ -30,7 +30,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_Class:         return "Class";
     case tp_void:          return "void";
     case tp_Error:         return "Error";
-    case tp_Any:           return "Any";
+    case tp_Any:           return "any";
     case tp_CreateAny:     return "CreateAny";
     case ptype_size:       kphp_fail();
   }

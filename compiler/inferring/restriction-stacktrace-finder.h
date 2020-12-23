@@ -8,11 +8,11 @@
 #include "compiler/inferring/node.h"
 #include "compiler/inferring/restriction-base.h"
 
-class RestrictionLess : public tinf::RestrictionBase {
-private:
+class RestrictionStacktraceFinder {
+  static const unsigned long max_cnt_nodes_in_path = 50;
+
   std::vector<tinf::Node *> stacktrace;
   std::vector<tinf::Node *> node_path_;
-  static const unsigned long max_cnt_nodes_in_path = 50;
   std::string desc;
 
   struct ComparatorByEdgePriorityRelativeToExpectedType;
@@ -32,28 +32,12 @@ private:
   row parse_description(std::string const &description);
   void remove_duplicates_from_stacktrace(std::vector<row> &rows) const;
 
-  tinf::Node *actual_;
-  tinf::Node *expected_;
-
   bool is_parent_node(tinf::Node const *node);
-  bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected);
-  static bool is_less(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr);
-  void find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type);
+  bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected_type);
 
 public:
 
-  RestrictionLess(tinf::Node *a, tinf::Node *b) :
-    actual_(a),
-    expected_(b) {
-  }
+  RestrictionStacktraceFinder(tinf::Node *cur_node, const TypeData *expected_type);
 
-  const char *get_description() final {
-    return desc.c_str();
-  }
-
-  std::string get_actual_error_message();
   std::string get_stacktrace_text();
-
-protected:
-  bool check_broken_restriction_impl() final;
 };

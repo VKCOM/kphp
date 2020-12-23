@@ -46,10 +46,6 @@ inline RValue drop_or_false(RValue rvalue) {
 }
 
 
-inline RValue as_rvalue(PrimitiveType primitive_type) {
-  return RValue(TypeData::get_type(primitive_type));
-}
-
 inline RValue as_rvalue(VertexPtr v, const MultiKey *key = nullptr) {
   return RValue(tinf::get_tinf_node(v), key);
 }
@@ -60,10 +56,6 @@ inline RValue as_rvalue(FunctionPtr function, int param_i) {
 
 inline RValue as_rvalue(VarPtr var) {
   return RValue(tinf::get_tinf_node(var));
-}
-
-inline RValue as_rvalue(ClassPtr klass) {
-  return RValue(klass->type_data);
 }
 
 inline RValue as_rvalue(const TypeData *type, const MultiKey *key = nullptr) {

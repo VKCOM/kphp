@@ -57,10 +57,10 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         node.cpp
         primitive-type.cpp
         public.cpp
-        restriction-base.cpp
         restriction-isset.cpp
-        restriction-less.cpp
+        restriction-match-phpdoc.cpp
         restriction-non-void.cpp
+        restriction-stacktrace-finder.cpp
         type-data.cpp
         type-inferer.cpp
         type-node.cpp
@@ -135,7 +135,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         load-files.cpp
         optimization.cpp
         parse.cpp
-        prepare-function.cpp
+        parse-and-apply-phpdoc.cpp
         preprocess-break.cpp
         preprocess-eq3.cpp
         preprocess-exceptions.cpp

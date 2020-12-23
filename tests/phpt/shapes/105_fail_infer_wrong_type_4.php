@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/pass shape<zz:string, x:string> to argument \$sh of printX/
 <?php
 require_once 'kphp_tester_include.php';
 

@@ -43,12 +43,12 @@ public:
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
   static bool is_superglobal(const string &s);
+  static bool is_magic_method_name_allowed(const std::string &name);
 
 
   GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
-  VertexAdaptor<op_string> generate_constant_field_class_value();
 
   bool test_expect(TokenType tp);
 

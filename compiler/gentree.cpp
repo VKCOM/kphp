@@ -55,10 +55,6 @@ VertexAdaptor<op_string> GenTree::generate_constant_field_class_value(ClassPtr k
   return value_of_const_field_class;
 }
 
-VertexAdaptor<op_string> GenTree::generate_constant_field_class_value() {
-  return generate_constant_field_class_value(cur_class);
-}
-
 void GenTree::next_cur() {
   if (cur != end) {
     cur++;
@@ -1247,7 +1243,7 @@ VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_pre
   auto v = VertexAdaptor<op_var>::create();
   v->str_val = gen_unique_name(name_prefix, cur_function);
   v->extra_type = op_ex_var_superlocal;
-  v->type_help = tp;
+  v->type_rule = VertexAdaptor<op_set_check_type_rule>::create(GenTree::create_type_help_vertex(tp));
   return v;
 }
 
@@ -1472,6 +1468,12 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 
+  for (size_t i = 1; i < params_next.size(); ++i) {
+    if (!params_next[i]->has_default_value()) {
+      kphp_error(!params_next[i - 1]->has_default_value(), "Optional parameter is provided before required");
+    }
+  }
+
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
@@ -1494,6 +1496,9 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     func_name = get_identifier();
     CE(!func_name.empty());
     func_name = static_cast<string>(std::prev(cur)->str_val);
+    if (cur_class && func_name.size() > 2 && func_name[0] == '_' && func_name[1] == '_') {
+      kphp_error(is_magic_method_name_allowed(func_name), "This magic method is unsupported");
+    }
     if (cur_class) { // fname inside a class is full$class$name$$fname
       func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
     }
@@ -2307,6 +2312,16 @@ bool GenTree::is_superglobal(const string &s) {
     "_ENV"
   };
   return vk::contains(names, s);
+}
+
+bool GenTree::is_magic_method_name_allowed(const string &name) {
+  static std::set<std::string> names = {
+    ClassData::NAME_OF_CONSTRUCT,
+    ClassData::NAME_OF_CLONE,
+    // other __-staring methods like __invoke/_self$ are implicitly generated and aren't allowed to occur in php
+  };
+
+  return vk::contains(names, name);
 }
 
 #undef CE

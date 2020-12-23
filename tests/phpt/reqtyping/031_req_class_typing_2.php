@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_REQUIRE_CLASS_TYPING=1
-/TYPE INFERENCE ERROR/
+/assign array< A > to A::\$cache/
 <?php
 
 // check that default value fixes the type

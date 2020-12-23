@@ -292,9 +292,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     AutoLocker<Lockable *> locker(&(*child_class->parent_class));
     child_class->parent_class->derived_classes.emplace_back(child_class);
   }
-
-  kphp_error(!(child_class->is_serializable && child_class->parent_class && child_class->parent_class->members.has_any_instance_var()),
-             "You may not serialize classes which has a parent with fields");
 }
 
 void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {

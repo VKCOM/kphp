@@ -58,8 +58,6 @@ public:
   bool is_tl_class{false};
   bool has_custom_constructor{false};
   bool is_serializable{false};
-  // flag forces to have php-docs above functions; we should add the same check for class fields
-  bool has_kphp_infer{false};
 
   SrcFilePtr file_id;
   int location_line_num{-1};

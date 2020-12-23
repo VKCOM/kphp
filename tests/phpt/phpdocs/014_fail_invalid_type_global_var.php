@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/insert string into \$ints\[\]/
 <?php
 
 $ints = [1];

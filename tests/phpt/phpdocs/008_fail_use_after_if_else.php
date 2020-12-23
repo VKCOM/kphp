@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/Different @var for \$a exist/
 <?php
 
 function demo() {
