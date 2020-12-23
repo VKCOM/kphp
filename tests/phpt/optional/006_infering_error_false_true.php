@@ -1,4 +1,5 @@
-@ok
+@kphp_should_fail
+/pass boolean to argument \$x of test/
 <?php
 
 /**
@@ -8,4 +9,3 @@ function test($x) {
 }
 
 test(true);
-// 'false' treated as bool in get_real_ptype()

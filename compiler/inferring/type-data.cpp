@@ -27,7 +27,7 @@ TypeData *TypeData::SubkeysValues::create_if_empty(const Key &key, TypeData *par
     return existed_type_data;
   }
 
-  TypeData *value = get_type(tp_Unknown)->clone();
+  TypeData *value = get_type(tp_any)->clone();
   value->parent_ = parent;
 
   add(key, value);
@@ -60,7 +60,7 @@ void TypeData::init_static() {
   }
 
   for (int tp = 0; tp < ptype_size; tp++) {
-    array_types[tp] = create_type_data(primitive_types[tp == tp_Any ? tp_CreateAny : tp]);
+    array_types[tp] = create_type_data(primitive_types[tp]);
   }
 }
 
@@ -80,11 +80,11 @@ TypeData::TypeData(PrimitiveType ptype) :
   generation_(current_generation()) {
   if (ptype_ == tp_Null) {
     set_or_null_flag();
-    ptype_ = tp_Unknown;
+    ptype_ = tp_any;
   }
   if (ptype_ == tp_False) {
     set_or_false_flag();
-    ptype_ = tp_Unknown;
+    ptype_ = tp_any;
   }
 }
 
@@ -134,7 +134,7 @@ TypeData *TypeData::at_force(const Key &key) {
     return res;
   }
 
-  TypeData *value = get_type(tp_Unknown)->clone();
+  TypeData *value = get_type(tp_any)->clone();
   value->parent_ = this;
   value->on_changed();
 
@@ -149,7 +149,7 @@ TypeData *TypeData::at_force(const Key &key) {
 
 PrimitiveType TypeData::get_real_ptype() const {
   const PrimitiveType p = ptype();
-  if (p == tp_Unknown && (or_null_flag() || or_false_flag())) {
+  if (p == tp_any && (or_null_flag() || or_false_flag())) {
     return tp_bool;
   }
   return p;
@@ -230,7 +230,7 @@ bool TypeData::has_class_type_inside() const {
  * True for array<any>, tuple<any, ...> and other having 'any' somewhere inside — meaning that this 'any' should be inferred
  */
 bool TypeData::has_tp_any_inside() const {
-  return for_each_deep([](const TypeData &data) { return data.get_real_ptype() == tp_Unknown || data.ptype() == tp_Any; }) || shape_has_varg_flag();
+  return for_each_deep([](const TypeData &data) { return data.get_real_ptype() == tp_any; }) || shape_has_varg_flag();
 }
 
 void TypeData::mark_classes_used() const {
@@ -292,7 +292,7 @@ bool TypeData::can_store_null() const {
 }
 
 bool TypeData::use_or_false() const {
-  return !::can_store_false(ptype()) && or_false_flag() && ptype() != tp_Unknown;
+  return !::can_store_false(ptype()) && or_false_flag();
 }
 
 bool TypeData::can_store_false() const {
@@ -316,18 +316,6 @@ TypeData *TypeData::clone() const {
   return new TypeData(*this);
 }
 
-void TypeData::convert_Unknown_to_Any() {
-  if (get_real_ptype() == tp_Unknown) {
-    set_ptype(tp_Any);
-  }
-  if (anykey_value != nullptr) {
-    anykey_value->convert_Unknown_to_Any();
-  }
-  for (auto &subkey : subkeys_values) {
-    subkey.second->convert_Unknown_to_Any();
-  }
-}
-
 const TypeData *TypeData::const_read_at(const Key &key) const {
   if (ptype() == tp_mixed) {
     return get_type(tp_mixed);
@@ -336,7 +324,7 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
     return get_type(tp_string);
   }
   if (!structured()) {
-    return get_type(tp_Unknown);
+    return get_type(tp_any);
   }
   if (vk::any_of_equal(ptype(), tp_tuple, tp_shape) && key.is_any_key()) {
     return get_type(tp_Error);
@@ -346,7 +334,7 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
     res = anykey_value;
   }
   if (res == nullptr) {
-    return get_type(tp_Unknown);
+    return get_type(tp_any);
   }
   return res;
 }
@@ -577,6 +565,10 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
       res += "std::tuple";
       break;
     }
+    case tp_any: {
+      res += "Unknown";
+      break;
+    }
     default : {
       res += ptype_name(tp);
       break;
@@ -600,7 +592,7 @@ inline void get_txt_style_type(const TypeData *type, std::string &res) {
 }
 
 static bool try_get_txt_or_false_or_null_for_unknown(const TypeData *type, std::string &res) {
-  if (type->ptype() == tp_Unknown) {
+  if (type->ptype() == tp_any) {
     if (type->or_false_flag()) {
       res += "false";
     }
@@ -731,7 +723,7 @@ std::string colored_type_out(const TypeData *type) {
 int type_strlen(const TypeData *type) {
   PrimitiveType tp = type->ptype();
   switch (tp) {
-    case tp_Unknown:
+    case tp_any:
       if (type->or_null_flag() || type->or_false_flag()) {
         return STRLEN_EMPTY;
       }
@@ -763,10 +755,6 @@ int type_strlen(const TypeData *type) {
       return STRLEN_FUTURE_QUEUE;
     case tp_Error:
       return STRLEN_ERROR;
-    case tp_Any:
-      return STRLEN_ANY;
-    case tp_CreateAny:
-      return STRLEN_CREATE_ANY;
     case tp_regexp:
     case ptype_size:
     kphp_fail();
@@ -794,7 +782,8 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   return type1->ptype() == type2->ptype();
 }
 
-// compare types in sense of cpp type out
+// check if types fully equal (if type2 is any, it's equal to anything)
+// note that false != bool here
 bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   if (type1 == nullptr) {
     return type2 == nullptr;
@@ -803,15 +792,11 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
     return false;
   }
 
-  if (type1->get_real_ptype() != type2->get_real_ptype()) {
-    return false;
+  bool fully_eq = type1->ptype() == type2->ptype() && type1->use_or_false() == type2->use_or_false() && type1->use_or_null() == type2->use_or_null();
+  if (!fully_eq) {
+    return type2->get_real_ptype() == tp_any;
   }
-  if (type1->use_or_false() != type2->use_or_false()) {
-    return false;
-  }
-  if (type1->use_or_null() != type2->use_or_null()) {
-    return false;
-  }
+
   const PrimitiveType tp = type1->ptype();
 
   if (tp == tp_Class) {
@@ -842,19 +827,18 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   return true;
 }
 
+// check that given <= expected, to if expected is a phpdoc restriction, check that actual inferred type matches
+// note that false < bool
 bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at) {
-  std::unique_ptr<TypeData> expected_clone(expected->clone());
-  expected_clone->convert_Unknown_to_Any();
+  std::unique_ptr<TypeData> type_of_to_node(expected->clone());
 
-  std::unique_ptr<TypeData> type_of_to_node(expected_clone->clone());
-
-  if (from_at) {
+  if (from_at && !from_at->empty()) {
     type_of_to_node->set_lca_at(*from_at, given);
   } else {
     type_of_to_node->set_lca(given);
   }
 
-  return are_equal_types(type_of_to_node.get(), expected_clone.get());
+  return are_equal_types(type_of_to_node.get(), expected);
 }
 
 bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept {
@@ -863,7 +847,7 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
   }
   if (from->get_real_ptype() == tp_array) {
     auto from_array_value_type = from->lookup_at(Key::any_key());
-    if (from_array_value_type->get_real_ptype() == tp_Unknown) {
+    if (from_array_value_type->get_real_ptype() == tp_any) {
       return false;
     }
     if (to->get_real_ptype() == tp_mixed) {

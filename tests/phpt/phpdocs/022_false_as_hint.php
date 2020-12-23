@@ -1,19 +1,37 @@
 @ok
 <?php
 
-// this seems strange, but works (vk.com has a lot of such cases, maybe will stop working in the future, see TypeData::use_or_false)
+/** @param string|false $s */
+function takeStrOrFalse($s) {}
 
-/**
- * @param false $b
- */
-function f1($b) {}
+function callTakeStrOrFalse() {
+    takeStrOrFalse(false);
+    $f = false;
+    takeStrOrFalse($f);
+}
+callTakeStrOrFalse();
 
-f1(false);
-f1(true);
+function takeBool(bool $s) {}
+
+/** @param false $b */
+function pFalseInferFalse($b) {
+    takeStrOrFalse($b);
+    takeBool($b);
+}
+pFalseInferFalse(false);
+
+function pInferBool($b) {
+    takeBool($b);
+}
+pInferBool(false);
+pInferBool(true);
 
 /**
  * @return false
  */
-function f2(bool $b = true) { return $b; }
+function getFalse() { return false; }
+getFalse();
 
-f2();
+/** @param bool[] $arr */
+function takeBoolArr(array $arr = ['k'=>false]) {}
+takeBoolArr(['d' => false]);

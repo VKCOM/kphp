@@ -42,13 +42,13 @@ public:
 
 class AssumNotInstance final : public Assumption {
   AssumNotInstance() = default;
-  PrimitiveType type{tp_Any};
+  PrimitiveType type{tp_any};
 
 public:
 
-  static auto create(PrimitiveType type = tp_Any) {
+  static auto create(PrimitiveType type = tp_any) {
     auto self = new AssumNotInstance();
-    self->type = type != tp_Unknown ? type : tp_Any;
+    self->type = type;
     return vk::intrusive_ptr<Assumption>(self);
   }
 

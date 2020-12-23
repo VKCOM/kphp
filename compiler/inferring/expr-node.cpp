@@ -357,7 +357,7 @@ void ExprNodeRecalc::recalc_conv_array(VertexAdaptor<meta_op_unary> conv) {
     set_lca(TypeData::get_type(tp_Error));
   } else {
     recalc_ptype<tp_array>();
-    if (tinf::get_type(arg)->ptype() != tp_Unknown) { //hack
+    if (tinf::get_type(arg)->ptype() != tp_any) { //hack
       set_lca_at(&MultiKey::any_key(1), tinf::get_type(arg)->get_real_ptype());
     }
   }

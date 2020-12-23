@@ -803,7 +803,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     return {};
   }
 
-  PrimitiveType tp = tp_Unknown;
+  PrimitiveType tp = tp_any;
   VertexAdaptor<meta_op_type_rule> type_rule;
   if (!from_callback && cur->type() == tok_triple_colon) {
     tp = get_func_param_type_help();    // saved to the param->type_help, implicitly casted during a call
@@ -830,7 +830,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
 
   if (type_rule) {
     v->type_rule = type_rule;
-  } else if (tp != tp_Unknown) {
+  } else if (tp != tp_any) {
     v->type_help = tp;
   }
 

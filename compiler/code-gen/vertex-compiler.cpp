@@ -350,7 +350,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   }
   W << "null_coalesce< " << TypeName{type} << " >(";
   const auto index = lhs.try_as<op_index>();
-  const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_Unknown;
+  const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_any;
   if (index && vk::none_of_equal(array_ptype, tp_shape, tp_tuple)) {
     kphp_assert (index->has_key());
     W << index->array() << ", " << index->key() << ", ";

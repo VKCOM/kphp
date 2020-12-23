@@ -34,7 +34,7 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
       return init_string && init_string->empty();
     }
     case tp_array:
-      return init_type->lookup_at(Key::any_key())->get_real_ptype() == tp_Unknown;
+      return init_type->lookup_at(Key::any_key())->get_real_ptype() == tp_any;
     default:
       return false;
   }

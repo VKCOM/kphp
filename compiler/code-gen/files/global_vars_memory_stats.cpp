@@ -19,7 +19,7 @@ GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file) :
 
 void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
   VarsCollector vars_collector{32, [](VarPtr global_var) {
-    return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_Unknown);
+    return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_any);
   }};
 
   vars_collector.collect_global_and_static_vars_from(main_file_->main_function);

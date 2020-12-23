@@ -22,7 +22,7 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
   }
 
   if (tinf::Node *tinf_node = tinf::get_tinf_node(v)) {
-    if (tinf_node->get_type()->ptype() != tp_Unknown) {
+    if (tinf_node->get_type()->ptype() != tp_any) {
       return tinf_node->get_type()->class_type().try_as<LambdaClassData>();
     }
   }
