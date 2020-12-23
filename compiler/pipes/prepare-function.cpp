@@ -344,9 +344,11 @@ private:
     // missing type hint and phpdoc for one of the parameters
     for (auto v : func_params_) {
       if (auto param = v.try_as<op_func_param>()) {
-        if (!param->type_hint && param->var()->extra_type != op_ex_var_this && param->template_type_id == -1) {
-          kphp_error(false, fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
-        }
+        bool ok = param->type_hint ||
+                  param->var()->extra_type == op_ex_var_this ||
+                  param->template_type_id != -1 ||
+                  param->type_help != tp_Unknown;
+        kphp_error(ok, fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
       }
     }
   }

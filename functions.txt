@@ -25,7 +25,7 @@ class Exception implements Throwable {
     /** @var int */
     protected $line;
 
-    final public function __construct(string $message = '', int $code = 0) ::: Exception;
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
     final public function getMessage () ::: string;
     final public function getCode () ::: int;
     final public function getFile () ::: string;
@@ -44,7 +44,7 @@ class Error implements Throwable {
     /** @var int */
     protected $line;
 
-    final public function __construct(string $message = '', int $code = 0) ::: Error;
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
     final public function getMessage () ::: string;
     final public function getCode () ::: int;
     final public function getFile () ::: string;
