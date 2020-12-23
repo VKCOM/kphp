@@ -13,7 +13,7 @@
 
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
-    case tp_Unknown:       return "Unknown";
+    case tp_any:           return "any";
     case tp_Null:          return "Null";
     case tp_False:         return "False";
     case tp_bool:          return "bool";
@@ -30,8 +30,6 @@ const char *ptype_name(PrimitiveType id) {
     case tp_Class:         return "Class";
     case tp_void:          return "void";
     case tp_Error:         return "Error";
-    case tp_Any:           return "any";
-    case tp_CreateAny:     return "CreateAny";
     case ptype_size:       kphp_fail();
   }
   kphp_fail();
@@ -39,12 +37,14 @@ const char *ptype_name(PrimitiveType id) {
 
 bool can_store_false(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_bool, tp_mixed, tp_Any);
+  // any+or_false means just 'false' keyword, it's not wrapped into Optional: it's bool in cpp, but stays just false in type comparisons
+  return vk::any_of_equal(tp, tp_bool, tp_mixed, tp_any);
 }
 
 bool can_store_null(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
-  return vk::any_of_equal(tp, tp_mixed, tp_Class, tp_Any);
+  // any+or_null means just 'null' keyword, it's represented as Optional<bool> in cpp, so any can't store null
+  return vk::any_of_equal(tp, tp_mixed, tp_Class);
 }
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
@@ -58,22 +58,11 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
     return tp_Error;
   }
 
-  if (a == tp_Any) {
-    return tp_Any;
-  }
-  if (b == tp_Any) {
-    return a;
-  }
-
-  if (b == tp_CreateAny) {
-    return tp_Any;
-  }
-
   if (a > b) {
     std::swap(a, b);
   }
 
-  if (a == tp_Unknown) {
+  if (a == tp_any) {
     return b;
   }
 

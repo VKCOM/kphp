@@ -218,7 +218,7 @@ void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_cal
   // built-in functions are declared as 'callback(...) ::: any' or 'callback(...) ::: bool'
   // if 'any', it must return anything but void; otherwise, the type rule must be satisfied (it's static, no argument depends)
   kphp_assert(callback_param->type_rule && callback_param->type_rule->rule()->type() == op_type_expr_type);
-  if (callback_param->type_rule->rule()->type_help == tp_Any) {
+  if (callback_param->type_rule->rule()->type_help == tp_any) {
     create_non_void(as_rvalue(provided_callback, -1));
   } else {
     // todo don't create it every time
@@ -272,7 +272,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     // * the paragraph above about 'any' refers only to PHP functions; built-ins accepting 'any' need only a postponed check
     // * cast params go their own way
     bool should_create_set_to_infer = (!param->type_hint || tinf::convert_type_rule_to_TypeData(VertexAdaptor<op_set_check_type_rule>::create(param->type_hint))->has_tp_any_inside())
-                                      && !function->is_extern() && param->type_help == tp_Unknown;
+                                      && !function->is_extern() && param->type_help == tp_any;
 
     if (should_create_set_to_infer) {
       create_set(as_lvalue(function, i), arg);
@@ -446,8 +446,8 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
   // (for not-cast params — with type hints — it will be done after)
   for (int i = 0; i < params.size(); i++) {
     PrimitiveType ptype = params[i]->type_help;
-    if (ptype != tp_Unknown) {
-      create_type_initial_assign(as_lvalue(function, i), TypeData::get_type(ptype, tp_Any));
+    if (ptype != tp_any) {
+      create_type_initial_assign(as_lvalue(function, i), TypeData::get_type(ptype, tp_any));
     }
   }
 
@@ -479,7 +479,7 @@ VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v) {
     kphp_error(v->type() == op_var, "type_rule can be set only for op_var");
     add_type_rule(v.as<op_var>());
   }
-  if (v->type_help != tp_Unknown) {
+  if (v->type_help != tp_any) {
     kphp_error(v->type() == op_func_param, "type_help can be set only for op_func_param or op_type_expr_type");
   }
 

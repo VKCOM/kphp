@@ -163,7 +163,7 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
     case op_add:
     case op_set_add:
       if (vk::any_of_equal(tp_array, lhs_type->get_real_ptype(), rhs_type->get_real_ptype())) {
-        kphp_error(vk::none_of_equal(tp_Unknown, lhs_type->ptype(), rhs_type->ptype()),
+        kphp_error(vk::none_of_equal(tp_any, lhs_type->ptype(), rhs_type->ptype()),
                    fmt_format("Can't use '{}' operation between {} and {} types",
                               OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
         return;
@@ -191,8 +191,8 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
     case op_set_xor:
     case op_set_shl:
     case op_set_shr: {
-      kphp_error((lhs_type->ptype() != tp_Unknown || lhs_type->or_false_flag()) &&
-                 (rhs_type->ptype() != tp_Unknown || rhs_type->or_false_flag()),
+      kphp_error((lhs_type->ptype() != tp_any || lhs_type->or_false_flag()) &&
+                 (rhs_type->ptype() != tp_any || rhs_type->or_false_flag()),
                  fmt_format("Got '{}' operation between {} and {} types",
                             OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
       return;
@@ -284,7 +284,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at(Key::any_key());
-      if (valueType->get_real_ptype() == tp_Unknown) {
+      if (valueType->get_real_ptype() == tp_any) {
         kphp_error (0, "Can not compile foreach on array of Unknown type");
       }
     }
@@ -295,7 +295,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at(Key::any_key());
-      kphp_error (valueType->get_real_ptype() != tp_Unknown, "Can not compile list with array of Unknown type");
+      kphp_error (valueType->get_real_ptype() != tp_any, "Can not compile list with array of Unknown type");
     } else if (arrayType->ptype() == tp_tuple) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
@@ -330,7 +330,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
       kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
     }
     const TypeData *key_type = tinf::get_type(key);
-    kphp_error(key_type->ptype() != tp_Unknown || key_type->or_false_flag(),
+    kphp_error(key_type->ptype() != tp_any || key_type->or_false_flag(),
                fmt_format("Can't get array element by key with {} type", colored_type_out(key_type)));
   }
   if (auto xset = vertex.try_as<meta_op_xset>()) {
@@ -488,7 +488,7 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
   // instance can be compared with other instances (reference comparison) or nulls
   if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
     auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
-    bool cmp_type_is_null = cmp_type->ptype() == tp_Unknown && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
+    bool cmp_type_is_null = cmp_type->ptype() == tp_any && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
     kphp_error(cmp_type->ptype() == tp_Class || cmp_type_is_null, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
   }
 }
@@ -532,7 +532,7 @@ bool FinalCheckPass::user_recursion(VertexPtr v) {
   if (vk::any_of_equal(v->type(), op_func_call, op_var, op_index, op_conv_drop_false, op_conv_drop_null)) {
     if (v->rl_type == val_r) {
       const TypeData *type = tinf::get_type(v);
-      if (type->get_real_ptype() == tp_Unknown) {
+      if (type->get_real_ptype() == tp_any) {
         raise_error_using_Unknown_type(v);
         return true;
       }

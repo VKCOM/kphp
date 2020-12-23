@@ -29,10 +29,8 @@ constexpr int STRLEN_STRING = STRLEN_DYNAMIC;
 constexpr int STRLEN_VAR = STRLEN_DYNAMIC;
 constexpr int STRLEN_CLASS = STRLEN_ERROR;
 constexpr int STRLEN_VOID = STRLEN_ERROR;
-constexpr int STRLEN_ANY = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE_QUEUE = STRLEN_ERROR;
-constexpr int STRLEN_CREATE_ANY = STRLEN_ERROR;
 
 class ExtraRefCnt {
 public:

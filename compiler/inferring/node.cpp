@@ -11,7 +11,7 @@ namespace tinf {
 
 Node::Node() :
   recalc_state_(empty_st),
-  type_(TypeData::get_type(tp_Unknown)),
+  type_(TypeData::get_type(tp_any)),
   recalc_cnt_(-1),
   isset_flags(0),
   isset_was(0) {

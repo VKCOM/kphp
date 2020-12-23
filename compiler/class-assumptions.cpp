@@ -903,7 +903,7 @@ std::string AssumInstance::as_human_readable() const {
 }
 
 std::string AssumNotInstance::as_human_readable() const {
-  return type != tp_Any ? ptype_name(type) : "primitive";
+  return type != tp_any ? ptype_name(type) : "primitive";
 }
 
 std::string AssumTuple::as_human_readable() const {

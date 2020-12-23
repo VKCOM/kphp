@@ -144,7 +144,6 @@ public:
   void make_structured();
   void on_changed();
   TypeData *clone() const;
-  void convert_Unknown_to_Any();
 
   TypeData *lookup_at(const Key &key) const;
   lookup_iterator lookup_begin() const;

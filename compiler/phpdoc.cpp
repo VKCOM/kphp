@@ -202,7 +202,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>
         return GenTree::create_type_help_vertex(tp_array, {parse_nested_one_type_rule()});
       }
-      return GenTree::create_type_help_vertex(tp_array, {GenTree::create_type_help_vertex(tp_Unknown)});
+      return GenTree::create_type_help_vertex(tp_array, {GenTree::create_type_help_vertex(tp_any)});
     case tok_at: {      // @tl\...
       cur_tok++;
       if (!cur_tok->str_val.starts_with("tl\\")) {
@@ -218,7 +218,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       return VertexAdaptor<op_type_expr_lca>::create(parse_type_expression(), GenTree::create_type_help_vertex(tp_Null));
     case tok_object:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_Any);
+      return GenTree::create_type_help_vertex(tp_any);
 
     case tok_static:
     case tok_func_name:
@@ -235,7 +235,7 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       // plus some extra types that are not tokens as well, but they make sense inside the phpdoc/functions.txt
       if (cur_tok->str_val == "any") {
         cur_tok++;
-        return GenTree::create_type_help_vertex(tp_Any);
+        return GenTree::create_type_help_vertex(tp_any);
       }
       if (cur_tok->str_val == "regexp") {
         cur_tok++;
@@ -662,9 +662,8 @@ VertexPtr phpdoc_convert_default_value_to_type_expr(VertexPtr init_val) {
       // an array as a default => like "array" as a type hint, meaning "array of any", regardless of elements values
       return GenTree::create_type_help_vertex(tp_array);
     case op_true:
-      return GenTree::create_type_help_vertex(tp_bool);
     case op_false:
-      return GenTree::create_type_help_vertex(tp_False);
+      return GenTree::create_type_help_vertex(tp_bool);
     case op_mul:
     case op_sub:
     case op_plus: {

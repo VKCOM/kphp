@@ -331,7 +331,7 @@ private:
     if (infer_cast_) {
       auto expr_type_v = doc_parsed.type_expr.try_as<op_type_expr_type>();
       kphp_error(expr_type_v && expr_type_v->args().empty(), "Too hard rule for cast");
-      kphp_error(param->type_help == tp_Unknown, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
+      kphp_error(param->type_help == tp_any, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
 
       param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
     }
@@ -346,7 +346,7 @@ private:
         bool ok = param->type_hint ||
                   param->var()->extra_type == op_ex_var_this ||
                   param->template_type_id != -1 ||
-                  param->type_help != tp_Unknown;
+                  param->type_help != tp_any;
         kphp_error(ok, fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
       }
     }

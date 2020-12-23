@@ -199,7 +199,7 @@ void NodeRecalc::run() {
 }
 
 void NodeRecalc::push_type() {
-  types_stack.push_back(TypeData::get_type(tp_Unknown)->clone());
+  types_stack.push_back(TypeData::get_type(tp_any)->clone());
 }
 
 TypeData *NodeRecalc::pop_type() {

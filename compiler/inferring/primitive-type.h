@@ -7,7 +7,7 @@
 #include <string>
 
 enum PrimitiveType {
-  tp_Unknown,
+  tp_any,
   tp_Null,
   tp_False,
   tp_bool,
@@ -24,8 +24,6 @@ enum PrimitiveType {
   tp_regexp,
   tp_Class,
   tp_Error,
-  tp_Any,
-  tp_CreateAny,
   ptype_size
 };
 
