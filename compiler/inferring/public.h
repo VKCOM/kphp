@@ -21,4 +21,6 @@ const TypeData *get_type(VertexPtr vertex);
 const TypeData *get_type(VarPtr var);
 const TypeData *get_type(FunctionPtr function, int param_i);
 
+const TypeData *convert_type_rule_to_TypeData(VertexPtr type_rule);
+
 } // namespace tinf

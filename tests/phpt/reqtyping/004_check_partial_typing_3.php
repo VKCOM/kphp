@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/return int|null from f1/
 <?php
 
 // even if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, given @return is checked

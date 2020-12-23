@@ -20,8 +20,8 @@ RestrictionIsset::RestrictionIsset(tinf::Node *a) :
   //empty
 }
 
-const char *RestrictionIsset::get_description() {
-  return desc.c_str();
+std::string RestrictionIsset::get_description() {
+  return desc;
 }
 
 
@@ -163,7 +163,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   return false;
 }
 
-bool RestrictionIsset::check_broken_restriction_impl() {
+bool RestrictionIsset::is_restriction_broken() {
   vector<tinf::Node *> bt;
   return find_dangerous_isset_dfs(a_->isset_flags, a_, &bt);
 }

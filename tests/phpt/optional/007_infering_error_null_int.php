@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Expected type\:\snull\sActual type\:\sint\|null/
+/pass int to argument \$x of test/
 <?php
 
 /**

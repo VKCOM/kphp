@@ -1,7 +1,6 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
-/Expected type:.+A/
-/Actual type:.+false/
+/pass false to argument \$a of demo/
+/but it's declared as @param A/
 <?php
 
 class A {

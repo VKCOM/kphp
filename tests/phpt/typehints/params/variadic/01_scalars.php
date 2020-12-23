@@ -1,5 +1,6 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/pass array< mixed > to argument \$args of test/
+/but it's declared as @param array< int >/
 <?php
 function test(int ...$args) {
   var_dump($args);

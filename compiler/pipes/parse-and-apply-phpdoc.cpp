@@ -2,10 +2,9 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/pipes/prepare-function.h"
+#include "compiler/pipes/parse-and-apply-phpdoc.h"
 
 #include <sstream>
-#include <unordered_map>
 
 #include "common/algorithms/contains.h"
 
@@ -18,23 +17,26 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-// Inspects @kphp-infer, @kphp-inline and other @kphp-* inside the function phpdoc.
-// Note that @kphp-required is analyzed inside gentree.
-class ParseAndApplyPHPDoc {
-public:
-  ParseAndApplyPHPDoc(FunctionPtr f) :
-    f_(f),
-    func_params_(f->get_params()) {
-    std::tie(phpdoc_str_, phpdoc_from_fun_) = get_inherited_phpdoc();
-  }
+// Inspects @kphp-tags in phpdoc above a function (note that @kphp-required is analyzed in gentree)
+// Also converts @param/@return to type hints and marks a function as a template on @kphp-template and untyped callables
+class ParseAndApplyPhpDocForFunction {
+  FunctionPtr f_;
+  bool infer_cast_{false};
+  FunctionPtr phpdoc_from_fun_;
+  VertexRange func_params_;
+  std::size_t id_of_kphp_template_{0};
 
-  void apply() {
-    stage::set_location(f_->root->get_location());
-    const auto &phpdoc_tags = parse_php_doc(phpdoc_str_);
+public:
+  explicit ParseAndApplyPhpDocForFunction(FunctionPtr f) : f_(f), func_params_(f->get_params()) {
+
+    phpdoc_from_fun_ = get_phpdoc_from_fun_considering_inheritance();
+    stage::set_location(phpdoc_from_fun_->root->get_location());
+
+    const auto &phpdoc_tags = parse_php_doc(phpdoc_from_fun_->phpdoc_str);
 
     // first, search for @kphp-... tags
     // @param/@return will be scanned later, as @kphp- annotations can affect their behavior
-    if (vk::contains(phpdoc_str_, "@kphp")) {
+    if (vk::contains(phpdoc_from_fun_->phpdoc_str, "@kphp")) {
       for (const auto &tag : phpdoc_tags) {
         stage::set_line(tag.line_num);
         parse_kphp_doc_tag(tag);
@@ -76,14 +78,14 @@ public:
   }
 
 private:
-  std::pair<vk::string_view, FunctionPtr> get_inherited_phpdoc() {
+  FunctionPtr get_phpdoc_from_fun_considering_inheritance() {
     bool is_phpdoc_inherited = f_->is_overridden_method || (f_->modifiers.is_static() && f_->class_id->parent_class);
     // inherit phpDoc only if it's not overridden in derived class
     is_phpdoc_inherited &= f_->phpdoc_str.empty() ||
                            (!vk::contains(f_->phpdoc_str, "@param") && !vk::contains(f_->phpdoc_str, "@return"));
 
     if (!is_phpdoc_inherited) {
-      return {f_->phpdoc_str, f_};
+      return f_;
     }
     for (const auto &ancestor : f_->class_id->get_all_ancestors()) {
       if (ancestor == f_->class_id) {
@@ -92,14 +94,14 @@ private:
 
       if (f_->modifiers.is_instance()) {
         if (auto method = ancestor->members.get_instance_method(f_->local_name())) {
-          return {method->function->phpdoc_str, method->function};
+          return method->function;
         }
       } else if (auto method = ancestor->members.get_static_method(f_->local_name())) {
-        return {method->function->phpdoc_str, method->function};
+        return method->function;
       }
     }
 
-    return {f_->phpdoc_str, f_};
+    return f_;
   }
 
   VertexAdaptor<op_func_param> find_param_by_name(vk::string_view name) {
@@ -170,16 +172,16 @@ private:
         break;
       }
 
-        case php_doc_tag::kphp_disable_warnings: {
-          std::istringstream is(tag.value);
-          std::string token;
-          while (is >> token) {
-            if (!f_->disabled_warnings.insert(token).second) {
-              kphp_warning(fmt_format("Warning '{}' has been disabled twice", token));
-            }
+      case php_doc_tag::kphp_disable_warnings: {
+        std::istringstream is(tag.value);
+        std::string token;
+        while (is >> token) {
+          if (!f_->disabled_warnings.insert(token).second) {
+            kphp_warning(fmt_format("Warning '{}' has been disabled twice", token));
           }
-          break;
         }
+        break;
+      }
 
       case php_doc_tag::kphp_extern_func_info: {
         kphp_error(f_->is_extern(), "@kphp-extern-func-info used for regular function");
@@ -361,60 +363,90 @@ private:
       }
     }
   }
-
-
-private:
-  FunctionPtr f_;
-  bool infer_cast_{false};
-  vk::string_view phpdoc_str_;
-  FunctionPtr phpdoc_from_fun_;
-  VertexRange func_params_;
-  std::size_t id_of_kphp_template_{0};
 };
 
-static void check_default_args(FunctionPtr fun) {
-  bool was_default = false;
+// Inspects @var above all fields and converts them to type hints
+// Also analyzes @kphp-serializable and other tags above the class itself
+class ParseAndApplyPhpDocForClass {
+  ClassPtr klass;
 
-  auto params = fun->get_params();
-  for (size_t i = 0; i < params.size(); i++) {
-    auto param = params[i].as<meta_op_func_param>();
+public:
+  explicit ParseAndApplyPhpDocForClass(ClassPtr klass) : klass(klass) {
 
-    if (param->has_default_value() && param->default_value()) {
-      was_default = true;
-      if (fun->type == FunctionData::func_local) {
-        kphp_error (!param->var()->ref_flag, fmt_format("Default value in reference function argument [function = {}]", fun->get_human_readable_name()));
+    // if there is @var / type hint near class field — save it; otherwise, convert the field default value to a type hint
+    // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
+    klass->members.for_each([&](ClassMemberInstanceField &f) {
+      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+    });
+    klass->members.for_each([&](ClassMemberStaticField &f) {
+      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+    });
+
+    const auto &phpdoc_tags = parse_php_doc(klass->phpdoc_str);
+
+    // now apply @kphp-serializable and so on
+    for (const auto &tag : phpdoc_tags) {
+      parse_kphp_doc_tag(tag);
+    }
+
+  }
+
+private:
+  // calculate type_hint for a field using all rules
+  // returns type_expr or {}
+  static VertexPtr calculate_field_type_hint(vk::string_view phpdoc_str, VarPtr var, ClassPtr klass) {
+    // if there is a /** @var int|false */ comment above the class field declaration, we create a type_rule
+    if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
+      auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
+      if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->get_human_readable_name()))) {
+        return parsed.type_expr;
       }
-    } else {
-      kphp_error (!was_default, fmt_format("Default value expected [function = {}] [param_i = {}]", fun->get_human_readable_name(), i));
+    }
+
+    // if there is no /** @var ... */ but class typing is mandatory, use the field initializer expression to express field type
+    // public $a = 0; - $a is int
+    // public $a = []; - $a is any[]
+    if (!G->settings().require_class_typing.get()) {
+      return {};
+    }
+    if (var->init_val) {
+      VertexPtr type_expr = phpdoc_convert_default_value_to_type_expr(var->init_val);
+      kphp_error(type_expr, fmt_format("Specify @var to {}", var->get_human_readable_name()));
+      return type_expr;
+    }
+
+    kphp_error(klass->is_lambda(),
+               fmt_format("Specify @var or default value to {}", var->get_human_readable_name()));
+    return {};
+  }
+
+  void parse_kphp_doc_tag(const php_doc_tag &tag) {
+    switch (tag.type) {
+      case php_doc_tag::kphp_serializable:
+        klass->is_serializable = true;
+        kphp_error(klass->is_class(), "@kphp-serialize is allowed only for classes");
+        break;
+
+      case php_doc_tag::kphp_tl_class:
+        klass->is_tl_class = true;
+        break;
+
+      default:
+        break;
     }
   }
-}
+};
 
-void PrepareFunctionF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
-  stage::set_name("Prepare function");
+void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+  stage::set_name("Apply phpdocs");
   stage::set_function(function);
   kphp_assert (function);
 
-  ParseAndApplyPHPDoc(function).apply();
-  check_default_args(function);
-
-  auto is_function_name_allowed = [](vk::string_view name) {
-    if (!name.starts_with("__")) {
-      return true;
-    }
-
-    static std::string allowed_magic_names[]{ClassData::NAME_OF_CONSTRUCT,
-                                             ClassData::NAME_OF_CLONE,
-                                             FunctionData::get_name_of_self_method(ClassData::NAME_OF_CLONE),
-                                             ClassData::NAME_OF_VIRT_CLONE,
-                                             FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE),
-                                             ClassData::NAME_OF_INVOKE_METHOD};
-
-    return vk::contains(allowed_magic_names, name);
-  };
-
-  kphp_error(!function->class_id || is_function_name_allowed(function->local_name()),
-             fmt_format("KPHP doesn't support magic method: {}", function->get_human_readable_name()));
+  if (function->type == FunctionData::func_class_holder) {
+    ParseAndApplyPhpDocForClass{function->class_id};
+  } else {
+    ParseAndApplyPhpDocForFunction{function};
+  }
 
   if (stage::has_error()) {
     return;

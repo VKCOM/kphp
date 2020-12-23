@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/return Zoo from foo/
 <?php
 class Test {
   public function empty() {}

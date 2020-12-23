@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/pass string to argument \$a of f1/
 <?php
 
 // even if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, given type hints are checked

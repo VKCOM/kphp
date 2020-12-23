@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_REQUIRE_FUNCTIONS_TYPING=1
-/Expected type:.+void/
+/return int from f3/
 <?php
 
 // if KPHP_REQUIRE_FUNCTIONS_TYPING = 1, then assume @return void unless specified

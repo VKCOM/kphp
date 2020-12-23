@@ -207,7 +207,8 @@ bool TypeData::for_each_deep(const F &visitor) const {
   if (visitor(*this)) {
     return true;
   }
-  if (anykey_value && anykey_value->for_each_deep(visitor)) {
+  bool use_any_key = ptype_ != tp_tuple && ptype_ != tp_shape;  // for them anykey_value doesn't make sense
+  if (use_any_key && anykey_value && anykey_value->for_each_deep(visitor)) {
     return true;
   }
   for (const auto &sub_key: subkeys_values) {
@@ -223,6 +224,13 @@ bool TypeData::for_each_deep(const F &visitor) const {
  */
 bool TypeData::has_class_type_inside() const {
   return for_each_deep([](const TypeData &data) { return !data.class_type_.empty(); });
+}
+
+/**
+ * True for array<any>, tuple<any, ...> and other having 'any' somewhere inside — meaning that this 'any' should be inferred
+ */
+bool TypeData::has_tp_any_inside() const {
+  return for_each_deep([](const TypeData &data) { return data.get_real_ptype() == tp_Unknown || data.ptype() == tp_Any; }) || shape_has_varg_flag();
 }
 
 void TypeData::mark_classes_used() const {
@@ -293,10 +301,6 @@ bool TypeData::can_store_false() const {
 
 bool TypeData::structured() const {
   return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_shape, tp_future, tp_future_queue);
-}
-
-TypeData::generation_t TypeData::generation() const {
-  return generation_;
 }
 
 void TypeData::on_changed() {
@@ -512,7 +516,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
 void TypeData::fix_inf_array() {
   //hack: used just to make current version stable
   int depth = 0;
-  TypeData *cur = this;
+  const TypeData *cur = this;
   while (cur != nullptr) {
     cur = cur->lookup_at(Key::any_key());
     depth++;
@@ -808,13 +812,13 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   if (type1->use_or_null() != type2->use_or_null()) {
     return false;
   }
-  const PrimitiveType tp = type1->get_real_ptype();
+  const PrimitiveType tp = type1->ptype();
 
   if (tp == tp_Class) {
     return type1->class_types() == type2->class_types();
   }
 
-  if (tp == tp_array) {
+  if (tp == tp_array || tp == tp_future || tp == tp_future_queue) {
     return are_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
   }
 
@@ -836,6 +840,21 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   }
 
   return true;
+}
+
+bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at) {
+  std::unique_ptr<TypeData> expected_clone(expected->clone());
+  expected_clone->convert_Unknown_to_Any();
+
+  std::unique_ptr<TypeData> type_of_to_node(expected_clone->clone());
+
+  if (from_at) {
+    type_of_to_node->set_lca_at(*from_at, given);
+  } else {
+    type_of_to_node->set_lca(given);
+  }
+
+  return are_equal_types(type_of_to_node.get(), expected_clone.get());
 }
 
 bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept {

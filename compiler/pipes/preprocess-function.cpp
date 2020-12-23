@@ -398,9 +398,7 @@ private:
           }
 
           auto param = func_args[i].as<op_func_param>();
-          if (param->type_rule) {
-            call_arg->type_rule = param->type_rule;
-          } else if (param->type_help != tp_Unknown) {
+          if (param->type_help != tp_Unknown) {   // ::: cast param in functions.txt or @kphp-infer cast function
             call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
           }
 

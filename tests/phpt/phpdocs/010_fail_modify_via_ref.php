@@ -1,10 +1,10 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/assign mixed to \$a/
 <?php
 
-/**@param mixed $a*/
-function modify(&$a) {
-  $a = 'str';
+/**@param mixed $p*/
+function modify(&$p) {
+  $p = 'str';
 }
 
 function demo() {

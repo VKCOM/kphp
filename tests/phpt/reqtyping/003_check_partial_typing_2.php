@@ -1,5 +1,6 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/pass array< string > to argument \$b of f1/
+/but it's declared as @param string/
 <?php
 
 // even if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, given @param are checked

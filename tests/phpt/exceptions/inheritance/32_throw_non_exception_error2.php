@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/Throw not Throwable, but NonException/
 <?php
 
 class NonException {}

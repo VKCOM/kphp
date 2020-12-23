@@ -1,5 +1,6 @@
 @kphp_should_fail
-/Expected type:.+void/
+/return int from f4/
+/but it's declared as @return void/
 KPHP_REQUIRE_FUNCTIONS_TYPING=1
 <?php
 

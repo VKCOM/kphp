@@ -29,21 +29,21 @@ public:
   void add_edge(Edge *edge);
 
   void recalc_node(Node *node);
-  bool add_node(Node *node);
+  void add_node(Node *node);
 
   void add_restriction(RestrictionBase *restriction);
   void check_restrictions();
 
-  int run_queue(NodeQueue *q);
+  void run_queue(NodeQueue *q);
   std::vector<Task *> get_tasks();
 
   void run_node(Node *node);
 
   void finish();
-  bool is_finished();
+  bool is_finished() const { return finish_flag; }
 
 private:
-  int do_run_queue();
+  void do_run_queue();
 };
 
 } // namespace tinf

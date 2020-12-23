@@ -1,5 +1,6 @@
 @kphp_should_fail
-/Error combining shapes/
+/assign shape<x:int, y:int> to A::\$sh/
+/but it's declared as @var shape<x:int, y:A>/
 <?php
 require_once 'kphp_tester_include.php';
 

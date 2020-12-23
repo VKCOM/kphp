@@ -1,5 +1,5 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/assign Foo to \$a/
 <?php
 
 interface A {}

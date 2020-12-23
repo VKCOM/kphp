@@ -14,12 +14,14 @@ public:
   enum {
     e_uninited = -3,
     e_variable = -2,
-    e_return_value = -1
+    e_return_value = -1,
+    // 0 and above — it's a function argument
   };
 
   VarPtr var_;
   int param_i{e_uninited};
   FunctionPtr function_;
+  const TypeData *type_restriction{nullptr};
 
   VarNode() = default;
 
@@ -32,13 +34,13 @@ public:
     recalc_cnt_ = 1;
   }
 
-  void recalc(TypeInferer *inferer);
+  void recalc(TypeInferer *inferer) final;
 
   VarPtr get_var() const {
     return var_;
   }
 
-  std::string get_description();
+  std::string get_description() final;
   std::string get_var_name();
   std::string get_function_name();
   std::string get_var_as_argument_name();
@@ -52,8 +54,10 @@ public:
   }
 
   bool is_argument_of_function() const {
-    return !is_variable() && !is_return_value_from_function();
+    return param_i >= 0;
   }
+
+  void set_type_restriction(const TypeData *r);
 };
 
 } // namespace tinf

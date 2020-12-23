@@ -1,5 +1,6 @@
 @kphp_should_fail
-/TYPE INFERENCE ERROR/
+/pass shape<y:string> to argument \$sh of process/
+/but \$sh declared as @param shape<x:int, y:string|null>/
 <?php
 require_once 'kphp_tester_include.php';
 

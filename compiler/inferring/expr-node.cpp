@@ -54,14 +54,13 @@ private:
   void recalc_power(VertexAdaptor<op_pow> expr);
   void recalc_fork(VertexAdaptor<op_fork> fork);
   void recalc_null_coalesce(VertexAdaptor<op_null_coalesce> expr);
+  void recalc_return(VertexAdaptor<op_return> expr);
   void recalc_expr(VertexPtr expr);
 
 public:
   ExprNodeRecalc(tinf::ExprNode *node, tinf::TypeInferer *inferer);
-  tinf::ExprNode *get_node();
-  void do_recalc();
-
-  bool auto_edge_flag();
+  void do_recalc() final;
+  bool auto_edge_flag() final;
 };
 
 template<PrimitiveType tp>
@@ -418,6 +417,14 @@ void ExprNodeRecalc::recalc_null_coalesce(VertexAdaptor<op_null_coalesce> expr) 
   set_lca(as_rvalue(expr->rhs()));
 }
 
+void ExprNodeRecalc::recalc_return(VertexAdaptor<op_return> expr) {
+  if (expr->has_expr()) {
+    set_lca(expr->expr());
+  } else {
+    recalc_ptype<tp_void>();
+  }
+}
+
 void ExprNodeRecalc::recalc_arithm(VertexAdaptor<meta_op_binary> expr) {
   VertexPtr lhs = expr->lhs();
   VertexPtr rhs = expr->rhs();
@@ -629,6 +636,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_null_coalesce(expr.as<op_null_coalesce>());
       break;
 
+    case op_return:
+      recalc_return(expr.as<op_return>());
+      break;
+
     case op_alloc:
       set_lca(expr.as<op_alloc>()->allocated_class);
       break;
@@ -651,14 +662,9 @@ ExprNodeRecalc::ExprNodeRecalc(tinf::ExprNode *node, tinf::TypeInferer *inferer)
   NodeRecalc(node, inferer) {
 }
 
-tinf::ExprNode *ExprNodeRecalc::get_node() {
-  return (tinf::ExprNode *)node_;
-}
-
 void ExprNodeRecalc::do_recalc() {
-  tinf::ExprNode *node = get_node();
-  VertexPtr expr = node->get_expr();
   //fprintf (stderr, "recalc expr %d %p %s\n", get_thread_id(), node_, node_->get_description().c_str());
+  VertexPtr expr = dynamic_cast<tinf::ExprNode *>(node_)->get_expr();
   stage::set_location(expr->get_location());
   recalc_expr(expr);
 }

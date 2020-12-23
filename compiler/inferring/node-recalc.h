@@ -15,7 +15,7 @@ protected:
   std::vector<TypeData *> types_stack;
 public:
   const TypeData *new_type();
-  void add_dependency_impl(tinf::Node *from, tinf::Node *to);
+  void add_dependency_impl(tinf::Node *from, tinf::Node *to, const MultiKey *from_at);
   void add_dependency(const RValue &rvalue);
   void set_lca_at(const MultiKey *key, const RValue &rvalue);
   void set_lca_at(const MultiKey *key, VertexPtr expr);
@@ -39,6 +39,8 @@ public:
   virtual bool auto_edge_flag();
 
   virtual void do_recalc() = 0;
+
+  virtual void on_new_type_became_tpError(const TypeData *because_of_type, const RValue &because_of_rvalue);
 
   void run();
 };

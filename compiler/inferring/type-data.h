@@ -78,7 +78,7 @@ private:
   SubkeysValues subkeys_values;
 
   static TLS<generation_t> current_generation_;
-  explicit TypeData(PrimitiveType ptype = tp_Unknown);
+  explicit TypeData(PrimitiveType ptype);
 
   TypeData *at(const Key &key) const;
   TypeData *at_force(const Key &key);
@@ -110,6 +110,7 @@ public:
   ClassPtr class_type() const;
   void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
   bool has_class_type_inside() const;
+  bool has_tp_any_inside() const;
   void mark_classes_used() const;
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
   ClassPtr get_first_class_type_inside() const;
@@ -137,9 +138,10 @@ public:
 
   void set_flags(flags_t new_flags);
 
+  generation_t generation() const { return generation_; }
+
   bool structured() const;
   void make_structured();
-  generation_t generation() const;
   void on_changed();
   TypeData *clone() const;
   void convert_Unknown_to_Any();
@@ -189,6 +191,7 @@ std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool are_equal_types(const TypeData *type1, const TypeData *type2);
+bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr);
 bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept;
 
 template<TypeData::flag_id_t FLAG>

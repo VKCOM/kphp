@@ -9,12 +9,11 @@
 
 class RestrictionNonVoid : public tinf::RestrictionBase {
   tinf::Node *node;
-  std::string desc;
+
 public:
 
   explicit RestrictionNonVoid(tinf::Node *node);
-  const char *get_description() override;
 
-protected:
-  bool check_broken_restriction_impl() override;
+  bool is_restriction_broken() final;
+  std::string get_description() final;
 };

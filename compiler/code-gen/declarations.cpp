@@ -127,10 +127,7 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
 }
 
 void FunctionParams::declare_txt_param(CodeGenerator &W, VertexAdaptor<op_var> var, const TypeName &type) const {
-  if (var->ref_flag) {
-    W << "&";
-  }
-  W << "$" << var->var_id->name << " :<=: " << type;
+  W << type << " " << (var->ref_flag ? "&" : "") << "$" << var->var_id->name;
 }
 
 void FunctionParams::compile(CodeGenerator &W) const {

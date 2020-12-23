@@ -11,20 +11,17 @@ namespace tinf {
 class RestrictionBase {
 public:
   virtual ~RestrictionBase() = default;
-  virtual const char *get_description() = 0;
-
 
   RestrictionBase() :
     location(stage::get_location()) {}
 
-  virtual bool check_broken_restriction();
+  const Location &get_location() const { return location; }
 
-  static bool is_broken_restriction_an_error() { return true; }
+  virtual bool is_restriction_broken() = 0;
+  virtual std::string get_description() = 0;
 
 protected:
   Location location;
-
-  virtual bool check_broken_restriction_impl() = 0;
 };
 
 } // namespace tinf

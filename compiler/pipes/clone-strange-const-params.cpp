@@ -17,7 +17,7 @@ VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root) {
   auto passed_params = func_call->args();
 
   auto clone_param = [](VertexPtr param) {
-    auto cloned_param = VertexAdaptor<op_func_call>::create(param);
+    auto cloned_param = VertexAdaptor<op_func_call>::create(param).set_location(param);
     cloned_param->str_val = "make_clone";
     cloned_param->func_id = G->get_function(cloned_param->str_val);
     G->stats.cnt_make_clone++;

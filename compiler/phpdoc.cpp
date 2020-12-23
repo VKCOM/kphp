@@ -646,7 +646,6 @@ bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, Vertex
 // when a field has neither @var not type hint, we use the default value initializer like a type guard
 // here we convert this value initializer (init_val) to a type_expr, like a phpdoc was actually written
 VertexPtr phpdoc_convert_default_value_to_type_expr(VertexPtr init_val) {
-  init_val = GenTree::get_actual_value(init_val);
   switch (init_val->type()) {
     case op_int_const:
     case op_conv_int:
@@ -663,8 +662,9 @@ VertexPtr phpdoc_convert_default_value_to_type_expr(VertexPtr init_val) {
       // an array as a default => like "array" as a type hint, meaning "array of any", regardless of elements values
       return GenTree::create_type_help_vertex(tp_array);
     case op_true:
-    case op_false:
       return GenTree::create_type_help_vertex(tp_bool);
+    case op_false:
+      return GenTree::create_type_help_vertex(tp_False);
     case op_mul:
     case op_sub:
     case op_plus: {

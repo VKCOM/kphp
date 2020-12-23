@@ -1103,6 +1103,7 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
         new_var->param_i = var->param_i;
         new_var->init_val = var->init_val;
         new_var->is_read_only = var->is_read_only;
+        new_var->tinf_node.init_as_argument(new_var);
         function->param_ids[var->param_i] = new_var;
       } else {
         new_var->type() = VarData::var_local_t;

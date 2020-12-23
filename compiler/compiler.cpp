@@ -71,7 +71,7 @@
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
 #include "compiler/pipes/parse.h"
-#include "compiler/pipes/prepare-function.h"
+#include "compiler/pipes/parse-and-apply-phpdoc.h"
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-exceptions.h"
@@ -236,10 +236,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<RegisterDefinesPass>{}
     >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
-    >> PipeC<PrepareFunctionF>{}
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
+    >> PipeC<ParseAndApplyPhpdocF>{}
     >> SyncC<GenerateVirtualMethods>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}

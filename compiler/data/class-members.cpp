@@ -164,7 +164,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   auto rule_this_var = GenTree::create_type_help_class_vertex(klass->name);
   rule_this_var->class_ptr = klass;
   auto this_var = function->root->params()->args()[0].as<op_func_param>()->var();
-  this_var->type_rule = VertexAdaptor<op_common_type_rule>::create(rule_this_var);
+  this_var->type_rule = VertexAdaptor<op_set_check_type_rule>::create(rule_this_var);
 
   if (klass->is_interface()) {
     function->modifiers.set_abstract();

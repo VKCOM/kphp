@@ -1,5 +1,6 @@
 @kphp_should_fail
-/Incorrect return type of function/
+/return string from A::foo/
+/but it's declared as @return int/
 <?php
 
 interface IA {

@@ -19,26 +19,25 @@ private:
 
   template<class R>
   static void create_set(const LValue &lhs, const R &rhs);
-  template<class R>
-  static void create_less(const RValue &lhs, const R &rhs);
+  static void create_type_initial_assign(const LValue &lhs, const TypeData *initial_type);
+  static void create_type_assign_with_restriction(const LValue &var_lhs, const TypeData *assigned_and_expected_type);
+  static void create_postponed_type_check(const RValue &restricted_value, const RValue &actual_value, const TypeData *expected_type);
   static void create_non_void(const RValue &lhs);
   static void create_isset_check(const RValue &rvalue);
-  static void require_node(const RValue &rvalue);
 
-  static void add_type_rule(VertexPtr v);
-  static void add_type_help(VertexPtr v);
+  static void add_type_rule(VertexAdaptor<op_var> var_op);
   static void on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback);
+  static void on_func_call_extern_modifying_arg_type(VertexAdaptor<op_func_call> call, FunctionPtr extern_function);
   static void on_func_call(VertexAdaptor<op_func_call> call);
   void on_return(VertexAdaptor<op_return> v);
   static void on_foreach(VertexAdaptor<op_foreach> foreach_op);
   static void on_list(VertexAdaptor<op_list> list);
-  static void on_throw(VertexAdaptor<op_throw> throw_op);
   static void on_try(VertexAdaptor<op_try> try_op);
   static void on_set_op(VertexPtr v);
   static void ifi_fix(VertexPtr v);
   static void on_function(FunctionPtr function);
-  void on_class(ClassPtr klass);
-  void on_var(VarPtr var);
+  static void on_class(ClassPtr klass);
+  static void on_var(VarPtr var);
 
   template<class CollectionT>
   void call_on_var(const CollectionT &collection);
@@ -52,8 +51,6 @@ public:
   }
 
   void on_start() override;
-
-  bool user_recursion(VertexPtr vertex) override;
 
   VertexPtr on_enter_vertex(VertexPtr v) override;
 

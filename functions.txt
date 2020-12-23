@@ -81,52 +81,52 @@ class UnderflowException extends RuntimeException {}
 class UnexpectedValueException extends RuntimeException {}
 
 interface Memcache {
-    public function get ($key) ::: mixed;
-    public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: mixed = 1) ::: mixed;
-    public function increment ($key ::: string, $v ::: mixed = 1) ::: mixed;
+    public function get (string|string[] $key) ::: mixed;
+    public function delete (string $key) ::: bool;
+    public function add (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function set (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function replace (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function decrement (string $key, int $v = 1) ::: mixed;
+    public function increment (string $key, int $v = 1) ::: mixed;
     public function getVersion () ::: mixed;
 
     // this two functions shouldn't be there, but we need it to rewrite code
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function addServer (string $host, int $port = 11211, bool $persistent = true, int $weight = 1, float $timeout = 1, int $retry_interval = 15, bool $status = true, mixed $failure_callback = null, int $timeoutms = 0) ::: bool;
+    public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
 }
 
 
 final class McMemcache implements Memcache {
     public function __construct() ::: McMemcache;
 
-    public function get ($key) ::: mixed;
-    public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int  = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: mixed = 1) ::: mixed;
-    public function increment ($key ::: string, $v ::: mixed = 1) ::: mixed;
+    public function get (string|string[] $key) ::: mixed;
+    public function delete (string $key) ::: bool;
+    public function add (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function set (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function replace (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function decrement (string $key, int $v = 1) ::: mixed;
+    public function increment (string $key, int $v = 1) ::: mixed;
     public function getVersion () ::: mixed;
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
+    public function addServer (string $host, int $port = 11211, bool $persistent = true, int $weight = 1, float $timeout = 1, int $retry_interval = 15, bool $status = true, mixed $failure_callback = null, int $timeoutms = 0) ::: bool;
 
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
 }
 
 final class RpcMemcache implements Memcache {
-    public function __construct($fake ::: bool = false) ::: RpcMemcache;
+    public function __construct(bool $fake = false) ::: RpcMemcache;
 
-    public function get ($key) ::: mixed;
-    public function delete ($key ::: string) ::: bool;
-    public function add ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function set ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function replace ($key ::: string, $value ::: mixed, $flags ::: int = 0, $expire ::: int = 0) ::: bool;
-    public function decrement ($key ::: string, $v ::: int = 1) ::: mixed;
-    public function increment ($key ::: string, $v ::: int = 1) ::: mixed;
+    public function get (string|string[] $key) ::: mixed;
+    public function delete (string $key) ::: bool;
+    public function add (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function set (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function replace (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
+    public function decrement (string $key, int $v = 1) ::: mixed;
+    public function increment (string $key, int $v = 1) ::: mixed;
 
     public function getVersion () ::: mixed;
-    public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
+    public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
 
-    public function addServer ($host ::: string, $port ::: int = 11211, $persistent ::: bool = true, $weight ::: int = 1, $timeout ::: float = 1, $retry_interval ::: int = 15, $status ::: bool = true, $failure_callback ::: mixed = null, $timeoutms ::: int = 0) ::: bool;
+    public function addServer (string $host, int $port = 11211, bool $persistent = true, int $weight = 1, float $timeout = 1, int $retry_interval = 15, bool $status = true, mixed $failure_callback = null, int $timeoutms = 0) ::: bool;
 }
 
 
@@ -434,7 +434,7 @@ function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: in
 function mt_getrandmax() ::: int;
 
 function hash_algos () ::: string[];
-function hash_equals($known_string :<=: string, $user_string :<=: string) ::: bool;
+function hash_equals(string $known_string, string $user_string) ::: bool;
 function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
 function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
@@ -497,7 +497,7 @@ function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
-                         &$tag :<=: string = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
+                         string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
@@ -655,7 +655,7 @@ function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
 function xor_strings ($s ::: string, $t ::: string) ::: string;
-function similar_text ($first ::: string, $second ::: string, &$percent :<=: float = TODO) ::: int;
+function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
 define('LC_ALL', 6);
 define('LC_COLLATE', 3);
@@ -691,18 +691,18 @@ function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: 
 function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
 function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: int;
 
-function mysqli_errno($dn :<=: \mysqli) ::: int;
-function mysqli_error($dn :<=: \mysqli) ::: string;
+function mysqli_errno(\mysqli $dn) ::: int;
+function mysqli_error(\mysqli $dn) ::: string;
 
 define('MYSQLI_ASSOC', 1);
 
-function mysqli_affected_rows($dn :<=: \mysqli) ::: int;
+function mysqli_affected_rows(\mysqli $dn) ::: int;
 function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: mixed[] | null;
-function mysqli_insert_id($dn :<=: \mysqli) ::: int;
+function mysqli_insert_id(\mysqli $dn) ::: int;
 function mysqli_num_rows($query_id ::: int) ::: int;
-function mysqli_query($dn :<=: \mysqli, $query ::: string) ::: mixed;
+function mysqli_query(\mysqli $dn, $query ::: string) ::: mixed;
 function mysqli_connect($host ::: string, $username ::: string, $password ::: string, $db_name ::: string, $port ::: int) ::: \mysqli;
-function mysqli_select_db($dn :<=: \mysqli, $name ::: string) ::: bool;
+function mysqli_select_db(\mysqli $dn, $name ::: string) ::: bool;
 
 
 function function_exists ($func_name ::: mixed) ::: bool;
@@ -839,8 +839,8 @@ function store_float ($v ::: float) ::: bool;
 function store_string ($v ::: string) ::: bool;
 function store_many (...$args) ::: bool;
 function store_finish() ::: bool;
-function rpc_send ($rpc_conn :<=: \RpcConnection, $timeout ::: float = -1.0) ::: int;
-function rpc_send_noflush ($rpc_conn :<=: \RpcConnection, $timeout ::: float = -1.0) ::: int;
+function rpc_send (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
+function rpc_send_noflush (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
 function rpc_flush () ::: void;
 /** @kphp-extern-func-info resumable */
 function rpc_get ($request_id ::: int) ::: string | false;
@@ -861,8 +861,8 @@ function rpc_wait_concurrently ($request_id ::: int) ::: bool;
 /** @kphp-extern-func-info can_throw */
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
-function rpc_tl_query_one ($rpc_conn :<=: \RpcConnection, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
-function rpc_tl_query ($rpc_conn :<=: \RpcConnection, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
+function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
 function rpc_tl_query_result_one ($query_id ::: int) ::: mixed[];
 /** @kphp-extern-func-info resumable */
@@ -893,41 +893,41 @@ interface RpcResponse {
 }
 
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query_one ($connection :<=: \RpcConnection, $query_function :<=: @tl\RpcFunction, $timeout ::: float = -1.0) ::: int;
+function typed_rpc_tl_query_one (\RpcConnection $connection, @tl\RpcFunction $query_function, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query ($connection :<=: \RpcConnection, $query_functions :<=: @tl\RpcFunction[], $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
 /** @kphp-extern-func-info tl_common_h_dep resumable */
-function typed_rpc_tl_query_result_one ($query_id :<=: int) ::: @tl\RpcResponse;
+function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
 /** @kphp-extern-func-info tl_common_h_dep resumable */
-function typed_rpc_tl_query_result ($query_ids :<=: int[]) ::: @tl\RpcResponse[];
+function typed_rpc_tl_query_result (int[] $query_ids) ::: @tl\RpcResponse[];
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query_result_synchronously ($query_ids :<=: int[]) ::: @tl\RpcResponse[];
+function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info can_throw */
 function rpc_server_fetch_request() ::: @tl\RpcFunction;
 /** @kphp-extern-func-info can_throw */
-function rpc_server_store_response($response :<=: @tl\RpcFunctionReturnResult) ::: void;
+function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait($id :<=: future(any) | false) ::: ^1[*] | null;
+function wait(future<any> | false $id) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait_multi ($resumables :<=: future(any)[]) ::: (^1[*][*] | null)[];
+function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
 /** @kphp-extern-func-info can_throw cpp_template_call */
-function wait_synchronously ($id :<=: future(any) | false) ::: ^1[*] | null;
+function wait_synchronously (future<any> | false $id) ::: ^1[*] | null;
 /** @kphp-extern-func-info resumable */
 function wait_concurrently ($id ::: future<any>) ::: bool;
-function wait_queue_create ($request_ids :<=: array< future<any> | false > = []) ::: future_queue<^1[*][*]>;
-function wait_queue_push (&$queue_id :<=: future_queue<any>, $request_ids :<=: future<any> | false) ::: void;
-function wait_queue_empty ($queue_id :<=: future_queue<any>) ::: bool;
+function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
+function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_ids) ::: void;
+function wait_queue_empty (future_queue<any> $queue_id) ::: bool;
 /** @kphp-extern-func-info resumable */
-function wait_queue_next ($queue_id :<=: future_queue<any>, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
-function wait_queue_next_synchronously ($queue_id :<=: future_queue<any>) ::: future<^1[*]> | false;
+function wait_queue_next (future_queue<any> $queue_id, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
+function wait_queue_next_synchronously (future_queue<any> $queue_id) ::: future<^1[*]> | false;
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
 /** @kphp-extern-func-info resumable */
 function sched_yield_sleep($timeout ::: float) ::: void;
 function get_running_fork_id() ::: future <void>;
-function get_fork_stat($fork :<=: future<any>) ::: mixed[] | false;
+function get_fork_stat(future<any> $fork) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 

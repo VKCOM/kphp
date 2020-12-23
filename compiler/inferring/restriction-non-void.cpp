@@ -8,11 +8,10 @@
 
 RestrictionNonVoid::RestrictionNonVoid(tinf::Node *node) : node(node) {}
 
-bool RestrictionNonVoid::check_broken_restriction_impl() {
+bool RestrictionNonVoid::is_restriction_broken() {
   return node->get_type()->ptype() == tp_void;
 }
 
-const char *RestrictionNonVoid::get_description() {
-  desc = "Expression " + node->get_description() + " is not allowed to be void";
-  return desc.c_str();
+std::string RestrictionNonVoid::get_description() {
+  return "Expression " + node->get_description() + " is not allowed to be void";
 }
