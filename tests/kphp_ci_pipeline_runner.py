@@ -292,7 +292,8 @@ if __name__ == "__main__":
             "{distcc_cmake_option}"
             "-DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
             "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test && "
-            "{env_vars} make -C {kphp_repo_root}/build vkext7.2 vkext7.4".format(
+            "{env_vars} make -C {kphp_repo_root}/build vkext7.2 vkext7.4 && "
+            "cd {kphp_repo_root}/build && cpack".format(
                 kphp_repo_root=kphp_repo_root,
                 distcc_cmake_option=distcc_cmake_option,
                 cc=cc_compiler,
@@ -304,18 +305,24 @@ if __name__ == "__main__":
     )
 
     if args.engine_repo:
+        packages_dir = os.path.abspath(os.path.join(kphp_repo_root, "build/_CPack_Packages/Linux/DEB/kphp-1.0.1-Linux"))
         engine_cc = "distcc gcc" if args.use_distcc else "gcc"
         engine_cxx = "distcc g++" if args.use_distcc else "g++"
+        # There is no way to pass extra options for engine Makefile, so pass them right via CXX
+        engine_cxx += " -I{packages_dir}/TLO_PARSING_DEV/usr/include/ -L{packages_dir}/TLO_PARSING_DEV/lib/".format(packages_dir=packages_dir)
         runner.add_test_group(
             name="make-engines",
             description="make engines",
-            cmd="{env_vars} PATH=\"{kphp_repo_root}/objs/bin:$PATH\" CC='{engine_cc}' CXX='{engine_cxx}' make -C {engine_repo_root} -j{{jobs}} "
+            cmd="{env_vars} PATH=\"{packages_dir}/TL_TOOLS/bin:$PATH\" "
+                "CC='{engine_cc}' CXX='{engine_cxx}' "
+                "make asan={asan} -C {engine_repo_root} -j{{jobs}} "
                 "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached memcached".format(
                     env_vars=env_vars,
-                    kphp_repo_root=os.path.abspath(kphp_repo_root),
+                    packages_dir=packages_dir,
                     engine_repo_root=args.engine_repo,
                     engine_cc=engine_cc,
-                    engine_cxx=engine_cxx
+                    engine_cxx=engine_cxx,
+                    asan=1 if args.use_asan else 0
             ),
             skip=args.steps and "make-engines" not in args.steps
         )
