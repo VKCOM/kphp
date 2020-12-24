@@ -30,7 +30,7 @@ private:
   TSHashTable<LibPtr> libs_ht;
   SrcFilePtr main_file;
   CompilerSettings *settings_;
-  ComposerClassLoader composer_class_loader;
+  ComposerAutoloader composer_class_loader;
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -49,6 +49,7 @@ public:
   const CompilerSettings &settings() const;
   const string &get_global_namespace() const;
 
+  std::string search_required_file(const std::string &file_name) const;
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const string &file_name, LibPtr owner_lib);
 
@@ -90,7 +91,7 @@ public:
   vector<ClassPtr> get_classes();
   vector<DefinePtr> get_defines();
   vector<LibPtr> get_libs();
-  const ComposerClassLoader &get_composer_class_loader() const;
+  const ComposerAutoloader &get_composer_autoloader() const;
 
   void load_index();
   void save_index();

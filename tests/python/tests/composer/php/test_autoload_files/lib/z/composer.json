@@ -1,0 +1,10 @@
+{
+    "name": "vk/z",
+    "version": "1.0.0",
+    "autoload": {
+        "files": ["z.php"]
+    },
+    "require": {
+        "vk/api": "1.5.0"
+    }
+}

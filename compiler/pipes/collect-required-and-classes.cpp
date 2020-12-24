@@ -49,7 +49,7 @@ private:
     }
 
     if (G->settings().is_composer_enabled()) {
-      const auto &psr4_filename = G->get_composer_class_loader().psr4_lookup(class_name);
+      const auto &psr4_filename = G->get_composer_autoloader().psr4_lookup(class_name);
       if (!psr4_filename.empty()) {
         require_file(psr4_filename, false);
         return; // required from the composer autoload PSR-4 path
@@ -132,6 +132,46 @@ private:
     // we assume that if it returns an instance, it'll reference the required class in one way or another
   }
 
+  VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once) {
+    auto file = require_file(name, true);
+    kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
+    VertexPtr call = VertexAdaptor<op_func_call>::create();
+    call->set_string(file->main_func_name);
+    call->location = root->location;
+    if (once) {
+      VertexPtr cond = VertexAdaptor<op_log_not>::create(file->get_main_func_run_var());
+      call = VertexAdaptor<op_if>::create(cond, VertexAdaptor<op_seq>::create(call));
+      call->location = root->location;
+    }
+    return call;
+  }
+
+  // whether required file name refers to the composer-generated autoload file
+  static bool is_composer_autoload(const std::string &required_path) {
+    // fast path: it there is no "/autoload.php", then we don't
+    // need to bother and expand the filename
+    if (!vk::ends_with(required_path, "/autoload.php")) {
+      return false;
+    }
+    auto full_name = G->search_required_file(required_path);
+    return G->get_composer_autoloader().is_autoload_file(full_name);
+  }
+
+  VertexPtr require_composer_autoload(VertexPtr root) {
+    // generate a block that contains a sequence of require_once() calls
+    // for all files that composer-generated autoload.php would require;
+    //
+    // note that we use once=true all the time since composer would
+    // do the same (it uses require+inclusion map to perform the inclusion exactly once)
+    const auto &files_to_require = G->get_composer_autoloader().get_files_to_require();
+    std::vector<VertexPtr> list;
+    list.reserve(files_to_require.size());
+    for (const auto &file : files_to_require) {
+      list.emplace_back(make_require_call(root, file, true));
+    }
+    return VertexAdaptor<op_seq>::create(list).set_location(root->location);
+  }
+
 public:
   CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
     file_stream(file_stream),
@@ -177,17 +217,10 @@ public:
     if (auto require = root.try_as<op_require>()) {
       string name = collect_string_concatenation(require->expr());
       kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
-      auto file = require_file(name, true);
-      kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
-      VertexPtr call = VertexAdaptor<op_func_call>::create();
-      call->set_string(file->main_func_name);
-      call->location = root->location;
-      if (require->once) {
-        VertexPtr cond = VertexAdaptor<op_log_not>::create(file->get_main_func_run_var());
-        call = VertexAdaptor<op_if>::create(cond, VertexAdaptor<op_seq>::create(call));
-        call->location = root->location;
+      if (is_composer_autoload(name)) {
+        return require_composer_autoload(root);
       }
-      return call;
+      return make_require_call(root, name, require->once);
     }
 
     return root;

@@ -6,16 +6,14 @@
 
 #include <yaml-cpp/yaml.h> // using YAML parser to handle JSON files
 
-#include "compiler/kphp_assert.h"
 #include "common/wrappers/fmt_format.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
-std::string ComposerClassLoader::psr4_lookup_nocache(const std::string &class_name) const {
+std::string ComposerAutoloader::psr4_lookup_nocache(const std::string &class_name) const {
   std::string prefix = class_name;
 
-  auto file_exists = [](const std::string &filename) {
-    return access(filename.c_str(), F_OK) == 0;
-  };
+  auto file_exists = [](const std::string &filename) { return access(filename.c_str(), F_OK) == 0; };
 
   // we start from a longest prefix and then try to match it
   // against the psr4 map; if there is no match, the last prefix
@@ -58,7 +56,7 @@ std::string ComposerClassLoader::psr4_lookup_nocache(const std::string &class_na
   return "";
 }
 
-std::string ComposerClassLoader::psr4_lookup(const std::string &class_name) const {
+std::string ComposerAutoloader::psr4_lookup(const std::string &class_name) const {
   // we could add a special path for packages with a single candidate, but
   // they seem to be almost non-existent; a single candidate package can
   // be handled without caching/touching FS/locking
@@ -81,19 +79,22 @@ std::string ComposerClassLoader::psr4_lookup(const std::string &class_name) cons
   return psr4_filename;
 }
 
-void ComposerClassLoader::set_use_dev(bool v) {
+void ComposerAutoloader::set_use_dev(bool v) {
   use_dev_ = v;
 }
 
-void ComposerClassLoader::load_root_file(const std::string &filename) {
-  load_file(filename, true);
+void ComposerAutoloader::load_root_file(const std::string &pkg_root) {
+  kphp_assert(!pkg_root.empty() && pkg_root.back() == '/');
+  kphp_assert(autoload_filename_.empty());
+  autoload_filename_ = pkg_root + "vendor/autoload.php";
+  load_file(pkg_root, true);
 }
 
-void ComposerClassLoader::load_file(const std::string &filename) {
-  load_file(filename, false);
+void ComposerAutoloader::load_file(const std::string &pkg_root) {
+  load_file(pkg_root, false);
 }
 
-void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_file) {
+void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_file) {
   // composer.json structure (that we care about):
   // {
   //   "autoload": {
@@ -128,6 +129,7 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
   };
 
   auto add_autoload_section = [&](YAML::Node autoload) {
+    // https://getcomposer.org/doc/04-schema.md#psr-4
     const auto psr4_src = autoload["psr-4"];
     for (const auto &kv : psr4_src) {
       std::string prefix = kv.first.as<std::string>();
@@ -142,6 +144,12 @@ void ComposerClassLoader::load_file(const std::string &pkg_root, bool is_root_fi
       } else {
         kphp_error(false, fmt_format("load composer file {}: invalid autoload psr-4 item", filename.c_str()));
       }
+    }
+
+    // files that are required by the composer-generated autoload.php
+    // https://getcomposer.org/doc/04-schema.md#files
+    for (const auto &autoload_filename : autoload["files"]) {
+      files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
     }
   };
 

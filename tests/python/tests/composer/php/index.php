@@ -1,8 +1,6 @@
 <?php
 
-#ifndef KPHP
-require_once './vendor/autoload.php';
-#endif
+require_once 'vendor/autoload.php';
 
 use VK\Utils\Strings;
 use VK\Common\Pkg1\C;

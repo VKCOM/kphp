@@ -1,0 +1,9 @@
+{
+    "name": "vk/api",
+    "version": "1.5.0",
+    "autoload": {
+        "files": [
+            "functions.php"
+        ]
+    }
+}
