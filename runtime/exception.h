@@ -40,17 +40,12 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 };
 
 struct C$Exception : public C$Throwable {
-  static int classname_hash;
-
   virtual ~C$Exception() = default;
-
   const char *get_class() const noexcept override { return "Exception"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$Error : public C$Throwable {
   virtual ~C$Error() = default;
-
   const char *get_class() const noexcept override { return "Error"; }
 };
 
@@ -159,79 +154,53 @@ struct C$UnhandledMatchError : public C$Error {
 };
 
 struct C$LogicException : public C$Exception {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "LogicException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$BadFunctionCallException : public C$LogicException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "BadFunctionCallException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$BadMethodCallException : public C$BadFunctionCallException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "BadMethodCallException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$DomainException : public C$LogicException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "DomainException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$InvalidArgumentException : public C$LogicException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "InvalidArgumentException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$LengthException : public C$LogicException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "LengthException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$OutOfRangeException : public C$LogicException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "OutOfRangeException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$RuntimeException : public C$Exception {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "RuntimeException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$OutOfBoundsException : public C$RuntimeException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "OutOfBoundsException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$OverflowException : public C$RuntimeException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "OverflowException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$RangeException : public C$RuntimeException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "RangeException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$UnderflowException : public C$RuntimeException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "UnderflowException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };
 
 struct C$UnexpectedValueException : public C$RuntimeException {
-  static int classname_hash;
   const char *get_class() const noexcept override { return "UnexpectedValueException"; }
-  int get_hash() const noexcept override { return classname_hash; }
 };

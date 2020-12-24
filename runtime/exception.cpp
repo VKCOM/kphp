@@ -44,21 +44,6 @@ array<array<string>> f$debug_backtrace() {
 
 Throwable CurException;
 
-int C$Exception::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("Exception")));
-int C$LogicException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("LogicException")));
-int C$BadFunctionCallException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("BadFunctionCallException")));
-int C$BadMethodCallException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("BadMethodCallException")));
-int C$DomainException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("DomainException")));
-int C$InvalidArgumentException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("InvalidArgumentException")));
-int C$LengthException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("LengthException")));
-int C$OutOfRangeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OutOfRangeException")));
-int C$RuntimeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("RuntimeException")));
-int C$OutOfBoundsException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OutOfBoundsException")));
-int C$OverflowException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("OverflowException")));
-int C$RangeException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("RangeException")));
-int C$UnderflowException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("UnderflowException")));
-int C$UnexpectedValueException::classname_hash = static_cast<int32_t>(vk::std_hash(vk::string_view("UnexpectedValueException")));
-
 string f$Exception$$getMessage(const Exception &e) { return e->$message; }
 string f$Error$$getMessage(const Error &e) { return e->$message; }
 
