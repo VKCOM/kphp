@@ -5,6 +5,7 @@
 #include "compiler/pipes/final-check.h"
 
 #include "common/termformat/termformat.h"
+#include "common/algorithms/string-algorithms.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
@@ -203,27 +204,15 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
 }
 
 void check_function_test_throws(FunctionPtr f) {
-  std::vector<ClassPtr> throws_expected;
-  for (const auto &class_name : f->test_data->check_throws) {
-    throws_expected.push_back(G->get_class(class_name));
+  std::unordered_set<std::string> throws_expected(f->test_data->check_throws.begin(), f->test_data->check_throws.end());
+  std::unordered_set<std::string> throws_actual;
+  for (const auto &e : f->exceptions_thrown) {
+    throws_actual.insert(e->name);
   }
-  std::vector<ClassPtr> throws_actual;
-  for (auto c : f->exceptions_thrown) {
-    throws_actual.push_back(c);
-  }
-  kphp_error_act(throws_expected.size() == throws_actual.size(), "throws count mismatch", return);
-  auto sort_classes = [](std::vector<ClassPtr> &classes) {
-    std::sort(classes.begin(), classes.end(), [](ClassPtr x, ClassPtr y) {
-      return x->name < y->name;
-    });
-  };
-  sort_classes(throws_expected);
-  sort_classes(throws_actual);
-  for (int i = 0; i < throws_expected.size(); i++) {
-    auto x = throws_expected[i];
-    auto y = throws_actual[i];
-    kphp_error_act(x == y, fmt_format("throws[{}] mismatch: {} != {}", i, x->name, y->name), return);
-  }
+  kphp_error_act(throws_expected == throws_actual,
+                 fmt_format("kphp-test-throws mismatch: have <{}>, want <{}>",
+                            vk::join(throws_actual, ", "), vk::join(throws_expected, ", ")),
+                 return);
 }
 
 void check_function_test(FunctionPtr f) {

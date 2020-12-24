@@ -233,7 +233,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<CheckRequires>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
-    >> PassC<PreprocessExceptions>{}
     >> PassC<RegisterDefinesPass>{}
     >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
@@ -243,6 +242,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<GenerateVirtualMethods>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}
+    >> PassC<PreprocessExceptions>{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}

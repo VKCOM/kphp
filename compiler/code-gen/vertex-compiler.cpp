@@ -625,6 +625,12 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   W << ", " << ThrowAction{} << MacroEnd{};
 }
 
+void compile_exception_constructor_call(VertexAdaptor<op_exception_constructor_call> root, CodeGenerator &W) {
+  W << "__exception_set_location(";
+  compile_func_call(root->constructor_call(), W);
+  W << ", " << root->file_arg() << ", " << root->line_arg() << ")";
+}
+
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
   compile_func_call(root->func_call(), W, func_call_mode::fork_call);
 }
@@ -1687,6 +1693,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_function:
       compile_function(root.as<op_function>(), W);
+      break;
+    case op_exception_constructor_call:
+      compile_exception_constructor_call(root.as<op_exception_constructor_call>(), W);
       break;
     case op_func_call:
       compile_func_call_fast(root.as<op_func_call>(), W);

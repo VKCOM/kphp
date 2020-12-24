@@ -14,7 +14,7 @@ array<array<string>> f$debug_backtrace();
 
 struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   virtual const char *get_class() const noexcept {
-    return "";
+    return "Throwable";
   }
 
   virtual int32_t get_hash() const noexcept {
@@ -91,7 +91,7 @@ Exception f$Exception$$__construct(const Exception &v$this, const string &messag
 Error f$Error$$__construct(const Error &v$this, const string &message = string(), int64_t code = 0);
 
 template<typename T>
-T f$__exception_set_location(const T &e, const string &file, int64_t line) {
+T __exception_set_location(const T &e, const string &file, int64_t line) {
   e->$file = file;
   e->$line = line;
   return e;

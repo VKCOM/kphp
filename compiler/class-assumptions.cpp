@@ -854,6 +854,8 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
       return infer_from_instance_prop(f, root.as<op_instance_prop>(), depth + 1);
     case op_func_call:
       return infer_from_call(f, root.as<op_func_call>(), depth + 1);
+    case op_exception_constructor_call:
+      return infer_from_call(f, root.as<op_exception_constructor_call>()->constructor_call(), depth + 1);
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key()) {
