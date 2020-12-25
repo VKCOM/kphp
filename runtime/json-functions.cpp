@@ -303,36 +303,6 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
   }
 }
 
-Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_encode) noexcept {
-  bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
-  if (has_unsupported_option) {
-    php_warning("Wrong parameter options = %" PRIi64 " in function json_encode", options);
-    return false;
-  }
-
-  static_SB.clean();
-
-  if (!do_json_encode(v, options, simple_encode)) {
-    return false;
-  }
-
-  return static_SB.str();
-}
-
-string f$vk_json_encode_safe(const mixed &v, bool simple_encode) noexcept {
-  static_SB.clean();
-  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  do_json_encode(v, 0, simple_encode);
-  if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
-    static_SB.clean();
-    string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
-    return string();
-  }
-  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-  return static_SB.str();
-}
-
 namespace {
 
 void json_skip_blanks(const char *s, int &i) noexcept {
