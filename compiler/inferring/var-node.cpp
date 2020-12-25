@@ -34,7 +34,7 @@ void VarNodeRecalc::do_recalc() {
     kphp_fail();
   }
   // at first, we just calculate new_type_ without any checks
-  for (const tinf::Edge *e : node->get_next()) {
+  for (const tinf::Edge *e : node->get_edges_from_this()) {
     set_lca_at(e->from_at, as_rvalue(e->to));
     inferer_->add_node(e->to);
   }
@@ -52,7 +52,7 @@ void VarNodeRecalc::do_recalc() {
     // so, passed string/tuple won't affect @param array, but will show a mismatch error after tinf finishes
     new_type_ = node->get_type()->clone();
 
-    for (const tinf::Edge *e : node->get_next()) {
+    for (const tinf::Edge *e : node->get_edges_from_this()) {
       TypeData *before_type = new_type_->clone();
       set_lca_at(e->from_at, as_rvalue(e->to));
 

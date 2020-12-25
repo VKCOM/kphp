@@ -21,14 +21,14 @@ std::string Node::as_human_readable() const {
   return type_->as_human_readable(false);
 }
 
-void Node::add_edge(Edge *edge) {
+void Node::register_edge_from_this(const tinf::Edge *edge) {
   AutoLocker<Node *> locker(this);
-  next_.push_back(edge);
+  edges_from_this_.emplace_front(edge);
 }
 
-void Node::add_rev_edge(Edge *edge) {
+void Node::register_edge_to_this(const tinf::Edge *edge) {
   AutoLocker<Node *> locker(this);
-  rev_next_.push_back(edge);
+  edges_to_this_.emplace_front(edge);
 }
 
 bool Node::try_start_recalc() {

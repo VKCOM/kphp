@@ -112,8 +112,8 @@ RestrictionMatchPhpdoc::UsageContext RestrictionMatchPhpdoc::detect_usage_contex
   }
 
   if (restricted_node->is_variable()) {
-    for (auto *n : actual_node->get_rev_next()) {
-      if (n->from == restricted_node && n->from_at && !n->from_at->empty()) {
+    for (const tinf::Edge *e : actual_node->get_edges_to_this()) {
+      if (e->from == restricted_node && e->from_at && !e->from_at->empty()) {
         return usage_assign_to_array_index;
       }
     }

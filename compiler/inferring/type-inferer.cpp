@@ -31,10 +31,10 @@ void TypeInferer::add_node(Node *node) {
   }
 }
 
-void TypeInferer::add_edge(Edge *edge) {
+void TypeInferer::add_edge(const Edge *edge) {
   //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
-  edge->from->add_edge(edge);
-  edge->to->add_rev_edge(edge);
+  edge->from->register_edge_from_this(edge);
+  edge->to->register_edge_to_this(edge);
 }
 
 void TypeInferer::add_restriction(RestrictionBase *restriction) {

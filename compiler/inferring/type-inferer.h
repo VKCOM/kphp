@@ -26,7 +26,7 @@ public:
 public:
   TypeInferer();
 
-  void add_edge(Edge *edge);
+  void add_edge(const Edge *edge);
 
   void recalc_node(Node *node);
   void add_node(Node *node);

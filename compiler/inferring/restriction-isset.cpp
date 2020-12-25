@@ -125,7 +125,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   tinf::VarNode *var_node = dynamic_cast <tinf::VarNode *> (node);
   if (var_node != nullptr) {
     VarPtr from_var = var_node->get_var();
-    for (auto e : var_node->get_next()) {
+    for (const tinf::Edge *e : var_node->get_edges_from_this()) {
       if (e->from_at->begin() != e->from_at->end()) {
         continue;
       }
