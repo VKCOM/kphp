@@ -35,7 +35,7 @@ apt-get update
 apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
 # for newest cmake package
 echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
-# for curl-kphp-vk and libuber-h3-dev packages
+# for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
 wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add -
 echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" >> /etc/apt/sources.list 
 # for php7.4-dev package
@@ -46,7 +46,7 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
             libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
 ```
 
@@ -57,7 +57,7 @@ Add external repositories
 apt-get update
 # utils for adding repositories
 apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
-# for curl-kphp-vk and libuber-h3-dev packages
+# for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
 wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add -
 echo "deb https://repo.vkpartner.ru/kphp-focal/ focal main" >> /etc/apt/sources.list
 ```
@@ -65,7 +65,7 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
             libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
 ```
 

@@ -47,6 +47,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "runtime/timelib_wrapper.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
@@ -2224,6 +2225,7 @@ void global_init_runtime_libs() {
   global_init_rpc_lib();
   global_init_udp_lib();
   global_init_job_workers_lib();
+  php_timelib_init();
 }
 
 void global_init_script_allocator() {

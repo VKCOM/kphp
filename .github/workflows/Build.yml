@@ -95,7 +95,7 @@ jobs:
     
     - name: Setup Environment
       run: |
-        brew install cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
+        brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
         brew link --overwrite php@7.4
         pip3 install jsonschema
         

@@ -56,6 +56,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
+        timelib_wrapper.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp
@@ -86,13 +87,15 @@ allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
 
+add_dependencies(kphp_runtime kphp-timelib)
+
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3)
 set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
-prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2)
+prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
 set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
