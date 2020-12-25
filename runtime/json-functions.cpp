@@ -4,10 +4,14 @@
 
 #include "runtime/json-functions.h"
 
+#include "common/algorithms/find.h"
+
 #include "runtime/exception.h"
 #include "runtime/string_functions.h"
 
-static void json_append_one_char(unsigned int c) {
+namespace {
+
+void json_append_one_char(unsigned int c) noexcept {
   static_SB.append_char('\\');
   static_SB.append_char('u');
   static_SB.append_char("0123456789abcdef"[c >> 12]);
@@ -16,24 +20,25 @@ static void json_append_one_char(unsigned int c) {
   static_SB.append_char("0123456789abcdef"[c & 15]);
 }
 
-static bool json_append_char(unsigned int c) {
+bool json_append_char(unsigned int c) noexcept {
   if (c < 0x10000) {
     if (0xD7FF < c && c < 0xE000) {
       return false;
     }
     json_append_one_char(c);
     return true;
-  } else if (c <= 0x10ffff) {
+  }
+  if (c <= 0x10ffff) {
     c -= 0x10000;
     json_append_one_char(0xD800 | (c >> 10));
     json_append_one_char(0xDC00 | (c & 0x3FF));
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
-static bool do_json_encode_string_php(const char *s, int len, int64_t options) {
+
+bool do_json_encode_string_php(const char *s, int len, int64_t options) noexcept {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
     static_SB.reserve(2 * len + 2);
@@ -42,11 +47,13 @@ static bool do_json_encode_string_php(const char *s, int len, int64_t options) {
   }
   static_SB.append_char('"');
 
-#define ERROR {static_SB.set_pos (begin_pos); static_SB.append ("null", 4); return false;}
-#define CHECK(x) if (!(x)) {php_warning ("Not a valid utf-8 character at pos %d in function json_encode", pos); ERROR}
-#define APPEND_CHAR(x) CHECK(json_append_char (x))
+  auto fire_error = [begin_pos](int pos) {
+    php_warning("Not a valid utf-8 character at pos %d in function json_encode", pos);
+    static_SB.set_pos(begin_pos);
+    static_SB.append("null", 4);
+    return false;
+  };
 
-  int a, b, c, d;
   for (int pos = 0; pos < len; pos++) {
     switch (s[pos]) {
       case '"':
@@ -86,54 +93,68 @@ static bool do_json_encode_string_php(const char *s, int len, int64_t options) {
       case 14 ... 31:
         json_append_one_char(s[pos]);
         break;
-      case -128 ... -1:
-        a = s[pos];
-        CHECK ((a & 0x40) != 0);
+      case -128 ... -1: {
+        const int a = s[pos];
+        if ((a & 0x40) == 0) {
+          return fire_error(pos);
+        }
 
-        b = s[++pos];
-        CHECK((b & 0xc0) == 0x80);
+        const int b = s[++pos];
+        if ((b & 0xc0) != 0x80) {
+          return fire_error(pos);
+        }
         if ((a & 0x20) == 0) {
-          CHECK((a & 0x1e) > 0);
+          if ((a & 0x1e) <= 0) {
+            return fire_error(pos);
+          }
           if (options & JSON_UNESCAPED_UNICODE) {
             static_SB.append_char(static_cast<char>(a));
             static_SB.append_char(static_cast<char>(b));
-          } else {
-            APPEND_CHAR(((a & 0x1f) << 6) | (b & 0x3f));
+          } else if (!json_append_char(((a & 0x1f) << 6) | (b & 0x3f))) {
+            return fire_error(pos);
           }
           break;
         }
 
-        c = s[++pos];
-        CHECK((c & 0xc0) == 0x80);
+        const int c = s[++pos];
+        if ((c & 0xc0) != 0x80) {
+          return fire_error(pos);
+        }
         if ((a & 0x10) == 0) {
-          CHECK(((a & 0x0f) | (b & 0x20)) > 0);
+          if (((a & 0x0f) | (b & 0x20)) <= 0) {
+            return fire_error(pos);
+          }
           if (options & JSON_UNESCAPED_UNICODE) {
             static_SB.append_char(static_cast<char>(a));
             static_SB.append_char(static_cast<char>(b));
             static_SB.append_char(static_cast<char>(c));
-          } else {
-            APPEND_CHAR(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f));
+          } else if (!json_append_char(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f))) {
+            return fire_error(pos);
           }
           break;
         }
 
-        d = s[++pos];
-        CHECK((d & 0xc0) == 0x80);
+        const int d = s[++pos];
+        if ((d & 0xc0) != 0x80) {
+          return fire_error(pos);
+        }
         if ((a & 0x08) == 0) {
-          CHECK(((a & 0x07) | (b & 0x30)) > 0);
+          if (((a & 0x07) | (b & 0x30)) <= 0) {
+            return fire_error(pos);
+          }
           if (options & JSON_UNESCAPED_UNICODE) {
             static_SB.append_char(static_cast<char>(a));
             static_SB.append_char(static_cast<char>(b));
             static_SB.append_char(static_cast<char>(c));
             static_SB.append_char(static_cast<char>(d));
-          } else {
-            APPEND_CHAR(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
+          } else if (!json_append_char(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f))) {
+            return fire_error(pos);
           }
           break;
         }
 
-        CHECK(0);
-        break;
+        return fire_error(pos);
+      }
       default:
         static_SB.append_char(s[pos]);
         break;
@@ -142,12 +163,9 @@ static bool do_json_encode_string_php(const char *s, int len, int64_t options) {
 
   static_SB.append_char('"');
   return true;
-#undef ERROR
-#undef CHECK
-#undef APPEND_CHAR
 }
 
-static bool do_json_encode_string_vkext(const char *s, int len) {
+bool do_json_encode_string_vkext(const char *s, int len) noexcept {
   static_SB.reserve(2 * len + 2);
   if (static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     return false;
@@ -157,7 +175,7 @@ static bool do_json_encode_string_vkext(const char *s, int len) {
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
-    if (unlikely ((unsigned int)c < 32u)) {
+    if (unlikely (static_cast<unsigned int>(c) < 32u)) {
       switch (c) {
         case '\b':
           static_SB.append_char('\\');
@@ -193,7 +211,9 @@ static bool do_json_encode_string_vkext(const char *s, int len) {
   return true;
 }
 
-bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
+} // namespace
+
+bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       static_SB.append("null", 4);
@@ -210,7 +230,7 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
       return true;
     case mixed::type::FLOAT:
       if (is_ok_float(v.as_double())) {
-        static_SB << (simple_encode ? f$number_format(v.as_double(), 6, DOT, string()) : string(v.as_double()));
+        static_SB << (simple_encode ? f$number_format(v.as_double(), 6, string{"."}, string()) : string(v.as_double()));
       } else {
         php_warning("strange double %lf in function json_encode", v.as_double());
         if (options & JSON_PARTIAL_OUTPUT_ON_ERROR) {
@@ -283,7 +303,7 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) {
   }
 }
 
-Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_encode) {
+Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_encode) noexcept {
   bool has_unsupported_option = static_cast<bool>(options & ~JSON_AVAILABLE_OPTIONS);
   if (has_unsupported_option) {
     php_warning("Wrong parameter options = %" PRIi64 " in function json_encode", options);
@@ -299,7 +319,7 @@ Optional<string> f$json_encode(const mixed &v, int64_t options, bool simple_enco
   return static_SB.str();
 }
 
-string f$vk_json_encode_safe(const mixed &v, bool simple_encode) {
+string f$vk_json_encode_safe(const mixed &v, bool simple_encode) noexcept {
   static_SB.clean();
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   do_json_encode(v, 0, simple_encode);
@@ -313,14 +333,15 @@ string f$vk_json_encode_safe(const mixed &v, bool simple_encode) {
   return static_SB.str();
 }
 
+namespace {
 
-static void json_skip_blanks(const char *s, int &i) {
-  while (s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n') {
+void json_skip_blanks(const char *s, int &i) noexcept {
+  while (vk::any_of_equal(s[i], ' ', '\t', '\r', '\n')) {
     i++;
   }
 }
 
-static bool do_json_decode(const char *s, int s_len, int &i, mixed &v) {
+bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
   if (!v.is_null()) {
     v.destroy();
   }
@@ -439,19 +460,19 @@ static bool do_json_decode(const char *s, int s_len, int &i, mixed &v) {
                   }
 
                   if (num < 128) {
-                    value[l] = (char)num;
+                    value[l] = static_cast<char>(num);
                   } else if (num < 0x800) {
-                    value[l++] = (char)(0xc0 + (num >> 6));
-                    value[l] = (char)(0x80 + (num & 63));
+                    value[l++] = static_cast<char>(0xc0 + (num >> 6));
+                    value[l] = static_cast<char>(0x80 + (num & 63));
                   } else if (num < 0xffff) {
-                    value[l++] = (char)(0xe0 + (num >> 12));
-                    value[l++] = (char)(0x80 + ((num >> 6) & 63));
-                    value[l] = (char)(0x80 + (num & 63));
+                    value[l++] = static_cast<char>(0xe0 + (num >> 12));
+                    value[l++] = static_cast<char>(0x80 + ((num >> 6) & 63));
+                    value[l] = static_cast<char>(0x80 + (num & 63));
                   } else {
-                    value[l++] = (char)(0xf0 + (num >> 18));
-                    value[l++] = (char)(0x80 + ((num >> 12) & 63));
-                    value[l++] = (char)(0x80 + ((num >> 6) & 63));
-                    value[l] = (char)(0x80 + (num & 63));
+                    value[l++] = static_cast<char>(0xf0 + (num >> 18));
+                    value[l++] = static_cast<char>(0x80 + ((num >> 12) & 63));
+                    value[l++] = static_cast<char>(0x80 + ((num >> 6) & 63));
+                    value[l] = static_cast<char>(0x80 + (num & 63));
                   }
                   break;
                 }
@@ -555,16 +576,16 @@ static bool do_json_decode(const char *s, int s_len, int &i, mixed &v) {
   return false;
 }
 
-mixed f$json_decode(const string &v, bool assoc) {
-  if (!assoc) {
-//    php_warning ("json_decode doesn't support decoding to class, returning array");
-  }
+} // namespace
+
+mixed f$json_decode(const string &v, bool assoc) noexcept {
+  static_cast<void>(assoc);
 
   mixed result;
   int i = 0;
   if (do_json_decode(v.c_str(), v.size(), i, result)) {
     json_skip_blanks(v.c_str(), i);
-    if (i == (int)v.size()) {
+    if (i == static_cast<int>(v.size())) {
       return result;
     }
   }
