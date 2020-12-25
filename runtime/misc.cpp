@@ -991,14 +991,14 @@ void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &e
     return json_str;
   };
 
-  if (do_json_encode(tags, JSON_FORCE_OBJECT, false)) {
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags)) {
     auto tags_json = get_json_string_from_SB_without_brackets();
     dl::CriticalSectionGuard critical_section;
     json_logger.set_tags(tags_json);
   }
   static_SB.clean();
 
-  if (do_json_encode(extra_info, JSON_FORCE_OBJECT, false)) {
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info)) {
     auto extra_info_json = get_json_string_from_SB_without_brackets();
     dl::CriticalSectionGuard critical_section;
     json_logger.set_extra_info(extra_info_json);

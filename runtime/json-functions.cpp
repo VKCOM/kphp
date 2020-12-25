@@ -213,7 +213,14 @@ bool do_json_encode_string_vkext(const char *s, int len) noexcept {
 
 } // namespace
 
-bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcept {
+namespace impl_ {
+
+JsonEncoder::JsonEncoder(int64_t options, bool simple_encode) noexcept:
+  options_(options),
+  simple_encode_(simple_encode) {
+}
+
+bool JsonEncoder::encode(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       static_SB.append("null", 4);
@@ -230,10 +237,10 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
       return true;
     case mixed::type::FLOAT:
       if (is_ok_float(v.as_double())) {
-        static_SB << (simple_encode ? f$number_format(v.as_double(), 6, string{"."}, string()) : string(v.as_double()));
+        static_SB << (simple_encode_ ? f$number_format(v.as_double(), 6, string{"."}, string()) : string(v.as_double()));
       } else {
         php_warning("strange double %lf in function json_encode", v.as_double());
-        if (options & JSON_PARTIAL_OUTPUT_ON_ERROR) {
+        if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
           static_SB.append("0", 1);
         } else {
           return false;
@@ -241,14 +248,14 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
       }
       return true;
     case mixed::type::STRING:
-      if (simple_encode) {
+      if (simple_encode_) {
         return do_json_encode_string_vkext(v.as_string().c_str(), v.as_string().size());
       }
 
-      return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options);
+      return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options_);
     case mixed::type::ARRAY: {
       bool is_vector = v.as_array().is_vector();
-      const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options);
+      const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
       if (!force_object && !is_vector && v.as_array().size().string_size == 0) {
         int n = 0;
         for (array<mixed>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
@@ -279,8 +286,8 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
           if (array<mixed>::is_int_key(key)) {
             static_SB << '"' << key.to_int() << '"';
           } else {
-            if (!do_json_encode(key, options, simple_encode)) {
-              if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+            if (!encode(key)) {
+              if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
                 return false;
               }
             }
@@ -288,8 +295,8 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
           static_SB << ':';
         }
 
-        if (!do_json_encode(p.get_value(), options, simple_encode)) {
-          if (!(options & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+        if (!encode(p.get_value())) {
+          if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
             return false;
           }
         }
@@ -302,6 +309,8 @@ bool do_json_encode(const mixed &v, int64_t options, bool simple_encode) noexcep
       __builtin_unreachable();
   }
 }
+
+} // namespace impl_
 
 namespace {
 
