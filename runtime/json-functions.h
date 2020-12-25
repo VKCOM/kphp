@@ -18,9 +18,15 @@ class JsonEncoder {
 public:
   JsonEncoder(int64_t options, bool simple_encode) noexcept;
 
+  bool encode(bool b) noexcept;
+  bool encode(int64_t i) noexcept;
+  bool encode(double d) noexcept;
+  bool encode(const string &s) noexcept;
   bool encode(const mixed &v) noexcept;
 
 private:
+  bool encode_null() noexcept;
+
   int64_t options_{0};
   bool simple_encode_{false};
 };

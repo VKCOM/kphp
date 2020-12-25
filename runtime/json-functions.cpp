@@ -220,39 +220,55 @@ JsonEncoder::JsonEncoder(int64_t options, bool simple_encode) noexcept:
   simple_encode_(simple_encode) {
 }
 
+bool JsonEncoder::encode(bool b) noexcept {
+  if (b) {
+    static_SB.append("true", 4);
+  } else {
+    static_SB.append("false", 5);
+  }
+  return true;
+}
+
+bool JsonEncoder::encode_null() noexcept {
+  static_SB.append("null", 4);
+  return true;
+}
+
+bool JsonEncoder::encode(int64_t i) noexcept {
+  static_SB << i;
+  return true;
+}
+
+bool JsonEncoder::encode(double d) noexcept {
+  if (is_ok_float(d)) {
+    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string()) : string(d));
+  } else {
+    php_warning("strange double %lf in function json_encode", d);
+    if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
+      static_SB.append("0", 1);
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool JsonEncoder::encode(const string &s) noexcept {
+  return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size()) : do_json_encode_string_php(s.c_str(), s.size(), options_);
+}
+
 bool JsonEncoder::encode(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
-      static_SB.append("null", 4);
-      return true;
+      return encode_null();
     case mixed::type::BOOLEAN:
-      if (v.as_bool()) {
-        static_SB.append("true", 4);
-      } else {
-        static_SB.append("false", 5);
-      }
-      return true;
+      return encode(v.as_bool());
     case mixed::type::INTEGER:
-      static_SB << v.as_int();
-      return true;
+      return encode(v.as_int());
     case mixed::type::FLOAT:
-      if (is_ok_float(v.as_double())) {
-        static_SB << (simple_encode_ ? f$number_format(v.as_double(), 6, string{"."}, string()) : string(v.as_double()));
-      } else {
-        php_warning("strange double %lf in function json_encode", v.as_double());
-        if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
-          static_SB.append("0", 1);
-        } else {
-          return false;
-        }
-      }
-      return true;
+      return encode(v.as_double());
     case mixed::type::STRING:
-      if (simple_encode_) {
-        return do_json_encode_string_vkext(v.as_string().c_str(), v.as_string().size());
-      }
-
-      return do_json_encode_string_php(v.as_string().c_str(), v.as_string().size(), options_);
+      return encode(v.as_string());
     case mixed::type::ARRAY: {
       bool is_vector = v.as_array().is_vector();
       const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
@@ -309,6 +325,7 @@ bool JsonEncoder::encode(const mixed &v) noexcept {
       __builtin_unreachable();
   }
 }
+
 
 } // namespace impl_
 
