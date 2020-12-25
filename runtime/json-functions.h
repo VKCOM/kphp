@@ -14,22 +14,97 @@ constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_O
 
 namespace impl_ {
 
-class JsonEncoder {
+class JsonEncoder : vk::not_copyable {
 public:
   JsonEncoder(int64_t options, bool simple_encode) noexcept;
 
-  bool encode(bool b) noexcept;
-  bool encode(int64_t i) noexcept;
-  bool encode(double d) noexcept;
-  bool encode(const string &s) noexcept;
-  bool encode(const mixed &v) noexcept;
+  bool encode(bool b) const noexcept;
+  bool encode(int64_t i) const noexcept;
+  bool encode(double d) const noexcept;
+  bool encode(const string &s) const noexcept;
+  bool encode(const mixed &v) const noexcept;
+
+  template<class T>
+  bool encode(const array<T> &arr) const noexcept;
+
+  template<class T>
+  bool encode(const Optional<T> &opt) const noexcept;
 
 private:
-  bool encode_null() noexcept;
+  bool encode_null() const noexcept;
 
-  int64_t options_{0};
-  bool simple_encode_{false};
+  const int64_t options_{0};
+  const bool simple_encode_{false};
 };
+
+template<class T>
+bool JsonEncoder::encode(const array<T> &arr) const noexcept {
+  bool is_vector = arr.is_vector();
+  const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
+  if (!force_object && !is_vector && arr.size().string_size == 0) {
+    int n = 0;
+    for (auto p : arr) {
+      if (p.get_key().to_int() != n) {
+        break;
+      }
+      n++;
+    }
+    if (n == arr.count()) {
+      if (arr.get_next_key() == arr.count()) {
+        is_vector = true;
+      } else {
+        php_warning("Corner case in json conversion, [] could be easy transformed to {}");
+      }
+    }
+  }
+  is_vector &= !force_object;
+
+  static_SB << "{["[is_vector];
+
+  bool first = true;
+  for (auto p : arr) {
+    if (!first) {
+      static_SB << ',';
+    }
+    first = false;
+
+    if (!is_vector) {
+      const auto key = p.get_key();
+      if (array<T>::is_int_key(key)) {
+        static_SB << '"' << key.to_int() << '"';
+      } else {
+        if (!encode(key)) {
+          if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+            return false;
+          }
+        }
+      }
+      static_SB << ':';
+    }
+
+    if (!encode(p.get_value())) {
+      if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+        return false;
+      }
+    }
+  }
+
+  static_SB << "}]"[is_vector];
+  return true;
+}
+
+template<class T>
+bool JsonEncoder::encode(const Optional<T> &opt) const noexcept {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return encode(opt.val());
+    case OptionalState::false_value:
+      return encode(false);
+    case OptionalState::null_value:
+      return encode_null();
+  }
+  __builtin_unreachable();
+}
 
 } // namespace impl_
 
