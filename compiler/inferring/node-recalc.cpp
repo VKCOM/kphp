@@ -86,7 +86,6 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
     if (auto_edge_flag()) {
       add_dependency_impl(node_, rvalue.node, key);
     }
-    __sync_synchronize();
     type = rvalue.node->get_type();
   } else if (rvalue.type != nullptr) {
     type = rvalue.type;
@@ -160,14 +159,11 @@ NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer) :
   inferer_(inferer) {}
 
 void NodeRecalc::on_changed() {
-  __sync_synchronize();
-
   //fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
   node_->set_type(new_type_);
   new_type_ = nullptr;
 
-  __sync_synchronize();
-
+  // here we need a lock: in case another thread updates edges_to_this_ just now via auto edge
   AutoLocker<Lockable *> locker(node_);
   for (auto e : node_->get_rev_next()) {
     inferer_->recalc_node(e->from);
