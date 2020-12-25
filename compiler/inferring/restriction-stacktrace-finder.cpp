@@ -114,7 +114,7 @@ bool RestrictionStacktraceFinder::find_call_trace_with_error(tinf::Node *cur_nod
   }
 
   std::vector<const tinf::Edge *> ordered_edges;
-  for (const tinf::Edge *e : cur_node->get_next()) {
+  for (const tinf::Edge *e : cur_node->get_edges_from_this()) {
     ordered_edges.emplace_back(e);
   }
   std::sort(ordered_edges.begin(), ordered_edges.end(), [&](const tinf::Edge *a, const tinf::Edge *b) {

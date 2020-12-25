@@ -5,7 +5,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <forward_list>
 
 #include "compiler/debug.h"
 #include "compiler/location.h"
@@ -23,8 +23,13 @@ class Node : public Lockable {
   DEBUG_STRING_METHOD { return as_human_readable(); }
 
 private:
-  std::vector<Edge *> next_;
-  std::vector<Edge *> rev_next_;
+  // this list contains edges from=this to=other
+  std::forward_list<const tinf::Edge *> edges_from_this_;
+  // this list contains edges to=this from=other
+  std::forward_list<const tinf::Edge *> edges_to_this_;
+  // using forward_list here is a bit-bit slower than vector, but takes considerably less memory
+  // these two lists are separate variables, as joining them into one list causes negative performance impact
+
   volatile int recalc_state_;
 public:
   const TypeData *type_;
@@ -46,15 +51,15 @@ public:
     return recalc_cnt_;
   }
 
-  void add_edge(Edge *edge);
-  void add_rev_edge(Edge *edge);
+  void register_edge_from_this(const tinf::Edge *edge);
+  void register_edge_to_this(const tinf::Edge *edge);
 
-  inline const std::vector<Edge *> &get_next() const {
-    return next_;
+  const std::forward_list<const Edge *> &get_edges_from_this() const {
+    return edges_from_this_;
   }
 
-  inline const std::vector<Edge *> &get_rev_next() const {
-    return rev_next_;
+  const std::forward_list<const Edge *> &get_edges_to_this() const {
+    return edges_to_this_;
   }
 
   bool try_start_recalc();

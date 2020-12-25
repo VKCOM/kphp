@@ -165,7 +165,7 @@ void NodeRecalc::on_changed() {
 
   // here we need a lock: in case another thread updates edges_to_this_ just now via auto edge
   AutoLocker<Lockable *> locker(node_);
-  for (auto e : node_->get_rev_next()) {
+  for (const tinf::Edge *e : node_->get_edges_to_this()) {
     inferer_->recalc_node(e->from);
   }
 }
