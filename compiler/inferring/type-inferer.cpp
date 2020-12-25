@@ -26,7 +26,7 @@ void TypeInferer::recalc_node(Node *node) {
 
 void TypeInferer::add_node(Node *node) {
   //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
-  if (node->get_recalc_cnt() < 0) {
+  if (!node->was_recalc_started_at_least_once()) {
     recalc_node(node);
   }
 }
@@ -115,11 +115,11 @@ void TypeInferer::run_queue(NodeQueue *new_q) {
 }
 
 void TypeInferer::run_node(Node *node) {
-  if (node->get_recalc_cnt() < 0) {
+  if (!node->was_recalc_started_at_least_once()) {
     add_node(node);
     do_run_queue();
   }
-  while (node->get_recalc_cnt() == 0) {
+  while (!node->was_recalc_finished_at_least_once()) {
     usleep(250);
   }
 }

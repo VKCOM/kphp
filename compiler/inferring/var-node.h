@@ -31,7 +31,7 @@ public:
 
   void copy_type_from(const TypeData *from) {
     type_ = from;
-    recalc_cnt_ = 1;
+    recalc_state_ = recalc_st_waiting | recalc_bit_at_least_once;
   }
 
   void recalc(TypeInferer *inferer) final;

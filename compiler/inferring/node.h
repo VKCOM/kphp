@@ -9,9 +9,8 @@
 
 #include "compiler/debug.h"
 #include "compiler/location.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/threading/locks.h"
-
-class TypeData;
 
 namespace tinf {
 
@@ -30,25 +29,36 @@ private:
   // using forward_list here is a bit-bit slower than vector, but takes considerably less memory
   // these two lists are separate variables, as joining them into one list causes negative performance impact
 
-  volatile int recalc_state_;
-public:
-  const TypeData *type_;
-  volatile int recalc_cnt_;
-  int isset_flags;
-  int isset_was;
-
+protected:
   enum {
-    empty_st,
-    own_st,
-    own_recalc_st
+    recalc_st_waiting = 0,
+    recalc_st_processing = 1,
+    recalc_st_need_relaunch = 2,
+    // and three more states — the same by meaning, but with bit 16 on (16, 17, 18)
+    // that 3 more states — with bit 16 on — mean that recalc has once finished <=> recalc count > 0
+    recalc_bit_at_least_once = 16,
   };
 
-  Node();
+  const TypeData *type_{TypeData::get_type(tp_any)};
+
+  // this field is a finite-state automation for multithreading synchronization, see enum above
+  // if should be placed here (after TypeData*) to make it join with the next int field in memory
+  int recalc_state_{recalc_st_waiting};
+
+public:
+
+  int isset_flags{0};   // ifi bitmask, see get_ifi_id(): for example, when is_integer($a) then node of $a has this flags
+  int isset_was{0};     // used to find "result may differ from PHP" error, see RestrictionIsset
+
 
   std::string as_human_readable() const;
 
-  int get_recalc_cnt() const {
-    return recalc_cnt_;
+  bool was_recalc_started_at_least_once() const {
+    return recalc_state_ > recalc_st_waiting;
+  }
+
+  bool was_recalc_finished_at_least_once() const {
+    return recalc_state_ >= recalc_bit_at_least_once;
   }
 
   void register_edge_from_this(const tinf::Edge *edge);

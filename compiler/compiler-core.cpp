@@ -457,7 +457,7 @@ vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   return global_vars_ht.get_all_if([](VarPtr v) {
-    return v->tinf_node.get_recalc_cnt() != -1;
+    return v->tinf_node.was_recalc_finished_at_least_once();
   });
 }
 
