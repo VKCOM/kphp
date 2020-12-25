@@ -652,7 +652,8 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
 }
 
 bool ExprNodeRecalc::auto_edge_flag() {
-  return node_->get_recalc_cnt() == 0;
+  // on the very first recalc, add all dependent edges while calculating lca
+  return !node_->was_recalc_finished_at_least_once();
 }
 
 ExprNodeRecalc::ExprNodeRecalc(tinf::ExprNode *node, tinf::TypeInferer *inferer) :

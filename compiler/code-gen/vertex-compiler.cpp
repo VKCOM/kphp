@@ -709,9 +709,9 @@ void compile_foreach_noref_header(VertexAdaptor<op_foreach> root, CodeGenerator 
     key = params->key();
   }
 
-  TypeData const *type_data = xs->tinf_node.type_;
+  TypeData const *type_data = tinf::get_type(xs);
   if (auto xs_var = xs.try_as<op_var>()) {
-    type_data = xs_var->var_id->tinf_node.type_;
+    type_data = tinf::get_type(xs_var->var_id);
   }
 
   PrimitiveType ptype = type_data->get_real_ptype();

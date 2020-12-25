@@ -14,9 +14,9 @@
 #include "compiler/phpdoc.h"
 
 VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
-  auto type_data = root->tinf_node.type_;
+  auto type_data = root->tinf_node.get_type();
   if (auto var = root.try_as<op_var>()) {
-    type_data = var->var_id ? var->var_id->tinf_node.type_ : type_data;
+    type_data = var->var_id ? var->var_id->tinf_node.get_type() : type_data;
   }
   if (type_data && type_data->ptype() == tp_Class) {
     const auto &class_types = type_data->class_types();

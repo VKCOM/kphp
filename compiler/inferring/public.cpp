@@ -33,10 +33,10 @@ TypeInferer *get_inferer() {
 }
 
 inline const TypeData *get_type_impl(Node *node) {
-  if (node->get_recalc_cnt() == -1) {
+  if (!node->was_recalc_started_at_least_once()) {
     get_inferer()->run_node(node);
   }
-  return node->type_;
+  return node->get_type();
 }
 
 const TypeData *get_type(VertexPtr vertex) {

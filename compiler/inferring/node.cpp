@@ -9,14 +9,6 @@
 
 namespace tinf {
 
-Node::Node() :
-  recalc_state_(empty_st),
-  type_(TypeData::get_type(tp_any)),
-  recalc_cnt_(-1),
-  isset_flags(0),
-  isset_was(0) {
-}
-
 std::string Node::as_human_readable() const {
   return type_->as_human_readable(false);
 }
@@ -34,19 +26,19 @@ void Node::register_edge_to_this(const tinf::Edge *edge) {
 bool Node::try_start_recalc() {
   while (true) {
     int recalc_state_copy = recalc_state_;
-    switch (recalc_state_copy) {
-      case empty_st:
-        if (__sync_bool_compare_and_swap(&recalc_state_, empty_st, own_recalc_st)) {
-          recalc_cnt_ = recalc_cnt_ + 1;
+    int once_finished_flag = recalc_state_copy & recalc_bit_at_least_once;
+    switch (recalc_state_copy & 15) {   // preserve bit 16 in transformations
+      case recalc_st_waiting:
+        if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_waiting | once_finished_flag, recalc_st_need_relaunch | once_finished_flag)) {
           return true;
         }
         break;
-      case own_st:
-        if (__sync_bool_compare_and_swap(&recalc_state_, own_st, own_recalc_st)) {
+      case recalc_st_processing:
+        if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_processing | once_finished_flag, recalc_st_need_relaunch | once_finished_flag)) {
           return false;
         }
         break;
-      case own_recalc_st:
+      case recalc_st_need_relaunch:
         return false;
       default:
         assert (0);
@@ -56,21 +48,31 @@ bool Node::try_start_recalc() {
 }
 
 void Node::start_recalc() {
-  bool swapped = __sync_bool_compare_and_swap(&recalc_state_, own_recalc_st, own_st);
+  int once_finished_flag = recalc_state_ & recalc_bit_at_least_once;  // preserve bit 16 in transformation
+  bool swapped = __sync_bool_compare_and_swap(&recalc_state_, recalc_st_need_relaunch | once_finished_flag, recalc_st_processing | once_finished_flag);
   kphp_assert(swapped);
 }
 
 bool Node::try_finish_recalc() {
-  recalc_cnt_ = recalc_cnt_ + 1;
   while (true) {
     int recalc_state_copy = recalc_state_;
-    switch (recalc_state_copy) {
-      case own_st:
-        if (__sync_bool_compare_and_swap(&recalc_state_, own_st, empty_st)) {
+    switch (recalc_state_copy) {  // always set bit 16 in transformations
+      case recalc_st_processing:
+        if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_processing, recalc_st_waiting | recalc_bit_at_least_once)) {
           return true;
         }
         break;
-      case own_recalc_st:
+      case recalc_st_processing | recalc_bit_at_least_once:
+        if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_processing | recalc_bit_at_least_once, recalc_st_waiting | recalc_bit_at_least_once)) {
+          return true;
+        }
+        break;
+      case recalc_st_need_relaunch:
+        if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_need_relaunch, recalc_st_need_relaunch | recalc_bit_at_least_once)) {
+          return false; // false here, unlike above, but like below
+        }
+        break;
+      case recalc_st_need_relaunch | recalc_bit_at_least_once:
         return false;
       default:
         assert (0);
