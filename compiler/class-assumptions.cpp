@@ -77,22 +77,9 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> &dst, const vk::intrusive_pt
     auto common_bases = rhs_class->get_common_base_or_interface(dst_class);
     return common_bases.size() == 1 ? common_bases[0] : ClassPtr{};
   };
-  auto dst_as_callable = dst.try_as<AssumCallable>();
-  auto rhs_as_callable = rhs.try_as<AssumCallable>();
+
   auto dst_as_instance = dst.try_as<AssumInstance>();
   auto rhs_as_instance = rhs.try_as<AssumInstance>();
-
-  if (dst_as_callable && rhs_as_callable) {
-    return dst_as_callable->klass == rhs_as_callable->klass;
-  } else if (dst_as_callable && rhs_as_instance) {
-    return rhs_as_instance->klass->is_lambda();
-  } else if (rhs_as_callable && dst_as_instance) {
-    if (dst_as_instance->klass->is_lambda()) {
-      dst = rhs_as_callable;
-      return true;
-    }
-  }
-
   if (dst_as_instance && rhs_as_instance) {
     ClassPtr lca_class = merge_classes_lca(dst_as_instance->klass, rhs_as_instance->klass);
     if (lca_class) {
@@ -129,6 +116,20 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> &dst, const vk::intrusive_pt
       }
     }
     return ok;
+  }
+
+  auto dst_as_typed_callable = dst.try_as<AssumTypedCallable>();
+  auto rhs_as_typed_callable = rhs.try_as<AssumTypedCallable>();
+  if (dst_as_typed_callable && rhs_as_typed_callable) {
+    return dst_as_typed_callable->interface == rhs_as_typed_callable->interface;
+  }
+
+  if (dst_as_typed_callable && rhs_as_instance) {
+    return rhs_as_instance->klass->is_lambda();
+  }
+  if (rhs_as_typed_callable && dst_as_instance && dst_as_instance->klass->is_lambda()) {
+    dst = rhs_as_typed_callable;
+    return true;
   }
 
   return dst->is_primitive() && rhs->is_primitive();
@@ -214,20 +215,6 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     type_expr = last_expr;
   }
 
-  if (auto callable = type_expr.try_as<op_type_expr_callable>()) {
-    if (!callable->has_params()) {
-      return AssumCallable::create(InterfacePtr{});
-    }
-    // typed callback
-
-    auto callable_params = callable->params()->params();
-    std::vector<vk::intrusive_ptr<Assumption>> assum_params(callable_params.size());
-    std::transform(callable_params.begin(), callable_params.end(), assum_params.begin(), &assumption_create_from_phpdoc);
-    auto assum_return = assumption_create_from_phpdoc(callable->return_type());
-    auto callable_interface = LambdaInterfaceGenerator{std::move(assum_params), std::move(assum_return)}.generate();
-    return AssumCallable::create(callable_interface)->add_flags(or_null_flag, or_false_flag);
-  }
-
   switch (type_expr->type_help) {
     case tp_Class:
       return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr)->add_flags(or_null_flag, or_false_flag);
@@ -253,6 +240,17 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
     }
 
     default:
+      if (auto callable = type_expr.try_as<op_type_expr_callable>()) {
+        // typed callable, like callable(int):void — when we see such a phpdoc, we generate an interface based on types
+        // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
+        if (callable->has_params()) {
+          auto callable_interface = LambdaInterfaceGenerator{callable}.generate();
+          return AssumTypedCallable::create(callable_interface)->add_flags(or_null_flag, or_false_flag);
+        }
+        // just `callable` keywords have sense only as a param type hint
+        // they turn the function into a template one, and each instantiation will have instances as a parameter assumption
+      }
+
       return AssumNotInstance::create(type_expr->type_help)->add_flags(or_null_flag, or_false_flag);
   }
 }
@@ -735,9 +733,12 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
         auto arr = array_rule->args()[0];
         if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
           auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
-          if (auto inst_a = expr_a.try_as<AssumInstance>()) {
-            return AssumArray::create(inst_a->klass);
+          if (auto inst_a = expr_a.try_as<AssumTypedCallable>()) {
+            return AssumArray::create(inst_a->interface);
           }
+//          if (auto inst_a = expr_a.try_as<AssumInstance>()) {
+//            return AssumArray::create(inst_a->klass);
+//          }
           return AssumNotInstance::create();
         }
       }
@@ -924,14 +925,10 @@ std::string AssumShape::as_human_readable() const {
   return r;
 }
 
-std::string AssumCallable::as_human_readable() const {
-  if (klass) {
-    if (auto invoke_method = klass->get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)) {
-      return invoke_method->function->get_human_readable_name();
-    };
-  }
-  return "unknown callable (use `callable` typehint)";
+std::string AssumTypedCallable::as_human_readable() const {
+  return interface->name + "::_invoke";
 }
+
 
 bool AssumArray::is_primitive() const {
   return inner->is_primitive();
@@ -950,6 +947,10 @@ bool AssumTuple::is_primitive() const {
 }
 
 bool AssumShape::is_primitive() const {
+  return false;
+}
+
+bool AssumTypedCallable::is_primitive() const {
   return false;
 }
 
@@ -992,6 +993,10 @@ const TypeData *AssumShape::get_type_data() const {
   return TypeData::create_type_data(subkeys_values, or_null_, or_false_);
 }
 
+const TypeData *AssumTypedCallable::get_type_data() const {
+  return interface->type_data;
+}
+
 
 vk::intrusive_ptr<Assumption> AssumArray::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
   return inner;
@@ -1025,3 +1030,8 @@ vk::intrusive_ptr<Assumption> AssumShape::get_subkey_by_index(VertexPtr index_ke
   }
   return AssumNotInstance::create();
 }
+
+vk::intrusive_ptr<Assumption> AssumTypedCallable::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
+  return AssumNotInstance::create();
+}
+
