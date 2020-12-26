@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 /*
- * Assumptions — is a predicted type information that describes which variables belong to which classes.
+ * 'Assumption' is predicted type information that describes which variables belong to which classes.
  * Used to resolve the arrow method calls and find which actual function is being called.
  * For $a->getValue() we can infer that getValue() belongs to the A class; hence we resolve it to Classes$A$$getValue().
  *
@@ -15,15 +15,10 @@
  * For example, in "$a = new A; $a->foo()" we see that A constructor is called, therefore the type of $a is A
  * and $a->foo can be resolved to Classes$A$$foo().
  *
- * Predictor mistakes (or phpdoc errors) are checked later, after the type inferring.
- * If expected types do not match the actual types, compile time error is given.
- * In other words, assumptions are our type expectations/intentions/predictions.
- * It's used for an early methods binding so the type inferring can work.
- * Type inferring produces types that are used inside the actual code.
- *
- * Assumptions can be associated to functions (local variables) and classes (class fields).
- *
- * Assumptions are computed only for such functions and variables that are accessed via the '->' operator.
+ * Caution! Assumptions is NOT type inferring, it's much more rough analysis. They are used only to bind -> invocations.
+ * They do not contain information about primitives, etc., they do not operate cfg/smartcasts — only variable names.
+ * In other words, assumptions are our type expectations/intentions/predictions, they are checked by tinf later.
+ * If they are incorrect (for example, @return A but actually returns B), a tinf error will occur later on.
  */
 #include "compiler/class-assumptions.h"
 
@@ -193,19 +188,13 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
   // 'A[]|false' => 'A[]'
   // 'null|some_class' => 'some_class'
   // 'mixed|mixed[]' => primitive
-  bool or_false_flag = false;
-  bool or_null_flag = false;
   VertexPtr last_expr;
   int expr_count = 0;
   std::function<void(VertexPtr)> walk_lca = [&](VertexPtr root) {
     if (auto lca_rule = root.try_as<op_type_expr_lca>()) {
       walk_lca(lca_rule->args()[0]);
       walk_lca(lca_rule->args()[1]);
-    } else if (root->type_help == tp_False) {
-      or_false_flag = true;
-    } else if (root->type_help == tp_Null) {
-      or_null_flag = true;
-    } else {
+    } else if (root->type_help != tp_False && root->type_help != tp_Null) {
       last_expr = root;
       expr_count++;
     }
@@ -217,17 +206,17 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
 
   switch (type_expr->type_help) {
     case tp_Class:
-      return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr)->add_flags(or_null_flag, or_false_flag);
+      return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr);
 
     case tp_array:
-        return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]))->add_flags(or_null_flag, or_false_flag);
+        return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]));
 
     case tp_tuple: {
       decltype(AssumTuple::subkeys_assumptions) sub;
       for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
         sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
       }
-      return AssumTuple::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
+      return AssumTuple::create(std::move(sub));
     }
 
     case tp_shape: {
@@ -236,7 +225,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
         auto double_arrow = sub_expr.as<op_double_arrow>();
         sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
       }
-      return AssumShape::create(std::move(sub))->add_flags(or_null_flag, or_false_flag);
+      return AssumShape::create(std::move(sub));
     }
 
     default:
@@ -245,13 +234,13 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
         // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
         if (callable->has_params()) {
           auto callable_interface = LambdaInterfaceGenerator{callable}.generate();
-          return AssumTypedCallable::create(callable_interface)->add_flags(or_null_flag, or_false_flag);
+          return AssumTypedCallable::create(callable_interface);
         }
         // just `callable` keywords have sense only as a param type hint
         // they turn the function into a template one, and each instantiation will have instances as a parameter assumption
       }
 
-      return AssumNotInstance::create(type_expr->type_help)->add_flags(or_null_flag, or_false_flag);
+      return AssumNotInstance::create();
   }
 }
 
@@ -414,8 +403,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
 
   VertexRange params = root->params()->args();
   for (auto i : params.get_reversed_range()) {
-    VertexAdaptor<op_func_param> param = i.as<op_func_param>();
-    if (param->type_hint) {
+    VertexAdaptor<op_func_param> param = i.try_as<op_func_param>();
+    if (param && param->type_hint) {
       auto a = assumption_create_from_phpdoc(param->type_hint);
       if (!a->is_primitive()) {
         assumption_add_for_var(f, param->var()->get_string(), a);
@@ -904,7 +893,7 @@ std::string AssumInstance::as_human_readable() const {
 }
 
 std::string AssumNotInstance::as_human_readable() const {
-  return type != tp_any ? ptype_name(type) : "primitive";
+  return "primitive";
 }
 
 std::string AssumTuple::as_human_readable() const {
@@ -952,49 +941,6 @@ bool AssumShape::is_primitive() const {
 
 bool AssumTypedCallable::is_primitive() const {
   return false;
-}
-
-
-const TypeData *AssumArray::get_type_data() const {
-  return TypeData::create_type_data(inner->get_type_data(), or_null_, or_false_);
-}
-
-const TypeData *AssumInstance::get_type_data() const {
-  return klass->type_data;
-}
-
-const TypeData *AssumNotInstance::get_type_data() const {
-  auto res = TypeData::get_type(type)->clone();
-  if (or_null_) {
-    res->set_or_null_flag();
-  }
-  if (or_false_) {
-    res->set_or_false_flag();
-  }
-  return res;
-}
-
-PrimitiveType AssumNotInstance::get_type() const {
-  return type;
-}
-
-const TypeData *AssumTuple::get_type_data() const {
-  std::vector<const TypeData *> subkeys_values;
-  std::transform(subkeys_assumptions.begin(), subkeys_assumptions.end(), std::back_inserter(subkeys_values),
-                 [](const vk::intrusive_ptr<Assumption> &a) { return a->get_type_data(); });
-  return TypeData::create_type_data(subkeys_values, or_null_, or_false_);
-}
-
-const TypeData *AssumShape::get_type_data() const {
-  std::map<std::string, const TypeData *> subkeys_values;
-  for (const auto &sub : subkeys_assumptions) {
-    subkeys_values.emplace(sub.first, sub.second->get_type_data());
-  }
-  return TypeData::create_type_data(subkeys_values, or_null_, or_false_);
-}
-
-const TypeData *AssumTypedCallable::get_type_data() const {
-  return interface->type_data;
 }
 
 

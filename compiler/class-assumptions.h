@@ -10,9 +10,7 @@
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
-#include "compiler/inferring/primitive-type.h"
 
-class TypeData;
 
 enum class AssumptionStatus {
   unknown,
@@ -21,41 +19,25 @@ enum class AssumptionStatus {
 };
 
 class Assumption : public vk::thread_safe_refcnt<Assumption> {
-protected:
-  bool or_null_{false};
-  bool or_false_{false};
-
 public:
   virtual ~Assumption() = default;
 
   virtual std::string as_human_readable() const = 0;
   virtual bool is_primitive() const = 0;
-  virtual const TypeData *get_type_data() const = 0;
   virtual vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const = 0;
-
-  vk::intrusive_ptr<Assumption> add_flags(bool or_null, bool or_false) {
-    or_null_ = or_null;
-    or_false_ = or_false;
-    return vk::intrusive_ptr<Assumption>(this);
-  }
 };
 
 class AssumNotInstance final : public Assumption {
   AssumNotInstance() = default;
-  PrimitiveType type{tp_any};
 
 public:
 
-  static auto create(PrimitiveType type = tp_any) {
-    auto self = new AssumNotInstance();
-    self->type = type;
-    return vk::intrusive_ptr<Assumption>(self);
+  static auto create() {
+    return vk::intrusive_ptr<Assumption>(new AssumNotInstance());
   }
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
-  PrimitiveType get_type() const;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
@@ -67,14 +49,13 @@ public:
   ClassPtr klass;
 
   static auto create(ClassPtr klass) {
-    auto self = new AssumInstance();
+    auto *self = new AssumInstance();
     self->klass = klass;
     return vk::intrusive_ptr<Assumption>(self);
   }
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
@@ -85,7 +66,7 @@ public:
   vk::intrusive_ptr<Assumption> inner;
 
   static auto create(const vk::intrusive_ptr<Assumption> &inner) {
-    auto self = new AssumArray();
+    auto *self = new AssumArray();
     self->inner = inner;
     return vk::intrusive_ptr<Assumption>(self);
   }
@@ -96,41 +77,40 @@ public:
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
 class AssumTuple final : public Assumption {
-  AssumTuple(const std::vector<vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
-    subkeys_assumptions(subkeys_assumptions) {}
+  AssumTuple() = default;
 
 public:
   std::vector<vk::intrusive_ptr<Assumption>> subkeys_assumptions;
 
   static auto create(std::vector<vk::intrusive_ptr<Assumption>> &&sub) {
-    return vk::intrusive_ptr<Assumption>{new AssumTuple(std::move(sub))};
+    auto *self = new AssumTuple();
+    self->subkeys_assumptions = std::move(sub);
+    return vk::intrusive_ptr<AssumTuple>(self);
   }
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
 class AssumShape final : public Assumption {
-  AssumShape(const std::map<std::string, vk::intrusive_ptr<Assumption>> &subkeys_assumptions) :
-    subkeys_assumptions(subkeys_assumptions) {}
+  AssumShape() = default;
 
 public:
   std::map<std::string, vk::intrusive_ptr<Assumption>> subkeys_assumptions;
 
   static auto create(std::map<std::string, vk::intrusive_ptr<Assumption>> &&sub) {
-    return vk::intrusive_ptr<Assumption>{new AssumShape(std::move(sub))};
+    auto *self = new AssumShape();
+    self->subkeys_assumptions = std::move(sub);
+    return vk::intrusive_ptr<AssumShape>(self);
   }
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
@@ -141,14 +121,13 @@ public:
   InterfacePtr interface;
 
   static auto create(InterfacePtr callable_interface) {
-    auto self = new AssumTypedCallable();
+    auto *self = new AssumTypedCallable();
     self->interface = callable_interface;
     return vk::intrusive_ptr<AssumTypedCallable>(self);
   }
 
   std::string as_human_readable() const final;
   bool is_primitive() const final;
-  const TypeData *get_type_data() const final;
   vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
 };
 
