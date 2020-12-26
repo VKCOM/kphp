@@ -43,16 +43,16 @@ public:
   }
 
   void check_assumption_and_inherit(const vk::intrusive_ptr<Assumption> &assumption, LambdaPtr lambda) {
-    auto interface_assumption = assumption.try_as<AssumCallable>();
-    if (!interface_assumption || !interface_assumption->klass || !interface_assumption->klass->is_interface()) {
+    auto interface_assumption = assumption.try_as<AssumTypedCallable>();
+    if (!interface_assumption || !interface_assumption->interface || !interface_assumption->interface->is_interface()) {
       return;
     }
-    if (!lambda->can_implement_interface(interface_assumption->klass)) {
-      kphp_error(false, fmt_format("lambda can't implement interface: {}", interface_assumption->klass->name));
+    if (!lambda->can_implement_interface(interface_assumption->interface)) {
+      kphp_error(false, fmt_format("lambda can't implement interface: {}", interface_assumption->interface->name));
       return;
     }
-    lambda->implement_interface(interface_assumption->klass);
-    lambdas_interfaces[interface_assumption->klass].emplace_back(lambda);
+    lambda->implement_interface(interface_assumption->interface);
+    lambdas_interfaces[interface_assumption->interface].emplace_back(lambda);
   }
 
   /**

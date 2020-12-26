@@ -70,15 +70,21 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
   auto interface_invoke_method = interface->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
   infer_uses_assumptions(stage::get_function());
   my_invoke_method->is_template = false;
+
   auto my_invoke_params = my_invoke_method->get_params();
   for (size_t i = 1; i < my_invoke_params.size(); ++i) {
-    auto param = my_invoke_params[i].as<meta_op_func_param>();
+    auto param = my_invoke_params[i].as<op_func_param>();
     param->template_type_id = -1;
-    my_invoke_method->assumptions_for_vars.emplace_back(param->var()->str_val, interface_invoke_method->assumptions_for_vars[i - 1].second);
+    // at first, an interface __invoke() had type hints based on phpdocs like callable(int, float[]): void
+    // here we copy them for each lambda, they will be checked and auto-used for assumptions
+    if (!param->type_hint) {
+      param->type_hint = interface_invoke_method->get_params()[i].as<op_func_param>()->type_hint;
+    }
   }
-  my_invoke_method->assumption_for_return = interface_invoke_method->assumption_for_return;
-  my_invoke_method->assumption_return_status = AssumptionStatus::initialized;
-  my_invoke_method->assumption_args_status = AssumptionStatus::initialized;
+
+  if (!my_invoke_method->return_typehint) {
+    my_invoke_method->return_typehint = interface_invoke_method->return_typehint;
+  }
 }
 
 bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {

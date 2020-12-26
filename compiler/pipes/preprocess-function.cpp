@@ -404,8 +404,13 @@ private:
 
           if (param->is_callable && !func->is_template && func->instantiation_of_template_function_location.line == -1) {
             if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
-              auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumInstance>();
-              auto is_correct_lambda = arg_assum->klass->is_lambda() && lambda_interface && lambda_interface->klass->is_parent_of(arg_assum->klass);
+              ClassPtr lambda_interface_klass;
+              if(auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumTypedCallable>()) {
+                lambda_interface_klass = lambda_interface->interface;
+              } else if(auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumInstance>()) {
+                lambda_interface_klass = lambda_interface->klass;
+              }
+              auto is_correct_lambda = arg_assum->klass->is_lambda() && lambda_interface_klass && lambda_interface_klass->is_parent_of(arg_assum->klass);
               kphp_error_act(is_correct_lambda, fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
             } else {
               kphp_error_act(false, fmt_format("You must passed lambda as argument: {}", param->var()->str_val), return call);
@@ -506,6 +511,7 @@ private:
         kphp_assert(!lambda_class->construct_function->is_required);
 
         lambda_class->infer_uses_assumptions(current_function);
+        lambda_class->construct_function->function_in_which_lambda_was_created = current_function;
         call->location.function = current_function;
         lambda_class->construct_function->is_template = false;
         G->require_function(lambda_class->construct_function, instance_of_function_template_stream);

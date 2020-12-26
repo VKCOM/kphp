@@ -133,12 +133,18 @@ ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v,
       return lhs.as<op_alloc>()->allocated_class;
     // $var->...
     case op_var: {
-      auto as_instance = infer_class_of_expr(function, lhs).try_as<AssumInstance>();
-      kphp_error(as_instance,
+      auto lhs_assum = infer_class_of_expr(function, lhs);
+      if (auto as_instance = lhs_assum.try_as<AssumInstance>()) {
+        return as_instance->klass;
+      }
+      if (auto as_callable = lhs_assum.try_as<AssumTypedCallable>()) {  // $cb->__invoke
+        return as_callable->interface;
+      }
+      kphp_error(0,
                  _err_instance_access(v, fmt_format("${} is not an instance or it can't be detected\n"
                                                     "Add phpdoc @var to variable or @return to function was used to initialize it.",
                                                     lhs->get_string())));
-      return as_instance ? as_instance->klass : ClassPtr{};
+      return ClassPtr{};
     }
 
     // getInstance()->...
