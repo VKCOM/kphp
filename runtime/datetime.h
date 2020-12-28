@@ -46,5 +46,6 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp = std::n
 
 int64_t f$time();
 
+mixed f$hrtime(bool as_number = false);
 
 void init_datetime_lib();

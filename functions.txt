@@ -299,6 +299,7 @@ function mktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MI
 function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
 function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | false;
 function time() ::: int;
+function hrtime (bool $as_number = false): mixed; // array|int
 
 function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
