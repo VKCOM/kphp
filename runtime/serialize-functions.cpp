@@ -4,9 +4,7 @@
 
 #include "runtime/serialize-functions.h"
 
-namespace {
-
-void do_serialize(bool b) noexcept {
+void impl_::PhpSerializer::serialize(bool b) noexcept {
   static_SB.reserve(4);
   static_SB.append_char('b');
   static_SB.append_char(':');
@@ -14,7 +12,7 @@ void do_serialize(bool b) noexcept {
   static_SB.append_char(';');
 }
 
-void do_serialize(int64_t i) noexcept {
+void impl_::PhpSerializer::serialize(int64_t i) noexcept {
   static_SB.reserve(24);
   static_SB.append_char('i');
   static_SB.append_char(':');
@@ -22,12 +20,12 @@ void do_serialize(int64_t i) noexcept {
   static_SB.append_char(';');
 }
 
-void do_serialize(double f) noexcept {
+void impl_::PhpSerializer::serialize(double f) noexcept {
   static_SB.append("d:", 2);
   static_SB << f << ';';
 }
 
-void do_serialize(const string &s) noexcept {
+void impl_::PhpSerializer::serialize(const string &s) noexcept {
   string::size_type len = s.size();
   static_SB.reserve(25 + len);
   static_SB.append_char('s');
@@ -40,7 +38,7 @@ void do_serialize(const string &s) noexcept {
   static_SB.append_char(';');
 }
 
-void do_serialize(const mixed &v) noexcept {
+void impl_::PhpSerializer::serialize(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       static_SB.reserve(2);
@@ -48,13 +46,13 @@ void do_serialize(const mixed &v) noexcept {
       static_SB.append_char(';');
       return;
     case mixed::type::BOOLEAN:
-      return do_serialize(v.as_bool());
+      return serialize(v.as_bool());
     case mixed::type::INTEGER:
-      return do_serialize(v.as_int());
+      return serialize(v.as_int());
     case mixed::type::FLOAT:
-      return do_serialize(v.as_double());
+      return serialize(v.as_double());
     case mixed::type::STRING:
-      return do_serialize(v.as_string());
+      return serialize(v.as_string());
     case mixed::type::ARRAY: {
       static_SB.append("a:", 2);
       static_SB << v.as_array().count();
@@ -62,11 +60,11 @@ void do_serialize(const mixed &v) noexcept {
       for (auto p : v.as_array()) {
         auto key = p.get_key();
         if (array<mixed>::is_int_key(key)) {
-          do_serialize(key.to_int());
+          serialize(key.to_int());
         } else {
-          do_serialize(key.to_string());
+          serialize(key.to_string());
         }
-        do_serialize(p.get_value());
+        serialize(p.get_value());
       }
       static_SB << '}';
       return;
@@ -74,16 +72,6 @@ void do_serialize(const mixed &v) noexcept {
     default:
       __builtin_unreachable();
   }
-}
-
-} // namespace
-
-string f$serialize(const mixed &v) noexcept {
-  static_SB.clean();
-
-  do_serialize(v);
-
-  return static_SB.str();
 }
 
 namespace {
