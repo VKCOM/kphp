@@ -53,6 +53,7 @@
 #include "compiler/pipes/clone-strange-const-params.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
+#include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
@@ -66,6 +67,7 @@
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
+#include "compiler/pipes/init-cpp-dest-dir.h"
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
@@ -250,6 +252,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
+    >> PipeC<InitCppDestDirF>{}
     >> PassC<RemoveEmptyFunctionCalls>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<CalcConstTypePass>{}
@@ -285,6 +288,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
+    >> PassC<CollectForkableTypesPass>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};
 

@@ -117,6 +117,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         clone-strange-const-params.cpp
         code-gen.cpp
         collect-const-vars.cpp
+        collect-forkable-types.cpp
         collect-main-edges.cpp
         collect-required-and-classes.cpp
         convert-list-assignments.cpp
@@ -130,6 +131,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         fix-returns.cpp
         gen-tree-postprocess.cpp
         generate-virtual-methods.cpp
+        init-cpp-dest-dir.cpp
         inline-defines-usages.cpp
         inline-simple-functions.cpp
         load-files.cpp
