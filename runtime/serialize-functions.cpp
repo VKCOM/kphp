@@ -4,7 +4,9 @@
 
 #include "runtime/serialize-functions.h"
 
-static inline void do_serialize(bool b) {
+namespace {
+
+void do_serialize(bool b) noexcept {
   static_SB.reserve(4);
   static_SB.append_char('b');
   static_SB.append_char(':');
@@ -12,7 +14,7 @@ static inline void do_serialize(bool b) {
   static_SB.append_char(';');
 }
 
-static inline void do_serialize(int64_t i) {
+void do_serialize(int64_t i) noexcept {
   static_SB.reserve(24);
   static_SB.append_char('i');
   static_SB.append_char(':');
@@ -20,12 +22,12 @@ static inline void do_serialize(int64_t i) {
   static_SB.append_char(';');
 }
 
-static inline void do_serialize(double f) {
+void do_serialize(double f) noexcept {
   static_SB.append("d:", 2);
   static_SB << f << ';';
 }
 
-static inline void do_serialize(const string &s) {
+void do_serialize(const string &s) noexcept {
   string::size_type len = s.size();
   static_SB.reserve(25 + len);
   static_SB.append_char('s');
@@ -38,7 +40,7 @@ static inline void do_serialize(const string &s) {
   static_SB.append_char(';');
 }
 
-void do_serialize(const mixed &v) {
+void do_serialize(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       static_SB.reserve(2);
@@ -57,8 +59,8 @@ void do_serialize(const mixed &v) {
       static_SB.append("a:", 2);
       static_SB << v.as_array().count();
       static_SB.append(":{", 2);
-      for (array<mixed>::const_iterator p = v.as_array().begin(); p != v.as_array().end(); ++p) {
-        const array<mixed>::key_type &key = p.get_key();
+      for (auto p : v.as_array()) {
+        auto key = p.get_key();
         if (array<mixed>::is_int_key(key)) {
           do_serialize(key.to_int());
         } else {
@@ -74,7 +76,9 @@ void do_serialize(const mixed &v) {
   }
 }
 
-string f$serialize(const mixed &v) {
+} // namespace
+
+string f$serialize(const mixed &v) noexcept {
   static_SB.clean();
 
   do_serialize(v);
@@ -82,7 +86,9 @@ string f$serialize(const mixed &v) {
   return static_SB.str();
 }
 
-static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
+namespace {
+
+int do_unserialize(const char *s, int s_len, mixed &out_var_value) noexcept {
   if (!out_var_value.is_null()) {
     out_var_value = mixed{};
   }
@@ -93,7 +99,7 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
       }
       break;
     case 'b':
-      if (s[1] == ':' && ((unsigned int)(s[2] - '0') < 2u) && s[3] == ';') {
+      if (s[1] == ':' && (static_cast<unsigned int>(s[2] - '0') < 2u) && s[3] == ';') {
         out_var_value = static_cast<bool>(s[2] - '0');
         return 4;
       }
@@ -101,11 +107,11 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
     case 'd':
       if (s[1] == ':') {
         s += 2;
-        char *end_ptr;
+        char *end_ptr = nullptr;
         double floatval = strtod(s, &end_ptr);
         if (*end_ptr == ';' && end_ptr > s) {
           out_var_value = floatval;
-          return (int)(end_ptr - s + 3);
+          return static_cast<int>(end_ptr - s + 3);
         }
       }
       break;
@@ -161,7 +167,8 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
       if (s[1] == ':') {
         const char *s_begin = s;
         s += 2;
-        int j = 0, len = 0;
+        int j = 0;
+        int len = 0;
         while ('0' <= s[j] && s[j] <= '9') {
           len = len * 10 + s[j++] - '0';
         }
@@ -241,7 +248,6 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
               } else {
                 return 0;
               }
-
             } else {
               return 0;
             }
@@ -249,7 +255,7 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
 
           if (s[0] == '}') {
             out_var_value = std::move(res);
-            return (int)(s - s_begin + 1);
+            return static_cast<int>(s - s_begin + 1);
           }
         }
       }
@@ -258,7 +264,9 @@ static int do_unserialize(const char *s, int s_len, mixed &out_var_value) {
   return 0;
 }
 
-mixed unserialize_raw(const char *v, int32_t v_len) {
+} // namespace
+
+mixed unserialize_raw(const char *v, int32_t v_len) noexcept {
   mixed result;
 
   if (do_unserialize(v, v_len, result) == v_len) {
@@ -268,7 +276,6 @@ mixed unserialize_raw(const char *v, int32_t v_len) {
   return false;
 }
 
-
-mixed f$unserialize(const string &v) {
+mixed f$unserialize(const string &v) noexcept {
   return unserialize_raw(v.c_str(), v.size());
 }
