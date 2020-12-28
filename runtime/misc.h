@@ -38,11 +38,6 @@ int64_t f$posix_getuid();
 Optional<array<mixed>> f$posix_getpwuid(int64_t uid);
 
 
-string f$serialize(const mixed &v);
-
-mixed f$unserialize(const string &v);
-mixed unserialize_raw(const char *v, int32_t v_len);
-
 string f$print_r(const mixed &v, bool buffered = false);
 
 template<class T>

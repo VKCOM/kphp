@@ -41,6 +41,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         regexp.cpp
         resumable.cpp
         rpc.cpp
+        serialize-functions.cpp
         storage.cpp
         streams.cpp
         string_buffer.cpp
