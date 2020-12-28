@@ -15,7 +15,45 @@ public:
   static void serialize(double d) noexcept;
   static void serialize(const string &s) noexcept;
   static void serialize(const mixed &v) noexcept;
+
+  template<class T>
+  static void serialize(const array<T> &arr) noexcept;
+
+  template<class T>
+  static void serialize(const Optional<T> &opt) noexcept;
+
+private:
+  static void serialize_null() noexcept;
 };
+
+template<class T>
+void PhpSerializer::serialize(const array<T> &arr) noexcept {
+  static_SB.append("a:", 2);
+  static_SB << arr.count();
+  static_SB.append(":{", 2);
+  for (auto p : arr) {
+    auto key = p.get_key();
+    if (array<T>::is_int_key(key)) {
+      serialize(key.to_int());
+    } else {
+      serialize(key.to_string());
+    }
+    serialize(p.get_value());
+  }
+  static_SB << '}';
+}
+
+template<class T>
+void PhpSerializer::serialize(const Optional<T> &opt) noexcept {
+  switch (opt.value_state()) {
+    case OptionalState::has_value:
+      return serialize(opt.val());
+    case OptionalState::false_value:
+      return serialize(false);
+    case OptionalState::null_value:
+      return serialize_null();
+  }
+}
 
 } // namespace impl_
 

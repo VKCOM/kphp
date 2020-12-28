@@ -38,13 +38,16 @@ void impl_::PhpSerializer::serialize(const string &s) noexcept {
   static_SB.append_char(';');
 }
 
+void impl_::PhpSerializer::serialize_null() noexcept {
+  static_SB.reserve(2);
+  static_SB.append_char('N');
+  static_SB.append_char(';');
+}
+
 void impl_::PhpSerializer::serialize(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
-      static_SB.reserve(2);
-      static_SB.append_char('N');
-      static_SB.append_char(';');
-      return;
+      return serialize_null();
     case mixed::type::BOOLEAN:
       return serialize(v.as_bool());
     case mixed::type::INTEGER:
@@ -53,22 +56,8 @@ void impl_::PhpSerializer::serialize(const mixed &v) noexcept {
       return serialize(v.as_double());
     case mixed::type::STRING:
       return serialize(v.as_string());
-    case mixed::type::ARRAY: {
-      static_SB.append("a:", 2);
-      static_SB << v.as_array().count();
-      static_SB.append(":{", 2);
-      for (auto p : v.as_array()) {
-        auto key = p.get_key();
-        if (array<mixed>::is_int_key(key)) {
-          serialize(key.to_int());
-        } else {
-          serialize(key.to_string());
-        }
-        serialize(p.get_value());
-      }
-      static_SB << '}';
-      return;
-    }
+    case mixed::type::ARRAY:
+      return serialize(v.as_array());
     default:
       __builtin_unreachable();
   }
