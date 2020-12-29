@@ -22,6 +22,36 @@ if(NOT fmt_FOUND)
     message(STATUS "---------------------")
 endif()
 
+set(H3_LIB h3)
+set(H3_COMPILE_OPTIONS -Wno-float-conversion)
+if (NOT APPLE)
+    set(H3_LIB uber-${H3_LIB})
+    set(H3_COMPILE_OPTIONS ${H3_COMPILE_OPTIONS} -Wno-maybe-uninitialized)
+endif()
+find_package(${H3_LIB} QUIET)
+if(NOT ${H3_LIB}_FOUND)
+    handle_missing_library("uber-h3")
+    FetchContent_Declare(
+            uber-h3
+            GIT_REPOSITORY https://github.com/VKCOM/uber-h3
+            GIT_TAG        dpkg-build
+    )
+    set(ENABLE_DOCS OFF CACHE BOOL "Disable docs for uber-h3.")
+    set(ENABLE_LINTING OFF CACHE BOOL "Disable linting for uber-h3.")
+    set(ENABLE_FORMAT OFF CACHE BOOL "Disable formatting for uber-h3.")
+    set(ENABLE_COVERAGE OFF CACHE BOOL "Disable compiling tests with coverage for uber-h3.")
+    set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarking applications for uber-h3.")
+    set(BUILD_FILTERS OFF CACHE BOOL "Disable filter applications for uber-h3.")
+    set(BUILD_GENERATORS OFF CACHE BOOL "Disable code generation applications for uber-h3.")
+
+    FetchContent_MakeAvailable(uber-h3)
+    target_compile_options(h3 PRIVATE ${H3_COMPILE_OPTIONS})
+    add_library(uber-h3::h3 ALIAS h3)
+    file(COPY ${uber-h3_BINARY_DIR}/src/h3lib/include/h3api.h DESTINATION ${uber-h3_BINARY_DIR}/include/h3)
+    include_directories(${uber-h3_BINARY_DIR}/include)
+    message(STATUS "---------------------")
+endif()
+
 if(KPHP_TESTS)
     find_package(GTest QUIET)
 
