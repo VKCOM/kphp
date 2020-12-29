@@ -16,7 +16,6 @@ enum OperationExtra {
   op_ex_var_superlocal,
   op_ex_var_superlocal_inplace,
   op_ex_var_this,
-  op_ex_rule_const,
   op_ex_internal_func,
   op_ex_safe_version,
   op_ex_shape_has_varg,

@@ -208,9 +208,7 @@ private:
 
       case php_doc_tag::kphp_pure_function: {
         kphp_error(f_->is_extern(), "@kphp-pure-function is supported only for built-in functions");
-        if (f_->root->type_rule) {
-          f_->root->type_rule->rule()->extra_type = op_ex_rule_const;
-        }
+        f_->is_pure = true;
         break;
       }
 

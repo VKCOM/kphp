@@ -31,8 +31,7 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   if (auto as_func_call = v.try_as<op_func_call>()) {
-    auto root = as_func_call->func_id ? as_func_call->func_id->root : VertexAdaptor<op_function>{};
-    if (!root || !root->type_rule || root->type_rule->rule()->extra_type != op_ex_rule_const) {
+    if (!as_func_call->func_id || !as_func_call->func_id->is_pure) {
       v->const_type = cnst_nonconst_val;
       return v;
     }
