@@ -21,7 +21,7 @@ ConstructorToPhp::ConstructorToPhp(TlToPhpClassesConverter &tl_to_php,
 std::unique_ptr<CombinatorToPhp> ConstructorToPhp::clone(const std::vector<php_field_type> &type_stack) const {
   auto result = std::make_unique<ConstructorToPhp>(tl_to_php_, tl_combinator_, outer_converter_, outer_type_expr_);
   result->type_stack_ = type_stack;
-  return std::move(result);
+  return {std::move(result)};
 }
 
 const PhpClassRepresentation &ConstructorToPhp::update_exclamation_interface(const PhpClassRepresentation &interface) {

@@ -188,7 +188,7 @@ Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noe
     auto malloc_replacer = make_malloc_replacement_with_script_allocator();
     kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index *>(&neighbor_indexes[0]));
   }
-  return std::move(neighbor_indexes);
+  return {std::move(neighbor_indexes)};
 }
 
 int64_t f$UberH3$$maxKringSize(int64_t k) noexcept {
@@ -212,7 +212,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$kRingDistances(int64_t h
       result.emplace_back(std::make_tuple(neighbor_indexes[i], neighbor_distances[i]));
     }
   }
-  return std::move(result);
+  return {std::move(result)};
 }
 
 Optional<array<int64_t>> f$UberH3$$hexRange(int64_t h3_index_origin, int64_t k) noexcept {
@@ -227,7 +227,7 @@ Optional<array<int64_t>> f$UberH3$$hexRange(int64_t h3_index_origin, int64_t k) 
       return false;
     }
   }
-  return std::move(neighbors);
+  return {std::move(neighbors)};
 }
 
 Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$hexRangeDistances(int64_t h3_index_origin, int64_t k) noexcept {
@@ -248,7 +248,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$hexRangeDistances(int64_
       result.emplace_back(std::make_tuple(neighbor_indexes[i], neighbor_distances[i]));
     }
   }
-  return std::move(result);
+  return {std::move(result)};
 }
 
 Optional<array<int64_t>> f$UberH3$$hexRanges(const array<int64_t> &h3_indexes, int64_t k) noexcept {
@@ -265,7 +265,7 @@ Optional<array<int64_t>> f$UberH3$$hexRanges(const array<int64_t> &h3_indexes, i
       return false;
     }
   }
-  return std::move(h3_indexes_result);
+  return {std::move(h3_indexes_result)};
 }
 
 Optional<array<int64_t>> f$UberH3$$hexRing(int64_t h3_index_origin, int64_t k) noexcept {
@@ -278,7 +278,7 @@ Optional<array<int64_t>> f$UberH3$$hexRing(int64_t h3_index_origin, int64_t k) n
   if (!h3_indexes_result.empty()) {
     hexRing(h3_index_origin, checked_k, reinterpret_cast<H3Index *>(&h3_indexes_result[0]));
   }
-  return std::move(h3_indexes_result);
+  return {std::move(h3_indexes_result)};
 }
 
 Optional<array<int64_t>> f$UberH3$$h3Line(int64_t h3_index_start, int64_t h3_index_end) noexcept {
@@ -295,7 +295,7 @@ Optional<array<int64_t>> f$UberH3$$h3Line(int64_t h3_index_start, int64_t h3_ind
       return false;
     }
   }
-  return std::move(line);
+  return {std::move(line)};
 }
 
 int64_t f$UberH3$$h3LineSize(int64_t h3_index_start, int64_t h3_index_end) noexcept {
@@ -322,7 +322,7 @@ Optional<array<int64_t>> f$UberH3$$h3ToChildren(int64_t h3_index, int64_t childr
   if (children_count) {
     h3ToChildren(static_cast<H3Index>(h3_index), checked_children_resolution, reinterpret_cast<H3Index *>(&children[0]));
   }
-  return std::move(children);
+  return {std::move(children)};
 }
 
 int64_t f$UberH3$$maxH3ToChildrenSize(int64_t h3_index, int64_t children_resolution) noexcept {
@@ -351,7 +351,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t> &h3_indexes) noe
   while (left && !compacted_h3_set[--left]) {
     compacted_h3_set.pop();
   }
-  return std::move(compacted_h3_set);
+  return {std::move(compacted_h3_set)};
 }
 
 Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t> &h3_indexes, int64_t resolution) noexcept {
@@ -375,7 +375,7 @@ Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t> &h3_indexes, i
                          reinterpret_cast<H3Index *>(&uncompacted_h3_indexes[0]), uncompact_size, checked_resolution))) {
     return false;
   }
-  return std::move(uncompacted_h3_indexes);
+  return {std::move(uncompacted_h3_indexes)};
 }
 
 int64_t f$UberH3$$maxUncompactSize(const array<int64_t> &h3_indexes, int64_t resolution) noexcept {
@@ -429,5 +429,5 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
     }
   }
 
-  return std::move(result_array);
+  return {std::move(result_array)};
 }

@@ -34,7 +34,7 @@ PhpClassField FunctionToPhp::return_type_to_php_field() {
 std::unique_ptr<CombinatorToPhp> FunctionToPhp::clone(const std::vector<php_field_type> &type_stack) const {
   auto result = std::make_unique<FunctionToPhp>(tl_to_php_, tl_combinator_);
   result->type_stack_ = type_stack;
-  return std::move(result);
+  return std::unique_ptr<CombinatorToPhp>{std::move(result)};
 }
 
 const PhpClassRepresentation &FunctionToPhp::update_exclamation_interface(const PhpClassRepresentation &interface) {

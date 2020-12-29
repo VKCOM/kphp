@@ -609,7 +609,7 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
   if (RAND_bytes(reinterpret_cast<unsigned char *>(buffer.buffer()), static_cast<int32_t>(length)) <= 0) {
     return false;
   }
-  return std::move(buffer);
+  return {std::move(buffer)};
 }
 
 
