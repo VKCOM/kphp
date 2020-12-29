@@ -144,9 +144,7 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
   cxx_flags += " -I/usr/local/include"
                " -I/usr/local/opt/openssl/include";
   ld_flags += " -liconv"
-              " -lepoll-shim"
-              " -L/usr/local/opt/openssl/lib"
-              " -L" EPOLL_SHIM_LIB_DIR;
+              " -L/usr/local/opt/openssl/lib";
 #else
   static_cast<void>(cxx_flags);
   static_cast<void>(ld_flags);
