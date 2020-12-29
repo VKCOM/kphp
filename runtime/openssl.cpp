@@ -289,10 +289,12 @@ public:
   }
 
   void free_resources() {
-    for (auto keyIt : *registered_keys_) {
-      EVP_PKEY_free(keyIt.get_value());
+    if (registered_keys_) {
+      for (auto keyIt : *registered_keys_) {
+        EVP_PKEY_free(keyIt.get_value());
+      }
+      registered_keys_ = nullptr;
     }
-    registered_keys_ = nullptr;
   }
 
 private:
