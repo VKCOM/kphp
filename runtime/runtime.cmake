@@ -76,10 +76,13 @@ vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
 
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd)
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto uber-h3::h3 m z pthread)
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
-set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
+set_target_properties(kphp-full-runtime PROPERTIES
+        STATIC_LIBRARY_OPTIONS "-T;${UBER_H3_STATIC_LIB}"
+        ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}
+)
 
 prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2)
 set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
