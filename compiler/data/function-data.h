@@ -101,6 +101,8 @@ public:
   bool is_no_return = false;
   bool warn_unused_result = false;
   bool is_flatten = false;
+  bool is_pure = false;
+  
   enum class profiler_status : uint8_t {
     disable,
     // A function that is being profiled that starts and ends the profiling

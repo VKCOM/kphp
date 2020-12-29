@@ -188,8 +188,7 @@ void AnalyzePerformance::analyze_func_call(VertexAdaptor<op_func_call> func_call
       }
     }
   }
-  auto func_type_rule = func_call->func_id->root->type_rule;
-  if (func_type_rule && func_type_rule->rule()->extra_type == op_ex_rule_const) {
+  if (func_call->func_id->is_pure) {
     save_to_second_pass_analyze_on_loop_exit(func_call);
   }
 
@@ -395,8 +394,7 @@ bool AnalyzePerformance::is_constant_expression_in_this_loop(VertexPtr vertex) c
            is_constant_expression_in_this_loop(op_index_vertex->array());
   }
   if (auto op_func_call_vertex = vertex.try_as<op_func_call>()) {
-    auto type_rule = op_func_call_vertex->func_id->root->type_rule;
-    if (type_rule && type_rule->rule()->extra_type == op_ex_rule_const) {
+    if (op_func_call_vertex->func_id->is_pure) {
       return vk::all_of(op_func_call_vertex->args(), [this](VertexPtr v) { return is_constant_expression_in_this_loop(v); });
     }
     return false;
