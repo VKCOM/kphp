@@ -5,7 +5,7 @@ class FooException extends Exception {}
 class BarException extends Exception {}
 
 /**
- * @kphp-test-throws FooException
+ * @kphp-throws FooException
  */
 function throws_foo() {
   throw new FooException();
@@ -13,7 +13,7 @@ function throws_foo() {
 
 /**
  * Nothing is caught, all exceptions bubble up
- * @kphp-test-throws FooException BarException
+ * @kphp-throws FooException BarException
  */
 function test1($cond) {
   if ($cond) {
@@ -25,7 +25,7 @@ function test1($cond) {
 
 /**
  * All exceptions are caught via \Exception
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test2($cond) {
   if ($cond) {
@@ -40,7 +40,7 @@ function test2($cond) {
 
 /**
  * Only BarException is caught
- * @kphp-test-throws FooException
+ * @kphp-throws FooException
  */
 function test3($cond) {
   if ($cond) {
@@ -55,7 +55,7 @@ function test3($cond) {
 
 /**
  * Only FooException is caught
- * @kphp-test-throws BarException
+ * @kphp-throws BarException
  */
 function test4($cond) {
   if ($cond) {
@@ -70,7 +70,7 @@ function test4($cond) {
 
 /**
  * All exceptions are caught, 2 separate try blocks
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test5($cond) {
   try {
@@ -88,7 +88,7 @@ function test5($cond) {
 
 /**
  * Calls test5 that handles all exceptions
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test6($cond) {
   test5($cond);
@@ -96,7 +96,7 @@ function test6($cond) {
 
 /**
  * All exceptions are caught via \Throwable
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test7($cond) {
   if ($cond) {

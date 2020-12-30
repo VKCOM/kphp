@@ -203,20 +203,16 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
   }
 }
 
-void check_function_test_throws(FunctionPtr f) {
-  std::unordered_set<std::string> throws_expected(f->test_data->check_throws.begin(), f->test_data->check_throws.end());
+void check_function_throws(FunctionPtr f) {
+  std::unordered_set<std::string> throws_expected(f->check_throws.begin(), f->check_throws.end());
   std::unordered_set<std::string> throws_actual;
   for (const auto &e : f->exceptions_thrown) {
     throws_actual.insert(e->name);
   }
-  kphp_error_act(throws_expected == throws_actual,
-                 fmt_format("kphp-test-throws mismatch: have <{}>, want <{}>",
-                            vk::join(throws_actual, ", "), vk::join(throws_expected, ", ")),
-                 return);
-}
-
-void check_function_test(FunctionPtr f) {
-  check_function_test_throws(f);
+  kphp_error(throws_expected == throws_actual,
+             fmt_format("kphp-throws mismatch: have <{}>, want <{}>",
+                        vk::join(throws_actual, ", "),
+                        vk::join(throws_expected, ", ")));
 }
 } // namespace
 
@@ -245,8 +241,8 @@ void FinalCheckPass::on_start() {
     check_lib_exported_function(current_function);
   }
 
-  if (current_function->test_data != nullptr) {
-    check_function_test(current_function);
+  if (!current_function->check_throws.empty()) {
+    check_function_throws(current_function);
   }
 }
 

@@ -276,14 +276,11 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_test_throws: {
-        if (f_->test_data == nullptr) {
-          f_->test_data = new FunctionTestData();
-        }
+      case php_doc_tag::kphp_throws: {
         std::istringstream is(tag.value);
         std::string klass;
         while (is >> klass) {
-          f_->test_data->check_throws.push_back(klass);
+          f_->check_throws.push_back(klass);
         }
         break;
       }

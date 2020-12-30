@@ -8,7 +8,7 @@ class FooException extends Exception implements CustomExceptionInterface {}
 class BarException extends Exception implements CustomExceptionInterface {}
 
 /**
- * @kphp-test-throws BarException FooException
+ * @kphp-throws BarException FooException
  */
 function foo($v) {
   if ($v === 1) {
@@ -23,7 +23,7 @@ function foo($v) {
 }
 
 /**
- * @kphp-test-throws BarException FooException
+ * @kphp-throws BarException FooException
  */
 function test1($cond) {
   if ($cond) {
@@ -33,7 +33,7 @@ function test1($cond) {
 
 /**
  * Has a try that catches everything, but also throws from another place
- * @kphp-test-throws BarException FooException
+ * @kphp-throws BarException FooException
  */
 function test2($cond) {
   if ($cond) {
@@ -46,7 +46,7 @@ function test2($cond) {
 
 /**
  * Like test2, but throws from a different place
- * @kphp-test-throws BarException FooException
+ * @kphp-throws BarException FooException
  */
 function test3($cond) {
   try {
@@ -59,7 +59,7 @@ function test3($cond) {
 
 /**
  * Both BarException and FooException implement CustomExceptionInterface
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test4($cond) {
   try {

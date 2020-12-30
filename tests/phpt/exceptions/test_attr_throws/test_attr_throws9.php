@@ -2,7 +2,7 @@
 <?php
 
 /**
- * @kphp-test-throws RuntimeException
+ * @kphp-throws RuntimeException
  */
 function f() {
     g(false);
@@ -13,7 +13,7 @@ function f() {
 }
 
 /**
- * @kphp-test-throws RuntimeException
+ * @kphp-throws RuntimeException
  */
 function g($cond) {
     if ($cond) {

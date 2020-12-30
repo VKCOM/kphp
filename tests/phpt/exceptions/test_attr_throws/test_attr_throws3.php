@@ -8,7 +8,7 @@ function throws_foo() { throw new FooException(); }
 
 /**
  * All exceptions are caught by multi-catch
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test1($cond) {
   if ($cond) {
@@ -23,7 +23,7 @@ function test1($cond) {
 
 /**
  * Throws nothing in a try block
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test2() {
   try {

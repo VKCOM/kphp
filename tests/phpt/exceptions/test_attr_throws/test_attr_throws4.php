@@ -2,7 +2,7 @@
 <?php
 
 /**
- * @kphp-test-throws Exception
+ * @kphp-throws Exception
  */
 function test($n) {
   if ($n > 0) {

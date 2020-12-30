@@ -4,7 +4,7 @@
 class MyError extends Error {}
 
 /**
- * @kphp-test-throws Error
+ * @kphp-throws Error
  */
 function test() {
   $throw = function(Error $e) {

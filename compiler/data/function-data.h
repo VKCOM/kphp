@@ -22,15 +22,6 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
-// FunctionTestData contains all kphp-test-* related fields.
-//
-// We move these fields to a separate struct so the FunctionData
-// is not cluttered by things we don't need during the normal compilation.
-struct FunctionTestData {
-  // kphp-test-throws checks that a function throws only specified exceptions
-  std::vector<std::string> check_throws;
-};
-
 class FunctionData {
   // code outside of the data/ should use FunctionData::create_function()
   FunctionData() = default;
@@ -66,9 +57,10 @@ public:
   bool tl_common_h_dep = false;
   FunctionPtr function_in_which_lambda_was_created;
 
-  // test_data is is non-null if there are any kphp-test-* attributes attached to this function;
-  // see FunctionTestData documentation for more info
-  FunctionTestData *test_data;
+  // kphp-throws checks that a function throws only specified exceptions;
+  // empty vector means "nothing to check", it's not "throws nothing",
+  // to check that a function does not throw, should_not_throw flag is used
+  std::vector<std::string> check_throws;
 
   // TODO: find usages when we'll allow lambdas inside template functions.
   //std::vector<FunctionPtr> lambdas_inside;

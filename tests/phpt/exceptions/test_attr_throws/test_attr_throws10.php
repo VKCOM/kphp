@@ -6,7 +6,7 @@ class Exception2 extends Exception {}
 class Exception3 extends Exception {}
 
 /**
- * @kphp-test-throws Exception1 Exception2 Exception3
+ * @kphp-throws Exception1 Exception2 Exception3
  */
 function f1($n) {
     var_dump([__LINE__ => $n]);
@@ -20,7 +20,7 @@ function f1($n) {
 }
 
 /**
- * @kphp-test-throws Exception1 Exception2 Exception3
+ * @kphp-throws Exception1 Exception2 Exception3
  */
 function f2($n) {
     var_dump([__LINE__ => $n]);
@@ -34,7 +34,7 @@ function f2($n) {
 }
 
 /**
- * @kphp-test-throws Exception1 Exception2 Exception3
+ * @kphp-throws Exception1 Exception2 Exception3
  */
 function f3($n) {
     var_dump([__LINE__ => $n]);

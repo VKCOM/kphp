@@ -4,7 +4,7 @@
 class MyError extends Error {}
 
 /**
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test1() {
   try {
@@ -13,7 +13,7 @@ function test1() {
 }
 
 /**
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test2() {
   try {
@@ -22,7 +22,7 @@ function test2() {
 }
 
 /**
- * @kphp-test-throws MyError
+ * @kphp-throws MyError
  */
 function test3() {
   try {

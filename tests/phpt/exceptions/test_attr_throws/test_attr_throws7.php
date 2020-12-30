@@ -2,7 +2,7 @@
 <?php
 
 /**
- * @kphp-test-throws
+ * @kphp-should-not-throw
  */
 function test1($cond) {
   try {
@@ -17,7 +17,7 @@ function test1($cond) {
 }
 
 /**
- * @kphp-test-throws BadFunctionCallException
+ * @kphp-throws BadFunctionCallException
  */
 function test2($cond) {
   try {
@@ -32,7 +32,7 @@ function test2($cond) {
 }
 
 /**
- * @kphp-test-throws BadFunctionCallException Exception
+ * @kphp-throws BadFunctionCallException Exception
  */
 function test3($type) {
   try {

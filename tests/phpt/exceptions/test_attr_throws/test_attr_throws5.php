@@ -4,7 +4,7 @@
 class MyException extends Exception {}
 
 /**
- * @kphp-test-throws Exception
+ * @kphp-throws Exception
  */
 function test() {
   $throw = function(Exception $e) {
