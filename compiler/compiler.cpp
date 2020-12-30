@@ -239,10 +239,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<PrepareFunctionF>{}
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
+    >> PassC<PreprocessExceptions>{}
     >> SyncC<GenerateVirtualMethods>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}
-    >> PassC<PreprocessExceptions>{}
     // functions which were generated from templates
     // need to be preprocessed therefore we tie second output and input of Pipe
     >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
