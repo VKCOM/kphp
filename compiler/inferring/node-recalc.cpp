@@ -160,6 +160,7 @@ NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer) :
 
 void NodeRecalc::on_changed() {
   //fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
+  new_type_->mark_classes_used();
   node_->set_type(new_type_);
   new_type_ = nullptr;
 
@@ -174,20 +175,18 @@ void NodeRecalc::run() {
   // current node type is node_->type_
   // while recalculation (in set_lca_at() and others), new_type_ is updated
   // after recalculation, if new_type_ was updated somehow, it is cloned to node_->type_
-  new_type_ = node_->get_type()->clone();
-
-  TypeData::upd_generation(new_type_->generation());
-  TypeData::generation_t old_generation = new_type_->generation();
-  TypeData::inc_generation();
+  const TypeData *before = node_->get_type();
+  new_type_ = before->clone();
 
   do_recalc();
   if (new_type_->ptype() == tp_array) {
     new_type_->fix_inf_array();
   }
 
-  if (new_type_->generation() != old_generation) {
-    new_type_->mark_classes_used();
-    //fprintf(stderr, "%s %s->%s\n", node_->get_description().c_str(), type_out(node_->get_type()).c_str(), type_out(new_type_).c_str());
+  // detect if new_type_ differs from before (the first line is a small optimization, not to invoke a function if obvious)
+  bool changed = new_type_->ptype() != before->ptype() || new_type_->flags() != before->flags() ||
+                 new_type_->did_type_data_change_after_tinf_step(before);
+  if (changed) {
     on_changed();
   }
 

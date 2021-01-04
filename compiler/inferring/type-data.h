@@ -33,8 +33,6 @@ private:
 public:
   using KeyValue = std::pair<Key, TypeData *>;
   using lookup_iterator = std::forward_list<KeyValue>::const_iterator;
-  using generation_t = uint32_t;
-  using flags_t = std::underlying_type_t<flag_id_t>;
 
 private:
   class SubkeysValues {
@@ -56,21 +54,14 @@ private:
     inline void clear() { values_pairs_.clear(); }
   };
 
-  // There is a bug in GCC before 8.4 where we can't declare underlying type of the enum PrimitiveType
-  // due-to vertex-meta-op_base.h:33, where the PrimiviteType used as a bit field
-  // GCC produces a false positive warning, which you may not disable;
-  // Later we need to add uint8_t underlying type for the enum PrimitiveType
-  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
   PrimitiveType ptype_ : 8;
-  flags_t flags_{0};
-  generation_t generation_;
+  uint8_t flags_{0};
 
   std::forward_list<ClassPtr> class_type_;
   TypeData *parent_{nullptr};
   TypeData *anykey_value{nullptr};
   SubkeysValues subkeys_values;
 
-  static TLS<generation_t> current_generation_;
   explicit TypeData(PrimitiveType ptype);
 
   TypeData *at(const Key &key) const;
@@ -96,9 +87,8 @@ public:
 
   std::string as_human_readable(bool colored = true) const;
 
-  PrimitiveType ptype() const { return static_cast<PrimitiveType>(ptype_); }
+  PrimitiveType ptype() const { return ptype_; }
   PrimitiveType get_real_ptype() const;
-  flags_t flags() const;
   void set_ptype(PrimitiveType new_ptype);
 
   const std::forward_list<ClassPtr> &class_types() const { return class_type_; }
@@ -110,6 +100,9 @@ public:
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
   ClassPtr get_first_class_type_inside() const;
   bool is_primitive_type() const;
+
+  uint8_t flags() const { return flags_; }
+  void set_flags(uint8_t new_flags);
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }
@@ -131,13 +124,8 @@ public:
   void set_shape_has_varg_flag() { set_flag<shape_has_varg_flag_e>(); }
   bool shape_has_varg_flag() const { return get_flag<shape_has_varg_flag_e>(); }
 
-  void set_flags(flags_t new_flags);
-
-  generation_t generation() const { return generation_; }
-
   bool structured() const;
   void make_structured();
-  void on_changed();
   TypeData *clone() const;
 
   TypeData *lookup_at(const Key &key) const;
@@ -156,28 +144,13 @@ public:
 
   size_t get_tuple_max_index() const;
 
+  bool did_type_data_change_after_tinf_step(const TypeData *before) const;
+
   static void init_static();
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
   static const TypeData *create_for_class(ClassPtr klass);
-  template<class T>
-  static const TypeData *create_type_data(const T &element_type, bool or_null, bool or_false) {
-    auto res = create_type_data(element_type);
-    if (or_null) {
-      res->set_or_null_flag();
-    }
-    if (or_false) {
-      res->set_or_false_flag();
-    }
-    return res;
-  }
-  static TypeData *create_array_of(const TypeData *element_type);
-  static TypeData *create_type_data(const std::vector<const TypeData *> &subkeys_values);
-  static TypeData *create_type_data(const std::map<std::string, const TypeData *> &subkeys_values);
-  //FIXME:??
-  static void inc_generation();
-  static generation_t current_generation();
-  static void upd_generation(TypeData::generation_t other_generation);
+  static const TypeData *create_array_of(const TypeData *element_type);
 };
 
 std::string type_out(const TypeData *type, gen_out_style style = gen_out_style::cpp);
@@ -196,8 +169,6 @@ void TypeData::set_flag() {
       if (parent_ != nullptr && should_proxy_error_flag_to_parent()) {
         parent_->set_flag<error_flag_e>();
       }
-    } else {
-      on_changed();
     }
   }
 }

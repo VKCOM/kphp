@@ -75,8 +75,7 @@ const TypeData *TypeData::get_type(PrimitiveType array, PrimitiveType type) {
 }
 
 TypeData::TypeData(PrimitiveType ptype) :
-  ptype_(ptype),
-  generation_(current_generation()) {
+  ptype_(ptype) {
   if (ptype_ == tp_Null) {
     set_or_null_flag();
     ptype_ = tp_any;
@@ -90,7 +89,6 @@ TypeData::TypeData(PrimitiveType ptype) :
 TypeData::TypeData(const TypeData &from) :
   ptype_(from.ptype_),
   flags_(from.flags_),
-  generation_(from.generation_),
   class_type_(from.class_type_),
   subkeys_values(from.subkeys_values) {
   if (from.anykey_value != nullptr) {
@@ -140,7 +138,6 @@ TypeData *TypeData::at_force(const Key &key) {
 
   TypeData *value = get_type(tp_any)->clone();
   value->parent_ = this;
-  value->on_changed();
 
   if (key.is_any_key()) {
     anykey_value = value;
@@ -165,7 +162,6 @@ void TypeData::set_ptype(PrimitiveType new_ptype) {
     if (new_ptype == tp_Error) {
       set_error_flag();
     }
-    on_changed();
   }
 }
 
@@ -182,7 +178,6 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
 
   if (class_type_.empty()) {
     class_type_ = new_class_type;
-    on_changed();
   } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(new_class_type, c); })) {
     std::unordered_set<ClassPtr> result_type;
     for (const auto &possible_class : class_type_) {
@@ -197,7 +192,6 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
       set_ptype(tp_Error);
     } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(result_type, c); })) {
       class_type_ = {result_type.begin(), result_type.end()};
-      on_changed();
     }
   }
 }
@@ -264,18 +258,13 @@ bool TypeData::is_primitive_type() const {
   return vk::any_of_equal(get_real_ptype(), tp_int, tp_bool, tp_float, tp_future, tp_future_queue);
 }
 
-TypeData::flags_t TypeData::flags() const {
-  return flags_;
-}
-
-void TypeData::set_flags(TypeData::flags_t new_flags) {
+void TypeData::set_flags(uint8_t new_flags) {
   kphp_assert_msg((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
   if (flags_ != new_flags) {
     if (new_flags & error_flag_e) {
       set_error_flag();
     }
     flags_ = new_flags;
-    on_changed();
   }
 }
 
@@ -289,15 +278,6 @@ bool TypeData::can_store_false() const {
 
 bool TypeData::structured() const {
   return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_shape, tp_future, tp_future_queue);
-}
-
-void TypeData::on_changed() {
-  generation_ = current_generation();
-  if (parent_ != nullptr) {
-    if (parent_->generation_ < current_generation()) {
-      parent_->on_changed();
-    }
-  }
 }
 
 TypeData *TypeData::clone() const {
@@ -399,7 +379,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 
   lhs->set_ptype(new_ptype);
-  TypeData::flags_t new_flags = rhs->flags_;
+  uint8_t new_flags = rhs->flags_;
   if (!save_or_false) {
     new_flags &= ~(or_false_flag_e);
   }
@@ -515,21 +495,6 @@ void TypeData::set_lca(PrimitiveType ptype) {
   set_lca(TypeData::get_type(ptype));
 }
 
-TLS<TypeData::generation_t> TypeData::current_generation_;
-
-void TypeData::inc_generation() {
-  (*current_generation_)++;
-}
-
-TypeData::generation_t TypeData::current_generation() {
-  return *current_generation_;
-}
-
-void TypeData::upd_generation(TypeData::generation_t other_generation) {
-  if (other_generation >= *current_generation_) {
-    *current_generation_ = other_generation;
-  }
-}
 
 inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   const PrimitiveType tp = type->get_real_ptype();
@@ -891,30 +856,46 @@ size_t TypeData::get_tuple_max_index() const {
   return subkeys_values.size();
 }
 
+bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) const {
+  if (ptype_ != before->ptype_ || flags_ != before->flags_) {
+    return true;
+  }
+  if (!class_type_.empty() && class_type_ != before->class_type_) {
+    return true;
+  }
+  if ((anykey_value == nullptr) != (before->anykey_value == nullptr)) {
+    return true;
+  }
+  if (anykey_value != nullptr && anykey_value->did_type_data_change_after_tinf_step(before->anykey_value)) {
+    return true;
+  }
+
+  // most likely we have no subkeys and return false now
+  if (subkeys_values.empty() && before->subkeys_values.empty()) {
+    return false;
+  }
+
+  auto i1 = subkeys_values.begin();
+  auto i2 = before->subkeys_values.begin();
+  auto e1 = subkeys_values.end();
+  auto e2 = before->subkeys_values.end();
+  for (; i1 != e1 && i2 != e2; ++i1, ++i2) {
+    if (i1->first != i2->first || i1->second->did_type_data_change_after_tinf_step(i2->second)) {
+      return true;
+    }
+  }
+  return i1 != e1 || i2 != e2;
+}
+
 const TypeData *TypeData::create_for_class(ClassPtr klass) {
   auto *res = new TypeData(tp_Class);
   res->class_type_ = {klass};
   return res;
 }
 
-TypeData *TypeData::create_array_of(const TypeData *element_type) {
+const TypeData *TypeData::create_array_of(const TypeData *element_type) {
   auto *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
   return res;
 }
 
-TypeData *TypeData::create_type_data(const std::vector<const TypeData *> &subkeys_values) {
-  auto *res = new TypeData(tp_tuple);
-  for (int int_index = 0; int_index < subkeys_values.size(); ++int_index) {
-    res->set_lca_at(MultiKey({Key::int_key(int_index)}), subkeys_values[int_index]);
-  }
-  return res;
-}
-
-TypeData *TypeData::create_type_data(const std::map<std::string, const TypeData *> &subkeys_values) {
-  auto *res = new TypeData(tp_shape);
-  for (const auto &sub: subkeys_values) {
-    res->set_lca_at(MultiKey({Key::string_key(sub.first)}), sub.second);
-  }
-  return res;
-}
