@@ -21,13 +21,12 @@
 
 /*** TypeData::SubkeysValues ***/
 
-TypeData *TypeData::SubkeysValues::create_if_empty(const Key &key, TypeData *parent) {
+TypeData *TypeData::SubkeysValues::create_if_empty(const Key &key) {
   if (auto existed_type_data = find(key)) {
     return existed_type_data;
   }
 
   TypeData *value = get_type(tp_any)->clone();
-  value->parent_ = parent;
 
   add(key, value);
   return value;
@@ -93,27 +92,18 @@ TypeData::TypeData(const TypeData &from) :
   subkeys_values(from.subkeys_values) {
   if (from.anykey_value != nullptr) {
     anykey_value = from.anykey_value->clone();
-    anykey_value->parent_ = this;
   }
   for (auto &subkey : subkeys_values) {
-    TypeData *ptr = subkey.second;
-    assert (ptr != nullptr);
-    subkey.second = ptr->clone();
-    subkey.second->parent_ = this;
+    subkey.second = subkey.second->clone();
   }
 }
 
 TypeData::~TypeData() {
-  assert (parent_ == nullptr);
-
   if (anykey_value != nullptr) {
-    anykey_value->parent_ = nullptr;
     delete anykey_value;
   }
   for (auto &subkey : subkeys_values) {
-    TypeData *ptr = subkey.second;
-    ptr->parent_ = nullptr;
-    delete ptr;
+    delete subkey.second;
   }
 }
 
@@ -137,7 +127,6 @@ TypeData *TypeData::at_force(const Key &key) {
   }
 
   TypeData *value = get_type(tp_any)->clone();
-  value->parent_ = this;
 
   if (key.is_any_key()) {
     anykey_value = value;
@@ -157,12 +146,7 @@ PrimitiveType TypeData::get_real_ptype() const {
 }
 
 void TypeData::set_ptype(PrimitiveType new_ptype) {
-  if (new_ptype != ptype_) {
-    ptype_ = new_ptype;
-    if (new_ptype == tp_Error) {
-      set_error_flag();
-    }
-  }
+  ptype_ = new_ptype;
 }
 
 ClassPtr TypeData::class_type() const {
@@ -260,12 +244,7 @@ bool TypeData::is_primitive_type() const {
 
 void TypeData::set_flags(uint8_t new_flags) {
   kphp_assert_msg((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
-  if (flags_ != new_flags) {
-    if (new_flags & error_flag_e) {
-      set_error_flag();
-    }
-    flags_ = new_flags;
-  }
+  flags_ = new_flags;
 }
 
 bool TypeData::can_store_null() const {
@@ -426,7 +405,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
     for (const auto &rhs_subkey : rhs->subkeys_values) {
       Key rhs_key = rhs_subkey.first;
       TypeData *rhs_value = rhs_subkey.second;
-      TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key, lhs);
+      TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key);
       lhs_value->set_lca(rhs_value);
     }
     for (auto &lhs_subkey : lhs->subkeys_values) {
@@ -459,6 +438,9 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null);
+  if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
+    this->set_ptype(tp_Error);
+  }
 }
 
 void TypeData::fix_inf_array() {
@@ -472,15 +454,6 @@ void TypeData::fix_inf_array() {
   if (depth > 6) {
     set_lca_at(MultiKey::any_key(6), TypeData::get_type(tp_mixed));
   }
-}
-
-bool TypeData::should_proxy_error_flag_to_parent() const {
-  if (vk::any_of_equal(parent_->ptype(), tp_tuple, tp_shape) && parent_->anykey_value == this) {
-    // tp_tuple any key can be tp_Error (for example, tuple(1, new A));
-    // it doesn't make the tuple itself a tp_Error
-    return false;
-  }
-  return true;
 }
 
 void TypeData::set_lca(PrimitiveType ptype) {

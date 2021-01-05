@@ -16,7 +16,7 @@ var_dump(array_map("is_numeric", array_map("instance_to_array", [new A()])));
 
 var_dump(array_reduce(["123", "245", "111", "0"], "bcadd", "0"));
 
-var_dump(array_map("array_filter", [[1, 0], [false], [2, NULL]]));
+//var_dump(array_map("array_filter", [[1, 0], [false], [2, NULL]]));
 
 $ints = [[1, 2], [3, 4]];
 $sums = array_map('intval', array_map('array_sum', $ints));
