@@ -26,8 +26,7 @@ private:
     write_flag_e          = 0b00000001,
     or_null_flag_e        = 0b00000010,
     or_false_flag_e       = 0b00000100,
-    error_flag_e          = 0b00001000,
-    shape_has_varg_flag_e = 0b00010000,
+    shape_has_varg_flag_e = 0b00001000,
   };
 
 public:
@@ -41,7 +40,7 @@ private:
 
   public:
     void add(const Key &key, TypeData *value) { values_pairs_.emplace_front(key, value); }
-    TypeData *create_if_empty(const Key &key, TypeData *parent);
+    TypeData *create_if_empty(const Key &key);
     TypeData *find(const Key &key) const;
 
     inline auto begin() { return values_pairs_.begin(); }
@@ -58,7 +57,6 @@ private:
   uint8_t flags_{0};
 
   std::forward_list<ClassPtr> class_type_;
-  TypeData *parent_{nullptr};
   TypeData *anykey_value{nullptr};
   SubkeysValues subkeys_values;
 
@@ -68,12 +66,10 @@ private:
   TypeData *at_force(const Key &key);
 
   template<flag_id_t FLAG>
-  inline bool get_flag() const {
-    return flags_ & FLAG;
-  }
+  inline bool get_flag() const { return flags_ & FLAG; }
 
   template<flag_id_t FLAG>
-  void set_flag();
+  void set_flag() { flags_ |= FLAG; }
 
   TypeData *write_at(const Key &key);
 
@@ -118,8 +114,7 @@ public:
 
   void set_write_flag() { set_flag<write_flag_e>(); }
 
-  void set_error_flag() { set_flag<error_flag_e>(); }
-  bool error_flag() const { return get_flag<error_flag_e>(); }
+  bool error_flag() const { return ptype_ == tp_Error; }
 
   void set_shape_has_varg_flag() { set_flag<shape_has_varg_flag_e>(); }
   bool shape_has_varg_flag() const { return get_flag<shape_has_varg_flag_e>(); }
@@ -140,7 +135,6 @@ public:
   void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);
   void set_lca(PrimitiveType ptype);
   void fix_inf_array();
-  bool should_proxy_error_flag_to_parent() const;
 
   size_t get_tuple_max_index() const;
 
@@ -159,16 +153,3 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool are_equal_types(const TypeData *type1, const TypeData *type2);
 bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at = nullptr);
 bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept;
-
-template<TypeData::flag_id_t FLAG>
-void TypeData::set_flag() {
-  if (!get_flag<FLAG>()) {
-    flags_ |= FLAG;
-
-    if (FLAG == error_flag_e) {
-      if (parent_ != nullptr && should_proxy_error_flag_to_parent()) {
-        parent_->set_flag<error_flag_e>();
-      }
-    }
-  }
-}
