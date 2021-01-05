@@ -34,7 +34,7 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
       return init_string && init_string->empty();
     }
     case tp_array:
-      return init_type->lookup_at(Key::any_key())->get_real_ptype() == tp_any;
+      return init_type->lookup_at_any_key()->get_real_ptype() == tp_any;
     default:
       return false;
   }
@@ -65,7 +65,7 @@ void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const Typ
   if (required_type->get_real_ptype() == tp_mixed) {
     required_type = TypeData::get_type(tp_array, tp_mixed);
   } else if (required_type->use_optional()) {
-    required_type = TypeData::create_array_of(required_type->lookup_at(Key::any_key()));
+    required_type = TypeData::create_array_of(required_type->lookup_at_any_key());
   }
   op_array_vertex->tinf_node.set_type(required_type);
 }
@@ -256,7 +256,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
     if (!var_init_expression_optimization_depth_) {
       for (auto &array_element : *op_array_vertex) {
-        const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at(Key::any_key());
+        const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
         if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
           explicit_cast_array_type(array_element, required_type, &current_function->explicit_const_var_ids);
         } else if (auto array_key_value = array_element.try_as<op_double_arrow>()) {

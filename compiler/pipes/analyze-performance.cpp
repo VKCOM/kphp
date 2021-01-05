@@ -230,7 +230,7 @@ void AnalyzePerformance::analyze_array_insertion(VertexAdaptor<op> vertex) noexc
   if (is_enabled<PerformanceInspections::implicit_array_cast>()) {
     const auto *to_type = tinf::get_type(vertex->array());
     if (to_type->get_real_ptype() == tp_array) {
-      to_type = to_type->lookup_at(Key::any_key());
+      to_type = to_type->lookup_at_any_key();
     }
     check_implicit_array_conversion(vertex->value(), to_type);
   }
@@ -240,7 +240,7 @@ void AnalyzePerformance::analyze_array_insertion(VertexAdaptor<op> vertex) noexc
 
 void AnalyzePerformance::analyze_op_array(VertexAdaptor<op_array> op_array_vertex) noexcept {
   if (is_enabled<PerformanceInspections::implicit_array_cast>()) {
-    const auto *to_type = tinf::get_type(op_array_vertex)->lookup_at(Key::any_key());
+    const auto *to_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
     for (auto array_element : *op_array_vertex) {
       if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
         check_implicit_array_conversion(array_element, to_type);

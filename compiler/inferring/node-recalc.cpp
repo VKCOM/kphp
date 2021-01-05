@@ -14,7 +14,7 @@
 
 // this callback is invoked immediately when new_type_ has become tp_Error during recalculation
 // by default, we try to detect the reason and print it out
-// (it may be because of mixing classes with primitives in an array, for example — they anykey_value will emerge tp_Error)
+// (it may be because of mixing classes with primitives in an array, for example — they any_key will emerge tp_Error)
 // note, that if a node is restricted with phpdoc, no error is printed, as VarNode overloads this callback
 void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, const RValue &because_of_rvalue) {
   PrimitiveType ptype_before_error = node_->get_type()->ptype();
