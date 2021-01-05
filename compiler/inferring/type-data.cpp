@@ -19,29 +19,6 @@
 #include "compiler/threading/hash-table.h"
 #include "compiler/utils/string-utils.h"
 
-/*** TypeData::SubkeysValues ***/
-
-TypeData *TypeData::SubkeysValues::create_if_empty(const Key &key) {
-  if (auto existed_type_data = find(key)) {
-    return existed_type_data;
-  }
-
-  TypeData *value = get_type(tp_any)->clone();
-
-  add(key, value);
-  return value;
-}
-
-TypeData *TypeData::SubkeysValues::find(const Key &key) const {
-  auto it = std::find_if(values_pairs_.begin(), values_pairs_.end(), [&](auto &kv) { return kv.first == key; });
-  if (it != values_pairs_.end()) {
-    return it->second;
-  }
-  return nullptr;
-}
-
-
-/*** TypeData ***/
 
 static std::vector<const TypeData *> primitive_types;
 static std::vector<const TypeData *> array_types;
@@ -89,14 +66,14 @@ TypeData::TypeData(const TypeData &from) :
   ptype_(from.ptype_),
   flags_(from.flags_),
   class_type_(from.class_type_),
-  subkeys_values(from.subkeys_values) {
-  for (auto &subkey : subkeys_values) {
+  subkeys(from.subkeys) {
+  for (auto &subkey : subkeys) {
     subkey.second = subkey.second->clone();
   }
 }
 
 TypeData::~TypeData() {
-  for (auto &subkey : subkeys_values) {
+  for (auto &subkey : subkeys) {
     delete subkey.second;
   }
 }
@@ -109,13 +86,14 @@ std::string TypeData::as_human_readable(bool colored) const {
 TypeData *TypeData::at_force(const Key &key) {
   kphp_assert_msg (structured(), "bug in TypeData");
 
-  TypeData *res = subkeys_values.find(key);
-  if (res != nullptr) {
-    return res;
+  for (const auto &subkey : subkeys) {
+    if (subkey.first == key) {
+      return subkey.second;
+    }
   }
 
   TypeData *value = get_type(tp_any)->clone();
-  subkeys_values.add(key, value);
+  subkeys.emplace_front(key, value);
   return value;
 }
 
@@ -167,7 +145,7 @@ bool TypeData::for_each_deep(const F &visitor) const {
   if (visitor(*this)) {
     return true;
   }
-  for (const auto &sub_key: subkeys_values) {
+  for (const auto &sub_key: subkeys) {
     if (sub_key.second->for_each_deep(visitor)) {
       return true;
     }
@@ -266,6 +244,15 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   return res;
 }
 
+const TypeData *TypeData::lookup_at(const Key &key) const {
+  for (const auto &subkey : subkeys) {
+    if (subkey.first == key) {
+      return subkey.second;
+    }
+  }
+  return nullptr;
+}
+
 const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
   const TypeData *res = this;
   for (Key i : multi_key) {
@@ -350,7 +337,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 
   if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
-    if (!lhs->subkeys_values.empty() && !rhs->subkeys_values.empty() && lhs->subkeys_values.size() != rhs->subkeys_values.size()) {
+    if (!lhs->subkeys.empty() && !rhs->subkeys.empty() && lhs->get_tuple_max_index() != rhs->get_tuple_max_index()) {
       lhs->set_ptype(tp_Error);   // mixing tuples of different sizes
       return;
     }
@@ -367,15 +354,15 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
     lhs->at_force(Key::any_key());  // if didn't exist, became tp_any
   }
 
-  if (!rhs->subkeys_values.empty()) {
-    for (const auto &rhs_subkey : rhs->subkeys_values) {
+  if (!rhs->subkeys.empty()) {
+    for (const auto &rhs_subkey : rhs->subkeys) {
       Key rhs_key = rhs_subkey.first;
       TypeData *rhs_value = rhs_subkey.second;
-      TypeData *lhs_value = lhs->subkeys_values.create_if_empty(rhs_key);
+      TypeData *lhs_value = lhs->at_force(rhs_key);
       lhs_value->set_lca(rhs_value);
     }
-    for (auto &lhs_subkey : lhs->subkeys_values) {
-      if (!rhs->subkeys_values.find(lhs_subkey.first)) {
+    for (auto &lhs_subkey : lhs->subkeys) {
+      if (!rhs->lookup_at(lhs_subkey.first)) {
         lhs_subkey.second->set_or_null_flag();
       }
     }
@@ -541,7 +528,7 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
     }
 
     if (tp == tp_shape) {
-      // since we can't depend on the TypeData::subkeys_values keys order,
+      // since we can't depend on the TypeData::subkeys order,
       // we emit the shape keys sorted by their key hashes to get the stable code generation
       // Note: key ids can vary between the compiler runs, so they can't be used for sorting
       // Note: this order is used during the shape construction, see compile_shape()
@@ -774,7 +761,7 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
     return !are_equal_types(from_array_value_type, to->lookup_at_any_key());
   }
 
-  const auto implicit_cast_pred = [to](const TypeData::KeyValue &key_value) {
+  const auto implicit_cast_pred = [to](const TypeData::SubkeyItem &key_value) {
     return is_implicit_array_conversion(key_value.second, to->lookup_at(key_value.first));
   };
   return std::find_if(from->lookup_begin(), from->lookup_end(), implicit_cast_pred) != from->lookup_end();
@@ -782,7 +769,7 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
 
 size_t TypeData::get_tuple_max_index() const {
   kphp_assert(ptype() == tp_tuple);
-  return subkeys_values.size();
+  return std::distance(subkeys.begin(), subkeys.end());
 }
 
 bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) const {
@@ -794,14 +781,14 @@ bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) cons
   }
 
   // most likely we have no subkeys and return false now
-  if (subkeys_values.empty() && before->subkeys_values.empty()) {
+  if (subkeys.empty() && before->subkeys.empty()) {
     return false;
   }
 
-  auto i1 = subkeys_values.begin();
-  auto i2 = before->subkeys_values.begin();
-  auto e1 = subkeys_values.end();
-  auto e2 = before->subkeys_values.end();
+  auto i1 = subkeys.begin();
+  auto i2 = before->subkeys.begin();
+  auto e1 = subkeys.end();
+  auto e2 = before->subkeys.end();
   for (; i1 != e1 && i2 != e2; ++i1, ++i2) {
     if (i1->first != i2->first || i1->second->did_type_data_change_after_tinf_step(i2->second)) {
       return true;
