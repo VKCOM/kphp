@@ -86,7 +86,7 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
   for (auto var_it : const_raw_array_vars) {
     VertexAdaptor<op_array> vertex = var_it->init_val.as<op_array>();
 
-    TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at(Key::any_key());
+    const TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at_any_key();
 
 
     int array_size = vertex->size();

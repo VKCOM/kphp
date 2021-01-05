@@ -419,7 +419,7 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
 
   if (root->type() == op_add) {
     if (lhs_tp->ptype() == tp_array && rhs_tp->ptype() == tp_array && type_out(lhs_tp) != type_out(rhs_tp)) {
-      const TypeData *res_tp = tinf::get_type(root)->const_read_at(Key::any_key());
+      const TypeData *res_tp = tinf::get_type(root)->lookup_at_any_key();
       W << "array_add < " << TypeName(res_tp) << " > (" << lhs << ", " << rhs << ")";
       return;
     }

@@ -90,27 +90,15 @@ TypeData::TypeData(const TypeData &from) :
   flags_(from.flags_),
   class_type_(from.class_type_),
   subkeys_values(from.subkeys_values) {
-  if (from.anykey_value != nullptr) {
-    anykey_value = from.anykey_value->clone();
-  }
   for (auto &subkey : subkeys_values) {
     subkey.second = subkey.second->clone();
   }
 }
 
 TypeData::~TypeData() {
-  if (anykey_value != nullptr) {
-    delete anykey_value;
-  }
   for (auto &subkey : subkeys_values) {
     delete subkey.second;
   }
-}
-
-TypeData *TypeData::at(const Key &key) const {
-  kphp_assert_msg (structured(), "bug in TypeData");
-
-  return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // both could be nullptr
 }
 
 std::string TypeData::as_human_readable(bool colored) const {
@@ -121,19 +109,13 @@ std::string TypeData::as_human_readable(bool colored) const {
 TypeData *TypeData::at_force(const Key &key) {
   kphp_assert_msg (structured(), "bug in TypeData");
 
-  TypeData *res = at(key);
+  TypeData *res = subkeys_values.find(key);
   if (res != nullptr) {
     return res;
   }
 
   TypeData *value = get_type(tp_any)->clone();
-
-  if (key.is_any_key()) {
-    anykey_value = value;
-  } else {
-    subkeys_values.add(key, value);
-  }
-
+  subkeys_values.add(key, value);
   return value;
 }
 
@@ -183,10 +165,6 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
 template<typename F>
 bool TypeData::for_each_deep(const F &visitor) const {
   if (visitor(*this)) {
-    return true;
-  }
-  bool use_any_key = ptype_ != tp_tuple && ptype_ != tp_shape;  // for them anykey_value doesn't make sense
-  if (use_any_key && anykey_value && anykey_value->for_each_deep(visitor)) {
     return true;
   }
   for (const auto &sub_key: subkeys_values) {
@@ -273,14 +251,16 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   if (!structured()) {
     return get_type(tp_any);
   }
-  if (vk::any_of_equal(ptype(), tp_tuple, tp_shape) && key.is_any_key()) {
-    return get_type(tp_Error);
-  }
-  TypeData *res = at(key);
+
+  const TypeData *res = lookup_at(key);
   if (res == nullptr && !key.is_any_key()) {
-    res = anykey_value;
+    res = lookup_at_any_key();
   }
+
   if (res == nullptr) {
+    if (vk::any_of_equal(ptype(), tp_tuple, tp_shape) && key.is_any_key()) {
+      return get_type(tp_Error);
+    }
     return get_type(tp_any);
   }
   return res;
@@ -312,24 +292,9 @@ TypeData *TypeData::write_at(const Key &key) {
   return res;
 }
 
-TypeData *TypeData::lookup_at(const Key &key) const {
-  if (!structured()) {
-    return nullptr;
-  }
-  return key.is_any_key() ? anykey_value : subkeys_values.find(key);
-}
-
-TypeData::lookup_iterator TypeData::lookup_begin() const {
-  return structured() ? subkeys_values.begin() : subkeys_values.end();
-}
-
-TypeData::lookup_iterator TypeData::lookup_end() const {
-  return subkeys_values.end();
-}
-
 const TypeData *TypeData::get_deepest_type_of_array() const {
   if (ptype() == tp_array) {
-    return lookup_at(Key::any_key())->get_deepest_type_of_array();
+    return lookup_at_any_key()->get_deepest_type_of_array();
   }
   return this;
 }
@@ -342,15 +307,15 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
   if (new_ptype == tp_mixed) {
-    if (lhs->ptype() == tp_array && lhs->anykey_value != nullptr) {
-      lhs->anykey_value->set_lca(tp_mixed);
+    if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
+      lhs->set_lca_at(MultiKey::any_key(1), TypeData::get_type(tp_mixed));
       if (lhs->ptype() == tp_Error) {
         new_ptype = tp_Error;
       }
     }
-    if (rhs->ptype() == tp_array && rhs->anykey_value != nullptr) {
+    if (rhs->ptype() == tp_array && rhs->lookup_at_any_key()) {
       TypeData tmp(tp_mixed);
-      tmp.set_lca(rhs->anykey_value);
+      tmp.set_lca(rhs->lookup_at_any_key());
       if (tmp.ptype() == tp_Error) {
         new_ptype = tp_Error;
       }
@@ -397,9 +362,10 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
     // will be validated by restrictions
   }
 
-  TypeData *lhs_any_key = lhs->at_force(Key::any_key());
-  TypeData *rhs_any_key = rhs->lookup_at(Key::any_key());
-  lhs_any_key->set_lca(rhs_any_key);
+  bool needs_any_key = vk::any_of_equal(new_ptype, tp_array, tp_future, tp_future_queue);
+  if (needs_any_key) {
+    lhs->at_force(Key::any_key());  // if didn't exist, became tp_any
+  }
 
   if (!rhs->subkeys_values.empty()) {
     for (const auto &rhs_subkey : rhs->subkeys_values) {
@@ -448,7 +414,7 @@ void TypeData::fix_inf_array() {
   int depth = 0;
   const TypeData *cur = this;
   while (cur != nullptr) {
-    cur = cur->lookup_at(Key::any_key());
+    cur = cur->lookup_at_any_key();
     depth++;
   }
   if (depth > 6) {
@@ -556,22 +522,20 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
       get_txt_style_type(type, res);
     }
 
-    const bool need_any_key = vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue);
-    const TypeData *anykey_value = need_any_key ? type->lookup_at(Key::any_key()) : nullptr;
-    if (anykey_value) {
+    if (vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue)) {
       res += "< ";
-      type_out_impl(anykey_value, res, style);
+      type_out_impl(type->lookup_at_any_key(), res, style);
       res += " >";
     }
 
     if (tp == tp_tuple) {
       res += "<";
-      for (const auto &subkey : std::set<TypeData::KeyValue>{type->lookup_begin(), type->lookup_end()}) {
-        if (res.back() != '<') {
+      int size = type->get_tuple_max_index();             // order of keys is undetermined
+      for (int tuple_i = 0; tuple_i < size; ++tuple_i) {  // that's why use loop by indexes
+        if (tuple_i > 0) {
           res += " , ";
         }
-        kphp_assert(subkey.first.is_int_key());
-        type_out_impl(type->const_read_at(subkey.first), res, style);
+        type_out_impl(type->lookup_at(Key::int_key(tuple_i)), res, style);
       }
       res += ">";
     }
@@ -717,12 +681,12 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
   }
 
   if (vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue)) {
-    return are_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
+    return are_equal_types(type1->lookup_at_any_key(), type2->lookup_at_any_key());
   }
 
   if (vk::any_of_equal(tp, tp_shape, tp_tuple)) {
     for (auto it1 = type1->lookup_begin(); it1 != type1->lookup_end(); ++it1) {
-      TypeData *t2_at_it = type2->lookup_at(it1->first);
+      const TypeData *t2_at_it = type2->lookup_at(it1->first);
       if (t2_at_it == nullptr && !type2->shape_has_varg_flag()) {
         return false;
       } else if (t2_at_it && !are_equal_types(it1->second, t2_at_it)) {
@@ -730,7 +694,7 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
       }
     }
     for (auto it2 = type2->lookup_begin(); it2 != type2->lookup_end(); ++it2) {
-      TypeData *t1_at_it = type1->lookup_at(it2->first);
+      const TypeData *t1_at_it = type1->lookup_at(it2->first);
       if (t1_at_it == nullptr && !type1->shape_has_varg_flag()) {
         return false;
       }
@@ -800,14 +764,14 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
     return false;
   }
   if (from->get_real_ptype() == tp_array) {
-    auto from_array_value_type = from->lookup_at(Key::any_key());
+    auto from_array_value_type = from->lookup_at_any_key();
     if (from_array_value_type->get_real_ptype() == tp_any) {
       return false;
     }
     if (to->get_real_ptype() == tp_mixed) {
       return from_array_value_type->get_real_ptype() != tp_mixed;
     }
-    return !are_equal_types(from_array_value_type, to->lookup_at(Key::any_key()));
+    return !are_equal_types(from_array_value_type, to->lookup_at_any_key());
   }
 
   const auto implicit_cast_pred = [to](const TypeData::KeyValue &key_value) {
@@ -826,12 +790,6 @@ bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) cons
     return true;
   }
   if (!class_type_.empty() && class_type_ != before->class_type_) {
-    return true;
-  }
-  if ((anykey_value == nullptr) != (before->anykey_value == nullptr)) {
-    return true;
-  }
-  if (anykey_value != nullptr && anykey_value->did_type_data_change_after_tinf_step(before->anykey_value)) {
     return true;
   }
 

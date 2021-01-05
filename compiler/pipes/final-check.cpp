@@ -140,7 +140,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       if (auto func_type_rule = rule_meta.try_as<op_index>()) {
         auto arg_ref = func_type_rule->array().as<op_type_expr_arg_ref>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
-          auto value_type = tinf::get_type(arg)->lookup_at(Key::any_key());
+          auto value_type = tinf::get_type(arg)->lookup_at_any_key();
           auto out_class = value_type->class_type();
           kphp_error_return(out_class, "type of argument for instance_to_array has to be array of Classes");
           out_class->deeply_require_instance_to_array_visitor();
@@ -283,7 +283,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     VertexPtr arr = vertex.as<op_foreach>()->params()->xs();
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
-      const TypeData *valueType = arrayType->lookup_at(Key::any_key());
+      const TypeData *valueType = arrayType->lookup_at_any_key();
       if (valueType->get_real_ptype() == tp_any) {
         kphp_error (0, "Can not compile foreach on array of Unknown type");
       }
@@ -294,7 +294,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     VertexPtr arr = list->array();
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
-      const TypeData *valueType = arrayType->lookup_at(Key::any_key());
+      const TypeData *valueType = arrayType->lookup_at_any_key();
       kphp_error (valueType->get_real_ptype() != tp_any, "Can not compile list with array of Unknown type");
     } else if (arrayType->ptype() == tp_tuple) {
       size_t list_size = vertex.as<op_list>()->list().size();
@@ -436,7 +436,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     if (is_value_sort_function) {
       // Forbid arrays with elements that would be rejected by check_comparisons().
       const TypeData *array_type = tinf::get_type(call->args()[0]);
-      auto *elem_type = array_type->lookup_at(Key::any_key());
+      auto *elem_type = array_type->lookup_at_any_key();
       kphp_error(vk::none_of_equal(elem_type->ptype(), tp_Class, tp_tuple, tp_shape),
                  fmt_format("{} is not comparable and cannot be sorted", elem_type->as_human_readable()));
     }

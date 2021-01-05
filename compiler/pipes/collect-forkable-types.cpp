@@ -13,8 +13,8 @@ VertexPtr CollectForkableTypesPass::on_enter_vertex(VertexPtr root) {
       if (call->str_val == "wait") {
         waitable_types_.push_back(tinf::get_type(root));
       } else if (call->str_val == "wait_multi") {
-        forkable_types_.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
-        waitable_types_.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
+        forkable_types_.push_back(tinf::get_type(root)->lookup_at_any_key());
+        waitable_types_.push_back(tinf::get_type(root)->lookup_at_any_key());
       }
       forkable_types_.push_back(tinf::get_type(root));
     } else if (call->str_val == "wait_synchronously") {
