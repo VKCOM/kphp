@@ -439,18 +439,17 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
 void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null) {
   TypeData *cur = this;
-  auto last = multi_key.rbegin();
-  for (auto it = multi_key.begin(); it != multi_key.end(); it++) {
-    auto key = *it;
+  
+  for (const Key &key : multi_key) {
     auto prev = cur;
     cur = cur->write_at(key);
+    // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
       if (prev->ptype() == tp_mixed) {
         TypeData tmp(tp_mixed);
         tmp.set_lca(rhs);
         if (tmp.ptype() == tp_Error) {
           prev->set_ptype(tp_Error);
-          last = std::prev(multi_key.rend(), std::distance(multi_key.begin(), it));
           cur = prev;
           break;
         }
@@ -458,15 +457,8 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       return;
     }
   }
+
   cur->set_lca(rhs, save_or_false, save_or_null);
-  for (auto it = last; it != multi_key.rend(); it++) {
-    cur = cur->parent_;
-    if (*it == Key::any_key()) {
-      TypeData *any_value = cur->at_force(Key::any_key());
-      TypeData *key_value = cur->write_at(*it);
-      any_value->set_lca(key_value);
-    }
-  }
 }
 
 void TypeData::fix_inf_array() {
