@@ -165,7 +165,7 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
       if (vk::any_of_equal(tp_array, lhs_type->get_real_ptype(), rhs_type->get_real_ptype())) {
         kphp_error(vk::none_of_equal(tp_any, lhs_type->ptype(), rhs_type->ptype()),
                    fmt_format("Can't use '{}' operation between {} and {} types",
-                              OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
+                              OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(), rhs_type->as_human_readable()));
         return;
       }
 
@@ -194,7 +194,7 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
       kphp_error((lhs_type->ptype() != tp_any || lhs_type->or_false_flag()) &&
                  (rhs_type->ptype() != tp_any || rhs_type->or_false_flag()),
                  fmt_format("Got '{}' operation between {} and {} types",
-                            OpInfo::str(binary_vertex->type()), colored_type_out(lhs_type), colored_type_out(rhs_type)));
+                            OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(), rhs_type->as_human_readable()));
       return;
     }
 
@@ -331,7 +331,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     }
     const TypeData *key_type = tinf::get_type(key);
     kphp_error(key_type->ptype() != tp_any || key_type->or_false_flag(),
-               fmt_format("Can't get array element by key with {} type", colored_type_out(key_type)));
+               fmt_format("Can't get array element by key with {} type", key_type->as_human_readable()));
   }
   if (auto xset = vertex.try_as<meta_op_xset>()) {
     auto v = xset->expr();
@@ -349,7 +349,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         kphp_error(!var->is_constant(), "Can't use isset on const variable");
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
-                   fmt_format("isset({}) will be always true for {}", var->get_human_readable_name(), colored_type_out(type_info)));
+                   fmt_format("isset({}) will be always true for {}", var->get_human_readable_name(), type_info->as_human_readable()));
       }
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
@@ -369,13 +369,13 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_instance_prop) {
     const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());
     kphp_error(lhs_type->ptype() == tp_Class,
-               fmt_format("Accessing ->property of non-instance {}", colored_type_out(lhs_type)));
+               fmt_format("Accessing ->property of non-instance {}", lhs_type->as_human_readable()));
   }
 
   if (vertex->type() == op_throw) {
     const TypeData *thrown_type = tinf::get_type(vertex.as<op_throw>()->exception());
     kphp_error(thrown_type->ptype() == tp_Class && G->get_class("Throwable")->is_parent_of(thrown_type->class_type()),
-               fmt_format("Throw not Throwable, but {}", colored_type_out(thrown_type)));
+               fmt_format("Throw not Throwable, but {}", thrown_type->as_human_readable()));
   }
 
   if (vertex->type() == op_fork) {
@@ -426,7 +426,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(),
-                 fmt_format("is_null() will be always false for {}", colored_type_out(arg_type)));
+                 fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     }
@@ -438,7 +438,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       const TypeData *array_type = tinf::get_type(call->args()[0]);
       auto *elem_type = array_type->lookup_at(Key::any_key());
       kphp_error(vk::none_of_equal(elem_type->ptype(), tp_Class, tp_tuple, tp_shape),
-                 fmt_format("{} is not comparable and cannot be sorted", colored_type_out(elem_type)));
+                 fmt_format("{} is not comparable and cannot be sorted", elem_type->as_human_readable()));
     }
   }
 
@@ -448,7 +448,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
 // Inspection: static-var should be initialized at the declaration (with the exception of tp_mixed).
 inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
   kphp_error(static_var->init_val || tinf::get_type(static_var)->ptype() == tp_mixed,
-             fmt_format("static ${} is not inited at declaration (inferred {})", static_var->name, colored_type_out(tinf::get_type(static_var))));
+             fmt_format("static ${} is not inited at declaration (inferred {})", static_var->name, tinf::get_type(static_var)->as_human_readable()));
 }
 
 void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
@@ -489,7 +489,7 @@ void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) 
   if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
     auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
     bool cmp_type_is_null = cmp_type->ptype() == tp_any && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
-    kphp_error(cmp_type->ptype() == tp_Class || cmp_type_is_null, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), colored_type_out(cmp_type)));
+    kphp_error(cmp_type->ptype() == tp_Class || cmp_type_is_null, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), cmp_type->as_human_readable()));
   }
 }
 
@@ -503,22 +503,22 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
 
   if (lhs_t->ptype() == tp_Class) {
     if (vk::any_of_equal(op, op_eq2, op_neq2)) {
-      kphp_error(false, fmt_format("instance {} {} is unsupported", OpInfo::desc(op), colored_type_out(rhs_t)));
+      kphp_error(false, fmt_format("instance {} {} is unsupported", OpInfo::desc(op), rhs_t->as_human_readable()));
     } else {
-      kphp_error(false, fmt_format("comparison instance with {} is prohibited (operation: {})", colored_type_out(rhs_t), OpInfo::desc(op)));
+      kphp_error(false, fmt_format("comparison instance with {} is prohibited (operation: {})", rhs_t->as_human_readable(), OpInfo::desc(op)));
     }
   } else if (lhs_t->ptype() == tp_array) {
     kphp_error(vk::any_of_equal(rhs_t->get_real_ptype(), tp_array, tp_bool, tp_mixed),
-               fmt_format("{} is always > than {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+               fmt_format("{} is always > than {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_tuple) {
     bool can_compare_with_tuple = vk::any_of_equal(op, op_eq2, op_neq2) &&
                                   rhs_t->ptype() == tp_tuple && lhs_t->get_tuple_max_index() == rhs_t->get_tuple_max_index();
     kphp_error(can_compare_with_tuple,
-               fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+               fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_shape) {
     // shape can't be compared with anything using ==, it's meaningless
     kphp_error(0,
-               fmt_format("You may not compare {} with {} used operator {}", colored_type_out(lhs_t), colored_type_out(rhs_t), OpInfo::desc(op)));
+               fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   }
 
 }
@@ -564,7 +564,7 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
       } else if (tinf::get_type(var)->get_real_ptype() == tp_shape) {
         kphp_error(0, fmt_format("Accessing unexisting element of shape ${}", var->name));
       } else {
-        kphp_error(0, fmt_format("${} is {}, can not get element", var->name, colored_type_out(tinf::get_type(var))));
+        kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
       }
 
     } else {                                // multidimentional array[*]...[*] access

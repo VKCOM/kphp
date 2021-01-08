@@ -21,8 +21,8 @@ public:
   void recalc(TypeInferer *inferer __attribute__((unused))) {
   }
 
-  std::string get_location_text();
-  std::string get_description();
+  std::string get_description() final;
+  const Location &get_location() const final;
 };
 
 } // namespace tinf

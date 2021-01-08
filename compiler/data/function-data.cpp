@@ -4,20 +4,15 @@
 
 #include "compiler/data/function-data.h"
 
-#include <regex>
-#include <sstream>
-
 #include "common/termformat/termformat.h"
 
 #include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
-#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
-#include "compiler/pipes/calc-locations.h"
 #include "compiler/vertex.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
@@ -248,27 +243,34 @@ std::string FunctionData::get_performance_inspections_warning_chain(PerformanceI
 }
 
 std::string FunctionData::get_human_readable_name(const std::string &name, bool add_details) {
-  std::smatch matched;
-  if (std::regex_match(name, matched, std::regex(R"((.+)\$\$(.+)\$\$(.+))"))) {
-    string base_class = matched[1].str(), actual_class = matched[3].str();
-    base_class = replace_characters(base_class, '$', '\\');
-    actual_class = replace_characters(actual_class, '$', '\\');
-    std::string result = actual_class + "::" + matched[2].str();
-    if (add_details) {
-      result += " (inherited from " + base_class + ")";
-    }
-    return result;
+  auto pos1 = name.find("$$");
+  auto pos2 = name.rfind("$$");
+
+  // if name is just a function "function_name", doesn't belong to any class
+  if (pos1 == std::string::npos) {
+    return name;
   }
-  // Modify with caution! Some symbols are analyzed with regexps during the stack trace printing
-  return std::regex_replace(std::regex_replace(name, std::regex(R"(\$\$)"), "::"), std::regex("\\$"), "\\");
+  // if name is "class$$method"
+  else if (pos2 == pos1) {
+    std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
+    std::string method_name = name.substr(pos1 + 2);
+    return base_class + "::" + method_name;
+  }
+  // if name is "class$$method$$context"
+  else {
+    std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
+    std::string method_name = name.substr(pos1 + 2, pos2 - pos1 - 2);
+    std::string context_class = replace_characters(name.substr(pos2 + 2), '$', '\\');
+    return add_details ? base_class + "::" + method_name + " (static=" + context_class + ")" : context_class + "::" + method_name;
+  }
 }
 
 string FunctionData::get_human_readable_name(bool add_details) const {
   std::string result_name;
-  if (modifiers.is_nonmember()) {
-    result_name = name;
+  if (is_lambda()) {
+    result_name = get_params().empty() ? "anonymous()" : "anonymous(...)";
   } else {
-    result_name = is_lambda() ? "anonymous(...)" : get_human_readable_name(name, add_details);
+    result_name = get_human_readable_name(name, add_details);
   }
 
   if (add_details && instantiation_of_template_function_location.get_line() != -1) {

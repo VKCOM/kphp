@@ -4,10 +4,8 @@
 
 #include "compiler/stage.h"
 
-#include <regex>
-#include <sstream>
-
 #include "common/termformat/termformat.h"
+#include "common/wrappers/pathname.h"
 
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
@@ -49,14 +47,11 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
     file = warning_file;
   }
-  fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} [gen by {}:{}]\n", get_assert_level_desc(assert_level), file_name, line_number);
-  stage::print(file);
-  string correct_description;
-  if (!stage::should_be_colored(file)) {
-    correct_description = TermStringFormat::remove_special_symbols(full_description);
-  } else {
-    correct_description = full_description;
-  }
+  std::string error_title = get_assert_level_desc(assert_level);
+  fmt_fprintf(file, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n{} at stage: {}, gen by {}:{}\n",
+              stage::should_be_colored(file) ? TermStringFormat::paint_red(error_title) : error_title, stage::get_name(), kbasename(file_name), line_number);
+  stage::print_current_location_on_error(file);
+  std::string correct_description = stage::should_be_colored(file) ? full_description : TermStringFormat::remove_special_symbols(full_description);
   fmt_fprintf(file, "{}\n\n", correct_description);
   if (assert_level == FATAL_ASSERT_LEVEL) {
     fmt_fprintf(file, "Compilation failed.\n"
@@ -106,6 +101,26 @@ Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line
   function(function),
   line(line) {}
 
+// return a location in the format: "{file}:{line}  in function {function}"
+std::string Location::as_human_readable() const {
+  std::string out;
+
+  out += file ? file->unified_file_name : "unknown file";
+  out += ":";
+  out += std::to_string(line);
+
+  // if it's a method of an PSR-4 class /path/to/A.php, output only A::methodName, not fully-qualified path\to\A::methodName
+  if (function && function->type == FunctionData::func_local) {
+    std::string function_name = function->get_human_readable_name(false);
+    std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";
+    if (file && file->unified_file_name == psr4_file_name) {
+      function_name = function_name.substr(function_name.rfind('\\', psr4_file_name.size()) + 1);
+    }
+    out += "  in function " + function_name;
+  }
+  return out;
+}
+
 bool operator<(const Location &lhs, const Location &rhs) {
   if (lhs.file && rhs.file) {
     if (const int cmp = lhs.file->file_name.compare(rhs.file->file_name)) {
@@ -127,58 +142,23 @@ namespace stage {
 static TLS<StageInfo> stage_info;
 } // namespace stage
 
-void stage::print(FILE *f) {
-  fmt_fprintf(f, "In stage = [{}]:\n", get_name());
-  fmt_fprintf(f, "  ");
-  print_file(f);
-  fmt_fprintf(f, "  ");
-  print_function(f);
-  fmt_fprintf(f, "  ");
-  print_line(f);
-  print_comment(f);
-}
-
-void stage::print_file(FILE *f) {
-  fmt_fprintf(f, "[file = {}]\n", get_file_name());
-}
-
-void stage::print_function(FILE *f) {
+void stage::print_current_location_on_error(FILE *f) {
+  SrcFilePtr file = get_file();
   FunctionPtr function = get_function();
-  string function_name_str = (function ? function->get_human_readable_name() : "unknown function");
-  if (should_be_colored(f)) {
-    function_name_str = TermStringFormat::add_text_attribute(function_name_str, TermStringFormat::bold);
-  }
-  fmt_fprintf(f, "[function = {}:{}]\n", function_name_str, get_line());
-}
+  int line = get_line();
+  bool use_colors = should_be_colored(f);
 
-void stage::print_line(FILE *f) {
-  if (get_line() > 0) {
-    fmt_fprintf(f, "[line = {}]\n", get_line());
+  // {file}:{line} and {function}
+  fmt_fprintf(f, "  at  {}:{}\n", file ? file->unified_file_name : "unknown", line);
+  if (function && function->type == FunctionData::func_local) {
+    std::string name = function->get_human_readable_name();
+    fmt_fprintf(f, "  in  function {}\n", use_colors ? TermStringFormat::add_text_attribute(name, TermStringFormat::bold) : name);
   }
-}
 
-void stage::print_comment(FILE *f) {
-  if (get_line() > 0) {
-    vk::string_view comment = get_file()->get_line(get_line());
-    fmt_fprintf(f, "//{:4}:", get_line());
-    int last_printed = ':';
-    for (int j = 0, nj = comment.size(); j < nj; j++) {
-      int c = comment.begin()[j];
-      if (c == '\n') {
-        putc('\\', f);
-        putc('n', f);
-        last_printed = 'n';
-      } else if (c > 13) {
-        putc(c, f);
-        if (c > 32) {
-          last_printed = c;
-        }
-      }
-    }
-    if (last_printed == '\\') {
-      putc(';', f);
-    }
-    putc('\n', f);
+  // line contents
+  if (line > 0) {
+    std::string comment = static_cast<std::string>(vk::trim(get_file()->get_line(line)));
+    fmt_fprintf(f, "  //  {}\n", use_colors ? TermStringFormat::paint(comment, TermStringFormat::cyan) : comment);
   }
 }
 
@@ -259,15 +239,6 @@ int stage::get_line() {
   return get_location().get_line();
 }
 
-const string &stage::get_file_name() {
-  static string no_file = "unknown";
-  SrcFilePtr file = get_file();
-  if (!file) {
-    return no_file;
-  }
-  return file->file_name;
-}
-
 const string &stage::get_function_name() {
   static string no_function = "unknown";
   FunctionPtr function = get_function();
@@ -275,27 +246,6 @@ const string &stage::get_function_name() {
     return no_function;
   }
   return function->name;
-}
-
-string stage::to_str(const Location &new_location) {
-  set_location(new_location);
-  FunctionPtr function = get_function();
-  std::stringstream ss;
-
-  // modify with caution! Some symbols are analyzed with regexps during the stack trace printing
-  ss << (get_file() ? get_file()->unified_file_name : "unknown file") << ": " << (function ? function->get_human_readable_name() : "unknown function") << ":" << get_line();
-  std::string out = ss.str();
-
-  // removing the class name from the path to that class to avoid the duplication
-  std::smatch matched;
-  if (std::regex_match(out, matched, std::regex("(.+?): ((.*?)::.*)"))) {
-    string class_name = replace_characters(matched[3].str(), '\\', '/');
-    if (matched[1].str().find(class_name + ".php") == matched[1].str().length() - (class_name.length() + 4)) {
-      return matched[2].str();
-    }
-  }
-
-  return out;
 }
 
 bool stage::should_be_colored(FILE *f)  {

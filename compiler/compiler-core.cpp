@@ -4,9 +4,6 @@
 
 #include "compiler/compiler-core.h"
 
-#include <numeric>
-#include <sstream>
-#include <unordered_map>
 #include <dirent.h>
 
 #include "common/algorithms/contains.h"

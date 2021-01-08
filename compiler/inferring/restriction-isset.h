@@ -11,7 +11,7 @@ class RestrictionIsset : public tinf::RestrictionBase {
   tinf::Node *a_;
   std::string desc;
 
-  void find_dangerous_isset_warning(const std::vector<tinf::Node *> &bt, tinf::Node *node, const std::string &msg);
+  void find_dangerous_isset_warning(std::vector<tinf::Node *> *bt, tinf::Node *node, const std::string &msg);
   bool isset_is_dangerous(int isset_flags, const TypeData *tp);
   bool find_dangerous_isset_dfs(int isset_flags, tinf::Node *node, std::vector<tinf::Node *> *bt);
 

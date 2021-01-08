@@ -4,8 +4,6 @@
 
 #include "compiler/code-gen/raw-data.h"
 
-#include <sstream>
-
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"

@@ -4,8 +4,6 @@
 
 #include "compiler/gentree.h"
 
-#include <sstream>
-
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
 #include "common/algorithms/contains.h"
@@ -21,7 +19,6 @@
 #include "compiler/data/lambda-implicit-uses.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/debug.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"

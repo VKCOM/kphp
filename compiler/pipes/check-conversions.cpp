@@ -65,7 +65,7 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
     });
 
     kphp_error(!is_forbidden_conversion, fmt_format("conversion from {} to {} is forbidden",
-                                                    colored_type_out(converted_expr_type),
+                                                    converted_expr_type->as_human_readable(),
                                                     TermStringFormat::paint_green(OpInfo::str(vertex->type()))));
   }
   return vertex;
