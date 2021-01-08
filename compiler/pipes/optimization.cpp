@@ -65,7 +65,7 @@ void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const Typ
   if (required_type->get_real_ptype() == tp_mixed) {
     required_type = TypeData::get_type(tp_array, tp_mixed);
   } else if (required_type->use_optional()) {
-    required_type = TypeData::create_type_data(required_type->lookup_at(Key::any_key()));
+    required_type = TypeData::create_array_of(required_type->lookup_at(Key::any_key()));
   }
   op_array_vertex->tinf_node.set_type(required_type);
 }

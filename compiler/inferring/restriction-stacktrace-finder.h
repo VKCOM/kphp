@@ -12,28 +12,14 @@ class RestrictionStacktraceFinder {
   static const unsigned long max_cnt_nodes_in_path = 50;
 
   std::vector<tinf::Node *> stacktrace;
-  std::vector<tinf::Node *> node_path_;
+  std::vector<tinf::Node *> node_path;
   std::string desc;
 
-  struct ComparatorByEdgePriorityRelativeToExpectedType;
+  static VarPtr get_var_id_from_node(const tinf::Node *node);
+  static int get_importance_of_reason(const tinf::Node *from, const tinf::Node *to);
+  static int get_priority(const tinf::Edge *edge, const TypeData *expected_type);
 
-  struct row {
-    std::string col[3];
-
-    row() = default;
-
-    row(std::string const &s1, std::string const &s2, std::string const &s3) {
-      col[0] = s1;
-      col[1] = s2;
-      col[2] = s3;
-    }
-  };
-
-  row parse_description(std::string const &description);
-  void remove_duplicates_from_stacktrace(std::vector<row> &rows) const;
-
-  bool is_parent_node(tinf::Node const *node);
-  bool find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected_type);
+  bool find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type);
 
 public:
 

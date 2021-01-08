@@ -4,8 +4,6 @@
 
 #include "compiler/pipes/calc-real-defines-values.h"
 
-#include <sstream>
-
 #include "common/version-string.h"
 #include "common/wrappers/likely.h"
 
@@ -80,7 +78,7 @@ void CalcRealDefinesValuesF::process_define(DefinePtr def) {
 }
 
 void CalcRealDefinesValuesF::print_error_infinite_define(DefinePtr cur_def) {
-  std::stringstream stream;
+  std::string str_stack;
   int id = -1;
   for (size_t i = 0; i < stack.size(); i++) {
     if (stack[i] == &cur_def->name) {
@@ -90,8 +88,9 @@ void CalcRealDefinesValuesF::print_error_infinite_define(DefinePtr cur_def) {
   }
   kphp_assert(id != -1);
   for (size_t i = id; i < stack.size(); i++) {
-    stream << *stack[i] << " -> ";
+    str_stack += *stack[i];
+    str_stack += " -> ";
   }
-  stream << cur_def->name;
-  kphp_error(0, fmt_format("Recursive define dependency:\n{}\n", stream.str()));
+  str_stack += cur_def->name;
+  kphp_error(0, fmt_format("Recursive define dependency:\n{}\n", str_stack));
 }

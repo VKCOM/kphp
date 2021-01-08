@@ -4,262 +4,253 @@
 
 #include "compiler/inferring/restriction-stacktrace-finder.h"
 
-#include <iomanip>
-#include <regex>
-#include <sstream>
-
+#include "common/algorithms/contains.h"
+#include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
 
-#include "compiler/data/var-data.h"
+#include "compiler/gentree.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/function-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/vertex.h"
 
-// A heuristic algorithm that sorts edges to optimize their order for the error printing (based on the empirical research)
-struct RestrictionStacktraceFinder::ComparatorByEdgePriorityRelativeToExpectedType {
-private:
-  enum {
-    e_default_priority = 4
-  };
+/*
+    This module finds a stacktrace to describe, why a type mismatch occurred.
+    For example:
+      function acInt(float $x) {}
+      $f = [1]; $a = $f; acInt($a);
+    Type mismatch is passing int[] to argument $x of acInt()
+    This stacktrace finder answers this exact question: "Why is it int[], but not float?"
+    The answer is: call acInt(int[]), because $a is int[], because $f is int[], because [1] is int[], because 1 is int.
 
-  const TypeData *expected;
-
-  static bool is_same_vars(const tinf::Node *node, VertexPtr vertex);
-
-  int get_priority(const tinf::Edge *edge) const;
-
-public:
-  explicit ComparatorByEdgePriorityRelativeToExpectedType(const TypeData *expected) :
-    expected(expected) {}
-
-  bool is_priority_less_than_default(tinf::Node *cur_node) const;
-
-  bool operator()(const tinf::Edge *lhs, const tinf::Edge *rhs) const {
-    return get_priority(lhs) < get_priority(rhs);
-  }
-};
-
-bool RestrictionStacktraceFinder::ComparatorByEdgePriorityRelativeToExpectedType::is_same_vars(const tinf::Node *node, VertexPtr vertex) {
-  if (auto var_node = dynamic_cast<const tinf::VarNode *>(node)) {
-    if (auto var = vertex.try_as<op_var>()) {
-      if (!var->var_id && !var_node->var_) {
-        return true;
-      }
-
-      return var->var_id && var_node->var_ && var->var_id->name == var_node->var_->name;
-    }
-  }
-
-  return false;
-}
-
-bool RestrictionStacktraceFinder::is_parent_node(tinf::Node const *node) {
-  return std::find(node_path_.begin(), node_path_.end(), node) != node_path_.end();
-}
-
-bool RestrictionStacktraceFinder::find_call_trace_with_error_impl(tinf::Node *cur_node, const TypeData *expected_type) {
-  static int limit_calls = 1000000;
-  limit_calls--;
-  if (limit_calls <= 0) {
-    return true;
-  }
-
-  ComparatorByEdgePriorityRelativeToExpectedType comparator(expected_type);
-
-  auto &node_next = cur_node->get_next();
-
-  if (node_next.empty()) {
-    return comparator.is_priority_less_than_default(cur_node);
-  }
-
-  std::vector<tinf::Edge *> ordered_edges{node_next};
-  std::sort(ordered_edges.begin(), ordered_edges.end(), comparator);
-
-  for (auto e : ordered_edges) {
-    tinf::Node *from = e->from;
-    tinf::Node *to = e->to;
-    assert(from == cur_node);
-
-    if (to == cur_node) {
-      kphp_warning(fmt_format("loop edge: from: {} to: {}", from->get_description(), to->get_description()));
-      continue;
-    }
-    if (is_parent_node(to)) {
-      continue;
-    }
-    if (node_path_.size() == max_cnt_nodes_in_path) {
-      return false;
-    }
-
-    node_path_.push_back(to);
-
-    const TypeData *expected_type_in_level_of_multi_key = expected_type;
-    if (e->from_at) {
-      expected_type_in_level_of_multi_key = expected_type->const_read_at(*e->from_at);
-    }
-
-    if (find_call_trace_with_error_impl(to, expected_type_in_level_of_multi_key)) {
-      node_path_.pop_back();
-      stacktrace.push_back(to);
-      return true;
-    }
-
-    node_path_.pop_back();
-  }
-
-  return false;
-}
-
+    Some known issues, that can't be overcome:
+    * as all constants are inlined, it will never point to the constant/define, only to the inlined value
+    * equal strings/arrays are extracted as one const variable, which location could seem strange for a particular stacktrace
+    * when mixed is a result of non-mixed operands, we actually trace into only one operand we find the most important
+ */
 
 RestrictionStacktraceFinder::RestrictionStacktraceFinder(tinf::Node *cur_node, const TypeData *expected_type) {
   assert(cur_node != nullptr);
 
-  stacktrace.reserve(max_cnt_nodes_in_path);
-  node_path_.reserve(max_cnt_nodes_in_path);
-
-  find_call_trace_with_error_impl(cur_node, expected_type);
+  find_call_trace_with_error(cur_node, expected_type);
 
   stacktrace.push_back(cur_node);
   std::reverse(stacktrace.begin(), stacktrace.end());
 }
 
-int RestrictionStacktraceFinder::ComparatorByEdgePriorityRelativeToExpectedType::get_priority(const tinf::Edge *edge) const {
-  const tinf::Node *from_node = edge->from;
-  const tinf::Node *to_node = edge->to;
-  const TypeData *to_type = to_node->get_type();
-  bool different_types = !is_less_or_equal_type(to_type, expected, edge->from_at);
-
-  if (auto expr_node = dynamic_cast<const tinf::ExprNode *>(to_node)) {
-    VertexPtr expr_vertex = expr_node->get_expr();
-
-    if (auto binary_vertex = expr_vertex.try_as<meta_op_binary>()) {
-      VertexPtr lhs = binary_vertex->lhs();
-      VertexPtr rhs = binary_vertex->rhs();
-
-      if (is_same_vars(from_node, lhs)) {
-        to_type = tinf::get_type(rhs);
-      } else if (is_same_vars(from_node, rhs)) {
-        to_type = tinf::get_type(lhs);
-      }
-    } else {
-      to_type = tinf::get_type(expr_vertex);
-    }
-  } else {
-    if (const auto *var_node = dynamic_cast<const tinf::VarNode *>(to_node)) {
-      if (var_node->is_argument_of_function()) {
-        return different_types ? 1 : (e_default_priority + 1);
-      }
-    } else if (dynamic_cast<const tinf::TypeNode *>(to_node)) {
-      return different_types ? 2 : (e_default_priority + 2);
+VarPtr RestrictionStacktraceFinder::get_var_id_from_node(const tinf::Node *node) {
+  if (const auto *as_var_node = dynamic_cast<const tinf::VarNode *>(node)) {
+    return as_var_node->var_;
+  }
+  if (const auto *as_expr_node = dynamic_cast<const tinf::ExprNode *>(node)) {
+    if (as_expr_node->get_expr()->type() == op_var) {
+      return as_expr_node->get_expr().as<op_var>()->var_id;
     }
   }
+  return {};
+}
 
-  if (to_type->ptype() == tp_array && to_type->lookup_at(Key::any_key()) == nullptr) {
-    return different_types ? 3 : (e_default_priority + 3);
+// returns, how important the 'to' node is
+// if all types are equal, sorting will be done by this importance
+// for example, when we are searching for why $a is float, and we have { $a = 4.5; $a = $v; } and $v is float,
+// then $v is a more important reason than 4.5, as we want to see, why $v also occurred float, not just stop at 4.5
+// so, a variable is more important than a constant, a func call is more important that assigning an array, and other heuristics
+int RestrictionStacktraceFinder::get_importance_of_reason(const tinf::Node *from, const tinf::Node *to) {
+  if (dynamic_cast<const tinf::TypeNode *>(to)) {
+    return 0;
   }
-
-  if (!is_less_or_equal_type(to_type, expected, edge->from_at)) {
+  if (dynamic_cast<const tinf::VarNode *>(to)) {
     return 0;
   }
 
-  return e_default_priority;
-}
-
-bool RestrictionStacktraceFinder::ComparatorByEdgePriorityRelativeToExpectedType::is_priority_less_than_default(tinf::Node *cur_node) const {
-  tinf::Edge edge_with_cur_node = {
-    .from    = nullptr,
-    .to      = cur_node,
-    .from_at = nullptr
-  };
-
-  return get_priority(&edge_with_cur_node) < ComparatorByEdgePriorityRelativeToExpectedType::e_default_priority;
-}
-
-RestrictionStacktraceFinder::row RestrictionStacktraceFinder::parse_description(string const &description) {
-  // all descriptions consist of the three columns delimited by two spaces (a column should never contain two consecutive spaces);
-  // this method splits a description into these columns (it's needed for the column width calculation)
-  std::smatch matched;
-  if (std::regex_match(description, matched, std::regex("(.+?)\\s\\s(.*?)(\\s\\s(.*))?"))) {
-    return row(matched[1], matched[2], matched[4]);
+  VertexPtr expr = GenTree::get_actual_value(dynamic_cast<const tinf::ExprNode *>(to)->get_expr());
+  switch (expr->type()) {
+    case op_var:
+      return get_var_id_from_node(to) == get_var_id_from_node(from) ? 4 : 5;
+    case op_func_call:
+      return expr->get_string() == "make_clone" ? 4 : 3;
+    case op_common_type_rule:
+      return 0;
+    case op_array:
+      return 2;
+    case op_float_const:
+    case op_int_const:
+    case op_string:
+    case op_true:
+    case op_false:
+    case op_null:
+      return 0;
+    default:
+      return 1;
   }
-  return row("", "", description);
 }
 
-std::string RestrictionStacktraceFinder::get_stacktrace_text() {
-  // making the stack trace pretty:
-  // 1) dynamically calculate the description columns width, so the output is aligned
-  // 2) delete the line duplicates that are uninformative
-  vector<row> rows;
-  for (int i = 0; i < stacktrace.size(); ++i) {
-    row cur = parse_description(stacktrace[i]->get_description());
-    row next = (i != int(stacktrace.size() - 1) ? parse_description(stacktrace[i + 1]->get_description()) : row());
-    if (cur.col[0] == "as expression:" && next.col[0] == "as variable:" && cur.col[1] == next.col[1]) {
-      i++;
+// when there are many edges pointing from 'from' to different 'to', these edges are sorted by priority
+// then we continue dfs starting from the highest priority
+// this priority is now well this edge answers the question "how did from->type occur, why is it not expected_type?"
+// for example, if from is mixed and to is mixed, it's the best answer: further we'll have to find out why to is mixed
+int RestrictionStacktraceFinder::get_priority(const tinf::Edge *edge, const TypeData *expected_type) {
+  const TypeData *from_type = edge->from->get_type();
+  const TypeData *to_type = edge->to->get_type();
+
+  int importance = get_importance_of_reason(edge->from, edge->to);
+
+  return are_equal_types(to_type, from_type) ? 300 + importance :
+         !is_less_or_equal_type(to_type, expected_type, edge->from_at) ? 200 + importance :
+         is_less_or_equal_type(to_type, from_type, edge->from_at) ? 100 + importance :
+         importance;
+}
+
+// this is the main function to fill the stacktrace field, it's done recursively
+// on each step, we have all edges pointing from cur_node and sort them by priority
+// then take the highest priority and find stacktrace pointing to it
+bool RestrictionStacktraceFinder::find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type) {
+  static int limit_calls = 1000000;
+  if (--limit_calls <= 0) {
+    return true;
+  }
+
+  std::vector<const tinf::Edge *> ordered_edges;
+  for (const tinf::Edge *e : cur_node->get_next()) {
+    ordered_edges.emplace_back(e);
+  }
+  std::sort(ordered_edges.begin(), ordered_edges.end(), [&](const tinf::Edge *a, const tinf::Edge *b) {
+    return get_priority(a, expected_type) > get_priority(b, expected_type);
+  });
+
+  if (ordered_edges.empty()) {
+    return true;
+  }
+
+  for (const tinf::Edge *e : ordered_edges) {
+    tinf::Node *to = e->to;
+    kphp_assert(e->from == cur_node && e->to != cur_node);
+
+    if (vk::contains(node_path, to)) {
+      continue;
     }
-    rows.push_back(cur);
-  }
-
-  remove_duplicates_from_stacktrace(rows);
-
-  int width[3] = {10, 15, 30};
-  for (auto &row : rows) {
-    width[0] = std::max(width[0], (int)row.col[0].length());
-    width[1] = std::max(width[1], (int)row.col[1].length() - TermStringFormat::get_length_without_symbols(row.col[1]));
-    width[2] = std::max(width[2], (int)row.col[2].length());
-  }
-
-  std::stringstream ss;
-  for (auto &row : rows) {
-    ss << std::setw(width[1] + 3 + TermStringFormat::get_length_without_symbols(row.col[1])) << std::left << row.col[1];
-    ss << std::setw(width[2]) << std::left << row.col[2] << std::endl;
-  }
-  return ss.str();
-}
-
-void RestrictionStacktraceFinder::remove_duplicates_from_stacktrace(vector<row> &rows) const {
-  auto ith_row = [&](int idx) -> row { return (idx < rows.size() ? rows[idx] : row()); };
-
-  // remove the phpdoc with instance types mismatch row; it's expected to start with ->var_name
-  if (vk::string_view{rows[0].col[1]}.starts_with("->")) {
-    auto as_expr_0 = dynamic_cast<tinf::ExprNode *>(this->stacktrace[0]);
-    if (as_expr_0 && as_expr_0->get_expr()->type() == op_instance_prop) {
-      rows.erase(rows.begin());
+    if (node_path.size() == max_cnt_nodes_in_path) {
+      return false;
     }
-  }
 
-  // duplicates removal for the statically inherited function calls (2 cases)
-  // 1) erroneous argument duplication:
-  //  $x                                        at .../VK/A.php: VK\D :: demo (inherited from VK\A) : 20
-  //  0-th arg ($x)                             at static function: VK\D :: demo (inherited from VK\A)
-  //  $x                                        at .../VK/A.php: VK\D :: demo : 20
-  //  0-th arg ($x)                             at static function: VK\D :: demo
-  //
-  // 2) return duplication:
-  //  VK\B :: calc(...) (inherited from VK\A)   at .../dev.php: src_dev3b832f7b\u : 12
-  //  return ...                                at static function: VK\B :: calc
-  //  VK\B :: calc(...) (inherited from VK\A)   at .../VK/A.php: VK\B :: calc : -1
-  //  return ...                                at static function: VK\B :: calc (inherited from VK\A)
-  for (int i = 0; i < rows.size(); ++i) {
-    if (ith_row(i).col[0] == "as expression:" && ith_row(i + 1).col[0] == "as argument:" &&
-        ith_row(i + 2).col[0] == "as expression:" && ith_row(i + 3).col[0] == "as argument:" &&
-        ith_row(i).col[1] == ith_row(i + 2).col[1] && ith_row(i + 1).col[1] == ith_row(i + 3).col[1] &&
-        vk::string_view(ith_row(i + 1).col[2]).starts_with("at static function: ") &&
-        vk::string_view(ith_row(i + 1).col[2]).starts_with(ith_row(i + 3).col[2]) &&
-        ith_row(i + 1).col[2].substr(ith_row(i + 3).col[2].length(), 17) == " (inherited from ") {
-      rows.erase(rows.begin() + i + 2, rows.begin() + i + 4);
-    } else if (ith_row(i + 1).col[1] == "return ..." && ith_row(i + 3).col[1] == "return ..." &&
-               vk::string_view(ith_row(i + 3).col[2]).starts_with("at static function: ") &&
-               vk::string_view(ith_row(i + 3).col[2]).starts_with(ith_row(i + 1).col[2]) &&
-               ith_row(i + 3).col[2].substr(ith_row(i + 1).col[2].length(), 17) == " (inherited from ") {
-      std::smatch matched;
-      std::string sanitized_col_i_1 = std::regex_replace(ith_row(i).col[1], std::regex(R"([\\\(\)\[\]])"), R"(\$&)");
-      auto temp_string = ith_row(i + 2).col[1];
-      if (std::regex_match(temp_string, matched, std::regex(sanitized_col_i_1 + " (\\(inherited from .+?\\))"))) {
-        rows[i].col[1] += " " + matched[1].str();
-        rows.erase(rows.begin() + i + 2, rows.begin() + i + 4);
+    node_path.push_back(e->to);
+
+
+    const TypeData *next_expected_type{nullptr};
+    if (e->from_at) { // inside arrays/tuples
+      next_expected_type = expected_type->const_read_at(*e->from_at);
+    } else if (auto *as_expr_node = dynamic_cast<tinf::ExprNode *>(e->from)) {
+      if (as_expr_node->get_expr()->type() == op_index) { // outside arrays
+        next_expected_type = TypeData::create_array_of(expected_type); // hard to explain, comment to see a failing test
       }
     }
+    if (find_call_trace_with_error(to, next_expected_type ?: expected_type)) {
+      node_path.pop_back();
+      stacktrace.push_back(to);
+      return true;
+    }
+
+    node_path.pop_back();
   }
+
+  return false;
+}
+
+// this functions converts a filled stacktrace into a human readable colorful format
+// if you wish to debug raw nodes in stacktrace, without skipping and prettifying, uncomment lines below
+std::string RestrictionStacktraceFinder::get_stacktrace_text() {
+  std::string desc;
+
+  // to see full development stacktrace, uncomment these lines
+//  for (tinf::Node *node : stacktrace)
+//    desc += node->get_description() + "\n";
+//  return desc;
+
+  // here we make stacktrace pretty and human-readable:
+  // don't use internal get_description(), join some combinations of ExprNode+VarNode, skip some technical nodes, etc
+
+  const tinf::Node *prev{nullptr};
+
+  auto append_current_php_line_if_changed = [&prev, &desc](const tinf::Node *cur_node) {
+    const Location &loc = cur_node->get_location();
+    if (loc.line <= 0) {
+      return;
+    }
+    if (prev && prev->get_location().function == loc.function && prev->get_location().line == loc.line) {
+      return;
+    }
+
+    std::string comment = static_cast<std::string>(vk::trim(loc.file->get_line(loc.line)));
+    desc += "\n   ";
+    desc += loc.as_human_readable();
+    desc += "\n";
+    desc += TermStringFormat::paint("// " + comment, TermStringFormat::yellow);
+    desc += "\n";
+  };
+
+  for (const tinf::Node *node : stacktrace) {
+
+    if (const auto *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
+      if (var_node->is_argument_of_function()) {
+        FunctionPtr function = var_node->var_->holder_func;
+        auto param = function->get_params()[var_node->param_i].try_as<op_func_param>();
+        append_current_php_line_if_changed(var_node);
+        desc += "argument " + var_node->var_->get_human_readable_name();
+        desc += param && param->type_hint && !tinf::convert_type_rule_to_TypeData(VertexAdaptor<op_common_type_rule>::create(param->type_hint))->has_tp_any_inside() ? " declared as " : " inferred as ";
+        desc += tinf::get_type(function, var_node->param_i)->as_human_readable();
+        desc += "\n";
+      } else if (var_node->is_return_value_from_function()) {
+        FunctionPtr function = var_node->function_;
+        append_current_php_line_if_changed(var_node);
+        desc += function->get_human_readable_name();
+        desc += function->return_typehint && !tinf::convert_type_rule_to_TypeData(VertexAdaptor<op_common_type_rule>::create(function->return_typehint))->has_tp_any_inside() ? " declared that returns " : " inferred that returns ";
+        desc += tinf::get_type(function, -1)->as_human_readable();
+        desc += "\n";
+      } else {
+        continue;
+      }
+
+    } else if (const auto *expr_node = dynamic_cast<const tinf::ExprNode *>(node)) {
+      VertexPtr expr = expr_node->get_expr();
+      bool skip =
+        (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->name == "make_clone") ||
+        (expr->type() == op_common_type_rule) ||
+        (expr->type() == op_return && expr.as<op_return>()->has_expr()) ||
+        (expr->type() == op_var && expr.as<op_var>()->extra_type == OperationExtra::op_ex_var_const);
+      if (skip) {
+        continue;
+      }
+
+      append_current_php_line_if_changed(expr_node);
+      desc += expr_node->get_expr_human_readable();
+      desc += expr->type() == op_func_call ? " returns " : " is ";
+      desc += expr_node->get_type()->as_human_readable();
+      desc += "\n";
+
+      bool stop =
+        (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->is_constructor());
+      if (stop) {
+        break;
+      }
+
+    } else if (const auto *type_node = dynamic_cast<const tinf::TypeNode *>(node)) {
+      const auto *prev_as_var = dynamic_cast<const tinf::VarNode *>(prev);
+      bool skip = prev_as_var && prev_as_var->type_restriction && are_equal_types(prev_as_var->type_restriction, type_node->get_type());
+      if (skip) { // then a line above is "... declared that returns T", see create_type_assign_with_restriction()
+        continue;
+      }
+
+      append_current_php_line_if_changed(type_node);
+      desc += "implicitly casted to " + type_node->get_type()->as_human_readable();
+      desc += "\n";
+      // if TypeNode is in stacktrace, it's the last one
+    }
+
+    prev = node;
+  }
+
+  return desc;
 }

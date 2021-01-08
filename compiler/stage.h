@@ -36,11 +36,7 @@ Location *get_location_ptr();
 const Location &get_location();
 void set_location(const Location &new_location);
 
-void print(FILE *f);
-void print_file(FILE *f);
-void print_function(FILE *f);
-void print_line(FILE *f);
-void print_comment(FILE *f);
+void print_current_location_on_error(FILE *f);
 
 void set_name(std::string &&name);
 const std::string &get_name();
@@ -52,9 +48,7 @@ SrcFilePtr get_file();
 FunctionPtr get_function();
 int get_line();
 
-const std::string &get_file_name();
 const std::string &get_function_name();
-std::string to_str(const Location &new_location);
 bool should_be_colored(FILE *f);
 
 extern int warnings_count;

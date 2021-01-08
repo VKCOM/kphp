@@ -41,9 +41,7 @@ public:
   }
 
   std::string get_description() final;
-  std::string get_var_name();
-  std::string get_function_name();
-  std::string get_var_as_argument_name();
+  const Location &get_location() const final;
 
   bool is_variable() const {
     return param_i == e_variable;

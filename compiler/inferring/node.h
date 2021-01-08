@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
 class TypeData;
@@ -65,6 +66,7 @@ public:
 
   virtual void recalc(TypeInferer *inferer) = 0;
   virtual std::string get_description() = 0;
+  virtual const Location &get_location() const = 0;
 };
 
 } // namespace tinf

@@ -4,7 +4,6 @@
 
 #include "compiler/inferring/type-data.h"
 
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -60,7 +59,7 @@ void TypeData::init_static() {
   }
 
   for (int tp = 0; tp < ptype_size; tp++) {
-    array_types[tp] = create_type_data(primitive_types[tp]);
+    array_types[tp] = create_array_of(primitive_types[tp]);
   }
 }
 
@@ -126,6 +125,11 @@ TypeData *TypeData::at(const Key &key) const {
   return key.is_any_key() ? anykey_value : subkeys_values.find(key);  // both could be nullptr
 }
 
+std::string TypeData::as_human_readable(bool colored) const {
+  std::string type_str = type_out(this, gen_out_style::txt);
+  return colored ? TermStringFormat::paint(type_str, TermStringFormat::green) : type_str;
+}
+
 TypeData *TypeData::at_force(const Key &key) {
   kphp_assert_msg (structured(), "bug in TypeData");
 
@@ -163,10 +167,6 @@ void TypeData::set_ptype(PrimitiveType new_ptype) {
     }
     on_changed();
   }
-}
-
-const std::forward_list<ClassPtr> &TypeData::class_types() const {
-  return class_type_;
 }
 
 ClassPtr TypeData::class_type() const {
@@ -279,20 +279,8 @@ void TypeData::set_flags(TypeData::flags_t new_flags) {
   }
 }
 
-bool TypeData::use_or_null() const {
-  return !::can_store_null(ptype()) && or_null_flag();
-}
-
-bool TypeData::use_optional() const {
-  return use_or_false() || use_or_null();
-}
-
 bool TypeData::can_store_null() const {
   return ::can_store_null(ptype()) || or_null_flag();
-}
-
-bool TypeData::use_or_false() const {
-  return !::can_store_false(ptype()) && or_false_flag();
 }
 
 bool TypeData::can_store_false() const {
@@ -715,11 +703,6 @@ std::string type_out(const TypeData *type, gen_out_style style) {
   return res;
 }
 
-std::string colored_type_out(const TypeData *type) {
-  std::string type_str = type_out(type, gen_out_style::txt);
-  return TermStringFormat::paint(type_str, TermStringFormat::green);
-}
-
 int type_strlen(const TypeData *type) {
   PrimitiveType tp = type->ptype();
   switch (tp) {
@@ -803,7 +786,7 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
     return type1->class_types() == type2->class_types();
   }
 
-  if (tp == tp_array || tp == tp_future || tp == tp_future_queue) {
+  if (vk::any_of_equal(tp, tp_array, tp_future, tp_future_queue)) {
     return are_equal_types(type1->lookup_at(Key::any_key()), type2->lookup_at(Key::any_key()));
   }
 
@@ -830,6 +813,47 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
 // check that given <= expected, to if expected is a phpdoc restriction, check that actual inferred type matches
 // note that false < bool
 bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at) {
+  // optimization: for obvious cases (like primitive=primitive or primitive<mixed, which is about 80% of calls)
+  // immediately return true, without extra memory allocations and lca checks
+  bool eq_flags = given->use_or_false() == expected->use_or_false() && given->use_or_null() == expected->use_or_null();
+  if (eq_flags && !from_at) {
+    PrimitiveType tp = given->ptype();
+    switch (expected->ptype()) {
+      case tp_any:
+        if (expected->get_real_ptype() == tp_any) {
+          return true;
+        }
+        break;
+      case tp_string:
+      case tp_int:
+      case tp_float:
+      case tp_bool:
+      case tp_void:
+        if (tp == expected->ptype()) {
+          return true;
+        }
+        break;
+      case tp_array:
+        if (tp == tp_array && expected->lookup_at(Key::any_key())->get_real_ptype() == tp_any) {
+          return true;
+        }
+        break;
+      case tp_mixed:
+        if (vk::any_of_equal(tp, tp_bool, tp_int, tp_float, tp_string, tp_mixed)) {
+          return true;
+        }
+        break;
+      case tp_Class:
+        if (given->class_types() == expected->class_types()) {
+          return true;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  // for non-obvious cases like arrays, tuples or varying flags, we do a heavy check, that takes more time
   std::unique_ptr<TypeData> type_of_to_node(expected->clone());
 
   if (from_at && !from_at->empty()) {
@@ -873,7 +897,7 @@ const TypeData *TypeData::create_for_class(ClassPtr klass) {
   return res;
 }
 
-TypeData *TypeData::create_type_data(const TypeData *element_type) {
+TypeData *TypeData::create_array_of(const TypeData *element_type) {
   auto *res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
   return res;

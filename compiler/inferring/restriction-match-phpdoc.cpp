@@ -29,14 +29,13 @@ RestrictionMatchPhpdoc::RestrictionMatchPhpdoc(tinf::VarNode *restricted_node, t
 }
 
 bool RestrictionMatchPhpdoc::is_restriction_broken() {
-  // todo maybe try are_equal_types first? (if faster) (mind convert_Unknown_to_Any)
   return !is_less_or_equal_type(actual_node->get_type(), expected_type);
 }
 
 std::string RestrictionMatchPhpdoc::get_description() {
   std::string desc;
-  std::string actual_str = colored_type_out(this->actual_node->get_type());
-  std::string expected_str = colored_type_out(this->expected_type);
+  std::string actual_str = this->actual_node->get_type()->as_human_readable();
+  std::string expected_str = this->expected_type->as_human_readable();
 
   switch (detect_usage_context()) {
 

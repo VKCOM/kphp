@@ -6,7 +6,7 @@ KPHP_SHOW_ALL_TYPE_ERRORS=1
 /but a callback was expected to return boolean/
 /return int from lambda/
 /but a callback was expected to return boolean/
-/Expression as expression:  return ...  at function: anonymous\(...\) is not allowed to be void/
+/anonymous\(...\) should return something, but it is void/
 <?php
 
 /** @kphp-required */

@@ -21,7 +21,7 @@ void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, con
   ClassPtr mix_class = new_type_->get_first_class_type_inside();
   ClassPtr mix_class2 = because_of_type->get_first_class_type_inside();
   std::string desc1 = node_->get_description();
-  std::string desc2 = because_of_rvalue.node ? because_of_rvalue.node->get_description() : "unknown";
+  std::string desc2 = because_of_rvalue.node ? because_of_rvalue.node->get_description() : because_of_rvalue.type->as_human_readable();
 
   if (mix_class && mix_class2 && mix_class != mix_class2 && !vk::any_of_equal(ptype_before_error, tp_tuple, tp_shape)) {
     kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n",

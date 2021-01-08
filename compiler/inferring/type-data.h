@@ -4,16 +4,9 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cassert>
-#include <cstdio>
-#include <cstring>
 #include <forward_list>
 #include <map>
 #include <string>
-
-#include "common/algorithms/find.h"
-#include "common/wrappers/fmt_format.h"
 
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/data_ptr.h"
@@ -23,9 +16,6 @@
 #include "compiler/stage.h"
 #include "compiler/threading/tls.h"
 
-/*** TypeData ***/
-// read/write/lookup at
-// check if something changed since last
 
 class TypeData {
 private:
@@ -101,12 +91,14 @@ public:
   TypeData(const TypeData &from);
   ~TypeData();
 
+  std::string as_human_readable(bool colored = true) const;
+
   PrimitiveType ptype() const { return static_cast<PrimitiveType>(ptype_); }
   PrimitiveType get_real_ptype() const;
   flags_t flags() const;
   void set_ptype(PrimitiveType new_ptype);
 
-  const std::forward_list<ClassPtr> &class_types() const;
+  const std::forward_list<ClassPtr> &class_types() const { return class_type_; }
   ClassPtr class_type() const;
   void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
   bool has_class_type_inside() const;
@@ -118,15 +110,15 @@ public:
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }
-  bool use_or_false() const;
+  bool use_or_false() const { return or_false_flag() && !::can_store_false(ptype_); }
   bool can_store_false() const;
 
   bool or_null_flag() const { return get_flag<or_null_flag_e>(); }
   void set_or_null_flag() { set_flag<or_null_flag_e>(); }
-  bool use_or_null() const;
+  bool use_or_null() const { return or_null_flag() && !::can_store_null(ptype_); }
   bool can_store_null() const;
 
-  bool use_optional() const;
+  bool use_optional() const { return use_or_false() || use_or_null(); }
 
   void set_write_flag() { set_flag<write_flag_e>(); }
 
@@ -176,7 +168,7 @@ public:
     }
     return res;
   }
-  static TypeData *create_type_data(const TypeData *element_type);
+  static TypeData *create_array_of(const TypeData *element_type);
   static TypeData *create_type_data(const std::vector<const TypeData *> &subkeys_values);
   static TypeData *create_type_data(const std::map<std::string, const TypeData *> &subkeys_values);
   //FIXME:??
@@ -186,7 +178,6 @@ public:
 };
 
 std::string type_out(const TypeData *type, gen_out_style style = gen_out_style::cpp);
-std::string colored_type_out(const TypeData *type);
 int type_strlen(const TypeData *type);
 bool can_be_same_type(const TypeData *type1, const TypeData *type2);
 bool are_equal_types(const TypeData *type1, const TypeData *type2);

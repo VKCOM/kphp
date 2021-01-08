@@ -13,8 +13,11 @@ namespace tinf {
 class ExprNode : public Node {
 private:
   VertexPtr expr_;
+
+  static std::string convert_expr_to_human_readable(VertexPtr expr);
+
 public:
-  explicit ExprNode(VertexPtr expr = VertexPtr()) :
+  explicit ExprNode(VertexPtr expr) :
     expr_(expr) {
   }
 
@@ -24,9 +27,9 @@ public:
     return expr_;
   }
 
-  std::string get_description();
-  std::string get_location_text();
-  const Location &get_location();
+  std::string get_description() final;
+  std::string get_expr_human_readable() const;
+  const Location &get_location() const final;
 };
 
 } // namespace tinf

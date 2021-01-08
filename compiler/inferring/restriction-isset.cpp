@@ -4,8 +4,6 @@
 
 #include "compiler/inferring/restriction-isset.h"
 
-#include <sstream>
-
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
@@ -25,22 +23,17 @@ std::string RestrictionIsset::get_description() {
 }
 
 
-static string remove_after_tab(const string &s) {
-  return s.substr(0, s.find('\t'));
-}
+void RestrictionIsset::find_dangerous_isset_warning(vector<tinf::Node *> *bt, tinf::Node *node, const string &msg __attribute__((unused))) {
+  desc = "isset, !==, ===, is_array or similar function result may differ from PHP\n";
+  desc += " Probably, this happened because " + node->get_description();
+  desc += " can't be null in KPHP, while it can be in PHP\n Chain of assignments:\n";
 
-void RestrictionIsset::find_dangerous_isset_warning(const vector<tinf::Node *> &bt, tinf::Node *node, const string &msg __attribute__((unused))) {
-  std::stringstream ss;
-  ss << "isset, !==, ===, is_array or similar function result may differ from PHP\n" <<
-     " Probably, this happened because " << remove_after_tab(node->get_description()) << " of type " <<
-     type_out(node->get_type()) << " can't be null in KPHP, while it can be in PHP\n" <<
-     " Chain of assignments:\n";
-
-  for (auto const n : bt) {
-    ss << "  " << n->get_description() << "\n";
+  bt->emplace_back(node);
+  for (auto const n : *bt) {
+    desc += "  ";
+    desc += n->get_description();
+    desc += "\n";
   }
-  ss << "  " << node->get_description() << "\n";
-  desc = ss.str();
 }
 
 bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
@@ -101,14 +94,14 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
     VertexPtr v = expr_node->get_expr();
     if (v->type() == op_index && !vk::any_of_equal(tinf::get_type(v.as<op_index>()->array())->ptype(), tp_tuple, tp_shape) && isset_is_dangerous(isset_flags, node->get_type())) {
       node->isset_was = -1;
-      find_dangerous_isset_warning(*bt, node, "[index]");
+      find_dangerous_isset_warning(bt, node, "[index]");
       return true;
     }
     if (auto var = v.try_as<op_var>()) {
       VarPtr from_var = var->var_id;
       if (from_var && from_var->get_uninited_flag() && isset_is_dangerous(isset_flags, node->get_type())) {
         node->isset_was = -1;
-        find_dangerous_isset_warning(*bt, node, "[uninited varialbe]");
+        find_dangerous_isset_warning(bt, node, "[uninited varialbe]");
         return true;
       }
 

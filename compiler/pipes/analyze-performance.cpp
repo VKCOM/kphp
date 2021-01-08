@@ -271,7 +271,7 @@ void AnalyzePerformance::check_implicit_array_conversion(VertexPtr expr, const T
   const auto *from = tinf::get_type(expr);
   if (is_implicit_array_conversion(from, to)) {
     trigger_inspection(PerformanceInspections::implicit_array_cast,
-                       get_description_for_help(expr) + " is implicitly converted from " + colored_type_out(from) + " to " + colored_type_out(to));
+                       get_description_for_help(expr) + " is implicitly converted from " + from->as_human_readable() + " to " + to->as_human_readable());
   }
 }
 

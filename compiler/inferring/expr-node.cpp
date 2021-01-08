@@ -4,9 +4,6 @@
 
 #include "compiler/inferring/expr-node.h"
 
-#include <regex>
-#include <sstream>
-
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
@@ -673,41 +670,27 @@ void tinf::ExprNode::recalc(tinf::TypeInferer *inferer) {
   ExprNodeRecalc(this, inferer).run();
 }
 
-static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
-  auto print_type = [&](VertexPtr type_out_of) -> string {
-    return with_type_hint ? " : " + colored_type_out(tinf::get_type(type_out_of)) : "";
-  };
-
+std::string tinf::ExprNode::convert_expr_to_human_readable(VertexPtr expr) {
   switch (expr->type()) {
     case op_var:
-      // the output should be identical to e_variable case in tinf::VarNode::get_description
-      // so we can detect and remove the duplicates in the stack trace.
-      return "$" + expr.as<op_var>()->var_id->name + print_type(expr);
+      return expr.as<op_var>()->var_id->get_human_readable_name();
 
     case op_func_call: {
       auto func = expr.as<op_func_call>()->func_id;
-      if (func->is_constructor()) {
-        return "new " + func->class_id->name + "()";
-      }
-      string function_name = func->get_human_readable_name();
-      std::smatch matched;
-      if (std::regex_match(function_name, matched, std::regex("(.+)( \\(inherited from .+?\\))"))) {
-        return matched[1].str() + "(...)" + matched[2].str() + print_type(expr);
-      }
-      return function_name + "(...)" + print_type(expr);
+      return func->is_constructor() ? "new " + func->class_id->name : func->get_human_readable_name();
     }
 
     case op_instance_prop:
-      return "->" + expr->get_string() + print_type(expr);
+      return convert_expr_to_human_readable(expr.as<op_instance_prop>()->instance()) + "->" + expr->get_string();
 
     case op_index: {
       string suff;
-      auto orig_expr = expr;
-      while (expr->type() == op_index) {
+      auto outer_expr = expr;
+      while (outer_expr->type() == op_index) {
         suff += "[.]";
-        expr = expr.as<op_index>()->array();
+        outer_expr = outer_expr.as<op_index>()->array();
       }
-      return get_expr_description(expr, false) + suff + print_type(orig_expr);
+      return convert_expr_to_human_readable(outer_expr) + suff;
     }
 
     case op_int_const:
@@ -721,16 +704,14 @@ static string get_expr_description(VertexPtr expr, bool with_type_hint = true) {
   }
 }
 
-string tinf::ExprNode::get_description() {
-  std::stringstream ss;
-  ss << "as expression:" << "  " << get_expr_description(expr_) << "  " << "at " + get_location_text();
-  return ss.str();
+std::string tinf::ExprNode::get_expr_human_readable() const {
+  return convert_expr_to_human_readable(expr_);
 }
 
-string tinf::ExprNode::get_location_text() {
-  return stage::to_str(expr_->get_location());
+std::string tinf::ExprNode::get_description() {
+  return "ExprNode " + get_expr_human_readable() + " at " + get_location().as_human_readable() + " : " + tinf::get_type(expr_)->as_human_readable();
 }
 
-const Location &tinf::ExprNode::get_location() {
-  return expr_->get_location();
+const Location &tinf::ExprNode::get_location() const {
+  return expr_->location;
 }
