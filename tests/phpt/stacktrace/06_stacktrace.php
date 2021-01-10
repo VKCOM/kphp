@@ -1,8 +1,8 @@
 @kphp_should_fail
 /pass float to argument \$x of f/
 /\$arr\[\.\]\[\.\] is float/
-/\$arr\[\.\] is array< float >/
-/\$arr is array< array< float > >/
+/\$arr\[\.\] is float\[\]/
+/\$arr is float\[\]\[\]/
 /3.4 is float/
 <?php
 

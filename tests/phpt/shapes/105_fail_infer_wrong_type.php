@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass shape<x:int, y:int> to argument \$sh of process/
+/pass shape\(x:int, y:int\) to argument \$sh of process/
 <?php
 require_once 'kphp_tester_include.php';
 

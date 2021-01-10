@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass boolean to argument \$x of test/
+/pass bool to argument \$x of test/
 <?php
 
 /**

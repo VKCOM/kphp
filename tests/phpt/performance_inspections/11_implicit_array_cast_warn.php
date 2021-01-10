@@ -1,14 +1,14 @@
 @kphp_should_warn
-/variable \$a1 is implicitly converted from array< int > to array< mixed >/
-/variable \$b1 is implicitly converted from array< string > to array< mixed >/
-/variable \$a2 is implicitly converted from array< int > to mixed/
-/variable \$b2 is implicitly converted from array< string > to mixed/
-/variable \$a3 is implicitly converted from array< int > to mixed/
-/variable \$b3 is implicitly converted from array< string > to mixed/
-/variable \$a4 is implicitly converted from array< int > to mixed/
-/variable \$b4 is implicitly converted from array< string > to mixed/
-/variable A::\$b is implicitly converted from array< int > to array< mixed >/
-/expresion <...> is implicitly converted from tuple<int , array< int >> to tuple<float , array< mixed >>/
+/variable \$a1 is implicitly converted from int\[\] to mixed\[\]/
+/variable \$b1 is implicitly converted from string\[\] to mixed\[\]/
+/variable \$a2 is implicitly converted from int\[\] to mixed/
+/variable \$b2 is implicitly converted from string\[\] to mixed/
+/variable \$a3 is implicitly converted from int\[\] to mixed/
+/variable \$b3 is implicitly converted from string\[\] to mixed/
+/variable \$a4 is implicitly converted from int\[\] to mixed/
+/variable \$b4 is implicitly converted from string\[\] to mixed/
+/variable A::\$b is implicitly converted from int\[\] to mixed\[\]/
+/expresion <...> is implicitly converted from tuple\(int, int\[\]\) to tuple\(float, mixed\[\]\)/
 <?php
 
 class A {

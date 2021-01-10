@@ -1,11 +1,11 @@
 @kphp_should_fail
-/pass array< int > to argument \$x of acInt/
+/pass int\[\] to argument \$x of acInt/
 /\/\/ acInt\(\$a\);/
-/\$a is array< int >/
+/\$a is int\[\]/
 /\/\/ \$a = \$f;/
-/\$f is array< int >/
+/\$f is int\[\]/
 /\/\/ \$f = \[1\];/
-/array is array< int >/
+/array is int\[\]/
 /1 is int/
 <?php
 function acInt(int $x) {}

@@ -1,6 +1,6 @@
 @kphp_should_fail
-/tuple<int , int> is not comparable and cannot be sorted/
-/shape<x:int> is not comparable and cannot be sorted/
+/tuple\(int, int\) is not comparable and cannot be sorted/
+/shape\(x:int\) is not comparable and cannot be sorted/
 /C is not comparable and cannot be sorted/
 <?php
 require_once 'kphp_tester_include.php';
