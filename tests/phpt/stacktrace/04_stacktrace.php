@@ -1,17 +1,17 @@
 @kphp_should_fail
-/assign tuple<array< int > , mixed , A> to A::\$t/
-/but it's declared as @var tuple<array< int > , int , A>/
-/getTuple returns tuple<array< int > , mixed , A>/
-/getTuple inferred that returns tuple<array< int > , mixed , A>/
-/tuple<> is tuple<array< int > , mixed , A>/
+/assign tuple\(int\[\], mixed, A\) to A::\$t/
+/but it's declared as @var tuple\(int\[\], int, A\)/
+/getTuple returns tuple\(int\[\], mixed, A\)/
+/getTuple inferred that returns tuple\(int\[\], mixed, A\)/
+/tuple<> is tuple\(int\[\], mixed, A\)/
 /\$s is mixed/
 /\$arr\[\.\] is mixed/
-/\$arr is array< mixed >/
-/argument \$arr inferred as array< mixed >/
-/getArr returns array< mixed >/
-/getArr inferred that returns array< mixed >/
-/\$arr is array< mixed >/
-/array is array< mixed >/
+/\$arr is mixed\[\]/
+/argument \$arr inferred as mixed\[\]/
+/getArr returns mixed\[\]/
+/getArr inferred that returns mixed\[\]/
+/\$arr is mixed\[\]/
+/array is mixed\[\]/
 /\$sample is string/
 /"str" is string/
 <?php

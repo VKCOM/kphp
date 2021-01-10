@@ -79,8 +79,81 @@ TypeData::~TypeData() {
 }
 
 std::string TypeData::as_human_readable(bool colored) const {
-  std::string type_str = type_out(this, gen_out_style::txt);
-  return colored ? TermStringFormat::paint(type_str, TermStringFormat::green) : type_str;
+  std::string res;
+
+  switch (ptype_) {
+    case tp_array: {
+      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+      if (inner->get_real_ptype() == tp_any) {
+        res = "array";
+      } else {
+        std::string inner_str = inner->as_human_readable(false);
+        res = inner->use_optional() ? "(" + inner_str + ")" + "[]" : inner_str + "[]";
+      }
+      break;
+    }
+    case tp_tuple: {
+      res = "tuple(";
+      for (int tuple_i = 0; tuple_i < get_tuple_max_index(); ++tuple_i) {
+        if (tuple_i > 0) {
+          res += ", ";
+        }
+        res += lookup_at(Key::int_key(tuple_i))->as_human_readable(false);
+      }
+      res += ")";
+      break;
+    }
+    case tp_shape: {
+      std::vector<SubkeyItem> items{lookup_begin(), lookup_end()};
+      std::reverse(items.begin(), items.end());
+      res = "shape(" + vk::join(items, ", ", [](const SubkeyItem &p) { return p.first.to_string() + ":" + p.second->as_human_readable(false); });
+      if (shape_has_varg_flag()) {
+        res += ", ...";
+      }
+      res += ")";
+      break;
+    }
+    case tp_future: {
+      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+      res = "future<" + inner->as_human_readable(false) + ">";
+      break;
+    }
+    case tp_future_queue: {
+      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+      res = "future_queue<" + inner->as_human_readable(false) + ">";
+      break;
+    }
+    case tp_Class: {
+      res = class_type()->name;
+      break;
+    }
+    case tp_any: {
+      if (or_null_flag() && !or_false_flag()) {
+        res = "null";
+      } else if (or_false_flag() && !or_null_flag()) {
+        res += "false";
+      } else if (or_false_flag() && or_null_flag()) {
+        res += "false|null";
+      } else {
+        res = "any";
+      }
+      break;
+    }
+    default:
+      res = ptype_name(ptype_);
+  }
+
+  if (ptype_ != tp_any) {
+    if (use_or_null() && !use_or_false()) {
+      res = "?" + res;
+    } else if (use_or_false() && !use_or_null()) {
+      res += "|false";
+    } else if (use_or_false() && use_or_null()) {
+      res += "|false|null";
+    }
+  }
+
+  return colored ? TermStringFormat::paint_green(res) : res;
 }
 
 TypeData *TypeData::at_force(const Key &key) {
@@ -452,9 +525,6 @@ inline void get_txt_style_type(const TypeData *type, std::string &res) {
   switch (tp) {
     case tp_Class:
       res += vk::join(type->class_types(), ", ", std::mem_fn(&ClassData::name));
-      break;
-    case tp_bool:
-      res += "boolean";
       break;
     default :
       res += ptype_name(tp);

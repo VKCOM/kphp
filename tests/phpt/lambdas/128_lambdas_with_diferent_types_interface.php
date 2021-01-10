@@ -2,8 +2,8 @@
 KPHP_SHOW_ALL_TYPE_ERRORS=1
 /return int from anonymous\(...\)/
 /but it's declared as @return void/
-/return array< float > from anonymous\(...\)/
-/but it's declared as @return array< int >/
+/return float\[\] from anonymous\(...\)/
+/but it's declared as @return int\[\]/
 /pass float to argument \$arg0 of L\\intvoid::__invoke/
 /but it's declared as @param int/
 <?php

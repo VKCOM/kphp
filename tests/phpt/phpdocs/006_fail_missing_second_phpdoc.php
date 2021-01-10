@@ -1,5 +1,5 @@
 @kphp_should_fail
-/assign array< string > to \$a/
+/assign string\[\] to \$a/
 <?php
 
 function demo() {

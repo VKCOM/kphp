@@ -1,6 +1,6 @@
 @kphp_should_fail
 /\/\/ acceptIntArr\(\[4, 'str'\]\);/
-/array is array< mixed >/
+/array is mixed\[\]/
 /"str" is string/
 <?php
 

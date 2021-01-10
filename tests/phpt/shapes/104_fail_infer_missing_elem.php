@@ -1,6 +1,6 @@
 @kphp_should_fail
-/pass shape<y:string> to argument \$sh of process/
-/but \$sh declared as @param shape<x:int, y:string|null>/
+/pass shape\(y:string\) to argument \$sh of process/
+/but it's declared as @param shape\(x:int, y:\?string\)/
 <?php
 require_once 'kphp_tester_include.php';
 

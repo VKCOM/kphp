@@ -1,9 +1,9 @@
 @kphp_should_fail
 KPHP_SHOW_ALL_TYPE_ERRORS=1
-/pass boolean to argument \$b of f1/
-/return boolean from f2/
-/pass array< boolean > to argument \$arr of f3/
-/but it's declared as @param array< false >/
+/pass bool to argument \$b of f1/
+/return bool from f2/
+/pass bool\[\] to argument \$arr of f3/
+/but it's declared as @param false\[\]/
 <?php
 
 /**

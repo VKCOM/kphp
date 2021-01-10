@@ -12,6 +12,9 @@ public:
     lexer_init();
     G = new CompilerCore();
     G->register_settings(new CompilerSettings{});
+    OpInfo::init_static();
+    MultiKey::init_static();
+    TypeData::init_static();
   }
 
   void TearDown() final {

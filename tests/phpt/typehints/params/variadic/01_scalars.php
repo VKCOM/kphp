@@ -1,6 +1,6 @@
 @kphp_should_fail
-/pass array< mixed > to argument \$args of test/
-/but it's declared as @param array< int >/
+/pass mixed\[\] to argument \$args of test/
+/but it's declared as @param int\[\]/
 <?php
 function test(int ...$args) {
   var_dump($args);

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass array< string > to argument \$b of f1/
+/pass string\[\] to argument \$b of f1/
 /but it's declared as @param string/
 <?php
 

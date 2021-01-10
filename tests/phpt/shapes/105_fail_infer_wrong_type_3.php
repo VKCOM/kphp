@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass shape<y:int> to argument \$sh of printX/
+/pass shape\(y:int\) to argument \$sh of printX/
 <?php
 require_once 'kphp_tester_include.php';
 

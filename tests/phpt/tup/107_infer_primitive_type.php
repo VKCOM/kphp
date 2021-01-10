@@ -1,5 +1,5 @@
 @kphp_should_fail
-/return tuple<mixed , A> from foo/
+/return tuple\(mixed, A\) from foo/
 <?php
 
 class A{ public $x = 10; }
