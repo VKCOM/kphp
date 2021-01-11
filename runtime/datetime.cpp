@@ -7,6 +7,7 @@
 #include <clocale>
 #include <ctime>
 #include <sys/time.h>
+#include <chrono>
 
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
@@ -815,6 +816,17 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
 
 int64_t f$time() {
   return time(nullptr);
+}
+
+mixed f$hrtime(bool as_number) {
+  auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
+  if (as_number) {
+    return since_epoch.count();
+  }
+  return array<mixed>::create(
+    std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
+    std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
+  );
 }
 
 
