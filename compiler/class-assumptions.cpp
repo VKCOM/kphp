@@ -27,12 +27,12 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/lambda-interface-generator.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -154,6 +154,7 @@ void assumption_add_for_return(FunctionPtr f, const vk::intrusive_ptr<Assumption
   if (a) {
     kphp_error(assumption_merge(a, assumption),
                fmt_format("{}() returns both {} and {}\n", f->get_human_readable_name(), a->as_human_readable(), assumption->as_human_readable()));
+    return;
   }
 
   f->assumption_for_return = assumption;
@@ -179,69 +180,58 @@ void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const vk::intr
 }
 
 /*
- * After we parsed the @param/@return/@var tag contents in the form of the VertexPtr type_expr,
- * try to find a class there.
- * Handles the common cases: A|null, A[], A[][]|false, tuple(A, B)
+ * After we parsed the @param/@return/@var tag contents as TypeHint, try to find a class there.
  */
-vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr) {
+vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const TypeHint *type_hint) {
   // 'A|null' => 'A'
   // 'A[]|false' => 'A[]'
   // 'null|some_class' => 'some_class'
   // 'mixed|mixed[]' => primitive
-  VertexPtr last_expr;
-  int expr_count = 0;
-  std::function<void(VertexPtr)> walk_lca = [&](VertexPtr root) {
-    if (auto lca_rule = root.try_as<op_type_expr_lca>()) {
-      walk_lca(lca_rule->args()[0]);
-      walk_lca(lca_rule->args()[1]);
-    } else if (root->type_help != tp_False && root->type_help != tp_Null) {
-      last_expr = root;
-      expr_count++;
+  if (const auto *as_optional = type_hint->try_as<TypeHintOptional>()) {
+    type_hint = as_optional->inner;
+  }
+  if (const auto *as_pipe = type_hint->try_as<TypeHintPipe>()) {
+    for (const auto *item : as_pipe->items) {
+      if (!item->try_as<TypeHintPrimitive>()) {
+        type_hint = item;
+      }
     }
-  };
-  walk_lca(type_expr);
-  if (expr_count == 1) {
-    type_expr = last_expr;
   }
 
-  switch (type_expr->type_help) {
-    case tp_Class:
-      return AssumInstance::create(type_expr.as<op_type_expr_class>()->class_ptr);
-
-    case tp_array:
-        return AssumArray::create(assumption_create_from_phpdoc(type_expr.as<op_type_expr_type>()->args()[0]));
-
-    case tp_tuple: {
-      decltype(AssumTuple::subkeys_assumptions) sub;
-      for (VertexPtr sub_expr : *type_expr.as<op_type_expr_type>()) {
-        sub.emplace_back(assumption_create_from_phpdoc(sub_expr));
-      }
-      return AssumTuple::create(std::move(sub));
-    }
-
-    case tp_shape: {
-      decltype(AssumShape::subkeys_assumptions) sub;
-      for (VertexPtr sub_expr : type_expr.as<op_type_expr_type>()->args()) {
-        auto double_arrow = sub_expr.as<op_double_arrow>();
-        sub.emplace(double_arrow->lhs()->get_string(), assumption_create_from_phpdoc(double_arrow->rhs()));
-      }
-      return AssumShape::create(std::move(sub));
-    }
-
-    default:
-      if (auto callable = type_expr.try_as<op_type_expr_callable>()) {
-        // typed callable, like callable(int):void — when we see such a phpdoc, we generate an interface based on types
-        // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
-        if (callable->has_params()) {
-          auto callable_interface = LambdaInterfaceGenerator{callable}.generate();
-          return AssumTypedCallable::create(callable_interface);
-        }
-        // just `callable` keywords have sense only as a param type hint
-        // they turn the function into a template one, and each instantiation will have instances as a parameter assumption
-      }
-
-      return AssumNotInstance::create();
+  if (const auto *as_instance = type_hint->try_as<TypeHintInstance>()) {
+    ClassPtr instance = as_instance->resolve();
+    kphp_error(instance, fmt_format("Can't find class {}", as_instance->full_class_name));
+    return instance ? AssumInstance::create(instance) : AssumNotInstance::create();
   }
+  if (const auto *as_array = type_hint->try_as<TypeHintArray>()) {
+    auto sub = assumption_create_from_phpdoc(as_array->inner);
+    return AssumArray::create(assumption_create_from_phpdoc(as_array->inner));
+  }
+  if (const auto *as_tuple = type_hint->try_as<TypeHintTuple>()) {
+    decltype(AssumTuple::subkeys_assumptions) sub;
+    for (const TypeHint *item : as_tuple->items) {
+      sub.emplace_back(assumption_create_from_phpdoc(item));
+    }
+    return AssumTuple::create(std::move(sub));
+  }
+  if (const auto *as_shape = type_hint->try_as<TypeHintShape>()) {
+    decltype(AssumShape::subkeys_assumptions) sub;
+    for (const auto &item : as_shape->items) {
+      sub.emplace(item.first, assumption_create_from_phpdoc(item.second));
+    }
+    return AssumShape::create(std::move(sub));
+  }
+  if (const auto *as_callable = type_hint->try_as<TypeHintCallable>()) {
+    // typed callable, like callable(int):void — when we see such a phpdoc, we generate an interface based on types
+    // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
+    if (as_callable->is_typed_callable()) {
+      return AssumTypedCallable::create(as_callable->get_interface());
+    }
+    // just `callable` keywords have sense only as a param type hint
+    // they turn the function into a template one, and each instantiation will have instances as a parameter assumption
+  }
+
+  return AssumNotInstance::create();
 }
 
 /*
@@ -250,10 +240,11 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(VertexPtr type_expr)
  * We recognize such phpdocs and var defs inside classes.
  */
 void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, vk::string_view phpdoc_str) {
-  FunctionPtr holder_f = G->get_function("$" + replace_backslashes(c->name));
-  if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, holder_f)) {
+  if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, c->get_holder_function())) {
     if (parsed.var_name.empty() || var_name == parsed.var_name) {
-      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(parsed.type_expr));
+      // todo rewrite in later, try not to parse phpdoc at all
+      auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(c->get_holder_function()) : parsed.type_hint;
+      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(resolved_type_hint));
     }
   }
 }
@@ -324,7 +315,9 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
         // both '/** @var A $v */' and '/** @var A */ $v ...' forms are supported
         const std::string &var_name = parsed.var_name.empty() ? root.as<op_phpdoc_raw>()->next_var_name : parsed.var_name;
         if (!var_name.empty()) {
-          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(parsed.type_expr));
+          // @var phpdocs can contain 'self' and others, that will be resolved only after registering variables
+          auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(f) : parsed.type_hint;
+          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(resolved_type_hint));
         }
       }
       return;
@@ -396,7 +389,7 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
   if (!f->phpdoc_str.empty()) {
     for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
       if (!parsed.var_name.empty()) {
-        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed.type_expr));
+        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed.type_hint));
       }
     }
   }
@@ -419,7 +412,7 @@ bool parse_kphp_return_doc(FunctionPtr f) {
     return false;
   }
 
-  // using as_string and do a an adhoc parsing as "T $arg" can't be turned into a type_expr (class T does not exist yet)
+  // using as_string and do a an adhoc parsing as "T $arg" can't be turned into a type hint (class T does not exist yet)
   for (const auto &kphp_template_str : phpdoc_find_tag_as_string_multi(f->phpdoc_str, php_doc_tag::kphp_template)) {
     // @kphp-template $arg is skipped, we're looking for
     // @kphp-template T $arg (as T is used to express the @kphp-return)
@@ -488,7 +481,9 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
 
   if (!f->phpdoc_str.empty()) {
     if (auto parsed = phpdoc_find_tag(f->phpdoc_str, php_doc_tag::returns, f)) {
-      assumption_add_for_return(f, assumption_create_from_phpdoc(parsed.type_expr));
+      // todo rewrite it later, try not to parse phpdoc at all
+      auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(f) : parsed.type_hint;
+      assumption_add_for_return(f, assumption_create_from_phpdoc(resolved_type_hint));
       return;
     }
 
@@ -496,14 +491,14 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       return;
     }
   }
-  if (f->return_typehint) {
-    if (f->return_typehint->type() != op_type_expr_callable) {
-      assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
-      return;
-    }
+  if (f->return_typehint && !f->return_typehint->try_as<TypeHintCallable>()) {
+    assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
+    return;
   }
 
-  for (auto i : *root->cmd()) {
+  // traverse function body, find all 'return' there
+  // note, that for strong typed code, with everything annotated with @return, it isn't executed: returned earlier
+  std::function<void(VertexPtr)> search_for_returns = [&search_for_returns, f](VertexPtr i) {
     if (i->type() == op_return && i.as<op_return>()->has_expr()) {
       VertexPtr expr = i.as<op_return>()->expr();
 
@@ -523,7 +518,12 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
         }
       }
     }
-  }
+
+    for (auto child : *i) {
+      search_for_returns(child);
+    }
+  };
+  search_for_returns(root->cmd());
 
   if (!f->assumption_for_return) {
     assumption_add_for_return(f, AssumNotInstance::create());
@@ -618,14 +618,13 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
-    if (f->root->type_rule) {
-      auto rule_meta = f->root->type_rule->rule();
-      if (auto class_type_rule = rule_meta.try_as<op_type_expr_class>()) {
-        return AssumInstance::create(class_type_rule->class_ptr);
-      } else if (auto func_type_rule = rule_meta.try_as<op_type_expr_instance>()) {
-        auto arg_ref = func_type_rule->expr().as<op_type_expr_arg_ref>();
-        if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
-          if (auto class_name = GenTree::get_constexpr_string(arg)) {
+    if (f->return_typehint) {
+      if (const auto *as_instance = f->return_typehint->try_as<TypeHintInstance>()) {
+        return AssumInstance::create(as_instance->resolve());
+      }
+      if (const auto *as_arg_ref = f->return_typehint->try_as<TypeHintArgRefInstance>()) {
+        if (auto arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, call)) {
+          if (auto *class_name = GenTree::get_constexpr_string(arg)) {
             if (auto klass = G->get_class(*class_name)) {
               return AssumInstance::create(klass);
             }
@@ -702,34 +701,26 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
   }
 
   // for builtin functions like array_pop/array_filter/etc with array of instances
-  if (auto common_rule = ptr->root->type_rule.try_as<op_common_type_rule>()) {
-    auto rule = common_rule->rule();
-    if (auto arg_ref = rule.try_as<op_type_expr_arg_ref>()) {     // array_values ($a ::: array) ::: ^1
-      return infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
+  if (ptr->return_typehint && ptr->return_typehint->has_argref_inside()) {
+    if (const auto *as_arg_ref = ptr->return_typehint->try_as<TypeHintArgRef>()) {       // array_values ($a ::: array) ::: ^1
+      return infer_class_of_expr(f, GenTree::get_call_arg_ref(as_arg_ref->arg_num, call), depth + 1);
     }
-    if (auto index = rule.try_as<op_index>()) {         // array_shift (&$a ::: array) ::: ^1[]
-      auto arr = index->array();
-      if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
-        auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
+    if (const auto *as_sub = ptr->return_typehint->try_as<TypeHintArgSubkeyGet>()) {  // array_shift (&$a ::: array) ::: ^1[*]
+      if (const auto *arg_ref = as_sub->inner->try_as<TypeHintArgRef>()) {
+        auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref->arg_num, call), depth + 1);
         if (auto arr_a = expr_a.try_as<AssumArray>()) {
           return arr_a->inner;
         }
-        return AssumNotInstance::create();
       }
+      return AssumNotInstance::create();
     }
-    if (auto array_rule = rule.try_as<op_type_expr_type>()) {  // create_vector ($n ::: int, $x ::: Any) ::: array <^2>
-      if (array_rule->type_help == tp_array) {
-        auto arr = array_rule->args()[0];
-        if (auto arg_ref = arr.try_as<op_type_expr_arg_ref>()) {
-          auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref, call), depth + 1);
-          if (auto inst_a = expr_a.try_as<AssumTypedCallable>()) {
-            return AssumArray::create(inst_a->interface);
-          }
-//          if (auto inst_a = expr_a.try_as<AssumInstance>()) {
-//            return AssumArray::create(inst_a->klass);
-//          }
-          return AssumNotInstance::create();
+    if (const auto *as_array = ptr->return_typehint->try_as<TypeHintArray>()) {  // f (...) ::: array <^2>
+      if (const auto *as_arg_ref = as_array->inner->try_as<TypeHintArgRef>()) {
+        auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(as_arg_ref->arg_num, call), depth + 1);
+        if (auto inst_a = expr_a.try_as<AssumTypedCallable>()) {
+          return AssumArray::create(inst_a->interface);
         }
+        return AssumNotInstance::create();
       }
     }
 

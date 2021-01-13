@@ -36,6 +36,7 @@ function run () {
   $z = fork (wait_x ($y));
   $t = wait($z);
   $t = $t != null;
+  return null;
 }
 
 run();

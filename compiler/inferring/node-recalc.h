@@ -12,7 +12,6 @@ protected:
   TypeData *new_type_;
   tinf::Node *node_;
   tinf::TypeInferer *inferer_;
-  std::vector<TypeData *> types_stack;
 public:
   const TypeData *new_type();
   void add_dependency_impl(tinf::Node *from, tinf::Node *to, const MultiKey *from_at);
@@ -34,8 +33,6 @@ public:
   NodeRecalc &operator=(const NodeRecalc &) = delete;
 
   void on_changed();
-  void push_type();
-  TypeData *pop_type();
   virtual bool auto_edge_flag();
 
   virtual void do_recalc() = 0;

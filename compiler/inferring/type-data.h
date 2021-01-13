@@ -77,7 +77,6 @@ public:
   ClassPtr class_type() const;
   void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
   bool has_class_type_inside() const;
-  bool has_tp_any_inside() const;
   void mark_classes_used() const;
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
   ClassPtr get_first_class_type_inside() const;

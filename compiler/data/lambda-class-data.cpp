@@ -11,6 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -100,38 +101,34 @@ bool LambdaClassData::can_implement_interface(InterfacePtr interface) const {
   return false;
 }
 
-void infer_type_of_callback_arg(VertexPtr type_rule, VertexAdaptor<op_func_call> extern_function_call,
+void infer_type_of_callback_arg(const TypeHint *type_hint, VertexAdaptor<op_func_call> extern_function_call,
                                 FunctionPtr function_context, vk::intrusive_ptr<Assumption> &assumption) {
-  if (auto lca_rule = type_rule.try_as<op_type_expr_lca>()) {
-    for (auto v : lca_rule->args()) {
-      infer_type_of_callback_arg(v, extern_function_call, function_context, assumption);
+  if (const auto *lca_rule = type_hint->try_as<TypeHintPipe>()) {
+    for (const TypeHint *item : lca_rule->items) {
+      infer_type_of_callback_arg(item, extern_function_call, function_context, assumption);
     }
 
-  } else if (auto callback_call_rule = type_rule.try_as<op_type_expr_callback_call>()) {
-    auto param = GenTree::get_call_arg_ref(callback_call_rule->expr().as<op_type_expr_arg_ref>(), extern_function_call);
+  } else if (const auto *callback_call_rule = type_hint->try_as<TypeHintArgRefCallbackCall>()) {
+    auto param = GenTree::get_call_arg_ref(callback_call_rule->arg_num, extern_function_call);
     if (auto lambda_class = LambdaClassData::get_from(param)) {
       FunctionPtr template_invoke = lambda_class->get_template_of_invoke_function();
       assumption = calc_assumption_for_return(template_invoke, extern_function_call);
     }
 
-  } else if (auto index_rule = type_rule.try_as<op_index>()) {
-    infer_type_of_callback_arg(index_rule->array(), extern_function_call, function_context, assumption);
+  } else if (const auto *subkey_get = type_hint->try_as<TypeHintArgSubkeyGet>()) {
+    infer_type_of_callback_arg(subkey_get->inner, extern_function_call, function_context, assumption);
     if (auto as_array = assumption.try_as<AssumArray>()) {
       assumption = as_array->inner;
     }
 
-  } else if (auto arg_ref = type_rule.try_as<op_type_expr_arg_ref>()) {
-    int id_of_call_parameter = GenTree::get_id_arg_ref(arg_ref, extern_function_call);
+  } else if (const auto *arg_ref = type_hint->try_as<TypeHintArgRef>()) {
+    int id_of_call_parameter = arg_ref->arg_num - 1;
     kphp_assert(id_of_call_parameter != -1);
     if (id_of_call_parameter < extern_function_call->args().size()) {
       auto call_param = extern_function_call->args()[id_of_call_parameter];
       assumption = infer_class_of_expr(function_context, call_param);
     }
 
-  } else if (type_rule->type() == op_type_expr_type) {
-    
-  } else {
-    kphp_assert(false);
   }
 }
 
@@ -162,13 +159,12 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
   auto template_invoke_params = (*template_of_invoke_method)->get_params();
   for (int i = 0; i < callback_params.size(); ++i) {
-    auto callback_param = callback_params[i];
+    auto callback_param = callback_params[i].as<op_func_param>();
 
     vk::intrusive_ptr<Assumption> assumption;
     auto lambda_param = template_invoke_params[i + 1].as<op_func_param>();
-    if (auto type_rule = callback_param->type_rule) {
-      kphp_assert(type_rule->type() == op_common_type_rule);
-      infer_type_of_callback_arg(type_rule.as<op_common_type_rule>()->rule(), extern_function_call, function_context, assumption);
+    if (callback_param->type_hint) {
+      infer_type_of_callback_arg(callback_param->type_hint, extern_function_call, function_context, assumption);
     }
 
     invoke_method_name += FunctionData::encode_template_arg_name(assumption, i + 1);

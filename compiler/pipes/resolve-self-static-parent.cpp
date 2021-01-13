@@ -32,15 +32,6 @@ void ResolveSelfStaticParentPass::on_start() {
       }
     });
   }
-
-  if (current_function->return_typehint) {
-    phpdoc_prepare_type_expr_resolving_classes(current_function, current_function->return_typehint);
-  }
-  for (auto param : current_function->get_params()) {
-    if (param->type() == op_func_param && param.as<op_func_param>()->type_hint) {
-      phpdoc_prepare_type_expr_resolving_classes(current_function, param.as<op_func_param>()->type_hint);
-    }
-  }
 }
 
 VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
@@ -88,7 +79,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
         }
       }
 
-      if (vk::any_of_equal(unresolved_class_name, "self", "parent", "static") && !current_function->modifiers.is_static()) {
+      if (is_string_self_static_parent(unresolved_class_name) && !current_function->modifiers.is_static()) {
         auto field_name = original_name.substr(pos + 2);
         bool get_field_using_self_or_parent = unresolved_class_name != "static" &&
                                               (ref_class->get_static_field(field_name) || ref_class->get_constant(field_name));
@@ -110,10 +101,6 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
                      fmt_format("Cannot instantiate abstract class {}", alloc->allocated_class_name), return v);
       check_access_to_class_from_this_file(alloc->allocated_class);
     }
-  }
-
-  if (v->type_rule) {
-    phpdoc_prepare_type_expr_resolving_classes(current_function, v->type_rule->rule());
   }
 
   return v;

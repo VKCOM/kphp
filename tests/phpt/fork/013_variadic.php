@@ -50,13 +50,14 @@ function a_varg(int $a, int $b, int $c = 7, int $d = 8) {
   var_dump ($b);
   var_dump ($c);
   var_dump ($d);
-  b_varg(1, 2, 3);
+  return b_varg(1, 2, 3);
 }
 /**
  * @param int ...$args
  */
 function b_varg(...$args) {
   var_dump($args);
+  return $args;
 }
 
 echo "-----------<stage 3>-----------\n";

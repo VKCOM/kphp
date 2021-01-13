@@ -19,6 +19,7 @@ exit;
 function f($x, $y) {
   sched_yield_sleep($x);
   echo $y . "\n";
+  return null;
 }
 
 $ids = [];

@@ -11,11 +11,13 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/data_ptr.h"
 
+class TypeHint;
+
 class LambdaInterfaceGenerator {
 public:
-  LambdaInterfaceGenerator(VertexAdaptor<op_type_expr_callable> type_expr) noexcept
-    : type_expr(type_expr) {
-  }
+  LambdaInterfaceGenerator(const std::vector<const TypeHint *> &arg_types, const TypeHint *return_type) noexcept
+    : arg_types(arg_types)
+    , return_type(return_type) {}
 
   InterfacePtr generate() noexcept;
 
@@ -26,5 +28,6 @@ private:
   void add_type_hints(FunctionPtr invoke_method) noexcept;
 
 private:
-  VertexAdaptor<op_type_expr_callable> type_expr;
+  const std::vector<const TypeHint *> arg_types;
+  const TypeHint *return_type;
 };

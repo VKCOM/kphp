@@ -23,6 +23,7 @@ public:
   }
 
   void on_start() override;
+  void on_function();
 
   VertexPtr on_enter_vertex(VertexPtr vertex) override;
 

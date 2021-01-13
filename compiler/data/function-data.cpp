@@ -38,7 +38,7 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
   res->name = new_name;
   res->update_location_in_body();
   res->name_gen_map = {};
-  res->return_typehint = other->return_typehint.clone();
+  res->tinf_node.init_as_return_value(res);
 
   res->assumptions_for_vars = {};
   res->assumption_args_status = AssumptionStatus::unknown;
@@ -274,9 +274,9 @@ string FunctionData::get_human_readable_name(bool add_details) const {
   }
 
   if (add_details && instantiation_of_template_function_location.get_line() != -1) {
-    auto &file = instantiation_of_template_function_location.get_file()->file_name;
+    auto &file = instantiation_of_template_function_location.get_file()->unified_file_name;
     auto line = std::to_string(instantiation_of_template_function_location.line);
-    result_name += "(instantiated at: " + file + ":" + line + ")";
+    result_name += " (instantiated at " + file + ":" + line + ")";
   }
 
   return result_name;

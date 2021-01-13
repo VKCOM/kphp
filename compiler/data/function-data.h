@@ -86,7 +86,7 @@ public:
   std::set<string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
-  VertexPtr return_typehint;
+  const TypeHint *return_typehint{nullptr};
   tinf::VarNode tinf_node;              // tinf node for return
 
   bool has_variadic_param = false;

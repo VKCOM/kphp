@@ -48,6 +48,8 @@ function demo() {
     } else {
         echo "false", "\n";
     }
+
+    return null;
 }
 
 $ff = fork(demo());

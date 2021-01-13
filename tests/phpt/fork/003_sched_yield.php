@@ -24,6 +24,7 @@ function f() {
     sched_yield();
     echo "f $id $i\n";
   }
+  return null;
 }
 
 $last = false;

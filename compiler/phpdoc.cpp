@@ -15,6 +15,7 @@
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 
 using std::vector;
@@ -122,14 +123,16 @@ vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
   return result;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_name) {
+const TypeHint *PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_name) {
   cur_tok++;
-  // we return an op_type_expr_class with a _relative_ class_name inside (it may also be "self" or similar)
-  // later on, this string class_name will be resolved to a class_ptr (see phpdoc_prepare_type_rule_resolving_classes)
-  return GenTree::create_type_help_class_vertex(phpdoc_class_name);
+  // here we have a relative class name, that can be resolved into full unless self/static/parent
+  // if self/static/parent, it will be resolved at context, see phpdoc_finalize_type_hint_and_resolve()
+  return is_string_self_static_parent(phpdoc_class_name)
+         ? TypeHintInstance::create(phpdoc_class_name)
+         : TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name, '\\'));
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
+const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
   TokenType cur_type = cur_tok->type();
   // some type names inside phpdoc are not keywords/tokens, but they should be interpreted as such
   if (cur_type == tok_func_name) {
@@ -151,43 +154,43 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       throw std::runtime_error("unexpected end");
     case tok_oppar: {
       cur_tok++;
-      VertexPtr v = parse_type_expression();
+      const TypeHint *type_hint = parse_type_expression();
       if (cur_tok->type() != tok_clpar) {
         throw std::runtime_error("unmatching ()");
       }
       cur_tok++;
-      return v;
+      return type_hint;
     }
     case tok_int:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_int);
+      return TypeHintPrimitive::create(tp_int);
     case tok_bool:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_bool);
+      return TypeHintPrimitive::create(tp_bool);
     case tok_float:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_float);
+      return TypeHintPrimitive::create(tp_float);
     case tok_string:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_string);
+      return TypeHintPrimitive::create(tp_string);
     case tok_false:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_False);
+      return TypeHintPrimitive::create(tp_False);
     case tok_true:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_bool);
+      return TypeHintPrimitive::create(tp_bool);
     case tok_null:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_Null);
+      return TypeHintPrimitive::create(tp_Null);
     case tok_mixed:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_mixed);
+      return TypeHintPrimitive::create(tp_mixed);
     case tok_void:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_void);
+      return TypeHintPrimitive::create(tp_void);
     case tok_tuple:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_tuple, parse_nested_type_rules());
+      return TypeHintTuple::create(parse_nested_type_hints());
     case tok_shape:
       cur_tok++;
       return parse_shape_type();
@@ -196,13 +199,13 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       if (cur_tok->type() == tok_oppar) {    // callable(...) : ... — typed callable
         return parse_typed_callable();
       }
-      return VertexAdaptor<op_type_expr_callable>::create();
+      return TypeHintCallable::create_untyped_callable();
     case tok_array:
       cur_tok++;
       if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>
-        return GenTree::create_type_help_vertex(tp_array, {parse_nested_one_type_rule()});
+        return TypeHintArray::create(parse_nested_one_type_hint());
       }
-      return GenTree::create_type_help_vertex(tp_array, {GenTree::create_type_help_vertex(tp_any)});
+      return TypeHintArray::create_array_of_any();
     case tok_at: {      // @tl\...
       cur_tok++;
       if (!cur_tok->str_val.starts_with("tl\\")) {
@@ -215,51 +218,43 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
       return parse_arg_ref();
     case tok_question:  // ?string == string|null; ?string[] == string[]|null
       cur_tok++;
-      return VertexAdaptor<op_type_expr_lca>::create(parse_type_expression(), GenTree::create_type_help_vertex(tp_Null));
+      return TypeHintOptional::create(parse_type_expression(), true, false);
     case tok_object:
       cur_tok++;
-      return GenTree::create_type_help_vertex(tp_any);
+      return TypeHintPrimitive::create(tp_any);
 
     case tok_static:
     case tok_func_name:
       // tok_future doesn't exist, it's a string
       if (vk::any_of_equal(cur_tok->str_val, "future", "\\future")) {
         cur_tok++;
-        return GenTree::create_type_help_vertex(tp_future, {parse_nested_one_type_rule()});
+        return TypeHintFuture::create(tp_future, parse_nested_one_type_hint());
       }
       // same for the future_queue
       if (cur_tok->str_val == "future_queue") {
         cur_tok++;
-        return GenTree::create_type_help_vertex(tp_future_queue, {parse_nested_one_type_rule()});
+        return TypeHintFuture::create(tp_future_queue, parse_nested_one_type_hint());
       }
       // plus some extra types that are not tokens as well, but they make sense inside the phpdoc/functions.txt
       if (cur_tok->str_val == "any") {
         cur_tok++;
-        return GenTree::create_type_help_vertex(tp_any);
+        return TypeHintPrimitive::create(tp_any);
       }
       if (cur_tok->str_val == "regexp") {
         cur_tok++;
-        return GenTree::create_type_help_vertex(tp_regexp);
+        return TypeHintPrimitive::create(tp_regexp);
       }
       // force(T) = T (for PhpStorm)
       if (cur_tok->str_val == "force") {
         cur_tok++;
-        return parse_nested_one_type_rule();
+        return parse_nested_one_type_hint();
       }
       // (for functions.txt) instance<^2>
       if (cur_tok->str_val == "instance") {
         cur_tok++;
-        return VertexAdaptor<op_type_expr_instance>::create(parse_nested_one_type_rule());
-      }
-      // (for functions.txt) DropFalse<^1>
-      if (cur_tok->str_val == "DropFalse") {
-        cur_tok++;
-        return VertexAdaptor<op_type_expr_drop_false>::create(parse_nested_one_type_rule());
-      }
-      // (for functions.txt) DropNull<^1>
-      if (cur_tok->str_val == "DropNull") {
-        cur_tok++;
-        return VertexAdaptor<op_type_expr_drop_null>::create(parse_nested_one_type_rule());
+        const auto *nested = dynamic_cast<const TypeHintArgRef *>(parse_nested_one_type_hint());
+        kphp_assert(nested);
+        return TypeHintArgRefInstance::create(nested->arg_num);
       }
       // otherwise interpreted as a class name (including the lowercase names);
       // it works with the absolute and relative names as well as for a special names like 'self';
@@ -271,44 +266,44 @@ VertexPtr PhpDocTypeRuleParser::parse_simple_type() {
   }
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*]
+const TypeHint *PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
-  auto v = VertexAdaptor<op_type_expr_arg_ref>::create();
-  v->int_val = std::stoi(std::string(cur_tok->str_val));
-
-  VertexPtr res = v;
+  int arg_num = std::stoi(std::string(cur_tok->str_val));
   cur_tok++;
+
+  if (cur_tok->type() == tok_oppar && (cur_tok + 1)->type() == tok_clpar) {
+    cur_tok += 2;
+    return TypeHintArgRefCallbackCall::create(arg_num);
+  }
+
+  const TypeHint *res = TypeHintArgRef::create(arg_num);
   while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_times && (cur_tok + 2)->type() == tok_clbrk) {
-    res = VertexAdaptor<op_index>::create(res);
+    res = TypeHintArgSubkeyGet::create(res);
     cur_tok += 3;
   }
-  while (cur_tok->type() == tok_oppar && (cur_tok + 1)->type() == tok_clpar) {
-    res = VertexAdaptor<op_type_expr_callback_call>::create(res);
-    cur_tok += 2;
-  }
 
   return res;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_array() {
-  VertexPtr res = parse_simple_type();
+const TypeHint *PhpDocTypeRuleParser::parse_type_array() {
+  const TypeHint *inner = parse_simple_type();
 
   while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
-    res = GenTree::create_type_help_vertex(tp_array, {res});
+    inner = TypeHintArray::create(inner);
     cur_tok += 2;
   }
 
-  return res;
+  return inner;
 }
 
-std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
+std::vector<const TypeHint *> PhpDocTypeRuleParser::parse_nested_type_hints() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
   cur_tok++;
-  std::vector<VertexPtr> sub_types;
+  std::vector<const TypeHint *> sub_types;
   while (true) {
     sub_types.emplace_back(parse_type_expression());
 
@@ -324,13 +319,13 @@ std::vector<VertexPtr> PhpDocTypeRuleParser::parse_nested_type_rules() {
   return sub_types;
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
+const TypeHint *PhpDocTypeRuleParser::parse_nested_one_type_hint() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
   cur_tok++;
 
-  VertexPtr sub_type = parse_type_expression();
+  const TypeHint *sub_type = parse_type_expression();
   if (vk::none_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
     throw std::runtime_error("expected ')'");
   }
@@ -339,38 +334,13 @@ VertexPtr PhpDocTypeRuleParser::parse_nested_one_type_rule() {
   return sub_type;
 }
 
-namespace {
-bool has_compound_type_inside(VertexPtr type) {
-  if (auto lca_rule = type.try_as<op_type_expr_lca>()) {
-    VertexPtr lhs = lca_rule->args()[0];
-    VertexPtr rhs = lca_rule->args()[1];
-    if (vk::any_of_equal(lhs->type_help, tp_False, tp_Null)) {
-      return has_compound_type_inside(rhs);
-    } else if (vk::any_of_equal(rhs->type_help, tp_False, tp_Null)) {
-      return has_compound_type_inside(lhs);
-    } else {
-      return true;
-    }
-  }
-
-  auto get_args = [type]() { return type.as<op_type_expr_type>()->args(); };
-  auto check_shape_arg = [](VertexPtr v) { return has_compound_type_inside(v.as<op_double_arrow>()->rhs()); };
-  switch (type->type_help) {
-    case tp_array: return has_compound_type_inside(get_args()[0]);
-    case tp_tuple: return vk::any_of(get_args(), has_compound_type_inside);
-    case tp_shape: return vk::any_of(get_args(), check_shape_arg);
-    default:       return false;
-  }
-};
-} // namespace
-
-VertexPtr PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):int, callable(int), callable():void
+const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):?string, callable(int), callable():void
   if (cur_tok->type() != tok_oppar) {
     throw std::runtime_error("expected '('");
   }
   cur_tok++;
 
-  std::vector<VertexPtr> arg_types;
+  std::vector<const TypeHint *> arg_types;
   while (true) {
     if (cur_tok->type() == tok_clpar) {
       cur_tok++;
@@ -385,36 +355,30 @@ VertexPtr PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):
     }
   }
 
-  VertexPtr return_type;
+  const TypeHint *return_type;
   if (cur_tok->type() == tok_colon) {
     cur_tok++;
     return_type = parse_type_expression();
   } else {
-    return_type = GenTree::create_type_help_vertex(tp_void);
+    return_type = TypeHintPrimitive::create(tp_void);
   }
 
-  // To generate a consistent name of lambda's interface we need arguments' types and return type
-  // At this stage it's not obvious how to calculate the lca of types such as (float[]|int[]), (string|int), (mixed|int[])
-  // but at the same time |null & |false are allowed; example of valid type: callable(?int, float[]|false, tuple(int)):shape(x:int)
-  kphp_error(!vk::any_of(arg_types, has_compound_type_inside) && !has_compound_type_inside(return_type), "Callable type may not contain compound types (int|string...)");
-
-  return VertexAdaptor<op_type_expr_callable>::create(VertexAdaptor<op_func_param_list>::create(arg_types), return_type);
+  return TypeHintCallable::create(std::move(arg_types), return_type);
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
+const TypeHint *PhpDocTypeRuleParser::parse_shape_type() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
   cur_tok++;
 
-  std::vector<VertexAdaptor<op_double_arrow>> shape_rules;
+  std::vector<std::pair<std::string, const TypeHint *>> shape_items;
   bool has_varg = false;
   // example: shape(x:int, y?:\A, z:tuple(...))
-  // elements are [ op_double_arrow ( op_func_name "x", type_rule "int" ), ... ]
+  // elements are [ op_double_arrow ( op_func_name "x", TypeHint "int" ), ... ]
   // may end with tok_varg: shape(x:int, ...)
   while (true) {
-    auto elem_name_v = VertexAdaptor<op_func_name>::create();
-    elem_name_v->str_val = static_cast<std::string>(cur_tok->str_val);
+    std::string elem_name = static_cast<std::string>(cur_tok->str_val);
     cur_tok++;
 
     bool is_nullable = false;
@@ -427,12 +391,12 @@ VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
     }
     cur_tok++;
 
-    VertexPtr elem_type_rule = parse_type_expression();
+    const TypeHint *elem_type_hint = parse_type_expression();
     if (is_nullable) {
-      elem_type_rule = VertexAdaptor<op_type_expr_lca>::create(elem_type_rule, GenTree::create_type_help_vertex(tp_Null));
+      elem_type_hint = TypeHintOptional::create(elem_type_hint, true, false);
     }
 
-    shape_rules.emplace_back(VertexAdaptor<op_double_arrow>::create(elem_name_v, elem_type_rule));
+    shape_items.emplace_back(std::make_pair(elem_name, elem_type_hint));
 
     if (vk::any_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
       cur_tok++;
@@ -454,47 +418,68 @@ VertexPtr PhpDocTypeRuleParser::parse_shape_type() {
     }
   }
 
-  VertexPtr shape_type_help = GenTree::create_type_help_vertex(tp_shape, shape_rules);
-  if (has_varg) {
-    shape_type_help->extra_type = op_ex_shape_has_varg;
-  }
-  return shape_type_help;
+  return TypeHintShape::create(std::move(shape_items), has_varg);
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_type_expression() {
-  VertexPtr result = parse_type_array();
-  bool is_raw_bool = result->type() == op_type_expr_type && result->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
-  bool is_raw_null = result->type() == op_type_expr_type && result->type_help == tp_Null && (cur_tok - 1)->type() == tok_null;
+const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
+  const TypeHint *result = parse_type_array();
+  if (cur_tok->type() != tok_or) {
+    return result;
+  }
+
+  std::vector<const TypeHint *> items;
+  bool was_raw_bool = false;
+  bool was_false = false;
+  bool was_null = false;
+  
+  auto on_each_item = [&](const TypeHint *item) {
+    items.emplace_back(item);
+    if (const auto *as_primitive = item->try_as<TypeHintPrimitive>()) {
+      was_raw_bool |= as_primitive->ptype == tp_bool && (cur_tok - 1)->type() == tok_bool;
+      was_false |= as_primitive->ptype == tp_False;
+      was_null |= as_primitive->ptype == tp_Null;
+    }
+  };
+
+  on_each_item(result);
   while (cur_tok->type() == tok_or) {
     cur_tok++;
-    // lhs|rhs => lca(lhs,rhs)
-    VertexPtr rhs = parse_type_array();
-    result = VertexAdaptor<op_type_expr_lca>::create(result, rhs);
+    on_each_item(parse_type_array());
 
-    is_raw_bool |= rhs->type() == op_type_expr_type && rhs->type_help == tp_bool && (cur_tok - 1)->type() == tok_bool;
-    is_raw_null |= rhs->type() == op_type_expr_type && rhs->type_help == tp_Null && (cur_tok - 1)->type() == tok_null;
-    if (is_raw_bool && !is_raw_null) {
+    if (was_raw_bool && !was_null) {
       throw std::runtime_error("Do not use |bool in phpdoc, use |false instead\n(if you really need bool, specify |boolean)");
     }
   }
-  return result;
+
+  // try to simplify: T|false and similar as an optional<T>, not as a vector
+  bool can_be_simplified_as_optional = 1 == (items.size() - was_false - was_null);
+  if (can_be_simplified_as_optional) {
+    for (const TypeHint *item : items) {
+      const auto *as_primitive = item->try_as<TypeHintPrimitive>();
+      if (!as_primitive || vk::none_of_equal(as_primitive->ptype, tp_Null, tp_False)) {
+        return TypeHintOptional::create(item, was_null, was_false);
+      }
+    }
+  }
+
+  return TypeHintPipe::create(std::move(items));
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
+const TypeHint *PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
-  VertexPtr v = parse_type_expression();      // could throw an exception
+  const TypeHint *v = parse_type_expression();      // could throw an exception
 
   // "?int ...$args" == "(?int)[] $args", "int|false ...$a" == "(int|false)[] $a"; handle "..." after all has been parsed
   if (cur_tok->type() == tok_varg) {
     cur_tok++;
-    v = GenTree::create_type_help_vertex(tp_array, {v});
+    v = TypeHintArray::create(v);
   }
 
   tok_iter = cur_tok;
   return v;                                   // not null if an exception was not thrown
 }
 
-VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
+const TypeHint *PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
   try {
     return parse_from_tokens(tok_iter);
   } catch (std::runtime_error &) {
@@ -505,7 +490,7 @@ VertexPtr PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::con
 /*
  * With a phpdoc string after a @param/@return/@var like "int|false $a maybe comment"
  * or "$var tuple(int, string) maybe comment" or "A[] maybe comment"
- * parse a type (turn it into the tree for a type_rule) and a variable name (if present).
+ * parse a type (turn it into the TypeHint tree representation) and a variable name (if present).
  */
 PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_str, FunctionPtr current_function) {
   std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str);
@@ -517,14 +502,14 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
     var_name = std::string(tokens.front().str_val);
     tok_iter++;
     if (tokens.size() <= 2) {     // only tok_end is left
-      return {VertexPtr{}, std::move(var_name)};
+      return {nullptr, std::move(var_name)};
     }
   }
 
   PhpDocTypeRuleParser parser(current_function);
-  VertexPtr doc_type;
+  const TypeHint *type_hint{nullptr};
   try {
-    doc_type = parser.parse_from_tokens(tok_iter);
+    type_hint = parser.parse_from_tokens(tok_iter);
   } catch (std::runtime_error &ex) {
     stage::set_location(current_function->root->location);
     kphp_error(0, fmt_format("{}: {}\n{}",
@@ -533,8 +518,8 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
                              ex.what()));
   }
 
-  if (!doc_type || !phpdoc_prepare_type_expr_resolving_classes(current_function, doc_type)) {
-    return {VertexPtr{}, std::move(var_name)};
+  if (!type_hint) {
+    return {nullptr, std::move(var_name)};
   }
 
   if (var_name.empty()) {
@@ -545,7 +530,7 @@ PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_s
     }
   }
 
-  return {doc_type, std::move(var_name)};
+  return {type_hint, std::move(var_name)};
 }
 
 /*
@@ -557,7 +542,7 @@ PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_ty
   if (auto found_tag = phpdoc_find_tag_as_string(phpdoc, tag_type)) {
     return phpdoc_parse_type_and_var_name(*found_tag, current_function);
   }
-  return {VertexPtr{}, std::string()};
+  return {nullptr, std::string()};
 }
 
 /*
@@ -610,76 +595,78 @@ bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
 }
 
 /*
- * Sets class_ptr of all nested op_type_expr_class — converting a string class_name to ClassPtr by resolving.
- * 'class_name' is a relative class name to be resolved on the context of cur_function, it may be "self" or similar also.
- * We store class_name when parsing phpdoc / type hints, as classes may have not been loaded at the time of parsing.
- * So, this function must be called for every type rule at some point, where all classes and contexts exist.
+ * When phpdoc/type hint has just been parsed and inherited, it's ready be to saved as a function/field property.
+ * Here we do final checks before saving it as immutable:
+ * 1) Check that all classes inside are resolved
+ * 2) Replace self/static/parent with actual context
+ * If it contains an error, it is printed with current location context is supposed to also be printed on the caller side.
  */
-bool phpdoc_prepare_type_expr_resolving_classes(FunctionPtr cur_function, VertexPtr type_expr) {
+const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context) {
+  if (!type_hint || !type_hint->has_instances_inside()) {
+    return type_hint;
+  }
+
+  if (type_hint->has_self_static_parent_inside()) {
+    type_hint = type_hint->replace_self_static_parent(resolve_context);
+    kphp_assert(!type_hint->has_self_static_parent_inside());
+  }
+
   bool all_resolved = true;
 
-  if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
-    if (!as_op_class->class_ptr) {
-      stage::set_location(as_op_class->get_location());
-      const std::string &class_name = resolve_uses(cur_function, as_op_class->class_name, '\\');
-      ClassPtr klass = G->get_class(class_name);
-      as_op_class->class_ptr = klass;
+  type_hint->traverse([&all_resolved](const TypeHint *child) {
+    if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+
+      ClassPtr klass = G->get_class(as_instance->full_class_name);
       if (!klass) {
         all_resolved = false;
-        kphp_error(0, fmt_format("{}: {}",
-                                 TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not find class", TermStringFormat::bold)),
-                                 TermStringFormat::add_text_attribute(class_name, TermStringFormat::underline)));
-      }
-      else {
+        kphp_error(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
+      } else {
         kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
       }
+
     }
-  }
+  });
 
-  for (auto i : *type_expr) {
-    all_resolved = all_resolved && phpdoc_prepare_type_expr_resolving_classes(cur_function, i);
-  }
-
-  return all_resolved;
+  return all_resolved ? type_hint : nullptr;
 }
 
 // when a field has neither @var not type hint, we use the default value initializer like a type guard
-// here we convert this value initializer (init_val) to a type_expr, like a phpdoc was actually written
-VertexPtr phpdoc_convert_default_value_to_type_expr(VertexPtr init_val) {
+// here we convert this value initializer (init_val) to a TypeHint, like a phpdoc was actually written
+const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val) {
   switch (init_val->type()) {
     case op_int_const:
     case op_conv_int:
-      return GenTree::create_type_help_vertex(tp_int);
+      return TypeHintPrimitive::create(tp_int);
     case op_string:
     case op_string_build:
     case op_concat:
-      return GenTree::create_type_help_vertex(tp_string);
+      return TypeHintPrimitive::create(tp_string);
     case op_float_const:
     case op_conv_float:
-      return GenTree::create_type_help_vertex(tp_float);
+      return TypeHintPrimitive::create(tp_float);
     case op_array:
     case op_conv_array:
       // an array as a default => like "array" as a type hint, meaning "array of any", regardless of elements values
-      return GenTree::create_type_help_vertex(tp_array);
+      return TypeHintArray::create_array_of_any();
     case op_true:
     case op_false:
-      return GenTree::create_type_help_vertex(tp_bool);
+      return TypeHintPrimitive::create(tp_bool);
     case op_mul:
     case op_sub:
     case op_plus: {
-      auto lhs_type_expr = phpdoc_convert_default_value_to_type_expr(init_val.as<meta_op_binary>()->lhs());
-      auto rhs_type_expr = phpdoc_convert_default_value_to_type_expr(init_val.as<meta_op_binary>()->rhs());
-      if (lhs_type_expr && rhs_type_expr) {
-        if (lhs_type_expr->type_help == tp_float || rhs_type_expr->type_help == tp_float) {
-          return GenTree::create_type_help_vertex(tp_float);
-        } else if (lhs_type_expr->type_help == tp_int && rhs_type_expr->type_help == tp_int) {
-          return GenTree::create_type_help_vertex(tp_int);
+      const auto *lhs_type_hint = phpdoc_convert_default_value_to_type_hint(init_val.as<meta_op_binary>()->lhs())->try_as<TypeHintPrimitive>();
+      const auto *rhs_type_hint = phpdoc_convert_default_value_to_type_hint(init_val.as<meta_op_binary>()->rhs())->try_as<TypeHintPrimitive>();
+      if (lhs_type_hint && rhs_type_hint) {
+        if (lhs_type_hint->ptype == tp_float || rhs_type_hint->ptype == tp_float) {
+          return TypeHintPrimitive::create(tp_float);
+        } else if (lhs_type_hint->ptype == tp_int && rhs_type_hint->ptype == tp_int) {
+          return TypeHintPrimitive::create(tp_int);
         }
       }
       return {};
     }
     case op_div:
-      return GenTree::create_type_help_vertex(tp_float);
+      return TypeHintPrimitive::create(tp_float);
       
     default:
       // 'null' or something strange as a default — can't detect, will report "specify @var manually"

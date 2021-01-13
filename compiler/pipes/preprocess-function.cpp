@@ -398,8 +398,8 @@ private:
           }
 
           auto param = func_args[i].as<op_func_param>();
-          if (param->type_help != tp_any) {   // ::: cast param in functions.txt or @kphp-infer cast function
-            call_arg = GenTree::conv_to(call_arg, param->type_help, param->var()->ref_flag);
+          if (param->is_cast_param) {   // ::: cast param in functions.txt or @kphp-infer cast function
+            call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
           }
 
           if (param->is_callable && !func->is_template && func->instantiation_of_template_function_location.line == -1) {
@@ -528,6 +528,8 @@ private:
     if (auto f = G->get_function(name)) {
       kphp_error(!(f->modifiers.is_static() && f->modifiers.is_abstract()),
                  fmt_format("you may not call abstract static method: {}", f->get_human_readable_name()));
+      kphp_error(!f->modifiers.is_instance() || !f->class_id->is_trait(),
+                 fmt_format("you may not call a method of trait {}", f->get_human_readable_name()));
 
       kphp_error(!f->modifiers.is_static() || call->extra_type != op_ex_func_call_arrow, "It's not allowed to call static method through instance var");
       call = set_func_id(call, f);

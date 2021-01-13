@@ -15,6 +15,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/inferring/var-node.h"
+#include "compiler/type-hint.h"
 #include "compiler/vertex.h"
 
 /*
@@ -176,19 +177,21 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
 
   auto append_current_php_line_if_changed = [&prev, &desc](const tinf::Node *cur_node) {
     const Location &loc = cur_node->get_location();
-    if (loc.line <= 0) {
+    if (loc.line <= 0 || !loc.file) {
+      desc += "    ";
       return;
     }
     if (prev && prev->get_location().function == loc.function && prev->get_location().line == loc.line) {
+      desc += "    ";
       return;
     }
 
     std::string comment = static_cast<std::string>(vk::trim(loc.file->get_line(loc.line)));
-    desc += "\n   ";
+    desc += "\n  ";
     desc += loc.as_human_readable();
-    desc += "\n";
-    desc += TermStringFormat::paint("// " + comment, TermStringFormat::yellow);
-    desc += "\n";
+    desc += "\n    ";
+    desc += TermStringFormat::paint(comment, TermStringFormat::yellow);
+    desc += "\n    ";
   };
 
   for (const tinf::Node *node : stacktrace) {
@@ -199,14 +202,14 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
         auto param = function->get_params()[var_node->param_i].try_as<op_func_param>();
         append_current_php_line_if_changed(var_node);
         desc += "argument " + var_node->var_->get_human_readable_name();
-        desc += param && param->type_hint && !tinf::convert_type_rule_to_TypeData(VertexAdaptor<op_common_type_rule>::create(param->type_hint))->has_tp_any_inside() ? " declared as " : " inferred as ";
+        desc += param && param->type_hint && !param->type_hint->has_tp_any_inside() ? " declared as " : " inferred as ";
         desc += tinf::get_type(function, var_node->param_i)->as_human_readable();
         desc += "\n";
       } else if (var_node->is_return_value_from_function()) {
         FunctionPtr function = var_node->function_;
         append_current_php_line_if_changed(var_node);
         desc += function->get_human_readable_name();
-        desc += function->return_typehint && !tinf::convert_type_rule_to_TypeData(VertexAdaptor<op_common_type_rule>::create(function->return_typehint))->has_tp_any_inside() ? " declared that returns " : " inferred that returns ";
+        desc += function->return_typehint && !function->return_typehint->has_tp_any_inside() ? " declared that returns " : " inferred that returns ";
         desc += tinf::get_type(function, -1)->as_human_readable();
         desc += "\n";
       } else {

@@ -12,11 +12,10 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/debug.h"
-#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -161,10 +160,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   function->class_id = klass;
   function->context_class = klass;
 
-  auto rule_this_var = GenTree::create_type_help_class_vertex(klass->name);
-  rule_this_var->class_ptr = klass;
-  auto this_var = function->root->params()->args()[0].as<op_func_param>()->var();
-  this_var->type_rule = VertexAdaptor<op_set_check_type_rule>::create(rule_this_var);
+  function->root->params()->args()[0].as<op_func_param>()->type_hint = TypeHintInstance::create(klass->name);
 
   if (klass->is_interface()) {
     function->modifiers.set_abstract();

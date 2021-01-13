@@ -1,4 +1,5 @@
-@ok
+@kphp_should_fail
+/forking void functions is forbidden, return null at least/
 <?php
 
 require_once 'kphp_tester_include.php';

@@ -11,6 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -184,7 +185,7 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
   // every parameter (excluding $this) could be any class_instance
   for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
     auto param = func_parameters[i].as<op_func_param>();
-    if (param->type_hint && param->type_hint->type() == op_type_expr_callable) {
+    if (param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
       param->template_type_id = static_cast<int>(id);
       param->is_callable = true;
       id++;

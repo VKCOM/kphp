@@ -13,6 +13,7 @@ function f() {
   sched_yield();
   echo "f 4\n";
   $f_finished = true;
+  return $f_finished;
 }
 
 /**
@@ -23,6 +24,7 @@ function g($id) {
   wait($f_resumable);
   $res = true;
   var_dump("g", $id, $res);
+  return null;
 }
 
 /**
@@ -33,6 +35,7 @@ function h($id) {
   $res = wait_concurrently($f_resumable);
   $res = true;
   var_dump("h", $id, $res);
+  return null;
 }
 
 echo "-----------<stage 1>-----------\n";

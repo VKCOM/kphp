@@ -22,6 +22,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -640,14 +641,6 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
   return VertexAdaptor<op_ternary>::create(cond, left_var_move, false_expr);
 }
 
-VertexAdaptor<op_type_expr_class> GenTree::create_type_help_class_vertex(const std::string &unresolved_class_name) {
-  auto type_rule = VertexAdaptor<op_type_expr_class>::create();
-  type_rule->type_help = tp_Class;
-  type_rule->class_ptr = {}; // this will be set later, see phpdoc_prepare_type_rule_resolving_classes()
-  type_rule->class_name = unresolved_class_name;
-  return type_rule;
-}
-
 VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary) {
   auto location = auto_location();
   next_cur();
@@ -813,7 +806,7 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
   auto location = auto_location();
 
-  VertexPtr type_hint = get_typehint();
+  const TypeHint *type_hint = get_typehint();
   bool is_varg = false;
 
   // if the argument is vararg and has a type hint — e.g. int ...$a — then cur points to $a, as ... were consumed by the type lexer
@@ -834,36 +827,30 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     return {};
   }
 
-  PrimitiveType tp = tp_any;
-  VertexAdaptor<meta_op_type_rule> type_rule;
-  if (!from_callback && cur->type() == tok_triple_colon) {
-    tp = get_func_param_type_help();    // saved to the param->type_help, implicitly casted during a call
-  } else {
-    type_rule = get_func_param_type_rule();
+  bool is_cast_param = false;
+  if (cur->type() == tok_triple_colon) {  // $x ::: string — a cast param
+    is_cast_param = true;
+    next_cur();
+    type_hint = get_typehint();
   }
 
   VertexPtr def_val = get_def_value();
   VertexAdaptor<op_func_param> v;
   if (def_val) {
     kphp_error(!is_varg, "Variadic argument can not have a default value");
-    v = VertexAdaptor<op_func_param>::create(name, def_val);
+    v = VertexAdaptor<op_func_param>::create(name, def_val).set_location(location);
   } else {
-    v = VertexAdaptor<op_func_param>::create(name);
+    v = VertexAdaptor<op_func_param>::create(name).set_location(location);
   }
-  v.set_location(location);
+
   if (type_hint) {
     // if "T $a = null" (default argument null), then type of $a is ?T (strange, but PHP works this way)
     if (def_val && def_val->type() == op_null) {
-      type_hint = VertexAdaptor<op_type_expr_lca>::create(type_hint, GenTree::create_type_help_vertex(tp_Null));
+      type_hint = TypeHintOptional::create(type_hint, true, false);
     }
     v->type_hint = type_hint;
   }
-
-  if (type_rule) {
-    v->type_rule = type_rule;
-  } else if (tp != tp_any) {
-    v->type_help = tp;
-  }
+  v->is_cast_param = is_cast_param;
 
   return v;
 }
@@ -887,7 +874,8 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
     auto params = VertexAdaptor<op_func_param_list>::create(callback_params).set_location(location);
     CE (expect(tok_clpar, "')'"));
 
-    VertexAdaptor<meta_op_type_rule> type_rule = get_func_param_type_rule();
+    CE (expect(tok_triple_colon, ":::"));
+    const TypeHint *return_type_hint = get_typehint();
 
     VertexPtr def_val = get_def_value();
     kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
@@ -899,7 +887,7 @@ VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
       v = VertexAdaptor<op_func_param_typed_callback>::create(name, params);
     }
 
-    v->type_rule = type_rule;
+    v->type_hint = return_type_hint;
     v.set_location(location);
 
     return v;
@@ -954,7 +942,14 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   return {param, list};
 }
 
-VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
+VertexPtr GenTree::conv_to_cast_param(VertexPtr x, const TypeHint *type_hint, bool ref_flag) {
+  PrimitiveType tp = tp_any;
+  if (type_hint->try_as<TypeHintArray>()) {
+    tp = tp_array;
+  } else if (const auto *as_primitive = type_hint->try_as<TypeHintPrimitive>()) {
+    tp = as_primitive->ptype;
+  }
+
   if (ref_flag) {
     switch (tp) {
       case tp_array:
@@ -966,7 +961,7 @@ VertexPtr GenTree::conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag) {
       case tp_mixed:
         return x;
       default:
-        kphp_error (0, "convert_to supports only var, array, string or int with ref_flag");
+        kphp_error (0, "convert_to supports only mixed, array, string or int with ref_flag");
         return x;
     }
   }
@@ -1010,55 +1005,12 @@ const std::string *GenTree::get_constexpr_string(VertexPtr v) {
   return nullptr;
 }
 
-int GenTree::get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
-  int id = -1;
-  if (auto fun_call = expr.try_as<op_func_call>()) {
-    id = arg->int_val - 1;
-    if (auto func_id = fun_call->func_id) {
-      if (id < 0 || id >= func_id->get_params().size()) {
-        id = -1;
-      }
-    }
-  }
-  return id;
-}
-
-VertexPtr GenTree::get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
-  int arg_id = get_id_arg_ref(arg, expr);
-  if (arg_id != -1) {
+VertexPtr GenTree::get_call_arg_ref(int arg_num, VertexPtr expr) {
+  if (arg_num > 0) {
     auto call_args = expr.as<op_func_call>()->args();
-    return arg_id < call_args.size() ? call_args[arg_id] : VertexPtr{};
+    return arg_num <= call_args.size() ? call_args[arg_num - 1] : VertexPtr{};
   }
   return {};
-}
-
-PrimitiveType GenTree::get_func_param_type_help() {
-  kphp_assert(cur->type() == tok_triple_colon);
-
-  next_cur();
-  PhpDocTypeRuleParser parser(cur_function);
-  VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
-  kphp_error(type_expr->type() == op_type_expr_type, "Incorrect type_help after :::");
-
-  return type_expr->type_help;
-}
-
-VertexAdaptor<meta_op_type_rule> GenTree::get_func_param_type_rule() {
-  VertexAdaptor<meta_op_type_rule> res;
-
-  TokenType tp = cur->type();
-  if (vk::any_of_equal(tp, tok_triple_colon, tok_triple_lt, tok_triple_gt)) {
-    auto location = auto_location();
-    next_cur();
-
-    PhpDocTypeRuleParser parser(cur_function);
-    VertexPtr type_expr = parser.parse_from_tokens_silent(cur);
-    CE(!kphp_error(type_expr, "Cannot parse type rule"));
-
-    VertexPtr rule = create_vertex(OpInfo::tok_to_op[tp], type_expr).set_location(location);
-    res = rule.as<meta_op_type_rule>();
-  }
-  return res;
 }
 
 void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
@@ -1266,21 +1218,20 @@ VertexAdaptor<op_do> GenTree::get_do() {
   return VertexAdaptor<op_do>::create(condition, embrace(body)).set_location(location);
 }
 
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, PrimitiveType tp) {
-  return create_superlocal_var(name_prefix, cur_function, tp);
+VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix) {
+  return create_superlocal_var(name_prefix, cur_function);
 }
 
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function, PrimitiveType tp) {
+VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
   auto v = VertexAdaptor<op_var>::create();
   v->str_val = gen_unique_name(name_prefix, cur_function);
   v->extra_type = op_ex_var_superlocal;
-  v->type_rule = VertexAdaptor<op_set_check_type_rule>::create(GenTree::create_type_help_vertex(tp));
   return v;
 }
 
 VertexAdaptor<op_switch> GenTree::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition,std::vector<VertexPtr> &&cases) {
-  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function, tp_mixed);
-  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function, tp_bool);
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
   return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
 }
 
@@ -1559,14 +1510,12 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
                "arguments and captured variables(in `use` clause) must have different names");
   }
-  // declarations from the functions.txt may contain ':::' after that
-  cur_function->root->type_rule = get_func_param_type_rule();
   if (is_lambda) {
     cur_function->modifiers.set_instance();
     cur_function->modifiers.set_public();
   }
 
-  if (test_expect(tok_colon)) {
+  if (test_expect(tok_colon) || test_expect(tok_triple_colon)) {    // function.txt allows ::: besides :
     next_cur();
     cur_function->return_typehint = get_typehint();
     kphp_error(cur_function->return_typehint, "Expected return typehint after :");
@@ -1951,7 +1900,7 @@ VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_st
   return VertexAdaptor<op_empty>::create();
 }
 
-VertexPtr GenTree::get_typehint() {
+const TypeHint *GenTree::get_typehint() {
   // optimization: don't start the lexer if it's 100% not a type hint here (so it wouldn't be parsed, and it's okay)
   // without this, everything still works, just a bit slower
   if (vk::any_of_equal(cur->type(), TokenType::tok_var_name, TokenType::tok_clpar, TokenType::tok_and, TokenType::tok_varg)) {

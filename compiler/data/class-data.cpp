@@ -78,9 +78,10 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_params, func_body);
 
-  auto res = FunctionData::create_function(func_name, func_root, FunctionData::func_class_holder);
-  res->class_id = ClassPtr{this};
-  return res;
+  auto holder_function = FunctionData::create_function(func_name, func_root, FunctionData::func_class_holder);
+  holder_function->class_id = ClassPtr{this};
+  holder_function->context_class = ClassPtr{this};
+  return holder_function;
 }
 
 FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return_value) {
@@ -258,6 +259,10 @@ const ClassMemberStaticField *ClassData::get_static_field(vk::string_view local_
 
 const ClassMemberConstant *ClassData::get_constant(vk::string_view local_name) const {
   return find_by_local_name<ClassMemberConstant>(local_name);
+}
+
+FunctionPtr ClassData::get_holder_function() const {
+  return G->get_function("$" + replace_backslashes(name));
 }
 
 VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {

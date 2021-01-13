@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Invalid property \.\.\.->x/
+/returns both A and primitive/
 <?php
 
 class A {

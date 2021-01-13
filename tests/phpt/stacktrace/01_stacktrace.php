@@ -1,10 +1,10 @@
 @kphp_should_fail
 /pass int\[\] to argument \$x of acInt/
-/\/\/ acInt\(\$a\);/
+/acInt\(\$a\);/
 /\$a is int\[\]/
-/\/\/ \$a = \$f;/
+/\$a = \$f;/
 /\$f is int\[\]/
-/\/\/ \$f = \[1\];/
+/\$f = \[1\];/
 /array is int\[\]/
 /1 is int/
 <?php

@@ -15,6 +15,8 @@
 template<Operation Op>
 vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
+class TypeHint;
+
 template<>
 class vertex_inner<meta_op_base> {
 public:
@@ -30,11 +32,9 @@ private:
 public:
   int id;
   tinf::ExprNode tinf_node;
-  VertexAdaptor<meta_op_type_rule> type_rule;
   Location location;
 
   OperationExtra extra_type : 4;
-  PrimitiveType type_help : 5;
   RLValueType rl_type : 2;
   RLValueType val_ref_flag : 2;
   ConstValueType const_type : 2;
@@ -112,10 +112,8 @@ public:
     n(-1),
     id(0),
     tinf_node(VertexPtr(this)),
-    type_rule(),
     location(),
     extra_type(op_ex_none),
-    type_help(),
     rl_type(val_error),
     val_ref_flag(val_none),
     const_type(cnst_error_),
@@ -128,10 +126,8 @@ public:
     n(-1),
     id(from.id),
     tinf_node(VertexPtr(this)),
-    type_rule(from.type_rule),
     location(from.location),
     extra_type(from.extra_type),
-    type_help(from.type_help),
     rl_type(from.rl_type),
     val_ref_flag(from.val_ref_flag),
     const_type(from.const_type),
@@ -142,7 +138,6 @@ public:
   virtual ~vertex_inner() {}
 
   void copy_location_and_flags(const vertex_inner<meta_op_base> &from) {
-    type_rule = from.type_rule;
     location = from.location;
     val_ref_flag = from.val_ref_flag;
     const_type = from.const_type;

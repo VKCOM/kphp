@@ -50,28 +50,22 @@ string gen_unique_name(const string& prefix, FunctionPtr function) {
   return replace_non_alphanum(prefix) + fmt_format("$u{:x}_{}", h, index++);
 }
 
-string resolve_uses(FunctionPtr current_function, string class_name, char delim) {
-  if (current_function->class_id && current_function->class_id->is_trait()) {
-    bool use_trait_inside_another_trait = current_function->type == FunctionData::func_class_holder;
-    if (!use_trait_inside_another_trait) {
-      return {};
-    }
-  }
-
+string resolve_uses(FunctionPtr resolve_context, string class_name, char delim) {
   if (class_name[0] != '\\') {
     if (class_name == "parent") {
       // do a str_dependents search instead of using parent_class->name:
       // resolve_uses() is called before the classes are resolved
-      if (auto parent_class_name = current_function->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
+      if (auto parent_class_name = resolve_context->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
         class_name = *parent_class_name;
       } else {
-        kphp_error_act(false, "Using parent:: in class that extends nothing", return {});
+        kphp_error_act(resolve_context->class_id && resolve_context->class_id->is_trait(),
+                       "Using parent:: in class that extends nothing", return {});
       }
     } else if (class_name == "static") {
-      auto parent_function = current_function->get_this_or_topmost_if_lambda();
+      auto parent_function = resolve_context->get_this_or_topmost_if_lambda();
       class_name = parent_function->context_class->name;
-    } else if (class_name == "self"){
-      auto class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
+    } else if (class_name == "self") {
+      auto class_id = resolve_context->get_this_or_topmost_if_lambda()->class_id;
       kphp_error_act(class_id, "Can't resolve self, there is no any class context", return {});
       class_name = class_id->name;
     } else {
@@ -80,12 +74,12 @@ string resolve_uses(FunctionPtr current_function, string class_name, char delim)
         slash_pos = class_name.length();
       }
       string class_name_start = class_name.substr(0, slash_pos);
-      auto uses_it = current_function->file_id->namespace_uses.find(class_name_start);
+      auto uses_it = resolve_context->file_id->namespace_uses.find(class_name_start);
 
-      if (uses_it != current_function->file_id->namespace_uses.end()) {
+      if (uses_it != resolve_context->file_id->namespace_uses.end()) {
         class_name = static_cast<std::string>(uses_it->second) + class_name.substr(class_name_start.length());
       } else {
-        class_name = current_function->file_id->namespace_name + "\\" + class_name;
+        class_name = resolve_context->file_id->namespace_name + "\\" + class_name;
       }
     }
   }
@@ -240,7 +234,7 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr v) {
 
 
 string get_context_by_prefix(FunctionPtr function, const string &class_name, char delim) {
-  if (class_name == "static" || class_name == "self" || class_name == "parent") {
+  if (is_string_self_static_parent(class_name)) {
     return resolve_uses(function, "\\" + function->get_this_or_topmost_if_lambda()->context_class->name, delim);
   }
   return resolve_uses(function, class_name, delim);
