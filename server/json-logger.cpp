@@ -129,16 +129,25 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_hex_as_string(int64_t val
   return *this;
 }
 
-template<class Mapper>
-JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_string_safe(vk::string_view value, Mapper value_mapper) noexcept {
+JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_raw_string(vk::string_view value) noexcept {
   *last_++ = '"';
   constexpr size_t reserved_bytes = 16;
   size_t left_bytes = buffer_.size() - static_cast<size_t>(last_ - buffer_.data());
   assert(left_bytes >= reserved_bytes);
   left_bytes -= reserved_bytes;
   const size_t write_bytes = std::min(left_bytes, value.size());
-  std::transform(value.begin(), value.begin() + write_bytes, last_, value_mapper);
-  last_ += write_bytes;
+  for (size_t i = 0; i != write_bytes; ++i) {
+    const char c = value[i];
+    if (std::iscntrl(c)) {
+      *last_++ = std::isspace(c) ? ' ' : '?';
+    } else {
+      if (vk::any_of_equal(c, '/', '\\', '"')) {
+        *last_++ = '\\';
+      }
+      *last_++ = c;
+    }
+  }
+
   if (unlikely(write_bytes != value.size())) {
     const vk::string_view truncated_dots{"..."};
     std::copy(truncated_dots.begin(), truncated_dots.end(), last_);
@@ -213,9 +222,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
   json_out_it->finish<']'>();
 
-  json_out_it->append_key("msg").append_string_safe(message, [](char c) {
-    return c == '"' ? '\'' : (c == '\n' ? ' ' : c);
-  });
+  json_out_it->append_key("msg").append_raw_string(message);
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
