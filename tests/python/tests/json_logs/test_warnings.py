@@ -24,7 +24,7 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 2, "env": "", "msg": "aaa'bbb' ccc",
+                "version": 0, "type": 2, "env": "", "msg": "aaa\"bbb\" ccc",
                 "tags": {"uncaught": False}
             }])
 

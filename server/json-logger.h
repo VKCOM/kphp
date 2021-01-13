@@ -70,8 +70,7 @@ private:
     JsonBuffer &append_raw(vk::string_view raw_element) noexcept;
     JsonBuffer &append_integer(int64_t value) noexcept;
     JsonBuffer &append_hex_as_string(int64_t value) noexcept;
-    template<class Mapper = vk::identity>
-    JsonBuffer &append_string_safe(vk::string_view value, Mapper value_mapper = {}) noexcept;
+    JsonBuffer &append_raw_string(vk::string_view raw_value) noexcept;
 
     void force_reset() noexcept;
 

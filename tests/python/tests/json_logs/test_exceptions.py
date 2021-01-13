@@ -29,3 +29,17 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
                 "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
                 "msg": "Unhandled exception from .+index.php:\\d+; Error 3456; Message: world",
             }])
+
+    def test_exception_with_special_chars(self):
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "set_context", "env": "efg", "tags": {"a": "b\\c\"d\n"}, "extra_info": {"c": "\\\\xxx\""}},
+                {"op": "exception", "msg": "\\a\\b\n\tc\"d \x06", "code": 123}
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_json_log(
+            expect=[{
+                "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b\\c\"d\n", "uncaught": True}, "extra_info": {"c": "\\\\xxx\""},
+                "msg": "Unhandled exception from .+index.php:\\d+; Error 123; Message: \\\\a\\\\b  c\"d ?",
+            }])
