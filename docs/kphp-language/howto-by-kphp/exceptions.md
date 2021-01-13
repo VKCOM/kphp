@@ -22,6 +22,7 @@ try {
 
 Traces are not identical to PHP, but more or less readable.
 
+
 ## How exceptions are implemented
 
 Internally, KPHP doesn't translate this code to C++ exceptions for several reasons.  

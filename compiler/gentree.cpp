@@ -1935,7 +1935,7 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   CE (expect(tok_catch, "'catch'"));
   CE (expect(tok_oppar, "'('"));
   auto exception_class = cur->str_val;
-  CE (expect(tok_func_name, "'Exception'"));
+  CE (expect(tok_func_name, "type that implements Throwable"));
   auto exception_var_name = get_expression();
   CE (!kphp_error(exception_var_name, "Cannot parse catch"));
   CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));

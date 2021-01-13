@@ -39,7 +39,7 @@ public:
 
     EdgeInfo(const FunctionPtr &called_f, std::vector<VertexAdaptor<op_try>> try_stack, bool inside_fork) :
       called_f(called_f),
-      try_stack(try_stack),
+      try_stack(std::move(try_stack)),
       inside_fork(inside_fork)
       {}
   };

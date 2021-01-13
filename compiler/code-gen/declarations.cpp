@@ -23,12 +23,6 @@
 #include "compiler/tl-classes.h"
 #include "compiler/vertex.h"
 
-namespace {
-bool is_builtin_class(ClassPtr c) {
-  return c && c->is_builtin() && c->is_class();
-}
-} // namespace
-
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return VarDeclaration(var, true, false);
 }
@@ -445,7 +439,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << NL << "struct " << klass->src_name;
   // builtin classes that should not be extended must be marked with "final";
   // classes without "final" are expected to be a proper KPHP classes that can be extended
-  if (is_builtin_class(klass->parent_class) || ClassData::does_need_codegen(klass->parent_class)) {
+  bool parent_class_is_builtin = klass->parent_class &&
+                                 klass->parent_class->is_builtin() &&
+                                 klass->parent_class->is_class();
+  if (parent_class_is_builtin || ClassData::does_need_codegen(klass->parent_class)) {
     W << (klass->derived_classes.empty() ? " final" : "") << " : public ";
     if (!klass->implements.empty()) {
       W << "refcountable_polymorphic_php_classes_virt<" << klass->parent_class->src_name << ", " << get_all_interfaces() << ">";

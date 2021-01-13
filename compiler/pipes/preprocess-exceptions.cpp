@@ -12,7 +12,13 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
 
   if (auto catch_op = root.try_as<op_catch>()) {
     catch_op->exception_class = G->get_class(catch_op->type_declaration);
-    kphp_error(catch_op->exception_class, fmt_format("Can't find class: {}", catch_op->type_declaration));
+    kphp_error_act(catch_op->exception_class,
+                   fmt_format("Can't find class: {}", catch_op->type_declaration),
+                   return catch_op);
+    if (catch_op->exception_class->is_class()) {
+      kphp_error(throwable_class->is_parent_of(catch_op->exception_class),
+                 fmt_format("Can't catch {}; only classes that implement Throwable can be caught", catch_op->type_declaration));
+    }
     return catch_op;
   }
 
