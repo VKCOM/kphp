@@ -9,30 +9,18 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"
+#include "compiler/type-hint.h"
 
 class ExprNodeRecalc : public NodeRecalc {
 private:
   template<PrimitiveType tp>
   void recalc_ptype();
-  template<typename InnerCall>
-  void recalc_and_drop_false(InnerCall call);
-  template<typename InnerCall>
-  void recalc_and_drop_null(InnerCall call);
 
   void recalc_ternary(VertexAdaptor<op_ternary> ternary);
-  void apply_type_rule_lca(VertexAdaptor<op_type_expr_lca> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_instance(VertexAdaptor<op_type_expr_instance> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_drop_or_false(VertexAdaptor<op_type_expr_drop_false> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_drop_or_null(VertexAdaptor<op_type_expr_drop_null> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr);
-  void apply_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
-  void apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
-  void apply_index(VertexAdaptor<op_index> index, VertexAdaptor<op_func_call> expr);
-  void apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call> expr);
   void recalc_func_call(VertexAdaptor<op_func_call> call);
+  void recalc_arg_ref_rule(VertexAdaptor<op_trigger_recalc_arg_ref_rule> expr);
   void recalc_var(VertexAdaptor<op_var> var);
   void recalc_push_back_return(VertexAdaptor<op_push_back_return> pb);
   void recalc_index(VertexAdaptor<op_index> index);
@@ -52,6 +40,8 @@ private:
   void recalc_fork(VertexAdaptor<op_fork> fork);
   void recalc_null_coalesce(VertexAdaptor<op_null_coalesce> expr);
   void recalc_return(VertexAdaptor<op_return> expr);
+  void recalc_and_drop_false(VertexAdaptor<op_conv_drop_false> expr);
+  void recalc_and_drop_null(VertexAdaptor<op_conv_drop_null> expr);
   void recalc_expr(VertexPtr expr);
 
 public:
@@ -66,238 +56,37 @@ void ExprNodeRecalc::recalc_ptype() {
   set_lca(TypeData::get_type(tp));
 }
 
+
+void ExprNodeRecalc::recalc_and_drop_false(VertexAdaptor<op_conv_drop_false> expr) {
+  VertexPtr inner_expr = expr->expr();
+  inner_expr->tinf_node.recalc(inferer_);
+  set_lca(drop_or_false(as_rvalue(inner_expr)));
+}
+
+void ExprNodeRecalc::recalc_and_drop_null(VertexAdaptor<op_conv_drop_null> expr) {
+  VertexPtr inner_expr = expr->expr();
+  inner_expr->tinf_node.recalc(inferer_);
+  set_lca(drop_or_null(as_rvalue(inner_expr)));
+}
+
+
 void ExprNodeRecalc::recalc_ternary(VertexAdaptor<op_ternary> ternary) {
   set_lca(ternary->true_expr());
   set_lca(ternary->false_expr());
 }
 
-void ExprNodeRecalc::apply_type_rule_lca(VertexAdaptor<op_type_expr_lca> type_rule, VertexAdaptor<op_func_call> expr) {
-  for (auto i : type_rule->args()) {
-    //TODO: is it hack?
-    apply_type_rule(i, expr);
-  }
-}
-
-void ExprNodeRecalc::apply_type_rule_instance(VertexAdaptor<op_type_expr_instance> type_rule, VertexAdaptor<op_func_call> expr) {
-  apply_instance_arg_ref(type_rule->expr().try_as<op_type_expr_arg_ref>(), expr);
-}
-
-template<typename InnerCall>
-void ExprNodeRecalc::recalc_and_drop_false(InnerCall call) {
-  push_type();
-  call();
-  TypeData *type = pop_type();
-  set_lca(drop_or_false(as_rvalue(type)));
-}
-
-template<typename InnerCall>
-void ExprNodeRecalc::recalc_and_drop_null(InnerCall call) {
-  push_type();
-  call();
-  TypeData *type = pop_type();
-  set_lca(drop_or_null(as_rvalue(type)));
-}
-
-void ExprNodeRecalc::apply_type_rule_drop_or_false(VertexAdaptor<op_type_expr_drop_false> type_rule, VertexAdaptor<op_func_call> expr) {
-  return recalc_and_drop_false([&] { apply_type_rule(type_rule->expr(), expr); });
-}
-
-void ExprNodeRecalc::apply_type_rule_drop_or_null(VertexAdaptor<op_type_expr_drop_null> type_rule, VertexAdaptor<op_func_call> expr) {
-  return recalc_and_drop_null([&] { apply_type_rule(type_rule->expr(), expr); });
-}
-
-void ExprNodeRecalc::apply_type_rule_callback_call(VertexAdaptor<op_type_expr_callback_call> type_rule, VertexAdaptor<op_func_call> expr) {
-  auto arg = type_rule->expr().as<op_type_expr_arg_ref>();
-  int callback_arg_id = GenTree::get_id_arg_ref(arg, expr);
-  if (callback_arg_id == -1) {
-    kphp_error (0, "error in type rule");
-    recalc_ptype<tp_Error>();
-  }
-  auto called_function = expr->func_id;
-  kphp_assert(called_function->is_extern() && called_function->get_params()[callback_arg_id]->type() == op_func_param_typed_callback);
-
-  VertexRange call_args = expr->args();
-  VertexPtr callback_arg = call_args[callback_arg_id];
-
-  if (auto ptr = callback_arg.try_as<op_func_ptr>()) {
-    if (auto rule = ptr->func_id->root->type_rule) {
-      VertexPtr son_rule = rule->rule();
-      while (son_rule->size() == 1) {
-        if (auto type_expr = son_rule.try_as<op_type_expr_type>()) {
-          son_rule = type_expr->args()[0];
-        } else {
-          recalc_ptype<tp_Error>();
-          break;
-        };
-      }
-      if (son_rule->type() == op_type_expr_type && son_rule->empty()) {
-        apply_type_rule(rule->rule(), expr);
-        return;
-      }
-      recalc_ptype<tp_Error>();
-    }
-    set_lca(ptr->func_id, -1);
-  } else {
-    recalc_ptype<tp_Error>();
-  }
-}
-
-void ExprNodeRecalc::apply_type_rule_callable(VertexAdaptor<op_type_expr_callable> type_rule __attribute__ ((unused)), VertexAdaptor<op_func_call> expr __attribute__ ((unused))) {
-  // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
-  // (but it does imply a template parameter for it)
-}
-
-void ExprNodeRecalc::apply_type_rule_type(VertexAdaptor<op_type_expr_type> rule, VertexAdaptor<op_func_call> expr) {
-  // it could be just set_lca(rule->type_help), but we don't allow a void|null combination
-  if (rule->type_help == tp_Null) {
-    if (new_type()->ptype() != tp_void) {
-      recalc_ptype<tp_Null>();
-    }
-  } else {
-    set_lca(rule->type_help);
-  }
-
-  if (!rule->empty()) {
-    switch (rule->type_help) {
-      case tp_array:
-      case tp_future:
-      case tp_future_queue: {
-        push_type();
-        apply_type_rule(rule->args()[0], expr);
-        TypeData *tmp = pop_type();
-        set_lca_at(&MultiKey::any_key(1), as_rvalue(tmp));
-        delete tmp;
-        break;
-      }
-      case tp_tuple: {
-        for (int int_index = 0; int_index < rule->size(); ++int_index) {
-          push_type();
-          apply_type_rule(rule->args()[int_index], expr);
-          TypeData *tmp = pop_type();
-          MultiKey key({Key::int_key(int_index)});
-          set_lca_at(&key, as_rvalue(tmp));
-          delete tmp;
-        }
-        break;
-      }
-      case tp_shape: {
-        for (const auto &elem : rule->args()) {
-          auto double_arrow = elem.as<op_double_arrow>();
-          push_type();
-          apply_type_rule(double_arrow->rhs(), expr);
-          TypeData *tmp = pop_type();
-          MultiKey key({Key::string_key(double_arrow->lhs()->get_string())});
-          set_lca_at(&key, as_rvalue(tmp));
-          delete tmp;
-        }
-        if (rule->extra_type == op_ex_shape_has_varg) {
-          new_type_->set_shape_has_varg_flag();
-        }
-        break;
-      }
-      default:
-        kphp_fail();
-    }
-  }
-}
-
-void ExprNodeRecalc::apply_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
-  if (GenTree::get_id_arg_ref(arg, expr) == -1) {
-    kphp_error (0, "error in type rule");
-    recalc_ptype<tp_Error>();
-  }
-
-  if (auto vertex = GenTree::get_call_arg_ref(arg, expr)) {
-    set_lca(vertex);
-  }
-}
-
-void ExprNodeRecalc::apply_instance_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr) {
-  std::string err_msg;
-
-  if (auto vertex = GenTree::get_call_arg_ref(arg, expr)) {
-    auto class_name = GenTree::get_constexpr_string(vertex);
-
-    if (class_name && !class_name->empty()) {
-      if (auto klass = G->get_class(*class_name)) {
-        set_lca(klass);
-      } else {
-        err_msg = fmt_format("bad {} parameter: can't find class {}", arg->int_val, *class_name);
-      }
-    } else {
-      err_msg = fmt_format("bad {} parameter: expected constant nonempty string with class name", arg->int_val);
-    }
-  } else {
-    err_msg = "error in type rule";
-  }
-
-  if (!err_msg.empty()) {
-    kphp_error(false, err_msg);
-    recalc_ptype<tp_Error>();
-  }
-}
-
-void ExprNodeRecalc::apply_index(VertexAdaptor<op_index> index, VertexAdaptor<op_func_call> expr) {
-  push_type();
-  apply_type_rule(index->array(), expr);
-  TypeData *type = pop_type();
-  set_lca(type, &MultiKey::any_key(1));
-  delete type;
-}
-
-void ExprNodeRecalc::apply_type_rule(VertexPtr rule, VertexAdaptor<op_func_call> expr) {
-  switch (rule->type()) {
-    case op_type_expr_lca:
-      apply_type_rule_lca(rule.as<op_type_expr_lca>(), expr);
-      break;
-    case op_type_expr_instance:
-      apply_type_rule_instance(rule.as<op_type_expr_instance>(), expr);
-      break;
-    case op_type_expr_drop_false:
-      apply_type_rule_drop_or_false(rule.as<op_type_expr_drop_false>(), expr);
-      break;
-    case op_type_expr_drop_null:
-      apply_type_rule_drop_or_null(rule.as<op_type_expr_drop_null>(), expr);
-      break;
-    case op_type_expr_callback_call:
-      apply_type_rule_callback_call(rule.as<op_type_expr_callback_call>(), expr);
-      break;
-    case op_type_expr_callable:
-      apply_type_rule_callable(rule.as<op_type_expr_callable>(), expr);
-      break;
-    case op_type_expr_type:
-      apply_type_rule_type(rule.as<op_type_expr_type>(), expr);
-      break;
-    case op_type_expr_arg_ref:
-      apply_arg_ref(rule.as<op_type_expr_arg_ref>(), expr);
-      break;
-    case op_index:
-      apply_index(rule.as<op_index>(), expr);
-      break;
-    case op_type_expr_class:
-      set_lca(rule.as<op_type_expr_class>()->class_ptr);
-      break;
-    default:
-      kphp_error (0, "error in type rule");
-      recalc_ptype<tp_Error>();
-      break;
-  }
-}
-
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr function = call->func_id;
-  if (call->type_rule) {
-    apply_type_rule(call->type_rule->rule(), call);
-    if (call->type_rule->type() == op_common_type_rule) {
-      return;
-    }
-  }
 
-  if (function->root->type_rule) {
-    apply_type_rule(function->root->type_rule->rule(), call);
+  if (function->return_typehint && function->return_typehint->has_argref_inside()) {
+    function->return_typehint->recalc_type_data_in_context_of_call(new_type_, call);
   } else {
     set_lca(function, -1);
   }
+}
+
+void ExprNodeRecalc::recalc_arg_ref_rule(VertexAdaptor<op_trigger_recalc_arg_ref_rule> expr) {
+  expr->type_hint->recalc_type_data_in_context_of_call(new_type_, expr->func_call);
 }
 
 void ExprNodeRecalc::recalc_var(VertexAdaptor<op_var> var) {
@@ -473,11 +262,14 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_exception_constructor_call:
       recalc_func_call(expr.as<op_exception_constructor_call>()->constructor_call());
       break;
+    case op_trigger_recalc_arg_ref_rule:
+      recalc_arg_ref_rule(expr.as<op_trigger_recalc_arg_ref_rule>());
+      break;
     case op_common_type_rule:
     case op_gt_type_rule:
     case op_lt_type_rule:
     case op_set_check_type_rule:
-      apply_type_rule(expr.as<meta_op_type_rule>()->rule(), VertexAdaptor<op_func_call>{});
+      kphp_assert(0 && "type_rule to be deleted");
       break;
     case op_var:
       recalc_var(expr.as<op_var>());
@@ -582,12 +374,12 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_ptype<tp_Null>();
       break;
 
-    case op_conv_drop_false: {
-      return recalc_and_drop_false([&] { recalc_expr(expr.as<op_conv_drop_false>()->expr());});
-    }
-    case op_conv_drop_null: {
-      return recalc_and_drop_null([&] { recalc_expr(expr.as<op_conv_drop_null>()->expr());});
-    }
+    case op_conv_drop_false:
+      recalc_and_drop_false(expr.as<op_conv_drop_false>());
+      break;
+    case op_conv_drop_null:
+      recalc_and_drop_null(expr.as<op_conv_drop_null>());
+      break;
 
     case op_plus:
     case op_minus:

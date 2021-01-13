@@ -1,5 +1,5 @@
 @kphp_should_fail
-/mixing void/
+/Function returns void and false simultaneously/
 <?php
 
 

@@ -15,6 +15,7 @@ function i () {
   sched_yield();
   sched_yield();
   sched_yield();
+  return null;
 }
 
 function g () {
@@ -29,6 +30,7 @@ function g () {
     usleep (10000);
     sched_yield();
   }
+  return null;
 }
 
 function h (&$x) {

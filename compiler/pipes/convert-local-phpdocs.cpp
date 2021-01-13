@@ -14,7 +14,7 @@
 VertexPtr ConvertLocalPhpdocsPass::visit_phpdoc_and_extract_vars(VertexAdaptor<op_phpdoc_raw> phpdoc_raw) {
   VertexPtr result;
 
-  // turn @var $v type into op_phpdoc_var with type_rule and var_id
+  // turn @var $v type into op_phpdoc_var with type_hint and var_id
   auto create_var_vertex = [](const std::vector<VarPtr> &lookup_vars_list, const PhpDocTagParseResult &tag_var) {
     auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(),
                                [&tag_var](VarPtr var) {
@@ -23,13 +23,15 @@ VertexPtr ConvertLocalPhpdocsPass::visit_phpdoc_and_extract_vars(VertexAdaptor<o
     if (var_it == lookup_vars_list.end()) {
       return VertexPtr{};
     }
-    // op_phpdoc_var consists of only one child (op_var) with var_id and type_rule for tinf;
+    // op_phpdoc_var consists of only one child (op_var) with var_id
     // this approach makes it automagically count as usage in cfg and collect edges
     auto inner_var = VertexAdaptor<op_var>::create().set_location(stage::get_location());
-    inner_var->type_rule = VertexAdaptor<op_set_check_type_rule>::create(tag_var.type_expr);
     inner_var->var_id = *var_it;
     inner_var->str_val = inner_var->var_id->name;
-    return (VertexPtr)VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(stage::get_location());
+
+    auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(stage::get_location());
+    phpdoc_var->type_hint = tag_var.type_hint;
+    return VertexPtr(phpdoc_var);
   };
 
   // one op_phpdoc_raw can contain several @var directives;
@@ -40,6 +42,8 @@ VertexPtr ConvertLocalPhpdocsPass::visit_phpdoc_and_extract_vars(VertexAdaptor<o
       tag_var.var_name = phpdoc_raw->next_var_name;
     }
     kphp_error_act(!tag_var.var_name.empty(), "@var with empty var name", continue);
+    tag_var.type_hint = phpdoc_finalize_type_hint_and_resolve(tag_var.type_hint, current_function);
+    kphp_error_act(tag_var.type_hint, fmt_format("Failed to parse @var inside {}", current_function->get_human_readable_name()), continue);
 
     // @var $v can refer to a local, static (inside a function) or global variable
     VertexPtr phpdoc_var = create_var_vertex(current_function->local_var_ids, tag_var);

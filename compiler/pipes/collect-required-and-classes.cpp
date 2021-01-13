@@ -14,6 +14,7 @@
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 
 namespace {
@@ -107,22 +108,21 @@ private:
       std::vector<Token> tokens = phpdoc_to_tokens(*type_and_var_name);
       std::vector<Token>::const_iterator cur_tok = tokens.begin();
       PhpDocTypeRuleParser parser(current_function);
-      auto type_expr = parser.parse_from_tokens_silent(cur_tok);
-      require_all_classes_in_phpdoc_type(type_expr);
+      const TypeHint *type_hint = parser.parse_from_tokens_silent(cur_tok);
+      require_all_classes_in_phpdoc_type(type_hint);
     }
   }
 
   // Searching for classes inside @var/@param phpdoc as well as inside type hints
-  inline void require_all_classes_in_phpdoc_type(VertexPtr type_expr) {
-    if (auto as_op_class = type_expr.try_as<op_type_expr_class>()) {
-      const std::string &class_name = resolve_uses(current_function, as_op_class->class_name, '\\');
-      if (!G->get_class(class_name)) {
-        require_class(replace_characters(class_name, '\\', '/'));
-      }
-    }
-
-    for (auto i : *type_expr) {
-      require_all_classes_in_phpdoc_type(i);
+  inline void require_all_classes_in_phpdoc_type(const TypeHint *type_hint) {
+    if (type_hint && type_hint->has_instances_inside()) {
+      type_hint->traverse([this](const TypeHint *child) {
+        if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+          if (!as_instance->has_self_static_parent_inside()) {
+            require_class(replace_characters(as_instance->full_class_name, '\\', '/'));
+          }
+        }
+      });
     }
   }
 

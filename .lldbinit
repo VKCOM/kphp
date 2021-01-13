@@ -15,6 +15,7 @@ type summary add --python-function "lldb_addons.class_with_debug_string" tinf::N
 type summary add --python-function "lldb_addons.class_with_debug_string" Assumption
 type summary add --python-function "lldb_addons.class_with_debug_string" Key
 type summary add --python-function "lldb_addons.class_with_debug_string" MultiKey
+type summary add --python-function "lldb_addons.class_with_debug_string" TypeHint
 
 type summary add --python-function "lldb_addons.token_printer" Token
 type summary add --python-function "lldb_addons.vk_string_view_printer" vk::string_view

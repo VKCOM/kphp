@@ -2,6 +2,7 @@
 
 function sleep_for_net_time() {
   sched_yield_sleep(0.01);
+  return null;
 }
 
 function wait_for_script_time() {

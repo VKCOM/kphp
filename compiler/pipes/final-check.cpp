@@ -13,6 +13,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
 #include "compiler/gentree.h"
+#include "compiler/type-hint.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -135,11 +136,10 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       }
     }
     if (func_ptr_of_callable->local_name() == "instance_to_array") {
-      auto param_of_callback = func_param->params()->params()[0];
-      auto rule_meta = param_of_callback->type_rule->rule();
-      if (auto func_type_rule = rule_meta.try_as<op_index>()) {
-        auto arg_ref = func_type_rule->array().as<op_type_expr_arg_ref>();
-        if (auto arg = GenTree::get_call_arg_ref(arg_ref, call)) {
+      auto param_of_callback = func_param->params()->params()[0].as<op_func_param>();
+      if (const auto *as_subkey = param_of_callback->type_hint->try_as<TypeHintArgSubkeyGet>()) {
+        auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
+        if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
           auto value_type = tinf::get_type(arg)->lookup_at_any_key();
           auto out_class = value_type->class_type();
           kphp_error_return(out_class, "type of argument for instance_to_array has to be array of Classes");
@@ -381,6 +381,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_fork) {
     const VertexAdaptor<op_func_call> &func_call = vertex.as<op_fork>()->func_call();
     kphp_error(!func_call->func_id->is_extern(), "fork of builtin function is forbidden");
+    kphp_error(tinf::get_type(func_call)->get_real_ptype() != tp_void, "forking void functions is forbidden, return null at least");
   }
 
   if (G->settings().warnings_level.get() >= 2 && vertex->type() == op_func_call) {
@@ -517,6 +518,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
 bool FinalCheckPass::user_recursion(VertexPtr v) {
   if (v->type() == op_function) {
     run_function_pass(v.as<op_function>()->cmd_ref(), this);
+    on_function();
     return true;
   }
 
@@ -531,6 +533,14 @@ bool FinalCheckPass::user_recursion(VertexPtr v) {
   }
 
   return false;
+}
+
+void FinalCheckPass::on_function() {
+  const TypeData *return_type = tinf::get_type(current_function, -1);
+  if (return_type->get_real_ptype() == tp_void) {
+    kphp_error(!return_type->or_false_flag(), fmt_format("Function returns void and false simultaneously"));
+    kphp_error(!return_type->or_null_flag(), fmt_format("Function returns void and null simultaneously"));
+  }
 }
 
 void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {

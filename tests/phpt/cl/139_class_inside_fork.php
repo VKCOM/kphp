@@ -32,6 +32,7 @@ function demo() {
     foreach($arr as $aa) {
         echo $aa->a, "\n";
     }
+    return null;
 }
 
 $ii = fork(demo());

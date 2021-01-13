@@ -38,8 +38,8 @@ class GenTree {
 
 public:
   Location auto_location() const;
-  VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, PrimitiveType tp = tp_any);
-  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function, PrimitiveType tp = tp_any);
+  VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
+  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
   static bool is_superglobal(const string &s);
@@ -57,26 +57,16 @@ public:
   void skip_phpdoc_tokens();
 
   static VertexAdaptor<op_seq> embrace(VertexPtr v);
-  PrimitiveType get_func_param_type_help();
-  VertexAdaptor<meta_op_type_rule> get_func_param_type_rule();
 
-  static VertexPtr conv_to(VertexPtr x, PrimitiveType tp, bool ref_flag = 0);
+  static VertexPtr conv_to_cast_param(VertexPtr x, const TypeHint *type_hint, bool ref_flag = 0);
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
   static VertexPtr get_actual_value(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
-  static int get_id_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
-  static VertexPtr get_call_arg_ref(VertexAdaptor<op_type_expr_arg_ref> arg, VertexPtr expr);
+  static VertexPtr get_call_arg_ref(int arg_num, VertexPtr expr);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
-  static VertexAdaptor<op_type_expr_class> create_type_help_class_vertex(const std::string &unresolved_class_name);
-  template<Operation op = meta_op_base>
-  static VertexAdaptor<op_type_expr_type> create_type_help_vertex(PrimitiveType type, const std::vector<VertexAdaptor<op>> &children = {}) {
-    auto type_rule = VertexAdaptor<op_type_expr_type>::create(children);
-    type_rule->type_help = type;
-    return type_rule;
-  }
 
   static auto create_int_const(int32_t number) {
     auto int_v = VertexAdaptor<op_int_const>::create();
@@ -162,7 +152,7 @@ public:
   static VertexAdaptor<op_func_call> generate_critical_error(std::string msg);
 
 private:
-  VertexPtr get_typehint();
+  const TypeHint *get_typehint();
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 

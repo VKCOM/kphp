@@ -167,7 +167,12 @@
         "default": -1
       },
       "type_hint": {
-        "type": "VertexPtr"
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      },
+      "is_cast_param": {
+        "type": "bool",
+        "default": "false"
       },
       "is_callable": {
         "type": "bool",
@@ -270,6 +275,19 @@
   {
     "name": "op_set_check_type_rule",
     "base_name": "meta_op_type_rule"
+  },
+  {
+    "comment": "aftificial vertex to trigger ExprNodeRecalc for a func call with ^1 and similar dependencies",
+    "name": "op_trigger_recalc_arg_ref_rule",
+    "base_name": "meta_op_base",
+    "extra_fields": {
+      "type_hint": {
+        "type": "const TypeHint *"
+      },
+      "func_call": {
+        "type": "VertexPtr"
+      }
+    }
   },
   {
     "comment": "artificial placeholder expression op",
@@ -1901,7 +1919,7 @@
     }
   },
   {
-    "comment": "artificial op that holds phpdoc var info",
+    "comment": "artificial op that holds phpdoc @var info",
     "sons": {
       "var": {
         "id": 0,
@@ -1915,6 +1933,12 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "@var"
+    },
+    "extra_fields": {
+      "type_hint": {
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      }
     }
   }
 ]

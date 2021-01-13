@@ -35,7 +35,7 @@ bool RestrictionMatchPhpdoc::is_restriction_broken() {
 std::string RestrictionMatchPhpdoc::get_description() {
   std::string desc;
   std::string actual_str = this->actual_node->get_type()->as_human_readable();
-  std::string expected_str = this->expected_type->as_human_readable();
+  std::string expected_str = this->expected_type->as_human_readable(false);
 
   switch (detect_usage_context()) {
 
@@ -44,7 +44,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
       std::string arg_name = arg->get_human_readable_name();
       std::string function_name = arg->holder_func->get_human_readable_name();
 
-      desc += "pass " + actual_str + " to " + TermStringFormat::add_text_attribute("argument " + arg_name + " of " + function_name, TermStringFormat::bold) + "\n";
+      desc += "pass " + actual_str + " to argument " + arg_name + " of " + function_name + "\n";
       desc += "but it's declared as @param " + expected_str + "\n";
       break;
     }
@@ -52,7 +52,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     case usage_assign_to_variable: {
       std::string var_name = restricted_node->var_->get_human_readable_name();
 
-      desc += "assign " + actual_str + " to " + TermStringFormat::add_text_attribute(var_name, TermStringFormat::bold) + "\n";
+      desc += "assign " + actual_str + " to " + var_name + "\n";
       desc += "but it's declared as @var " + expected_str + "\n";
       break;
     }
@@ -60,7 +60,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     case usage_assign_to_array_index: {
       std::string var_name = restricted_node->var_->get_human_readable_name();
 
-      desc += "insert " + actual_str + " into " + TermStringFormat::add_text_attribute(var_name, TermStringFormat::bold) + "[]\n";
+      desc += "insert " + actual_str + " into " + var_name + "[]\n";
       desc += "but it's declared as @var " + expected_str + "\n";
       break;
     }
@@ -68,7 +68,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     case usage_return_from_function: {
       std::string function_name = restricted_node->function_->get_human_readable_name(false);
 
-      desc += TermStringFormat::add_text_attribute("return ", TermStringFormat::bold) + actual_str + " from " + function_name + "\n";
+      desc += "return " + actual_str + " from " + function_name + "\n";
       desc += "but it's declared as @return " + expected_str + "\n";
       break;
     }
@@ -76,7 +76,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     case usage_return_from_callback: {
       std::string function_name = restricted_node->function_->is_lambda() ? "lambda" : restricted_node->function_->get_human_readable_name(false);
 
-      desc += TermStringFormat::add_text_attribute("return ", TermStringFormat::bold) + actual_str + " from " + function_name + "\n";
+      desc += "return " + actual_str + " from " + function_name + "\n";
       desc += "but a callback was expected to return " + expected_str + "\n";
       break;
     }
@@ -87,8 +87,6 @@ std::string RestrictionMatchPhpdoc::get_description() {
       break;
     }
   }
-
-  desc += "\nWhy? Follow this stacktrace from top to bottom:\n";
 
   RestrictionStacktraceFinder stacktrace_finder(actual_node, expected_type);
   desc += stacktrace_finder.get_stacktrace_text();

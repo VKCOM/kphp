@@ -233,8 +233,6 @@ static std::string debugVertexMore(VertexPtr v) {
     case op_type_expr_class:
       return v.as<op_type_expr_class>()->class_name + " = " +
              (v.as<op_type_expr_class>()->class_ptr ? v.as<op_type_expr_class>()->class_ptr->name : "unresolved");
-    case op_type_expr_type:
-      return ptype_name(v->type_help);
     case op_seq:
       return std::to_string(v->size());
     case op_type_expr_arg_ref:

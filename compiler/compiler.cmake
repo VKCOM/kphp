@@ -63,6 +63,7 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         restriction-stacktrace-finder.cpp
         type-data.cpp
         type-inferer.cpp
+        type-hint-recalc.cpp
         type-node.cpp
         var-node.cpp)
 
@@ -175,6 +176,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         phpdoc.cpp
         stage.cpp
         stats.cpp
+        type-hint.cpp
         tl-classes.cpp
         vertex.cpp)
 

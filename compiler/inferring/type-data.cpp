@@ -233,13 +233,6 @@ bool TypeData::has_class_type_inside() const {
   return for_each_deep([](const TypeData &data) { return !data.class_type_.empty(); });
 }
 
-/**
- * True for array<any>, tuple<any, ...> and other having 'any' somewhere inside — meaning that this 'any' should be inferred
- */
-bool TypeData::has_tp_any_inside() const {
-  return for_each_deep([](const TypeData &data) { return data.get_real_ptype() == tp_any; }) || shape_has_varg_flag();
-}
-
 void TypeData::mark_classes_used() const {
   for_each_deep([](const TypeData &this_) {
     if (this_.ptype() == tp_Class) {
@@ -393,9 +386,9 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   new_flags |= lhs->flags_;
 
   lhs->set_flags(new_flags);
-  if (new_ptype == tp_void && (new_flags & (or_false_flag_e|or_null_flag_e))) {
-    lhs->set_ptype(tp_Error);
-  }
+
+  // void + false/null does not convert to tp_Error here anymore, as that errors are hard to understand without context
+  // (it remains void with flags, and a comprehensive error is printed in final check)
 
   if (rhs->ptype() == tp_Class) {
     if (lhs->or_false_flag()) {

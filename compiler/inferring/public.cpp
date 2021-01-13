@@ -51,13 +51,4 @@ const TypeData *get_type(FunctionPtr function, int param_i) {
   return get_type_impl(get_tinf_node(function, param_i));
 }
 
-// this is a temporary function, that will be deleted in some future
-// it converts op_common_type_rule to TypeData — and we are sure, that it helds static type
-// (e.g. int, array<any> or others but NOT ^2 and other argument-dependent)
-const TypeData *convert_type_rule_to_TypeData(VertexPtr type_rule) {
-  static TypeInferer inferer;
-  inferer.run_node(&type_rule->tinf_node);
-  return type_rule->tinf_node.get_type();
-}
-
 } // namespace tinf

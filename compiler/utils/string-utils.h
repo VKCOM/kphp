@@ -131,3 +131,7 @@ static inline void remove_extra_spaces(std::string &str) {
   auto new_end = std::unique(str.begin(), str.end(), [](char lhs, char rhs) { return (lhs == rhs) && lhs == ' '; });
   str.erase(new_end, str.end());
 }
+
+static inline bool is_string_self_static_parent(const std::string &s) {
+  return s == "self" || s == "static" || s == "parent";
+}

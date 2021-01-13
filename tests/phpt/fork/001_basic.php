@@ -9,6 +9,7 @@ function add_res($value) {
   global $res;
   sched_yield();
   $res += $value;
+  return $res;
 }
 /**
  * @param int $n
@@ -27,6 +28,7 @@ function hash2($n) {
   foreach ($ids as $id){
     wait($id);
   }
+  return null;
 }
 /**
  * @param int $n
@@ -50,11 +52,12 @@ function hash3($n) {
     }
     wait($t);
   }
+  return null;
 }
 
 /**
  * @param int $n
- * @return future_queue<void>
+ * @return future_queue<int>
  */
 function hash4($n) {
   global $res;

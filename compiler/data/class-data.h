@@ -129,6 +129,8 @@ public:
     return ClassPtr{const_cast<ClassData *>(this)};
   }
 
+  FunctionPtr get_holder_function() const;
+
   bool need_virtual_modifier() const {
     auto has_several_parents = [](ClassPtr c) { return (c->parent_class && !c->implements.empty()) || c->implements.size() > 1; };
     return vk::any_of(get_all_inheritors(), has_several_parents);

@@ -52,7 +52,7 @@ void on_compilation_error(const char *description __attribute__((unused)), const
               stage::should_be_colored(file) ? TermStringFormat::paint_red(error_title) : error_title, stage::get_name(), kbasename(file_name), line_number);
   stage::print_current_location_on_error(file);
   std::string correct_description = stage::should_be_colored(file) ? full_description : TermStringFormat::remove_special_symbols(full_description);
-  fmt_fprintf(file, "{}\n\n", correct_description);
+  fmt_fprintf(file, "\n{}\n\n", correct_description);
   if (assert_level == FATAL_ASSERT_LEVEL) {
     fmt_fprintf(file, "Compilation failed.\n"
                       "It is probably happened due to incorrect or unsupported PHP input.\n"
@@ -101,7 +101,7 @@ Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line
   function(function),
   line(line) {}
 
-// return a location in the format: "{file}:{line}  in function {function}"
+// return a location in the format: "{file}:{line}  in {function}"
 std::string Location::as_human_readable() const {
   std::string out;
 
@@ -111,12 +111,12 @@ std::string Location::as_human_readable() const {
 
   // if it's a method of an PSR-4 class /path/to/A.php, output only A::methodName, not fully-qualified path\to\A::methodName
   if (function && function->type == FunctionData::func_local) {
-    std::string function_name = function->get_human_readable_name(false);
+    std::string function_name = function->get_human_readable_name();
     std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";
     if (file && file->unified_file_name == psr4_file_name) {
       function_name = function_name.substr(function_name.rfind('\\', psr4_file_name.size()) + 1);
     }
-    out += "  in function " + function_name;
+    out += "  in " + function_name;
   }
   return out;
 }
@@ -143,22 +143,16 @@ static TLS<StageInfo> stage_info;
 } // namespace stage
 
 void stage::print_current_location_on_error(FILE *f) {
-  SrcFilePtr file = get_file();
-  FunctionPtr function = get_function();
   int line = get_line();
   bool use_colors = should_be_colored(f);
 
-  // {file}:{line} and {function}
-  fmt_fprintf(f, "  at  {}:{}\n", file ? file->unified_file_name : "unknown", line);
-  if (function && function->type == FunctionData::func_local) {
-    std::string name = function->get_human_readable_name();
-    fmt_fprintf(f, "  in  function {}\n", use_colors ? TermStringFormat::add_text_attribute(name, TermStringFormat::bold) : name);
-  }
+  // {file}:{line} in {function}
+  fmt_fprintf(f, "  {}\n", get_location().as_human_readable());
 
   // line contents
   if (line > 0) {
     std::string comment = static_cast<std::string>(vk::trim(get_file()->get_line(line)));
-    fmt_fprintf(f, "  //  {}\n", use_colors ? TermStringFormat::paint(comment, TermStringFormat::cyan) : comment);
+    fmt_fprintf(f, "    {}\n", use_colors ? TermStringFormat::paint(comment, TermStringFormat::yellow) : comment);
   }
 }
 

@@ -22,6 +22,9 @@ void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, con
   ClassPtr mix_class2 = because_of_type->get_first_class_type_inside();
   std::string desc1 = node_->get_description();
   std::string desc2 = because_of_rvalue.node ? because_of_rvalue.node->get_description() : because_of_rvalue.type->as_human_readable();
+  if (because_of_rvalue.node) {
+    stage::set_location(because_of_rvalue.node->get_location());
+  }
 
   if (mix_class && mix_class2 && mix_class != mix_class2 && !vk::any_of_equal(ptype_before_error, tp_tuple, tp_shape)) {
     kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n",
@@ -100,11 +103,7 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
     key = &MultiKey::any_key(0);
   }
 
-  if (types_stack.empty()) {
-    new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
-  } else {
-    types_stack.back()->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
-  }
+  new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
 
   if (unlikely(new_type_->error_flag())) {
     on_new_type_became_tpError(type, rvalue);
@@ -187,14 +186,4 @@ void NodeRecalc::run() {
   }
 
   delete new_type_;
-}
-
-void NodeRecalc::push_type() {
-  types_stack.push_back(TypeData::get_type(tp_any)->clone());
-}
-
-TypeData *NodeRecalc::pop_type() {
-  TypeData *result = types_stack.back();
-  types_stack.pop_back();
-  return result;
 }

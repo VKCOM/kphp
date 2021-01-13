@@ -1,3 +1,4 @@
+@ok
 <?php
 
 interface FooInterface {
@@ -18,3 +19,22 @@ class Foo extends AbstractFoo {
 }
 
 var_dump((new Foo())->foo());
+
+
+trait T {
+    /** @var self */
+    public $s = null;
+}
+
+abstract class A1 {
+    use T;
+
+    function f() {}
+}
+
+class A extends A1 {
+}
+
+$a = new A;
+$a->s = new A;
+$a->s->f();

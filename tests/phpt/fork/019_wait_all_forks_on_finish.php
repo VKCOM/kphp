@@ -27,14 +27,14 @@ function function_with_wait(string $msg) {
 function function_with_exception1(string $msg) {
   echo "start function_with_exception1($msg)\n";
   sched_yield();
-  throw new Exception("Exception $msg");
+  if(1) throw new Exception("Exception $msg");
   echo "finish function_with_exception1($msg)\n";
   return null;
 }
 
 function function_with_exception2(string $msg) {
   echo "start function_with_exception2($msg)\n";
-  throw new Exception("Exception $msg");
+  if(1) throw new Exception("Exception $msg");
   sched_yield();
   echo "finish function_with_exception2($msg)\n";
   return null;

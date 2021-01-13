@@ -35,6 +35,7 @@
 #include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
+class TypeHint;
 class ClassMembersContainer;
 
 struct ClassMemberStaticMethod {
@@ -71,7 +72,7 @@ struct ClassMemberStaticField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
-  VertexPtr type_hint;  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
+  const TypeHint *type_hint{nullptr};  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
 
   ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
 
@@ -86,7 +87,7 @@ struct ClassMemberInstanceField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
-  VertexPtr type_hint;  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
+  const TypeHint *type_hint{nullptr};  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
   int8_t serialization_tag = -1;
   bool serialize_as_float32{false};
 

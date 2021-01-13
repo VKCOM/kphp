@@ -14,6 +14,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
@@ -59,6 +60,19 @@ public:
       if (tag.type == php_doc_tag::returns && f_->type == FunctionData::func_local) {  // @return @tl\... in functions.txt will be parsed only by assumptions
         stage::set_line(tag.line_num);
         parse_return_doc_tag(tag);
+      }
+    }
+
+    // 1) check that all classes exists and are not traits in @param/@return
+    // 2) if self/static/parent, resolve them
+    if (f_->return_typehint) {
+      f_->return_typehint = phpdoc_finalize_type_hint_and_resolve(f_->return_typehint, f_);
+      kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->get_human_readable_name()));
+    }
+    for (auto param : f_->get_params()) {
+      if (param->type() == op_func_param && param.as<op_func_param>()->type_hint) {
+        param.as<op_func_param>()->type_hint = phpdoc_finalize_type_hint_and_resolve(param.as<op_func_param>()->type_hint, f_);
+        kphp_error(param.as<op_func_param>()->type_hint, fmt_format("Failed to parse @param of {}", f_->get_human_readable_name()));
       }
     }
 
@@ -118,10 +132,10 @@ private:
   void convert_to_template_function_if_callable_arg() {
     for (auto p : func_params_) {
       auto cur_func_param = p.as<meta_op_func_param>();
-      if (auto type_callable = cur_func_param->type_hint.try_as<op_type_expr_callable>()) {
-        cur_func_param->is_callable = type_callable->has_params();
-        // we will generate common interface for typed callables later
-        if (!cur_func_param->is_callable) {
+      if (const auto *callable = cur_func_param->type_hint ? cur_func_param->type_hint->try_as<TypeHintCallable>() : nullptr) {
+        if (callable->is_typed_callable()) {    // we will generate common interface for typed callables later
+          cur_func_param->is_callable = true;
+        } else {                                // untyped callables is like a @kphp-template parameter
           cur_func_param->template_type_id = id_of_kphp_template_++;
           cur_func_param->is_callable = true;
           f_->is_template = true;
@@ -304,7 +318,7 @@ private:
     if (f_->is_template) {
       return;
     }
-    f_->return_typehint = doc_parsed.type_expr.set_location(f_->root);
+    f_->return_typehint = doc_parsed.type_hint;
   }
 
   void parse_param_doc_tag(const php_doc_tag &tag) {
@@ -324,14 +338,13 @@ private:
     if (param->template_type_id != -1) {
       return;
     }
-    param->type_hint = doc_parsed.type_expr.set_location(f_->root);
+    param->type_hint = doc_parsed.type_hint;
 
     if (infer_cast_) {
-      auto expr_type_v = doc_parsed.type_expr.try_as<op_type_expr_type>();
-      kphp_error(expr_type_v && expr_type_v->args().empty(), "Too hard rule for cast");
-      kphp_error(param->type_help == tp_any, fmt_format("Duplicate type rule for argument '{}'", doc_parsed.var_name));
-
-      param->type_help = doc_parsed.type_expr.as<op_type_expr_type>()->type_help;
+      auto expr_type_v = doc_parsed.type_hint->try_as<TypeHintPrimitive>();
+      kphp_error(expr_type_v, "Too hard rule for cast");
+      kphp_error(!param->is_cast_param, fmt_format("Duplicate type cast for argument '{}'", doc_parsed.var_name));
+      param->is_cast_param = true;
     }
   }
 
@@ -343,8 +356,7 @@ private:
       if (auto param = v.try_as<op_func_param>()) {
         bool ok = param->type_hint ||
                   param->var()->extra_type == op_ex_var_this ||
-                  param->template_type_id != -1 ||
-                  param->type_help != tp_any;
+                  param->template_type_id != -1;
         kphp_error(ok, fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
       }
     }
@@ -357,7 +369,7 @@ private:
       bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return && !f_->is_template;
 
       if (assume_return_void) {
-        f_->return_typehint = GenTree::create_type_help_vertex(tp_void);
+        f_->return_typehint = TypeHintPrimitive::create(tp_void);
       }
     }
   }
@@ -375,9 +387,17 @@ public:
     // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
     klass->members.for_each([&](ClassMemberInstanceField &f) {
       f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+      if (f.type_hint) {
+        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
+        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
+      }
     });
     klass->members.for_each([&](ClassMemberStaticField &f) {
       f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+      if (f.type_hint) {
+        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
+        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
+      }
     });
 
     const auto &phpdoc_tags = parse_php_doc(klass->phpdoc_str);
@@ -391,13 +411,13 @@ public:
 
 private:
   // calculate type_hint for a field using all rules
-  // returns type_expr or {}
-  static VertexPtr calculate_field_type_hint(vk::string_view phpdoc_str, VarPtr var, ClassPtr klass) {
-    // if there is a /** @var int|false */ comment above the class field declaration, we create a type_rule
+  // returns TypeHint or nullptr
+  static const TypeHint *calculate_field_type_hint(vk::string_view phpdoc_str, VarPtr var, ClassPtr klass) {
+    // if there is a /** @var int|false */ comment above the class field declaration
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->get_human_readable_name()))) {
-        return parsed.type_expr;
+        return parsed.type_hint;
       }
     }
 
@@ -405,17 +425,17 @@ private:
     // public $a = 0; - $a is int
     // public $a = []; - $a is any[]
     if (!G->settings().require_class_typing.get()) {
-      return {};
+      return nullptr;
     }
     if (var->init_val) {
-      VertexPtr type_expr = phpdoc_convert_default_value_to_type_expr(var->init_val);
-      kphp_error(type_expr, fmt_format("Specify @var to {}", var->get_human_readable_name()));
-      return type_expr;
+      const TypeHint *type_hint = phpdoc_convert_default_value_to_type_hint(var->init_val);
+      kphp_error(type_hint, fmt_format("Specify @var to {}", var->get_human_readable_name()));
+      return type_hint;
     }
 
     kphp_error(klass->is_lambda(),
                fmt_format("Specify @var or default value to {}", var->get_human_readable_name()));
-    return {};
+    return nullptr;
   }
 
   void parse_kphp_doc_tag(const php_doc_tag &tag) {

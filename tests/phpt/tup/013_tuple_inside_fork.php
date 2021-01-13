@@ -54,6 +54,7 @@ function demo() {
     } else {
         echo "false", "\n";
     }
+    return null;
 }
 
 $ii = fork(demo());
