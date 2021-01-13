@@ -60,7 +60,7 @@ public:
   // @kphp-throws checks that a function throws only specified exceptions;
   // empty vector means "nothing to check", it's not "throws nothing",
   // to check that a function does not throw, should_not_throw flag is used
-  std::list<std::string> check_throws;
+  std::forward_list<std::string> check_throws;
 
   // TODO: find usages when we'll allow lambdas inside template functions.
   //std::vector<FunctionPtr> lambdas_inside;

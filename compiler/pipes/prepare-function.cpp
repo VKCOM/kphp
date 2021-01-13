@@ -280,7 +280,7 @@ private:
         std::istringstream is(tag.value);
         std::string klass;
         while (is >> klass) {
-          f_->check_throws.push_back(klass);
+          f_->check_throws.emplace_front(klass); // the reversed order doesn't matter
         }
         break;
       }
