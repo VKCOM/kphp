@@ -803,7 +803,7 @@ VertexPtr GenTree::get_def_value() {
   return val;
 }
 
-VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from_callback) {
+VertexAdaptor<op_func_param> GenTree::get_func_param() {
   auto location = auto_location();
 
   const TypeHint *type_hint = get_typehint();
@@ -816,7 +816,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
     next_cur();
     is_varg = true;
   }
-  if (is_varg && !from_callback) {
+  if (is_varg) {
     kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
     cur_function->has_variadic_param = true;
   }
@@ -853,47 +853,6 @@ VertexAdaptor<op_func_param> GenTree::get_func_param_without_callbacks(bool from
   v->is_cast_param = is_cast_param;
 
   return v;
-}
-
-VertexAdaptor<op_func_param> GenTree::get_func_param_from_callback() {
-  return get_func_param_without_callbacks(true);
-}
-
-VertexAdaptor<meta_op_func_param> GenTree::get_func_param() {
-  auto location = auto_location();
-  if (test_expect(tok_func_name) && ((cur + 1)->type() == tok_oppar)) { // callback
-    auto name = VertexAdaptor<op_var>::create().set_location(location);
-    name->str_val = static_cast<string>(cur->str_val);
-    kphp_assert(name->str_val == "callback");
-    next_cur();
-
-    CE (expect(tok_oppar, "'('"));
-    std::vector<VertexAdaptor<op_func_param>> callback_params;
-    bool ok_params_next = gen_list<op_err>(&callback_params, &GenTree::get_func_param_from_callback, tok_comma);
-    CE (!kphp_error(ok_params_next, "Failed to parse callback params"));
-    auto params = VertexAdaptor<op_func_param_list>::create(callback_params).set_location(location);
-    CE (expect(tok_clpar, "')'"));
-
-    CE (expect(tok_triple_colon, ":::"));
-    const TypeHint *return_type_hint = get_typehint();
-
-    VertexPtr def_val = get_def_value();
-    kphp_assert(!def_val || (def_val->type() == op_func_name && def_val->get_string() == "TODO"));
-
-    VertexAdaptor<op_func_param_typed_callback> v;
-    if (def_val) {
-      v = VertexAdaptor<op_func_param_typed_callback>::create(name, params, def_val);
-    } else {
-      v = VertexAdaptor<op_func_param_typed_callback>::create(name, params);
-    }
-
-    v->type_hint = return_type_hint;
-    v.set_location(location);
-
-    return v;
-  }
-
-  return get_func_param_without_callbacks();
 }
 
 std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param() {
@@ -1340,7 +1299,7 @@ bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexA
                  [](VertexAdaptor<op_func_param> v) { return v->var()->get_string(); });
 
   return std::none_of(params.begin(), params.end(),
-                      [&](VertexPtr p) { return uniq_uses.find(p.as<meta_op_func_param>()->var()->get_string()) != uniq_uses.end(); });
+                      [&](VertexPtr p) { return uniq_uses.find(p.as<op_func_param>()->var()->get_string()) != uniq_uses.end(); });
 }
 
 VertexAdaptor<op_func_call> GenTree::get_anonymous_function(TokenType tok, bool is_static/* = false*/) {
@@ -1438,7 +1397,7 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
 }
 
 VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
-  vector<VertexAdaptor<meta_op_func_param>> params_next;
+  vector<VertexAdaptor<op_func_param>> params_next;
 
   CE(expect(tok_oppar, "'('"));
 
@@ -1504,7 +1463,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   cur_function->modifiers = modifiers;
 
   // function params follow the function name, followed by the 'use' list for closures
-  CE(cur_function->root->params_ref() = parse_cur_function_param_list());
+  CE(cur_function->root->param_list_ref() = parse_cur_function_param_list());
   if (!is_arrow) {
     CE(parse_function_uses(uses_of_lambda));
     kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
@@ -1525,7 +1484,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     CE (expect(tok_double_arrow, "'=>'"));
     auto body_expr = get_expression();
     CE (!kphp_error(body_expr, "Bad expression in arrow function body"));
-    LambdaImplicitUses{cur_function->root->params(), uses_of_lambda}.find(body_expr);
+    LambdaImplicitUses{cur_function->root->param_list(), uses_of_lambda}.find(body_expr);
     auto return_stmt = VertexAdaptor<op_return>::create(body_expr);
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(return_stmt);
   } else if (test_expect(tok_opbrc)) { // then we have '{ cmd }' or ';' — function is marked as func_extern in the latter case

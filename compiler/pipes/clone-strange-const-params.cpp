@@ -31,9 +31,6 @@ VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root) {
   }
   for (size_t i = 0; i < passed_params.size() - func_call->func_id->has_variadic_param; ++i) {
     auto &cur_passed_param = passed_params[i];
-    if (params_of_called_func[i]->type() == op_func_param_typed_callback) {
-      continue;
-    }
     if (func_call->func_id->is_extern()) {
       continue;
     }

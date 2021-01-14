@@ -136,15 +136,15 @@ void ClassData::add_class_constant() {
 
 void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {
   auto parent_constructor = parent_class->construct_function;
-  auto params = parent_constructor->root->params().clone();
+  auto list = parent_constructor->root->param_list().clone();
   // skip parent's this
-  params = VertexAdaptor<op_func_param_list>::create(VertexRange{params->params().begin() + 1, params->params().end()});
+  list = VertexAdaptor<op_func_param_list>::create(VertexRange{list->params().begin() + 1, list->params().end()});
 
   auto parent_call = VertexAdaptor<op_func_call>::create(parent_constructor->get_params_as_vector_of_vars(1));
   parent_call->set_string("parent::__construct");
   has_custom_constructor = true;
 
-  create_constructor(params, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc_str, os);
+  create_constructor(list, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc_str, os);
 }
 
 void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
@@ -159,8 +159,8 @@ void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &
   }
 }
 
-void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os) {
-  auto func = VertexAdaptor<op_function>::create(params, body);
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os) {
+  auto func = VertexAdaptor<op_function>::create(param_list, body);
   func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
   construct_function->phpdoc_str = phpdoc;
@@ -171,7 +171,7 @@ void ClassData::create_constructor(VertexAdaptor<op_func_param_list> params, Ver
 void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   std::string func_name = replace_backslashes(name) + "$$" + NAME_OF_CONSTRUCT;
   auto this_param = gen_param_this(func->get_location());
-  func->params_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->params()->params());
+  func->param_list_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->param_list()->params());
 
   GenTree::func_force_return(func, gen_vertex_this(func->location));
 

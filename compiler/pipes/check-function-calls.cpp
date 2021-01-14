@@ -5,6 +5,7 @@
 #include "compiler/pipes/check-function-calls.h"
 
 #include "compiler/data/src-file.h"
+#include "compiler/type-hint.h"
 
 void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   FunctionPtr f = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
@@ -50,16 +51,15 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   );
 
   for (int i = 0; i < call_params.size(); i++) {
-    if (auto func_param = func_params[i].try_as<op_func_param_typed_callback>()) {
+    auto func_param = func_params[i].as<op_func_param>();
+    if (f->is_extern() && func_param->type_hint && func_param->type_hint->try_as<TypeHintCallable>()) {
       auto call_param = call_params[i].try_as<op_func_ptr>();
       kphp_error_return(call_param,
-                        fmt_format("Argument '{}' should be function pointer, but {} found [{} : {}]",
+                        fmt_format("Argument '{}' should be function pointer, but {} found",
                                    func_param->var()->get_string(),
-                                   OpInfo::str(call_params[i]->type()),
-                                   f->file_id->file_name, f->get_human_readable_name()
-                        ));
+                                   OpInfo::str(call_params[i]->type())));
 
-      if (!FunctionData::check_cnt_params(get_function_params(func_param).size(), call_param->func_id)) {
+      if (!FunctionData::check_cnt_params(func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size(), call_param->func_id)) {
         return;
       }
     }

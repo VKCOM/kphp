@@ -160,7 +160,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   function->class_id = klass;
   function->context_class = klass;
 
-  function->root->params()->args()[0].as<op_func_param>()->type_hint = TypeHintInstance::create(klass->name);
+  function->get_params()[0].as<op_func_param>()->type_hint = TypeHintInstance::create(klass->name);
 
   if (klass->is_interface()) {
     function->modifiers.set_abstract();

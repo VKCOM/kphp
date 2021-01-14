@@ -43,7 +43,7 @@
   {
     "comment": "op that holds a function params and its body",
     "sons": {
-      "params": {
+      "param_list": {
         "id": 0,
         "type": "op_func_param_list"
       },
@@ -146,39 +146,6 @@
     },
     "name": "op_define",
     "base_name": "meta_op_base"
-  },
-  {
-    "sons": {
-      "var": {
-        "id": 0,
-        "type": "op_var"
-      },
-      "default_value": {
-        "id": 1,
-        "optional": true,
-        "virtual": true
-      }
-    },
-    "name": "meta_op_func_param",
-    "base_name": "meta_op_base",
-    "extra_fields": {
-      "template_type_id": {
-        "type": "int",
-        "default": -1
-      },
-      "type_hint": {
-        "type": "const TypeHint *",
-        "default": "nullptr"
-      },
-      "is_cast_param": {
-        "type": "bool",
-        "default": "false"
-      },
-      "is_callable": {
-        "type": "bool",
-        "default": "false"
-      }
-    }
   },
   {
     "name": "meta_op_type_rule",
@@ -442,7 +409,7 @@
     "name": "op_func_ptr",
     "base_name": "meta_op_base",
     "props": {
-      "rl": "rl_error",
+      "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "function ptr"
@@ -532,23 +499,36 @@
   {
     "comment": "var(); or var() = default_value(); type hints are stored in type_hint",
     "name": "op_func_param",
-    "base_name": "meta_op_func_param"
-  },
-  {
-    "comment": "a typed callback-type in functions.txt, like callback ($x ::: var)",
+    "base_name": "meta_op_base",
     "sons": {
-      "params": {
-        "id": 1,
-        "type": "op_func_param_list"
+      "var": {
+        "id": 0,
+        "type": "op_var"
       },
       "default_value": {
-        "id": 2,
+        "id": 1,
         "optional": true,
-        "override": true
+        "virtual": true
       }
     },
-    "name": "op_func_param_typed_callback",
-    "base_name": "meta_op_func_param"
+    "extra_fields": {
+      "template_type_id": {
+        "type": "int",
+        "default": -1
+      },
+      "type_hint": {
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      },
+      "is_cast_param": {
+        "type": "bool",
+        "default": "false"
+      },
+      "is_callable": {
+        "type": "bool",
+        "default": "false"
+      }
+    }
   },
   {
     "comment": "isset(expr())",

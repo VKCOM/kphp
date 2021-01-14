@@ -90,7 +90,7 @@ public:
 
   void create_constructor_with_parent_call(DataStream<FunctionPtr> &os);
   void create_default_constructor_if_required(DataStream<FunctionPtr> &os);
-  void create_constructor(VertexAdaptor<op_func_param_list> params, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os);
+  void create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
   static auto gen_param_this(Location location) {
@@ -98,9 +98,7 @@ public:
   }
 
   // function fname(args) => function fname($this ::: class_instance, args)
-  template<Operation Op>
-  static void patch_func_add_this(std::vector<VertexAdaptor<Op>> &params_next, Location location) {
-    static_assert(vk::any_of_equal(Op, meta_op_base, meta_op_func_param, op_func_param), "disallowed vector of Operation");
+  static void patch_func_add_this(std::vector<VertexAdaptor<op_func_param>> &params_next, Location location) {
     params_next.emplace(params_next.begin(), gen_param_this(location));
   }
 

@@ -142,7 +142,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
   //int call_params_n = static_cast<int>(call_params.size());
 
   VertexRange extern_func_params = extern_function_call->func_id->get_params();
-  auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p->type() == op_func_param_typed_callback; });
+  auto callback_it = std::find_if(extern_func_params.begin(), extern_func_params.end(), [](VertexPtr p) { return p.as<op_func_param>()->type_hint && p.as<op_func_param>()->type_hint->try_as<TypeHintCallable>(); });
   kphp_assert(callback_it != extern_func_params.end());
   auto callback_pos = static_cast<size_t>(std::distance(extern_func_params.begin(), callback_it));
   if (auto call_func_ptr = call_params[callback_pos].try_as<op_func_ptr>()) {
@@ -151,20 +151,18 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
     }
   }
 
-  auto func_param_callback = callback_it->as<op_func_param_typed_callback>();
-  VertexRange callback_params = get_function_params(func_param_callback);
-  if (!FunctionData::check_cnt_params(callback_params.size(), *template_of_invoke_method)) {
+  auto func_param_callback = callback_it->as<op_func_param>();
+  const auto *type_hint_callable = func_param_callback->type_hint->try_as<TypeHintCallable>();
+  if (!FunctionData::check_cnt_params(type_hint_callable->arg_types.size(), *template_of_invoke_method)) {
     return "";
   }
 
   auto template_invoke_params = (*template_of_invoke_method)->get_params();
-  for (int i = 0; i < callback_params.size(); ++i) {
-    auto callback_param = callback_params[i].as<op_func_param>();
-
+  for (int i = 0; i < type_hint_callable->arg_types.size(); ++i) {
     vk::intrusive_ptr<Assumption> assumption;
     auto lambda_param = template_invoke_params[i + 1].as<op_func_param>();
-    if (callback_param->type_hint) {
-      infer_type_of_callback_arg(callback_param->type_hint, extern_function_call, function_context, assumption);
+    if (type_hint_callable->arg_types[i]) {
+      infer_type_of_callback_arg(type_hint_callable->arg_types[i], extern_function_call, function_context, assumption);
     }
 
     invoke_method_name += FunctionData::encode_template_arg_name(assumption, i + 1);

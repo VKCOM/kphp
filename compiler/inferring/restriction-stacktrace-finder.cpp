@@ -199,10 +199,10 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
     if (const auto *var_node = dynamic_cast<const tinf::VarNode *>(node)) {
       if (var_node->is_argument_of_function()) {
         FunctionPtr function = var_node->var_->holder_func;
-        auto param = function->get_params()[var_node->param_i].try_as<op_func_param>();
+        auto param = function->get_params()[var_node->param_i].as<op_func_param>();
         append_current_php_line_if_changed(var_node);
         desc += "argument " + var_node->var_->get_human_readable_name();
-        desc += param && param->type_hint && !param->type_hint->has_tp_any_inside() ? " declared as " : " inferred as ";
+        desc += param->type_hint && !param->type_hint->has_tp_any_inside() ? " declared as " : " inferred as ";
         desc += tinf::get_type(function, var_node->param_i)->as_human_readable();
         desc += "\n";
       } else if (var_node->is_return_value_from_function()) {

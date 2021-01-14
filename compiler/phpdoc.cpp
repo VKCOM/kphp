@@ -334,7 +334,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_nested_one_type_hint() {
   return sub_type;
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):?string, callable(int), callable():void
+const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):?string, callable(int $x), callable():void
   if (cur_tok->type() != tok_oppar) {
     throw std::runtime_error("expected '('");
   }
@@ -348,6 +348,9 @@ const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int,
     }
     arg_types.emplace_back(parse_type_expression());
 
+    if (cur_tok->type() == tok_var_name) {  // callable(int $x) — var name is like a comment in declaration
+      cur_tok++;
+    }
     if (cur_tok->type() == tok_comma) {
       cur_tok++;
     } else if (cur_tok->type() != tok_clpar) {

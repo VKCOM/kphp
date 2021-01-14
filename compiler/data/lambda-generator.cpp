@@ -97,7 +97,7 @@ LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_function(Function
 
   call_function->set_string(called_function->name);
   call_function->func_id = called_function;
-  return create_invoke_fun_returning_call(called_function, call_function, called_function->root->params());
+  return create_invoke_fun_returning_call(called_function, call_function, called_function->root->param_list());
 }
 
 LambdaPtr LambdaGenerator::generate_and_require(FunctionPtr parent_function, DataStream<FunctionPtr> &os) {
@@ -169,9 +169,9 @@ VertexAdaptor<op_seq> LambdaGenerator::create_seq_saving_captured_vars_to_fields
 }
 
 VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAdaptor<op_function> function) {
-  std::vector<VertexAdaptor<meta_op_func_param>> func_parameters;
+  std::vector<VertexAdaptor<op_func_param>> func_parameters;
   generated_lambda->patch_func_add_this(func_parameters, created_location);
-  auto params_range = get_function_params(function);
+  auto params_range = function->param_list()->params();
   auto params_begin = params_range.begin();
   auto params_end = params_range.end();
   if (function->func_id && (function->func_id->function_in_which_lambda_was_created || function->func_id->is_lambda())) {
@@ -180,11 +180,11 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
     std::advance(params_begin, 1);
   }
   // need transformation for params_range to meta_op_func_param vertices, due to we don't have typed VertexRange
-  std::transform(params_begin, params_end, std::back_inserter(func_parameters), std::mem_fn(&VertexPtr::as<meta_op_func_param>));
+  std::transform(params_begin, params_end, std::back_inserter(func_parameters), std::mem_fn(&VertexPtr::as<op_func_param>));
 
   // every parameter (excluding $this) could be any class_instance
   for (size_t i = 1, id = 0; i < func_parameters.size(); ++i) {
-    auto param = func_parameters[i].as<op_func_param>();
+    auto param = func_parameters[i];
     if (param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
       param->template_type_id = static_cast<int>(id);
       param->is_callable = true;
@@ -195,10 +195,7 @@ VertexAdaptor<op_func_param_list> LambdaGenerator::create_invoke_params(VertexAd
     }
   }
 
-  auto params = VertexAdaptor<op_func_param_list>::create(func_parameters);
-  params->location.line = function->params()->location.line;
-
-  return params;
+  return VertexAdaptor<op_func_param_list>::create(func_parameters).set_location(function->param_list());
 }
 
 void LambdaGenerator::add_this_to_captured_variables(VertexPtr &root) {

@@ -932,7 +932,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_function: {
       auto function = tree_node.as<op_function>();
       Node a, b;
-      create_cfg(function->params(), res_start, &a);
+      create_cfg(function->param_list(), res_start, &a);
       create_cfg(function->cmd(), &b, res_finish);
       add_edge(a, b);
       break;

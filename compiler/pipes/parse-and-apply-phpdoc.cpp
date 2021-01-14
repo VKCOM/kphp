@@ -70,7 +70,7 @@ public:
       kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->get_human_readable_name()));
     }
     for (auto param : f_->get_params()) {
-      if (param->type() == op_func_param && param.as<op_func_param>()->type_hint) {
+      if (param.as<op_func_param>()->type_hint) {
         param.as<op_func_param>()->type_hint = phpdoc_finalize_type_hint_and_resolve(param.as<op_func_param>()->type_hint, f_);
         kphp_error(param.as<op_func_param>()->type_hint, fmt_format("Failed to parse @param of {}", f_->get_human_readable_name()));
       }
@@ -131,7 +131,7 @@ private:
 
   void convert_to_template_function_if_callable_arg() {
     for (auto p : func_params_) {
-      auto cur_func_param = p.as<meta_op_func_param>();
+      auto cur_func_param = p.as<op_func_param>();
       if (const auto *callable = cur_func_param->type_hint ? cur_func_param->type_hint->try_as<TypeHintCallable>() : nullptr) {
         if (callable->is_typed_callable()) {    // we will generate common interface for typed callables later
           cur_func_param->is_callable = true;

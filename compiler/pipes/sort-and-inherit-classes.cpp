@@ -189,8 +189,8 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
 
   auto new_return = VertexAdaptor<op_return>::create(new_func_call);
   auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
-  auto new_params = parent_f->root->params().clone();
-  auto func = VertexAdaptor<op_function>::create(new_params, new_cmd);
+  auto new_param_list = parent_f->root->param_list().clone();
+  auto func = VertexAdaptor<op_function>::create(new_param_list, new_cmd);
   func->copy_location_and_flags(*parent_f->root);
 
   return func;

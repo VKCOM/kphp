@@ -27,7 +27,7 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
   };
 
   auto called_function = call.as<op_func_call>()->func_id;
-  auto callback_param = called_function->get_params()[arg_num - 1].as<op_func_param_typed_callback>();
+  auto callback_param = called_function->get_params()[arg_num - 1].as<op_func_param>();
   VertexRange call_args = call.as<op_func_call>()->args();
   FunctionPtr provided_callback = call_args[arg_num - 1].as<op_func_ptr>()->func_id;
 
@@ -45,14 +45,14 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
     }
 
     std::vector<VertexPtr> fake_call_params;    // e.g., only one here for fake array_filter call: ^2[*]
-    for (auto callback_param_decl : callback_param->params()->params()) {
+    for (auto callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
       prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
         recursion.emplace_back(provided_callback->name);
       });
 
       auto fake_call_param = VertexAdaptor<op_none>::create();  // it has no contents, only tinf_node
       TypeData *type_of_passed = TypeData::get_type(tp_any)->clone();  // type of passed ^2[*]
-      callback_param_decl.as<op_func_param>()->type_hint->recalc_type_data_in_context_of_call(type_of_passed, call);
+      callback_param_hint->recalc_type_data_in_context_of_call(type_of_passed, call);
       fake_call_param->tinf_node.set_type(type_of_passed);
       fake_call_params.emplace_back(fake_call_param);
 

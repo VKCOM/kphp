@@ -133,17 +133,14 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 
   std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
   std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
-                 [](VertexPtr param) {
-                   kphp_error_act(param->type() != op_func_param_typed_callback, "Callbacks are not supported", return VertexAdaptor<op_var>{});
-                   return param.as<op_func_param>()->var().clone();
-                 }
+                 [](VertexPtr param) { return param.as<op_func_param>()->var().clone(); }
   );
 
   return res_params;
 }
 
 void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
-  auto self_function_vertex = VertexAdaptor<op_function>::create(root->params().clone(), root->cmd());
+  auto self_function_vertex = VertexAdaptor<op_function>::create(root->param_list().clone(), root->cmd());
   auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), get_self(), self_function_vertex);
   // It's safe to copy assumptions here and useful only for __virt_clone_self method
   kphp_assert(assumption_return_status != AssumptionStatus::processing);
@@ -170,7 +167,7 @@ int FunctionData::get_min_argn() {
   }
 
   auto has_default = [](VertexPtr v) {
-    auto param = v.as<meta_op_func_param>();
+    auto param = v.as<op_func_param>();
     return param->has_default_value() && param->default_value();
   };
 
@@ -290,8 +287,9 @@ bool FunctionData::is_imported_from_static_lib() const {
   return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && !is_main_function();
 }
 
+// in fact it's range of op_func_param, but it can't be expressed with VertexRange and needs .as<op_func_param>() when using
 VertexRange FunctionData::get_params() const {
-  return ::get_function_params(root);
+  return root->param_list()->params();
 }
 
 bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_func) {

@@ -209,18 +209,13 @@ VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root) {
 
 void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_list> list) {
   for (auto i : list->params()) {
-    if (auto param = i.try_as<op_func_param>()) {
-      VertexPtr default_value;
-      if (param->has_default_value() && param->default_value()) {
-        default_value = param->default_value();
-        run_function_pass(param->default_value(), this);
-        kphp_error(!param->var()->ref_flag || current_function->is_extern(), "Reference argument can not have a default value");
-      }
-      register_param_var(param->var(), default_value);
-    } else if (auto param_cb = i.try_as<op_func_param_typed_callback>()) {
-      register_param_var(param_cb->var(), {});
+    auto param = i.as<op_func_param>();
+    if (param->has_default_value() && param->default_value()) {
+      run_function_pass(param->default_value(), this);
+      kphp_error(!param->var()->ref_flag || current_function->is_extern(), "Reference argument can not have a default value");
+      register_param_var(param->var(), param->default_value());
     } else {
-      kphp_error(0, "Strange vertex type in op_func_param_list");
+      register_param_var(param->var(), {});
     }
   }
 }
