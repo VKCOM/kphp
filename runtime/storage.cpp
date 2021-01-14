@@ -19,6 +19,6 @@ void Storage::save_void() noexcept {
 
 void Storage::save_exception() noexcept {
   php_assert (!CurException.is_null());
-  Exception exception = std::move(CurException);
+  Throwable exception = std::move(CurException);
   save<thrown_exception>(thrown_exception{exception});
 }

@@ -8,15 +8,77 @@ if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
 }
 
-class Exception {
-    public function __construct($file ::: string, $line ::: int, $err ::: string = '', $code ::: int = 0) ::: Exception;
+interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
     public function getFile () ::: string;
     public function getLine () ::: int;
     public function getTrace () ::: string[][];
     public function getTraceAsString () ::: string;
-};
+}
+
+class Exception implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
+    final public function getMessage () ::: string;
+    final public function getCode () ::: int;
+    final public function getFile () ::: string;
+    final public function getLine () ::: int;
+    final public function getTrace () ::: string[][];
+    final public function getTraceAsString () ::: string;
+
+    final private function __clone() ::: void;
+}
+
+class Error implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
+    final public function getMessage () ::: string;
+    final public function getCode () ::: int;
+    final public function getFile () ::: string;
+    final public function getLine () ::: int;
+    final public function getTrace () ::: string[][];
+    final public function getTraceAsString () ::: string;
+
+    final private function __clone() ::: void;
+}
+
+class ArithmeticError extends Error {}
+class DivisionByZeroError extends ArithmeticError {}
+class AssertionError extends Error {}
+class CompileError extends Error {}
+class ParseError extends CompileError {}
+class TypeError extends Error {}
+class ArgumentCountError extends TypeError {}
+class ValueError extends Error {}
+class UnhandledMatchError extends Error {}
+
+class LogicException extends Exception {}
+class BadFunctionCallException extends LogicException {}
+class BadMethodCallException extends BadFunctionCallException {}
+class DomainException extends LogicException {}
+class InvalidArgumentException extends LogicException {}
+class LengthException extends LogicException {}
+class OutOfRangeException extends LogicException {}
+
+class RuntimeException extends Exception {}
+class OutOfBoundsException extends RuntimeException {}
+class OverflowException extends RuntimeException {}
+class RangeException extends RuntimeException {}
+class UnderflowException extends RuntimeException {}
+class UnexpectedValueException extends RuntimeException {}
 
 interface Memcache {
     public function get ($key) ::: mixed;
@@ -34,7 +96,7 @@ interface Memcache {
 }
 
 
-class McMemcache implements Memcache {
+final class McMemcache implements Memcache {
     public function __construct() ::: McMemcache;
 
     public function get ($key) ::: mixed;
@@ -50,7 +112,7 @@ class McMemcache implements Memcache {
     public function rpc_connect ($host ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: bool;
 }
 
-class RpcMemcache implements Memcache {
+final class RpcMemcache implements Memcache {
     public function __construct($fake ::: bool = false) ::: RpcMemcache;
 
     public function get ($key) ::: mixed;
@@ -68,7 +130,7 @@ class RpcMemcache implements Memcache {
 }
 
 
-class mysqli {
+final class mysqli {
     private function __construct() ::: \mysqli;
 }
 
@@ -756,7 +818,7 @@ function fetch_lookup_data ($x4_bytes_length ::: int) ::: string;
 
 function rpc_parse ($data) ::: bool;
 
-class RpcConnection {
+final class RpcConnection {
     private function __construct();
 }
 
@@ -1220,8 +1282,10 @@ function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
 
+function __exception_set_location($e ::: any, $file ::: string, $line ::: int) ::: ^1;
+
 // uber h3 bindings https://h3geo.org/docs
-class UberH3 {
+final class UberH3 {
   // Indexing functions: https://h3geo.org/docs/api/indexing
   static public function geoToH3($latitude ::: float, $longitude ::: float, $resolution ::: int) ::: int;
   static public function h3ToGeo($h3_index ::: int) ::: tuple(float, float);

@@ -204,7 +204,7 @@ string FunctionData::get_resumable_path() const {
 }
 
 string FunctionData::get_throws_call_chain() const {
-  if (!can_throw) {
+  if (!can_throw()) {
     return "";
   }
   vector<string> names;

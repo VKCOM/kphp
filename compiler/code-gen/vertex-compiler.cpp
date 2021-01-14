@@ -123,6 +123,43 @@ struct CycleBody {
   }
 };
 
+struct EmptyReturn {
+  //TODO: it's copypasted to compile_return
+  void compile(CodeGenerator &W) const {
+    CGContext &context = W.get_context();
+    const TypeData *tp = tinf::get_type(context.parent_func, -1);
+    if (context.resumable_flag) {
+      kphp_assert(!context.inside_null_coalesce_fallback);
+      if (tp->ptype() != tp_void) {
+        W << "RETURN (";
+      } else {
+        W << "RETURN_VOID (";
+      }
+    } else {
+      W << "return ";
+    }
+    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
+      W << "{}";
+    }
+    if (context.resumable_flag) {
+      W << ")";
+    }
+  }
+};
+
+struct ThrowAction {
+  //TODO: some interface for context?
+  static void compile(CodeGenerator &W) {
+    CGContext &context = W.get_context();
+    if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
+      W << EmptyReturn();
+    } else {
+      W << "goto " << context.catch_labels.back();
+      context.catch_label_used.back() = 1;
+    }
+  }
+};
+
 void compile_prefix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << OpInfo::str(root->type()) << Operand{root->expr(), root->type(), true};
 }
@@ -153,43 +190,30 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
   }
 }
 
-//TODO: some interface for context?
-//TODO: it's copypasted to compile_return
-void compile_throw_action(CodeGenerator &W) {
-  CGContext &context = W.get_context();
-  if (context.catch_labels.empty() || context.catch_labels.back().empty()) {
-    const TypeData *tp = tinf::get_type(context.parent_func, -1);
-    if (context.resumable_flag) {
-      kphp_assert(!context.inside_null_coalesce_fallback);
-      if (tp->ptype() != tp_void) {
-        W << "RETURN (";
-      } else {
-        W << "RETURN_VOID (";
-      }
-    } else {
-      W << "return ";
-    }
-    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
-      W << "{}";
-    }
-    if (context.resumable_flag) {
-      W << ")";
-    }
-  } else {
-    W << "goto " << context.catch_labels.back();
-    context.catch_label_used.back() = 1;
-  }
-}
-
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
   W << BEGIN <<
-    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL;
-  compile_throw_action(W);
-  W << ";" << NL <<
+    "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL <<
+    ThrowAction() << ";" << NL <<
     END << NL;
 }
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
+  auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {
+    if (caught_class->name == "Throwable") {
+      W << dst << " = std::move(CurException);" << NL;
+      return;
+    }
+    std::string e = gen_unique_name("e");
+    W << "auto " << e << " = std::move(CurException);" << NL <<
+         dst << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL;
+    // we don't allow catching arbitrary classes, but we don't check
+    // interfaces at compile time; to be on the safe side, check that
+    // exception dynamic_cast succeeded
+    if (caught_class->is_interface()) {
+      W << "php_assert(!" << dst << ".is_null());" << NL;
+    }
+  };
+
   CGContext &context = W.get_context();
 
   string catch_label = gen_unique_name("catch_label");
@@ -202,13 +226,71 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   context.catch_label_used.pop_back();
 
   if (used) {
-    W << "/""*** CATCH ***""/" << NL <<
-      "if (0) " <<
-      BEGIN <<
-      catch_label << ":;" << NL << //TODO: Label (lable_id) ?
-      root->exception() << " = std::move(CurException);" << NL <<
-      root->catch_cmd() << NL <<
-      END << NL;
+    // A catch list produces a series of if/elseif statements ending with else.
+    //
+    // Every if condition tries to match an exception against the type being
+    // handled by the catch clause.
+    // The "else" contains the ThrowAction (return) that makes exception
+    // escape the current function.
+    //
+    // If try block is marked with catches_all=true, then instead of the
+    // normal else branch with ThrowAction we'll generate an unconditional exception move.
+
+    W << "/""*** CATCH ***""/" << NL;
+    W << "if (0) " << BEGIN <<
+      catch_label << ":;" << NL; // TODO: Label (label_id) ?
+
+    bool need_else = !root->catches_all;
+    bool is_first_catch = true;
+    auto last_catch = root->catch_list().back();
+    for (auto &c : root->catch_list()) {
+      auto catch_op = c.as<op_catch>();
+      bool is_last_catch = c == last_catch;
+
+      ClassPtr caught_class = catch_op->exception_class;
+
+      W << UpdateLocation(catch_op->var()->location);
+
+      if (is_last_catch && root->catches_all) {
+        // the last catch in a try statement that "catches all" is guaranteed not to fail;
+        //
+        // imagine this case:
+        //     try {
+        //       // something that throws \Exception
+        //     } catch (\Exception $e) {}
+        // the \Exception handling catch is both last and first catch and try.catches_all=true,
+        // so we can generate the move assignment without any checks
+        if (!is_first_catch) {
+          W << "else " << BEGIN << NL;
+        }
+        move_exception(caught_class, catch_op->var());
+        W << catch_op->cmd() << NL;
+        if (!is_first_catch) {
+          W << END << NL;
+        }
+      } else {
+        W << (is_first_catch ? "if" : "else if");
+        if (caught_class->derived_classes.empty()) {
+          W << " (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") ";
+        } else {
+          W << " (f$is_a<" << caught_class->src_name << ">(CurException)) ";
+        }
+        std::string e = gen_unique_name("e");
+        W << BEGIN;
+        move_exception(caught_class, catch_op->var());
+        W << catch_op->cmd() << NL << END << NL;
+      }
+
+      is_first_catch = false;
+    }
+
+    if (need_else) {
+      W << "else " << BEGIN <<
+        ThrowAction() << ";" << NL <<
+        END << NL;
+    }
+
+    W << END << NL;
   }
 }
 
@@ -297,9 +379,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
 
   W << ")";
   if (rhs->throw_flag) {
-    W << ", ";
-    compile_throw_action(W);
-    W << MacroEnd{};
+    W << ", " << ThrowAction{} << MacroEnd{};
   }
 }
 
@@ -531,7 +611,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
-  if (!root->func_id->can_throw) {
+  if (!root->func_id->can_throw()) {
     compile_func_call(root, W);
     return;
   }
@@ -548,9 +628,13 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   compile_func_call(root, W);
   W.get_context().catch_labels.pop_back();
 
-  W << ", ";
-  compile_throw_action(W);
-  W << MacroEnd{};
+  W << ", " << ThrowAction{} << MacroEnd{};
+}
+
+void compile_exception_constructor_call(VertexAdaptor<op_exception_constructor_call> root, CodeGenerator &W) {
+  W << "__exception_set_location(";
+  compile_func_call(root->constructor_call(), W);
+  W << ", " << root->file_arg() << ", " << root->line_arg() << ")";
 }
 
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
@@ -571,11 +655,9 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
     W << root->save_var() << ", ";
   }
   W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
-  if (func->can_throw) {
+  if (func->can_throw()) {
     W << NL;
-    W << "CHECK_EXCEPTION" << MacroBegin{};
-    compile_throw_action(W);
-    W << MacroEnd{};
+    W << "CHECK_EXCEPTION" << MacroBegin{} << ThrowAction{} << MacroEnd{};
   }
 }
 
@@ -1617,6 +1699,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_function:
       compile_function(root.as<op_function>(), W);
+      break;
+    case op_exception_constructor_call:
+      compile_exception_constructor_call(root.as<op_exception_constructor_call>(), W);
       break;
     case op_func_call:
       compile_func_call_fast(root.as<op_func_call>(), W);

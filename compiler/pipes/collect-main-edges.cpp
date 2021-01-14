@@ -274,12 +274,15 @@ void CollectMainEdgesPass::on_list(VertexAdaptor<op_list> list) {
 }
 
 void CollectMainEdgesPass::on_throw(VertexAdaptor<op_throw> throw_op) {
-  create_less(as_rvalue(G->get_class("Exception")), throw_op->exception());
-  create_less(as_rvalue(throw_op->exception()), G->get_class("Exception"));
+  create_less(as_rvalue(throw_op->exception()), G->get_class("Throwable"));
 }
 
 void CollectMainEdgesPass::on_try(VertexAdaptor<op_try> try_op) {
-  create_set(as_lvalue(try_op->exception()), G->get_class("Exception"));
+  for (auto c : try_op->catch_list()) {
+    auto catch_op = c.as<op_catch>();
+    kphp_assert(catch_op->exception_class);
+    create_set(as_lvalue(catch_op->var()), catch_op->exception_class);
+  }
 }
 
 void CollectMainEdgesPass::on_set_op(VertexPtr v) {

@@ -66,6 +66,14 @@ private:
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
     for (const auto &dep : cur_class->get_str_dependents()) {
+      if (!cur_class->is_builtin() && dep.class_name == "Throwable") {
+        if (cur_class->is_interface()) {
+          kphp_error(false, fmt_format("Interface {} cannot extend Throwable", cur_class->name));
+        } else {
+          kphp_error(false, fmt_format("Class {} cannot implement Throwable, extend Exception instead", cur_class->name));
+        }
+      }
+
       require_class(replace_characters(dep.class_name, '\\', '/'));
     }
     // class constant values may contain other class constants that may need require_class()
@@ -192,6 +200,14 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
     stage::set_line(root->location.line);
+
+    if (auto try_op = root.try_as<op_try>()) {
+      for (auto v : try_op->catch_list()) {
+        auto catch_op = v.as<op_catch>();
+        require_class(replace_characters(catch_op->type_declaration, '\\', '/'));
+      }
+      return root;
+    }
 
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
       auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);

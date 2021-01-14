@@ -437,7 +437,12 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     return JoinValues(klass->implements, ", ", join_mode::one_line, transform_to_src_name);
   };
   W << NL << "struct " << klass->src_name;
-  if (ClassData::does_need_codegen(klass->parent_class)) {
+  // builtin classes that should not be extended must be marked with "final";
+  // classes without "final" are expected to be a proper KPHP classes that can be extended
+  bool parent_class_is_builtin = klass->parent_class &&
+                                 klass->parent_class->is_builtin() &&
+                                 klass->parent_class->is_class();
+  if (parent_class_is_builtin || ClassData::does_need_codegen(klass->parent_class)) {
     W << (klass->derived_classes.empty() ? " final" : "") << " : public ";
     if (!klass->implements.empty()) {
       W << "refcountable_polymorphic_php_classes_virt<" << klass->parent_class->src_name << ", " << get_all_interfaces() << ">";

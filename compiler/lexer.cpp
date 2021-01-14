@@ -211,22 +211,6 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
-  if (are_last_tokens(tok_new, tok_func_name, tok_oppar, any_token_tag{})) {
-    auto class_name = tokens[tokens.size() - 3].str_val;
-    if (class_name == "Exception" || class_name == "\\Exception") {
-      Token t = tokens.back();
-      tokens.pop_back();
-      tokens.emplace_back(tok_file_c);
-      tokens.emplace_back(tok_comma);
-      tokens.emplace_back(tok_line_c);
-      if (t.type() != tok_clpar) {
-        tokens.emplace_back(tok_comma);
-      }
-      tokens.push_back(t);
-      return;
-    }
-  }
-
   if (are_last_tokens(tok_new, tok_func_name, except_token_tag<tok_oppar>{})) {
     Token t = tokens.back();
     tokens.pop_back();

@@ -102,7 +102,7 @@ class CFG {
 
   std::vector<std::vector<Node>> exception_nodes;
   void create_cfg_begin_try();
-  void create_cfg_end_try(Node to);
+  void create_cfg_end_try();
   void create_cfg_register_exception(Node from);
 
   Node new_node();
@@ -227,7 +227,7 @@ void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool 
   }
   //TODO: only if function has throws flag
   if (auto call = tree_node.try_as<op_func_call>()) {
-    *can_throw = call->func_id->can_throw;
+    *can_throw = call->func_id->can_throw();
   }
 
   if (auto set_op = tree_node.try_as<op_set>()) {
@@ -279,10 +279,7 @@ void CFG::create_cfg_begin_try() {
   exception_nodes.resize(exception_nodes.size() + 1);
 }
 
-void CFG::create_cfg_end_try(Node to) {
-  for (Node i : exception_nodes.back()) {
-    add_edge(i, to);
-  }
+void CFG::create_cfg_end_try() {
   exception_nodes.pop_back();
 }
 
@@ -419,7 +416,6 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
   add_subtree(*res_start, tree_node, false);
 }
 
-
 void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag, bool weak_write_flag) {
   stage::set_location(tree_node->location);
   bool recursive_flag = false;
@@ -527,7 +523,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         *res_finish = start;
       }
 
-      if (func->can_throw) {
+      if (func->can_throw()) {
         create_cfg_register_exception(*res_finish);
       }
       break;
@@ -876,28 +872,49 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_try: {
       auto try_op = tree_node.as<op_try>();
-      Node exception_start, exception_finish;
-      create_cfg(try_op->exception(), &exception_start, &exception_finish, true);
 
       Node try_start, try_finish;
       create_cfg_begin_try();
       create_cfg(try_op->try_cmd(), &try_start, &try_finish);
-      create_cfg_end_try(exception_start);
-
-      Node catch_start, catch_finish;
-      create_cfg(try_op->catch_cmd(), &catch_start, &catch_finish);
-
-      add_edge(exception_finish, catch_start);
+      std::vector<Node> exceptions = exception_nodes.back();
+      create_cfg_end_try();
 
       Node finish = new_node();
       add_edge(try_finish, finish);
-      add_edge(catch_finish, finish);
+
+      Node catch_list_start = new_node();
+      for (Node e : exceptions) {
+        add_edge(e, catch_list_start);
+      }
+
+      // connect catch_list_start to every catch block
+      for (auto c : try_op->catch_list()) {
+        auto catch_op = c.as<op_catch>();
+        Node exception_start, exception_finish;
+        create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
+
+        add_edge(catch_list_start, exception_start);
+
+        Node catch_start, catch_finish;
+        create_cfg(catch_op->cmd(), &catch_start, &catch_finish);
+
+        add_edge(exception_finish, catch_start);
+        add_edge(catch_finish, finish);
+
+        add_subtree(catch_list_start, catch_op, false);
+        add_subtree(exception_start, catch_op->var(), false);
+        add_subtree(catch_start, catch_op->cmd(), true);
+      }
+
+      if (!try_op->catches_all) {
+        // propagate all thrown exceptions
+        for (Node n : exceptions) {
+          create_cfg_register_exception(n);
+        }
+      }
 
       *res_start = try_start;
       *res_finish = finish;
-
-      add_subtree(exception_start, try_op->exception(), false);
-      add_subtree(catch_start, try_op->catch_cmd(), true);
       break;
     }
 
@@ -1211,8 +1228,9 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr v) override {
     if (auto try_op = v.try_as<op_try>()) {
-      if (!vertex_usage[try_op->exception()].used) {
-        kphp_assert(!vertex_usage[try_op->catch_cmd()].used);
+      auto catch_op = try_op->catch_list()[0].as<op_catch>();
+      if (!vertex_usage[catch_op->var()].used) {
+        kphp_assert(!vertex_usage[catch_op->cmd()].used);
         return try_op->try_cmd();
       }
     }

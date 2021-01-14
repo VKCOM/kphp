@@ -34,7 +34,7 @@ int get_backtrace(void **buffer, int size) noexcept {
 
 constexpr int backtrace_size_limit = 64;
 
-} // namsepace
+} // namespace
 
 array<array<string>> f$debug_backtrace() {
   void *buffer[backtrace_size_limit];
@@ -42,45 +42,35 @@ array<array<string>> f$debug_backtrace() {
   return make_backtrace(buffer, nptrs);
 }
 
-Exception CurException;
+Throwable CurException;
 
-string f$Exception$$getMessage(const Exception &e) {
-  return e->message;
+string f$Exception$$getMessage(const Exception &e) { return e->$message; }
+string f$Error$$getMessage(const Error &e) { return e->$message; }
+
+int64_t f$Exception$$getCode(const Exception &e) { return e->$code; }
+int64_t f$Error$$getCode(const Error &e) { return e->$code; }
+
+string f$Exception$$getFile(const Exception &e) { return e->$file; }
+string f$Error$$getFile(const Error &e) { return e->$file; }
+
+int64_t f$Exception$$getLine(const Exception &e) { return e->$line; }
+int64_t f$Error$$getLine(const Error &e) { return e->$line; }
+
+array<array<string>> f$Exception$$getTrace(const Exception &e) { return e->trace; }
+array<array<string>> f$Error$$getTrace(const Error &e) { return e->trace; }
+
+Exception f$Exception$$__construct(const Exception &v$this, const string &message, int64_t code) {
+  exception_initialize(v$this, message, code);
+  return v$this;
 }
 
-int64_t f$Exception$$getCode(const Exception &e) {
-  return e->code;
-}
-
-string f$Exception$$getFile(const Exception &e) {
-  return e->file;
-}
-
-int64_t f$Exception$$getLine(const Exception &e) {
-  return e->line;
-}
-
-array<array<string>> f$Exception$$getTrace(const Exception &e) {
-  return e->trace;
-}
-
-Exception f$Exception$$__construct(const Exception &v$this, const string &file, int64_t line, const string &message, int64_t code) {
-  v$this->file = file;
-  v$this->line = line;
-  v$this->message = message;
-  v$this->code = code;
-
-  void *buffer[backtrace_size_limit];
-  const int trace_size = get_backtrace(buffer, backtrace_size_limit);
-  v$this->raw_trace = array<void *>{array_size{trace_size, 0, true}};
-  v$this->raw_trace.memcpy_vector(trace_size, buffer);
-
-  v$this->trace = make_backtrace(buffer, trace_size);
+Error f$Error$$__construct(const Error &v$this, const string &message, int64_t code) {
+  exception_initialize(v$this, message, code);
   return v$this;
 }
 
 Exception new_Exception(const string &file, int64_t line, const string &message, int64_t code) {
-  return f$Exception$$__construct(Exception().alloc(), file, line, message, code);
+  return __exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
 
@@ -88,8 +78,7 @@ Exception f$err(const string &file, int64_t line, const string &code, const stri
   return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
-
-string f$Exception$$getTraceAsString(const Exception &e) {
+string exception_trace_as_string(const Throwable &e) {
   static_SB.clean();
   for (int64_t i = 0; i < e->trace.count(); i++) {
     array<string> current = e->trace.get_value(i);
@@ -97,6 +86,21 @@ string f$Exception$$getTraceAsString(const Exception &e) {
   }
   return static_SB.str();
 }
+
+void exception_initialize(const Throwable &e, const string &message, int64_t code) {
+  e->$message = message;
+  e->$code = code;
+
+  void *buffer[backtrace_size_limit];
+  const int trace_size = get_backtrace(buffer, backtrace_size_limit);
+  e->raw_trace = array<void *>{array_size{trace_size, 0, true}};
+  e->raw_trace.memcpy_vector(trace_size, buffer);
+
+  e->trace = make_backtrace(buffer, trace_size);
+}
+
+string f$Exception$$getTraceAsString(const Exception &e) { return exception_trace_as_string(e); }
+string f$Error$$getTraceAsString(const Error &e) { return exception_trace_as_string(e); }
 
 void free_exception_lib() {
   hard_reset_var(CurException);

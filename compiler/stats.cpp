@@ -38,7 +38,7 @@ void Stats::on_var_inserting(VarData::Type type) {
 
 void Stats::on_function_processed(FunctionPtr function) {
   ++total_functions_;
-  if (function->can_throw) {
+  if (function->can_throw()) {
     ++total_throwing_functions_;
   }
   if (function->is_resumable) {

@@ -33,8 +33,7 @@ public:
    */
   static LambdaPtr get_lambda_class(VertexPtr arg) {
     auto func_call_arg = arg.try_as<op_func_call>();
-    bool is_constructor = func_call_arg && !func_call_arg->args().empty() && func_call_arg->str_val == ClassData::NAME_OF_CONSTRUCT;
-    if (!is_constructor) {
+    if (!func_call_arg || !is_constructor_call(func_call_arg)) {
       return {};
     }
     if (auto alloc_inside = func_call_arg->args()[0].try_as<op_alloc>()) {

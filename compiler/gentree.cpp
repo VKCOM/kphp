@@ -1931,6 +1931,25 @@ VertexPtr GenTree::get_typehint() {
   }
 }
 
+VertexAdaptor<op_catch> GenTree::get_catch() {
+  CE (expect(tok_catch, "'catch'"));
+  CE (expect(tok_oppar, "'('"));
+  auto exception_class = cur->str_val;
+  CE (expect(tok_func_name, "type that implements Throwable"));
+  auto exception_var_name = get_expression();
+  CE (!kphp_error(exception_var_name, "Cannot parse catch"));
+  CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
+
+  CE (expect(tok_clpar, "')'"));
+  auto catch_body = get_statement();
+  CE (!kphp_error(catch_body, "Cannot parse catch block"));
+
+  auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), embrace(catch_body));
+  catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
+
+  return catch_op;
+}
+
 VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
   TokenType type = cur->type();
 
@@ -2091,17 +2110,17 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       next_cur();
       auto try_body = get_statement();
       CE (!kphp_error(try_body, "Cannot parse try block"));
-      CE (expect(tok_catch, "'catch'"));
-      CE (expect(tok_oppar, "'('"));
-      CE (expect(tok_func_name, "'Exception'"));
-      auto exception_var_name = get_expression();
-      CE (!kphp_error(exception_var_name, "Cannot parse catch ( ??? )"));
-      CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
 
-      CE (expect(tok_clpar, "')'"));
-      auto catch_body = get_statement();
-      CE (!kphp_error(catch_body, "Cannot parse catch block"));
-      return VertexAdaptor<op_try>::create(embrace(try_body), exception_var_name.as<op_var>(), embrace(catch_body)).set_location(location);
+      std::vector<VertexPtr> catch_list;
+      while (test_expect(tok_catch)) {
+        auto catch_op = get_catch();
+        CE (!kphp_error(catch_op, "Cannot parse catch statement"));
+        catch_op.set_location(location);
+        catch_list.emplace_back(catch_op);
+      }
+      CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
+
+      return VertexAdaptor<op_try>::create(embrace(try_body), std::move(catch_list)).set_location(location);
     }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create().set_location(auto_location());

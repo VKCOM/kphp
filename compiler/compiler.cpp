@@ -74,6 +74,7 @@
 #include "compiler/pipes/prepare-function.h"
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
+#include "compiler/pipes/preprocess-exceptions.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-kphp-configuration.h"
@@ -238,6 +239,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<PrepareFunctionF>{}
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
+    >> PassC<PreprocessExceptions>{}
     >> SyncC<GenerateVirtualMethods>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}

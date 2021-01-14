@@ -4,9 +4,9 @@ sort: 7
 
 # Exceptions 
 
-KPHP supports `Exception` class, but doesn't support exceptions inheritance and `finally` keyword. 
+KPHP supports most exception-related features, but doesn't support `finally` keyword. 
 ```php
-// simple Exceptions usage will work on KPHP
+// Exception is a builtin class that can be extended
 function loadUser(int $user_id): User {
   if ($user_id <= 0)
     throw new Exception("Invalid user_id = $user_id");

@@ -53,8 +53,14 @@ public:
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
+  std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
   FunctionPtr function_in_which_lambda_was_created;
+
+  // @kphp-throws checks that a function throws only specified exceptions;
+  // empty vector means "nothing to check", it's not "throws nothing",
+  // to check that a function does not throw, should_not_throw flag is used
+  std::forward_list<std::string> check_throws;
 
   // TODO: find usages when we'll allow lambdas inside template functions.
   //std::vector<FunctionPtr> lambdas_inside;
@@ -87,7 +93,6 @@ public:
   bool is_template = false;
   bool is_auto_inherited = false;
   bool is_inline = false;
-  bool can_throw = false;
   bool cpp_template_call = false;
   bool cpp_variadic_call = false;
   bool is_resumable = false;
@@ -131,6 +136,10 @@ public:
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
   static string get_human_readable_name(const std::string &name, bool add_details = true);
   string get_human_readable_name(bool add_details = true) const;
+
+  bool can_throw() const noexcept  {
+    return !exceptions_thrown.empty();
+  }
 
   bool has_implicit_this_arg() const {
     return modifiers.is_instance();

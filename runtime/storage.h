@@ -12,9 +12,9 @@
 extern const char *last_wait_error;
 
 struct thrown_exception {
-  Exception exception;
+  Throwable exception;
   thrown_exception() = default;
-  explicit thrown_exception(Exception exception) noexcept : exception(std::move(exception)) {}
+  explicit thrown_exception(Throwable exception) noexcept : exception(std::move(exception)) {}
 };
 
 template<size_t limit>

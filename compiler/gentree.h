@@ -96,6 +96,7 @@ public:
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
   VertexPtr get_statement(vk::string_view phpdoc_str = vk::string_view{});
+  VertexAdaptor<op_catch> get_catch();
   void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
   void get_traits_uses();
   void get_use();
@@ -264,4 +265,8 @@ static inline bool is_const_int(VertexPtr root) {
 inline bool is_positive_constexpr_int(VertexPtr v) {
   auto actual_value = GenTree::get_actual_value(v).try_as<op_int_const>();
   return actual_value && parse_int_from_string(actual_value) >= 0;
+}
+
+inline bool is_constructor_call(VertexAdaptor<op_func_call> call) {
+  return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
 }
