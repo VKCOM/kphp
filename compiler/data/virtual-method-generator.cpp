@@ -237,7 +237,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
 
   auto &root = virtual_function->root;
   auto declaration_location = root->get_location();
-  root = VertexAdaptor<op_function>::create(root->params(), body_of_virtual_method);
+  root = VertexAdaptor<op_function>::create(root->param_list(), body_of_virtual_method);
   root->func_id = virtual_function;
   virtual_function->type = FunctionData::func_local;
 

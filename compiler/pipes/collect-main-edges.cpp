@@ -83,7 +83,7 @@ void CollectMainEdgesPass::create_type_assign(const LValue &lhs, const TypeData 
 }
 
 // when we have array_map(function($v) { ... }, ...), then type of $v depends on this exact call
-// it's because array_map's first argument is declared as callback ($x ::: ^2[*]) : any
+// it's because array_map's first argument is declared as callable(^2[*] $x) : any
 // as an input, we have lhs ($v), func_call (exact array_map invocation), and type_hint for lhs (^2[*])
 // it's not a type assign, because tinf::TypeNode holds a constexpr type, whereas here we have a rule with call context
 void CollectMainEdgesPass::create_type_assign_with_arg_ref_rule(const LValue &lhs, const TypeHint *type_hint, VertexPtr func_call) {
@@ -222,27 +222,28 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
 
 // handle calls to built-in functions with callbacks:
 // array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
-// (not to php functions with callable arguments! built-in only, having a callback type rule)
+// (not to php functions with callable arguments! built-in only)
 void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback) {
   const FunctionPtr call_function = call->func_id;  // array_filter, etc
-  auto callback_param = call_function->get_params()[param_i].as<op_func_param_typed_callback>();
+  auto callback_param = call_function->get_params()[param_i].as<op_func_param>();
+  const auto *type_hint_callable = callback_param->type_hint->try_as<TypeHintCallable>();
 
   // set restriction of return type of provided callback
-  // built-in functions are declared as 'callback(...) ::: any' or 'callback(...) ::: bool'
+  // built-in functions are declared as 'callable(...):any' or 'callable(...):bool'
   // if 'any', it must return anything but void; otherwise, the type rule must be satisfied (it's static, no argument depends)
-  const auto *as_primitive = callback_param->type_hint->try_as<TypeHintPrimitive>();
+  const auto *as_primitive = type_hint_callable->return_type->try_as<TypeHintPrimitive>();
   if (as_primitive && as_primitive->ptype == tp_any) {
     create_non_void(as_rvalue(provided_callback, -1));
   } else {
-    create_postponed_type_check(as_rvalue(provided_callback, -1), as_rvalue(provided_callback, -1), callback_param->type_hint);
+    create_postponed_type_check(as_rvalue(provided_callback, -1), as_rvalue(provided_callback, -1), type_hint_callable->return_type);
   }
 
   // analyze uncommon pattern 'array_map("array_filter", $arr)': the callback itself has ^1 return typehint
   // so, we need to recalc this call whenever arguments applied for this callback are recalculated
   if (provided_callback->return_typehint && provided_callback->return_typehint->has_argref_inside()) {
-    for (auto callback_param_decl : callback_param->params()->params()) {
-      if (callback_param_decl.as<op_func_param>()->type_hint->has_argref_inside()) {
-        create_edges_to_recalc_arg_ref(callback_param_decl.as<op_func_param>()->type_hint, call, call);
+    for (const auto *callback_param_type_hint : type_hint_callable->arg_types) {
+      if (callback_param_type_hint->has_argref_inside()) {
+        create_edges_to_recalc_arg_ref(callback_param_type_hint, call, call);
       }
     }
   }
@@ -253,16 +254,15 @@ void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_cal
   }
 
   // here we do the following: having PHP code 'array_map(function($v) { ... }, $arr)'
-  // with callback_param declared as 'callback ($x ::: ^2[*]) ::: any',
+  // with callback_param declared as 'callable(^2[*] $x):any',
   // create set-edges to infer $v as ^2[*] of $arr on this exact call
-  VertexRange callback_args = get_function_params(callback_param);
-  for (int i = 0; i < callback_args.size(); ++i) {
-    auto callback_param_decl = callback_args[i].as<op_func_param>(); // $x ::: ^2[*] above
+  for (int i = 0; i < type_hint_callable->arg_types.size(); ++i) {
+    const auto *callback_param_decl = type_hint_callable->arg_types[i]; // ^2[*] above
     int param_i = provided_callback->is_lambda() ? i + 1 : i;
-    if (callback_param_decl->type_hint->has_argref_inside()) {
-      create_type_assign_with_arg_ref_rule(as_lvalue(provided_callback, param_i), callback_param_decl->type_hint, call);
+    if (callback_param_decl->has_argref_inside()) {
+      create_type_assign_with_arg_ref_rule(as_lvalue(provided_callback, param_i), callback_param_decl, call);
     } else {
-      create_type_assign(as_lvalue(provided_callback, param_i), callback_param_decl->type_hint->to_type_data());
+      create_type_assign(as_lvalue(provided_callback, param_i), callback_param_decl->to_type_data());
     }
   }
 }
@@ -282,10 +282,10 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
 
   for (int i = 0; i < call->args().size(); ++i) {
     VertexPtr arg = call->args()[i];
-    auto param = function_params[i].as<meta_op_func_param>();
+    auto param = function_params[i].as<op_func_param>();
 
-    // call an extern function having a callback type description, like 'callback($x ::: ^1[*]) ::: bool'
-    if (param->type() == op_func_param_typed_callback) {
+    // call an extern function having a callback type description, like 'callable(^1[*]) : bool'
+    if (function->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
       kphp_assert(arg->type() == op_func_ptr);
       on_func_call_param_callback(call, i, arg.as<op_func_ptr>()->func_id);
     }
@@ -302,7 +302,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
 
     if (should_create_set_to_infer) {
       create_set(as_lvalue(function, i), arg);
-    } else if (param->type_hint && param->type() == op_func_param && !param->is_cast_param) {
+    } else if (param->type_hint && param->type_hint->is_typedata_constexpr() && !param->is_cast_param) {
       create_postponed_type_check(as_rvalue(function, i), as_rvalue(arg), param->type_hint);
     }
 
@@ -461,7 +461,7 @@ void CollectMainEdgesPass::on_function(FunctionPtr function) {
   // all arguments having a type hint or @param — create both set and restriction edges
   for (int i = 0; i < params.size(); i++) {
     if (auto param = params[i].try_as<op_func_param>()) {
-      if (param->type_hint) {
+      if (param->type_hint && param->type_hint->is_typedata_constexpr()) {
         create_type_assign_with_restriction(as_lvalue(function, i), param->type_hint);
       }
     }

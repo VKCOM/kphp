@@ -70,7 +70,7 @@ public:
                          : func_call->get_string();
 
     FunctionPtr called_function = G->get_function(name);
-    if (!called_function) {
+    if (!called_function || called_function->is_extern()) {
       return;
     }
 
@@ -81,7 +81,7 @@ public:
 
     for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
       if (auto lambda_class = get_lambda_class(call_args[i])) {
-        auto func_param = func_args[i].try_as<op_func_param>();
+        auto func_param = func_args[i].as<op_func_param>();
         if (!func_param) {
           continue;
         }

@@ -224,7 +224,7 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const TypeHint *type
   if (const auto *as_callable = type_hint->try_as<TypeHintCallable>()) {
     // typed callable, like callable(int):void — when we see such a phpdoc, we generate an interface based on types
     // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
-    if (as_callable->is_typed_callable()) {
+    if (as_callable->is_typed_callable() && !as_callable->has_argref_inside()) {
       return AssumTypedCallable::create(as_callable->get_interface());
     }
     // just `callable` keywords have sense only as a param type hint
@@ -385,7 +385,7 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
  * That type information comes in two forms: a @param phpdoc or a type hint like in 'f(A $a)'.
  * Called exactly once for every function.
  */
-void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> root) {
+void init_assumptions_for_arguments(FunctionPtr f) {
   if (!f->phpdoc_str.empty()) {
     for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
       if (!parsed.var_name.empty()) {
@@ -394,9 +394,8 @@ void init_assumptions_for_arguments(FunctionPtr f, VertexAdaptor<op_function> ro
     }
   }
 
-  VertexRange params = root->params()->args();
-  for (auto i : params.get_reversed_range()) {
-    VertexAdaptor<op_func_param> param = i.try_as<op_func_param>();
+  for (auto i : f->get_params()) {
+    auto param = i.as<op_func_param>();
     if (param && param->type_hint) {
       auto a = assumption_create_from_phpdoc(param->type_hint);
       if (!a->is_primitive()) {
@@ -566,7 +565,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::st
 
   auto expected = AssumptionStatus::unknown;
   if (f->assumption_args_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
-    init_assumptions_for_arguments(f, f->root);
+    init_assumptions_for_arguments(f);
     f->assumption_args_status = AssumptionStatus::initialized;
   } else if (expected == AssumptionStatus::processing) {
     assumption_busy_wait(f->assumption_args_status);

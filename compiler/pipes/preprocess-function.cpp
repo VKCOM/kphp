@@ -14,6 +14,7 @@
 #include "compiler/function-pass.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
+#include "compiler/type-hint.h"
 
 class PreprocessFunctionPass final : public FunctionPassBase {
 public:
@@ -385,93 +386,78 @@ private:
     auto func_args_n = static_cast<int>(func_args.size());
 
     for (int i = 0; i < std::min(call_args_n, func_args_n); i++) {
+      auto param = func_args[i].as<op_func_param>();
+      bool is_callback_passed_to_extern = func->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>();
       auto &call_arg = call_args[i];
-      switch (func_args[i]->type()) {
-        case op_func_param: {
-          if (call_arg->type() == op_func_name) {
-            string msg = "Unexpected function pointer: " + call_arg->get_string();
-            kphp_error(false, msg.c_str());
-            continue;
-          } else if (call_arg->type() == op_varg) {
-            string msg = "function: `" + func->name + "` must takes variable-length argument list";
-            kphp_error_act(false, msg.c_str(), break);
-          }
 
-          auto param = func_args[i].as<op_func_param>();
-          if (param->is_cast_param) {   // ::: cast param in functions.txt or @kphp-infer cast function
-            call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
-          }
+      if (!is_callback_passed_to_extern) {
+        kphp_error_act(call_arg->type() != op_func_name,
+                       fmt_format("Unexpected function pointer: {}", call_arg->get_string()), continue);
+        kphp_error_act(call_arg->type() != op_varg,
+                       fmt_format("Passed unpacked arguments to a non-vararg function"), continue);
 
-          if (param->is_callable && !func->is_template && func->instantiation_of_template_function_location.line == -1) {
-            if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
-              ClassPtr lambda_interface_klass;
-              if(auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumTypedCallable>()) {
-                lambda_interface_klass = lambda_interface->interface;
-              } else if(auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumInstance>()) {
-                lambda_interface_klass = lambda_interface->klass;
-              }
-              auto is_correct_lambda = arg_assum->klass->is_lambda() && lambda_interface_klass && lambda_interface_klass->is_parent_of(arg_assum->klass);
-              kphp_error_act(is_correct_lambda, fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
-            } else {
-              kphp_error_act(false, fmt_format("You must passed lambda as argument: {}", param->var()->str_val), return call);
-            }
-            break;
-          }
-
-          if (!param->is_callable) {
-            break;
-          }
-          auto name_of_fun_for_wrapping_into_lambda = conv_to_func_ptr_name(call_arg);
-          if (!name_of_fun_for_wrapping_into_lambda.empty()) {
-            FunctionPtr fun_for_wrapping = G->get_function(name_of_fun_for_wrapping_into_lambda);
-            if (!fun_for_wrapping || !fun_for_wrapping->is_required) {
-              auto err_msg = "Maybe you have never used class or miss @kphp-required tag: " +
-                             TermStringFormat::paint(FunctionData::get_human_readable_name(name_of_fun_for_wrapping_into_lambda), TermStringFormat::green);
-              kphp_error_act(false, err_msg.c_str(), return call);
-            }
-
-            auto anon_location = call->location;
-            call_arg = LambdaGenerator{current_function, anon_location}
-              .add_invoke_method_which_call_function(fun_for_wrapping)
-              .add_constructor_from_uses()
-              .generate_and_require(current_function, instance_of_function_template_stream)
-              ->gen_constructor_call_pass_fields_as_args();
-          } else if (convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
-            break;
-          } else if (stage::has_error()) {
-            return call;
-          }
-
-          if (!infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
-            std::string fun_name;
-            if (auto arr = call_arg.try_as<op_array>()) {
-              if (arr->args().size() == 2 && arr->args()[1]->type() == op_string) {
-                fun_name = arr->args()[1]->get_string();
-              }
-            } else if (auto str = call_arg.try_as<op_string>()) {
-              fun_name = str->get_string();
-            }
-
-            auto err_msg = "can't find function:" + TermStringFormat::paint(fun_name, TermStringFormat::green) + ", maybe you miss @kphp-required tag";
-            kphp_error_act(false, err_msg.c_str(), return call);
-          }
-
-          break;
+        if (param->is_cast_param) {   // ::: cast param in functions.txt or @kphp-infer cast function
+          call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
         }
 
-        case op_func_param_typed_callback: {
-          if (!convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
-            call_arg = conv_to_func_ptr(call_arg);
+        if (!param->is_callable) {
+          continue;
+        }
+
+        // handle typed callables, which are interfaces in face
+        if (!func->is_template && func->instantiation_of_template_function_location.line == -1) {
+          if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
+            ClassPtr lambda_interface_klass;
+            if (auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumTypedCallable>()) {
+              lambda_interface_klass = lambda_interface->interface;
+            } else if (auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumInstance>()) {
+              lambda_interface_klass = lambda_interface->klass;
+            }
+            auto is_correct_lambda = arg_assum->klass->is_lambda() && lambda_interface_klass && lambda_interface_klass->is_parent_of(arg_assum->klass);
+            kphp_error_act(is_correct_lambda, fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
+          } else {
+            kphp_error_act(false, fmt_format("You must passed lambda as argument: {}", param->var()->str_val), return call);
           }
-
-          instantiate_lambda(call.as<op_func_call>(), call_arg);
-          break;
+          continue;
         }
 
-        default: {
-          kphp_fail();
+        // handle untyped callables
+        auto name_of_fun_for_wrapping_into_lambda = conv_to_func_ptr_name(call_arg);
+        if (!name_of_fun_for_wrapping_into_lambda.empty()) {
+          FunctionPtr fun_for_wrapping = G->get_function(name_of_fun_for_wrapping_into_lambda);
+          kphp_error_act(fun_for_wrapping && fun_for_wrapping->is_required,
+                         fmt_format("Can't find function {}, maybe you miss @kphp-required tag", name_of_fun_for_wrapping_into_lambda), continue);
+
+          auto anon_location = call->location;
+          call_arg = LambdaGenerator{current_function, anon_location}
+            .add_invoke_method_which_call_function(fun_for_wrapping)
+            .add_constructor_from_uses()
+            .generate_and_require(current_function, instance_of_function_template_stream)
+            ->gen_constructor_call_pass_fields_as_args();
+        } else if (convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
+          continue;
         }
+
+        if (!infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
+          std::string fun_name;
+          if (auto arr = call_arg.try_as<op_array>()) {
+            if (arr->args().size() == 2 && arr->args()[1]->type() == op_string) {
+              fun_name = arr->args()[1]->get_string();
+            }
+          } else if (auto str = call_arg.try_as<op_string>()) {
+            fun_name = str->get_string();
+          }
+          kphp_error(0, fmt_format("Can't find function {}, maybe you miss @kphp-required tag", fun_name));
+        }
+
+      } else {    // is_callback_passed_to_extern
+        if (!convert_array_with_instance_to_lambda_class(call_arg, call->get_location())) {
+          call_arg = conv_to_func_ptr(call_arg);
+        }
+
+        instantiate_lambda(call.as<op_func_call>(), call_arg);
       }
+
     }
 
     if (func->is_template) {

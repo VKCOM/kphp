@@ -134,10 +134,6 @@ void FunctionParams::compile(CodeGenerator &W) const {
   bool first = true;
   size_t ii = shift;
   for (auto i : params) {
-    if (i->type() == op_func_param) {
-      assert ("functions with callback are not supported");
-    }
-
     if (first) {
       first = false;
     } else {

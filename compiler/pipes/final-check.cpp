@@ -111,11 +111,13 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
   }
 
   for (int i = 0; i < call_params_n; i++) {
-    auto func_param = func_params[i].try_as<op_func_param_typed_callback>();
-    if (!func_param) {
+    auto param = func_params[i].as<op_func_param>();
+    bool is_callback_passed_to_extern = f->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>();
+    if (!is_callback_passed_to_extern) {
       kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
       continue;
     }
+    const auto *type_hint_callable = param->type_hint->try_as<TypeHintCallable>();
 
     auto lambda_class = LambdaClassData::get_from(call_params[i]);
     kphp_error_act(lambda_class || call_params[i]->type() == op_func_ptr, "Callable object expected", continue);
@@ -129,15 +131,10 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     VertexRange cur_params = func_ptr_of_callable->get_params();
 
     for (auto arg : cur_params) {
-      if (auto param_arg = arg.try_as<op_func_param>()) {
-        kphp_error_return(!param_arg->var()->ref_flag, "Callback function with reference parameter");
-      } else if (auto callback_arg = arg.try_as<op_func_param_typed_callback>()) {
-        kphp_error_return(callback_arg->has_default_value(), "Callback function with callback parameter");
-      }
+      kphp_error_return(!arg.as<op_func_param>()->var()->ref_flag, "You can't pass callbacks with &references to built-in functions");
     }
     if (func_ptr_of_callable->local_name() == "instance_to_array") {
-      auto param_of_callback = func_param->params()->params()[0].as<op_func_param>();
-      if (const auto *as_subkey = param_of_callback->type_hint->try_as<TypeHintArgSubkeyGet>()) {
+      if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
         auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
           auto value_type = tinf::get_type(arg)->lookup_at_any_key();
@@ -148,7 +145,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
       }
     }
 
-    auto expected_arguments_count = get_function_params(func_param).size();
+    auto expected_arguments_count = type_hint_callable->arg_types.size();
     if (!FunctionData::check_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
       continue;
     }

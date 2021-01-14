@@ -169,7 +169,7 @@ function header ($str ::: string, $replace ::: bool = true, $http_response_code 
 function headers_list () ::: string[];
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
-function register_shutdown_function (callback() ::: void) ::: void;
+function register_shutdown_function (callable():void $function) ::: void;
 /* // removed because it's not working now.
   function fastcgi_finish_request() ::: void;
 */
@@ -200,7 +200,7 @@ function critical_error($message ::: string) ::: void;
 function exit($code = 0) ::: void;
 /** @kphp-no-return */
 function die($code = 0) ::: void;
-function register_kphp_on_warning_callback(callback($warning_message ::: string, $stacktrace ::: string[]) ::: void) ::: void;
+function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
 
@@ -265,7 +265,7 @@ function array_shift (&$a ::: array) ::: ^1[*];
 function array_unshift (&$a ::: array, $val ::: any) ::: int;
 function array_key_exists ($v ::: any, $a ::: array) ::: bool;
 function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: mixed;
-function array_find ($val ::: array, callback ($x ::: ^1[*]) ::: bool) ::: tuple(mixed, ^1[*]);
+function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
 function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
 function array_keys ($a ::: array) ::: mixed[];
 function array_keys_as_strings ($a ::: array) ::: string[];
@@ -298,11 +298,11 @@ function min (...$a) ::: ^1[*];
  */
 function max (...$a) ::: ^1[*];
 
-function array_filter ($a ::: array, callback ($x ::: ^1[*]) ::: bool = TODO) ::: ^1;
-function array_filter_by_key ($a ::: array, callback ($key ::: mixed) ::: bool) ::: ^1;
-function array_map (callback ($x ::: ^2[*]) ::: any, $a ::: array) ::: ^1() [];
+function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
+function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback) ::: ^1;
+function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
-function array_reduce ($a ::: array, callback($carry ::: ^3 | ^2(), $item ::: ^1[*]) ::: any, $initial ::: any) ::: ^2() | ^3;
+function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
 function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;
@@ -405,7 +405,7 @@ define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0) ::: int | false;//TODO
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
-function preg_replace_callback ($regex ::: regexp, callback($x ::: string[]) ::: string, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
+function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
@@ -417,13 +417,13 @@ define('SORT_STRING', 2);
 function shuffle (&$a ::: array) ::: void;
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function usort (&$a ::: array, callback($x ::: ^1[*], $y ::: ^1[*]) ::: int) ::: void;
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
 function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function uasort (&$a ::: array, callback($x ::: ^1[*], $y ::: ^1[*]) ::: int) ::: void;
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
 function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function uksort (&$a ::: array, callback($x ::: mixed, $y ::: mixed) ::: int) ::: void;
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
 function natsort (&$a ::: array) ::: void;
 
 function lcg_value() ::: float;

@@ -20,8 +20,7 @@ void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, Data
   }
 
   auto get_default = [](VertexPtr v) {
-    auto param = v.try_as<op_func_param>();
-    kphp_assert(param);
+    auto param = v.as<op_func_param>();
     if (param->has_default_value()) {
       return param->default_value();
     }
