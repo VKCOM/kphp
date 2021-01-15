@@ -12,6 +12,21 @@
 
 class WarmUpContext : public vk::singleton<WarmUpContext> {
 public:
+  double calc_final_instance_cache_sizes_ratio() const {
+    if (final_old_instance_cache_size_ == 0) {
+      return -0.1;
+    }
+    return static_cast<double>(final_new_instance_cache_size_) / final_old_instance_cache_size_;
+  }
+
+  void update_final_instance_cache_sizes() {
+    if (!final_instance_cache_sizes_saved_) {
+      final_new_instance_cache_size_ = me->instance_cache_elements_stored;
+      final_old_instance_cache_size_ = other->instance_cache_elements_stored;
+      final_instance_cache_sizes_saved_ = true;
+    }
+  }
+
   void try_start_warmup() {
     if (me_running_workers_n > 0 && !timer_.is_started()) {
       timer_.start();
@@ -20,6 +35,9 @@ public:
 
   void reset() {
     timer_.reset();
+    final_new_instance_cache_size_ = 0;
+    final_old_instance_cache_size_ = 0;
+    final_instance_cache_sizes_saved_ = false;
   }
 
   bool need_more_workers_for_warmup() const {
@@ -51,6 +69,10 @@ private:
   std::chrono::duration<double> warm_up_max_time_{5.0};
 
   vk::SteadyTimer<std::chrono::milliseconds> timer_{};
+
+  uint32_t final_new_instance_cache_size_{0};
+  uint32_t final_old_instance_cache_size_{0};
+  bool final_instance_cache_sizes_saved_{false};
 
   WarmUpContext() = default;
 
