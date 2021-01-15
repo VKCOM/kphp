@@ -25,6 +25,7 @@
 #include "common/precise-time.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
 #include "compiler/pipes/analyzer.h"
@@ -67,7 +68,6 @@
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
-#include "compiler/pipes/init-cpp-dest-dir.h"
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/load-files.h"
@@ -212,12 +212,15 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   SchedulerBase *scheduler;
-  if (G->settings().threads_count.get() == 1) {
+  const auto scheduler_threads = static_cast<int32_t>(G->settings().threads_count.get());
+  if (scheduler_threads == 1) {
     scheduler = new OneThreadScheduler();
+    vk::singleton<CppDestDirInitializer>::get().initialize_sync();
   } else {
     auto s = new Scheduler();
-    s->set_threads_count(static_cast<int32_t>(G->settings().threads_count.get()));
+    s->set_threads_count(scheduler_threads);
     scheduler = s;
+    vk::singleton<CppDestDirInitializer>::get().initialize_async(scheduler_threads + 1);
   }
 
   G->try_load_tl_classes();
@@ -252,7 +255,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
-    >> PipeC<InitCppDestDirF>{}
     >> PassC<RemoveEmptyFunctionCalls>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<CalcConstTypePass>{}

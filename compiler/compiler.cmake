@@ -131,7 +131,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         fix-returns.cpp
         gen-tree-postprocess.cpp
         generate-virtual-methods.cpp
-        init-cpp-dest-dir.cpp
         inline-defines-usages.cpp
         inline-simple-functions.cpp
         load-files.cpp
@@ -165,6 +164,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         compiler-core.cpp
         compiler.cpp
         composer.cpp
+        cpp-dest-dir-initializer.cpp
         debug.cpp
         compiler-settings.cpp
         gentree.cpp

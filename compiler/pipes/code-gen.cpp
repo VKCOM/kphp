@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/code-gen.h"
 
+#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -32,6 +33,8 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
 }
 
 void CodeGenF::on_finish(DataStream<WriterData> &os) {
+  vk::singleton<CppDestDirInitializer>::get().wait();
+
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
