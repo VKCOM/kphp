@@ -138,10 +138,6 @@ void OpInfo::init_static() {
   add_unary_op(curP, tok_dec, op_prefix_dec);
 
   op_priority_end = ++curP;
-
-  add_op(tok_triple_colon, op_common_type_rule);
-  add_op(tok_triple_lt, op_lt_type_rule);
-  add_op(tok_triple_gt, op_gt_type_rule);
 }
 
 OpProperties OpInfo::P[Operation_size];

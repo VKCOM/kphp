@@ -166,12 +166,9 @@ enum TokenType {
   tok_defined,
 
   tok_triple_colon,
-  tok_triple_gt,
-  tok_triple_lt,
 
   tok_throw,
   tok_new,
-  tok_Exception,
 
   tok_try,
   tok_catch,
