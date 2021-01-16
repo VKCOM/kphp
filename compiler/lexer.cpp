@@ -955,9 +955,7 @@ void TokenLexerCommon::init() {
   assert(!h);
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("No <common token> found"));
 
-  add_rule(h, ":::", tok_triple_colon);
-  add_rule(h, ":<=:", tok_triple_lt);
-  add_rule(h, ":>=:", tok_triple_gt);
+  add_rule(h, ":::", tok_triple_colon);   // used in functions.txt to express cast params
 
   add_rule(h, "=", tok_eq1);
   add_rule(h, "==", tok_eq2);

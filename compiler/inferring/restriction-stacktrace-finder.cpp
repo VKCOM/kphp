@@ -73,8 +73,6 @@ int RestrictionStacktraceFinder::get_importance_of_reason(const tinf::Node *from
       return get_var_id_from_node(to) == get_var_id_from_node(from) ? 4 : 5;
     case op_func_call:
       return expr->get_string() == "make_clone" ? 4 : 3;
-    case op_common_type_rule:
-      return 0;
     case op_array:
       return 2;
     case op_float_const:
@@ -220,7 +218,6 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
       VertexPtr expr = expr_node->get_expr();
       bool skip =
         (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->name == "make_clone") ||
-        (expr->type() == op_common_type_rule) ||
         (expr->type() == op_return && expr.as<op_return>()->has_expr()) ||
         (expr->type() == op_var && expr.as<op_var>()->extra_type == OperationExtra::op_ex_var_const);
       if (skip) {

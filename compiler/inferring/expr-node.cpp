@@ -265,12 +265,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_trigger_recalc_arg_ref_rule:
       recalc_arg_ref_rule(expr.as<op_trigger_recalc_arg_ref_rule>());
       break;
-    case op_common_type_rule:
-    case op_gt_type_rule:
-    case op_lt_type_rule:
-    case op_set_check_type_rule:
-      kphp_assert(0 && "type_rule to be deleted");
-      break;
     case op_var:
       recalc_var(expr.as<op_var>());
       break;

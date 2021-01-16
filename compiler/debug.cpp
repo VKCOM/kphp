@@ -171,11 +171,8 @@ std::string debugTokenName(TokenType t) {
     {tok_define, "tok_define"},
     {tok_defined, "tok_defined"},
     {tok_triple_colon, "tok_triple_colon"},
-    {tok_triple_gt, "tok_triple_gt"},
-    {tok_triple_lt, "tok_triple_lt"},
     {tok_throw, "tok_throw"},
     {tok_new, "tok_new"},
-    {tok_Exception, "tok_Exception"},
     {tok_try, "tok_try"},
     {tok_catch, "tok_catch"},
     {tok_public, "tok_public"},
@@ -230,13 +227,8 @@ static std::string debugVertexMore(VertexPtr v) {
       return v->get_string() == "\n" ? "\"\\n\"" : "\"" + v->get_string() + "\"";
     case op_int_const:
       return v->get_string();
-    case op_type_expr_class:
-      return v.as<op_type_expr_class>()->class_name + " = " +
-             (v.as<op_type_expr_class>()->class_ptr ? v.as<op_type_expr_class>()->class_ptr->name : "unresolved");
     case op_seq:
       return std::to_string(v->size());
-    case op_type_expr_arg_ref:
-      return "^" + std::to_string(v.as<op_type_expr_arg_ref>()->int_val);
     case op_phpdoc_var:
       return "@var for " + v.as<op_phpdoc_var>()->var()->str_val;
     default:

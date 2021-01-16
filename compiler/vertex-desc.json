@@ -148,13 +148,6 @@
     "base_name": "meta_op_base"
   },
   {
-    "name": "meta_op_type_rule",
-    "base_name": "meta_op_base",
-    "sons": {
-      "rule": 0
-    }
-  },
-  {
     "extras": [
       "string"
     ],
@@ -165,83 +158,6 @@
       "cnst": "cnst_const_func",
       "type": "common_op"
     }
-  },
-  {
-    "name": "op_type_expr_type",
-    "base_name": "meta_op_varg"
-  },
-  {
-    "name": "op_type_expr_lca",
-    "base_name": "meta_op_varg"
-  },
-  {
-    "name": "op_type_expr_instance",
-    "base_name": "meta_op_unary"
-  },
-  {
-    "name": "op_type_expr_drop_false",
-    "base_name": "meta_op_unary"
-  },
-  {
-    "name": "op_type_expr_drop_null",
-    "base_name": "meta_op_unary"
-  },
-  {
-    "name": "op_type_expr_callback_call",
-    "base_name": "meta_op_unary"
-  },
-  {
-    "sons": {
-      "params": {
-        "id": 0,
-        "type": "op_func_param_list",
-        "optional": true
-      },
-      "return_type": {
-        "id": 1,
-        "optional": true
-      }
-    },
-    "name": "op_type_expr_callable",
-    "base_name": "meta_op_unary"
-  },
-  {
-    "name": "op_type_expr_class",
-    "base_name": "meta_op_base",
-    "extra_fields": {
-      "class_ptr": {
-        "type": "ClassPtr"
-      },
-      "class_name": {
-        "type": "std::string"
-      }
-    }
-  },
-  {
-    "extra_fields": {
-      "int_val": {
-        "type": "int",
-        "default": 0
-      }
-    },
-    "name": "op_type_expr_arg_ref",
-    "base_name": "meta_op_base"
-  },
-  {
-    "name": "op_common_type_rule",
-    "base_name": "meta_op_type_rule"
-  },
-  {
-    "name": "op_lt_type_rule",
-    "base_name": "meta_op_type_rule"
-  },
-  {
-    "name": "op_gt_type_rule",
-    "base_name": "meta_op_type_rule"
-  },
-  {
-    "name": "op_set_check_type_rule",
-    "base_name": "meta_op_type_rule"
   },
   {
     "comment": "aftificial vertex to trigger ExprNodeRecalc for a func call with ^1 and similar dependencies",
