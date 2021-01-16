@@ -122,6 +122,7 @@ public:
   VertexAdaptor<op_do> get_do();
   VertexAdaptor<op_switch> get_switch();
   VertexAdaptor<op_shape> get_shape();
+  VertexPtr get_phpdoc_inside_function();
   bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
   static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
   VertexAdaptor<op_func_call> get_anonymous_function(TokenType tok = tok_function, bool is_static = false);

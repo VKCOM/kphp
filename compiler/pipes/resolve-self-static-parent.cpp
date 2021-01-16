@@ -13,6 +13,7 @@
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 
 
 void ResolveSelfStaticParentPass::on_start() {
@@ -91,6 +92,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
 
       v->set_string(get_full_static_member_name(current_function, original_name, v->type() == op_func_call));
     }
+
   } else if (auto alloc = v.try_as<op_alloc>()) {
     // replace 'new A' to the fully resolved name 'new Classes\A'
     if (!alloc->allocated_class) {
@@ -101,6 +103,11 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
                      fmt_format("Cannot instantiate abstract class {}", alloc->allocated_class_name), return v);
       check_access_to_class_from_this_file(alloc->allocated_class);
     }
+
+  } else if (auto phpdoc_var = v.try_as<op_phpdoc_var>()) {
+    // replace 'self' and others if exist in @var, check classes existence
+    phpdoc_var->type_hint = phpdoc_finalize_type_hint_and_resolve(phpdoc_var->type_hint, current_function);
+    kphp_error(phpdoc_var->type_hint, fmt_format("Failed to parse @var inside {}", current_function->get_human_readable_name()));
   }
 
   return v;

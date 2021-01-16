@@ -49,7 +49,6 @@ FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
     case op_seq:
       return calc_seq_body_type(vertex.as<op_seq>());
     case op_empty:
-    case op_phpdoc_raw:
       return FunctionData::body_value::empty;
     default:
       return FunctionData::body_value::non_empty;

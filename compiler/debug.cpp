@@ -237,8 +237,8 @@ static std::string debugVertexMore(VertexPtr v) {
       return std::to_string(v->size());
     case op_type_expr_arg_ref:
       return "^" + std::to_string(v.as<op_type_expr_arg_ref>()->int_val);
-    case op_phpdoc_raw:
-      return "/*" + std::string(v.as<op_phpdoc_raw>()->phpdoc_str) + "*/";
+    case op_phpdoc_var:
+      return "@var for " + v.as<op_phpdoc_var>()->var()->str_val;
     default:
       return "";
   }

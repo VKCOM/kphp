@@ -1880,25 +1880,6 @@
     }
   },
   {
-    "comment": "partially parsed phpdoc comment",
-    "name": "op_phpdoc_raw",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_error",
-      "cnst": "cnst_not_func",
-      "type": "error_op",
-      "str": "phpdoc"
-    },
-    "extra_fields": {
-      "phpdoc_str": {
-        "type": "vk::string_view"
-      },
-      "next_var_name": {
-        "type": "std::string"
-      }
-    }
-  },
-  {
     "comment": "artificial op that holds phpdoc @var info",
     "sons": {
       "var": {
