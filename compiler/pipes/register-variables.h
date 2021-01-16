@@ -19,6 +19,7 @@
 class RegisterVariablesPass final : public FunctionPassBase {
 private:
   std::map<string, VarPtr> registred_vars;
+  std::forward_list<VertexAdaptor<op_phpdoc_var>> phpdoc_vars;
   bool global_function_flag{false};
   int in_param_list{0};
 
@@ -35,6 +36,7 @@ private:
   void visit_global_vertex(VertexAdaptor<op_global> global);
   void visit_static_vertex(VertexAdaptor<op_static> stat);
   void visit_var(VertexAdaptor<op_var> var);
+  void visit_phpdoc_var(VertexAdaptor<op_phpdoc_var> phpdoc_var);
 
   void visit_func_param_list(VertexAdaptor<op_func_param_list> list);
 
@@ -48,6 +50,8 @@ public:
   void on_start() override {
     global_function_flag = current_function->is_main_function() || current_function->type == FunctionData::func_switch;
   }
+
+  void on_finish() override;
 
   VertexPtr on_enter_vertex(VertexPtr root) override;
   VertexPtr on_exit_vertex(VertexPtr root) override;

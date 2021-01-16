@@ -58,7 +58,6 @@
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
-#include "compiler/pipes/convert-local-phpdocs.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
@@ -261,7 +260,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CollectConstVarsPass>{}
     >> PassC<ConvertListAssignmentsPass>{}
     >> PassC<RegisterVariablesPass>{}
-    >> PassC<ConvertLocalPhpdocsPass>{}
     >> PassC<CheckFunctionCallsPass>{}
     >> PassC<CheckModificationsOfConstVars>{}
     >> PipeC<CalcRLF>{}

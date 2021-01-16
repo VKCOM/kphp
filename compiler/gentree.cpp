@@ -151,7 +151,7 @@ inline void GenTree::skip_phpdoc_tokens() {
     //kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
     next_cur();
   }
-  // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_raw
+  // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_var
 }
 
 template<Operation EmptyOp, class FuncT, class ResultType>
@@ -1269,6 +1269,34 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
   return VertexAdaptor<op_shape>::create(inner_array.as<op_array>()->args()).set_location(location);
 }
 
+// analyze phpdoc /** ... */ NOT above a function/field/etc, but inside a function
+// we search for @var tags inside and convert them to op_phpdoc_var vertices
+VertexPtr GenTree::get_phpdoc_inside_function() {
+  kphp_assert(cur->type() == tok_phpdoc);
+  VertexPtr result;
+  vk::string_view phpdoc_str = cur->str_val;
+
+  // there can be several @var directives (for example, a block of @var comments above the list() assignment)
+  for (auto &tag_var : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, cur_function)) {
+    // /** @var int */ $v ... - assume that @var refers to $v
+    if (tag_var.var_name.empty() && (cur+1)->type() == tok_var_name) {
+      tag_var.var_name = static_cast<std::string>((cur+1)->str_val);
+    }
+    kphp_error_act(!tag_var.var_name.empty(), "@var with empty var name", continue);
+
+    auto inner_var = VertexAdaptor<op_var>::create().set_location(auto_location());
+    inner_var->str_val = tag_var.var_name;
+
+    auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(inner_var);
+    phpdoc_var->type_hint = tag_var.type_hint;
+
+    result = result ? VertexPtr(VertexAdaptor<op_seq>::create(result, phpdoc_var)) : VertexPtr(phpdoc_var);
+  }
+
+  next_cur();   // only here, not at the beginning: in case of phpdoc errors to point to phpdoc
+  return result ?: VertexPtr(VertexAdaptor<op_empty>::create());
+}
+
 bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
   if (test_expect(tok_use)) {
     kphp_error_act(uses_of_lambda, "Unexpected `use` token", return false);
@@ -2022,26 +2050,16 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_switch:
       return get_switch();
     case tok_phpdoc: {      // enter /** ... */
-      auto location = auto_location();
-      vk::string_view tok_phpdoc_str = cur->str_val;
-      next_cur();
       // is it a function/class/field phpdoc?
-      if (vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var)
-          || (cur->type() == tok_static && cur_function->type == FunctionData::func_class_holder)) {
-        return get_statement(tok_phpdoc_str);
+      auto next = (cur+1)->type();
+      if (vk::any_of_equal(next, tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var, tok_const)
+          || (next == tok_static && cur_function->type == FunctionData::func_class_holder)) {
+        vk::string_view phpdoc_str = cur->str_val;
+        next_cur();
+        return get_statement(phpdoc_str);
       }
-      // otherwise it's a phpdoc-statement: it may contain @var which will be used for assumptions and tinf;
-      // save as a raw-string for now; the convert-local-phpdocs.php pipe will fetch @var from there
-      // and make turn them into op_phpdoc_var;
-      // we can't do it here as classes are not resolved yet
-      auto op = VertexAdaptor<op_phpdoc_raw>::create().set_location(location);
-      op->phpdoc_str = tok_phpdoc_str;
-      // it's a common pattern to omit the varname in /** @var int */ $v = ...,
-      // we treat that form as like the following varname was spelled inside the comment
-      if (cur->type() == tok_var_name) {
-        op->next_var_name = std::string(cur->str_val);
-      }
-      return op;
+      // otherwise it's a phpdoc-statement: it may contain @var which will be used for assumptions and tinf
+      return get_phpdoc_inside_function();
     }
     case tok_function:
       if (cur_class) {      // no access modifier implies 'public'

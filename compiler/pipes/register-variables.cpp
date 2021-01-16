@@ -220,12 +220,50 @@ void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_li
   }
 }
 
+void RegisterVariablesPass::visit_phpdoc_var(VertexAdaptor<op_phpdoc_var> phpdoc_var) {
+  const std::string &var_name = phpdoc_var->var()->get_string();
+
+  auto try_bind_to_one_of = [&var_name, &phpdoc_var](const std::vector<VarPtr> &lookup_vars_list) -> bool {
+    auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(),
+                               [&var_name](VarPtr var) { return var->name == var_name; });
+    if (var_it == lookup_vars_list.end()) {
+      return false;
+    }
+
+    phpdoc_var->var()->var_id = *var_it;
+    return true;
+  };
+
+  if (try_bind_to_one_of(current_function->local_var_ids) ||
+      try_bind_to_one_of(current_function->global_var_ids) ||
+      try_bind_to_one_of(current_function->static_var_ids)) {
+    return;
+  }
+  if (try_bind_to_one_of(current_function->param_ids)) {
+    kphp_error(0, "Do not use @var for arguments, use @param or type hint");
+    return;
+  }
+  kphp_error(0, fmt_format("Unknown var ${} in phpdoc", var_name));
+}
+
 bool RegisterVariablesPass::user_recursion(VertexPtr v) {
   if (v->type() == op_func_param_list) {
     in_param_list++;
     visit_func_param_list(v.as<op_func_param_list>());
     in_param_list--;
     return true;
+  } else if (v->type() == op_phpdoc_var) {
+    phpdoc_vars.emplace_front(v.as<op_phpdoc_var>()); // we'll analyze them on function finish
+    return true;
   }
   return false;
+}
+
+void RegisterVariablesPass::on_finish() {
+  // analyze @var phpdocs — only after all variables have been detected by code and registered
+  // that's because only now we know whether a var inside is local/static/global — to bind correctly to var_id
+  for (auto v : phpdoc_vars) {
+    stage::set_location(v->location);
+    visit_phpdoc_var(v);
+  }
 }

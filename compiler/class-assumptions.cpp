@@ -309,17 +309,12 @@ void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
  */
 void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, VertexPtr root, size_t depth) {
   switch (root->type()) {
-    // assumptions pass happens early in the pipeline, so /** phpdocs with @var */ are not turned into the op_phpdoc_var yet
-    case op_phpdoc_raw: {
-      for (const auto &parsed : phpdoc_find_tag_multi(root.as<op_phpdoc_raw>()->phpdoc_str, php_doc_tag::var, f)) {
-        // both '/** @var A $v */' and '/** @var A */ $v ...' forms are supported
-        const std::string &var_name = parsed.var_name.empty() ? root.as<op_phpdoc_raw>()->next_var_name : parsed.var_name;
-        if (!var_name.empty()) {
-          // @var phpdocs can contain 'self' and others, that will be resolved only after registering variables
-          auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(f) : parsed.type_hint;
-          assumption_add_for_var(f, var_name, assumption_create_from_phpdoc(resolved_type_hint));
-        }
-      }
+    case op_phpdoc_var: {
+      auto phpdoc_var = root.as<op_phpdoc_var>();
+      // here is a hack, that we add assumptions for all found vars (not only for var_name)
+      // I hope to make it work somewhen (uncomment this if and see a failing test)
+      // if (phpdoc_var->var()->str_val == var_name)
+      assumption_add_for_var(f, phpdoc_var->var()->str_val, assumption_create_from_phpdoc(phpdoc_var->type_hint));
       return;
     }
 

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Do not use @var for arguments, use @param or type declaration/
+/Do not use @var for arguments, use @param or type hint/
 <?php
 
 // doesn't work, because such phpdoc prevents splitting, as param $id is used for reading after it

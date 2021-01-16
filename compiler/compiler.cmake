@@ -122,7 +122,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         collect-main-edges.cpp
         collect-required-and-classes.cpp
         convert-list-assignments.cpp
-        convert-local-phpdocs.cpp
         erase-defines-declarations.cpp
         extract-async.cpp
         extract-resumable-calls.cpp
