@@ -11,6 +11,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
@@ -605,7 +606,7 @@ bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
  * If it contains an error, it is printed with current location context is supposed to also be printed on the caller side.
  */
 const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context) {
-  if (!type_hint || !type_hint->has_instances_inside()) {
+  if (!type_hint || !type_hint->has_instances_inside() || resolve_context->file_id->is_builtin()) {
     return type_hint;
   }
 

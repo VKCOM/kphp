@@ -57,7 +57,7 @@ public:
 
     // now, parse @return tags
     for (const auto &tag : phpdoc_tags) {
-      if (tag.type == php_doc_tag::returns && f_->type == FunctionData::func_local) {  // @return @tl\... in functions.txt will be parsed only by assumptions
+      if (tag.type == php_doc_tag::returns) {
         stage::set_line(tag.line_num);
         parse_return_doc_tag(tag);
       }
@@ -455,7 +455,7 @@ private:
   }
 };
 
-void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
+void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) {
   stage::set_name("Apply phpdocs");
   stage::set_function(function);
   kphp_assert (function);
@@ -470,5 +470,10 @@ void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr>
     return;
   }
 
-  os << function;
+  Base::execute(function, unused_os);
+}
+
+void ParseAndApplyPhpdocF::on_finish(DataStream<FunctionPtr> &os) {
+  stage::die_if_global_errors();
+  Base::on_finish(os);
 }

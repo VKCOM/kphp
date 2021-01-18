@@ -40,27 +40,6 @@ LambdaPtr LambdaClassData::get_from(VertexPtr v) {
   return {};
 }
 
-void LambdaClassData::infer_uses_assumptions(FunctionPtr parent_function) {
-  auto expected = AssumptionStatus::unknown;
-  if (!assumption_vars_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
-    return;
-  }
-  members.for_each([this, parent_function](const ClassMemberInstanceField &field) {
-    vk::intrusive_ptr<Assumption> assumption;
-    auto local_name = field.local_name();
-    if (local_name == LambdaClassData::get_parent_this_name()) {
-      if (parent_function->is_lambda()) {
-        assumption = assumption_get_for_var(parent_function->class_id, LambdaClassData::get_parent_this_name());
-      } else {
-        local_name = "this";
-      }
-    }
-    assumptions_for_vars.emplace_back(std::string{field.local_name()},
-                                      assumption ?: calc_assumption_for_var(parent_function, local_name));
-  });
-  assumption_vars_status = AssumptionStatus::initialized;
-}
-
 void LambdaClassData::implement_interface(InterfacePtr interface) {
   implements.emplace_back(interface);
   add_virt_clone();
@@ -69,7 +48,6 @@ void LambdaClassData::implement_interface(InterfacePtr interface) {
 
   auto my_invoke_method = members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
   auto interface_invoke_method = interface->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
-  infer_uses_assumptions(stage::get_function());
   my_invoke_method->is_template = false;
 
   auto my_invoke_params = my_invoke_method->get_params();

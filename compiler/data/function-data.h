@@ -181,6 +181,10 @@ public:
     return is_lambda() ? function_in_which_lambda_was_created->get_this_or_topmost_if_lambda() : this;
   }
 
+  bool is_instantiation_of_template_function() const {
+    return instantiation_of_template_function_location.line != -1;
+  }
+
   VertexRange get_params() const;
 
   static bool check_cnt_params(int expected_cnt_params, FunctionPtr called_func);

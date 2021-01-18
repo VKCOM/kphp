@@ -243,7 +243,8 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
-    >> PipeC<ParseAndApplyPhpdocF>{}
+    >> SyncC<ParseAndApplyPhpdocF>{}
+    // from this point, @param/@return are parsed in all functions, and we can use assumptions
     >> SyncC<GenerateVirtualMethods>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}
