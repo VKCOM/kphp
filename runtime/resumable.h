@@ -68,15 +68,15 @@ public:
 
 
 template<class T>
-T start_resumable(Resumable *resumable);
+T start_resumable(Resumable *resumable) noexcept;
+
+Storage *start_resumable_impl(Resumable *resumable) noexcept;
 
 int64_t fork_resumable(Resumable *resumable) noexcept;
 
 
 void resumable_run_ready(int64_t resumable_id);
 
-
-bool wait_started_resumable(int64_t resumable_id);
 
 void wait_without_result_synchronously(int64_t resumable_id);
 
@@ -97,19 +97,7 @@ void f$sched_yield();
 void f$sched_yield_sleep(double timeout);
 
 
-bool in_main_thread();
-
 int64_t register_forked_resumable(Resumable *resumable);
-
-int64_t register_started_resumable(Resumable *resumable);
-
-void finish_forked_resumable(int64_t resumable_id);
-
-void finish_started_resumable(int64_t resumable_id);
-
-void unregister_started_resumable(int64_t resumable_id);
-
-Storage *get_started_storage(int64_t resumable_id);
 
 Storage *get_forked_storage(int64_t resumable_id);
 
@@ -146,27 +134,9 @@ Optional<array<mixed>> f$get_fork_stat(int64_t fork_id);
 
 
 template<class T>
-T start_resumable(Resumable *resumable) {
-  int64_t id = register_started_resumable(resumable);
-
-  if (resumable->resume(id, nullptr)) {
-    Storage *output = get_started_storage(id);
-    finish_started_resumable(id);
-    unregister_started_resumable(id);
-    resumable_finished = true;
-    return output->load<T>();
-  }
-
-  if (in_main_thread()) {
-    php_assert (wait_started_resumable(id));
-    Storage *output = get_started_storage(id);
-    resumable_finished = true;
-    unregister_started_resumable(id);
-    return output->load<T>();
-  }
-
-  resumable_finished = false;
-  return T();
+T start_resumable(Resumable *resumable) noexcept {
+  auto *storage = start_resumable_impl(resumable);
+  return storage ? storage->load<T>() : T{};
 }
 
 template<typename T>

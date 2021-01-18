@@ -21,13 +21,7 @@ void debug_print_resumables();
 Storage *Resumable::input_;
 Storage *Resumable::output_;
 
-Storage *get_storage(int64_t resumable_id) {
-  if (resumable_id > 1000000000) {
-    return get_forked_storage(resumable_id);
-  } else {
-    return get_started_storage(resumable_id);
-  }
-}
+static Storage *get_storage(int64_t resumable_id);
 
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
@@ -110,7 +104,7 @@ static uint32_t yielded_resumables_l;
 static uint32_t yielded_resumables_r;
 static uint32_t yielded_resumables_size;
 
-bool in_main_thread() {
+static bool in_main_thread() noexcept {
   return runned_resumable_id == 0;
 }
 
@@ -144,7 +138,7 @@ static inline wait_queue *get_wait_queue(int64_t queue_id) {
   return &wait_queues[queue_id - 1];
 }
 
-Storage *get_started_storage(int64_t resumable_id) {
+static Storage *get_started_storage(int64_t resumable_id) noexcept {
   return &get_started_resumable_info(resumable_id)->output;
 }
 
@@ -162,6 +156,13 @@ bool check_forked_storage(Storage *storage) {
          static_cast<void *>(storage) < static_cast<void *>(forked_resumables + forked_resumables_size);
 }
 
+static Storage *get_storage(int64_t resumable_id) {
+  if (resumable_id > 1000000000) {
+    return get_forked_storage(resumable_id);
+  } else {
+    return get_started_storage(resumable_id);
+  }
+}
 
 int64_t register_forked_resumable(Resumable *resumable) {
   if (current_forked_resumable_id == first_array_forked_resumable_id + forked_resumables_size) {
@@ -254,7 +255,7 @@ Optional<array<mixed>> f$get_fork_stat(int64_t fork_id) {
   return result;
 }
 
-int64_t register_started_resumable(Resumable *resumable) {
+static int64_t register_started_resumable(Resumable *resumable) noexcept {
   int64_t res_id;
   bool is_new = false;
   if (first_free_started_resumable_id) {
@@ -326,13 +327,13 @@ static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *
   q->left_functions--;
 }
 
-static void free_resumable_continuation(resumable_info *res) {
+static void free_resumable_continuation(resumable_info *res) noexcept {
   php_assert(res->continuation);
   delete res->continuation;
   res->continuation = nullptr;
 }
 
-void finish_forked_resumable(int64_t resumable_id) {
+static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
   free_resumable_continuation(res);
 
@@ -350,7 +351,7 @@ void finish_forked_resumable(int64_t resumable_id) {
   php_assert (get_forked_resumable_info(resumable_id)->queue_id < 0);
 }
 
-void finish_started_resumable(int64_t resumable_id) {
+static void finish_started_resumable(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   free_resumable_continuation(res);
 }
@@ -363,7 +364,7 @@ void unregister_started_resumable_debug_hack(int64_t resumable_id) {
   first_free_started_resumable_id = resumable_id;
 }
 
-void unregister_started_resumable(int64_t resumable_id) {
+static void unregister_started_resumable(int64_t resumable_id) noexcept {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   if (res->parent_id > 0) {
     auto *parent = is_started_resumable_id(res->parent_id)
@@ -456,6 +457,31 @@ void debug_print_resumables() {
     fprintf(stderr, "forked id = %" PRIi64 ", queue_id = %" PRIi64 ", son = %" PRIi64 ", continuation = %s, name = %s\n", i, info->queue_id, info->son,
             info->continuation ? typeid(*info->continuation).name() : "(none)", info->name ? info->name : "()");
   }
+}
+
+static bool wait_started_resumable(int64_t resumable_id) noexcept;
+
+Storage *start_resumable_impl(Resumable *resumable) noexcept {
+  int64_t id = register_started_resumable(resumable);
+
+  if (resumable->resume(id, nullptr)) {
+    Storage *output = get_started_storage(id);
+    finish_started_resumable(id);
+    unregister_started_resumable(id);
+    resumable_finished = true;
+    return output;
+  }
+
+  if (in_main_thread()) {
+    php_assert (wait_started_resumable(id));
+    Storage *output = get_started_storage(id);
+    resumable_finished = true;
+    unregister_started_resumable(id);
+    return output;
+  }
+
+  resumable_finished = false;
+  return nullptr;
 }
 
 int64_t fork_resumable(Resumable *resumable) noexcept {
@@ -636,7 +662,7 @@ static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
   return false;
 }
 
-bool wait_started_resumable(int64_t resumable_id) {
+static bool wait_started_resumable(int64_t resumable_id) noexcept {
   php_assert (in_main_thread());//TODO remove asserts
   php_assert (is_started_resumable_id(resumable_id));
 
