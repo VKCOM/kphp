@@ -7,13 +7,16 @@
 #include "runtime/kphp_core.h"
 
 template<class T>
-std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &);
+std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &, bool with_class_names = false);
 
 template<class T>
-std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c);
+std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c, bool with_class_names = false);
 
 class InstanceToArrayVisitor {
 public:
+  explicit InstanceToArrayVisitor(bool with_class_names)
+    : with_class_names_(with_class_names) {}
+
   array<mixed> flush_result() {
     return std::move(result_);
   }
@@ -48,12 +51,12 @@ private:
 
   template<class I>
   void process_impl(const char *field_name, const class_instance<I> &instance) {
-    add_value(field_name, instance.is_null() ? mixed{} : f$instance_to_array(instance));
+    add_value(field_name, instance.is_null() ? mixed{} : f$instance_to_array(instance, with_class_names_));
   }
 
   template<class ...Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
-    InstanceToArrayVisitor tuple_processor;
+    InstanceToArrayVisitor tuple_processor(with_class_names_);
     tuple_processor.result_.reserve(sizeof...(Args), 0, true);
 
     process_tuple(value, tuple_processor);
@@ -62,7 +65,7 @@ private:
 
   template<size_t ...Is, typename ...T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
-    InstanceToArrayVisitor shape_processor;
+    InstanceToArrayVisitor shape_processor(with_class_names_);
     shape_processor.result_.reserve(sizeof...(Is), 0, true);
 
     process_shape(value, shape_processor);
@@ -96,19 +99,32 @@ private:
 
 private:
   array<mixed> result_;
+  bool with_class_names_{false};
 };
 
-template<class T>
-std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &) {
-  return {};
+inline void set_class_name_assoc(array<mixed> &arr, const char *class_name) {
+  arr.set_value(string("__class_name"), string(class_name));
 }
 
 template<class T>
-std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c) {
+std::enable_if_t<std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c, bool with_class_names) {
+  array<mixed> result;
+  if (with_class_names) {
+    set_class_name_assoc(result, c.get_class());
+  }
+  return result;
+}
+
+template<class T>
+std::enable_if_t<!std::is_empty<T>{}, array<mixed>> f$instance_to_array(const class_instance<T> &c, bool with_class_names) {
   if (c.is_null()) {
     return {};
   }
-  InstanceToArrayVisitor visitor;
+  InstanceToArrayVisitor visitor(with_class_names);
   c.get()->accept(visitor);
-  return visitor.flush_result();
+  array<mixed> result = visitor.flush_result();
+  if (with_class_names) {
+    set_class_name_assoc(result, c.get_class());
+  }
+  return result;
 }
