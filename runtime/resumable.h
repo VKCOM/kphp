@@ -185,49 +185,40 @@ private:
       ready_ = wait_without_result(resumable_id_, timeout_);
       TRY_WAIT(wait_result_resumable_label_1, ready_, bool);
       if (!ready_) {
-        if (last_wait_error == nullptr) {
-          last_wait_error = "Timeout in wait";
-        }
-        RETURN(Optional<bool>{});
+        last_wait_error = last_wait_error ?: "Timeout in wait";
+        return on_return(nullptr);
       }
       Storage *output = get_forked_storage(resumable_id_);
 
       if (output->tag == 0) {
         last_wait_error = "Result already was gotten";
-        RETURN(Optional<bool>{});
+        return on_return(nullptr);
       }
 
-      RETURN(output->load_as<T>());
+      return on_return(output);
     RESUMABLE_END
+  }
+
+  template<class S = T>
+  std::enable_if_t<!std::is_same<S, void>{}, bool> on_return(Storage *output) noexcept {
+    if (output) {
+      RETURN(output->load_as<T>());
+    }
+    RETURN(Optional<bool>{});
+  }
+
+  template<class S = T>
+  std::enable_if_t<std::is_same<S, void>{}, bool> on_return(Storage *output) noexcept {
+    if (output) {
+      output->load_as<void>();
+    }
+    RETURN_VOID();
   }
 
   int64_t resumable_id_;
   double timeout_;
   bool ready_{false};
 };
-
-template<>
-inline bool wait_result_resumable<void>::run() {
-  RESUMABLE_BEGIN
-    ready_ = wait_without_result(resumable_id_, timeout_);
-    TRY_WAIT(wait_result_resumable_label_1, ready_, bool);
-    if (!ready_) {
-      if (last_wait_error == nullptr) {
-        last_wait_error = "Timeout in wait";
-      }
-      RETURN_VOID();
-    }
-    Storage *output = get_forked_storage(resumable_id_);
-
-    if (output->tag == 0) {
-      last_wait_error = "Result already was gotten";
-      RETURN_VOID();
-    }
-
-    output->load_as<void>();
-    RETURN_VOID();
-  RESUMABLE_END
-}
 
 template<typename T>
 T f$wait(int64_t resumable_id) {
