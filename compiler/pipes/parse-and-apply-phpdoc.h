@@ -5,9 +5,15 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
 
-class ParseAndApplyPhpdocF {
+class ParseAndApplyPhpdocF final : public SyncPipeF<FunctionPtr> {
+  using need_profiler = std::true_type;
+
+  using Base = SyncPipeF<FunctionPtr>;
+
 public:
-  void execute(FunctionPtr function, DataStream<FunctionPtr> &os);
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
+  void on_finish(DataStream<FunctionPtr> &os) final;
 };

@@ -48,16 +48,6 @@ vk::intrusive_ptr<Assumption> assumption_get_for_var(FunctionPtr f, vk::string_v
   return {};
 }
 
-vk::intrusive_ptr<Assumption> assumption_get_for_var(ClassPtr c, vk::string_view var_name) {
-  for (const auto &name_and_a : c->assumptions_for_vars) {
-    if (name_and_a.first == var_name) {
-      return name_and_a.second;
-    }
-  }
-
-  return {};
-}
-
 std::string assumption_debug(vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption) {
   return "$" + var_name + " is " + (assumption ? assumption->as_human_readable() : "null");
 }
@@ -161,24 +151,6 @@ void assumption_add_for_return(FunctionPtr f, const vk::intrusive_ptr<Assumption
   //printf("%s() returns %s\n", f->name.c_str(), assumption_debug("return", assumption).c_str());
 }
 
-void assumption_add_for_var(ClassPtr c, vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption) {
-  bool exists = false;
-
-  for (auto &name_and_a : c->assumptions_for_vars) {
-    if (name_and_a.first == var_name) {
-      vk::intrusive_ptr<Assumption> &a = name_and_a.second;
-      kphp_error(assumption_merge(a, assumption),
-                 fmt_format("{}::${} is both {} and {}\n", c->name, var_name, a->as_human_readable(), assumption->as_human_readable()));
-      exists = true;
-    }
-  }
-
-  if (!exists) {
-    c->assumptions_for_vars.emplace_back(std::string(var_name), assumption);
-    //printf("%s::%s\n", c->name.c_str(), assumption_debug(var_name, assumption).c_str());
-  }
-}
-
 /*
  * After we parsed the @param/@return/@var tag contents as TypeHint, try to find a class there.
  */
@@ -232,21 +204,6 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const TypeHint *type
   }
 
   return AssumNotInstance::create();
-}
-
-/*
- * If a class property is an array/other class instance, it should be marked with this phpdoc:
- * / ** @var A * / var $aInstance;
- * We recognize such phpdocs and var defs inside classes.
- */
-void analyze_phpdoc_of_class_field(ClassPtr c, vk::string_view var_name, vk::string_view phpdoc_str) {
-  if (auto parsed = phpdoc_find_tag(phpdoc_str, php_doc_tag::var, c->get_holder_function())) {
-    if (parsed.var_name.empty() || var_name == parsed.var_name) {
-      // todo rewrite in later, try not to parse phpdoc at all
-      auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(c->get_holder_function()) : parsed.type_hint;
-      assumption_add_for_var(c, var_name, assumption_create_from_phpdoc(resolved_type_hint));
-    }
-  }
 }
 
 
@@ -381,14 +338,6 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
  * Called exactly once for every function.
  */
 void init_assumptions_for_arguments(FunctionPtr f) {
-  if (!f->phpdoc_str.empty()) {
-    for (const auto &parsed : phpdoc_find_tag_multi(f->phpdoc_str, php_doc_tag::param, f)) {
-      if (!parsed.var_name.empty()) {
-        assumption_add_for_var(f, parsed.var_name, assumption_create_from_phpdoc(parsed.type_hint));
-      }
-    }
-  }
-
   for (auto i : f->get_params()) {
     auto param = i.as<op_func_param>();
     if (param && param->type_hint) {
@@ -473,21 +422,17 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   assert (f->assumption_return_status == AssumptionStatus::processing);
 //  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
 
-  if (!f->phpdoc_str.empty()) {
-    if (auto parsed = phpdoc_find_tag(f->phpdoc_str, php_doc_tag::returns, f)) {
-      // todo rewrite it later, try not to parse phpdoc at all
-      auto resolved_type_hint = parsed.type_hint->has_self_static_parent_inside() ? parsed.type_hint->replace_self_static_parent(f) : parsed.type_hint;
-      assumption_add_for_return(f, assumption_create_from_phpdoc(resolved_type_hint));
-      return;
-    }
-
+  if (!f->phpdoc_str.empty() && f->is_instantiation_of_template_function()) {
     if (parse_kphp_return_doc(f)) {
       return;
     }
   }
-  if (f->return_typehint && !f->return_typehint->try_as<TypeHintCallable>()) {
-    assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
-    return;
+  if (f->return_typehint && !f->is_template) {
+    const auto *as_callable = f->return_typehint->try_as<TypeHintCallable>();
+    if (!as_callable || as_callable->is_typed_callable()) {
+      assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
+      return;
+    }
   }
 
   // traverse function body, find all 'return' there
@@ -524,23 +469,6 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   }
 }
 
-/*
- * If we know that $a is A and we have an expression like '$a->chat->...' we need to deduce the chat type.
- * That information can be obtained from the @var tag near the 'public $chat' declaration.
- * Called exactly once for every class.
- */
-void init_assumptions_for_all_fields(ClassPtr c) {
-  assert (c->assumption_vars_status == AssumptionStatus::processing);
-//  printf("[%d] init_assumptions_for_all_fields of %s\n", get_thread_id(), c->name.c_str());
-
-  c->members.for_each([&](ClassMemberInstanceField &f) {
-    analyze_phpdoc_of_class_field(c, f.local_name(), f.phpdoc_str);
-  });
-  c->members.for_each([&](ClassMemberStaticField &f) {
-    analyze_phpdoc_of_class_field(c, f.local_name(), f.phpdoc_str);
-  });
-}
-
 namespace {
 template<class Atomic>
 void assumption_busy_wait(Atomic &status_holder) noexcept {
@@ -554,10 +482,6 @@ void assumption_busy_wait(Atomic &status_holder) noexcept {
 
 
 vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name) {
-  if (f->modifiers.is_instance() && var_name == "this") {
-    return AssumInstance::create(f->class_id);
-  }
-
   auto expected = AssumptionStatus::unknown;
   if (f->assumption_args_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
     init_assumptions_for_arguments(f);
@@ -575,6 +499,10 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::st
  * Always returns a non-null assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
+  if (f->modifiers.is_instance() && var_name == "this") {
+    return AssumInstance::create(f->class_id);
+  }
+
   if (auto assumption_from_argument = calc_assumption_for_argument(f, var_name)) {
     return assumption_from_argument;
   }
@@ -654,19 +582,26 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
 
 /*
  * A high-level function which deduces the type of ->nested inside $a instance of the class c.
- * The results are cached; calls the class init once.
  * Always returns a non-null assumption.
  */
 vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
-  auto expected = AssumptionStatus::unknown;
-  if (c->assumption_vars_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
-    init_assumptions_for_all_fields(c);   // both instance and static variables
-    c->assumption_vars_status = AssumptionStatus::initialized;
-  } else if (expected == AssumptionStatus::processing) {
-    assumption_busy_wait(c->assumption_vars_status);
+  // for lambdas, proxy captured vars to a containing function
+  // e.g. function f() { $a = new A;  function() use ($a) { $a->... } ) — $anon->a is $a in f()
+  if (c->is_lambda()) {
+    return var_name == LambdaClassData::get_parent_this_name()
+           ? calc_assumption_for_var(c->construct_function->function_in_which_lambda_was_created, "this")
+           : calc_assumption_for_var(c->construct_function->function_in_which_lambda_was_created, var_name);
   }
 
-  return assumption_get_for_var(c, var_name);
+  // for regular classes, assume $object->a as it's declared with @var or field type hint
+  if (const auto *field = c->members.find_by_local_name<ClassMemberInstanceField>(var_name)) {
+    return field->type_hint ? assumption_create_from_phpdoc(field->type_hint) : AssumNotInstance::create();
+  }
+  if (const auto *field = c->members.find_by_local_name<ClassMemberStaticField>(var_name)) {
+    return field->type_hint ? assumption_create_from_phpdoc(field->type_hint) : AssumNotInstance::create();
+  }
+
+  return AssumNotInstance::create();
 }
 
 

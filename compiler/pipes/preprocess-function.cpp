@@ -405,7 +405,7 @@ private:
         }
 
         // handle typed callables, which are interfaces in face
-        if (!func->is_template && func->instantiation_of_template_function_location.line == -1) {
+        if (!func->is_template && !func->is_instantiation_of_template_function()) {
           if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as<AssumInstance>()) {
             ClassPtr lambda_interface_klass;
             if (auto lambda_interface = infer_class_of_expr(func, param->var()).try_as<AssumTypedCallable>()) {
@@ -496,7 +496,6 @@ private:
 
         kphp_assert(!lambda_class->construct_function->is_required);
 
-        lambda_class->infer_uses_assumptions(current_function);
         lambda_class->construct_function->function_in_which_lambda_was_created = current_function;
         call->location.function = current_function;
         lambda_class->construct_function->is_template = false;

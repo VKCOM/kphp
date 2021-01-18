@@ -887,8 +887,7 @@ function rpc_tl_pending_queries_count () ::: int;
 
 /** @kphp-tl-class */
 interface RpcFunction {
-  /** @return string */
-  public function getTLFunctionName();
+  public function getTLFunctionName() : string;
 }
 
 /** @kphp-tl-class */
@@ -897,14 +896,10 @@ interface RpcFunctionReturnResult {}
 // type ReqResult <=> RpcResponse
 /** @kphp-tl-class */
 interface RpcResponse {
-  /** @return @tl\RpcFunctionReturnResult */
-  public function getResult();
-  /** @return @tl\_common\Types\rpcResponseHeader */
-  public function getHeader();
-  /** @return @tl\_common\Types\rpcResponseError */
-  public function getError();
-  /** @return bool */
-  public function isError() ::: bool;
+  public function getResult() : @tl\RpcFunctionReturnResult;
+  public function getHeader() : @tl\_common\Types\rpcResponseHeader;
+  public function getError() : @tl\_common\Types\rpcResponseError;
+  public function isError() : bool;
 }
 
 /** @kphp-extern-func-info tl_common_h_dep */

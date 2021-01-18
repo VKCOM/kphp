@@ -53,8 +53,6 @@ public:
   FunctionPtr construct_function;
   vk::string_view phpdoc_str;
 
-  std::vector<std::pair<std::string, vk::intrusive_ptr<Assumption>>> assumptions_for_vars;   // (var_name, assumption)[]
-  std::atomic<AssumptionStatus> assumption_vars_status{AssumptionStatus::unknown};
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
   bool really_used{false};
