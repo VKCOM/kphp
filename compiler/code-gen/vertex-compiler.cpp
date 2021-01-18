@@ -1073,8 +1073,7 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   //FORK FUNCTION
   W << FunctionForkDeclaration(func, false) << " " <<
     BEGIN;
-  W << "return fork_resumable < " << FunctionClassName(func) << "::ReturnT >" <<
-    "(new " << FunctionClassName(func) << "(";
+  W << "return fork_resumable(new " << FunctionClassName(func) << "(";
   W << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen);
   W << "));" << NL;
   W << END << NL;

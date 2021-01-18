@@ -50,28 +50,27 @@ class Resumable : public ManagedThroughDlAllocator {
 protected:
   static Storage *input_;
   static Storage *output_;
-  void *pos__;
+  void *pos__{nullptr};
 
   virtual bool run() = 0;
 
 public:
-  Resumable();
+  Resumable() = default;
 
-  virtual ~Resumable();
+  virtual ~Resumable() = default;
 
   bool resume(int64_t resumable_id, Storage *input);
 
   static void update_output();
 
-  void* get_stack_ptr() { return pos__; }
+  void *get_stack_ptr() { return pos__; }
 };
 
 
 template<class T>
 T start_resumable(Resumable *resumable);
 
-template<class T>
-int64_t fork_resumable(Resumable *resumable);
+int64_t fork_resumable(Resumable *resumable) noexcept;
 
 
 void resumable_run_ready(int64_t resumable_id);
@@ -124,7 +123,6 @@ int64_t wait_queue_create(const array<int64_t> &resumable_ids);
 void unregister_wait_queue(int64_t queue_id);
 
 int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids);
-int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id);
 int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
 
 bool f$wait_queue_empty(int64_t queue_id);
@@ -171,36 +169,28 @@ T start_resumable(Resumable *resumable) {
   return T();
 }
 
-template<class T>
-int64_t fork_resumable(Resumable *resumable) {
-  int64_t id = register_forked_resumable(resumable);
-
-  if (resumable->resume(id, nullptr)) {
-    finish_forked_resumable(id);
+template<typename T>
+class wait_result_resumable final : public Resumable {
+public:
+  wait_result_resumable(int64_t resumable_id, double timeout) noexcept:
+    resumable_id_(resumable_id),
+    timeout_(timeout) {
   }
 
-  return id;
-}
-
-template<typename T>
-class wait_result_resumable : public Resumable {
+private:
   using ReturnT = T;
-  int64_t resumable_id;
-  double timeout;
-  bool ready;
 
-protected:
-  bool run() {
+  bool run() final {
     RESUMABLE_BEGIN
-      ready = wait_without_result(resumable_id, timeout);
-      TRY_WAIT(wait_result_resumable_label_1, ready, bool);
-      if (!ready) {
+      ready_ = wait_without_result(resumable_id_, timeout_);
+      TRY_WAIT(wait_result_resumable_label_1, ready_, bool);
+      if (!ready_) {
         if (last_wait_error == nullptr) {
           last_wait_error = "Timeout in wait";
         }
         RETURN(Optional<bool>{});
       }
-      Storage *output = get_forked_storage(resumable_id);
+      Storage *output = get_forked_storage(resumable_id_);
 
       if (output->tag == 0) {
         last_wait_error = "Result already was gotten";
@@ -211,26 +201,23 @@ protected:
     RESUMABLE_END
   }
 
-public:
-  wait_result_resumable(int64_t resumable_id, double timeout) :
-    resumable_id(resumable_id),
-    timeout(timeout),
-    ready(false) {
-  }
+  int64_t resumable_id_;
+  double timeout_;
+  bool ready_{false};
 };
 
 template<>
 inline bool wait_result_resumable<void>::run() {
   RESUMABLE_BEGIN
-    ready = wait_without_result(resumable_id, timeout);
-    TRY_WAIT(wait_result_resumable_label_1, ready, bool);
-    if (!ready) {
+    ready_ = wait_without_result(resumable_id_, timeout_);
+    TRY_WAIT(wait_result_resumable_label_1, ready_, bool);
+    if (!ready_) {
       if (last_wait_error == nullptr) {
         last_wait_error = "Timeout in wait";
       }
       RETURN_VOID();
     }
-    Storage *output = get_forked_storage(resumable_id);
+    Storage *output = get_forked_storage(resumable_id_);
 
     if (output->tag == 0) {
       last_wait_error = "Result already was gotten";
@@ -264,35 +251,36 @@ T f$wait_synchronously(Optional<int64_t> resumable_id) {
 }
 
 template<typename T>
-class wait_multi_resumable : public Resumable {
+class wait_multi_resumable final : public Resumable {
+public:
+  explicit wait_multi_resumable(const array<int64_t> &resumable_ids) noexcept:
+    resumable_ids_(resumable_ids),
+    result_(resumable_ids.size()) {
+  }
+
+private:
   using ReturnT = T;
-  array<int64_t> resumable_ids;
-  T result;
 
-  array<int64_t>::const_iterator resumable_it;
-  typename T::value_type next_waited_result;
-
-protected:
-  bool run() {
+  bool run() final {
     RESUMABLE_BEGIN
-      for (resumable_it = const_begin(resumable_ids); resumable_it != const_end(resumable_ids); ++resumable_it) {
-        next_waited_result = f$wait<typename T::value_type>(resumable_it.get_value());
+      for (resumable_it_ = const_begin(resumable_ids_); resumable_it_ != const_end(resumable_ids_); ++resumable_it_) {
+        next_waited_result_ = f$wait<typename T::value_type>(resumable_it_.get_value());
 
-        TRY_WAIT(wait_multi_label, next_waited_result, typename T::value_type);
+        TRY_WAIT(wait_multi_label, next_waited_result_, typename T::value_type);
         CHECK_EXCEPTION(RETURN(T()));
 
-        result.set_value(resumable_it.get_key(), next_waited_result);
+        result_.set_value(resumable_it_.get_key(), next_waited_result_);
       }
 
-      RETURN(result);
+      RETURN(result_);
     RESUMABLE_END
   }
 
-public:
-  explicit wait_multi_resumable(const array<int64_t> &resumable_ids) :
-    resumable_ids(resumable_ids),
-    result(resumable_ids.size()) {
-  }
+  array<int64_t> resumable_ids_;
+  T result_;
+
+  array<int64_t>::const_iterator resumable_it_;
+  typename T::value_type next_waited_result_;
 };
 
 template<typename T>

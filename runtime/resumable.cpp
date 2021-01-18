@@ -21,13 +21,6 @@ void debug_print_resumables();
 Storage *Resumable::input_;
 Storage *Resumable::output_;
 
-Resumable::Resumable() :
-  pos__(nullptr) {
-}
-
-Resumable::~Resumable() {
-}
-
 Storage *get_storage(int64_t resumable_id) {
   if (resumable_id > 1000000000) {
     return get_forked_storage(resumable_id);
@@ -66,22 +59,21 @@ void Resumable::update_output() {
   }
 }
 
-struct forked_resumable_info {
+struct resumable_info {
   Storage output;
   Resumable *continuation;
-  int64_t queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
   int64_t son;
   const char *name;
+};
+
+struct forked_resumable_info : resumable_info {
+  int64_t queue_id;// == 0 - default, 2 * 10^9 > x > 10^8 - waited by x, 10^8 > x > 0 - in queue x, -1 if answer received and not in queue, x < 0 - (-id) of next finished function in the same queue or -2 if none
   double running_time;
 };
 
-struct started_resumable_info {
-  Storage output;
-  Resumable *continuation;
+struct started_resumable_info : resumable_info {
   int64_t parent_id;// x > 0 - has parent x, == 0 - in main thread, == -1 - finished
   int64_t fork_id;
-  int64_t son;
-  const char *name;
 };
 
 static int64_t first_forked_resumable_id;
@@ -161,11 +153,13 @@ Storage *get_forked_storage(int64_t resumable_id) {
 }
 
 bool check_started_storage(Storage *storage) {
-  return ((void *)started_resumables <= (void *)storage && (void *)storage < (void *)(started_resumables + started_resumables_size));
+  return static_cast<void *>(started_resumables) <= static_cast<void *>(storage) &&
+         static_cast<void *>(storage) < static_cast<void *>(started_resumables + started_resumables_size);
 }
 
 bool check_forked_storage(Storage *storage) {
-  return ((void *)forked_resumables <= (void *)storage && (void *)storage < (void *)(forked_resumables + forked_resumables_size));
+  return static_cast<void *>(forked_resumables) <= static_cast<void *>(storage) &&
+         static_cast<void *>(storage) < static_cast<void *>(forked_resumables + forked_resumables_size);
 }
 
 
@@ -268,7 +262,7 @@ int64_t register_started_resumable(Resumable *resumable) {
     first_free_started_resumable_id = get_started_resumable_info(first_free_started_resumable_id)->parent_id;
   } else {
     if (current_started_resumable_id == first_started_resumable_id + started_resumables_size) {
-      started_resumables = static_cast <started_resumable_info *> (dl::reallocate(started_resumables, sizeof(started_resumable_info) * 2 * started_resumables_size, sizeof(started_resumable_info) * started_resumables_size));
+      started_resumables = static_cast<started_resumable_info *>(dl::reallocate(started_resumables, sizeof(started_resumable_info) * 2 * started_resumables_size, sizeof(started_resumable_info) * started_resumables_size));
       started_resumables_size *= 2;
     }
 
@@ -293,23 +287,15 @@ int64_t register_started_resumable(Resumable *resumable) {
   res->name = resumable ? typeid(*resumable).name() : "(null)";
 
   if (runned_resumable_id) {
-    if (is_started_resumable_id(runned_resumable_id)) {
-      started_resumable_info *parent = get_started_resumable_info(runned_resumable_id);
-      if (parent->son != 0) {
-        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %" PRIi64 "\n", runned_resumable_id, parent->son, res_id);
-        debug_print_resumables();
-        php_assert(parent->son == 0);
-      }
-      parent->son = res_id;
-    } else {
-      forked_resumable_info *parent = get_forked_resumable_info(runned_resumable_id);
-      if (parent->son != 0) {
-        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %" PRIi64 "\n", runned_resumable_id, parent->son, res_id);
-        debug_print_resumables();
-        php_assert(parent->son == 0);
-      }
-      parent->son = res_id;
+    auto *parent = is_started_resumable_id(runned_resumable_id)
+                   ? static_cast<resumable_info *>(get_started_resumable_info(runned_resumable_id))
+                   : static_cast<resumable_info *>(get_forked_resumable_info(runned_resumable_id));
+    if (parent->son != 0) {
+      kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %" PRIi64 "\n", runned_resumable_id, parent->son, res_id);
+      debug_print_resumables();
+      php_assert(parent->son == 0);
     }
+    parent->son = res_id;
   }
 
   return res_id;
@@ -340,12 +326,15 @@ static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *
   q->left_functions--;
 }
 
-void finish_forked_resumable(int64_t resumable_id) {
-  forked_resumable_info *res = get_forked_resumable_info(resumable_id);
-  php_assert (res->continuation != nullptr);
-
+static void free_resumable_continuation(resumable_info *res) {
+  php_assert(res->continuation);
   delete res->continuation;
   res->continuation = nullptr;
+}
+
+void finish_forked_resumable(int64_t resumable_id) {
+  forked_resumable_info *res = get_forked_resumable_info(resumable_id);
+  free_resumable_continuation(res);
 
   if (res->queue_id > 100000000) {
     php_assert (is_started_resumable_id(res->queue_id));
@@ -363,10 +352,7 @@ void finish_forked_resumable(int64_t resumable_id) {
 
 void finish_started_resumable(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
-  php_assert (res->continuation != nullptr);
-
-  delete res->continuation;
-  res->continuation = nullptr;
+  free_resumable_continuation(res);
 }
 
 void unregister_started_resumable_debug_hack(int64_t resumable_id) {
@@ -380,25 +366,15 @@ void unregister_started_resumable_debug_hack(int64_t resumable_id) {
 void unregister_started_resumable(int64_t resumable_id) {
   started_resumable_info *res = get_started_resumable_info(resumable_id);
   if (res->parent_id > 0) {
-    if (is_started_resumable_id(res->parent_id)) {
-      started_resumable_info *parent = get_started_resumable_info(res->parent_id);
-      if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %d\n", res->parent_id, resumable_id, 0);
-        debug_print_resumables();
-        php_assert(parent->son == resumable_id || parent->son == 0);
-      }
-      parent->son = 0;
-    } else if (is_forked_resumable_id(res->fork_id)) {
-      forked_resumable_info *parent = get_forked_resumable_info(res->parent_id);
-      if (parent->son != resumable_id && parent->son != 0) {
-        kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %d\n", res->parent_id, resumable_id, 0);
-        debug_print_resumables();
-        php_assert(parent->son == resumable_id || parent->son == 0);
-      }
-      parent->son = 0;
-    } else {
-      php_assert(0);
+    auto *parent = is_started_resumable_id(res->parent_id)
+                   ? static_cast<resumable_info *>(get_started_resumable_info(res->parent_id))
+                   : static_cast<resumable_info *>(get_forked_resumable_info(res->parent_id));
+    if (parent->son != resumable_id && parent->son != 0) {
+      kprintf("Tring to change %" PRIi64 "->son from %" PRIi64 " to %d\n", res->parent_id, resumable_id, 0);
+      debug_print_resumables();
+      php_assert(parent->son == resumable_id || parent->son == 0);
     }
+    parent->son = 0;
   }
   php_assert (res->continuation == nullptr);
 
@@ -482,25 +458,35 @@ void debug_print_resumables() {
   }
 }
 
+int64_t fork_resumable(Resumable *resumable) noexcept {
+  int64_t id = register_forked_resumable(resumable);
+
+  if (resumable->resume(id, nullptr)) {
+    finish_forked_resumable(id);
+  }
+
+  return id;
+}
+
+static void continue_resumable(resumable_info *res, int64_t resumable_id) noexcept {
+  if (unlikely(res->son)) {
+    debug_print_resumables();
+    php_assert(res->son == 0);
+  }
+  const bool is_done = res->continuation->resume(resumable_id, nullptr);
+  php_assert(is_done);
+}
 
 void resumable_run_ready(int64_t resumable_id) {
 //  fprintf (stderr, "run ready %d\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
-    php_assert (res->queue_id >= 0);
-    if (res->son) {
-      debug_print_resumables();
-      php_assert (res->son == 0);
-    }
-    php_assert (res->continuation->resume(resumable_id, nullptr));
+    php_assert(res->queue_id >= 0);
+    continue_resumable(res, resumable_id);
     finish_forked_resumable(resumable_id);
   } else {
     started_resumable_info *res = get_started_resumable_info(resumable_id);
-    if (res->son) {
-      debug_print_resumables();
-      php_assert (res->son == 0);
-    }
-    php_assert (res->continuation->resume(resumable_id, nullptr));
+    continue_resumable(res, resumable_id);
     finish_started_resumable(resumable_id);
     resumable_add_finished(resumable_id);
   }
@@ -680,17 +666,25 @@ bool wait_started_resumable(int64_t resumable_id) {
 
 static int32_t wait_timeout_wakeup_id = -1;
 
-class wait_resumable : public Resumable {
-  int64_t child_id;
-  event_timer *timer;
-protected:
-  bool run() {
-    if (timer != nullptr) {
-      remove_event_timer(timer);
-      timer = nullptr;
+class wait_resumable final : public Resumable {
+public:
+  explicit wait_resumable(int64_t child_id) noexcept:
+    child_id_(child_id) {
+  }
+
+  void set_timer(double timeout, int64_t wakeup_extra) noexcept {
+    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
+    timer_ = allocate_event_timer(timeout, wait_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
+  }
+
+private:
+  bool run() final {
+    if (timer_) {
+      remove_event_timer(timer_);
+      timer_ = nullptr;
     }
 
-    forked_resumable_info *info = get_forked_resumable_info(child_id);
+    forked_resumable_info *info = get_forked_resumable_info(child_id_);
 
     if (info->queue_id < 0) {
       output_->save<bool>(true);
@@ -700,56 +694,49 @@ protected:
       output_->save<bool>(false);
     }
 
-    child_id = -1;
+    child_id_ = -1;
     return true;
   }
 
-public:
-  wait_resumable(int64_t child_id) :
-    child_id(child_id),
-    timer(nullptr) {
-  }
-
-  void set_timer(double timeout, int64_t wakeup_extra) {
-    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
-    timer = allocate_event_timer(timeout, wait_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
-  }
+  int64_t child_id_;
+  event_timer *timer_{nullptr};
 };
 
-class wait_concurrently_resumable : public Resumable {
-  int64_t child_id;
-  forked_resumable_info *info;
-protected:
-  bool run() {
+class wait_concurrently_resumable final : public Resumable {
+public:
+  explicit wait_concurrently_resumable(int64_t child_id) noexcept:
+    child_id_(child_id) {
+  }
+
+private:
+  bool run() final {
     RESUMABLE_BEGIN
       while (true) {
-        info = get_forked_resumable_info(child_id);
+        info_ = get_forked_resumable_info(child_id_);
 
-        if (info->queue_id < 0) {
+        if (info_->queue_id < 0) {
           break;
         } else {
           if (!resumable_has_finished()) {
             wait_net(MAX_TIMEOUT);
           }
           f$sched_yield();
-          TRY_WAIT_DROP_RESULT (wait_many_resumable_label1, void);
+          TRY_WAIT_DROP_RESULT(wait_many_resumable_label1, void);
         }
       }
 
       output_->save<bool>(true);
-      child_id = -1;
+      child_id_ = -1;
       return true;
     RESUMABLE_END
   }
 
-public:
-  explicit wait_concurrently_resumable(int64_t child_id) :
-    child_id(child_id),
-    info(nullptr) {}
+  int64_t child_id_;
+  forked_resumable_info *info_{nullptr};
 };
 
 
-void process_wait_timeout(event_timer *timer) {
+static void process_wait_timeout(event_timer *timer) {
   int64_t wait_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_resumable_id));
 
@@ -838,7 +825,7 @@ bool f$wait_concurrently(int64_t resumable_id) {
   return wait_without_result(resumable_id);
 }
 
-int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
+static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   if (!is_forked_resumable_id(resumable_id)) {
     php_warning("Wrong resumable_id %" PRIi64 " in function wait_queue_push", resumable_id);
 
@@ -942,7 +929,7 @@ int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
   }
 
   if (resumable_ids.is_array()) {
-    for (array<mixed>::const_iterator p = resumable_ids.begin(), p_end = resumable_ids.end(); p != p_end; ++p) {
+    for (auto p : resumable_ids) {
       wait_queue_push(queue_id, f$intval(p.get_value()));
     }
     return queue_id;
@@ -957,9 +944,7 @@ int64_t wait_queue_create(const array<int64_t> &resumable_ids) {
   }
 
   const int64_t queue_id = f$wait_queue_create();
-
-  const auto p_end = resumable_ids.end();
-  for (auto p = resumable_ids.begin(); p != p_end; ++p) {
+  for (auto p : resumable_ids) {
     wait_queue_push(queue_id, p.get_value());
   }
   return queue_id;
@@ -1047,44 +1032,45 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
 
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
-class wait_queue_resumable : public Resumable {
+class wait_queue_resumable final : public Resumable {
+public:
+  explicit wait_queue_resumable(int64_t queue_id) :
+    queue_id_(queue_id) {
+  }
+
+  void set_timer(double timeout, int64_t wakeup_extra) noexcept {
+    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
+    timer_ = allocate_event_timer(timeout, wait_queue_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
+  }
+
+private:
   using ReturnT = Optional<int64_t>;
-  int64_t queue_id;
-  event_timer *timer;
-protected:
-  bool run() {
-    if (timer != nullptr) {
-      remove_event_timer(timer);
-      timer = nullptr;
+
+  bool run() final {
+    if (timer_) {
+      remove_event_timer(timer_);
+      timer_ = nullptr;
     }
 
-    wait_queue *q = get_wait_queue(queue_id);
+    wait_queue *q = get_wait_queue(queue_id_);
 
-    php_assert (q->resumable_id > 0);
+    php_assert(q->resumable_id > 0);
     q->resumable_id = 0;
 
-    queue_id = -1;
+    queue_id_ = -1;
     if (q->first_finished_function != -2) {
       RETURN((-q->first_finished_function));
     } else {
-      php_assert (input_ == nullptr);//timeout
+      php_assert(input_ == nullptr);//timeout
       RETURN(false);
     }
   }
 
-public:
-  explicit wait_queue_resumable(int64_t queue_id) :
-    queue_id(queue_id),
-    timer(nullptr) {
-  }
-
-  void set_timer(double timeout, int64_t wakeup_extra) {
-    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
-    timer = allocate_event_timer(timeout, wait_queue_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
-  }
+  int64_t queue_id_;
+  event_timer *timer_{nullptr};
 };
 
-void process_wait_queue_timeout(event_timer *timer) {
+static void process_wait_queue_timeout(event_timer *timer) {
   int64_t wait_queue_resumable_id = timer->wakeup_extra;
   php_assert (is_started_resumable_id(wait_queue_resumable_id));
 

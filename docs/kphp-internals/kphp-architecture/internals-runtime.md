@@ -202,7 +202,7 @@ mixed f$selectUser(int64_t v$id) noexcept {
   return start_resumable < c$selectUser::ReturnT >(new c$selectUser(v$id));
 }
 int64_t f$fork$selectUser(int64_t v$id) noexcept {
-  return fork_resumable < c$selectUser::ReturnT >(new c$selectUser(v$id));
+  return fork_resumable(new c$selectUser(v$id));
 }
 ```
 
