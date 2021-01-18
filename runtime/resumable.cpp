@@ -663,26 +663,39 @@ bool wait_started_resumable(int64_t resumable_id) {
   return false;
 }
 
+class ResumableWithTimer : public Resumable {
+protected:
+  void set_timer(double timeout, int32_t wakeup_callback_id, int64_t wakeup_extra) noexcept {
+    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
+    timer_ = allocate_event_timer(timeout, wakeup_callback_id, static_cast<int32_t>(wakeup_extra));
+  }
+
+  void remove_timer() noexcept {
+    if (timer_) {
+      remove_event_timer(timer_);
+      timer_ = nullptr;
+    }
+  }
+
+private:
+  event_timer *timer_{nullptr};
+};
 
 static int32_t wait_timeout_wakeup_id = -1;
 
-class wait_resumable final : public Resumable {
+class wait_resumable final : public ResumableWithTimer {
 public:
   explicit wait_resumable(int64_t child_id) noexcept:
     child_id_(child_id) {
   }
 
   void set_timer(double timeout, int64_t wakeup_extra) noexcept {
-    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
-    timer_ = allocate_event_timer(timeout, wait_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
+    ResumableWithTimer::set_timer(timeout, wait_timeout_wakeup_id, wakeup_extra);
   }
 
 private:
   bool run() final {
-    if (timer_) {
-      remove_event_timer(timer_);
-      timer_ = nullptr;
-    }
+    remove_timer();
 
     forked_resumable_info *info = get_forked_resumable_info(child_id_);
 
@@ -699,7 +712,6 @@ private:
   }
 
   int64_t child_id_;
-  event_timer *timer_{nullptr};
 };
 
 class wait_concurrently_resumable final : public Resumable {
@@ -716,13 +728,12 @@ private:
 
         if (info_->queue_id < 0) {
           break;
-        } else {
-          if (!resumable_has_finished()) {
-            wait_net(MAX_TIMEOUT);
-          }
-          f$sched_yield();
-          TRY_WAIT_DROP_RESULT(wait_many_resumable_label1, void);
         }
+        if (!resumable_has_finished()) {
+          wait_net(MAX_TIMEOUT);
+        }
+        f$sched_yield();
+        TRY_WAIT_DROP_RESULT(wait_many_resumable_label1, void);
       }
 
       output_->save<bool>(true);
@@ -883,7 +894,7 @@ int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id) {
   return queue_id;
 }
 
-int64_t first_free_queue_id;
+static int64_t first_free_queue_id;
 
 void unregister_wait_queue(int64_t queue_id) {
   if (queue_id == -1) {
@@ -1006,8 +1017,6 @@ static void wait_queue_next(int64_t queue_id, double timeout) {
       continue;
     }
   } while (resumable_has_finished() || wait_net(timeout_convert_to_ms(timeout - get_precise_now())));
-
-  return;
 }
 
 Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
@@ -1032,26 +1041,21 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
 
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
-class wait_queue_resumable final : public Resumable {
+class wait_queue_resumable final : public ResumableWithTimer {
 public:
-  explicit wait_queue_resumable(int64_t queue_id) :
+  explicit wait_queue_resumable(int64_t queue_id) noexcept:
     queue_id_(queue_id) {
   }
 
   void set_timer(double timeout, int64_t wakeup_extra) noexcept {
-    php_assert(static_cast<int32_t>(wakeup_extra) == wakeup_extra);
-    timer_ = allocate_event_timer(timeout, wait_queue_timeout_wakeup_id, static_cast<int32_t>(wakeup_extra));
+    ResumableWithTimer::set_timer(timeout, wait_queue_timeout_wakeup_id, wakeup_extra);
   }
 
 private:
   using ReturnT = Optional<int64_t>;
 
   bool run() final {
-    if (timer_) {
-      remove_event_timer(timer_);
-      timer_ = nullptr;
-    }
-
+    remove_timer();
     wait_queue *q = get_wait_queue(queue_id_);
 
     php_assert(q->resumable_id > 0);
@@ -1067,7 +1071,6 @@ private:
   }
 
   int64_t queue_id_;
-  event_timer *timer_{nullptr};
 };
 
 static void process_wait_queue_timeout(event_timer *timer) {
