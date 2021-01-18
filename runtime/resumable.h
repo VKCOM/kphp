@@ -56,88 +56,59 @@ protected:
 
 public:
   Resumable() = default;
-
   virtual ~Resumable() = default;
 
   bool resume(int64_t resumable_id, Storage *input);
+  void *get_stack_ptr() { return pos__; }
 
   static void update_output();
-
-  void *get_stack_ptr() { return pos__; }
 };
-
-
-template<class T>
-T start_resumable(Resumable *resumable) noexcept;
-
-Storage *start_resumable_impl(Resumable *resumable) noexcept;
-
-int64_t fork_resumable(Resumable *resumable) noexcept;
-
-
-void resumable_run_ready(int64_t resumable_id);
-
-
-void wait_without_result_synchronously(int64_t resumable_id);
-
-bool wait_without_result_synchronously_safe(int64_t resumable_id);
-
-bool wait_without_result(int64_t resumable_id, double timeout = -1.0);
-
-bool f$wait_concurrently(int64_t resumable_id);
-
-inline bool wait_without_result(Optional<int64_t> resumable_id, double timeout = -1.0) { return wait_without_result(resumable_id.val(), timeout); }
-
-inline bool f$wait_concurrently(Optional<int64_t> resumable_id) { return f$wait_concurrently(resumable_id.val());};
-
-inline bool f$wait_concurrently(const mixed &resumable_id) { return f$wait_concurrently(resumable_id.to_int());};
-
-
-void f$sched_yield();
-void f$sched_yield_sleep(double timeout);
-
-
-int64_t register_forked_resumable(Resumable *resumable);
-
-Storage *get_forked_storage(int64_t resumable_id);
-
-Resumable *get_forked_resumable(int64_t resumable_id);
 
 int32_t get_resumable_stack(void **buffer, int32_t limit);
 
-int64_t f$wait_queue_create();
-int64_t f$wait_queue_create(const mixed &resumable_ids);
-int64_t wait_queue_create(const array<int64_t> &resumable_ids);
-void unregister_wait_queue(int64_t queue_id);
-
-int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids);
-int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
-
-bool f$wait_queue_empty(int64_t queue_id);
-
-Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0);
-Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
-Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
-
-void global_init_resumable_lib();
-
-void init_resumable_lib();
-
-int64_t f$get_running_fork_id();
-Optional<array<mixed>> f$get_fork_stat(int64_t fork_id);
-
-/*
- *
- *     IMPLEMENTATION
- *
- */
-
+int64_t fork_resumable(Resumable *resumable) noexcept;
+Storage *start_resumable_impl(Resumable *resumable) noexcept;
 
 template<class T>
 T start_resumable(Resumable *resumable) noexcept {
   auto *storage = start_resumable_impl(resumable);
-  return storage ? storage->load<T>() : T{};
+  return storage ? storage->load<T>() : T();
 }
+
+void resumable_run_ready(int64_t resumable_id);
+
+bool wait_without_result(int64_t resumable_id, double timeout = -1.0);
+void wait_without_result_synchronously(int64_t resumable_id);
+bool wait_without_result_synchronously_safe(int64_t resumable_id);
+
+int64_t register_forked_resumable(Resumable *resumable);
+Resumable *get_forked_resumable(int64_t resumable_id);
+Storage *get_forked_storage(int64_t resumable_id);
+
+int64_t wait_queue_create(const array<int64_t> &resumable_ids);
+void unregister_wait_queue(int64_t queue_id);
+int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
+Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
+
+void global_init_resumable_lib();
+void init_resumable_lib();
+
+bool f$wait_concurrently(int64_t resumable_id);
+inline bool f$wait_concurrently(Optional<int64_t> resumable_id) { return f$wait_concurrently(resumable_id.val());};
+inline bool f$wait_concurrently(const mixed &resumable_id) { return f$wait_concurrently(resumable_id.to_int());};
+
+void f$sched_yield();
+void f$sched_yield_sleep(double timeout);
+
+int64_t f$wait_queue_create();
+int64_t f$wait_queue_create(const mixed &resumable_ids);
+int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids);
+bool f$wait_queue_empty(int64_t queue_id);
+Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0);
+Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
+
+int64_t f$get_running_fork_id();
+Optional<array<mixed>> f$get_fork_stat(int64_t fork_id);
 
 template<typename T>
 class wait_result_resumable final : public Resumable {
@@ -158,8 +129,8 @@ private:
         last_wait_error = last_wait_error ?: "Timeout in wait";
         return on_return(nullptr);
       }
-      Storage *output = get_forked_storage(resumable_id_);
 
+      Storage *output = get_forked_storage(resumable_id_);
       if (output->tag == 0) {
         last_wait_error = "Result already was gotten";
         return on_return(nullptr);
