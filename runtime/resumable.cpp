@@ -8,6 +8,8 @@
 
 #include "runtime/net_events.h"
 
+DEFINE_VERBOSITY(resumable);
+
 bool resumable_finished;
 
 const char *last_wait_error;
@@ -319,7 +321,9 @@ Resumable *get_started_resumable(int64_t resumable_id) {
 static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *resumable) {
   int64_t queue_id = resumable->queue_id;
   wait_queue *q = get_wait_queue(queue_id);
-//  fprintf (stderr, "Push resumable %d to queue %d(%d,%d,%d) at %.6lf\n", resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
+  tvkprintf(resumable, 1, "Push resumable %" PRIi64 " to queue %" PRIi64 "(%" PRIi64 ", %" PRIi64 ", %" PRIi32 ") at %.6lf\n",
+            resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
+
   resumable->queue_id = q->first_finished_function;
   q->first_finished_function = -resumable_id;
 
@@ -407,7 +411,7 @@ static void yielded_resumables_push(int64_t id) {
 }
 
 static int64_t yielded_resumables_pop() {
-  php_assert (yielded_resumables_l != yielded_resumables_r);
+  php_assert(yielded_resumables_l != yielded_resumables_r);
   int64_t result = yielded_resumables[yielded_resumables_l];
   yielded_resumables_l++;
   if (yielded_resumables_l == yielded_resumables_size) {
@@ -418,9 +422,9 @@ static int64_t yielded_resumables_pop() {
 
 
 static void resumable_add_finished(int64_t resumable_id) {
-  php_assert (is_started_resumable_id(resumable_id));
+  php_assert(is_started_resumable_id(resumable_id));
   if (finished_resumables_count >= finished_resumables_size) {
-    php_assert (finished_resumables_count == finished_resumables_size);
+    php_assert(finished_resumables_count == finished_resumables_size);
     finished_resumables = static_cast<int64_t *>(
       dl::reallocate(finished_resumables,
                      sizeof(int64_t) * 2 * finished_resumables_size,
@@ -428,8 +432,7 @@ static void resumable_add_finished(int64_t resumable_id) {
     finished_resumables_size *= 2;
   }
 
-//    fprintf (stderr, "!!! process %d(%d) with parent %d in sheduller\n", resumable_id, is_yielded, res->parent_id);
-//  fprintf(stderr, "Resumbale %d put to position %d of finised list\n", resumable_id, finished_resumables_count);
+  tvkprintf(resumable, 1, "Resumable %" PRIi64 " put to position %" PRIu32 " of finished list\n", resumable_id, finished_resumables_count);
   finished_resumables[finished_resumables_count++] = resumable_id;
 }
 
@@ -508,7 +511,7 @@ static void continue_resumable(resumable_info *res, int64_t resumable_id) noexce
 }
 
 void resumable_run_ready(int64_t resumable_id) {
-//  fprintf (stderr, "run ready %d\n", resumable_id);
+  tvkprintf(resumable, 1, "Run ready %" PRIi64 "\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
     php_assert(res->queue_id >= 0);
@@ -531,7 +534,7 @@ void run_scheduler(double timeout) __attribute__((section("run_scheduler_section
 static int64_t scheduled_resumable_id = 0;
 
 void run_scheduler(double timeout) {
-//  fprintf (stderr, "!!! run scheduler %d\n", finished_resumables_count);
+  tvkprintf(resumable, 1, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
   int32_t left_resumables = 1000;
   bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
@@ -551,7 +554,8 @@ void run_scheduler(double timeout) {
     started_resumable_info *res = get_started_resumable_info(resumable_id);
     php_assert(res->continuation == nullptr);
 
-//    fprintf (stderr, "!!! process %d(%d) with parent %d in scheduler\n", resumable_id, is_long, res->parent_id);
+    tvkprintf(resumable, 1, "Process %" PRIi64 "(%s) with parent %" PRIi64 " in scheduler\n",
+              resumable_id, is_yielded ? "yielded" : "not yielded", res->parent_id);
     int64_t parent_id = res->parent_id;
     if (parent_id == 0) {
       res->parent_id = -1;
@@ -667,17 +671,17 @@ static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
 }
 
 static bool wait_started_resumable(int64_t resumable_id) noexcept {
-  php_assert(in_main_thread()); //TODO remove asserts
+  php_assert(in_main_thread()); // TODO remove asserts
   php_assert(is_started_resumable_id(resumable_id));
 
   started_resumable_info *resumable = get_started_resumable_info(resumable_id);
 
   do {
     php_assert(resumable->parent_id == 0);
-
     run_scheduler(get_precise_now() + MAX_TIMEOUT);
 
-    resumable = get_started_resumable_info(resumable_id);//can change in scheduler
+    // can change in scheduler
+    resumable = get_started_resumable_info(resumable_id);
     if (resumable->parent_id == -1) {
       return true;
     }
@@ -884,19 +888,17 @@ static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
 
   if (queue_id == -1) {
     queue_id = f$wait_queue_create();
-  } else {
-    if (!is_wait_queue_id(queue_id)) {
-      php_warning("Wrong queue_id %" PRIi64, queue_id);
-
-      return queue_id;
-    }
+  } else if (!is_wait_queue_id(queue_id)) {
+    php_warning("Wrong queue_id %" PRIi64, queue_id);
+    return queue_id;
   }
-  wait_queue *q = get_wait_queue(queue_id);
 
+  wait_queue *q = get_wait_queue(queue_id);
   if (resumable->queue_id == 0) {
     resumable->queue_id = queue_id;
 
-//    fprintf (stderr, "Link resumable %d with queue %d at %.6lf\n", resumable_id, queue_id, (update_precise_now(), get_precise_now()));
+    tvkprintf(resumable, 1, "Link resumable %" PRIi64 " with queue %" PRIi64 " at %.6lf\n",
+              resumable_id, queue_id, (update_precise_now(), get_precise_now()));
     q->left_functions++;
   } else {
     resumable->queue_id = q->first_finished_function;
@@ -942,7 +944,7 @@ int64_t f$wait_queue_create() {
   } else {
     if (wait_next_queue_id >= wait_queues_size) {
       php_assert(wait_next_queue_id == wait_queues_size);
-      wait_queues = static_cast <wait_queue *> (dl::reallocate(wait_queues, sizeof(wait_queue) * 2 * wait_queues_size, sizeof(wait_queue) * wait_queues_size));
+      wait_queues = static_cast<wait_queue *>(dl::reallocate(wait_queues, sizeof(wait_queue) * 2 * wait_queues_size, sizeof(wait_queue) * wait_queues_size));
       wait_queues_size *= 2;
     }
     res_id = ++wait_next_queue_id;
@@ -1016,8 +1018,8 @@ bool f$wait_queue_empty(int64_t queue_id) {
 }
 
 static void wait_queue_next(int64_t queue_id, double timeout) {
-  php_assert(timeout > get_precise_now()); //TODO remove asserts
-  php_assert(in_main_thread()); //TODO remove asserts
+  php_assert(timeout > get_precise_now()); // TODO remove asserts
+  php_assert(in_main_thread()); // TODO remove asserts
   php_assert(is_wait_queue_id(queue_id));
 
   wait_queue *q = get_wait_queue(queue_id);
@@ -1028,8 +1030,8 @@ static void wait_queue_next(int64_t queue_id, double timeout) {
     }
 
     run_scheduler(timeout);
-
-    q = get_wait_queue(queue_id);//can change in scheduler
+    // can change in scheduler
+    q = get_wait_queue(queue_id);
     wait_queue_skip_gotten(q);
     if (q->first_finished_function != -2 || q->left_functions == 0 || get_precise_now() > timeout) {
       return;
@@ -1107,7 +1109,7 @@ static void process_wait_queue_timeout(event_timer *timer) {
 Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
-//  fprintf (stderr, "Waiting for queue %d\n", queue_id);
+  tvkprintf(resumable, 1, "Waiting for queue %" PRIi64 "\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next", queue_id);
@@ -1206,11 +1208,8 @@ void f$sched_yield() {
   }
 
   resumable_finished = false;
-
   int64_t id = register_started_resumable(nullptr);
-
   get_started_storage(id)->save_void();
-
   yielded_resumables_push(id);
 }
 
