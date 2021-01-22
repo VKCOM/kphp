@@ -23,6 +23,8 @@
 #define MAX_SCRIPT_TIMEOUT (60 * 7)
 
 /** engine variables **/
+extern int initial_verbosity;
+
 extern char *logname_pattern;
 extern int logname_id;
 extern long long max_memory;

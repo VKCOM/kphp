@@ -14,6 +14,9 @@
  ***/
 
 /** engine variables **/
+
+int initial_verbosity = 0;
+
 char *logname_pattern = nullptr;
 int logname_id = 0;
 long long max_memory = 1 << 29;

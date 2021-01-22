@@ -64,8 +64,6 @@ extern const char *engine_tag;
 
 #define PHP_MASTER_VERSION "0.1"
 
-static int save_verbosity;
-
 static std::string socket_name, shmem_name;
 static int cpu_cnt;
 
@@ -458,7 +456,7 @@ void delete_worker(worker_info_t *w) {
 }
 
 void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
-  save_verbosity = verbosity;
+  initial_verbosity = verbosity;
   if (verbosity < 1) {
     //verbosity = 1;
   }
@@ -764,7 +762,7 @@ int run_worker() {
     init_epoll();
 
     //verbosity = 0;
-    verbosity = save_verbosity;
+    verbosity = initial_verbosity;
     pid = getpid();
 
     master_pipe_write = new_pipe[1];
@@ -840,10 +838,8 @@ int run_worker() {
 }
 
 void remove_worker(pid_t pid) {
-  int i;
-
   vkprintf(2, "remove workers [pid = %d]\n", (int)pid);
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_workers_n; i++) {
     if (workers[i]->pid == pid) {
       if (workers[i]->is_dying) {
         me_dying_workers_n--;
