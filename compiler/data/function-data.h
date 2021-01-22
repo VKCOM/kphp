@@ -68,8 +68,8 @@ public:
   // TODO: find usages when we'll allow lambdas inside template functions.
   //std::vector<FunctionPtr> lambdas_inside;
 
-  std::vector<std::pair<std::string, vk::intrusive_ptr<Assumption>>> assumptions_for_vars;   // (var_name, assumption)[]
-  vk::intrusive_ptr<Assumption> assumption_for_return;
+  std::vector<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
+  Assumption assumption_for_return;
 
   vk::copyable_atomic<AssumptionStatus> assumption_args_status{AssumptionStatus::unknown};
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
@@ -158,8 +158,8 @@ public:
   bool is_main_function() const;
 
   void update_location_in_body();
-  static std::string encode_template_arg_name(const vk::intrusive_ptr<Assumption> &assumption, int id);
-  static FunctionPtr generate_instance_of_template_function(const std::map<int, vk::intrusive_ptr<Assumption>> &template_type_id_to_ClassPtr,
+  static std::string encode_template_arg_name(const Assumption &assumption, int id);
+  static FunctionPtr generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
                                                             FunctionPtr func,
                                                             const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;

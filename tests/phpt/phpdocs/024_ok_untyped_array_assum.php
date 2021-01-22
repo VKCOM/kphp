@@ -1,11 +1,6 @@
-@kphp_should_fail
-/demo\(\)::\$b is both primitive and Button/
-/result of operation is both tuple\(primitive,Button\[\]\) and tuple\(primitive,primitive\)/
+@ok
 <?php
-
-// todo: it's bad, that this test fails
-// it's because of mixing any[] and class assumptions
-// I hope to get it work somewhen
+require_once 'kphp_tester_include.php';
 
 class Button {
     function f() {}
@@ -15,7 +10,7 @@ class Button {
 function getButtons() : array {
     $arr = [];
     if(1) { $arr[] = new Button; }
-    return $att;
+    return $arr;
 }
 
 /** @return tuple(bool, Button[]) */

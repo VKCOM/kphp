@@ -9,6 +9,9 @@
 
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   static const ClassPtr throwable_class = G->get_class("Throwable");
+  if (!throwable_class) {   // when functions.txt deleted while development
+    return root;
+  }
 
   if (auto catch_op = root.try_as<op_catch>()) {
     catch_op->exception_class = G->get_class(catch_op->type_declaration);

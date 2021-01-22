@@ -1,5 +1,5 @@
 @kphp_should_fail
-/lambda can\'t implement interface: L\\void/
+/run\(\)::\$callback is both L\\void and L\\anon\$u/
 <?php
 
 function run() {

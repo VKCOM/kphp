@@ -9,13 +9,12 @@
  *
  * Methods resolving happens in "Preprocess functions C pass" (try_set_func_id).
  * That pass happens before the type inferring and register variables, this is why assumptions relies on variable names.
- * Parsing of @return/@param/@type/@var for variables and class members is implemented here.
  *
  * We also perform a simple function code analysis that helps infer some types without explicit phpdoc hints.
  * For example, in "$a = new A; $a->foo()" we see that A constructor is called, therefore the type of $a is A
  * and $a->foo can be resolved to Classes$A$$foo().
  *
- * Caution! Assumptions is NOT type inferring, it's much more rough analysis. They are used only to bind -> invocations.
+ * Caution! Assumptions is NOT type inferring, it's much more rough analysis. They are used ONLY to bind -> invocations.
  * They do not contain information about primitives, etc., they do not operate cfg/smartcasts — only variable names.
  * In other words, assumptions are our type expectations/intentions/predictions, they are checked by tinf later.
  * If they are incorrect (for example, @return A but actually returns B), a tinf error will occur later on.
@@ -36,24 +35,119 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name);
 
-vk::intrusive_ptr<Assumption> assumption_get_for_var(FunctionPtr f, vk::string_view var_name) {
+Assumption::Assumption(const TypeHint *type_hint) {
+  if (type_hint == nullptr) {
+    // an undefined state
+    assum_hint = nullptr;
+  } else if (!type_hint->has_instances_inside() && !type_hint->has_callables_inside()) {
+    // a not instance state
+    assum_hint = TypeHintPrimitive::create(tp_any);
+
+  } else if (const auto *as_optional = type_hint->try_as<TypeHintOptional>()) {
+    assum_hint = as_optional->inner;    // if we have ?A, save A as an assumption
+  } else {
+    assum_hint = type_hint; // note, that tuple(int,A) is saved as is, but getting [0] subkey will return not instance
+  }
+}
+
+Assumption::Assumption(ClassPtr klass) : assum_hint(TypeHintInstance::create(klass->name)) {
+}
+
+std::string Assumption::as_human_readable() const {
+  return is_undefined() ? "undefined" : !has_instance() ? "not instance" : assum_hint->as_human_readable();
+}
+
+bool Assumption::has_instance() const {
+  return assum_hint != nullptr && assum_hint->try_as<TypeHintPrimitive>() == nullptr;
+}
+
+Assumption Assumption::get_inner_if_array() const {
+  if (assum_hint == nullptr) {
+    return Assumption::undefined();
+  }
+  if (const auto *as_array = assum_hint->try_as<TypeHintArray>()) {
+    return Assumption(as_array->inner);
+  }
+  return Assumption::undefined();
+}
+
+Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
+  if (assum_hint == nullptr) {
+    return Assumption::undefined();
+  }
+  if (const auto *as_array = assum_hint->try_as<TypeHintArray>()) {
+    return Assumption(as_array->inner);
+  }
+  if (const auto *as_tuple = assum_hint->try_as<TypeHintTuple>()) {
+    if (auto as_int_index = GenTree::get_actual_value(index_key).try_as<op_int_const>()) {
+      int int_index = parse_int_from_string(as_int_index);
+      if (int_index >= 0 && int_index < as_tuple->items.size()) {
+        return Assumption(as_tuple->items[int_index]);
+      }
+    }
+  }
+  if (const auto *as_shape = assum_hint->try_as<TypeHintShape>()) {
+    if (vk::any_of_equal(GenTree::get_actual_value(index_key)->type(), op_int_const, op_string)) {
+      const auto &string_index = GenTree::get_actual_value(index_key)->get_string();
+      if (const TypeHint *at_index = as_shape->find_at(string_index)) {
+        return Assumption(at_index);
+      }
+    }
+  }
+  return Assumption::undefined();
+}
+
+Assumption Assumption::not_instance() {
+  return Assumption(TypeHintPrimitive::create(tp_any));
+}
+
+Assumption Assumption::undefined() {
+  return {};
+}
+
+ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
+  if (a == nullptr) {
+    return ClassPtr{};
+  }
+  if (const auto *as_optional = a->try_as<TypeHintOptional>()) {
+    a = as_optional->inner;
+  }
+
+  if (const auto *as_instance = a->try_as<TypeHintInstance>()) {
+    return as_instance->resolve();
+  }
+  if (const auto *as_callable = a->try_as<TypeHintCallable>()) {
+    return as_callable->is_typed_callable() ? as_callable->get_interface() : ClassPtr{};
+  }
+  return ClassPtr{};
+}
+
+
+// --------------------------------------------
+
+Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name);
+
+Assumption assumption_get_for_var(FunctionPtr f, vk::string_view var_name) {
   for (const auto &name_and_a : f->assumptions_for_vars) {
     if (name_and_a.first == var_name) {
       return name_and_a.second;
     }
   }
 
-  return {};
+  return Assumption::undefined();
 }
 
-std::string assumption_debug(vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption) {
-  return "$" + var_name + " is " + (assumption ? assumption->as_human_readable() : "null");
-}
-
-bool assumption_merge(vk::intrusive_ptr<Assumption> &dst, const vk::intrusive_ptr<Assumption> &rhs) {
-  if (dst == rhs) return true;
+const TypeHint *assumption_merge(const TypeHint *dst, const TypeHint *rhs) {
+  if (dst == rhs) {
+    return dst;
+  }
+  if (dst == nullptr || dst->try_as<TypeHintPrimitive>() != nullptr) {
+    return rhs;
+  }
+  if (rhs == nullptr || rhs->try_as<TypeHintPrimitive>() != nullptr) {
+    return dst;
+  }
 
   auto merge_classes_lca = [](ClassPtr dst_class, ClassPtr rhs_class) -> ClassPtr {
     if (dst_class->is_parent_of(rhs_class)) {
@@ -63,147 +157,87 @@ bool assumption_merge(vk::intrusive_ptr<Assumption> &dst, const vk::intrusive_pt
     return common_bases.size() == 1 ? common_bases[0] : ClassPtr{};
   };
 
-  auto dst_as_instance = dst.try_as<AssumInstance>();
-  auto rhs_as_instance = rhs.try_as<AssumInstance>();
+  ClassPtr dst_as_instance = Assumption::extract_instance_from_type_hint(dst);
+  ClassPtr rhs_as_instance = Assumption::extract_instance_from_type_hint(rhs);
   if (dst_as_instance && rhs_as_instance) {
-    ClassPtr lca_class = merge_classes_lca(dst_as_instance->klass, rhs_as_instance->klass);
-    if (lca_class) {
-      dst_as_instance->klass = lca_class;
-      return true;
+    ClassPtr lca_class = merge_classes_lca(dst_as_instance, rhs_as_instance);
+    if (!lca_class) {
+      return nullptr;
     }
-    return false;
+    return TypeHintInstance::create(lca_class->name);
   }
 
-  auto dst_as_array = dst.try_as<AssumArray>();
-  auto rhs_as_array = rhs.try_as<AssumArray>();
+  const auto *dst_as_array = dst->try_as<TypeHintArray>();
+  const auto *rhs_as_array = rhs->try_as<TypeHintArray>();
   if (dst_as_array && rhs_as_array) {
-    return assumption_merge(dst_as_array->inner, rhs_as_array->inner);
-  }
-
-  auto dst_as_tuple = dst.try_as<AssumTuple>();
-  auto rhs_as_tuple = rhs.try_as<AssumTuple>();
-  if (dst_as_tuple && rhs_as_tuple && dst_as_tuple->subkeys_assumptions.size() == rhs_as_tuple->subkeys_assumptions.size()) {
-    bool ok = true;
-    for (int i = 0; i < dst_as_tuple->subkeys_assumptions.size(); ++i) {
-      ok &= assumption_merge(dst_as_tuple->subkeys_assumptions[i], rhs_as_tuple->subkeys_assumptions[i]);
+    const TypeHint *array_merged = assumption_merge(dst_as_array->inner, rhs_as_array->inner);
+    if (array_merged == nullptr) {
+      return nullptr;
     }
-    return ok;
+    return TypeHintArray::create(array_merged);
   }
 
-  auto dst_as_shape = dst.try_as<AssumShape>();
-  auto rhs_as_shape = rhs.try_as<AssumShape>();
-  if (dst_as_shape && rhs_as_shape) {
-    bool ok = true;
-    for (auto &it : dst_as_shape->subkeys_assumptions) {
-      auto at_it = rhs_as_shape->subkeys_assumptions.find(it.first);
-      if (at_it != rhs_as_shape->subkeys_assumptions.end()) {
-        ok &= assumption_merge(it.second, at_it->second);
+  const auto *dst_as_tuple = dst->try_as<TypeHintTuple>();
+  const auto *rhs_as_tuple = rhs->try_as<TypeHintTuple>();
+  if (dst_as_tuple && rhs_as_tuple && dst_as_tuple->items.size() == rhs_as_tuple->items.size()) {
+    std::vector<const TypeHint *> items;
+    for (int i = 0; i < dst_as_tuple->items.size(); ++i) {
+      items.emplace_back(assumption_merge(dst_as_tuple->items[i], rhs_as_tuple->items[i]));
+      if (items.back() == nullptr) {
+        return nullptr;
       }
     }
-    return ok;
+    return TypeHintTuple::create(std::move(items));
   }
 
-  auto dst_as_typed_callable = dst.try_as<AssumTypedCallable>();
-  auto rhs_as_typed_callable = rhs.try_as<AssumTypedCallable>();
-  if (dst_as_typed_callable && rhs_as_typed_callable) {
-    return dst_as_typed_callable->interface == rhs_as_typed_callable->interface;
+  const auto *dst_as_shape = dst->try_as<TypeHintShape>();
+  const auto *rhs_as_shape = rhs->try_as<TypeHintShape>();
+  if (dst_as_shape && rhs_as_shape) {
+    std::vector<std::pair<std::string, const TypeHint *>> items;
+    for (const auto &it : dst_as_shape->items) {
+      items.emplace_back(it.first, assumption_merge(it.second, rhs_as_shape->find_at(it.first)));
+      if (items.back().second == nullptr) {
+        return nullptr;
+      }
+    }
+    return TypeHintShape::create(std::move(items), false);
   }
 
-  if (dst_as_typed_callable && rhs_as_instance) {
-    return rhs_as_instance->klass->is_lambda();
-  }
-  if (rhs_as_typed_callable && dst_as_instance && dst_as_instance->klass->is_lambda()) {
-    dst = rhs_as_typed_callable;
-    return true;
-  }
-
-  return dst->is_primitive() && rhs->is_primitive();
+  return nullptr;
 }
 
-void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption) {
-  bool exists = false;
+void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const Assumption &assumption) {
+  if (!assumption.has_instance()) {   // we store only meaningful assumptions, that will help resolve -> access
+    return;
+  }
 
   for (auto &name_and_a : f->assumptions_for_vars) {
     if (name_and_a.first == var_name) {
-      vk::intrusive_ptr<Assumption> &a = name_and_a.second;
-      kphp_error(assumption_merge(a, assumption),
-                 fmt_format("{}()::${} is both {} and {}\n", f->get_human_readable_name(), var_name, a->as_human_readable(), assumption->as_human_readable()));
-      exists = true;
+      Assumption before = name_and_a.second;
+      kphp_error(name_and_a.second = Assumption(assumption_merge(before.assum_hint, assumption.assum_hint)),
+                 fmt_format("{}()::${} is both {} and {}\n", f->get_human_readable_name(), var_name, before.as_human_readable(), assumption.as_human_readable()));
+      return;
     }
   }
 
-  if (!exists) {
-    f->assumptions_for_vars.emplace_back(std::string(var_name), assumption);
-    //printf("%s() %s\n", f->name.c_str(), assumption_debug(var_name, assumption).c_str());
-  }
+  f->assumptions_for_vars.emplace_back(std::string(var_name), assumption);
+//  printf("%s() $%s %s\n", f->name.c_str(), std::string(var_name).c_str(), assumption.as_human_readable().c_str());
 }
 
-void assumption_add_for_return(FunctionPtr f, const vk::intrusive_ptr<Assumption> &assumption) {
-  vk::intrusive_ptr<Assumption> &a = f->assumption_for_return;
+void assumption_add_for_return(FunctionPtr f, const Assumption &assumption) {
+  if (!assumption.has_instance()) {   // we store only meaningful assumptions, that will help resolve -> access
+    return;
+  }
 
-  if (a) {
-    kphp_error(assumption_merge(a, assumption),
-               fmt_format("{}() returns both {} and {}\n", f->get_human_readable_name(), a->as_human_readable(), assumption->as_human_readable()));
+  if (f->assumption_for_return) {
+    Assumption before = f->assumption_for_return;
+    kphp_error(f->assumption_for_return = Assumption(assumption_merge(before.assum_hint, assumption.assum_hint)),
+               fmt_format("{}() returns both {} and {}\n", f->get_human_readable_name(), before.as_human_readable(), assumption.as_human_readable()));
     return;
   }
 
   f->assumption_for_return = assumption;
-  //printf("%s() returns %s\n", f->name.c_str(), assumption_debug("return", assumption).c_str());
-}
-
-/*
- * After we parsed the @param/@return/@var tag contents as TypeHint, try to find a class there.
- */
-vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const TypeHint *type_hint) {
-  // 'A|null' => 'A'
-  // 'A[]|false' => 'A[]'
-  // 'null|some_class' => 'some_class'
-  // 'mixed|mixed[]' => primitive
-  if (const auto *as_optional = type_hint->try_as<TypeHintOptional>()) {
-    type_hint = as_optional->inner;
-  }
-  if (const auto *as_pipe = type_hint->try_as<TypeHintPipe>()) {
-    for (const auto *item : as_pipe->items) {
-      if (!item->try_as<TypeHintPrimitive>()) {
-        type_hint = item;
-      }
-    }
-  }
-
-  if (const auto *as_instance = type_hint->try_as<TypeHintInstance>()) {
-    ClassPtr instance = as_instance->resolve();
-    kphp_error(instance, fmt_format("Can't find class {}", as_instance->full_class_name));
-    return instance ? AssumInstance::create(instance) : AssumNotInstance::create();
-  }
-  if (const auto *as_array = type_hint->try_as<TypeHintArray>()) {
-    auto sub = assumption_create_from_phpdoc(as_array->inner);
-    return AssumArray::create(assumption_create_from_phpdoc(as_array->inner));
-  }
-  if (const auto *as_tuple = type_hint->try_as<TypeHintTuple>()) {
-    decltype(AssumTuple::subkeys_assumptions) sub;
-    for (const TypeHint *item : as_tuple->items) {
-      sub.emplace_back(assumption_create_from_phpdoc(item));
-    }
-    return AssumTuple::create(std::move(sub));
-  }
-  if (const auto *as_shape = type_hint->try_as<TypeHintShape>()) {
-    decltype(AssumShape::subkeys_assumptions) sub;
-    for (const auto &item : as_shape->items) {
-      sub.emplace(item.first, assumption_create_from_phpdoc(item.second));
-    }
-    return AssumShape::create(std::move(sub));
-  }
-  if (const auto *as_callable = type_hint->try_as<TypeHintCallable>()) {
-    // typed callable, like callable(int):void — when we see such a phpdoc, we generate an interface based on types
-    // (they don't turn a function into templates: $cb(1) => $cb->__invoke(1) => $cb is still AssumTypedCallable inside f)
-    if (as_callable->is_typed_callable() && !as_callable->has_argref_inside()) {
-      return AssumTypedCallable::create(as_callable->get_interface());
-    }
-    // just `callable` keywords have sense only as a param type hint
-    // they turn the function into a template one, and each instantiation will have instances as a parameter assumption
-  }
-
-  return AssumNotInstance::create();
+//  printf("%s() returns %s\n", f->name.c_str(), assumption.as_human_readable().c_str());
 }
 
 
@@ -211,11 +245,8 @@ vk::intrusive_ptr<Assumption> assumption_create_from_phpdoc(const TypeHint *type
  * Deduce which type is assigned to $a in '$a = ...rhs...'
  */
 void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr &rhs, size_t depth) {
-  auto a = infer_class_of_expr(f, rhs, depth + 1);
-
-  if (!a->is_primitive()) {
-    assumption_add_for_var(f, var_name, a);
-  }
+  Assumption rhs_assum = infer_class_of_expr(f, rhs, depth + 1);
+  assumption_add_for_var(f, var_name, rhs_assum);
 }
 
 /*
@@ -223,11 +254,8 @@ void analyze_set_to_var(FunctionPtr f, vk::string_view var_name, const VertexPtr
  * (rhs may contain shape or tuple)
  */
 void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr index_key, const VertexPtr &rhs, size_t depth) {
-  auto a = infer_class_of_expr(f, rhs, depth + 1);
-
-  if (!a->get_subkey_by_index(index_key)->is_primitive()) {
-    assumption_add_for_var(f, var_name, a->get_subkey_by_index(index_key));
-  }
+  Assumption rhs_assum = infer_class_of_expr(f, rhs, depth + 1);
+  assumption_add_for_var(f, var_name, rhs_assum.get_subkey_by_index(index_key));
 }
 
 /*
@@ -235,18 +263,15 @@ void analyze_set_to_list_var(FunctionPtr f, vk::string_view var_name, VertexPtr 
  */
 void analyze_catch_of_var(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_catch> root) {
   kphp_assert(root->exception_class);
-  assumption_add_for_var(f, var_name, AssumInstance::create(root->exception_class));
+  assumption_add_for_var(f, var_name, Assumption(root->exception_class));
 }
 
 /*
  * Deduce that $a is an instance of T if $arr is T[] in 'foreach($arr as $a)'
  */
 static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdaptor<op_foreach_param> root, size_t depth) {
-  auto a = infer_class_of_expr(f, root->xs(), depth + 1);
-
-  if (auto as_array = a.try_as<AssumArray>()) {
-    assumption_add_for_var(f, var_name, as_array->inner);
-  }
+  Assumption arr_assum = infer_class_of_expr(f, root->xs(), depth + 1);
+  assumption_add_for_var(f, var_name, arr_assum.get_inner_if_array());
 }
 
 /*
@@ -255,7 +280,7 @@ static void analyze_foreach(FunctionPtr f, vk::string_view var_name, VertexAdapt
  */
 void analyze_global_var(FunctionPtr f, vk::string_view var_name) {
   if (vk::any_of_equal(var_name, "MC", "MC_Local", "MC_Ads", "MC_Log", "PMC", "mc_fast", "MC_Config", "MC_Stats")) {
-    assumption_add_for_var(f, var_name, AssumInstance::create(G->get_memcache_class()));
+    assumption_add_for_var(f, var_name, Assumption(G->get_memcache_class()));
   }
 }
 
@@ -268,10 +293,9 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
   switch (root->type()) {
     case op_phpdoc_var: {
       auto phpdoc_var = root.as<op_phpdoc_var>();
-      // here is a hack, that we add assumptions for all found vars (not only for var_name)
-      // I hope to make it work somewhen (uncomment this if and see a failing test)
-      // if (phpdoc_var->var()->str_val == var_name)
-      assumption_add_for_var(f, phpdoc_var->var()->str_val, assumption_create_from_phpdoc(phpdoc_var->type_hint));
+      if (phpdoc_var->var()->str_val == var_name) {
+        assumption_add_for_var(f, phpdoc_var->var()->str_val, Assumption(phpdoc_var->type_hint));
+      }
       return;
     }
 
@@ -285,7 +309,6 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
 
     case op_list: {
       auto list = root.as<op_list>();
-
       for (auto x : list->list()) {
         const auto kv = x.as<op_list_keyval>();
         auto as_var = kv->var().try_as<op_var>();
@@ -340,11 +363,8 @@ void calc_assumptions_for_var_internal(FunctionPtr f, vk::string_view var_name, 
 void init_assumptions_for_arguments(FunctionPtr f) {
   for (auto i : f->get_params()) {
     auto param = i.as<op_func_param>();
-    if (param && param->type_hint) {
-      auto a = assumption_create_from_phpdoc(param->type_hint);
-      if (!a->is_primitive()) {
-        assumption_add_for_var(f, param->var()->get_string(), a);
-      }
+    if (param->type_hint) {
+      assumption_add_for_var(f, param->var()->get_string(), Assumption(param->type_hint));
     }
   }
 }
@@ -390,18 +410,15 @@ bool parse_kphp_return_doc(FunctionPtr f) {
       auto a = calc_assumption_for_argument(f, template_arg_name);
 
       if (!field_name.empty()) {
-        ClassPtr klass =
-          a.try_as<AssumInstance>() ? a.try_as<AssumInstance>()->klass :
-          a.try_as<AssumArray>() && a.try_as<AssumArray>()->inner.try_as<AssumInstance>() ? a.try_as<AssumArray>()->inner.try_as<AssumInstance>()->klass :
-          ClassPtr{};
+        ClassPtr klass = a.try_as_class() ? a.try_as_class() : a.get_inner_if_array() ? a.get_inner_if_array().try_as_class() : ClassPtr{}; // ?: isn't compiled by gcc
         kphp_error_act(klass, fmt_format("try to get type of field({}) of non-instance", field_name), return false);
         a = calc_assumption_for_class_var(klass, field_name);
       }
 
-      if (a.try_as<AssumInstance>() && return_type_arr_of_arg_type) {
-        assumption_add_for_return(f, AssumArray::create(a.try_as<AssumInstance>()->klass));
-      } else if (a.try_as<AssumArray>() && return_type_element_of_arg_type && field_name.empty()) {
-        assumption_add_for_return(f, a.try_as<AssumArray>()->inner);
+      if (a.try_as_class() && return_type_arr_of_arg_type) {
+        assumption_add_for_return(f, Assumption(TypeHintArray::create(a.assum_hint)));
+      } else if (a.get_inner_if_array() && return_type_element_of_arg_type && field_name.empty()) {
+        assumption_add_for_return(f, a.get_inner_if_array());
       } else {
         assumption_add_for_return(f, a);
       }
@@ -430,7 +447,7 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
   if (f->return_typehint && !f->is_template) {
     const auto *as_callable = f->return_typehint->try_as<TypeHintCallable>();
     if (!as_callable || as_callable->is_typed_callable()) {
-      assumption_add_for_return(f, assumption_create_from_phpdoc(f->return_typehint));
+      assumption_add_for_return(f, Assumption(f->return_typehint));
       return;
     }
   }
@@ -442,13 +459,11 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
       VertexPtr expr = i.as<op_return>()->expr();
 
       if (expr->type() == op_var && expr->get_string() == "this" && f->modifiers.is_instance()) {
-        assumption_add_for_return(f, AssumInstance::create(f->class_id));  // return this
+        assumption_add_for_return(f, Assumption(f->class_id));  // return this
       } else if (auto call_vertex = expr.try_as<op_func_call>()) {
         if (call_vertex->str_val == ClassData::NAME_OF_CONSTRUCT && !call_vertex->args().empty()) {
           if (auto alloc = call_vertex->args()[0].try_as<op_alloc>()) {
-            ClassPtr klass = G->get_class(alloc->allocated_class_name);
-            kphp_assert(klass);
-            assumption_add_for_return(f, AssumInstance::create(klass));        // return A
+            assumption_add_for_return(f, Assumption(G->get_class(alloc->allocated_class_name)));
             return;
           }
         }
@@ -463,10 +478,6 @@ void init_assumptions_for_return(FunctionPtr f, VertexAdaptor<op_function> root)
     }
   };
   search_for_returns(root->cmd());
-
-  if (!f->assumption_for_return) {
-    assumption_add_for_return(f, AssumNotInstance::create());
-  }
 }
 
 namespace {
@@ -481,7 +492,7 @@ void assumption_busy_wait(Atomic &status_holder) noexcept {
 } // namespace
 
 
-vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name) {
+Assumption calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name) {
   auto expected = AssumptionStatus::unknown;
   if (f->assumption_args_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
     init_assumptions_for_arguments(f);
@@ -498,9 +509,9 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::st
  * The results are cached; init on f is called during the first invocation.
  * Always returns a non-null assumption.
  */
-vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
+Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth) {
   if (f->modifiers.is_instance() && var_name == "this") {
-    return AssumInstance::create(f->class_id);
+    return Assumption(f->class_id);
   }
 
   if (auto assumption_from_argument = calc_assumption_for_argument(f, var_name)) {
@@ -523,14 +534,13 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
   auto pos = var_name.find("$$");
   if (pos != std::string::npos) {   // static class variable that is used inside a function
     if (auto of_class = G->get_class(replace_characters(std::string{var_name.substr(0, pos)}, '$', '\\'))) {
-      auto class_var_assum = calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
-      return class_var_assum ?: AssumNotInstance::create();
+      return calc_assumption_for_class_var(of_class, var_name.substr(pos + 2));
     }
   }
 
-  auto not_instance = AssumNotInstance::create();
-  f->assumptions_for_vars.emplace_back(std::string{var_name}, not_instance);
-  return not_instance;
+  // here we store even 'any' assumptions: we tried to calculate, but var_name has no instances
+  f->assumptions_for_vars.emplace_back(std::string{var_name}, Assumption::not_instance());
+  return Assumption::not_instance();
 }
 
 /*
@@ -538,27 +548,27 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_
  * The results are cached; init on f is called during the first invocation.
  * Always returns a non-null assumption.
  */
-vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
+Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
     if (f->return_typehint) {
       if (const auto *as_instance = f->return_typehint->try_as<TypeHintInstance>()) {
-        return AssumInstance::create(as_instance->resolve());
+        return Assumption(as_instance->resolve());
       }
       if (const auto *as_arg_ref = f->return_typehint->try_as<TypeHintArgRefInstance>()) {
         if (auto arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, call)) {
-          if (auto *class_name = GenTree::get_constexpr_string(arg)) {
+          if (const auto *class_name = GenTree::get_constexpr_string(arg)) {
             if (auto klass = G->get_class(*class_name)) {
-              return AssumInstance::create(klass);
+              return Assumption(klass);
             }
           }
         }
       }
     }
-    return AssumNotInstance::create();
+    return Assumption::not_instance();
   }
 
   if (f->is_constructor()) {
-    return AssumInstance::create(f->class_id);
+    return Assumption(f->class_id);
   }
 
   auto expected = AssumptionStatus::unknown;
@@ -572,7 +582,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
       // we're checking for recursion inside a single thread, so the atomic operations order doesn't matter much;
       // if another thread modifies assumption_return_status but fails to set assumption_return_processing_thread in time,
       // we still won't enter this branch as assumption_return_processing_thread will have a default value
-      return AssumNotInstance::create();
+      return Assumption::not_instance();
     }
     assumption_busy_wait(f->assumption_return_status);
   }
@@ -584,7 +594,7 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAd
  * A high-level function which deduces the type of ->nested inside $a instance of the class c.
  * Always returns a non-null assumption.
  */
-vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
+Assumption calc_assumption_for_class_var(ClassPtr c, vk::string_view var_name) {
   // for lambdas, proxy captured vars to a containing function
   // e.g. function f() { $a = new A;  function() use ($a) { $a->... } ) — $anon->a is $a in f()
   if (c->is_lambda()) {
@@ -595,13 +605,13 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::stri
 
   // for regular classes, assume $object->a as it's declared with @var or field type hint
   if (const auto *field = c->members.find_by_local_name<ClassMemberInstanceField>(var_name)) {
-    return field->type_hint ? assumption_create_from_phpdoc(field->type_hint) : AssumNotInstance::create();
+    return field->type_hint ? Assumption(field->type_hint) : Assumption::not_instance();
   }
   if (const auto *field = c->members.find_by_local_name<ClassMemberStaticField>(var_name)) {
-    return field->type_hint ? assumption_create_from_phpdoc(field->type_hint) : AssumNotInstance::create();
+    return field->type_hint ? Assumption(field->type_hint) : Assumption::not_instance();
   }
 
-  return AssumNotInstance::create();
+  return Assumption::undefined();
 }
 
 
@@ -609,16 +619,16 @@ vk::intrusive_ptr<Assumption> calc_assumption_for_class_var(ClassPtr c, vk::stri
 
 
 
-vk::intrusive_ptr<Assumption> infer_from_var(FunctionPtr f,
-                                             VertexAdaptor<op_var> var,
-                                             size_t depth) {
+Assumption infer_from_var(FunctionPtr f,
+                          VertexAdaptor<op_var> var,
+                          size_t depth) {
   return calc_assumption_for_var(f, var->str_val, depth + 1);
 }
 
 
-vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
-                                              VertexAdaptor<op_func_call> call,
-                                              size_t depth) {
+Assumption infer_from_call(FunctionPtr f,
+                           VertexAdaptor<op_func_call> call,
+                           size_t depth) {
   const std::string &fname = call->extra_type == op_ex_func_call_arrow
                              ? resolve_instance_func_name(f, call)
                              : get_full_static_member_name(f, call->str_val);
@@ -626,7 +636,7 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
   const FunctionPtr ptr = G->get_function(fname);
   if (!ptr) {
     kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
-    return AssumNotInstance::create();
+    return Assumption::not_instance();
   }
 
   // for builtin functions like array_pop/array_filter/etc with array of instances
@@ -637,19 +647,19 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
     if (const auto *as_sub = ptr->return_typehint->try_as<TypeHintArgSubkeyGet>()) {  // array_shift (&$a ::: array) ::: ^1[*]
       if (const auto *arg_ref = as_sub->inner->try_as<TypeHintArgRef>()) {
         auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref->arg_num, call), depth + 1);
-        if (auto arr_a = expr_a.try_as<AssumArray>()) {
-          return arr_a->inner;
+        if (Assumption inner = expr_a.get_inner_if_array()) {
+          return inner;
         }
       }
-      return AssumNotInstance::create();
+      return Assumption::not_instance();
     }
     if (const auto *as_array = ptr->return_typehint->try_as<TypeHintArray>()) {  // f (...) ::: array <^2>
       if (const auto *as_arg_ref = as_array->inner->try_as<TypeHintArgRef>()) {
         auto expr_a = infer_class_of_expr(f, GenTree::get_call_arg_ref(as_arg_ref->arg_num, call), depth + 1);
-        if (auto inst_a = expr_a.try_as<AssumTypedCallable>()) {
-          return AssumArray::create(inst_a->interface);
+        if (const auto *inst_a = expr_a ? expr_a.assum_hint->try_as<TypeHintCallable>() : nullptr) {
+          return Assumption(TypeHintArray::create(TypeHintInstance::create(inst_a->get_interface()->name)));
         }
-        return AssumNotInstance::create();
+        return Assumption::not_instance();
       }
     }
 
@@ -658,11 +668,11 @@ vk::intrusive_ptr<Assumption> infer_from_call(FunctionPtr f,
   return calc_assumption_for_return(ptr, call);
 }
 
-vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
-                                               VertexAdaptor<op_array> array,
-                                               size_t depth) {
+Assumption infer_from_array(FunctionPtr f,
+                            VertexAdaptor<op_array> array,
+                            size_t depth) {
   if (array->size() == 0) {
-    return AssumNotInstance::create();
+    return Assumption::not_instance();
   }
 
   ClassPtr klass;
@@ -670,56 +680,56 @@ vk::intrusive_ptr<Assumption> infer_from_array(FunctionPtr f,
     if (auto double_arrow = v.try_as<op_double_arrow>()) {
       v = double_arrow->value();
     }
-    auto as_instance = infer_class_of_expr(f, v, depth + 1).try_as<AssumInstance>();
-    if (!as_instance) {
-      return AssumNotInstance::create();
+    ClassPtr as_klass = infer_class_of_expr(f, v, depth + 1).try_as_class();
+    if (!as_klass) {
+      return Assumption::not_instance();
     }
 
     if (!klass) {
-      klass = as_instance->klass;
-    } else if (klass != as_instance->klass) {
-      return AssumNotInstance::create();
+      klass = as_klass;
+    } else if (klass != as_klass) {
+      return Assumption::not_instance();
     }
   }
 
-  return AssumArray::create(klass);
+  return Assumption(TypeHintArray::create(TypeHintInstance::create(klass->name)));
 }
 
-vk::intrusive_ptr<Assumption> infer_from_tuple(FunctionPtr f,
-                                               VertexAdaptor<op_tuple> tuple,
-                                               size_t depth) {
-  decltype(AssumTuple::subkeys_assumptions) sub;
+Assumption infer_from_tuple(FunctionPtr f,
+                            VertexAdaptor<op_tuple> tuple,
+                            size_t depth) {
+  std::vector<const TypeHint *> sub;
   for (auto sub_expr : *tuple) {
-    sub.emplace_back(infer_class_of_expr(f, sub_expr, depth + 1));
+    sub.emplace_back(infer_class_of_expr(f, sub_expr, depth + 1).assum_hint);
   }
-  return AssumTuple::create(std::move(sub));
+  return Assumption(TypeHintTuple::create(std::move(sub)));
 }
 
-vk::intrusive_ptr<Assumption> infer_from_shape(FunctionPtr f,
-                                               VertexAdaptor<op_shape> shape,
-                                               size_t depth) {
-  decltype(AssumShape::subkeys_assumptions) sub;
+Assumption infer_from_shape(FunctionPtr f,
+                            VertexAdaptor<op_shape> shape,
+                            size_t depth) {
+  std::vector<std::pair<std::string, const TypeHint *>> sub;
   for (auto sub_expr : shape->args()) {
     auto double_arrow = sub_expr.as<op_double_arrow>();
-    sub.emplace(GenTree::get_actual_value(double_arrow->lhs())->get_string(), infer_class_of_expr(f, double_arrow->rhs(), depth + 1));
+    sub.emplace_back(GenTree::get_actual_value(double_arrow->lhs())->get_string(), infer_class_of_expr(f, double_arrow->rhs(), depth + 1).assum_hint);
   }
-  return AssumShape::create(std::move(sub));
+  return Assumption(TypeHintShape::create(std::move(sub), false));
 }
 
-vk::intrusive_ptr<Assumption> infer_from_pair_vertex_merge(FunctionPtr f, Location location, VertexPtr a, VertexPtr b, size_t depth) {
+Assumption infer_from_pair_vertex_merge(FunctionPtr f, Location location, VertexPtr a, VertexPtr b, size_t depth) {
   auto a_assumption = infer_class_of_expr(f, a, depth + 1);
   auto b_assumption = infer_class_of_expr(f, b, depth + 1);
-  if (!a_assumption->is_primitive() && !b_assumption->is_primitive()) {
+  if (a_assumption.has_instance() && b_assumption.has_instance()) {
     std::swap(*stage::get_location_ptr(), location);
-    kphp_error(assumption_merge(a_assumption, b_assumption),
-               fmt_format("result of operation is both {} and {}\n",
-                          a_assumption->as_human_readable(), b_assumption->as_human_readable()));
+    Assumption before = a_assumption;
+    kphp_error(a_assumption = Assumption(assumption_merge(a_assumption.assum_hint, b_assumption.assum_hint)),
+               fmt_format("result of operation is both {} and {}\n", before.as_human_readable(), b_assumption.as_human_readable()));
     std::swap(*stage::get_location_ptr(), location);
   }
-  return a_assumption->is_primitive() ? b_assumption : a_assumption;
+  return a_assumption.has_instance() ? a_assumption : b_assumption;
 }
 
-vk::intrusive_ptr<Assumption> infer_from_ternary(FunctionPtr f, VertexAdaptor<op_ternary> ternary, size_t depth) {
+Assumption infer_from_ternary(FunctionPtr f, VertexAdaptor<op_ternary> ternary, size_t depth) {
   // this code handles '$x = $y ?: $z' operation;
   // it's converted to '$x = bool($tmp_var = $y) ? move($tmp_var) : $z'
   if (auto move_true_expr = ternary->true_expr().try_as<op_move>()) {
@@ -731,31 +741,30 @@ vk::intrusive_ptr<Assumption> infer_from_ternary(FunctionPtr f, VertexAdaptor<op
   return infer_from_pair_vertex_merge(f, ternary->get_location(), ternary->true_expr(), ternary->false_expr(), depth);
 }
 
-vk::intrusive_ptr<Assumption> infer_from_instance_prop(FunctionPtr f,
-                                                       VertexAdaptor<op_instance_prop> prop,
-                                                       size_t depth) {
-  auto lhs_a = infer_class_of_expr(f, prop->instance(), depth + 1).try_as<AssumInstance>();
-  if (!lhs_a || !lhs_a->klass) {
-    return AssumNotInstance::create();
+Assumption infer_from_instance_prop(FunctionPtr f,
+                                    VertexAdaptor<op_instance_prop> prop,
+                                    size_t depth) {
+  ClassPtr lhs_class = infer_class_of_expr(f, prop->instance(), depth + 1).try_as_class();
+  if (!lhs_class) {
+    return Assumption::not_instance();
   }
 
-  ClassPtr lhs_class = lhs_a->klass;
-  vk::intrusive_ptr<Assumption> res_assum;
+  Assumption res_assum;
   do {
     res_assum = calc_assumption_for_class_var(lhs_class, prop->str_val);
     lhs_class = lhs_class->parent_class;
-  } while ((!res_assum || res_assum.try_as<AssumNotInstance>()) && lhs_class);
+  } while (!res_assum.has_instance() && lhs_class);
 
-  return res_assum ?: AssumNotInstance::create();
+  return res_assum;
 }
 
 /*
  * Main functions that are called from the outside: returns the assumptions for any root expression inside f.
- * Never returns null (AssumNotInstance is used as a sentinel value).
+ * May return an undefined / not instance / meaningful assumption, extern call should rely only on has_instance().
  */
-vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0*/) {
+Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0*/) {
   if (depth > 1000) {
-    return AssumNotInstance::create();
+    return Assumption::not_instance();
   }
   switch (root->type()) {
     case op_var:
@@ -769,9 +778,9 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key()) {
-        return infer_class_of_expr(f, index->array(), depth + 1)->get_subkey_by_index(index->key());
+        return infer_class_of_expr(f, index->array(), depth + 1).get_subkey_by_index(index->key());
       }
-      return AssumNotInstance::create();
+      return Assumption::not_instance();
     }
     case op_array:
       return infer_from_array(f, root.as<op_array>(), depth + 1);
@@ -796,108 +805,8 @@ vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root,
     case op_move:
       return infer_class_of_expr(f, root.as<op_move>()->expr(), depth + 1);
     default:
-      return AssumNotInstance::create();
+      return Assumption::not_instance();
   }
 }
 
-
-// ——————————————
-
-
-std::string AssumArray::as_human_readable() const {
-  return inner->as_human_readable() + "[]";
-}
-
-std::string AssumInstance::as_human_readable() const {
-  return klass->name;
-}
-
-std::string AssumNotInstance::as_human_readable() const {
-  return "primitive";
-}
-
-std::string AssumTuple::as_human_readable() const {
-  std::string r = "tuple(";
-  for (const auto &a_sub : subkeys_assumptions) {
-    r += a_sub->as_human_readable() + ",";
-  }
-  r[r.size() - 1] = ')';
-  return r;
-}
-
-std::string AssumShape::as_human_readable() const {
-  std::string r = "shape(";
-  for (const auto &a_sub : subkeys_assumptions) {
-    r += a_sub.first + ":" + a_sub.second->as_human_readable() + ",";
-  }
-  r[r.size() - 1] = ')';
-  return r;
-}
-
-std::string AssumTypedCallable::as_human_readable() const {
-  return interface->name + "::_invoke";
-}
-
-
-bool AssumArray::is_primitive() const {
-  return inner->is_primitive();
-}
-
-bool AssumInstance::is_primitive() const {
-  return false;
-}
-
-bool AssumNotInstance::is_primitive() const {
-  return true;
-}
-
-bool AssumTuple::is_primitive() const {
-  return false;
-}
-
-bool AssumShape::is_primitive() const {
-  return false;
-}
-
-bool AssumTypedCallable::is_primitive() const {
-  return false;
-}
-
-
-vk::intrusive_ptr<Assumption> AssumArray::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
-  return inner;
-}
-
-vk::intrusive_ptr<Assumption> AssumInstance::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
-  return AssumNotInstance::create();
-}
-
-vk::intrusive_ptr<Assumption> AssumNotInstance::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
-  return AssumNotInstance::create();
-}
-
-vk::intrusive_ptr<Assumption> AssumTuple::get_subkey_by_index(VertexPtr index_key) const {
-  if (auto as_int_index = GenTree::get_actual_value(index_key).try_as<op_int_const>()) {
-    int int_index = parse_int_from_string(as_int_index);
-    if (int_index >= 0 && int_index < subkeys_assumptions.size()) {
-      return subkeys_assumptions[int_index];
-    }
-  }
-  return AssumNotInstance::create();
-}
-
-vk::intrusive_ptr<Assumption> AssumShape::get_subkey_by_index(VertexPtr index_key) const {
-  if (vk::any_of_equal(GenTree::get_actual_value(index_key)->type(), op_int_const, op_string)) {
-    const auto &string_index = GenTree::get_actual_value(index_key)->get_string();
-    auto at_index = subkeys_assumptions.find(string_index);
-    if (at_index != subkeys_assumptions.end()) {
-      return at_index->second;
-    }
-  }
-  return AssumNotInstance::create();
-}
-
-vk::intrusive_ptr<Assumption> AssumTypedCallable::get_subkey_by_index(VertexPtr index_key __attribute__ ((unused))) const {
-  return AssumNotInstance::create();
-}
 

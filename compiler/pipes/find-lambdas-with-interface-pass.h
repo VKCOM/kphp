@@ -9,6 +9,7 @@
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/function-pass.h"
 #include "compiler/name-gen.h"
+#include "compiler/type-hint.h"
 
 /**
  * finds lambdas in different places, if these places expect interface with __invoke method
@@ -42,17 +43,21 @@ public:
     return {};
   }
 
-  void check_assumption_and_inherit(const vk::intrusive_ptr<Assumption> &assumption, LambdaPtr lambda) {
-    auto interface_assumption = assumption.try_as<AssumTypedCallable>();
-    if (!interface_assumption || !interface_assumption->interface || !interface_assumption->interface->is_interface()) {
+  void check_assumption_and_inherit(const Assumption &assumption, LambdaPtr lambda) {
+//    auto interface_assumption = assumption.type_hint->try_as<TypeHintCallable>();
+//    if (!interface_assumption || !interface_assumption->is_typed_callable() || !interface_assumption->get_interface()->is_interface()) {
+//      return;
+//    }
+    auto interface_assumption = assumption.try_as_class();
+    if (!interface_assumption || !interface_assumption->is_interface()) {
       return;
     }
-    if (!lambda->can_implement_interface(interface_assumption->interface)) {
-      kphp_error(false, fmt_format("lambda can't implement interface: {}", interface_assumption->interface->name));
+    if (!lambda->can_implement_interface(interface_assumption)) {
+      kphp_error(false, fmt_format("lambda can't implement interface: {}", interface_assumption->name));
       return;
     }
-    lambda->implement_interface(interface_assumption->interface);
-    lambdas_interfaces[interface_assumption->interface].emplace_back(lambda);
+    lambda->implement_interface(interface_assumption);
+    lambdas_interfaces[interface_assumption].emplace_back(lambda);
   }
 
   /**
@@ -121,8 +126,8 @@ public:
     }
 
     auto assum = infer_class_of_expr(current_function, lhs);
-    while (auto assum_array = assum.try_as<AssumArray>()) {
-      assum = assum_array->inner;
+    while (Assumption inner = assum.get_inner_if_array()) {
+      assum = inner;
     }
 
     check_assumption_and_inherit(assum, lambda_class);
@@ -146,8 +151,8 @@ public:
       }
     } else if (auto lambda_class = get_lambda_class(v)) {
       auto assum = calc_assumption_for_return(current_function, {});
-      while (auto assum_array = assum.try_as<AssumArray>()) {
-        assum = assum_array->inner;
+      while (Assumption inner = assum.get_inner_if_array()) {
+        assum = inner;
       }
 
       check_assumption_and_inherit(assum, lambda_class);

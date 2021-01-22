@@ -1067,7 +1067,7 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
   }
   kphp_assert(parts.size() > 1);
 
-  vk::intrusive_ptr<Assumption> a = assumption_get_for_var(function, var->name);
+  Assumption a = assumption_get_for_var(function, var->name);
 
   for (size_t i = 0; i < parts.size(); i++) {
     // name$v1, name$v2 and so on, but name (0th copy) is kept as is
@@ -1075,7 +1075,7 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
     VarPtr new_var = G->create_var(new_name, var->type());
     new_var->holder_func = var->holder_func;
 
-    if (i && a) {
+    if (i && a.has_instance()) {
       assumption_add_for_var(function, new_name, a);
     }
 

@@ -49,6 +49,7 @@ protected:
     flag_contains_self_static_parent_inside = 1 << 1,
     flag_contains_argref_inside = 1 << 2,
     flag_contains_tp_any_inside = 1 << 3,
+    flag_contains_callables_inside = 1 << 4,
   };
 
   explicit TypeHint(int self_flags_without_children) : flags(self_flags_without_children) {}
@@ -65,6 +66,7 @@ public:
   bool has_self_static_parent_inside() const { return flags & flag_contains_self_static_parent_inside; }
   bool has_argref_inside() const { return flags & flag_contains_argref_inside; }
   bool has_tp_any_inside() const { return flags & flag_contains_tp_any_inside; }
+  bool has_callables_inside() const { return flags & flag_contains_callables_inside; }
 
   bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside(); }
   const TypeData *to_type_data() const;
@@ -185,7 +187,7 @@ public:
  */
 class TypeHintCallable : public TypeHint {
   explicit TypeHintCallable(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type)
-    : TypeHint(flag_contains_tp_any_inside)
+    : TypeHint(flag_contains_tp_any_inside | flag_contains_callables_inside)
     , arg_types(arg_types)
     , return_type(return_type) {}
 
@@ -340,6 +342,8 @@ public:
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+
+  const TypeHint *find_at(const std::string &key) const;
 };
 
 /**

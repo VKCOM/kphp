@@ -14,7 +14,7 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v) {
     return false;
   }
 
-  if (!infer_class_of_expr(current_function, instance_var).try_as<AssumInstance>()) {
+  if (!infer_class_of_expr(current_function, instance_var).try_as_class()) {
     kphp_error(false, "left operand of `instanceof` should be instance of class");
     return false;
   }

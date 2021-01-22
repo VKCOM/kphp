@@ -92,6 +92,15 @@ InterfacePtr TypeHintCallable::get_interface() const {
   return interface;
 }
 
+const TypeHint *TypeHintShape::find_at(const string &key) const {
+  for (const auto &p : items) {
+    if (p.first == key) {
+      return p.second;
+    }
+  }
+  return nullptr;
+}
+
 
 // --------------------------------------------
 //    create()
