@@ -4,6 +4,8 @@
 #include "compiler/debug.h"
 
 TEST(lexer_test, test_php_tokens) {
+  std::string debugTokenName(TokenType t);  // implemented in debug.cpp
+
   struct testCase {
     std::string input;
     std::vector<std::string> expected;

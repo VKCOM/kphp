@@ -5,18 +5,15 @@
 #include "compiler/debug.h"
 
 #include <string>
-#include <vector>
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/src-file.h"
-#include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 #include "common/wrappers/to_array.h"
 
 static std::map<Operation, std::string> OPERATION_NAMES;
 
-void fillOperationNames() {
+static void fillOperationNames() {
 #define FOREACH_OP(x) OPERATION_NAMES[x] = #x;
 
 #include "auto/compiler/vertex/foreach-op.h"
@@ -205,7 +202,7 @@ std::string debugTokenName(TokenType t) {
   return name_pairs.at(t).second;
 }
 
-std::string debugOperationName(Operation o) {
+static std::string debugOperationName(Operation o) {
   if (OPERATION_NAMES.empty()) {
     fillOperationNames();
   }
@@ -214,7 +211,7 @@ std::string debugOperationName(Operation o) {
 }
 
 
-std::string debugVertexMore(VertexPtr v) {
+static std::string debugVertexMore(VertexPtr v) {
   switch (v->type()) {
     case op_alloc:
       return "new " + v.as<op_alloc>()->allocated_class_name;
@@ -249,53 +246,22 @@ std::string debugVertexMore(VertexPtr v) {
   }
 }
 
-void debugPrintVertexTree(VertexPtr root, int level) {
+static void debugVertexTree(VertexPtr root, int level, std::string &append) {
   for (int i = 0; i < level; ++i) {
-    fmt_print("  ");
+    append += "  ";
   }
-  fmt_print("{} {}\n", debugOperationName(root->type()), debugVertexMore(root));
+  append += debugOperationName(root->type());
+  append += " ";
+  append += debugVertexMore(root);
+  append += "\n";
 
   for (auto i : *root) {
-    debugPrintVertexTree(i, level + 1);
+    debugVertexTree(i, level + 1, append);
   }
 }
 
-void debugPrintLocation(VertexPtr v) {
-  const Location &l = v->location;
-  fmt_print("{}:{} {}\n", l.file ? l.file->unified_file_name : "unknown file", l.line, l.function ? l.function->get_human_readable_name() : "unknown funtion");
+std::string debugVertexTree(VertexPtr root) {
+  std::string result;
+  debugVertexTree(root, 0, result);
+  return result;
 }
-
-void debugPrintFunction(FunctionPtr function) {
-  fmt_print("--- {}\n", function->name);
-  debugPrintVertexTree(function->root, 0);
-}
-
-
-struct GdbVertex {
-  Operation type;
-  std::string str;
-
-  GdbVertex *ith0;
-  GdbVertex *ith1;
-  GdbVertex *ith2;
-};
-
-GdbVertex *debugVertexToGdb(VertexPtr v) {
-  GdbVertex *g = new GdbVertex;
-  int size = v ? v->size() : 0;
-
-  g->type = (v ? v->type() : meta_op_base);
-  g->str = v ? debugVertexMore(v) : "";
-  VertexRange sons{v->begin(), v->end()};
-  g->ith0 = size > 0 ? debugVertexToGdb(sons[0]) : nullptr;
-  g->ith1 = size > 1 ? debugVertexToGdb(sons[1]) : nullptr;
-  g->ith2 = size > 2 ? debugVertexToGdb(sons[2]) : nullptr;
-
-  return g;
-}
-
-// "expr*8" in CLion debugger
-GdbVertex operator*(VertexPtr v, int n __attribute__((unused))) {
-  return *debugVertexToGdb(v);
-}
-

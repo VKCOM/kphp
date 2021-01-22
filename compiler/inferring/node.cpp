@@ -17,6 +17,10 @@ Node::Node() :
   isset_was(0) {
 }
 
+std::string Node::as_human_readable() const {
+  return type_->as_human_readable(false);
+}
+
 void Node::add_edge(Edge *edge) {
   AutoLocker<Node *> locker(this);
   next_.push_back(edge);

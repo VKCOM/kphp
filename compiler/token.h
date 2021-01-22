@@ -209,6 +209,13 @@ public:
     str_val(s, t) {
   }
 
+  // use 'cur->debugPrint()' anywhere in gentree while development
+  // (in release it's not used and is not linked to a binary)
+  void debugPrint() const {
+    std::string debugTokenName(TokenType t);  // implemented in debug.cpp
+    printf("%s '%s'\n", debugTokenName(type_).c_str(), static_cast<std::string>(debug_str.empty() ? str_val : debug_str).c_str());
+  }
+
   inline TokenType &type() { return type_; }
   inline const TokenType &type() const { return type_; }
 

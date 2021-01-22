@@ -54,7 +54,7 @@ std::string Key::to_string() const {
     return *string_key_names_ht.at(id)->data;
   }
   if (is_any_key()) {
-    return "Any";
+    return "any_key";
   }
   kphp_assert(0);
   return "fail";

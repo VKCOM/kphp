@@ -6,8 +6,11 @@
 #include <string>
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/debug.h"
 
 class LibData {
+  DEBUG_STRING_METHOD { return lib_name_; }
+  
 public:
   LibData(const std::string &lib_name, const std::string &lib_dir);
   LibData(const std::string &lib_require_name);

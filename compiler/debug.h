@@ -2,19 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef PHP_DEBUG_H
-#define PHP_DEBUG_H
+#pragma once
 
-#include "compiler/data/data_ptr.h"
-#include "compiler/data/vertex-adaptor.h"
-#include "compiler/operation.h"
-#include "compiler/token.h"
-
-std::string debugOperationName(Operation o);
-std::string debugTokenName(TokenType t);
-void debugPrintVertexTree(VertexPtr root, int level = 0);
-void debugPrintLocation(VertexPtr v);
-void debugPrintFunction(FunctionPtr function);
-std::string debugVertexMore(VertexPtr v);
-
-#endif //PHP_DEBUG_H
+// using this macro inside a class: DEBUG_STRING_METHOD { ... cpp code ...; return std::string }
+// that code is also embedded into a release binary, we decided not to do anything about it
+#define DEBUG_STRING_METHOD std::string _debug_string() const __attribute__((used))

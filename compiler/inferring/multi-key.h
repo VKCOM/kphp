@@ -7,10 +7,13 @@
 #include <string>
 #include <vector>
 
+#include "compiler/debug.h"
 #include "compiler/inferring/key.h"
 #include "compiler/kphp_assert.h"
 
 class MultiKey {
+  DEBUG_STRING_METHOD { return to_string(); }
+
 private:
   std::vector<Key> keys_;
   static std::vector<MultiKey> any_key_vec;

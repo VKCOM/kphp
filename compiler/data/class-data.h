@@ -11,6 +11,7 @@
 #include "compiler/class-assumptions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
+#include "compiler/debug.h"
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
@@ -24,6 +25,8 @@ enum class ClassType {
 };
 
 class ClassData : public Lockable {
+  DEBUG_STRING_METHOD { return name; }
+  
 public:
   // extends/implements/use trait description in a string form (class_name)
   struct StrDependence {

@@ -10,8 +10,11 @@
 #include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/debug.h"
 
 class DefineData : private vk::not_copyable {
+  DEBUG_STRING_METHOD { return name; }
+  
 public:
   enum DefineType {
     def_unknown,

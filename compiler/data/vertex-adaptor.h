@@ -159,4 +159,11 @@ public:
   VertexAdaptor &set_location_recursively(VertexAdaptor<Op2> v) {
     return set_location_recursively(v.impl->location);
   }
+
+  // use 'vertex.debugPrint()' anywhere in your code while development
+  // (in release it's not used and is not linked to a binary)
+  void debugPrint() const {
+    std::string debugVertexTree(VertexPtr root);   // implemented in debug.cpp
+    printf("%s", debugVertexTree(VertexPtr(*this)).c_str());
+  }
 };
