@@ -4,10 +4,6 @@
 
 #pragma once
 
-#include <map>
-
-#include "common/smart_ptrs/intrusive_ptr.h"
-
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
@@ -19,125 +15,43 @@ enum class AssumptionStatus {
   initialized
 };
 
-class Assumption : public vk::thread_safe_refcnt<Assumption> {
+class TypeHint;
+
+class Assumption {
   DEBUG_STRING_METHOD { return as_human_readable(); }
 
 public:
-  virtual ~Assumption() = default;
+  // the only field of Assumption indicates a possible state:
+  // 1) nullptr — undefined
+  // 2) primitive (then it's tp_any) — means not instance
+  // 3) otherwise, it contains an instance inside
+  // important! no int / string[] / tuple(int): only if it has instances! (so that it will help -> resolving)
+  const TypeHint *assum_hint{nullptr};
 
-  virtual std::string as_human_readable() const = 0;
-  virtual bool is_primitive() const = 0;
-  virtual vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const = 0;
-};
+  Assumption() = default;                           // create in undefined state
+  static Assumption undefined();                    // create in undefined state
+  static Assumption not_instance();                 // create in not_instance state
+  explicit Assumption(const TypeHint *type_hint);   // create from type hint (save it if has instances)
+  explicit Assumption(ClassPtr klass);
 
-class AssumNotInstance final : public Assumption {
-  AssumNotInstance() = default;
+  std::string as_human_readable() const;
 
-public:
+  bool is_undefined() const { return assum_hint == nullptr; }
+  explicit operator bool() const { return assum_hint != nullptr; }
 
-  static auto create() {
-    return vk::intrusive_ptr<Assumption>(new AssumNotInstance());
-  }
+  bool has_instance() const;
 
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
-};
+  ClassPtr try_as_class() const { return extract_instance_from_type_hint(assum_hint); }
+  Assumption get_inner_if_array() const;
+  Assumption get_subkey_by_index(VertexPtr index_key) const;
 
-class AssumInstance : public Assumption {
-protected:
-  AssumInstance() = default;
-
-public:
-  ClassPtr klass;
-
-  static auto create(ClassPtr klass) {
-    auto *self = new AssumInstance();
-    self->klass = klass;
-    return vk::intrusive_ptr<Assumption>(self);
-  }
-
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
-};
-
-class AssumArray final : public Assumption {
-  AssumArray() = default;
-
-public:
-  vk::intrusive_ptr<Assumption> inner;
-
-  static auto create(const vk::intrusive_ptr<Assumption> &inner) {
-    auto *self = new AssumArray();
-    self->inner = inner;
-    return vk::intrusive_ptr<Assumption>(self);
-  }
-
-  static auto create(ClassPtr klass) {
-    return create(AssumInstance::create(klass));
-  }
-
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
-};
-
-class AssumTuple final : public Assumption {
-  AssumTuple() = default;
-
-public:
-  std::vector<vk::intrusive_ptr<Assumption>> subkeys_assumptions;
-
-  static auto create(std::vector<vk::intrusive_ptr<Assumption>> &&sub) {
-    auto *self = new AssumTuple();
-    self->subkeys_assumptions = std::move(sub);
-    return vk::intrusive_ptr<AssumTuple>(self);
-  }
-
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
-};
-
-class AssumShape final : public Assumption {
-  AssumShape() = default;
-
-public:
-  std::map<std::string, vk::intrusive_ptr<Assumption>> subkeys_assumptions;
-
-  static auto create(std::map<std::string, vk::intrusive_ptr<Assumption>> &&sub) {
-    auto *self = new AssumShape();
-    self->subkeys_assumptions = std::move(sub);
-    return vk::intrusive_ptr<AssumShape>(self);
-  }
-
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
-};
-
-class AssumTypedCallable final : public Assumption {
-  AssumTypedCallable() = default;
-
-public:
-  InterfacePtr interface;
-
-  static auto create(InterfacePtr callable_interface) {
-    auto *self = new AssumTypedCallable();
-    self->interface = callable_interface;
-    return vk::intrusive_ptr<AssumTypedCallable>(self);
-  }
-
-  std::string as_human_readable() const final;
-  bool is_primitive() const final;
-  vk::intrusive_ptr<Assumption> get_subkey_by_index(VertexPtr index_key) const final;
+  static ClassPtr extract_instance_from_type_hint(const TypeHint *type_hint);
 };
 
 
-void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const vk::intrusive_ptr<Assumption> &assumption);
-vk::intrusive_ptr<Assumption> assumption_get_for_var(FunctionPtr f, vk::string_view var_name);
-vk::intrusive_ptr<Assumption> infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
-vk::intrusive_ptr<Assumption> calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
-vk::intrusive_ptr<Assumption> calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
-vk::intrusive_ptr<Assumption> calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name);
+void assumption_add_for_var(FunctionPtr f, vk::string_view var_name, const Assumption &assumption);
+Assumption assumption_get_for_var(FunctionPtr f, vk::string_view var_name);
+Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth = 0);
+Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call);
+Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size_t depth = 0);
+Assumption calc_assumption_for_argument(FunctionPtr f, vk::string_view var_name);

@@ -13,6 +13,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
+#include "compiler/type-hint.h"
 #include "compiler/vertex.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
@@ -42,7 +43,7 @@ FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr ot
 
   res->assumptions_for_vars = {};
   res->assumption_args_status = AssumptionStatus::unknown;
-  res->assumption_for_return = {};
+  res->assumption_for_return = Assumption::undefined();
   res->assumption_return_status = AssumptionStatus::unknown;
   res->assumption_return_processing_thread = std::thread::id{};
 
@@ -72,19 +73,19 @@ void FunctionData::update_location_in_body() {
   update_location(root);
 }
 
-std::string FunctionData::encode_template_arg_name(const vk::intrusive_ptr<Assumption> &assumption, int id) {
-  if (assumption && !assumption->is_primitive()) {
-    if (auto as_instance = assumption.try_as<AssumInstance>()) {
-      return "$" + replace_backslashes(as_instance->klass->name);
+std::string FunctionData::encode_template_arg_name(const Assumption &assumption, int id) {
+  if (assumption.has_instance()) {
+    if (ClassPtr klass = assumption.try_as_class()) {
+      return "$" + replace_backslashes(klass->name);
     }
-    if (auto as_array = assumption.try_as<AssumArray>()) {
-      return "$arr" + encode_template_arg_name(as_array->inner, id);
+    if (Assumption inner = assumption.get_inner_if_array()) {
+      return "$arr" + encode_template_arg_name(inner, id);
     }
   }
   return "$" + std::to_string(id) + "not_instance";
 }
 
-FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, vk::intrusive_ptr<Assumption>> &template_type_id_to_ClassPtr,
+FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
                                                                  FunctionPtr func,
                                                                  const std::string &name_of_function_instance) {
   kphp_assert_msg(func->is_template, "function must be template");

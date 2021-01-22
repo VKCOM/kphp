@@ -1,5 +1,4 @@
-@kphp_should_fail
-/returns both A and primitive/
+@ok
 <?php
 
 class A {

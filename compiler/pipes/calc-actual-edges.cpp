@@ -44,10 +44,9 @@ VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
   }
 
   if (v->type() == op_throw) {
-    auto as_instance = infer_class_of_expr(stage::get_function(), v.as<op_throw>()->exception()).try_as<AssumInstance>();
+    ClassPtr thrown_class = infer_class_of_expr(stage::get_function(), v.as<op_throw>()->exception()).try_as_class();
     // TODO: an error message that is more actionable, like in name-gen.cpp (i.e. suggest to add @return, etc.)
-    kphp_error_act(as_instance, "Throw expression is not an instance or it can't be detected", return v);
-    ClassPtr thrown_class = as_instance->klass;
+    kphp_error_act(thrown_class, "Throw expression is not an instance or it can't be detected", return v);
     if (!handle_exception(try_stack_, thrown_class)) {
       current_function->exceptions_thrown.insert(thrown_class);
       current_function->throws_location = v->location;
