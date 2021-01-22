@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "common/algorithms/clamp.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
@@ -65,6 +66,8 @@
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
 #include "server/php-master-warmup.h"
+#include "server/task-workers/task-workers-context.h"
+#include "server/task-workers/task-worker-client.h"
 
 static void turn_sigterm_on();
 
@@ -2167,6 +2170,12 @@ void start_server() {
     init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
   }
 
+  const auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
+  if (task_worker_client.read_task_result_fd >= 0) {
+    epoll_sethandler(task_worker_client.read_task_result_fd, 0, TaskWorkerClient::on_get_task_result, nullptr);
+    epoll_insert(task_worker_client.read_task_result_fd, EVT_READ | EVT_SPEC);
+  }
+
   if (no_sql) {
     sql_target_id = -1;
   } else {
@@ -2637,6 +2646,10 @@ int main_args_handler(int i) {
       WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
       return 0;
     }
+    case 2016: {
+      vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS);
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2704,6 +2717,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
+  parse_option("task-workers-num", required_argument, 2016, "number of task workers to run");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

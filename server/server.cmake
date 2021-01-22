@@ -18,5 +18,14 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-sql-connections.cpp
         php-worker-stats.cpp)
 
+prepend(KPHP_TASK_WORKERS_SOURCES ${BASE_DIR}/server/task-workers/
+        task-worker-server.cpp
+        task-worker-client.cpp
+        task-workers-context.cpp)
+
+set(KPHP_SERVER_ALL_SOURCES
+    ${KPHP_SERVER_SOURCES}
+    ${KPHP_TASK_WORKERS_SOURCES})
+
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
-vk_add_library(kphp_server OBJECT ${KPHP_SERVER_SOURCES})
+vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})

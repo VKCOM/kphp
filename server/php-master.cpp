@@ -57,6 +57,9 @@
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
 
+#include "server/task-workers/task-workers-context.h"
+#include "server/task-workers/task-worker-client.h"
+
 extern const char *engine_tag;
 
 //do not kill more then MAX_KILL at the same time
@@ -383,6 +386,8 @@ struct worker_info_t {
   int logname_id;
 
   Stats *stats;
+
+  int task_result_fd_idx{-1};
 };
 
 static worker_info_t *workers[MAX_WORKERS];
@@ -741,6 +746,9 @@ int run_worker() {
 
   tot_workers_started++;
 
+  auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
+  int task_result_fd_idx = task_workers_ctx.get_vacant_task_result_fd_idx();
+  
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
@@ -794,6 +802,9 @@ int run_worker() {
     active_connections = 0;
 
     reset_PID();
+
+    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(task_result_fd_idx);
+
     //TODO: fill other stats with zero
     //
 
@@ -823,6 +834,7 @@ int run_worker() {
   worker->logname_id = worker_logname_id;
   worker->last_activity_time = my_now;
 
+  worker->task_result_fd_idx = task_result_fd_idx;
 
   init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
   init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
@@ -850,6 +862,8 @@ void remove_worker(pid_t pid) {
         workers_failed++;
       }
 
+      vk::singleton<TaskWorkersContext>::get().put_back_task_result_fd_idx(workers[i]->task_result_fd_idx);
+
       clear_pipe_info(&workers[i]->pipes[0]);
       clear_pipe_info(&workers[i]->pipes[1]);
       delete_worker(workers[i]);
@@ -868,7 +882,7 @@ void remove_worker(pid_t pid) {
 void update_workers() {
   while (true) {
     int status;
-    pid_t pid = waitpid(-1, &status, WNOHANG);
+    pid_t pid = waitpid(-1, &status, WNOHANG); // TODO: can be task worker pid, it will cause error
     if (pid > 0) {
       if (!WIFEXITED (status)) {
         tot_workers_strange_dead++;
@@ -1652,6 +1666,8 @@ void run_master_on() {
     }
   }
 
+  vk::singleton<TaskWorkersContext>::get().master_init_pipes(workers_n);
+
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
 
   if (need_http_fd) {
@@ -1927,6 +1943,8 @@ void run_master() {
     }
 
     me->generation = generation;
+
+    vk::singleton<TaskWorkersContext>::get().master_update_task_workers();
 
     if (to_kill != 0 || to_run != 0) {
       vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
