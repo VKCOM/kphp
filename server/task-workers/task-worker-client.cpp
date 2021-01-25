@@ -11,6 +11,7 @@
 #include "server/php-engine.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-workers-context.h"
+#include "server/task-workers/pending-tasks.h"
 
 
 int TaskWorkerClient::on_get_task_result(int fd, void *data __attribute__((unused)), event_t *ev) {
@@ -35,6 +36,7 @@ int TaskWorkerClient::on_get_task_result(int fd, void *data __attribute__((unuse
 
   tvkprintf(task_workers_logging, 2, "got task result: ready_task_id = %d\n", ready_task_id);
 
+  vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
   return 0;
 }
 
