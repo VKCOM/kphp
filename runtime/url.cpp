@@ -4,7 +4,9 @@
 
 #include "runtime/url.h"
 
+#include "common/algorithms/contains.h"
 #include "common/macos-ports.h"
+#include "common/wrappers/string_view.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/regexp.h"
@@ -219,6 +221,21 @@ void f$parse_str(const string &str, mixed &arr) {
   }
 }
 
+bool is_userinfo_valid(const char *str, string::size_type length) {
+  const vk::string_view valid_chars{"-._~!$&'()*+,;=:"};
+  const char *p = str;
+  while (p - str < length) {
+    if (isalpha(*p) || isdigit(*p) || vk::contains(valid_chars, *p)) {
+      p++;
+    } else if (*p == '%' && p - str <= length - 3 && isdigit(*(p + 1)) && isxdigit(*(p + 2))) {
+      p += 3;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 // returns associative array like [host=> path=>] or empty array if str is not a valid url
 array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
   array<mixed> result;
@@ -335,15 +352,20 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
 
   /* check for login and password */
   if ((p = static_cast<const char *>(memrchr(s, '@', (e - s))))) {
+    bool is_ok = true;
     if ((pp = static_cast<const char *>(memchr(s, ':', (p - s))))) {
       result.set_value(string("user", 4), string(s, static_cast<string::size_type>(pp - s)));
       pp++;
       result.set_value(string("pass", 4), string(pp, static_cast<string::size_type>(p - pp)));
-    } else {
+    } else if (is_userinfo_valid(s, static_cast<string::size_type>(p - s))) {
       result.set_value(string("user", 4), string(s, static_cast<string::size_type>(p - s)));
+    } else {
+      is_ok = false;
     }
 
-    s = p + 1;
+    if (is_ok) {
+      s = p + 1;
+    }
   }
 
   /* check for port */
