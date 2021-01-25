@@ -117,6 +117,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         clone-strange-const-params.cpp
         code-gen.cpp
         collect-const-vars.cpp
+        collect-forkable-types.cpp
         collect-main-edges.cpp
         collect-required-and-classes.cpp
         convert-list-assignments.cpp
@@ -163,6 +164,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         compiler-core.cpp
         compiler.cpp
         composer.cpp
+        cpp-dest-dir-initializer.cpp
         debug.cpp
         compiler-settings.cpp
         gentree.cpp

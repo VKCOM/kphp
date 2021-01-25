@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/code-gen.h"
 
+#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -25,55 +26,15 @@
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
-
-class CollectForkableTypes final : public FunctionPassBase {
-public:
-  std::vector<const TypeData *> waitable_types;
-  std::vector<const TypeData *> forkable_types;
-  string get_description() override {
-    return "Collect forkable types";
-  }
-
-  VertexPtr on_enter_vertex(VertexPtr root) override {
-    if (auto call = root.try_as<op_func_call>()) {
-      if (call->func_id->is_resumable) {
-        if (call->str_val == "wait") {
-          waitable_types.push_back(tinf::get_type(root));
-        } else if (call->str_val == "wait_multi") {
-          forkable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
-          waitable_types.push_back(tinf::get_type(root)->const_read_at(Key::any_key()));
-        }
-        forkable_types.push_back(tinf::get_type(root));
-      } else if (call->str_val == "wait_synchronously") {
-        waitable_types.push_back(tinf::get_type(root));
-      }
-    }
-    return root;
-  }
-};
-
-void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &os) {
-  CollectForkableTypes pass;
-  run_function_pass(function, &pass);
-  if (!pass.waitable_types.empty() || !pass.forkable_types.empty()){
-    static volatile int lock = 0;
-    AutoLocker<volatile int*> locker(&lock);
-    waitable_types.insert(waitable_types.end(), pass.waitable_types.begin(), pass.waitable_types.end());
-    forkable_types.insert(forkable_types.end(), pass.forkable_types.begin(), pass.forkable_types.end());
-  }
-
-  std::call_once(dest_dir_synced, [] {
-    G->init_dest_dir();
-    G->load_index();
-  });
-  SyncPipeF<FunctionPtr, WriterData>::execute(function, os);
-}
+#include "compiler/pipes/collect-forkable-types.h"
 
 size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / G->settings().globals_split_count.get();
 }
 
 void CodeGenF::on_finish(DataStream<WriterData> &os) {
+  vk::singleton<CppDestDirInitializer>::get().wait();
+
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
@@ -166,7 +127,7 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     W << Async(StaticLibraryRunGlobalHeaderH());
   } else {
     // TODO: should be done in lib mode, but by some other way
-    W << Async(TypeTagger(std::move(forkable_types), std::move(waitable_types)));
+    W << Async(TypeTagger(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
   }
 
   //TODO: use Async for that

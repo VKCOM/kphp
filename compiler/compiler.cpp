@@ -25,6 +25,7 @@
 #include "common/precise-time.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
 #include "compiler/pipes/analyzer.h"
@@ -53,6 +54,7 @@
 #include "compiler/pipes/clone-strange-const-params.h"
 #include "compiler/pipes/code-gen.h"
 #include "compiler/pipes/collect-const-vars.h"
+#include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
@@ -210,12 +212,15 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   SchedulerBase *scheduler;
-  if (G->settings().threads_count.get() == 1) {
+  const auto scheduler_threads = static_cast<int32_t>(G->settings().threads_count.get());
+  if (scheduler_threads == 1) {
     scheduler = new OneThreadScheduler();
+    vk::singleton<CppDestDirInitializer>::get().initialize_sync();
   } else {
     auto s = new Scheduler();
-    s->set_threads_count(static_cast<int32_t>(G->settings().threads_count.get()));
+    s->set_threads_count(scheduler_threads);
     scheduler = s;
+    vk::singleton<CppDestDirInitializer>::get().initialize_async(scheduler_threads + 1);
   }
 
   G->try_load_tl_classes();
@@ -285,6 +290,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
+    >> PassC<CollectForkableTypesPass>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};
 

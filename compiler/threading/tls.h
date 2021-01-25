@@ -15,7 +15,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
-const int MAX_THREADS_COUNT = 101;
+const int MAX_THREADS_COUNT = 102;
 
 inline uint32_t get_default_threads_count() noexcept {
   return vk::clamp(std::thread::hardware_concurrency(), 1U, static_cast<uint32_t>(MAX_THREADS_COUNT));

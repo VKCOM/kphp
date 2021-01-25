@@ -14,9 +14,7 @@
 class CodeGenerator;
 
 class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
-  std::vector<const TypeData *> forkable_types;
-  std::vector<const TypeData *> waitable_types;
-  std::once_flag dest_dir_synced;
+  using need_profiler = std::false_type;
 
   void prepare_generate_class(ClassPtr klass);
   void prepare_generate_function(FunctionPtr func);
@@ -26,7 +24,5 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
   size_t calc_count_of_parts(size_t cnt_global_vars);
 
 public:
-
-  void execute(FunctionPtr function, DataStream<WriterData> &os) final;
   void on_finish(DataStream<WriterData> &os) final;
 };
