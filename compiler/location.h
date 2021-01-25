@@ -5,8 +5,11 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/debug.h"
 
 class Location {
+  DEBUG_STRING_METHOD { return as_human_readable(); }
+  
 public:
   SrcFilePtr file;
   FunctionPtr function;

@@ -10,6 +10,7 @@
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/debug.h"
 
 
 enum class AssumptionStatus {
@@ -19,6 +20,8 @@ enum class AssumptionStatus {
 };
 
 class Assumption : public vk::thread_safe_refcnt<Assumption> {
+  DEBUG_STRING_METHOD { return as_human_readable(); }
+
 public:
   virtual ~Assumption() = default;
 

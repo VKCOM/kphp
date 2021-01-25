@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "compiler/debug.h"
 #include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
@@ -19,6 +20,8 @@ class Edge;
 class TypeInferer;
 
 class Node : public Lockable {
+  DEBUG_STRING_METHOD { return as_human_readable(); }
+
 private:
   std::vector<Edge *> next_;
   std::vector<Edge *> rev_next_;
@@ -36,6 +39,8 @@ public:
   };
 
   Node();
+
+  std::string as_human_readable() const;
 
   int get_recalc_cnt() const {
     return recalc_cnt_;

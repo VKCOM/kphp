@@ -10,6 +10,7 @@
 
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/debug.h"
 #include "compiler/inferring/key.h"
 #include "compiler/inferring/multi-key.h"
 #include "compiler/inferring/primitive-type.h"
@@ -18,6 +19,8 @@
 
 
 class TypeData {
+  DEBUG_STRING_METHOD { return as_human_readable(false); }
+
 private:
   enum flag_id_t : uint8_t {
     write_flag_e          = 0b00000001,

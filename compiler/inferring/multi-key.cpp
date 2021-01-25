@@ -9,6 +9,9 @@
 #include "common/algorithms/string-algorithms.h"
 
 std::string MultiKey::to_string() const {
+  if (keys_.empty()) {
+    return "(empty)";
+  }
   return "[" + vk::join(*this, ",", std::mem_fn(&Key::to_string))+ "]";
 }
 

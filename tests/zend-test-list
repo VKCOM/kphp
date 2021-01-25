@@ -124,8 +124,6 @@ Zend/tests/inter_04.phpt
 Zend/tests/line_const_in_array.phpt
 Zend/tests/loop_free_on_return.phpt
 Zend/tests/lsb_001.phpt
-Zend/tests/magic_methods_003.phpt
-Zend/tests/magic_methods_009.phpt
 Zend/tests/nowdoc_016.phpt
 Zend/tests/nowdoc_017.phpt
 Zend/tests/objects_004.phpt

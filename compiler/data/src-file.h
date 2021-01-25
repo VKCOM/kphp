@@ -10,8 +10,11 @@
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/debug.h"
 
 class SrcFile {
+  DEBUG_STRING_METHOD { return unified_file_name; }
+  
 public:
   int id{0};
   std::string text, file_name, short_file_name;

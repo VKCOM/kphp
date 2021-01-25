@@ -8,9 +8,12 @@
 #include <string>
 
 #include "compiler/data/class-members.h"
+#include "compiler/debug.h"
 #include "compiler/inferring/var-node.h"
 
 class VarData {
+  DEBUG_STRING_METHOD { return get_human_readable_name(); }
+  
 public:
   enum Type {
     var_unknown_t = 0,

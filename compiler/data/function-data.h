@@ -18,11 +18,14 @@
 #include "compiler/data/function-modifiers.h"
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/debug.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData {
+  DEBUG_STRING_METHOD { return get_human_readable_name(); }
+  
   // code outside of the data/ should use FunctionData::create_function()
   FunctionData() = default;
   FunctionData& operator=(const FunctionData &other) = default;
@@ -102,7 +105,7 @@ public:
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
-  
+
   enum class profiler_status : uint8_t {
     disable,
     // A function that is being profiled that starts and ends the profiling

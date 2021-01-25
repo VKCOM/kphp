@@ -6,7 +6,11 @@
 
 #include <string>
 
+#include "compiler/debug.h"
+
 class Key {
+  DEBUG_STRING_METHOD { return to_string(); }
+
 private:
   int id{-1};
 
