@@ -15,12 +15,15 @@
 class TaskWorkerServer {
 public:
   friend class vk::singleton<TaskWorkerServer>;
+  static constexpr size_t TASK_BYTE_SIZE = 3 * sizeof(int); // task_id; write_task_result_fd; x
 
   void init_task_worker_server();
   void event_loop();
+  bool execute_task(int task_id, int task_result_fd_idx, int x) const;
 
-  static int on_get_task(int fd, void *data __attribute__((unused)), event_t *ev);
+  static int read_tasks(int fd, void *data __attribute__((unused)), event_t *ev);
 private:
+
   int read_task_fd{-1};
 
   TaskWorkerServer() = default;

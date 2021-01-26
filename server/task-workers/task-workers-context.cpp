@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "common/dl-utils-lite.h"
 #include "server/task-workers/task-workers-context.h"
@@ -15,7 +16,7 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
     return;
   }
 
-  int err = pipe(task_pipe.data());
+  int err = pipe2(task_pipe.data(), O_NONBLOCK);
   if (err) {
     kprintf("Unable to create task pipe: %s", strerror(errno));
     assert(false);
@@ -25,7 +26,7 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
   result_pipes.resize(task_result_slots_num);
   for (int i = 0; i < result_pipes.size(); ++i) {
     auto &result_pipe = result_pipes.at(i);
-    err = pipe(result_pipe.data());
+    err = pipe2(result_pipe.data(), O_NONBLOCK);
     if (err) {
       kprintf("Unable to create result pipe: %s", strerror(errno));
       assert(false);

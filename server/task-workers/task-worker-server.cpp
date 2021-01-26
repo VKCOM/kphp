@@ -2,6 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <sys/param.h>
 #include <signal.h>
 
 #include "common/dl-utils-lite.h"
@@ -11,11 +12,10 @@
 #include "server/task-workers/task-worker-server.h"
 #include "server/task-workers/task-workers-context.h"
 
-int TaskWorkerServer::on_get_task(int fd, void *data __attribute__((unused)), event_t *ev) {
-  static constexpr int QUERY_BUF_LEN = 100;
-  static int buf[QUERY_BUF_LEN];
+int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), event_t *ev) {
+  static int read_buf[PIPE_BUF / sizeof(int)];
 
-  vkprintf(3, "TaskWorkerClient::on_get_task: fd=%d\n", fd);
+  vkprintf(3, "TaskWorkerClient::read_tasks: fd=%d\n", fd);
 
   const auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
   assert(fd == task_worker_server.read_task_fd);
@@ -27,29 +27,62 @@ int TaskWorkerServer::on_get_task(int fd, void *data __attribute__((unused)), ev
   }
   assert(ev->ready & EVT_READ);
 
-  ssize_t read_bytes = read(fd, buf, sizeof(int) * 3);
-  assert(read_bytes == sizeof(int) * 3);
+  ssize_t read_bytes = read(fd, read_buf, PIPE_BUF);
+  if (read_bytes == -1) {
+    if (errno == EWOULDBLOCK) {
+      // another task worker has already taken the task, all task workers are readers for this fd
+      return 0;
+    }
+    kprintf("pid = %d, Couldn't read tasks: %s\n", getpid(), strerror(errno));
+    return -1;
+  }
+  if (read_bytes % TASK_BYTE_SIZE != 0) {
+    kprintf("Got inconsistent number of bytes on read tasks: %zd. Probably some tasks are written not atomically\n", read_bytes);
+    return -1;
+  }
+  size_t tasks_number = read_bytes / TASK_BYTE_SIZE;
+  tvkprintf(task_workers_logging, 2, "got %zu tasks, executing ...\n", tasks_number);
+  for (size_t i = 0, data_pos = 0; i < tasks_number; ++i) {
+    int task_id = read_buf[data_pos++];
+    int task_result_fd_idx = read_buf[data_pos++];
+    int x = read_buf[data_pos++];
 
-  int task_id = buf[0];
-  int task_result_fd_idx = buf[1];
-  int x = buf[2];
-  
-  tvkprintf(task_workers_logging, 2, "pid = %d, got task: task_id = %d, write_task_result_fd = %d\n", getpid(), task_id, task_result_fd_idx);
+    tvkprintf(task_workers_logging, 2, "executing task (%lu / %lu): task_id = %d, task_result_fd_idx = %d\n", i + 1, tasks_number, task_id, task_result_fd_idx);
 
-  int task_result = x * x;
-
-  int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
-
-  size_t query_size = 0;
-  buf[query_size++] = task_id;
-  buf[query_size++] = task_result;
-  ssize_t written = write(write_task_result_fd, buf, query_size * sizeof(int)); // TODO: make it non blocking
-  if (written != query_size * sizeof(int)) {
-    kprintf("Fail to write task result: written bytes = %zd %s\n", written, written == -1 ? strerror(errno) : "");
-    assert(false);
+    bool success = task_worker_server.execute_task(task_id, task_result_fd_idx, x);
+    assert(success);
   }
   return 0;
 }
+
+bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) const {
+  static int write_buf[PIPE_BUF / sizeof(int)];
+
+  int task_result = x * x;
+  sleep(1);
+
+  int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
+  size_t answer_size = 0;
+  write_buf[answer_size++] = task_id;
+  write_buf[answer_size++] = task_result;
+
+  ssize_t written = write(write_task_result_fd, write_buf, answer_size * sizeof(int));
+  if (written == -1) {
+    if (errno == EWOULDBLOCK) {
+      kprintf("Fail to write task result: pipe is full\n");
+    } else {
+      kprintf("Fail to write task result: %s", strerror(errno));
+    }
+    return false;
+  }
+
+  if (written != answer_size * sizeof(int)) {
+    kprintf("Fail to write task result: written bytes = %zd\n", written);
+    return false;
+  }
+  return true;
+}
+
 
 void TaskWorkerServer::init_task_worker_server() {
   prctl(PR_SET_PDEATHSIG, SIGKILL); // to prevent the process from becoming orphan
@@ -90,7 +123,7 @@ void TaskWorkerServer::init_task_worker_server() {
 void TaskWorkerServer::event_loop() {
   init_task_worker_server();
 
-  epoll_sethandler(read_task_fd, 0, on_get_task, nullptr);
+  epoll_sethandler(read_task_fd, 0, read_tasks, nullptr);
   epoll_insert(read_task_fd, EVT_READ | EVT_SPEC);
   tvkprintf(task_workers_logging, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
 

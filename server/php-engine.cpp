@@ -2172,7 +2172,7 @@ void start_server() {
 
   const auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
   if (task_worker_client.read_task_result_fd >= 0) {
-    epoll_sethandler(task_worker_client.read_task_result_fd, 0, TaskWorkerClient::on_get_task_result, nullptr);
+    epoll_sethandler(task_worker_client.read_task_result_fd, 0, TaskWorkerClient::read_task_results, nullptr);
     epoll_insert(task_worker_client.read_task_result_fd, EVT_READ | EVT_SPEC);
   }
 

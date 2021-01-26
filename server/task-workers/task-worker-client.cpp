@@ -14,11 +14,10 @@
 #include "server/task-workers/pending-tasks.h"
 
 
-int TaskWorkerClient::on_get_task_result(int fd, void *data __attribute__((unused)), event_t *ev) {
-  static constexpr int MAX_QUERY_INT_LEN = 100;
-  static int buf[MAX_QUERY_INT_LEN];
+int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused)), event_t *ev) {
+  static int read_buf[PIPE_BUF / sizeof(int)];
 
-  vkprintf(3, "TaskWorkerClient::on_get_task_result: fd=%d\n", fd);
+  vkprintf(3, "TaskWorkerClient::read_task_results: fd=%d\n", fd);
 
   const auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
   assert(fd == task_worker_client.read_task_result_fd);
@@ -29,14 +28,26 @@ int TaskWorkerClient::on_get_task_result(int fd, void *data __attribute__((unuse
   }
   assert(ev->ready & EVT_READ);
 
-  ssize_t read_bytes = read(fd, buf, sizeof(int) * 2);
-  assert(read_bytes == sizeof(int) * 2);
-  int ready_task_id = buf[0];
-  int task_result = buf[1];
+  ssize_t read_bytes = read(fd, read_buf, PIPE_BUF);
 
-  tvkprintf(task_workers_logging, 2, "got task result: ready_task_id = %d\n", ready_task_id);
+  if (read_bytes == -1) {
+    assert(errno != EWOULDBLOCK); // because fd must be ready for read, current HTTP worker is only one reader for this fd
+    kprintf("Couldn't read task results: %s", strerror(errno));
+    return -1;
+  }
+  if (read_bytes % TASK_RESULT_BYTE_SIZE != 0) {
+    kprintf("Got inconsistent number of bytes on read task results: %zd. Probably some task results are written not atomically", read_bytes);
+    return -1;
+  }
 
-  vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
+  size_t tasks_results_number = read_bytes / TASK_RESULT_BYTE_SIZE;
+  tvkprintf(task_workers_logging, 2, "got %zu task results, collecting ...\n", tasks_results_number);
+  for (size_t i = 0, data_pos = 0; i < tasks_results_number; ++i) {
+    int ready_task_id = read_buf[data_pos++];
+    int task_result = read_buf[data_pos++];
+    tvkprintf(task_workers_logging, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id, task_result);
+    vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
+  }
   return 0;
 }
 
@@ -61,17 +72,29 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
   }
 }
 
-void TaskWorkerClient::send_task_x2(int task_id, int x) {
+bool TaskWorkerClient::send_task_x2(int task_id, int x) {
+  static int write_buf[PIPE_BUF / sizeof(int)];
   tvkprintf(task_workers_logging, 2, "sending task: task_id = %d, write_task_fd = %d, task_result_fd_idx = %d\n", task_id, write_task_fd, task_result_fd_idx);
 
   size_t query_size = 0;
-  buf[query_size++] = task_id;
-  buf[query_size++] = task_result_fd_idx;
-  buf[query_size++] = x;
+  write_buf[query_size++] = task_id;
+  write_buf[query_size++] = task_result_fd_idx;
+  write_buf[query_size++] = x;
 
-  ssize_t written = write(write_task_fd, buf, query_size * sizeof(int));
-  if (written != query_size * sizeof(int)) {
-    kprintf("Fail to write task: task_id = %d, written bytes = %zd %s\n", task_id, written, written == -1 ? strerror(errno) : "");
-    assert(false);
+  ssize_t written = write(write_task_fd, write_buf, query_size * sizeof(int));
+
+  if (written == -1) {
+    if (errno == EWOULDBLOCK) {
+      kprintf("Fail to write task: pipe is full\n");
+    } else {
+      kprintf("Fail to write task: %s\n", strerror(errno));
+    }
+    return false;
   }
+
+  if (written != query_size * sizeof(int)) {
+    kprintf("Fail to write task: task_id = %d, written bytes = %zd\n", task_id, written);
+    return false;
+  }
+  return true;
 }
