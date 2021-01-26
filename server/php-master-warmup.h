@@ -12,11 +12,12 @@
 
 class WarmUpContext : public vk::singleton<WarmUpContext> {
 public:
-  double calc_final_instance_cache_sizes_ratio() const {
-    if (final_old_instance_cache_size_ == 0) {
-      return -0.1;
-    }
-    return static_cast<double>(final_new_instance_cache_size_) / final_old_instance_cache_size_;
+  uint32_t get_final_new_instance_cache_size() const {
+    return final_new_instance_cache_size_;
+  }
+
+  uint32_t get_final_old_instance_cache_size() const {
+    return final_old_instance_cache_size_;
   }
 
   void update_final_instance_cache_sizes() {

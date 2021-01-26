@@ -1536,7 +1536,8 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
   add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 
-  add_histogram_stat_double(stats, "graceful_restart.warmup.final_instance_cache_sizes_ratio", WarmUpContext::get().calc_final_instance_cache_sizes_ratio());
+  add_histogram_stat_double(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
+  add_histogram_stat_double(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
   update_mem_stats();
   unsigned long long max_vms = 0;
