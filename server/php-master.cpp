@@ -1536,6 +1536,9 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
   add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 
+  add_histogram_stat_double(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
+  add_histogram_stat_double(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
+
   update_mem_stats();
   unsigned long long max_vms = 0;
   unsigned long long max_rss = 0;
@@ -1713,8 +1716,13 @@ void run_master_on() {
       bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();
       if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
-        vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [warmup_timeout_expired = %d]\n",
-                     set_to_kill, need_more_workers_for_warmup, is_instance_cache_hot_enough, warmup_timeout_expired);
+        vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
+                        set_to_kill, need_more_workers_for_warmup,
+                        is_instance_cache_hot_enough, me->instance_cache_elements_stored, other->instance_cache_elements_stored,
+                        warmup_timeout_expired);
+        if (!need_more_workers_for_warmup && (is_instance_cache_hot_enough || warmup_timeout_expired)) {
+          warm_up_ctx.update_final_instance_cache_sizes();
+        }
         me->to_kill = set_to_kill;
         me->to_kill_generation = generation;
         changed = 1;
