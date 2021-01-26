@@ -524,6 +524,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
 } // namespace
 
 mixed f$json_decode(const string &v, bool assoc) noexcept {
+  // TODO It was a warning before (in case if assoc is false), but then it was disabled, should we enable it again?
   static_cast<void>(assoc);
 
   mixed result;
