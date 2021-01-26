@@ -383,7 +383,7 @@ struct worker_info_t {
   pid_info_t my_info;
   int valid_my_info;
 
-  int logname_id;
+  int slot_index;
 
   Stats *stats;
 };
@@ -433,19 +433,19 @@ worker_info_t *new_worker() {
   return w;
 }
 
-int get_logname_id() {
+int get_vacant_worker_slot_index() {
   assert (worker_ids_n > 0);
   return worker_ids[--worker_ids_n];
 }
 
-void add_logname_id(int id) {
+void put_back_worker_slot_index(int id) {
   assert (worker_ids_n < MAX_WORKERS);
   worker_ids[worker_ids_n++] = id;
 }
 
 void delete_worker(worker_info_t *w) {
   w->generation = ++conn_generation;
-  add_logname_id(w->logname_id);
+  put_back_worker_slot_index(w->slot_index);
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
@@ -464,7 +464,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
     //verbosity = 1;
   }
   for (int i = MAX_WORKERS - 1; i >= 0; i--) {
-    add_logname_id(i);
+    put_back_worker_slot_index(i);
   }
 
   std::string s = cluster_name;
@@ -747,7 +747,7 @@ int run_worker() {
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
-  int worker_logname_id = get_logname_id();
+  int worker_slot_index = get_vacant_worker_slot_index();
   if (new_pid == 0) {
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
@@ -798,16 +798,16 @@ int run_worker() {
 
     reset_PID();
 
-    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(worker_logname_id);
+    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(worker_slot_index);
 
     //TODO: fill other stats with zero
     //
 
     signal_fd = -1;
-    logname_id = worker_logname_id;
+    logname_id = worker_slot_index;
     if (logname_pattern) {
       char buf[100];
-      snprintf(buf, 100, logname_pattern, worker_logname_id);
+      snprintf(buf, 100, logname_pattern, worker_slot_index);
       logname = strdup(buf);
     }
 
@@ -826,7 +826,7 @@ int run_worker() {
   worker->is_dying = 0;
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
-  worker->logname_id = worker_logname_id;
+  worker->slot_index = worker_slot_index;
   worker->last_activity_time = my_now;
 
   init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
