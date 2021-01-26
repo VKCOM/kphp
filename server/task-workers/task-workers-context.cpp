@@ -32,7 +32,6 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
       assert(false);
       return;
     }
-    task_result_fd_idx_vacant_pool_.push(i);
   }
 
   task_result_slots_num_ = task_result_slots_num;
@@ -66,16 +65,4 @@ void TaskWorkersContext::run_task_worker() {
   vk::singleton<TaskWorkerServer>::get().event_loop();
 
   exit(0);
-}
-
-int TaskWorkersContext::get_vacant_task_result_fd_idx() {
-  assert(!task_result_fd_idx_vacant_pool_.empty());
-  int vacant_fd_idx = task_result_fd_idx_vacant_pool_.front();
-  task_result_fd_idx_vacant_pool_.pop();
-  return vacant_fd_idx;
-}
-
-void TaskWorkersContext::put_back_task_result_fd_idx(int vacant_fd_idx) {
-  assert(0 <= vacant_fd_idx && vacant_fd_idx < task_result_slots_num_);
-  task_result_fd_idx_vacant_pool_.push(vacant_fd_idx);
 }

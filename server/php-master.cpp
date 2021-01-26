@@ -386,8 +386,6 @@ struct worker_info_t {
   int logname_id;
 
   Stats *stats;
-
-  int task_result_fd_idx{-1};
 };
 
 static worker_info_t *workers[MAX_WORKERS];
@@ -746,9 +744,6 @@ int run_worker() {
 
   tot_workers_started++;
 
-  auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
-  int task_result_fd_idx = task_workers_ctx.get_vacant_task_result_fd_idx();
-  
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
@@ -803,7 +798,7 @@ int run_worker() {
 
     reset_PID();
 
-    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(task_result_fd_idx);
+    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(worker_logname_id);
 
     //TODO: fill other stats with zero
     //
@@ -834,8 +829,6 @@ int run_worker() {
   worker->logname_id = worker_logname_id;
   worker->last_activity_time = my_now;
 
-  worker->task_result_fd_idx = task_result_fd_idx;
-
   init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
   init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
 
@@ -861,8 +854,6 @@ void remove_worker(pid_t pid) {
         failed++;
         workers_failed++;
       }
-
-      vk::singleton<TaskWorkersContext>::get().put_back_task_result_fd_idx(workers[i]->task_result_fd_idx);
 
       clear_pipe_info(&workers[i]->pipes[0]);
       clear_pipe_info(&workers[i]->pipes[1]);

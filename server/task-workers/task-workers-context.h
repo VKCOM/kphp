@@ -33,13 +33,8 @@ public:
 
   void master_init_pipes(int task_result_slots_num);
   void master_run_task_workers();
-
-  int get_vacant_task_result_fd_idx();
-  void put_back_task_result_fd_idx(int vacant_fd_idx);
-
 private:
   size_t task_result_slots_num_{0};
-  std::queue<int> task_result_fd_idx_vacant_pool_;
   bool pipes_inited_{false};
 
   void run_task_worker();
