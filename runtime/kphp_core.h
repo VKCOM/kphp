@@ -14,6 +14,7 @@
 #include "runtime/allocator.h"
 #include "runtime/include.h"
 #include "runtime/kphp_type_traits.h"
+#include "runtime/shape.h"
 
 // order of includes below matters, be careful
 
