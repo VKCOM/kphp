@@ -8,7 +8,7 @@
 #include "server/php-master.h"
 #include <cstddef>
 #include <queue>
-#include <vector>
+#include <unordered_set>
 
 #include "server/task-workers/task-worker-server.h"
 
@@ -26,13 +26,13 @@ public:
   size_t dying_task_workers{0};
   size_t task_workers_num{0};
 
-  std::vector<pid_t> task_workers;
+  std::unordered_set<pid_t> task_workers;
 
   Pipe task_pipe;
   std::vector<Pipe> result_pipes;
 
   void master_init_pipes(int task_result_slots_num);
-  void master_update_task_workers();
+  void master_run_task_workers();
 
   int get_vacant_task_result_fd_idx();
   void put_back_task_result_fd_idx(int vacant_fd_idx);

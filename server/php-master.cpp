@@ -880,10 +880,17 @@ void remove_worker(pid_t pid) {
 }
 
 void update_workers() {
+  auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
   while (true) {
     int status;
-    pid_t pid = waitpid(-1, &status, WNOHANG); // TODO: can be task worker pid, it will cause error
+    pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
+      const auto &it = task_workers_ctx.task_workers.find(pid);
+      if (it != task_workers_ctx.task_workers.end()) {
+        task_workers_ctx.task_workers.erase(it);
+        task_workers_ctx.running_task_workers--;
+        continue;
+      }
       if (!WIFEXITED (status)) {
         tot_workers_strange_dead++;
       }
@@ -1944,7 +1951,7 @@ void run_master() {
 
     me->generation = generation;
 
-    vk::singleton<TaskWorkersContext>::get().master_update_task_workers();
+    vk::singleton<TaskWorkersContext>::get().master_run_task_workers();
 
     if (to_kill != 0 || to_run != 0) {
       vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);

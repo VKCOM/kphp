@@ -39,8 +39,7 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
   pipes_inited_ = true;
 }
 
-void TaskWorkersContext::master_update_task_workers() {
-  // TODO: poll and remove dead workers
+void TaskWorkersContext::master_run_task_workers() {
   for (int i = 0; i < task_workers_num - (running_task_workers + dying_task_workers); ++i) {
     run_task_worker();
   }
@@ -57,7 +56,7 @@ void TaskWorkersContext::run_task_worker() {
   if (pid != 0) {
     // in master
     tvkprintf(task_workers_logging, 1, "launched new task worker with pid = %d\n", pid);
-    task_workers.emplace_back(pid);
+    task_workers.insert(pid);
     ++running_task_workers;
     dl_restore_signal_mask();
     return;
