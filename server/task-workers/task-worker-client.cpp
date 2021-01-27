@@ -2,17 +2,16 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <sys/param.h>
 #include <cassert>
 #include <cstdio>
 #include <unistd.h>
 
 #include "net/net-reactor.h"
 
-#include "server/php-engine.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-workers-context.h"
-#include "server/task-workers/pending-tasks.h"
-
+#include "server/php-queries.h"
 
 int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused)), event_t *ev) {
   static int read_buf[PIPE_BUF / sizeof(int)];
@@ -46,7 +45,7 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
     int ready_task_id = read_buf[data_pos++];
     int task_result = read_buf[data_pos++];
     tvkprintf(task_workers_logging, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id, task_result);
-    vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
+    put_task_worker_answer_event(ready_task_id, task_result);
   }
   return 0;
 }

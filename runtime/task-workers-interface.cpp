@@ -8,14 +8,18 @@
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/task-worker-client.h"
 
+void process_task_worker_answer_event(int ready_task_id, int task_result) {
+  vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
+}
+
 static int64_t generate_id() {
   return f$rand();
 }
 
 int64_t f$async_x2(int64_t x) {
-  int64_t task_id = generate_id();
+  int task_id = static_cast<int>(generate_id());
   vk::singleton<PendingTasks>::get().put_task(task_id);
-  bool success = vk::singleton<TaskWorkerClient>::get().send_task_x2(static_cast<int>(task_id), x);
+  bool success = vk::singleton<TaskWorkerClient>::get().send_task_x2(task_id, x);
   php_assert(success);
   return task_id;
 }

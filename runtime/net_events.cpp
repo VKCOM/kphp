@@ -8,6 +8,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/rpc.h"
+#include "runtime/task-workers-interface.h"
 #include "server/php-queries.h"
 
 int timeout_convert_to_ms(double timeout) {
@@ -44,6 +45,9 @@ static bool process_net_event(net_event_t *e) {
       break;
     case net_event_type_t::rpc_error:
       process_rpc_error(e->slot_id, e->error_code, e->error_message);
+      break;
+    case net_event_type_t::task_worker_answer:
+      process_task_worker_answer_event(e->task_id, e->task_result);
       break;
     default:
       php_critical_error ("unsupported net event %d", static_cast<int>(e->type));

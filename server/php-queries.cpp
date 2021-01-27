@@ -774,7 +774,7 @@ public:
   }
 };
 
-static StaticQueue<net_event_t, 2000000> net_events;
+static StaticQueue<net_event_t, 2000000> net_events; // TODO: increase queue size ???
 static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
@@ -855,6 +855,17 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   event->result_len = len;
   assert (res != nullptr);
   *res = event;
+  return 1;
+}
+
+int put_task_worker_answer_event(int ready_task_id, int task_result) {
+  net_event_t *event = net_events.create();
+  if (event == nullptr) {
+    return -2;
+  }
+  event->type = net_event_type_t::task_worker_answer;
+  event->task_id = ready_task_id;
+  event->task_result = task_result;
   return 1;
 }
 

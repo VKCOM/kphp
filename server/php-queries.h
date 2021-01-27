@@ -11,6 +11,7 @@ using slot_id_t = int;
 enum class net_event_type_t {
   rpc_answer,
   rpc_error,
+  task_worker_answer,
 };
 
 struct net_event_t {
@@ -18,6 +19,7 @@ struct net_event_t {
   union {
     slot_id_t slot_id;
     slot_id_t rpc_id;
+    int task_id;
   };
   union {
     struct { //rpc_answer
@@ -28,6 +30,9 @@ struct net_event_t {
     struct { //rpc_error
       int error_code;
       const char *error_message;
+    };
+    struct { // task_worker_answer
+      int task_result;
     };
   };
 };
@@ -331,6 +336,9 @@ void free_net_query(net_query_t *query);
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
+
+int put_task_worker_answer_event(int ready_task_id, int task_result);
+
 int net_events_empty();
 
 void php_queries_start();
