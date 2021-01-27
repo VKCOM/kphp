@@ -672,6 +672,17 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
   return expr;
 }
 
+TokenType transform_compare_operation_token(TokenType token) noexcept {
+  switch (token) {
+    case tok_gt:
+      return tok_lt;
+    case tok_ge:
+      return tok_le;
+    default:
+      return token;
+  }
+}
+
 VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
   if (op_priority_cur >= OpInfo::op_priority_end) {
     return get_expr_top(false);
@@ -691,7 +702,10 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
   }
 
   while (cur != end) {
-    const Operation binary_op_tp = OpInfo::tok_to_binary_op[cur->type()];
+    const TokenType origin_token = cur->type();
+    const TokenType token = transform_compare_operation_token(origin_token);
+
+    const Operation binary_op_tp = OpInfo::tok_to_binary_op[token];
     if (binary_op_tp == op_err || OpInfo::priority(binary_op_tp) != op_priority_cur) {
       break;
     }
@@ -732,6 +746,10 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
     if (vk::any_of_equal(binary_op_tp, op_or, op_and, op_xor)) {
       left = conv_to<tp_int>(left);
       right = conv_to<tp_int>(right);
+    }
+
+    if (vk::any_of_equal(origin_token, tok_gt, tok_ge)) {
+      std::swap(left, right);
     }
 
     if (ternary) {

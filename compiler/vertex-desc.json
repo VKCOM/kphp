@@ -908,18 +908,6 @@
     }
   },
   {
-    "comment": "lsh() >= rhs()",
-    "name": "op_ge",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_op",
-      "str": ">=",
-      "description": ">="
-    }
-  },
-  {
     "comment": "lsh() < rhs()",
     "name": "op_lt",
     "base_name": "meta_op_binary",
@@ -929,18 +917,6 @@
       "type": "binary_op",
       "str": "<",
       "description": "<"
-    }
-  },
-  {
-    "comment": "lsh() > rhs()",
-    "name": "op_gt",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_op",
-      "str": ">",
-      "description": ">"
     }
   },
   {

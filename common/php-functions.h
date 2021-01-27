@@ -210,5 +210,5 @@ inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
 template<class T>
 inline constexpr int three_way_comparison(const T &lhs, const T &rhs) {
   return lhs < rhs ? -1 :
-         (lhs > rhs ?  1 : 0);
+         (rhs < lhs ?  1 : 0);
 }

@@ -510,9 +510,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_neq2:
     case op_neq3:
     case op_lt:
-    case op_gt:
     case op_le:
-    case op_ge:
     case op_isset:
       recalc_ptype<tp_bool>();
       break;

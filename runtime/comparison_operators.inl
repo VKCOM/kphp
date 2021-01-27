@@ -578,18 +578,9 @@ inline bool lt(const array<T1> &lhs, const array<T2> &rhs) {
 }
 
 template<class T1, class T2>
-inline bool gt(const T1 &lhs, const T2 &rhs) {
-  return lt(rhs, lhs);
-}
-
-template<class T1, class T2>
 inline bool leq(const T1 &lhs, const T2 &rhs) {
-  return !gt(lhs, rhs);
-}
-
-template<class T1, class T2>
-inline bool geq(const T1 &lhs, const T2 &rhs) {
-  return leq(rhs, lhs);
+  // (lhs <= rhs) === (!(rhs < lhs))
+  return !lt(rhs, lhs);
 }
 
 namespace impl_ {

@@ -256,7 +256,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vk::any_of_equal(vertex->type(), op_eq3, op_neq3)) {
     check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
-  if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_gt, op_ge, op_spaceship, op_eq2, op_neq2)) {
+  if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_spaceship, op_eq2, op_neq2)) {
     check_comparisons(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
   if (vertex->type() == op_add) {

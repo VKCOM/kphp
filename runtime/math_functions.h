@@ -147,7 +147,7 @@ T f$max(const array<T> &a) {
   typename array<T>::const_iterator p = a.begin();
   T res = p.get_value();
   for (++p; p != a.end(); ++p) {
-    if (gt(p.get_value(), res)) {
+    if (lt(res, p.get_value())) {
       res = p.get_value();
     }
   }
@@ -171,7 +171,7 @@ T f$max(const T &arg1) {
 
 template<class T, class ...Args>
 T f$max(const T &arg1, const T &arg2, Args&& ...args) {
-  return f$max<T>(gt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
+  return f$max<T>(lt(arg2, arg1) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
 double f$acos(double v) {

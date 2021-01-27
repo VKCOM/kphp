@@ -1189,7 +1189,7 @@ void f$shuffle(array<T> &a) {
 template<class T>
 struct sort_compare {
   bool operator()(const T &h1, const T &h2) const {
-    return gt(h1, h2);
+    return lt(h2, h1);
   }
 };
 
