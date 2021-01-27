@@ -16,6 +16,8 @@ type summary add --python-function "lldb_addons.class_with_debug_string" Assumpt
 type summary add --python-function "lldb_addons.class_with_debug_string" Key
 type summary add --python-function "lldb_addons.class_with_debug_string" MultiKey
 type summary add --python-function "lldb_addons.class_with_debug_string" TypeHint
+type summary add --python-function "lldb_addons.class_with_debug_string" cfg::Node
+type summary add --python-function "lldb_addons.class_with_debug_string" cfg::UsageData
 
 type summary add --python-function "lldb_addons.token_printer" Token
 type summary add --python-function "lldb_addons.vk_string_view_printer" vk::string_view
@@ -26,6 +28,7 @@ type summary add --python-function "lldb_addons.data_ptr_printer" Id<VarData>   
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<DefineData>    # DefinePtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<LibData>       # LibPtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<SrcFile>       # SrcFilePtr
+type summary add --python-function "lldb_addons.data_ptr_printer" Id<cfg::UsageData> # UsagePtr
 
 type synth add -l "lldb_addons.data_ptr_children" Id<FunctionData>  # FunctionPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<ClassData>     # ClassPtr

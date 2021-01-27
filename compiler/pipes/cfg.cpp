@@ -8,6 +8,7 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/debug.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/utils/dsu.h"
@@ -17,6 +18,8 @@
 namespace cfg {
 // just simple int id type
 class Node {
+  DEBUG_STRING_METHOD { return std::to_string(id_); }
+
 public:
   explicit operator bool() const { return id_ != -1; }
   void clear() { id_ = -1; }
@@ -36,6 +39,8 @@ enum UsageType : uint8_t {
 };
 
 struct UsageData {
+  DEBUG_STRING_METHOD { return std::to_string(id); }
+
   int id = -1;
   int part_id = -1;
   Node node;
@@ -112,10 +117,7 @@ class CFG {
   void add_edge(Node from, Node to);
   void collect_ref_vars(VertexPtr v, std::unordered_set<VarPtr> &ref);
   std::vector<VarPtr> collect_splittable_vars(FunctionPtr func);
-  void collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *can_throw);
-  void create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish);
-  void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish,
-                  bool write_flag = false, bool weak_write_flag = false);
+  void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag = false, bool weak_write_flag = false);
   void create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
 
   void calc_used(Node v);
@@ -124,7 +126,6 @@ class CFG {
   void dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask);
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
-  void compress_usages(std::vector<UsagePtr> &usages);
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
   void dfs_apply_type_hint(Node v, UsagePtr usage);
   void process_var(FunctionPtr function, VarPtr v);
@@ -218,33 +219,6 @@ std::vector<VarPtr> CFG::collect_splittable_vars(FunctionPtr func) {
   return splittable_vars;
 }
 
-void CFG::collect_vars_usage(VertexPtr tree_node, Node writes, Node reads, bool *can_throw) {
-  //TODO: a lot of problems
-  //is_set, unset, reference arguments...
-
-  if (tree_node->type() == op_throw) {
-    *can_throw = true;
-  }
-  //TODO: only if function has throws flag
-  if (auto call = tree_node.try_as<op_func_call>()) {
-    *can_throw = call->func_id->can_throw();
-  }
-
-  if (auto set_op = tree_node.try_as<op_set>()) {
-    if (auto lhs_var = set_op->lhs().try_as<op_var>()) {
-      add_usage(writes, new_usage(usage_write_t, lhs_var));
-      collect_vars_usage(set_op->rhs(), writes, reads, can_throw);
-      return;
-    }
-  }
-  if (auto var_node = tree_node.try_as<op_var>()) {
-    add_usage(reads, new_usage(usage_read_t, var_node));
-  }
-  for (auto i : *tree_node) {
-    collect_vars_usage(i, writes, reads, can_throw);
-  }
-}
-
 void CFG::create_cfg_enter_cycle() {
   continue_nodes.resize(continue_nodes.size() + 1);
   break_nodes.resize(break_nodes.size() + 1);
@@ -286,35 +260,6 @@ void CFG::create_cfg_end_try() {
 void CFG::create_cfg_register_exception(Node from) {
   if (!exception_nodes.empty()) {
     exception_nodes.back().push_back(from);
-  }
-}
-
-void CFG::create_full_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish) {
-  stage::set_location(tree_node->location);
-  Node start = new_node(),
-    finish = new_node(),
-    writes = new_node(),
-    reads = new_node();
-
-  bool can_throw = false;
-  collect_vars_usage(tree_node, writes, reads, &can_throw);
-  compress_usages(node_usages[writes]);
-  compress_usages(node_usages[reads]);
-
-  add_subtree(start, tree_node, true);
-
-  //add_edge (start, finish);
-  add_edge(start, writes);
-  add_edge(start, reads);
-  add_edge(writes, reads);
-  add_edge(writes, finish);
-  add_edge(reads, finish);
-  //TODO: (reads->writes) (finish->start)
-
-  *res_start = start;
-  *res_finish = finish;
-  if (can_throw) {
-    create_cfg_register_exception(*res_finish);
   }
 }
 
@@ -418,16 +363,17 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
   stage::set_location(tree_node->location);
   bool recursive_flag = false;
   switch (tree_node->type()) {
+    // vararg operators
     case op_array:
     case op_tuple:
+    case op_shape:
     case op_seq_comma:
     case op_seq_rval:
-    case op_seq: {
+    case op_seq:
+    case op_string_build: {
       Node a, b, end;
       if (tree_node->empty()) {
-        a = new_node();
-        *res_start = a;
-        *res_finish = a;
+        *res_start = *res_finish = new_node();
         break;
       }
       VertexRange args = tree_node.as<meta_op_varg>()->args();
@@ -441,21 +387,95 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = end;
       break;
     }
-    case op_log_not: {
-      create_cfg(tree_node.as<op_log_not>()->expr(), res_start, res_finish);
+
+    // simple just-value operators
+    case op_int_const:
+    case op_float_const:
+    case op_true:
+    case op_false:
+    case op_null:
+    case op_empty:
+    case op_alloc: {
+      *res_start = *res_finish = new_node();
       break;
     }
+
+    // simple binary operators
+    case op_add:
+    case op_sub:
+    case op_mul:
+    case op_div:
+    case op_shl:
+    case op_shr:
+    case op_concat:
+    case op_le:
+    case op_lt:
+    case op_null_coalesce:
+    case op_instanceof:
+    case op_and:
+    case op_xor:
+    case op_or:
     case op_eq3:
-    case op_eq2: {
+    case op_eq2:
+    case op_mod:
+    case op_pow:
+    case op_set_add:
+    case op_set_sub:
+    case op_set_mul:
+    case op_set_div:
+    case op_set_mod:
+    case op_set_pow:
+    case op_set_and:
+    case op_set_or:
+    case op_set_xor:
+    case op_set_dot:
+    case op_set_shr:
+    case op_set_shl:
+    case op_spaceship:
+    case op_double_arrow: {
       auto op = tree_node.as<meta_op_binary>();
-      if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
-        Node first_finish, second_start;
-        create_cfg(op->lhs(), res_start, &first_finish);
-        create_cfg(op->rhs(), &second_start, res_finish);
-        add_edge(first_finish, second_start);
-      } else {
-        create_full_cfg(tree_node, res_start, res_finish);
-      }
+      Node first_finish, second_start;
+      create_cfg(op->lhs(), res_start, &first_finish);
+      create_cfg(op->rhs(), &second_start, res_finish);
+      add_edge(first_finish, second_start);
+      break;
+    }
+
+    // simple unary operators
+    case op_conv_int:
+    case op_conv_int_l:
+    case op_conv_float:
+    case op_conv_string:
+    case op_conv_string_l:
+    case op_conv_array:
+    case op_conv_array_l:
+    case op_conv_object:
+    case op_conv_mixed:
+    case op_force_mixed:
+    case op_conv_regexp:
+    case op_conv_bool:
+    case op_conv_drop_null:
+    case op_conv_drop_false:
+    case op_isset:
+    case op_unset:
+    case op_postfix_inc:
+    case op_postfix_dec:
+    case op_prefix_inc:
+    case op_prefix_dec:
+    case op_plus:
+    case op_minus:
+    case op_move:
+    case op_log_not:
+    case op_noerr:
+    case op_not:
+    case op_addr:
+    case op_clone: {
+      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);
+      break;
+    }
+
+    case op_instance_prop: {
+      create_cfg(tree_node.as<op_instance_prop>()->instance(), res_start, res_finish);
       break;
     }
     case op_index: {
@@ -475,7 +495,10 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
     case op_log_and:
-    case op_log_or: {
+    case op_log_or:
+    case op_log_and_let:
+    case op_log_or_let:
+    case op_log_xor_let: {
       Node first_start, first_finish, second_start, second_finish;
       auto op = tree_node.as<meta_op_binary>();
       create_cfg(op->lhs(), &first_start, &first_finish);
@@ -524,6 +547,30 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       }
       break;
     }
+    case op_exception_constructor_call: {
+      auto op = tree_node.as<op_exception_constructor_call>();
+      Node call_end, file_start, file_end, line_start;
+      create_cfg(op->constructor_call(), res_start, &call_end);
+      create_cfg(op->file_arg(), &file_start, &file_end);
+      create_cfg(op->line_arg(), &line_start, res_finish);
+      add_edge(call_end, file_start);
+      add_edge(file_end, line_start);
+      break;
+    }
+    case op_fork: {
+      create_cfg(tree_node.as<op_fork>()->func_call(), res_start, res_finish);
+      break;
+    }
+    case op_func_ptr: {
+      int n = std::distance(tree_node.as<op_func_ptr>()->begin(), tree_node.as<op_func_ptr>()->end());
+      kphp_assert(n == 0 || n == 1);    // empty if a string callback, op_func_call if a lambda
+      if (n == 1) {
+        create_cfg(*tree_node.as<op_func_ptr>()->begin(), res_start, res_finish);
+      } else {
+        *res_start = *res_finish = new_node();
+      }
+      break;
+    }
     case op_return: {
       auto return_op = tree_node.as<op_return>();
       if (return_op->has_expr()) {
@@ -540,25 +587,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       Node a, b;
       create_cfg(set_op->rhs(), res_start, &a);
       create_cfg(set_op->lhs(), &b, res_finish, true);
-      add_edge(a, b);
-      break;
-    }
-    case op_set_add:
-    case op_set_sub:
-    case op_set_mul:
-    case op_set_div:
-    case op_set_mod:
-    case op_set_pow:
-    case op_set_and:
-    case op_set_or:
-    case op_set_xor:
-    case op_set_dot:
-    case op_set_shr:
-    case op_set_shl: {
-      auto set_op = tree_node.as<meta_op_binary>();
-      Node a, b;
-      create_cfg(set_op->rhs(), res_start, &a);
-      create_full_cfg(set_op->lhs(), &b, res_finish);
       add_edge(a, b);
       break;
     }
@@ -914,21 +942,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
 
-    case op_conv_int:
-    case op_conv_int_l:
-    case op_conv_float:
-    case op_conv_string:
-    case op_conv_string_l:
-    case op_conv_array:
-    case op_conv_array_l:
-    case op_conv_object:
-    case op_conv_mixed:
-    case op_force_mixed:
-    case op_conv_regexp:
-    case op_conv_bool: {
-      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);
-      break;
-    }
     case op_function: {
       auto function = tree_node.as<op_function>();
       Node a, b;
@@ -937,8 +950,21 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       add_edge(a, b);
       break;
     }
+    case op_func_param_list: {
+      auto param_list = tree_node.as<op_func_param_list>();
+      Node a = new_node();
+      for (auto p : param_list->params()) {
+        add_usage(a, new_usage(usage_read_t, p.as<op_func_param>()->var()));
+      }
+      *res_start = a;
+      *res_finish = a;
+      recursive_flag = true;
+      break;
+    }
+
     default: {
-      create_full_cfg(tree_node, res_start, res_finish);
+      kphp_error(0, fmt_format("cfg doesnt handle this type of operation: {}", static_cast<int>(tree_node->type())));
+      kphp_fail();
       return;
     }
   }
@@ -956,23 +982,6 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
     return true;
   }
   return false;
-}
-
-void CFG::compress_usages(std::vector<UsagePtr> &usages) {
-  std::sort(usages.begin(), usages.end(),
-            [](const UsagePtr &l, const UsagePtr &r) {
-              return l->v->var_id < r->v->var_id;
-            });
-
-  std::vector<UsagePtr> res;
-  for (size_t i = 0; i < usages.size(); i++) {
-    if (i == 0 || !try_uni_usages(usages[i], usages[i - 1])) {
-      res.push_back(usages[i]);
-    } else {
-      res.back()->weak_write_flag |= usages[i]->weak_write_flag;
-    }
-  }
-  usages = std::move(res);
 }
 
 void CFG::dfs_uni_rw_usages(Node v, UsagePtr usage) {
