@@ -23,7 +23,7 @@ int64_t f$async_x2(int64_t x) {
 int64_t f$await_x2(int64_t task_id) {
   auto &pending_tasks = vk::singleton<PendingTasks>::get();
   if (!pending_tasks.task_exists(task_id)) {
-    php_warning("Task with id %ld doesn't exist", task_id);
+    php_warning("Task with id %" PRIi64 "doesn't exist", task_id);
     return -1;
   }
   while (!pending_tasks.is_task_ready(task_id)) {

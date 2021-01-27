@@ -8,6 +8,7 @@
 #include "server/php-master.h"
 #include <cstddef>
 #include <queue>
+#include <array>
 #include <unordered_set>
 
 #include "server/task-workers/task-worker-server.h"
