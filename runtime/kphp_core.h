@@ -767,10 +767,10 @@ int64_t modulo(const T1 &lhs, const T2 &rhs) {
   int64_t div = f$intval(lhs);
   int64_t mod = f$intval(rhs);
 
-  if (neq2(div, lhs)) {
+  if (!eq2(div, lhs)) {
     php_warning("First parameter of operator %% is not an integer");
   }
-  if (neq2(mod, rhs)) {
+  if (!eq2(mod, rhs)) {
     php_warning("Second parameter of operator %% is not an integer");
   }
 

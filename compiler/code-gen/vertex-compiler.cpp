@@ -441,7 +441,6 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
       {op_lt,   "lt"},
       {op_le,   "leq"},
       {op_eq2,  "eq2"},
-      {op_neq2, "neq2"},
     };
 
     auto str_repr_it = tp_to_str.find(root->type());

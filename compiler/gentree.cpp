@@ -678,6 +678,9 @@ TokenType transform_compare_operation_token(TokenType token) noexcept {
       return tok_lt;
     case tok_ge:
       return tok_le;
+    case tok_neq_lg:
+    case tok_neq2:
+      return tok_eq2;
     default:
       return token;
   }
@@ -759,6 +762,10 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
     }
 
     left.set_location(expr_location);
+    if (vk::any_of_equal(origin_token, tok_neq2, tok_neq_lg)) {
+      left = VertexAdaptor<op_log_not>::create(left).set_location(expr_location);
+    }
+
     if (!(left_to_right || ternary)) {
       break;
     }

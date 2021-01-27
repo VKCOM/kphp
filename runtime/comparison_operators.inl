@@ -509,11 +509,6 @@ inline bool equals(int32_t lhs, const T &rhs) {
   return equals(int64_t{lhs}, rhs);
 }
 
-template<class T1, class T2>
-inline bool neq2(const T1 &lhs, const T2 &rhs) {
-  return !eq2(lhs, rhs);
-}
-
 inline bool lt(const bool &lhs, const bool &rhs) {
   return lhs < rhs;
 }

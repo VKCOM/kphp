@@ -399,11 +399,10 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
             add_type_check_usage(invert ? *res_true : *res_false, ifi_any_type & ~ifi_is_false, var);
           }
         }
-      } else if (vk::any_of_equal(tree_node->type(),  op_eq2, op_neq2)) {
+      } else if (tree_node->type() == op_eq2) {
         if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
           if (vk::any_of_equal(tree_node.try_as<meta_op_binary>()->rhs()->type(), op_false, op_null)) {
-            bool invert = (tree_node->type() == op_neq2);
-            add_type_check_usage(invert ? *res_true : *res_false, ifi_any_type & ~(ifi_is_false|ifi_is_null), var);
+            add_type_check_usage(*res_false, ifi_any_type & ~(ifi_is_false|ifi_is_null), var);
           }
         }
       }
@@ -449,8 +448,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_neq3:
     case op_eq3:
-    case op_eq2:
-    case op_neq2: {
+    case op_eq2: {
       auto op = tree_node.as<meta_op_binary>();
       if (op->rhs()->type() == op_false || op->rhs()->type() == op_null) {
         Node first_finish, second_start;

@@ -256,7 +256,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vk::any_of_equal(vertex->type(), op_eq3, op_neq3)) {
     check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
-  if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_spaceship, op_eq2, op_neq2)) {
+  if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_spaceship, op_eq2)) {
     check_comparisons(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
   }
   if (vertex->type() == op_add) {
@@ -502,7 +502,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
   auto rhs_t = tinf::get_type(rhs);
 
   if (lhs_t->ptype() == tp_Class) {
-    if (vk::any_of_equal(op, op_eq2, op_neq2)) {
+    if (op == op_eq2) {
       kphp_error(false, fmt_format("instance {} {} is unsupported", OpInfo::desc(op), rhs_t->as_human_readable()));
     } else {
       kphp_error(false, fmt_format("comparison instance with {} is prohibited (operation: {})", rhs_t->as_human_readable(), OpInfo::desc(op)));
@@ -511,8 +511,7 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
     kphp_error(vk::any_of_equal(rhs_t->get_real_ptype(), tp_array, tp_bool, tp_mixed),
                fmt_format("{} is always > than {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_tuple) {
-    bool can_compare_with_tuple = vk::any_of_equal(op, op_eq2, op_neq2) &&
-                                  rhs_t->ptype() == tp_tuple && lhs_t->get_tuple_max_index() == rhs_t->get_tuple_max_index();
+    bool can_compare_with_tuple = op == op_eq2 && rhs_t->ptype() == tp_tuple && lhs_t->get_tuple_max_index() == rhs_t->get_tuple_max_index();
     kphp_error(can_compare_with_tuple,
                fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_shape) {
