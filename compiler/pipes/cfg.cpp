@@ -58,16 +58,6 @@ struct UsageData {
 
 using UsagePtr = Id<UsageData>;
 
-struct SubTreeData {
-  VertexPtr v;
-  bool recursive_flag;
-};
-
-struct VertexUsage {
-  bool used = false;
-  bool used_rec = false;
-};
-
 struct VarSplitData {
   int n = 0;
 
@@ -86,8 +76,8 @@ class CFG {
   IdGen<Node> node_gen;
   IdMap<std::vector<Node>> node_next, node_prev;
   IdMap<std::vector<UsagePtr>> node_usages;
-  IdMap<std::vector<SubTreeData>> node_subtrees;
-  IdMap<VertexUsage> vertex_usage;
+  IdMap<std::vector<VertexPtr>> node_subvertices;
+  IdMap<int> vertex_usage;
   IdMap<is_func_id_t> vertex_convertions;
   int cur_dfs_mark = 0;
   Node current_start;
@@ -121,7 +111,6 @@ class CFG {
   void create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
 
   void calc_used(Node v);
-  void confirm_usage(VertexPtr, bool recursive_flags);
 
   void dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask);
 
@@ -168,13 +157,17 @@ void CFG::add_usage(Node node, UsagePtr usage) {
   kphp_assert (node_usages[node].empty() || node_usages[node].back()->type == usage->type);
   node_usages[node].push_back(usage);
   usage->node = node;
-
-//    VertexPtr v = usage->v; //TODO assigned but not used
 }
 
 void CFG::add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag) {
   kphp_assert (node && subtree_vertex);
-  node_subtrees[node].emplace_back(SubTreeData{subtree_vertex, recursive_flag});
+  node_subvertices[node].emplace_back(subtree_vertex);
+
+  if (recursive_flag) {
+    for (VertexPtr v : *subtree_vertex) {
+      add_subtree(node, v, true);
+    }
+  }
 }
 
 void CFG::add_edge(Node from, Node to) {
@@ -924,7 +917,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
 
         add_subtree(catch_list_start, catch_op, false);
         add_subtree(exception_start, catch_op->var(), false);
-        add_subtree(catch_start, catch_op->cmd(), true);
+        add_subtree(catch_start, catch_op->cmd(), true);  // todo shall we pass true here?
       }
 
       if (!try_op->catches_all) {
@@ -1184,19 +1177,6 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   split_var(function, var, parts);
 }
 
-void CFG::confirm_usage(VertexPtr v, bool recursive_flag) {
-  //fprintf (stdout, "%s\n", OpInfo::op_str[v->type()].c_str());
-  if (!vertex_usage[v].used || (recursive_flag && !vertex_usage[v].used_rec)) {
-    vertex_usage[v].used = true;
-    if (recursive_flag) {
-      vertex_usage[v].used_rec = true;
-      for (auto i : *v) {
-        confirm_usage(i, true);
-      }
-    }
-  }
-}
-
 void CFG::calc_used(Node v) {
   std::stack<Node> node_stack;
   node_stack.push(v);
@@ -1208,8 +1188,8 @@ void CFG::calc_used(Node v) {
     node_was[v] = cur_dfs_mark;
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
-    for (const auto &node_subtree : node_subtrees[v]) {
-      confirm_usage(node_subtree.v, node_subtree.recursive_flag);
+    for (VertexPtr node_subvertex : node_subvertices[v]) {
+      vertex_usage[node_subvertex] = true;
     }
     for (Node i : node_next[v]) {
       if (node_was[i] != cur_dfs_mark) {
@@ -1220,24 +1200,24 @@ void CFG::calc_used(Node v) {
 }
 
 class DropUnusedPass final : public FunctionPassBase {
-  IdMap<VertexUsage> &vertex_usage;
+  IdMap<int> &vertex_usage;
 public:
   string get_description() override {
     return "Drop unused vertices";
   }
 
-  explicit DropUnusedPass(IdMap<VertexUsage> &vertexUsage) :
+  explicit DropUnusedPass(IdMap<int> &vertexUsage) :
     vertex_usage(vertexUsage) {}
 
   VertexPtr on_enter_vertex(VertexPtr v) override {
     if (auto try_op = v.try_as<op_try>()) {
       auto catch_op = try_op->catch_list()[0].as<op_catch>();
-      if (!vertex_usage[catch_op->var()].used) {
-        kphp_assert(!vertex_usage[catch_op->cmd()].used);
+      if (!vertex_usage[catch_op->var()]) {
+        kphp_assert(!vertex_usage[catch_op->cmd()]);
         return try_op->try_cmd();
       }
     }
-    if (!vertex_usage[v].used) {
+    if (!vertex_usage[v]) {
       if (v->type() == op_seq) {
         return VertexAdaptor<op_seq>::create();
       } else {
@@ -1344,7 +1324,7 @@ void CFG::process_function(FunctionPtr function) {
   node_gen.add_id_map(&node_mark_dfs);
   node_gen.add_id_map(&node_mark_dfs_type_hint);
   node_gen.add_id_map(&node_usages);
-  node_gen.add_id_map(&node_subtrees);
+  node_gen.add_id_map(&node_subvertices);
   cur_dfs_mark = 0;
 
   Node start, finish;
