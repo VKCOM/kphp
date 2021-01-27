@@ -34,6 +34,7 @@ private:
 enum UsageType : uint8_t {
   usage_write_t,
   usage_read_t,
+  usage_weak_write_t,
   usage_type_hint_t,
   usage_type_check_t,
 };
@@ -45,7 +46,6 @@ struct UsageData {
   int part_id = -1;
   Node node;
   UsageType type;
-  bool weak_write_flag = false;
   is_func_id_t checked_type;
 
   VertexAdaptor<op_var> v;
@@ -613,10 +613,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
     case op_var: {
       Node res = new_node();
-      UsagePtr usage = new_usage(write_flag ? usage_write_t : usage_read_t, tree_node.as<op_var>());
-      if (usage) {
-        usage->weak_write_flag = weak_write_flag;
-      }
+      UsagePtr usage = new_usage(write_flag ? usage_write_t : weak_write_flag ? usage_weak_write_t : usage_read_t, tree_node.as<op_var>());
       add_usage(res, usage);
       *res_start = *res_finish = res;
       break;
@@ -1042,7 +1039,7 @@ void CFG::dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask) {
 
   for (UsagePtr another_usage : node_usages[v]) {
     if (another_usage->v->var_id == var) {
-      if (another_usage->type == usage_write_t || another_usage->weak_write_flag) {
+      if (another_usage->type == usage_write_t || another_usage->type == usage_weak_write_t) {
         current_mask = ifi_any_type;
       } else if (another_usage->type == usage_type_check_t) {
         current_mask = static_cast<is_func_id_t>(current_mask & (another_usage->checked_type | ifi_unset));
@@ -1140,7 +1137,7 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   std::fill(node_checked_type.begin(), node_checked_type.end(), static_cast<is_func_id_t>(0));
   dfs_checked_types(current_start, var, static_cast<is_func_id_t>(ifi_any_type | ((var->type() == VarData::var_param_t) ? 0 : ifi_unset)));
   for (UsagePtr u : var_split->usage_gen) {
-    if (u->type == usage_read_t && (node_checked_type[u->node] & ifi_unset)) {
+    if ((u->type == usage_read_t || u->type == usage_old_read_write_t) && (node_checked_type[u->node] & ifi_unset)) {
       add_uninited_var(u->v);
     }
     vertex_convertions[u->v] = static_cast<is_func_id_t>(vertex_convertions[u->v] | node_checked_type[u->node]);
