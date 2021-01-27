@@ -94,7 +94,6 @@ class CFG {
   IdMap<std::vector<UsagePtr>> node_usages;
   IdMap<std::vector<VertexPtr>> node_subvertices;
   IdMap<is_func_id_t> vertex_convertions;
-  int cur_dfs_mark = 0;
   Node current_start;
 
   IdMap<int> node_was;
@@ -1140,7 +1139,6 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   VarSplitPtr var_split = var_split_data[var];
   kphp_assert (var_split);
 
-  cur_dfs_mark++;
   std::fill(node_checked_type.begin(), node_checked_type.end(), static_cast<is_func_id_t>(0));
   dfs_checked_types(current_start, var, static_cast<is_func_id_t>(ifi_any_type | ((var->type() == VarData::var_param_t) ? 0 : ifi_unset)));
   for (UsagePtr u : var_split->usages) {
@@ -1199,14 +1197,14 @@ void CFG::calc_used(Node v) {
     v = node_stack.top();
     node_stack.pop();
 
-    node_was[v] = cur_dfs_mark;
+    node_was[v] = 1;
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
     for (VertexPtr node_subvertex : node_subvertices[v]) {
       node_subvertex->used_flag = true;
     }
     for (Node i : node_next[v]) {
-      if (node_was[i] != cur_dfs_mark) {
+      if (!node_was[i]) {
         node_stack.push(i);
       }
     }
@@ -1334,13 +1332,11 @@ void CFG::process_function(FunctionPtr function) {
   node_gen.add_id_map(&node_mark_dfs_type_hint);
   node_gen.add_id_map(&node_usages);
   node_gen.add_id_map(&node_subvertices);
-  cur_dfs_mark = 0;
 
   Node start, finish;
   create_cfg(function->root, &start, &finish);
   current_start = start;
 
-  cur_dfs_mark++;
   calc_used(start);
   {
     DropUnusedPass pass;
