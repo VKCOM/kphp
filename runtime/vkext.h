@@ -12,8 +12,6 @@ string f$vk_win_to_utf8(const string &text, bool escape = true);
 
 string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id = 0);
 
-Optional<string> f$vk_json_encode(const mixed &v);
-
 string f$vk_whitespace_pack(const string &str, bool html_opt = false);
 
 string f$vk_sp_simplify(const string &s);

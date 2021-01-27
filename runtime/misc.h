@@ -38,22 +38,6 @@ int64_t f$posix_getuid();
 Optional<array<mixed>> f$posix_getpwuid(int64_t uid);
 
 
-string f$serialize(const mixed &v);
-
-mixed f$unserialize(const string &v);
-mixed unserialize_raw(const char *v, int32_t v_len);
-
-constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
-constexpr int64_t JSON_FORCE_OBJECT = 16;
-constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
-constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
-
-Optional<string> f$json_encode(const mixed &v, int64_t options = 0, bool simple_encode = false);
-
-string f$vk_json_encode_safe(const mixed &v, bool simple_encode = true);
-
-mixed f$json_decode(const string &v, bool assoc = false);
-
 string f$print_r(const mixed &v, bool buffered = false);
 
 template<class T>

@@ -23,6 +23,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         instance_cache.cpp
         inter-process-mutex.cpp
         interface.cpp
+        json-functions.cpp
         kphp-backtrace.cpp
         mail.cpp
         math_functions.cpp
@@ -40,6 +41,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         regexp.cpp
         resumable.cpp
         rpc.cpp
+        serialize-functions.cpp
         storage.cpp
         streams.cpp
         string_buffer.cpp
