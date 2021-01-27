@@ -1699,16 +1699,8 @@ inline bool operator<(const mixed &lhs, const mixed &rhs) {
   return lhs.compare(rhs) < 0;
 }
 
-inline bool operator>(const mixed &lhs, const mixed &rhs) {
-  return rhs < lhs;
-}
-
 inline bool operator<=(const mixed &lhs, const mixed &rhs) {
   return !(rhs < lhs);
-}
-
-inline bool operator>=(const mixed &lhs, const mixed &rhs) {
-  return rhs <= lhs;
 }
 
 inline void swap(mixed &lhs, mixed &rhs) {

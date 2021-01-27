@@ -31,7 +31,7 @@ bool is_pure_nary_operation(VertexPtr vertex) noexcept {
                           op_add, op_mul, op_sub, op_div, op_mod, op_pow,
                           op_and, op_or, op_xor, op_shl, op_shr,
                           op_log_xor_let, op_log_and_let, op_log_or_let, op_log_and, op_log_or,
-                          op_eq2, op_neq2, op_eq3, op_neq3, op_le, op_ge, op_lt, op_gt,
+                          op_eq2, op_eq3, op_neq3, op_le, op_lt,
                           op_spaceship, op_null_coalesce, op_ternary, op_isset, op_string_build);
 }
 

@@ -439,11 +439,8 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   if (rhs_is_bool ^ lhs_is_bool) {
     static const std::unordered_map<int, const char *, std::hash<int>> tp_to_str{
       {op_lt,   "lt"},
-      {op_gt,   "gt"},
       {op_le,   "leq"},
-      {op_ge,   "geq"},
       {op_eq2,  "eq2"},
-      {op_neq2, "neq2"},
     };
 
     auto str_repr_it = tp_to_str.find(root->type());

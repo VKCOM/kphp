@@ -860,18 +860,6 @@
     }
   },
   {
-    "comment": "lsh() != rhs()",
-    "name": "op_neq2",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_func_op",
-      "str": "neq2",
-      "description": "!="
-    }
-  },
-  {
     "comment": "lsh() === rhs()",
     "name": "op_eq3",
     "base_name": "meta_op_binary",
@@ -908,18 +896,6 @@
     }
   },
   {
-    "comment": "lsh() >= rhs()",
-    "name": "op_ge",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_op",
-      "str": ">=",
-      "description": ">="
-    }
-  },
-  {
     "comment": "lsh() < rhs()",
     "name": "op_lt",
     "base_name": "meta_op_binary",
@@ -929,18 +905,6 @@
       "type": "binary_op",
       "str": "<",
       "description": "<"
-    }
-  },
-  {
-    "comment": "lsh() > rhs()",
-    "name": "op_gt",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_op",
-      "str": ">",
-      "description": ">"
     }
   },
   {

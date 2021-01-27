@@ -1744,7 +1744,7 @@ const Stream STDERR("php://stderr", 12);
 
 static Stream php_fopen(const string &stream, const string &mode) {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
-    if (neq2(mode, string("w")) && neq2(mode, string("a"))) {
+    if (!eq2(mode, string("w")) && !eq2(mode, string("a"))) {
       php_warning("%s should be opened in write or append mode", stream.to_string().c_str());
       return false;
     }
@@ -1752,7 +1752,7 @@ static Stream php_fopen(const string &stream, const string &mode) {
   }
 
   if (eq2(stream, INPUT)) {
-    if (neq2(mode, string("r"))) {
+    if (!eq2(mode, string("r"))) {
       php_warning("%s should be opened in read mode", stream.to_string().c_str());
       return false;
     }
