@@ -36,6 +36,7 @@ type synth add -l "lldb_addons.data_ptr_children" Id<VarData>       # VarPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<DefineData>    # DefinePtr
 type synth add -l "lldb_addons.data_ptr_children" Id<LibData>       # LibPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<SrcFile>       # SrcFilePtr
+type synth add -l "lldb_addons.data_ptr_children" Id<cfg::UsageData> # UsagePtr
 
 type summary add --python-function "lldb_addons.vertex_printer" -x "^VertexAdaptor<.+>$"
 type synth add -l "lldb_addons.vertex_children" -x "^VertexAdaptor<.+>$"

@@ -90,10 +90,6 @@ public:
     return !(*this == other);
   }
 
-  std::string &str() {
-    return ptr->str_val;
-  }
-
   template<class AnotherIdData>
   friend class Id;
 };
