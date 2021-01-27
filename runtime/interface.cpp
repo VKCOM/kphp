@@ -442,11 +442,13 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
 // i don't want destructors of this array to be called
-int shutdown_functions_count;
+int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
-static bool finished;
-static bool flushed;
+static bool finished = false;
+static bool flushed = false;
+static bool wait_all_forks_on_finish = false;
+
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   if (flushed) {
@@ -527,6 +529,11 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
+bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
+  std::swap(wait_all_forks_on_finish, wait);
+  return wait;
+}
+
 void finish(int64_t exit_code) {
   if (!finished) {
     finished = true;
@@ -536,6 +543,9 @@ void finish(int64_t exit_code) {
       for (int i = 0; i < shutdown_functions_count; i++) {
         shutdown_functions[i]();
       }
+    }
+    if (wait_all_forks_on_finish) {
+      wait_all_forks();
     }
   }
 

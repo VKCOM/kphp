@@ -533,14 +533,14 @@ void run_scheduler(double timeout) __attribute__((section("run_scheduler_section
 
 static int64_t scheduled_resumable_id = 0;
 
-void run_scheduler(double timeout) {
+void run_scheduler(double dead_line_time) {
   tvkprintf(resumable, 1, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
   int32_t left_resumables = 1000;
   bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
     if (force_run_next) {
       force_run_next = false;
-    } else if (get_precise_now() > timeout) {
+    } else if (get_precise_now() > dead_line_time) {
       return;
     }
 
@@ -637,8 +637,8 @@ bool wait_without_result_synchronously_safe(int64_t resumable_id) {
 }
 
 
-static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
-  php_assert(timeout > get_precise_now()); // TODO remove asserts
+static bool wait_forked_resumable(int64_t resumable_id, double dead_line_time) {
+  php_assert(dead_line_time > get_precise_now()); // TODO remove asserts
   php_assert(in_main_thread()); // TODO remove asserts
   php_assert(is_forked_resumable_id(resumable_id));
 
@@ -649,14 +649,14 @@ static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
       return true;
     }
 
-    run_scheduler(timeout);
+    run_scheduler(dead_line_time);
 
     resumable = get_forked_resumable_info(resumable_id);//can change in scheduler
     if (resumable->queue_id < 0) {
       return true;
     }
 
-    if (get_precise_now() > timeout) {
+    if (get_precise_now() > dead_line_time) {
       return false;
     }
     update_precise_now();
@@ -665,7 +665,7 @@ static bool wait_forked_resumable(int64_t resumable_id, double timeout) {
       wait_net(0);
       continue;
     }
-  } while (resumable_has_finished() || wait_net(timeout_convert_to_ms(timeout - get_precise_now())));
+  } while (resumable_has_finished() || wait_net(timeout_convert_to_ms(dead_line_time - get_precise_now())));
 
   return false;
 }
@@ -1063,6 +1063,31 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
   }
 
   return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
+}
+
+void wait_all_forks() noexcept {
+  if (!in_main_thread()) {
+    return;
+  }
+
+  // TODO CurException should be null?
+  auto saved_exception = std::move(CurException);
+  for (int64_t fork_id = first_array_forked_resumable_id; fork_id < current_forked_resumable_id; ++fork_id) {
+    if (get_forked_resumable(fork_id)) {
+      wait_forked_resumable(fork_id, get_precise_now() + MAX_TIMEOUT);
+    }
+    Storage *output = get_forked_storage(fork_id);
+    if (output->tag == Storage::tagger<thrown_exception>::get_tag()) {
+      CurException = Optional<bool>{};
+      output->load<void>();
+      // TODO assert?
+      if (!CurException.is_null()) {
+        // write exception into logs and continue
+        php_uncaught_exception_error(CurException, true);
+      }
+    }
+  }
+  CurException = std::move(saved_exception);
 }
 
 static int32_t wait_queue_timeout_wakeup_id = -1;
