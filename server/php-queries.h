@@ -8,9 +8,9 @@
 
 using slot_id_t = int;
 
-enum net_event_type_t {
-  ne_rpc_answer,
-  ne_rpc_error
+enum class net_event_type_t {
+  rpc_answer,
+  rpc_error,
 };
 
 struct net_event_t {
@@ -20,12 +20,12 @@ struct net_event_t {
     slot_id_t rpc_id;
   };
   union {
-    struct { //ne_rpc_answer
+    struct { //rpc_answer
       int result_len;
       //allocated via dl_malloc
       char *result;
     };
-    struct { //ne_rpc_error
+    struct { //rpc_error
       int error_code;
       const char *error_message;
     };

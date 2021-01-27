@@ -38,12 +38,15 @@ static bool process_net_event(net_event_t *e) {
     return false;
   }
 
-  if (e->type == ne_rpc_answer) {
-    process_rpc_answer(e->slot_id, e->result, e->result_len);
-  } else if (e->type == ne_rpc_error) {
-    process_rpc_error(e->slot_id, e->error_code, e->error_message);
-  } else {
-    php_critical_error ("unsupported net event %d", e->type);
+  switch (e->type) {
+    case net_event_type_t::rpc_answer:
+      process_rpc_answer(e->slot_id, e->result, e->result_len);
+      break;
+    case net_event_type_t::rpc_error:
+      process_rpc_error(e->slot_id, e->error_code, e->error_message);
+      break;
+    default:
+      php_critical_error ("unsupported net event %d", static_cast<int>(e->type));
   }
 
   return true;

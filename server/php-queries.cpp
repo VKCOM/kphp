@@ -823,7 +823,7 @@ void unalloc_net_event(net_event_t *event) {
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res) {
   net_event_t *event;
-  int status = alloc_net_event(slot_id, ne_rpc_error, &event);
+  int status = alloc_net_event(slot_id, net_event_type_t::rpc_error, &event);
   if (status <= 0) {
     return status;
   }
@@ -838,7 +838,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
-  int status = alloc_net_event(slot_id, ne_rpc_answer, &event);
+  int status = alloc_net_event(slot_id, net_event_type_t::rpc_answer, &event);
   if (status <= 0) {
     return status;
   }
