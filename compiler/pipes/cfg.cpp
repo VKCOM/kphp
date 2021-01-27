@@ -77,7 +77,6 @@ class CFG {
   IdMap<std::vector<Node>> node_next, node_prev;
   IdMap<std::vector<UsagePtr>> node_usages;
   IdMap<std::vector<VertexPtr>> node_subvertices;
-  IdMap<int> vertex_usage;
   IdMap<is_func_id_t> vertex_convertions;
   int cur_dfs_mark = 0;
   Node current_start;
@@ -1189,7 +1188,7 @@ void CFG::calc_used(Node v) {
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
     for (VertexPtr node_subvertex : node_subvertices[v]) {
-      vertex_usage[node_subvertex] = true;
+      node_subvertex->used_flag = true;
     }
     for (Node i : node_next[v]) {
       if (node_was[i] != cur_dfs_mark) {
@@ -1200,24 +1199,20 @@ void CFG::calc_used(Node v) {
 }
 
 class DropUnusedPass final : public FunctionPassBase {
-  IdMap<int> &vertex_usage;
 public:
   string get_description() override {
     return "Drop unused vertices";
   }
 
-  explicit DropUnusedPass(IdMap<int> &vertexUsage) :
-    vertex_usage(vertexUsage) {}
-
   VertexPtr on_enter_vertex(VertexPtr v) override {
     if (auto try_op = v.try_as<op_try>()) {
       auto catch_op = try_op->catch_list()[0].as<op_catch>();
-      if (!vertex_usage[catch_op->var()]) {
-        kphp_assert(!vertex_usage[catch_op->cmd()]);
+      if (!catch_op->var()->used_flag) {
+        kphp_assert(!catch_op->cmd()->used_flag);
         return try_op->try_cmd();
       }
     }
-    if (!vertex_usage[v]) {
+    if (!v->used_flag) {
       if (v->type() == op_seq) {
         return VertexAdaptor<op_seq>::create();
       } else {
@@ -1314,7 +1309,6 @@ void CFG::process_function(FunctionPtr function) {
   }
 
   int vertex_n = register_vertices(function->root, 0);
-  vertex_usage.update_size(vertex_n);
   vertex_convertions.update_size(vertex_n);
 
   node_gen.add_id_map(&node_next);
@@ -1334,7 +1328,7 @@ void CFG::process_function(FunctionPtr function) {
   cur_dfs_mark++;
   calc_used(start);
   {
-    DropUnusedPass pass{vertex_usage};
+    DropUnusedPass pass;
     run_function_pass(function, &pass);
   }
 
