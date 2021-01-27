@@ -88,8 +88,7 @@ File *Target::get_file() const {
   return file;
 }
 
-void Target::set_env(KphpMakeEnv *new_env) {
-  assert (env == nullptr);
-  env = new_env;
+void Target::set_settings(const CompilerSettings *new_settings) {
+  assert (settings == nullptr);
+  settings = new_settings;
 }
-

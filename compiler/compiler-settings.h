@@ -4,6 +4,7 @@
 
 #pragma once
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
@@ -74,6 +75,7 @@ private:
 class KphpImplicitOption : vk::not_copyable {
 public:
   friend class CompilerSettings;
+  friend class CxxFlags;
 
   const std::string &get() const noexcept {
     return value_;
@@ -81,6 +83,19 @@ public:
 
 private:
   std::string value_;
+};
+
+class CxxFlags {
+public:
+  void init(const std::string &runtime_sha256, const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept;
+
+  KphpImplicitOption flags;
+  KphpImplicitOption flags_sha256;
+  KphpImplicitOption pch_dir;
+
+  friend inline bool operator==(const CxxFlags &lhs, const CxxFlags &rhs) noexcept {
+    return std::tie(lhs.flags.get(), lhs.flags_sha256.get(), lhs.pch_dir.get()) == std::tie(rhs.flags.get(), rhs.flags_sha256.get(), rhs.pch_dir.get());
+  }
 };
 
 class CompilerSettings : vk::not_copyable {
@@ -135,7 +150,7 @@ public:
   KphpOption<std::string> cxx;
   KphpOption<std::string> extra_cxx_flags;
   KphpOption<std::string> extra_ld_flags;
-  KphpOption<std::string> debug_level;
+  KphpOption<std::string> extra_cxx_debug_level;
   KphpOption<std::string> archive_creator;
   KphpOption<bool> dynamic_incremental_linkage;
 
@@ -148,7 +163,8 @@ public:
   KphpOption<bool> no_index_file;
   KphpOption<bool> show_progress;
 
-  KphpImplicitOption cxx_flags;
+  CxxFlags cxx_flags_default;
+  CxxFlags cxx_flags_with_debug;
   KphpImplicitOption ld_flags;
   KphpImplicitOption incremental_linker;
   KphpImplicitOption incremental_linker_flags;
@@ -162,7 +178,6 @@ public:
   KphpImplicitOption performance_analyze_report_path;
 
   KphpImplicitOption runtime_sha256;
-  KphpImplicitOption cxx_flags_sha256;
 
   KphpImplicitOption tl_namespace_prefix;
   KphpImplicitOption tl_classname_prefix;
@@ -180,7 +195,6 @@ public:
 
 private:
   static void option_as_dir(KphpOption<std::string> &path) noexcept;
-  void update_cxx_flags_sha256();
 
   color_settings color_{auto_colored};
 };

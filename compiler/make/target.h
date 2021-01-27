@@ -10,7 +10,8 @@
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/index.h"
-#include "compiler/make/make-env.h"
+
+class CompilerSettings;
 
 class Target : private vk::not_copyable {
   friend class MakeRunner;
@@ -30,7 +31,7 @@ protected:
   void set_mtime(long long new_mtime);
 
   std::vector<Target *> deps;
-  const KphpMakeEnv *env = nullptr;
+  const CompilerSettings *settings{nullptr};
 public:
   long long priority;
   double start_time;
@@ -52,5 +53,5 @@ public:
 
   void set_file(File *new_file);
   File *get_file() const;
-  void set_env(KphpMakeEnv *new_env);
+  void set_settings(const CompilerSettings *new_settings);
 };

@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
              "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", get_default_extra_cxxflags());
   parser.add("Extra linker flags for building the output binary", settings->extra_ld_flags,
              "extra-linker-flags", "KPHP_EXTRA_LDFLAGS", get_default_extra_ldflags());
-  parser.add("C++ compiler debug level for building the output binary", settings->debug_level,
+  parser.add("C++ compiler debug level for building the output binary", settings->extra_cxx_debug_level,
              "debug-level", "KPHP_DEBUG_LEVEL");
   parser.add("Archive creator for building the output binary", settings->archive_creator,
              "archive-creator", "KPHP_ARCHIVE_CREATOR", "ar");
@@ -294,7 +294,6 @@ int main(int argc, char *argv[]) {
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
 
-  parser.add_implicit_option("C++ compiler flags", settings->cxx_flags);
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker", settings->incremental_linker);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
@@ -304,7 +303,10 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("Binary path", settings->binary_path);
   parser.add_implicit_option("Static lib name", settings->static_lib_name);
   parser.add_implicit_option("Runtime SHA256", settings->runtime_sha256);
-  parser.add_implicit_option("C++ compiler flags SHA256", settings->cxx_flags_sha256);
+  parser.add_implicit_option("C++ compiler flags default", settings->cxx_flags_default.flags);
+  parser.add_implicit_option("C++ compiler flags default SHA256", settings->cxx_flags_default.flags_sha256);
+  parser.add_implicit_option("C++ compiler flags with debug", settings->cxx_flags_with_debug.flags);
+  parser.add_implicit_option("C++ compiler flags with debug SHA256", settings->cxx_flags_with_debug.flags_sha256);
   parser.add_implicit_option("TL namespace prefix", settings->tl_namespace_prefix);
   parser.add_implicit_option("TL classname prefix", settings->tl_classname_prefix);
   parser.add_implicit_option("Generated runtime path", settings->generated_runtime_path);

@@ -168,8 +168,8 @@ void CodeGenF::write_lib_version(CodeGenerator &W) {
   W << OpenFile("_lib_version.h");
   W << "// Runtime sha256: " << G->settings().runtime_sha256.get() << NL;
   W << "// CXX: " << G->settings().cxx.get() << NL;
-  W << "// CXXFLAGS: " << G->settings().cxx_flags.get() << NL;
-  W << "// DEBUG: " << G->settings().debug_level.get() << NL;
+  W << "// CXXFLAGS DEFAULT: " << G->settings().cxx_flags_default.flags.get() << NL;
+  W << "// CXXFLAGS WITH EXTRA: " << G->settings().cxx_flags_with_debug.flags.get() << NL;
   W << CloseFile();
 }
 

@@ -175,7 +175,7 @@ void MakeRunner::sigint_handler(int sig __attribute__((unused))) {
   signal_flag = 1;
 }
 
-bool MakeRunner::make_target(Target *target, int jobs_count) {
+bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
   if (jobs_count < 1) {
     fmt_print("Invalid jobs_count [{}]\n", jobs_count);
     return false;
@@ -185,9 +185,11 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   ksignal(SIGINT, MakeRunner::sigint_handler);
   ksignal(SIGTERM, MakeRunner::sigint_handler);
 
-  //fprintf (stderr, "make target: %s\n", target->get_name().c_str());
   //TODO: check timeouts
-  require_target(target);
+  for (auto *target : targets) {
+    // fprintf (stderr, "make target: %s\n", target->get_name().c_str());
+    require_target(target);
+  }
 
   int total_jobs = targets_left;
   int old_perc = -1;
@@ -262,7 +264,11 @@ bool MakeRunner::make_target(Target *target, int jobs_count) {
   //TODO: use old handlers instead SIG_DFL
   ksignal(SIGINT, SIG_DFL);
   ksignal(SIGTERM, SIG_DFL);
-  return !fail_flag && target->is_ready;
+  bool is_ready = true;
+  for (auto *target : targets) {
+    is_ready = is_ready && target->is_ready;
+  }
+  return !fail_flag && is_ready;
 }
 
 MakeRunner::MakeRunner(FILE *stats_file) noexcept:
