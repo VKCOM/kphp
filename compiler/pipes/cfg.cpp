@@ -85,8 +85,6 @@ struct VarSplitData {
   }
 };
 
-using VarSplitPtr = Id<VarSplitData>;
-
 class CFG {
   CFGData data;
   IdGen<Node> node_gen;
@@ -100,7 +98,7 @@ class CFG {
   IdMap<is_func_id_t> node_checked_type;
   IdMap<UsagePtr> node_mark_dfs;
   IdMap<int> node_mark_dfs_type_hint;
-  IdMap<VarSplitPtr> var_split_data;
+  IdMap<VarSplitData> var_split_data;
 
   std::vector<std::vector<Node>> continue_nodes;
   std::vector<std::vector<Node>> break_nodes;
@@ -153,10 +151,9 @@ UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
   if (get_index(var) < 0) {    // non-splittable var
     return {};
   }
-  VarSplitPtr var_split = var_split_data[var];
-  kphp_assert(var_split);
-  UsagePtr res = UsagePtr(new UsageData(type, v, var_split->usages.size()));
-  var_split->usages.emplace_back(res);
+  VarSplitData &var_split = var_split_data[var];
+  UsagePtr res = UsagePtr(new UsageData(type, v, var_split.usages.size()));
+  var_split.usages.emplace_back(res);
   return res;
 }
 
@@ -207,7 +204,7 @@ std::vector<VarPtr> CFG::collect_splittable_vars(FunctionPtr func) {
   std::vector<VarPtr> splittable_vars;
   splittable_vars.reserve(func->local_var_ids.size() + params.size());
   for (auto var : func->local_var_ids) {
-    if (ref_vars.find(var) == ref_vars.end()) {
+    if (ref_vars.find(var) == ref_vars.end() && var->type() != VarData::var_local_inplace_t) {
       splittable_vars.emplace_back(var);
     }
   }
@@ -978,9 +975,8 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
   VarPtr var = usage->v->var_id;
   VarPtr another_var = another_usage->v->var_id;
   if (var == another_var) {
-    VarSplitPtr var_split = var_split_data[var];
-    kphp_assert (var_split);
-    var_split->dsu_uni(usage, another_usage);
+    VarSplitData &var_split = var_split_data[var];
+    var_split.dsu_uni(usage, another_usage);
     return true;
   }
   return false;
@@ -1135,12 +1131,11 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
 }
 
 void CFG::process_var(FunctionPtr function, VarPtr var) {
-  VarSplitPtr var_split = var_split_data[var];
-  kphp_assert (var_split);
+  VarSplitData &var_split = var_split_data[var];
 
   std::fill(node_checked_type.begin(), node_checked_type.end(), static_cast<is_func_id_t>(0));
   dfs_checked_types(current_start, var, static_cast<is_func_id_t>(ifi_any_type | ((var->type() == VarData::var_param_t) ? 0 : ifi_unset)));
-  for (UsagePtr u : var_split->usages) {
+  for (UsagePtr u : var_split.usages) {
     if ((u->type == usage_read_t || u->type == usage_old_read_write_t) && (node_checked_type[u->node] & ifi_unset)) {
       add_uninited_var(u->v);
     }
@@ -1151,12 +1146,12 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
 
   std::fill(node_mark_dfs.begin(), node_mark_dfs.end(), UsagePtr());
   std::fill(node_mark_dfs_type_hint.begin(), node_mark_dfs_type_hint.end(), 0);
-  for (UsagePtr u : var_split->usages) {
+  for (UsagePtr u : var_split.usages) {
     if (u->type != usage_type_hint_t) {
       dfs_uni_rw_usages(u->node, u);
     }
   }
-  for (UsagePtr u : var_split->usages) {
+  for (UsagePtr u : var_split.usages) {
     if (u->type == usage_type_hint_t) {
       dfs_apply_type_hint(u->node, u);
     }
@@ -1165,9 +1160,9 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   //fprintf (stdout, "PROCESS:[%s][%d]\n", var->name.c_str(), var->id);
 
   size_t parts_cnt = 0;
-  for (UsagePtr i : var_split->usages) {
+  for (UsagePtr i : var_split.usages) {
     if (node_was[i->node]) {
-      UsagePtr u = var_split->dsu_get(i);
+      UsagePtr u = var_split.dsu_get(i);
       if (u->part_id == -1) {
         u->part_id = static_cast<int>(parts_cnt++);
       }
@@ -1180,9 +1175,9 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   }
 
   std::vector<std::vector<VertexAdaptor<op_var>>> parts(parts_cnt);
-  for (UsagePtr i : var_split->usages) {
+  for (UsagePtr i : var_split.usages) {
     if (node_was[i->node]) {
-      UsagePtr u = var_split->dsu_get(i);
+      UsagePtr u = var_split.dsu_get(i);
       parts[u->part_id].push_back(i->v);
     }
   }
@@ -1305,19 +1300,15 @@ public:
 };
 
 void CFG::process_function(FunctionPtr function) {
-  //vertex_usage
-  //var_split_data
-
   if (function->type != FunctionData::func_local) {
     return;
   }
 
   auto splittable_vars = collect_splittable_vars(function);
   var_split_data.update_size(static_cast<int>(splittable_vars.size()));
-  int var_i = 0;
-  for (auto var_id : splittable_vars) {
-    set_index(var_id, var_i++);
-    var_split_data[var_id] = VarSplitPtr(new VarSplitData());
+  int var_id = 0;
+  for (auto var : splittable_vars) {
+    set_index(var, var_id++);
   }
 
   node_gen.add_id_map(&node_next);
@@ -1340,9 +1331,7 @@ void CFG::process_function(FunctionPtr function) {
   }
 
   for (auto var: splittable_vars) {
-    if (var->type() != VarData::var_local_inplace_t) {
-      process_var(function, var);
-    }
+    process_var(function, var);
   }
 
   if (!smartcasts_conversions.empty()) {
