@@ -31,7 +31,7 @@ struct master_data_t {
   int ask_http_fd_generation;
   int sent_http_fd_generation;
 
-  uint32_t instance_cache_elements_stored;
+  uint32_t instance_cache_elements_cached;
 
   int reserved[50 - 1];
 };
