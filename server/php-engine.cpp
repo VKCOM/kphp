@@ -2103,39 +2103,14 @@ void reopen_json_log() {
   }
 }
 
-void start_server() {
-  int prev_time;
-  double next_create_outbound = 0;
-
-  pending_signals = 0;
-  if (daemonize) {
-    setsid();
-
-    ksignal(SIGHUP, sighup_handler);
+static void worker_event_loop() {
+  if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
   }
-  if (master_flag) {
-    vkprintf (-1, "master\n");
-    if (rpc_port != -1) {
-      vkprintf (-1, "rpc_port is ignored in master mode\n");
-      rpc_port = -1;
-    }
-  }
 
-  init_netbuffers();
-
-  init_epoll();
-  if (master_flag) {
-    start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
-
-    if (logname_pattern != nullptr) {
-      reopen_logs();
-      reopen_json_log();
-    }
-  }
-
-  prev_time = 0;
+  int prev_time = 0;
+  double next_create_outbound = 0;
 
   if (http_port > 0 && http_sfd < 0) {
     dl_assert (!master_flag, "failed to get http_fd\n");
@@ -2184,9 +2159,9 @@ void start_server() {
   }
   auto &rpc_clients = RpcClients::get().rpc_clients;
   std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
-                  vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
-                  rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
-                });
+    vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
+    rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
+  });
   if (!rpc_clients.empty()) {
     set_main_target(rpc_clients.front());
   }
@@ -2285,6 +2260,33 @@ void start_server() {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }
+}
+
+void start_server() {
+  pending_signals = 0;
+  if (daemonize) {
+    setsid();
+
+    ksignal(SIGHUP, sighup_handler);
+    reopen_logs();
+    reopen_json_log();
+  }
+  if (master_flag) {
+    vkprintf (-1, "master\n");
+    if (rpc_port != -1) {
+      vkprintf (-1, "rpc_port is ignored in master mode\n");
+      rpc_port = -1;
+    }
+  }
+
+  init_netbuffers();
+
+  init_epoll();
+  if (master_flag) {
+    start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
+  }
+
+  worker_event_loop();
 }
 
 void set_instance_cache_memory_limit(size_t limit);
