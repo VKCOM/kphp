@@ -101,6 +101,10 @@ Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line
   function(function),
   line(line) {}
 
+Location::Location(const SrcFilePtr &file, int line) :
+  file(file),
+  line(line) {}
+
 // return a location in the format: "{file}:{line}  in function {function}"
 std::string Location::as_human_readable() const {
   std::string out;

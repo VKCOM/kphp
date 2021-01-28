@@ -18,6 +18,7 @@ public:
   Location() = default;
   explicit Location(int line) : line(line) {}
   Location(const SrcFilePtr &file, const FunctionPtr &function, int line);
+  Location(const SrcFilePtr &file, int line);
 
   void set_file(SrcFilePtr file);
   void set_function(FunctionPtr function);

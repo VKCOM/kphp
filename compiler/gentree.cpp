@@ -43,7 +43,10 @@ GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> 
 }
 
 Location GenTree::auto_location() const {
-  return Location{this->line_num};
+  if (cur_function) {
+    return {processing_file, cur_function, line_num};
+  }
+  return {processing_file, line_num};
 }
 
 VertexAdaptor<op_string> GenTree::generate_constant_field_class_value(ClassPtr klass) {
