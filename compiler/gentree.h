@@ -90,7 +90,7 @@ public:
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
   VertexPtr get_expr_top(bool was_arrow);
-  VertexPtr get_postfix_expression(VertexPtr res);
+  VertexPtr get_postfix_expression(VertexPtr res, bool parenthesized);
   VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);

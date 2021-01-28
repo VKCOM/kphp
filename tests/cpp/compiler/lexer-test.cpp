@@ -102,6 +102,11 @@ TEST(lexer_test, test_php_tokens) {
     // strings: simple syntax doesn't support indexing of the accessed instance member
     {R"("$x->y[0]")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end", "tok_str([0])", "tok_str_end(\")"}},
 
+    {"'a'[0]", {"tok_str(a)", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])"}},
+    {"[$a][0]", {"tok_opbrk([)", "tok_var_name($a)", "tok_clbrk(])", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])"}},
+    {"$a[0]", {"tok_var_name($a)", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])"}},
+    {"('a' . 'b')[0]", {"tok_oppar(()", "tok_str(a)", "tok_dot(.)", "tok_str(b)", "tok_clpar())", "tok_opbrk([)", "tok_int_const(0)", "tok_clbrk(])"}},
+
     {"[1]", {"tok_opbrk([)", "tok_int_const(1)", "tok_clbrk(])"}},
     {"array(1)", {"tok_array(array)", "tok_oppar(()", "tok_int_const(1)", "tok_clpar())"}},
 
