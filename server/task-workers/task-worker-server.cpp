@@ -16,6 +16,7 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   static int read_buf[PIPE_BUF / sizeof(int)];
 
   vkprintf(3, "TaskWorkerClient::read_tasks: fd=%d\n", fd);
+  tvkprintf(task_workers_logging, 3, "wakeup task worker\n");
 
   const auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
   assert(fd == task_worker_server.read_task_fd);
@@ -27,27 +28,24 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   }
   assert(ev->ready & EVT_READ);
 
-  ssize_t read_bytes = read(fd, read_buf, PIPE_BUF);
-  if (read_bytes == -1) {
-    if (errno == EWOULDBLOCK) {
-      // another task worker has already taken the task, all task workers are readers for this fd
-      return 0;
+  while (true) {
+    ssize_t read_bytes = read(fd, read_buf, TASK_BYTE_SIZE);
+    if (read_bytes == -1) {
+      if (errno == EWOULDBLOCK) {
+        // another task worker has already taken the task (all task workers are readers for this fd)
+        // or there are no more tasks in pipe
+        return 0;
+      }
+      kprintf("pid = %d, Couldn't read task: %s\n", getpid(), strerror(errno));
+      return -1;
     }
-    kprintf("pid = %d, Couldn't read tasks: %s\n", getpid(), strerror(errno));
-    return -1;
-  }
-  if (read_bytes % TASK_BYTE_SIZE != 0) {
-    kprintf("Got inconsistent number of bytes on read tasks: %zd. Probably some tasks are written not atomically\n", read_bytes);
-    return -1;
-  }
-  size_t tasks_number = read_bytes / TASK_BYTE_SIZE;
-  tvkprintf(task_workers_logging, 2, "got %zu tasks, executing ...\n", tasks_number);
-  for (size_t i = 0, data_pos = 0; i < tasks_number; ++i) {
-    int task_id = read_buf[data_pos++];
-    int task_result_fd_idx = read_buf[data_pos++];
-    int x = read_buf[data_pos++];
-
-    tvkprintf(task_workers_logging, 2, "executing task (%lu / %lu): task_id = %d, task_result_fd_idx = %d\n", i + 1, tasks_number, task_id, task_result_fd_idx);
+    if (read_bytes != TASK_BYTE_SIZE) {
+      kprintf("Couldn't read task. Got %zd bytes, but task bytes size = %zd. Probably some tasks are written not atomically\n", read_bytes, TASK_BYTE_SIZE);
+      return -1;
+    }
+    int task_id = read_buf[0];
+    int task_result_fd_idx = read_buf[1];
+    int x = read_buf[2];
 
     bool success = task_worker_server.execute_task(task_id, task_result_fd_idx, x);
     assert(success);
@@ -56,6 +54,8 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
 }
 
 bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) const {
+  tvkprintf(task_workers_logging, 2, "executing task: task_id = %d, task_result_fd_idx = %d\n", task_id, task_result_fd_idx);
+
   static int write_buf[PIPE_BUF / sizeof(int)];
 
   int task_result = x * x;
