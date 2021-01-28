@@ -412,7 +412,7 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   if (call->func_id->is_extern()) {
-    auto &function_name = call->get_string();
+    const auto &function_name = call->get_string();
     if (function_name == "instance_cache_fetch") {
       check_instance_cache_fetch_call(call);
     } else if (function_name == "instance_cache_store") {
@@ -429,6 +429,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
+    } else if (vk::any_of_equal(function_name, "exit", "die")) {
+      kphp_error(!current_function->is_resumable, "Resumable function can't use " + function_name + "()");
     }
 
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
