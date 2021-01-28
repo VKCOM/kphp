@@ -93,7 +93,7 @@ class CFG {
   IdMap<std::vector<Node>> node_next, node_prev;
   IdMap<std::vector<UsagePtr>> node_usages;
   IdMap<std::vector<VertexPtr>> node_subvertices;
-  IdMap<is_func_id_t> vertex_convertions;
+  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> smartcasts_conversions;
   Node current_start;
 
   IdMap<int> node_was;
@@ -132,7 +132,6 @@ class CFG {
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
   void dfs_apply_type_hint(Node v, UsagePtr usage);
   void process_var(FunctionPtr function, VarPtr v);
-  int register_vertices(VertexPtr v, int N);
   void add_uninited_var(VertexAdaptor<op_var> v);
   void split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
 public:
@@ -1145,7 +1144,9 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
     if ((u->type == usage_read_t || u->type == usage_old_read_write_t) && (node_checked_type[u->node] & ifi_unset)) {
       add_uninited_var(u->v);
     }
-    vertex_convertions[u->v] = static_cast<is_func_id_t>(vertex_convertions[u->v] | node_checked_type[u->node]);
+    if (u->type == usage_read_t && node_checked_type[u->node] != ifi_any_type) {
+      smartcasts_conversions[u->v] = static_cast<is_func_id_t>(smartcasts_conversions[u->v] | node_checked_type[u->node]);
+    }
   }
 
   std::fill(node_mark_dfs.begin(), node_mark_dfs.end(), UsagePtr());
@@ -1246,13 +1247,13 @@ public:
 
 };
 
-class AddConversionsPass final : public FunctionPassBase {
-  IdMap<is_func_id_t> &conversions;
+class AddSmartcastsConversionsPass final : public FunctionPassBase {
+  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions;
 public:
   string get_description() override {
     return "Add conversions after checks";
   }
-  explicit AddConversionsPass(IdMap<is_func_id_t> &conversions) :
+  explicit AddSmartcastsConversionsPass(std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions) :
     conversions(conversions) {}
 
   VertexPtr on_exit_vertex(VertexPtr v) override {
@@ -1263,28 +1264,34 @@ public:
       if (!vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) || var->var_id->is_reference || var->var_id->is_foreach_reference) {
         return v;
       }
-      //fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conversions[v]);
-      if (conversions[v] == 0) {
+      const auto &it = conversions.find(var);
+      if (it == conversions.end()) {
+        return v;
+      }
+      is_func_id_t conv = it->second;
+      //fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conv);
+
+      if (conv == 0) {
         kphp_warning(fmt_format("Unreachable code: variable type conditions creates contradiction for variable {}", var->get_string()));
-      } else if (conversions[v] == ifi_is_integer) {
+      } else if (conv == ifi_is_integer) {
         return VertexAdaptor<op_conv_int>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == ifi_is_string) {
+      } else if (conv == ifi_is_string) {
         return VertexAdaptor<op_conv_string>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == ifi_is_array) {
+      } else if (conv == ifi_is_array) {
         return VertexAdaptor<op_conv_array>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == (ifi_is_bool|ifi_is_false) || conversions[v] == ifi_is_bool) {
+      } else if (conv == (ifi_is_bool|ifi_is_false) || conv == ifi_is_bool) {
         return VertexAdaptor<op_conv_bool>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == ifi_is_float) {
+      } else if (conv == ifi_is_float) {
         return VertexAdaptor<op_conv_float>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == ifi_is_null) {
+      } else if (conv == ifi_is_null) {
         return VertexAdaptor<op_null>::create().set_rl_type(val_r).set_location(v);
-      } else if (conversions[v] == ifi_is_false) {
+      } else if (conv == ifi_is_false) {
         return VertexAdaptor<op_false>::create().set_rl_type(val_r).set_location(v);
-      } else if ((conversions[v] & (ifi_is_false|ifi_is_null)) == 0) {
+      } else if ((conv & (ifi_is_false|ifi_is_null)) == 0) {
         return VertexAdaptor<op_conv_drop_null>::create(VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r).set_location(v)).set_rl_type(val_r).set_location(v);
-      } else if ((conversions[v] & ifi_is_false) == 0) {
+      } else if ((conv & ifi_is_false) == 0) {
         return VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r).set_location(v);
-      } else if ((conversions[v] & ifi_is_null) == 0) {
+      } else if ((conv & ifi_is_null) == 0) {
         return VertexAdaptor<op_conv_drop_null>::create(v).set_rl_type(val_r).set_location(v);
       }
     }
@@ -1296,14 +1303,6 @@ public:
     return root->type() == op_func_param_list;
   }
 };
-
-int CFG::register_vertices(VertexPtr v, int N) {
-  set_index(v, N++);
-  for (auto i : *v) {
-    N = register_vertices(i, N);
-  }
-  return N;
-}
 
 void CFG::process_function(FunctionPtr function) {
   //vertex_usage
@@ -1320,9 +1319,6 @@ void CFG::process_function(FunctionPtr function) {
     set_index(var_id, var_i++);
     var_split_data[var_id] = VarSplitPtr(new VarSplitData());
   }
-
-  int vertex_n = register_vertices(function->root, 0);
-  vertex_convertions.update_size(vertex_n);
 
   node_gen.add_id_map(&node_next);
   node_gen.add_id_map(&node_prev);
@@ -1349,8 +1345,8 @@ void CFG::process_function(FunctionPtr function) {
     }
   }
 
-  {
-    AddConversionsPass pass{vertex_convertions};
+  if (!smartcasts_conversions.empty()) {
+    AddSmartcastsConversionsPass pass{smartcasts_conversions};
     run_function_pass(function, &pass);
   }
 

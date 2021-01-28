@@ -26,6 +26,13 @@ template<Operation Op>
 class VertexAdaptor {
   vertex_inner<Op> *impl;
 public:
+  struct Hash {
+    size_t operator()(const VertexAdaptor<Op> &arg) const noexcept {
+      return reinterpret_cast<size_t>(arg.impl);
+    }
+  };
+
+public:
 
   VertexAdaptor() :
     impl(nullptr) {
@@ -123,12 +130,12 @@ public:
   template<Operation Op2>
   friend class VertexAdaptor;
 
-  bool operator==(VertexPtr other) {
-    return static_cast<vertex_inner<meta_op_base> *>(impl) == other.impl;
+  bool operator==(const VertexAdaptor<Op> &other) const noexcept {
+    return impl == other.impl;
   }
 
-  bool operator!=(VertexPtr other) {
-    return !(*this == other);
+  bool operator!=(const VertexAdaptor<Op> &other) const noexcept {
+    return impl != other.impl;
   }
 
   VertexAdaptor &set_rl_type(RLValueType valueType) {

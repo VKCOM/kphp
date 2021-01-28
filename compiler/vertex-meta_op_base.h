@@ -30,7 +30,6 @@ private:
   Operation type_;
   int n;
 public:
-  int id;
   tinf::ExprNode tinf_node;
   Location location;
 
@@ -111,7 +110,6 @@ public:
   vertex_inner() :
     type_(op_none),
     n(-1),
-    id(0),
     tinf_node(VertexPtr(this)),
     location(),
     extra_type(op_ex_none),
@@ -126,7 +124,6 @@ public:
   vertex_inner(const vertex_inner<meta_op_base> &from) :
     type_(from.type_),
     n(-1),
-    id(from.id),
     tinf_node(VertexPtr(this)),
     location(from.location),
     extra_type(from.extra_type),

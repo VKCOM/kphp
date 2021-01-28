@@ -10,19 +10,14 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-inline bool operator==(const VertexPtr &a, const VertexPtr &b) {
-  return a->id == b->id;
-}
-
+namespace std {
 template<Operation Op>
-int get_index(const VertexAdaptor<Op> &v) {
-  return v->id;
-}
-
-template<Operation Op>
-void set_index(VertexAdaptor<Op> &v, int id) {
-  v->id = id;
-}
+struct hash<VertexAdaptor<Op>> : private VertexAdaptor<Op>::Hash {
+  using argument_type = VertexAdaptor<Op>;
+  using result_type = std::size_t;
+  using VertexAdaptor<Op>::Hash::operator();
+};
+} // namespace std
 
 template<Operation Op>
 size_t vertex_inner_size(int args_n) {
