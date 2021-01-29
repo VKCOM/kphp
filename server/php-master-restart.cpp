@@ -180,7 +180,7 @@ void master_init(master_data_t *me, master_data_t *other) {
   me->ask_http_fd_generation = 0;
   me->sent_http_fd_generation = 0;
 
-  me->instance_cache_elements_stored = 0;
+  me->instance_cache_elements_cached = 0;
 
   me->is_alive = true; //NB: must be the last operation.
 }

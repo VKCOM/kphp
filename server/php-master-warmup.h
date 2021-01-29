@@ -22,8 +22,8 @@ public:
 
   void update_final_instance_cache_sizes() {
     if (!final_instance_cache_sizes_saved_) {
-      final_new_instance_cache_size_ = me->instance_cache_elements_stored;
-      final_old_instance_cache_size_ = other->instance_cache_elements_stored;
+      final_new_instance_cache_size_ = me->instance_cache_elements_cached;
+      final_old_instance_cache_size_ = other->instance_cache_elements_cached;
       final_instance_cache_sizes_saved_ = true;
     }
   }
@@ -46,7 +46,7 @@ public:
   }
 
   bool is_instance_cache_hot_enough() const {
-    return me->instance_cache_elements_stored >= target_instance_cache_elements_part_ * other->instance_cache_elements_stored;
+    return me->instance_cache_elements_cached >= target_instance_cache_elements_part_ * other->instance_cache_elements_cached;
   }
 
   bool warmup_timeout_expired() const {
