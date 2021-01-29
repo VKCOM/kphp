@@ -93,10 +93,11 @@ class CFG {
 
   // these id maps are node properties WHILE building cfg: every node has them
   // on every new node appearing, their sizes are updated
-  IdMap<std::vector<Node>> node_next;
-  IdMap<std::vector<Node>> node_prev;
-  IdMap<std::vector<UsagePtr>> node_usages;
-  IdMap<std::vector<VertexPtr>> node_subvertices;
+  // these lists are mostly small or empty for each node, that's why use forward_list instead of vector
+  IdMap<std::forward_list<Node>> node_next;
+  IdMap<std::forward_list<Node>> node_prev;
+  IdMap<std::forward_list<UsagePtr>> node_usages;
+  IdMap<std::forward_list<VertexPtr>> node_subvertices;
   void reserve_capacity_for_cfg_idmaps();
 
   // these is maps are node properties AFTER building cfg: for calculating really used, applying @var phpdocs, etc
@@ -193,15 +194,15 @@ void CFG::add_usage(Node node, UsagePtr usage) {
   }
   //fprintf(stderr, "%s is used at node %d with type %d\n", usage->v->get_string().c_str(), get_index(node), usage->type);
   //hope that one node will contain usages of the same type
-  kphp_assert (node_usages[node].empty() || node_usages[node].back()->type == usage->type);
-  node_usages[node].push_back(usage);
+  kphp_assert (node_usages[node].empty() || node_usages[node].front()->type == usage->type);
+  node_usages[node].emplace_front(usage);
   usage->node = node;
 }
 
 void CFG::add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag) {
   kphp_assert (node && subtree_vertex);
-  node_subvertices[node].emplace_back(subtree_vertex);
-
+  node_subvertices[node].emplace_front(subtree_vertex);
+  
   if (recursive_flag) {
     for (VertexPtr v : *subtree_vertex) {
       add_subtree(node, v, true);
@@ -212,8 +213,8 @@ void CFG::add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag) 
 void CFG::add_edge(Node from, Node to) {
   if (from && to) {
     //fprintf(stderr, "%s, add-edge: %d->%d\n", stage::get_function_name().c_str(), get_index(from), get_index(to));
-    node_next[from].push_back(to);
-    node_prev[to].push_back(from);
+    node_next[from].emplace_front(to);
+    node_prev[to].emplace_front(from);
   }
 }
 
