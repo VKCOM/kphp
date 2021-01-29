@@ -196,8 +196,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          kphp_error (array->type() == op_var || array->type() == op_index ||
-                      array->type() == op_func_call || array->type() == op_instance_prop,
+          kphp_error (vk::any_of_equal(array->type(), op_var, op_index, op_func_call, op_instance_prop, op_array),
                       "op_index has to be used on lvalue");
           rl_calc(array, val_r);
 

@@ -296,7 +296,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
   return VertexAdaptor<op_string_build>::create(strings).set_location(sb_location);
 }
 
-VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
+VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
   //postfix operators x++, x--, x[] and x{}, x->y, x()
   bool need = true;
   while (need && cur != end) {
@@ -309,11 +309,13 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res) {
       res = v;
       need = true;
       next_cur();
+      CE (!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
     } else if (tp == tok_dec) {
       auto v = VertexAdaptor<op_postfix_dec>::create(res).set_location(auto_location());
       res = v;
       need = true;
       next_cur();
+      CE (!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
     } else if (tp == tok_opbrk || tp == tok_opbrc) {
       auto location = auto_location();
       next_cur();
@@ -379,7 +381,8 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     return res;
   };
 
-  bool return_flag = true;
+  bool return_flag = true; // whether to stop parsing without trying to parse expr as postfix expr
+  bool parenthesized = false;
   switch (type) {
     case tok_line_c: {
       res = get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, std::to_string(stage::get_line()));
@@ -476,6 +479,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_str:
       res = get_string();
+      return_flag = false; // string is a valid postfix expr operand
       break;
     case tok_conv_int:
       res = get_conv<op_conv_int>();
@@ -577,6 +581,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     case tok_array:
       res = get_func_call<op_array, op_none>();
+      return_flag = false; // array is valid postfix expression operand
       break;
     case tok_tuple:
       res = get_func_call<op_tuple, op_err>();
@@ -587,6 +592,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     case tok_opbrk:
       res = get_short_array();
+      return_flag = false; // array is valid postfix expression operand
       break;
     case tok_list:
       res = get_func_call<op_list_ce, op_lvalue_null>();
@@ -599,7 +605,8 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       res = get_expression();
       CE (!kphp_error(res, "Failed to parse expression after '('"));
       CE (expect(tok_clpar, "')'"));
-      return_flag = cur->type() != tok_arrow;
+      return_flag = false; // expression inside '()' is valid postfix expression operand
+      parenthesized = true;
       break;
     case tok_str_begin:
       res = get_string_build();
@@ -617,7 +624,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     return res;
   }
 
-  return get_postfix_expression(res);
+  return get_postfix_expression(res, parenthesized);
 }
 
 VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr) {
@@ -2006,10 +2013,10 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_var_dump: {
       auto res = get_multi_call<op_func_call, op_none>(&GenTree::get_expression, true);
+      CE (res && check_statement_end());
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "var_dump";
       }
-      CE (check_statement_end());
       if (res->size() == 1) {
         return res->args()[0];
       }
