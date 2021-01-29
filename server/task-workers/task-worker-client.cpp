@@ -69,6 +69,11 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
     close(result_pipe[1]); // this endpoint is for task worker to write task result
     clear_event(result_pipe[1]);
   }
+
+  if (read_task_result_fd >= 0) {
+    epoll_sethandler(read_task_result_fd, 0, TaskWorkerClient::read_task_results, nullptr);
+    epoll_insert(read_task_result_fd, EVT_READ | EVT_SPEC);
+  }
 }
 
 bool TaskWorkerClient::send_task_x2(int task_id, int x) {

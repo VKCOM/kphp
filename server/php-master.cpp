@@ -364,6 +364,11 @@ struct pipe_info_t {
   connection pending_stat_queue;
 };
 
+enum class WorkerType {
+  http_worker,
+  task_worker
+};
+
 struct worker_info_t {
   worker_info_t *next_worker;
 
@@ -386,6 +391,7 @@ struct worker_info_t {
   int slot_index;
 
   Stats *stats;
+  WorkerType type;
 };
 
 static worker_info_t *workers[MAX_WORKERS];
@@ -445,7 +451,9 @@ void put_back_worker_slot_index(int id) {
 
 void delete_worker(worker_info_t *w) {
   w->generation = ++conn_generation;
-  put_back_worker_slot_index(w->slot_index);
+  if (w->type == WorkerType::http_worker) {
+    put_back_worker_slot_index(w->slot_index);
+  }
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
@@ -549,17 +557,24 @@ void terminate_worker(worker_info_t *w) {
   w->is_dying = 1;
   w->kill_time = my_now + 35;
   w->kill_flag = 0;
-  workers_terminated++;
 
-  me_running_workers_n--;
-  me_dying_workers_n++;
-
-  changed = 1;
+  switch (w->type) {
+    case WorkerType::http_worker:
+      workers_terminated++;
+      me_running_http_workers_n--;
+      me_dying_http_workers_n++;
+      changed = 1;
+      break;
+    case WorkerType::task_worker:
+      auto &ctx = vk::singleton<TaskWorkersContext>::get();
+      ctx.running_task_workers--;
+      ctx.dying_task_workers++;
+      break;
+  }
 }
 
 int kill_worker() {
-  int i;
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     if (!workers[i]->is_dying) {
       terminate_worker(workers[i]);
       return 1;
@@ -569,17 +584,25 @@ int kill_worker() {
   return 0;
 }
 
-static int get_max_hanging_time_sec() {
-  // + 1 sec for terminating
-  return max(script_timeout + 1, 65);
+static int get_max_hanging_time_sec(WorkerType worker_type) {
+  switch (worker_type) {
+    case WorkerType::http_worker:
+      return max(script_timeout + 1, 65); // + 1 sec for terminating
+    case WorkerType::task_worker:
+      return TaskWorkersContext::MAX_HANGING_TIME_SEC;
+  }
+  return 0;
 }
 
 void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
-    for (int i = 0; i < me_workers_n; i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec() <= my_now) {
+    for (int i = 0; i < me_all_workers_n; i++) {
+      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+        if (workers[i]->type == WorkerType::task_worker) {
+          tvkprintf(task_workers_logging, 1, "No stats received from task worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+        }
         workers_hung++;
         terminate_worker(workers[i]);
         last_terminated = my_now;
@@ -588,9 +611,12 @@ void kill_hanging_workers() {
     }
   }
 
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
+      if (workers[i]->type == WorkerType::task_worker) {
+        tvkprintf(task_workers_logging, 1, "kill hanging task worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
+      }
       kill(workers[i]->pid, SIGKILL);
       workers_killed++;
 
@@ -602,8 +628,7 @@ void kill_hanging_workers() {
 }
 
 void workers_send_signal(int sig) {
-  int i;
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     if (!workers[i]->is_dying) {
       kill(workers[i]->pid, sig);
     }
@@ -729,11 +754,11 @@ void clear_pipe_info(pipe_info_t *info) {
   info->reader = nullptr;
 }
 
-int run_worker() {
+int run_worker(WorkerType worker_type) {
   dl_block_all_signals();
 
   int err;
-  assert (me_workers_n < MAX_WORKERS);
+  assert (me_all_workers_n < MAX_WORKERS);
 
   int new_pipe[2];
   err = pipe2(new_pipe, O_CLOEXEC);
@@ -747,8 +772,19 @@ int run_worker() {
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
-  int worker_slot_index = get_vacant_worker_slot_index();
+  int worker_slot_index = -1;
+  if (worker_type == WorkerType::http_worker) {
+    worker_slot_index = get_vacant_worker_slot_index();
+  }
   if (new_pid == 0) {
+    switch (worker_type) {
+      case WorkerType::http_worker:
+        run_mode = RunMode::http_worker;
+        break;
+      case WorkerType::task_worker:
+        run_mode = RunMode::task_worker;
+        break;
+    }
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
       vkprintf(0, "parent is dead just after start\n");
@@ -798,9 +834,7 @@ int run_worker() {
 
     reset_PID();
 
-    vk::singleton<TaskWorkerClient>::get().init_task_worker_client(worker_slot_index);
-
-    //TODO: fill other stats with zero
+    // TODO: fill other stats with zero
     //
 
     signal_fd = -1;
@@ -811,8 +845,10 @@ int run_worker() {
       logname = strdup(buf);
     }
 
-    instance_cache_release_all_resources_acquired_by_this_proc();
-    ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
+    if (worker_type == WorkerType::http_worker) {
+      instance_cache_release_all_resources_acquired_by_this_proc();
+      ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
+    }
     return 1;
   }
 
@@ -820,7 +856,7 @@ int run_worker() {
 
   vkprintf(1, "new worker launched [pid = %d]\n", (int)new_pid);
 
-  worker_info_t *worker = workers[me_workers_n++] = new_worker();
+  worker_info_t *worker = workers[me_all_workers_n++] = new_worker();
   worker->pid = new_pid;
 
   worker->is_dying = 0;
@@ -828,6 +864,7 @@ int run_worker() {
   worker->start_time = my_now;
   worker->slot_index = worker_slot_index;
   worker->last_activity_time = my_now;
+  worker->type = worker_type;
 
   init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
   init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
@@ -835,7 +872,14 @@ int run_worker() {
   close(new_pipe[1]);
   close(new_fast_pipe[1]);
 
-  me_running_workers_n++;
+  switch (worker_type) {
+    case WorkerType::http_worker:
+      me_running_http_workers_n++;
+      break;
+    case WorkerType::task_worker:
+      vk::singleton<TaskWorkersContext>::get().running_task_workers++;
+      break;
+  }
 
   changed = 1;
 
@@ -844,25 +888,37 @@ int run_worker() {
 
 void remove_worker(pid_t pid) {
   vkprintf(2, "remove workers [pid = %d]\n", (int)pid);
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     if (workers[i]->pid == pid) {
-      if (workers[i]->is_dying) {
-        me_dying_workers_n--;
-      } else {
-        me_running_workers_n--;
-        last_failed = my_now;
-        failed++;
-        workers_failed++;
+      switch (workers[i]->type) {
+        case WorkerType::http_worker:
+          if (workers[i]->is_dying) {
+            me_dying_http_workers_n--;
+          } else {
+            me_running_http_workers_n--;
+            last_failed = my_now;
+            failed++;
+            workers_failed++;
+          }
+          break;
+        case WorkerType::task_worker:
+          auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
+          if (workers[i]->is_dying) {
+            task_workers_ctx.dying_task_workers--;
+          } else {
+            task_workers_ctx.running_task_workers--;
+          }
+          break;
       }
 
       clear_pipe_info(&workers[i]->pipes[0]);
       clear_pipe_info(&workers[i]->pipes[1]);
       delete_worker(workers[i]);
 
-      me_workers_n--;
-      workers[i] = workers[me_workers_n];
+      me_all_workers_n--;
+      workers[i] = workers[me_all_workers_n];
 
-      vkprintf(1, "worker_removed: [running = %d] [dying = %d]\n", me_running_workers_n, me_dying_workers_n);
+      vkprintf(1, "worker_removed: [running = %d] [dying = %d]\n", me_running_http_workers_n, me_dying_http_workers_n);
       return;
     }
   }
@@ -871,17 +927,10 @@ void remove_worker(pid_t pid) {
 }
 
 void update_workers() {
-  auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
   while (true) {
     int status;
     pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
-      const auto &it = task_workers_ctx.task_workers.find(pid);
-      if (it != task_workers_ctx.task_workers.end()) {
-        task_workers_ctx.task_workers.erase(it);
-        task_workers_ctx.running_task_workers--;
-        continue;
-      }
       if (!WIFEXITED (status)) {
         tot_workers_strange_dead++;
       }
@@ -1107,14 +1156,12 @@ conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
 }
 
 void create_stats_queries(connection *c, int op, int worker_pid) {
-  int i;
-
 #if defined(__APPLE__)
   op |= SPOLL_SEND_IMMEDIATE_STATS | SPOLL_SEND_FULL_STATS;
 #endif
   sigval to_send;
   to_send.sival_int = op;
-  for (i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     workers[i]->stats_flag = 0;
     if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
       pipe_info_t *pipe_info = nullptr;
@@ -1173,7 +1220,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
 
   double min_uptime = 1e9;
   double max_uptime = -1;
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     worker_info_t *w = workers[i];
     if (!w->is_dying) {
       total_workers_n++;
@@ -1218,7 +1265,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   header += buf;
   sprintf(buf, "paused_workers\t%d\n", paused_workers_n);
   header += buf;
-  sprintf(buf, "dying_workers\t%d\n", me_dying_workers_n);
+  sprintf(buf, "dying_workers\t%d\n", me_dying_http_workers_n);
   header += buf;
   sprintf(buf, "tot_workers_started\t%ld\n", tot_workers_started);
   header += buf;
@@ -1240,7 +1287,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   }
   if (!full_flag && worker_pid == -2) {
     header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
-    for (int i = 0; i < me_workers_n; i++) {
+    for (int i = 0; i < me_all_workers_n; i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         php_immediate_stats_t *imm = &w->stats->istats;
@@ -1397,7 +1444,7 @@ struct WorkerStats {
 
   static WorkerStats collect() {
     WorkerStats result;
-    for (int i = 0; i < me_workers_n; i++) {
+    for (int i = 0; i < me_all_workers_n; i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         result.total_workers_n++;
@@ -1551,7 +1598,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   unsigned long long max_vms = 0;
   unsigned long long max_rss = 0;
   unsigned long long max_shared = 0;
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     worker_info_t *w = workers[i];
     if (!w->is_dying) {
       const mem_info_t &mem_stats = w->stats->mem_info;
@@ -1607,8 +1654,8 @@ int php_master_http_execute(struct connection *c, int op) {
 void run_master_off_in_graceful_shutdown() {
   vkprintf(2, "state: master_state::off_in_graceful_shutdown\n");
   assert(state == master_state::off_in_graceful_shutdown);
-  to_kill = me_running_workers_n;
-  if (me_running_workers_n + me_dying_workers_n == 0) {
+  to_kill = me_running_http_workers_n;
+  if (me_running_http_workers_n + me_dying_http_workers_n == 0) {
     to_exit = 1;
     me->is_alive = false;
   }
@@ -1632,7 +1679,7 @@ void run_master_off_in_graceful_restart() {
     to_kill = other->to_kill;
   }
 
-  if (me_running_workers_n + me_dying_workers_n == 0) {
+  if (me_running_http_workers_n + me_dying_http_workers_n == 0) {
     to_exit = 1;
     changed = 1;
     me->is_alive = false;
@@ -1664,7 +1711,9 @@ void run_master_on() {
     }
   }
 
-  vk::singleton<TaskWorkersContext>::get().master_init_pipes(workers_n);
+  if (vk::singleton<TaskWorkersContext>::get().task_workers_num > 0) {
+    vk::singleton<TaskWorkersContext>::get().master_init_pipes(workers_n);
+  }
 
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
 
@@ -1713,14 +1762,14 @@ void run_master_on() {
   }
 
   if (!need_http_fd) {
-    int total_workers = me_running_workers_n + me_dying_workers_n + (other->is_alive ? other->running_workers_n + other->dying_workers_n : 0);
+    int total_workers = me_running_http_workers_n + me_dying_http_workers_n + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
     to_run = std::max(0, workers_n - total_workers);
 
     if (other->is_alive) {
       auto &warm_up_ctx = WarmUpContext::get();
       warm_up_ctx.try_start_warmup();
 
-      int set_to_kill = vk::clamp(MAX_KILL - other->dying_workers_n, 0, other->running_workers_n);
+      int set_to_kill = vk::clamp(MAX_KILL - other->dying_http_workers_n, 0, other->running_http_workers_n);
       bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
       bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
       bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();
@@ -1767,7 +1816,7 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
 
 int update_mem_stats() {
   get_mem_stats(me->pid, &server_stats.mem_info);
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     worker_info_t *w = workers[i];
 
     if (get_mem_stats(w->pid, &w->stats->mem_info) != 1) {
@@ -1810,7 +1859,7 @@ static void cron() {
   server_stats.worker_stats.copy_internal_from(dead_worker_stats);
   server_stats.worker_stats.reset_memory_and_percentiles_stats();
   int running_workers = 0;
-  for (int i = 0; i < me_workers_n; i++) {
+  for (int i = 0; i < me_all_workers_n; i++) {
     worker_info_t *w = workers[i];
     const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
@@ -1942,7 +1991,13 @@ void run_master() {
 
     me->generation = generation;
 
-    vk::singleton<TaskWorkersContext>::get().master_run_task_workers();
+    const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();//.master_run_task_workers();
+    for (int i = 0; i < task_workers_ctx.task_workers_num - (task_workers_ctx.running_task_workers + task_workers_ctx.dying_task_workers); ++i) {
+      if (run_worker(WorkerType::task_worker)) {
+        tvkprintf(task_workers_logging, 1, "launched new task worker with pid = %d\n", pid);
+        return;
+      }
+    }
 
     if (to_kill != 0 || to_run != 0) {
       vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
@@ -1951,14 +2006,14 @@ void run_master() {
       kill_worker();
     }
     while (to_run-- > 0 && !failed) {
-      if (run_worker()) {
+      if (run_worker(WorkerType::http_worker)) {
         return;
       }
     }
     kill_hanging_workers();
 
-    me->running_workers_n = me_running_workers_n;
-    me->dying_workers_n = me_dying_workers_n;
+    me->running_http_workers_n = me_running_http_workers_n;
+    me->dying_http_workers_n = me_dying_http_workers_n;
     me->instance_cache_elements_cached = static_cast<uint32_t>(instance_cache_get_stats().elements_cached.load(std::memory_order_relaxed));
 
     if (state != master_state::off_in_graceful_shutdown) {
@@ -1972,6 +2027,7 @@ void run_master() {
 
     if (to_exit) {
       vkprintf(1, "all workers killed. exit\n");
+      // todo: kill task workers? or prctl(PR_SET_PDEATHSIG, SIGKILL); is enough?
       _exit(0);
     }
 

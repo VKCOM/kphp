@@ -2103,7 +2103,7 @@ void reopen_json_log() {
   }
 }
 
-static void worker_event_loop() {
+static void generic_event_loop(RunMode mode) {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -2112,43 +2112,78 @@ static void worker_event_loop() {
   int prev_time = 0;
   double next_create_outbound = 0;
 
-  if (http_port > 0 && http_sfd < 0) {
-    dl_assert (!master_flag, "failed to get http_fd\n");
-    if (master_flag) {
-      vkprintf (-1, "try_get_http_fd after start_master\n");
-      exit(1);
+  switch (mode) {
+    case RunMode::master: {
+      if (rpc_port > 0 && rpc_sfd < 0) {
+        rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
+        if (rpc_sfd < 0) {
+          vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
+          exit(1);
+        }
+      }
+
+      if (rpc_sfd >= 0) {
+        init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
+      }
+
+      if (run_once) {
+        int pipe_fd[2];
+        pipe(pipe_fd);
+
+        int read_fd = pipe_fd[0];
+        int write_fd = pipe_fd[1];
+
+        rpc_client_methods.rpc_ready = nullptr;
+        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+
+        int q[6];
+        int qsize = 6 * sizeof(int);
+        q[2] = TL_RPC_INVOKE_REQ;
+        for (int i = 0; i < run_once_count; i++) {
+          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
+          assert (write(write_fd, q, (size_t)qsize) == qsize);
+        }
+      }
     }
-    http_sfd = try_get_http_fd();
-    if (http_sfd < 0) {
-      vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
-      exit(1);
+    // fall through
+    case RunMode::http_worker: {
+      if (http_port > 0 && http_sfd < 0) {
+        dl_assert (!master_flag, "failed to get http_fd\n");
+        if (master_flag) {
+          vkprintf (-1, "try_get_http_fd after start_master\n");
+          exit(1);
+        }
+        http_sfd = try_get_http_fd();
+        if (http_sfd < 0) {
+          vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
+          exit(1);
+        }
+      }
+
+      if (verbosity > 0 && http_sfd >= 0) {
+        vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+      }
+
+      if (http_sfd >= 0) {
+        init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
+      }
+
+      auto &rpc_clients = RpcClients::get().rpc_clients;
+      std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
+        vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
+        rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
+      });
+      if (!rpc_clients.empty()) {
+        set_main_target(rpc_clients.front());
+      }
+
+      vk::singleton<TaskWorkerClient>::get().init_task_worker_client(logname_id);
+      break;
     }
-  }
-
-  if (rpc_port > 0 && rpc_sfd < 0) {
-    rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-    if (rpc_sfd < 0) {
-      vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-      exit(1);
+    case RunMode::task_worker: {
+      vk::singleton<TaskWorkerServer>::get().init_task_worker_server();
+      break;
     }
-  }
-
-  if (verbosity > 0 && http_sfd >= 0) {
-    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
-  }
-
-  if (http_sfd >= 0) {
-    init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
-  }
-
-  if (rpc_sfd >= 0) {
-    init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-  }
-
-  const auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
-  if (task_worker_client.read_task_result_fd >= 0) {
-    epoll_sethandler(task_worker_client.read_task_result_fd, 0, TaskWorkerClient::read_task_results, nullptr);
-    epoll_insert(task_worker_client.read_task_result_fd, EVT_READ | EVT_SPEC);
   }
 
   if (no_sql) {
@@ -2156,33 +2191,6 @@ static void worker_event_loop() {
   } else {
     sql_target_id = get_target("localhost", db_port, &db_ct);
     assert (sql_target_id != -1);
-  }
-  auto &rpc_clients = RpcClients::get().rpc_clients;
-  std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
-    vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
-    rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
-  });
-  if (!rpc_clients.empty()) {
-    set_main_target(rpc_clients.front());
-  }
-
-  if (run_once) {
-    int pipe_fd[2];
-    pipe(pipe_fd);
-
-    int read_fd = pipe_fd[0];
-    int write_fd = pipe_fd[1];
-
-    rpc_client_methods.rpc_ready = nullptr;
-    epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-    int q[6];
-    int qsize = 6 * sizeof(int);
-    q[2] = TL_RPC_INVOKE_REQ;
-    for (int i = 0; i < run_once_count; i++) {
-      prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-      assert (write(write_fd, q, (size_t)qsize) == qsize);
-    }
   }
 
   get_utime_monotonic();
@@ -2233,12 +2241,14 @@ static void worker_event_loop() {
       cron();
     }
 
-    lease_cron();
-    if (sigterm_on && !rpc_stopped) {
-      rpcc_stop();
-    }
-    if (sigterm_on && !hts_stopped) {
-      hts_stop();
+    if (mode == RunMode::http_worker || mode == RunMode::master) {
+      lease_cron();
+      if (sigterm_on && !rpc_stopped) {
+        rpcc_stop();
+      }
+      if (sigterm_on && !hts_stopped) {
+        hts_stop();
+      }
     }
 
     if (main_thread_reactor.pre_event) {
@@ -2256,7 +2266,7 @@ static void worker_event_loop() {
     vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
-  if (http_sfd >= 0) {
+  if (mode == RunMode::http_worker && http_sfd >= 0) {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }
@@ -2284,9 +2294,11 @@ void start_server() {
   init_epoll();
   if (master_flag) {
     start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
+  } else {
+    run_mode = RunMode::master;
   }
 
-  worker_event_loop();
+  generic_event_loop(run_mode);
 }
 
 void set_instance_cache_memory_limit(size_t limit);

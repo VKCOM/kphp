@@ -23,20 +23,16 @@ public:
   friend class vk::singleton<TaskWorkersContext>;
   using Pipe = std::array<int, 2>;
 
+  static constexpr int MAX_HANGING_TIME_SEC = 10; // TODO: tune it
+
   size_t running_task_workers{0};
   size_t dying_task_workers{0};
   size_t task_workers_num{0};
-
-  std::unordered_set<pid_t> task_workers;
 
   Pipe task_pipe;
   std::vector<Pipe> result_pipes;
 
   void master_init_pipes(int task_result_slots_num);
-  void master_run_task_workers();
 private:
-  size_t task_result_slots_num_{0};
   bool pipes_inited_{false};
-
-  void run_task_worker();
 };

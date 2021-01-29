@@ -37,6 +37,14 @@ extern int no_sql;
 extern int master_flag;
 extern int workers_n;
 
+enum class RunMode {
+  master,
+  http_worker,
+  task_worker,
+};
+
+extern RunMode run_mode;
+
 extern int run_once;
 extern int run_once_return_code;
 

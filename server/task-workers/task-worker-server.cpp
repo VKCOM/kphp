@@ -85,30 +85,6 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) 
 
 
 void TaskWorkerServer::init_task_worker_server() {
-  prctl(PR_SET_PDEATHSIG, SIGKILL); // to prevent the process from becoming orphan
-
-  if (getppid() != me->pid) {
-    vkprintf(0, "parent is dead just after start\n");
-    exit(124);
-  }
-
-  net_reset_after_fork();
-
-  verbosity = initial_verbosity;
-  ::pid = getpid();
-
-  if (master_sfd >= 0) {
-    close(master_sfd);
-    clear_event(master_sfd); // TODO: maybe it's redundant
-    master_sfd = -1;
-  }
-
-  if (http_sfd >= 0) {
-    close(http_sfd);
-    clear_event(http_sfd);
-    http_sfd = -1;
-  }
-
   const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
 
   read_task_fd = task_workers_ctx.task_pipe[0];
@@ -118,21 +94,8 @@ void TaskWorkerServer::init_task_worker_server() {
     close(result_pipe[0]); // this endpoint is for HTTP worker to read task result
     clear_event(result_pipe[0]);
   }
-}
-
-void TaskWorkerServer::event_loop() {
-  init_task_worker_server();
 
   epoll_sethandler(read_task_fd, 0, read_tasks, nullptr);
   epoll_insert(read_task_fd, EVT_READ | EVT_SPEC);
   tvkprintf(task_workers_logging, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
-
-  dl_allow_all_signals();
-
-  while (true) {
-    epoll_work(57);
-  }
-
-  epoll_close(read_task_fd);
-  assert (close(read_task_fd) >= 0);
 }
