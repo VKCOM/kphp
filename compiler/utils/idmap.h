@@ -6,15 +6,8 @@
 
 #include "compiler/stage.h"
 
-struct IdMapBase {
-  virtual void update_size(int new_max_id) = 0;
-  virtual void clear() = 0;
-
-  virtual ~IdMapBase() {}
-};
-
 template<class DataType>
-struct IdMap : public IdMapBase {
+struct IdMap {
   vector <DataType> data;
 
   using iterator = typename vector<DataType>::iterator;

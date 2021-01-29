@@ -12,22 +12,23 @@
 #include "compiler/debug.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/ifi.h"
-#include "compiler/utils/idgen.h"
+#include "compiler/utils/idmap.h"
 
 namespace cfg {
 // just simple int id type
 class Node {
   DEBUG_STRING_METHOD { return std::to_string(id_); }
 
+  int id_{-1};
+
 public:
+  Node() = default;
+  explicit Node(int id): id_(id) {}
+
   explicit operator bool() const { return id_ != -1; }
   void clear() { id_ = -1; }
 
   friend int get_index(const Node &i) { return i.id_; }
-  friend void set_index(Node &i, int index) { i.id_ = index; }
-
-private:
-  int id_{-1};
 };
 
 enum UsageType : uint8_t {
@@ -87,18 +88,28 @@ struct VarSplitData {
 
 class CFG {
   CFGData data;
-  IdGen<Node> node_gen;
-  IdMap<std::vector<Node>> node_next, node_prev;
-  IdMap<std::vector<UsagePtr>> node_usages;
-  IdMap<std::vector<VertexPtr>> node_subvertices;
-  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> smartcasts_conversions;
+  int n_nodes = 0;
   Node current_start;
 
-  IdMap<int> node_was;
+  // these id maps are node properties WHILE building cfg: every node has them
+  // on every new node appearing, their sizes are updated
+  IdMap<std::vector<Node>> node_next;
+  IdMap<std::vector<Node>> node_prev;
+  IdMap<std::vector<UsagePtr>> node_usages;
+  IdMap<std::vector<VertexPtr>> node_subvertices;
+  void reserve_capacity_for_cfg_idmaps();
+
+  // these is maps are node properties AFTER building cfg: for calculating really used, applying @var phpdocs, etc
+  // their sizes are set once after all cfg has been build
+  IdMap<int> node_used;
   IdMap<is_func_id_t> node_checked_type;
   IdMap<UsagePtr> node_mark_dfs;
   IdMap<int> node_mark_dfs_type_hint;
+  void reserve_size_for_dfs_idmaps();
+
   IdMap<VarSplitData> var_split_data;
+
+  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> smartcasts_conversions;
 
   std::vector<std::vector<Node>> continue_nodes;
   std::vector<std::vector<Node>> break_nodes;
@@ -112,7 +123,7 @@ class CFG {
   void create_cfg_end_try();
   void create_cfg_register_exception(Node from);
 
-  Node new_node();
+  inline Node new_node() __attribute__((always_inline));
   UsagePtr new_usage(UsageType type, VertexAdaptor<op_var> v);
   void add_usage(Node node, UsagePtr usage);
   void add_subtree(Node node, VertexPtr subtree_vertex, bool recursive_flag);
@@ -139,10 +150,29 @@ public:
   }
 };
 
-Node CFG::new_node() {
-  Node res;
-  node_gen.init_id(&res);
+inline Node CFG::new_node() {
+  Node res(n_nodes++);
+
+  if ((n_nodes & 0x3f) == 1) {
+    reserve_capacity_for_cfg_idmaps();
+  }
+
   return res;
+}
+
+void CFG::reserve_capacity_for_cfg_idmaps() {
+  int capacity = (n_nodes | 0x3f) + 1;
+  node_prev.update_size(capacity);
+  node_next.update_size(capacity);
+  node_usages.update_size(capacity);
+  node_subvertices.update_size(capacity);
+}
+
+void CFG::reserve_size_for_dfs_idmaps() {
+  node_used.update_size(n_nodes);
+  node_checked_type.update_size(n_nodes);
+  node_mark_dfs.update_size(n_nodes);
+  node_mark_dfs_type_hint.update_size(n_nodes);
 }
 
 UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
@@ -1161,7 +1191,7 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
 
   size_t parts_cnt = 0;
   for (UsagePtr i : var_split.usages) {
-    if (node_was[i->node]) {
+    if (node_used[i->node]) {
       UsagePtr u = var_split.dsu_get(i);
       if (u->part_id == -1) {
         u->part_id = static_cast<int>(parts_cnt++);
@@ -1176,7 +1206,7 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
 
   std::vector<std::vector<VertexAdaptor<op_var>>> parts(parts_cnt);
   for (UsagePtr i : var_split.usages) {
-    if (node_was[i->node]) {
+    if (node_used[i->node]) {
       UsagePtr u = var_split.dsu_get(i);
       parts[u->part_id].push_back(i->v);
     }
@@ -1193,14 +1223,14 @@ void CFG::calc_used(Node v) {
     v = node_stack.top();
     node_stack.pop();
 
-    node_was[v] = 1;
+    node_used[v] = 1;
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
     for (VertexPtr node_subvertex : node_subvertices[v]) {
       node_subvertex->used_flag = true;
     }
     for (Node i : node_next[v]) {
-      if (!node_was[i]) {
+      if (!node_used[i]) {
         node_stack.push(i);
       }
     }
@@ -1311,17 +1341,9 @@ void CFG::process_function(FunctionPtr function) {
     set_index(var, var_id++);
   }
 
-  node_gen.add_id_map(&node_next);
-  node_gen.add_id_map(&node_prev);
-  node_gen.add_id_map(&node_was);
-  node_gen.add_id_map(&node_checked_type);
-  node_gen.add_id_map(&node_mark_dfs);
-  node_gen.add_id_map(&node_mark_dfs_type_hint);
-  node_gen.add_id_map(&node_usages);
-  node_gen.add_id_map(&node_subvertices);
-
   Node start, finish;
   create_cfg(function->root, &start, &finish);
+  reserve_size_for_dfs_idmaps();
   current_start = start;
 
   calc_used(start);
@@ -1339,7 +1361,7 @@ void CFG::process_function(FunctionPtr function) {
     run_function_pass(function, &pass);
   }
 
-  node_gen.clear();
+  // all idmaps will be auto cleared in their destructors
 }
 } // namespace cfg
 
