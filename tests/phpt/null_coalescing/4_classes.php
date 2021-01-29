@@ -140,7 +140,7 @@ function test_or_false_or_null_with_class_and_rpc_connection() {
 
   $x = 1 ? null : new_rpc_connection("", 0);
   $rpc_conn = $x ?? new_rpc_connection("", 0);
-  var_dump(!$rpc_conn);
+  var_dump($rpc_conn === null);
 }
 
 test_classes_variable();

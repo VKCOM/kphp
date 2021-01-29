@@ -3241,10 +3241,10 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
   int argc = ZEND_NUM_ARGS ();
   if (zend_get_parameters_array_ex (argc > 6 ? 6 : argc < 2 ? 2 : argc, z) == FAILURE) {
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_NULL();
   }
   if (VK_Z_API_TYPE(VK_ZVAL_ARRAY_TO_API_P(z[0])) != IS_STRING) {
-    RETURN_FALSE;
+    RETURN_NULL();
   }
   const char *host_name = VK_Z_STRVAL_P (VK_ZVAL_ARRAY_TO_API_P(z[0]));
 //  int host_len = Z_STRLEN_PP (z[0]);
@@ -3271,7 +3271,7 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
   if (!host) {
     php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can't resolve hostname %s", host_name);
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_NULL();
   }
 
   END_TIMER (parse);
@@ -3285,7 +3285,7 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
     if (error_string) {
       efree (error_string);
     }
-    RETURN_FALSE;
+    RETURN_NULL();
   }
 
   RETURN_LONG (c->fd);
@@ -3436,7 +3436,7 @@ void rpc_on_rinit(int module_number) { /* {{{ */
       }
     }
   }
-  last_connection_fd = 0;
+  last_connection_fd = 1;
   tl_parse_on_rinit();
   fail_rpc_on_int32_overflow = false;
 }
