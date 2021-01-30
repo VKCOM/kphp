@@ -23,7 +23,8 @@ prepend(KPHP_TASK_WORKERS_SOURCES ${BASE_DIR}/server/task-workers/
         task-worker-client.cpp
         task-workers-context.cpp
         pending-tasks.cpp
-        task-workers.cpp)
+        task-workers.cpp
+        shared-context.cpp)
 
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}

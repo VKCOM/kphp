@@ -2183,6 +2183,7 @@ void global_init_runtime_libs() {
   global_init_resumable_lib();
   global_init_rpc_lib();
   global_init_udp_lib();
+  global_init_task_workers_lib();
 }
 
 void global_init_script_allocator() {

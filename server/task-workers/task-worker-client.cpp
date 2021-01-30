@@ -9,9 +9,10 @@
 
 #include "net/net-reactor.h"
 
+#include "server/php-queries.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-workers-context.h"
-#include "server/php-queries.h"
+#include "server/task-workers/shared-context.h"
 
 int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused)), event_t *ev) {
   static int read_buf[PIPE_BUF / sizeof(int)];
@@ -101,5 +102,6 @@ bool TaskWorkerClient::send_task_x2(int task_id, int x) {
     kprintf("Fail to write task: task_id = %d, written bytes = %zd\n", task_id, written);
     return false;
   }
+  SharedContext::get().task_queue_size++;
   return true;
 }

@@ -4,7 +4,7 @@
 
 #include "server/task-workers/task-workers.h"
 #include "server/task-workers/pending-tasks.h"
-
+#include "server/task-workers/shared-context.h"
 
 void init_task_workers_lib() {
   vk::singleton<PendingTasks>::get().reset();
@@ -14,3 +14,6 @@ void free_task_workers_lib() {
   vk::singleton<PendingTasks>::get().reset();
 }
 
+void global_init_task_workers_lib() {
+  SharedContext::init();
+}
