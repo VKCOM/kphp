@@ -102,10 +102,10 @@ class CFG {
 
   // these is maps are node properties AFTER building cfg: for calculating really used, applying @var phpdocs, etc
   // their sizes are set once after all cfg has been build
-  IdMap<int> node_used;
+  int cur_dfs_step{0};
+  IdMap<int> node_dfs;
   IdMap<is_func_id_t> node_checked_type;
-  IdMap<UsagePtr> node_mark_dfs;
-  IdMap<int> node_mark_dfs_type_hint;
+  IdMap<UsagePtr> node_dfs_usages;
   void reserve_size_for_dfs_idmaps();
 
   IdMap<VarSplitData> var_split_data;
@@ -140,7 +140,7 @@ class CFG {
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
-  void dfs_apply_type_hint(Node v, UsagePtr usage);
+  void dfs_apply_type_hint(Node v, UsagePtr type_hint_usage);
   void process_var(FunctionPtr function, VarPtr v);
   void add_uninited_var(VertexAdaptor<op_var> v);
   void split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
@@ -170,10 +170,9 @@ void CFG::reserve_capacity_for_cfg_idmaps() {
 }
 
 void CFG::reserve_size_for_dfs_idmaps() {
-  node_used.update_size(n_nodes);
+  node_dfs.update_size(n_nodes);
   node_checked_type.update_size(n_nodes);
-  node_mark_dfs.update_size(n_nodes);
-  node_mark_dfs_type_hint.update_size(n_nodes);
+  node_dfs_usages.update_size(n_nodes);
 }
 
 UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
@@ -1013,56 +1012,61 @@ bool CFG::try_uni_usages(UsagePtr usage, UsagePtr another_usage) {
   return false;
 }
 
+// usages unification is used for variable splitting
+// for example: function f() { $a = 1; f1($a); f2($a); $a = '2'; f3($a); } — 5 usages (wrrwr), will be unified 123 and 45
+// here, having a particular usage we unify traversing up all available paths until a write usage found
+// (of course, mind cases like { $a = 1; if(rand()) $a = 2; f1($a); } — these all (wwr) will be unified into a single)
 void CFG::dfs_uni_rw_usages(Node v, UsagePtr usage) {
-  UsagePtr other_usage = node_mark_dfs[v];
+  UsagePtr other_usage = node_dfs_usages[v];
   if (other_usage) {
     try_uni_usages(usage, other_usage);
     return;
   }
-  node_mark_dfs[v] = usage;
+  node_dfs_usages[v] = usage;
 
-  bool write_usage_found = false;
-  for (auto another_usage : node_usages[v]) {
+  for (UsagePtr another_usage : node_usages[v]) {
     if (try_uni_usages(usage, another_usage) && another_usage->type == usage_write_t) {
-      write_usage_found = true;
+      return;   // stop when we reached a write usage traversing up
     }
   }
-  if (write_usage_found) {
-    return;
-  }
+
   for (Node i : node_prev[v]) {
     dfs_uni_rw_usages(i, usage);
   }
 }
 
-void CFG::dfs_apply_type_hint(Node v, UsagePtr usage) {
-  UsagePtr other_usage = node_mark_dfs[v];
+// apply @var phpdoc: starting from a given point, it's applied all the way down (even unifying write usages)
+// for example: function f() { /** @var int $x */ $x = 1; $x = '2'; } all these will be unified, $x won't be splitted
+// only another type hint can stop unification, like /** @var int */ $x = 1; /** @var string */ $x = '2';
+void CFG::dfs_apply_type_hint(Node v, UsagePtr type_hint_usage) {
+  UsagePtr other_usage = node_dfs_usages[v];
   if (other_usage && other_usage->type != usage_type_hint_t) {
-    try_uni_usages(usage, other_usage);
+    try_uni_usages(type_hint_usage, other_usage);
   }
-  // this check is needed to avoid the infinite loop (node_next is a graph with cycles)
-  if (node_mark_dfs_type_hint[v]) {
+  if (node_dfs[v] == cur_dfs_step) {
     return;
   }
-  node_mark_dfs[v] = usage;
-  node_mark_dfs_type_hint[v] = 1;
+  node_dfs_usages[v] = type_hint_usage;
+  node_dfs[v] = cur_dfs_step;
 
-  bool another_type_hint_found = false;
   for (UsagePtr another_usage : node_usages[v]) {
-    if (another_usage->type == usage_type_hint_t && get_index(usage) != get_index(another_usage)) {
-      another_type_hint_found = true;
-    } else {
-      try_uni_usages(usage, another_usage);
+    if (another_usage->type == usage_type_hint_t && type_hint_usage != another_usage) {
+      return;   // stop when we reached another type hint traversing down
     }
+    try_uni_usages(type_hint_usage, another_usage);
   }
-  if (another_type_hint_found) {
-    return;
-  }
+
   for (Node i : node_next[v]) {
-    dfs_apply_type_hint(i, usage);
+    dfs_apply_type_hint(i, type_hint_usage);
   }
 }
 
+// dfs for checked types is used for two things:
+// 1) check if var is uninited (contains ifi_unset in mask)
+// 2) calc smart casts for var
+// it starts from function root with mask (any|unset) and traverses all the cfg tree down,
+// narrowing the mask on writes (drop unset) and smart casts
+// so, a node can be traversed multiple times if it is reachable with different masks
 void CFG::dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask) {
   if ((node_checked_type[v] | current_mask) == node_checked_type[v]) {
     return;
@@ -1175,8 +1179,8 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
     }
   }
 
-  std::fill(node_mark_dfs.begin(), node_mark_dfs.end(), UsagePtr());
-  std::fill(node_mark_dfs_type_hint.begin(), node_mark_dfs_type_hint.end(), 0);
+  cur_dfs_step++;
+  std::fill(node_dfs_usages.begin(), node_dfs_usages.end(), UsagePtr());
   for (UsagePtr u : var_split.usages) {
     if (u->type != usage_type_hint_t) {
       dfs_uni_rw_usages(u->node, u);
@@ -1192,7 +1196,7 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
 
   size_t parts_cnt = 0;
   for (UsagePtr i : var_split.usages) {
-    if (node_used[i->node]) {
+    if (node_dfs[i->node]) {    // is used (has ever occurred in dfs searching)
       UsagePtr u = var_split.dsu_get(i);
       if (u->part_id == -1) {
         u->part_id = static_cast<int>(parts_cnt++);
@@ -1207,7 +1211,7 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
 
   std::vector<std::vector<VertexAdaptor<op_var>>> parts(parts_cnt);
   for (UsagePtr i : var_split.usages) {
-    if (node_used[i->node]) {
+    if (node_dfs[i->node]) {
       UsagePtr u = var_split.dsu_get(i);
       parts[u->part_id].push_back(i->v);
     }
@@ -1224,14 +1228,14 @@ void CFG::calc_used(Node v) {
     v = node_stack.top();
     node_stack.pop();
 
-    node_used[v] = 1;
+    node_dfs[v] = cur_dfs_step;
     //fprintf (stdout, "calc_used %d\n", get_index (v));
 
     for (VertexPtr node_subvertex : node_subvertices[v]) {
       node_subvertex->used_flag = true;
     }
     for (Node i : node_next[v]) {
-      if (!node_used[i]) {
+      if (node_dfs[i] != cur_dfs_step) {
         node_stack.push(i);
       }
     }
@@ -1347,6 +1351,7 @@ void CFG::process_function(FunctionPtr function) {
   reserve_size_for_dfs_idmaps();
   current_start = start;
 
+  cur_dfs_step++;
   calc_used(start);
   {
     DropUnusedPass pass;
