@@ -15,7 +15,7 @@
 class TaskWorkerServer {
 public:
   friend class vk::singleton<TaskWorkerServer>;
-  static constexpr size_t TASK_BYTE_SIZE = 3 * sizeof(int); // task_id; write_task_result_fd; x
+  static constexpr size_t TASK_BYTE_SIZE = 4 * sizeof(int); // task_id; write_task_result_fd; x; 0
 
   void init_task_worker_server();
   bool execute_task(int task_id, int task_result_fd_idx, int x) const;

@@ -46,6 +46,8 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
     int task_id = read_buf[0];
     int task_result_fd_idx = read_buf[1];
     int x = read_buf[2];
+    int zero = read_buf[3];
+    assert(zero == 0);
 
     bool success = task_worker_server.execute_task(task_id, task_result_fd_idx, x);
     assert(success);
@@ -59,7 +61,6 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) 
   static int write_buf[PIPE_BUF / sizeof(int)];
 
   int task_result = x * x;
-  sleep(1);
 
   int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
   size_t answer_size = 0;

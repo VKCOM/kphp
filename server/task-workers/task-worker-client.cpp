@@ -84,6 +84,7 @@ bool TaskWorkerClient::send_task_x2(int task_id, int x) {
   write_buf[query_size++] = task_id;
   write_buf[query_size++] = task_result_fd_idx;
   write_buf[query_size++] = x;
+  write_buf[query_size++] = 0;
 
   ssize_t written = write(write_task_fd, write_buf, query_size * sizeof(int));
 
