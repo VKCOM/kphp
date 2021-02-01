@@ -7,7 +7,7 @@
 
 #include "server/task-workers/task-workers-context.h"
 
-DEFINE_VERBOSITY(task_workers_logging);
+DEFINE_VERBOSITY(task_workers);
 
 void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
   if (pipes_inited_) {

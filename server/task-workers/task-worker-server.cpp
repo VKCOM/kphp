@@ -2,10 +2,6 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <sys/param.h>
-#include <signal.h>
-
-#include "common/dl-utils-lite.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-restart.h"
@@ -14,12 +10,10 @@
 #include "server/task-workers/shared-context.h"
 
 int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), event_t *ev) {
-  static int read_buf[PIPE_BUF / sizeof(int)];
-
   vkprintf(3, "TaskWorkerClient::read_tasks: fd=%d\n", fd);
-  tvkprintf(task_workers_logging, 3, "wakeup task worker\n");
+  tvkprintf(task_workers, 3, "wakeup task worker\n");
 
-  const auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
+  auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
   assert(fd == task_worker_server.read_task_fd);
 
   if (ev->ready & EVT_SPEC) {
@@ -30,7 +24,7 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   assert(ev->ready & EVT_READ);
 
   while (true) {
-    ssize_t read_bytes = read(fd, read_buf, TASK_BYTE_SIZE);
+    ssize_t read_bytes = read(fd, task_worker_server.buffer.read_buf, TASK_BYTE_SIZE);
     if (read_bytes == -1) {
       if (errno == EWOULDBLOCK) {
         // another task worker has already taken the task (all task workers are readers for this fd)
@@ -44,10 +38,10 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
       kprintf("Couldn't read task. Got %zd bytes, but task bytes size = %zd. Probably some tasks are written not atomically\n", read_bytes, TASK_BYTE_SIZE);
       return -1;
     }
-    int task_id = read_buf[0];
-    int task_result_fd_idx = read_buf[1];
-    int x = read_buf[2];
-    int zero = read_buf[3];
+    int task_id = task_worker_server.buffer.read_buf[0];
+    int task_result_fd_idx = task_worker_server.buffer.read_buf[1];
+    int x = task_worker_server.buffer.read_buf[2];
+    int zero = task_worker_server.buffer.read_buf[3];
     assert(zero == 0);
 
     SharedContext::get().task_queue_size--;
@@ -58,20 +52,18 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   return 0;
 }
 
-bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) const {
-  tvkprintf(task_workers_logging, 2, "executing task: task_id = %d, task_result_fd_idx = %d\n", task_id, task_result_fd_idx);
-
-  static int write_buf[PIPE_BUF / sizeof(int)];
+bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) {
+  tvkprintf(task_workers, 2, "executing task: task_id = %d, task_result_fd_idx = %d\n", task_id, task_result_fd_idx);
 
   int task_result = x * x;
   sleep(1);
 
   int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
   size_t answer_size = 0;
-  write_buf[answer_size++] = task_id;
-  write_buf[answer_size++] = task_result;
+  buffer.write_buf[answer_size++] = task_id;
+  buffer.write_buf[answer_size++] = task_result;
 
-  ssize_t written = write(write_task_result_fd, write_buf, answer_size * sizeof(int));
+  ssize_t written = write(write_task_result_fd, buffer.write_buf, answer_size * sizeof(int));
   if (written == -1) {
     if (errno == EWOULDBLOCK) {
       kprintf("Fail to write task result: pipe is full\n");
@@ -102,5 +94,5 @@ void TaskWorkerServer::init_task_worker_server() {
 
   epoll_sethandler(read_task_fd, 0, read_tasks, nullptr);
   epoll_insert(read_task_fd, EVT_READ | EVT_SPEC);
-  tvkprintf(task_workers_logging, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
+  tvkprintf(task_workers, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
 }

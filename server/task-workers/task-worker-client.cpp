@@ -15,11 +15,9 @@
 #include "server/task-workers/shared-context.h"
 
 int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused)), event_t *ev) {
-  static int read_buf[PIPE_BUF / sizeof(int)];
-
   vkprintf(3, "TaskWorkerClient::read_task_results: fd=%d\n", fd);
 
-  const auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
+  auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
   assert(fd == task_worker_client.read_task_result_fd);
   if (ev->ready & EVT_SPEC) {
     fprintf(stderr, "task worker special event: fd = %d, flags = %d\n", fd, ev->ready);
@@ -28,7 +26,7 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   }
   assert(ev->ready & EVT_READ);
 
-  ssize_t read_bytes = read(fd, read_buf, PIPE_BUF);
+  ssize_t read_bytes = read(fd, task_worker_client.buffer.read_buf, PIPE_BUF);
 
   if (read_bytes == -1) {
     assert(errno != EWOULDBLOCK); // because fd must be ready for read, current HTTP worker is only one reader for this fd
@@ -41,11 +39,11 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   }
 
   size_t tasks_results_number = read_bytes / TASK_RESULT_BYTE_SIZE;
-  tvkprintf(task_workers_logging, 2, "got %zu task results, collecting ...\n", tasks_results_number);
+  tvkprintf(task_workers, 2, "got %zu task results, collecting ...\n", tasks_results_number);
   for (size_t i = 0, data_pos = 0; i < tasks_results_number; ++i) {
-    int ready_task_id = read_buf[data_pos++];
-    int task_result = read_buf[data_pos++];
-    tvkprintf(task_workers_logging, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id, task_result);
+    int ready_task_id = task_worker_client.buffer.read_buf[data_pos++];
+    int task_result = task_worker_client.buffer.read_buf[data_pos++];
+    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id, task_result);
     put_task_worker_answer_event(ready_task_id, task_result);
   }
   return 0;
@@ -78,16 +76,15 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
 }
 
 bool TaskWorkerClient::send_task_x2(int task_id, int x) {
-  static int write_buf[PIPE_BUF / sizeof(int)];
-  tvkprintf(task_workers_logging, 2, "sending task: task_id = %d, write_task_fd = %d, task_result_fd_idx = %d\n", task_id, write_task_fd, task_result_fd_idx);
+  tvkprintf(task_workers, 2, "sending task: task_id = %d, write_task_fd = %d, task_result_fd_idx = %d\n", task_id, write_task_fd, task_result_fd_idx);
 
   size_t query_size = 0;
-  write_buf[query_size++] = task_id;
-  write_buf[query_size++] = task_result_fd_idx;
-  write_buf[query_size++] = x;
-  write_buf[query_size++] = 0;
+  buffer.write_buf[query_size++] = task_id;
+  buffer.write_buf[query_size++] = task_result_fd_idx;
+  buffer.write_buf[query_size++] = x;
+  buffer.write_buf[query_size++] = 0;
 
-  ssize_t written = write(write_task_fd, write_buf, query_size * sizeof(int));
+  ssize_t written = write(write_task_fd, buffer.write_buf, query_size * sizeof(int));
 
   if (written == -1) {
     if (errno == EWOULDBLOCK) {

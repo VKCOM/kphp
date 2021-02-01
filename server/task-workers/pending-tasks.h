@@ -7,9 +7,10 @@
 #include <cstdint>
 
 #include "common/smart_ptrs/singleton.h"
+#include "common/mixin/not_copyable.h"
 #include "runtime/kphp_core.h"
 
-class PendingTasks {
+class PendingTasks : vk::not_copyable {
 public:
   friend class vk::singleton<PendingTasks>;
 

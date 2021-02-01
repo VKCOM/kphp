@@ -4,21 +4,22 @@
 
 #pragma once
 
-#include "common/smart_ptrs/singleton.h"
-#include "server/php-master.h"
+#include <array>
 #include <cstddef>
 #include <queue>
-#include <array>
 #include <unordered_set>
 
+#include "common/mixin/not_copyable.h"
+#include "server/php-master.h"
+#include "common/smart_ptrs/singleton.h"
 #include "server/task-workers/task-worker-server.h"
 
-DECLARE_VERBOSITY(task_workers_logging);
+DECLARE_VERBOSITY(task_workers);
 
 /**
  * Master process manages this context
  */
-class TaskWorkersContext {
+class TaskWorkersContext : vk::not_copyable {
 public:
   friend class vk::singleton<TaskWorkersContext>;
   using Pipe = std::array<int, 2>;

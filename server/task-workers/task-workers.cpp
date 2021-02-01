@@ -15,5 +15,5 @@ void free_task_workers_lib() {
 }
 
 void global_init_task_workers_lib() {
-  SharedContext::init();
+  SharedContext::get();
 }

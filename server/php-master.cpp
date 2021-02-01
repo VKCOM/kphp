@@ -602,7 +602,7 @@ void kill_hanging_workers() {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         if (workers[i]->type == WorkerType::task_worker) {
-          tvkprintf(task_workers_logging, 1, "No stats received from task worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+          tvkprintf(task_workers, 1, "No stats received from task worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         }
         workers_hung++;
         terminate_worker(workers[i]);
@@ -616,7 +616,7 @@ void kill_hanging_workers() {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       if (workers[i]->type == WorkerType::task_worker) {
-        tvkprintf(task_workers_logging, 1, "kill hanging task worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
+        tvkprintf(task_workers, 1, "kill hanging task worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       }
       kill(workers[i]->pid, SIGKILL);
       workers_killed++;
@@ -1947,7 +1947,7 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(task_workers_logging, 3, "Task queue size = %d\n", SharedContext::get().task_queue_size.load(std::memory_order_relaxed));
+    tvkprintf(task_workers, 3, "Task queue size = %d\n", SharedContext::get().task_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 
@@ -1994,10 +1994,10 @@ void run_master() {
 
     me->generation = generation;
 
-    const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();//.master_run_task_workers();
+    const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
     for (int i = 0; i < task_workers_ctx.task_workers_num - (task_workers_ctx.running_task_workers + task_workers_ctx.dying_task_workers); ++i) {
       if (run_worker(WorkerType::task_worker)) {
-        tvkprintf(task_workers_logging, 1, "launched new task worker with pid = %d\n", pid);
+        tvkprintf(task_workers, 1, "launched new task worker with pid = %d\n", pid);
         return;
       }
     }

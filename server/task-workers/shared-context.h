@@ -13,11 +13,10 @@ class SharedContext : vk::not_copyable {
 public:
   std::atomic<int> task_queue_size{0};
 
-  // must be called once from master process
-  static void init();
+  static SharedContext &make();
+
+  // must be called from master process on global init
   static SharedContext &get();
 private:
-  static bool inited;
-
   SharedContext() = default;
 };
