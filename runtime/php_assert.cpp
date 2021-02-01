@@ -16,13 +16,17 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#include "common/dl-utils-lite.h"
 #include "common/fast-backtrace.h"
+#include "common/wrappers/pathname.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
+#include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
+
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
@@ -187,6 +191,24 @@ void php_out_of_memory_warning(char const *message, ...) {
   va_start (args, message);
   php_warning_impl(true, E_ERROR, message, args);
   va_end(args);
+}
+
+const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) noexcept {
+  const int64_t current_time = time(nullptr);
+  const char *message = ex->$message.empty() ? "(empty)" : ex->$message.c_str();
+  const char *src_file = kbasename(ex->$file.c_str());
+  vk::singleton<JsonLogger>::get().write_log(
+    dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", ex->get_class(), src_file, ex->$line, ex->$code, message),
+    E_ERROR, current_time, ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+
+  const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s caught in file %s at line %" PRIi64 ".\n"
+                            "Backtrace:\n%s",
+                            engine_tag, current_time, engine_pid,
+                            ex->$code, message, ex->get_class(), src_file, ex->$line,
+                            exception_trace_as_string(ex).c_str());
+  fprintf(stderr, "%s", msg);
+  fprintf(stderr, "-------------------------------\n\n");
+  return msg;
 }
 
 void php_assert__(const char *msg, const char *file, int line) {

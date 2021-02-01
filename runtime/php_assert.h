@@ -24,6 +24,11 @@ void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)
 void php_error(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_out_of_memory_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
+template<class T>
+class class_instance;
+struct C$Throwable;
+const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) noexcept;
+
 void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
 void raise_php_assert_signal__();
 
