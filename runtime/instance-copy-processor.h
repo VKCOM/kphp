@@ -18,20 +18,20 @@ template<typename Child>
 class InstanceDeepBasicVisitor : vk::not_copyable {
 public:
   template<typename T>
-  void operator()(const char *, T &&value) {
+  void operator()(const char *, T &&value) noexcept {
     is_ok_ = child_.process(std::forward<T>(value));
   }
 
   template<typename T>
-  bool process(T &) { return true; }
+  bool process(T &) noexcept { return true; }
 
   template<typename T>
-  bool process(Optional<T> &value) {
+  bool process(Optional<T> &value) noexcept {
     return value.has_value() ? child_.process(value.val()) : true;
   }
 
   template<typename I>
-  bool process(class_instance<I> &instance) {
+  bool process(class_instance<I> &instance) noexcept {
     static_assert(!std::is_abstract<I>::value, "instance_cache doesn't support interfaces");
     if (!instance.is_null()) {
       instance->accept(child_);
@@ -41,17 +41,17 @@ public:
   }
 
   template<typename ...Args>
-  bool process(std::tuple<Args...> &value) {
+  bool process(std::tuple<Args...> &value) noexcept {
     return process_tuple(value);
   }
 
   template<size_t ...Is, typename ...T>
-  bool process(shape<std::index_sequence<Is...>, T...> &value) {
+  bool process(shape<std::index_sequence<Is...>, T...> &value) noexcept {
     const bool child_res[] = {child_.process(value.template get<Is>())...};
     return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
   }
 
-  bool process(mixed &value) {
+  bool process(mixed &value) noexcept {
     if (value.is_string()) {
       return child_.process(value.as_string());
     } else if (value.is_array()) {
@@ -60,15 +60,15 @@ public:
     return true;
   }
 
-  bool is_ok() const { return is_ok_; }
+  bool is_ok() const noexcept { return is_ok_; }
 
 protected:
-  explicit InstanceDeepBasicVisitor(Child &child) :
+  explicit InstanceDeepBasicVisitor(Child &child) noexcept:
     child_(child) {
   }
 
   template<typename Iterator>
-  bool process_range(Iterator first, Iterator last) {
+  bool process_range(Iterator first, Iterator last) noexcept {
     bool res = true;
     for (; first != last; ++first) {
       if (!child_.process(first.get_value())) {
@@ -83,13 +83,13 @@ protected:
 
 private:
   template<size_t Index = 0, typename ...Args>
-  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) {
+  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) noexcept {
     bool res = child_.process(std::get<Index>(value));
     return process_tuple<Index + 1>(value) && res;
   }
 
   template<size_t Index = 0, typename ...Args>
-  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) {
+  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) noexcept {
     return true;
   }
 
@@ -109,7 +109,7 @@ public:
   InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
-  bool process(array<T> &arr) {
+  bool process(array<T> &arr) noexcept {
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
@@ -131,7 +131,7 @@ public:
   }
 
   template<typename I>
-  bool process(class_instance<I> &instance) {
+  bool process(class_instance<I> &instance) noexcept {
     if (++instance_depth_level_ >= instance_depth_level_limit_) {
       instance.destroy();
       is_depth_limit_exceeded_ = true;
@@ -154,13 +154,13 @@ public:
     return result;
   }
 
-  bool process(string &str);
+  bool process(string &str) noexcept;
 
-  bool is_depth_limit_exceeded() const {
+  bool is_depth_limit_exceeded() const noexcept {
     return is_depth_limit_exceeded_;
   }
 
-  bool is_memory_limit_exceeded() const {
+  bool is_memory_limit_exceeded() const noexcept {
     return memory_limit_exceeded_;
   }
 
@@ -195,10 +195,10 @@ public:
   using Basic::operator();
   using Basic::is_ok;
 
-  explicit InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt);
+  explicit InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
-  bool process(array<T> &arr) {
+  bool process(array<T> &arr) noexcept{
     // if array is constant, skip it, otherwise element was cached and should be destroyed
     if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
@@ -208,16 +208,14 @@ public:
   }
 
   template<typename I>
-  bool process(class_instance<I> &instance) {
+  bool process(class_instance<I> &instance) noexcept{
     Basic::process(instance);
     instance.force_destroy(memory_ref_cnt_);
     return true;
   }
 
-  bool process(string &str);
+  bool process(string &str) noexcept;
 
 private:
   const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
 };
-
-

@@ -10,12 +10,12 @@ InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized
   memory_pool_(memory_pool) {
 }
 
-InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) :
+InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:
   Basic(*this),
   memory_ref_cnt_(memory_ref_cnt) {
 }
 
-bool InstanceDeepCopyVisitor::process(string &str) {
+bool InstanceDeepCopyVisitor::process(string &str) noexcept {
   if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     return true;
   }
@@ -37,7 +37,7 @@ bool InstanceDeepCopyVisitor::process(string &str) {
   return true;
 }
 
-bool InstanceDeepDestroyVisitor::process(string &str) {
+bool InstanceDeepDestroyVisitor::process(string &str) noexcept {
   // if string is constant, skip it, otherwise element was cached and should be destroyed
   if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     str.force_destroy(memory_ref_cnt_);
