@@ -219,3 +219,59 @@ public:
 private:
   const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
 };
+
+class InstanceCopyistBase : public ManagedThroughDlAllocator, vk::not_copyable {
+public:
+  virtual const char *get_class() const noexcept = 0;
+  virtual std::unique_ptr<InstanceCopyistBase> clone_and_detach_shared_ref(InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
+  virtual std::unique_ptr<InstanceCopyistBase> clone_on_script_memory() const noexcept = 0;
+  virtual ~InstanceCopyistBase() noexcept = default;
+};
+
+template<typename I>
+class InstanceCopyistImpl;
+
+template<typename I>
+class InstanceCopyistImpl<class_instance<I>> final : public InstanceCopyistBase {
+public:
+  explicit InstanceCopyistImpl(const class_instance<I> &instance, bool deep_destroy_required = false) noexcept:
+    instance_(instance),
+    deep_destroy_required_(deep_destroy_required) {
+  }
+
+  const char *get_class() const noexcept final {
+    return instance_.get_class();
+  }
+
+  std::unique_ptr<InstanceCopyistBase> clone_and_detach_shared_ref(InstanceDeepCopyVisitor &detach_processor) const noexcept final {
+    auto detached_instance = instance_;
+    detach_processor.process(detached_instance);
+
+    // sizeof(size_t) - an extra memory that we need inside the make_unique_on_script_memory
+    constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceCopyistImpl<class_instance<I>>);
+    if (unlikely(detach_processor.is_depth_limit_exceeded() ||
+                 !detach_processor.is_enough_memory_for(size_for_wrapper))) {
+      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(detached_instance);
+      return {};
+    }
+    return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(detached_instance, true);
+  }
+
+  std::unique_ptr<InstanceCopyistBase> clone_on_script_memory() const noexcept final {
+    return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(instance_);
+  }
+
+  class_instance<I> get_instance() const noexcept {
+    return instance_;
+  }
+
+  ~InstanceCopyistImpl() noexcept final {
+    if (deep_destroy_required_ && !instance_.is_null()) {
+      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(instance_);
+    }
+  }
+
+private:
+  class_instance<I> instance_;
+  const bool deep_destroy_required_{false};
+};

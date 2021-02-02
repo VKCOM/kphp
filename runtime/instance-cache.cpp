@@ -93,7 +93,7 @@ public:
   }
 
   ElementHolder(std::chrono::nanoseconds now, int64_t ttl,
-                std::unique_ptr<InstanceWrapperBase> &&instance,
+                std::unique_ptr<InstanceCopyistBase> &&instance,
                 CacheContext &context) noexcept:
     inserted_by_process(getpid()),
     instance_wrapper(std::move(instance)),
@@ -127,7 +127,7 @@ public:
   bool early_fetch_performed{false};
   const pid_t inserted_by_process{0};
 
-  std::unique_ptr<InstanceWrapperBase> instance_wrapper;
+  std::unique_ptr<InstanceCopyistBase> instance_wrapper;
   CacheContext &cache_context;
 
   // Removed elements list
@@ -298,7 +298,7 @@ public:
     context_ = nullptr;
   }
 
-  bool store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) noexcept {
+  bool store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) noexcept {
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_ && context_);
     if (context_->memory_swap_required) {
@@ -338,7 +338,7 @@ public:
     return true;
   }
 
-  const InstanceWrapperBase *fetch(const string &key, bool even_if_expired) {
+  const InstanceCopyistBase *fetch(const string &key, bool even_if_expired) {
     php_assert(current_ && context_);
     sync_delayed();
     // storing_delayed_ uses a script memory
@@ -589,7 +589,7 @@ private:
 
   ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
                                                const string &key_in_script_memory, int64_t ttl,
-                                               const InstanceWrapperBase &instance_wrapper,
+                                               const InstanceCopyistBase &instance_wrapper,
                                                InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
     auto shared_memory_guard = context_->memory_replacement_guard();
@@ -672,7 +672,7 @@ private:
   // A container for instances which we failed to save from the first try due to the allocator lock
   // Uses script memory. Wrapped into the class_instance as array doesn't work with unique_ptr
   struct DelayedInstance : refcountable_php_classes<DelayedInstance> {
-    std::unique_ptr<InstanceWrapperBase> instance_wrapper;
+    std::unique_ptr<InstanceCopyistBase> instance_wrapper;
     int64_t ttl{0};
   };
   array<class_instance<DelayedInstance>> storing_delayed_;
@@ -682,11 +682,11 @@ private:
   size_t purge_shard_offset_{0};
 };
 
-bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) {
+bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
-const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
+const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
   return InstanceCache::get().fetch(key, even_if_expired);
 }
 

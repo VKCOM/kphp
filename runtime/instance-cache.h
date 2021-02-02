@@ -24,66 +24,8 @@
 
 namespace impl_ {
 
-class InstanceWrapperBase : public ManagedThroughDlAllocator, vk::not_copyable {
-public:
-  virtual const char *get_class() const noexcept = 0;
-  virtual std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
-    InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
-  virtual std::unique_ptr<InstanceWrapperBase> clone_on_script_memory() const noexcept = 0;
-  virtual ~InstanceWrapperBase() noexcept = default;
-};
-
-template<typename I>
-class InstanceWrapper;
-
-template<typename I>
-class InstanceWrapper<class_instance<I>> final : public InstanceWrapperBase {
-public:
-  explicit InstanceWrapper(const class_instance<I> &instance, bool deep_destroy_required = false) noexcept:
-    instance_(instance),
-    deep_destroy_required_(deep_destroy_required) {
-  }
-
-  const char *get_class() const noexcept final {
-    return instance_.get_class();
-  }
-
-  std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
-    InstanceDeepCopyVisitor &detach_processor) const noexcept final {
-    auto detached_instance = instance_;
-    detach_processor.process(detached_instance);
-
-    // sizeof(size_t) - an extra memory that we need inside the make_unique_on_script_memory
-    constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>);
-    if (unlikely(detach_processor.is_depth_limit_exceeded() ||
-                 !detach_processor.is_enough_memory_for(size_for_wrapper))) {
-      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(detached_instance);
-      return {};
-    }
-    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(detached_instance, true);
-  }
-
-  std::unique_ptr<InstanceWrapperBase> clone_on_script_memory() const noexcept final {
-    return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(instance_);
-  }
-
-  class_instance<I> get_instance() const noexcept {
-    return instance_;
-  }
-
-  ~InstanceWrapper() noexcept final {
-    if (deep_destroy_required_ && !instance_.is_null()) {
-      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(instance_);
-    }
-  }
-
-private:
-  class_instance<I> instance_;
-  const bool deep_destroy_required_{false};
-};
-
-bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl);
-const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
+bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl);
+const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace impl_
 
@@ -134,7 +76,7 @@ bool f$instance_cache_store(const string &key, const ClassInstanceType &instance
   if (instance.is_null()) {
     return false;
   }
-  impl_::InstanceWrapper<ClassInstanceType> instance_wrapper{instance};
+  InstanceCopyistImpl<ClassInstanceType> instance_wrapper{instance};
   return impl_::instance_cache_store(key, instance_wrapper, ttl);
 }
 
@@ -144,7 +86,7 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
   if (const auto *base_wrapper = impl_::instance_cache_fetch_wrapper(key, even_if_expired)) {
     // do not use first parameter (class name) for verifying type,
     // because different classes from separated libs may have same names
-    if (auto wrapper = dynamic_cast<const impl_::InstanceWrapper<ClassInstanceType> *>(base_wrapper)) {
+    if (auto wrapper = dynamic_cast<const InstanceCopyistImpl<ClassInstanceType> *>(base_wrapper)) {
       auto result = wrapper->get_instance();
       php_assert(!result.is_null());
       return result;
