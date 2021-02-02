@@ -313,7 +313,7 @@ public:
       return false;
     }
 
-    DeepMoveFromScriptToCacheVisitor detach_processor{context_->memory_resource};
+    InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     const ElementHolder *inserted_element = try_insert_element_into_cache(
       data, key, ttl, instance_wrapper, detach_processor);
 
@@ -493,7 +493,7 @@ public:
           ic_debug("purge '%s'\n", it->first.c_str());
           string removing_key = it->first;
           it = data_shard.storage.erase(it);
-          DeepDestroyFromCacheVisitor{}.process(removing_key);
+          InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(removing_key);
           context.stats.elements_expired.fetch_add(1, std::memory_order_relaxed);
           context.stats.elements_cached.fetch_sub(1, std::memory_order_relaxed);
         } else {
@@ -554,7 +554,7 @@ private:
       return;
     }
 
-    DeepMoveFromScriptToCacheVisitor detach_processor{context_->memory_resource};
+    InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     for (auto it = storing_delayed_.cbegin(); it != storing_delayed_.cend(); it = storing_delayed_.cbegin()) {
       php_assert(it.is_string_key());
       const auto &key = it.get_string_key();
@@ -590,7 +590,7 @@ private:
   ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
                                                const string &key_in_script_memory, int64_t ttl,
                                                const InstanceWrapperBase &instance_wrapper,
-                                               DeepMoveFromScriptToCacheVisitor &detach_processor) noexcept {
+                                               InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
     auto shared_memory_guard = context_->memory_replacement_guard();
 
@@ -616,7 +616,7 @@ private:
           }
           constexpr auto node_max_size = ElementStorage_::allocator_type::max_value_type_size();
           if (unlikely(!detach_processor.is_enough_memory_for(node_max_size))) {
-            DeepDestroyFromCacheVisitor{}.process(key_in_shared_memory);
+            InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(key_in_shared_memory);
             return nullptr;
           }
 
@@ -638,7 +638,7 @@ private:
     return nullptr;
   }
 
-  void fire_warning(const DeepMoveFromScriptToCacheVisitor &detach_processor, const char *class_name) noexcept {
+  void fire_warning(const InstanceDeepCopyVisitor &detach_processor, const char *class_name) noexcept {
     if (detach_processor.is_depth_limit_exceeded()) {
       php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", class_name);
     }

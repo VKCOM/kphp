@@ -28,7 +28,7 @@ class InstanceWrapperBase : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   virtual const char *get_class() const noexcept = 0;
   virtual std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
-    DeepMoveFromScriptToCacheVisitor &detach_processor) const noexcept = 0;
+    InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
   virtual std::unique_ptr<InstanceWrapperBase> clone_on_script_memory() const noexcept = 0;
   virtual ~InstanceWrapperBase() noexcept = default;
 };
@@ -49,7 +49,7 @@ public:
   }
 
   std::unique_ptr<InstanceWrapperBase> clone_and_detach_shared_ref(
-    DeepMoveFromScriptToCacheVisitor &detach_processor) const noexcept final {
+    InstanceDeepCopyVisitor &detach_processor) const noexcept final {
     auto detached_instance = instance_;
     detach_processor.process(detached_instance);
 
@@ -57,7 +57,7 @@ public:
     constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceWrapper<class_instance<I>>);
     if (unlikely(detach_processor.is_depth_limit_exceeded() ||
                  !detach_processor.is_enough_memory_for(size_for_wrapper))) {
-      DeepDestroyFromCacheVisitor{}.process(detached_instance);
+      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(detached_instance);
       return {};
     }
     return make_unique_on_script_memory<InstanceWrapper<class_instance<I>>>(detached_instance, true);
@@ -73,7 +73,7 @@ public:
 
   ~InstanceWrapper() noexcept final {
     if (deep_destroy_required_ && !instance_.is_null()) {
-      DeepDestroyFromCacheVisitor{}.process(instance_);
+      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(instance_);
     }
   }
 
@@ -86,9 +86,6 @@ bool instance_cache_store(const string &key, const InstanceWrapperBase &instance
 const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace impl_
-
-using DeepMoveFromScriptToCacheVisitor = impl_::DeepMoveFromScriptToCacheVisitor;
-using DeepDestroyFromCacheVisitor = impl_::DeepDestroyFromCacheVisitor;
 
 void global_init_instance_cache_lib();
 void init_instance_cache_lib();

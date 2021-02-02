@@ -4,18 +4,18 @@
 
 #include "runtime/instance-copy-processor.h"
 
-namespace impl_ {
-
-DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept:
+InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept:
   Basic(*this),
+  memory_ref_cnt_(memory_ref_cnt),
   memory_pool_(memory_pool) {
 }
 
-DeepDestroyFromCacheVisitor::DeepDestroyFromCacheVisitor() :
-  Basic(*this) {
+InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) :
+  Basic(*this),
+  memory_ref_cnt_(memory_ref_cnt) {
 }
 
-bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
+bool InstanceDeepCopyVisitor::process(string &str) {
   if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     return true;
   }
@@ -32,17 +32,15 @@ bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
     php_assert(str.size() < 2);
   } else {
     php_assert(str.get_reference_counter() == 1);
-    str.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
+    str.set_reference_counter_to(memory_ref_cnt_);
   }
   return true;
 }
 
-bool DeepDestroyFromCacheVisitor::process(string &str) {
+bool InstanceDeepDestroyVisitor::process(string &str) {
   // if string is constant, skip it, otherwise element was cached and should be destroyed
   if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    str.force_destroy(ExtraRefCnt::for_instance_cache);
+    str.force_destroy(memory_ref_cnt_);
   }
   return true;
-}
-
 }

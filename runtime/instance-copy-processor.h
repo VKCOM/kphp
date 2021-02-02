@@ -15,7 +15,7 @@
 namespace impl_ {
 
 template<typename Child>
-class BasicVisitor : vk::not_copyable {
+class InstanceDeepBasicVisitor : vk::not_copyable {
 public:
   template<typename T>
   void operator()(const char *, T &&value) {
@@ -63,7 +63,7 @@ public:
   bool is_ok() const { return is_ok_; }
 
 protected:
-  explicit BasicVisitor(Child &child) :
+  explicit InstanceDeepBasicVisitor(Child &child) :
     child_(child) {
   }
 
@@ -97,14 +97,16 @@ private:
   Child &child_;
 };
 
-class DeepMoveFromScriptToCacheVisitor : BasicVisitor<DeepMoveFromScriptToCacheVisitor> {
+} // namespace impl_
+
+class InstanceDeepCopyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor> {
 public:
-  using Basic = BasicVisitor<DeepMoveFromScriptToCacheVisitor>;
+  using Basic = InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
   using Basic::process;
   using Basic::operator();
   using Basic::is_ok;
 
-  explicit DeepMoveFromScriptToCacheVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept;
+  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
   bool process(array<T> &arr) {
@@ -124,7 +126,7 @@ public:
       return true;
     }
     php_assert(arr.get_reference_counter() == 1);
-    arr.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
+    arr.set_reference_counter_to(memory_ref_cnt_);
     return Basic::process_range(first, arr.end());
   }
 
@@ -140,7 +142,7 @@ public:
     if (!instance.is_null()) {
       if (likely(is_enough_memory_for(instance.estimate_memory_usage()))) {
         instance = instance.clone();
-        instance.set_reference_counter_to_cache();
+        instance.set_reference_counter_to(memory_ref_cnt_);
         result = Basic::process(instance);
       } else {
         instance.destroy();
@@ -182,24 +184,25 @@ private:
   bool is_depth_limit_exceeded_{false};
   uint8_t instance_depth_level_{0u};
   const uint8_t instance_depth_level_limit_{128u};
+  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
   memory_resource::unsynchronized_pool_resource &memory_pool_;
 };
 
-class DeepDestroyFromCacheVisitor : BasicVisitor<DeepDestroyFromCacheVisitor> {
+class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
 public:
-  using Basic = BasicVisitor<DeepDestroyFromCacheVisitor>;
+  using Basic = InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
   using Basic::process;
   using Basic::operator();
   using Basic::is_ok;
 
-  DeepDestroyFromCacheVisitor();
+  explicit InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt);
 
   template<typename T>
   bool process(array<T> &arr) {
     // if array is constant, skip it, otherwise element was cached and should be destroyed
     if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
-      arr.force_destroy(ExtraRefCnt::for_instance_cache);
+      arr.force_destroy(memory_ref_cnt_);
     }
     return true;
   }
@@ -207,12 +210,14 @@ public:
   template<typename I>
   bool process(class_instance<I> &instance) {
     Basic::process(instance);
-    instance.destroy_cached();
+    instance.force_destroy(memory_ref_cnt_);
     return true;
   }
 
   bool process(string &str);
+
+private:
+  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
 };
 
-} // namespace impl_
 

@@ -80,20 +80,20 @@ void class_instance<T>::warn_on_access_null() const {
 }
 
 template<class T>
-void class_instance<T>::set_reference_counter_to_cache() {
+void class_instance<T>::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   php_assert(o->get_refcnt() == 1);
-  o->set_refcnt(ExtraRefCnt::for_instance_cache);
+  o->set_refcnt(static_cast<uint32_t>(static_cast<int32_t>(ref_cnt_value)));
 }
 
 template<class T>
-bool class_instance<T>::is_cache_reference_counter() const {
-  return o->get_refcnt() == ExtraRefCnt::for_instance_cache;
+bool class_instance<T>::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+  return static_cast<int32_t>(o->get_refcnt()) == ref_cnt_value;
 }
 
 template<class T>
-void class_instance<T>::destroy_cached() {
+void class_instance<T>::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   if (o) {
-    php_assert(o->get_refcnt() == ExtraRefCnt::for_instance_cache);
+    php_assert(static_cast<int32_t>(o->get_refcnt()) == expected_ref_cnt);
     o->set_refcnt(1);
     destroy();
   }

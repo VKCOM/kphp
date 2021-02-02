@@ -77,9 +77,9 @@ public:
   inline void destroy() { o.reset(); }
   int64_t get_reference_counter() const { return o->get_refcnt(); }
 
-  void set_reference_counter_to_cache();
-  bool is_cache_reference_counter() const;
-  void destroy_cached();
+  void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
+  bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
+  void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   constexpr static size_t estimate_memory_usage() {
     static_assert(!std::is_polymorphic<T>{}, "forbidden for polymorphic");
