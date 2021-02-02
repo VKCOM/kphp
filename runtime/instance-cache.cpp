@@ -326,7 +326,7 @@ public:
       // failed to acquire a lock, save the instance into the script memory container, we'll try again later
       class_instance<DelayedInstance> delayed_instance;
       delayed_instance.alloc().get()->ttl = ttl;
-      delayed_instance.get()->instance_wrapper = instance_wrapper.clone_on_script_memory();
+      delayed_instance.get()->instance_wrapper = instance_wrapper.shallow_copy();
       storing_delayed_.set_value(key, std::move(delayed_instance));
       context_->stats.elements_storing_delayed_due_mutex.fetch_add(1, std::memory_order_relaxed);
       return false;
@@ -604,7 +604,7 @@ private:
     auto clear_garbage = vk::finally([this] { context_->clear_garbage(); });
 
     // moving an instance into a shared memory
-    if (auto cached_instance_wrapper = instance_wrapper.clone_and_detach_shared_ref(detach_processor)) {
+    if (auto cached_instance_wrapper = instance_wrapper.deep_copy_and_set_ref_cnt(detach_processor)) {
       if (void *mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
         vk::intrusive_ptr<ElementHolder> element{new(mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
         std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};

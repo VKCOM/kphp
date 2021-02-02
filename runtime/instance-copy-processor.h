@@ -62,8 +62,11 @@ public:
 
   bool is_ok() const noexcept { return is_ok_; }
 
+  ExtraRefCnt get_memory_ref_cnt() const noexcept { return memory_ref_cnt_; }
+
 protected:
-  explicit InstanceDeepBasicVisitor(Child &child) noexcept:
+  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt) noexcept:
+    memory_ref_cnt_(memory_ref_cnt),
     child_(child) {
   }
 
@@ -94,6 +97,7 @@ private:
   }
 
   bool is_ok_{true};
+  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
   Child &child_;
 };
 
@@ -105,6 +109,7 @@ public:
   using Basic::process;
   using Basic::operator();
   using Basic::is_ok;
+  using Basic::get_memory_ref_cnt;
 
   InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept;
 
@@ -126,7 +131,7 @@ public:
       return true;
     }
     php_assert(arr.get_reference_counter() == 1);
-    arr.set_reference_counter_to(memory_ref_cnt_);
+    arr.set_reference_counter_to(get_memory_ref_cnt());
     return Basic::process_range(first, arr.end());
   }
 
@@ -142,7 +147,7 @@ public:
     if (!instance.is_null()) {
       if (likely(is_enough_memory_for(instance.estimate_memory_usage()))) {
         instance = instance.clone();
-        instance.set_reference_counter_to(memory_ref_cnt_);
+        instance.set_reference_counter_to(get_memory_ref_cnt());
         result = Basic::process(instance);
       } else {
         instance.destroy();
@@ -184,7 +189,6 @@ private:
   bool is_depth_limit_exceeded_{false};
   uint8_t instance_depth_level_{0u};
   const uint8_t instance_depth_level_limit_{128u};
-  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
   memory_resource::unsynchronized_pool_resource &memory_pool_;
 };
 
@@ -202,7 +206,7 @@ public:
     // if array is constant, skip it, otherwise element was cached and should be destroyed
     if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
-      arr.force_destroy(memory_ref_cnt_);
+      arr.force_destroy(get_memory_ref_cnt());
     }
     return true;
   }
@@ -210,21 +214,18 @@ public:
   template<typename I>
   bool process(class_instance<I> &instance) noexcept{
     Basic::process(instance);
-    instance.force_destroy(memory_ref_cnt_);
+    instance.force_destroy(get_memory_ref_cnt());
     return true;
   }
 
   bool process(string &str) noexcept;
-
-private:
-  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
 };
 
 class InstanceCopyistBase : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   virtual const char *get_class() const noexcept = 0;
-  virtual std::unique_ptr<InstanceCopyistBase> clone_and_detach_shared_ref(InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
-  virtual std::unique_ptr<InstanceCopyistBase> clone_on_script_memory() const noexcept = 0;
+  virtual std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
+  virtual std::unique_ptr<InstanceCopyistBase> shallow_copy() const noexcept = 0;
   virtual ~InstanceCopyistBase() noexcept = default;
 };
 
@@ -234,30 +235,36 @@ class InstanceCopyistImpl;
 template<typename I>
 class InstanceCopyistImpl<class_instance<I>> final : public InstanceCopyistBase {
 public:
-  explicit InstanceCopyistImpl(const class_instance<I> &instance, bool deep_destroy_required = false) noexcept:
-    instance_(instance),
-    deep_destroy_required_(deep_destroy_required) {
+  explicit InstanceCopyistImpl(const class_instance<I> &instance) noexcept:
+    instance_(instance) {
+  }
+
+  InstanceCopyistImpl(class_instance<I> &&instance, ExtraRefCnt memory_ref_cnt) noexcept:
+    instance_(std::move(instance)),
+    memory_ref_cnt_(memory_ref_cnt) {
   }
 
   const char *get_class() const noexcept final {
     return instance_.get_class();
   }
 
-  std::unique_ptr<InstanceCopyistBase> clone_and_detach_shared_ref(InstanceDeepCopyVisitor &detach_processor) const noexcept final {
+  std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor &detach_processor) const noexcept final {
     auto detached_instance = instance_;
     detach_processor.process(detached_instance);
+
+    const auto memory_ref_cnt = detach_processor.get_memory_ref_cnt();
 
     // sizeof(size_t) - an extra memory that we need inside the make_unique_on_script_memory
     constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceCopyistImpl<class_instance<I>>);
     if (unlikely(detach_processor.is_depth_limit_exceeded() ||
                  !detach_processor.is_enough_memory_for(size_for_wrapper))) {
-      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(detached_instance);
+      InstanceDeepDestroyVisitor{memory_ref_cnt}.process(detached_instance);
       return {};
     }
-    return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(detached_instance, true);
+    return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(std::move(detached_instance), memory_ref_cnt);
   }
 
-  std::unique_ptr<InstanceCopyistBase> clone_on_script_memory() const noexcept final {
+  std::unique_ptr<InstanceCopyistBase> shallow_copy() const noexcept final {
     return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(instance_);
   }
 
@@ -266,12 +273,12 @@ public:
   }
 
   ~InstanceCopyistImpl() noexcept final {
-    if (deep_destroy_required_ && !instance_.is_null()) {
-      InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(instance_);
+    if (memory_ref_cnt_ && !instance_.is_null()) {
+      InstanceDeepDestroyVisitor{static_cast<ExtraRefCnt::extra_ref_cnt_value>(memory_ref_cnt_)}.process(instance_);
     }
   }
 
 private:
   class_instance<I> instance_;
-  const bool deep_destroy_required_{false};
+  const int memory_ref_cnt_{0};
 };
