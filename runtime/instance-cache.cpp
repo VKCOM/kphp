@@ -19,7 +19,7 @@
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/refcountable_php_classes.h"
 
-namespace ic_impl_ {
+namespace impl_ {
 
 //#define DEBUG_INSTANCE_CACHE
 
@@ -682,45 +682,6 @@ private:
   size_t purge_shard_offset_{0};
 };
 
-DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept:
-  Basic(*this),
-  memory_pool_(memory_pool) {
-}
-
-DeepDestroyFromCacheVisitor::DeepDestroyFromCacheVisitor() :
-  Basic(*this) {
-}
-
-bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
-  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    return true;
-  }
-
-  if (unlikely(!is_enough_memory_for(str.estimate_memory_usage()))) {
-    str = string();
-    memory_limit_exceeded_ = true;
-    return false;
-  }
-
-  str.make_not_shared();
-  // make_not_shared may make str constant again (e.g. const empty or single char str), therefore check again
-  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    php_assert(str.size() < 2);
-  } else {
-    php_assert(str.get_reference_counter() == 1);
-    str.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
-  }
-  return true;
-}
-
-bool DeepDestroyFromCacheVisitor::process(string &str) {
-  // if string is constant, skip it, otherwise element was cached and should be destroyed
-  if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    str.force_destroy(ExtraRefCnt::for_instance_cache);
-  }
-  return true;
-}
-
 bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
@@ -729,53 +690,53 @@ const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool 
   return InstanceCache::get().fetch(key, even_if_expired);
 }
 
-} // namespace ic_impl_
+} // namespace impl_
 
 void global_init_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().global_init();
+  impl_::InstanceCache::get().global_init();
 }
 
 void init_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().refresh();
+  impl_::InstanceCache::get().refresh();
 }
 
 void free_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().free();
+  impl_::InstanceCache::get().free();
 }
 
 // should be called only from master
 void set_instance_cache_memory_limit(size_t limit) {
-  ic_impl_::instance_cache_settings.total_memory_limit = limit;
+  impl_::instance_cache_settings.total_memory_limit = limit;
 }
 
 // should be called only from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory() {
-  return ic_impl_::InstanceCache::get().try_swap_memory_resource();
+  return impl_::InstanceCache::get().try_swap_memory_resource();
 }
 
 // should be called only from master
 const InstanceCacheStats &instance_cache_get_stats() {
-  return ic_impl_::InstanceCache::get().get_stats();
+  return impl_::InstanceCache::get().get_stats();
 }
 
 // should be called only from master
 const memory_resource::MemoryStats &instance_cache_get_memory_stats() {
-  return ic_impl_::InstanceCache::get().get_last_memory_stats();
+  return impl_::InstanceCache::get().get_last_memory_stats();
 }
 
 // should be called only from master
 void instance_cache_purge_expired_elements() {
-  ic_impl_::InstanceCache::get().purge_expired();
+  impl_::InstanceCache::get().purge_expired();
 }
 
 void instance_cache_release_all_resources_acquired_by_this_proc() {
-  ic_impl_::InstanceCache::get().force_release_all_resources();
+  impl_::InstanceCache::get().force_release_all_resources();
 }
 
 bool f$instance_cache_update_ttl(const string &key, int64_t ttl) {
-  return ic_impl_::InstanceCache::get().update_ttl(key, ttl);
+  return impl_::InstanceCache::get().update_ttl(key, ttl);
 }
 
 bool f$instance_cache_delete(const string &key) {
-  return ic_impl_::InstanceCache::get().del(key);
+  return impl_::InstanceCache::get().del(key);
 }

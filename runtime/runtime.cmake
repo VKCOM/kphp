@@ -21,6 +21,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         exception.cpp
         files.cpp
         instance-cache.cpp
+        instance-copy-processor.cpp
         inter-process-mutex.cpp
         interface.cpp
         json-functions.cpp
