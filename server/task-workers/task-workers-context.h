@@ -24,7 +24,7 @@ public:
   friend class vk::singleton<TaskWorkersContext>;
   using Pipe = std::array<int, 2>;
 
-  static constexpr int MAX_HANGING_TIME_SEC = 10; // TODO: tune it
+  static constexpr int MAX_HANGING_TIME_SEC = 20; // TODO: tune it
 
   size_t running_task_workers{0};
   size_t dying_task_workers{0};

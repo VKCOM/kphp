@@ -7,6 +7,6 @@
 #include <sys/param.h>
 
 struct PipeBuffer {
-  int read_buf[PIPE_BUF / sizeof(int)];
-  int write_buf[PIPE_BUF / sizeof(int)];
+  int read_buf[PIPE_BUF / sizeof(int)]{};
+  int write_buf[PIPE_BUF / sizeof(int)]{};
 };

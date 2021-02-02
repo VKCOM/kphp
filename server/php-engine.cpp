@@ -2207,11 +2207,16 @@ static void generic_event_loop(RunMode mode) {
 
   dl_allow_all_signals();
 
+  auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
+
   vkprintf (1, "Server started\n");
   for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
     if (verbosity > 0 && !(i & 255)) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
+    }
+    if (mode == RunMode::task_worker) {
+      task_worker_server.try_complete_delayed_tasks();
     }
     epoll_work(57);
 
@@ -2223,6 +2228,9 @@ static void generic_event_loop(RunMode mode) {
     while (spoll_send_stats > 0) {
       write_full_stats_to_pipe();
       spoll_send_stats--;
+      if (mode == RunMode::task_worker) {
+        task_worker_server.last_stats.start();
+      }
     }
 
     if (pending_signals & (1ll << SIGHUP)) {

@@ -2,12 +2,12 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "server/task-workers/task-worker-server.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-restart.h"
-#include "server/task-workers/task-worker-server.h"
-#include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/shared-context.h"
+#include "server/task-workers/task-workers-context.h"
 
 int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), event_t *ev) {
   vkprintf(3, "TaskWorkerClient::read_tasks: fd=%d\n", fd);
@@ -23,12 +23,24 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   }
   assert(ev->ready & EVT_READ);
 
+  int status_code = task_worker_server.read_execute_loop();
+
+  return status_code;
+}
+
+int TaskWorkerServer::read_execute_loop() {
   while (true) {
-    ssize_t read_bytes = read(fd, task_worker_server.buffer.read_buf, TASK_BYTE_SIZE);
+    if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{TaskWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
+      tvkprintf(task_workers, 1, "Too many tasks. Task worker will complete them later. Goes back to event loop now\n");
+      has_delayed_tasks = true;
+      return 0;
+    }
+    ssize_t read_bytes = read(read_task_fd, buffer.read_buf, TASK_BYTE_SIZE);
     if (read_bytes == -1) {
       if (errno == EWOULDBLOCK) {
         // another task worker has already taken the task (all task workers are readers for this fd)
         // or there are no more tasks in pipe
+        has_delayed_tasks = false;
         return 0;
       }
       kprintf("pid = %d, Couldn't read task: %s\n", getpid(), strerror(errno));
@@ -38,18 +50,17 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
       kprintf("Couldn't read task. Got %zd bytes, but task bytes size = %zd. Probably some tasks are written not atomically\n", read_bytes, TASK_BYTE_SIZE);
       return -1;
     }
-    int task_id = task_worker_server.buffer.read_buf[0];
-    int task_result_fd_idx = task_worker_server.buffer.read_buf[1];
-    int x = task_worker_server.buffer.read_buf[2];
-    int zero = task_worker_server.buffer.read_buf[3];
+    int task_id = buffer.read_buf[0];
+    int task_result_fd_idx = buffer.read_buf[1];
+    int x = buffer.read_buf[2];
+    int zero = buffer.read_buf[3];
     assert(zero == 0);
 
     SharedContext::get().task_queue_size--;
 
-    bool success = task_worker_server.execute_task(task_id, task_result_fd_idx, x);
+    bool success = execute_task(task_id, task_result_fd_idx, x);
     assert(success);
   }
-  return 0;
 }
 
 bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) {
@@ -80,7 +91,6 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) 
   return true;
 }
 
-
 void TaskWorkerServer::init_task_worker_server() {
   const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
 
@@ -95,4 +105,11 @@ void TaskWorkerServer::init_task_worker_server() {
   epoll_sethandler(read_task_fd, 0, read_tasks, nullptr);
   epoll_insert(read_task_fd, EVT_READ | EVT_SPEC);
   tvkprintf(task_workers, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
+}
+
+void TaskWorkerServer::try_complete_delayed_tasks() {
+  if (has_delayed_tasks) {
+    tvkprintf(task_workers, 1, "There are delayed tasks. Let's complete them\n");
+    read_execute_loop();
+  }
 }
