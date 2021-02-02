@@ -47,7 +47,7 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/confdata-global-manager.h"
-#include "runtime/instance_cache.h"
+#include "runtime/instance-cache.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"

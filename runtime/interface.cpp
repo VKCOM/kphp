@@ -26,7 +26,7 @@
 #include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
-#include "runtime/instance_cache.h"
+#include "runtime/instance-cache.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"

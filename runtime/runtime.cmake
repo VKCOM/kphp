@@ -20,7 +20,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         datetime.cpp
         exception.cpp
         files.cpp
-        instance_cache.cpp
+        instance-cache.cpp
         inter-process-mutex.cpp
         interface.cpp
         json-functions.cpp
