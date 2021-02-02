@@ -9,6 +9,8 @@
 
 DEFINE_VERBOSITY(task_workers);
 
+namespace task_workers {
+
 void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
   if (pipes_inited_) {
     return;
@@ -34,3 +36,5 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
 
   pipes_inited_ = true;
 }
+
+} // namespace task_workers

@@ -9,6 +9,8 @@
 #include "server/task-workers/shared-context.h"
 #include "server/task-workers/task-workers-context.h"
 
+namespace task_workers {
+
 int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), event_t *ev) {
   vkprintf(3, "TaskWorkerClient::read_tasks: fd=%d\n", fd);
   tvkprintf(task_workers, 3, "wakeup task worker\n");
@@ -113,3 +115,5 @@ void TaskWorkerServer::try_complete_delayed_tasks() {
     read_execute_loop();
   }
 }
+
+} // namespace task_workers

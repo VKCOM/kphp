@@ -4,7 +4,11 @@
 
 #pragma once
 
+namespace task_workers {
+
 void init_task_workers_lib();
 void free_task_workers_lib();
 
 void global_init_task_workers_lib();
+
+} // namespace task_workers

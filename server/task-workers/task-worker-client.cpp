@@ -14,6 +14,8 @@
 #include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/shared-context.h"
 
+namespace task_workers {
+
 int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused)), event_t *ev) {
   vkprintf(3, "TaskWorkerClient::read_task_results: fd=%d\n", fd);
 
@@ -43,7 +45,8 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   for (size_t i = 0, data_pos = 0; i < tasks_results_number; ++i) {
     int ready_task_id = task_worker_client.buffer.read_buf[data_pos++];
     int task_result = task_worker_client.buffer.read_buf[data_pos++];
-    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id, task_result);
+    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id,
+              task_result);
     put_task_worker_answer_event(ready_task_id, task_result);
   }
   return 0;
@@ -102,3 +105,5 @@ bool TaskWorkerClient::send_task_x2(int task_id, int x) {
   SharedContext::get().task_queue_size++;
   return true;
 }
+
+} // namespace task_workers

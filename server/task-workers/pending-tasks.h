@@ -10,6 +10,8 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/kphp_core.h"
 
+namespace task_workers {
+
 class PendingTasks : vk::not_copyable {
 public:
   friend class vk::singleton<PendingTasks>;
@@ -22,8 +24,11 @@ public:
   int withdraw_task(int task_id);
 
   void reset();
+
 private:
   array<int> tasks_;
 
   PendingTasks() = default;
 };
+
+} // namespace task_workers

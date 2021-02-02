@@ -8,6 +8,8 @@
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/task-worker-client.h"
 
+using namespace task_workers;
+
 void process_task_worker_answer_event(int ready_task_id, int task_result) {
   vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result);
 }

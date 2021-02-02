@@ -4,6 +4,8 @@
 
 #include "server/task-workers/pending-tasks.h"
 
+namespace task_workers {
+
 void PendingTasks::put_task(int task_id) {
   tasks_.set_value(task_id, -1);
 }
@@ -33,3 +35,5 @@ int PendingTasks::withdraw_task(int task_id) {
 void PendingTasks::reset() {
   tasks_ = {};
 }
+
+} // namespace task_workers

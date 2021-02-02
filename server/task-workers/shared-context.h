@@ -9,6 +9,8 @@
 
 #include "common/mixin/not_copyable.h"
 
+namespace task_workers {
+
 class SharedContext : vk::not_copyable {
 public:
   std::atomic<int> task_queue_size{0};
@@ -17,6 +19,9 @@ public:
 
   // must be called from master process on global init
   static SharedContext &get();
+
 private:
   SharedContext() = default;
 };
+
+} // namespace task_workers

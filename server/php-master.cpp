@@ -62,6 +62,8 @@
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/shared-context.h"
 
+using task_workers::TaskWorkersContext;
+
 extern const char *engine_tag;
 
 //do not kill more then MAX_KILL at the same time
@@ -1955,7 +1957,7 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(task_workers, 3, "Task queue size = %d\n", SharedContext::get().task_queue_size.load(std::memory_order_relaxed));
+    tvkprintf(task_workers, 3, "Task queue size = %d\n", task_workers::SharedContext::get().task_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 

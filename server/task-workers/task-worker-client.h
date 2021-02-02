@@ -10,6 +10,8 @@
 
 typedef struct event_descr event_t;
 
+namespace task_workers {
+
 /**
  * HTTP worker process is usual task worker client
  */
@@ -28,6 +30,9 @@ public:
   bool send_task_x2(int task_id, int x);
 
   static int read_task_results(int fd, void *data __attribute__((unused)), event_t *ev);
+
 private:
   TaskWorkerClient() = default;
 };
+
+} // namespace task_workers

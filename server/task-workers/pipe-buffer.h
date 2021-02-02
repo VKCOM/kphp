@@ -6,7 +6,11 @@
 
 #include <sys/param.h>
 
+namespace task_workers {
+
 struct PipeBuffer {
   int read_buf[PIPE_BUF / sizeof(int)]{};
   int write_buf[PIPE_BUF / sizeof(int)]{};
 };
+
+} // namespace task_workers

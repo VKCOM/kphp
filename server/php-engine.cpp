@@ -68,6 +68,11 @@
 #include "server/php-master-warmup.h"
 #include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/task-worker-client.h"
+#include "server/task-workers/task-worker-server.h"
+
+using task_workers::TaskWorkersContext;
+using task_workers::TaskWorkerClient;
+using task_workers::TaskWorkerServer;
 
 static void turn_sigterm_on();
 

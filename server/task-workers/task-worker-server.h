@@ -12,6 +12,8 @@
 #include "net/net-reactor.h"
 #include "server/task-workers/pipe-buffer.h"
 
+namespace task_workers {
+
 /**
  * Task worker process runs task worker server
  */
@@ -37,3 +39,5 @@ private:
 
   TaskWorkerServer() = default;
 };
+
+} // namespace task_workers

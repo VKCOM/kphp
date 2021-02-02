@@ -16,6 +16,8 @@
 
 DECLARE_VERBOSITY(task_workers);
 
+namespace task_workers {
+
 /**
  * Master process manages this context
  */
@@ -34,6 +36,9 @@ public:
   std::vector<Pipe> result_pipes;
 
   void master_init_pipes(int task_result_slots_num);
+
 private:
   bool pipes_inited_{false};
 };
+
+} // namespace task_workers
