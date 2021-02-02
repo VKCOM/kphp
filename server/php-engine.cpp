@@ -2661,7 +2661,7 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2016: {
-      vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS);
+      vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
       return 0;
     }
     default:

@@ -22,6 +22,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stack>
 #include <vector>
 
 #include "common/algorithms/clamp.h"
@@ -389,15 +390,18 @@ struct worker_info_t {
   pid_info_t my_info;
   int valid_my_info;
 
-  int slot_index;
+  int slot_id;
 
   Stats *stats;
   WorkerType type;
 };
 
+
+using worker_slots_t = std::stack<int, std::vector<int>>;
+static worker_slots_t http_worker_slot_ids;
+static worker_slots_t task_worker_slot_ids;
+
 static worker_info_t *workers[MAX_WORKERS];
-static int worker_ids[MAX_WORKERS];
-static int worker_ids_n;
 static Stats server_stats;
 static unsigned long long dead_stime, dead_utime;
 static PhpWorkerStats dead_worker_stats;
@@ -440,20 +444,15 @@ worker_info_t *new_worker() {
   return w;
 }
 
-int get_vacant_worker_slot_index() {
-  assert (worker_ids_n > 0);
-  return worker_ids[--worker_ids_n];
-}
-
-void put_back_worker_slot_index(int id) {
-  assert (worker_ids_n < MAX_WORKERS);
-  worker_ids[worker_ids_n++] = id;
-}
-
 void delete_worker(worker_info_t *w) {
   w->generation = ++conn_generation;
-  if (w->type == WorkerType::http_worker) {
-    put_back_worker_slot_index(w->slot_index);
+  switch (w->type) {
+    case WorkerType::http_worker:
+      http_worker_slot_ids.push(w->slot_id);
+      break;
+    case WorkerType::task_worker:
+      task_worker_slot_ids.push(w->slot_id);
+      break;
   }
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
@@ -472,8 +471,12 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
   if (verbosity < 1) {
     //verbosity = 1;
   }
-  for (int i = MAX_WORKERS - 1; i >= 0; i--) {
-    put_back_worker_slot_index(i);
+  for (int slot_id = MAX_WORKERS - 1; slot_id >= 0; slot_id--) {
+    if (slot_id < MAX_WORKERS / 2 || slot_id < workers_n) {
+      http_worker_slot_ids.push(slot_id);
+    } else {
+      task_worker_slot_ids.push(slot_id);
+    }
   }
 
   std::string s = cluster_name;
@@ -773,9 +776,16 @@ int run_worker(WorkerType worker_type) {
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
-  int worker_slot_index = -1;
-  if (worker_type == WorkerType::http_worker) {
-    worker_slot_index = get_vacant_worker_slot_index();
+  int worker_slot_id = -1;
+  switch (worker_type) {
+    case WorkerType::http_worker:
+      worker_slot_id = http_worker_slot_ids.top();
+      http_worker_slot_ids.pop();
+      break;
+    case WorkerType::task_worker:
+      worker_slot_id = task_worker_slot_ids.top();
+      task_worker_slot_ids.pop();
+      break;
   }
   if (new_pid == 0) {
     switch (worker_type) {
@@ -839,17 +849,15 @@ int run_worker(WorkerType worker_type) {
     //
 
     signal_fd = -1;
-    logname_id = worker_slot_index;
+    logname_id = worker_slot_id;
     if (logname_pattern) {
       char buf[100];
-      snprintf(buf, 100, logname_pattern, worker_slot_index);
+      snprintf(buf, 100, logname_pattern, worker_slot_id);
       logname = strdup(buf);
     }
 
-    if (worker_type == WorkerType::http_worker) {
-      instance_cache_release_all_resources_acquired_by_this_proc();
-      ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
-    }
+    instance_cache_release_all_resources_acquired_by_this_proc();
+    ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
     return 1;
   }
 
@@ -863,7 +871,7 @@ int run_worker(WorkerType worker_type) {
   worker->is_dying = 0;
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
-  worker->slot_index = worker_slot_index;
+  worker->slot_id = worker_slot_id;
   worker->last_activity_time = my_now;
   worker->type = worker_type;
 
@@ -1995,10 +2003,12 @@ void run_master() {
     me->generation = generation;
 
     const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
-    for (int i = 0; i < task_workers_ctx.task_workers_num - (task_workers_ctx.running_task_workers + task_workers_ctx.dying_task_workers); ++i) {
-      if (run_worker(WorkerType::task_worker)) {
-        tvkprintf(task_workers, 1, "launched new task worker with pid = %d\n", pid);
-        return;
+    if (task_workers_ctx.task_workers_num > 0) {
+      for (int i = 0; i < task_workers_ctx.task_workers_num - (task_workers_ctx.running_task_workers + task_workers_ctx.dying_task_workers); ++i) {
+        if (run_worker(WorkerType::task_worker)) {
+          tvkprintf(task_workers, 1, "launched new task worker with pid = %d\n", pid);
+          return;
+        }
       }
     }
 
