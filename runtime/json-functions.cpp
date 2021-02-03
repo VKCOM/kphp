@@ -240,15 +240,15 @@ bool JsonEncoder::encode(int64_t i) const noexcept {
 }
 
 bool JsonEncoder::encode(double d) const noexcept {
-  if (is_ok_float(d)) {
-    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string()) : string(d));
-  } else {
+  if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("strange double %lf in function json_encode", d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
       static_SB.append("0", 1);
     } else {
       return false;
     }
+  } else {
+    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
   }
   return true;
 }
