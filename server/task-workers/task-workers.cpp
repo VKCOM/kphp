@@ -5,6 +5,7 @@
 #include "server/task-workers/task-workers.h"
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/shared-context.h"
+#include "server/task-workers/shared-memory-manager.h"
 
 namespace task_workers {
 
@@ -18,6 +19,7 @@ void free_task_workers_lib() {
 
 void global_init_task_workers_lib() {
   SharedContext::get();
+  vk::singleton<SharedMemoryManager>::get().init();
 }
 
 } // namespace task_workers
