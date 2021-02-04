@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <forward_list>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
 struct CFGData {
-  std::vector<VertexAdaptor<op_var>> uninited_vars;
-  std::vector<std::vector<std::vector<VertexAdaptor<op_var>>>> todo_parts;
+  std::forward_list<VertexAdaptor<op_var>> uninited_vars;
+  std::forward_list<std::vector<std::vector<VertexAdaptor<op_var>>>> split_parts_list;
 };
 
 struct FunctionAndCFG {

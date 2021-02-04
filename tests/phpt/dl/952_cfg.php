@@ -36,7 +36,7 @@ function test3() {
     $tmp = $a;
     $a = "hello";
     $a = $tmp;
-  } 
+  }
 
   $a = 0;
   while ($a < 10) {
@@ -54,7 +54,7 @@ function test3() {
   } while ($a < 10);
 
   $a = 0;
-  
+
   switch ($a) {
     case 0:
       $a = 1;
@@ -68,7 +68,7 @@ function test3() {
       break;
     case 3:
       var_dump ($a);
-  } 
+  }
   $a = 0;
 }
 
@@ -94,7 +94,7 @@ function geoComputeGeoNum($longitude_degrees, $latitude_degrees) {
   $latitude_degrees = floatval($latitude_degrees);
   if ($latitude_degrees > 90 || $latitude_degrees < -90 || $longitude_degrees < -180 || $longitude_degrees > 360) {
     return false;
-  } 
+  }
   $theta = $longitude_degrees * M_PI / 180;
   $phi = $latitude_degrees * M_PI / 180;
   $h = 1;
@@ -160,7 +160,7 @@ function test7() {
       convertToJSON($response);
       //$response;
   }
-  
+
 }
 
 
@@ -180,12 +180,45 @@ function test8() {
 function test9() {
   do {
     do {
-      break 2; 
+      break 2;
       echo "WA";
     } while (0);
     echo "WA";
   } while (0);
 }
+
+function test10() {
+  $ol = '';
+  foreach ([1] as $_) {
+    $ol = 'n';
+    break;
+  }
+  echo $ol, "\n";
+}
+
+function test11() {
+    if (1)
+        $a11 = 1;
+    else
+        return;
+    echo $a11, "\n";
+}
+
+function test12() {
+    $a = 1;
+    if (1) return;
+    else exit;
+    echo $bbb; // not reachable => no error about uninited
+}
+
+function test13() {
+    do {
+        $ch = 0;
+        if (!$ch) break;
+        echo $ch;
+    } while($ch);
+}
+
 
 test1();
 test2();
@@ -196,3 +229,7 @@ test6();
 test7();
 test8();
 test9();
+test10();
+test11();
+test12();
+test13();

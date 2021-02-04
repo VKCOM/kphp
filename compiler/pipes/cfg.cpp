@@ -29,6 +29,8 @@ public:
   void clear() { id_ = -1; }
 
   friend int get_index(const Node &i) { return i.id_; }
+  friend bool operator==(const Node &n1, const Node &n2) { return n1.id_ == n2.id_; }
+  friend bool operator!=(const Node &n1, const Node &n2) { return n1.id_ != n2.id_; }
 };
 
 enum UsageType : uint8_t {
@@ -89,7 +91,7 @@ struct VarSplitData {
 class CFG {
   CFGData data;
   int n_nodes = 0;
-  Node current_start;
+  Node func_root_node;
 
   // these id maps are node properties WHILE building cfg: every node has them
   // on every new node appearing, their sizes are updated
@@ -104,7 +106,7 @@ class CFG {
   // their sizes are set once after all cfg has been build
   int cur_dfs_step{0};
   IdMap<int> node_dfs;
-  IdMap<is_func_id_t> node_checked_type;
+  IdMap<int> node_dfs_smartcast_mask;
   IdMap<UsagePtr> node_dfs_usages;
   void reserve_size_for_dfs_idmaps();
 
@@ -136,13 +138,14 @@ class CFG {
 
   void calc_used(Node v);
 
-  void dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask);
+  void dfs_apply_smartcasts(Node v, VarPtr var, int current_mask);
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
   void dfs_apply_type_hint(Node v, UsagePtr type_hint_usage);
+  bool dfs_is_uninited_usage(Node v, UsagePtr read_usage);
   void process_var(FunctionPtr function, VarPtr v);
-  void add_uninited_var(VertexAdaptor<op_var> v);
+  void on_uninited_var(VertexAdaptor<op_var> v);
   void split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
 public:
   void process_function(FunctionPtr func);
@@ -171,7 +174,7 @@ void CFG::reserve_capacity_for_cfg_idmaps() {
 
 void CFG::reserve_size_for_dfs_idmaps() {
   node_dfs.update_size(n_nodes);
-  node_checked_type.update_size(n_nodes);
+  node_dfs_smartcast_mask.update_size(n_nodes);
   node_dfs_usages.update_size(n_nodes);
 }
 
@@ -1061,49 +1064,70 @@ void CFG::dfs_apply_type_hint(Node v, UsagePtr type_hint_usage) {
   }
 }
 
-// dfs for checked types is used for two things:
-// 1) check if var is uninited (contains ifi_unset in mask)
-// 2) calc smart casts for var
-// it starts from function root with mask (any|unset) and traverses all the cfg tree down,
-// narrowing the mask on writes (drop unset) and smart casts
+// test whether a read usage operates potentially uninited var
+// for example, function f() { if(1) $a = 1; echo $a; f1($a); } — usages 2 and 3 are potentially uninited
+// (but! we'll trigger an error only for the first uninited usage (2 in this case), not for all)
+// here, having a read usage, we traverse up all available paths stopping and write usages
+// if we reach function root — it's an uninited usage
+bool CFG::dfs_is_uninited_usage(Node v, UsagePtr read_usage) {
+  node_dfs[v] = cur_dfs_step;
+
+  for (UsagePtr another_usage : node_usages[v]) {
+    if (another_usage->v->var_id == read_usage->v->var_id && another_usage->type == usage_write_t) {
+      return false;
+    }
+  }
+
+  for (Node i : node_prev[v]) {
+    int prev_dfs_step = node_dfs[i];
+    if (prev_dfs_step != 0 && prev_dfs_step != cur_dfs_step && dfs_is_uninited_usage(i, read_usage)) {
+      return true;
+    }
+    // prev_dfs_step != 0 means that node is used (see calc_used() which is invoked before vars processing)
+    // if prev_dfs_step == cur_dfs_step, then this usage might be also uninited,
+    // but don't recurse once again, because if yes, we have already triggered an uninited error for that (prev) usage
+  }
+  return v == func_root_node;
+}
+
+// dfs for smart casts calculates narrowed types of var for some usages
+// for example, function f($v) { if(is_int($v)) fInt($v); }
+// note, that unlike other dfs functions, it accepts VarPtr, not UsagePtr,
+// and calculates node_dfs_smartcast_mask for var throughout all reachable cfg nodes
+// it starts from a function root with mask ifi_any_type and traverses all the cfg tree down narrowing current_mask
 // so, a node can be traversed multiple times if it is reachable with different masks
-void CFG::dfs_checked_types(Node v, VarPtr var, is_func_id_t current_mask) {
-  if ((node_checked_type[v] | current_mask) == node_checked_type[v]) {
+void CFG::dfs_apply_smartcasts(Node v, VarPtr var, int current_mask) {
+  if ((node_dfs_smartcast_mask[v] | current_mask) == node_dfs_smartcast_mask[v]) {
     return;
   }
-  node_checked_type[v] = static_cast<is_func_id_t>(node_checked_type[v] | current_mask);
+  node_dfs_smartcast_mask[v] = node_dfs_smartcast_mask[v] | current_mask;
 
   for (UsagePtr another_usage : node_usages[v]) {
     if (another_usage->v->var_id == var) {
       if (another_usage->type == usage_write_t || another_usage->type == usage_weak_write_t) {
         current_mask = ifi_any_type;
-      } else if (another_usage->type == usage_type_check_t) {
-        current_mask = static_cast<is_func_id_t>(current_mask & (another_usage->checked_type | ifi_unset));
+      } else if (another_usage->type == usage_type_check_t) {   // is_int($v), $v !== false, etc
+        current_mask &= another_usage->checked_type;
       }
     }
   }
 
   for (Node i : node_next[v]) {
-    dfs_checked_types(i, var, current_mask);
+    dfs_apply_smartcasts(i, var, current_mask);
   }
 }
 
-void CFG::add_uninited_var(VertexAdaptor<op_var> v) {
-  if (v && v->extra_type != op_ex_var_superlocal && v->extra_type != op_ex_var_this) {
-    data.uninited_vars.push_back(v);
-    v->var_id->set_uninited_flag(true);
-  }
+void CFG::on_uninited_var(VertexAdaptor<op_var> v) {
+  // when we met an uninited usage — don't emit a warning here: instead, save it and analyze after tinf
+  data.uninited_vars.emplace_front(v);
+  v->var_id->set_uninited_flag(true);
 }
 
 void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexAdaptor<op_var>>> &parts) {
   kphp_assert(var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
   if (parts.empty()) {
     if (var->type() == VarData::var_local_t) {
-      function->local_var_ids.erase(
-        std::find(
-          function->local_var_ids.begin(),
-          function->local_var_ids.end(),
-          var));
+      function->local_var_ids.erase(std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var));
     }
     return;
   }
@@ -1127,17 +1151,12 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
 
     VertexRange params = function->get_params();
     if (var->type() == VarData::var_local_t) {
-      new_var->type() = VarData::var_local_t;
       function->local_var_ids.push_back(new_var);
-    } else if (var->type() == VarData::var_param_t) {
-      bool was_var = std::find(
-        parts[i].begin(),
-        parts[i].end(),
-        params[var->param_i].as<op_func_param>()->var()
-      ) != parts[i].end();
 
-      if (was_var) { //union of part that contains function argument
-        new_var->type() = VarData::var_param_t;
+    } else {    // var_param_t
+      bool is_param = std::find(parts[i].begin(), parts[i].end(), params[var->param_i].as<op_func_param>()->var()) != parts[i].end();
+
+      if (is_param) { //union of part that contains function argument
         new_var->param_i = var->param_i;
         new_var->init_val = var->init_val;
         new_var->is_read_only = var->is_read_only;
@@ -1147,35 +1166,45 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
         new_var->type() = VarData::var_local_t;
         function->local_var_ids.push_back(new_var);
       }
-    } else {
-      kphp_fail();
     }
-
   }
 
   if (var->type() == VarData::var_local_t) {
-    auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
-    if (function->local_var_ids.end() != tmp) {
-      function->local_var_ids.erase(tmp);
-    } else {
-      kphp_fail();
-    }
+    function->local_var_ids.erase(std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var));
   }
 
-  data.todo_parts.emplace_back(std::move(parts));
+  data.split_parts_list.emplace_front(std::move(parts));
 }
 
 void CFG::process_var(FunctionPtr function, VarPtr var) {
   VarSplitData &var_split = var_split_data[var];
 
-  std::fill(node_checked_type.begin(), node_checked_type.end(), static_cast<is_func_id_t>(0));
-  dfs_checked_types(current_start, var, static_cast<is_func_id_t>(ifi_any_type | ((var->type() == VarData::var_param_t) ? 0 : ifi_unset)));
+  bool potentially_has_smartcasts = false;
   for (UsagePtr u : var_split.usages) {
-    if ((u->type == usage_read_t || u->type == usage_old_read_write_t) && (node_checked_type[u->node] & ifi_unset)) {
-      add_uninited_var(u->v);
+    if (u->type == usage_type_check_t) {
+      potentially_has_smartcasts = true;
+      break;
     }
-    if (u->type == usage_read_t && node_checked_type[u->node] != ifi_any_type) {
-      smartcasts_conversions[u->v] = static_cast<is_func_id_t>(smartcasts_conversions[u->v] | node_checked_type[u->node]);
+  }
+  if (potentially_has_smartcasts) {
+    std::fill(node_dfs_smartcast_mask.begin(), node_dfs_smartcast_mask.end(), 0);
+    dfs_apply_smartcasts(func_root_node, var, ifi_any_type);
+    for (UsagePtr u : var_split.usages) {
+      if (u->type == usage_read_t && node_dfs_smartcast_mask[u->node] != ifi_any_type && node_dfs[u->node]) {
+        smartcasts_conversions[u->v] = static_cast<is_func_id_t>(node_dfs_smartcast_mask[u->node]);
+      }
+    }
+  }
+
+  if (var->type() != VarData::var_param_t) {
+    cur_dfs_step++;
+    for (UsagePtr u : var_split.usages) {
+      if (u->type == usage_read_t || u->type == usage_weak_write_t) {
+        if (node_dfs[u->node] && dfs_is_uninited_usage(u->node, u)) {
+          on_uninited_var(u->v);
+          break;  // fire only the first uninited usage for a variable, not all usages
+        }
+      }
     }
   }
 
@@ -1192,8 +1221,6 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
     }
   }
 
-  //fprintf (stdout, "PROCESS:[%s][%d]\n", var->name.c_str(), var->id);
-
   size_t parts_cnt = 0;
   for (UsagePtr i : var_split.usages) {
     if (node_dfs[i->node]) {    // is used (has ever occurred in dfs searching)
@@ -1204,7 +1231,6 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
     }
   }
 
-  //printf ("parts_cnt = %d\n", parts_cnt);
   if (parts_cnt == 1) {
     return;
   }
@@ -1349,7 +1375,7 @@ void CFG::process_function(FunctionPtr function) {
   Node start, finish;
   create_cfg(function->root, &start, &finish);
   reserve_size_for_dfs_idmaps();
-  current_start = start;
+  func_root_node = start;
 
   cur_dfs_step++;
   calc_used(start);

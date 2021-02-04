@@ -5,38 +5,39 @@
 #pragma once
 
 #include "compiler/stage.h"
+#include "common/wrappers/likely.h"
 
 template<class DataType>
-struct IdMap {
-  vector <DataType> data;
+class IdMap {
+  std::vector<DataType> data;
 
-  using iterator = typename vector<DataType>::iterator;
+  void print_error_invalid_index(int index) const __attribute__((noinline));
+
+public:
+  using iterator = typename std::vector<DataType>::iterator;
+  
   IdMap() = default;
-  explicit IdMap(int size);
+  explicit IdMap(int size): data(size) {}
 
   template<class IndexType>
-  DataType &operator[](const IndexType &i);
+  inline DataType &operator[](const IndexType &i);
   template<class IndexType>
-  const DataType &operator[](const IndexType &i) const;
+  inline const DataType &operator[](const IndexType &i) const;
 
-  iterator begin();
-  iterator end();
-  void clear();
+  iterator begin() { return data.begin(); }
+  iterator end() { return data.end(); }
+  void clear() { data.clear(); }
 
   void update_size(int n);
 };
 
 template<class DataType>
-IdMap<DataType>::IdMap(int size) :
-  data(size) {
-}
-
-template<class DataType>
 template<class IndexType>
 DataType &IdMap<DataType>::operator[](const IndexType &i) {
   int index = get_index(i);
-  kphp_assert_msg(index >= 0, "maybe you've forgotten pass function to stream");
-  kphp_assert_msg(index < (int)data.size(), fmt_format("{} of {}\n", index, (int)data.size()));
+  if (unlikely(index < 0 || index >= data.size())) {
+    print_error_invalid_index(index);
+  }
   return data[index];
 }
 
@@ -44,24 +45,16 @@ template<class DataType>
 template<class IndexType>
 const DataType &IdMap<DataType>::operator[](const IndexType &i) const {
   int index = get_index(i);
-  kphp_assert(index >= 0);
-  kphp_assert_msg(index < (int)data.size(), fmt_format("{} of {}\n", index, (int)data.size()));
+  if (unlikely(index < 0 || index >= data.size())) {
+    print_error_invalid_index(index);
+  }
   return data[index];
 }
 
 template<class DataType>
-typename IdMap<DataType>::iterator IdMap<DataType>::begin() {
-  return data.begin();
-}
-
-template<class DataType>
-typename IdMap<DataType>::iterator IdMap<DataType>::end() {
-  return data.end();
-}
-
-template<class DataType>
-void IdMap<DataType>::clear() {
-  data.clear();
+void IdMap<DataType>::print_error_invalid_index(int index) const {
+  kphp_assert_msg(index >= 0, "invalid index of IdMap: -1 (maybe you've forgotten to pass a function to stream?)");
+  kphp_assert_msg(index < data.size(), fmt_format("invalid index of IdMap: {} (size={})\n", index, data.size()));
 }
 
 template<class DataType>

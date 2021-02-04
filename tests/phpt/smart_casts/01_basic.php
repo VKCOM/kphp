@@ -28,6 +28,23 @@ function f($x) {
   var_dump($x);
 }
 
+/** @param false $r */
+function acceptFalse($r) { return $r; }
+
+function smMixedUninited() {
+    if (1) {
+        $mixed = 1 ? ['asdf'] : true;
+        if (1) $mixed = false;
+    }
+    // $mixed can be potentially uninited, but smart casts work, because why not
+    if ($mixed === false) {
+        $r = acceptFalse($mixed);
+        var_dump($r);
+    }
+}
+
+
 f(1);
 f("1");
 f([1]);
+smMixedUninited();
