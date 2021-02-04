@@ -872,18 +872,6 @@
     }
   },
   {
-    "comment": "lsh() !== rhs()",
-    "name": "op_neq3",
-    "base_name": "meta_op_binary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "binary_func_op",
-      "str": "!equals",
-      "description": "!=="
-    }
-  },
-  {
     "comment": "lsh() <= rhs()",
     "name": "op_le",
     "base_name": "meta_op_binary",

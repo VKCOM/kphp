@@ -8,7 +8,7 @@
 #include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
-  if (root->type() == op_eq3 || root->type() == op_neq3) {
+  if (root->type() == op_eq3) {
     auto eq_op = root.as<meta_op_binary>();
     VertexPtr a = eq_op->lhs();
     VertexPtr b = eq_op->rhs();
@@ -37,10 +37,7 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
     }
 
     auto isset = VertexAdaptor<op_isset>::create(not_null).set_location(not_null->location);
-    if (eq_op->type() != op_neq3) {
-      return VertexAdaptor<op_log_not>::create(isset);
-    }
-    return isset;
+    return VertexAdaptor<op_log_not>::create(isset);
   }
 
   return eq_op;
