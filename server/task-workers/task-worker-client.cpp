@@ -2,17 +2,17 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <sys/param.h>
 #include <cassert>
 #include <cstdio>
+#include <sys/param.h>
 #include <unistd.h>
 
 #include "net/net-reactor.h"
 
 #include "server/php-queries.h"
+#include "server/task-workers/shared-context.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-workers-context.h"
-#include "server/task-workers/shared-context.h"
 
 namespace task_workers {
 
@@ -28,26 +28,20 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   }
   assert(ev->ready & EVT_READ);
 
-  ssize_t read_bytes = read(fd, task_worker_client.buffer.read_buf, PIPE_BUF);
-
-  if (read_bytes == -1) {
-    assert(errno != EWOULDBLOCK); // because fd must be ready for read, current HTTP worker is only one reader for this fd
-    kprintf("Couldn't read task results: %s", strerror(errno));
-    return -1;
-  }
-  if (read_bytes % TASK_RESULT_BYTE_SIZE != 0) {
-    kprintf("Got inconsistent number of bytes on read task results: %zd. Probably some task results are written not atomically", read_bytes);
+  task_worker_client.task_reader.reset();
+  ssize_t read_bytes = task_worker_client.task_reader.read_task_results_from_pipe(TASK_RESULT_BYTE_SIZE);
+  if (read_bytes < 0) {
     return -1;
   }
 
   size_t tasks_results_number = read_bytes / TASK_RESULT_BYTE_SIZE;
   tvkprintf(task_workers, 2, "got %zu task results, collecting ...\n", tasks_results_number);
-  for (size_t i = 0, data_pos = 0; i < tasks_results_number; ++i) {
-    int ready_task_id = task_worker_client.buffer.read_buf[data_pos++];
-    int task_result = task_worker_client.buffer.read_buf[data_pos++];
-    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result = %d\n", i + 1, tasks_results_number, ready_task_id,
-              task_result);
-    put_task_worker_answer_event(ready_task_id, task_result);
+  for (size_t i = 0; i < tasks_results_number; ++i) {
+    int ready_task_id = static_cast<int>(task_worker_client.task_reader.next());
+    intptr_t task_result_memory_ptr = task_worker_client.task_reader.next();
+    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result_memory_ptr = %ld\n", i + 1, tasks_results_number,
+              ready_task_id, task_result_memory_ptr);
+    put_task_worker_answer_event(ready_task_id, task_result_memory_ptr);
   }
   return 0;
 }
@@ -75,33 +69,23 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
   if (read_task_result_fd >= 0) {
     epoll_sethandler(read_task_result_fd, 0, TaskWorkerClient::read_task_results, nullptr);
     epoll_insert(read_task_result_fd, EVT_READ | EVT_SPEC);
+    task_reader = PipeTaskReader{read_task_result_fd};
   }
 }
 
-bool TaskWorkerClient::send_task_x2(int task_id, int x) {
-  tvkprintf(task_workers, 2, "sending task: task_id = %d, write_task_fd = %d, task_result_fd_idx = %d\n", task_id, write_task_fd, task_result_fd_idx);
+bool TaskWorkerClient::send_task(int task_id, intptr_t task_memory_ptr) {
+  static_assert(sizeof(task_memory_ptr) == 8, "Unexpected pointer size");
 
-  size_t query_size = 0;
-  buffer.write_buf[query_size++] = task_id;
-  buffer.write_buf[query_size++] = task_result_fd_idx;
-  buffer.write_buf[query_size++] = x;
-  buffer.write_buf[query_size++] = 0;
+  tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %ld, write_task_fd = %d\n", task_result_fd_idx,
+            task_id, task_memory_ptr, write_task_fd);
 
-  ssize_t written = write(write_task_fd, buffer.write_buf, query_size * sizeof(int));
+  task_writer.reset();
+  task_writer.append((static_cast<int64_t>(task_id) << 32) | task_result_fd_idx);
+  task_writer.append(task_memory_ptr);
 
-  if (written == -1) {
-    if (errno == EWOULDBLOCK) {
-      kprintf("Fail to write task: pipe is full\n");
-    } else {
-      kprintf("Fail to write task: %s\n", strerror(errno));
-    }
-    return false;
-  }
+  bool success = task_writer.flush_to_pipe(write_task_fd, "writing task");
+  assert(success);
 
-  if (written != query_size * sizeof(int)) {
-    kprintf("Fail to write task: task_id = %d, written bytes = %zd\n", task_id, written);
-    return false;
-  }
   SharedContext::get().task_queue_size++;
   return true;
 }

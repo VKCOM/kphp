@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime/kphp_core.h"
 
-void process_task_worker_answer_event(int ready_task_id, int task_result);
+void process_task_worker_answer_event(int ready_task_id, intptr_t task_result_memory_ptr);
 
-int64_t f$async_x2(int64_t x);
-int64_t f$await_x2(int64_t task_id);
+int64_t f$async_x2(const array<int64_t> &arr);
+array<int64_t> f$await_x2(int64_t task_id);

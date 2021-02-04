@@ -2,11 +2,15 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <cstdint>
+#include <vector>
+
 #include "server/task-workers/task-worker-server.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-restart.h"
 #include "server/task-workers/shared-context.h"
+#include "server/task-workers/shared-memory-manager.h"
 #include "server/task-workers/task-workers-context.h"
 
 namespace task_workers {
@@ -37,59 +41,58 @@ int TaskWorkerServer::read_execute_loop() {
       has_delayed_tasks = true;
       return 0;
     }
-    ssize_t read_bytes = read(read_task_fd, buffer.read_buf, TASK_BYTE_SIZE);
-    if (read_bytes == -1) {
-      if (errno == EWOULDBLOCK) {
-        // another task worker has already taken the task (all task workers are readers for this fd)
-        // or there are no more tasks in pipe
-        has_delayed_tasks = false;
-        return 0;
-      }
-      kprintf("pid = %d, Couldn't read task: %s\n", getpid(), strerror(errno));
+
+    task_reader.reset();
+    ssize_t read_bytes = task_reader.read_task_from_pipe(TASK_BYTE_SIZE);
+
+    if (read_bytes == -2) {
+      assert(errno == EWOULDBLOCK);
+      // another task worker has already taken the task (all task workers are readers for this fd)
+      // or there are no more tasks in pipe
+      has_delayed_tasks = false;
+      return 0;
+    } else if (read_bytes < 0) {
       return -1;
     }
-    if (read_bytes != TASK_BYTE_SIZE) {
-      kprintf("Couldn't read task. Got %zd bytes, but task bytes size = %zd. Probably some tasks are written not atomically\n", read_bytes, TASK_BYTE_SIZE);
-      return -1;
-    }
-    int task_id = buffer.read_buf[0];
-    int task_result_fd_idx = buffer.read_buf[1];
-    int x = buffer.read_buf[2];
-    int zero = buffer.read_buf[3];
-    assert(zero == 0);
+
+    int64_t qword = task_reader.next();
+    int task_id = qword >> 32;
+    int task_result_fd_idx = qword & 0xFFFFFFFF;
+    intptr_t task_memory_ptr = task_reader.next();
 
     SharedContext::get().task_queue_size--;
 
-    bool success = execute_task(task_id, task_result_fd_idx, x);
+    bool success = execute_task(task_id, task_result_fd_idx, task_memory_ptr);
     assert(success);
   }
 }
 
-bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, int x) {
-  tvkprintf(task_workers, 2, "executing task: task_id = %d, task_result_fd_idx = %d\n", task_id, task_result_fd_idx);
+bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, intptr_t task_memory_ptr) {
+  tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %ld\n", task_result_fd_idx, task_id, task_memory_ptr);
 
-  int task_result = x * x;
-  sleep(1);
+  SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
+
+  auto *task_memory = reinterpret_cast<int64_t *>(task_memory_ptr);
+  int64_t arr_n = *task_memory++;
+  std::vector<int64_t> res(arr_n);
+  for (int i = 0; i < arr_n; ++i) {
+    res[i] = task_memory[i] * task_memory[i];
+  }
+  memory_manager.deallocate_slice(reinterpret_cast<void *>(task_memory_ptr));
+
+  void * const task_result_memory_slice = memory_manager.allocate_slice();
+  auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
+  *task_result_memory++ = arr_n;
+  memcpy(task_result_memory, res.data(), res.size() * sizeof(int64_t));
 
   int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
-  size_t answer_size = 0;
-  buffer.write_buf[answer_size++] = task_id;
-  buffer.write_buf[answer_size++] = task_result;
 
-  ssize_t written = write(write_task_result_fd, buffer.write_buf, answer_size * sizeof(int));
-  if (written == -1) {
-    if (errno == EWOULDBLOCK) {
-      kprintf("Fail to write task result: pipe is full\n");
-    } else {
-      kprintf("Fail to write task result: %s", strerror(errno));
-    }
-    return false;
-  }
+  task_writer.reset();
+  task_writer.append(task_id);
+  task_writer.append(reinterpret_cast<intptr_t>(task_result_memory_slice));
+  bool success = task_writer.flush_to_pipe(write_task_result_fd, "writing result of task");
+  assert(success);
 
-  if (written != answer_size * sizeof(int)) {
-    kprintf("Fail to write task result: written bytes = %zd\n", written);
-    return false;
-  }
   return true;
 }
 
@@ -107,6 +110,8 @@ void TaskWorkerServer::init_task_worker_server() {
   epoll_sethandler(read_task_fd, 0, read_tasks, nullptr);
   epoll_insert(read_task_fd, EVT_READ | EVT_SPEC);
   tvkprintf(task_workers, 1, "insert read_task_fd = %d to epoll\n", read_task_fd);
+
+  task_reader = PipeTaskReader{read_task_fd};
 }
 
 void TaskWorkerServer::try_complete_delayed_tasks() {

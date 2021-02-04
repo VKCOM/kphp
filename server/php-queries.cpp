@@ -858,14 +858,14 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   return 1;
 }
 
-int put_task_worker_answer_event(int ready_task_id, int task_result) {
+int put_task_worker_answer_event(int ready_task_id, intptr_t task_result_memory_ptr) {
   net_event_t *event = net_events.create();
   if (event == nullptr) {
     return -2;
   }
   event->type = net_event_type_t::task_worker_answer;
   event->task_id = ready_task_id;
-  event->task_result = task_result;
+  event->task_result_memory_ptr = task_result_memory_ptr;
   return 1;
 }
 
@@ -1065,6 +1065,7 @@ void php_queries_start() {
 void php_queries_finish() {
   qmem_clear();
   clear_slots();
+  // TODO: deallocate task results memory?
   net_events.clear();
   net_queries.clear();
 }

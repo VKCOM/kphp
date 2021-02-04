@@ -22,6 +22,7 @@ prepend(KPHP_TASK_WORKERS_SOURCES ${BASE_DIR}/server/task-workers/
         task-worker-server.cpp
         task-worker-client.cpp
         task-workers-context.cpp
+        pipe-io.cpp
         pending-tasks.cpp
         task-workers.cpp
         shared-context.cpp
