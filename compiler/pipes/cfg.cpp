@@ -391,12 +391,11 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
         }
       } else if (auto var = tree_node.try_as<op_var>()) {
         add_type_check_usage(*res_true, ifi_any_type & ~(ifi_is_false | ifi_is_null), var);
-      } else if (vk::any_of_equal(tree_node->type(), op_eq3, op_neq3)) {
+      } else if (tree_node->type() == op_eq3) {
         if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
           if (tree_node.try_as<meta_op_binary>()->rhs()->type() == op_false) {
-            bool invert = (tree_node->type() == op_neq3);
-            add_type_check_usage(invert ? *res_false : *res_true, ifi_is_false, var);
-            add_type_check_usage(invert ? *res_true : *res_false, ifi_any_type & ~ifi_is_false, var);
+            add_type_check_usage(*res_true, ifi_is_false, var);
+            add_type_check_usage(*res_false, ifi_any_type & ~ifi_is_false, var);
           }
         }
       } else if (tree_node->type() == op_eq2) {
@@ -446,7 +445,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       create_cfg(tree_node.as<op_log_not>()->expr(), res_start, res_finish);
       break;
     }
-    case op_neq3:
     case op_eq3:
     case op_eq2: {
       auto op = tree_node.as<meta_op_binary>();

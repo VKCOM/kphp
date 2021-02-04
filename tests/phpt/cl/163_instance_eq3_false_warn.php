@@ -1,5 +1,5 @@
 @kphp_should_warn
-/is always false/
+/Types A and false can.t be identical/
 <?php
 
 class A {

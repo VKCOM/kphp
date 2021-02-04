@@ -507,7 +507,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_true:
     case op_eq2:
     case op_eq3:
-    case op_neq3:
     case op_lt:
     case op_le:
     case op_isset:

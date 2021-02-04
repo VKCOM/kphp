@@ -16,7 +16,7 @@ is_func_id_t get_ifi_id(VertexPtr v) {
   if (vk::any_of_equal(v->type(), op_isset, op_null_coalesce)) {
     return ifi_isset;
   }
-  if (v->type() == op_eq3 || v->type() == op_neq3) {
+  if (v->type() == op_eq3) {
     VertexPtr b = GenTree::get_actual_value(v.as<meta_op_binary>()->rhs());
     if (b->type() == op_var || b->type() == op_index) {
       b = GenTree::get_actual_value(v.as<meta_op_binary>()->lhs());

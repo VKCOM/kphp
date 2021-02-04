@@ -253,8 +253,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");
   }
-  if (vk::any_of_equal(vertex->type(), op_eq3, op_neq3)) {
-    check_eq3_neq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
+  if (vertex->type() == op_eq3) {
+    check_eq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs());
   }
   if (vk::any_of_equal(vertex->type(), op_lt, op_le, op_spaceship, op_eq2)) {
     check_comparisons(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs(), vertex->type());
@@ -471,27 +471,17 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
   }
 }
 
-void FinalCheckPass::check_eq3_neq3(VertexPtr lhs, VertexPtr rhs, Operation op) {
+void FinalCheckPass::check_eq3(VertexPtr lhs, VertexPtr rhs) {
   auto lhs_type = tinf::get_type(lhs);
   auto rhs_type = tinf::get_type(rhs);
 
-  // we only check the ===, but !== would also make sense;
-  // but it results in a lot of warnings, so we disable it for now
-  if (op == op_eq3) {
-    if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
-        (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
-      kphp_warning("Using === with float operand");
-    }
-    if (!can_be_same_type(lhs_type, rhs_type)) {
-      kphp_warning(fmt_format("{} === {} is always false", type_out(lhs_type), type_out(rhs_type)));
-    }
-  }
-
-  // instance can be compared with other instances (reference comparison) or nulls
-  if (vk::any_of_equal(tp_Class, lhs_type->ptype(), rhs_type->ptype())) {
-    auto cmp_type = lhs_type->ptype() == tp_Class ? rhs_type : lhs_type;
-    bool cmp_type_is_null = cmp_type->ptype() == tp_any && (cmp_type->or_false_flag() || cmp_type->or_null_flag());
-    kphp_error(cmp_type->ptype() == tp_Class || cmp_type_is_null, fmt_format("instance {} {} is a strange operation", OpInfo::desc(op), cmp_type->as_human_readable()));
+  if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
+      (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
+    kphp_warning(fmt_format("Identity operator between {} and {} types may give an unexpected result",
+                            lhs_type->as_human_readable(), rhs_type->as_human_readable()));
+  } else if (!can_be_same_type(lhs_type, rhs_type)) {
+    kphp_warning(fmt_format("Types {} and {} can't be identical",
+                            lhs_type->as_human_readable(), rhs_type->as_human_readable()));
   }
 }
 

@@ -91,7 +91,6 @@ void OpInfo::init_static() {
 
   add_binary_op(curP, tok_eq2, op_eq2);
   add_binary_op(curP, tok_eq3, op_eq3);
-  add_binary_op(curP, tok_neq3, op_neq3);
   add_binary_op(curP, tok_spaceship, op_spaceship);
   curP++;
 
