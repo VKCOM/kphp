@@ -20,7 +20,6 @@ struct net_event_t {
   union {
     slot_id_t slot_id;
     slot_id_t rpc_id;
-    int task_id;
   };
   union {
     struct { //rpc_answer
@@ -33,7 +32,7 @@ struct net_event_t {
       const char *error_message;
     };
     struct { // task_worker_answer
-      intptr_t task_result_memory_ptr;
+      void *task_result_script_memory_ptr;
     };
   };
 };
@@ -338,12 +337,14 @@ void free_net_query(net_query_t *query);
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 
-int put_task_worker_answer_event(int ready_task_id, long task_result_memory_ptr);
+int create_task_worker_answer_event(slot_id_t ready_task_id, long task_result_memory_ptr);
 
 int net_events_empty();
 
 void php_queries_start();
 void php_queries_finish();
+
+slot_id_t create_slot();
 
 void init_drivers();
 

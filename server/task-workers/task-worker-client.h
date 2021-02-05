@@ -30,7 +30,7 @@ public:
 
   void init_task_worker_client(int task_result_slot);
 
-  bool send_task(int task_id, intptr_t task_memory_ptr);
+  int send_task(intptr_t task_memory_ptr);
 
   static int read_task_results(int fd, void *data __attribute__((unused)), event_t *ev);
 

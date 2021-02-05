@@ -81,6 +81,8 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, intptr_
   memory_manager.deallocate_slice(reinterpret_cast<void *>(task_memory_ptr));
 
   void * const task_result_memory_slice = memory_manager.allocate_slice();
+  assert(task_result_memory_slice);
+
   auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
   *task_result_memory++ = arr_n;
   memcpy(task_result_memory, res.data(), res.size() * sizeof(int64_t));

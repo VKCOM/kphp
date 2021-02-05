@@ -47,7 +47,7 @@ static bool process_net_event(net_event_t *e) {
       process_rpc_error(e->slot_id, e->error_code, e->error_message);
       break;
     case net_event_type_t::task_worker_answer:
-      process_task_worker_answer_event(e->task_id, e->task_result_memory_ptr);
+      process_task_worker_answer_event(e->slot_id, e->task_result_script_memory_ptr);
       break;
     default:
       php_critical_error ("unsupported net event %d", static_cast<int>(e->type));

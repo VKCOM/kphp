@@ -41,7 +41,7 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
     intptr_t task_result_memory_ptr = task_worker_client.task_reader.next();
     tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result_memory_ptr = %ld\n", i + 1, tasks_results_number,
               ready_task_id, task_result_memory_ptr);
-    put_task_worker_answer_event(ready_task_id, task_result_memory_ptr);
+    create_task_worker_answer_event(ready_task_id, task_result_memory_ptr);
   }
   return 0;
 }
@@ -73,8 +73,10 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
   }
 }
 
-bool TaskWorkerClient::send_task(int task_id, intptr_t task_memory_ptr) {
+int TaskWorkerClient::send_task(intptr_t task_memory_ptr) {
   static_assert(sizeof(task_memory_ptr) == 8, "Unexpected pointer size");
+
+  slot_id_t task_id = create_slot();
 
   tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %ld, write_task_fd = %d\n", task_result_fd_idx,
             task_id, task_memory_ptr, write_task_fd);
@@ -87,7 +89,7 @@ bool TaskWorkerClient::send_task(int task_id, intptr_t task_memory_ptr) {
   assert(success);
 
   SharedContext::get().task_queue_size++;
-  return true;
+  return task_id;
 }
 
 } // namespace task_workers

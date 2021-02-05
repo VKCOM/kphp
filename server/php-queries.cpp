@@ -16,6 +16,7 @@
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
 #include "server/php-script.h"
+#include "server/task-workers/shared-memory-manager.h"
 
 #define MAX_NET_ERROR_LEN 128
 
@@ -858,14 +859,27 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   return 1;
 }
 
-int put_task_worker_answer_event(int ready_task_id, intptr_t task_result_memory_ptr) {
-  net_event_t *event = net_events.create();
-  if (event == nullptr) {
-    return -2;
+int create_task_worker_answer_event(slot_id_t ready_task_id, intptr_t task_result_memory_ptr) {
+  void *task_result_memory_slice = reinterpret_cast<void *>(task_result_memory_ptr);
+
+  auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
+  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_slice); });
+
+  net_event_t *event = nullptr;
+  int status = alloc_net_event(ready_task_id, net_event_type_t::task_worker_answer, &event);
+  if (status <= 0) {
+    return status;
   }
-  event->type = net_event_type_t::task_worker_answer;
-  event->task_id = ready_task_id;
-  event->task_result_memory_ptr = task_result_memory_ptr;
+  // script is running here
+
+  void *script_memory_ptr = dl_allocate_safe(task_workers::SharedMemoryManager::SLICE_PAYLOAD_SIZE);
+  if (script_memory_ptr == nullptr) {
+    unalloc_net_event(event);
+    return -1;
+  }
+  memcpy(script_memory_ptr, task_result_memory_slice, task_workers::SharedMemoryManager::SLICE_PAYLOAD_SIZE);
+
+  event->task_result_script_memory_ptr = script_memory_ptr;
   return 1;
 }
 

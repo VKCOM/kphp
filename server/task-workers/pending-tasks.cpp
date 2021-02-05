@@ -7,11 +7,6 @@
 
 namespace task_workers {
 
-
-int PendingTasks::generate_task_id() {
-  return next_task_id_++;
-}
-
 void PendingTasks::put_task(int task_id) {
   tasks_.set_value(task_id, {});
 }
@@ -28,17 +23,16 @@ bool PendingTasks::task_exists(int task_id) const {
   return tasks_.has_key(task_id);
 }
 
-void PendingTasks::mark_task_ready(int task_id, intptr_t task_result_memory_ptr) {
-  void * const task_result_memory_slice = reinterpret_cast<void *>(task_result_memory_ptr);
-
-  const int64_t *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
+void PendingTasks::mark_task_ready(int task_id, void *task_result_script_memory_ptr) {
+  const int64_t *task_result_memory = reinterpret_cast<int64_t *>(task_result_script_memory_ptr);
   int64_t arr_n = *task_result_memory++;
   array<int64_t> res;
   res.reserve(arr_n, 0, true);
-  res.memcpy_vector(arr_n, task_result_memory);
+  res.memcpy_vector(arr_n, task_result_memory); // TODO: create inplace instead of copying
+
+  dl::deallocate(task_result_script_memory_ptr, SharedMemoryManager::SLICE_PAYLOAD_SIZE);
 
   tasks_.set_value(task_id, std::move(res));
-  vk::singleton<SharedMemoryManager>::get().deallocate_slice(task_result_memory_slice);
 }
 
 array<int64_t> PendingTasks::withdraw_task(int task_id) {
@@ -49,7 +43,6 @@ array<int64_t> PendingTasks::withdraw_task(int task_id) {
 
 void PendingTasks::reset() {
   tasks_ = {};
-  next_task_id_ = 0;
 }
 
 } // namespace task_workers
