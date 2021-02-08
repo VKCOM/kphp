@@ -2,9 +2,13 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <cassert>
+#include <cerrno>
+#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "common/macos-ports.h"
 #include "server/task-workers/task-workers-context.h"
 
 DEFINE_VERBOSITY(task_workers);

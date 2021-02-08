@@ -4,9 +4,9 @@
 
 #include <cassert>
 #include <cstdio>
-#include <sys/param.h>
 #include <unistd.h>
 
+#include "net/net-events.h"
 #include "net/net-reactor.h"
 
 #include "server/php-queries.h"

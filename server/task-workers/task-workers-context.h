@@ -9,8 +9,8 @@
 #include <queue>
 #include <unordered_set>
 
+#include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"
-#include "server/php-master.h"
 #include "common/smart_ptrs/singleton.h"
 #include "server/task-workers/task-worker-server.h"
 

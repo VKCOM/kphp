@@ -9,8 +9,9 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/timer.h"
-#include "net/net-reactor.h"
 #include "server/task-workers/pipe-io.h"
+
+typedef struct event_descr event_t;
 
 namespace task_workers {
 
@@ -30,8 +31,6 @@ public:
 
   void try_complete_delayed_tasks();
 
-  static int read_tasks(int fd, void *data __attribute__((unused)), event_t *ev);
-
 private:
   PipeTaskWriter task_writer;
   PipeTaskReader task_reader;
@@ -39,6 +38,8 @@ private:
   int read_task_fd{-1};
 
   TaskWorkerServer() = default;
+
+  static int read_tasks(int fd, void *data __attribute__((unused)), event_t *ev);
 };
 
 } // namespace task_workers

@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <sys/param.h>
+#include <climits>
+#include <cstdint>
 
 namespace task_workers {
 

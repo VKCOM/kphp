@@ -2,12 +2,15 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
+#include "net/net-events.h"
+#include "net/net-reactor.h"
+
 #include "server/task-workers/task-worker-server.h"
-#include "server/php-engine-vars.h"
-#include "server/php-engine.h"
 #include "server/php-master-restart.h"
 #include "server/task-workers/shared-context.h"
 #include "server/task-workers/shared-memory-manager.h"
