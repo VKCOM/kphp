@@ -29,10 +29,11 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
   while (v->type() == op_index) {
     v = v.as<op_index>()->array();
   }
-  if (auto var_v = v.try_as<op_var>()) {
+  if (vk::any_of_equal(v->type(), op_var, op_instance_prop, op_array)) {
     // it's a kludge to make "real world" PHP code compile
     // TODO: can we get rid of this?
-    if (var_v->str_val == "connection" || vk::contains(var_v->str_val, "MC")) {
+    if (v->has_get_string() &&
+        (v->get_string() == "connection" || vk::contains(v->get_string(), "MC"))) {
       return eq_op;
     }
 
