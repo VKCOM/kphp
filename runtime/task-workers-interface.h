@@ -12,3 +12,4 @@ void process_task_worker_answer_event(int ready_task_id, void *task_result_scrip
 
 int64_t f$async_x2(const array<int64_t> &arr);
 array<int64_t> f$await_x2(int64_t task_id);
+bool f$is_task_workers_enabled();

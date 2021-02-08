@@ -6,6 +6,7 @@
 #include "runtime/net_events.h"
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/task-worker-client.h"
+#include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/shared-memory-manager.h"
 
 using namespace task_workers;
@@ -43,4 +44,8 @@ array<int64_t> f$await_x2(int64_t task_id) {
     wait_net(0);
   }
   return pending_tasks.withdraw_task(task_id);
+}
+
+bool f$is_task_workers_enabled() {
+  return vk::singleton<TaskWorkersContext>::get().task_workers_num > 0;
 }

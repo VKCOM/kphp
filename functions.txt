@@ -1347,3 +1347,4 @@ final class UberH3 {
 
 function async_x2($arr ::: int[]) ::: int;
 function await_x2($task_id ::: int) ::: int[];
+function is_task_workers_enabled() ::: bool;
