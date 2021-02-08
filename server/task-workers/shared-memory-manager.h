@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -35,19 +36,22 @@ public:
 
 private:
   unsigned char *memory{nullptr};
-  inter_process_mutex *mutex{nullptr};
 
   struct SliceMetaInfo {
-    pid_t owner_pid{};
-    bool vacant{true};
+    std::atomic<pid_t> owner_pid{0};
 
-    void acquire() {
-      owner_pid = getpid();
-      vacant = false;
+    bool acquire() {
+      pid_t old_pid = 0;
+      return owner_pid.compare_exchange_strong(old_pid, getpid());
     }
 
-    void release() {
-      vacant = true;
+    bool release() {
+      pid_t old_pid = owner_pid.exchange(0);
+      return old_pid != 0;
+    }
+
+    bool is_vacant() const {
+      return owner_pid == 0;
     }
   };
 
