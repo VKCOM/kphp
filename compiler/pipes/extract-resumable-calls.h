@@ -8,9 +8,9 @@
 
 class ExtractResumableCallsPass final : public FunctionPassBase {
 private:
-  static void skip_conv_and_sets(VertexPtr *&replace);
-  static VertexPtr *get_resumable_func_for_replacement(VertexPtr vertex);
-  static VertexAdaptor<op_var> make_temp_resumable_var(const TypeData *type);
+  static VertexPtr *skip_conv_and_sets(VertexPtr *replace) noexcept;
+  static VertexPtr try_save_resumable_func_call_in_temp_var(VertexPtr vertex) noexcept;
+  static VertexAdaptor<op_var> make_temp_resumable_var(const TypeData *type) noexcept;
 
 public:
   string get_description() override {
