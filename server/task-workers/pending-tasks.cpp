@@ -30,7 +30,7 @@ void PendingTasks::mark_task_ready(int task_id, void *task_result_script_memory_
   res.reserve(arr_n, 0, true);
   res.memcpy_vector(arr_n, task_result_memory); // TODO: create inplace instead of copying
 
-  dl::deallocate(task_result_script_memory_ptr, SharedMemoryManager::SLICE_PAYLOAD_SIZE);
+  dl::deallocate(task_result_script_memory_ptr, vk::singleton<SharedMemoryManager>::get().get_slice_payload_size());
 
   tasks_.set_value(task_id, std::move(res));
 }

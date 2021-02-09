@@ -18,14 +18,11 @@ class SharedMemoryManager : vk::not_copyable {
 public:
   friend class vk::singleton<SharedMemoryManager>;
 
-  static constexpr size_t MEMORY_SIZE = 1024 * 1024 * 1024;
-  static constexpr size_t SLICE_PAYLOAD_SIZE = 1024 * 1023;
-  static constexpr size_t SLICE_META_INFO_SIZE = 1024;
-  static constexpr size_t SLICE_SIZE = SLICE_PAYLOAD_SIZE + SLICE_META_INFO_SIZE;
-  static constexpr size_t TOTAL_SLICES_COUNT = MEMORY_SIZE / SLICE_SIZE;
+  void set_memory_size(size_t memory_size_);
+  void set_slice_payload_size(size_t slice_payload_size_);
 
-  static_assert(SLICE_PAYLOAD_SIZE % 1024 == 0, "SLICE_PAYLOAD_SIZE must be multiple of 1KB");
-  static_assert(MEMORY_SIZE % SLICE_SIZE == 0, "MEMORY_SIZE must be multiple of SLICE_SIZE");
+  size_t get_slice_payload_size() const;
+  size_t get_slice_meta_info_size() const;
 
   // must be called from master once during the global initialization
   void init();
@@ -36,6 +33,12 @@ public:
 
 private:
   unsigned char *memory{nullptr};
+  size_t memory_size = 1024 * 1024 * 1024;
+  size_t slice_payload_size = 1024 * 1023;
+  const size_t slice_meta_info_size = 1024;
+
+  size_t slice_size{};
+  size_t total_slices_count{};
 
   struct SliceMetaInfo {
     std::atomic<pid_t> owner_pid{0};
@@ -58,11 +61,11 @@ private:
   SharedMemoryManager() = default;
 
   unsigned char *get_slice_ptr(size_t idx) const {
-    return memory + idx * SLICE_SIZE;
+    return memory + idx * slice_size;
   };
 
   SliceMetaInfo &get_slice_meta_info(unsigned char *slice_ptr) const {
-    return *reinterpret_cast<SliceMetaInfo *>(slice_ptr + SLICE_PAYLOAD_SIZE);
+    return *reinterpret_cast<SliceMetaInfo *>(slice_ptr + slice_payload_size);
   };
 
 };

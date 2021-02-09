@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/task-workers/task-workers.h"
+#include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/shared-context.h"
 #include "server/task-workers/shared-memory-manager.h"
@@ -18,6 +19,9 @@ void free_task_workers_lib() {
 }
 
 void global_init_task_workers_lib() {
+  if (vk::singleton<TaskWorkersContext>::get().task_workers_num == 0) {
+    return;
+  }
   SharedContext::get();
   vk::singleton<SharedMemoryManager>::get().init();
 }

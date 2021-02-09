@@ -872,12 +872,13 @@ int create_task_worker_answer_event(slot_id_t ready_task_id, intptr_t task_resul
   }
   // script is running here
 
-  void *script_memory_ptr = dl_allocate_safe(task_workers::SharedMemoryManager::SLICE_PAYLOAD_SIZE);
+  size_t slice_payload_size = vk::singleton<task_workers::SharedMemoryManager>::get().get_slice_payload_size();
+  void *script_memory_ptr = dl_allocate_safe(slice_payload_size);
   if (script_memory_ptr == nullptr) {
     unalloc_net_event(event);
     return -1;
   }
-  memcpy(script_memory_ptr, task_result_memory_slice, task_workers::SharedMemoryManager::SLICE_PAYLOAD_SIZE);
+  memcpy(script_memory_ptr, task_result_memory_slice, slice_payload_size);
 
   event->task_result_script_memory_ptr = script_memory_ptr;
   return 1;

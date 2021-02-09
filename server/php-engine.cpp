@@ -69,6 +69,7 @@
 #include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-worker-server.h"
+#include "server/task-workers/shared-memory-manager.h"
 
 using task_workers::TaskWorkersContext;
 using task_workers::TaskWorkerClient;
@@ -2677,6 +2678,21 @@ int main_args_handler(int i) {
       vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
       return 0;
     }
+    case 2017: {
+      size_t mbs = atoi(optarg);
+      vk::singleton<task_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
+      return 0;
+    }
+    case 2018: {
+      size_t mbs = atoi(optarg);
+      if (mbs == 0) {
+        kprintf("Task workers shared memory slice size can't be 0");
+        return -1;
+      }
+      auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
+      memory_manager.set_slice_payload_size(mbs * 1024 * 1024 - memory_manager.get_slice_meta_info_size());
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2745,6 +2761,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("task-workers-num", required_argument, 2016, "number of task workers to run");
+  parse_option("task-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for task workers related communication");
+  parse_option("task-workers-shared-memory-slice-size", required_argument, 2018, "size of shared memory slice in MBs used by workers to write task args or read task result");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
