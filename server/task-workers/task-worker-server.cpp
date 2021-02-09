@@ -98,6 +98,8 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, intptr_
   bool success = task_writer.flush_to_pipe(write_task_result_fd, "writing result of task");
   assert(success);
 
+  SharedContext::get().total_tasks_done_count++;
+
   return true;
 }
 

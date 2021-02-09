@@ -8,6 +8,7 @@
 #include <random>
 #include <sys/mman.h>
 
+#include "server/task-workers/shared-context.h"
 #include "server/task-workers/shared-memory-manager.h"
 
 namespace task_workers {
@@ -37,6 +38,7 @@ void *SharedMemoryManager::allocate_slice() {
     SliceMetaInfo &cur_slice_meta_info = get_slice_meta_info(cur_slice_ptr);
 
     if (cur_slice_meta_info.acquire()) {
+      SharedContext::get().occupied_slices_count++;
       return cur_slice_ptr;
     }
 
@@ -52,7 +54,9 @@ void *SharedMemoryManager::allocate_slice() {
 void SharedMemoryManager::deallocate_slice(void *slice) {
   auto *slice_ptr = static_cast<unsigned char *>(slice);
   SliceMetaInfo &slice_meta_info = get_slice_meta_info(slice_ptr);
-  slice_meta_info.release();
+  if (slice_meta_info.release()) {
+    SharedContext::get().occupied_slices_count--;
+  }
 }
 
 void SharedMemoryManager::set_memory_size(size_t memory_size_) {
@@ -69,6 +73,10 @@ size_t SharedMemoryManager::get_slice_payload_size() const {
 
 size_t SharedMemoryManager::get_slice_meta_info_size() const {
   return slice_meta_info_size;
+}
+
+size_t SharedMemoryManager::get_total_slices_count() const {
+  return total_slices_count;
 }
 
 } // namespace task_workers

@@ -61,6 +61,7 @@
 #include "server/task-workers/task-workers-context.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/shared-context.h"
+#include "server/task-workers/shared-memory-manager.h"
 
 using task_workers::TaskWorkersContext;
 
@@ -1604,6 +1605,13 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
+
+  const auto &task_workers_stats = task_workers::SharedContext::get();
+  add_histogram_stat_long(stats, "task_workers.task_queue_size", task_workers_stats.task_queue_size.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.occupied_shared_memory_slices_count", task_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.max_shared_memory_slices_count", vk::singleton<task_workers::SharedMemoryManager>::get().get_total_slices_count());
+  add_histogram_stat_long(stats, "task_workers.total_tasks_send_count", task_workers_stats.total_tasks_send_count.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_tasks_done_count", task_workers_stats.total_tasks_done_count.load(std::memory_order_relaxed));
 
   update_mem_stats();
   unsigned long long max_vms = 0;

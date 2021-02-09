@@ -14,6 +14,9 @@ namespace task_workers {
 class SharedContext : vk::not_copyable {
 public:
   std::atomic<int> task_queue_size{0};
+  std::atomic<int> occupied_slices_count{0};
+  std::atomic<size_t> total_tasks_send_count{0};
+  std::atomic<size_t> total_tasks_done_count{0};
 
   static SharedContext &make();
 

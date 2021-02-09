@@ -89,6 +89,7 @@ int TaskWorkerClient::send_task(intptr_t task_memory_ptr) {
   assert(success);
 
   SharedContext::get().task_queue_size++;
+  SharedContext::get().total_tasks_send_count++;
   return task_id;
 }
 

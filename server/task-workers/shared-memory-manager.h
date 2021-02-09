@@ -23,6 +23,7 @@ public:
 
   size_t get_slice_payload_size() const;
   size_t get_slice_meta_info_size() const;
+  size_t get_total_slices_count() const;
 
   // must be called from master once during the global initialization
   void init();
