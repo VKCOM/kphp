@@ -83,6 +83,10 @@ inline double f$ceil(double v);
 
 inline double f$cos(double v);
 
+inline double f$cosh(double v);
+
+inline double f$acosh(double v);
+
 inline double f$deg2rad(double v);
 
 inline double f$exp(double v);
@@ -107,9 +111,17 @@ double f$round(double v, int64_t precision = 0);
 
 inline double f$sin(double v);
 
+inline double f$sinh(double v);
+
 inline double f$sqrt(double v);
 
 inline double f$tan(double v);
+
+inline double f$asin(double v);
+
+inline double f$asinh(double v);
+
+inline double f$rad2deg(double v);
 
 void init_math_functions() noexcept;
 
@@ -194,6 +206,14 @@ double f$cos(double v) {
   return cos(v);
 }
 
+double f$cosh(double v) {
+  return cosh(v);
+}
+
+double f$acosh(double v) {
+  return acosh(v);
+}
+
 double f$deg2rad(double v) {
   return v * M_PI / 180;
 }
@@ -248,6 +268,10 @@ double f$sin(double v) {
   return sin(v);
 }
 
+double f$sinh(double v) {
+  return sinh(v);
+}
+
 double f$sqrt(double v) {
   if (v < 0) {
     return 0.0;
@@ -257,4 +281,16 @@ double f$sqrt(double v) {
 
 double f$tan(double v) {
   return tan(v);
+}
+
+double f$asin(double v) {
+  return asin(v);
+}
+
+double f$asinh(double v) {
+  return asinh(v);
+}
+
+double f$rad2deg(double v) {
+  return v * 180 / M_PI;
 }
