@@ -32,6 +32,10 @@ bool ExtractResumableCallsPass::is_resumable_expr(VertexPtr vertex) noexcept {
       }
     }
   }
+  if (auto null_coalesce = vertex.try_as<op_null_coalesce>()) {
+    // support only lhs
+    return is_resumable_expr(*skip_conv_and_sets(&null_coalesce->lhs()));
+  }
 
   return false;
 }
@@ -94,7 +98,6 @@ VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(Vertex
   return VertexAdaptor<op_seq>::create(set_op, expr_user).set_rl_type(val_none).set_location(expr_user);
 }
 
-
 VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->rl_type != val_none) {
     return vertex;
@@ -108,6 +111,9 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
   if (auto set_modify = vertex.try_as<op_set_modify>()) {
     if (auto ternary = resumable_expr->try_as<op_ternary>()) {
       return replace_set_ternary(set_modify, ternary);
+    }
+    if (auto null_coalesce = resumable_expr->try_as<op_null_coalesce>()) {
+      return replace_resumable_expr_with_temp_var(skip_conv_and_sets(&null_coalesce->lhs()), vertex);
     }
   }
 
