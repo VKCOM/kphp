@@ -5,6 +5,7 @@
 #include "compiler/pipes/extract-resumable-calls.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 
@@ -18,42 +19,52 @@ VertexPtr *ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *replace) noe
   return replace;
 }
 
-VertexPtr ExtractResumableCallsPass::try_save_resumable_func_call_in_temp_var(VertexPtr vertex) noexcept {
-  VertexPtr *resumable_func_call = nullptr;
+bool ExtractResumableCallsPass::is_resumable_expr(VertexPtr vertex) noexcept {
+  if (auto func_call = vertex.try_as<op_func_call>()) {
+    if (func_call->func_id->is_resumable) {
+      return true;
+    }
+  }
+  if (auto ternary = vertex.try_as<op_ternary>()) {
+    for (auto v : *ternary) {
+      if (is_resumable_expr(*skip_conv_and_sets(&v))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+VertexPtr *ExtractResumableCallsPass::extract_resumable_expr(VertexPtr vertex) noexcept {
+  VertexPtr *resumable_expr = nullptr;
 
   if (auto return_v = vertex.try_as<op_return>()) {
-    resumable_func_call = return_v->has_expr() ? &return_v->expr() : nullptr;
+    resumable_expr = return_v->has_expr() ? &return_v->expr() : nullptr;
   } else if (auto set_modify = vertex.try_as<op_set_modify>()) {
-    resumable_func_call = &(set_modify->rhs());
-
-    if ((*resumable_func_call)->type() == op_func_call && vertex->type() == op_set && set_modify->lhs()->type() != op_instance_prop) {
+    resumable_expr = &(set_modify->rhs());
+    if ((*resumable_expr)->type() == op_func_call && vertex->type() == op_set && set_modify->lhs()->type() != op_instance_prop) {
       return {};
     }
   } else if (auto list = vertex.try_as<op_list>()) {
-    resumable_func_call = &list->array();
+    resumable_expr = &list->array();
   } else if (auto set_value = vertex.try_as<op_set_value>()) {
-    resumable_func_call = &set_value->value();
+    resumable_expr = &set_value->value();
   } else if (auto push_back = vertex.try_as<op_push_back>()) {
-    resumable_func_call = &push_back->value();
+    resumable_expr = &push_back->value();
   } else if (auto if_cond = vertex.try_as<op_if>()) {
-    resumable_func_call = &if_cond->cond();
+    resumable_expr = &if_cond->cond();
   }
 
-  if (!resumable_func_call || !*resumable_func_call) {
+  if (!resumable_expr || !*resumable_expr) {
     return {};
   }
 
-  resumable_func_call = skip_conv_and_sets(resumable_func_call);
-  auto func_call = resumable_func_call->try_as<op_func_call>();
-  if (!func_call || !func_call->func_id->is_resumable) {
+  resumable_expr = skip_conv_and_sets(resumable_expr);
+  if (!is_resumable_expr(*resumable_expr)) {
     return {};
   }
-
-  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(func_call)).set_rl_type(val_l).set_location(vertex);
-  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, func_call).set_rl_type(val_none).set_location(vertex);;
-  *resumable_func_call = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone().set_rl_type(val_r)).set_rl_type(val_r);
-  resumable_func_call->set_location(vertex);
-  return VertexAdaptor<op_seq>::create(set_op, vertex).set_rl_type(val_none).set_location(vertex);
+  return resumable_expr;
 }
 
 VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const TypeData *type) noexcept {
@@ -64,16 +75,43 @@ VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const T
   return temp_var;
 }
 
+VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<op_ternary> rhs_ternary) noexcept {
+  auto set_true_case = set_vertex.clone();
+  *skip_conv_and_sets(&set_true_case->rhs()) = rhs_ternary->true_expr();
+
+  auto set_false_case = set_vertex.clone();
+  *skip_conv_and_sets(&set_false_case->rhs()) = rhs_ternary->false_expr();
+
+  auto ternary_replacer = VertexAdaptor<op_if>::create(rhs_ternary->cond(), GenTree::embrace(set_true_case), GenTree::embrace(set_false_case));
+  return GenTree::embrace(ternary_replacer.set_rl_type(val_none).set_location(set_vertex));
+}
+
+VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(VertexPtr *resumable_expr, VertexPtr expr_user) noexcept {
+  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(*resumable_expr)).set_rl_type(val_l).set_location(expr_user);
+  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, *resumable_expr).set_rl_type(val_none).set_location(expr_user);
+  *resumable_expr = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone().set_rl_type(val_r)).set_rl_type(val_r);
+  resumable_expr->set_location(expr_user);
+  return VertexAdaptor<op_seq>::create(set_op, expr_user).set_rl_type(val_none).set_location(expr_user);
+}
+
+
 VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->rl_type != val_none) {
     return vertex;
   }
 
-  if (auto new_vertex = try_save_resumable_func_call_in_temp_var(vertex)) {
-    return new_vertex;
+  VertexPtr *resumable_expr = extract_resumable_expr(vertex);
+  if (!resumable_expr) {
+    return vertex;
   }
 
-  return vertex;
+  if (auto set_modify = vertex.try_as<op_set_modify>()) {
+    if (auto ternary = resumable_expr->try_as<op_ternary>()) {
+      return replace_set_ternary(set_modify, ternary);
+    }
+  }
+
+  return replace_resumable_expr_with_temp_var(resumable_expr, vertex);
 }
 
 bool ExtractResumableCallsPass::check_function(FunctionPtr function) const {
