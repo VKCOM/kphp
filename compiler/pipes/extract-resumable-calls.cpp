@@ -25,15 +25,17 @@ bool ExtractResumableCallsPass::is_resumable_expr(VertexPtr vertex) noexcept {
       return true;
     }
   }
-  if (auto ternary = vertex.try_as<op_ternary>()) {
-    for (auto v : *ternary) {
+
+  if (vk::any_of_equal(vertex->type(), op_ternary, op_log_or, op_log_and)) {
+    for (auto v : *vertex) {
       if (is_resumable_expr(*skip_conv_and_sets(&v))) {
         return true;
       }
     }
   }
+
   if (auto null_coalesce = vertex.try_as<op_null_coalesce>()) {
-    // support only lhs
+    // only lhs is supported
     return is_resumable_expr(*skip_conv_and_sets(&null_coalesce->lhs()));
   }
 
@@ -71,12 +73,14 @@ VertexPtr *ExtractResumableCallsPass::extract_resumable_expr(VertexPtr vertex) n
   return resumable_expr;
 }
 
-VertexAdaptor<op_var> ExtractResumableCallsPass::make_temp_resumable_var(const TypeData *type) noexcept {
-  auto temp_var = VertexAdaptor<op_var>::create();
+std::pair<VertexAdaptor<op_move>, VertexAdaptor<op_set>> ExtractResumableCallsPass::make_temp_resumable_var(VertexPtr init) noexcept {
+  auto temp_var = VertexAdaptor<op_var>::create().set_location(init);
   temp_var->str_val = gen_unique_name("resumable_temp_var");
   temp_var->var_id = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
-  temp_var->var_id->tinf_node.copy_type_from(type);
-  return temp_var;
+  temp_var->var_id->tinf_node.copy_type_from(tinf::get_type(init));
+  auto set_op = VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), init).set_rl_type(val_none).set_location(init);
+  auto move_op = VertexAdaptor<op_move>::create(temp_var.set_rl_type(val_r)).set_rl_type(val_r).set_location(init);
+  return {move_op, set_op};
 }
 
 VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<op_ternary> rhs_ternary) noexcept {
@@ -90,12 +94,33 @@ VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_mo
   return GenTree::embrace(ternary_replacer.set_rl_type(val_none).set_location(set_vertex));
 }
 
+VertexPtr ExtractResumableCallsPass::replace_set_logical_operation(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<meta_op_binary> operation) noexcept {
+  auto temp_var = make_temp_resumable_var(operation->lhs());
+
+  auto set_if_lhs_true = set_vertex.clone();
+  auto set_if_lhs_false = set_vertex.clone();
+
+  switch (operation->type()) {
+    case op_log_or:
+      *skip_conv_and_sets(&set_if_lhs_true->rhs()) = temp_var.first;
+      *skip_conv_and_sets(&set_if_lhs_false->rhs()) = operation->rhs();
+      break;
+    case op_log_and:
+      *skip_conv_and_sets(&set_if_lhs_false->rhs()) = temp_var.first;
+      *skip_conv_and_sets(&set_if_lhs_true->rhs()) = operation->rhs();
+      break;
+    default:
+      kphp_assert(0 && "unexpected type");
+  }
+
+  auto check_lhs = VertexAdaptor<op_if>::create(temp_var.second, GenTree::embrace(set_if_lhs_true), GenTree::embrace(set_if_lhs_false));
+  return GenTree::embrace(check_lhs.set_rl_type(val_none).set_location(operation));
+}
+
 VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(VertexPtr *resumable_expr, VertexPtr expr_user) noexcept {
-  auto temp_var_with_res_of_func_call = make_temp_resumable_var(tinf::get_type(*resumable_expr)).set_rl_type(val_l).set_location(expr_user);
-  auto set_op = VertexAdaptor<op_set>::create(temp_var_with_res_of_func_call, *resumable_expr).set_rl_type(val_none).set_location(expr_user);
-  *resumable_expr = VertexAdaptor<op_move>::create(temp_var_with_res_of_func_call.clone().set_rl_type(val_r)).set_rl_type(val_r);
-  resumable_expr->set_location(expr_user);
-  return VertexAdaptor<op_seq>::create(set_op, expr_user).set_rl_type(val_none).set_location(expr_user);
+  auto temp_var = make_temp_resumable_var(*resumable_expr);
+  *resumable_expr = temp_var.first;
+  return VertexAdaptor<op_seq>::create(temp_var.second, expr_user).set_rl_type(val_none).set_location(expr_user);
 }
 
 VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
@@ -114,6 +139,9 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
     }
     if (auto null_coalesce = resumable_expr->try_as<op_null_coalesce>()) {
       return replace_resumable_expr_with_temp_var(skip_conv_and_sets(&null_coalesce->lhs()), vertex);
+    }
+    if (vk::any_of_equal((*resumable_expr)->type(), op_log_or, op_log_and)) {
+      return replace_set_logical_operation(set_modify, resumable_expr->as<meta_op_binary>());
     }
   }
 
