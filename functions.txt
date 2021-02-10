@@ -539,6 +539,12 @@ function abs ($v ::: mixed) ::: ^1 | int;
 /** @kphp-pure-function */
 function acos ($v ::: float) ::: float;
 /** @kphp-pure-function */
+function acosh ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function asin ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function asinh ($v ::: float) ::: float;
+/** @kphp-pure-function */
 function atan ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function atan2 ($y ::: float, $x ::: float) ::: float;
@@ -548,6 +554,8 @@ function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) :
 function ceil ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function cos ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function cosh ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function deg2rad ($v ::: float) ::: float;
 /** @kphp-pure-function */
@@ -565,9 +573,13 @@ function round ($v ::: float, $precision ::: int = 0) ::: float;
 /** @kphp-pure-function */
 function sin ($v ::: float) ::: float;
 /** @kphp-pure-function */
+function sinh ($v ::: float) ::: float;
+/** @kphp-pure-function */
 function sqrt ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function tan ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function rad2deg ($v ::: float) ::: float;
 
 
 define('ENT_HTML401', 0);
