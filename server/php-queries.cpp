@@ -859,18 +859,16 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   return 1;
 }
 
-int create_task_worker_answer_event(slot_id_t ready_task_id, intptr_t task_result_memory_ptr) {
-  void *task_result_memory_slice = reinterpret_cast<void *>(task_result_memory_ptr);
-
+int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_result_memory_ptr) {
   auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
-  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_slice); });
+  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_ptr); });
 
   net_event_t *event = nullptr;
   int status = alloc_net_event(ready_task_id, net_event_type_t::task_worker_answer, &event);
   if (status <= 0) {
     return status;
   }
-  // script is running here
+  // script is running here, because is_valid_slot(ready_task_id) == true
 
   size_t slice_payload_size = vk::singleton<task_workers::SharedMemoryManager>::get().get_slice_payload_size();
   void *script_memory_ptr = dl_allocate_safe(slice_payload_size);
@@ -878,7 +876,7 @@ int create_task_worker_answer_event(slot_id_t ready_task_id, intptr_t task_resul
     unalloc_net_event(event);
     return -1;
   }
-  memcpy(script_memory_ptr, task_result_memory_slice, slice_payload_size);
+  memcpy(script_memory_ptr, task_result_memory_ptr, slice_payload_size);
 
   event->task_result_script_memory_ptr = script_memory_ptr;
   return 1;

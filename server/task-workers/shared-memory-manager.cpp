@@ -52,6 +52,9 @@ void *SharedMemoryManager::allocate_slice() {
 }
 
 void SharedMemoryManager::deallocate_slice(void *slice) {
+  if (slice == nullptr) {
+    return;
+  }
   auto *slice_ptr = static_cast<unsigned char *>(slice);
   SliceMetaInfo &slice_meta_info = get_slice_meta_info(slice_ptr);
   if (slice_meta_info.release()) {

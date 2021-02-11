@@ -30,7 +30,7 @@ public:
 
   void init_task_worker_client(int task_result_slot);
 
-  int send_task(intptr_t task_memory_ptr);
+  int send_task(void *task_memory_ptr);
 
 private:
   TaskWorkerClient() = default;

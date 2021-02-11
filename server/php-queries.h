@@ -337,7 +337,7 @@ void free_net_query(net_query_t *query);
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 
-int create_task_worker_answer_event(slot_id_t ready_task_id, long task_result_memory_ptr);
+int create_task_worker_answer_event(slot_id_t ready_task_id, void *task_result_memory_ptr);
 
 int net_events_empty();
 

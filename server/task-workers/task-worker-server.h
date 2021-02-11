@@ -26,7 +26,7 @@ public:
   vk::SteadyTimer<std::chrono::milliseconds> last_stats;
 
   void init_task_worker_server();
-  bool execute_task(int task_id, int task_result_fd_idx, intptr_t task_memory_ptr);
+  bool execute_task(int task_id, int task_result_fd_idx, void *task_memory_ptr);
   int read_execute_loop();
 
   void try_complete_delayed_tasks();

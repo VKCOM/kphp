@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <unistd.h>
 
+#include "common/kprintf.h"
+
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 
@@ -22,7 +24,7 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   auto &task_worker_client = vk::singleton<TaskWorkerClient>::get();
   assert(fd == task_worker_client.read_task_result_fd);
   if (ev->ready & EVT_SPEC) {
-    fprintf(stderr, "task worker special event: fd = %d, flags = %d\n", fd, ev->ready);
+    kprintf("task worker client special event: fd = %d, flags = %d\n", fd, ev->ready);
     // TODO:
     return 0;
   }
@@ -38,8 +40,8 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   tvkprintf(task_workers, 2, "got %zu task results, collecting ...\n", tasks_results_number);
   for (size_t i = 0; i < tasks_results_number; ++i) {
     int ready_task_id = static_cast<int>(task_worker_client.task_reader.next());
-    intptr_t task_result_memory_ptr = task_worker_client.task_reader.next();
-    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result_memory_ptr = %ld\n", i + 1, tasks_results_number,
+    auto *task_result_memory_ptr = reinterpret_cast<void *>(task_worker_client.task_reader.next());
+    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result_memory_ptr = %p\n", i + 1, tasks_results_number,
               ready_task_id, task_result_memory_ptr);
     create_task_worker_answer_event(ready_task_id, task_result_memory_ptr);
   }
@@ -73,20 +75,22 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
   }
 }
 
-int TaskWorkerClient::send_task(intptr_t task_memory_ptr) {
+int TaskWorkerClient::send_task(void * const task_memory_ptr) {
   static_assert(sizeof(task_memory_ptr) == 8, "Unexpected pointer size");
 
   slot_id_t task_id = create_slot();
 
-  tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %ld, write_task_fd = %d\n", task_result_fd_idx,
+  tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %p, write_task_fd = %d\n", task_result_fd_idx,
             task_id, task_memory_ptr, write_task_fd);
 
   task_writer.reset();
   task_writer.append((static_cast<int64_t>(task_id) << 32) | task_result_fd_idx);
-  task_writer.append(task_memory_ptr);
+  task_writer.append(reinterpret_cast<intptr_t>(task_memory_ptr));
 
   bool success = task_writer.flush_to_pipe(write_task_fd, "writing task");
-  assert(success);
+  if (!success) {
+    return false;
+  }
 
   SharedContext::get().task_queue_size++;
   SharedContext::get().total_tasks_send_count++;

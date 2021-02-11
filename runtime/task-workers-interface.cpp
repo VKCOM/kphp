@@ -16,19 +16,23 @@ void process_task_worker_answer_event(int ready_task_id, void *task_result_scrip
 }
 
 int64_t f$async_x2(const array<int64_t> &arr) {
-  void * const memory_slice = vk::singleton<SharedMemoryManager>::get().allocate_slice();
+  auto &memory_manager = vk::singleton<SharedMemoryManager>::get();
+  void * const memory_slice = memory_manager.allocate_slice();
   if (memory_slice == nullptr) {
-    php_warning("Can't allocate slice for task: memory is full");
+    php_warning("Can't allocate slice for task: not enough shared memory");
     return -1;
   }
-  php_assert(memory_slice);
 
   auto *task_memory = reinterpret_cast<int64_t *>(memory_slice);
   *task_memory++ = arr.count();
   memcpy(task_memory, arr.get_const_vector_pointer(), arr.count() * sizeof(int64_t));
 
-  int task_id = vk::singleton<TaskWorkerClient>::get().send_task(reinterpret_cast<intptr_t>(memory_slice));
-  php_assert(task_id > 0);
+  int task_id = vk::singleton<TaskWorkerClient>::get().send_task(memory_slice);
+  if (task_id <= 0) {
+    memory_manager.deallocate_slice(memory_slice);
+    php_warning("Can't send task. Probably tasks queue is full");
+    return -1;
+  }
 
   vk::singleton<PendingTasks>::get().put_task(task_id);
   return task_id;

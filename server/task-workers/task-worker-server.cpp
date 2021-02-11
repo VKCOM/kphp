@@ -7,6 +7,8 @@
 #include <cstring>
 #include <vector>
 
+#include "common/kprintf.h"
+
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 
@@ -26,7 +28,7 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
   assert(fd == task_worker_server.read_task_fd);
 
   if (ev->ready & EVT_SPEC) {
-    fprintf(stderr, "task worker special event: fd = %d, flags = %d\n", fd, ev->ready);
+    kprintf("task worker server special event: fd = %d, flags = %d\n", fd, ev->ready);
     // TODO:
     return 0;
   }
@@ -61,30 +63,36 @@ int TaskWorkerServer::read_execute_loop() {
     int64_t qword = task_reader.next();
     int task_id = qword >> 32;
     int task_result_fd_idx = qword & 0xFFFFFFFF;
-    intptr_t task_memory_ptr = task_reader.next();
+    auto *task_memory_ptr = reinterpret_cast<void *>(task_reader.next());
 
     SharedContext::get().task_queue_size--;
 
     bool success = execute_task(task_id, task_result_fd_idx, task_memory_ptr);
-    assert(success);
+
+    if (!success) {
+      kprintf("Error on executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
+    }
   }
 }
 
-bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, intptr_t task_memory_ptr) {
-  tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %ld\n", task_result_fd_idx, task_id, task_memory_ptr);
+bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * const task_memory_ptr) {
+  tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
 
   SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
 
-  auto *task_memory = reinterpret_cast<int64_t *>(task_memory_ptr);
+  auto *task_memory = static_cast<int64_t *>(task_memory_ptr);
   int64_t arr_n = *task_memory++;
   std::vector<int64_t> res(arr_n);
   for (int i = 0; i < arr_n; ++i) {
     res[i] = task_memory[i] * task_memory[i];
   }
-  memory_manager.deallocate_slice(reinterpret_cast<void *>(task_memory_ptr));
+  memory_manager.deallocate_slice(task_memory_ptr);
 
-  void * const task_result_memory_slice = memory_manager.allocate_slice();
-  assert(task_result_memory_slice);
+  void * const task_result_memory_slice = memory_manager.allocate_slice(); // TODO: reuse task_memory_ptr ?
+  if (task_result_memory_slice == nullptr) {
+    kprintf("Can't allocate slice for result of task: not enough shared memory\n");
+    return false;
+  }
 
   auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
   *task_result_memory++ = arr_n;
@@ -96,7 +104,10 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, intptr_
   task_writer.append(task_id);
   task_writer.append(reinterpret_cast<intptr_t>(task_result_memory_slice));
   bool success = task_writer.flush_to_pipe(write_task_result_fd, "writing result of task");
-  assert(success);
+  if (!success) {
+    memory_manager.deallocate_slice(task_result_memory_slice);
+    return false;
+  }
 
   SharedContext::get().total_tasks_done_count++;
 
