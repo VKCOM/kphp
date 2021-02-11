@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "common/kprintf.h"
+#include "common/timer.h"
 
 #include "net/net-events.h"
 #include "net/net-reactor.h"
@@ -78,6 +79,24 @@ int TaskWorkerServer::read_execute_loop() {
   }
 }
 
+static std::vector<int64_t> run_task_array_x2(const std::vector<int64_t> &arr) {
+  static constexpr auto HANG_SHIFT = static_cast<int64_t>(1e9);
+  std::vector<int64_t> res;
+  res.reserve(arr.size());
+  for (const auto &item : arr) {
+    if (item < 0) {
+      assert(false);
+    } else if (item > HANG_SHIFT) {
+      int64_t hang_time_ms = item - HANG_SHIFT;
+      vk::SteadyTimer<std::chrono::milliseconds> timer;
+      timer.start();
+      while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {};
+    }
+    res.push_back(item * item);
+  }
+  return res;
+}
+
 bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * const task_memory_ptr) {
   tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
 
@@ -85,9 +104,9 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
 
   auto *task_memory = static_cast<int64_t *>(task_memory_ptr);
   int64_t arr_n = *task_memory++;
-  std::vector<int64_t> res(arr_n);
+  std::vector<int64_t> arr(arr_n);
   for (int i = 0; i < arr_n; ++i) {
-    res[i] = task_memory[i] * task_memory[i];
+    arr[i] = task_memory[i];
   }
   memory_manager.deallocate_slice(task_memory_ptr);
 
@@ -98,6 +117,7 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
     return false;
   }
 
+  std::vector<int64_t> res = run_task_array_x2(arr);
   auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
   *task_result_memory++ = arr_n;
   memcpy(task_result_memory, res.data(), res.size() * sizeof(int64_t));
