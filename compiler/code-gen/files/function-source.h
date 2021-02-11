@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
-struct FunctionCpp {
+struct FunctionCpp : CodeGenRootCmd {
   FunctionPtr function;
-  FunctionCpp(FunctionPtr function);
-  void compile(CodeGenerator &W) const;
+  explicit FunctionCpp(FunctionPtr function);
+  void compile(CodeGenerator &W) const final;
 };
 
 void declare_global_vars(FunctionPtr function, CodeGenerator &W);

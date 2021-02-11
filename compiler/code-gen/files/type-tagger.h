@@ -7,12 +7,13 @@
 #include <string>
 #include <vector>
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/inferring/type-data.h"
 
-struct TypeTagger {
+struct TypeTagger : CodeGenRootCmd {
   TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
 
 private:
   std::vector<const TypeData *> forkable_types;

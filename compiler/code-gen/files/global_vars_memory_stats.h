@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
-struct GlobalVarsMemoryStats {
+struct GlobalVarsMemoryStats : CodeGenRootCmd {
   explicit GlobalVarsMemoryStats(SrcFilePtr main_file);
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
 
 private:
   void compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const;

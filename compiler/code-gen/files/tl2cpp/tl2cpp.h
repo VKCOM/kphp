@@ -4,8 +4,9 @@
 
 #pragma once
 
-class CodeGenerator;
+#include "compiler/code-gen/code-gen-root-cmd.h"
+#include "compiler/code-gen/code-generator.h"
 
-struct TlSchemaToCpp {
-  void compile(CodeGenerator &W) const;
+struct TlSchemaToCpp : CodeGenRootCmd {
+  void compile(CodeGenerator &W) const final;
 };

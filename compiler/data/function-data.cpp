@@ -6,7 +6,6 @@
 
 #include "common/termformat/termformat.h"
 
-#include "compiler/code-gen/writer.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"

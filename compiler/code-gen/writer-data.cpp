@@ -10,14 +10,14 @@
 #include "compiler/stage.h"
 #include "common/wrappers/fmt_format.h"
 
-WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc) :
+WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc, std::string file_name, std::string subdir) :
   lines(),
   text(),
   crc(-1),
   compile_with_debug_info_flag(compile_with_debug_info_flag),
   compile_with_crc_flag(compile_with_crc),
-  file_name(),
-  subdir() {
+  file_name(std::move(file_name)),
+  subdir(std::move(subdir)) {
 }
 
 void WriterData::begin_line() {
@@ -26,6 +26,7 @@ void WriterData::begin_line() {
 
 void WriterData::end_line() {
   lines.back().end_pos = (int)text.size();
+  append('\n');
 }
 
 void WriterData::brk() {

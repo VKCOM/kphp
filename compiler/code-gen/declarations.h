@@ -6,6 +6,7 @@
 
 #include "common/tlo-parsing/tl-objects.h"
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/code-gen/naming.h"
@@ -96,18 +97,18 @@ private:
   bool check_deduction_result() const;
 };
 
-struct InterfaceDeclaration {
+struct InterfaceDeclaration : CodeGenRootCmd {
   InterfacePtr interface;
   explicit InterfaceDeclaration(InterfacePtr interface);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
 private:
   std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
 };
 
-struct ClassDeclaration {
+struct ClassDeclaration : CodeGenRootCmd {
   ClassPtr klass;
   explicit ClassDeclaration(ClassPtr klass);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
   static void compile_inner_methods(CodeGenerator &W, ClassPtr klass);
 
 private:

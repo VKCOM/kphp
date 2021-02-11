@@ -11,40 +11,20 @@
 
 ProfilerRaw &get_code_gen_profiler();
 
-template<class T>
-class CodeGenTask : public Task {
-private:
+struct CodeGenRootCmd;
+
+class CodeGenSchedulerTask : public Task {
   CodeGenerator W;
-  T cmd;
+  std::unique_ptr<CodeGenRootCmd> cmd;
+
 public:
-  CodeGenTask(const CodeGenerator &W, const T &cmd) :
-    W(W),
-    cmd(cmd) {
-  }
+  CodeGenSchedulerTask(DataStream<WriterData *> &os, std::unique_ptr<CodeGenRootCmd> &&cmd) :
+    W(os),
+    cmd(std::move(cmd)) {}
 
-  void execute() {
-    AutoProfiler profler{get_code_gen_profiler()};
-    stage::set_name("Async code generation");
-
-    // uncomment this to launch codegen twice and ensure there is no diff (codegeneration is idempotent)
-    // W << cmd;
-                    
-    W << cmd;
-  }
+  void execute() final;
 };
 
-template<class T>
-struct AsyncImpl {
-  const T &cmd;
-  AsyncImpl(const T &cmd) :
-    cmd(cmd) {
-  }
-  void compile(CodeGenerator &W) const {
-    register_async_task(new CodeGenTask<T>(W, cmd));
-  }
-};
-
-template<class T>
-AsyncImpl<T> Async(const T &cmd) {
-  return AsyncImpl<T>(cmd);
+inline void code_gen_start_root_task(DataStream<WriterData *> &os, std::unique_ptr<CodeGenRootCmd> &&cmd) {
+  register_async_task(new CodeGenSchedulerTask(os, std::move(cmd)));
 }

@@ -21,12 +21,12 @@ void ExternInclude::compile(CodeGenerator &W) const {
 }
 
 void Include::compile(CodeGenerator &W) const {
-  W.get_writer().add_include(static_cast<std::string>(file_name));
+  W.add_include(static_cast<std::string>(file_name));
   ExternInclude::compile(W);
 }
 
 void LibInclude::compile(CodeGenerator &W) const {
-  W.get_writer().add_lib_include(static_cast<std::string>(file_name));
+  W.add_lib_include(static_cast<std::string>(file_name));
   ExternInclude::compile(W);
 }
 

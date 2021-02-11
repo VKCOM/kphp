@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
-struct FunctionH {
+struct FunctionH : CodeGenRootCmd {
   FunctionPtr function;
-  FunctionH(FunctionPtr function);
-  void compile(CodeGenerator &W) const;
+  explicit FunctionH(FunctionPtr function);
+  void compile(CodeGenerator &W) const final;
 };
 

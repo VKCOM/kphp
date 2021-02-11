@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
-struct GlobalVarsReset {
-  GlobalVarsReset(SrcFilePtr main_file);
+struct GlobalVarsReset : CodeGenRootCmd {
+  explicit GlobalVarsReset(SrcFilePtr main_file);
 
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
 
   static void compile_part(FunctionPtr func, const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W);
 
