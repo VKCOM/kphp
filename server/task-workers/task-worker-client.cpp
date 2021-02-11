@@ -33,6 +33,7 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   task_worker_client.task_reader.reset();
   ssize_t read_bytes = task_worker_client.task_reader.read_task_results_from_pipe(TASK_RESULT_BYTE_SIZE);
   if (read_bytes < 0) {
+    SharedContext::get().total_errors_pipe_client_read++;
     return -1;
   }
 
@@ -89,11 +90,12 @@ int TaskWorkerClient::send_task(void * const task_memory_ptr) {
 
   bool success = task_writer.flush_to_pipe(write_task_fd, "writing task");
   if (!success) {
+    SharedContext::get().total_errors_pipe_client_write++;
     return false;
   }
 
   SharedContext::get().task_queue_size++;
-  SharedContext::get().total_tasks_send_count++;
+  SharedContext::get().total_tasks_sent++;
   return task_id;
 }
 

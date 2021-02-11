@@ -57,6 +57,7 @@ int TaskWorkerServer::read_execute_loop() {
       has_delayed_tasks = false;
       return 0;
     } else if (read_bytes < 0) {
+      SharedContext::get().total_errors_pipe_server_read++;
       return -1;
     }
 
@@ -68,8 +69,10 @@ int TaskWorkerServer::read_execute_loop() {
     SharedContext::get().task_queue_size--;
 
     bool success = execute_task(task_id, task_result_fd_idx, task_memory_ptr);
-
-    if (!success) {
+    if (success) {
+      SharedContext::get().total_tasks_done++;
+    } else {
+      SharedContext::get().total_tasks_failed++;
       kprintf("Error on executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
     }
   }
@@ -91,6 +94,7 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
   void * const task_result_memory_slice = memory_manager.allocate_slice(); // TODO: reuse task_memory_ptr ?
   if (task_result_memory_slice == nullptr) {
     kprintf("Can't allocate slice for result of task: not enough shared memory\n");
+    SharedContext::get().total_errors_shared_memory_limit++;
     return false;
   }
 
@@ -106,10 +110,9 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
   bool success = task_writer.flush_to_pipe(write_task_result_fd, "writing result of task");
   if (!success) {
     memory_manager.deallocate_slice(task_result_memory_slice);
+    SharedContext::get().total_errors_pipe_server_write++;
     return false;
   }
-
-  SharedContext::get().total_tasks_done_count++;
 
   return true;
 }

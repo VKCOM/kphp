@@ -7,6 +7,7 @@
 #include "server/task-workers/pending-tasks.h"
 #include "server/task-workers/task-worker-client.h"
 #include "server/task-workers/task-workers-context.h"
+#include "server/task-workers/shared-context.h"
 #include "server/task-workers/shared-memory-manager.h"
 
 using namespace task_workers;
@@ -20,6 +21,7 @@ int64_t f$async_x2(const array<int64_t> &arr) {
   void * const memory_slice = memory_manager.allocate_slice();
   if (memory_slice == nullptr) {
     php_warning("Can't allocate slice for task: not enough shared memory");
+    SharedContext::get().total_errors_shared_memory_limit++;
     return -1;
   }
 

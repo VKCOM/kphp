@@ -1610,8 +1610,15 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "task_workers.task_queue_size", task_workers_stats.task_queue_size.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "task_workers.occupied_shared_memory_slices_count", task_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "task_workers.max_shared_memory_slices_count", vk::singleton<task_workers::SharedMemoryManager>::get().get_total_slices_count());
-  add_histogram_stat_long(stats, "task_workers.total_tasks_send_count", task_workers_stats.total_tasks_send_count.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_tasks_done_count", task_workers_stats.total_tasks_done_count.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_tasks_sent", task_workers_stats.total_tasks_sent.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_tasks_done", task_workers_stats.total_tasks_done.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_tasks_failed", task_workers_stats.total_tasks_failed.load(std::memory_order_relaxed));
+
+  add_histogram_stat_long(stats, "task_workers.total_errors_shared_memory_limit", task_workers_stats.total_errors_shared_memory_limit.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_server_write", task_workers_stats.total_errors_pipe_server_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_server_read", task_workers_stats.total_errors_pipe_server_read.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_client_write", task_workers_stats.total_errors_pipe_client_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_client_read", task_workers_stats.total_errors_pipe_client_read.load(std::memory_order_relaxed));
 
   update_mem_stats();
   unsigned long long max_vms = 0;
