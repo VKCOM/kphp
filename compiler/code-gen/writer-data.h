@@ -40,7 +40,7 @@ private:
   void dump(std::string &dest_str, const std::vector<Line>::iterator &begin, const std::vector<Line>::iterator &end, SrcFilePtr file);
 
 public:
-  explicit WriterData(bool compile_with_debug_info_flag = true, bool compile_with_crc = true);
+  explicit WriterData(bool compile_with_debug_info_flag, bool compile_with_crc, std::string file_name, std::string subdir);
 
   void append(const char *begin, size_t length) {
     text.append(begin, length);

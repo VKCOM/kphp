@@ -69,6 +69,7 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
 
 prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
+        code-generator.cpp
         declarations.cpp
         files/function-header.cpp
         files/function-source.cpp
@@ -89,8 +90,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         includes.cpp
         raw-data.cpp
         vertex-compiler.cpp
-        writer-data.cpp
-        writer.cpp)
+        writer-data.cpp)
 
 prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         analyzer.cpp

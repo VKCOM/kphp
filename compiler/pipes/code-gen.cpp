@@ -41,7 +41,7 @@ void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &unused_os _
   }
 }
 
-void CodeGenF::on_finish(DataStream<WriterData> &os) {
+void CodeGenF::on_finish(DataStream<WriterData *> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
   stage::set_name("GenerateCode");
@@ -51,13 +51,9 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
   const std::vector<ClassPtr> &all_classes = G->get_classes();
 
-  //TODO: delete W_ptr
-  CodeGenerator *W_ptr = new CodeGenerator(os);
-  CodeGenerator &W = *W_ptr;  // created once, others are copied in Async()
-
   for (FunctionPtr f : all_functions) {
-    W << Async(FunctionH(f));
-    W << Async(FunctionCpp(f));
+    code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
+    code_gen_start_root_task(os, std::make_unique<FunctionCpp>(f));
   }
 
   for (ClassPtr c : all_classes) {
@@ -67,10 +63,10 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
 
     switch (c->class_type) {
       case ClassType::klass:
-        W << Async(ClassDeclaration(c));
+        code_gen_start_root_task(os, std::make_unique<ClassDeclaration>(c));
         break;
       case ClassType::interface:
-        W << Async(InterfaceDeclaration(c));
+        code_gen_start_root_task(os, std::make_unique<InterfaceDeclaration>(c));
         break;
 
       default:
@@ -78,41 +74,41 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
     }
   }
 
-  W << Async(GlobalVarsReset(G->get_main_file()));
+  code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(G->get_main_file()));
   if (G->settings().enable_global_vars_memory_stats.get()) {
-    W << Async(GlobalVarsMemoryStats{G->get_main_file()});
+    code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(G->get_main_file()));
   }
-  W << Async(InitScriptsCpp(G->get_main_file()));
+  code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
 
   std::vector<VarPtr> vars = G->get_global_vars();
   for (FunctionPtr f : all_functions) {
     vars.insert(vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
   size_t parts_cnt = calc_count_of_parts(vars.size());
-  W << Async(VarsCpp(std::move(vars), parts_cnt));
+  code_gen_start_root_task(os, std::make_unique<VarsCpp>(std::move(vars), parts_cnt));
 
   if (G->settings().is_static_lib_mode()) {
     std::vector<FunctionPtr> exported_functions;
     for (FunctionPtr f : all_functions) {
       if (f->kphp_lib_export) {
-        W << Async(LibHeaderH(f));
+        code_gen_start_root_task(os, std::make_unique<LibHeaderH>(f));
         exported_functions.emplace_back(f);
       }
     }
     std::sort(exported_functions.begin(), exported_functions.end());
-    W << Async(LibHeaderTxt(std::move(exported_functions)));
-    W << Async(StaticLibraryRunGlobalHeaderH());
+    code_gen_start_root_task(os, std::make_unique<LibHeaderTxt>(std::move(exported_functions)));
+    code_gen_start_root_task(os, std::make_unique<StaticLibraryRunGlobalHeaderH>());
   }
 
   // TODO: should be done in lib mode also, but in some other way
   if (!G->settings().is_static_lib_mode()) {
-    W << Async(TypeTagger(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
+    code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
   }
 
-  W << Async(TlSchemaToCpp());
-  W << Async(LibVersionHFile());
+  code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());
+  code_gen_start_root_task(os, std::make_unique<LibVersionHFile>());
   if (!G->settings().is_static_lib_mode()) {
-    W << Async(CppMainFile());
+    code_gen_start_root_task(os, std::make_unique<CppMainFile>());
   }
 }
 

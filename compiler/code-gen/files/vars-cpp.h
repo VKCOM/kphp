@@ -6,9 +6,10 @@
 
 #include <vector>
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 
-struct VarsCpp {
+struct VarsCpp : CodeGenRootCmd {
   VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt);
   void compile(CodeGenerator &W) const;
 

@@ -27,16 +27,13 @@ struct OpenFile {
   }
 
   void compile(CodeGenerator &W) const {
-    W.create_writer();
-    W.get_writer().begin_write(compile_with_debug_info_flag, compile_with_crc);
-    W.get_writer().set_file_name(file_name, subdir);
+    W.open_file_create_writer(compile_with_debug_info_flag, compile_with_crc, file_name, subdir);
   }
 };
 
 struct CloseFile {
   void compile(CodeGenerator &W) const {
-    W.get_writer().end_write();
-    W.clear_writer();
+    W.close_file_clear_writer();
   }
 };
 
@@ -46,16 +43,16 @@ struct UpdateLocation {
     location(location) {
   }
   void compile(CodeGenerator &W) const {
-    if (!W.get_writer().is_comments_locked()) {
+    if (!W.is_comments_locked()) {
       stage::set_location(location);
-      W.get_writer().add_location(stage::get_file(), stage::get_line());
+      W.add_location(stage::get_file(), stage::get_line());
     }
   }
 };
 
 struct NewLine {
   void compile(CodeGenerator &W) const {
-    W.get_writer().new_line();
+    W.new_line();
   }
 };
 
@@ -63,7 +60,7 @@ struct Indent {
   int val;
   Indent(int val) : val(val) { }
   inline void compile(CodeGenerator &W) const {
-    W.get_writer().indent(val);
+    W.indent(val);
   }
 };
 
@@ -87,13 +84,13 @@ struct SemicolonAndNL {
 
 struct LockComments {
   inline void compile(CodeGenerator &W) const {
-    W.get_writer().lock_comments();
+    W.lock_comments();
   }
 };
 
 struct UnlockComments {
   inline void compile(CodeGenerator &W) const {
-    W.get_writer().unlock_comments();
+    W.unlock_comments();
   }
 };
 

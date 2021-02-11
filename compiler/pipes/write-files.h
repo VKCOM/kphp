@@ -9,5 +9,5 @@
 
 class WriteFilesF {
 public:
-  void execute(WriterData data, EmptyStream &);
+  void execute(WriterData *data, EmptyStream &);
 };

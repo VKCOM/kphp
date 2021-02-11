@@ -4,20 +4,21 @@
 
 #pragma once
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 
-struct StaticLibraryRunGlobalHeaderH {
-  void compile(CodeGenerator &W) const;
+struct StaticLibraryRunGlobalHeaderH : CodeGenRootCmd {
+  void compile(CodeGenerator &W) const final;
 };
 
-struct LibHeaderH {
+struct LibHeaderH : CodeGenRootCmd {
   FunctionPtr exported_function;
-  LibHeaderH(FunctionPtr exported_function);
-  void compile(CodeGenerator &W) const;
+  explicit LibHeaderH(FunctionPtr exported_function);
+  void compile(CodeGenerator &W) const final;
 };
 
-struct LibHeaderTxt {
+struct LibHeaderTxt : CodeGenRootCmd {
   std::vector<FunctionPtr> exported_functions;
-  LibHeaderTxt(std::vector<FunctionPtr> &&exported_functions);
-  void compile(CodeGenerator &W) const;
+  explicit LibHeaderTxt(std::vector<FunctionPtr> &&exported_functions);
+  void compile(CodeGenerator &W) const final;
 };

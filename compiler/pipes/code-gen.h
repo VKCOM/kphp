@@ -13,7 +13,7 @@
 
 class CodeGenerator;
 
-class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
+class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData *> {
   using need_profiler = std::true_type;
   using Base = SyncPipeF<FunctionPtr, WriterData>;
 
@@ -23,5 +23,5 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, WriterData> {
 
 public:
   void execute(FunctionPtr function, DataStream<WriterData> &unused_os) final;
-  void on_finish(DataStream<WriterData> &os) final;
+  void on_finish(DataStream<WriterData *> &os) final;
 };

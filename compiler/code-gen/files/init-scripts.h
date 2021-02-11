@@ -6,19 +6,20 @@
 
 #include <vector>
 
+#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
 
-struct InitScriptsCpp {
+struct InitScriptsCpp : CodeGenRootCmd {
   SrcFilePtr main_file_id;
   explicit InitScriptsCpp(SrcFilePtr main_file_id);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator &W) const final;
 };
 
-struct LibVersionHFile {
-  void compile(CodeGenerator &W) const;
+struct LibVersionHFile : CodeGenRootCmd {
+  void compile(CodeGenerator &W) const final;
 };
 
-struct CppMainFile {
-  void compile(CodeGenerator &W) const;
+struct CppMainFile : CodeGenRootCmd {
+  void compile(CodeGenerator &W) const final;
 };
