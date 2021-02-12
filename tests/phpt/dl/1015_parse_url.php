@@ -49,6 +49,7 @@ $URLS = [
   'http://secret:@www.php.net/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123',
   'http://:hideout@www.php.net:80/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123',
   'http://secret:hideout@www.php.net/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123',
+  'http://secret@hideout@www.php.net:80/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123',
   'http://secret:hid:out@www.php.net:80/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123',
   'nntp://news.php.net',
   'ftp://ftp.gnu.org/gnu/glic/glibc.tar.gz',
@@ -128,13 +129,6 @@ $URLS = [
   // '//php.net/path?query=1:2',
   // '/busca/?fq=B:20001',
 ];
-
-// Jessie doesn't have fresh PHP
-// TODO: Drop
-$is_jessie = strpos(file_get_contents("/etc/issue"), "Debian GNU/Linux 8") !== false;
-if (!$is_jessie) {
-  $URLS[] = 'http://secret@hideout@www.php.net:80/index.php?test=1&test2=char&test3=mixesCI#some_page_ref123';
-}
 
 
 foreach($URLS as $url) {

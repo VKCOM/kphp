@@ -667,9 +667,9 @@ ext/standard/tests/url/bug47174.phpt
 ext/standard/tests/url/bug52327.phpt
 ext/standard/tests/url/bug55399.phpt
 ext/standard/tests/url/parse_url_basic_002.phpt
-# ext/standard/tests/url/parse_url_basic_003.phpt TODO: uncomment after jessie removing
+ext/standard/tests/url/parse_url_basic_003.phpt
 ext/standard/tests/url/parse_url_basic_004.phpt
-# ext/standard/tests/url/parse_url_basic_005.phpt TODO: uncomment after jessie removing
+ext/standard/tests/url/parse_url_basic_005.phpt
 ext/standard/tests/url/parse_url_basic_006.phpt
 ext/standard/tests/url/parse_url_basic_007.phpt
 ext/standard/tests/url/parse_url_basic_008.phpt
