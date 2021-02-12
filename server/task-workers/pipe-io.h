@@ -6,6 +6,9 @@
 
 #include <climits>
 #include <cstdint>
+#include <type_traits>
+
+#include "server/task-workers/task.h"
 
 namespace task_workers {
 
@@ -13,21 +16,33 @@ class PipeIO {
 public:
   void reset() {
     buf_end_pos = 0;
-    buf_size = -1;
   };
 
 protected:
-  int64_t buf[PIPE_BUF / sizeof(int64_t)]{};
+  unsigned char buf[PIPE_BUF]{};
   size_t buf_end_pos{0};
-  ssize_t buf_size{-1};
 
   PipeIO() = default;
+
+  template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+  void copy_to_buffer(const T &x) {
+    memcpy(buf + buf_end_pos, &x, sizeof(T));
+    buf_end_pos += sizeof(T);
+  }
+
+  template <typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+  void extract_from_buffer(T &dest) {
+    memcpy(&dest, buf, sizeof(T));
+  }
 };
 
 class PipeTaskWriter : public PipeIO {
 public:
-  void append(int64_t val);
-  bool flush_to_pipe(int write_fd, const char *description);
+  bool write_task(const Task &task, int write_fd);
+  bool write_task_result(const TaskResult &task_result, int write_fd);
+
+private:
+  bool write_to_pipe(int write_fd, const char *description);
 };
 
 class PipeTaskReader : public PipeIO {
@@ -37,11 +52,18 @@ public:
   explicit PipeTaskReader(int read_fd)
     : read_fd(read_fd) {}
 
-  ssize_t read_task_from_pipe(size_t task_byte_size);
-  ssize_t read_task_results_from_pipe(size_t task_result_byte_size);
-  int64_t next();
+  enum ReadStatus {
+    READ_OK,
+    READ_FAIL,
+    READ_BLOCK
+  };
+
+  ReadStatus read_task(Task &task);
+  ReadStatus read_task_result(TaskResult &task_result);
 private:
   int read_fd{-1};
+
+  ReadStatus read_from_pipe(size_t bytes_cnt, const char *description);
 };
 
 } // namespace task_workers

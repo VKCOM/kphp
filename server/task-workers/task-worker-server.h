@@ -10,6 +10,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/timer.h"
 #include "server/task-workers/pipe-io.h"
+#include "server/task-workers/task.h"
 
 typedef struct event_descr event_t;
 
@@ -21,12 +22,11 @@ namespace task_workers {
 class TaskWorkerServer : vk::not_copyable {
 public:
   friend class vk::singleton<TaskWorkerServer>;
-  static constexpr size_t TASK_BYTE_SIZE = 2 * sizeof(int64_t); // <task_id, write_task_result_fd>; task_memory_ptr
 
   vk::SteadyTimer<std::chrono::milliseconds> last_stats;
 
   void init_task_worker_server();
-  bool execute_task(int task_id, int task_result_fd_idx, void *task_memory_ptr);
+  bool execute_task(const Task &task);
   int read_execute_loop();
 
   void try_complete_delayed_tasks();

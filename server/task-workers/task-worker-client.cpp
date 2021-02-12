@@ -30,22 +30,21 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
   }
   assert(ev->ready & EVT_READ);
 
-  task_worker_client.task_reader.reset();
-  ssize_t read_bytes = task_worker_client.task_reader.read_task_results_from_pipe(TASK_RESULT_BYTE_SIZE);
-  if (read_bytes < 0) {
-    SharedContext::get().total_errors_pipe_client_read++;
-    return -1;
-  }
+  PipeTaskReader::ReadStatus status{};
 
-  size_t tasks_results_number = read_bytes / TASK_RESULT_BYTE_SIZE;
-  tvkprintf(task_workers, 2, "got %zu task results, collecting ...\n", tasks_results_number);
-  for (size_t i = 0; i < tasks_results_number; ++i) {
-    int ready_task_id = static_cast<int>(task_worker_client.task_reader.next());
-    auto *task_result_memory_ptr = reinterpret_cast<void *>(task_worker_client.task_reader.next());
-    tvkprintf(task_workers, 2, "collecting task result (%lu / %lu): ready_task_id = %d, task_result_memory_ptr = %p\n", i + 1, tasks_results_number,
-              ready_task_id, task_result_memory_ptr);
-    create_task_worker_answer_event(ready_task_id, task_result_memory_ptr);
-  }
+  do {
+    TaskResult task_result;
+    status = task_worker_client.task_reader.read_task_result(task_result);
+    if (status == PipeTaskReader::READ_FAIL) {
+      SharedContext::get().total_errors_pipe_client_read++;
+      return -1;
+    }
+    if (status == PipeTaskReader::READ_OK) {
+      tvkprintf(task_workers, 2, "got task result: ready_task_id = %d, task_result_memory_ptr = %p\n", task_result.task_id, task_result.task_result_memory_ptr);
+      create_task_worker_answer_event(task_result.task_id, task_result.task_result_memory_ptr);
+    }
+  } while (status != PipeTaskReader::READ_BLOCK);
+
   return 0;
 }
 
@@ -84,11 +83,7 @@ int TaskWorkerClient::send_task(void * const task_memory_ptr) {
   tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %p, write_task_fd = %d\n", task_result_fd_idx,
             task_id, task_memory_ptr, write_task_fd);
 
-  task_writer.reset();
-  task_writer.append((static_cast<int64_t>(task_id) << 32) | task_result_fd_idx);
-  task_writer.append(reinterpret_cast<intptr_t>(task_memory_ptr));
-
-  bool success = task_writer.flush_to_pipe(write_task_fd, "writing task");
+  bool success = task_writer.write_task(Task{task_id, task_result_fd_idx, task_memory_ptr}, write_task_fd);
   if (!success) {
     SharedContext::get().total_errors_pipe_client_write++;
     return false;

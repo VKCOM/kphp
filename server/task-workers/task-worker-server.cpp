@@ -46,33 +46,28 @@ int TaskWorkerServer::read_execute_loop() {
       return 0;
     }
 
-    task_reader.reset();
-    ssize_t read_bytes = task_reader.read_task_from_pipe(TASK_BYTE_SIZE);
+    Task task;
+    PipeTaskReader::ReadStatus status = task_reader.read_task(task);
 
-    if (read_bytes == -2) {
+    if (status == PipeTaskReader::READ_BLOCK) {
       assert(errno == EWOULDBLOCK);
       // another task worker has already taken the task (all task workers are readers for this fd)
       // or there are no more tasks in pipe
       has_delayed_tasks = false;
       return 0;
-    } else if (read_bytes < 0) {
+    } else if (status == PipeTaskReader::READ_FAIL) {
       SharedContext::get().total_errors_pipe_server_read++;
       return -1;
     }
 
-    int64_t qword = task_reader.next();
-    int task_id = qword >> 32;
-    int task_result_fd_idx = qword & 0xFFFFFFFF;
-    auto *task_memory_ptr = reinterpret_cast<void *>(task_reader.next());
-
     SharedContext::get().task_queue_size--;
 
-    bool success = execute_task(task_id, task_result_fd_idx, task_memory_ptr);
+    bool success = execute_task(task);
     if (success) {
       SharedContext::get().total_tasks_done++;
     } else {
       SharedContext::get().total_tasks_failed++;
-      kprintf("Error on executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
+      kprintf("Error on executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task.task_result_fd_idx, task.task_id, task.task_memory_ptr);
     }
   }
 }
@@ -94,8 +89,8 @@ static bool run_task_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
   return true;
 }
 
-bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * const task_memory_ptr) {
-  tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task_result_fd_idx, task_id, task_memory_ptr);
+bool TaskWorkerServer::execute_task(const Task &task) {
+  tvkprintf(task_workers, 2, "executing task: <task_result_fd_idx, task_id> = <%d, %d>, task_memory_ptr = %p\n", task.task_result_fd_idx, task.task_id, task.task_memory_ptr);
 
   SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
 
@@ -103,30 +98,27 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
   if (task_result_memory_slice == nullptr) {
     kprintf("Can't allocate slice for result of task: not enough shared memory\n");
     SharedContext::get().total_errors_shared_memory_limit++;
-    memory_manager.deallocate_slice(task_memory_ptr);
+    memory_manager.deallocate_slice(task.task_memory_ptr);
     return false;
   }
 
-  auto *task_memory = static_cast<int64_t *>(task_memory_ptr);
+  auto *task_memory = static_cast<int64_t *>(task.task_memory_ptr);
   int64_t arr_size = *task_memory++;
 
   auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
   *task_result_memory++ = arr_size;
 
   bool ok = run_task_array_x2(task_result_memory, task_memory, arr_size);
-  memory_manager.deallocate_slice(task_memory_ptr);
+  memory_manager.deallocate_slice(task.task_memory_ptr);
 
   if (!ok) {
     memory_manager.deallocate_slice(task_result_memory_slice);
     assert(false);
   }
 
-  int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
+  int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task.task_result_fd_idx)[1];
 
-  task_writer.reset();
-  task_writer.append(task_id);
-  task_writer.append(reinterpret_cast<intptr_t>(task_result_memory_slice));
-  bool success = task_writer.flush_to_pipe(write_task_result_fd, "writing result of task");
+  bool success = task_writer.write_task_result(TaskResult{0, task.task_id, task_result_memory_slice}, write_task_result_fd);
   if (!success) {
     memory_manager.deallocate_slice(task_result_memory_slice);
     SharedContext::get().total_errors_pipe_server_write++;

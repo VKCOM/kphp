@@ -20,7 +20,6 @@ namespace task_workers {
 class TaskWorkerClient : vk::not_copyable {
 public:
   friend class vk::singleton<TaskWorkerClient>;
-  static constexpr int TASK_RESULT_BYTE_SIZE = 2 * sizeof(int64_t); // task_id; task_result_memory_ptr
 
   int task_result_fd_idx{-1};
   int read_task_result_fd{-1};

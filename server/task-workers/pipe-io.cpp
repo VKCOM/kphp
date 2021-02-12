@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cstring>
 #include <errno.h>
 #include <unistd.h>
@@ -8,8 +7,8 @@
 
 namespace task_workers {
 
-bool PipeTaskWriter::flush_to_pipe(int write_fd, const char *description) {
-  size_t bytes_to_write = buf_end_pos * sizeof(buf[0]);
+bool PipeTaskWriter::write_to_pipe(int write_fd, const char *description) {
+  size_t bytes_to_write = buf_end_pos;
   ssize_t written = write(write_fd, buf, bytes_to_write);
 
   if (written == -1) {
@@ -30,46 +29,50 @@ bool PipeTaskWriter::flush_to_pipe(int write_fd, const char *description) {
   return true;
 }
 
-void PipeTaskWriter::append(int64_t val) {
-  buf[buf_end_pos++] = val;
+bool PipeTaskWriter::write_task(const Task &task, int write_fd) {
+  reset();
+  copy_to_buffer(task);
+  return write_to_pipe(write_fd, "writing task");
 }
 
-ssize_t PipeTaskReader::read_task_from_pipe(size_t task_byte_size) {
-  ssize_t read_bytes = read(read_fd, buf, task_byte_size);
+bool PipeTaskWriter::write_task_result(const TaskResult &task_result, int write_fd) {
+  reset();
+  copy_to_buffer(task_result);
+  return write_to_pipe(write_fd, "writing result of task");
+}
+
+PipeTaskReader::ReadStatus PipeTaskReader::read_task(Task &task) {
+  reset();
+  ReadStatus status = read_from_pipe(sizeof(Task), "read task");
+  if (status == READ_OK) {
+    extract_from_buffer(task);
+  }
+  return status;
+}
+
+PipeTaskReader::ReadStatus PipeTaskReader::read_task_result(TaskResult &task_result) {
+  reset();
+  ReadStatus status = read_from_pipe(sizeof(TaskResult), "read result of task");
+  if (status == READ_OK) {
+    extract_from_buffer(task_result);
+  }
+  return status;
+}
+
+PipeTaskReader::ReadStatus PipeTaskReader::read_from_pipe(size_t bytes_cnt, const char *description) {
+  ssize_t read_bytes = read(read_fd, buf, bytes_cnt);
   if (read_bytes == -1) {
     if (errno == EWOULDBLOCK) {
-      return -2;
+      return READ_BLOCK;
     }
-    kprintf("pid = %d, Couldn't read task: %s\n", getpid(), strerror(errno));
-    return -1;
+    kprintf("Couldn't %s: %s\n", description, strerror(errno));
+    return READ_FAIL;
   }
-  if (read_bytes != task_byte_size) {
-    kprintf("Couldn't read task. Got %zd bytes, but task bytes size = %zd. Probably some tasks are written not atomically\n", read_bytes, task_byte_size);
-    return -1;
+  if (read_bytes != bytes_cnt) {
+    kprintf("Couldn't %s. Got %zd bytes, but expected %zd. Probably some tasks are written not atomically\n", description, bytes_cnt, read_bytes);
+    return READ_FAIL;
   }
-  buf_size = read_bytes / sizeof(buf[0]);
-  return read_bytes;
-}
-
-ssize_t PipeTaskReader::read_task_results_from_pipe(size_t task_result_byte_size) {
-  ssize_t read_bytes = read(read_fd, buf, PIPE_BUF);
-
-  if (read_bytes == -1) {
-    assert(errno != EWOULDBLOCK); // because fd must be ready for read, current HTTP worker is only one reader for this fd
-    kprintf("Couldn't read task results: %s", strerror(errno));
-    return -1;
-  }
-  if (read_bytes % task_result_byte_size != 0) {
-    kprintf("Got inconsistent number of bytes on read task results: %zd. Probably some task results are written not atomically", read_bytes);
-    return -1;
-  }
-  buf_size = read_bytes / sizeof(buf[0]);
-  return read_bytes;
-}
-
-int64_t PipeTaskReader::next() {
-  assert(buf_end_pos < buf_size);
-  return buf[buf_end_pos++];
+  return READ_OK;
 }
 
 } // namespace task_workers
