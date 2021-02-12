@@ -2057,7 +2057,6 @@ void run_master() {
 
     if (to_exit) {
       vkprintf(1, "all workers killed. exit\n");
-      // todo: kill task workers? or prctl(PR_SET_PDEATHSIG, SIGKILL); is enough?
       _exit(0);
     }
 

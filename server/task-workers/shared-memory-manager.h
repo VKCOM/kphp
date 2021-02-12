@@ -5,6 +5,7 @@
 #pragma once
 
 #include <atomic>
+#include <random>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -41,6 +42,8 @@ private:
   size_t slice_size{};
   size_t total_slices_count{};
 
+  std::random_device rd;
+
   struct SliceMetaInfo {
     std::atomic<pid_t> owner_pid{0};
 
@@ -52,10 +55,6 @@ private:
     bool release() {
       pid_t old_pid = owner_pid.exchange(0);
       return old_pid != 0;
-    }
-
-    bool is_vacant() const {
-      return owner_pid == 0;
     }
   };
 

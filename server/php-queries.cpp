@@ -870,7 +870,7 @@ int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_r
   }
   // script is running here, because is_valid_slot(ready_task_id) == true
 
-  size_t slice_payload_size = vk::singleton<task_workers::SharedMemoryManager>::get().get_slice_payload_size();
+  size_t slice_payload_size = memory_manager.get_slice_payload_size();
   void *script_memory_ptr = dl_allocate_safe(slice_payload_size);
   if (script_memory_ptr == nullptr) {
     unalloc_net_event(event);
@@ -1078,7 +1078,7 @@ void php_queries_start() {
 void php_queries_finish() {
   qmem_clear();
   clear_slots();
-  // TODO: deallocate task results memory?
+
   net_events.clear();
   net_queries.clear();
 }

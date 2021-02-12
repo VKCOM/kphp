@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include "common/algorithms/clamp.h"
+#include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
@@ -2255,7 +2256,7 @@ static void generic_event_loop(RunMode mode) {
       cron();
     }
 
-    if (mode == RunMode::http_worker || mode == RunMode::master) {
+    if (vk::any_of_equal(mode, RunMode::http_worker, RunMode::master)) {
       lease_cron();
       if (sigterm_on && !rpc_stopped) {
         rpcc_stop();
@@ -2675,22 +2676,14 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2016: {
+      // TODO: add check
       vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
       return 0;
     }
     case 2017: {
+      // TODO: add check
       size_t mbs = atoi(optarg);
       vk::singleton<task_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
-      return 0;
-    }
-    case 2018: {
-      size_t mbs = atoi(optarg);
-      if (mbs == 0) {
-        kprintf("Task workers shared memory slice size can't be 0");
-        return -1;
-      }
-      auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
-      memory_manager.set_slice_payload_size(mbs * 1024 * 1024 - memory_manager.get_slice_meta_info_size());
       return 0;
     }
     default:
@@ -2762,7 +2755,6 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("task-workers-num", required_argument, 2016, "number of task workers to run");
   parse_option("task-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for task workers related communication");
-  parse_option("task-workers-shared-memory-slice-size", required_argument, 2018, "size of shared memory slice in MBs used by workers to write task args or read task result");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

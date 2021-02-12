@@ -8,6 +8,10 @@
 
 #include "runtime/kphp_core.h"
 
+void init_task_workers_lib();
+void free_task_workers_lib();
+void global_init_task_workers_lib();
+
 void process_task_worker_answer_event(int ready_task_id, void *task_result_script_memory_ptr);
 
 int64_t f$async_x2(const array<int64_t> &arr);

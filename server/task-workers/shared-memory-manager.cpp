@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstddef>
 #include <new>
-#include <random>
 #include <sys/mman.h>
 
 #include "server/task-workers/shared-context.h"
@@ -28,10 +27,7 @@ void task_workers::SharedMemoryManager::init() {
 }
 
 void *SharedMemoryManager::allocate_slice() {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<int> dis(0, total_slices_count - 1);
-  size_t random_slice_idx = dis(gen);
+  size_t random_slice_idx = rd() % total_slices_count;
   size_t i = random_slice_idx;
   do {
     unsigned char *cur_slice_ptr = get_slice_ptr(i);

@@ -40,6 +40,7 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/task-workers-interface.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
@@ -48,7 +49,6 @@
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
-#include "server/task-workers/task-workers.h"
 
 
 static enum {
@@ -2104,7 +2104,7 @@ static void init_runtime_libs() {
   init_openssl_lib();
   init_math_functions();
 
-  task_workers::init_task_workers_lib();
+  init_task_workers_lib();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
@@ -2155,7 +2155,7 @@ static void free_runtime_libs() {
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
   vk::singleton<JsonLogger>::get().reset_buffers();
-  task_workers::free_task_workers_lib();
+  free_task_workers_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
@@ -2183,7 +2183,7 @@ void global_init_runtime_libs() {
   global_init_resumable_lib();
   global_init_rpc_lib();
   global_init_udp_lib();
-  task_workers::global_init_task_workers_lib();
+  global_init_task_workers_lib();
 }
 
 void global_init_script_allocator() {

@@ -5,10 +5,12 @@
 #pragma once
 
 namespace task_workers {
+struct Task {
 
-void init_task_workers_lib();
-void free_task_workers_lib();
+};
 
-void global_init_task_workers_lib();
+struct TaskResult {
 
-} // namespace task_workers
+};
+
+}

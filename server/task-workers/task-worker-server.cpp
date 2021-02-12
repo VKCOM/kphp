@@ -4,8 +4,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <cstring>
-#include <vector>
 
 #include "common/kprintf.h"
 #include "common/timer.h"
@@ -79,22 +77,21 @@ int TaskWorkerServer::read_execute_loop() {
   }
 }
 
-static std::vector<int64_t> run_task_array_x2(const std::vector<int64_t> &arr) {
+static bool run_task_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
   static constexpr auto HANG_SHIFT = static_cast<int64_t>(1e9);
-  std::vector<int64_t> res;
-  res.reserve(arr.size());
-  for (const auto &item : arr) {
+  for (int64_t i = 0; i < size; ++i) {
+    int64_t item = src[i];
     if (item < 0) {
-      assert(false);
+      return false;
     } else if (item > HANG_SHIFT) {
       int64_t hang_time_ms = item - HANG_SHIFT;
       vk::SteadyTimer<std::chrono::milliseconds> timer;
       timer.start();
       while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {};
     }
-    res.push_back(item * item);
+    dest[i] = item * item;
   }
-  return res;
+  return true;
 }
 
 bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * const task_memory_ptr) {
@@ -102,25 +99,27 @@ bool TaskWorkerServer::execute_task(int task_id, int task_result_fd_idx, void * 
 
   SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
 
-  auto *task_memory = static_cast<int64_t *>(task_memory_ptr);
-  int64_t arr_n = *task_memory++;
-  std::vector<int64_t> arr(arr_n);
-  for (int i = 0; i < arr_n; ++i) {
-    arr[i] = task_memory[i];
-  }
-  memory_manager.deallocate_slice(task_memory_ptr);
-
   void * const task_result_memory_slice = memory_manager.allocate_slice(); // TODO: reuse task_memory_ptr ?
   if (task_result_memory_slice == nullptr) {
     kprintf("Can't allocate slice for result of task: not enough shared memory\n");
     SharedContext::get().total_errors_shared_memory_limit++;
+    memory_manager.deallocate_slice(task_memory_ptr);
     return false;
   }
 
-  std::vector<int64_t> res = run_task_array_x2(arr);
+  auto *task_memory = static_cast<int64_t *>(task_memory_ptr);
+  int64_t arr_size = *task_memory++;
+
   auto *task_result_memory = reinterpret_cast<int64_t *>(task_result_memory_slice);
-  *task_result_memory++ = arr_n;
-  memcpy(task_result_memory, res.data(), res.size() * sizeof(int64_t));
+  *task_result_memory++ = arr_size;
+
+  bool ok = run_task_array_x2(task_result_memory, task_memory, arr_size);
+  memory_manager.deallocate_slice(task_memory_ptr);
+
+  if (!ok) {
+    memory_manager.deallocate_slice(task_result_memory_slice);
+    assert(false);
+  }
 
   int write_task_result_fd = vk::singleton<TaskWorkersContext>::get().result_pipes.at(task_result_fd_idx)[1];
 

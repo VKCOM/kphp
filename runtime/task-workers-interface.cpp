@@ -12,6 +12,22 @@
 
 using namespace task_workers;
 
+void init_task_workers_lib() {
+  vk::singleton<PendingTasks>::get().reset();
+}
+
+void free_task_workers_lib() {
+  vk::singleton<PendingTasks>::get().reset();
+}
+
+void global_init_task_workers_lib() {
+  if (vk::singleton<TaskWorkersContext>::get().task_workers_num == 0) {
+    return;
+  }
+  SharedContext::get();
+  vk::singleton<SharedMemoryManager>::get().init();
+}
+
 void process_task_worker_answer_event(int ready_task_id, void *task_result_script_memory_ptr) {
   vk::singleton<PendingTasks>::get().mark_task_ready(ready_task_id, task_result_script_memory_ptr);
 }

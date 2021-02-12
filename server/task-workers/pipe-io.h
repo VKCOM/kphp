@@ -20,6 +20,8 @@ protected:
   int64_t buf[PIPE_BUF / sizeof(int64_t)]{};
   size_t buf_end_pos{0};
   ssize_t buf_size{-1};
+
+  PipeIO() = default;
 };
 
 class PipeTaskWriter : public PipeIO {
