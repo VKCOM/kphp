@@ -46,9 +46,9 @@ VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_
   std::string name = ss.str();
   bool is_new = true;
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
+  var_id->tinf_node.copy_type_from(required_type);  // not inside if(is_new) to avoid race conditions when one thread creates and another uses faster
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
-    var_id->tinf_node.copy_type_from(required_type);
   }
 
   auto casted_var = VertexAdaptor<op_var>::create();
