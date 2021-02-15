@@ -52,10 +52,23 @@ VertexPtr *ExtractResumableCallsPass::extract_resumable_expr(VertexPtr vertex) n
     if ((*resumable_expr)->type() == op_func_call && vertex->type() == op_set && set_modify->lhs()->type() != op_instance_prop) {
       return {};
     }
+    auto lhs_var = set_modify->lhs().try_as<op_var>();
+    auto instance_prop = set_modify->lhs().try_as<op_instance_prop>();
+    while (instance_prop) {
+      lhs_var = instance_prop->instance().try_as<op_var>();
+      instance_prop = instance_prop->instance().try_as<op_instance_prop>();
+    }
+    if (!lhs_var || lhs_var->var_id->is_in_global_scope()) {
+      return {};
+    }
   } else if (auto list = vertex.try_as<op_list>()) {
     resumable_expr = &list->array();
   } else if (auto set_value = vertex.try_as<op_set_value>()) {
-    resumable_expr = &set_value->value();
+    if (auto var_key = set_value->key().try_as<op_var>()) {
+      if (!var_key->var_id->is_in_global_scope()) {
+        resumable_expr = &set_value->value();
+      }
+    }
   } else if (auto push_back = vertex.try_as<op_push_back>()) {
     resumable_expr = &push_back->value();
   } else if (auto if_cond = vertex.try_as<op_if>()) {
