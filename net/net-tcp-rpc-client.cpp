@@ -109,8 +109,8 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
     if (P.key_select) {
       return -3;
     }
-    if (D->crypto_flags & 1) {
-      if (D->crypto_flags & 2) {
+    if (D->crypto_flags & RPC_CRYPTO_ALLOW_UNENCRYPTED) {
+      if (D->crypto_flags & RPC_CRYPTO_ALLOW_ENCRYPTED) {
         assert (!c->out_p.total_bytes);
       }
       D->crypto_flags = 1;
@@ -122,7 +122,7 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
     if (!P.key_select || P.key_select != get_crypto_key_id (default_aes_key)) {
       return -3;
     }
-    if (!(D->crypto_flags & 2)) {
+    if (!(D->crypto_flags & RPC_CRYPTO_ALLOW_ENCRYPTED)) {
       return -5;
     }
     if (abs (P.crypto_ts - D->nonce_time) > 30) {
@@ -394,7 +394,7 @@ int tcp_rpcc_connected (struct connection *c) {
   int res = TCP_RPCC_FUNC(c)->rpc_init_crypto (c);
 
   if (res > 0) {
-    assert (TCP_RPC_DATA(c)->crypto_flags & 4);
+    assert (TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_NONCE_SENT);
   } else {
     return -1;
   }
@@ -421,7 +421,7 @@ int tcp_rpc_client_check_ready (struct connection *c) {
 
 
 int tcp_rpcc_init_fake_crypto (struct connection *c) {
-  if (!(TCP_RPC_DATA(c)->crypto_flags & 1)) {
+  if (!(TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ALLOW_UNENCRYPTED)) {
     return -1;
   }
 
@@ -432,8 +432,8 @@ int tcp_rpcc_init_fake_crypto (struct connection *c) {
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
-  assert ((TCP_RPC_DATA(c)->crypto_flags & 14) == 0);
-  TCP_RPC_DATA(c)->crypto_flags |= 4;
+  assert ((TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ENCRYPTED_MASK) == 0);
+  TCP_RPC_DATA(c)->crypto_flags |= RPC_CRYPTO_NONCE_SENT;
  
   return 1;
 }
@@ -456,22 +456,24 @@ int tcp_rpcc_init_outbound (struct connection *c) {
 }
 
 int tcp_rpcc_default_check_perm (struct connection *c) {
-  if (aes_initialized <= 0) {
-    return (!is_same_data_center(c, 1)) ? 0 : 1;
+  int res = 0;
+  if (aes_initialized > 0) {
+    res |= RPC_CRYPTO_ALLOW_ENCRYPTED;
   }
-  return (!is_same_data_center(c, 1)) ? 2 : 1;
+  if (is_same_data_center(c, true)) {
+    res |= RPC_CRYPTO_ALLOW_UNENCRYPTED;
+  }
+  return res;
 }
 
-int tcp_rpcc_default_check_perm_crypto (struct connection *c __attribute__((unused))) {
-  if (aes_initialized <= 0) {
-    return 0;
-  }
-  return 2;
+int tcp_rpcc_default_check_perm_crypto (struct connection *c) {
+  return tcp_rpcc_default_check_perm(c) & ~RPC_CRYPTO_ALLOW_UNENCRYPTED;
 }
+
 
 
 int tcp_rpcc_init_crypto (struct connection *c) {
-  if (!(TCP_RPC_DATA(c)->crypto_flags & 2)) {
+  if (!(TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ALLOW_ENCRYPTED)) {
     return tcp_rpcc_init_fake_crypto (c);
   }
 
@@ -485,21 +487,14 @@ int tcp_rpcc_init_crypto (struct connection *c) {
   buf.crypto_ts = TCP_RPC_DATA(c)->nonce_time;
   buf.type = RPC_NONCE;
   buf.key_select = get_crypto_key_id (default_aes_key);
-  buf.crypto_schema = RPC_CRYPTO_AES;
+  buf.crypto_schema = (TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ALLOW_UNENCRYPTED) ? RPC_CRYPTO_NONE_OR_AES : RPC_CRYPTO_AES;
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
-  assert ((TCP_RPC_DATA(c)->crypto_flags & 14) == 2);
-  TCP_RPC_DATA(c)->crypto_flags |= 4;
+  assert ((TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ENCRYPTED_MASK) == RPC_CRYPTO_ALLOW_ENCRYPTED);
+  TCP_RPC_DATA(c)->crypto_flags |= RPC_CRYPTO_NONCE_SENT;
 
   assert (!c->crypto);
-
-/*  raw_message_t x;
-  assert (!c->out_p.total_bytes);
-  x = c->out_p;
-  c->out_p = c->out;
-  c->out = x;*/
-
   return 1;
 }
 
