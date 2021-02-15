@@ -1345,6 +1345,6 @@ final class UberH3 {
 
 /** Task workers interface **/
 
-function async_x2($arr ::: int[]) ::: int;
-function await_x2($task_id ::: int) ::: int[];
+function async_x2(int[] $arr) ::: int;
+function await_x2(int $task_id) ::: int[];
 function is_task_workers_enabled() ::: bool;
