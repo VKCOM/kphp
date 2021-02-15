@@ -580,9 +580,9 @@ void terminate_worker(worker_info_t *w) {
   }
 }
 
-int kill_worker() {
+int kill_http_worker() {
   for (int i = 0; i < me_all_workers_n; i++) {
-    if (!workers[i]->is_dying) {
+    if (workers[i]->type == WorkerType::http_worker && !workers[i]->is_dying) {
       terminate_worker(workers[i]);
       return 1;
     }
@@ -2033,7 +2033,7 @@ void run_master() {
       vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
     }
     while (to_kill-- > 0) {
-      kill_worker();
+      kill_http_worker();
     }
     while (to_run-- > 0 && !failed) {
       if (run_worker(WorkerType::http_worker)) {
@@ -2056,7 +2056,7 @@ void run_master() {
     shared_data_unlock(shared_data);
 
     if (to_exit) {
-      vkprintf(1, "all workers killed. exit\n");
+      vkprintf(1, "all HTTP workers killed. Exit\n");
       _exit(0);
     }
 

@@ -31,7 +31,10 @@ int TaskWorkerServer::read_tasks(int fd, void *data __attribute__((unused)), eve
     // TODO:
     return 0;
   }
-  assert(ev->ready & EVT_READ);
+  if (!(ev->ready & EVT_READ)) {
+    kprintf("Strange event in server: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
+    return 0;
+  }
 
   int status_code = task_worker_server.read_execute_loop();
 

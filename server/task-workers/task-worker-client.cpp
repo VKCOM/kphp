@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
-#include <cstdio>
 #include <unistd.h>
 
 #include "common/kprintf.h"
@@ -28,7 +27,10 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
     // TODO:
     return 0;
   }
-  assert(ev->ready & EVT_READ);
+  if (!(ev->ready & EVT_READ)) {
+    kprintf("Strange event in client: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
+    return 0;
+  }
 
   PipeTaskReader::ReadStatus status{};
 
@@ -86,7 +88,7 @@ int TaskWorkerClient::send_task(void * const task_memory_ptr) {
   bool success = task_writer.write_task(Task{task_id, task_result_fd_idx, task_memory_ptr}, write_task_fd);
   if (!success) {
     SharedContext::get().total_errors_pipe_client_write++;
-    return false;
+    return -1;
   }
 
   SharedContext::get().task_queue_size++;

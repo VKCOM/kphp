@@ -33,6 +33,10 @@ void process_task_worker_answer_event(int ready_task_id, void *task_result_scrip
 }
 
 int64_t f$async_x2(const array<int64_t> &arr) {
+  if (!f$is_task_workers_enabled()) {
+    php_warning("Can't send task: task workers disabled");
+    return -1;
+  }
   auto &memory_manager = vk::singleton<SharedMemoryManager>::get();
   void * const memory_slice = memory_manager.allocate_slice();
   if (memory_slice == nullptr) {
@@ -57,6 +61,10 @@ int64_t f$async_x2(const array<int64_t> &arr) {
 }
 
 array<int64_t> f$await_x2(int64_t task_id) {
+  if (!f$is_task_workers_enabled()) {
+    php_warning("Can't wait task: task workers disabled");
+    return {};
+  }
   auto &pending_tasks = vk::singleton<PendingTasks>::get();
   if (!pending_tasks.task_exists(task_id)) {
     php_warning("Task with id %" PRIi64 " doesn't exist", task_id);
