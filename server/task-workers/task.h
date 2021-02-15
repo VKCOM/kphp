@@ -12,6 +12,13 @@ struct Task {
   int task_id{};
   int task_result_fd_idx{};
   void *task_memory_ptr{};
+
+  Task() = default;
+
+  Task(int task_id, int task_result_fd_idx, void *task_memory_ptr)
+    : task_id(task_id)
+    , task_result_fd_idx(task_result_fd_idx)
+    , task_memory_ptr(task_memory_ptr) {}
 };
 
 static_assert(PIPE_BUF % sizeof(Task) == 0, "Size of task must be multiple of PIPE_BUF for read/write atomicity");
@@ -20,6 +27,13 @@ struct TaskResult {
   int padding{};
   int task_id{};
   void *task_result_memory_ptr{};
+
+  TaskResult() = default;
+
+  TaskResult(int padding, int task_id, void *task_result_memory_ptr)
+    : padding(padding)
+    , task_id(task_id)
+    , task_result_memory_ptr(task_result_memory_ptr) {}
 };
 
 static_assert(PIPE_BUF % sizeof(TaskResult) == 0, "Size of task result must be multiple of PIPE_BUF for read/write atomicity");
