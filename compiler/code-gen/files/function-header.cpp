@@ -45,6 +45,7 @@ void FunctionH::compile(CodeGenerator &W) const {
   }
   if (function->is_inline) {
     stage::set_function(function);
+    function->name_gen_map = {};  // make codegeneration of this function idempotent
 
     W << CloseNamespace();
     includes.start_next_block();

@@ -25,6 +25,10 @@ public:
   void execute() {
     AutoProfiler profler{get_code_gen_profiler()};
     stage::set_name("Async code generation");
+
+    // uncomment this to launch codegen twice and ensure there is no diff (codegeneration is idempotent)
+    // W << cmd;
+                    
     W << cmd;
   }
 };

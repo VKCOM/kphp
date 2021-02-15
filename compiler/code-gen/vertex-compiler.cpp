@@ -1190,6 +1190,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   bool complex_flag = was_dynamic || was_object;
   std::string len_name;
   std::string tmp_string_name;
+  int n_next_var_idx = 0;
   if (complex_flag) {
     W << "(" << BEGIN;
     vector<string> to_add;
@@ -1198,7 +1199,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
         continue;
       }
       if (str_info.len == STRLEN_DYNAMIC || str_info.len == STRLEN_OBJECT) {
-        string var_name = gen_unique_name("var");
+        string var_name = "tmp_var" + std::to_string(n_next_var_idx++);
 
         if (str_info.len == STRLEN_DYNAMIC) {
           bool can_save_ref_flag = can_save_ref(str_info.v);
@@ -1216,13 +1217,13 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       }
     }
 
-    len_name = gen_unique_name("strlen");
+    len_name = "tmp_strlen";
     W << "string::size_type " << len_name << " = " << static_length;
     for (const auto &str : to_add) {
       W << " + max_string_size (" << str << ")";
     }
     W << ";" << NL;
-    tmp_string_name = gen_unique_name("tmp_string");
+    tmp_string_name = "tmp_string";
     W << "string " << tmp_string_name << " = ";
   }
 
@@ -1372,6 +1373,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
       if (!has_double_arrow && key->type() == op_int_const) {
         if (key.as<op_int_const>()->str_val == std::to_string(key_id)) {
           root->args()[key_id] = arrow->value();
+          int_cnt++;
           continue;
         }
       }
