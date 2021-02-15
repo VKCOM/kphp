@@ -47,6 +47,25 @@ char *append_raw_integer(char *buffer, int64_t value) noexcept {
   return last;
 }
 
+bool copy_raw_string(char *&out, size_t out_size, vk::string_view str) noexcept {
+  size_t i = 0;
+  for (; i != str.size() && out_size; ++i, --out_size) {
+    const char c = str[i];
+    if (std::iscntrl(c)) {
+      *out++ = std::isspace(c) ? ' ' : '?';
+    } else {
+      if (vk::any_of_equal(c, '/', '\\', '"')) {
+        if (!--out_size) {
+          return false;
+        }
+        *out++ = '\\';
+      }
+      *out++ = c;
+    }
+  }
+  return i == str.size();
+}
+
 } // namespace
 
 bool JsonLogger::JsonBuffer::try_start_json() noexcept {
@@ -132,23 +151,9 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_hex_as_string(int64_t val
 JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_raw_string(vk::string_view value) noexcept {
   *last_++ = '"';
   constexpr size_t reserved_bytes = 16;
-  size_t left_bytes = buffer_.size() - static_cast<size_t>(last_ - buffer_.data());
+  const size_t left_bytes = buffer_.size() - static_cast<size_t>(last_ - buffer_.data());
   assert(left_bytes >= reserved_bytes);
-  left_bytes -= reserved_bytes;
-  const size_t write_bytes = std::min(left_bytes, value.size());
-  for (size_t i = 0; i != write_bytes; ++i) {
-    const char c = value[i];
-    if (std::iscntrl(c)) {
-      *last_++ = std::isspace(c) ? ' ' : '?';
-    } else {
-      if (vk::any_of_equal(c, '/', '\\', '"')) {
-        *last_++ = '\\';
-      }
-      *last_++ = c;
-    }
-  }
-
-  if (unlikely(write_bytes != value.size())) {
+  if (unlikely(!copy_raw_string(last_, left_bytes - reserved_bytes, value))) {
     const vk::string_view truncated_dots{"..."};
     std::copy(truncated_dots.begin(), truncated_dots.end(), last_);
     last_ += truncated_dots.size();
@@ -187,7 +192,13 @@ void JsonLogger::set_extra_info(vk::string_view extra_info) noexcept {
 }
 
 void JsonLogger::set_env(vk::string_view env) noexcept {
-  copy_if_enough_size(env, env_, env_buffer_, env_available_);
+  char *out = env_buffer_.data();
+  env_available_ = false;
+  if (copy_raw_string(out, env_buffer_.size() - 1, env)) {
+    *out = '\0';
+    env_ = {env_buffer_.data(), static_cast<size_t>(out - env_buffer_.data())};
+    env_available_ = true;
+  }
 }
 
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
