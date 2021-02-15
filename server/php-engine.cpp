@@ -2829,6 +2829,12 @@ int run_main(int argc, char **argv, php_mode mode) {
 
   parse_main_args(argc, argv);
 
+  size_t total_workers = workers_n + vk::singleton<TaskWorkersContext>::get().task_workers_num;
+  if (total_workers > MAX_WORKERS) {
+    kprintf("Too many workers: %zu, maximum is %d\n", total_workers, MAX_WORKERS);
+    exit(1);
+  }
+
   if (run_once) {
     master_flag = 0;
     rpc_port = -1;

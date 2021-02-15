@@ -475,7 +475,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
     //verbosity = 1;
   }
   for (int slot_id = MAX_WORKERS - 1; slot_id >= 0; slot_id--) {
-    if (slot_id < MAX_WORKERS / 2 || slot_id < workers_n) {
+    if (slot_id < workers_n) {
       http_worker_slot_ids.push(slot_id);
     } else {
       task_worker_slot_ids.push(slot_id);
