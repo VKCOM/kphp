@@ -79,8 +79,9 @@ struct tcp_rpc_data {
 #define RPC_HANDSHAKE       0x7682eef5
 #define RPC_HANDSHAKE_ERROR 0x6a27beda
 
-#define RPC_CRYPTO_NONE 0
-#define RPC_CRYPTO_AES  1
+#define RPC_CRYPTO_NONE         0
+#define RPC_CRYPTO_AES          1
+#define RPC_CRYPTO_NONE_OR_AES  2
 
 extern int default_rpc_flags;  /* 0 = compatibility mode, RPC_CRYPTO_USE_CRC32C = allow both CRC32C and CRC32 */
 
