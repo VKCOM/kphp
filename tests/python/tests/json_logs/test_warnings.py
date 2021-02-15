@@ -64,6 +64,26 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "abc", "tags": {"uncaught": False}}])
 
+    def test_warning_with_env_special_chars(self):
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "set_context", "env": "a\tb\nc/d\\e\x06f", "tags": {}, "extra_info": {}},
+                {"op": "warning", "msg": "aaa"},
+            ])
+        self.assertEqual(resp.text, "ok")
+        self.kphp_server.assert_json_log(
+            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "a b c/d\\e?f", "tags": {"uncaught": False}}])
+
+    def test_warning_with_long_env(self):
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "set_context", "env": "x"*128, "tags": {}, "extra_info": {}},
+                {"op": "warning", "msg": "aaa"},
+            ])
+        self.assertEqual(resp.text, "ok")
+        self.kphp_server.assert_json_log(
+            expect=[{"version": 0, "type": 2, "msg": "aaa", "env": "", "tags": {"uncaught": False}}])
+
     def test_warning_with_full_context(self):
         resp = self.kphp_server.http_post(
             json=[
