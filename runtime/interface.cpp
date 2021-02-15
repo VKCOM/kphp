@@ -14,9 +14,9 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include "common/tl/constants/common.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
+#include "common/tl/constants/common.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
@@ -40,6 +40,7 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/task-workers-interface.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
@@ -48,6 +49,7 @@
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
+
 
 static enum {
   QUERY_TYPE_NONE,
@@ -2102,6 +2104,8 @@ static void init_runtime_libs() {
   init_openssl_lib();
   init_math_functions();
 
+  init_task_workers_lib();
+
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   shutdown_functions_count = 0;
@@ -2151,6 +2155,7 @@ static void free_runtime_libs() {
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
   vk::singleton<JsonLogger>::get().reset_buffers();
+  free_task_workers_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
@@ -2178,6 +2183,7 @@ void global_init_runtime_libs() {
   global_init_resumable_lib();
   global_init_rpc_lib();
   global_init_udp_lib();
+  global_init_task_workers_lib();
 }
 
 void global_init_script_allocator() {

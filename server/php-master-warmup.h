@@ -29,7 +29,7 @@ public:
   }
 
   void try_start_warmup() {
-    if (me_running_workers_n > 0 && !timer_.is_started()) {
+    if (me_running_http_workers_n > 0 && !timer_.is_started()) {
       timer_.start();
     }
   }
@@ -42,7 +42,7 @@ public:
   }
 
   bool need_more_workers_for_warmup() const {
-    return me_running_workers_n < workers_part_for_warm_up_ * workers_n;
+    return me_running_http_workers_n < workers_part_for_warm_up_ * workers_n;
   }
 
   bool is_instance_cache_hot_enough() const {

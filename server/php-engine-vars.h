@@ -23,6 +23,8 @@
 #define MAX_SCRIPT_TIMEOUT (60 * 7)
 
 /** engine variables **/
+extern int initial_verbosity;
+
 extern char *logname_pattern;
 extern int logname_id;
 extern long long max_memory;
@@ -34,6 +36,14 @@ extern int no_sql;
 
 extern int master_flag;
 extern int workers_n;
+
+enum class RunMode {
+  master,
+  http_worker,
+  task_worker,
+};
+
+extern RunMode run_mode;
 
 extern int run_once;
 extern int run_once_return_code;

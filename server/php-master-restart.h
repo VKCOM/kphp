@@ -20,8 +20,8 @@ struct master_data_t {
   long long rate;
   long long generation;
 
-  int running_workers_n;
-  int dying_workers_n;
+  int running_http_workers_n;
+  int dying_http_workers_n;
 
   int to_kill;
   long long to_kill_generation;
@@ -63,9 +63,9 @@ static_assert(sizeof(shared_data_t) == SHARED_DATA_T_SIZEOF, "Layout of this str
 extern shared_data_t *shared_data;
 extern master_data_t *me, *other; // these are pointers to shared memory
 
-extern int me_workers_n;
-extern int me_running_workers_n;
-extern int me_dying_workers_n;
+extern int me_all_workers_n; // http workers + task workers
+extern int me_running_http_workers_n;
+extern int me_dying_http_workers_n;
 
 inline bool in_new_master_on_restart() {
   return other->is_alive && me->rate > other->rate;

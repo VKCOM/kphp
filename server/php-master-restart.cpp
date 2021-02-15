@@ -23,9 +23,9 @@
 shared_data_t *shared_data;
 master_data_t *me, *other; // these are pointers to shared memory
 
-int me_workers_n;
-int me_running_workers_n;
-int me_dying_workers_n;
+int me_all_workers_n;
+int me_running_http_workers_n;
+int me_dying_http_workers_n;
 
 void init_mutex(pthread_mutex_t *mutex) {
   pthread_mutexattr_t attr;
@@ -170,8 +170,8 @@ void master_init(master_data_t *me, master_data_t *other) {
     me->generation = 1;
   }
 
-  me->running_workers_n = 0;
-  me->dying_workers_n = 0;
+  me->running_http_workers_n = 0;
+  me->dying_http_workers_n = 0;
   me->to_kill = 0;
 
   me->own_http_fd = 0;

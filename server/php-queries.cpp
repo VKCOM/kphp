@@ -16,6 +16,7 @@
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
 #include "server/php-script.h"
+#include "server/task-workers/shared-memory-manager.h"
 
 #define MAX_NET_ERROR_LEN 128
 
@@ -774,7 +775,7 @@ public:
   }
 };
 
-static StaticQueue<net_event_t, 2000000> net_events;
+static StaticQueue<net_event_t, 2000000> net_events; // TODO: increase queue size ???
 static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
@@ -823,7 +824,7 @@ void unalloc_net_event(net_event_t *event) {
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res) {
   net_event_t *event;
-  int status = alloc_net_event(slot_id, ne_rpc_error, &event);
+  int status = alloc_net_event(slot_id, net_event_type_t::rpc_error, &event);
   if (status <= 0) {
     return status;
   }
@@ -838,7 +839,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
-  int status = alloc_net_event(slot_id, ne_rpc_answer, &event);
+  int status = alloc_net_event(slot_id, net_event_type_t::rpc_answer, &event);
   if (status <= 0) {
     return status;
   }
@@ -855,6 +856,29 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   event->result_len = len;
   assert (res != nullptr);
   *res = event;
+  return 1;
+}
+
+int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_result_memory_ptr) {
+  auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
+  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_ptr); });
+
+  net_event_t *event = nullptr;
+  int status = alloc_net_event(ready_task_id, net_event_type_t::task_worker_answer, &event);
+  if (status <= 0) {
+    return status;
+  }
+  // script is running here, because is_valid_slot(ready_task_id) == true
+
+  size_t slice_payload_size = memory_manager.get_slice_payload_size();
+  void *script_memory_ptr = dl_allocate_safe(slice_payload_size);
+  if (script_memory_ptr == nullptr) {
+    unalloc_net_event(event);
+    return -1;
+  }
+  memcpy(script_memory_ptr, task_result_memory_ptr, slice_payload_size);
+
+  event->task_result_script_memory_ptr = script_memory_ptr;
   return 1;
 }
 
@@ -1054,6 +1078,7 @@ void php_queries_start() {
 void php_queries_finish() {
   qmem_clear();
   clear_slots();
+
   net_events.clear();
   net_queries.clear();
 }

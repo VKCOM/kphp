@@ -17,6 +17,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "common/algorithms/clamp.h"
+#include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
@@ -65,6 +67,14 @@
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
 #include "server/php-master-warmup.h"
+#include "server/task-workers/task-workers-context.h"
+#include "server/task-workers/task-worker-client.h"
+#include "server/task-workers/task-worker-server.h"
+#include "server/task-workers/shared-memory-manager.h"
+
+using task_workers::TaskWorkersContext;
+using task_workers::TaskWorkerClient;
+using task_workers::TaskWorkerServer;
 
 static void turn_sigterm_on();
 
@@ -2100,10 +2110,184 @@ void reopen_json_log() {
   }
 }
 
-void start_server() {
-  int prev_time;
+static void generic_event_loop(RunMode mode) {
+  if (master_flag && logname_pattern != nullptr) {
+    reopen_logs();
+    reopen_json_log();
+  }
+
+  int prev_time = 0;
   double next_create_outbound = 0;
 
+  switch (mode) {
+    case RunMode::master: {
+      if (rpc_port > 0 && rpc_sfd < 0) {
+        rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
+        if (rpc_sfd < 0) {
+          vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
+          exit(1);
+        }
+      }
+
+      if (rpc_sfd >= 0) {
+        init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
+      }
+
+      if (run_once) {
+        int pipe_fd[2];
+        pipe(pipe_fd);
+
+        int read_fd = pipe_fd[0];
+        int write_fd = pipe_fd[1];
+
+        rpc_client_methods.rpc_ready = nullptr;
+        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+
+        int q[6];
+        int qsize = 6 * sizeof(int);
+        q[2] = TL_RPC_INVOKE_REQ;
+        for (int i = 0; i < run_once_count; i++) {
+          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
+          assert (write(write_fd, q, (size_t)qsize) == qsize);
+        }
+      }
+    }
+    // fall through
+    case RunMode::http_worker: {
+      if (http_port > 0 && http_sfd < 0) {
+        dl_assert (!master_flag, "failed to get http_fd\n");
+        if (master_flag) {
+          vkprintf (-1, "try_get_http_fd after start_master\n");
+          exit(1);
+        }
+        http_sfd = try_get_http_fd();
+        if (http_sfd < 0) {
+          vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
+          exit(1);
+        }
+      }
+
+      if (verbosity > 0 && http_sfd >= 0) {
+        vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+      }
+
+      if (http_sfd >= 0) {
+        init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
+      }
+
+      auto &rpc_clients = RpcClients::get().rpc_clients;
+      std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
+        vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
+        rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
+      });
+      if (!rpc_clients.empty()) {
+        set_main_target(rpc_clients.front());
+      }
+
+      vk::singleton<TaskWorkerClient>::get().init_task_worker_client(logname_id);
+      break;
+    }
+    case RunMode::task_worker: {
+      vk::singleton<TaskWorkerServer>::get().init_task_worker_server();
+      break;
+    }
+  }
+
+  if (no_sql) {
+    sql_target_id = -1;
+  } else {
+    sql_target_id = get_target("localhost", db_port, &db_ct);
+    assert (sql_target_id != -1);
+  }
+
+  get_utime_monotonic();
+  //create_all_outbound_connections();
+
+  ksignal(SIGTERM, sigterm_handler);
+  ksignal(SIGPIPE, SIG_IGN);
+  ksignal(SIGINT, run_once ? sigint_immediate_handler : sigint_handler);
+  ksignal(SIGUSR1, sigusr1_handler);
+  ksignal(SIGPOLL, SIG_IGN);
+
+  //using sigaction for SIGSTAT
+  dl_sigaction(SIGSTAT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigstats_handler);
+
+  dl_allow_all_signals();
+
+  auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
+
+  vkprintf (1, "Server started\n");
+  for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
+    if (verbosity > 0 && !(i & 255)) {
+      vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
+                active_connections, maxconn, NB_used, NB_alloc, NB_max);
+    }
+    if (mode == RunMode::task_worker) {
+      task_worker_server.try_complete_delayed_tasks();
+    }
+    epoll_work(57);
+
+    if (precise_now > next_create_outbound) {
+      create_all_outbound_connections();
+      next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
+    }
+
+    while (spoll_send_stats > 0) {
+      write_full_stats_to_pipe();
+      spoll_send_stats--;
+      if (mode == RunMode::task_worker) {
+        task_worker_server.last_stats.start();
+      }
+    }
+
+    if (pending_signals & (1ll << SIGHUP)) {
+      pending_signals = pending_signals & ~(1ll << SIGHUP);
+    }
+
+    if (pending_signals & (1ll << SIGUSR1)) {
+      pending_signals = pending_signals & ~(1ll << SIGUSR1);
+
+      reopen_logs();
+      reopen_json_log();
+    }
+
+    if (now != prev_time) {
+      prev_time = now;
+      cron();
+    }
+
+    if (vk::any_of_equal(mode, RunMode::http_worker, RunMode::master)) {
+      lease_cron();
+      if (sigterm_on && !rpc_stopped) {
+        rpcc_stop();
+      }
+      if (sigterm_on && !hts_stopped) {
+        hts_stop();
+      }
+    }
+
+    if (main_thread_reactor.pre_event) {
+      main_thread_reactor.pre_event();
+    }
+
+    if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&
+        pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
+      vkprintf (1, "Quitting because of sigterm\n");
+      break;
+    }
+  }
+
+  if (verbosity > 0 && pending_signals) {
+    vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
+  }
+
+  if (mode == RunMode::http_worker && http_sfd >= 0) {
+    epoll_close(http_sfd);
+    assert (close(http_sfd) >= 0);
+  }
+}
+
+void start_server() {
   pending_signals = 0;
   if (daemonize) {
     setsid();
@@ -2125,157 +2309,11 @@ void start_server() {
   init_epoll();
   if (master_flag) {
     start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
-
-    if (logname_pattern != nullptr) {
-      reopen_logs();
-      reopen_json_log();
-    }
-  }
-
-  prev_time = 0;
-
-  if (http_port > 0 && http_sfd < 0) {
-    dl_assert (!master_flag, "failed to get http_fd\n");
-    if (master_flag) {
-      vkprintf (-1, "try_get_http_fd after start_master\n");
-      exit(1);
-    }
-    http_sfd = try_get_http_fd();
-    if (http_sfd < 0) {
-      vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
-      exit(1);
-    }
-  }
-
-  if (rpc_port > 0 && rpc_sfd < 0) {
-    rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-    if (rpc_sfd < 0) {
-      vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-      exit(1);
-    }
-  }
-
-  if (verbosity > 0 && http_sfd >= 0) {
-    vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
-  }
-
-  if (http_sfd >= 0) {
-    init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
-  }
-
-  if (rpc_sfd >= 0) {
-    init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-  }
-
-  if (no_sql) {
-    sql_target_id = -1;
   } else {
-    sql_target_id = get_target("localhost", db_port, &db_ct);
-    assert (sql_target_id != -1);
-  }
-  auto &rpc_clients = RpcClients::get().rpc_clients;
-  std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
-                  vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
-                  rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
-                });
-  if (!rpc_clients.empty()) {
-    set_main_target(rpc_clients.front());
+    run_mode = RunMode::master;
   }
 
-  if (run_once) {
-    int pipe_fd[2];
-    pipe(pipe_fd);
-
-    int read_fd = pipe_fd[0];
-    int write_fd = pipe_fd[1];
-
-    rpc_client_methods.rpc_ready = nullptr;
-    epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-    int q[6];
-    int qsize = 6 * sizeof(int);
-    q[2] = TL_RPC_INVOKE_REQ;
-    for (int i = 0; i < run_once_count; i++) {
-      prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-      assert (write(write_fd, q, (size_t)qsize) == qsize);
-    }
-  }
-
-  get_utime_monotonic();
-  //create_all_outbound_connections();
-
-  ksignal(SIGTERM, sigterm_handler);
-  ksignal(SIGPIPE, SIG_IGN);
-  ksignal(SIGINT, run_once ? sigint_immediate_handler : sigint_handler);
-  ksignal(SIGUSR1, sigusr1_handler);
-  ksignal(SIGPOLL, SIG_IGN);
-
-  //using sigaction for SIGSTAT
-  dl_sigaction(SIGSTAT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigstats_handler);
-
-  dl_allow_all_signals();
-
-  vkprintf (1, "Server started\n");
-  for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
-    if (verbosity > 0 && !(i & 255)) {
-      vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
-                active_connections, maxconn, NB_used, NB_alloc, NB_max);
-    }
-    epoll_work(57);
-
-    if (precise_now > next_create_outbound) {
-      create_all_outbound_connections();
-      next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
-    }
-
-    while (spoll_send_stats > 0) {
-      write_full_stats_to_pipe();
-      spoll_send_stats--;
-    }
-
-    if (pending_signals & (1ll << SIGHUP)) {
-      pending_signals = pending_signals & ~(1ll << SIGHUP);
-    }
-
-    if (pending_signals & (1ll << SIGUSR1)) {
-      pending_signals = pending_signals & ~(1ll << SIGUSR1);
-
-      reopen_logs();
-      reopen_json_log();
-    }
-
-    if (now != prev_time) {
-      prev_time = now;
-      cron();
-    }
-
-    lease_cron();
-    if (sigterm_on && !rpc_stopped) {
-      rpcc_stop();
-    }
-    if (sigterm_on && !hts_stopped) {
-      hts_stop();
-    }
-
-    if (main_thread_reactor.pre_event) {
-      main_thread_reactor.pre_event();
-    }
-
-    if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&
-        pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
-      vkprintf (1, "Quitting because of sigterm\n");
-      break;
-    }
-  }
-
-  if (verbosity > 0 && pending_signals) {
-    vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
-  }
-
-  if (http_sfd >= 0) {
-    epoll_close(http_sfd);
-    assert (close(http_sfd) >= 0);
-  }
+  generic_event_loop(run_mode);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -2637,6 +2675,17 @@ int main_args_handler(int i) {
       WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
       return 0;
     }
+    case 2016: {
+      // TODO: add check
+      vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
+      return 0;
+    }
+    case 2017: {
+      // TODO: add check
+      size_t mbs = atoi(optarg);
+      vk::singleton<task_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2704,6 +2753,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
+  parse_option("task-workers-num", required_argument, 2016, "number of task workers to run");
+  parse_option("task-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for task workers related communication");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
@@ -2777,6 +2828,12 @@ int run_main(int argc, char **argv, php_mode mode) {
   }
 
   parse_main_args(argc, argv);
+
+  size_t total_workers = workers_n + vk::singleton<TaskWorkersContext>::get().task_workers_num;
+  if (total_workers > MAX_WORKERS) {
+    kprintf("Too many workers: %zu, maximum is %d\n", total_workers, MAX_WORKERS);
+    exit(1);
+  }
 
   if (run_once) {
     master_flag = 0;

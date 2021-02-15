@@ -5,12 +5,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 using slot_id_t = int;
 
-enum net_event_type_t {
-  ne_rpc_answer,
-  ne_rpc_error
+enum class net_event_type_t {
+  rpc_answer,
+  rpc_error,
+  task_worker_answer,
 };
 
 struct net_event_t {
@@ -20,14 +22,17 @@ struct net_event_t {
     slot_id_t rpc_id;
   };
   union {
-    struct { //ne_rpc_answer
+    struct { //rpc_answer
       int result_len;
       //allocated via dl_malloc
       char *result;
     };
-    struct { //ne_rpc_error
+    struct { //rpc_error
       int error_code;
       const char *error_message;
+    };
+    struct { // task_worker_answer
+      void *task_result_script_memory_ptr;
     };
   };
 };
@@ -331,10 +336,15 @@ void free_net_query(net_query_t *query);
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
+
+int create_task_worker_answer_event(slot_id_t ready_task_id, void *task_result_memory_ptr);
+
 int net_events_empty();
 
 void php_queries_start();
 void php_queries_finish();
+
+slot_id_t create_slot();
 
 void init_drivers();
 
