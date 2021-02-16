@@ -43,6 +43,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << Include(function->header_full_name);
 
   stage::set_function(function);
+  function->name_gen_map = {};  // make codegeneration of this function idempotent
 
   IncludesCollector includes;
   includes.add_function_body_depends(function);

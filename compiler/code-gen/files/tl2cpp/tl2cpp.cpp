@@ -179,5 +179,8 @@ void write_tl_query_handlers(CodeGenerator &W) {
   });
   W << END;
   W << CloseFile();
+
+  modules.clear();
+  modules_with_functions.clear();
 }
 } // namespace tl_gen
