@@ -45,6 +45,8 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 void f$register_shutdown_function(const shutdown_function_type &f);
 
+bool f$set_wait_all_forks_on_finish(bool wait = true) noexcept;
+
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))

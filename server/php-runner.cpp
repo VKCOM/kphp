@@ -366,21 +366,7 @@ void PHPScriptBase::run() {
   if (CurException.is_null()) {
     set_script_result(nullptr);
   } else {
-    const Throwable &e = CurException;
-    const int64_t current_time = time(nullptr);
-    const char *message = e->$message.empty() ? "(empty)" : e->$message.c_str();
-    vk::singleton<JsonLogger>::get().write_log(
-      dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", e->get_class(), e->$file.c_str(), e->$line, e->$code, message),
-      E_ERROR, current_time, e->raw_trace.get_const_vector_pointer(), e->raw_trace.count(), true);
-
-    const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s caught in file %s at line %" PRIi64 ".\n"
-                              "Backtrace:\n%s",
-                              engine_tag, current_time, engine_pid,
-                              e->$code, message, e->get_class(), e->$file.c_str(), e->$line,
-                              exception_trace_as_string(e).c_str());
-    fprintf(stderr, "%s", msg);
-    fprintf(stderr, "-------------------------------\n\n");
-    error(msg, script_error_t::exception);
+    error(php_uncaught_exception_error(CurException), script_error_t::exception);
   }
 }
 
