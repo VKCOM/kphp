@@ -132,7 +132,7 @@ int64_t estimate_class_instance_memory_usage(const class_instance<T> &, std::tru
 
 template<typename T>
 int64_t estimate_class_instance_memory_usage(const class_instance<T> &value, std::false_type) {
-  if (value.is_null() || value.is_cache_reference_counter()) {
+  if (value.is_null() || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
     return 0;
   }
 

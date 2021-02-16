@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/instance_cache.h"
+#include "runtime/instance-cache.h"
 
 #include <chrono>
 #include <forward_list>
@@ -19,7 +19,7 @@
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/refcountable_php_classes.h"
 
-namespace ic_impl_ {
+namespace impl_ {
 
 //#define DEBUG_INSTANCE_CACHE
 
@@ -93,7 +93,7 @@ public:
   }
 
   ElementHolder(std::chrono::nanoseconds now, int64_t ttl,
-                std::unique_ptr<InstanceWrapperBase> &&instance,
+                std::unique_ptr<InstanceCopyistBase> &&instance,
                 CacheContext &context) noexcept:
     inserted_by_process(getpid()),
     instance_wrapper(std::move(instance)),
@@ -127,7 +127,7 @@ public:
   bool early_fetch_performed{false};
   const pid_t inserted_by_process{0};
 
-  std::unique_ptr<InstanceWrapperBase> instance_wrapper;
+  std::unique_ptr<InstanceCopyistBase> instance_wrapper;
   CacheContext &cache_context;
 
   // Removed elements list
@@ -298,7 +298,7 @@ public:
     context_ = nullptr;
   }
 
-  bool store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) noexcept {
+  bool store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) noexcept {
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_ && context_);
     if (context_->memory_swap_required) {
@@ -313,7 +313,7 @@ public:
       return false;
     }
 
-    DeepMoveFromScriptToCacheVisitor detach_processor{context_->memory_resource};
+    InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     const ElementHolder *inserted_element = try_insert_element_into_cache(
       data, key, ttl, instance_wrapper, detach_processor);
 
@@ -326,7 +326,7 @@ public:
       // failed to acquire a lock, save the instance into the script memory container, we'll try again later
       class_instance<DelayedInstance> delayed_instance;
       delayed_instance.alloc().get()->ttl = ttl;
-      delayed_instance.get()->instance_wrapper = instance_wrapper.clone_on_script_memory();
+      delayed_instance.get()->instance_wrapper = instance_wrapper.shallow_copy();
       storing_delayed_.set_value(key, std::move(delayed_instance));
       context_->stats.elements_storing_delayed_due_mutex.fetch_add(1, std::memory_order_relaxed);
       return false;
@@ -338,7 +338,7 @@ public:
     return true;
   }
 
-  const InstanceWrapperBase *fetch(const string &key, bool even_if_expired) {
+  const InstanceCopyistBase *fetch(const string &key, bool even_if_expired) {
     php_assert(current_ && context_);
     sync_delayed();
     // storing_delayed_ uses a script memory
@@ -493,7 +493,7 @@ public:
           ic_debug("purge '%s'\n", it->first.c_str());
           string removing_key = it->first;
           it = data_shard.storage.erase(it);
-          DeepDestroyFromCacheVisitor{}.process(removing_key);
+          InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(removing_key);
           context.stats.elements_expired.fetch_add(1, std::memory_order_relaxed);
           context.stats.elements_cached.fetch_sub(1, std::memory_order_relaxed);
         } else {
@@ -554,7 +554,7 @@ private:
       return;
     }
 
-    DeepMoveFromScriptToCacheVisitor detach_processor{context_->memory_resource};
+    InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     for (auto it = storing_delayed_.cbegin(); it != storing_delayed_.cend(); it = storing_delayed_.cbegin()) {
       php_assert(it.is_string_key());
       const auto &key = it.get_string_key();
@@ -589,8 +589,8 @@ private:
 
   ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
                                                const string &key_in_script_memory, int64_t ttl,
-                                               const InstanceWrapperBase &instance_wrapper,
-                                               DeepMoveFromScriptToCacheVisitor &detach_processor) noexcept {
+                                               const InstanceCopyistBase &instance_wrapper,
+                                               InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
     auto shared_memory_guard = context_->memory_replacement_guard();
 
@@ -604,7 +604,7 @@ private:
     auto clear_garbage = vk::finally([this] { context_->clear_garbage(); });
 
     // moving an instance into a shared memory
-    if (auto cached_instance_wrapper = instance_wrapper.clone_and_detach_shared_ref(detach_processor)) {
+    if (auto cached_instance_wrapper = instance_wrapper.deep_copy_and_set_ref_cnt(detach_processor)) {
       if (void *mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
         vk::intrusive_ptr<ElementHolder> element{new(mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
         std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
@@ -616,7 +616,7 @@ private:
           }
           constexpr auto node_max_size = ElementStorage_::allocator_type::max_value_type_size();
           if (unlikely(!detach_processor.is_enough_memory_for(node_max_size))) {
-            DeepDestroyFromCacheVisitor{}.process(key_in_shared_memory);
+            InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(key_in_shared_memory);
             return nullptr;
           }
 
@@ -638,7 +638,7 @@ private:
     return nullptr;
   }
 
-  void fire_warning(const DeepMoveFromScriptToCacheVisitor &detach_processor, const char *class_name) noexcept {
+  void fire_warning(const InstanceDeepCopyVisitor &detach_processor, const char *class_name) noexcept {
     if (detach_processor.is_depth_limit_exceeded()) {
       php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", class_name);
     }
@@ -672,7 +672,7 @@ private:
   // A container for instances which we failed to save from the first try due to the allocator lock
   // Uses script memory. Wrapped into the class_instance as array doesn't work with unique_ptr
   struct DelayedInstance : refcountable_php_classes<DelayedInstance> {
-    std::unique_ptr<InstanceWrapperBase> instance_wrapper;
+    std::unique_ptr<InstanceCopyistBase> instance_wrapper;
     int64_t ttl{0};
   };
   array<class_instance<DelayedInstance>> storing_delayed_;
@@ -682,100 +682,61 @@ private:
   size_t purge_shard_offset_{0};
 };
 
-DeepMoveFromScriptToCacheVisitor::DeepMoveFromScriptToCacheVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept:
-  Basic(*this),
-  memory_pool_(memory_pool) {
-}
-
-DeepDestroyFromCacheVisitor::DeepDestroyFromCacheVisitor() :
-  Basic(*this) {
-}
-
-bool DeepMoveFromScriptToCacheVisitor::process(string &str) {
-  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    return true;
-  }
-
-  if (unlikely(!is_enough_memory_for(str.estimate_memory_usage()))) {
-    str = string();
-    memory_limit_exceeded_ = true;
-    return false;
-  }
-
-  str.make_not_shared();
-  // make_not_shared may make str constant again (e.g. const empty or single char str), therefore check again
-  if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    php_assert(str.size() < 2);
-  } else {
-    php_assert(str.get_reference_counter() == 1);
-    str.set_reference_counter_to(ExtraRefCnt::for_instance_cache);
-  }
-  return true;
-}
-
-bool DeepDestroyFromCacheVisitor::process(string &str) {
-  // if string is constant, skip it, otherwise element was cached and should be destroyed
-  if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
-    str.force_destroy(ExtraRefCnt::for_instance_cache);
-  }
-  return true;
-}
-
-bool instance_cache_store(const string &key, const InstanceWrapperBase &instance_wrapper, int64_t ttl) {
+bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
-const InstanceWrapperBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
+const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
   return InstanceCache::get().fetch(key, even_if_expired);
 }
 
-} // namespace ic_impl_
+} // namespace impl_
 
 void global_init_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().global_init();
+  impl_::InstanceCache::get().global_init();
 }
 
 void init_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().refresh();
+  impl_::InstanceCache::get().refresh();
 }
 
 void free_instance_cache_lib() {
-  ic_impl_::InstanceCache::get().free();
+  impl_::InstanceCache::get().free();
 }
 
 // should be called only from master
 void set_instance_cache_memory_limit(size_t limit) {
-  ic_impl_::instance_cache_settings.total_memory_limit = limit;
+  impl_::instance_cache_settings.total_memory_limit = limit;
 }
 
 // should be called only from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory() {
-  return ic_impl_::InstanceCache::get().try_swap_memory_resource();
+  return impl_::InstanceCache::get().try_swap_memory_resource();
 }
 
 // should be called only from master
 const InstanceCacheStats &instance_cache_get_stats() {
-  return ic_impl_::InstanceCache::get().get_stats();
+  return impl_::InstanceCache::get().get_stats();
 }
 
 // should be called only from master
 const memory_resource::MemoryStats &instance_cache_get_memory_stats() {
-  return ic_impl_::InstanceCache::get().get_last_memory_stats();
+  return impl_::InstanceCache::get().get_last_memory_stats();
 }
 
 // should be called only from master
 void instance_cache_purge_expired_elements() {
-  ic_impl_::InstanceCache::get().purge_expired();
+  impl_::InstanceCache::get().purge_expired();
 }
 
 void instance_cache_release_all_resources_acquired_by_this_proc() {
-  ic_impl_::InstanceCache::get().force_release_all_resources();
+  impl_::InstanceCache::get().force_release_all_resources();
 }
 
 bool f$instance_cache_update_ttl(const string &key, int64_t ttl) {
-  return ic_impl_::InstanceCache::get().update_ttl(key, ttl);
+  return impl_::InstanceCache::get().update_ttl(key, ttl);
 }
 
 bool f$instance_cache_delete(const string &key) {
-  return ic_impl_::InstanceCache::get().del(key);
+  return impl_::InstanceCache::get().del(key);
 }

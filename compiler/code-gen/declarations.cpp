@@ -567,8 +567,8 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 
   if (klass->need_instance_cache_visitors) {
     W << NL;
-    compile_accept_visitor(W, klass, "DeepMoveFromScriptToCacheVisitor");
-    compile_accept_visitor(W, klass, "DeepDestroyFromCacheVisitor");
+    compile_accept_visitor(W, klass, "InstanceDeepCopyVisitor");
+    compile_accept_visitor(W, klass, "InstanceDeepDestroyVisitor");
   }
 }
 
