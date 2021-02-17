@@ -32,13 +32,19 @@ public:
   size_t dying_task_workers{0};
   size_t task_workers_num{0};
 
-  Pipe task_pipe;
+  Pipe task_pipe{};
   std::vector<Pipe> result_pipes;
+  bool pipes_inited{false};
 
   void master_init_pipes(int task_result_slots_num);
 
 private:
-  bool pipes_inited_{false};
+  TaskWorkersContext() {
+    task_pipe.fill(-1);
+    for (auto &result_pipe : result_pipes) {
+      result_pipe.fill(-1);
+    }
+  }
 };
 
 } // namespace task_workers

@@ -2184,7 +2184,9 @@ static void generic_event_loop(RunMode mode) {
         set_main_target(rpc_clients.front());
       }
 
-      vk::singleton<TaskWorkerClient>::get().init_task_worker_client(logname_id);
+      if (vk::singleton<TaskWorkersContext>::get().task_workers_num > 0) {
+        vk::singleton<TaskWorkerClient>::get().init_task_worker_client(logname_id);
+      }
       break;
     }
     case RunMode::task_worker: {
