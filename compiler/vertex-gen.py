@@ -51,7 +51,7 @@ def output_include_directive(f, name):
     if name == "meta_op_base":
         f.write('#include "compiler/vertex-meta_op_base.h"\n')
     else:
-        f.write('#include "%s/vertex-%s.h"\n' % (REL_DIR, name))
+        f.write('#include "vertex-%s.h"\n' % name)
 
 
 def output_class_header(f, base_name, name, final_specifier="", comment=""):
