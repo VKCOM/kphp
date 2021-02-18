@@ -15,15 +15,9 @@
 #include "compiler/data/src-file.h"
 
 struct StaticInit {
-  const std::vector<FunctionPtr> &all_functions;
-  explicit StaticInit(const std::vector<FunctionPtr> &all_functions);
   void compile(CodeGenerator &W) const;
 };
 
-
-StaticInit::StaticInit(const vector<FunctionPtr> &all_functions) :
-  all_functions(all_functions) {
-}
 
 void StaticInit::compile(CodeGenerator &W) const {
   for (LibPtr lib: G->get_libs()) {
@@ -161,9 +155,8 @@ void LibGlobalVarsReset::compile(CodeGenerator &W) const {
 }
 
 
-InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id, vector<FunctionPtr> &&all_functions) :
-  main_file_id(main_file_id),
-  all_functions(std::move(all_functions)) {}
+InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
+  main_file_id(main_file_id) {}
 
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
@@ -179,7 +172,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "void init_php_scripts()" << SemicolonAndNL();
   }
 
-  W << NL << StaticInit(all_functions) << NL;
+  W << NL << StaticInit() << NL;
 
   if (G->settings().is_static_lib_mode()) {
     W << LibGlobalVarsReset(main_file_id->main_function);
@@ -200,5 +193,24 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << END;
 
+  W << CloseFile();
+}
+
+void LibVersionHFile::compile(CodeGenerator &W) const {
+  W << OpenFile("_lib_version.h");
+  W << "// Runtime sha256: " << G->settings().runtime_sha256.get() << NL;
+  W << "// CXX: " << G->settings().cxx.get() << NL;
+  W << "// CXXFLAGS DEFAULT: " << G->settings().cxx_flags_default.flags.get() << NL;
+  W << "// CXXFLAGS WITH EXTRA: " << G->settings().cxx_flags_with_debug.flags.get() << NL;
+  W << CloseFile();
+}
+
+void CppMainFile::compile(CodeGenerator &W) const {
+  kphp_assert(G->settings().is_server_mode() || G->settings().is_cli_mode());
+  W << OpenFile("main.cpp");
+  W << ExternInclude("server/php-engine.h") << NL;
+  W << "int main(int argc, char *argv[]) " << BEGIN
+    << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
+    << END;
   W << CloseFile();
 }

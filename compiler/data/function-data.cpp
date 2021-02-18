@@ -308,6 +308,12 @@ bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_
   return true;
 }
 
+bool FunctionData::does_need_codegen(FunctionPtr f) {
+  return f->type != FunctionData::func_class_holder &&
+         f->type != FunctionData::func_extern &&
+         (f->body_seq != body_value::empty || G->get_main_file()->main_function == f);
+}
+
 bool operator<(FunctionPtr a, FunctionPtr b) {
   return a->name < b->name;
 }

@@ -32,6 +32,15 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / G->settings().globals_split_count.get();
 }
 
+
+void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &unused_os __attribute__ ((unused))) {
+  if (FunctionData::does_need_codegen(function)) {
+    prepare_generate_function(function);
+    G->stats.on_function_processed(function);
+    tmp_stream << function;
+  }
+}
+
 void CodeGenF::on_finish(DataStream<WriterData> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
@@ -39,54 +48,19 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  auto xall = tmp_stream.flush();
-  xall.sort();
-  const vector<ClassPtr> &all_classes = G->get_classes();
+  std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
+  const std::vector<ClassPtr> &all_classes = G->get_classes();
 
   //TODO: delete W_ptr
   CodeGenerator *W_ptr = new CodeGenerator(os);
-  CodeGenerator &W = *W_ptr;
+  CodeGenerator &W = *W_ptr;  // created once, others are copied in Async()
 
-  FunctionPtr main_function = G->get_main_file()->main_function;
-
-  auto should_gen_function = [&](FunctionPtr fun) {
-    return fun->type != FunctionData::func_class_holder &&
-           (fun->body_seq != FunctionData::body_value::empty || main_function == fun);
-  };
-
-  //TODO: parallelize;
-  for (const auto &fun : xall) {
-    if (should_gen_function(fun)) {
-      G->stats.on_function_processed(fun);
-      prepare_generate_function(fun);
-    }
-  }
-  for (const auto &c : all_classes) {
-    if (ClassData::does_need_codegen(c)) {
-      prepare_generate_class(c);
-    }
+  for (FunctionPtr f : all_functions) {
+    W << Async(FunctionH(f));
+    W << Async(FunctionCpp(f));
   }
 
-  vector<FunctionPtr> all_functions;
-  vector<FunctionPtr> exported_functions;
-
-  for (const auto &function : xall) {
-    if (!should_gen_function(function)) {
-      continue;
-    }
-    if (function->is_extern()) {
-      continue;
-    }
-    all_functions.push_back(function);
-    W << Async(FunctionH(function));
-    W << Async(FunctionCpp(function));
-
-    if (function->kphp_lib_export && G->settings().is_static_lib_mode()) {
-      exported_functions.emplace_back(function);
-    }
-  }
-
-  for (const auto &c : all_classes) {
+  for (ClassPtr c : all_classes) {
     if (!ClassData::does_need_codegen(c)) {
       continue;
     }
@@ -99,8 +73,6 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
         W << Async(InterfaceDeclaration(c));
         break;
 
-      case ClassType::trait:
-        /* fallthrough */
       default:
         kphp_assert(false);
     }
@@ -110,31 +82,37 @@ void CodeGenF::on_finish(DataStream<WriterData> &os) {
   if (G->settings().enable_global_vars_memory_stats.get()) {
     W << Async(GlobalVarsMemoryStats{G->get_main_file()});
   }
-  W << Async(InitScriptsCpp(G->get_main_file(), std::move(all_functions)));
+  W << Async(InitScriptsCpp(G->get_main_file()));
 
   std::vector<VarPtr> vars = G->get_global_vars();
-  for (FunctionPtr fun: xall) {
-    vars.insert(vars.end(), fun->static_var_ids.begin(), fun->static_var_ids.end());
+  for (FunctionPtr f : all_functions) {
+    vars.insert(vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
   size_t parts_cnt = calc_count_of_parts(vars.size());
   W << Async(VarsCpp(std::move(vars), parts_cnt));
 
   if (G->settings().is_static_lib_mode()) {
-    for (FunctionPtr exported_function: exported_functions) {
-      W << Async(LibHeaderH(exported_function));
+    std::vector<FunctionPtr> exported_functions;
+    for (FunctionPtr f : all_functions) {
+      if (f->kphp_lib_export) {
+        W << Async(LibHeaderH(f));
+        exported_functions.emplace_back(f);
+      }
     }
+    std::sort(exported_functions.begin(), exported_functions.end());
     W << Async(LibHeaderTxt(std::move(exported_functions)));
     W << Async(StaticLibraryRunGlobalHeaderH());
-  } else {
-    // TODO: should be done in lib mode, but by some other way
+  }
+
+  // TODO: should be done in lib mode also, but in some other way
+  if (!G->settings().is_static_lib_mode()) {
     W << Async(TypeTagger(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
   }
 
-  //TODO: use Async for that
-  tl2cpp::write_tl_query_handlers(W);
-  write_lib_version(W);
+  W << Async(TlSchemaToCpp());
+  W << Async(LibVersionHFile());
   if (!G->settings().is_static_lib_mode()) {
-    write_main(W);
+    W << Async(CppMainFile());
   }
 }
 
@@ -154,34 +132,12 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
     ? func->file_id->owner_lib->headers_dir() + func->header_name
     : func->subdir + "/" + func->header_name;
 
-  my_unique(&func->static_var_ids);
-  my_unique(&func->global_var_ids);
-  my_unique(&func->local_var_ids);
+  std::sort(func->static_var_ids.begin(), func->static_var_ids.end());
+  std::sort(func->global_var_ids.begin(), func->global_var_ids.end());
+  std::sort(func->local_var_ids.begin(), func->local_var_ids.end());
 }
 
 string CodeGenF::get_subdir(const string &base) {
   int bucket = vk::std_hash(base) % 100;
   return "o_" + std::to_string(bucket);
-}
-
-void CodeGenF::write_lib_version(CodeGenerator &W) {
-  W << OpenFile("_lib_version.h");
-  W << "// Runtime sha256: " << G->settings().runtime_sha256.get() << NL;
-  W << "// CXX: " << G->settings().cxx.get() << NL;
-  W << "// CXXFLAGS DEFAULT: " << G->settings().cxx_flags_default.flags.get() << NL;
-  W << "// CXXFLAGS WITH EXTRA: " << G->settings().cxx_flags_with_debug.flags.get() << NL;
-  W << CloseFile();
-}
-
-void CodeGenF::write_main(CodeGenerator &W) {
-  kphp_assert(G->settings().is_server_mode() || G->settings().is_cli_mode());
-  W << OpenFile("main.cpp");
-  W << ExternInclude("server/php-engine.h") << NL;
-  W << "int main(int argc, char *argv[]) " << BEGIN
-    << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
-    << END;
-  W << CloseFile();
-}
-
-void CodeGenF::prepare_generate_class(ClassPtr) {
 }
