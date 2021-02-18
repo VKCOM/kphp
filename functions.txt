@@ -404,8 +404,8 @@ define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
 function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0) ::: int | false;//TODO
-function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
-function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: mixed;
+function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null|false;
+function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null;
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
