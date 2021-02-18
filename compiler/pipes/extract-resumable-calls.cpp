@@ -92,16 +92,21 @@ std::pair<VertexAdaptor<op_move>, VertexAdaptor<op_set>> ExtractResumableCallsPa
   temp_var->var_id = G->create_local_var(stage::get_function(), temp_var->str_val, VarData::var_local_t);
   temp_var->var_id->tinf_node.copy_type_from(tinf::get_type(init));
   auto set_op = VertexAdaptor<op_set>::create(temp_var.clone().set_rl_type(val_l), init).set_rl_type(val_none).set_location(init);
+  temp_var->val_ref_flag = init->val_ref_flag;
   auto move_op = VertexAdaptor<op_move>::create(temp_var.set_rl_type(val_r)).set_rl_type(val_r).set_location(init);
   return {move_op, set_op};
 }
 
 VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<op_ternary> rhs_ternary) noexcept {
   auto set_true_case = set_vertex.clone();
-  *skip_conv_and_sets(&set_true_case->rhs()) = rhs_ternary->true_expr();
+  VertexPtr &true_case_rhs = *skip_conv_and_sets(&set_true_case->rhs());
+  true_case_rhs = rhs_ternary->true_expr();
+  true_case_rhs->val_ref_flag = rhs_ternary->val_ref_flag;
 
   auto set_false_case = set_vertex.clone();
-  *skip_conv_and_sets(&set_false_case->rhs()) = rhs_ternary->false_expr();
+  VertexPtr &false_case_rhs = *skip_conv_and_sets(&set_false_case->rhs());
+  false_case_rhs = rhs_ternary->false_expr();
+  false_case_rhs->val_ref_flag = rhs_ternary->val_ref_flag;
 
   auto ternary_replacer = VertexAdaptor<op_if>::create(rhs_ternary->cond(), GenTree::embrace(set_true_case), GenTree::embrace(set_false_case));
   return GenTree::embrace(ternary_replacer.set_rl_type(val_none).set_location(set_vertex));
