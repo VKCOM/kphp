@@ -11,14 +11,14 @@
 #include "compiler/function-pass.h"
 
 struct DepData : private vk::movable_only {
-  std::vector<FunctionPtr> dep;
-  std::vector<VarPtr> used_global_vars;
+  std::vector<FunctionPtr> dep;               // functions accessible directly from the current (called or lambdas) (except extern)
+  std::vector<VarPtr> modified_global_vars;   // val_l globals for ub check later
 
-  std::vector<VarPtr> used_ref_vars;
-  std::vector<std::pair<VarPtr, VarPtr>> ref_ref_edges;
-  std::vector<std::pair<VarPtr, VarPtr>> global_ref_edges;
+  std::forward_list<VarPtr> ref_param_vars;                       // param &$refs from func declaration
+  std::forward_list<std::pair<VarPtr, VarPtr>> ref_ref_edges;     // calls to f($v) when $v is a reference
+  std::forward_list<std::pair<VarPtr, VarPtr>> global_ref_edges;  // calls to f($v) when $v is a global
 
-  std::vector<FunctionPtr> forks;
+  std::forward_list<FunctionPtr> forks;       // calls to fork(f(...)) to calc resumable graph later
 };
 
 static_assert(std::is_nothrow_move_constructible<DepData>::value, "DepData should be movable");
