@@ -134,6 +134,8 @@ bool TaskWorkerServer::execute_task(const Task &task) {
 void TaskWorkerServer::init_task_worker_server() {
   const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
 
+  assert(task_workers_ctx.pipes_inited);
+
   read_task_fd = task_workers_ctx.task_pipe[0];
   close(task_workers_ctx.task_pipe[1]); // this endpoint is for HTTP worker to write task
   clear_event(task_workers_ctx.task_pipe[1]);

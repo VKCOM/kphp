@@ -53,6 +53,8 @@ int TaskWorkerClient::read_task_results(int fd, void *data __attribute__((unused
 void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
   auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
 
+  assert(task_workers_ctx.pipes_inited);
+
   write_task_fd = task_workers_ctx.task_pipe[1];
   close(task_workers_ctx.task_pipe[0]); // this endpoint is for task worker to read task
   clear_event(task_workers_ctx.task_pipe[0]);
