@@ -1585,7 +1585,10 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
       if (!check_tasks_invoker_pid(remote_pid)) {
-        send_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, "Task invoker is invalid");
+        static char msg_buf[1000];
+        process_id_t lease_pid = get_lease_pid();
+        sprintf(msg_buf, "Task invoker is invalid. Expected %s, but actual %s", pid_to_print(&lease_pid), pid_to_print(&remote_pid));
+        send_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg_buf);
         return 0;
       }
       if (c->type != &ct_php_rpc_client && c->type != &ct_php_engine_rpc_server) {
