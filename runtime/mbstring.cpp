@@ -259,42 +259,53 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
   }
 }
 
-Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset, const string &encoding) {
-  if (offset < 0) {
-    php_warning("Wrong offset = %" PRIi64 " in function mb_strpos", offset);
-    return false;
+namespace {
+
+int check_strpos_agrs(const char *func_name, const string &needle, int64_t offset, const string &encoding) noexcept {
+  if (unlikely(offset < 0)) {
+    php_warning("Wrong offset = %" PRIi64 " in function %s()", offset, func_name);
+    return 0;
   }
-  if (needle.size() == 0) {
-    php_warning("Parameter needle is empty in function mb_strpos");
-    return false;
+  if (unlikely(needle.empty())) {
+    php_warning("Parameter needle is empty in function %s()", func_name);
+    return 0;
   }
 
-  int encoding_num = mb_detect_encoding(encoding);
-  if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_strpos", encoding.c_str());
-    return false;
+  const int encoding_num = mb_detect_encoding(encoding);
+  if (unlikely(encoding_num < 0)) {
+    php_critical_error ("encoding \"%s\" doesn't supported in %s()", encoding.c_str(), func_name);
+    return 0;
   }
+  return encoding_num;
+}
 
+Optional<int64_t> mp_strpos_impl(const string &haystack, const string &needle, int64_t offset, int encoding_num) noexcept {
   if (encoding_num == 1251) {
     return f$strpos(haystack, needle, offset);
   }
 
   int64_t UTF8_offset = mb_UTF8_advance(haystack.c_str(), offset);
-  const char *s = (const char *)memmem(haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size());
-  if (s == nullptr) {
+  const char *s = static_cast<const char *>(memmem(haystack.c_str() + UTF8_offset, haystack.size() - UTF8_offset, needle.c_str(), needle.size()));
+  if (unlikely(s == nullptr)) {
     return false;
   }
   return mb_UTF8_get_offset(haystack.c_str() + UTF8_offset, s - (haystack.c_str() + UTF8_offset)) + offset;
 }
 
-Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int64_t offset, const string &encoding) {
-  int encoding_num = mb_detect_encoding(encoding);
-  if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_stripos", encoding.c_str());
-    return false;
-  }
+} // namespace
 
-  return f$mb_strpos(f$mb_strtolower(haystack, encoding), f$mb_strtolower(needle, encoding), offset, encoding);
+Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset, const string &encoding) noexcept {
+  if (const int encoding_num = check_strpos_agrs("mb_strpos", needle, offset, encoding)) {
+    return mp_strpos_impl(haystack, needle, offset, encoding_num);
+  }
+  return false;
+}
+
+Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int64_t offset, const string &encoding) noexcept {
+  if (const int encoding_num = check_strpos_agrs("mb_stripos", needle, offset, encoding)) {
+    return mp_strpos_impl(f$mb_strtolower(haystack, encoding), f$mb_strtolower(needle, encoding), offset, encoding_num);
+  }
+  return false;
 }
 
 string f$mb_substr(const string &str, int64_t start, const mixed &length_var, const string &encoding) {
