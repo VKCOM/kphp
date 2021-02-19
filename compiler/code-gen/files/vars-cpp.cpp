@@ -62,10 +62,10 @@ void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part) {
-  std::string file_name = "vars" + std::to_string(part) + ".cpp";
-  W << OpenFile(file_name, "o_vars_" + std::to_string(part / 100), false);
- 
+static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part_id) {
+  std::string file_name = "vars" + std::to_string(part_id) + ".cpp";
+  W << OpenFile(file_name, "o_vars_" + std::to_string(part_id / 100), false);
+
   W << ExternInclude("runtime-headers.h");
 
   std::vector<VarPtr> const_raw_string_vars;
@@ -81,7 +81,7 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
   }
   W << includes;
 
-  std::vector<bool> dep_mask;
+  int max_dep_level{0};
   W << OpenNamespace();
   for (auto var : vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
@@ -90,9 +90,8 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
 
     W << VarDeclaration(var);
     if (var->is_constant()) {
-      if (dep_mask.size() <= var->dependency_level) {
-        dep_mask.resize(var->dependency_level + 1, false);
-        dep_mask[var->dependency_level] = true;
+      if (max_dep_level < var->dependency_level) {
+        max_dep_level = var->dependency_level;
       }
       switch (var->init_val->type()) {
         case op_string:
@@ -129,12 +128,8 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
-  for (size_t dep_level = 0; dep_level < dep_mask.size(); ++dep_level) {
-    if (!dep_mask[dep_level]) {
-      continue;
-    }
-
-    FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part << "()" << BEGIN;
+  for (size_t dep_level = 0; dep_level <= max_dep_level; ++dep_level) {
+    FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part_id << "()" << BEGIN;
 
     for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
       VarPtr var = const_raw_string_vars[ii];
@@ -169,40 +164,25 @@ static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<V
 
   W << CloseNamespace();
   W << CloseFile();
-  return dep_mask;
 }
 
 
-VarsCpp::VarsCpp(std::vector<VarPtr> &&vars, size_t parts_cnt) :
-  vars_(std::move(vars)),
-  parts_cnt_(parts_cnt) {
+VarsCpp::VarsCpp(std::vector<int> &&max_dep_levels, size_t parts_cnt)
+  : max_dep_levels_(std::move(max_dep_levels))
+  , parts_cnt_(parts_cnt) {
   kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 1024);
 }
 
 void VarsCpp::compile(CodeGenerator &W) const {
-  std::vector<std::vector<VarPtr>> vars_batches(parts_cnt_);
-  std::vector<std::vector<bool>> dep_masks(parts_cnt_);
-  for (auto var : vars_) {
-    vars_batches[vk::std_hash(var->name) % parts_cnt_].emplace_back(var);
-  }
-  for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
-    std::sort(vars_batches[part_id].begin(), vars_batches[part_id].end());
-    dep_masks[part_id] = compile_vars_part(W, vars_batches[part_id], part_id);
-  }
-
   W << OpenFile("vars.cpp", "", false);
   W << OpenNamespace();
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
 
-  const auto longest_dep_mask = std::max_element(
-    dep_masks.begin(), dep_masks.end(),
-    [](const std::vector<bool> &l, const std::vector<bool> &r) {
-      return l.size() < r.size();
-    });
-  for (int dep_level = 0; dep_level < longest_dep_mask->size(); ++dep_level) {
+  const int very_max_dep_level = *std::max_element(max_dep_levels_.begin(), max_dep_levels_.end());
+  for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
     for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
-      if (dep_masks[part_id].size() > dep_level && dep_masks[part_id][dep_level]) {
+      if (dep_level <= max_dep_levels_[part_id]) {
         auto init_fun = fmt_format("const_vars_init_priority_{}_file_{}();", dep_level, part_id);
         // function declaration
         W << "void " << init_fun << NL;
@@ -214,4 +194,13 @@ void VarsCpp::compile(CodeGenerator &W) const {
   W << END;
   W << CloseNamespace();
   W << CloseFile();
+}
+
+VarsCppPart::VarsCppPart(vector<VarPtr> &&vars_of_part, size_t part_id)
+  : vars_of_part_(std::move(vars_of_part))
+  , part_id(part_id) {}
+
+void VarsCppPart::compile(CodeGenerator &W) const {
+  std::sort(vars_of_part_.begin(), vars_of_part_.end());
+  compile_vars_part(W, vars_of_part_, part_id);
 }
