@@ -56,9 +56,7 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
     W << "hard_reset_var(" << VarName(var);
     //FIXME: brk and comments
     if (var->init_val) {
-      W << UnlockComments();
       W << ", " << var->init_val;
-      W << LockComments();
     }
     W << ");" << NL;
   }

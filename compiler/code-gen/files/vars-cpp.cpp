@@ -22,7 +22,6 @@ struct InitVar {
 
   void compile(CodeGenerator &W) const {
     Location save_location = stage::get_location();
-    W << UnlockComments();
 
     VertexPtr init_val = var->init_val;
     if (init_val->type() == op_conv_regexp) {
@@ -36,7 +35,6 @@ struct InitVar {
       W << VarName(var) << " = " << var->init_val << ";" << NL;
     }
 
-    W << LockComments();
     stage::set_location(save_location);
   }
 };
@@ -61,14 +59,7 @@ void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
     return;
   }
 
-  const Location &save_location = stage::get_location();
-  W << UnlockComments();
-  W << UpdateLocation(var->init_val->location);
-
   W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
-
-  W << LockComments();
-  stage::set_location(save_location);
 }
 
 static std::vector<bool> compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part) {
