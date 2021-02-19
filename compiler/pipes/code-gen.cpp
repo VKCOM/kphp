@@ -85,7 +85,23 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     vars.insert(vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
   size_t parts_cnt = calc_count_of_parts(vars.size());
-  code_gen_start_root_task(os, std::make_unique<VarsCpp>(std::move(vars), parts_cnt));
+
+  std::vector<std::vector<VarPtr>> vars_batches(parts_cnt);
+  std::vector<int> max_dep_levels(parts_cnt);
+  for (VarPtr var : vars) {
+    vars_batches[vk::std_hash(var->name) % parts_cnt].emplace_back(var);
+  }
+  for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
+    int max_dep_level{0};
+    for (auto var : vars_batches[part_id]) {
+      if (var->is_constant() && max_dep_level < var->dependency_level) {
+        max_dep_level = var->dependency_level;
+      }
+    }
+    max_dep_levels[part_id] = max_dep_level;
+    code_gen_start_root_task(os, std::make_unique<VarsCppPart>(std::move(vars_batches[part_id]), part_id));
+  }
+  code_gen_start_root_task(os, std::make_unique<VarsCpp>(std::move(max_dep_levels), parts_cnt));
 
   if (G->settings().is_static_lib_mode()) {
     std::vector<FunctionPtr> exported_functions;
