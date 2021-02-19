@@ -10,6 +10,8 @@
 
 #include "compiler/data/data_ptr.h"
 
+class File;
+
 class WriterData {
 private:
   struct Line {
@@ -22,26 +24,21 @@ private:
     explicit Line(int begin_pos) : begin_pos(begin_pos){}
   };
 
+  File *file;
+
   std::vector<Line> lines;
   std::string text;
   unsigned long long hash_of_cpp;
   unsigned long long hash_of_comments;
 
-  std::vector<std::string> includes;
-  std::vector<std::string> lib_includes;
-  bool compile_with_debug_info_flag;
   bool compile_with_crc_flag;
 
-public:
-  std::string file_name;
-  std::string subdir;
 
-private:
   void write_code(std::string &dest_str, const Line &line);
   void dump(std::string &dest_str, const std::vector<Line>::iterator &begin, const std::vector<Line>::iterator &end, SrcFilePtr file);
 
 public:
-  explicit WriterData(bool compile_with_debug_info_flag, bool compile_with_crc, std::string file_name, std::string subdir);
+  explicit WriterData(File *file, bool compile_with_crc);
 
   void append(const char *begin, size_t length) {
     text.append(begin, length);
@@ -58,17 +55,11 @@ public:
   void brk();
   void add_location(SrcFilePtr file, int line);
 
-  void add_include(const std::string &s);
-  std::vector<std::string> flush_includes();
-
-  void add_lib_include(const std::string &s);
-  std::vector<std::string> flush_lib_includes();
-
   void set_calculated_hashes(unsigned long long hash_of_cpp, unsigned long long hash_of_comments);
   unsigned long long get_hash_of_cpp() { return hash_of_cpp; }
   unsigned long long get_hash_of_comments() { return hash_of_comments; }
   void dump(std::string &dest_str);
 
-  bool compile_with_debug_info() const;
-  bool compile_with_crc() const;
+  File *get_file() const { return file; }
+  bool compile_with_crc() const { return compile_with_crc_flag; }
 };

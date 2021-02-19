@@ -290,8 +290,9 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
     >> PassC<CollectForkableTypesPass>{}
-    >> SyncC<CodeGenF>{}
-    >> PipeC<WriteFilesF, false>{};
+    >> SyncC<CodeGenF>{}              // create all codegen commands and launch them in "just calc hashes" mode
+    >> PipeC<CodeGenForDiffF>{}       // re-launch codegen commands that diff from the previous kphp launch
+    >> PipeC<WriteFilesF, false>{};   // store files that differ from the previous kphp launch
 
   SchedulerConstructor{scheduler}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<1>{}
