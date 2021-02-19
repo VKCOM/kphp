@@ -4,8 +4,6 @@
 
 #include "compiler/code-gen/writer-data.h"
 
-#include "common/crc32.h"
-
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
 #include "common/wrappers/fmt_format.h"
@@ -13,7 +11,8 @@
 WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc, std::string file_name, std::string subdir) :
   lines(),
   text(),
-  crc(-1),
+  hash_of_cpp(-1),
+  hash_of_comments(-1),
   compile_with_debug_info_flag(compile_with_debug_info_flag),
   compile_with_crc_flag(compile_with_crc),
   file_name(std::move(file_name)),
@@ -67,14 +66,9 @@ std::vector<std::string> WriterData::flush_lib_includes() {
   return std::move(lib_includes);
 }
 
-unsigned long long WriterData::calc_crc() {
-  if (crc == (unsigned long long)-1) {
-    crc = compute_crc64(text.c_str(), (int)text.length());
-    if (crc == (unsigned long long)-1) {
-      crc = 463721894672819432ull;
-    }
-  }
-  return crc;
+void WriterData::set_calculated_hashes(unsigned long long int hash_of_cpp, unsigned long long int hash_of_comments) {
+  this->hash_of_cpp = hash_of_cpp;
+  this->hash_of_comments = hash_of_comments;
 }
 
 void WriterData::write_code(std::string &dest_str, const Line &line) {

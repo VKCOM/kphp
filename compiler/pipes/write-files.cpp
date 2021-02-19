@@ -52,15 +52,13 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   bool need_del = false;
   bool need_fix = false;
   bool need_save_time = false;
-  const unsigned long long crc = data->calc_crc();
-  string code_str;
-  data->dump(code_str);
-  const unsigned long long crc_with_comments = compute_crc64(code_str.c_str(), code_str.length());
+  const unsigned long long hash_of_cpp = data->get_hash_of_cpp();
+  const unsigned long long hash_of_comments = data->get_hash_of_comments();
   if (file->on_disk && data->compile_with_crc()) {
-    if (file->crc64 != crc) {
+    if (file->crc64 != hash_of_cpp) {
       need_fix = true;
       need_del = true;
-    } else if (file->crc64_with_comments != crc_with_comments) {
+    } else if (file->crc64_with_comments != hash_of_comments) {
       need_fix = true;
       need_del = true;
       need_save_time = true;
@@ -70,6 +68,10 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   }
 
   if (need_fix) {
+    string code_str;
+    data->dump(code_str);
+//    printf("overwrite file %s need_fix=%d need_del=%d need_save_time=%d\n", file->path.c_str(), need_fix, need_del, need_save_time);
+
     long long mtime_before = 0;
     if (need_save_time) {
       int res = file->read_stat();
@@ -87,13 +89,17 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
                 fmt_format("Failed to open [{}] for write : {}\n", file->path, strerror(errno)));
 
     if (data->compile_with_crc()) {
-      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", ~crc) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", ~crc_with_comments) >= 0);
+      // the first two lines of every .cpp/.h are hashes
+      // they are named "crc64", but actually are not crc of contents, just some hashes calculated on the fly
+      // also, "crc64_with_comments" is actually "hash OF comments", not "with"
+      // such naming at the top of every file is left for backwards compatibility reasons
+      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", ~hash_of_cpp) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", ~hash_of_comments) >= 0);
       kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
       kphp_assert(fflush(dest_file) >= 0);
       kphp_assert(fseek(dest_file, 0, SEEK_SET) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", crc) >= 0);
-      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", crc_with_comments) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", hash_of_cpp) >= 0);
+      kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", hash_of_comments) >= 0);
     }
     else {
       kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
@@ -102,8 +108,8 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
     kphp_assert(fflush(dest_file) >= 0);
     kphp_assert(fclose(dest_file) >= 0);
 
-    file->crc64 = crc;
-    file->crc64_with_comments = crc_with_comments;
+    file->crc64 = hash_of_cpp;
+    file->crc64_with_comments = hash_of_comments;
     file->on_disk = true;
 
     if (need_save_time) {
