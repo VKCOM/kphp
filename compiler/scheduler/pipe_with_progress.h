@@ -65,7 +65,7 @@ private:
   template<typename PipeFunctionT>
   void write_progress(const char *name_postfix = "") {
     std::lock_guard<std::mutex> lock{mutex_};
-    const size_t percent = 100 * ++stages_counter_ / total_stages_;
+    const size_t percent = *name_postfix ? 100 * ++stages_counter_ / total_stages_ : 100;
     std::cerr << "[" << std::setw(3) << percent << "%] "
               << PipeProgressName<PipeFunctionT>::get() << name_postfix << "\n";
   }

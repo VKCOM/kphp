@@ -33,7 +33,7 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
 }
 
 
-void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &unused_os __attribute__ ((unused))) {
+void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
   if (FunctionData::does_need_codegen(function)) {
     prepare_generate_function(function);
     G->stats.on_function_processed(function);
@@ -41,7 +41,7 @@ void CodeGenF::execute(FunctionPtr function, DataStream<WriterData> &unused_os _
   }
 }
 
-void CodeGenF::on_finish(DataStream<WriterData *> &os) {
+void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
   stage::set_name("GenerateCode");
@@ -136,4 +136,15 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
 string CodeGenF::get_subdir(const string &base) {
   int bucket = vk::std_hash(base) % 100;
   return "o_" + std::to_string(bucket);
+}
+
+
+void CodeGenForDiffF::execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData *> &os) {
+  stage::set_name("Code generation for diff");
+
+  // re-launch cmd not with "calc hashes", but with "store cpp/h contents and php comments" mode
+  // all generated files will be passed to os (to WriteFilesF)
+  CodeGenerator W(false, os);
+  cmd->compile(W);
+  // now cmd is destroyed
 }

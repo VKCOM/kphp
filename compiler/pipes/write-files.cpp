@@ -12,42 +12,7 @@
 void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   stage::set_name("Write files");
 
-  std::string full_file_name = G->cpp_dir;
-  if (!data->subdir.empty()) {
-    full_file_name += data->subdir;
-    full_file_name += "/";
-  }
-  full_file_name += data->file_name;
-
-  File *file = G->get_file_info(std::move(full_file_name));
-  file->needed = true;
-  file->includes = data->flush_includes();
-  file->lib_includes = data->flush_lib_includes();
-
-  file->compile_with_debug_info_flag = data->compile_with_debug_info();
-
-  if (file->on_disk && data->compile_with_crc()) {
-    if (file->crc64 == (unsigned long long)-1) {
-      FILE *old_file = fopen(file->path.c_str(), "r");
-      kphp_assert_msg (old_file != nullptr,
-                  fmt_format("Failed to open [{}] : {}", file->path, strerror(errno)));
-      unsigned long long old_crc = 0;
-      unsigned long long old_crc_with_comments = static_cast<unsigned long long>(-1);
-
-      if (fscanf(old_file, "//crc64:%llx", &old_crc) != 1) {
-        kphp_warning (fmt_format("can't read crc64 from [{}]\n", file->path));
-        old_crc = static_cast<unsigned long long>(-1);
-      } else {
-        if (fscanf(old_file, " //crc64_with_comments:%llx", &old_crc_with_comments) != 1) {
-          old_crc_with_comments = static_cast<unsigned long long>(-1);
-        }
-      }
-      fclose(old_file);
-
-      file->crc64 = old_crc;
-      file->crc64_with_comments = old_crc_with_comments;
-    }
-  }
+  File *file = data->get_file();
 
   bool need_del = false;
   bool need_fix = false;

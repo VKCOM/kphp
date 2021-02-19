@@ -490,6 +490,14 @@ const Index &CompilerCore::get_index() {
 }
 
 File *CompilerCore::get_file_info(std::string &&file_name) {
+  File *f = cpp_index.get_file(file_name);
+  if (f != nullptr) {
+    return f;
+  }
+//  printf("%s not found in index, creating\n", file_name.c_str());
+
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> guard{mutex};
   return cpp_index.insert_file(std::move(file_name));
 }
 

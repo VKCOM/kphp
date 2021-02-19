@@ -24,15 +24,30 @@ struct CGContext {
   size_t inside_null_coalesce_fallback{0};
 };
 
+class File;
+
+// CodeGenerator is created for every root codegen command as an async task, see code-gen-task.h
+// usually one command (one CodeGenerator) produces one file (function cpp / function h for example),
+// but generally it can produce many files (calling open and close multiple times, a tl schema compiler for example)
 class CodeGenerator {
 private:
+  // a CodeGenerator is used consequently in two steps:
+  // 1) we generate contents of every file, but DO NOT STORE contents and locations — just calculate hashes on the fly
+  //    if calculated hashes differ to actually stored on disk, the same codegen command is passed is launched again:
+  // 2) we do the same codegeneration (for command that emerged diff) and STORE contents and php comments
+  // this reduces memory usage, as typically there are a few changes in php code between kphp launches
+  bool is_step_just_calc_hashes;
+  int diff_files_count{0};
+
   // hashes of the currently opened file, calculated on the fly
-  // (one CodeGenerator may produce multiple files, they are set to 0 on opening a new one)
+  // (one codegen command may produce multiple files, they are set to 0 on opening a new one)
   unsigned long long hash_of_cpp;
   unsigned long long hash_of_comments;
+  File *cur_file{nullptr};
 
-  WriterData *data{nullptr};
-  DataStream<WriterData *> &os;
+  WriterData *data{nullptr};      // stored contents, is created only on step 2 (re-generating diff files)
+  DataStream<WriterData *> &os;   // output stream for stored contents, used only on step 2
+  
   CGContext context;
 
   int indent_level;
@@ -47,7 +62,9 @@ private:
 
 public:
 
-  explicit CodeGenerator(DataStream<WriterData *> &os): os(os) {}
+  explicit CodeGenerator(bool is_step_just_calc_hashes, DataStream<WriterData *> &os)
+    : is_step_just_calc_hashes(is_step_just_calc_hashes)
+    , os(os) {}
   ~CodeGenerator() = default;
 
   CodeGenerator(const CodeGenerator &from) = delete;
@@ -58,41 +75,55 @@ public:
 
   void append(char c) {
     feed_hash(c);
-    data->append(c);
+    if (!is_step_just_calc_hashes) {
+      data->append(c);
+    }
   }
 
   void append(const char *p, size_t len) {
     if (need_indent) {
       need_indent = false;
       feed_hash(static_cast<unsigned long long>(' ') * indent_level);
-      data->append(indent_level, ' ');
+      if (!is_step_just_calc_hashes) {
+        data->append(indent_level, ' ');
+      }
     }
     feed_hash(string_hash(p, len));
-    data->append(p, len);
+    if (!is_step_just_calc_hashes) {
+      data->append(p, len);
+    }
   }
 
   void append(long long value) {
     feed_hash(value);
-    char buf[32];
-    data->append(buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf));
+    if (!is_step_just_calc_hashes) {
+      char buf[32];
+      data->append(buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf));
+    }
   }
 
   void append(unsigned long long value) {
     feed_hash(value);
-    char buf[32];
-    data->append(buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf));
+    if (!is_step_just_calc_hashes) {
+      char buf[32];
+      data->append(buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf));
+    }
   }
 
   void append(int value) {
     feed_hash(value);
-    char buf[16];
-    data->append(buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf));
+    if (!is_step_just_calc_hashes) {
+      char buf[16];
+      data->append(buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf));
+    }
   }
 
   void append(unsigned int value) {
     feed_hash(value);
-    char buf[16];
-    data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf));
+    if (!is_step_just_calc_hashes) {
+      char buf[16];
+      data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf));
+    }
   }
 
 
@@ -102,34 +133,44 @@ public:
 
   void new_line() {
     feed_hash('\n');
-    data->end_line();
-    data->begin_line();
+    if (!is_step_just_calc_hashes) {
+      data->end_line();
+      data->begin_line();
+    }
     need_indent = true;
   }
 
   void add_location(SrcFilePtr file, int line_num) {
     if (!is_comments_locked()) {
       feed_hash_of_comments(file, line_num);
-      data->add_location(file, line_num);
+      if (!is_step_just_calc_hashes) {
+        data->add_location(file, line_num);
+      }
     }
   }
 
-  bool is_comments_locked() { return lock_comments_cnt > 0; }
-  void lock_comments() { lock_comments_cnt++; data->brk(); }
-  void unlock_comments() { lock_comments_cnt--; }
+  bool is_comments_locked() {
+    return lock_comments_cnt > 0;
+  }
+  void lock_comments() {
+    lock_comments_cnt++;
+    if (!is_step_just_calc_hashes) {
+      data->brk();
+    }
+  }
+  void unlock_comments() {
+    lock_comments_cnt--;
+  }
 
-  void add_include(const std::string &s) {
-    feed_hash(string_hash(s.c_str(), s.size()));
-    data->add_include(s);
-  }
-  
-  void add_lib_include(const std::string &s) {
-    feed_hash(string_hash(s.c_str(), s.size()));
-    data->add_lib_include(s);
-  }
+  void add_include(const std::string &s);
+  void add_lib_include(const std::string &s);
 
   CGContext &get_context() {
     return context;
+  }
+
+  bool was_diff_in_any_file() {
+    return diff_files_count > 0;
   }
 };
 

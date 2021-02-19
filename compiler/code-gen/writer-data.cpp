@@ -8,15 +8,13 @@
 #include "compiler/stage.h"
 #include "common/wrappers/fmt_format.h"
 
-WriterData::WriterData(bool compile_with_debug_info_flag, bool compile_with_crc, std::string file_name, std::string subdir) :
+WriterData::WriterData(File *file, bool compile_with_crc) :
+  file(file),
   lines(),
   text(),
   hash_of_cpp(-1),
   hash_of_comments(-1),
-  compile_with_debug_info_flag(compile_with_debug_info_flag),
-  compile_with_crc_flag(compile_with_crc),
-  file_name(std::move(file_name)),
-  subdir(std::move(subdir)) {
+  compile_with_crc_flag(compile_with_crc) {
 }
 
 void WriterData::begin_line() {
@@ -47,23 +45,6 @@ void WriterData::add_location(SrcFilePtr file, int line) {
   if (line != -1) {
     lines.back().line_ids.insert(line);
   }
-}
-
-void WriterData::add_include(const std::string &s) {
-  kphp_assert(!s.empty());
-  includes.push_back(s);
-}
-
-std::vector<std::string> WriterData::flush_includes() {
-  return std::move(includes);
-}
-
-void WriterData::add_lib_include(const std::string &s) {
-  lib_includes.push_back(s);
-}
-
-std::vector<std::string> WriterData::flush_lib_includes() {
-  return std::move(lib_includes);
 }
 
 void WriterData::set_calculated_hashes(unsigned long long int hash_of_cpp, unsigned long long int hash_of_comments) {
@@ -184,12 +165,4 @@ void WriterData::dump(std::string &dest_str) {
     dump(dest_str, i, j, i->file);
     i = j;
   }
-}
-
-bool WriterData::compile_with_debug_info() const {
-  return compile_with_debug_info_flag;
-}
-
-bool WriterData::compile_with_crc() const {
-  return compile_with_crc_flag;
 }

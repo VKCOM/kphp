@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <forward_list>
 #include <vector>
 #include <tuple>
 
@@ -29,14 +30,14 @@ public:
   vk::string_view subdir;
   long long mtime{0};
   long long file_size{0};
-  unsigned long long crc64{static_cast<unsigned long long>(-1)};
-  unsigned long long crc64_with_comments{static_cast<unsigned long long>(-1)};
+  unsigned long long crc64{static_cast<unsigned long long>(-1)};                // actually, some hash of cpp contents
+  unsigned long long crc64_with_comments{static_cast<unsigned long long>(-1)};  // actually, some hash of comments (php lines)
   bool on_disk{false};
   bool needed{false};
   Target *target{nullptr};
   //Don't know where else I can save it
-  std::vector<std::string> includes;
-  std::vector<std::string> lib_includes;
+  std::forward_list<std::string> includes;
+  std::forward_list<std::string> lib_includes;
   bool compile_with_debug_info_flag{true};
   bool is_changed{false};
 
