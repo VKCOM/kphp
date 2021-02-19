@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "common/algorithms/simd-int-to-string.h"
+#include "common/php-functions.h"
 #include "common/wrappers/fmt_format.h"
 
 #include "compiler/code-gen/writer-data.h"
@@ -25,6 +26,11 @@ struct CGContext {
 
 class CodeGenerator {
 private:
+  // hashes of the currently opened file, calculated on the fly
+  // (one CodeGenerator may produce multiple files, they are set to 0 on opening a new one)
+  unsigned long long hash_of_cpp;
+  unsigned long long hash_of_comments;
+
   WriterData *data{nullptr};
   DataStream<WriterData *> &os;
   CGContext context;
@@ -32,6 +38,12 @@ private:
   int indent_level;
   bool need_indent;
   int lock_comments_cnt;
+
+  void feed_hash(unsigned long long val) {
+    hash_of_cpp = hash_of_cpp * 56235515617499ULL + val;
+  }
+
+  void feed_hash_of_comments(SrcFilePtr file, int line_num);
 
 public:
 
@@ -45,33 +57,40 @@ public:
   void close_file_clear_writer();
 
   void append(char c) {
+    feed_hash(c);
     data->append(c);
   }
 
   void append(const char *p, size_t len) {
     if (need_indent) {
       need_indent = false;
+      feed_hash(static_cast<unsigned long long>(' ') * indent_level);
       data->append(indent_level, ' ');
     }
+    feed_hash(string_hash(p, len));
     data->append(p, len);
   }
 
   void append(long long value) {
+    feed_hash(value);
     char buf[32];
     data->append(buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf));
   }
 
   void append(unsigned long long value) {
+    feed_hash(value);
     char buf[32];
     data->append(buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf));
   }
 
   void append(int value) {
+    feed_hash(value);
     char buf[16];
     data->append(buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf));
   }
 
   void append(unsigned int value) {
+    feed_hash(value);
     char buf[16];
     data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf));
   }
@@ -82,6 +101,7 @@ public:
   }
 
   void new_line() {
+    feed_hash('\n');
     data->end_line();
     data->begin_line();
     need_indent = true;
@@ -89,6 +109,7 @@ public:
 
   void add_location(SrcFilePtr file, int line_num) {
     if (!is_comments_locked()) {
+      feed_hash_of_comments(file, line_num);
       data->add_location(file, line_num);
     }
   }
@@ -97,8 +118,15 @@ public:
   void lock_comments() { lock_comments_cnt++; data->brk(); }
   void unlock_comments() { lock_comments_cnt--; }
 
-  void add_include(const std::string &s) { data->add_include(s); }
-  void add_lib_include(const std::string &s) { data->add_lib_include(s); }
+  void add_include(const std::string &s) {
+    feed_hash(string_hash(s.c_str(), s.size()));
+    data->add_include(s);
+  }
+  
+  void add_lib_include(const std::string &s) {
+    feed_hash(string_hash(s.c_str(), s.size()));
+    data->add_lib_include(s);
+  }
 
   CGContext &get_context() {
     return context;

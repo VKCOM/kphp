@@ -24,7 +24,8 @@ private:
 
   std::vector<Line> lines;
   std::string text;
-  unsigned long long crc;
+  unsigned long long hash_of_cpp;
+  unsigned long long hash_of_comments;
 
   std::vector<std::string> includes;
   std::vector<std::string> lib_includes;
@@ -63,7 +64,9 @@ public:
   void add_lib_include(const std::string &s);
   std::vector<std::string> flush_lib_includes();
 
-  unsigned long long calc_crc();
+  void set_calculated_hashes(unsigned long long hash_of_cpp, unsigned long long hash_of_comments);
+  unsigned long long get_hash_of_cpp() { return hash_of_cpp; }
+  unsigned long long get_hash_of_comments() { return hash_of_comments; }
   void dump(std::string &dest_str);
 
   bool compile_with_debug_info() const;
