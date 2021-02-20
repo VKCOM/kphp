@@ -91,7 +91,7 @@ public:
   Optional<array<mixed>> split(const string &subject, int64_t limit, int64_t flags) const;
 
   template<class T>
-  mixed replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const;
+  Optional<string> replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const;
 
   static int64_t last_error();
 
@@ -143,38 +143,41 @@ inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject,
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-inline mixed f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 inline mixed f$preg_replace(const regexp &regex, const string &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 inline mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T1, class T2>
-inline mixed f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline auto f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 inline mixed f$preg_replace(const mixed &regex, const string &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 inline mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
+template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
+auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+
 template<class T>
-mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+Optional<string> f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
 mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T, class T2>
-mixed f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
-mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
+Optional<string> f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
 mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const mixed &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
@@ -263,18 +266,18 @@ string regexp::get_replacement(const T &replace_val, const string &subject, int6
 
 
 template<class T>
-mixed regexp::replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const {
+Optional<string> regexp::replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const {
   pcre_last_error = 0;
   int64_t result_count = 0;//calls can be recursive, can't write to replace_count directly
 
   check_pattern_compilation_warning();
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    return mixed();
+    return {};
   }
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
     pcre_last_error = PCRE_ERROR_BADUTF8;
-    return mixed();
+    return {};
   }
 
   if (limit == 0 || limit == -1) {
@@ -318,7 +321,7 @@ mixed regexp::replace(const T &replace_val, const string &subject, int64_t limit
 
   replace_count = result_count;
   if (pcre_last_error) {
-    return mixed();
+    return {};
   }
 
   if (replace_count == 0) {
@@ -420,15 +423,15 @@ Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mi
 
 
 template<class T1, class T2, class T3, class>
-inline mixed f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit, int64_t &replace_count) {
+inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
 }
 
-mixed f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+Optional<string> f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   return regex.replace(replace_val, subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+Optional<string> f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (replace_val.is_array()) {
     php_warning("Parameter mismatch, pattern is a string while replacement is an array");
     return false;
@@ -466,21 +469,21 @@ mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const mixed 
 }
 
 template<class T1, class T2>
-mixed f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
+auto f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regexp(regex), replace_val, subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
-  return f$preg_replace(regex, mixed(replace_val), mixed(subject), limit, replace_count);
+Optional<string> f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+  return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
 }
 
 mixed f$preg_replace(const mixed &regex, const string &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+Optional<string> f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (regex.is_array()) {
-    mixed result = subject;
+    Optional<string> result = subject;
 
     replace_count = 0;
     int64_t replace_count_one;
@@ -495,14 +498,14 @@ mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const string 
           ++cur_replace_val;
         }
 
-        result = f$preg_replace(it.get_value().to_string(), replace_value, result.to_string(), limit, replace_count_one);
+        result = f$preg_replace(it.get_value().to_string(), replace_value, result, limit, replace_count_one);
         replace_count += replace_count_one;
       }
     } else {
       string replace_value = replace_val.to_string();
 
       for (array<mixed>::const_iterator it = regex.begin(); it != regex.end(); ++it) {
-        result = f$preg_replace(it.get_value().to_string(), replace_value, result.to_string(), limit, replace_count_one);
+        result = f$preg_replace(it.get_value().to_string(), replace_value, result, limit, replace_count_one);
         replace_count += replace_count_one;
       }
     }
@@ -537,8 +540,13 @@ mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const mixed &
   }
 }
 
+template<class T1, class T2, class T3, class>
+auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit, int64_t &replace_count) {
+  return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count);
+}
+
 template<class T>
-mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+Optional<string> f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   return regex.replace(replace_val, subject, limit, replace_count);
 }
 
@@ -563,20 +571,20 @@ mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const m
 }
 
 template<class T, class T2>
-mixed f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
+auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace_callback(regexp(regex), replace_val, subject, limit, replace_count);
 }
 
 template<class T>
-mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
+Optional<string> f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (regex.is_array()) {
-    mixed result = subject;
+    Optional<string> result = subject;
 
     replace_count = 0;
     int64_t replace_count_one;
 
     for (array<mixed>::const_iterator it = regex.begin(); it != regex.end(); ++it) {
-      result = f$preg_replace_callback(it.get_value().to_string(), replace_val, result.to_string(), limit, replace_count_one);
+      result = f$preg_replace_callback(it.get_value().to_string(), replace_val, result, limit, replace_count_one);
       replace_count += replace_count_one;
     }
 
