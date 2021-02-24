@@ -10,7 +10,7 @@
 #include "common/tl/constants/kphp.h"
 #include "common/wrappers/optional.h"
 
-#include "server/php-engine-vars.h"
+#include "server/lease-context.h"
 
 vk::optional<QueueTypesLeaseWorkerMode> LeaseConfigParser::get_lease_mode_from_config(const YAML::Node &node) {
   vk::optional<QueueTypesLeaseWorkerMode> lease_worker_mode;
@@ -58,7 +58,7 @@ int LeaseConfigParser::parse_lease_options_config(const char *lease_config) noex
     YAML::Node node = YAML::LoadFile(lease_config);
     const auto &rpc_clients = LeaseConfigParser::get_rpc_clients_from_config(node);
     RpcClients::get().rpc_clients.insert(RpcClients::get().rpc_clients.end(), rpc_clients.begin(), rpc_clients.end());
-    cur_lease_mode = LeaseConfigParser::get_lease_mode_from_config(node);
+    vk::singleton<LeaseContext>::get().cur_lease_mode = LeaseConfigParser::get_lease_mode_from_config(node);
   } catch (const std::exception &e) {
     kprintf("-S option, incorrect lease config '%s'\n%s\n", lease_config, e.what());
     return -1;

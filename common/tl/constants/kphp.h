@@ -13,6 +13,7 @@
 #define                                          TL_KPHP_START_LEASE_V2 0x896e46e9U
 #define                                              TL_KPHP_STOP_LEASE 0x183bf49dU
 #define                                              TL_KPHP_STOP_READY 0x59d86654U
+#define                               TL_KPHP_STOP_READY_ACKNOWLEDGMENT 0x4b7503efU
 
 #include <cstdint>
 namespace vk {
