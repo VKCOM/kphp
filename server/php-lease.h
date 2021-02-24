@@ -7,10 +7,12 @@
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/kphp-tasks-lease/lease-worker-settings.h"
 #include "common/pid.h"
-#include "common/wrappers/optional.h"
 
 #include "server/lease-rpc-client.h"
 #include "server/php-worker.h"
+
+bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid);
+bool check_tasks_manager_pid(process_id_t tasks_manager_pid);
 
 void lease_on_worker_finish(php_worker *worker);
 void lease_set_ready();

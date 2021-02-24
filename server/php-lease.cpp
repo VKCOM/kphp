@@ -11,6 +11,8 @@
 #include "common/tl/methods/string.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
+#include "common/wrappers/optional.h"
+
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-tcp-rpc-common.h"
@@ -18,32 +20,36 @@
 #include "server/php-engine-vars.h"
 #include "server/php-worker.h"
 
-static int rpc_proxy_target = -1;
+namespace {
 
-static int cur_lease_target_ip = -1;
-static int cur_lease_target_port = -1;
-static conn_target_t *cur_lease_target_ct = nullptr;
-static int cur_lease_target = -1;
+int rpc_proxy_target = -1;
 
-static int rpc_lease_target = -1;
-static double rpc_lease_timeout = -1;
-static process_id_t lease_pid;
-static int lease_actor_id = -1;
+int cur_lease_target_ip = -1;
+int cur_lease_target_port = -1;
+conn_target_t *cur_lease_target_ct = nullptr;
+int cur_lease_target = -1;
 
-static double lease_stats_start_time;
-static double lease_stats_time;
-static long long lease_stats_cnt;
-static int ready_cnt = 0;
+int rpc_lease_target = -1;
+double rpc_lease_timeout = -1;
+process_id_t lease_pid;
+int lease_actor_id = -1;
 
-enum lease_state_t {
-  lst_off,            // connect to rpc-proxy, wait kphp.startLease from it, connect to target
-  lst_start,          // if !has_pending_scripts -> change state to lst_on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
-  lst_on,             // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lst_finish
-  lst_finish          // wait finishing current task, send RPC_STOP to target, send TL_KPHP_LEASE_STATS to rpc-proxy, change state to lst_off
+double lease_stats_start_time;
+double lease_stats_time;
+long long lease_stats_cnt;
+int ready_cnt = 0;
+
+enum class lease_state_t {
+  off,            // connect to rpc-proxy, wait kphp.startLease from it, connect to target
+  start,          // if !has_pending_scripts -> change state to lease_state_t::on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
+  on,             // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lease_state_t::finish
+  finish          // wait finishing current task, send RPC_STOP to target, send TL_KPHP_LEASE_STATS to rpc-proxy, change state to lease_state_t::off
 };
 
-static lease_state_t lease_state = lst_off;
-static int lease_ready_flag = 0; // waiting for something -> equal 0
+lease_state_t lease_state = lease_state_t::off;
+int lease_ready_flag = 0; // waiting for something -> equal 0
+
+} // namespace
 
 extern conn_target_t rpc_client_ct;
 
@@ -51,6 +57,14 @@ int get_target_by_pid(int ip, int port, conn_target_t *ct);
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
 connection *get_target_connection(conn_target_t *S, int force_flag);
 int has_pending_scripts();
+
+bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid) {
+  return matches_pid_ref(tasks_invoker_pid, lease_pid) != no_pid_match;
+}
+
+bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
+  return matches_pid_ref(tasks_manager_pid, get_rpc_main_target_pid()) != no_pid_match;
+}
 
 static int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
   if (ip == cur_lease_target_ip && port == cur_lease_target_port && ct == cur_lease_target_ct) {
@@ -76,7 +90,7 @@ static void lease_change_state(lease_state_t new_state) {
 }
 
 void lease_on_worker_finish(php_worker *worker) {
-  if ((lease_state == lst_on || lease_state == lst_finish) && worker->target_fd == rpc_lease_target) {
+  if ((lease_state == lease_state_t::on || lease_state == lease_state_t::finish) && worker->target_fd == rpc_lease_target) {
     double worked = precise_now - worker->start_time;
     lease_stats_time += worked;
     lease_stats_cnt++;
@@ -212,11 +226,11 @@ static void rpct_lease_stats(int target_fd) {
 }
 
 int get_current_target() {
-  if (lease_state == lst_off) {
+  if (lease_state == lease_state_t::off) {
     // rpc-proxy
     return rpc_proxy_target;
   }
-  if (lease_state == lst_on) {
+  if (lease_state == lease_state_t::on) {
     // tasks
     return rpc_lease_target;
   }
@@ -224,7 +238,7 @@ int get_current_target() {
 }
 
 static int lease_off() {
-  assert(lease_state == lst_off);
+  assert(lease_state == lease_state_t::off);
   if (!lease_ready_flag) {
     return 0;
   }
@@ -241,7 +255,7 @@ static int lease_off() {
 }
 
 static int lease_on() {
-  assert(lease_state == lst_on);
+  assert(lease_state == lease_state_t::on);
   if (!lease_ready_flag) {
     return 0;
   }
@@ -257,26 +271,26 @@ static int lease_on() {
 }
 
 static int lease_start() {
-  assert(lease_state == lst_start);
+  assert(lease_state == lease_state_t::start);
   if (has_pending_scripts()) {
     return 0;
   }
-  lease_change_state(lst_on);
+  lease_change_state(lease_state_t::on);
   lease_ready_flag = 1;
   if (rpc_stopped) {
-    lease_change_state(lst_finish);
+    lease_change_state(lease_state_t::finish);
   }
   return 1;
 }
 
 static int lease_finish() {
-  assert(lease_state == lst_finish);
+  assert(lease_state == lease_state_t::finish);
   if (has_pending_scripts()) {
     return 0;
   }
   rpct_stop_ready(rpc_lease_target);
   rpct_lease_stats(rpc_proxy_target);
-  lease_change_state(lst_off);
+  lease_change_state(lease_state_t::finish);
   lease_ready_flag = 1;
   return 1;
 }
@@ -285,16 +299,16 @@ void run_rpc_lease() {
   int run_flag = 1;
   while (run_flag) {
     switch (lease_state) {
-      case lst_off:
+      case lease_state_t::off:
         run_flag = lease_off();
         break;
-      case lst_start:
+      case lease_state_t::start:
         run_flag = lease_start();
         break;
-      case lst_on:
+      case lease_state_t::on:
         run_flag = lease_on();
         break;
-      case lst_finish:
+      case lease_state_t::finish:
         run_flag = lease_finish();
         break;
       default:
@@ -306,8 +320,8 @@ void run_rpc_lease() {
 void lease_cron() {
   int need = 0;
 
-  if (lease_state == lst_on && rpc_lease_timeout < precise_now) {
-    lease_change_state(lst_finish);
+  if (lease_state == lease_state_t::on && rpc_lease_timeout < precise_now) {
+    lease_change_state(lease_state_t::finish);
     need = 1;
   }
   if (lease_ready_flag) {
@@ -320,10 +334,10 @@ void lease_cron() {
 
 
 void do_rpc_stop_lease() {
-  if (lease_state != lst_on) {
+  if (lease_state != lease_state_t::on) {
     return;
   }
-  lease_change_state(lst_finish);
+  lease_change_state(lease_state_t::finish);
   run_rpc_lease();
 }
 
@@ -332,7 +346,7 @@ int do_rpc_start_lease(process_id_t pid, double timeout, int actor_id) {
     return -1;
   }
 
-  if (lease_state != lst_off) {
+  if (lease_state != lease_state_t::off) {
     return -1;
   }
   int target_fd = get_lease_target_by_pid(pid.ip, pid.port, &rpc_client_ct);
@@ -356,7 +370,7 @@ int do_rpc_start_lease(process_id_t pid, double timeout, int actor_id) {
   lease_stats_start_time = precise_now;
   lease_stats_time = 0;
 
-  lease_change_state(lst_start);
+  lease_change_state(lease_state_t::start);
   run_rpc_lease();
 
   return 0;
@@ -384,7 +398,7 @@ void set_main_target(const LeaseRpcClient &client) {
 }
 
 connection *get_lease_connection() {
-  if (lease_state != lst_on || rpc_lease_target == -1) {
+  if (lease_state != lease_state_t::on || rpc_lease_target == -1) {
     return nullptr;
   }
   return get_target_connection(&Targets[rpc_lease_target], 0);
