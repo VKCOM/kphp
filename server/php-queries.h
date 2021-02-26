@@ -7,7 +7,9 @@
 #include <cstddef>
 #include <cstdint>
 
-using slot_id_t = int;
+#include "server/slot-ids-factory.h"
+
+extern SlotIdsFactory parallel_task_ids_factory;
 
 enum class net_event_type_t {
   rpc_answer,

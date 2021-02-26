@@ -692,29 +692,17 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 }
 
 /** new rpc interface **/
-static slot_id_t end_slot_id, begin_slot_id;
-static const slot_id_t max_slot_id = 1000000000;
+static SlotIdsFactory rpc_ids_factory;
+SlotIdsFactory parallel_task_ids_factory;
 
-void init_slots() {
-  end_slot_id = begin_slot_id = static_cast<slot_id_t>(lrand48() % (max_slot_id / 4) + 1);
+static void init_slots() {
+  rpc_ids_factory.init();
+  parallel_task_ids_factory.init();
 }
 
-slot_id_t create_slot() {
-  if (end_slot_id > max_slot_id) {
-    return -1;
-  }
-  return end_slot_id++;
-}
-
-bool is_valid_slot(slot_id_t slot_id) {
-  return begin_slot_id <= slot_id && slot_id < end_slot_id;
-}
-
-void clear_slots() {
-  begin_slot_id = end_slot_id;
-  if (begin_slot_id > max_slot_id / 2) {
-    init_slots();
-  }
+static void clear_slots() {
+  rpc_ids_factory.clear();
+  parallel_task_ids_factory.clear();
 }
 
 template<class DataT, int N>
@@ -804,10 +792,6 @@ void *dl_allocate_safe(size_t size) {
 }
 
 int alloc_net_event(slot_id_t slot_id, net_event_type_t type, net_event_t **res) {
-  if (!is_valid_slot(slot_id)) {
-    return 0;
-  }
-
   net_event_t *event = net_events.create();
   if (event == nullptr) {
     return -2;
@@ -824,6 +808,9 @@ void unalloc_net_event(net_event_t *event) {
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res) {
   net_event_t *event;
+  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+    return 0;
+  }
   int status = alloc_net_event(slot_id, net_event_type_t::rpc_error, &event);
   if (status <= 0) {
     return status;
@@ -839,6 +826,9 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
+  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+    return 0;
+  }
   int status = alloc_net_event(slot_id, net_event_type_t::rpc_answer, &event);
   if (status <= 0) {
     return status;
@@ -863,6 +853,9 @@ int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_r
   auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
   auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_ptr); });
 
+  if (!parallel_task_ids_factory.is_valid_slot(ready_task_id)) {
+    return 0;
+  }
   net_event_t *event = nullptr;
   int status = alloc_net_event(ready_task_id, net_event_type_t::task_worker_answer, &event);
   if (status <= 0) {
@@ -948,7 +941,7 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
   if (query == nullptr) {
     return -1; // memory limit
   }
-  query->slot_id = create_slot();
+  query->slot_id = rpc_ids_factory.create_slot();
   if (query->slot_id == -1) {
     unalloc_net_query(query);
     return -1;

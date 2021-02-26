@@ -82,7 +82,7 @@ void TaskWorkerClient::init_task_worker_client(int task_result_slot) {
 int TaskWorkerClient::send_task(void * const task_memory_ptr) {
   static_assert(sizeof(task_memory_ptr) == 8, "Unexpected pointer size");
 
-  slot_id_t task_id = create_slot();
+  slot_id_t task_id = parallel_task_ids_factory.create_slot();
 
   tvkprintf(task_workers, 2, "sending task: <task_result_fd_idx, task_id> = <%d, %d> , task_memory_ptr = %p, write_task_fd = %d\n", task_result_fd_idx,
             task_id, task_memory_ptr, write_task_fd);
