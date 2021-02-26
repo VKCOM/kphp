@@ -37,7 +37,7 @@ LambdaGenerator &LambdaGenerator::add_uses(std::vector<VertexAdaptor<op_func_par
   for (auto param_as_use : uses) {
     auto variable_in_use = VertexAdaptor<op_var>::create().set_location(created_location);
     variable_in_use->str_val = param_as_use->var()->get_string();
-    generated_lambda->members.add_instance_field(variable_in_use, {}, FieldModifiers{}.set_private(), vk::string_view{});
+    generated_lambda->members.add_instance_field(variable_in_use, {}, FieldModifiers{}.set_private(), vk::string_view{}, nullptr);
 
     auto field = generated_lambda->members.get_instance_field(variable_in_use->get_string());
     field->var->marked_as_const = true;
@@ -74,7 +74,7 @@ LambdaGenerator &LambdaGenerator::add_constructor_from_uses() {
 }
 
 LambdaGenerator &LambdaGenerator::add_invoke_method_which_call_method(FunctionPtr called_method) {
-  generated_lambda->members.add_instance_field(get_var_of_captured_array_arg<op_var>(), {}, FieldModifiers{}.set_private(), vk::string_view{});
+  generated_lambda->members.add_instance_field(get_var_of_captured_array_arg<op_var>(), {}, FieldModifiers{}.set_private(), vk::string_view{}, nullptr);
 
   add_uses_for_captured_class_from_array();
   auto lambda_params = create_params_for_invoke_which_call_method(called_method);

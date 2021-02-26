@@ -72,9 +72,9 @@ struct ClassMemberStaticField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
-  const TypeHint *type_hint{nullptr};  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
+  const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
 
   vk::string_view local_name() const &;
   static std::string hash_name(vk::string_view name);
@@ -87,11 +87,11 @@ struct ClassMemberInstanceField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   vk::string_view phpdoc_str;
-  const TypeHint *type_hint{nullptr};  // from @var or from default value, class type hints from PHP 7.4 are unsupported yet
+  const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
   int8_t serialization_tag = -1;
   bool serialize_as_float32{false};
 
-  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
+  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
 
   vk::string_view local_name() const &;
   vk::string_view local_name() const && = delete;
@@ -189,8 +189,8 @@ public:
 
   void add_static_method(FunctionPtr function);
   void add_instance_method(FunctionPtr function);
-  void add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
-  void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str);
+  void add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
+  void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
   void add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access);
 
   void safe_add_instance_method(FunctionPtr function);

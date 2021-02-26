@@ -51,10 +51,11 @@ std::string ClassMemberInstanceMethod::get_hash_name() const {
   return hash_name(local_name());
 }
 
-inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) :
+inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint) :
   modifiers(modifiers),
   root(root),
-  phpdoc_str(phpdoc_str) {
+  phpdoc_str(phpdoc_str),
+  type_hint(type_hint) {
 
   std::string global_var_name = replace_backslashes(klass->name) + "$$" + root->get_string();
   var = G->get_global_var(global_var_name, VarData::var_global_t, def_val);
@@ -91,10 +92,11 @@ std::string ClassMemberInstanceField::get_hash_name() const {
   return hash_name(local_name());
 }
 
-ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) :
+ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint) :
   modifiers(modifiers),
   root(root),
-  phpdoc_str(phpdoc_str) {
+  phpdoc_str(phpdoc_str),
+  type_hint(type_hint) {
 
   std::string local_var_name = root->get_string();
   var = G->create_var(local_var_name, VarData::var_instance_t);
@@ -172,12 +174,12 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   }
 }
 
-void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) {
-  append_member(ClassMemberStaticField{klass, root, def_val, modifiers, phpdoc_str});
+void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint) {
+  append_member(ClassMemberStaticField{klass, root, def_val, modifiers, phpdoc_str, type_hint});
 }
 
-void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str) {
-  append_member(ClassMemberInstanceField{klass, root, def_val, modifiers, phpdoc_str});
+void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint) {
+  append_member(ClassMemberInstanceField{klass, root, def_val, modifiers, phpdoc_str, type_hint});
 }
 
 void ClassMembersContainer::add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access) {

@@ -40,7 +40,7 @@ class PrimitiveHolder {
      * @kphp-serialized-field 6
      * @var bool
      */
-    public $bool_true_f = false;
+    public $bool_true_f = true;
 
     /**
      * @kphp-serialized-field 7
