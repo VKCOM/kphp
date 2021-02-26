@@ -924,11 +924,9 @@ mixed f$array_rand(const array<T> &a, int64_t num) {
   }
 
   int64_t size = a.count();
-  if (num > size) {
-    num = size;
-  }
-  if (unlikely(num <= 0)) {
-    php_warning("Parameter num of array_rand must be positive");
+
+  if (unlikely(num <= 0 || num > size)) {
+    php_warning("Second argument has to be between 1 and the number of elements in the array");
     return {};
   }
 
