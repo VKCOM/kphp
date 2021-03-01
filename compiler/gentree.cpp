@@ -1833,8 +1833,27 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
 }
 
 void GenTree::parse_declare_at_top_of_file() {
-  kphp_assert(test_expect(tok_declare));
+  // check whether phpdocs are followed by a declare statement;
+  // if they are, parse declare statement (otherwise don't consume any tokens)
+  int i = 0;
+  while (std::next(cur, i)->type() == tok_phpdoc) {
+    i++;
+  }
+  if (std::next(cur, i)->type() != tok_declare) {
+    return;
+  }
+  // a lot of code is not prepared to strict_types=1 without implicit casts,
+  // so we expect an additional annotation that turns this feature on;
+  // TODO: remove this toggle later and enable strict_types by default
+  bool enabled = false;
+  while (cur->type() == tok_phpdoc) {
+    if (!enabled && vk::contains(cur->str_val, "@kphp-strict-types-enable")) {
+      enabled = true;
+    }
+    next_cur();
+  }
 
+  kphp_assert(test_expect(tok_declare));
   next_cur();
   expect(tok_oppar, "(");
 
@@ -1851,6 +1870,7 @@ void GenTree::parse_declare_at_top_of_file() {
 
   if (test_expect(tok_int_const)) {
     kphp_error(vk::any_of_equal(cur->str_val, "0", "1"), "strict_types declaration must have 0 or 1 as its value");
+    processing_file->is_strict_types = enabled && cur->str_val == "1";
     next_cur();
   } else {
     kphp_error(0, expect_msg("'tok_int_const'"));
@@ -2227,12 +2247,7 @@ void GenTree::run() {
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_main));
   processing_file->main_function = cur_function;
 
-  if (test_expect(tok_phpdoc) && std::next(cur, 1)->type() == tok_declare) {
-    skip_phpdoc_tokens();
-  }
-  if (test_expect(tok_declare)) {
-    parse_declare_at_top_of_file();
-  }
+  parse_declare_at_top_of_file();
 
   if (test_expect(tok_phpdoc) && std::next(cur, 1)->type() == tok_namespace) {
     skip_phpdoc_tokens();

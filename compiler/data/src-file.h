@@ -22,6 +22,7 @@ public:
   std::string unified_dir_name;
   bool loaded{false};
   bool is_required{false};
+  bool is_strict_types{false}; // whether declare(strict_types=1) is set
 
   std::string main_func_name;
   FunctionPtr main_function;

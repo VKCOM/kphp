@@ -225,3 +225,5 @@ No matter whether a native function accepts strings / ints / arrays — casts wi
 ```
 
 **Why is it done in such a way?** Almost because when executed in plain PHP, standard library functions check input arguments, and if you pass something wrong — you'll see it while development, as opposed to functions written in PHP with auto inferred types. Moreover, such an approach requires less manual casts when using *mixed*, though it seems a bit incorrectly. Maybe, this behavior will be controlled by an option in the future.
+
+When `declare(strict_types=1)` is used, implicit casting is disabled for that file. This applies to both native functions and functions annotated with `@kphp-infer cast`.

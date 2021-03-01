@@ -396,7 +396,10 @@ private:
         kphp_error_act(call_arg->type() != op_varg,
                        fmt_format("Passed unpacked arguments to a non-vararg function"), continue);
 
-        if (param->is_cast_param) {   // ::: cast param in functions.txt or @kphp-infer cast function
+        // for cast params (::: in functions.txt or '@kphp-infer cast') we add
+        // conversions automatically (implicit casts), unless the file from where
+        // we're calling this function is annotated with strict_types=1
+        if (!current_function->file_id->is_strict_types && param->is_cast_param) {
           call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
         }
 

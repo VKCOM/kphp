@@ -283,6 +283,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
   for (int i = 0; i < call->args().size(); ++i) {
     VertexPtr arg = call->args()[i];
     auto param = function_params[i].as<op_func_param>();
+    bool is_cast_param = !stage::get_function()->file_id->is_strict_types && param->is_cast_param;
 
     // call an extern function having a callback type description, like 'callable(^1[*]) : bool'
     if (function->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
@@ -298,11 +299,11 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     // * the paragraph above about 'any' refers only to PHP functions; built-ins accepting 'any' need only a postponed check
     // * cast params go their own way
     bool should_create_set_to_infer = (!param->type_hint || param->type_hint->has_tp_any_inside())
-                                      && !function->is_extern() && !param->is_cast_param;
+                                      && !function->is_extern() && !is_cast_param;
 
     if (should_create_set_to_infer) {
       create_set(as_lvalue(function, i), arg);
-    } else if (param->type_hint && param->type_hint->is_typedata_constexpr() && !param->is_cast_param) {
+    } else if (param->type_hint && param->type_hint->is_typedata_constexpr() && !is_cast_param) {
       create_postponed_type_check(as_rvalue(function, i), as_rvalue(arg), param->type_hint);
     }
 
