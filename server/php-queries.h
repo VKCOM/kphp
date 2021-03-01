@@ -9,12 +9,12 @@
 
 #include "server/slot-ids-factory.h"
 
-extern SlotIdsFactory parallel_task_ids_factory;
+extern SlotIdsFactory parallel_job_ids_factory;
 
 enum class net_event_type_t {
   rpc_answer,
   rpc_error,
-  task_worker_answer,
+  job_worker_answer,
 };
 
 struct net_event_t {
@@ -33,8 +33,8 @@ struct net_event_t {
       int error_code;
       const char *error_message;
     };
-    struct { // task_worker_answer
-      void *task_result_script_memory_ptr;
+    struct { // job_worker_answer
+      void *job_result_script_memory_ptr;
     };
   };
 };
@@ -339,7 +339,7 @@ void free_net_query(net_query_t *query);
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 
-int create_task_worker_answer_event(slot_id_t ready_task_id, void *task_result_memory_ptr);
+int create_job_worker_answer_event(slot_id_t job_id, void *job_result_memory_ptr);
 
 int net_events_empty();
 

@@ -8,9 +8,9 @@
 #include <cstdint>
 #include "common/type_traits/is_copyable.h"
 
-#include "server/task-workers/task.h"
+#include "server/job-workers/job.h"
 
-namespace task_workers {
+namespace job_workers {
 
 class PipeIO {
 public:
@@ -36,20 +36,20 @@ protected:
   }
 };
 
-class PipeTaskWriter : public PipeIO {
+class PipeJobWriter : public PipeIO {
 public:
-  bool write_task(const Task &task, int write_fd);
-  bool write_task_result(const TaskResult &task_result, int write_fd);
+  bool write_job(const Job &job, int write_fd);
+  bool write_job_result(const JobResult &job_result, int write_fd);
 
 private:
   bool write_to_pipe(int write_fd, const char *description);
 };
 
-class PipeTaskReader : public PipeIO {
+class PipeJobReader : public PipeIO {
 public:
-  PipeTaskReader() = default;
+  PipeJobReader() = default;
 
-  explicit PipeTaskReader(int read_fd)
+  explicit PipeJobReader(int read_fd)
     : read_fd(read_fd) {}
 
   enum ReadStatus {
@@ -58,12 +58,12 @@ public:
     READ_BLOCK
   };
 
-  ReadStatus read_task(Task &task);
-  ReadStatus read_task_result(TaskResult &task_result);
+  ReadStatus read_job(Job &job);
+  ReadStatus read_job_result(JobResult &job_result);
 private:
   int read_fd{-1};
 
   ReadStatus read_from_pipe(size_t bytes_cnt, const char *description);
 };
 
-} // namespace task_workers
+} // namespace job_workers

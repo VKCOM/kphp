@@ -7,11 +7,11 @@
 #include <new>
 #include <sys/mman.h>
 
-#include "server/task-workers/shared-context.h"
-#include "server/task-workers/shared-memory-manager.h"
+#include "server/job-workers/shared-context.h"
+#include "server/job-workers/shared-memory-manager.h"
 
-namespace task_workers {
-void task_workers::SharedMemoryManager::init() {
+namespace job_workers {
+void job_workers::SharedMemoryManager::init() {
   slice_size = slice_payload_size + slice_meta_info_size;
   total_slices_count = memory_size / slice_size;
 
@@ -78,4 +78,4 @@ size_t SharedMemoryManager::get_total_slices_count() const {
   return total_slices_count;
 }
 
-} // namespace task_workers
+} // namespace job_workers

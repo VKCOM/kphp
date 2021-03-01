@@ -58,12 +58,12 @@
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
 
-#include "server/task-workers/task-workers-context.h"
-#include "server/task-workers/task-worker-client.h"
-#include "server/task-workers/shared-context.h"
-#include "server/task-workers/shared-memory-manager.h"
+#include "server/job-workers/job-worker-client.h"
+#include "server/job-workers/job-workers-context.h"
+#include "server/job-workers/shared-context.h"
+#include "server/job-workers/shared-memory-manager.h"
 
-using task_workers::TaskWorkersContext;
+using job_workers::JobWorkersContext;
 
 extern const char *engine_tag;
 
@@ -371,7 +371,7 @@ struct pipe_info_t {
 
 enum class WorkerType {
   http_worker,
-  task_worker
+  job_worker
 };
 
 struct worker_info_t {
@@ -402,7 +402,7 @@ struct worker_info_t {
 
 using worker_slots_t = std::stack<int, std::vector<int>>;
 static worker_slots_t http_worker_slot_ids;
-static worker_slots_t task_worker_slot_ids;
+static worker_slots_t job_worker_slot_ids;
 
 static worker_info_t *workers[MAX_WORKERS];
 static Stats server_stats;
@@ -453,8 +453,8 @@ void delete_worker(worker_info_t *w) {
     case WorkerType::http_worker:
       http_worker_slot_ids.push(w->slot_id);
       break;
-    case WorkerType::task_worker:
-      task_worker_slot_ids.push(w->slot_id);
+    case WorkerType::job_worker:
+      job_worker_slot_ids.push(w->slot_id);
       break;
   }
   if (w->valid_my_info) {
@@ -478,7 +478,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
     if (slot_id < workers_n) {
       http_worker_slot_ids.push(slot_id);
     } else {
-      task_worker_slot_ids.push(slot_id);
+      job_worker_slot_ids.push(slot_id);
     }
   }
 
@@ -572,10 +572,10 @@ void terminate_worker(worker_info_t *w) {
       me_dying_http_workers_n++;
       changed = 1;
       break;
-    case WorkerType::task_worker:
-      auto &ctx = vk::singleton<TaskWorkersContext>::get();
-      ctx.running_task_workers--;
-      ctx.dying_task_workers++;
+    case WorkerType::job_worker:
+      auto &ctx = vk::singleton<JobWorkersContext>::get();
+      ctx.running_job_workers--;
+      ctx.dying_job_workers++;
       break;
   }
 }
@@ -595,8 +595,8 @@ static int get_max_hanging_time_sec(WorkerType worker_type) {
   switch (worker_type) {
     case WorkerType::http_worker:
       return max(script_timeout + 1, 65); // + 1 sec for terminating
-    case WorkerType::task_worker:
-      return TaskWorkersContext::MAX_HANGING_TIME_SEC;
+    case WorkerType::job_worker:
+      return JobWorkersContext::MAX_HANGING_TIME_SEC;
   }
   return 0;
 }
@@ -607,8 +607,8 @@ void kill_hanging_workers() {
     for (int i = 0; i < me_all_workers_n; i++) {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
-        if (workers[i]->type == WorkerType::task_worker) {
-          tvkprintf(task_workers, 1, "No stats received from task worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+        if (workers[i]->type == WorkerType::job_worker) {
+          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         }
         workers_hung++;
         terminate_worker(workers[i]);
@@ -621,8 +621,8 @@ void kill_hanging_workers() {
   for (int i = 0; i < me_all_workers_n; i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
-      if (workers[i]->type == WorkerType::task_worker) {
-        tvkprintf(task_workers, 1, "kill hanging task worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
+      if (workers[i]->type == WorkerType::job_worker) {
+        tvkprintf(job_workers, 1, "kill hanging job worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       }
       kill(workers[i]->pid, SIGKILL);
       workers_killed++;
@@ -785,9 +785,9 @@ int run_worker(WorkerType worker_type) {
       worker_slot_id = http_worker_slot_ids.top();
       http_worker_slot_ids.pop();
       break;
-    case WorkerType::task_worker:
-      worker_slot_id = task_worker_slot_ids.top();
-      task_worker_slot_ids.pop();
+    case WorkerType::job_worker:
+      worker_slot_id = job_worker_slot_ids.top();
+      job_worker_slot_ids.pop();
       break;
   }
   if (new_pid == 0) {
@@ -795,8 +795,8 @@ int run_worker(WorkerType worker_type) {
       case WorkerType::http_worker:
         run_mode = RunMode::http_worker;
         break;
-      case WorkerType::task_worker:
-        run_mode = RunMode::task_worker;
+      case WorkerType::job_worker:
+        run_mode = RunMode::job_worker;
         break;
     }
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
@@ -888,8 +888,8 @@ int run_worker(WorkerType worker_type) {
     case WorkerType::http_worker:
       me_running_http_workers_n++;
       break;
-    case WorkerType::task_worker:
-      vk::singleton<TaskWorkersContext>::get().running_task_workers++;
+    case WorkerType::job_worker:
+      vk::singleton<JobWorkersContext>::get().running_job_workers++;
       break;
   }
 
@@ -913,12 +913,12 @@ void remove_worker(pid_t pid) {
             workers_failed++;
           }
           break;
-        case WorkerType::task_worker:
-          auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
+        case WorkerType::job_worker:
+          auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
           if (workers[i]->is_dying) {
-            task_workers_ctx.dying_task_workers--;
+            job_workers_ctx.dying_job_workers--;
           } else {
-            task_workers_ctx.running_task_workers--;
+            job_workers_ctx.running_job_workers--;
           }
           break;
       }
@@ -1606,19 +1606,19 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
-  const auto &task_workers_stats = task_workers::SharedContext::get();
-  add_histogram_stat_long(stats, "task_workers.task_queue_size", task_workers_stats.task_queue_size.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.occupied_shared_memory_slices_count", task_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.max_shared_memory_slices_count", vk::singleton<task_workers::SharedMemoryManager>::get().get_total_slices_count());
-  add_histogram_stat_long(stats, "task_workers.total_tasks_sent", task_workers_stats.total_tasks_sent.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_tasks_done", task_workers_stats.total_tasks_done.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_tasks_failed", task_workers_stats.total_tasks_failed.load(std::memory_order_relaxed));
+  const auto &job_workers_stats = job_workers::SharedContext::get();
+  add_histogram_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.occupied_shared_memory_slices_count", job_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
+  add_histogram_stat_long(stats, "job_workers.total_jobs_sent", job_workers_stats.total_jobs_sent.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_jobs_done", job_workers_stats.total_jobs_done.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_jobs_failed", job_workers_stats.total_jobs_failed.load(std::memory_order_relaxed));
 
-  add_histogram_stat_long(stats, "task_workers.total_errors_shared_memory_limit", task_workers_stats.total_errors_shared_memory_limit.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_server_write", task_workers_stats.total_errors_pipe_server_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_server_read", task_workers_stats.total_errors_pipe_server_read.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_client_write", task_workers_stats.total_errors_pipe_client_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "task_workers.total_errors_pipe_client_read", task_workers_stats.total_errors_pipe_client_read.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_errors_shared_memory_limit", job_workers_stats.total_errors_shared_memory_limit.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_server_write", job_workers_stats.total_errors_pipe_server_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_server_read", job_workers_stats.total_errors_pipe_server_read.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_client_write", job_workers_stats.total_errors_pipe_client_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_client_read", job_workers_stats.total_errors_pipe_client_read.load(std::memory_order_relaxed));
 
   update_mem_stats();
   unsigned long long max_vms = 0;
@@ -1737,8 +1737,8 @@ void run_master_on() {
     }
   }
 
-  if (vk::singleton<TaskWorkersContext>::get().task_workers_num > 0) {
-    vk::singleton<TaskWorkersContext>::get().master_init_pipes(workers_n);
+  if (vk::singleton<JobWorkersContext>::get().job_workers_num > 0) {
+    vk::singleton<JobWorkersContext>::get().master_init_pipes(workers_n);
   }
 
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
@@ -1972,7 +1972,7 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(task_workers, 3, "Task queue size = %d\n", task_workers::SharedContext::get().task_queue_size.load(std::memory_order_relaxed));
+    tvkprintf(job_workers, 3, "Job queue size = %d\n", job_workers::SharedContext::get().job_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 
@@ -2019,11 +2019,11 @@ void run_master() {
 
     me->generation = generation;
 
-    const auto &task_workers_ctx = vk::singleton<TaskWorkersContext>::get();
-    if (task_workers_ctx.task_workers_num > 0) {
-      for (int i = 0; i < task_workers_ctx.task_workers_num - (task_workers_ctx.running_task_workers + task_workers_ctx.dying_task_workers); ++i) {
-        if (run_worker(WorkerType::task_worker)) {
-          tvkprintf(task_workers, 1, "launched new task worker with pid = %d\n", pid);
+    const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
+    if (job_workers_ctx.job_workers_num > 0) {
+      for (int i = 0; i < job_workers_ctx.job_workers_num - (job_workers_ctx.running_job_workers + job_workers_ctx.dying_job_workers); ++i) {
+        if (run_worker(WorkerType::job_worker)) {
+          tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
           return;
         }
       }

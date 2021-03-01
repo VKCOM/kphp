@@ -19,18 +19,18 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-worker-stats.cpp
         slot-ids-factory.cpp)
 
-prepend(KPHP_TASK_WORKERS_SOURCES ${BASE_DIR}/server/task-workers/
-        task-worker-server.cpp
-        task-worker-client.cpp
-        task-workers-context.cpp
+prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
+        job-worker-server.cpp
+        job-worker-client.cpp
+        job-workers-context.cpp
         pipe-io.cpp
-        pending-tasks.cpp
+        pending-jobs.cpp
         shared-context.cpp
         shared-memory-manager.cpp)
 
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}
-    ${KPHP_TASK_WORKERS_SOURCES})
+    ${KPHP_JOB_WORKERS_SOURCES})
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})

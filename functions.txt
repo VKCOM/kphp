@@ -1340,8 +1340,8 @@ final class UberH3 {
   static public function maxPolyfillSize(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int;
 }
 
-/** Task workers interface **/
+/** Job workers interface **/
 
 function async_x2(int[] $arr) ::: int;
-function await_x2(int $task_id) ::: int[];
-function is_task_workers_enabled() ::: bool;
+function await_x2(int $job_id) ::: int[];
+function is_job_workers_enabled() ::: bool;

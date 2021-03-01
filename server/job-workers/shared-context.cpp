@@ -5,9 +5,9 @@
 #include <new>
 #include <sys/mman.h>
 
-#include "server/task-workers/shared-context.h"
+#include "server/job-workers/shared-context.h"
 
-namespace task_workers {
+namespace job_workers {
 
 SharedContext &SharedContext::make() {
   void *shared_mem = mmap(nullptr, sizeof(SharedContext), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -20,4 +20,4 @@ SharedContext &SharedContext::get() {
   return ctx;
 }
 
-} // namespace task_workers
+} // namespace job_workers

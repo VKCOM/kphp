@@ -9,30 +9,30 @@
 #include <unistd.h>
 
 #include "common/macos-ports.h"
-#include "server/task-workers/task-workers-context.h"
+#include "server/job-workers/job-workers-context.h"
 
-DEFINE_VERBOSITY(task_workers);
+DEFINE_VERBOSITY(job_workers);
 
-namespace task_workers {
+namespace job_workers {
 
-void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
+void JobWorkersContext::master_init_pipes(int job_result_slots_num) {
   if (pipes_inited) {
     return;
   }
 
-  int err = pipe2(task_pipe.data(), O_NONBLOCK);
+  int err = pipe2(job_pipe.data(), O_NONBLOCK);
   if (err) {
-    kprintf("Unable to create task pipe: %s", strerror(errno));
+    kprintf("Unable to create job pipe: %s", strerror(errno));
     assert(false);
     return;
   }
 
-  result_pipes.resize(task_result_slots_num);
+  result_pipes.resize(job_result_slots_num);
   for (int i = 0; i < result_pipes.size(); ++i) {
     auto &result_pipe = result_pipes.at(i);
     err = pipe2(result_pipe.data(), O_NONBLOCK);
     if (err) {
-      kprintf("Unable to create result pipe: %s", strerror(errno));
+      kprintf("Unable to create job result pipe: %s", strerror(errno));
       assert(false);
       return;
     }
@@ -41,4 +41,4 @@ void TaskWorkersContext::master_init_pipes(int task_result_slots_num) {
   pipes_inited = true;
 }
 
-} // namespace task_workers
+} // namespace job_workers
