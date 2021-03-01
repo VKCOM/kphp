@@ -16,7 +16,7 @@
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
 #include "server/php-script.h"
-#include "server/task-workers/shared-memory-manager.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 #define MAX_NET_ERROR_LEN 128
 
@@ -693,16 +693,16 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 
 /** new rpc interface **/
 static SlotIdsFactory rpc_ids_factory;
-SlotIdsFactory parallel_task_ids_factory;
+SlotIdsFactory parallel_job_ids_factory;
 
 static void init_slots() {
   rpc_ids_factory.init();
-  parallel_task_ids_factory.init();
+  parallel_job_ids_factory.init();
 }
 
 static void clear_slots() {
   rpc_ids_factory.clear();
-  parallel_task_ids_factory.clear();
+  parallel_job_ids_factory.clear();
 }
 
 template<class DataT, int N>
@@ -849,19 +849,19 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   return 1;
 }
 
-int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_result_memory_ptr) {
-  auto &memory_manager = vk::singleton<task_workers::SharedMemoryManager>::get();
-  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(task_result_memory_ptr); });
+int create_job_worker_answer_event(slot_id_t job_id, void *job_result_memory_ptr) {
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto deallocate_shared_memory_slice = vk::finally([&]() { memory_manager.deallocate_slice(job_result_memory_ptr); });
 
-  if (!parallel_task_ids_factory.is_valid_slot(ready_task_id)) {
+  if (!parallel_job_ids_factory.is_valid_slot(job_id)) {
     return 0;
   }
   net_event_t *event = nullptr;
-  int status = alloc_net_event(ready_task_id, net_event_type_t::task_worker_answer, &event);
+  int status = alloc_net_event(job_id, net_event_type_t::job_worker_answer, &event);
   if (status <= 0) {
     return status;
   }
-  // script is running here, because is_valid_slot(ready_task_id) == true
+  // script is running here, because is_valid_slot(job_id) == true
 
   size_t slice_payload_size = memory_manager.get_slice_payload_size();
   void *script_memory_ptr = dl_allocate_safe(slice_payload_size);
@@ -869,9 +869,9 @@ int create_task_worker_answer_event(slot_id_t ready_task_id, void * const task_r
     unalloc_net_event(event);
     return -1;
   }
-  memcpy(script_memory_ptr, task_result_memory_ptr, slice_payload_size);
+  memcpy(script_memory_ptr, job_result_memory_ptr, slice_payload_size);
 
-  event->task_result_script_memory_ptr = script_memory_ptr;
+  event->job_result_script_memory_ptr = script_memory_ptr;
   return 1;
 }
 

@@ -7,11 +7,11 @@
 #include <unistd.h>
 
 #include "common/kprintf.h"
-#include "server/task-workers/pipe-io.h"
+#include "server/job-workers/pipe-io.h"
 
-namespace task_workers {
+namespace job_workers {
 
-bool PipeTaskWriter::write_to_pipe(int write_fd, const char *description) {
+bool PipeJobWriter::write_to_pipe(int write_fd, const char *description) {
   size_t bytes_to_write = buf_end_pos;
   ssize_t written = write(write_fd, buf, bytes_to_write);
 
@@ -33,37 +33,37 @@ bool PipeTaskWriter::write_to_pipe(int write_fd, const char *description) {
   return true;
 }
 
-bool PipeTaskWriter::write_task(const Task &task, int write_fd) {
+bool PipeJobWriter::write_job(const Job &job, int write_fd) {
   reset();
-  copy_to_buffer(task);
-  return write_to_pipe(write_fd, "writing task");
+  copy_to_buffer(job);
+  return write_to_pipe(write_fd, "writing job");
 }
 
-bool PipeTaskWriter::write_task_result(const TaskResult &task_result, int write_fd) {
+bool PipeJobWriter::write_job_result(const JobResult &job_result, int write_fd) {
   reset();
-  copy_to_buffer(task_result);
-  return write_to_pipe(write_fd, "writing result of task");
+  copy_to_buffer(job_result);
+  return write_to_pipe(write_fd, "writing result of job");
 }
 
-PipeTaskReader::ReadStatus PipeTaskReader::read_task(Task &task) {
+PipeJobReader::ReadStatus PipeJobReader::read_job(Job &job) {
   reset();
-  ReadStatus status = read_from_pipe(sizeof(Task), "read task");
+  ReadStatus status = read_from_pipe(sizeof(Job), "read job");
   if (status == READ_OK) {
-    extract_from_buffer(task);
+    extract_from_buffer(job);
   }
   return status;
 }
 
-PipeTaskReader::ReadStatus PipeTaskReader::read_task_result(TaskResult &task_result) {
+PipeJobReader::ReadStatus PipeJobReader::read_job_result(JobResult &job_result) {
   reset();
-  ReadStatus status = read_from_pipe(sizeof(TaskResult), "read result of task");
+  ReadStatus status = read_from_pipe(sizeof(JobResult), "read result of job");
   if (status == READ_OK) {
-    extract_from_buffer(task_result);
+    extract_from_buffer(job_result);
   }
   return status;
 }
 
-PipeTaskReader::ReadStatus PipeTaskReader::read_from_pipe(size_t bytes_cnt, const char *description) {
+PipeJobReader::ReadStatus PipeJobReader::read_from_pipe(size_t bytes_cnt, const char *description) {
   ssize_t read_bytes = read(read_fd, buf, bytes_cnt);
   if (read_bytes == -1) {
     if (errno == EWOULDBLOCK) {
@@ -73,10 +73,10 @@ PipeTaskReader::ReadStatus PipeTaskReader::read_from_pipe(size_t bytes_cnt, cons
     return READ_FAIL;
   }
   if (read_bytes != bytes_cnt) {
-    kprintf("Couldn't %s. Got %zd bytes, but expected %zd. Probably some tasks are written not atomically\n", description, bytes_cnt, read_bytes);
+    kprintf("Couldn't %s. Got %zd bytes, but expected %zd. Probably some jobs are written not atomically\n", description, bytes_cnt, read_bytes);
     return READ_FAIL;
   }
   return READ_OK;
 }
 
-} // namespace task_workers
+} // namespace job_workers

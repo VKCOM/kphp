@@ -55,10 +55,15 @@
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/job-workers/job-worker-client.h"
+#include "server/job-workers/job-worker-server.h"
+#include "server/job-workers/job-workers-context.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
+#include "server/php-master-warmup.h"
 #include "server/php-master.h"
 #include "server/php-mc-connections.h"
 #include "server/php-queries.h"
@@ -66,15 +71,10 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
-#include "server/php-master-warmup.h"
-#include "server/task-workers/task-workers-context.h"
-#include "server/task-workers/task-worker-client.h"
-#include "server/task-workers/task-worker-server.h"
-#include "server/task-workers/shared-memory-manager.h"
 
-using task_workers::TaskWorkersContext;
-using task_workers::TaskWorkerClient;
-using task_workers::TaskWorkerServer;
+using job_workers::JobWorkersContext;
+using job_workers::JobWorkerClient;
+using job_workers::JobWorkerServer;
 
 static void turn_sigterm_on();
 
@@ -2187,13 +2187,13 @@ static void generic_event_loop(RunMode mode) {
         set_main_target(rpc_clients.front());
       }
 
-      if (vk::singleton<TaskWorkersContext>::get().task_workers_num > 0) {
-        vk::singleton<TaskWorkerClient>::get().init_task_worker_client(logname_id);
+      if (vk::singleton<JobWorkersContext>::get().job_workers_num > 0) {
+        vk::singleton<JobWorkerClient>::get().init(logname_id);
       }
       break;
     }
-    case RunMode::task_worker: {
-      vk::singleton<TaskWorkerServer>::get().init_task_worker_server();
+    case RunMode::job_worker: {
+      vk::singleton<JobWorkerServer>::get().init();
       break;
     }
   }
@@ -2219,7 +2219,7 @@ static void generic_event_loop(RunMode mode) {
 
   dl_allow_all_signals();
 
-  auto &task_worker_server = vk::singleton<TaskWorkerServer>::get();
+  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
 
   vkprintf (1, "Server started\n");
   for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
@@ -2227,8 +2227,8 @@ static void generic_event_loop(RunMode mode) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
     }
-    if (mode == RunMode::task_worker) {
-      task_worker_server.try_complete_delayed_tasks();
+    if (mode == RunMode::job_worker) {
+      job_worker_server.try_complete_delayed_jobs();
     }
     epoll_work(57);
 
@@ -2240,8 +2240,8 @@ static void generic_event_loop(RunMode mode) {
     while (spoll_send_stats > 0) {
       write_full_stats_to_pipe();
       spoll_send_stats--;
-      if (mode == RunMode::task_worker) {
-        task_worker_server.last_stats.start();
+      if (mode == RunMode::job_worker) {
+        job_worker_server.last_stats.start();
       }
     }
 
@@ -2682,13 +2682,13 @@ int main_args_handler(int i) {
     }
     case 2016: {
       // TODO: add check
-      vk::singleton<TaskWorkersContext>::get().task_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
+      vk::singleton<JobWorkersContext>::get().job_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
       return 0;
     }
     case 2017: {
       // TODO: add check
       size_t mbs = atoi(optarg);
-      vk::singleton<task_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
+      vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
       return 0;
     }
     default:
@@ -2758,8 +2758,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
-  parse_option("task-workers-num", required_argument, 2016, "number of task workers to run");
-  parse_option("task-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for task workers related communication");
+  parse_option("job-workers-num", required_argument, 2016, "number of job workers to run");
+  parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for job workers related communication");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
@@ -2834,7 +2834,7 @@ int run_main(int argc, char **argv, php_mode mode) {
 
   parse_main_args(argc, argv);
 
-  size_t total_workers = workers_n + vk::singleton<TaskWorkersContext>::get().task_workers_num;
+  size_t total_workers = workers_n + vk::singleton<JobWorkersContext>::get().job_workers_num;
   if (total_workers > MAX_WORKERS) {
     kprintf("Too many workers: %zu, maximum is %d\n", total_workers, MAX_WORKERS);
     exit(1);

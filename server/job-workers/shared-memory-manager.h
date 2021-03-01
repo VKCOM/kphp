@@ -13,7 +13,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/inter-process-mutex.h"
 
-namespace task_workers {
+namespace job_workers {
 
 class SharedMemoryManager : vk::not_copyable {
 public:
@@ -70,4 +70,4 @@ private:
 
 };
 
-} // namespace task_workers
+} // namespace job_workers

@@ -40,7 +40,7 @@ extern int workers_n;
 enum class RunMode {
   master,
   http_worker,
-  task_worker,
+  job_worker,
 };
 
 extern RunMode run_mode;

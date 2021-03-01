@@ -9,15 +9,15 @@
 
 #include "common/mixin/not_copyable.h"
 
-namespace task_workers {
+namespace job_workers {
 
 class SharedContext : vk::not_copyable {
 public:
-  std::atomic<int> task_queue_size{0};
+  std::atomic<int> job_queue_size{0};
   std::atomic<int> occupied_slices_count{0};
-  std::atomic<size_t> total_tasks_sent{0};
-  std::atomic<size_t> total_tasks_done{0};
-  std::atomic<size_t> total_tasks_failed{0};
+  std::atomic<size_t> total_jobs_sent{0};
+  std::atomic<size_t> total_jobs_done{0};
+  std::atomic<size_t> total_jobs_failed{0};
 
   std::atomic<size_t> total_errors_pipe_server_write{0};
   std::atomic<size_t> total_errors_pipe_server_read{0};
@@ -34,4 +34,4 @@ private:
   SharedContext() = default;
 };
 
-} // namespace task_workers
+} // namespace job_workers
