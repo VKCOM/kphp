@@ -149,7 +149,7 @@ template<class T>
 struct pack<array<T>> {
   template <typename Stream>
   packer<Stream>& operator()(msgpack::packer<Stream>& packer, const array<T>& arr) const noexcept {
-    if (arr.is_vector()) {
+    if (arr.is_vector() || arr.is_pseudo_vector()) {
       packer.pack_array(static_cast<uint32_t>(arr.count()));
       for (const auto &it : arr) {
         pack_value(packer, it.get_value());

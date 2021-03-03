@@ -261,6 +261,7 @@ public:
   inline void clear() __attribute__ ((always_inline));
 
   inline bool is_vector() const __attribute__ ((always_inline));
+  inline bool is_pseudo_vector() const __attribute__ ((always_inline));
 
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
