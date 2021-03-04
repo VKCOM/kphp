@@ -16,6 +16,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-runner.cpp
         php-script.cpp
         php-sql-connections.cpp
+        php-worker.cpp
         php-worker-stats.cpp
         slot-ids-factory.cpp)
 

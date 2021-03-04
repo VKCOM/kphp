@@ -22,6 +22,8 @@ extern const int64_t tl_str_result_hash;
 
 extern bool fail_rpc_on_int32_overflow;
 
+extern bool rpc_stored;
+
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
 void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message);

@@ -25,10 +25,36 @@ struct command_net_write_t {
   long long extra;
 };
 
+void server_rpc_error(connection *c, long long req_id, int code, const char *str);
+
+void http_return(connection *c, const char *str, int len);
+
+/** delayed httq queries queue **/
+extern connection pending_http_queue;
+extern int php_worker_run_flag;
+
+struct conn_query_functions;
+extern conn_query_functions pending_cq_func;
+
+extern command_t command_net_write_rpc_base;
+
+extern conn_target_t rpc_ct;
+
+void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
+void on_net_event(int event_status);
+void create_delayed_send_query(conn_target_t *t, command_t *command, double finish_time);
+
+int get_target(const char *host, int port, conn_target_t *ct);
+
 void net_error(net_ansgen_t *ansgen, php_query_base_t *query, const char *err);
 conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansgen_t *gen, double finish_time);
 void pnet_query_delete(conn_query *q);
+
+#define run_once_count 1
+extern int queries_to_recreate_script;
 extern void *php_script;
+void turn_sigterm_on();
+
 connection *get_target_connection(conn_target_t *S, int force_flag);
 double fix_timeout(double timeout);
 int pnet_query_check(conn_query *q);
@@ -39,3 +65,6 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 connection *get_target_connection_force(conn_target_t *S);
 int pnet_query_timeout(conn_query *q);
 void reopen_json_log();
+
+int delete_pending_query(conn_query *q);
+
