@@ -13,6 +13,11 @@
 
 int64_t preg_replace_count_dummy;
 
+// TODO: remove when/if we migrate to pcre2
+#ifndef PCRE2_ERROR_BADOFFSET
+#  define PCRE2_ERROR_BADOFFSET -33
+#endif
+
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 // refactor me please :(
 // for i-th match(capturing group)
@@ -706,6 +711,12 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
   pcre_last_error = 0;
 
   int64_t result = 0;
+  offset = std::max(subject.get_correct_index(offset), 0_i64);
+  if (offset > subject.size()) {
+    matches = array<mixed>();
+    pcre_last_error = PCRE2_ERROR_BADOFFSET;
+    return false;
+  }
   while (offset <= int64_t{subject.size()}) {
     int64_t count = exec(subject, offset, second_try);
 
@@ -818,6 +829,12 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
 
   int64_t result = 0;
   auto empty_match = array<mixed>::create(string(), -1);
+  offset = std::max(subject.get_correct_index(offset), 0_i64);
+  if (offset > subject.size()) {
+    matches = array<mixed>();
+    pcre_last_error = PCRE2_ERROR_BADOFFSET;
+    return false;
+  }
   while (offset <= int64_t{subject.size()}) {
     int64_t count = exec(subject, offset, second_try);
 
@@ -1005,6 +1022,8 @@ int64_t regexp::last_error() {
       return PHP_PCRE_RECURSION_LIMIT_ERROR;
     case PCRE_ERROR_BADUTF8:
       return PHP_PCRE_BAD_UTF8_ERROR;
+    case PCRE2_ERROR_BADOFFSET:
+      return PHP_PCRE_INTERNAL_ERROR;
     default:
       php_assert (0);
       exit(1);
