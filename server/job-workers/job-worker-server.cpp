@@ -6,10 +6,11 @@
 #include <cstdint>
 
 #include "common/kprintf.h"
+#include "common/pipe-utils.h"
 #include "common/timer.h"
 
 #include "net/net-events.h"
-#include "net/net-reactor.h"
+#include "net/net-connections.h"
 
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
@@ -19,61 +20,138 @@
 
 namespace job_workers {
 
-int JobWorkerServer::read_jobs(int fd, void *data __attribute__((unused)), event_t *ev) {
-  vkprintf(3, "JobWorkerClient::read_jobs: fd=%d\n", fd);
-  tvkprintf(job_workers, 3, "wakeup job worker\n");
+namespace {
 
-  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
-  assert(fd == job_worker_server.read_job_fd);
+int jobs_server_reader(connection *c) {
+  int status = c->type->parse_execute(c);
 
-  if (ev->ready & EVT_SPEC) {
-    kprintf("job worker server special event: fd = %d, flags = %d\n", fd, ev->ready);
-    // TODO:
-    return 0;
-  }
-  if (!(ev->ready & EVT_READ)) {
-    kprintf("Strange event in server: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
-    return 0;
+  c->flags |= C_NORD;
+  c->flags &= ~C_REPARSE;
+
+  if (status < 0) {
+    c->error = -1;
+    status = -1;
   }
 
-  int status_code = job_worker_server.read_execute_loop();
-
-  return status_code;
+  return status;
 }
 
-int JobWorkerServer::read_execute_loop() {
-  while (true) {
-    if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
-      tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
-      has_delayed_jobs = true;
-      return 0;
-    }
+int jobs_server_parse_execute(connection *c) {
+  return vk::singleton<JobWorkerServer>::get().job_parse_execute(c);
+}
 
-    Job job;
-    PipeJobReader::ReadStatus status = job_reader.read_job(job);
+void jobs_server_at_query_end(connection *c) {
+  clear_connection_timeout(c);
+  c->generation = ++conn_generation;
+  c->pending_queries = 0;
 
-    if (status == PipeJobReader::READ_BLOCK) {
-      assert(errno == EWOULDBLOCK);
-      // another job worker has already taken the job (all job workers are readers for this fd)
-      // or there are no more jobs in pipe
-      has_delayed_jobs = false;
-      return 0;
-    } else if (status == PipeJobReader::READ_FAIL) {
-      SharedContext::get().total_errors_pipe_server_read++;
-      return -1;
-    }
+  c->flags |= C_REPARSE;
 
-    SharedContext::get().job_queue_size--;
+  vk::singleton<JobWorkerServer>::get().running_job.reset();
+  assert (c->status != conn_wait_net);
+}
 
-    bool success = execute_job(job);
-    if (success) {
-      SharedContext::get().total_jobs_done++;
-    } else {
-      SharedContext::get().total_jobs_failed++;
-      kprintf("Error on executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
-              job.job_memory_ptr);
-    }
+int jobs_server_php_wakeup(connection *c) {
+  assert (c->status == conn_expect_query || c->status == conn_wait_net);
+  c->status = conn_expect_query;
+
+  JobWorkerServer &job_worker_server = vk::singleton<JobWorkerServer>::get();
+  Job &job = job_worker_server.running_job.value();
+  bool success = job_worker_server.execute_job(job);
+  if (success) {
+    SharedContext::get().total_jobs_done++;
+  } else {
+    SharedContext::get().total_jobs_failed++;
+    kprintf("Error on executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
+            job.job_memory_ptr);
   }
+
+//    auto *worker = reinterpret_cast<php_worker *>(c->custom_data);
+//    double timeout = php_worker_main(worker);
+
+  double timeout = 0; // query is always synchronous
+  if (timeout == 0) {
+    jobs_server_at_query_end(c);
+  } else {
+    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert (timeout > 0);
+    set_connection_timeout(c, timeout);
+  }
+  return 0;
+}
+
+
+conn_type_t php_jobs_server = [] {
+  auto res = conn_type_t();
+
+  res.flags = 0;
+  res.magic = CONN_FUNC_MAGIC;
+  res.title = "jobs_server";
+
+  res.run = server_read_write;
+  res.reader = jobs_server_reader;
+  res.parse_execute = jobs_server_parse_execute;
+  res.wakeup = jobs_server_php_wakeup;
+  res.alarm = jobs_server_php_wakeup;
+
+  res.accept = server_failed;
+  res.init_accepted = server_failed;
+  res.writer = server_failed;
+  res.init_outbound = server_failed;
+  res.connected = server_failed;
+  res.close = server_failed;
+  res.free_buffers = server_failed;
+
+  // The following handlers will be set to default ones:
+  //    flush
+  //    check_ready
+
+  return res;
+}();
+
+} // namespace
+
+int JobWorkerServer::job_parse_execute(connection *c) {
+  assert(c == read_job_connection);
+
+  if (running_job.has_value()) {
+    tvkprintf(job_workers, 1, "Get new job while another job is running. Goes back to event loop now\n");
+    has_delayed_jobs = true;
+    return 0;
+  }
+
+  if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
+    tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
+    has_delayed_jobs = true;
+    return 0;
+  }
+
+  Job job;
+  PipeJobReader::ReadStatus status = job_reader.read_job(job);
+
+  if (status == PipeJobReader::READ_BLOCK) {
+    assert(errno == EWOULDBLOCK);
+    // another job worker has already taken the job (all job workers are readers for this fd)
+    // or there are no more jobs in pipe
+    has_delayed_jobs = false;
+    return 0;
+  } else if (status == PipeJobReader::READ_FAIL) {
+    SharedContext::get().total_errors_pipe_server_read++;
+    return -1;
+  }
+
+  SharedContext::get().job_queue_size--;
+  running_job = job;
+
+  // c->custom_data = new worker;
+
+//  set_connection_timeout(c, script_timeout);
+
+  c->status = conn_wait_net;
+
+  jobs_server_php_wakeup(c);
+
+  return 0;
 }
 
 static bool run_job_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
@@ -86,7 +164,8 @@ static bool run_job_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
       int64_t hang_time_ms = item - HANG_SHIFT;
       vk::SteadyTimer<std::chrono::milliseconds> timer;
       timer.start();
-      while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {};
+      while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {
+      };
     }
     dest[i] = item * item;
   }
@@ -146,17 +225,19 @@ void JobWorkerServer::init() {
     clear_event(result_pipe[0]);
   }
 
-  epoll_sethandler(read_job_fd, 0, read_jobs, nullptr);
-  epoll_insert(read_job_fd, EVT_READ | EVT_SPEC);
-  tvkprintf(job_workers, 1, "insert read_job_fd = %d to epoll\n", read_job_fd);
+  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr);
+  assert(read_job_connection);
+  memset(read_job_connection->custom_data, 0, sizeof(read_job_connection->custom_data));
+
+  tvkprintf(job_workers, 1, "insert read job connection [fd = %d] to epoll\n", read_job_connection->fd);
 
   job_reader = PipeJobReader{read_job_fd};
 }
 
 void JobWorkerServer::try_complete_delayed_jobs() {
-  if (has_delayed_jobs) {
+  if (!running_job.has_value() && has_delayed_jobs) {
     tvkprintf(job_workers, 1, "There are delayed jobs. Let's complete them\n");
-    read_execute_loop();
+    job_parse_execute(read_job_connection);
   }
 }
 

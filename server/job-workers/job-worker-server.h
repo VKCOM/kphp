@@ -12,7 +12,10 @@
 #include "server/job-workers/job.h"
 #include "server/job-workers/pipe-io.h"
 
+#include "common/wrappers/optional.h"
+
 typedef struct event_descr event_t;
+struct connection;
 
 namespace job_workers {
 
@@ -24,10 +27,12 @@ public:
   friend class vk::singleton<JobWorkerServer>;
 
   vk::SteadyTimer<std::chrono::milliseconds> last_stats;
+  vk::optional<Job> running_job;
 
   void init();
   bool execute_job(const Job &job);
-  int read_execute_loop();
+
+  int job_parse_execute(connection *c);
 
   void try_complete_delayed_jobs();
 
@@ -36,10 +41,9 @@ private:
   PipeJobReader job_reader;
   bool has_delayed_jobs{false};
   int read_job_fd{-1};
+  connection *read_job_connection{nullptr};
 
   JobWorkerServer() = default;
-
-  static int read_jobs(int fd, void *data __attribute__((unused)), event_t *ev);
 };
 
 } // namespace job_workers

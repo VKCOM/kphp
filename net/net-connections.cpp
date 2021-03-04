@@ -1200,6 +1200,12 @@ int server_failed(struct connection *c) {
   return -1;
 }
 
+int server_failed(struct connection *c, int who __attribute__((unused))) {
+  kprintf("connection %d: call to pure virtual method\n", c->fd);
+  assert(0);
+  return -1;
+}
+
 int check_conn_functions(conn_type_t *type) {
   if (type->magic != CONN_FUNC_MAGIC) {
     return -1;
