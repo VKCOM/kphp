@@ -54,7 +54,8 @@ static enum {
   QUERY_TYPE_NONE,
   QUERY_TYPE_CONSOLE,
   QUERY_TYPE_HTTP,
-  QUERY_TYPE_RPC
+  QUERY_TYPE_RPC,
+  QUERY_TYPE_JOB
 } query_type;
 static bool is_head_query;
 
@@ -511,6 +512,11 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 
       break;
     }
+    case QUERY_TYPE_JOB: {
+      job_set_result(static_cast<int32_t>(exit_code));
+
+      break;
+    }
     default:
       php_assert (0);
       exit(1);
@@ -707,6 +713,8 @@ static string php_sapi_name() {
       } else {
         return string("Kitten PHP");
       }
+    case QUERY_TYPE_JOB:
+      return string("KPHP job");
     default:
       php_assert (0);
       exit(1);
@@ -1364,10 +1372,14 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
 }
 
-static void init_superglobals(const http_query_data &http_data, const rpc_query_data &rpc_data) {
+static void init_superglobals(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
   rpc_parse(rpc_data.data, rpc_data.len);
 
   reset_superglobals();
+
+  if (query_type == QUERY_TYPE_JOB) {
+    v$_SERVER.set_value(string("JOB_ID"), job_data.job.job_id);
+  }
 
   string uri_str;
   if (http_data.uri_len) {
@@ -1616,32 +1628,49 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
 
 static http_query_data empty_http_data;
 static rpc_query_data empty_rpc_data;
+static job_query_data empty_job_data;
 
 void init_superglobals(php_query_data *data) {
   http_query_data *http_data;
   rpc_query_data *rpc_data;
+  job_query_data *job_data;
   if (data != nullptr) {
-    if (data->http_data == nullptr) {
-      php_assert (data->rpc_data != nullptr);
+    if (data->rpc_data != nullptr) {
+      php_assert (data->http_data == nullptr);
+      php_assert (data->job_data == nullptr);
       query_type = QUERY_TYPE_RPC;
 
       http_data = &empty_http_data;
       rpc_data = data->rpc_data;
-    } else {
+      job_data = &empty_job_data;
+    } else if (data->http_data != nullptr) {
       php_assert (data->rpc_data == nullptr);
+      php_assert (data->job_data == nullptr);
       query_type = QUERY_TYPE_HTTP;
 
       http_data = data->http_data;
       rpc_data = &empty_rpc_data;
+      job_data = &empty_job_data;
+    } else {
+      php_assert (data->job_data != nullptr);
+      php_assert (data->rpc_data == nullptr);
+      php_assert (data->http_data == nullptr);
+
+      query_type = QUERY_TYPE_JOB;
+
+      http_data = &empty_http_data;
+      rpc_data = &empty_rpc_data;
+      job_data = data->job_data;
     }
   } else {
     query_type = QUERY_TYPE_CONSOLE;
 
     http_data = &empty_http_data;
     rpc_data = &empty_rpc_data;
+    job_data = &empty_job_data;
   }
 
-  init_superglobals(*http_data, *rpc_data);
+  init_superglobals(*http_data, *rpc_data, *job_data);
 }
 
 double f$get_net_time() {

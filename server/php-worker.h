@@ -12,7 +12,8 @@
 enum php_worker_mode_t {
   http_worker,
   rpc_worker,
-  once_worker
+  once_worker,
+  job_worker
 };
 
 enum php_worker_state_t {
@@ -51,7 +52,8 @@ struct php_worker {
 
 extern php_worker *active_worker;
 
-php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id);
+php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
+                              long long req_id, double timeout);
 void php_worker_free(php_worker *worker);
 
 double php_worker_main(php_worker *worker);

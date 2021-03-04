@@ -17,10 +17,15 @@
 #include "server/job-workers/shared-context.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
+#include "server/php-worker.h"
 
 namespace job_workers {
 
 namespace {
+
+struct JobCustomData {
+  php_worker *worker;
+};
 
 int jobs_server_reader(connection *c) {
   int status = c->type->parse_execute(c);
@@ -55,21 +60,20 @@ int jobs_server_php_wakeup(connection *c) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  JobWorkerServer &job_worker_server = vk::singleton<JobWorkerServer>::get();
-  Job &job = job_worker_server.running_job.value();
-  bool success = job_worker_server.execute_job(job);
-  if (success) {
-    SharedContext::get().total_jobs_done++;
-  } else {
-    SharedContext::get().total_jobs_failed++;
-    kprintf("Error on executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
-            job.job_memory_ptr);
-  }
+//  JobWorkerServer &job_worker_server = vk::singleton<JobWorkerServer>::get();
+//  Job &job = job_worker_server.running_job.value();
+//  bool success = job_worker_server.execute_job(job);
+//  if (success) {
+//    SharedContext::get().total_jobs_done++;
+//  } else {
+//    SharedContext::get().total_jobs_failed++;
+//    kprintf("Error on executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
+//            job.job_memory_ptr);
+//  }
 
-//    auto *worker = reinterpret_cast<php_worker *>(c->custom_data);
-//    double timeout = php_worker_main(worker);
+  auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
+  double timeout = php_worker_main(worker);
 
-  double timeout = 0; // query is always synchronous
   if (timeout == 0) {
     jobs_server_at_query_end(c);
   } else {
@@ -143,12 +147,12 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   SharedContext::get().job_queue_size--;
   running_job = job;
 
-  // c->custom_data = new worker;
+  double timeout_sec = DEFAULT_SCRIPT_TIMEOUT;
+  job_query_data *job_data = job_query_data_create(job);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job.job_id, timeout_sec);
 
-//  set_connection_timeout(c, script_timeout);
-
+  set_connection_timeout(c, timeout_sec);
   c->status = conn_wait_net;
-
   jobs_server_php_wakeup(c);
 
   return 0;

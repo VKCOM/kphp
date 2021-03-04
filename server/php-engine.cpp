@@ -604,7 +604,7 @@ int hts_func_execute(connection *c, int op) {
                                                       inet_sockaddr_port(&c->remote_endpoint));
 
   static long long http_script_req_id = 0;
-  php_worker *worker = php_worker_create(http_worker, c, http_data, nullptr, script_timeout, ++http_script_req_id);
+  php_worker *worker = php_worker_create(http_worker, c, http_data, nullptr, nullptr, ++http_script_req_id, script_timeout);
   D->extra = worker;
 
   set_connection_timeout(c, script_timeout);
@@ -993,8 +993,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
                                                        D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
-      php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data,
-                                             actual_script_timeout, req_id);
+      php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, nullptr, req_id, actual_script_timeout);
       D->extra = worker;
 
       c->status = conn_wait_net;

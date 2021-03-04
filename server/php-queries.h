@@ -365,6 +365,8 @@ int http_load_long_query(char *buf, int min_len, int max_len);
 void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code);
 void rpc_answer(const char *res, int res_len);
 void rpc_set_result(const char *body, int body_len, int exit_code);
+void job_set_result(int exit_code);
+
 void script_error();
 void finish_script(int exit_code);
 int rpc_connect_to(const char *host_name, int port);

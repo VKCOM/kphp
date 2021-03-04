@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common/tl/query-header.h"
+#include "server/job-workers/job.h"
 
 /** http_query_data **/
 struct http_query_data {
@@ -35,13 +36,29 @@ struct rpc_query_data {
 rpc_query_data *rpc_query_data_create(tl_query_header_t &&header, int *data, int len, unsigned int ip, short port, short pid, int utime);
 void rpc_query_data_free(rpc_query_data *d);
 
+struct job_query_data {
+  job_workers::Job job;
+};
+
+inline job_query_data *job_query_data_create(const job_workers::Job &job) {
+  return new job_query_data{job};
+}
+
+inline void job_query_data_free(job_query_data *job_data) {
+  if (job_data == nullptr) {
+    return;
+  }
+  delete job_data;
+}
+
 /** php_query_data **/
 struct php_query_data {
   http_query_data *http_data;
   rpc_query_data *rpc_data;
+  job_query_data *job_data;
 };
 
-php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data);
+php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data);
 void php_query_data_free(php_query_data *d);
 
 

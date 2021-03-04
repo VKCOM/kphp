@@ -1019,6 +1019,17 @@ void rpc_set_result(const char *body, int body_len, int exit_code) {
   PHPScriptBase::current_script->set_script_result(&res);
 }
 
+void job_set_result(int exit_code) {
+  script_result res;
+  res.exit_code = exit_code;
+  res.headers = nullptr;
+  res.headers_len = 0;
+  res.body = nullptr;
+  res.body_len = 0;
+
+  PHPScriptBase::current_script->set_script_result(&res);
+}
+
 void finish_script(int exit_code __attribute__((unused))) {
   //TODO
   assert (0);

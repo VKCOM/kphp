@@ -96,11 +96,12 @@ void rpc_query_data_free(rpc_query_data *d) {
   delete d;
 }
 
-php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data) {
+php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data) {
   php_query_data *d = (php_query_data *)malloc(sizeof(php_query_data));
 
   d->http_data = http_data;
   d->rpc_data = rpc_data;
+  d->job_data = job_data;
 
   return d;
 }
@@ -108,6 +109,7 @@ php_query_data *php_query_data_create(http_query_data *http_data, rpc_query_data
 void php_query_data_free(php_query_data *d) {
   http_query_data_free(d->http_data);
   rpc_query_data_free(d->rpc_data);
+  job_query_data_free(d->job_data);
 
   free(d);
 }

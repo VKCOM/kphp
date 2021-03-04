@@ -5,23 +5,24 @@
 #include <cassert>
 #include <poll.h>
 
-
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
 #include "net/net-connections.h"
 #include "runtime/rpc.h"
+#include "server/job-workers/shared-context.h"
 #include "server/php-engine.h"
 #include "server/php-lease.h"
-#include "server/php-worker.h"
 #include "server/php-mc-connections.h"
 #include "server/php-sql-connections.h"
+#include "server/php-worker.h"
 
 php_worker *active_worker = nullptr;
 
-php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, double timeout, long long req_id) {
+php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
+                              long long req_id, double timeout) {
   auto worker = reinterpret_cast<php_worker *>(malloc(sizeof(php_worker)));
 
-  worker->data = php_query_data_create(http_data, rpc_data);
+  worker->data = php_query_data_create(http_data, rpc_data, job_data);
   worker->conn = c;
   assert (c != nullptr);
 
@@ -281,12 +282,19 @@ void php_worker_run(php_worker *worker) {
         php_script_finish(php_script);
 
         if (worker->conn != nullptr) {
-          if (worker->mode == http_worker) {
-            http_return(worker->conn, "ERROR", 5);
-          } else if (worker->mode == rpc_worker) {
-            if (!rpc_stored) {
-              server_rpc_error(worker->conn, worker->req_id, -504, php_script_get_error(php_script));
-            }
+          switch (worker->mode) {
+            case http_worker:
+              http_return(worker->conn, "ERROR", 5);
+              break;
+            case rpc_worker:
+              if (!rpc_stored) {
+                server_rpc_error(worker->conn, worker->req_id, -504, php_script_get_error(php_script));
+              }
+              break;
+            case job_worker:
+              job_workers::SharedContext::get().total_jobs_failed++;
+              break;
+            default:;
           }
         }
 
