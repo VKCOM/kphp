@@ -511,6 +511,9 @@ mixed f$microtime(bool get_as_float) {
   }
 }
 
+double f$microtime_float() { return microtime(); }
+string f$microtime_string() { return microtime_string(); }
+
 int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
   time_t timestamp_t = time(nullptr);

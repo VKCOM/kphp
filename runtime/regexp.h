@@ -11,6 +11,11 @@
 #include "runtime/kphp_core.h"
 #include "runtime/mbstring.h"
 
+// TODO: remove when/if we migrate to pcre2
+#ifndef PCRE2_ERROR_BADOFFSET
+#  define PCRE2_ERROR_BADOFFSET -33
+#endif
+
 namespace re2 {
 class RE2;
 } // namespace re2
@@ -84,7 +89,129 @@ public:
 
 
   Optional<int64_t> match(const string &subject, bool all_matches) const;
-  Optional<int64_t> match(const string &subject, mixed &matches, bool all_matches, int64_t offset = 0) const;
+  Optional<int64_t> match(const string &subject, array<mixed> &matches, bool all_matches, int64_t offset = 0) const;
+
+  template<typename T>
+  Optional<int64_t> match_all(const string &subject, array<array<T>> &matches, int64_t offset = 0) const {
+    pcre_last_error = 0;
+
+    check_pattern_compilation_warning();
+    if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
+      matches = array<array<T>>();
+      return false;
+    }
+
+    if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
+      matches = array<array<T>>();
+      pcre_last_error = PCRE_ERROR_BADUTF8;
+      return false;
+    }
+
+    matches = array<array<T>>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+    for (int32_t i = 0; i < subpatterns_count; i++) {
+      if (named_subpatterns_count && !subpattern_names[i].empty()) {
+        matches.set_value(subpattern_names[i], array<T>());
+      }
+      matches.push_back(array<T>());
+    }
+
+    bool second_try = false; // set after matching an empty string
+    pcre_last_error = 0;
+
+    int64_t result = 0;
+    offset = std::max(subject.get_correct_index(offset), 0_i64);
+    if (offset > subject.size()) {
+      matches = array<T>();
+      pcre_last_error = PCRE2_ERROR_BADOFFSET;
+      return false;
+    }
+    while (offset <= int64_t{subject.size()}) {
+      int64_t count = exec(subject, offset, second_try);
+
+      if (count == 0) {
+        if (second_try) {
+          second_try = false;
+          do {
+            offset++;
+          } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+          continue;
+        }
+
+        break;
+      }
+
+      result++;
+
+      for (int32_t i = 0; i < subpatterns_count; i++) {
+        const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
+        if (named_subpatterns_count && !subpattern_names[i].empty()) {
+          matches[subpattern_names[i]].push_back(match_str);
+        }
+        matches[i].push_back(match_str);
+      }
+
+      second_try = (submatch[0] == submatch[1]);
+      offset = submatch[1];
+    }
+
+    if (pcre_last_error != 0) {
+      return false;
+    }
+
+    return result;
+  }
+
+  template<typename T>
+  Optional<int64_t> match_one(const string &subject, array<T> &matches, int64_t offset = 0) const {
+    pcre_last_error = 0;
+
+    check_pattern_compilation_warning();
+    if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
+      matches = array<T>();
+      return false;
+    }
+
+    if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
+      matches = array<T>();
+      pcre_last_error = PCRE_ERROR_BADUTF8;
+      return false;
+    }
+
+    pcre_last_error = 0;
+
+    offset = std::max(subject.get_correct_index(offset), 0_i64);
+    if (offset > subject.size()) {
+      matches = array<T>();
+      pcre_last_error = PCRE2_ERROR_BADOFFSET;
+      return false;
+    }
+    int64_t count = exec(subject, offset, false);
+
+    if (count == 0) {
+      matches = array<T>();
+      return 0;
+    }
+
+    int64_t size = fix_php_bugs ? subpatterns_count : count;
+    array<T> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+    if (named_subpatterns_count) {
+      for (int64_t i = 0; i < size; i++) {
+        const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
+        preg_add_match(result_set, match_str, subpattern_names[i]);
+      }
+    } else {
+      for (int64_t i = 0; i < size; i++) {
+        result_set.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
+      }
+    }
+    matches = result_set;
+
+    if (pcre_last_error != 0) {
+      return false;
+    }
+
+    return 1;
+  }
 
   Optional<int64_t> match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset = 0) const;
 
@@ -105,25 +232,19 @@ void global_init_regexp_lib();
 inline void preg_add_match(array<mixed> &v, const mixed &match, const string &name);
 inline void preg_add_match(array<string> &v, const string &match, const string &name);
 
-
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject);
 
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches);
 
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
-
 inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
@@ -131,16 +252,28 @@ inline Optional<int64_t> f$preg_match(const string &regex, const string &subject
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
+
+template <typename T>
+inline Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, array<T> &matches, int64_t offset = 0) {
+  return regex.match_one(subject, matches, offset);
+}
+
+template <typename T>
+Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, array<T> &matches, int64_t offset = 0) {
+  return f$preg_match_strings(regexp(regex), subject, matches, offset);
+}
+
+template <typename T>
+Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, array<T> &matches, int64_t offset = 0) {
+  return f$preg_match_strings(regexp(regex.to_string()), subject, matches, offset);
+}
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
@@ -358,11 +491,17 @@ Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject) {
 }
 
 Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches) {
-  return regex.match(subject, matches, false);
+  array<mixed> matches_array;
+  auto result = regex.match_one(subject, matches_array, false);
+  matches = matches_array;
+  return result;
 }
 
 Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches) {
-  return regex.match(subject, matches, true);
+  array<mixed> matches_array;
+  auto result = regex.match(subject, matches_array, true);
+  matches = matches_array;
+  return result;
 }
 
 Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {

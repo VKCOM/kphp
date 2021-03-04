@@ -238,6 +238,19 @@ void FinalCheckPass::on_start() {
     check_lib_exported_function(current_function);
   }
 
+  if (!current_function->out_param_name.empty()) {
+    for (const auto &it : current_function->get_params()) {
+      const auto &p = it.as<op_func_param>();
+      bool found = false;
+      if (p->var()->str_val == current_function->out_param_name) {
+        found = true;
+        kphp_error(p->var()->ref_flag, fmt_format("Function {} annotated {} as out-param, but it is not a reference",
+                                                  current_function->get_human_readable_name(), current_function->out_param_name));
+      }
+      kphp_error(found, fmt_format("Function {} annotated a non-existing param with @kphp-out-param", current_function->get_human_readable_name()));
+    }
+  }
+
   if (!current_function->check_throws.empty()) {
     check_function_throws(current_function);
   }

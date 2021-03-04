@@ -13,11 +13,6 @@
 
 int64_t preg_replace_count_dummy;
 
-// TODO: remove when/if we migrate to pcre2
-#ifndef PCRE2_ERROR_BADOFFSET
-#  define PCRE2_ERROR_BADOFFSET -33
-#endif
-
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 // refactor me please :(
 // for i-th match(capturing group)
@@ -682,7 +677,7 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches __attrib
   return result;
 }
 
-Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_matches, int64_t offset) const {
+Optional<int64_t> regexp::match(const string &subject, array<mixed> &matches, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();

@@ -146,6 +146,14 @@ private:
 
   void parse_kphp_doc_tag(const php_doc_tag &tag) {
     switch (tag.type) {
+      case php_doc_tag::kphp_out_param:
+        if (!tag.value.empty() && tag.value[0] == '$') {
+          f_->out_param_name = tag.value.substr(1);
+        } else {
+          kphp_error(f_->is_extern(), "@kphp-out-param expects a $varname argument");
+        }
+        break;
+
       case php_doc_tag::kphp_inline: {
         f_->is_inline = true;
         break;

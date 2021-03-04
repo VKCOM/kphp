@@ -125,6 +125,16 @@ public:
   FunctionModifiers modifiers = FunctionModifiers::nonmember();
   vk::string_view phpdoc_str;
 
+  // The name of the parameter that is used as a function result.
+  //
+  // Makes KPHP believe that this parameter is always
+  // initialized to something meaningful.
+  //
+  // Intialized by the `@kphp-out-param $varname` annotation.
+  //
+  // It's not allowed to have a non-ref out param.
+  std::string out_param_name;
+
   Location instantiation_of_template_function_location;
 
   enum class body_value {

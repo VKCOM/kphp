@@ -498,16 +498,20 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       int ii = 0;
       for (auto cur : tree_node.as<op_func_call>()->args()) {
         bool new_weak_write_flag = false;
+        bool new_write_flag = false;
 
         if (func) {
           auto param = func->get_params()[ii].try_as<op_func_param>();
           if (param && param->var()->ref_flag) {
             new_weak_write_flag = true;
           }
+          if (param && !func->out_param_name.empty() && param->var()->str_val == func->out_param_name) {
+            new_write_flag = true;
+          }
         }
 
         kphp_assert (cur);
-        create_cfg(cur, &a, &b, false, new_weak_write_flag);
+        create_cfg(cur, &a, &b, new_write_flag, new_weak_write_flag);
         add_edge(start, a);
         start = b;
 
@@ -926,7 +930,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_force_mixed:
     case op_conv_regexp:
     case op_conv_bool: {
-      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);
+      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish, write_flag);
       break;
     }
     case op_function: {

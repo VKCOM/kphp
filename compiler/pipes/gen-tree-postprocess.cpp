@@ -89,6 +89,55 @@ VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, Verte
   return req_once;
 }
 
+VertexPtr process_microtime(VertexAdaptor<op_func_call> call) {
+  const auto &args = call->args();
+
+  // microtime()      -> microtime_string()
+  // microtime(false) -> microtime_string()
+  if (args.empty() || args[0]->type() == op_false) {
+    auto result = VertexAdaptor<op_func_call>::create().set_location(call);
+    result->set_string("microtime_string");
+    return result;
+  }
+
+  // microtime(true) -> microtime_float()
+  if (GenTree::get_actual_value(args[0])->type() == op_true) {
+    auto result = VertexAdaptor<op_func_call>::create().set_location(call);
+    result->set_string("microtime_float");
+    return result;
+  }
+
+  return call;
+}
+
+VertexPtr process_preg_match(VertexAdaptor<op_func_call> call) {
+  return call; // FIXME: disabled until CFG is fixed
+
+  const auto &args = call->args();
+
+  // preg_match($re, $s, $m) -> preg_match_strings($re, $s, $m)
+  if (args.size() == 3) {
+    auto result = VertexAdaptor<op_func_call>::create(args).set_location(call);
+    result->set_string("preg_match_strings");
+    return result;
+  }
+
+  // preg_match($re, $s, $m, 0, $offset) -> preg_match_string($re, $s, $m, $offset)
+  if (args.size() == 5) {
+    auto flags = GenTree::get_actual_value(args[3]).try_as<op_int_const>();
+    if (flags && parse_int_from_string(flags) == 0) {
+      auto result = VertexAdaptor<op_func_call>::create(args[0], args[1], args[2], args[4]).set_location(call);
+      result->set_string("preg_match_strings");
+      return result;
+    }
+  }
+
+  // TODO: do we want to handle this rare case?
+  // preg_match($re, $s, $m, 0) -> preg_match_strings($re, $s, $m)
+
+  return call;
+}
+
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   kphp_error_act (!G->settings().is_static_lib_mode(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
   VertexRange args = require_lib_call->args();
@@ -201,6 +250,13 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
     if (name == "require_lib") {
       return process_require_lib(call);
+    }
+
+    if (name == "preg_match") {
+      return process_preg_match(call);
+    }
+    if (name == "microtime") {
+      return process_microtime(call);
     }
 
     if (name == "min" || name == "max") {

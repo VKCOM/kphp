@@ -17,6 +17,7 @@
 struct php_doc_tag {
   enum doc_type {
     unknown,
+    kphp_out_param,
     kphp_inline,
     kphp_infer,
     kphp_disable_warnings,
