@@ -518,6 +518,7 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
   compile_get_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
   compile_serialization_methods(W, klass);
+  compile_virtual_builtin_functions(W, klass);
 }
 
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
@@ -636,6 +637,18 @@ void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
         << END << NL
       << END << NL
     << END << NL;
+}
+
+void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->need_virtual_builtin_functions) {
+    return;
+  }
+
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
+                       "size_t virtual_builtin_sizeof()", "sizeof(*this)");
+
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
+                       klass->src_name + "* virtual_builtin_clone()", "new " + klass->src_name + "{*this}");
 }
 
 IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) const {

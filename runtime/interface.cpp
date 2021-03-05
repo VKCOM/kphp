@@ -27,6 +27,7 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
+#include "runtime/job-workers/server-functions.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
@@ -479,6 +480,11 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 
       write_safe(1, oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size());
 
+      // TODO temp hack, remove together with simple-php-script.cpp
+      if (f$is_job_worker_mode()) {
+        http_set_result("", 0, "", 0, 0);
+      }
+
       //TODO move to finish_script
       free_runtime_environment();
 
@@ -549,6 +555,8 @@ void finish(int64_t exit_code) {
       wait_all_forks();
     }
   }
+
+  if (f$is_job_workers_enabled())
 
   f$fastcgi_finish_request(exit_code);
 

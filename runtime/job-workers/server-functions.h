@@ -4,7 +4,9 @@
 
 #pragma once
 
-namespace job_workers {
+#include "runtime/job-workers/job-interface.h"
+#include "runtime/kphp_core.h"
 
-
-} // namespace job_workers
+bool f$is_job_worker_mode() noexcept;
+class_instance<C$KphpJobWorkerRequest> f$job_worker_fetch_request() noexcept;
+void f$job_worker_store_response(const class_instance<C$KphpJobWorkerReply> &response) noexcept;

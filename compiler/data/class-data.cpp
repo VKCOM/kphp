@@ -393,6 +393,10 @@ void ClassData::deeply_require_instance_memory_estimate_visitor() {
   set_atomic_field_deeply<&ClassData::need_instance_memory_estimate_visitor>();
 }
 
+void ClassData::deeply_require_virtual_builtin_functions() {
+  set_atomic_field_deeply<&ClassData::need_virtual_builtin_functions>();
+}
+
 void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name) {
   auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(class_name), '\\');
   str_dependents.emplace_back(type, full_class_name);

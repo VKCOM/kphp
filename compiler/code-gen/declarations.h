@@ -117,6 +117,7 @@ private:
   static void compile_serialization_methods(CodeGenerator &W, ClassPtr klass);
   static void compile_serialize(CodeGenerator &W, ClassPtr klass);
   static void compile_deserialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);
 
   template<class ReturnValueT>
   static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);

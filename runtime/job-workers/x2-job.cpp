@@ -22,17 +22,17 @@ namespace job_workers {
 
 template<class Base>
 struct JobX2Data final : refcountable_polymorphic_php_classes<Base> {
-  const char *get_class() const final { return "JobX2Data"; }
+  const char *get_class() const noexcept final { return "JobX2Data"; }
 
-  int64_t get_hash() const final { return vk::std_hash(vk::string_view(get_class())); }
+  int get_hash() const noexcept final { return static_cast<int>(vk::std_hash(vk::string_view(get_class()))); }
 
-  void accept(InstanceDeepCopyVisitor &visitor) final { visitor("data", data); }
+  void accept(InstanceDeepCopyVisitor &visitor) noexcept final { visitor("data", data); }
 
-  void accept(InstanceDeepDestroyVisitor &visitor) final { visitor("data", data); }
+  void accept(InstanceDeepDestroyVisitor &visitor) noexcept final { visitor("data", data); }
 
-  size_t virtual_builtin_sizeof() const final { return sizeof(JobX2Data); }
+  size_t virtual_builtin_sizeof() const noexcept final { return sizeof(JobX2Data); }
 
-  JobX2Data *virtual_builtin_clone() const final { return new JobX2Data{*this}; }
+  JobX2Data *virtual_builtin_clone() const noexcept final { return new JobX2Data{*this}; }
 
   array<int64_t> data;
 };

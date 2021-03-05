@@ -17,6 +17,7 @@
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-context.h"
+#include "server/job-workers/simple-php-script.h"
 #include "server/php-master-restart.h"
 
 namespace job_workers {
@@ -82,7 +83,8 @@ bool JobWorkerServer::execute_job(const Job &job) {
   tvkprintf(job_workers, 2, "executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
             job.job_memory_ptr);
 
-  SharedMemorySlice *reply = process_x2(job.job_memory_ptr);
+  SharedMemorySlice *reply = run_simple_php_script(job.job_memory_ptr);
+  vk::singleton<SharedMemoryManager>::get().release_slice(job.job_memory_ptr);
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(job.job_result_fd_idx)[1];
   bool success = job_writer.write_job_result(JobResult{0, job.job_id, reply}, write_job_result_fd);
   if (!success) {
