@@ -49,6 +49,7 @@
 
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
+#include "runtime/job-workers/shared-memory-manager.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
@@ -61,7 +62,6 @@
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-context.h"
-#include "server/job-workers/shared-memory-manager.h"
 
 using job_workers::JobWorkersContext;
 

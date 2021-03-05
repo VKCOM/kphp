@@ -7,7 +7,7 @@
 #include "common/precise-time.h"
 
 #include "runtime/allocator.h"
-#include "runtime/job-workers-interface.h"
+#include "runtime/job-workers/job-interface.h"
 #include "runtime/rpc.h"
 #include "server/php-queries.h"
 

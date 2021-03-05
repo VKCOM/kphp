@@ -32,9 +32,8 @@ public:
 
   template<typename I>
   bool process(class_instance<I> &instance) noexcept {
-    static_assert(!std::is_abstract<I>::value, "instance_cache doesn't support interfaces");
     if (!instance.is_null()) {
-      instance->accept(child_);
+      instance.get()->accept(child_);
       return child_.is_ok();
     }
     return true;
@@ -65,7 +64,8 @@ public:
   ExtraRefCnt get_memory_ref_cnt() const noexcept { return memory_ref_cnt_; }
 
 protected:
-  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt) noexcept:
+  InstanceDeepBasicVisitor(Child &child, bool set_memory_ref_cnt, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::for_global_const) noexcept:
+    set_memory_ref_cnt_(set_memory_ref_cnt),
     memory_ref_cnt_(memory_ref_cnt),
     child_(child) {
   }
@@ -83,6 +83,8 @@ protected:
     }
     return res;
   }
+
+  bool set_memory_ref_cnt_{false};
 
 private:
   template<size_t Index = 0, typename ...Args>
@@ -111,6 +113,7 @@ public:
   using Basic::is_ok;
   using Basic::get_memory_ref_cnt;
 
+  explicit InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept;
   InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
@@ -131,7 +134,9 @@ public:
       return true;
     }
     php_assert(arr.get_reference_counter() == 1);
-    arr.set_reference_counter_to(get_memory_ref_cnt());
+    if (set_memory_ref_cnt_) {
+      arr.set_reference_counter_to(get_memory_ref_cnt());
+    }
     return Basic::process_range(first, arr.end());
   }
 
@@ -146,8 +151,10 @@ public:
     bool result = true;
     if (!instance.is_null()) {
       if (likely(is_enough_memory_for(instance.estimate_memory_usage()))) {
-        instance = instance.clone();
-        instance.set_reference_counter_to(get_memory_ref_cnt());
+        instance = instance.virtual_builtin_clone();
+        if (set_memory_ref_cnt_) {
+          instance.set_reference_counter_to(get_memory_ref_cnt());
+        }
         result = Basic::process(instance);
       } else {
         instance.destroy();
@@ -282,3 +289,34 @@ private:
   class_instance<I> instance_;
   const int memory_ref_cnt_{0};
 };
+
+template<class T>
+class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
+                                                  memory_resource::unsynchronized_pool_resource &memory_pool,
+                                                  ExtraRefCnt memory_ref_cnt,
+                                                  // TODO this param is used only for x2, so it can be removed with x2
+                                                  bool force_enable_allocator = false) noexcept {
+  dl::set_current_script_allocator(memory_pool, force_enable_allocator);
+
+  class_instance<T> copied_instance = instance;
+  InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt};
+  copyVisitor.process(copied_instance);
+  if (unlikely(copyVisitor.is_depth_limit_exceeded())) {
+    InstanceDeepDestroyVisitor{memory_ref_cnt}.process(copied_instance);
+    copied_instance = class_instance<T>{};
+  }
+
+  dl::restore_default_script_allocator(force_enable_allocator);
+  return copied_instance;
+}
+
+template<class T>
+class_instance<T> copy_instance_into_script_memory(const class_instance<T> &instance) noexcept {
+  class_instance<T> copied_instance = instance;
+  InstanceDeepCopyVisitor copyVisitor{dl::get_default_script_allocator()};
+  copyVisitor.process(copied_instance);
+  if (unlikely(copyVisitor.is_depth_limit_exceeded())) {
+    copied_instance = class_instance<T>{};
+  }
+  return copied_instance;
+}

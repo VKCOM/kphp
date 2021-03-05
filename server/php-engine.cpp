@@ -55,12 +55,12 @@
 
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
+#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/rpc.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
@@ -2066,7 +2066,7 @@ int main_args_handler(int i) {
     case 2017: {
       // TODO: add check
       size_t mbs = atoi(optarg);
-      vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_size(mbs * 1024 * 1024);
+      vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_limit(mbs * 1024 * 1024);
       return 0;
     }
     default:

@@ -27,7 +27,8 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
-#include "runtime/job-workers-interface.h"
+#include "runtime/job-workers/client-functions.h"
+#include "runtime/job-workers/server-functions.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
@@ -1379,6 +1380,7 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
 
   if (query_type == QUERY_TYPE_JOB) {
     v$_SERVER.set_value(string("JOB_ID"), job_data.job.job_id);
+    init_job_server_interface_lib(job_data.job.job_memory_ptr, job_data.send_reply);
   }
 
   string uri_str;
@@ -2142,8 +2144,6 @@ static void init_runtime_libs() {
   init_openssl_lib();
   init_math_functions();
 
-  init_job_workers_lib();
-
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   shutdown_functions_count = 0;
@@ -2193,7 +2193,8 @@ static void free_runtime_libs() {
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
   vk::singleton<JsonLogger>::get().reset_buffers();
-  free_job_workers_lib();
+  free_job_client_interface_lib();
+  free_job_server_interface_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();

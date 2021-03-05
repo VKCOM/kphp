@@ -32,6 +32,12 @@ volatile bool script_allocator_enabled = false;
 
 long long query_num = 0;
 
+memory_resource::unsynchronized_pool_resource &get_default_script_allocator() noexcept {
+  php_assert(script_allocator_enabled);
+  php_assert(get_memory_dealer().is_default_allocator_used());
+  return get_memory_dealer().current_script_resource();
+}
+
 void set_current_script_allocator(memory_resource::unsynchronized_pool_resource &resource, bool force_enable) noexcept {
   get_memory_dealer().set_current_script_resource(resource);
   if (force_enable) {

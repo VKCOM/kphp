@@ -15,7 +15,6 @@
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-context.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 
@@ -51,25 +50,13 @@ void jobs_server_at_query_end(connection *c) {
   c->pending_queries = 0;
 
   c->flags |= C_REPARSE;
-
-  vk::singleton<JobWorkerServer>::get().running_job.reset();
+  vk::singleton<JobWorkerServer>::get().reset_running_job();
   assert (c->status != conn_wait_net);
 }
 
 int jobs_server_php_wakeup(connection *c) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
-
-//  JobWorkerServer &job_worker_server = vk::singleton<JobWorkerServer>::get();
-//  Job &job = job_worker_server.running_job.value();
-//  bool success = job_worker_server.execute_job(job);
-//  if (success) {
-//    SharedContext::get().total_jobs_done++;
-//  } else {
-//    SharedContext::get().total_jobs_failed++;
-//    kprintf("Error on executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
-//            job.job_memory_ptr);
-//  }
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
   double timeout = php_worker_main(worker);
@@ -146,9 +133,12 @@ int JobWorkerServer::job_parse_execute(connection *c) {
 
   SharedContext::get().job_queue_size--;
   running_job = job;
+  reply_was_sent = false;
 
   double timeout_sec = DEFAULT_SCRIPT_TIMEOUT;
-  job_query_data *job_data = job_query_data_create(job);
+  job_query_data *job_data = job_query_data_create(job, [](job_workers::SharedMemorySlice *reply_memory) {
+    return vk::singleton<JobWorkerServer>::get().send_job_reply(reply_memory);
+  });
   reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job.job_id, timeout_sec);
 
   set_connection_timeout(c, timeout_sec);
@@ -156,64 +146,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   jobs_server_php_wakeup(c);
 
   return 0;
-}
-
-static bool run_job_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
-  static constexpr auto HANG_SHIFT = static_cast<int64_t>(1e9);
-  for (int64_t i = 0; i < size; ++i) {
-    int64_t item = src[i];
-    if (item < 0) {
-      return false;
-    } else if (item > HANG_SHIFT) {
-      int64_t hang_time_ms = item - HANG_SHIFT;
-      vk::SteadyTimer<std::chrono::milliseconds> timer;
-      timer.start();
-      while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {
-      };
-    }
-    dest[i] = item * item;
-  }
-  return true;
-}
-
-bool JobWorkerServer::execute_job(const Job &job) {
-  tvkprintf(job_workers, 2, "executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
-            job.job_memory_ptr);
-
-  SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
-
-  void * const job_result_memory_slice = memory_manager.allocate_slice(); // TODO: reuse job_memory_ptr ?
-  if (job_result_memory_slice == nullptr) {
-    kprintf("Can't allocate slice for result of job: not enough shared memory\n");
-    SharedContext::get().total_errors_shared_memory_limit++;
-    memory_manager.deallocate_slice(job.job_memory_ptr);
-    return false;
-  }
-
-  auto *job_memory = static_cast<int64_t *>(job.job_memory_ptr);
-  int64_t arr_size = *job_memory++;
-
-  auto *job_result_memory = reinterpret_cast<int64_t *>(job_result_memory_slice);
-  *job_result_memory++ = arr_size;
-
-  bool ok = run_job_array_x2(job_result_memory, job_memory, arr_size);
-  memory_manager.deallocate_slice(job.job_memory_ptr);
-
-  if (!ok) {
-    memory_manager.deallocate_slice(job_result_memory_slice);
-    assert(false);
-  }
-
-  int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(job.job_result_fd_idx)[1];
-
-  bool success = job_writer.write_job_result(JobResult{0, job.job_id, job_result_memory_slice}, write_job_result_fd);
-  if (!success) {
-    memory_manager.deallocate_slice(job_result_memory_slice);
-    SharedContext::get().total_errors_pipe_server_write++;
-    return false;
-  }
-
-  return true;
 }
 
 void JobWorkerServer::init() {
@@ -243,6 +175,27 @@ void JobWorkerServer::try_complete_delayed_jobs() {
     tvkprintf(job_workers, 1, "There are delayed jobs. Let's complete them\n");
     job_parse_execute(read_job_connection);
   }
+}
+
+void JobWorkerServer::reset_running_job() noexcept {
+  running_job.reset();
+}
+
+const char *JobWorkerServer::send_job_reply(SharedMemorySlice *reply_memory) noexcept {
+  if (!running_job.has_value()) {
+    return "There is no running jobs";
+  }
+
+  if (reply_was_sent) {
+    return "The reply has been already sent";
+  }
+
+  int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
+  if (!job_writer.write_job_result(JobResult{0, running_job->job_id, reply_memory}, write_job_result_fd)) {
+    return "Can't write job reply to the pipe";
+  }
+  reply_was_sent = true;
+  return nullptr;
 }
 
 } // namespace job_workers

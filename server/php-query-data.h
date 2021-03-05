@@ -38,10 +38,11 @@ void rpc_query_data_free(rpc_query_data *d);
 
 struct job_query_data {
   job_workers::Job job;
+  const char *(*send_reply) (job_workers::SharedMemorySlice *reply_memory);
 };
 
-inline job_query_data *job_query_data_create(const job_workers::Job &job) {
-  return new job_query_data{job};
+inline job_query_data *job_query_data_create(const job_workers::Job &job, const char *(*send_reply) (job_workers::SharedMemorySlice *reply_memory)) {
+  return new job_query_data{job, send_reply};
 }
 
 inline void job_query_data_free(job_query_data *job_data) {

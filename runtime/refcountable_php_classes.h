@@ -5,6 +5,8 @@
 #pragma once
 #include <cstdint>
 
+#include "common/php-functions.h"
+
 #include "runtime/allocator.h"
 
 class abstract_refcountable_php_interface : public ManagedThroughDlAllocator {
