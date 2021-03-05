@@ -27,7 +27,7 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
-#include "runtime/job-workers-interface.h"
+#include "runtime/job-workers/job-interface.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
@@ -2112,8 +2112,6 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
-
-  init_job_workers_lib();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 

@@ -48,7 +48,12 @@ public:
     // used as a reference counter for the confdata variables;
     // data is located in shared memory;
     // either recursive or non-recursive array deletion is implied (depends on the context)
-    for_confdata
+    for_confdata,
+
+    // used as a reference counter for communication with job workers
+    // data is located in shared memory;
+    // hard reset without the destructor calls is implied
+    for_job_worker_communication
   };
 
   // wrapping this into a class helps avoid the global namespace pollution

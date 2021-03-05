@@ -11,10 +11,12 @@
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 
+#include "runtime/job-workers/shared-memory-manager.h"
+#include "runtime/job-workers/x2-job.h"
+
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-context.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
 
 namespace job_workers {
@@ -76,56 +78,15 @@ int JobWorkerServer::read_execute_loop() {
   }
 }
 
-static bool run_job_array_x2(int64_t *dest, const int64_t *src, int64_t size) {
-  static constexpr auto HANG_SHIFT = static_cast<int64_t>(1e9);
-  for (int64_t i = 0; i < size; ++i) {
-    int64_t item = src[i];
-    if (item < 0) {
-      return false;
-    } else if (item > HANG_SHIFT) {
-      int64_t hang_time_ms = item - HANG_SHIFT;
-      vk::SteadyTimer<std::chrono::milliseconds> timer;
-      timer.start();
-      while (timer.time() < std::chrono::milliseconds{hang_time_ms}) {};
-    }
-    dest[i] = item * item;
-  }
-  return true;
-}
-
 bool JobWorkerServer::execute_job(const Job &job) {
   tvkprintf(job_workers, 2, "executing job: <job_result_fd_idx, job_id> = <%d, %d>, job_memory_ptr = %p\n", job.job_result_fd_idx, job.job_id,
             job.job_memory_ptr);
 
-  SharedMemoryManager &memory_manager = vk::singleton<SharedMemoryManager>::get();
-
-  void * const job_result_memory_slice = memory_manager.allocate_slice(); // TODO: reuse job_memory_ptr ?
-  if (job_result_memory_slice == nullptr) {
-    kprintf("Can't allocate slice for result of job: not enough shared memory\n");
-    SharedContext::get().total_errors_shared_memory_limit++;
-    memory_manager.deallocate_slice(job.job_memory_ptr);
-    return false;
-  }
-
-  auto *job_memory = static_cast<int64_t *>(job.job_memory_ptr);
-  int64_t arr_size = *job_memory++;
-
-  auto *job_result_memory = reinterpret_cast<int64_t *>(job_result_memory_slice);
-  *job_result_memory++ = arr_size;
-
-  bool ok = run_job_array_x2(job_result_memory, job_memory, arr_size);
-  memory_manager.deallocate_slice(job.job_memory_ptr);
-
-  if (!ok) {
-    memory_manager.deallocate_slice(job_result_memory_slice);
-    assert(false);
-  }
-
+  SharedMemorySlice *reply = process_x2(job.job_memory_ptr);
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(job.job_result_fd_idx)[1];
-
-  bool success = job_writer.write_job_result(JobResult{0, job.job_id, job_result_memory_slice}, write_job_result_fd);
+  bool success = job_writer.write_job_result(JobResult{0, job.job_id, reply}, write_job_result_fd);
   if (!success) {
-    memory_manager.deallocate_slice(job_result_memory_slice);
+    vk::singleton<SharedMemoryManager>::get().release_slice(reply);
     SharedContext::get().total_errors_pipe_server_write++;
     return false;
   }

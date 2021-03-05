@@ -4,13 +4,18 @@
 
 #include "runtime/instance-copy-processor.h"
 
+InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept:
+  Basic(*this, false),
+  memory_pool_(memory_pool) {
+}
+
 InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept:
-  Basic(*this, memory_ref_cnt),
+  Basic(*this, true, memory_ref_cnt),
   memory_pool_(memory_pool) {
 }
 
 InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:
-  Basic(*this, memory_ref_cnt) {
+  Basic(*this, true, memory_ref_cnt) {
 }
 
 bool InstanceDeepCopyVisitor::process(string &str) noexcept {
@@ -30,7 +35,9 @@ bool InstanceDeepCopyVisitor::process(string &str) noexcept {
     php_assert(str.size() < 2);
   } else {
     php_assert(str.get_reference_counter() == 1);
-    str.set_reference_counter_to(get_memory_ref_cnt());
+    if (set_memory_ref_cnt_) {
+      str.set_reference_counter_to(get_memory_ref_cnt());
+    }
   }
   return true;
 }
