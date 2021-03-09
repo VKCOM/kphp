@@ -28,6 +28,7 @@ static int cur_lease_target = -1;
 static int rpc_lease_target = -1;
 static double rpc_lease_timeout = -1;
 static process_id_t lease_pid;
+static int lease_actor_id = -1;
 
 static double lease_stats_start_time;
 static double lease_stats_time;
@@ -113,7 +114,19 @@ static void rpc_send_lease_stats(connection *c) {
   send_rpc_query(c, TL_KPHP_LEASE_STATS, -1, q, qn * 4);
 }
 
+static int get_current_actor_id() {
+  int cur_target = get_current_target();
+  if (cur_target == rpc_proxy_target) {
+    return rpc_client_actor;
+  }
+  if (cur_target == rpc_lease_target) {
+    return lease_actor_id;
+  }
+  return -1;
+}
+
 static int is_staging;
+
 FLAG_OPTION_PARSER(OPT_ENGINE_CUSTOM, "staging", is_staging, "kphp sends this info to tasks if running as worker");
 
 static void rpc_send_ready(connection *c) {
@@ -125,11 +138,12 @@ static void rpc_send_ready(connection *c) {
   int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
 
   q[qn++] = -1; // will be replaced by op
-  if (get_current_target() == rpc_proxy_target && rpc_client_actor != -1) { // we don't want to update all tasks
-    *reinterpret_cast<long long*>(&q[qn]) = 0;
+  int actor_id = get_current_actor_id();
+  if (actor_id != -1) { // we don't want to update all tasks
+    *reinterpret_cast<long long *>(&q[qn]) = 0;
     qn += 2;
     q[qn++] = TL_RPC_DEST_ACTOR;
-    *reinterpret_cast<long long*>(&q[qn]) = rpc_client_actor;
+    *reinterpret_cast<long long *>(&q[qn]) = actor_id;
     qn += 2;
     q[qn++] = magic;
     magic = TL_RPC_INVOKE_REQ;
@@ -313,7 +327,7 @@ void do_rpc_stop_lease() {
   run_rpc_lease();
 }
 
-int do_rpc_start_lease(process_id_t pid, double timeout) {
+int do_rpc_start_lease(process_id_t pid, double timeout, int actor_id) {
   if (rpc_proxy_target == -1) {
     return -1;
   }
@@ -336,6 +350,7 @@ int do_rpc_start_lease(process_id_t pid, double timeout) {
   rpc_lease_target = target_fd;
   rpc_lease_timeout = timeout;
   lease_pid = pid;
+  lease_actor_id = actor_id;
 
   lease_stats_cnt = 0;
   lease_stats_start_time = precise_now;
