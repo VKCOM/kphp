@@ -293,10 +293,8 @@ private:
 template<class T>
 class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
                                                   memory_resource::unsynchronized_pool_resource &memory_pool,
-                                                  ExtraRefCnt memory_ref_cnt,
-                                                  // TODO this param is used only for x2, so it can be removed with x2
-                                                  bool force_enable_allocator = false) noexcept {
-  dl::set_current_script_allocator(memory_pool, force_enable_allocator);
+                                                  ExtraRefCnt memory_ref_cnt) noexcept {
+  dl::set_current_script_allocator(memory_pool, false);
 
   class_instance<T> copied_instance = instance;
   InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt};
@@ -306,7 +304,7 @@ class_instance<T> copy_instance_into_other_memory(const class_instance<T> &insta
     copied_instance = class_instance<T>{};
   }
 
-  dl::restore_default_script_allocator(force_enable_allocator);
+  dl::restore_default_script_allocator(false);
   return copied_instance;
 }
 
