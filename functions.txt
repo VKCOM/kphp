@@ -437,7 +437,7 @@ function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: in
 function mt_getrandmax() ::: int;
 
 function hash_algos () ::: string[];
-function hash_equals(string $known_string, string $user_string) ::: bool;
+function hash_hmac_algos () ::: string[];
 function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
 function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
@@ -445,6 +445,7 @@ function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
 function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
 function crc32 ($s ::: string) ::: int;
 function crc32_file ($s ::: string) ::: int;
+function hash_equals(string $known_string, string $user_string) ::: bool;
 /** @kphp-pure-function */
 function cp1251 ($utf8_string ::: string) ::: string;
 

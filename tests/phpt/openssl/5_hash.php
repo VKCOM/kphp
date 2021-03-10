@@ -8,7 +8,7 @@
 
 function test_hash_basic() {
   hash_algos();
-  $algos = array ("md5", "sha1", "sha256");
+  $algos = array ("md5", "sha1", "sha224", "sha256", "sha384", "sha512");
 
 
   $a = array("", "asdasd", "abacaba", "1", NULL, false, true, "asdasdasdasdasd42n3jb23jkb2k3vb2hj3v41hj 13hj j23hbr j42hb j42hb jh43b rjh1hb 12jb 3jh4 b32 b24");
@@ -21,16 +21,15 @@ function test_hash_basic() {
     var_dump (md5 ($s, false));
     var_dump (md5 ($s, true));
     var_dump (md5 ($s));
-    var_dump (hash_hmac ('sha1', $s, $s, true));
-    var_dump (hash_hmac ('sha1', $s, $s));
-    var_dump (hash_hmac ('sha256', $s, $s, true));
-    var_dump (hash_hmac ('sha256', $s, $s));
-    var_dump (hash_hmac ('sha256', $s, "dummy", true));
-    var_dump (hash_hmac ('sha256', $s, "dummy"));
-    var_dump (hash_hmac ('sha256', "dummy", $s, true));
-    var_dump (hash_hmac ('sha256', "dummy", $s));
 
     foreach ($algos as $a) {
+      var_dump (hash_hmac ($a, $s, $s, true));
+      var_dump (hash_hmac ($a, $s, $s));
+      var_dump (hash_hmac ($a, $s, "dummy", true));
+      var_dump (hash_hmac ($a, $s, "dummy"));
+      var_dump (hash_hmac ($a, "dummy", $s, true));
+      var_dump (hash_hmac ($a, "dummy", $s));
+
       var_dump (hash ($a, $s, true));
       var_dump (hash ($a, $s, false));
     }
