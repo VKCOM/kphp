@@ -21,17 +21,17 @@ enum openssl_algo {
   OPENSSL_ALGO_RMD160 = 10,
 };
 
-array<string> f$hash_algos();
+array<string> f$hash_algos() noexcept;
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
+array<string> f$hash_hmac_algos() noexcept;
 
-string f$hash(const string &algo, const string &s, bool raw_output = false);
+string f$hash(const string &algo, const string &s, bool raw_output = false) noexcept;
 
-string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output = false);
+string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output = false) noexcept;
 
-string f$sha1(const string &s, bool raw_output = false);
+string f$sha1(const string &s, bool raw_output = false) noexcept;
 
-string f$md5(const string &s, bool raw_output = false);
+string f$md5(const string &s, bool raw_output = false) noexcept;
 
 Optional<string> f$md5_file(const string &file_name, bool raw_output = false);
 
@@ -39,6 +39,7 @@ int64_t f$crc32(const string &s);
 
 int64_t f$crc32_file(const string &file_name);
 
+bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key);
 

@@ -26,6 +26,7 @@
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "common/wrappers/openssl.h"
 #include "common/wrappers/string_view.h"
+#include "common/wrappers/to_array.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
@@ -36,79 +37,18 @@
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
 
-array<string> f$hash_algos() {
-  return array<string>::create(
-    string("sha1", 4),
-    string("sha256", 6),
-    string("md5", 3));
-}
+namespace {
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept {
-  if (known_string.size() != user_string.size()) {
-    return false;
-  }
-  int result = 0;
-  // This is security sensitive code. Do not optimize this for speed
-  for (int i = 0; i != known_string.size(); ++i) {
-    result |= known_string[i] ^ user_string[i];
-  }
-  return !result;
-}
+struct HashTraits {
+private:
+  template<class F>
+  string call_hash_algo(bool raw_output, const F &hash_algo) const noexcept {
+    string res{hash_len * (raw_output ? 1 : 2), false};
 
-string f$hash(const string &algo, const string &s, bool raw_output) {
-  if (!strcmp(algo.c_str(), "sha256")) {
-    string res;
-    if (raw_output) {
-      res.assign(32, false);
-    } else {
-      res.assign(64, false);
-    }
-
-    dl::critical_section_call(SHA256, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
+    hash_algo(res);
 
     if (!raw_output) {
-      for (int i = 31; i >= 0; i--) {
-        res[2 * i + 1] = lhex_digits[res[i] & 15];
-        res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
-      }
-    }
-    return res;
-  } else if (!strcmp(algo.c_str(), "md5")) {
-    return f$md5(s, raw_output);
-  } else if (!strcmp(algo.c_str(), "sha1")) {
-    return f$sha1(s, raw_output);
-  }
-
-  php_critical_error ("algo %s not supported in function hash", algo.c_str());
-}
-
-string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output) {
-  const EVP_MD *evp_md = nullptr;
-  string::size_type hash_len = 0;
-  if (!strcmp(algo.c_str(), "sha1")) {
-    evp_md = EVP_sha1();
-    hash_len = 20;
-  } else if (!strcmp(algo.c_str(), "sha256")) {
-    evp_md = EVP_sha256();
-    hash_len = 32;
-  }
-
-  if (evp_md != nullptr) {
-    string res;
-    if (raw_output) {
-      res.assign(hash_len, false);
-    } else {
-      res.assign(hash_len * 2, false);
-    }
-
-    unsigned int md_len = 0;
-    dl::critical_section_call(HMAC, evp_md, key.c_str(), static_cast<int>(key.size()),
-                              reinterpret_cast<const unsigned char *> (data.c_str()), static_cast<int>(data.size()),
-                              reinterpret_cast<unsigned char *> (res.buffer()), &md_len);
-    php_assert (md_len == hash_len);
-
-    if (!raw_output) {
-      for (int i = hash_len - 1; i >= 0; i--) {
+      for (int64_t i = hash_len - 1; i >= 0; i--) {
         res[2 * i + 1] = lhex_digits[res[i] & 15];
         res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
       }
@@ -116,47 +56,91 @@ string f$hash_hmac(const string &algo, const string &data, const string &key, bo
     return res;
   }
 
-  php_critical_error ("unsupported algo = \"%s\" in function hash_hmac", algo.c_str());
-  return string();
+public:
+  const char *name;
+  unsigned char *(*algo_function)(const unsigned char *, size_t, unsigned char *);
+  uint32_t hash_len;
+  const EVP_MD *(*get_evp)();
+
+  string hash(const string &s, bool raw_output) const noexcept {
+    return call_hash_algo(raw_output, [this, &s](string &out) {
+      dl::critical_section_call(algo_function,
+                                reinterpret_cast<const unsigned char *>(s.c_str()), s.size(),
+                                reinterpret_cast<unsigned char *>(out.buffer()));
+    });
+  }
+
+  string hash_hmac(const string &data, const string &key, bool raw_output) const noexcept {
+    return call_hash_algo(raw_output, [this, &data, &key](string &out) {
+      unsigned int md_len = 0;
+      dl::critical_section_call(HMAC, get_evp(), key.c_str(), static_cast<int>(key.size()),
+                                reinterpret_cast<const unsigned char *> (data.c_str()), static_cast<int>(data.size()),
+                                reinterpret_cast<unsigned char *> (out.buffer()), &md_len);
+      php_assert (md_len == hash_len);
+    });
+  }
+};
+
+HashTraits make_sha1_traits() noexcept {
+  return HashTraits{"sha1", SHA1, SHA_DIGEST_LENGTH, EVP_sha1};
 }
 
-string f$sha1(const string &s, bool raw_output) {
-  string res;
-  if (raw_output) {
-    res.assign(20, false);
-  } else {
-    res.assign(40, false);
-  }
-
-  dl::critical_section_call(SHA1, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
-
-  if (!raw_output) {
-    for (int i = 19; i >= 0; i--) {
-      res[2 * i + 1] = lhex_digits[res[i] & 15];
-      res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
-    }
-  }
-  return res;
+HashTraits make_md5_traits() noexcept {
+  return HashTraits{"md5", MD5, MD5_DIGEST_LENGTH, EVP_md5};
 }
 
+const auto &get_supported_hash_algorithms() noexcept {
+  const static auto supported_algorithms = vk::to_array<HashTraits>(
+    {
+      make_sha1_traits(),
+      HashTraits{"sha224", SHA224, SHA224_DIGEST_LENGTH, EVP_sha224},
+      HashTraits{"sha256", SHA256, SHA256_DIGEST_LENGTH, EVP_sha256},
+      HashTraits{"sha384", SHA384, SHA384_DIGEST_LENGTH, EVP_sha384},
+      HashTraits{"sha512", SHA512, SHA512_DIGEST_LENGTH, EVP_sha512},
+      make_md5_traits()
+    });
+  return supported_algorithms;
+}
 
-string f$md5(const string &s, bool raw_output) {
-  string res;
-  if (raw_output) {
-    res.assign(16, false);
-  } else {
-    res.assign(32, false);
+const HashTraits &find_hash_algorithm(const char *algo) noexcept {
+  const auto &supported_algorithms = get_supported_hash_algorithms();
+  const auto it = std::find_if(supported_algorithms.begin(), supported_algorithms.end(),
+                               [algo](const HashTraits &traits) { return !strcmp(algo, traits.name); });
+  if (it == supported_algorithms.end()) {
+    php_critical_error ("algo %s not supported in function hash", algo);
   }
+  return *it;
+}
 
-  dl::critical_section_call(MD5, reinterpret_cast<const unsigned char *>(s.c_str()), s.size(), reinterpret_cast<unsigned char *>(res.buffer()));
+} // namespace
 
-  if (!raw_output) {
-    for (int i = 15; i >= 0; i--) {
-      res[2 * i + 1] = lhex_digits[res[i] & 15];
-      res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
-    }
+array<string> f$hash_algos() noexcept {
+  const auto &supported_algorithms = get_supported_hash_algorithms();
+  array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), 0, true}};
+  for (const auto &algo : supported_algorithms) {
+    result.emplace_back(string{algo.name});
   }
-  return res;
+  return result;
+}
+
+array<string> f$hash_hmac_algos() noexcept {
+  return f$hash_algos();
+}
+
+string f$hash(const string &algo, const string &s, bool raw_output) noexcept {
+  return find_hash_algorithm(algo.c_str()).hash(s, raw_output);
+}
+
+string f$hash_hmac(const string &algo, const string &data, const string &key, bool raw_output) noexcept {
+  return find_hash_algorithm(algo.c_str()).hash_hmac(data, key, raw_output);
+}
+
+string f$sha1(const string &s, bool raw_output) noexcept {
+  return make_sha1_traits().hash(s, raw_output);
+}
+
+string f$md5(const string &s, bool raw_output) noexcept {
+  return make_md5_traits().hash(s, raw_output);
 }
 
 Optional<string> f$md5_file(const string &file_name, bool raw_output) {
@@ -251,6 +235,20 @@ int64_t f$crc32_file(const string &file_name) {
   }
 
   return res ^ std::numeric_limits<uint32_t>::max();
+}
+
+bool f$hash_equals(const string &known_string, const string &user_string) noexcept {
+  if (known_string.size() != user_string.size()) {
+    return false;
+  }
+  int result = 0;
+  // This is security sensitive code. Do not optimize this for speed
+  // Compares two strings using the same time whether they're equal or not
+  // A difference in length will leak
+  for (int i = 0; i != known_string.size(); ++i) {
+    result |= known_string[i] ^ user_string[i];
+  }
+  return !result;
 }
 
 template<char PREFIX_CHAR>
