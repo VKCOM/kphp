@@ -40,6 +40,7 @@
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg-end.h"
 #include "compiler/pipes/cfg.h"
+#include "compiler/pipes/check-type-hint-variance.h"
 #include "compiler/pipes/check-abstract-function-defaults.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
@@ -235,6 +236,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SplitSwitchF>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
+    >> PipeC<CheckTypeHintVariance>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}

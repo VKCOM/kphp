@@ -19,7 +19,7 @@ interface ITwo extends IOne {
   /**
    * @param int $x
    * @param int $y
-   * @return mixed
+   * @return int[]|int
    */
   public function two($x, $y);
 }
@@ -28,7 +28,7 @@ interface IThree extends IOne {
   /**
    * @param int $x
    * @param int $y
-   * @return mixed
+   * @return int|null
    */
   public function three($x, $y);
 }
@@ -44,10 +44,11 @@ class ImplTwo implements ITwo {
   /**
    * @param int $x
    * @param int $y
-   * @return void|mixed
+   * @return int[]
    */
   public function two($x, $y) {
     var_dump($x + $y);
+    return [1];
   }
 
   public static function static_one($x, $y) {
@@ -66,10 +67,11 @@ class ImplThree implements IThree {
   /**
    * @param int $x
    * @param int $y
-   * @return void|mixed
+   * @return int
    */
   public function three($x, $y) {
     var_dump($x + $y);
+    return 10;
   }
 
   /**
