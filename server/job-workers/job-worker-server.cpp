@@ -108,12 +108,14 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   if (running_job.has_value()) {
     tvkprintf(job_workers, 1, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;
+    JobStats::get().job_worker_skip_job_due_another_is_running++;
     return 0;
   }
 
   if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
     tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
     has_delayed_jobs = true;
+    JobStats::get().job_worker_skip_job_due_overload++;
     return 0;
   }
 
@@ -125,9 +127,10 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
     has_delayed_jobs = false;
+    JobStats::get().job_worker_skip_job_due_steal++;
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
-    JobStats::get().total_errors_pipe_server_read++;
+    JobStats::get().errors_pipe_server_read++;
     return -1;
   }
 
@@ -192,8 +195,10 @@ const char *JobWorkerServer::send_job_reply(SharedMemorySlice *reply_memory) noe
 
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
   if (!job_writer.write_job_result(JobResult{0, running_job->job_id, reply_memory}, write_job_result_fd)) {
+    JobStats::get().errors_pipe_server_write++;
     return "Can't write job reply to the pipe";
   }
+  JobStats::get().jobs_replied++;
   reply_was_sent = true;
   return nullptr;
 }

@@ -14,16 +14,18 @@ namespace job_workers {
 class JobStats : vk::not_copyable {
 public:
   std::atomic<int> job_queue_size{0};
-  std::atomic<int> occupied_slices_count{0};
-  std::atomic<size_t> total_jobs_sent{0};
-  std::atomic<size_t> total_jobs_done{0};
-  std::atomic<size_t> total_jobs_failed{0};
+  std::atomic<int> currently_memory_slices_used{0};
+  std::atomic<size_t> jobs_sent{0};
+  std::atomic<size_t> jobs_replied{0};
 
-  std::atomic<size_t> total_errors_pipe_server_write{0};
-  std::atomic<size_t> total_errors_pipe_server_read{0};
-  std::atomic<size_t> total_errors_pipe_client_write{0};
-  std::atomic<size_t> total_errors_pipe_client_read{0};
-  std::atomic<size_t> total_errors_shared_memory_limit{0};
+  std::atomic<size_t> errors_pipe_server_write{0};
+  std::atomic<size_t> errors_pipe_server_read{0};
+  std::atomic<size_t> errors_pipe_client_write{0};
+  std::atomic<size_t> errors_pipe_client_read{0};
+
+  std::atomic<size_t> job_worker_skip_job_due_another_is_running{0};
+  std::atomic<size_t> job_worker_skip_job_due_overload{0};
+  std::atomic<size_t> job_worker_skip_job_due_steal{0};
 
   // must be called from master process on global init
   static JobStats &get();

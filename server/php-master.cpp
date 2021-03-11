@@ -1608,17 +1608,22 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   const auto &job_workers_stats = job_workers::JobStats::get();
   add_histogram_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.occupied_shared_memory_slices_count", job_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.currently_memory_slices_used", job_workers_stats.currently_memory_slices_used.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
-  add_histogram_stat_long(stats, "job_workers.total_jobs_sent", job_workers_stats.total_jobs_sent.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_jobs_done", job_workers_stats.total_jobs_done.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_jobs_failed", job_workers_stats.total_jobs_failed.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.jobs_sent", job_workers_stats.jobs_sent.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.jobs_replied", job_workers_stats.jobs_replied.load(std::memory_order_relaxed));
 
-  add_histogram_stat_long(stats, "job_workers.total_errors_shared_memory_limit", job_workers_stats.total_errors_shared_memory_limit.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_server_write", job_workers_stats.total_errors_pipe_server_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_server_read", job_workers_stats.total_errors_pipe_server_read.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_client_write", job_workers_stats.total_errors_pipe_client_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.total_errors_pipe_client_read", job_workers_stats.total_errors_pipe_client_read.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.errors_pipe_server_write", job_workers_stats.errors_pipe_server_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.errors_pipe_server_read", job_workers_stats.errors_pipe_server_read.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.errors_pipe_client_write", job_workers_stats.errors_pipe_client_write.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.errors_pipe_client_read", job_workers_stats.errors_pipe_client_read.load(std::memory_order_relaxed));
+
+  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_another_is_running",
+                          job_workers_stats.job_worker_skip_job_due_another_is_running.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_overload",
+                          job_workers_stats.job_worker_skip_job_due_overload.load(std::memory_order_relaxed));
+  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_steal",
+                          job_workers_stats.job_worker_skip_job_due_steal.load(std::memory_order_relaxed));
 
   update_mem_stats();
   unsigned long long max_vms = 0;

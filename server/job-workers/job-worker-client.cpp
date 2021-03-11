@@ -40,7 +40,7 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
     JobResult job_result;
     status = job_worker_client.job_reader.read_job_result(job_result);
     if (status == PipeJobReader::READ_FAIL) {
-      JobStats::get().total_errors_pipe_client_read++;
+      JobStats::get().errors_pipe_client_read++;
       return -1;
     }
     if (status == PipeJobReader::READ_OK) {
@@ -94,12 +94,12 @@ int JobWorkerClient::send_job(SharedMemorySlice * const job_memory_ptr) {
 
   bool success = job_writer.write_job(Job{job_id, job_result_fd_idx, job_memory_ptr}, write_job_fd);
   if (!success) {
-    JobStats::get().total_errors_pipe_client_write++;
+    JobStats::get().errors_pipe_client_write++;
     return -1;
   }
 
   JobStats::get().job_queue_size++;
-  JobStats::get().total_jobs_sent++;
+  JobStats::get().jobs_sent++;
   return job_id;
 }
 

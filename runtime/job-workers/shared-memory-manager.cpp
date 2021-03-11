@@ -32,7 +32,7 @@ SharedMemorySlice *SharedMemoryManager::acquire_slice() noexcept {
     auto *slice = get_slice(i);
     pid_t prev_pid = 0;
     if (slice->owner_pid.compare_exchange_strong(prev_pid, pid)) {
-      JobStats::get().occupied_slices_count++;
+      JobStats::get().currently_memory_slices_used++;
       return slice;
     }
 
@@ -48,6 +48,7 @@ void SharedMemoryManager::release_slice(SharedMemorySlice *slice) noexcept {
   slice->resource.init(slice->resource.memory_begin(), slice->resource.get_memory_stats().memory_limit);
   const pid_t prev_pid = slice->owner_pid.exchange(0);
   php_assert(prev_pid);
+  JobStats::get().currently_memory_slices_used--;
 }
 
 } // namespace job_workers

@@ -26,7 +26,6 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   job_workers::SharedMemorySlice *memory_request = memory_manager.acquire_slice();
   if (memory_request == nullptr) {
     php_warning("Can't send job: not enough shared memory");
-    job_workers::JobStats::get().total_errors_shared_memory_limit++;
     return -1;
   }
 

@@ -292,7 +292,6 @@ void php_worker_run(php_worker *worker) {
               }
               break;
             case job_worker:
-              job_workers::JobStats::get().total_jobs_failed++;
               break;
             default:;
           }
