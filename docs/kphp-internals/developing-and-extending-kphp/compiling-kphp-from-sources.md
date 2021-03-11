@@ -83,7 +83,7 @@ Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of c
 git clone https://github.com/VKCOM/epoll-shim.git
 cd epoll-shim
 git checkout osx-platform
-echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile
+echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
 ```
 
 
