@@ -13,6 +13,10 @@
 #include "runtime/job-workers/client-functions.h"
 
 int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request) noexcept {
+  if (request.is_null()) {
+    php_warning("Can't send job: the request shouldn't be null");
+    return -1;
+  }
   if (!f$is_job_workers_enabled()) {
     php_warning("Can't send job: job workers disabled");
     return -1;
@@ -21,17 +25,22 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   job_workers::SharedMemorySlice *memory_request = memory_manager.acquire_slice();
   if (memory_request == nullptr) {
-    php_warning("Can't allocate slice for job: not enough shared memory");
+    php_warning("Can't send job: not enough shared memory");
     job_workers::SharedContext::get().total_errors_shared_memory_limit++;
     return -1;
   }
 
   memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource, ExtraRefCnt::for_job_worker_communication);
+  if (memory_request->instance.is_null()) {
+    memory_manager.release_slice(memory_request);
+    php_warning("Can't send job: too big request");
+    return -1;
+  }
 
   const int job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
   if (job_id <= 0) {
     memory_manager.release_slice(memory_request);
-    php_warning("Can't send job. Probably jobs queue is full");
+    php_warning("Can't send job: probably jobs queue is full");
     return -1;
   }
 
