@@ -21,11 +21,11 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         slot-ids-factory.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
+        job-stats.cpp
         job-worker-server.cpp
         job-worker-client.cpp
         job-workers-context.cpp
-        pipe-io.cpp
-        shared-context.cpp)
+        pipe-io.cpp)
 
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}

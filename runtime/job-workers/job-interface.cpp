@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/job-workers/shared-memory-manager.h"
@@ -16,7 +16,7 @@ bool f$is_job_workers_enabled() noexcept {
 
 void global_init_job_workers_lib() noexcept {
   if (f$is_job_workers_enabled()) {
-    job_workers::SharedContext::get();
+    job_workers::JobStats::get();
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
   }
 }

@@ -14,7 +14,7 @@
 
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 
@@ -127,11 +127,11 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     has_delayed_jobs = false;
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
-    SharedContext::get().total_errors_pipe_server_read++;
+    JobStats::get().total_errors_pipe_server_read++;
     return -1;
   }
 
-  SharedContext::get().job_queue_size--;
+  JobStats::get().job_queue_size--;
   running_job = job;
   reply_was_sent = false;
 

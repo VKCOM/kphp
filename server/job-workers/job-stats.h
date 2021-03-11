@@ -11,7 +11,7 @@
 
 namespace job_workers {
 
-class SharedContext : vk::not_copyable {
+class JobStats : vk::not_copyable {
 public:
   std::atomic<int> job_queue_size{0};
   std::atomic<int> occupied_slices_count{0};
@@ -25,13 +25,13 @@ public:
   std::atomic<size_t> total_errors_pipe_client_read{0};
   std::atomic<size_t> total_errors_shared_memory_limit{0};
 
-  static SharedContext &make();
-
   // must be called from master process on global init
-  static SharedContext &get();
+  static JobStats &get();
 
 private:
-  SharedContext() = default;
+  JobStats() = default;
+
+  static JobStats &make();
 };
 
 } // namespace job_workers

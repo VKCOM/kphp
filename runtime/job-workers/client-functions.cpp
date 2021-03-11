@@ -8,7 +8,7 @@
 #include "runtime/net_events.h"
 
 #include "server/job-workers/job-worker-client.h"
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 
 #include "runtime/job-workers/client-functions.h"
 
@@ -26,7 +26,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   job_workers::SharedMemorySlice *memory_request = memory_manager.acquire_slice();
   if (memory_request == nullptr) {
     php_warning("Can't send job: not enough shared memory");
-    job_workers::SharedContext::get().total_errors_shared_memory_limit++;
+    job_workers::JobStats::get().total_errors_shared_memory_limit++;
     return -1;
   }
 

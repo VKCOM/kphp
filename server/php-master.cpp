@@ -61,7 +61,7 @@
 
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 
 using job_workers::JobWorkersContext;
 
@@ -1606,7 +1606,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_histogram_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
-  const auto &job_workers_stats = job_workers::SharedContext::get();
+  const auto &job_workers_stats = job_workers::JobStats::get();
   add_histogram_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "job_workers.occupied_shared_memory_slices_count", job_workers_stats.occupied_slices_count.load(std::memory_order_relaxed));
   add_histogram_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
@@ -1972,7 +1972,7 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(job_workers, 3, "Job queue size = %d\n", job_workers::SharedContext::get().job_queue_size.load(std::memory_order_relaxed));
+    tvkprintf(job_workers, 3, "Job queue size = %d\n", job_workers::JobStats::get().job_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 

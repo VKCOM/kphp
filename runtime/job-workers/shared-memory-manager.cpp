@@ -4,7 +4,7 @@
 
 #include <sys/mman.h>
 
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 #include "server/php-engine-vars.h"
 
 #include "runtime/job-workers/shared-memory-manager.h"
@@ -32,7 +32,7 @@ SharedMemorySlice *SharedMemoryManager::acquire_slice() noexcept {
     auto *slice = get_slice(i);
     pid_t prev_pid = 0;
     if (slice->owner_pid.compare_exchange_strong(prev_pid, pid)) {
-      SharedContext::get().occupied_slices_count++;
+      JobStats::get().occupied_slices_count++;
       return slice;
     }
 

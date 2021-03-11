@@ -9,7 +9,7 @@
 #include "common/rpc-error-codes.h"
 #include "net/net-connections.h"
 #include "runtime/rpc.h"
-#include "server/job-workers/shared-context.h"
+#include "server/job-workers/job-stats.h"
 #include "server/php-engine.h"
 #include "server/php-lease.h"
 #include "server/php-mc-connections.h"
@@ -292,7 +292,7 @@ void php_worker_run(php_worker *worker) {
               }
               break;
             case job_worker:
-              job_workers::SharedContext::get().total_jobs_failed++;
+              job_workers::JobStats::get().total_jobs_failed++;
               break;
             default:;
           }
