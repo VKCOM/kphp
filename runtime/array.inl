@@ -629,6 +629,20 @@ bool array<T>::is_vector() const {
 }
 
 template<class T>
+bool array<T>::is_pseudo_vector() const {
+  if (p->string_size) {
+    return false;
+  }
+  int64_t n = 0;
+  for (auto element : *this) {
+    if (element.get_key().as_int() != n++) {
+      return false;
+    }
+  }
+  return n == count();
+}
+
+template<class T>
 bool array<T>::mutate_if_vector_shared(uint32_t mul) {
   return mutate_to_size_if_vector_shared(mul * int64_t{p->int_size});
 }

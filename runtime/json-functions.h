@@ -41,20 +41,11 @@ template<class T>
 bool JsonEncoder::encode(const array<T> &arr) const noexcept {
   bool is_vector = arr.is_vector();
   const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
-  if (!force_object && !is_vector && arr.size().string_size == 0) {
-    int n = 0;
-    for (auto p : arr) {
-      if (p.get_key().to_int() != n) {
-        break;
-      }
-      n++;
-    }
-    if (n == arr.count()) {
-      if (arr.get_next_key() == arr.count()) {
-        is_vector = true;
-      } else {
-        php_warning("Corner case in json conversion, [] could be easy transformed to {}");
-      }
+  if (!force_object && !is_vector && arr.is_pseudo_vector()) {
+    if (arr.get_next_key() == arr.count()) {
+      is_vector = true;
+    } else {
+      php_warning("Corner case in json conversion, [] could be easy transformed to {}");
     }
   }
   is_vector &= !force_object;
