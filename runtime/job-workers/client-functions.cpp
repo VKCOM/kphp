@@ -62,7 +62,7 @@ class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id, d
   wait_net(0);
 
   if (tmp_wait_timeout < 0) {
-    tmp_wait_timeout = MAX_TIMEOUT_MS;
+    tmp_wait_timeout = MAX_TIMEOUT;
   }
 
   const double start = get_precise_now();
