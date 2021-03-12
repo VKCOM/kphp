@@ -98,6 +98,9 @@ int64_t f$strcasecmp(const string &lhs, const string &rhs);
 
 int64_t f$strcmp(const string &lhs, const string &rhs);
 
+string f$strip_tags(const string &str, const array<Unknown> &allow);
+string f$strip_tags(const string &str, const mixed &allow);
+string f$strip_tags(const string &str, const array<string> &allow_list);
 string f$strip_tags(const string &str, const string &allow = string());
 
 Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset = 0);
@@ -213,7 +216,7 @@ Optional<string> f$substr(const string &str, int64_t start, int64_t length = std
 
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max());
 
-Optional<string> f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
+string f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
 
 Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), bool case_insensitivity = false);
 

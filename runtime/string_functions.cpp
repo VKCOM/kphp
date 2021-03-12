@@ -1269,7 +1269,9 @@ static bool php_tag_find(const string &tag, const string &allow) {
         break;
       default:
         if (!isspace(c)) {
-          if (c != '/' || state == 1) {
+          // since PHP5.3.4, self-closing tags are interpreted as normal tags,
+          // so normalized <br/> = <br>; note that tags from $allow are not normalized
+          if (c != '/') {
             norm.push_back(c);
           }
           if (state == 0) {
@@ -1477,6 +1479,40 @@ string f$strip_tags(const string &str, const string &allow) {
   }
 
   return static_SB.str();
+}
+
+template <class T>
+string strip_tags_string(const array<T> &list) {
+  string allow_str;
+  if (!list.empty()) {
+    allow_str.reserve_at_least(list.count() * strlen("<br>"));
+    for (const auto &it : list) {
+      const auto &s = it.get_value();
+      if (!s.empty()) {
+        allow_str.push_back('<');
+        allow_str.append(f$strval(s));
+        allow_str.push_back('>');
+      }
+    }
+  }
+  return allow_str;
+}
+
+string f$strip_tags(const string &str, const array<Unknown> &allow_list) {
+  php_assert(allow_list.empty());
+  return f$strip_tags(str, string());
+}
+
+string f$strip_tags(const string &str, const array<string> &allow_list) {
+  return f$strip_tags(str, strip_tags_string(allow_list));
+}
+
+string f$strip_tags(const string &str, const mixed &allow) {
+  if (!allow.is_array()) {
+    return f$strip_tags(str, allow.to_string());
+  }
+  auto allow_list = allow.to_array();
+  return f$strip_tags(str, strip_tags_string(allow_list));
 }
 
 Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle) {
@@ -2170,34 +2206,21 @@ int64_t f$substr_count(const string &haystack, const string &needle, int64_t off
   } while (true);
 }
 
-Optional<string> f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length) {
+string f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length) {
   int64_t str_len = str.size();
 
-  if (length < 0 && -length > str_len) {
-    php_warning("bad length argument in substr function call");
-    return false;
-  }
-
-  if (length > str_len) {
-    length = str_len;
-  }
-
-  if (start >= str_len) {
-    php_warning("start is after string end in substr function call");
-    return false;
-  }
-
-  if (length < 0 && length < start - str_len) {
-    php_warning("start is in part removed by length argument in substr function call");
-    return false;
-  }
+  // if $start is negative, count $start from the end of the string
   if (start < 0) {
     start = str_len + start;
     if (start < 0) {
-      php_warning("start is too low in substr function call");
       start = 0;
     }
+  } else if (start > str_len) {
+    start = str_len;
   }
+
+  // if $length is negative, set it to the length needed
+  // needed to stop that many chars from the end of the string
   if (length < 0) {
     length = (str_len - start) + length;
     if (length < 0) {
@@ -2205,7 +2228,10 @@ Optional<string> f$substr_replace(const string &str, const string &replacement, 
     }
   }
 
-  if (length > str_len - start) {
+  if (length > str_len) {
+    length = str_len;
+  }
+  if ((start + length) > str_len) {
     length = str_len - start;
   }
 

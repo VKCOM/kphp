@@ -612,7 +612,7 @@ function ord ($c ::: string) ::: int;
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
 function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function stripslashes ($str ::: string) ::: string;
-function strip_tags ($str ::: string, $allow ::: string = "") ::: string;
+function strip_tags ($str ::: string, $allow ::: string|string[] = "") ::: string;
 function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
 function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
@@ -663,7 +663,7 @@ function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
 function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string | false;
 function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = INT_MAX) ::: int;
-function substr_replace ($str ::: string, $replacement ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string | false;
+function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = INT_MAX) ::: string;
 function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
 
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
