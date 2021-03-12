@@ -73,7 +73,7 @@ class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id, d
     if (left_time <= 0) {
       break;
     }
-    wait_net(timeout_convert_to_ms(left_time));
+    wait_net(1);
   }
 
   class_instance<C$KphpJobWorkerResponse> response;
