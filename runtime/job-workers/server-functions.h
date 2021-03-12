@@ -10,5 +10,5 @@
 void init_job_server_interface_lib(job_workers::SharedMemorySlice *request_memory, const char *(*send_reply) (job_workers::SharedMemorySlice *)) noexcept;
 void free_job_server_interface_lib() noexcept;
 
-class_instance<C$KphpJobWorkerRequest> f$job_worker_fetch_request() noexcept;
-void f$job_worker_store_response(const class_instance<C$KphpJobWorkerReply> &response) noexcept;
+class_instance<C$KphpJobWorkerRequest> f$kphp_job_worker_fetch_request() noexcept;
+void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse> &response) noexcept;

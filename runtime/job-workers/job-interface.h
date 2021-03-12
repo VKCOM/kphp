@@ -41,11 +41,11 @@ struct C$KphpJobWorkerRequest : job_workers::SendingInstanceBase {
   C$KphpJobWorkerRequest *virtual_builtin_clone() const noexcept override = 0;
 };
 
-struct C$KphpJobWorkerReply : job_workers::SendingInstanceBase {
-  C$KphpJobWorkerReply *virtual_builtin_clone() const noexcept override = 0;
+struct C$KphpJobWorkerResponse : job_workers::SendingInstanceBase {
+  C$KphpJobWorkerResponse *virtual_builtin_clone() const noexcept override = 0;
 };
 
-bool f$is_job_workers_enabled() noexcept;
+bool f$is_kphp_job_workers_enabled() noexcept;
 
 void global_init_job_workers_lib() noexcept;
 

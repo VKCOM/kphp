@@ -41,9 +41,9 @@ void check_class_immutableness(ClassPtr klass) {
 
 void process_job_worker_class(ClassPtr klass) {
   auto request_interface = G->get_class("KphpJobWorkerRequest");
-  auto reply_interface = G->get_class("KphpJobWorkerReply");
+  auto response_interface = G->get_class("KphpJobWorkerResponse");
   if ((request_interface && request_interface->is_parent_of(klass)) ||
-      (reply_interface && reply_interface->is_parent_of(klass))) {
+      (response_interface && response_interface->is_parent_of(klass))) {
     klass->deeply_require_instance_cache_visitor();
     klass->deeply_require_virtual_builtin_functions();
   }

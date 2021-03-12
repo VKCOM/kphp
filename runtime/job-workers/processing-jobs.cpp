@@ -11,7 +11,7 @@ namespace job_workers {
 
 void ProcessingJobs::finish_job_processing(int job_slot_id, SharedMemorySlice *reply_slice) noexcept {
   php_assert(reply_slice);
-  auto reply = reply_slice->instance.cast_to<C$KphpJobWorkerReply>();
+  auto reply = reply_slice->instance.cast_to<C$KphpJobWorkerResponse>();
   php_assert(!reply.is_null());
 
   // TODO Check if reply is null => OOM
@@ -27,8 +27,8 @@ bool ProcessingJobs::is_ready(int job_slot_id) const noexcept {
   return job_result && job_result->ready;
 }
 
-class_instance<C$KphpJobWorkerReply> ProcessingJobs::withdraw(int job_slot_id) noexcept {
-  class_instance<C$KphpJobWorkerReply> result = std::move(processing_[job_slot_id].reply);
+class_instance<C$KphpJobWorkerResponse> ProcessingJobs::withdraw(int job_slot_id) noexcept {
+  class_instance<C$KphpJobWorkerResponse> result = std::move(processing_[job_slot_id].reply);
   processing_.unset(job_slot_id);
   return result;
 }

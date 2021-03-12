@@ -10,12 +10,12 @@
 
 #include "runtime/job-workers/job-interface.h"
 
-bool f$is_job_workers_enabled() noexcept {
+bool f$is_kphp_job_workers_enabled() noexcept {
   return vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num > 0;
 }
 
 void global_init_job_workers_lib() noexcept {
-  if (f$is_job_workers_enabled()) {
+  if (f$is_kphp_job_workers_enabled()) {
     job_workers::JobStats::get();
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
   }

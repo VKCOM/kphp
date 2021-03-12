@@ -27,7 +27,7 @@ public:
 
   void finish_job_processing(int job_slot_id, SharedMemorySlice *reply_slice) noexcept;
   bool is_ready(int job_slot_id) const noexcept;
-  class_instance<C$KphpJobWorkerReply> withdraw(int job_slot_id) noexcept;
+  class_instance<C$KphpJobWorkerResponse> withdraw(int job_slot_id) noexcept;
 
   void reset() noexcept {
     hard_reset_var(processing_);
@@ -39,7 +39,7 @@ private:
   friend class vk::singleton<ProcessingJobs>;
 
   struct ProcessingJobAwait {
-    class_instance<C$KphpJobWorkerReply> reply;
+    class_instance<C$KphpJobWorkerResponse> reply;
     bool ready{false};
   };
   array<ProcessingJobAwait> processing_;

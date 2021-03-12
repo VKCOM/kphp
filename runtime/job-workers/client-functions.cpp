@@ -17,7 +17,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
     php_warning("Can't send job: the request shouldn't be null");
     return -1;
   }
-  if (!f$is_job_workers_enabled()) {
+  if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't send job: job workers disabled");
     return -1;
   }
@@ -47,8 +47,8 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   return job_id;
 }
 
-class_instance<C$KphpJobWorkerReply> f$kphp_job_worker_wait(int64_t job_id) noexcept {
-  if (!f$is_job_workers_enabled()) {
+class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id) noexcept {
+  if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't wait job: job workers disabled");
     return {};
   }
@@ -67,7 +67,7 @@ class_instance<C$KphpJobWorkerReply> f$kphp_job_worker_wait(int64_t job_id) noex
 }
 
 void free_job_client_interface_lib() noexcept {
-  if (f$is_job_workers_enabled()) {
+  if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::ProcessingJobs>::get().reset();
   }
 }

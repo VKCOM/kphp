@@ -28,8 +28,8 @@ void free_job_server_interface_lib() noexcept {
   current_job.send_reply = nullptr;
 }
 
-class_instance<C$KphpJobWorkerRequest> f$job_worker_fetch_request() noexcept {
-  if (!f$is_job_workers_enabled()) {
+class_instance<C$KphpJobWorkerRequest> f$kphp_job_worker_fetch_request() noexcept {
+  if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't fetch job: job workers disabled");
     return {};
   }
@@ -42,12 +42,12 @@ class_instance<C$KphpJobWorkerRequest> f$job_worker_fetch_request() noexcept {
   return result;
 }
 
-void f$job_worker_store_response(const class_instance<C$KphpJobWorkerReply> &response) noexcept {
+void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse> &response) noexcept {
   if (response.is_null()) {
     php_warning("Can't store job response: the response shouldn't be null");
     return;
   }
-  if (!f$is_job_workers_enabled()) {
+  if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't store job response: job workers disabled");
     return;
   }
