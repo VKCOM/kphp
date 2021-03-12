@@ -47,7 +47,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   return job_id;
 }
 
-class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id) noexcept {
+class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id, double tmp_wait_timeout) noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't wait job: job workers disabled");
     return {};
@@ -57,10 +57,29 @@ class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_id) n
     php_warning("Job with id %" PRIi64 " doesn't exist", job_id);
     return {};
   }
-  while (!processing_jobs.is_ready(job_id)) {
-    wait_net(0);
+
+  update_precise_now();
+  wait_net(0);
+
+  if (tmp_wait_timeout < 0) {
+    tmp_wait_timeout = MAX_TIMEOUT_MS;
   }
-  auto response = processing_jobs.withdraw(job_id);
+
+  const double start = get_precise_now();
+  while (!processing_jobs.is_ready(job_id)) {
+    update_precise_now();
+    const double waiting_time = get_precise_now() - start;
+    const double left_time = tmp_wait_timeout - waiting_time;
+    if (left_time <= 0) {
+      break;
+    }
+    wait_net(timeout_convert_to_ms(left_time));
+  }
+
+  class_instance<C$KphpJobWorkerResponse> response;
+  if (processing_jobs.is_ready(job_id)) {
+    response = processing_jobs.withdraw(job_id);
+  }
   // TODO check response for OOM?
   php_assert(response.is_null() || response.get_reference_counter() == 1);
   return response;

@@ -1347,7 +1347,7 @@ interface KphpJobWorkerRequest {}
 interface KphpJobWorkerResponse {}
 
 function kphp_job_worker_start(KphpJobWorkerRequest $request) ::: int;
-function kphp_job_worker_wait(int $job_id) ::: KphpJobWorkerResponse;
+function kphp_job_worker_wait(int $job_id, float $tmp_wait_timeout = -1) ::: KphpJobWorkerResponse;
 
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
 function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
