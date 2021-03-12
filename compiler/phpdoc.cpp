@@ -55,6 +55,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-serialized-float32",   kphp_serialized_float32},
   {"@kphp-profile",              kphp_profile},
   {"@kphp-profile-allow-inline", kphp_profile_allow_inline},
+  {"@kphp-strict-types-enable",  kphp_strict_types_enable},
 };
 
 vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
