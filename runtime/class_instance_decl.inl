@@ -81,10 +81,32 @@ public:
   bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
   void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
-  constexpr static size_t estimate_memory_usage() {
-    static_assert(!std::is_polymorphic<T>{}, "forbidden for polymorphic");
+  template<class S = T>
+  std::enable_if_t<!std::is_polymorphic<S>{}, size_t> estimate_memory_usage() const noexcept {
     static_assert(!std::is_empty<T>{}, "class T may not be empty");
     return sizeof(T);
+  }
+
+  template<class S = T>
+  std::enable_if_t<std::is_polymorphic<S>{}, size_t> estimate_memory_usage() const noexcept {
+    // TODO this is used only for job workers. Should we use this logic for other?
+    return o->virtual_builtin_sizeof();
+  }
+
+  template<class S = T>
+  std::enable_if_t<!std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone() const noexcept {
+    return clone();
+  }
+
+  template<class S = T>
+  std::enable_if_t<std::is_polymorphic<S>{}, class_instance> virtual_builtin_clone() const noexcept {
+    // TODO this is used only for job workers. Should we use this logic for other?
+    class_instance res;
+    if (o) {
+      res.o = vk::intrusive_ptr<T>{o->virtual_builtin_clone()};
+      res.o->set_refcnt(1);
+    }
+    return res;
   }
 
   inline T *operator->() __attribute__ ((always_inline));

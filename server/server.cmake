@@ -16,17 +16,16 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-runner.cpp
         php-script.cpp
         php-sql-connections.cpp
+        php-worker.cpp
         php-worker-stats.cpp
         slot-ids-factory.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
+        job-stats.cpp
         job-worker-server.cpp
         job-worker-client.cpp
         job-workers-context.cpp
-        pipe-io.cpp
-        pending-jobs.cpp
-        shared-context.cpp
-        shared-memory-manager.cpp)
+        pipe-io.cpp)
 
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}

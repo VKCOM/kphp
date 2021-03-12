@@ -8,14 +8,16 @@
 
 namespace job_workers {
 
+struct SharedMemorySlice;
+
 struct Job {
   int job_id{};
   int job_result_fd_idx{};
-  void *job_memory_ptr{};
+  SharedMemorySlice *job_memory_ptr{};
 
   Job() = default;
 
-  Job(int job_id, int job_result_fd_idx, void *job_memory_ptr)
+  Job(int job_id, int job_result_fd_idx, SharedMemorySlice *job_memory_ptr)
     : job_id(job_id)
     , job_result_fd_idx(job_result_fd_idx)
     , job_memory_ptr(job_memory_ptr) {}
@@ -26,11 +28,11 @@ static_assert(PIPE_BUF % sizeof(Job) == 0, "Size of job must be multiple of PIPE
 struct JobResult {
   int padding{};
   int job_id{};
-  void *job_result_memory_ptr{};
+  SharedMemorySlice *job_result_memory_ptr{};
 
   JobResult() = default;
 
-  JobResult(int padding, int job_id, void *job_result_memory_ptr)
+  JobResult(int padding, int job_id, SharedMemorySlice *job_result_memory_ptr)
     : padding(padding)
     , job_id(job_id)
     , job_result_memory_ptr(job_result_memory_ptr) {}

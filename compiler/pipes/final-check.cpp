@@ -39,6 +39,16 @@ void check_class_immutableness(ClassPtr klass) {
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
 }
 
+void process_job_worker_class(ClassPtr klass) {
+  auto request_interface = G->get_class("KphpJobWorkerRequest");
+  auto response_interface = G->get_class("KphpJobWorkerResponse");
+  if ((request_interface && request_interface->is_parent_of(klass)) ||
+      (response_interface && response_interface->is_parent_of(klass))) {
+    klass->deeply_require_instance_cache_visitor();
+    klass->deeply_require_virtual_builtin_functions();
+  }
+};
+
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
@@ -218,6 +228,7 @@ void FinalCheckPass::on_start() {
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);
+    process_job_worker_class(current_function->class_id);
   }
 
   if (current_function->modifiers.is_instance() && current_function->local_name() == ClassData::NAME_OF_CLONE) {

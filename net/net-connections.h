@@ -260,6 +260,8 @@ int server_reader(struct connection *c);
 int server_writer(struct connection *c);
 int server_noop(struct connection *c);
 int server_failed(struct connection *c);
+int server_failed(struct connection *c, int who);
+
 int server_close_connection(struct connection *c, int who);
 int client_close_connection(struct connection *c, int who);
 int free_connection_buffers(struct connection *c);

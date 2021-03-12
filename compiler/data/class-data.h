@@ -67,6 +67,7 @@ public:
   std::atomic<bool> need_instance_to_array_visitor{false};
   std::atomic<bool> need_instance_cache_visitors{false};
   std::atomic<bool> need_instance_memory_estimate_visitor{false};
+  std::atomic<bool> need_virtual_builtin_functions{false};
 
   ClassModifiers modifiers;
   ClassMembersContainer members;
@@ -174,6 +175,7 @@ public:
   void deeply_require_instance_to_array_visitor();
   void deeply_require_instance_cache_visitor();
   void deeply_require_instance_memory_estimate_visitor();
+  void deeply_require_virtual_builtin_functions();
 
   void add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name);
   const std::vector<StrDependence> &get_str_dependents() const {

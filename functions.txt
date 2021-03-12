@@ -1343,6 +1343,13 @@ final class UberH3 {
 
 /** Job workers interface **/
 
-function async_x2(int[] $arr) ::: int;
-function await_x2(int $job_id) ::: int[];
-function is_job_workers_enabled() ::: bool;
+interface KphpJobWorkerRequest {}
+interface KphpJobWorkerResponse {}
+
+function kphp_job_worker_start(KphpJobWorkerRequest $request) ::: int;
+function kphp_job_worker_wait(int $job_id, float $tmp_wait_timeout = -1) ::: KphpJobWorkerResponse;
+
+function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
+function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
+
+function is_kphp_job_workers_enabled() ::: bool;

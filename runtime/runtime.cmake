@@ -7,8 +7,16 @@ prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
         monotonic_buffer_resource.cpp
         unsynchronized_pool_resource.cpp)
 
+prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
+        client-functions.cpp
+        job-interface.cpp
+        processing-jobs.cpp
+        server-functions.cpp
+        shared-memory-manager.cpp)
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
+        ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
@@ -48,7 +56,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
-        job-workers-interface.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp

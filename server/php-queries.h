@@ -11,6 +11,10 @@
 
 extern SlotIdsFactory parallel_job_ids_factory;
 
+namespace job_workers {
+struct SharedMemorySlice;
+} // namespace job_workers
+
 enum class net_event_type_t {
   rpc_answer,
   rpc_error,
@@ -34,7 +38,7 @@ struct net_event_t {
       const char *error_message;
     };
     struct { // job_worker_answer
-      void *job_result_script_memory_ptr;
+      job_workers::SharedMemorySlice *job_result_memory_slice_ptr;
     };
   };
 };
@@ -339,7 +343,7 @@ void free_net_query(net_query_t *query);
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 
-int create_job_worker_answer_event(slot_id_t job_id, void *job_result_memory_ptr);
+int create_job_worker_answer_event(slot_id_t job_id, job_workers::SharedMemorySlice *job_result_memory_ptr);
 
 int net_events_empty();
 
@@ -365,6 +369,8 @@ int http_load_long_query(char *buf, int min_len, int max_len);
 void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code);
 void rpc_answer(const char *res, int res_len);
 void rpc_set_result(const char *body, int body_len, int exit_code);
+void job_set_result(int exit_code);
+
 void script_error();
 void finish_script(int exit_code);
 int rpc_connect_to(const char *host_name, int port);

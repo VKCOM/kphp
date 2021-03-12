@@ -29,7 +29,7 @@ public:
 
   void init(int job_result_slot);
 
-  int send_job(void *job_memory_ptr);
+  int send_job(SharedMemorySlice *job_memory_ptr);
 
 private:
   JobWorkerClient() = default;
