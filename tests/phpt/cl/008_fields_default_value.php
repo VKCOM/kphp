@@ -1,4 +1,4 @@
-@ok
+@ok php7_4
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -11,12 +11,9 @@ function test_empty_string_default_value() {
   class EmptyStringDefault {
     const EMPTY = "";
 
-    /** @var string */
-    public $empty_str1 = "";
-    /** @var string */
-    public $empty_str2 = EmptyStringDefault::EMPTY;
-    /** @var string */
-    public $empty_str3;
+    public string $empty_str1 = "";
+    public string $empty_str2 = EmptyStringDefault::EMPTY;
+    public string $empty_str3;
 
     public function __construct() {
       $this->empty_str3 = "";
@@ -37,17 +34,19 @@ function test_optional_string_default_value() {
     /** @var string|false */
     public $str_or_false3 = OptionalStringDefault::EMPTY;
 
-    /** @var string|null */
-    public $str_or_null1 = null;
-    /** @var string|null */
-    public $str_or_null2 = "";
-    /** @var string|null */
-    public $str_or_null3 = OptionalStringDefault::EMPTY;
-    /** @var string|null */
-    public $str_or_null4;
+    public ?string $str_or_null1 = null;
+    public ?string $str_or_null2 = "";
+    public ?string $str_or_null3 = OptionalStringDefault::EMPTY;
+    public ?string $str_or_null4;
   }
 
-  var_dump(instance_to_array(new OptionalStringDefault));
+  $o = new OptionalStringDefault;
+  // since php 7.4 (with class fields), not uninialized fields are not dumped with (array)$obj
+  // that's why (array)$o won't output $str_or_null4 if not set, which will diff with kphp
+  #ifndef KPHP
+  $o->str_or_null4 = null;
+  #endif
+  var_dump(instance_to_array($o));
 }
 
 function test_empty_array_default_value() {

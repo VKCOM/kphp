@@ -384,14 +384,14 @@ public:
     // if there is @var / type hint near class field — save it; otherwise, convert the field default value to a type hint
     // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
     klass->members.for_each([&](ClassMemberInstanceField &f) {
-      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
       }
     });
     klass->members.for_each([&](ClassMemberStaticField &f) {
-      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.var, klass);
+      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
@@ -410,8 +410,9 @@ public:
 private:
   // calculate type_hint for a field using all rules
   // returns TypeHint or nullptr
-  static const TypeHint *calculate_field_type_hint(vk::string_view phpdoc_str, VarPtr var, ClassPtr klass) {
+  static const TypeHint *calculate_field_type_hint(vk::string_view phpdoc_str, const TypeHint *php_type_hint, VarPtr var, ClassPtr klass) {
     // if there is a /** @var int|false */ comment above the class field declaration
+    // moreover, it overrides php_type_hint: /** @var int[] */ public array $a; — int[] is used instead of array
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
       if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->get_human_readable_name()))) {
@@ -419,7 +420,12 @@ private:
       }
     }
 
-    // if there is no /** @var ... */ but class typing is mandatory, use the field initializer expression to express field type
+    // fields that have a type_hint in php (private ?A $field) have it already parsed in gentree
+    if (php_type_hint) {
+      return php_type_hint;
+    }
+
+    // if there is no /** @var ... */ and no php type hint, but class typing is mandatory, use the field initializer
     // public $a = 0; - $a is int
     // public $a = []; - $a is any[]
     if (!G->settings().require_class_typing.get()) {
@@ -432,7 +438,7 @@ private:
     }
 
     kphp_error(klass->is_lambda(),
-               fmt_format("Specify @var or default value to {}", var->get_human_readable_name()));
+               fmt_format("Specify @var or type hint or default value to {}", var->get_human_readable_name()));
     return nullptr;
   }
 

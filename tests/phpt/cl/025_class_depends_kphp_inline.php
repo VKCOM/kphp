@@ -1,9 +1,9 @@
-@ok
+@ok php7_4
 <?php
 
 class A {
   /** @var A[] */
-  private static $b = [];
+  private static array $b = [];
 
   public function __construct() {}
 

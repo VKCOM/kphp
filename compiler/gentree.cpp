@@ -1403,19 +1403,19 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
     modifiers.set_public();
   }
 
-  const TokenType cur_tok = cur == end ? tok_end : cur->type();
-
-  if (cur_tok == tok_function) {
+  if (test_expect(tok_function)) {
     return get_function(tok_function, phpdoc_str, modifiers);
   }
 
-  if (cur_tok == tok_var_name) {
+  const TypeHint *type_hint = get_typehint();
+
+  if (test_expect(tok_var_name)) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
     kphp_error(!modifiers.is_final() && !modifiers.is_abstract(), "Class fields can not be declared final/abstract");
     if (modifiers.is_static()) {
-      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()});
+      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
     }
-    get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()});
+    get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
     return {};
   }
 
@@ -1860,7 +1860,7 @@ void GenTree::parse_declare_at_top_of_file() {
   expect(tok_semicolon, ";");
 }
 
-VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers) {
+VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint) {
   cur--;      // it was a $field_name; we do it before the get_multi_call() as it does next_cur() by itself
   VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
   CE (check_statement_end());
@@ -1870,13 +1870,13 @@ VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_st
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexPtr{}, modifiers, phpdoc_str);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexPtr{}, modifiers, phpdoc_str, type_hint);
         break;
       }
       case op_set: {
         auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), modifiers, phpdoc_str);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), modifiers, phpdoc_str, type_hint);
         break;
       }
       default:
@@ -2117,7 +2117,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_var: {
       next_cur();
-      get_instance_var_list(phpdoc_str, FieldModifiers{}.set_public());
+      get_instance_var_list(phpdoc_str, FieldModifiers{}.set_public(), get_typehint());
       CE (check_statement_end());
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
@@ -2178,7 +2178,7 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
   return VertexAdaptor<op_define>::create(name, v).set_location(location);
 }
 
-void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers) {
+void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint) {
   kphp_error(cur_class, "var declaration is outside of class");
 
   vk::string_view var_name = cur->str_val;
@@ -2195,11 +2195,11 @@ void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers m
   auto var = VertexAdaptor<op_var>::create().set_location(auto_location());
   var->str_val = static_cast<string>(var_name);
 
-  cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc_str);
+  cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc_str, type_hint);
 
   if (test_expect(tok_comma)) {
     next_cur();
-    get_instance_var_list(phpdoc_str, modifiers);
+    get_instance_var_list(phpdoc_str, modifiers, type_hint);
   }
 }
 

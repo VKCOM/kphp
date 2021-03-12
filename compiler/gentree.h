@@ -85,7 +85,7 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement(vk::string_view phpdoc_str = vk::string_view{});
   VertexAdaptor<op_catch> get_catch();
-  void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
+  void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint);
   void get_traits_uses();
   void get_use();
   void get_seq(std::vector<VertexPtr> &seq_next);
@@ -155,7 +155,7 @@ private:
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers);
+  VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint);
   VertexAdaptor<op_var> get_function_use_var_name_ref();
   VertexPtr get_foreach_value();
   std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> get_foreach_param();

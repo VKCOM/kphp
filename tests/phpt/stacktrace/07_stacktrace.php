@@ -1,11 +1,10 @@
-@kphp_should_fail
+@kphp_should_fail php7_4
 /assign int to A::\$name/
 /but it's declared as @var string/
 <?php
 
 class A {
-  /** @var string */
-  public $name = 0;
+  public string $name = 0;
 }
 
 new A;

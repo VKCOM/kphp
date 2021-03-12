@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_REQUIRE_CLASS_TYPING=1
-/Specify @var or default value to A::\$a/
+/Specify @var or type hint or default value to A::\$a/
 <?php
 
 // when class typing required, use @var or default value

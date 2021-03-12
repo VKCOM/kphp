@@ -1,4 +1,4 @@
-@ok
+@ok php7_4
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -21,8 +21,7 @@ class A {
 
 class B {
     public $s_b = "asdf";
-    /** @var A */
-    public $a_b;
+    public A $a_b;
     /** @var A[]|false */
     public $arr_a_b = false;
     public function __construct() { 
