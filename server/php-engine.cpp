@@ -43,6 +43,7 @@
 #include "net/net-crypto-aes.h"
 #include "net/net-dc.h"
 #include "net/net-http-server.h"
+#include "net/net-ifnet.h"
 #include "net/net-memcache-client.h"
 #include "net/net-memcache-server.h"
 #include "net/net-mysql-client.h"
@@ -1478,11 +1479,17 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
 }
 
 static bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid) {
+  if (tasks_invoker_pid.ip == 0) {
+    tasks_invoker_pid.ip = LOCALHOST;
+  }
   process_id_t lease_pid = get_lease_pid();
   return matches_pid(&tasks_invoker_pid, &lease_pid) != no_pid_match;
 }
 
 static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
+  if (tasks_manager_pid.ip == 0) {
+    tasks_manager_pid.ip = LOCALHOST;
+  }
   process_id_t rpc_main_target_pid = get_rpc_main_target_pid();
   return matches_pid(&tasks_manager_pid, &rpc_main_target_pid) != no_pid_match;
 }
@@ -1531,6 +1538,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       do_rpc_stop_lease();
       break;
     }
+    case TL_KPHP_START_LEASE_V2:
     case TL_KPHP_START_LEASE: {
       // rpc-proxy response with task PID
       if (!check_tasks_manager_pid(remote_pid) || in_sigterm) {
@@ -1544,8 +1552,15 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       static_assert(sizeof(process_id_t) == 12, "");
 
-      if (len < sizeof(process_id_t) + sizeof(int)) {
+      size_t expected_min_size = (op == TL_KPHP_START_LEASE_V2 ? sizeof(int) + sizeof(process_id_t) + sizeof(int) : sizeof(process_id_t) + sizeof(int));
+      if (len < expected_min_size) {
         return 0;
+      }
+
+      int fields_mask = 0;
+
+      if (op == TL_KPHP_START_LEASE_V2) {
+        fields_mask = tl_fetch_int();
       }
 
       union {
@@ -1557,8 +1572,14 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       int timeout = tl_fetch_int();
 
+      int actor_id = -1;
+
+      if (fields_mask & vk::tl::kphp::start_lease_v2_fields_mask::actor_id) {
+        actor_id = tl_fetch_int();
+      }
+
       // get tasks target by the PID and send kphp.readyV2 to the target (in other words, do a task request)
-      do_rpc_start_lease(xpid, precise_now + timeout);
+      do_rpc_start_lease(xpid, precise_now + timeout, actor_id);
       return 0;
     }
     case TL_RPC_INVOKE_REQ: {

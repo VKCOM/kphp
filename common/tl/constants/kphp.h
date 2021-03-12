@@ -10,6 +10,7 @@
 #define                                                   TL_KPHP_READY 0x6a34cac7U
 #define                                                TL_KPHP_READY_V2 0xfbdb5d27U
 #define                                             TL_KPHP_START_LEASE 0x61344739U
+#define                                          TL_KPHP_START_LEASE_V2 0x896e46e9U
 #define                                              TL_KPHP_STOP_LEASE 0x183bf49dU
 #define                                              TL_KPHP_STOP_READY 0x59d86654U
 
@@ -30,6 +31,11 @@ namespace ready_v2_fields_mask {
 constexpr static uint32_t                                         is_staging = 1U << 0U;
 constexpr static uint32_t                                        worker_mode = 1U << 1U;
 } // namespace ready_v2_fields_mask
+
+namespace start_lease_v2_fields_mask {
+constexpr static uint32_t                                           actor_id = 1U << 0U;
+constexpr static uint32_t                                                ALL = 0x00000001;
+} // namespace start_lease_v2_fields_mask
 
 } // namespace kphp
 } // namespace tl
