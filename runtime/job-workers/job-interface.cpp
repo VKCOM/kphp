@@ -21,6 +21,6 @@ void global_init_job_workers_lib() noexcept {
   }
 }
 
-void process_job_worker_answer_event(int ready_job_id, job_workers::SharedMemorySlice *job_result_script_memory_ptr) noexcept {
-  vk::singleton<job_workers::ProcessingJobs>::get().finish_job_processing(ready_job_id, job_result_script_memory_ptr);
+void process_job_worker_answer_event(int ready_job_id, job_workers::SharedMemorySlice *job_result_memory_slice_ptr) noexcept {
+  vk::singleton<job_workers::ProcessingJobs>::get().finish_job_processing(ready_job_id, job_result_memory_slice_ptr);
 }

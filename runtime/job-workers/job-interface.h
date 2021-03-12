@@ -49,4 +49,4 @@ bool f$is_kphp_job_workers_enabled() noexcept;
 
 void global_init_job_workers_lib() noexcept;
 
-void process_job_worker_answer_event(int ready_job_id, job_workers::SharedMemorySlice *job_result_script_memory_ptr) noexcept;
+void process_job_worker_answer_event(int ready_job_id, job_workers::SharedMemorySlice *job_result_memory_slice_ptr) noexcept;

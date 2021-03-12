@@ -38,7 +38,7 @@ struct net_event_t {
       const char *error_message;
     };
     struct { // job_worker_answer
-      job_workers::SharedMemorySlice *job_result_script_memory_ptr;
+      job_workers::SharedMemorySlice *job_result_memory_slice_ptr;
     };
   };
 };

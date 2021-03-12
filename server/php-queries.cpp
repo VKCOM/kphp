@@ -857,7 +857,7 @@ int create_job_worker_answer_event(slot_id_t job_id, job_workers::SharedMemorySl
   if (status <= 0) {
     return status;
   }
-  event->job_result_script_memory_ptr = job_result_memory_ptr;
+  event->job_result_memory_slice_ptr = job_result_memory_ptr;
   return 1;
 }
 
