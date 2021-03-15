@@ -1535,63 +1535,63 @@ private:
 
 STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
-    add_histogram_stat_long(stats, "kphp_version", atoll(engine_tag));
+    add_gauge_stat_long(stats, "kphp_version", atoll(engine_tag));
   }
 
-  add_histogram_stat_long(stats, "uptime", get_uptime());
+  add_gauge_stat_long(stats, "uptime", get_uptime());
 
   const auto worker_stats = WorkerStats::collect();
-  add_histogram_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
-  add_histogram_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
-  add_histogram_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
-  add_histogram_stat_long(stats, "workers.current.ready_for_accept", worker_stats.ready_for_accept_workers_n);
+  add_gauge_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
+  add_gauge_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
+  add_gauge_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
+  add_gauge_stat_long(stats, "workers.current.ready_for_accept", worker_stats.ready_for_accept_workers_n);
 
-  add_histogram_stat_long(stats, "workers.total.started", tot_workers_started);
-  add_histogram_stat_long(stats, "workers.total.dead", tot_workers_dead);
-  add_histogram_stat_long(stats, "workers.total.strange_dead", tot_workers_strange_dead);
-  add_histogram_stat_long(stats, "workers.total.killed", workers_killed);
-  add_histogram_stat_long(stats, "workers.total.hung", workers_hung);
-  add_histogram_stat_long(stats, "workers.total.terminated", workers_terminated);
-  add_histogram_stat_long(stats, "workers.total.failed", workers_failed);
+  add_gauge_stat_long(stats, "workers.total.started", tot_workers_started);
+  add_gauge_stat_long(stats, "workers.total.dead", tot_workers_dead);
+  add_gauge_stat_long(stats, "workers.total.strange_dead", tot_workers_strange_dead);
+  add_gauge_stat_long(stats, "workers.total.killed", workers_killed);
+  add_gauge_stat_long(stats, "workers.total.hung", workers_hung);
+  add_gauge_stat_long(stats, "workers.total.terminated", workers_terminated);
+  add_gauge_stat_long(stats, "workers.total.failed", workers_failed);
 
   const auto workers_stats = server_stats.misc[1].get_stat();
-  add_histogram_stat_double(stats, "workers.running.avg_1m", workers_stats.running_workers_avg);
-  add_histogram_stat_long(stats, "workers.running.max_1m", workers_stats.running_workers_max);
+  add_gauge_stat_double(stats, "workers.running.avg_1m", workers_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.running.max_1m", workers_stats.running_workers_max);
 
   const auto cpu_stats = server_stats.cpu[1].get_stat();
-  add_histogram_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
-  add_histogram_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
+  add_gauge_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
+  add_gauge_stat_double(stats, "cpu.utime", cpu_stats.cpu_u_usage);
 
   instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
-  add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
-  add_histogram_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
+  add_gauge_stat_long(stats, "instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
+  add_gauge_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 
   const auto &instance_cache_element_stats = instance_cache_get_stats();
-  add_histogram_stat_long(stats, "instance_cache.elements.stored",
+  add_gauge_stat_long(stats, "instance_cache.elements.stored",
                           instance_cache_element_stats.elements_stored.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.stored_with_delay",
+  add_gauge_stat_long(stats, "instance_cache.elements.stored_with_delay",
                           instance_cache_element_stats.elements_stored_with_delay.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.storing_skipped_due_recent_update",
+  add_gauge_stat_long(stats, "instance_cache.elements.storing_skipped_due_recent_update",
                           instance_cache_element_stats.elements_storing_skipped_due_recent_update.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.storing_delayed_due_mutex",
+  add_gauge_stat_long(stats, "instance_cache.elements.storing_delayed_due_mutex",
                           instance_cache_element_stats.elements_storing_delayed_due_mutex.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.fetched",
+  add_gauge_stat_long(stats, "instance_cache.elements.fetched",
                           instance_cache_element_stats.elements_fetched.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.missed",
+  add_gauge_stat_long(stats, "instance_cache.elements.missed",
                           instance_cache_element_stats.elements_missed.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.missed_earlier",
+  add_gauge_stat_long(stats, "instance_cache.elements.missed_earlier",
                           instance_cache_element_stats.elements_missed_earlier.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.expired",
+  add_gauge_stat_long(stats, "instance_cache.elements.expired",
                           instance_cache_element_stats.elements_expired.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.created",
+  add_gauge_stat_long(stats, "instance_cache.elements.created",
                           instance_cache_element_stats.elements_created.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.destroyed",
+  add_gauge_stat_long(stats, "instance_cache.elements.destroyed",
                           instance_cache_element_stats.elements_destroyed.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.cached",
+  add_gauge_stat_long(stats, "instance_cache.elements.cached",
                           instance_cache_element_stats.elements_cached.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored",
+  add_gauge_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored",
                           instance_cache_element_stats.elements_logically_expired_and_ignored.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched",
+  add_gauge_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched",
                           instance_cache_element_stats.elements_logically_expired_but_fetched.load(std::memory_order_relaxed));
 
   write_confdata_stats_to(stats);
@@ -1600,29 +1600,29 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
   qps_calculator.update(my_now, server_stats.worker_stats);
-  add_histogram_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
-  add_histogram_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
+  add_gauge_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
+  add_gauge_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 
-  add_histogram_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
-  add_histogram_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
+  add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
+  add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
   const auto &job_workers_stats = job_workers::JobStats::get();
-  add_histogram_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.currently_memory_slices_used", job_workers_stats.currently_memory_slices_used.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
-  add_histogram_stat_long(stats, "job_workers.jobs_sent", job_workers_stats.jobs_sent.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.jobs_replied", job_workers_stats.jobs_replied.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.currently_memory_slices_used", job_workers_stats.currently_memory_slices_used.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
+  add_gauge_stat_long(stats, "job_workers.jobs_sent", job_workers_stats.jobs_sent.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.jobs_replied", job_workers_stats.jobs_replied.load(std::memory_order_relaxed));
 
-  add_histogram_stat_long(stats, "job_workers.errors_pipe_server_write", job_workers_stats.errors_pipe_server_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.errors_pipe_server_read", job_workers_stats.errors_pipe_server_read.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.errors_pipe_client_write", job_workers_stats.errors_pipe_client_write.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.errors_pipe_client_read", job_workers_stats.errors_pipe_client_read.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.errors_pipe_server_write", job_workers_stats.errors_pipe_server_write.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.errors_pipe_server_read", job_workers_stats.errors_pipe_server_read.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.errors_pipe_client_write", job_workers_stats.errors_pipe_client_write.load(std::memory_order_relaxed));
+  add_gauge_stat_long(stats, "job_workers.errors_pipe_client_read", job_workers_stats.errors_pipe_client_read.load(std::memory_order_relaxed));
 
-  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_another_is_running",
+  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_another_is_running",
                           job_workers_stats.job_worker_skip_job_due_another_is_running.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_overload",
+  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_overload",
                           job_workers_stats.job_worker_skip_job_due_overload.load(std::memory_order_relaxed));
-  add_histogram_stat_long(stats, "job_workers.job_worker_skip_job_due_steal",
+  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_steal",
                           job_workers_stats.job_worker_skip_job_due_steal.load(std::memory_order_relaxed));
 
   update_mem_stats();
@@ -1639,9 +1639,9 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
     }
   }
 
-  add_histogram_stat_long(stats, "memory.vms_max", max_vms * 1024);
-  add_histogram_stat_long(stats, "memory.rss_max", max_rss * 1024);
-  add_histogram_stat_long(stats, "memory.shared_max", max_shared * 1024);
+  add_gauge_stat_long(stats, "memory.vms_max", max_vms * 1024);
+  add_gauge_stat_long(stats, "memory.rss_max", max_rss * 1024);
+  add_gauge_stat_long(stats, "memory.shared_max", max_shared * 1024);
 }
 
 int php_master_http_execute(struct connection *c, int op) {

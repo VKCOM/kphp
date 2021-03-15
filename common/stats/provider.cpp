@@ -54,20 +54,24 @@ static void add_stat(const char type, stats_t *stats, const char *key, const cha
   va_end (ap);
 }
 
-#define add_histogram_stat(stats, key, value_format, ...) add_stat('h', stats, key, value_format, ##__VA_ARGS__)
+#define add_histogram_stat_impl(stats, key, value_format, ...) add_stat('h', stats, key, value_format, ##__VA_ARGS__)
 
-#define add_gauge_stat(stats, key, value_format, ...) add_stat('g', stats, key, value_format, ##__VA_ARGS__)
+#define add_gauge_stat_impl(stats, key, value_format, ...) add_stat('g', stats, key, value_format, ##__VA_ARGS__)
 
 void add_histogram_stat_long(stats_t *stats, const char *key, long long value) {
-  add_histogram_stat(stats, key, "%lld", value);
+  add_histogram_stat_impl(stats, key, "%lld", value);
 }
 
 void add_gauge_stat_long(stats_t *stats, const char *key, long long value) {
-  add_gauge_stat(stats, key, "%lld", value);
+  add_gauge_stat_impl(stats, key, "%lld", value);
+}
+
+void add_gauge_stat_double(stats_t *stats, const char *key, double value) {
+  add_gauge_stat_impl(stats, key, "%.3f", value);
 }
 
 void add_histogram_stat_double(stats_t *stats, const char *key, double value) {
-  add_histogram_stat(stats, key, "%.3f", value);
+  add_histogram_stat_impl(stats, key, "%.3f", value);
 }
 
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) {
