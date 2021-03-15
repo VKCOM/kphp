@@ -7,6 +7,7 @@
 #include <cstdarg>
 
 #include "common/rpc-error-codes.h"
+#include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
 #include "runtime/critical_section.h"
@@ -335,8 +336,6 @@ class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, in
 }
 
 static string_buffer data_buf;
-static const int data_buf_header_size = 2 * sizeof(long long) + 4 * sizeof(int);
-static const int data_buf_header_reserved_size = sizeof(long long) + sizeof(int);
 
 bool rpc_stored;
 static int64_t rpc_pack_threshold;
@@ -536,12 +535,8 @@ bool f$store_finish() {
 
 bool f$rpc_clean(bool is_error) {
   data_buf.clean();
-  store_int(-1); //reserve for TL_RPC_DEST_ACTOR
-  store_long(-1); //reserve for actor_id
-  store_int(-1); //reserve for length
-  store_int(-1); //reserve for num
-  store_int(-is_error); //reserve for type
-  store_long(-1); //reserve for req_id
+
+  store_raw(RpcHeaders{-is_error});
 
   rpc_pack_from = -1;
   return true;
@@ -553,13 +548,13 @@ bool rpc_store(bool is_error) {
   }
 
   if (!is_error) {
-    rpc_pack_from = data_buf_header_size;
+    rpc_pack_from = sizeof(RpcHeaders);
     f$store_finish_gzip_pack(rpc_pack_threshold);
   }
 
   store_int(-1); // reserve for crc32
   rpc_stored = true;
-  rpc_answer(data_buf.c_str() + data_buf_header_reserved_size, (int)(data_buf.size() - data_buf_header_reserved_size));
+  rpc_answer(data_buf.c_str(), static_cast<int>(data_buf.size()));
   return true;
 }
 
@@ -688,23 +683,20 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  int reserved = data_buf_header_reserved_size;
-  if (conn.get()->default_actor_id) {
-    const char *answer_begin = data_buf.c_str() + data_buf_header_size;
-    int x = *(int *)answer_begin;
-    if (x != TL_RPC_DEST_ACTOR && x != TL_RPC_DEST_ACTOR_FLAGS) {
-      reserved -= (int)(sizeof(int) + sizeof(long long));
-      php_assert (reserved >= 0);
-      *(int *)(answer_begin - sizeof(int) - sizeof(long long)) = TL_RPC_DEST_ACTOR;
-      *(long long *)(answer_begin - sizeof(long long)) = conn.get()->default_actor_id;
-    }
-  }
+  const char *answer_begin = data_buf.c_str() + sizeof(RpcHeaders);
+  RpcExtraHeaders extra_headers{};
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, *(int *)answer_begin, conn.get()->default_actor_id, ignore_answer);
 
-  const auto request_size = static_cast<size_t>(data_buf.size() - reserved);
-  void *p = dl::allocate(request_size);
-  memcpy(p, data_buf.c_str() + reserved, request_size);
+  const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
+  char *p = static_cast<char *>(dl::allocate(request_size));
 
-  slot_id_t result = rpc_send_query(conn.get()->host_num, (char *)p, (int)request_size, timeout_convert_to_ms(timeout));
+  // Memory will look like this:
+  //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
+  memcpy(p, data_buf.c_str(), sizeof(RpcHeaders));
+  memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
+  memcpy(p + sizeof(RpcHeaders) + extra_headers_size, data_buf.c_str() + sizeof(RpcHeaders), data_buf.size() - sizeof(RpcHeaders));
+
+  slot_id_t result = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
   if (result <= 0) {
     return -1;
   }

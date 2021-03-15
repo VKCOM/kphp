@@ -23,7 +23,8 @@ prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         parallel/maximum.cpp
         parallel/thread-id.cpp
         parallel/limit-counter.cpp
-        version-string.cpp)
+        version-string.cpp
+        rpc-headers.cpp)
 
 if(APPLE)
     list(APPEND POPULAR_COMMON_SOURCES ${COMMON_DIR}/macos-ports.cpp)

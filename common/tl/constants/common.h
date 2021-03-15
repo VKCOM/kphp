@@ -45,6 +45,7 @@ constexpr static uint32_t                                         return_pid = 1
 constexpr static uint32_t                               return_request_sizes = 1U << 3U;
 constexpr static uint32_t                           return_failed_subqueries = 1U << 4U;
 constexpr static uint32_t                                 return_query_stats = 1U << 6U;
+constexpr static uint32_t                                          no_result = 1U << 7U;
 constexpr static uint32_t                                    wait_binlog_pos = 1U << 16U;
 constexpr static uint32_t                                string_forward_keys = 1U << 18U;
 constexpr static uint32_t                                   int_forward_keys = 1U << 19U;
@@ -53,7 +54,7 @@ constexpr static uint32_t                                        int_forward = 1
 constexpr static uint32_t                                  custom_timeout_ms = 1U << 23U;
 constexpr static uint32_t                      supported_compression_version = 1U << 25U;
 constexpr static uint32_t                                       random_delay = 1U << 26U;
-constexpr static uint32_t                                                ALL = 0x06bd005f;
+constexpr static uint32_t                                                ALL = 0x06bd00df;
 } // namespace rpc_invoke_req_extra_flags
 
 namespace rpc_req_result_extra_flags {
