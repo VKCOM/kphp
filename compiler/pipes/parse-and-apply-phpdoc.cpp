@@ -275,15 +275,16 @@ private:
 
       case php_doc_tag::kphp_warn_performance: {
         try {
-          f_->performance_inspections_for_warning.add_from_php_doc(tag.value);
+          f_->performance_inspections_for_warning.set_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-warn-performance bad tag: {}", ex.what()));
         }
         break;
       }
+
       case php_doc_tag::kphp_analyze_performance: {
         try {
-          f_->performance_inspections_for_analysis.add_from_php_doc(tag.value);
+          f_->performance_inspections_for_analysis.set_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
         }
@@ -451,6 +452,32 @@ private:
 
       case php_doc_tag::kphp_tl_class:
         klass->is_tl_class = true;
+        break;
+
+      case php_doc_tag::kphp_warn_performance:
+        try {
+          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
+            f.function->performance_inspections_for_warning.set_from_php_doc(tag.value);
+          });
+          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) {
+            f.function->performance_inspections_for_warning.set_from_php_doc(tag.value);
+          });
+        } catch (const std::exception &ex) {
+          kphp_error(false, fmt_format("@kphp-warn-performance bad tag: {}", ex.what()));
+        }
+        break;
+
+      case php_doc_tag::kphp_analyze_performance:
+        try {
+          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
+            f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value);
+          });
+          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) {
+            f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value);
+          });
+        } catch (const std::exception &ex) {
+          kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
+        }
         break;
 
       default:

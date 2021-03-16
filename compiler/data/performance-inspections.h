@@ -20,7 +20,7 @@ public:
 
   explicit PerformanceInspections(Inspections enabled = Inspections::no_inspections) noexcept;
 
-  void add_from_php_doc(vk::string_view php_doc_tag);
+  void set_from_php_doc(vk::string_view php_doc_tag);
 
   bool has_their_own_inspections() const noexcept {
     return !inspections_are_merged_ && (enabled_inspections_ || disabled_inspections_);
