@@ -6,6 +6,8 @@
 #include "common/algorithms/sorting.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
+#include "common/wrappers/to_array.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
@@ -148,11 +150,24 @@ VertexPtr get_first_arg_from_array_merge_call(VertexAdaptor<op_func_call> func_c
   return get_first_arg_from_builtin_call(func_call, "array_merge");
 }
 
+constexpr auto get_reserve_function_names() noexcept {
+  return vk::to_array(
+    {
+      "array_reserve",
+      "array_reserve_vector",
+      "array_reserve_map_int_keys",
+      "array_reserve_map_string_keys",
+      "array_reserve_from"
+    });
+}
+
 VertexPtr get_first_arg_from_array_reserve_call(VertexAdaptor<op_func_call> func_call) noexcept {
-  if (auto first_arg = get_first_arg_from_builtin_call(func_call, "array_reserve")) {
-    return first_arg;
+  for (auto reserve_function : get_reserve_function_names()) {
+    if (auto first_arg = get_first_arg_from_builtin_call(func_call, reserve_function)) {
+      return first_arg;
+    }
   }
-  return get_first_arg_from_builtin_call(func_call, "array_reserve_from");
+  return {};
 }
 
 bool is_var_can_be_optimized_in_loop(VertexAdaptor<op_var> op_var_vertex) noexcept {
@@ -309,7 +324,7 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
     if (auto op_push_back_vertex = vertex.try_as<meta_op_push_back>()) {
       auto array_var = remove_conv_wrap(op_push_back_vertex->array()).try_as<op_var>();
       if (array_var && !array_var->var_id->is_in_global_scope() && !reserved_arrays_.count(array_var->var_id)) {
-        auto message = get_description_for_help(array_var) + " can be reserved with array_reserve or array_reserve_from out of loop";
+        auto message = get_description_for_help(array_var) + " can be reserved with array_reserve functions family out of loop";
         trigger_inspection_on_second_pass(op_push_back_vertex, PerformanceInspections::array_reserve, std::move(message));
         enabled_inspections &= ~PerformanceInspections::array_reserve;
       }
@@ -322,7 +337,7 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
       auto foreach_key = op_foreach_loop_exit->params()->key();
       if (array_var && !array_var->var_id->is_in_global_scope() && !reserved_arrays_.count(array_var->var_id) &&
           array_set_key && array_set_key->var_id == foreach_key->var_id) {
-        auto message = get_description_for_help(array_var) + " can be reserved with array_reserve or array_reserve_from out of loop";
+        auto message = get_description_for_help(array_var) + " can be reserved with array_reserve functions family out of loop";
         trigger_inspection_on_second_pass(op_set_value_vertex, PerformanceInspections::array_reserve, std::move(message));
         enabled_inspections &= ~PerformanceInspections::array_reserve;
       }
