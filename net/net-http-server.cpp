@@ -240,7 +240,7 @@ int hts_parse_execute (struct connection *c) {
             D->wlen++;
             ptr++;
           }
-          if (D->wlen > 4096) {
+          if (D->wlen > MAX_HTTP_HEADER_QUERY_WORD_SIZE) {
             if (D->query_words == 1) {
               D->extra_int = 414;
             }
@@ -361,7 +361,7 @@ int hts_parse_execute (struct connection *c) {
             D->wlen++;
             ptr++;
           }
-          if (D->wlen > 4096) {
+          if (D->wlen > MAX_HTTP_HEADER_KEY_SIZE) {
             c->parse_state = htqp_fatal;
             break;
           }

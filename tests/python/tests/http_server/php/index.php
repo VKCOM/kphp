@@ -10,6 +10,8 @@ class A {
 
 if ($_SERVER["PHP_SELF"] === "/ini_get") {
   echo ini_get($_SERVER["QUERY_STRING"]);
+} else if (substr($_SERVER["PHP_SELF"], 0, 12) === "/test_limits") {
+  echo json_encode($_SERVER);
 } else if ($_SERVER["PHP_SELF"] === "/sleep") {
   $sleep_time = (int)$_GET["time"];
   echo "before sleep $sleep_time\n";

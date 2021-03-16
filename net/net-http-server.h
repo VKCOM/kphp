@@ -9,7 +9,9 @@
 
 #include "net/net-connections.h"
 
-#define	MAX_HTTP_HEADER_SIZE	16384
+#define	MAX_HTTP_HEADER_SIZE (64 * 1024)
+#define	MAX_HTTP_HEADER_QUERY_WORD_SIZE (16 * 1024)
+#define	MAX_HTTP_HEADER_KEY_SIZE (4 * 1024)
 
 struct http_server_functions {
   void *info;
