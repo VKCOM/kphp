@@ -16,7 +16,7 @@
 #include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/tl_func_base.h"
 
-#define tl_undefined_php_type nullptr_t
+#define tl_undefined_php_type std::nullptr_t
 
 int tl_parse_save_pos();
 bool tl_parse_restore_pos(int pos);

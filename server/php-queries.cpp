@@ -239,7 +239,9 @@ void str_buf_append(str_buf_t *buf, data_reader_t *reader) {
     need = need * 2 + 1;
     char *new_buf = (char *)qmem_malloc(need);
     assert (new_buf != nullptr);
-    memcpy(new_buf, buf->buf, buf->len);
+    if (buf->buf) {
+      memcpy(new_buf, buf->buf, buf->len);
+    }
     buf->buf = new_buf;
     buf->buf_len = need;
   }

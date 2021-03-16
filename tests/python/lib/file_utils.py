@@ -46,6 +46,7 @@ def search_combined_tlo(working_dir):
     common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
     subprocess.call(
         ["bash", "-c", "{} -e {} {}".format(tl_compiler_path, working_dir + "/combined.tlo", common_tl)],
+        env={"ASAN_OPTIONS": "detect_leaks=0"}
     )
     return _check_file("combined.tlo", working_dir, os.path.isfile)
 
