@@ -1052,6 +1052,8 @@ void pnet_query_answer(conn_query *q) {
       extra = TCP_RPC_DATA(req)->extra;
     } else if (req->type == &ct_php_engine_http_server) {
       extra = HTS_DATA (req)->extra;
+    } else if (req->type && !strcmp(req->type->title, "jobs_server")) {
+      extra = req->custom_data;
     } else {
       assert ("unexpected type of connection\n" && 0);
     }
