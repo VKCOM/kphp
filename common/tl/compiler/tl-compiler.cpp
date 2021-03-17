@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   int files_count = argc - optind;
   struct parse files[files_count];
   for (i = optind; i != argc; ++i) {
-    if (!tl_init_parse_file(argv[i], files + i - optind)) {
+    if (!tl_init_parse_file(argv[i], files + (i - optind))) {
       return 2;
     }
   }

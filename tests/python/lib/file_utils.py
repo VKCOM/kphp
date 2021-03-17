@@ -39,8 +39,16 @@ def search_tl_client():
     return _check_file("objs/bin/tlclient", _ENGINE_REPO, _check_bin)
 
 
-def search_combined_tlo():
-    return _check_file("objs/bin/combined.tlo", _ENGINE_REPO, os.path.isfile)
+def search_combined_tlo(working_dir):
+    if _ENGINE_REPO:
+        return _check_file("objs/bin/combined.tlo", _ENGINE_REPO, os.path.isfile)
+    tl_compiler_path = _check_file("objs/bin/tl-compiler", _KPHP_REPO, _check_bin)
+    common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
+    subprocess.call(
+        ["bash", "-c", "{} -e {} {}".format(tl_compiler_path, working_dir + "/combined.tlo", common_tl)],
+        env={"ASAN_OPTIONS": "detect_leaks=0"}
+    )
+    return _check_file("combined.tlo", working_dir, os.path.isfile)
 
 
 def replace_in_file(file, old, new):

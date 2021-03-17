@@ -2,6 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/instance-copy-processor.h"
@@ -23,7 +24,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  job_workers::SharedMemorySlice *memory_request = memory_manager.acquire_slice();
+  auto *memory_request = memory_manager.acquire_shared_message();
   if (memory_request == nullptr) {
     php_warning("Can't send job: not enough shared memory");
     return -1;
@@ -31,14 +32,14 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
 
   memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource, ExtraRefCnt::for_job_worker_communication);
   if (memory_request->instance.is_null()) {
-    memory_manager.release_slice(memory_request);
+    memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: too big request");
     return -1;
   }
 
   const int job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
   if (job_id <= 0) {
-    memory_manager.release_slice(memory_request);
+    memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: probably jobs queue is full");
     return -1;
   }

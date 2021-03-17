@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/sanitizer.h"
+
 #include "server/php-queries.h"
 
 struct conn_query;
@@ -40,7 +42,7 @@ extern command_t command_net_write_rpc_base;
 
 extern conn_target_t rpc_ct;
 
-void send_rpc_query(connection *c, int op, long long id, int *q, int qsize);
+void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) ubsan_supp("alignment");
 void on_net_event(int event_status);
 void create_delayed_send_query(conn_target_t *t, command_t *command, double finish_time);
 

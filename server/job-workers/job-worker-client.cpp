@@ -10,6 +10,7 @@
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 
+#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 
 #include "server/job-workers/job-worker-client.h"
@@ -37,17 +38,17 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
   PipeJobReader::ReadStatus status{};
 
   do {
-    JobResult job_result;
+    JobSharedMessage *job_result = nullptr;
     status = job_worker_client.job_reader.read_job_result(job_result);
     if (status == PipeJobReader::READ_FAIL) {
       JobStats::get().errors_pipe_client_read++;
       return -1;
     }
     if (status == PipeJobReader::READ_OK) {
-      tvkprintf(job_workers, 2, "got job result: ready_job_id = %d, job_result_memory_ptr = %p\n", job_result.job_id, job_result.job_result_memory_ptr);
-      if (create_job_worker_answer_event(job_result.job_id, job_result.job_result_memory_ptr) <= 0) {
+      tvkprintf(job_workers, 2, "got job result: ready_job_id = %d, job_result_memory_ptr = %p\n", job_result->job_id, job_result);
+      if (create_job_worker_answer_event(job_result) <= 0) {
         // TODO ERROR?
-        vk::singleton<SharedMemoryManager>::get().release_slice(job_result.job_result_memory_ptr);
+        vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
       }
     }
   } while (status != PipeJobReader::READ_BLOCK);
@@ -84,15 +85,15 @@ void JobWorkerClient::init(int job_result_slot) {
   }
 }
 
-int JobWorkerClient::send_job(SharedMemorySlice * const job_memory_ptr) {
-  static_assert(sizeof(job_memory_ptr) == 8, "Unexpected pointer size");
-
+int JobWorkerClient::send_job(JobSharedMessage *job_request) {
   slot_id_t job_id = parallel_job_ids_factory.create_slot();
 
-  tvkprintf(job_workers, 2, "sending job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, write_job_fd = %d\n", job_result_fd_idx, job_id,
-            job_memory_ptr, write_job_fd);
+  tvkprintf(job_workers, 2, "sending job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, write_job_fd = %d\n",
+            job_result_fd_idx, job_id, job_request, write_job_fd);
 
-  bool success = job_writer.write_job(Job{job_id, job_result_fd_idx, job_memory_ptr}, write_job_fd);
+  job_request->job_id = job_id;
+  job_request->job_result_fd_idx = job_result_fd_idx;
+  bool success = job_writer.write_job(job_request, write_job_fd);
   if (!success) {
     JobStats::get().errors_pipe_client_write++;
     return -1;

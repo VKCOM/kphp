@@ -12,7 +12,7 @@
 extern SlotIdsFactory parallel_job_ids_factory;
 
 namespace job_workers {
-struct SharedMemorySlice;
+struct JobSharedMessage;
 } // namespace job_workers
 
 enum class net_event_type_t {
@@ -38,7 +38,7 @@ struct net_event_t {
       const char *error_message;
     };
     struct { // job_worker_answer
-      job_workers::SharedMemorySlice *job_result_memory_slice_ptr;
+      job_workers::JobSharedMessage *job_result;
     };
   };
 };
@@ -343,7 +343,7 @@ void free_net_query(net_query_t *query);
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 
-int create_job_worker_answer_event(slot_id_t job_id, job_workers::SharedMemorySlice *job_result_memory_ptr);
+int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result);
 
 int net_events_empty();
 

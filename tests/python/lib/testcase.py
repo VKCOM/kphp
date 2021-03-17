@@ -154,7 +154,7 @@ class KphpServerAutoTestCase(BaseTestCase):
     def custom_setup(cls):
         if _check_if_tl_required(os.path.join(cls.test_dir, "php/")):
             os.environ["KPHP_GEN_TL_INTERNALS"] = "1"
-            os.environ["KPHP_TL_SCHEMA"] = search_combined_tlo()
+            os.environ["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
         cls.kphp_builder = KphpBuilder(
             php_script_path=os.path.join(cls.test_dir, "php/index.php"),

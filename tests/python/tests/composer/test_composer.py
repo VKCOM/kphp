@@ -28,7 +28,9 @@ class TestComposer(KphpCompilerAutoTestCase):
 
     def run_kphp(self, builder):
         kphp_server = self.new_kphp_server(builder)
-        return kphp_server.http_get("/")
+        run_result = kphp_server.http_get("/")
+        kphp_server.stop()
+        return run_result
 
     def run_php(self, php_script_path = "php/index.php"):
         index_file = os.path.join(self.test_dir, php_script_path)

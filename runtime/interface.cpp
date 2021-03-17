@@ -27,6 +27,7 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
+#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/kphp-backtrace.h"
@@ -1379,8 +1380,8 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
   reset_superglobals();
 
   if (query_type == QUERY_TYPE_JOB) {
-    v$_SERVER.set_value(string("JOB_ID"), job_data.job.job_id);
-    init_job_server_interface_lib(job_data.job.job_memory_ptr, job_data.send_reply);
+    v$_SERVER.set_value(string("JOB_ID"), job_data.job_request->job_id);
+    init_job_server_interface_lib(job_data);
   }
 
   string uri_str;

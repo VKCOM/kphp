@@ -41,3 +41,4 @@ class TestGlobalVarsMemoryStats(KphpCompilerAutoTestCase):
                 'function_with_static_var::$static_str': 24
             }
         })
+        kphp_server.stop()

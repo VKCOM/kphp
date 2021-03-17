@@ -14,6 +14,8 @@ typedef struct event_descr event_t;
 
 namespace job_workers {
 
+struct JobSharedMessage;
+
 /**
  * HTTP worker process is usual job worker client
  */
@@ -29,7 +31,7 @@ public:
 
   void init(int job_result_slot);
 
-  int send_job(SharedMemorySlice *job_memory_ptr);
+  int send_job(JobSharedMessage *job_request);
 
 private:
   JobWorkerClient() = default;
