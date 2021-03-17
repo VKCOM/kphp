@@ -214,7 +214,6 @@ public:
   }
 
   void on_start() final {
-    Stacktrace stacktrace{};
     this->check();
   }
 

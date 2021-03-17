@@ -37,7 +37,6 @@ enum class Color {
  */
 class Colors {
   using ColorsRaw = std::array<Color, static_cast<size_t>(Color::_count)>;
-  const size_t Size = static_cast<size_t>(Color::_count);
 
 private:
   ColorsRaw colors_{};
@@ -49,7 +48,7 @@ public:
   }
 
   void add(const Color &color) {
-    if (this->count >= Size) {
+    if (this->count >= static_cast<size_t>(Color::_count)) {
       return;
     }
     this->colors_[this->count] = color;
