@@ -31,41 +31,104 @@ void RegisterKphpConfiguration::on_start() {
       return;
     }
 
-    // TODO: make it beautiful
-    kphp_error_return(c.local_name() == runtime_options_name_,
-                      fmt_format("Got unexpected {} constant '{}'",
-                                 configuration_class_name_, c.local_name()));
-
-    auto arr = c.value.try_as<op_array>();
-    kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
-                                      configuration_class_name_, runtime_options_name_));
-    for (const auto &opt : arr->args()) {
-      auto opt_pair = opt.try_as<op_double_arrow>();
-      kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
-                                             configuration_class_name_, runtime_options_name_));
-      const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
-      kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
-                                            configuration_class_name_, runtime_options_name_));
-      if (*opt_key == confdata_blacklist_key_) {
-        register_confdata_blacklist(opt_pair->value());
-      } else if (*opt_key == confdata_predefined_wildcard_key_) {
-        register_confdata_predefined_wildcard(opt_pair->value());
-      } else if (*opt_key == mysql_db_name_key_) {
-        register_mysql_db_name(opt_pair->value());
-      } else if (*opt_key == net_dc_mask_key_) {
-        register_net_dc_mask(opt_pair->value());
-      }  else if (*opt_key == warmup_workers_part_key_) {
-        register_warmup_workers_part(opt_pair->value());
-      }  else if (*opt_key == warmup_instance_cache_elements_part_key_) {
-        register_warmup_instance_cache_elements_part(opt_pair->value());
-      }  else if (*opt_key == warmup_timeout_sec_key_) {
-        register_warmup_timeout_sec(opt_pair->value());
-      } else {
-        kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
-                                 configuration_class_name_, runtime_options_name_, *opt_key));
-      }
+    if (c.local_name() == function_color_palette_name_) {
+      handle_function_color_palette(c);
+    } else if (c.local_name() == runtime_options_name_) {
+      handle_runtime_options(c);
+    } else {
+      kphp_error_return(0, fmt_format("Got unexpected {} constant '{}'",
+                                   configuration_class_name_, c.local_name()));
     }
   });
+}
+
+void RegisterKphpConfiguration::handle_function_color_palette(const ClassMemberConstant &c) {
+  auto arr = c.value.try_as<op_array>();
+  kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
+                                    configuration_class_name_, function_color_palette_name_));
+
+  for (const auto &opt : arr->args()) {
+    auto opt_pair = opt.try_as<op_double_arrow>();
+    kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
+                                           configuration_class_name_, function_color_palette_name_));
+    const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
+    kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
+                                          configuration_class_name_, function_color_palette_name_));
+
+    const auto raw_colors = split(*opt_key, ' ');
+    if (raw_colors.empty()) {
+      kphp_error_return(0, fmt_format("{}::{} rule must not be empty",
+                                             configuration_class_name_, function_color_palette_name_));
+    }
+
+    auto colors = vector<Color>();
+    colors.reserve(raw_colors.size());
+
+    for (const auto& raw_color : raw_colors) {
+      const auto color = Colors::get_color_type(raw_color);
+      if (color == Color::none) {
+        kphp_error(0, fmt_format("{}::{} unknown '{}' color",
+                                 configuration_class_name_, function_color_palette_name_, raw_color));
+        continue;
+      }
+      colors.push_back(color);
+    }
+
+    auto is_error_rule = false;
+    std::string error_message;
+
+    const auto *opt_value = GenTree::get_constexpr_string(opt_pair->value());
+    if (opt_value == nullptr) {
+      const auto opt_value_int = opt_pair->value().try_as<op_int_const>();
+      if (!opt_value_int) {
+        kphp_error_return(0, fmt_format("{}::{} map values must be constexpr strings or number 1",
+                                              configuration_class_name_, function_color_palette_name_));
+      }
+
+      const auto opt_value_str = opt_value_int->get_string();
+      if (opt_value_str != "1") {
+        kphp_error_return(0, fmt_format("{}::{} in the palette, the result of the rule must be either the number 1 or a string with an error",
+                                              configuration_class_name_, function_color_palette_name_));
+      }
+    } else {
+      error_message = *opt_value;
+      is_error_rule = true;
+    }
+
+    G->add_function_palette_rule(colors, is_error_rule, error_message);
+  }
+}
+
+void RegisterKphpConfiguration::handle_runtime_options(const ClassMemberConstant &c) {
+  auto arr = c.value.try_as<op_array>();
+  kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
+                                    configuration_class_name_, runtime_options_name_));
+  for (const auto &opt : arr->args()) {
+    auto opt_pair = opt.try_as<op_double_arrow>();
+    kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
+                                           configuration_class_name_, runtime_options_name_));
+    const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
+    kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
+                                          configuration_class_name_, runtime_options_name_));
+    if (*opt_key == confdata_blacklist_key_) {
+      register_confdata_blacklist(opt_pair->value());
+    } else if (*opt_key == confdata_predefined_wildcard_key_) {
+      register_confdata_predefined_wildcard(opt_pair->value());
+    } else if (*opt_key == mysql_db_name_key_) {
+      register_mysql_db_name(opt_pair->value());
+    } else if (*opt_key == net_dc_mask_key_) {
+      register_net_dc_mask(opt_pair->value());
+    }  else if (*opt_key == warmup_workers_part_key_) {
+      register_warmup_workers_part(opt_pair->value());
+    }  else if (*opt_key == warmup_instance_cache_elements_part_key_) {
+      register_warmup_instance_cache_elements_part(opt_pair->value());
+    }  else if (*opt_key == warmup_timeout_sec_key_) {
+      register_warmup_timeout_sec(opt_pair->value());
+    } else {
+      kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
+                               configuration_class_name_, runtime_options_name_, *opt_key));
+    }
+  }
 }
 
 void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept {

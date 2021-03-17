@@ -17,6 +17,9 @@ public:
   void on_start() final;
 
 private:
+  void handle_runtime_options(const ClassMemberConstant &c);
+  void handle_function_color_palette(const ClassMemberConstant &c);
+
   void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
 
   void register_confdata_blacklist(VertexPtr value) const noexcept;
@@ -30,7 +33,8 @@ private:
 
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
-  
+  const vk::string_view function_color_palette_name_{"FUNCTION_PALETTE"};
+
   const vk::string_view confdata_blacklist_key_{"--confdata-blacklist"};
   const vk::string_view confdata_predefined_wildcard_key_{"--confdata-predefined-wildcard"};
   const vk::string_view mysql_db_name_key_{"--mysql-db-name"};

@@ -19,6 +19,7 @@
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
 #include "compiler/composer.h"
+#include "compiler/function-colors.h"
 
 class CompilerCore {
 private:
@@ -36,6 +37,8 @@ private:
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
   bool is_untyped_rpc_tl_used{false};
+
+  PaletteTree function_palette_tree;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -106,6 +109,14 @@ public:
 
   void add_kphp_runtime_opt(std::string opt) { kphp_runtime_opts.emplace_back(std::move(opt)); }
   const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
+
+  void add_function_palette_rule(const std::vector<Color> &colors, bool is_error = false, const std::string &message = "") {
+    function_palette_tree.insert(colors, is_error, message);
+  }
+
+  PaletteTree get_function_palette_tree() {
+    return function_palette_tree;
+  }
 
   void set_untyped_rpc_tl_used() {
     is_untyped_rpc_tl_used = true;
