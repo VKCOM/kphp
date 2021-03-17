@@ -10,24 +10,16 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
-#include "runtime/job-workers/job-interface.h"
-#include "runtime/kphp_core.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
-
 namespace job_workers {
 
-struct SharedMemorySlice : vk::not_copyable {
-  memory_resource::unsynchronized_pool_resource resource;
-  std::atomic<pid_t> owner_pid{0};
-  class_instance<SendingInstanceBase> instance;
-};
+struct JobSharedMessage;
 
 class SharedMemoryManager : vk::not_copyable {
 public:
   void init() noexcept;
 
-  SharedMemorySlice *acquire_slice() noexcept;
-  void release_slice(SharedMemorySlice *slice) noexcept;
+  JobSharedMessage *acquire_shared_message() noexcept;
+  void release_shared_message(JobSharedMessage *slice) noexcept;
 
   void set_memory_limit(size_t memory_limit) {
     memory_limit_ = memory_limit;
@@ -42,8 +34,8 @@ private:
 
   friend class vk::singleton<SharedMemoryManager>;
 
-  SharedMemorySlice *get_slice(size_t index) noexcept {
-    return reinterpret_cast<SharedMemorySlice *>(static_cast<uint8_t *>(memory_) + index * memory_slice_size_);
+  JobSharedMessage *get_message(size_t index) noexcept {
+    return reinterpret_cast<JobSharedMessage *>(static_cast<uint8_t *>(memory_) + index * memory_slice_size_);
   }
 
   static constexpr size_t memory_slice_size_ = 1024 * 1024;

@@ -33,30 +33,30 @@ bool PipeJobWriter::write_to_pipe(int write_fd, const char *description) {
   return true;
 }
 
-bool PipeJobWriter::write_job(const Job &job, int write_fd) {
+bool PipeJobWriter::write_job(JobSharedMessage *job, int write_fd) {
   reset();
   copy_to_buffer(job);
   return write_to_pipe(write_fd, "writing job");
 }
 
-bool PipeJobWriter::write_job_result(const JobResult &job_result, int write_fd) {
+bool PipeJobWriter::write_job_result(JobSharedMessage *job_result, int write_fd) {
   reset();
   copy_to_buffer(job_result);
   return write_to_pipe(write_fd, "writing result of job");
 }
 
-PipeJobReader::ReadStatus PipeJobReader::read_job(Job &job) {
+PipeJobReader::ReadStatus PipeJobReader::read_job(JobSharedMessage *&job) {
   reset();
-  ReadStatus status = read_from_pipe(sizeof(Job), "read job");
+  ReadStatus status = read_from_pipe(sizeof(JobSharedMessage *), "read job");
   if (status == READ_OK) {
     extract_from_buffer(job);
   }
   return status;
 }
 
-PipeJobReader::ReadStatus PipeJobReader::read_job_result(JobResult &job_result) {
+PipeJobReader::ReadStatus PipeJobReader::read_job_result(JobSharedMessage *&job_result) {
   reset();
-  ReadStatus status = read_from_pipe(sizeof(JobResult), "read result of job");
+  ReadStatus status = read_from_pipe(sizeof(JobSharedMessage *), "read result of job");
   if (status == READ_OK) {
     extract_from_buffer(job_result);
   }

@@ -2,6 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/instance-copy-processor.h"
 
@@ -9,17 +10,18 @@
 
 namespace job_workers {
 
-void ProcessingJobs::finish_job_processing(int job_slot_id, SharedMemorySlice *reply_slice) noexcept {
-  php_assert(reply_slice);
-  auto reply = reply_slice->instance.cast_to<C$KphpJobWorkerResponse>();
+void ProcessingJobs::finish_job_processing(job_workers::JobSharedMessage *job_result) noexcept {
+  php_assert(job_result);
+  auto reply = job_result->instance.cast_to<C$KphpJobWorkerResponse>();
   php_assert(!reply.is_null());
 
+  const int job_slot_id = job_result->job_id;
   // TODO Check if reply is null => OOM
   reply = copy_instance_into_script_memory(reply);
-  vk::singleton<SharedMemoryManager>::get().release_slice(reply_slice);
-  auto &job_result = processing_[job_slot_id];
-  job_result.reply = std::move(reply);
-  job_result.ready = true;
+  vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
+  auto &job_ready_result = processing_[job_slot_id];
+  job_ready_result.reply = std::move(reply);
+  job_ready_result.ready = true;
 }
 
 bool ProcessingJobs::is_ready(int job_slot_id) const noexcept {

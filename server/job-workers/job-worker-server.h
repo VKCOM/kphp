@@ -9,14 +9,13 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/timer.h"
-#include "server/job-workers/job.h"
 #include "server/job-workers/pipe-io.h"
-
-#include "common/wrappers/optional.h"
 
 struct connection;
 
 namespace job_workers {
+
+struct JobSharedMessage;
 
 /**
  * Job worker process runs job worker server
@@ -36,9 +35,9 @@ public:
   void reset_running_job() noexcept;
 
 private:
-  const char *send_job_reply(SharedMemorySlice *reply_memory) noexcept;
+  const char *send_job_reply(JobSharedMessage *response) noexcept;
 
-  vk::optional<Job> running_job;
+  JobSharedMessage *running_job{nullptr};
   PipeJobWriter job_writer;
   PipeJobReader job_reader;
   bool has_delayed_jobs{false};

@@ -7,7 +7,7 @@
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/kphp_core.h"
 
-void init_job_server_interface_lib(job_workers::SharedMemorySlice *request_memory, const char *(*send_reply) (job_workers::SharedMemorySlice *)) noexcept;
+void init_job_server_interface_lib(job_query_data job_data) noexcept;
 void free_job_server_interface_lib() noexcept;
 
 class_instance<C$KphpJobWorkerRequest> f$kphp_job_worker_fetch_request() noexcept;

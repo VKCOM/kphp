@@ -12,6 +12,8 @@
 #include "net/net-events.h"
 #include "net/net-connections.h"
 
+#include "runtime/job-workers/job-message.h"
+
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
@@ -105,7 +107,7 @@ conn_type_t php_jobs_server = [] {
 int JobWorkerServer::job_parse_execute(connection *c) {
   assert(c == read_job_connection);
 
-  if (running_job.has_value()) {
+  if (running_job) {
     tvkprintf(job_workers, 1, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;
     JobStats::get().job_worker_skip_job_due_another_is_running++;
@@ -119,7 +121,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     return 0;
   }
 
-  Job job;
+  JobSharedMessage *job = nullptr;
   PipeJobReader::ReadStatus status = job_reader.read_job(job);
 
   if (status == PipeJobReader::READ_BLOCK) {
@@ -139,10 +141,10 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   reply_was_sent = false;
 
   double timeout_sec = DEFAULT_SCRIPT_TIMEOUT;
-  job_query_data *job_data = job_query_data_create(job, [](job_workers::SharedMemorySlice *reply_memory) {
-    return vk::singleton<JobWorkerServer>::get().send_job_reply(reply_memory);
+  job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
+    return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });
-  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job.job_id, timeout_sec);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job->job_id, timeout_sec);
 
   set_connection_timeout(c, timeout_sec);
   c->status = conn_wait_net;
@@ -174,18 +176,18 @@ void JobWorkerServer::init() {
 }
 
 void JobWorkerServer::try_complete_delayed_jobs() {
-  if (!running_job.has_value() && has_delayed_jobs) {
+  if (!running_job && has_delayed_jobs) {
     tvkprintf(job_workers, 1, "There are delayed jobs. Let's complete them\n");
     job_parse_execute(read_job_connection);
   }
 }
 
 void JobWorkerServer::reset_running_job() noexcept {
-  running_job.reset();
+  running_job = nullptr;
 }
 
-const char *JobWorkerServer::send_job_reply(SharedMemorySlice *reply_memory) noexcept {
-  if (!running_job.has_value()) {
+const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noexcept {
+  if (!running_job) {
     return "There is no running jobs";
   }
 
@@ -194,7 +196,8 @@ const char *JobWorkerServer::send_job_reply(SharedMemorySlice *reply_memory) noe
   }
 
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
-  if (!job_writer.write_job_result(JobResult{0, running_job->job_id, reply_memory}, write_job_result_fd)) {
+  job_response->job_id = running_job->job_id;
+  if (!job_writer.write_job_result(job_response, write_job_result_fd)) {
     JobStats::get().errors_pipe_server_write++;
     return "Can't write job reply to the pipe";
   }

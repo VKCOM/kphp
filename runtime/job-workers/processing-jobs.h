@@ -13,7 +13,7 @@
 
 namespace job_workers {
 
-struct SharedMemorySlice;
+struct JobSharedMessage;
 
 class ProcessingJobs : vk::not_copyable {
 public:
@@ -25,7 +25,7 @@ public:
     return processing_.has_key(job_slot_id);
   }
 
-  void finish_job_processing(int job_slot_id, SharedMemorySlice *reply_slice) noexcept;
+  void finish_job_processing(job_workers::JobSharedMessage *job_result) noexcept;
   bool is_ready(int job_slot_id) const noexcept;
   class_instance<C$KphpJobWorkerResponse> withdraw(int job_slot_id) noexcept;
 

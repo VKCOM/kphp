@@ -8,9 +8,9 @@
 #include <cstdint>
 #include "common/type_traits/is_copyable.h"
 
-#include "server/job-workers/job.h"
-
 namespace job_workers {
+
+struct JobSharedMessage;
 
 class PipeIO {
 public:
@@ -24,13 +24,13 @@ protected:
 
   PipeIO() = default;
 
-  template <typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
-  void copy_to_buffer(const T &x) {
+  template<typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
+  void copy_to_buffer(T x) {
     memcpy(buf + buf_end_pos, &x, sizeof(T));
     buf_end_pos += sizeof(T);
   }
 
-  template <typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
+  template<typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
   void extract_from_buffer(T &dest) {
     memcpy(&dest, buf, sizeof(T));
   }
@@ -38,8 +38,8 @@ protected:
 
 class PipeJobWriter : public PipeIO {
 public:
-  bool write_job(const Job &job, int write_fd);
-  bool write_job_result(const JobResult &job_result, int write_fd);
+  bool write_job(JobSharedMessage *job, int write_fd);
+  bool write_job_result(JobSharedMessage *job_result, int write_fd);
 
 private:
   bool write_to_pipe(int write_fd, const char *description);
@@ -58,8 +58,8 @@ public:
     READ_BLOCK
   };
 
-  ReadStatus read_job(Job &job);
-  ReadStatus read_job_result(JobResult &job_result);
+  ReadStatus read_job(JobSharedMessage *&job);
+  ReadStatus read_job_result(JobSharedMessage *&job_result);
 private:
   int read_fd{-1};
 

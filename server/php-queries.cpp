@@ -12,6 +12,8 @@
 #include "common/precise-time.h"
 
 #include "runtime/allocator.h"
+#include "runtime/job-workers/job-message.h"
+
 #include "server/php-engine-vars.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
@@ -850,16 +852,16 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   return 1;
 }
 
-int create_job_worker_answer_event(slot_id_t job_id, job_workers::SharedMemorySlice *job_result_memory_ptr) {
-  if (!parallel_job_ids_factory.is_valid_slot(job_id)) {
+int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
+  if (!parallel_job_ids_factory.is_valid_slot(job_result->job_id)) {
     return 0;
   }
   net_event_t *event = nullptr;
-  const int status = alloc_net_event(job_id, net_event_type_t::job_worker_answer, &event);
+  const int status = alloc_net_event(job_result->job_id, net_event_type_t::job_worker_answer, &event);
   if (status <= 0) {
     return status;
   }
-  event->job_result_memory_slice_ptr = job_result_memory_ptr;
+  event->job_result = job_result;
   return 1;
 }
 
