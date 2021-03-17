@@ -48,6 +48,7 @@ struct php_doc_tag {
     kphp_profile,
     kphp_profile_allow_inline,
     kphp_strict_types_enable, // TODO: remove when strict_types=1 are enabled by default
+    kphp_color,
   };
 
 public:

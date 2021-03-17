@@ -109,6 +109,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-abstract-function-defaults.cpp
         check-access-modifiers.cpp
         check-classes.cpp
+        check-color.cpp
         check-conversions.cpp
         check-function-calls.cpp
         check-modifications-of-const-vars.cpp
@@ -177,7 +178,8 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         stats.cpp
         type-hint.cpp
         tl-classes.cpp
-        vertex.cpp)
+        vertex.cpp
+        function-colors.cpp)
 
 if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)

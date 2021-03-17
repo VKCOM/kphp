@@ -19,6 +19,7 @@
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
+#include "compiler/function-colors.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
@@ -105,6 +106,10 @@ public:
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
+
+  Colors colors{};
+  // An array of functions that call the current one.
+  std::vector<FunctionPtr> called_in{};
 
   enum class profiler_status : uint8_t {
     disable,

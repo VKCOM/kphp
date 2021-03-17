@@ -146,6 +146,20 @@ private:
 
   void parse_kphp_doc_tag(const php_doc_tag &tag) {
     switch (tag.type) {
+      case php_doc_tag::kphp_color: {
+        const auto raw_colors = split(tag.value, ' ');
+        for (const auto& raw_color : raw_colors) {
+          const auto color = Colors::get_color_type(raw_color);
+          if (color == Color::none) {
+            kphp_error(0, fmt_format("Unknown '{}' color", raw_color));
+            continue;
+          }
+
+          f_->colors.add(color);
+        }
+        break;
+      }
+
       case php_doc_tag::kphp_inline: {
         f_->is_inline = true;
         break;

@@ -43,6 +43,7 @@
 #include "compiler/pipes/check-abstract-function-defaults.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
+#include "compiler/pipes/check-color.h"
 #include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-function-calls.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
@@ -289,6 +290,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
     >> PassC<RegisterKphpConfiguration>{}
+    >> PassC<CheckColorPass>{}
     >> PassC<CollectForkableTypesPass>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};
