@@ -152,10 +152,6 @@ class KphpServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def custom_setup(cls):
-        if _check_if_tl_required(os.path.join(cls.test_dir, "php/")):
-            os.environ["KPHP_GEN_TL_INTERNALS"] = "1"
-            os.environ["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
-
         cls.kphp_builder = KphpBuilder(
             php_script_path=os.path.join(cls.test_dir, "php/index.php"),
             artifacts_dir=cls.artifacts_dir,
@@ -163,10 +159,15 @@ class KphpServerAutoTestCase(BaseTestCase):
             distcc_hosts=read_distcc_hosts(os.environ.get("KPHP_TESTS_DISTCC_FILE", None))
         )
 
+        tl_schema_required = _check_if_tl_required(os.path.join(cls.test_dir, "php/"))
         kphp_build_lock_file = os.path.join(cls.kphp_build_working_dir, "kphp_build_lock")
         pathlib.Path(kphp_build_lock_file, exist_ok=True).touch()
         with open(kphp_build_lock_file, "r+") as lock:
             portalocker.lock(lock, portalocker.LOCK_EX)
+            if tl_schema_required:
+                os.environ["KPHP_GEN_TL_INTERNALS"] = "1"
+                os.environ["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
+
             print("\nCompiling kphp server")
             # Специально выключаем KPHP_DYNAMIC_INCREMENTAL_LINKAGE, чтобы не было рейзов
             if not cls.kphp_builder.compile_with_kphp({"KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0"}):
