@@ -92,6 +92,7 @@ class KphpRunOnceRunner(KphpBuilder):
             ("extension", "curl.so"),
             ("extension", "tokenizer.so"),
             ("extension", "h3.so"),
+            ("extension", "zstd.so"),
             ("extension", vkext_so)
         ]
         return php_bin, extensions

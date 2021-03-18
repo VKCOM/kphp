@@ -65,7 +65,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         url.cpp
         vkext.cpp
         vkext_stats.cpp
-        zlib.cpp)
+        zlib.cpp
+        zstd.cpp)
 
 set_source_files_properties(
         ${BASE_DIR}/server/php-runner.cpp
