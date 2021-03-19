@@ -89,6 +89,8 @@ void *php_script_create(size_t mem_size, size_t stack_size);
 void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type);
 void php_script_set_timeout(double t);
 const char *php_script_get_error(void *ptr);
+script_error_t php_script_get_error_type(void *ptr);
+
 long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/

@@ -24,3 +24,15 @@ void global_init_job_workers_lib() noexcept {
 void process_job_worker_answer_event(job_workers::JobSharedMessage *job_result) noexcept {
   vk::singleton<job_workers::ProcessingJobs>::get().finish_job_processing(job_result);
 }
+
+class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
+  return v$this;
+}
+
+string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
+  return v$this.get()->error;
+}
+
+int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
+  return v$this.get()->error_code;
+}

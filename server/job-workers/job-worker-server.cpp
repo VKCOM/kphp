@@ -13,6 +13,7 @@
 #include "net/net-connections.h"
 
 #include "runtime/job-workers/job-message.h"
+#include "runtime/job-workers/shared-memory-manager.h"
 
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
@@ -205,6 +206,37 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   JobStats::get().jobs_replied++;
   reply_was_sent = true;
   return nullptr;
+}
+
+void JobWorkerServer::try_store_job_response_error(const char *error_msg, int error_code) {
+  if (reply_was_sent) {
+    return;
+  }
+  auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
+  if (!response_memory) {
+    kprintf("Can't store job response error: not enough shared memory");
+    return;
+  }
+
+  dl::set_current_script_allocator(response_memory->resource, false);
+
+  class_instance<C$KphpJobWorkerResponseError> error;
+  error.alloc();
+  error.get()->error = string{error_msg};
+  error.get()->error_code = error_code;
+  response_memory->instance = std::move(error);
+
+  dl::restore_default_script_allocator(false);
+
+  if (response_memory->instance.is_null()) {
+    kprintf("Can't store job response error: too big response error");
+    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    return;
+  }
+  if (const char *err = send_job_reply(response_memory)) {
+    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    kprintf("Can't store job response: %s", err);
+  }
 }
 
 } // namespace job_workers

@@ -649,7 +649,11 @@ void php_script_terminate(void *ptr, const char *error_message, script_error_t e
 }
 
 const char *php_script_get_error(void *ptr) {
-  return ((PHPScriptBase *)ptr)->error_message;
+  return static_cast<PHPScriptBase *>(ptr)->error_message;
+}
+
+script_error_t php_script_get_error_type(void *ptr) {
+  return static_cast<PHPScriptBase *>(ptr)->error_type;
 }
 
 long long php_script_memory_get_total_usage(void *ptr) {

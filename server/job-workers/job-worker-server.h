@@ -34,6 +34,7 @@ public:
 
   void reset_running_job() noexcept;
 
+  void try_store_job_response_error(const char *error_msg, int error_code);
 private:
   const char *send_job_reply(JobSharedMessage *response) noexcept;
 

@@ -1346,6 +1346,11 @@ final class UberH3 {
 interface KphpJobWorkerRequest {}
 interface KphpJobWorkerResponse {}
 
+class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
+  public function getError() ::: string;
+  public function getErrorCode() ::: int;
+}
+
 function kphp_job_worker_start(KphpJobWorkerRequest $request, float $script_execution_timeout = -1) ::: int;
 function kphp_job_worker_wait(int $job_id, float $tmp_wait_timeout = -1) ::: KphpJobWorkerResponse;
 
