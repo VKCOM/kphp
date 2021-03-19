@@ -17,6 +17,7 @@
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-engine-vars.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 
@@ -140,7 +141,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   running_job = job;
   reply_was_sent = false;
 
-  double timeout_sec = DEFAULT_SCRIPT_TIMEOUT;
+  double timeout_sec = job->script_execution_timeout < 0 ? MAX_SCRIPT_TIMEOUT : job->script_execution_timeout;
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });

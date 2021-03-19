@@ -20,6 +20,7 @@ struct JobSharedMessage : vk::not_copyable {
 
   int job_id{0};
   int job_result_fd_idx{-1};
+  double script_execution_timeout{-1.0};
 };
 
 } // namespace job_workers

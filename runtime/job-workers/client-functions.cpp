@@ -2,25 +2,33 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "common/algorithms/clamp.h"
+
+#include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/job-workers/shared-memory-manager.h"
-#include "runtime/instance-copy-processor.h"
 #include "runtime/net_events.h"
 
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-engine-vars.h"
 
 #include "runtime/job-workers/client-functions.h"
 
-int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request) noexcept {
+
+int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double script_execution_timeout) noexcept {
+  if (!f$is_kphp_job_workers_enabled()) {
+    php_warning("Can't send job: job workers disabled");
+    return -1;
+  }
   if (request.is_null()) {
     php_warning("Can't send job: the request shouldn't be null");
     return -1;
   }
-  if (!f$is_kphp_job_workers_enabled()) {
-    php_warning("Can't send job: job workers disabled");
-    return -1;
+  if (script_execution_timeout >= 0 && (script_execution_timeout < 1 || script_execution_timeout > MAX_SCRIPT_TIMEOUT)) {
+    script_execution_timeout = vk::clamp(script_execution_timeout, 1.0, MAX_SCRIPT_TIMEOUT * 1.0);
+    php_warning("$script_execution_timeout value was clamped to [%d; %d]", 1, MAX_SCRIPT_TIMEOUT);
   }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
@@ -36,6 +44,8 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
     php_warning("Can't send job: too big request");
     return -1;
   }
+
+  memory_request->script_execution_timeout = script_execution_timeout;
 
   const int job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
   if (job_id <= 0) {
