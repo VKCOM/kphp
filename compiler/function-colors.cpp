@@ -96,6 +96,7 @@ bool NodeContainer::has(color_t color) const {
 }
 
 void NodeContainer::del(color_t color) {
+  this->count--;
   this->data[static_cast<size_t>(color)] = nullptr;
 }
 

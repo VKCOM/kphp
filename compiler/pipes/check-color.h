@@ -138,7 +138,7 @@ private:
     // at the stage of rule initialization, any is converted to any_except,
     // which is processed separately.
     auto *any_rule = rule->match(fp::color_t::any);
-    if (any_rule != nullptr) {
+    if (any_rule != nullptr && !any_rule->children.empty()) {
       this->check_func_caller(stacktrace, any_rule, func);
     }
 
@@ -163,6 +163,10 @@ private:
       // makes no sense to check the calling functions, since their check will be
       // done when this pass is called for them.
       if (rule == this->tree.root()) {
+        return;
+      }
+
+      if (vk::any_of_equal(rule->color, fp::color_t::any_except, fp::color_t::any)) {
         return;
       }
 
