@@ -244,12 +244,13 @@ struct convert<Optional<T>> {
   const msgpack::object &operator()(const msgpack::object &obj, Optional<T>& v) const {
     switch (obj.type) {
       case msgpack::type::BOOLEAN: {
-        v = obj.as<bool>();
-        if (unlikely(obj.as<bool>())) {
+        bool value = obj.as<bool>();
+        if (!std::is_same<T, bool>{} && value) {
           char err_msg[256];
-          snprintf(err_msg, 256, "Expected false for unpacking Optional<%s>", typeid(T).name());
+          snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
           throw msgpack::unpack_error(err_msg);
         }
+        v = value;
         break;
       }
       case msgpack::type::NIL:
