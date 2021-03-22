@@ -280,6 +280,8 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CalcFuncDepPass>{}
     >> SyncC<CalcBadVarsF>{}
     >> PipeC<CheckUBF>{}
+    >> PassC<RegisterKphpConfiguration>{}
+    >> PassC<CheckColorPass>{}
     >> PassC<ExtractResumableCallsPass>{}
     >> PassC<ExtractAsyncPass>{}
     >> PassC<CheckNestedForeachPass>{}
@@ -289,8 +291,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CheckAccessModifiersPass>{}
     >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
-    >> PassC<RegisterKphpConfiguration>{}
-    >> PassC<CheckColorPass>{}
     >> PassC<CollectForkableTypesPass>{}
     >> SyncC<CodeGenF>{}
     >> PipeC<WriteFilesF, false>{};

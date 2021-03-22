@@ -56,6 +56,7 @@ public:
   std::set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   vector<VarPtr> param_ids;
   vector<FunctionPtr> dep;
+  vector<FunctionPtr> dep_rev;
   std::set<ClassPtr> class_dep;
   std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
@@ -108,8 +109,6 @@ public:
   bool is_pure = false;
 
   FunctionColors colors{};
-  // An array of functions that call the current one.
-  std::vector<FunctionPtr> called_in{};
 
   enum class profiler_status : uint8_t {
     disable,

@@ -55,7 +55,7 @@ private:
 
       // However, if there are children, but the current function
       // is not called anywhere, then we also cause an error.
-      if (func->called_in.empty()) {
+      if (func->dep_rev.empty()) {
         error(stacktrace, rule->message);
         return;
       }
@@ -65,7 +65,7 @@ private:
       // calling function will probably allow the use and there will be no error.
     }
 
-    for (auto& call_in_func : func->called_in) {
+    for (auto& call_in_func : func->dep_rev) {
       const auto contains = vk::contains(stacktrace, call_in_func);
       if (contains) {
         continue;

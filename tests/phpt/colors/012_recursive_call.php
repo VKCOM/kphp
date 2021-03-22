@@ -14,7 +14,9 @@ function withoutColor(int $a) {
 }
 
 function withoutColorToo(int $a) {
-    withoutColor($a);
+    if ($a) {
+        withoutColor($a);
+    }
 }
 
 withoutColor((int)$_POST["id"]);

@@ -12,9 +12,9 @@
 #include <compiler/stage.h>
 
 enum class Color {
-  none,        // special color denoting an unsettled color.
-  any,         // special color denoting any color.
-  any_except,  // special color denoting any color with except.
+  none,       // special color denoting an unsettled color.
+  any,        // special color denoting any color.
+  any_except, // special color denoting any color with except.
 
   highload,
   no_highload,

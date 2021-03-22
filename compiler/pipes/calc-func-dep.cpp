@@ -52,10 +52,6 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     data.dep.push_back(other_function);
     calls.push_back(other_function);
 
-    if (!current_function->is_main_function() && !current_function->is_extern()) {
-      other_function->called_in.push_back(current_function);
-    }
-
     if (other_function->is_extern()) {
       if (other_function->cpp_template_call) {
         auto tp = tinf::get_type(call);
