@@ -1,4 +1,5 @@
 prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
+        cluster-name.cpp
         confdata-binlog-replay.cpp
         confdata-stats.cpp
         json-logger.cpp

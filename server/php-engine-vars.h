@@ -65,7 +65,6 @@ extern int rpc_sfd;
 extern long long rpc_client_actor;
 
 /** master **/
-extern const char *cluster_name;
 extern int master_port;
 extern int master_sfd;
 extern int master_sfd_inited;

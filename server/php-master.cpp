@@ -50,6 +50,7 @@
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
 #include "runtime/job-workers/shared-memory-manager.h"
+#include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
@@ -72,7 +73,6 @@ extern const char *engine_tag;
 
 #define PHP_MASTER_VERSION "0.1"
 
-static std::string socket_name, shmem_name;
 static int cpu_cnt;
 
 static sigset_t mask;
@@ -482,15 +482,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
     }
   }
 
-  std::string s = cluster_name;
-  std::replace_if(s.begin(), s.end(), [](unsigned char c) { return !isalpha(c); }, '_');
-
-  shmem_name = std::string() + "/" + s + "_kphp_shm";
-  socket_name = std::string() + s + "_kphp_fd_transfer";
-
-  dl_assert (shmem_name.size() < NAME_MAX, "too long name for shared memory file");
-  dl_assert (socket_name.size() < NAME_MAX, "too long socket name (for fd transfer)");
-  kprintf("[%s] [%s]\n", shmem_name.c_str(), socket_name.c_str());
+  kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
 
   http_fd = new_http_fd;
   http_fd_port = new_http_fd_port;
@@ -521,7 +513,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
 
   //TODO: other signals, daemonize, change user...
   if (shared_data == nullptr) {
-    shared_data = get_shared_data(shmem_name.c_str());
+    shared_data = get_shared_data(vk::singleton<ClusterName>::get().get_shmem_name());
   }
 
   int attempts_to_start = 2;
@@ -970,7 +962,7 @@ static const sockaddr_un *get_socket_addr() {
   static int inited = 0;
 
   if (!inited) {
-    init_sockaddr_un(&unix_socket_addr, socket_name.c_str());
+    init_sockaddr_un(&unix_socket_addr, vk::singleton<ClusterName>::get().get_socket_name());
     inited = 1;
   }
 
@@ -1265,7 +1257,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
     sprintf(buf + sprintf(buf, "kphp_version\t%s", engine_tag) - 2, "\n");
     header += buf;
   }
-  sprintf(buf, "cluster_name\t%s\n", cluster_name);
+  sprintf(buf, "cluster_name\t%s\n", vk::singleton<ClusterName>::get().get_cluster_name());
   header += buf;
   sprintf(buf, "min_worker_uptime\t%.0lf\n", min_uptime);
   header += buf;
@@ -1785,7 +1777,7 @@ void run_master_on() {
         if (socket_fd != -1) {
           close(socket_fd);
         }
-        socket_fd = sock_dgram(socket_name.c_str());
+        socket_fd = sock_dgram(vk::singleton<ClusterName>::get().get_socket_name());
         me->ask_http_fd_generation = static_cast<int>(generation);
         changed = 1;
       }
@@ -1876,7 +1868,7 @@ void check_and_instance_cache_try_swap_memory() {
 static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
-    send_data_to_statsd_with_prefix("kphp_server", STATS_TAG_KPHP_SERVER);
+    send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), STATS_TAG_KPHP_SERVER);
   }
   create_all_outbound_connections();
 
