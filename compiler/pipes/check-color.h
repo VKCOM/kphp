@@ -50,6 +50,17 @@ public:
     }
 
     for (auto& call_in_func : func->called_in) {
+      auto has = false;
+      for (auto& stacktrace_func : stacktrace) {
+        if (stacktrace_func == call_in_func) {
+          has = true;
+          break;
+        }
+      }
+      if (has) {
+        continue;
+      }
+
       this->check_step(stacktrace, rule, call_in_func);
     }
   }
