@@ -61,12 +61,12 @@ void RegisterKphpConfiguration::handle_function_color_palette(const ClassMemberC
                                              configuration_class_name_, function_color_palette_name_));
     }
 
-    auto colors = vector<Color>();
+    auto colors = vector<function_palette::color_t>();
     colors.reserve(raw_colors.size());
 
     for (const auto& raw_color : raw_colors) {
-      const auto color = FunctionColors::get_color_type(raw_color);
-      if (color == Color::none) {
+      const auto color = function_palette::parse_color(raw_color);
+      if (color == function_palette::color_t::none) {
         kphp_error(0, fmt_format("{}::{} unknown '{}' color",
                                  configuration_class_name_, function_color_palette_name_, raw_color));
         continue;

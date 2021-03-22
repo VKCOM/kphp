@@ -11,7 +11,9 @@
 #include <common/termformat/termformat.h>
 #include <compiler/stage.h>
 
-enum class Color {
+namespace function_palette {
+
+enum class color_t {
   none,       // special color denoting an unsettled color.
   any,        // special color denoting any color.
   any_except, // special color denoting any color with except.
@@ -32,129 +34,78 @@ enum class Color {
   _count // auxiliary color denotes the number of colors.
 };
 
+// parse_color returns the color from the string representation.
+color_t parse_color(const std::string &str);
+// color_to_string returns the string representation of the color.
+std::string color_to_string(color_t color);
+
 /**
- * FunctionColors is a class for conveniently working with a set of colors,
+ * ColorContainer is a class for conveniently working with a set of colors,
  * where order is **important**.
  */
-class FunctionColors {
-  using ColorsRaw = std::array<Color, static_cast<size_t>(Color::_count)>;
+class ColorContainer {
+  using ColorsRaw = std::array<color_t, static_cast<size_t>(color_t::_count)>;
 
 private:
   ColorsRaw data{};
   size_t count{0};
 
 public:
-  const ColorsRaw &colors() {
-    return this->data;
-  }
-
-  void add(const Color &color) {
-    if (this->count >= static_cast<size_t>(Color::_count)) {
-      return;
-    }
-    this->data[this->count] = color;
-    this->count++;
-  }
-
-  size_t size() const noexcept {
-    return this->count;
-  }
-
-  bool empty() const noexcept {
-    return this->count == 0;
-  }
-
-  Color operator[](size_t index) const {
-    return this->data[index];
-  }
-
-  std::string to_string() const {
-    std::string desc;
-
-    desc += "colors: {";
-
-    for (int i = 0; i < this->count; ++i) {
-      const auto color = this->data[i];
-      const auto color_str = FunctionColors::color_to_string(color);
-
-      desc += TermStringFormat::paint_green(color_str);
-
-      if (i != this->count - 1) {
-        desc += ", ";
-      }
-    }
-
-    desc += "}";
-
-    return desc;
-  }
-
-private:
-  static const std::map<std::string, Color> str2color_type;
-
-public:
-  static Color get_color_type(const std::string &str) {
-    const auto it = str2color_type.find(str);
-    const auto found = it != str2color_type.end();
-    return found ? it->second : Color::none;
-  }
-  static std::string color_to_string(Color color) {
-    for (const auto &pair : str2color_type) {
-      if (pair.second == color) {
-        return pair.first;
-      }
-    }
-    return "";
-  }
+  const ColorsRaw &colors();
+  void add(const color_t &color);
+  size_t size() const noexcept;
+  bool empty() const noexcept;
+  color_t operator[](size_t index) const;
+  std::string to_string() const;
 };
 
-struct PaletteNode;
+struct Node;
 
 /**
- * PaletteNodeContainer is a class for conveniently working
- * with a set of colors, where order is **not important**.
+ * NodeContainer is a class for conveniently working
+ * with a map<color,Node*>, where order is **not important**.
  */
-class PaletteNodeContainer {
+class NodeContainer {
 public:
-  static const auto Size = static_cast<size_t>(Color::_count);
+  static const auto Size = static_cast<size_t>(color_t::_count);
 
 private:
-  PaletteNode* data[static_cast<size_t>(Color::_count)]{nullptr};
+  Node *data[static_cast<size_t>(color_t::_count)]{nullptr};
   size_t count{0};
 
 public:
-  void add(PaletteNode* node);
-  PaletteNode* get(Color color) const;
-  bool has(Color color) const;
-  void del(Color color);
+  void add(Node *node);
+  Node *get(color_t color) const;
+  bool has(color_t color) const;
+  void del(color_t color);
   size_t size() const;
   bool empty() const;
-  PaletteNode* operator[](size_t index) const;
+  Node *operator[](size_t index) const;
 };
 
 /**
- * PaletteNode is a structure that describes a node in the PaletteTree tree.
+ * Node is a structure that describes a node in the RuleTree tree.
  */
-struct PaletteNode {
-  Color color{};
-  PaletteNodeContainer children;
+struct Node {
+  color_t color{};
+  NodeContainer children;
 
   bool is_leaf{false};
   bool is_error{false};
   std::string message;
 
-  // For nodes of type any_except. See PaletteTree::normalize.
-  std::map<PaletteNode*, PaletteNodeContainer> except_for_color;
+  // For nodes of type any_except. See RuleTree::normalize.
+  std::map<Node *, NodeContainer> except_for_color;
 
 public:
-  explicit PaletteNode(Color c)
+  explicit Node(color_t c)
     : color(c) {}
 
-  PaletteNode* match(Color clr) const {
+  Node *match(color_t clr) const {
     return this->children.get(clr);
   }
 
-  void insert(const std::vector<Color> &colors, size_t shift, bool error, const std::string &msg) {
+  void insert(const std::vector<color_t> &colors, size_t shift, bool error, const std::string &msg) {
     if (shift == colors.size()) {
       this->is_leaf = true;
       this->is_error = error;
@@ -164,9 +115,9 @@ public:
 
     const auto cur_color = colors[colors.size() - 1 - shift];
 
-    auto* child = this->children.get(cur_color);
+    auto *child = this->children.get(cur_color);
     if (child == nullptr) {
-      auto* child_node = new PaletteNode(cur_color);
+      auto *child_node = new Node(cur_color);
       this->children.add(child_node);
       child_node->insert(colors, shift + 1, error, msg);
       return;
@@ -177,8 +128,8 @@ public:
 };
 
 /**
- * PaletteTree is a class for storing color mixing rules.
- * The tree consists of PaletteNode nodes.
+ * RuleTree is a class for storing color mixing rules.
+ * The tree consists of Node nodes.
  * Leaves in the tree are indicated by nodes with
  * the is_leaf, is_error, and message values set.
  *
@@ -186,15 +137,15 @@ public:
  * colors, which either end with an error and its description,
  * or not. See insert method.
  */
-class PaletteTree {
-  PaletteNode *root_;
-  std::map<std::pair<PaletteNode*, Color>, int> need_delete;
+class RuleTree {
+  Node *root_;
+  std::map<std::pair<Node *, color_t>, int> need_delete;
 
 public:
-  PaletteTree()
-    : root_(new PaletteNode(Color::none)) {}
+  RuleTree()
+    : root_(new Node(color_t::none)) {}
 
-  void insert(const std::vector<Color> &colors, bool is_error = false, const std::string &message = "") {
+  void insert(const std::vector<color_t> &colors, bool is_error = false, const std::string &message = "") {
     root_->insert(colors, 0, is_error, message);
   }
 
@@ -227,23 +178,23 @@ public:
   void normalize() {
     this->normalize_tree(this->root());
 
-    for (auto& pair : this->need_delete) {
-      auto* node = pair.first.first;
+    for (auto &pair : this->need_delete) {
+      auto *node = pair.first.first;
       const auto color = pair.first.second;
       node->children.del(color);
     }
   }
 
-  PaletteNode *root() const {
+  Node *root() const {
     return root_;
   }
 
 private:
-  void normalize_tree(PaletteNode* tree) {
-    auto* any_rule = tree->match(Color::any);
+  void normalize_tree(Node *tree) {
+    auto *any_rule = tree->match(color_t::any);
     if (any_rule == nullptr) {
-      for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
-        auto* child = tree->children[i];
+      for (int i = 0; i < NodeContainer::Size; ++i) {
+        auto *child = tree->children[i];
         if (child == nullptr) {
           continue;
         }
@@ -253,8 +204,8 @@ private:
       return;
     }
 
-    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
-      auto* child = tree->children[i];
+    for (int i = 0; i < NodeContainer::Size; ++i) {
+      auto *child = tree->children[i];
       if (child == nullptr) {
         continue;
       }
@@ -270,14 +221,14 @@ private:
     this->normalize_tree(any_rule);
   }
 
-  void normalize_subtrees(PaletteNode* parent, PaletteNode* any_rule, PaletteNode* specific_rule) {
-    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
-      auto* any_rule_child = any_rule->children[i];
+  void normalize_subtrees(Node *parent, Node *any_rule, Node *specific_rule) {
+    for (int i = 0; i < NodeContainer::Size; ++i) {
+      auto *any_rule_child = any_rule->children[i];
       if (any_rule_child == nullptr) {
         continue;
       }
 
-      const auto* matched = specific_rule->match(any_rule_child->color);
+      const auto *matched = specific_rule->match(any_rule_child->color);
       if (matched == nullptr) {
         continue;
       }
@@ -289,17 +240,15 @@ private:
 
       need_delete.insert(std::make_pair(std::make_pair(any_rule, matched->color), 1));
 
-      auto* any_except_node = parent->match(Color::any_except);
+      auto *any_except_node = parent->match(color_t::any_except);
       if (any_except_node == nullptr) {
-        auto* new_any_except = new PaletteNode(Color::any_except);
+        auto *new_any_except = new Node(color_t::any_except);
         new_any_except->children.add(any_rule_child);
 
-        auto any_except_colors = PaletteNodeContainer();
+        auto any_except_colors = NodeContainer();
         any_except_colors.add(specific_rule);
 
-        new_any_except->except_for_color.insert(
-          std::make_pair(any_rule_child, any_except_colors)
-        );
+        new_any_except->except_for_color.insert(std::make_pair(any_rule_child, any_except_colors));
 
         parent->children.add(new_any_except);
       } else {
@@ -307,12 +256,10 @@ private:
         if (except != any_except_node->except_for_color.end()) {
           except->second.add(specific_rule);
         } else {
-          auto any_except_colors = PaletteNodeContainer();
+          auto any_except_colors = NodeContainer();
           any_except_colors.add(specific_rule);
 
-          any_except_node->except_for_color.insert(
-            std::make_pair(any_rule_child, any_except_colors)
-          );
+          any_except_node->except_for_color.insert(std::make_pair(any_rule_child, any_except_colors));
         }
 
         any_except_node->children.add(any_rule_child);
@@ -320,7 +267,7 @@ private:
     }
   }
 
-  static bool equal_tree(const PaletteNode* first, const PaletteNode* second) {
+  static bool equal_tree(const Node *first, const Node *second) {
     if (first->color != second->color) {
       return false;
     }
@@ -329,9 +276,9 @@ private:
       return false;
     }
 
-    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
-      const auto* first_child = first->children[i];
-      const auto* second_child = second->children[i];
+    for (int i = 0; i < NodeContainer::Size; ++i) {
+      const auto *first_child = first->children[i];
+      const auto *second_child = second->children[i];
       if (first_child == nullptr && second_child == nullptr) {
         continue;
       }
@@ -349,3 +296,5 @@ private:
     return true;
   }
 };
+
+} // namespace function_palette

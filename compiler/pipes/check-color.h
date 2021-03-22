@@ -6,17 +6,66 @@
 
 #include <utility>
 
+#include "common/algorithms/contains.h"
+#include "common/termformat/termformat.h"
+#include "compiler/compiler-core.h"
 #include "compiler/function-colors.h"
 #include "compiler/function-pass.h"
-#include "compiler/compiler-core.h"
-#include "common/termformat/termformat.h"
-#include "common/algorithms/contains.h"
 
-class CheckColorPass final : public FunctionPassBase {
-  using Stacktrace = std::vector<FunctionPtr>;
+namespace fp = function_palette;
+
+class Callstack {
+  const static auto Size = 50;
 
 private:
-  PaletteTree tree;
+  FunctionPtr data[Size]{};
+  size_t count{0};
+
+public:
+  void add(const FunctionPtr& func) {
+    if (this->count >= Size) {
+      return;
+    }
+    this->data[this->count] = func;
+    this->count++;
+  }
+
+  bool contains(const FunctionPtr& func) const {
+    for (int i = 0; i < this->count; ++i) {
+      if (this->data[i] == func) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const FunctionPtr& front() const {
+    return this->data[0];
+  }
+
+  const FunctionPtr& back() const {
+    return this->data[this->count - 1];
+  }
+
+  size_t size() const {
+    return this->count;
+  }
+
+  bool full() const {
+    return this->count == Size;
+  }
+
+  const FunctionPtr& operator[](size_t index) const {
+    if (index >= Size) {
+      return this->data[Size - 1];
+    }
+    return this->data[index];
+  }
+};
+
+class CheckColorPass final : public FunctionPassBase {
+private:
+  fp::RuleTree tree;
 
 public:
   CheckColorPass() {
@@ -24,8 +73,8 @@ public:
   }
 
   void check() const {
-    Stacktrace stacktrace{};
-    this->check_step(stacktrace, this->tree.root(), this->current_function);
+    Callstack stacktrace{};
+    this->check_step(std::move(stacktrace), this->tree.root(), this->current_function);
   }
 
   void on_start() final {
@@ -44,7 +93,7 @@ public:
 
 private:
   // check_func_caller is a function that checks functions above the given in callstack.
-  void check_func_caller(const Stacktrace& stacktrace, PaletteNode* rule, FunctionPtr func) const {
+  void check_func_caller(const Callstack &stacktrace, fp::Node *rule, const FunctionPtr &func) const {
     // If the current rule describes an error.
     if (rule->is_leaf && rule->is_error) {
       // If the rule has no children, then we immediately cause an error.
@@ -65,9 +114,12 @@ private:
       // calling function will probably allow the use and there will be no error.
     }
 
-    for (auto& call_in_func : func->dep_rev) {
-      const auto contains = vk::contains(stacktrace, call_in_func);
-      if (contains) {
+    for (auto &call_in_func : func->dep_rev) {
+      if (stacktrace.full()) {
+        return;
+      }
+
+      if (stacktrace.contains(call_in_func)) {
         continue;
       }
 
@@ -75,8 +127,8 @@ private:
     }
   }
 
-  void check_step(Stacktrace stacktrace, PaletteNode* rule, FunctionPtr func) const {
-    stacktrace.push_back(func);
+  void check_step(Callstack stacktrace, fp::Node *rule, const FunctionPtr& func) const {
+    stacktrace.add(func);
 
     // The rules are structured in such a way that if there is a rule
     // starting with any, then it must be processed in any case, regardless
@@ -85,21 +137,17 @@ private:
     // In order to handle complex cases when a rule with any has clarifying rules,
     // at the stage of rule initialization, any is converted to any_except,
     // which is processed separately.
-    auto* any_rule = rule->match(Color::any);
+    auto *any_rule = rule->match(fp::color_t::any);
     if (any_rule != nullptr) {
       this->check_func_caller(stacktrace, any_rule, func);
     }
 
     // If the current rules have a child with any_except color, in addition,
     // we need to get it for further processing.
-    auto* any_except_rule = rule->match(Color::any_except);
+    auto *any_except_rule = rule->match(fp::color_t::any_except);
 
     // If a function has no color, then it is considered transparent.
     if (func->colors.empty()) {
-      if (stacktrace.size() > 100) {
-        return;
-      }
-
       if (any_except_rule != nullptr) {
         // Rules starting with any_except can be skipped if more precise
         // rules were found in the process of processing the colors of the
@@ -139,7 +187,7 @@ private:
     // used_colors contains all the colors that will be used to process the current
     // function. This is necessary to cancel matching any_except rules if the colors
     // used are rules that are more precise than any_except.
-    auto used_colors = PaletteNodeContainer();
+    auto used_colors = fp::NodeContainer();
 
     // We process the colors until all of them have been processed in one way or another.
     while (shift_in_colors < func->colors.size()) {
@@ -158,7 +206,7 @@ private:
       //
       // count_used_colors stores the amount that was able to be matched in a row at a time.
       auto count_used_colors = 0;
-      auto* tmp_rule = try_use_max_colors(func, shift_in_colors, rule, count_used_colors);
+      auto *tmp_rule = try_use_max_colors(func, shift_in_colors, rule, count_used_colors);
 
       // If count_used_colors is zero, which means that it was not possible to find suitable
       // colors in this iteration, then go to the next iteration.
@@ -191,14 +239,14 @@ private:
       // with used_colors, call the check, so we will call only the necessary any_except
       // rules and skip those that do not need to be processed, since a rule that
       // is more precise than any_except has already been processed earlier.
-      for (auto& pair : any_except_rule->except_for_color) {
+      for (auto &pair : any_except_rule->except_for_color) {
         const auto except_colors = pair.second;
 
         auto has = false;
 
-        for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
-          const auto except_has_color = except_colors.has(Color(i));
-          const auto used_has_color = used_colors.has(Color(i));
+        for (int i = 0; i < fp::NodeContainer::Size; ++i) {
+          const auto except_has_color = except_colors.has(fp::color_t(i));
+          const auto used_has_color = used_colors.has(fp::color_t(i));
 
           if (except_has_color && used_has_color) {
             has = true;
@@ -210,7 +258,7 @@ private:
           // Since we save a pointer to the beginning of the rule, we need to create
           // a fake parent so that in check_step, this parent has the received rule
           // and is applied.
-          auto tmp_node = PaletteNode(Color::none);
+          auto tmp_node = fp::Node(fp::color_t::none);
           tmp_node.children.add(pair.first);
           this->check_func_caller(stacktrace, &tmp_node, func);
         }
@@ -237,9 +285,9 @@ private:
     }
   }
 
-  static PaletteNode* try_use_max_colors(const FunctionPtr& func, int shift_in_colors, PaletteNode* rule, int& count_used_colors) {
+  static fp::Node *try_use_max_colors(const FunctionPtr &func, int shift_in_colors, fp::Node *rule, int &count_used_colors) {
     // We copy the pointer to the current rule so as not to modify the original.
-    auto* tmp_rule = rule;
+    auto *tmp_rule = rule;
 
     // The starting index is the last index minus the color shift.
     // Thus, each iteration of the while loop (in the calling function)
@@ -254,7 +302,7 @@ private:
       const auto color = func->colors[i];
 
       // Trying to match the current color to the current rule.
-      auto* temp_rule_node = tmp_rule->match(color);
+      auto *temp_rule_node = tmp_rule->match(color);
       if (temp_rule_node == nullptr) {
         // If the match failed, it means that the current iteration has failed.
         break;
@@ -267,7 +315,7 @@ private:
     return tmp_rule;
   }
 
-  static void error(const Stacktrace& stacktrace, const std::string& message) {
+  static void error(const Callstack &stacktrace, const std::string &message) {
     stage::set_function(stacktrace.back());
 
     const auto child = stacktrace.front();
@@ -285,10 +333,10 @@ private:
                              TermStringFormat::paint_green(parent_name),
                              TermStringFormat::paint_green(child_name),
                              desc)
-    );
+     );
   }
 
-  static string format_stacktrace(const Stacktrace &stacktrace) {
+  static string format_stacktrace(const Callstack &stacktrace) {
     std::string desc;
 
     for (int i = stacktrace.size() - 1; i >= 0; --i) {

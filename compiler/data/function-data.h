@@ -108,7 +108,7 @@ public:
   bool is_flatten = false;
   bool is_pure = false;
 
-  FunctionColors colors{};
+  function_palette::ColorContainer colors{};
 
   enum class profiler_status : uint8_t {
     disable,
