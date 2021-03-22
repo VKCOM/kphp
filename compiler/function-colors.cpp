@@ -4,7 +4,7 @@
 
 #include "function-colors.h"
 
-const std::map<std::string, Color> Colors::str2color_type = {
+const std::map<std::string, Color> FunctionColors::str2color_type = {
   {"*",                 Color::any},
   {"highload",          Color::highload},
   {"no-highload",       Color::no_highload},
@@ -46,6 +46,8 @@ bool PaletteNodeContainer::empty() const {
 }
 
 PaletteNode *PaletteNodeContainer::operator[](size_t index) const {
+  if (index >= Size) {
+    return nullptr;
+  }
   return this->data[index];
 }
-

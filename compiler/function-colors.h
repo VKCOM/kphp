@@ -33,30 +33,30 @@ enum class Color {
 };
 
 /**
- * Colors is a class for conveniently working with a set of colors,
+ * FunctionColors is a class for conveniently working with a set of colors,
  * where order is **important**.
  */
-class Colors {
+class FunctionColors {
   using ColorsRaw = std::array<Color, static_cast<size_t>(Color::_count)>;
 
 private:
-  ColorsRaw colors_{};
-  int count{0};
+  ColorsRaw data{};
+  size_t count{0};
 
 public:
   const ColorsRaw &colors() {
-    return this->colors_;
+    return this->data;
   }
 
   void add(const Color &color) {
     if (this->count >= static_cast<size_t>(Color::_count)) {
       return;
     }
-    this->colors_[this->count] = color;
+    this->data[this->count] = color;
     this->count++;
   }
 
-  int length() const noexcept {
+  size_t size() const noexcept {
     return this->count;
   }
 
@@ -64,19 +64,20 @@ public:
     return this->count == 0;
   }
 
-  std::string to_string() const {
-    auto *file = stdout;
-    const auto with_color = stage::should_be_colored(file);
+  Color operator[](size_t index) const {
+    return this->data[index];
+  }
 
+  std::string to_string() const {
     std::string desc;
 
     desc += "colors: {";
 
     for (int i = 0; i < this->count; ++i) {
-      const auto color = this->colors_[i];
-      const auto color_str = Colors::color_to_string(color);
+      const auto color = this->data[i];
+      const auto color_str = FunctionColors::color_to_string(color);
 
-      desc += with_color ? TermStringFormat::paint_green(color_str) : color_str;
+      desc += TermStringFormat::paint_green(color_str);
 
       if (i != this->count - 1) {
         desc += ", ";
@@ -228,7 +229,7 @@ public:
 
     for (auto& pair : this->need_delete) {
       auto* node = pair.first.first;
-      auto color = pair.first.second;
+      const auto color = pair.first.second;
       node->children.del(color);
     }
   }
@@ -276,12 +277,12 @@ private:
         continue;
       }
 
-      auto* matched = specific_rule->match(any_rule_child->color);
+      const auto* matched = specific_rule->match(any_rule_child->color);
       if (matched == nullptr) {
         continue;
       }
 
-      auto equal = equal_tree(any_rule_child, matched);
+      const auto equal = equal_tree(any_rule_child, matched);
       if (!equal) {
         continue;
       }

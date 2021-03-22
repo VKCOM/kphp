@@ -107,7 +107,7 @@ public:
   bool is_flatten = false;
   bool is_pure = false;
 
-  Colors colors{};
+  FunctionColors colors{};
   // An array of functions that call the current one.
   std::vector<FunctionPtr> called_in{};
 

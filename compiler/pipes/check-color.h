@@ -4,14 +4,13 @@
 
 #pragma once
 
-#include "compiler/function-colors.h"
-#include "compiler/function-pass.h"
-#include <common/termformat/termformat.h>
-#include <common/algorithms/contains.h>
-
 #include <utility>
 
+#include "compiler/function-colors.h"
+#include "compiler/function-pass.h"
 #include "compiler/compiler-core.h"
+#include "common/termformat/termformat.h"
+#include "common/algorithms/contains.h"
 
 class CheckColorPass final : public FunctionPassBase {
   using Stacktrace = std::vector<FunctionPtr>;
@@ -24,27 +23,43 @@ public:
     tree = G->get_function_palette_tree();
   }
 
-  void check() {
+  void check() const {
     Stacktrace stacktrace{};
     this->check_step(stacktrace, this->tree.root(), this->current_function);
   }
 
+  void on_start() final {
+    this->check();
+  }
+
+  void on_finish() override {}
+
+  std::string get_description() override {
+    return "Check function color";
+  }
+
+  bool check_function(FunctionPtr function) const override {
+    return !function->is_extern();
+  }
+
+private:
   // check_func_caller is a function that checks functions above the given in callstack.
-  void check_func_caller(const Stacktrace& stacktrace, PaletteNode* rule, FunctionPtr func) {
+  void check_func_caller(const Stacktrace& stacktrace, PaletteNode* rule, FunctionPtr func) const {
     // If the current rule describes an error.
     if (rule->is_leaf && rule->is_error) {
       // If the rule has no children, then we immediately cause an error.
       if (rule->children.empty()) {
         error(stacktrace, rule->message);
         return;
-      } else {
-        // However, if there are children, but the current function
-        // is not called anywhere, then we also cause an error.
-        if (func->called_in.empty()) {
-          error(stacktrace, rule->message);
-          return;
-        }
       }
+
+      // However, if there are children, but the current function
+      // is not called anywhere, then we also cause an error.
+      if (func->called_in.empty()) {
+        error(stacktrace, rule->message);
+        return;
+      }
+
       // If the rule has children and the current function is called
       // somewhere, there is no need to cause an error, since the
       // calling function will probably allow the use and there will be no error.
@@ -60,7 +75,7 @@ public:
     }
   }
 
-  void check_step(Stacktrace stacktrace, PaletteNode* rule, FunctionPtr func) {
+  void check_step(Stacktrace stacktrace, PaletteNode* rule, FunctionPtr func) const {
     stacktrace.push_back(func);
 
     // The rules are structured in such a way that if there is a rule
@@ -116,7 +131,7 @@ public:
     auto used_colors = PaletteNodeContainer();
 
     // We process the colors until all of them have been processed in one way or another.
-    while (shift_in_colors < func->colors.length()) {
+    while (shift_in_colors < func->colors.size()) {
 
       // Trying to match the largest number of colors in a row, color by color.
       //
@@ -218,14 +233,14 @@ public:
     // The starting index is the last index minus the color shift.
     // Thus, each iteration of the while loop (in the calling function)
     // we will bypass different colors.
-    const auto start_index = func->colors.length() - 1 - shift_in_colors;
+    const auto start_index = func->colors.size() - 1 - shift_in_colors;
 
     // The number of colors matched in a row.
     count_used_colors = 0;
 
     // We go around the colors from the end.
     for (int i = start_index; i >= 0; --i) {
-      const auto color = func->colors.colors()[i];
+      const auto color = func->colors[i];
 
       // Trying to match the current color to the current rule.
       auto* temp_rule_node = tmp_rule->match(color);
@@ -283,19 +298,5 @@ public:
     }
 
     return desc;
-  }
-
-  void on_start() final {
-    this->check();
-  }
-
-  void on_finish() override {}
-
-  std::string get_description() override {
-    return "Check function color";
-  }
-
-  bool check_function(FunctionPtr function) const override {
-    return !function->is_extern();
   }
 };
