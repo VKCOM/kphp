@@ -19,3 +19,33 @@ const std::map<std::string, Color> Colors::str2color_type = {
   {"message-module",    Color::message_module},
   {"danger-zone",       Color::danger_zone},
 };
+
+void PaletteNodeContainer::add(PaletteNode* node) {
+  this->count++;
+  this->data[static_cast<size_t>(node->color)] = node;
+}
+
+PaletteNode *PaletteNodeContainer::get(Color color) const {
+  return this->data[static_cast<size_t>(color)];
+}
+
+bool PaletteNodeContainer::has(Color color) const {
+  return this->get(color) != nullptr;
+}
+
+void PaletteNodeContainer::del(Color color) {
+  this->data[static_cast<size_t>(color)] = nullptr;
+}
+
+size_t PaletteNodeContainer::size() const {
+  return this->count;
+}
+
+bool PaletteNodeContainer::empty() const {
+  return this->count == 0;
+}
+
+PaletteNode *PaletteNodeContainer::operator[](size_t index) const {
+  return this->data[index];
+}
+

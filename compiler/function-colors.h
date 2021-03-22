@@ -12,8 +12,9 @@
 #include <compiler/stage.h>
 
 enum class Color {
-  none, // special color denoting an unsettled color.
-  any,  // special color denoting any color.
+  none,        // special color denoting an unsettled color.
+  any,         // special color denoting any color.
+  any_except,  // special color denoting any color with except.
 
   highload,
   no_highload,
@@ -32,8 +33,8 @@ enum class Color {
 };
 
 /**
- * Colors is a class that describes a container
- * that stores the colors of a function.
+ * Colors is a class for conveniently working with a set of colors,
+ * where order is **important**.
  */
 class Colors {
   using ColorsRaw = std::array<Color, static_cast<size_t>(Color::_count)>;
@@ -106,29 +107,50 @@ public:
   }
 };
 
+struct PaletteNode;
+
+/**
+ * PaletteNodeContainer is a class for conveniently working
+ * with a set of colors, where order is **not important**.
+ */
+class PaletteNodeContainer {
+public:
+  static const auto Size = static_cast<size_t>(Color::_count);
+
+private:
+  PaletteNode* data[static_cast<size_t>(Color::_count)]{nullptr};
+  size_t count{0};
+
+public:
+  void add(PaletteNode* node);
+  PaletteNode* get(Color color) const;
+  bool has(Color color) const;
+  void del(Color color);
+  size_t size() const;
+  bool empty() const;
+  PaletteNode* operator[](size_t index) const;
+};
+
 /**
  * PaletteNode is a structure that describes a node in the PaletteTree tree.
  */
 struct PaletteNode {
   Color color{};
-  std::vector<PaletteNode *> children;
+  PaletteNodeContainer children;
 
   bool is_leaf{false};
   bool is_error{false};
   std::string message;
 
+  // For nodes of type any_except. See PaletteTree::normalize.
+  std::map<PaletteNode*, PaletteNodeContainer> except_for_color;
+
 public:
   explicit PaletteNode(Color c)
     : color(c) {}
 
-  PaletteNode *match(Color clr) {
-    for (auto &child : this->children) {
-      if (child->color == clr) {
-        return child;
-      }
-    }
-
-    return nullptr;
+  PaletteNode* match(Color clr) const {
+    return this->children.get(clr);
   }
 
   void insert(const std::vector<Color> &colors, size_t shift, bool error, const std::string &msg) {
@@ -139,21 +161,17 @@ public:
       return;
     }
 
-    bool has_child = false;
+    const auto cur_color = colors[colors.size() - 1 - shift];
 
-    for (auto &child : this->children) {
-      if (child->color == colors[colors.size() - 1 - shift]) {
-        has_child = true;
-        child->insert(colors, shift + 1, error, msg);
-        break;
-      }
-    }
-
-    if (!has_child) {
-      auto *child_node = new PaletteNode(colors[colors.size() - 1 - shift]);
-      this->children.push_back(child_node);
+    auto* child = this->children.get(cur_color);
+    if (child == nullptr) {
+      auto* child_node = new PaletteNode(cur_color);
+      this->children.add(child_node);
       child_node->insert(colors, shift + 1, error, msg);
+      return;
     }
+
+    child->insert(colors, shift + 1, error, msg);
   }
 };
 
@@ -169,16 +187,164 @@ public:
  */
 class PaletteTree {
   PaletteNode *root_;
+  std::map<std::pair<PaletteNode*, Color>, int> need_delete;
 
 public:
   PaletteTree()
     : root_(new PaletteNode(Color::none)) {}
 
-  void insert(const std::vector<Color> &colors, bool is_error = false, const std::string &message = "") const {
+  void insert(const std::vector<Color> &colors, bool is_error = false, const std::string &message = "") {
     root_->insert(colors, 0, is_error, message);
+  }
+
+  // The normalize function converts the rule tree to a form where any (as type)
+  // rules are represented as any and any_except rules.
+  // any rules are rules for which there are no qualifying rules (1).
+  // Example:
+  //
+  // (1)
+  //    'green *'   => "error" // There is no clarification for the rule.
+  //
+  // (2)
+  //    'red *'     => "error"
+  //    'red green' => 1 // Rule clarifies the previous one.
+  //
+  // And any_except rules, which are designed to store rules for which
+  // there are refinement rules (2).
+  //
+  // any_except rules contain an additional except field, which stores a set of colors for
+  // which you do not need to call the rule, since there is a more precise rule.
+  // In the previous example, this will be green.
+  //
+  // Thus, we get the following rules:
+  //    'green *'       => "error"
+  //    'red *(-green)' => "error"
+  //    'red green'     => 1
+  //
+  // And thanks to this transformation, we can easily understand whether to check
+  // the any rule (which has now become any_except) or not.
+  void normalize() {
+    this->normalize_tree(this->root());
+
+    for (auto& pair : this->need_delete) {
+      auto* node = pair.first.first;
+      auto color = pair.first.second;
+      node->children.del(color);
+    }
   }
 
   PaletteNode *root() const {
     return root_;
+  }
+
+private:
+  void normalize_tree(PaletteNode* tree) {
+    auto* any_rule = tree->match(Color::any);
+    if (any_rule == nullptr) {
+      for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
+        auto* child = tree->children[i];
+        if (child == nullptr) {
+          continue;
+        }
+
+        this->normalize_tree(child);
+      }
+      return;
+    }
+
+    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
+      auto* child = tree->children[i];
+      if (child == nullptr) {
+        continue;
+      }
+
+      if (child == any_rule) {
+        continue;
+      }
+
+      this->normalize_subtrees(tree, any_rule, child);
+      this->normalize_tree(child);
+    }
+
+    this->normalize_tree(any_rule);
+  }
+
+  void normalize_subtrees(PaletteNode* parent, PaletteNode* any_rule, PaletteNode* specific_rule) {
+    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
+      auto* any_rule_child = any_rule->children[i];
+      if (any_rule_child == nullptr) {
+        continue;
+      }
+
+      auto* matched = specific_rule->match(any_rule_child->color);
+      if (matched == nullptr) {
+        continue;
+      }
+
+      auto equal = equal_tree(any_rule_child, matched);
+      if (!equal) {
+        continue;
+      }
+
+      need_delete.insert(std::make_pair(std::make_pair(any_rule, matched->color), 1));
+
+      auto* any_except_node = parent->match(Color::any_except);
+      if (any_except_node == nullptr) {
+        auto* new_any_except = new PaletteNode(Color::any_except);
+        new_any_except->children.add(any_rule_child);
+
+        auto any_except_colors = PaletteNodeContainer();
+        any_except_colors.add(specific_rule);
+
+        new_any_except->except_for_color.insert(
+          std::make_pair(any_rule_child, any_except_colors)
+        );
+
+        parent->children.add(new_any_except);
+      } else {
+        auto except = any_except_node->except_for_color.find(any_rule_child);
+        if (except != any_except_node->except_for_color.end()) {
+          except->second.add(specific_rule);
+        } else {
+          auto any_except_colors = PaletteNodeContainer();
+          any_except_colors.add(specific_rule);
+
+          any_except_node->except_for_color.insert(
+            std::make_pair(any_rule_child, any_except_colors)
+          );
+        }
+
+        any_except_node->children.add(any_rule_child);
+      }
+    }
+  }
+
+  static bool equal_tree(const PaletteNode* first, const PaletteNode* second) {
+    if (first->color != second->color) {
+      return false;
+    }
+
+    if (first->children.size() != second->children.size()) {
+      return false;
+    }
+
+    for (int i = 0; i < PaletteNodeContainer::Size; ++i) {
+      const auto* first_child = first->children[i];
+      const auto* second_child = second->children[i];
+      if (first_child == nullptr && second_child == nullptr) {
+        continue;
+      }
+
+      if (first_child != second_child) {
+        return false;
+      }
+
+      const auto children_equal = equal_tree(first_child, second_child);
+      if (!children_equal) {
+        return false;
+      }
+    }
+
+    return true;
   }
 };

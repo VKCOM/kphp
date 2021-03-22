@@ -114,6 +114,10 @@ public:
     function_palette_tree.insert(colors, is_error, message);
   }
 
+  void normalize_function_palette_tree() {
+    function_palette_tree.normalize();
+  }
+
   PaletteTree get_function_palette_tree() {
     return function_palette_tree;
   }

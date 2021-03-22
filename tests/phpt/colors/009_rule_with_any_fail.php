@@ -34,4 +34,5 @@ function functionWithoutColors() {
     echo 1;
 }
 
+functionWithSomeColors();
 dangerZone();

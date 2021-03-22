@@ -7,6 +7,13 @@
 /  functionWithSsrAndMessageModuleAndHighload\(\) with following colors\: \{ssr, message\-module, highload\}/
 /  functionWithMessageModule\(\) with following colors\: \{message\-module\}/
 /  functionWithAllowDbAccessAndNoHighload\(\) with following colors\: \{has\-db\-access, ssr\-allow\-db, no\-highload\}/
+/Calling function marked as internal outside of functions with the color message\-module \(main\(\) call messageInternals\(\)\)/
+/  main\(\)/
+/  dangerZoneCallingMessageInternals\(\) with following colors\: \{danger\-zone\}/
+/  messageInternals\(\) with following colors\: \{message-internals}/
+/Calling function without color danger\-zone in a function with color danger\-zone \(dangerZoneCallingMessageInternals\(\) call messageInternals\(\)\)/
+/  dangerZoneCallingMessageInternals\(\) with following colors: \{danger\-zone\}/
+/  messageInternals\(\) with following colors\: \{message-internals\}/
 <?php
 
 class KphpConfiguration {
@@ -56,4 +63,25 @@ function functionWithDbAccessWithoutAllow() {
     echo 1;
 }
 
-functionWithSsrAndMessageModuleAndHighload();
+
+/**
+ * @kphp-color danger-zone
+ */
+function dangerZoneCallingMessageInternals() {
+    messageInternals();
+}
+
+/**
+ * @kphp-color message-internals
+ */
+function messageInternals() {
+    echo 1;
+}
+
+
+function main() {
+    dangerZoneCallingMessageInternals();
+    functionWithSsrAndMessageModuleAndHighload();
+}
+
+main();

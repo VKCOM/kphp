@@ -97,6 +97,8 @@ void RegisterKphpConfiguration::handle_function_color_palette(const ClassMemberC
 
     G->add_function_palette_rule(colors, is_error_rule, error_message);
   }
+
+  G->normalize_function_palette_tree();
 }
 
 void RegisterKphpConfiguration::handle_runtime_options(const ClassMemberConstant &c) {
