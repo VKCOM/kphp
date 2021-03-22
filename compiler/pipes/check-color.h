@@ -96,6 +96,10 @@ private:
 
     // If a function has no color, then it is considered transparent.
     if (func->colors.empty()) {
+      if (stacktrace.size() > 100 && rule == this->tree.root()) {
+        return;
+      }
+
       if (any_except_rule != nullptr) {
         // Rules starting with any_except can be skipped if more precise
         // rules were found in the process of processing the colors of the
