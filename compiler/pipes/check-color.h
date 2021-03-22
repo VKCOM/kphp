@@ -7,6 +7,7 @@
 #include "compiler/function-colors.h"
 #include "compiler/function-pass.h"
 #include <common/termformat/termformat.h>
+#include <common/algorithms/contains.h>
 
 #include <utility>
 
@@ -50,14 +51,8 @@ public:
     }
 
     for (auto& call_in_func : func->called_in) {
-      auto has = false;
-      for (auto& stacktrace_func : stacktrace) {
-        if (stacktrace_func == call_in_func) {
-          has = true;
-          break;
-        }
-      }
-      if (has) {
+      const auto contains = vk::contains(stacktrace, call_in_func);
+      if (contains) {
         continue;
       }
 
