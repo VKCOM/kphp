@@ -11,10 +11,13 @@
 #include <common/termformat/termformat.h>
 #include <compiler/stage.h>
 
+// function_palette namespace contains all the necessary things to
+// implement the concept of colors for functions.
 namespace function_palette {
 
+// color_t enumeration describes all possible colors.
 enum class color_t {
-  none,       // special color denoting an unsettled color.
+  none,       // special color denoting an unidentified color.
   any,        // special color denoting any color.
   any_except, // special color denoting any color with except.
 
@@ -34,9 +37,11 @@ enum class color_t {
   _count // auxiliary color denotes the number of colors.
 };
 
-// parse_color returns the color from the string representation.
+// parse_color converts the string representation of a color
+// to an color_t enumeration value.
 color_t parse_color(const std::string &str);
-// color_to_string returns the string representation of the color.
+
+// color_to_string converts color to its string representation.
 std::string color_to_string(color_t color);
 
 /**
@@ -76,15 +81,15 @@ private:
 public:
   void add(Node *node);
   Node *get(color_t color) const;
-  bool has(color_t color) const;
+  bool has(color_t color) const noexcept;
   void del(color_t color);
-  size_t size() const;
-  bool empty() const;
+  size_t size() const noexcept;
+  bool empty() const noexcept;
   Node *operator[](size_t index) const;
 };
 
 /**
- * Node is a structure that describes a node in the RuleTree tree.
+ * Node is a structure that describes a node in the RuleTree.
  */
 struct Node {
   color_t color{};
@@ -135,7 +140,8 @@ public:
  *
  * It is assumed that the tree will be built from chains of
  * colors, which either end with an error and its description,
- * or not. See insert method.
+ * or not.
+ * See insert method.
  */
 class RuleTree {
   Node *root_;

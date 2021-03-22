@@ -14,7 +14,12 @@
 
 namespace fp = function_palette;
 
+// Callstack class describes a static array for storing functions
+// while checking a function. An array is allocated on the stack,
+// which avoids heap allocations, which allows less memory to be used.
 class Callstack {
+  // Size constant describes the maximum depth of color checking,
+  // as well as the maximum number of functions in the callstack.
   const static auto Size = 50;
 
 private:
@@ -166,6 +171,9 @@ private:
         return;
       }
 
+      // If the rule any or any_except is currently being processed, then if the current
+      // function is transparent, then the rule will definitely not be matched, since the
+      // rules contain specific colors in the children.
       if (vk::any_of_equal(rule->color, fp::color_t::any_except, fp::color_t::any)) {
         return;
       }

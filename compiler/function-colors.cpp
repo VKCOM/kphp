@@ -7,19 +7,19 @@
 using namespace function_palette;
 
 const std::map<std::string, color_t> str2color_type = {
-  {"*", color_t::any},
-  {"highload", color_t::highload},
-  {"no-highload", color_t::no_highload},
-  {"ssr", color_t::ssr},
-  {"ssr-allow-db", color_t::ssr_allow_db},
-  {"has-db-access", color_t::has_db_access},
-  {"api", color_t::api},
-  {"api-callback", color_t::api_callback},
-  {"api-allow-curl", color_t::api_allow_curl},
-  {"has-curl", color_t::has_curl},
+  {"*",                 color_t::any},
+  {"highload",          color_t::highload},
+  {"no-highload",       color_t::no_highload},
+  {"ssr",               color_t::ssr},
+  {"ssr-allow-db",      color_t::ssr_allow_db},
+  {"has-db-access",     color_t::has_db_access},
+  {"api",               color_t::api},
+  {"api-callback",      color_t::api_callback},
+  {"api-allow-curl",    color_t::api_allow_curl},
+  {"has-curl",          color_t::has_curl},
   {"message-internals", color_t::message_internals},
-  {"message-module", color_t::message_module},
-  {"danger-zone", color_t::danger_zone},
+  {"message-module",    color_t::message_module},
+  {"danger-zone",       color_t::danger_zone},
 };
 
 color_t function_palette::parse_color(const std::string &str) {
@@ -91,7 +91,7 @@ Node *NodeContainer::get(color_t color) const {
   return this->data[static_cast<size_t>(color)];
 }
 
-bool NodeContainer::has(color_t color) const {
+bool NodeContainer::has(color_t color) const noexcept {
   return this->get(color) != nullptr;
 }
 
@@ -100,11 +100,11 @@ void NodeContainer::del(color_t color) {
   this->data[static_cast<size_t>(color)] = nullptr;
 }
 
-size_t NodeContainer::size() const {
+size_t NodeContainer::size() const noexcept {
   return this->count;
 }
 
-bool NodeContainer::empty() const {
+bool NodeContainer::empty() const noexcept {
   return this->count == 0;
 }
 
