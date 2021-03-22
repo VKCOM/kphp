@@ -111,6 +111,13 @@ private:
         this->check_func_caller(stacktrace, any_except_rule, func);
       }
 
+      // If the current function has no colors and the rule is initial, then it
+      // makes no sense to check the calling functions, since their check will be
+      // done when this pass is called for them.
+      if (rule == this->tree.root()) {
+        return;
+      }
+
       // Also, due to the fact that there are no colors and the function is
       // transparent, we call the processing of the functions above the
       // current in callstack.
