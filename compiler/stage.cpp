@@ -213,8 +213,8 @@ void stage::set_file(SrcFilePtr file) {
   get_location_ptr()->set_file(file);
 }
 
-void stage::set_function(FunctionPtr file) {
-  get_location_ptr()->set_function(file);
+void stage::set_function(FunctionPtr function) {
+  get_location_ptr()->set_function(function);
 }
 
 void stage::set_line(int line) {
