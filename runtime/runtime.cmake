@@ -40,6 +40,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         memcache.cpp
         memory_usage.cpp
         misc.cpp
+        mixed.cpp
         msgpack-serialization.cpp
         mysql.cpp
         net_events.cpp
@@ -53,6 +54,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         serialize-functions.cpp
         storage.cpp
         streams.cpp
+        string.cpp
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
