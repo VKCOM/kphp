@@ -42,7 +42,7 @@ void set_name(std::string &&name);
 const std::string &get_name();
 
 void set_file(SrcFilePtr file);
-void set_function(FunctionPtr file);
+void set_function(FunctionPtr function);
 void set_line(int line);
 SrcFilePtr get_file();
 FunctionPtr get_function();
