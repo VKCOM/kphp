@@ -2,11 +2,13 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/job-workers-context.h"
 
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/job-workers/shared-memory-manager.h"
+#include "runtime/resumable.h"
+#include "runtime/net_events.h"
 
 #include "runtime/job-workers/job-interface.h"
 
@@ -14,15 +16,38 @@ bool f$is_kphp_job_workers_enabled() noexcept {
   return vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num > 0;
 }
 
+int job_timeout_wakeup_id{-1};
+
+static void process_job_timeout(kphp_event_timer *timer) {
+  process_job_timeout(timer->wakeup_extra);
+}
+
 void global_init_job_workers_lib() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
     job_workers::JobStats::get();
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
+    job_timeout_wakeup_id = register_wakeup_callback(&process_job_timeout);
   }
 }
 
-void process_job_worker_answer_event(job_workers::JobSharedMessage *job_result) noexcept {
-  vk::singleton<job_workers::ProcessingJobs>::get().finish_job_processing(job_result);
+void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
+  int64_t job_resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().finish_job_on_answer(job_id, job_result);
+
+  if (job_resumable_id == 0) {
+    return;
+  }
+
+  resumable_run_ready(job_resumable_id);
+}
+
+void process_job_timeout(int job_id) noexcept {
+  int64_t job_resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().finish_job_on_timeout(job_id);
+
+  if (job_resumable_id == 0) {
+    return;
+  }
+
+  resumable_run_ready(job_resumable_id);
 }
 
 class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {

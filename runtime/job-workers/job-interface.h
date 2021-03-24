@@ -93,4 +93,8 @@ bool f$is_kphp_job_workers_enabled() noexcept;
 
 void global_init_job_workers_lib() noexcept;
 
-void process_job_worker_answer_event(job_workers::JobSharedMessage *job_result) noexcept;
+extern int job_timeout_wakeup_id;
+
+void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+
+void process_job_timeout(int job_id) noexcept;

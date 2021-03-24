@@ -1351,8 +1351,9 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   public function getErrorCode() ::: int;
 }
 
-function kphp_job_worker_start(KphpJobWorkerRequest $request, float $script_execution_timeout = -1) ::: int;
-function kphp_job_worker_wait(int $job_id, float $tmp_wait_timeout = -1) ::: KphpJobWorkerResponse;
+function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout = -1.0) ::: int;
+/** @kphp-extern-func-info resumable */
+function kphp_job_worker_wait(int $job_id, float $timeout = -1.0) ::: KphpJobWorkerResponse;
 
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
 function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;

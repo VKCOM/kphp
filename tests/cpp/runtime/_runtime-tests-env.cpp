@@ -4,6 +4,7 @@
 
 #include "runtime/storage.h"
 #include "runtime/interface.h"
+#include "runtime/job-workers/job-interface.h"
 #include "runtime/tl/rpc_response.h"
 #include "server/php-engine-vars.h"
 
@@ -60,6 +61,7 @@ template<> int Storage::tagger<array<mixed>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<Optional<string>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<Optional<array<mixed>>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<array<array<mixed>>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<class_instance<C$KphpJobWorkerResponse>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<class_instance<C$VK$TL$RpcResponse>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<array<class_instance<C$VK$TL$RpcResponse>>>::get_tag() noexcept { return 0; }
 template<> Storage::loader<mixed>::loader_fun Storage::loader<mixed>::get_function(int) noexcept { return nullptr; }

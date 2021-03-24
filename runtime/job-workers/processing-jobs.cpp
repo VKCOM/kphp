@@ -2,6 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/net_events.h"
 #include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/instance-copy-processor.h"
@@ -10,28 +11,57 @@
 
 namespace job_workers {
 
-void ProcessingJobs::finish_job_processing(job_workers::JobSharedMessage *job_result) noexcept {
+void ProcessingJobs::start_job_processing(int job_id, JobRequestInfo &&job_request_info) noexcept {
+  processing_[job_id] = std::move(job_request_info);
+}
+
+int64_t ProcessingJobs::finish_job_on_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
   php_assert(job_result);
-  auto reply = job_result->instance.cast_to<C$KphpJobWorkerResponse>();
-  php_assert(!reply.is_null());
+  php_assert(job_id == job_result->job_id);
 
-  const int job_slot_id = job_result->job_id;
-  // TODO Check if reply is null => OOM
-  reply = copy_instance_into_script_memory(reply);
-  vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
-  auto &job_ready_result = processing_[job_slot_id];
-  job_ready_result.reply = std::move(reply);
-  job_ready_result.ready = true;
+  return finish_job_impl(job_id, job_result);
 }
 
-bool ProcessingJobs::is_ready(int job_slot_id) const noexcept {
-  const ProcessingJobAwait *job_result = processing_.find_value(job_slot_id);
-  return job_result && job_result->ready;
+int64_t ProcessingJobs::finish_job_on_timeout(int job_id) noexcept {
+  return finish_job_impl(job_id, nullptr);
 }
 
-class_instance<C$KphpJobWorkerResponse> ProcessingJobs::withdraw(int job_slot_id) noexcept {
-  class_instance<C$KphpJobWorkerResponse> result = std::move(processing_[job_slot_id].reply);
-  processing_.unset(job_slot_id);
+int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
+  auto release_job_result = vk::finally([=]() {
+    if (job_result) {
+      vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
+    }
+  });
+
+  if (!processing_.has_key(job_id)) {
+    // possible in case of answer after timeout
+    return 0;
+  }
+
+  auto &ready_job = processing_[job_id];
+
+  if (job_result) {
+    auto reply = job_result->instance.cast_to<C$KphpJobWorkerResponse>();
+    php_assert(!reply.is_null());
+
+    // TODO Check if reply is null => OOM
+    reply = copy_instance_into_script_memory(reply);
+    ready_job.response = std::move(reply);
+  } else {
+    ready_job.response = class_instance<C$KphpJobWorkerResponse>{}; // TODO: or C$KphpJobWorkerResponseError{.error_code = JOB_CLIENT_TIMEOUT} ?
+  }
+
+  if (ready_job.timer) {
+    remove_event_timer(ready_job.timer);
+  }
+
+  return ready_job.resumable_id;
+}
+class_instance<C$KphpJobWorkerResponse> ProcessingJobs::withdraw(int job_id) noexcept {
+  JobRequestInfo &ready_job = processing_[job_id];
+  php_assert(ready_job.resumable_id != 0);
+  class_instance<C$KphpJobWorkerResponse> result = std::move(ready_job.response);
+  processing_.unset(job_id);
   return result;
 }
 
