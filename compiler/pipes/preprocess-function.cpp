@@ -16,6 +16,21 @@
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 
+namespace {
+
+bool implicit_cast_allowed(bool strict_types, const TypeHint *type) {
+  if (!strict_types) {
+    return true;
+  }
+  // converting to regexp is OK even in strict_types mode
+  if (const auto *primitive_type = type->try_as<TypeHintPrimitive>()) {
+    return primitive_type->ptype == tp_regexp;
+  }
+  return false;
+}
+
+} // namespace
+
 class PreprocessFunctionPass final : public FunctionPassBase {
 public:
   DataStream<FunctionPtr> &instance_of_function_template_stream;
@@ -399,7 +414,7 @@ private:
         // for cast params (::: in functions.txt or '@kphp-infer cast') we add
         // conversions automatically (implicit casts), unless the file from where
         // we're calling this function is annotated with strict_types=1
-        if (!current_function->file_id->is_strict_types && param->is_cast_param) {
+        if (param->is_cast_param && implicit_cast_allowed(current_function->file_id->is_strict_types, param->type_hint)) {
           call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
         }
 
