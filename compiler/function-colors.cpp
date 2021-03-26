@@ -17,25 +17,14 @@ colors_t ColorContainer::colors() {
   return data;
 }
 
-std::vector<color_t> ColorContainer::sep_colors() {
-  std::vector<color_t> colors;
-  colors.reserve(count);
-
-  for (int i = 0; i < colors_size; ++i) {
-    const color_t color = color_t(1) << i;
-    const auto has_color = data & color;
-
-    if (has_color) {
-      colors.push_back(color);
-    }
-  }
-
-  return colors;
+const std::vector<color_t> &ColorContainer::sep_colors() {
+  return sep_colors_;
 }
 
 void ColorContainer::add(color_t color) {
   data |= color;
   count++;
+  sep_colors_.push_back(color);
 }
 
 size_t ColorContainer::size() const noexcept {

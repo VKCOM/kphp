@@ -168,12 +168,14 @@ private:
   colors_t data{};
   size_t count{0};
 
+  std::vector<color_t> sep_colors_;
+
 public:
   ColorContainer() = default;
 
 public:
   colors_t colors();
-  std::vector<color_t> sep_colors();
+  const std::vector<color_t> &sep_colors();
   void add(color_t color);
   size_t size() const noexcept;
   bool empty() const noexcept;
