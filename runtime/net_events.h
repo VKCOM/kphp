@@ -15,17 +15,17 @@ void update_precise_now();
 double get_precise_now();
 
 
-struct event_timer {
+struct kphp_event_timer {
   int heap_index;
   int wakeup_extra;
   double wakeup_time;
 };
 
-int register_wakeup_callback(void (*wakeup)(event_timer* timer));
+int register_wakeup_callback(void (*wakeup)(kphp_event_timer * timer));
 
-event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra);
+kphp_event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra);
 
-void remove_event_timer(event_timer *et);
+void remove_event_timer(kphp_event_timer *et);
 
 
 int wait_net(int timeout_ms);

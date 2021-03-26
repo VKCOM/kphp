@@ -567,7 +567,7 @@ bool rpc_store(bool is_error) {
 struct rpc_request {
   int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
   union {
-    event_timer *timer;
+    kphp_event_timer *timer;
     char *answer;
     const char *error;
   };
@@ -671,7 +671,7 @@ static void process_rpc_timeout(int request_id) {
   process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
 }
 
-static void process_rpc_timeout(event_timer *timer) {
+static void process_rpc_timeout(kphp_event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra);
 }
 
