@@ -11,19 +11,6 @@
 #include "compiler/gentree.h"
 
 namespace {
-template <typename F>
-bool contains_vertex(const VertexPtr &root, F fn) {
-  if (fn(root)) {
-    return true;
-  }
-  for (const auto &v : *root) {
-    if (contains_vertex(v, fn)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 VertexAdaptor<op_set> convert_set_null_coalesce(VertexAdaptor<op_set_null_coalesce> v) {
   // forbid any lhs that contains a function/method calls for now as PHP
   // behavior is not well-documented in this case;

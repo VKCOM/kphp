@@ -157,24 +157,32 @@ private:
   bool pure_virtual_ = false;
 };
 
+enum class func_call_mode {
+  simple = 0, // just call
+  async_call, // call of resumable function inside another resumable function, but not in fork
+  fork_call // call using fork
+};
+
 struct FunctionName {
+  func_call_mode mode;
   FunctionPtr function;
-  explicit FunctionName(FunctionPtr function) :
+
+  explicit FunctionName(FunctionPtr function, func_call_mode mode = func_call_mode::simple) :
+    mode(mode),
     function(function) {
   }
 
   void compile(CodeGenerator &W) const {
-    W << "f$" << function->name;
+    if (mode == func_call_mode::fork_call) {
+      W << "f$fork$" << function->name;
+    } else {
+      W << "f$" << function->name;
+    }
   }
 };
 
-struct FunctionForkName {
-  FunctionPtr function;
-  inline FunctionForkName(FunctionPtr function) : function(function) {}
-
-  void compile(CodeGenerator &W) const {
-    W << "f$fork$" << function->name;
-  }
+struct FunctionForkName : FunctionName {
+  inline FunctionForkName(FunctionPtr function) : FunctionName(function, func_call_mode::fork_call) {}
 };
 
 struct FunctionClassName {

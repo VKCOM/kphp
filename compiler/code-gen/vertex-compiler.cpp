@@ -23,6 +23,161 @@
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
 
+// Compilable wraps unrelated types with compile(CodeGenerator&) method
+// and makes it possible to store them together
+struct Compilable {
+  // TODO: use std::variant when C++17 is available
+  enum class ValueTag {
+    Vertex,
+    TypeName,
+    FunctionName,
+    String,
+    Int,
+  };
+  ValueTag u_tag;
+  union Value {
+    VertexPtr vertex_value;
+    TypeName type_name_value;
+    FunctionName function_name_value;
+    const char *string_value;
+    int64_t int_value;
+
+    explicit Value(VertexPtr v): vertex_value{v} {}
+    explicit Value(TypeName v): type_name_value{v} {}
+    explicit Value(FunctionName v): function_name_value{std::move(v)} {}
+    explicit Value(const char *v): string_value{v} {}
+    explicit Value(int64_t v): int_value{v} {}
+  } u;
+
+  Compilable(VertexPtr v): u_tag{ValueTag::Vertex}, u{v} {}
+  Compilable(TypeName v): u_tag{ValueTag::TypeName}, u{v} {}
+  Compilable(FunctionName v): u_tag{ValueTag::FunctionName}, u{v} {}
+  Compilable(const char *v): u_tag{ValueTag::String}, u{v} {}
+  Compilable(int64_t v): u_tag{ValueTag::Int}, u{v} {}
+
+  void compile(CodeGenerator &W) const {
+    if (u_tag == ValueTag::Vertex) {
+      W << u.vertex_value;
+    } else if (u_tag == ValueTag::TypeName) {
+      W << u.type_name_value;
+    } else if (u_tag == ValueTag::FunctionName) {
+      W << u.function_name_value;
+    } else if (u_tag == ValueTag::String) {
+      W << u.string_value;
+    } else if (u_tag == ValueTag::Int) {
+      W << u.int_value;
+    } else {
+      kphp_error(false, fmt_format("internal error: unexpected Compilable ValueTag: {}", u_tag));
+    }
+  }
+};
+
+template<int Elems>
+struct Compose {
+  std::array<Compilable, Elems> args;
+
+  explicit Compose(std::array<Compilable, Elems> args): args{args} {}
+
+  void compile(CodeGenerator &W) const {
+    for (const Compilable &c : args) {
+      W << c;
+    }
+  }
+};
+
+template<typename... Args>
+auto compose(Args... args) {
+  constexpr int num_args = sizeof...(args);
+  return Compose<num_args>({args...});
+}
+
+template<typename FuncExpr>
+class CallBuilder {
+public:
+  explicit CallBuilder(FuncExpr fn): fn{std::move(fn)} {}
+
+  void add_arg(Compilable arg) {
+    if (is_order_dependent_arg(arg)) {
+      order_dependent_args++;
+    }
+    args.emplace_back(arg);
+  }
+
+  // this method is needed if arg is order-dependent, but it's not a vertex (so it can't be checked automatically)
+  void add_order_dependent_arg(Compilable arg) {
+    order_dependent_args++;
+    args.emplace_back(arg);
+  }
+
+  void compile(CodeGenerator &W) const {
+    // if there are less than 2 arguments with side effects, we
+    // can generate a normal function call;
+    // otherwise we evaluate all arguments into temporary vars
+    // in left-to-right order to avoid unexpected arguments evaluation order
+    if (order_dependent_args < 2) {
+      W << fn << "(" << JoinValues(args, ", ") << ")";
+      return;
+    }
+
+    // we have some macros to make the code output less convoluted;
+    // See CALL_ORDERED2 ... CALL_ORDERED5
+    auto num_args = std::distance(args.begin(), args.end());
+    if (num_args <= 5) {
+      // f(a, b) => CALL_ORDERED2(f, a, b)
+      W << fmt_format("CALL_ORDERED{}", num_args) << MacroBegin{} << fn << ", " << JoinValues(args, ", ") << MacroEnd{};
+      return;
+    }
+
+    // for function calls with a larger number of arguments we generate an inline sequence
+    // that is identical to what CALL_ORDERED does
+    W << "({" << NL;
+    std::vector<std::string> arg_vars;
+    arg_vars.reserve(num_args);
+    for (const auto &arg : args) {
+      std::string tmp_name = gen_unique_name("arg");
+      W << "auto &&" << tmp_name << " = " << arg << ";" << NL;
+      arg_vars.emplace_back(std::move(tmp_name));
+    }
+    W << fn << "(" << JoinValues(arg_vars, ", ") << ");";
+    W << NL << "})";
+  }
+
+private:
+  FuncExpr fn;
+  std::vector<Compilable> args;
+  int64_t order_dependent_args = 0;
+
+  bool is_order_dependent_arg(const Compilable &compilable) const {
+    // consider all non-vertex args to be safe
+    if (compilable.u_tag != Compilable::ValueTag::Vertex) {
+      return false;
+    }
+    VertexPtr arg = compilable.u.vertex_value;
+    bool has_unsafe_call = contains_vertex(arg, [](VertexPtr v) {
+      if (v->type() == op_func_call) {
+        const auto &func_call = v.as<op_func_call>();
+        return !func_call->func_id->is_pure;
+      }
+      return false;
+    });
+    return has_unsafe_call;
+  }
+};
+
+template<typename FuncExpr>
+CallBuilder<FuncExpr> call_builder(FuncExpr fn) {
+  return CallBuilder<FuncExpr>(fn);
+}
+
+template<typename FuncExpr, typename ArgsContainer>
+CallBuilder<FuncExpr> compile_simple_call(FuncExpr fn, const ArgsContainer &args) {
+  auto call = call_builder(fn);
+  for (const auto &arg : args) {
+    call.add_arg(arg);
+  }
+  return call;
+}
+
 struct Operand {
   VertexPtr root;
   Operation parent_type;
@@ -549,51 +704,35 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
     CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
 }
 
-enum class func_call_mode {
-  simple = 0, // just call
-  async_call, // call of resumable function inside another resumable function, but not in fork
-  fork_call // call using fork
-};
-
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
   if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
     // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
     W << root->args()[0];
     return;
   }
-  FunctionPtr func;
+
   if (root->extra_type == op_ex_internal_func) {
-    W << root->str_val;
-  } else {
-    func = root->func_id;
-    if (mode == func_call_mode::simple && W.get_context().resumable_flag && func->is_resumable) {
-      static std::atomic<int> errors_count;
-      int cnt = ++errors_count;
-      if (cnt >= 10) {
-        if (cnt == 10) {
-          kphp_error(0, "Too many same errors about resumable functions, will skip others");
-        }
-      } else {
-        kphp_error (0, fmt_format("Can't compile call of resumable function [{}] in too complex expression\n"
-                                  "Consider using a temporary variable for this call.\n"
-                                  "Function is resumable because of calls chain:\n"
-                                  "{}",
-                                  func->get_human_readable_name(), func->get_resumable_path()));
+    W << compile_simple_call(root->str_val, root->args());
+    return;
+  }
+
+  FunctionPtr func = root->func_id;
+  if (mode == func_call_mode::simple && W.get_context().resumable_flag && func->is_resumable) {
+    static std::atomic<int> errors_count;
+    int cnt = ++errors_count;
+    if (cnt >= 10) {
+      if (cnt == 10) {
+        kphp_error(0, "Too many same errors about resumable functions, will skip others");
       }
-    }
-
-
-    if (mode == func_call_mode::fork_call) {
-      W << FunctionForkName(func);
     } else {
-      W << FunctionName(func);
+      kphp_error (0, fmt_format("Can't compile call of resumable function [{}] in too complex expression\n"
+                                "Consider using a temporary variable for this call.\n"
+                                "Function is resumable because of calls chain:\n"
+                                "{}",
+                                func->get_human_readable_name(), func->get_resumable_path()));
     }
   }
-  if (func && func->cpp_template_call) {
-    const TypeData *tp = tinf::get_type(root);
-    W << "< " << TypeName(tp) << " >";
-  }
-  W << "(";
+
   auto args = root->args();
   if (func && func->cpp_variadic_call) {
     if (args.size() == 1) {
@@ -602,9 +741,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     }
   }
-
-  W << JoinValues(vk::make_iterator_range(args.begin(), args.end()), ", ");
-  W << ")";
+  auto func_name = FunctionName(func, mode);
+  if (func->cpp_template_call) {
+    const TypeData *tp = tinf::get_type(root);
+    W << compile_simple_call(compose(func_name, "<", TypeName(tp), ">"), args);
+  } else {
+    W << compile_simple_call(func_name, args);
+  }
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
@@ -1397,7 +1540,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     }
   }
   if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
-    W << TypeName(type) << "::create(" << JoinValues(*root, ", ") << ")";
+    W << compile_simple_call(compose(TypeName(type), "::create"), *root);
     return;
   }
 
@@ -1417,15 +1560,16 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     << string_cnt + xx_cnt << ", "
     << (has_double_arrow ? "false" : "true") << "));" << NL;
   for (auto cur : root->args()) {
-    W << arr_name;
     if (auto arrow = cur.try_as<op_double_arrow>()) {
-      W << ".set_value (" << arrow->key() << ", " << arrow->value();
-      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key())) {
-        W << ", " << precomputed_hash << "_i64";
+      auto set_value_call = call_builder(compose(arr_name.c_str(), ".set_value"));
+      set_value_call.add_arg(arrow->key());
+      set_value_call.add_arg(arrow->value());
+      if (int64_t precomputed_hash = can_use_precomputed_hash_indexing_array(arrow->key())) {
+        set_value_call.add_arg(precomputed_hash);
       }
-      W << ")";
+      W << set_value_call;
     } else {
-      W << ".push_back (" << cur << ")";
+      W << arr_name << ".push_back (" << cur << ")";
     }
 
     W << ";" << NL;
@@ -1550,11 +1694,13 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
 
 
 void compile_set_value(VertexAdaptor<op_set_value> root, CodeGenerator &W) {
-  W << "(" << root->array() << ").set_value (" << root->key() << ", " << root->value();
+  auto set_value_call = call_builder(compose("(", root->array(), ").set_value"));
+  set_value_call.add_arg(root->key());
+  set_value_call.add_arg(root->value());
   if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
-    W << ", " << precomputed_hash << "_i64";
+    set_value_call.add_arg(precomputed_hash);
   }
-  W << ")";
+  W << set_value_call;
   // there is no dedicated string/tuple overloadings for the set_value() (unlike in compile_index()),
   // as when these are used in lvalue context string will be generalized to a var
   // and a tuple will give an error; in the end we get only array/var here

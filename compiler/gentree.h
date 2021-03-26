@@ -259,3 +259,16 @@ inline bool is_positive_constexpr_int(VertexPtr v) {
 inline bool is_constructor_call(VertexAdaptor<op_func_call> call) {
   return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
 }
+
+template <typename F>
+bool contains_vertex(const VertexPtr &root, F fn) {
+  if (fn(root)) {
+    return true;
+  }
+  for (const auto &v : *root) {
+    if (contains_vertex(v, fn)) {
+      return true;
+    }
+  }
+  return false;
+}

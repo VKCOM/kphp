@@ -36,6 +36,39 @@
 
 #undef INCLUDED_FROM_KPHP_CORE
 
+// CALL_ORDERED<n> is a helper macro that is used to enforce function
+// call arguments evaluation order
+#define CALL_ORDERED2(f, arg1, arg2) \
+  ({ \
+    auto &&kphp_arg1_ = arg1; \
+    auto &&kphp_arg2_ = arg2; \
+    f(kphp_arg1_, kphp_arg2_); \
+  })
+#define CALL_ORDERED3(f, arg1, arg2, arg3) \
+  ({ \
+    auto &&kphp_arg1_ = arg1; \
+    auto &&kphp_arg2_ = arg2; \
+    auto &&kphp_arg3_ = arg3; \
+    f(kphp_arg1_, kphp_arg2_, kphp_arg3_); \
+  })
+#define CALL_ORDERED4(f, arg1, arg2, arg3, arg4) \
+  ({ \
+    auto &&kphp_arg1_ = arg1; \
+    auto &&kphp_arg2_ = arg2; \
+    auto &&kphp_arg3_ = arg3; \
+    auto &&kphp_arg4_ = arg4; \
+    f(kphp_arg1_, kphp_arg2_, kphp_arg3_, kphp_arg4_); \
+  })
+#define CALL_ORDERED5(f, arg1, arg2, arg3, arg4, arg5) \
+  ({ \
+    auto &&kphp_arg1_ = arg1; \
+    auto &&kphp_arg2_ = arg2; \
+    auto &&kphp_arg3_ = arg3; \
+    auto &&kphp_arg4_ = arg4; \
+    auto &&kphp_arg5_ = arg5; \
+    f(kphp_arg1_, kphp_arg2_, kphp_arg3_, kphp_arg4_, kphp_arg5_); \
+  })
+
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})
 #define SAFE_INDEX(a, b, b_type) a[({b_type b_tmp___ = b; b_tmp___;})]
