@@ -8,6 +8,7 @@
 #include "compiler/pipes/calc-func-dep.h"
 #include "compiler/pipes/sync.h"
 #include "compiler/threading/data-stream.h"
+#include "common/algorithms/contains.h"
 
 class CalcBadVarsF final : public SyncPipeF<std::pair<FunctionPtr, DepData>, FunctionPtr> {
 public:

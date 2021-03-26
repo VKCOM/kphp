@@ -6,9 +6,11 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "api has-curl"                => "Calling curl function from API functions",
-    "api api-callback has-curl"   => 1,
-    "api has-curl api-allow-curl" => 1,
+    [
+        "api has-curl"                => "Calling curl function from API functions",
+        "api api-callback has-curl"   => 1,
+        "api has-curl api-allow-curl" => 1,
+    ],
   ];
 }
 

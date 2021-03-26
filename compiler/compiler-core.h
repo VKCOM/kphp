@@ -38,8 +38,9 @@ private:
   std::vector<std::string> kphp_runtime_opts;
   bool is_untyped_rpc_tl_used{false};
 
-  function_palette::RuleTree function_palette_tree;
+  function_palette::Palette function_palette_;
 
+private:
   inline bool try_require_file(SrcFilePtr file);
 
 public:
@@ -110,16 +111,12 @@ public:
   void add_kphp_runtime_opt(std::string opt) { kphp_runtime_opts.emplace_back(std::move(opt)); }
   const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
 
-  void add_function_palette_rule(const std::vector<function_palette::color_t> &colors, bool is_error = false, const std::string &message = "") {
-    function_palette_tree.insert(colors, is_error, message);
+  void set_function_palette(function_palette::Palette &&palette) {
+    function_palette_ = palette;
   }
 
-  void normalize_function_palette_tree() {
-    function_palette_tree.normalize();
-  }
-
-  function_palette::RuleTree get_function_palette_tree() {
-    return function_palette_tree;
+  const function_palette::Palette &get_function_palette() {
+    return function_palette_;
   }
 
   void set_untyped_rpc_tl_used() {

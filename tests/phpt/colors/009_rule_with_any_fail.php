@@ -9,8 +9,14 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
-    "danger-zone danger-zone" => 1,
+    [
+        "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
+        "danger-zone danger-zone" => 1,
+    ],
+    [
+        "ssr has-db-access"                 => "Calling function working with the database in the server side rendering function",
+        "ssr has-db-access ssr-allow-db"    => 1,
+    ],
   ];
 }
 

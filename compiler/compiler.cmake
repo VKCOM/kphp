@@ -109,7 +109,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-abstract-function-defaults.cpp
         check-access-modifiers.cpp
         check-classes.cpp
-        check-color.cpp
         check-conversions.cpp
         check-function-calls.cpp
         check-modifications-of-const-vars.cpp

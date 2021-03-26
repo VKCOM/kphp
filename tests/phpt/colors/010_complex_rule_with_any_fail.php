@@ -10,13 +10,19 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
-    "danger-zone danger-zone" => 1,
-    "danger-zone highload"    => 1,
-    "danger-zone ssr"         => 1,
-
-    "danger-zone highload *"        => "Error using highload with danger-zone",
-    "danger-zone highload highload" => 1,
+    [
+        "highload no-highload"              => "Calling no-highload function from highload function",
+    ],
+    [
+        "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
+        "danger-zone danger-zone" => 1,
+        "danger-zone highload"    => 1,
+        "danger-zone ssr"         => 1,
+    ],
+    [
+        "danger-zone highload *"        => "Error using highload with danger-zone",
+        "danger-zone highload highload" => 1,
+    ],
   ];
 }
 

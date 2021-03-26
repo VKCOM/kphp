@@ -19,7 +19,7 @@ bool RegisterKphpConfiguration::check_function(FunctionPtr function) const {
 void RegisterKphpConfiguration::on_start() {
   const auto klass = current_function->class_id;
   kphp_error(
-    !klass->members.has_any_instance_method() &&
+//    !klass->members.has_any_instance_method() &&
     !klass->members.has_any_instance_var() &&
     !klass->members.has_any_static_method() &&
     !klass->members.has_any_static_var(),
@@ -43,62 +43,144 @@ void RegisterKphpConfiguration::on_start() {
 }
 
 void RegisterKphpConfiguration::handle_function_color_palette(const ClassMemberConstant &c) {
-  auto arr = c.value.try_as<op_array>();
-  kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
-                                    configuration_class_name_, function_color_palette_name_));
+  auto palette = parse_palette(c);
+  G->set_function_palette(std::move(palette));
+}
 
-  for (const auto &opt : arr->args()) {
-    auto opt_pair = opt.try_as<op_double_arrow>();
-    kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
-                                           configuration_class_name_, function_color_palette_name_));
-    const auto *opt_key = GenTree::get_constexpr_string(opt_pair->key());
-    kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
-                                          configuration_class_name_, function_color_palette_name_));
-
-    const auto raw_colors = split(*opt_key, ' ');
-    if (raw_colors.empty()) {
-      kphp_error_return(0, fmt_format("{}::{} rule must not be empty",
-                                             configuration_class_name_, function_color_palette_name_));
-    }
-
-    auto colors = vector<function_palette::color_t>();
-    colors.reserve(raw_colors.size());
-
-    for (const auto& raw_color : raw_colors) {
-      const auto color = function_palette::parse_color(raw_color);
-      if (color == function_palette::color_t::none) {
-        kphp_error(0, fmt_format("{}::{} unknown '{}' color",
-                                 configuration_class_name_, function_color_palette_name_, raw_color));
-        continue;
-      }
-      colors.push_back(color);
-    }
-
-    auto is_error_rule = false;
-    std::string error_message;
-
-    const auto *opt_value = GenTree::get_constexpr_string(opt_pair->value());
-    if (opt_value == nullptr) {
-      const auto opt_value_int = opt_pair->value().try_as<op_int_const>();
-      if (!opt_value_int) {
-        kphp_error_return(0, fmt_format("{}::{} map values must be constexpr strings or number 1",
-                                              configuration_class_name_, function_color_palette_name_));
-      }
-
-      const auto opt_value_str = opt_value_int->get_string();
-      if (opt_value_str != "1") {
-        kphp_error_return(0, fmt_format("{}::{} in the palette, the result of the rule must be either the number 1 or a string with an error",
-                                              configuration_class_name_, function_color_palette_name_));
-      }
-    } else {
-      error_message = *opt_value;
-      is_error_rule = true;
-    }
-
-    G->add_function_palette_rule(colors, is_error_rule, error_message);
+function_palette::Palette RegisterKphpConfiguration::parse_palette(const ClassMemberConstant &c) {
+  const auto arr = c.value.try_as<op_array>();
+  if (!arr) {
+    kphp_error(arr, fmt_format("{}::{} must be a constexpr array",
+                                      configuration_class_name_, function_color_palette_name_));
+    return {};
   }
 
-  G->normalize_function_palette_tree();
+  palette_groups_raw groups;
+
+  for (const auto &opt : arr->args()) {
+    const auto palette_group = opt.try_as<op_array>();
+    if (!palette_group) {
+      kphp_error(palette_group, fmt_format("{}::{} must be a constexpr array",
+                                                  configuration_class_name_, function_color_palette_name_));
+      continue;
+    }
+
+    const auto group = parse_palette_group(palette_group);
+    groups.push_back(std::move(group));
+  }
+
+  auto colors_num = create_palette_colors_num(groups);
+  const auto palette = create_palette(groups, std::move(colors_num));
+  return palette;
+}
+
+function_palette::Palette RegisterKphpConfiguration::create_palette(const palette_groups_raw &groups, function_palette::colors_num &&colors_num) {
+  function_palette::Palette palette;
+
+  for (const auto &group : groups) {
+    function_palette::PaletteGroup palette_group;
+
+    for (const auto &rule : group) {
+      std::vector<function_palette::color_t> rule_colors;
+      rule_colors.reserve(rule.first.size());
+
+      for (const auto& color : rule.first) {
+        rule_colors.push_back(colors_num.at(color));
+      }
+
+      function_palette::Rule palette_rule(std::move(rule_colors), rule.second);
+      palette_group.add_rule(std::move(palette_rule));
+    }
+
+    palette.add_group(std::move(palette_group));
+  }
+
+  palette.set_color_nums(std::move(colors_num));
+  return palette;
+}
+
+function_palette::colors_num RegisterKphpConfiguration::create_palette_colors_num(const palette_groups_raw &groups) {
+  function_palette::colors_num color_nums;
+  function_palette::color_t color_num = 1;
+
+  for (const auto &group : groups) {
+    for (const auto &rule : group) {
+      for (const auto &color : rule.first) {
+        if (color == "*") {
+          color_nums.insert(std::make_pair(color, function_palette::special_colors::any));
+          continue;
+        }
+        color_nums.insert(std::make_pair(color, color_num));
+        color_num = color_num << 1;
+      }
+    }
+  }
+
+  return color_nums;
+}
+
+std::vector<palette_rule_raw> RegisterKphpConfiguration::parse_palette_group(const VertexAdaptor<op_array> &arr) {
+  std::vector<palette_rule_raw> group;
+
+  for (const auto &rule_node : arr->args()) {
+    auto pair = rule_node.try_as<op_double_arrow>();
+    if (!pair) {
+      kphp_error(pair, fmt_format("{}::{} rule must be an associative map",
+                                  configuration_class_name_, function_color_palette_name_));
+      continue;
+    }
+
+    const auto rule = parse_palette_rule(pair);
+    group.push_back(std::move(rule));
+  }
+
+  return group;
+}
+
+palette_rule_raw RegisterKphpConfiguration::parse_palette_rule(const VertexAdaptor<op_double_arrow> &pair) {
+  const auto colors = parse_palette_rule_colors(pair->key());
+  const auto rule_result = parse_palette_rule_result(pair->value());
+  return {std::move(colors), std::move(rule_result)};
+}
+
+std::vector<std::string> RegisterKphpConfiguration::parse_palette_rule_colors(const VertexPtr &val) {
+  const auto *rule_string = GenTree::get_constexpr_string(val);
+  if (rule_string == nullptr) {
+    kphp_error(rule_string, fmt_format("{}::{} map keys must be constexpr strings",
+                                       configuration_class_name_, function_color_palette_name_));
+    return {};
+  }
+
+  const auto raw_colors = split(*rule_string, ' ');
+  if (raw_colors.empty()) {
+    kphp_error(0, fmt_format("{}::{} rule must not be empty",
+                                    configuration_class_name_, function_color_palette_name_));
+  }
+
+  return raw_colors;
+}
+
+std::string RegisterKphpConfiguration::parse_palette_rule_result(const VertexPtr &val) {
+  const auto *opt_value = GenTree::get_constexpr_string(val);
+  if (opt_value != nullptr) {
+    return *opt_value;
+  }
+
+  const auto opt_value_int = val.try_as<op_int_const>();
+  if (!opt_value_int) {
+    kphp_error(0, fmt_format("{}::{} map values must be constexpr strings or number 1",
+                                    configuration_class_name_, function_color_palette_name_));
+    return "";
+  }
+
+  const auto opt_value_str = opt_value_int->get_string();
+  if (opt_value_str != "1") {
+    kphp_error(0, fmt_format("{}::{} in the palette, the result of the rule must be either the number 1 or a string with an error",
+                                    configuration_class_name_, function_color_palette_name_));
+    return "";
+  }
+
+  return "";
 }
 
 void RegisterKphpConfiguration::handle_runtime_options(const ClassMemberConstant &c) {

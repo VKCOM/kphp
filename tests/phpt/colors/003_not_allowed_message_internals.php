@@ -6,8 +6,10 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "message-internals"                => "Calling function marked as internal outside of functions with the color message-module",
-    "message-module message-internals" => 1,
+    [
+        "message-internals"                => "Calling function marked as internal outside of functions with the color message-module",
+        "message-module message-internals" => 1,
+    ],
   ];
 }
 

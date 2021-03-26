@@ -6,6 +6,10 @@
 
 #include "compiler/function-pass.h"
 
+using palette_rule_raw = std::pair<std::vector<std::string>, std::string>;
+using palette_group_raw = std::vector<palette_rule_raw>;
+using palette_groups_raw = std::vector<palette_group_raw>;
+
 class RegisterKphpConfiguration final : public FunctionPassBase {
 public:
   string get_description() final {
@@ -18,7 +22,15 @@ public:
 
 private:
   void handle_runtime_options(const ClassMemberConstant &c);
+
   void handle_function_color_palette(const ClassMemberConstant &c);
+  function_palette::Palette parse_palette(const ClassMemberConstant &c);
+  function_palette::Palette create_palette(const palette_groups_raw &groups, function_palette::colors_num &&colors_num);
+  function_palette::colors_num create_palette_colors_num(const palette_groups_raw &groups);
+  std::vector<palette_rule_raw> parse_palette_group(const VertexAdaptor<op_array> &arr);
+  palette_rule_raw parse_palette_rule(const VertexAdaptor<op_double_arrow> &pair);
+  std::string parse_palette_rule_result(const VertexPtr &pair);
+  std::vector<std::string> parse_palette_rule_colors(const VertexPtr &pair);
 
   void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
 

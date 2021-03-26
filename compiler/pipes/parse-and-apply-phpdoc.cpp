@@ -149,8 +149,8 @@ private:
       case php_doc_tag::kphp_color: {
         const auto raw_colors = split(tag.value, ' ');
         for (const auto& raw_color : raw_colors) {
-          const auto color = function_palette::parse_color(raw_color);
-          if (color == function_palette::color_t::none) {
+          const auto color = G->get_function_palette().parse_color(raw_color);
+          if (color == function_palette::special_colors::none) {
             kphp_error(0, fmt_format("Unknown '{}' color", raw_color));
             continue;
           }

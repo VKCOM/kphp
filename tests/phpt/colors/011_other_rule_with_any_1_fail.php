@@ -6,8 +6,10 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "* *" => "error 1",
-    "* highload" => 1,
+    [
+        "* *" => "error 1",
+        "* highload" => 1,
+    ],
   ];
 }
 

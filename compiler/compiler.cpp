@@ -43,7 +43,6 @@
 #include "compiler/pipes/check-abstract-function-defaults.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
-#include "compiler/pipes/check-color.h"
 #include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-function-calls.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
@@ -234,6 +233,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<ParseF>{}
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
+    >> PassC<RegisterKphpConfiguration>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
     >> PassC<CalcLocationsPass>{}
@@ -280,8 +280,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CalcFuncDepPass>{}
     >> SyncC<CalcBadVarsF>{}
     >> PipeC<CheckUBF>{}
-    >> PassC<RegisterKphpConfiguration>{}
-    >> PassC<CheckColorPass>{}
     >> PassC<ExtractResumableCallsPass>{}
     >> PassC<ExtractAsyncPass>{}
     >> PassC<CheckNestedForeachPass>{}

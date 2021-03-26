@@ -3,8 +3,10 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
-    "danger-zone danger-zone" => 1,
+    [
+        "danger-zone *"           => "Calling function without color danger-zone in a function with color danger-zone",
+        "danger-zone danger-zone" => 1,
+    ],
   ];
 }
 

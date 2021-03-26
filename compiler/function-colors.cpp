@@ -6,47 +6,36 @@
 
 using namespace function_palette;
 
-const std::map<std::string, color_t> str2color_type = {
-  {"*",                 color_t::any},
-  {"highload",          color_t::highload},
-  {"no-highload",       color_t::no_highload},
-  {"ssr",               color_t::ssr},
-  {"ssr-allow-db",      color_t::ssr_allow_db},
-  {"has-db-access",     color_t::has_db_access},
-  {"api",               color_t::api},
-  {"api-callback",      color_t::api_callback},
-  {"api-allow-curl",    color_t::api_allow_curl},
-  {"has-curl",          color_t::has_curl},
-  {"message-internals", color_t::message_internals},
-  {"message-module",    color_t::message_module},
-  {"danger-zone",       color_t::danger_zone},
-};
-
-color_t function_palette::parse_color(const std::string &str) {
-  const auto it = str2color_type.find(str);
-  const auto found = it != str2color_type.end();
-  return found ? it->second : color_t::none;
+size_t function_palette::count_significant_bits(uint64_t n) {
+  n -= (n >> 1) & 0x5555555555555555llu;
+  n = ((n >> 2) & 0x3333333333333333llu) + (n & 0x3333333333333333llu);
+  n = ((((n >> 4) + n) & 0x0F0F0F0F0F0F0F0Fllu) * 0x0101010101010101) >> 56;
+  return n;
 }
 
-std::string function_palette::color_to_string(color_t color) {
-  for (const auto &pair : str2color_type) {
-    if (pair.second == color) {
-      return pair.first;
+colors_t ColorContainer::colors() {
+  return data;
+}
+
+std::vector<color_t> ColorContainer::sep_colors() {
+  std::vector<color_t> colors;
+  colors.reserve(count);
+
+  for (int i = 0; i < colors_size; ++i) {
+    const color_t color = color_t(1) << i;
+    const auto has_color = data & color;
+
+    if (has_color) {
+      colors.push_back(color);
     }
   }
-  return "";
+
+  return colors;
 }
 
-const ColorContainer::ColorsRaw &ColorContainer::colors() {
-  return this->data;
-}
-
-void ColorContainer::add(const color_t &color) {
-  if (this->count >= static_cast<size_t>(color_t::_count)) {
-    return;
-  }
-  this->data[this->count] = color;
-  this->count++;
+void ColorContainer::add(color_t color) {
+  data |= color;
+  count++;
 }
 
 size_t ColorContainer::size() const noexcept {
@@ -57,23 +46,25 @@ bool ColorContainer::empty() const noexcept {
   return this->count == 0;
 }
 
-color_t ColorContainer::operator[](size_t index) const {
-  return this->data[index];
-}
-
-std::string ColorContainer::to_string() const {
+std::string ColorContainer::to_string(const Palette &palette) const {
   std::string desc;
 
   desc += "colors: {";
 
-  for (int i = 0; i < this->count; ++i) {
-    const auto color = this->data[i];
-    const auto color_str = color_to_string(color);
+  auto colors_output = 0;
 
-    desc += TermStringFormat::paint_green(color_str);
+  for (int i = 0; i < colors_size; ++i) {
+    const color_t color = color_t(1) << i;
+    const auto has_color = data & color;
 
-    if (i != this->count - 1) {
-      desc += ", ";
+    if (has_color) {
+      const auto color_str = palette.color_to_string(color);
+      desc += TermStringFormat::paint_green(color_str);
+      colors_output++;
+
+      if (colors_output != count) {
+        desc += ", ";
+      }
     }
   }
 
@@ -82,35 +73,64 @@ std::string ColorContainer::to_string() const {
   return desc;
 }
 
-void NodeContainer::add(Node *node) {
-  this->count++;
-  this->data[static_cast<size_t>(node->color)] = node;
-}
+size_t Rule::counter = 0;
 
-Node *NodeContainer::get(color_t color) const {
-  return this->data[static_cast<size_t>(color)];
-}
-
-bool NodeContainer::has(color_t color) const noexcept {
-  return this->get(color) != nullptr;
-}
-
-void NodeContainer::del(color_t color) {
-  this->count--;
-  this->data[static_cast<size_t>(color)] = nullptr;
-}
-
-size_t NodeContainer::size() const noexcept {
-  return this->count;
-}
-
-bool NodeContainer::empty() const noexcept {
-  return this->count == 0;
-}
-
-Node *NodeContainer::operator[](size_t index) const {
-  if (index >= Size) {
-    return nullptr;
+bool Rule::match_two_vectors(const std::vector<function_palette::colors_t> &first, const std::vector<function_palette::colors_t> &second) {
+  if (first.empty()) {
+    return false;
   }
-  return this->data[index];
+  if (second.empty()) {
+    return false;
+  }
+
+  auto first_it = first.end() - 1;
+  auto second_it = second.end() - 1;
+
+  while (true) {
+    auto matched = false;
+
+    if (*first_it == special_colors::any) {
+      matched = true;
+    } else if (*first_it == *second_it) {
+      matched = true;
+    }
+
+    if (matched) {
+      if (first_it == first.begin()) {
+        return true;
+      }
+      if (second_it == second.begin()) {
+        return false;
+      }
+      first_it--;
+      second_it--;
+    } else {
+      if (second_it == second.begin()) {
+        return false;
+      }
+      second_it--;
+    }
+  }
+}
+
+std::string Rule::to_string(const Palette &palette) const {
+  std::string res = "\"";
+
+  for (int i = 0; i < colors.size(); ++i) {
+    res += palette.color_to_string(colors[i]);
+
+    if (i != colors.size() - 1) {
+      res += " ";
+    }
+  }
+
+  res += "\"";
+
+  res = TermStringFormat::paint(res, TermStringFormat::blue);
+
+  res += " => ";
+
+  res += error.size() == 0 ? "1" : TermStringFormat::paint(error, TermStringFormat::yellow);
+
+  return res;
 }

@@ -6,8 +6,10 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "ssr has-db-access"              => "Calling function working with the database in the server side rendering function",
-    "ssr has-db-access ssr-allow-db" => 1,
+    [
+        "ssr has-db-access"              => "Calling function working with the database in the server side rendering function",
+        "ssr has-db-access ssr-allow-db" => 1,
+    ],
   ];
 }
 

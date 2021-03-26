@@ -3,7 +3,9 @@
 
 class KphpConfiguration {
   const FUNCTION_PALETTE = [
-    "highload no-highload" => "Calling no-highload function from highload function",
+    [
+        "highload no-highload" => "Calling no-highload function from highload function",
+    ],
   ];
 }
 
