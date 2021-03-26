@@ -233,7 +233,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<ParseF>{}
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
-    >> PassC<RegisterKphpConfiguration>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
     >> PassC<CalcLocationsPass>{}
@@ -242,6 +241,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<CalcRealDefinesValuesF>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
     >> PassC<InlineDefinesUsagesPass>{}
+    >> PassC<RegisterKphpConfiguration>{}
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
