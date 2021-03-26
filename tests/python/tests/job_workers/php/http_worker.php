@@ -22,6 +22,14 @@ function do_http_worker() {
       test_job_errors();
       return;
     }
+    case "/test_jobs_in_wait_queue": {
+      test_jobs_in_wait_queue();
+      return;
+    }
+    case "/test_several_waits_for_one_job": {
+      test_several_waits_for_one_job();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -91,5 +99,54 @@ function test_job_script_timeout_error() {
 function test_job_errors() {
   $context = json_decode(file_get_contents('php://input'));
   $ids = send_jobs($context);
+  echo json_encode(["jobs-result" => gather_jobs($ids)]);
+}
+
+function raise_error(string $err) {
+  echo json_encode(["error" => $err]);
+}
+
+function test_jobs_in_wait_queue() {
+  $context = json_decode(file_get_contents('php://input'));
+  $ids = send_jobs($context);
+
+  $wait_queue = rpc_queue_create($ids);
+
+  $id = rpc_queue_next($wait_queue, 0.2);
+  if ($id !== false) {
+    raise_error("Too short wait time in wait_queue");
+    return;
+  }
+
+  $job_sleep_time = (float)$context["job-sleep-time-sec"];
+  $result = [];
+  while (!rpc_queue_empty($wait_queue)) {
+    $ready_id = rpc_queue_next($wait_queue, $job_sleep_time + 0.2);
+    if ($ready_id === false) {
+      raise_error("Too long wait time in wait_queue");
+      return;
+    }
+    $result[$ready_id] = gather_jobs([$ready_id])[0];
+  }
+  ksort($result);
+
+  echo json_encode(["jobs-result" => array_values($result)]);
+}
+
+function test_several_waits_for_one_job() {
+  $context = json_decode(file_get_contents('php://input'));
+  $ids = send_jobs($context);
+
+  $id = $ids[0];
+  $job_sleep_time = (float)$context["job-sleep-time-sec"];
+
+  for ($i = 0; $i < 5; $i++) {
+    $res = kphp_job_worker_wait($id, $job_sleep_time / 100.0);
+    if ($res !== null) {
+      raise_error("Too short wait time $i");
+      return;
+    }
+  }
+
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }
