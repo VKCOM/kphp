@@ -61,7 +61,7 @@ for ($i = 0; $i < count($arrays); ++$i) {
   }
 
   foreach(["hello", false] as $or_false_key) {
-    test_or_false_keys("test_or_false_keys array$i, key='$bool_key' : ", $or_false_key, $arrays[$i]);
+    test_or_false_keys("test_or_false_keys array$i, key='$or_false_key' : ", $or_false_key, $arrays[$i]);
   }
 
   foreach(["[]" => [], "[1, 2]" => [1, 2], "[7]" => [7]] as $key_hint => $array_key) {
