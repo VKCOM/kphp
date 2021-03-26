@@ -1295,8 +1295,6 @@ function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
 
-function __exception_set_location($e ::: any, $file ::: string, $line ::: int) ::: ^1;
-
 // uber h3 bindings https://h3geo.org/docs
 final class UberH3 {
   // Indexing functions: https://h3geo.org/docs/api/indexing
