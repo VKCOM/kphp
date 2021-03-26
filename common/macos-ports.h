@@ -127,6 +127,15 @@ inline int pthread_mutex_consistent_np(pthread_mutex_t *) noexcept {
   return 0;
 }
 
+struct mallinfo_port {
+  int hblkhd{0};
+  int uordblks{0};
+  int fordblks{0};
+};
+
+inline mallinfo_port mallinfo() noexcept {
+  return mallinfo_port{};
+};
 
 #else
 

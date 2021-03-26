@@ -12,20 +12,26 @@
 
 #include "server/php-runner.h"
 
+// TODO Split this class into different entities:
+//    KphpProcessStats - stats about general staff: memory, cpu, idle, ...
+//    PhpWorkerStats inherits KphpProcessStats - stats about request processing: script time, memory usage, ...
+//    KphpMasterStats inherits KphpProcessStats - stats about master process (may be exactly the same as KphpProcessStats)
+//    KphpStats - can aggregate, calc percentile, write stats to statsd, string and so on ...
+// Also, take a look into php-master.cpp, there are a bunch of other stats.
 class PhpWorkerStats {
 public:
-  void add_stats(double script_time, double net_time, long script_queries,
-                 long max_memory_used, long max_real_memory_used, script_error_t error) noexcept;
+  void add_stats(double script_time, double net_time, int64_t script_queries,
+                 int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used, script_error_t error) noexcept;
 
   void update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept;
+  void update_mem_info() noexcept;
   void recalc_worker_percentiles() noexcept;
-  void recalc_master_percentiles() noexcept;
 
-  void add_from(const PhpWorkerStats &from) noexcept;
+  void add_worker_stats_from(const PhpWorkerStats &from) noexcept;
   void copy_internal_from(const PhpWorkerStats &from) noexcept;
 
   std::string to_string(const std::string &pid_s = {}) const noexcept;
-  void to_stats(stats_t *stats) const noexcept;
+  void to_stats(stats_t *stats) noexcept;
 
   int write_into(char *buffer, int buffer_len) const noexcept;
   int read_from(const char *buffer) noexcept;
@@ -49,6 +55,7 @@ private:
   static constexpr size_t PERCENTILE_SAMPLES{600};
   static_assert(PERCENTILE_SAMPLES % PERCENTILES_COUNT == 0, "bad PERCENTILE_SAMPLES value");
 
+  size_t request_circular_percentiles_counter_{0};
   std::array<std::chrono::steady_clock::time_point, PERCENTILE_SAMPLES> samples_tp_{};
   std::array<double, PERCENTILE_SAMPLES> working_time_samples_{};
   std::array<double, PERCENTILE_SAMPLES> net_time_samples_{};
@@ -57,7 +64,24 @@ private:
   std::array<int64_t, PERCENTILE_SAMPLES> script_memory_used_samples_{};
   std::array<int64_t, PERCENTILE_SAMPLES> script_real_memory_used_samples_{};
 
-  size_t circular_percentiles_counter_{0};
+  size_t worker_circular_percentiles_counter_{0};
+  std::array<int64_t, PERCENTILE_SAMPLES> workers_script_heap_usage_bytes_{};
+  std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_non_mapped_total_used_bytes_{};
+  std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_non_mapped_allocated_bytes_{};
+  std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_non_mapped_free_bytes_{};
+  std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_mmaped_bytes_{};
+
+  std::array<int64_t, PERCENTILE_SAMPLES> workers_rss_usage_{};
+  std::array<int64_t, PERCENTILE_SAMPLES> workers_vms_usage_{};
+  std::array<int64_t, PERCENTILE_SAMPLES> workers_shm_usage_{};
+
+  int64_t rss_kb_sum_{0};
+  int64_t vms_kb_sum_{0};
+
+  uint32_t rss_kb_max_{0};
+  uint32_t vms_kb_max_{0};
+
+  int64_t rss_no_shm_kb_sum_{0};
 
   struct {
     int64_t tot_queries_{0};
@@ -72,6 +96,14 @@ private:
 
     int64_t script_max_memory_used_{0};
     int64_t script_max_real_memory_used_{0};
+    int64_t script_heap_memory_usage_{0};
+
+    mem_info_t mem_info_{};
+    struct {
+      uint32_t total_non_mmaped_allocated_bytes_{0};
+      uint32_t total_non_mmaped_free_bytes_{0};
+      uint32_t total_mmaped_bytes_{0};
+    } malloc_stats_;
 
     uint32_t accumulated_stats_{0};
     std::array<uint32_t, static_cast<size_t>(script_error_t::errors_count)> errors_{{0}};

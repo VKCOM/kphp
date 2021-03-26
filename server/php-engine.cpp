@@ -1327,11 +1327,11 @@ static int stats_len;
 void prepare_full_stats() {
   char *s = stats;
   int s_left = 65530;
-
-  PhpWorkerStats::get_local().update_idle_time(epoll_total_idle_time(), get_uptime(),
-                                               epoll_average_idle_time(), epoll_average_idle_quotient());
-  PhpWorkerStats::get_local().recalc_worker_percentiles();
-  const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
+  auto &local_worker_stats = PhpWorkerStats::get_local();
+  local_worker_stats.update_mem_info();
+  local_worker_stats.update_idle_time(epoll_total_idle_time(), get_uptime(), epoll_average_idle_time(), epoll_average_idle_quotient());
+  local_worker_stats.recalc_worker_percentiles();
+  const int stats_size = local_worker_stats.write_into(s, s_left);
   s += stats_size;
   s_left -= stats_size;
 
