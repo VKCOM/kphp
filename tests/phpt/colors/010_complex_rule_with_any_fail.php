@@ -1,11 +1,15 @@
 @kphp_should_fail
+/Calling function without color danger\-zone in a function with color danger\-zone \(dangerZone\(\) call noHighload\(\)\)/
+/  dangerZone\(\) with following colors\: \{danger\-zone\}/
+/  noHighload\(\) with following colors\: \{no\-highload\}/
+/Produced according to the following rule:/
+/  "danger-zone \*" => Calling function without color danger-zone in a function with color danger-zone/
 /Error using highload with danger\-zone \(dangerZone\(\) call ssr\(\)\)/
 /  dangerZone\(\) with following colors\: \{danger\-zone\}/
 /  highload\(\) with following colors\: \{highload\}/
 /  ssr\(\) with following colors\: \{ssr\}/
-/Calling function without color danger\-zone in a function with color danger\-zone \(dangerZone\(\) call noHighload\(\)\)/
-/  dangerZone\(\) with following colors\: \{danger\-zone\}/
-/  noHighload\(\) with following colors\: \{no\-highload\}/
+/Produced according to the following rule:/
+/  "danger-zone highload \*" => Error using highload with danger-zone/
 <?php
 
 class KphpConfiguration {

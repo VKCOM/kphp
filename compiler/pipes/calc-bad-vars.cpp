@@ -115,147 +115,77 @@ struct FuncCallGraph {
   }
 };
 
-class CheckFunctionsColors {
-  FuncCallGraph call_graph;
-  function_palette::Palette palette;
+struct CallstackColor {
+  function_palette::color_t color;
+  FunctionPtr func;
 
-  std::map<uint64_t, std::string> errors;
+  CallstackColor(function_palette::color_t color, const FunctionPtr &func)
+    : color(color), func(func) {}
+};
+
+using CallstackColors = std::vector<CallstackColor>;
+
+struct MatchedRule {
+  function_palette::Rule rule{};
+  FunctionPtr start_func{nullptr};
+  FunctionPtr end_func{nullptr};
+  bool matched{false};
+
+  MatchedRule() = default;
+
+  MatchedRule(const function_palette::Rule &rule, const FunctionPtr &start, const FunctionPtr &end)
+    : rule(rule), start_func(start), end_func(end), matched(true) {}
+};
+
+class Callstack {
+  using raw = std::vector<FunctionPtr>;
+  using it = std::vector<FunctionPtr>::iterator;
+  using element = FunctionPtr;
+
+private:
+  raw data;
+  it begin;
+  it end;
 
 public:
-  CheckFunctionsColors(const FuncCallGraph &call_graph)
-    : call_graph(call_graph), palette(G->get_function_palette()) {}
+  Callstack(size_t cap) {
+    data.reserve(cap);
+    begin = data.begin();
+    end = data.end();
+  }
 
 public:
-  void check() {
-    std::vector<FunctionPtr> callstack;
-    callstack.reserve(50);
-    std::vector<function_palette::color_t> color_stack;
-    color_stack.reserve(50);
-
-    for (const auto &func : call_graph.functions) {
-      if (func->is_extern() || func->is_main_function() || func->type == FunctionData::func_class_holder) {
-        continue;
-      }
-
-      check_func(color_stack, callstack, func);
-    }
-
-    if (!errors.empty()) {
-      for (const auto &error : errors) {
-        kphp_error(0, error.second);
-      }
-    }
+  size_t size() {
+    return data.size();
   }
 
-  function_palette::Palette match(const std::vector<function_palette::colors_t> &colors) {
-    function_palette::Palette matched_palette;
-
-    for (const auto &group : palette.groups()) {
-      function_palette::PaletteGroup matched_group;
-      std::vector<function_palette::Rule> rules;
-
-      for (const auto &rule : group.rules()) {
-        if (rule.match(colors)) {
-          rules.push_back(rule);
-        }
-      }
-
-      if (rules.empty()) {
-        continue;
-      }
-
-      auto max_id = 0;
-      auto index = -1;
-      for (auto &rule : rules) {
-        if (rule.id >= max_id) {
-          index++;
-          max_id = rule.id;
-        }
-      }
-
-      const auto rule = rules[index];
-      matched_group.add_rule(rule);
-      matched_palette.add_group(matched_group);
-    }
-
-    return matched_palette;
+  element &front() {
+    return *begin;
   }
 
-  void check_func(std::vector<function_palette::color_t>& color_stack, std::vector<FunctionPtr> &callstack, const FunctionPtr &func) {
-    if (callstack.size() > 50) {
-      return;
-    }
-
-    callstack.push_back(func);
-    const auto sep_colors = func->colors.sep_colors();
-    for (const auto &sep_color : sep_colors) {
-      color_stack.push_back(sep_color);
-    }
-
-    if (color_stack.empty()) {
-      return;
-    }
-
-    if (callstack.size() != 1) {
-      const auto matched_palette = match(color_stack);
-
-      for (const auto &group : matched_palette.groups()) {
-        for (const auto &rule : group.rules()) {
-          if (rule.is_error()) {
-            error(callstack, rule.error, rule);
-          }
-        }
-      }
-    }
-
-    for (const auto &next : call_graph.graph[func]) {
-      if (vk::contains(callstack, next)) {
-        continue;
-      }
-
-      check_func(color_stack, callstack, next);
-    }
-
-    for (int i = 0; i < sep_colors.size(); ++i) {
-      color_stack.pop_back();
-    }
-    callstack.pop_back();
+  element &back() {
+    return *end;
   }
 
-  void error(const std::vector<FunctionPtr> &stacktrace, const std::string &message, const function_palette::Rule &rule) {
-    stage::set_function(stacktrace.front());
-
-    const auto child = stacktrace.back();
-    const auto parent = stacktrace.front();
-
-    const auto parent_name = parent->get_human_readable_name() + "()";
-    const auto child_name = child->get_human_readable_name() + "()";
-
-    const auto description = fmt_format("{} ({} call {})\n\n{}\n\nProduced according to the following rule:\n  {}",
-                             message,
-                             TermStringFormat::paint_green(parent_name),
-                             TermStringFormat::paint_green(child_name),
-                             format_stacktrace(stacktrace),
-                             rule.to_string(palette)
-    );
-    const auto hash = hash_stacktrace(stacktrace) * rule.id;
-
-    errors.insert(std::make_pair(hash, std::move(description)));
+  void push_back(const element &el) {
+    data.push_back(el);
+    begin = data.begin();
+    end = data.end();
   }
 
-  uint64_t hash_stacktrace(const std::vector<FunctionPtr> &stacktrace) {
-    uint64_t hash = 0;
-    for (int i = 0; i < stacktrace.size(); ++i) {
-      hash += stacktrace[i]->id * i;
-    }
-    return hash;
+  void pop_back() {
+    data.pop_back();
   }
 
-  string format_stacktrace(const std::vector<FunctionPtr> &stacktrace) {
+  bool contains(const element &el) const {
+    return vk::contains(data, el);
+  }
+
+  std::string format(const function_palette::Palette& palette) const {
     std::string desc;
 
-    for (int i = 0; i < stacktrace.size(); ++i) {
-      const auto frame = stacktrace[i];
+    for (auto it = begin; it != end + 1; ++it) {
+      const auto frame = *it;
       const auto name = frame->get_human_readable_name() + "()";
 
       desc += "  ";
@@ -266,12 +196,216 @@ public:
         desc += frame->colors.to_string(palette);
       }
 
-      if (i != stacktrace.size() - 1) {
+      if (it != end) {
         desc += "\n\n";
       }
     }
 
     return desc;
+  }
+
+  void reset_narrow() {
+    begin = data.begin();
+    end = data.end();
+  }
+
+  void narrow(const element &from, const element &to) {
+    while (begin != data.end()) {
+      if (*begin == from) {
+        break;
+      }
+      ++begin;
+    }
+
+    while (end != data.begin()) {
+      if (*end == to) {
+        break;
+      }
+      --end;
+    }
+  }
+};
+
+class CheckFunctionsColors {
+  FuncCallGraph call_graph;
+  function_palette::Palette palette;
+
+  std::map<uint64_t, std::pair<FunctionPtr, std::string>> errors;
+
+public:
+  CheckFunctionsColors(const FuncCallGraph &call_graph)
+    : call_graph(call_graph), palette(G->get_function_palette()) {}
+
+public:
+  void check() {
+    Callstack callstack(50);
+    CallstackColors colors;
+    colors.reserve(50);
+
+    for (auto &func : call_graph.functions) {
+      if (func->type != FunctionData::func_local) {
+        continue;
+      }
+
+      const auto called_in = call_graph.rev_graph[func];
+
+      // we only check functions that are not called anywhere other than the main function
+      if (called_in.size() > 0 && !called_in[0]->is_main_function()) {
+        continue;
+      }
+
+      check_func(colors, callstack, func);
+    }
+
+    for (const auto &error : errors) {
+      stage::set_function(error.second.first);
+      kphp_error(0, error.second.second);
+    }
+  }
+
+  void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
+    if (func->type != FunctionData::func_local || callstack.size() >= 50) {
+      return;
+    }
+
+    callstack.push_back(func);
+    const auto sep_colors = func->colors.sep_colors();
+    for (const auto &sep_color : sep_colors) {
+      colors.push_back(CallstackColor(sep_color, func));
+    }
+
+    if (sep_colors.empty()) {
+      colors.push_back(CallstackColor(function_palette::special_colors::none, func));
+    }
+
+    if (callstack.size() > 1 && !colors.empty()) {
+      const auto matched_rules = match(colors);
+
+      for (const auto &rule : matched_rules) {
+        error(callstack, rule);
+      }
+    }
+
+    for (const auto &next : call_graph.graph[func]) {
+      if (callstack.contains(next)) {
+        continue;
+      }
+
+      check_func(colors, callstack, next);
+    }
+
+    for (int i = 0; i < sep_colors.size(); ++i) {
+      colors.pop_back();
+    }
+    callstack.pop_back();
+  }
+
+  static function_palette::colors_t calc_mask(const std::vector<CallstackColor> &colors) {
+    function_palette::colors_t mask = 0;
+    for (const auto &color : colors) {
+      mask |= color.color;
+    }
+    return mask;
+  }
+
+  static MatchedRule match_rule(const function_palette::Rule& rule, std::vector<CallstackColor>& colors) {
+    const auto match_mask = calc_mask(colors);
+    if (!rule.contains_in(match_mask)) {
+      return {};
+    }
+
+    return match_two_vectors(rule, rule.colors, colors);
+  }
+
+  static MatchedRule match_two_vectors(const function_palette::Rule& rule, const std::vector<function_palette::colors_t> &first, std::vector<CallstackColor>& second) {
+    if (first.empty() || second.empty()) {
+      return {};
+    }
+
+    FunctionPtr* end_func = nullptr;
+
+    auto first_it = first.end() - 1;
+    auto second_it = second.end() - 1;
+
+    while (true) {
+      auto matched = false;
+
+      if (second_it->color == function_palette::special_colors::none) {
+        if (*first_it == function_palette::special_colors::any) {
+          matched = true;
+        } else {
+          matched = false;
+        }
+      } else if (*first_it == function_palette::special_colors::any) {
+        matched = true;
+      } else if (*first_it == second_it->color) {
+        matched = true;
+      }
+
+      if (matched) {
+        if (end_func == nullptr) {
+          end_func = &second_it->func;
+        }
+
+        if (first_it == first.begin()) {
+          return MatchedRule(rule, second_it->func, *end_func);
+        }
+        if (second_it == second.begin()) {
+          return {};
+        }
+        first_it--;
+        second_it--;
+      } else {
+        if (second_it == second.begin()) {
+          return {};
+        }
+        second_it--;
+      }
+    }
+  }
+
+  std::vector<MatchedRule> match(CallstackColors &colors) {
+    std::vector<MatchedRule> rules;
+
+    for (const auto &group : palette.groups()) {
+      for (auto it = group.rules().rbegin(); it != group.rules().rend(); ++it) {
+        const auto rule = *it;
+        const auto matched_rule = match_rule(rule, colors);
+
+        if (!matched_rule.matched) {
+          continue;
+        }
+
+        if (rule.is_error()) {
+          rules.push_back(matched_rule);
+        }
+        break;
+      }
+    }
+
+    return rules;
+  }
+
+  void error(Callstack& callstack, const MatchedRule &rule) {
+    callstack.narrow(rule.start_func, rule.end_func);
+
+    const auto parent = callstack.front();
+    const auto parent_name = callstack.front()->get_human_readable_name() + "()";
+    const auto child_name = callstack.back()->get_human_readable_name() + "()";
+    const auto callstack_format = callstack.format(palette);
+    const auto hash = (callstack.front()->id + callstack.back()->id + 1000) * (rule.rule.id + 1);
+
+    callstack.reset_narrow();
+
+    const auto description = fmt_format("{} ({} call {})\n\n{}\n\nProduced according to the following rule:\n  {}",
+                             rule.rule.error,
+                             TermStringFormat::paint_green(parent_name),
+                             TermStringFormat::paint_green(child_name),
+                             callstack_format,
+                             rule.rule.to_string(palette)
+    );
+
+    errors.insert(std::make_pair(hash, std::make_pair(parent, std::move(description))));
   }
 };
 

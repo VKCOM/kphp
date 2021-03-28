@@ -1,7 +1,9 @@
 @kphp_should_fail
 /error 1 \(dangerZone\(\) call hasCurl\(\)\)/
-/  dangerZone\(\) with following colors\: \{danger\-zone\}/
-/  hasCurl\(\) with following colors\: \{has\-curl\}/
+/  dangerZone\(\)/
+/  hasCurl\(\)/
+/Produced according to the following rule:/
+/  "\* \*" => error 1/
 <?php
 
 class KphpConfiguration {
@@ -13,9 +15,6 @@ class KphpConfiguration {
   ];
 }
 
-/**
- * @kphp-color danger-zone
- */
 function dangerZone() {
     highload(); // ok
     hasCurl(); // error
@@ -28,9 +27,6 @@ function highload() {
     echo 1;
 }
 
-/**
- * @kphp-color has-curl
- */
 function hasCurl() {
     echo 1;
 }

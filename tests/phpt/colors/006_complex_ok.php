@@ -16,7 +16,7 @@ class KphpConfiguration {
       "api has-curl api-allow-curl"       => 1,
     ],
     [
-      "message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
+      "* message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
       "message-module message-internals"  => 1,
     ],
     [

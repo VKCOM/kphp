@@ -28,11 +28,15 @@ void ColorContainer::add(color_t color) {
 }
 
 size_t ColorContainer::size() const noexcept {
-  return this->count;
+  return count;
 }
 
 bool ColorContainer::empty() const noexcept {
-  return this->count == 0;
+  return count == 0;
+}
+
+bool ColorContainer::contains(color_t color) const noexcept {
+  return (data & color) == color;
 }
 
 std::string ColorContainer::to_string(const Palette &palette) const {
@@ -63,44 +67,6 @@ std::string ColorContainer::to_string(const Palette &palette) const {
 }
 
 size_t Rule::counter = 0;
-
-bool Rule::match_two_vectors(const std::vector<function_palette::colors_t> &first, const std::vector<function_palette::colors_t> &second) {
-  if (first.empty()) {
-    return false;
-  }
-  if (second.empty()) {
-    return false;
-  }
-
-  auto first_it = first.end() - 1;
-  auto second_it = second.end() - 1;
-
-  while (true) {
-    auto matched = false;
-
-    if (*first_it == special_colors::any) {
-      matched = true;
-    } else if (*first_it == *second_it) {
-      matched = true;
-    }
-
-    if (matched) {
-      if (first_it == first.begin()) {
-        return true;
-      }
-      if (second_it == second.begin()) {
-        return false;
-      }
-      first_it--;
-      second_it--;
-    } else {
-      if (second_it == second.begin()) {
-        return false;
-      }
-      second_it--;
-    }
-  }
-}
 
 std::string Rule::to_string(const Palette &palette) const {
   std::string res = "\"";

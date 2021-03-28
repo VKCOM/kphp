@@ -41,6 +41,8 @@ private:
   static size_t counter;
 
 public:
+  Rule() = default;
+
   Rule(std::vector<color_t> &&colors, const std::string &error)
     : colors(colors), error(error) {
     for (const auto& color : colors) {
@@ -56,17 +58,6 @@ public:
 
   std::string to_string(const Palette &palette) const;
 
-  bool match(const std::vector<function_palette::colors_t> &match_colors) const {
-    const auto match_mask = calc_mask(match_colors);
-    if (!contains_in(match_mask)) {
-      return false;
-    }
-
-    return match_two_vectors(colors, match_colors);
-  }
-
-  static bool match_two_vectors(const std::vector<function_palette::colors_t> &first, const std::vector<function_palette::colors_t> &second);
-
   bool is_error() const {
     return !error.empty();
   }
@@ -79,22 +70,14 @@ public:
         return true;
       }
 
+      const auto count_unique_colors = count_significant_bits(mask);
       const auto count_bits = count_significant_bits(res_mask);
-      if (count_bits == count_any) {
+      if (count_bits == count_unique_colors - count_any) {
         return true;
       }
     }
 
     return res_mask == mask;
-  }
-
-private:
-  static colors_t calc_mask(const std::vector<function_palette::colors_t> &colors) {
-    colors_t mask = 0;
-    for (const auto &color : colors) {
-      mask |= color;
-    }
-    return mask;
   }
 };
 
@@ -103,10 +86,6 @@ class PaletteGroup {
 
 public:
   void add_rule(Rule &&rule) {
-    rules_.push_back(rule);
-  }
-
-  void add_rule(const Rule &rule) {
     rules_.push_back(rule);
   }
 
@@ -129,10 +108,6 @@ public:
   }
 
   void add_group(PaletteGroup &&group) {
-    groups_.push_back(group);
-  }
-
-  void add_group(const PaletteGroup &group) {
     groups_.push_back(group);
   }
 
@@ -179,6 +154,7 @@ public:
   void add(color_t color);
   size_t size() const noexcept;
   bool empty() const noexcept;
+  bool contains(color_t color) const noexcept;
   std::string to_string(const Palette &palette) const;
 };
 

@@ -2,9 +2,13 @@
 /Calling function without color danger\-zone in a function with color danger\-zone \(dangerZone\(\) call functionWithSomeColors\(\)\)/
 /  dangerZone\(\) with following colors\: \{danger\-zone\}/
 /  functionWithSomeColors\(\) with following colors: \{ssr\}/
+/Produced according to the following rule:/
+/  "danger-zone \*" => Calling function without color danger-zone in a function with color danger-zone/
 /Calling function without color danger\-zone in a function with color danger\-zone \(dangerZone\(\) call functionWithoutColors\(\)\)/
 /  dangerZone\(\) with following colors\: \{danger\-zone\}/
 /  functionWithoutColors\(\)/
+/Produced according to the following rule:/
+/  "danger-zone \*" => Calling function without color danger-zone in a function with color danger-zone/
 <?php
 
 class KphpConfiguration {

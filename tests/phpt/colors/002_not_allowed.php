@@ -2,9 +2,13 @@
 /Calling function working with the database in the server side rendering function \(someSsr\(\) call hasDbAccess\(\)\)/
 /  someSsr\(\) with following colors\: \{ssr\}/
 /  hasDbAccess\(\) with following colors\: \{has-db-access\}/
+/Produced according to the following rule:/
+/  "ssr has-db-access" => Calling function working with the database in the server side rendering function/
 /Calling curl function from API functions \(api\(\) call hasCurl\(\)\)/
 /  api\(\) with following colors\: \{api\}/
 /  hasCurl\(\) with following colors\: \{has-curl\}/
+/Produced according to the following rule:/
+/  "api has-curl" => Calling curl function from API functions/
 <?php
 
 
@@ -20,10 +24,10 @@ class KphpConfiguration {
     [
       "api has-curl"                      => "Calling curl function from API functions",
       "api api-callback has-curl"         => 1,
-      "api has-curl api-allow-curl"       => 1,
+      "api api-allow-curl has-curl"       => 1,
     ],
     [
-      "message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
+      "* message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
       "message-module message-internals"  => 1,
     ],
     [
