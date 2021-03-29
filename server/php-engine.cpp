@@ -1327,11 +1327,7 @@ static int stats_len;
 void prepare_full_stats() {
   char *s = stats;
   int s_left = 65530;
-  auto &local_worker_stats = PhpWorkerStats::get_local();
-  local_worker_stats.update_mem_info();
-  local_worker_stats.update_idle_time(epoll_total_idle_time(), get_uptime(), epoll_average_idle_time(), epoll_average_idle_quotient());
-  local_worker_stats.recalc_worker_percentiles();
-  const int stats_size = local_worker_stats.write_into(s, s_left);
+  const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
   s += stats_size;
   s_left -= stats_size;
 
@@ -1495,6 +1491,13 @@ void reopen_json_log() {
   }
 }
 
+void update_worker_stats() noexcept {
+  auto &local_worker_stats = PhpWorkerStats::get_local();
+  local_worker_stats.update_mem_info();
+  local_worker_stats.update_idle_time(epoll_total_idle_time(), get_uptime(), epoll_average_idle_time(), epoll_average_idle_quotient());
+  local_worker_stats.recalc_worker_percentiles();
+}
+
 static void generic_event_loop(RunMode mode) {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
@@ -1619,6 +1622,9 @@ static void generic_event_loop(RunMode mode) {
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
     }
 
+    if (spoll_send_stats > 0) {
+      update_worker_stats();
+    }
     while (spoll_send_stats > 0) {
       write_full_stats_to_pipe();
       spoll_send_stats--;
