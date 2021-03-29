@@ -128,7 +128,7 @@ class CallstackColors {
   using it = std::vector<CallstackColor>::iterator;
 
   std::vector<CallstackColor> data;
-  bool only_none_colors{true};
+  size_t count_none_colors{0};
 
 public:
   CallstackColors(size_t cap) {
@@ -136,13 +136,16 @@ public:
   }
 
   void push_back(CallstackColor &&color) {
-    if (color.color != function_palette::special_colors::none) {
-      only_none_colors = false;
+    if (color.color == function_palette::special_colors::none) {
+      count_none_colors++;
     }
     data.push_back(color);
   }
 
   void pop_back() {
+    if (data.size() > 0 && data.back().color == function_palette::special_colors::none) {
+      count_none_colors--;
+    }
     data.pop_back();
   }
 
@@ -156,7 +159,7 @@ public:
   }
 
   bool contains_only_none() const {
-    return only_none_colors;
+    return count_none_colors == 0;
   }
 };
 
