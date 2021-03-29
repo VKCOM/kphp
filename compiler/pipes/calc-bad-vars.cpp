@@ -178,17 +178,20 @@ struct MatchedRule {
 
 class Callstack {
   using raw = std::vector<FunctionPtr>;
+  using raw_set = std::unordered_set<FunctionPtr>;
   using it = std::vector<FunctionPtr>::iterator;
   using element = FunctionPtr;
 
 private:
   raw data;
+  raw_set data_set;
   it begin;
   it end;
 
 public:
   Callstack(size_t cap) {
     data.reserve(cap);
+    data_set.reserve(cap);
     begin = data.begin();
     end = data.end();
   }
@@ -210,14 +213,16 @@ public:
     data.push_back(el);
     begin = data.begin();
     end = data.end();
+    data_set.insert(el);
   }
 
   void pop_back() {
+    data_set.erase(data.back());
     data.pop_back();
   }
 
   bool contains(const element &el) const {
-    return vk::contains(data, el);
+    return vk::contains(data_set, el);
   }
 
   std::string format(const function_palette::Palette& palette) const {
@@ -302,7 +307,7 @@ public:
   }
 
   void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
-    if (func->type != FunctionData::func_local || callstack.size() >= 50) {
+    if (func->type != FunctionData::func_local) {
       return;
     }
 
@@ -327,6 +332,9 @@ public:
     for (const auto &next : call_graph.graph[func]) {
       if (callstack.contains(next)) {
         continue;
+      }
+      if (callstack.size() >= 50) {
+        break;
       }
 
       check_func(colors, callstack, next);
