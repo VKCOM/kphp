@@ -123,7 +123,42 @@ struct CallstackColor {
     : color(color), func(func) {}
 };
 
-using CallstackColors = std::vector<CallstackColor>;
+class CallstackColors {
+  using const_it = std::vector<CallstackColor>::const_iterator;
+  using it = std::vector<CallstackColor>::iterator;
+
+  std::vector<CallstackColor> data;
+  bool only_none_colors{true};
+
+public:
+  CallstackColors(size_t cap) {
+    data.reserve(cap);
+  }
+
+  void push_back(CallstackColor &&color) {
+    if (color.color != function_palette::special_colors::none) {
+      only_none_colors = false;
+    }
+    data.push_back(color);
+  }
+
+  void pop_back() {
+    data.pop_back();
+  }
+
+  const_it begin() const { return data.begin(); }
+  const_it end() const { return data.end(); }
+  it begin() { return data.begin(); }
+  it end() { return data.end(); }
+
+  bool empty() const {
+    return data.empty();
+  }
+
+  bool contains_only_none() const {
+    return only_none_colors;
+  }
+};
 
 struct MatchedRule {
   function_palette::Rule rule{};
@@ -135,6 +170,10 @@ struct MatchedRule {
 
   MatchedRule(const function_palette::Rule &rule, const FunctionPtr &start, const FunctionPtr &end)
     : rule(rule), start_func(start), end_func(end), matched(true) {}
+
+  uint64_t hash() const {
+    return (start_func->id + end_func->id + 1000) * (rule.id + 1);
+  }
 };
 
 class Callstack {
@@ -239,8 +278,7 @@ public:
 public:
   void check() {
     Callstack callstack(50);
-    CallstackColors colors;
-    colors.reserve(50);
+    CallstackColors colors(50);
 
     for (auto &func : call_graph.functions) {
       if (func->type != FunctionData::func_local) {
@@ -278,7 +316,7 @@ public:
       colors.push_back(CallstackColor(function_palette::special_colors::none, func));
     }
 
-    if (callstack.size() > 1 && !colors.empty()) {
+    if (callstack.size() > 1 && !colors.empty() && !colors.contains_only_none()) {
       const auto matched_rules = match(colors);
 
       for (const auto &rule : matched_rules) {
@@ -300,7 +338,7 @@ public:
     callstack.pop_back();
   }
 
-  static function_palette::colors_t calc_mask(const std::vector<CallstackColor> &colors) {
+  static function_palette::colors_t calc_mask(const CallstackColors &colors) {
     function_palette::colors_t mask = 0;
     for (const auto &color : colors) {
       mask |= color.color;
@@ -308,7 +346,7 @@ public:
     return mask;
   }
 
-  static MatchedRule match_rule(const function_palette::Rule& rule, std::vector<CallstackColor>& colors) {
+  static MatchedRule match_rule(const function_palette::Rule& rule, CallstackColors& colors) {
     const auto match_mask = calc_mask(colors);
     if (!rule.contains_in(match_mask)) {
       return {};
@@ -317,7 +355,7 @@ public:
     return match_two_vectors(rule, rule.colors, colors);
   }
 
-  static MatchedRule match_two_vectors(const function_palette::Rule& rule, const std::vector<function_palette::colors_t> &first, std::vector<CallstackColor>& second) {
+  static MatchedRule match_two_vectors(const function_palette::Rule& rule, const std::vector<function_palette::colors_t> &first, CallstackColors& second) {
     if (first.empty() || second.empty()) {
       return {};
     }
@@ -376,6 +414,10 @@ public:
           continue;
         }
 
+        if (errors.count(matched_rule.hash()) != 0) {
+          break;
+        }
+
         if (rule.is_error()) {
           rules.push_back(matched_rule);
         }
@@ -389,11 +431,11 @@ public:
   void error(Callstack& callstack, const MatchedRule &rule) {
     callstack.narrow(rule.start_func, rule.end_func);
 
+    const auto hash = rule.hash();
     const auto parent = callstack.front();
     const auto parent_name = callstack.front()->get_human_readable_name() + "()";
     const auto child_name = callstack.back()->get_human_readable_name() + "()";
     const auto callstack_format = callstack.format(palette);
-    const auto hash = (callstack.front()->id + callstack.back()->id + 1000) * (rule.rule.id + 1);
 
     callstack.reset_narrow();
 
