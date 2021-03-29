@@ -577,18 +577,6 @@ private:
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr function = call_graph.functions[i];
       function->dep = std::move(call_graph.graph[function]);
-
-      function->dep_rev = std::move(call_graph.rev_graph[function]);
-      auto& dep = function->dep_rev;
-      auto it = dep.begin();
-      while (it != dep.end()) {
-        if ((*it)->is_main_function() || (*it)->is_extern()) {
-          it = dep.erase(it);
-          continue;
-        }
-
-        ++it;
-      }
     }
 
     if (!G->settings().is_static_lib_mode()) {

@@ -22,16 +22,6 @@ public:
 
 private:
   void handle_runtime_options(const ClassMemberConstant &c);
-
-  void handle_function_color_palette(const ClassMemberConstant &c);
-  function_palette::Palette parse_palette(const ClassMemberConstant &c);
-  function_palette::Palette create_palette(const palette_groups_raw &groups, function_palette::colors_num &&colors_num);
-  function_palette::colors_num create_palette_colors_num(const palette_groups_raw &groups);
-  std::vector<palette_rule_raw> parse_palette_group(const VertexAdaptor<op_array> &arr);
-  palette_rule_raw parse_palette_rule(const VertexAdaptor<op_double_arrow> &pair);
-  std::string parse_palette_rule_result(const VertexPtr &pair);
-  std::vector<std::string> parse_palette_rule_colors(const VertexPtr &pair);
-
   void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
 
   void register_confdata_blacklist(VertexPtr value) const noexcept;
@@ -42,6 +32,14 @@ private:
   void register_warmup_instance_cache_elements_part(VertexPtr value) const noexcept;
   void register_warmup_timeout_sec(VertexPtr value) const noexcept;
 
+  void handle_function_color_palette(const ClassMemberConstant &c);
+  function_palette::Palette parse_palette(const ClassMemberConstant &c);
+  function_palette::Palette create_palette(const palette_groups_raw &groups, function_palette::colors_num &&colors_num);
+  function_palette::colors_num create_palette_colors_num(const palette_groups_raw &groups);
+  std::vector<palette_rule_raw> parse_palette_group(const VertexAdaptor<op_array> &arr);
+  palette_rule_raw parse_palette_rule(const VertexAdaptor<op_double_arrow> &pair);
+  std::string parse_palette_rule_result(const VertexPtr &pair);
+  std::vector<std::string> parse_palette_rule_colors(const VertexPtr &pair);
 
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
