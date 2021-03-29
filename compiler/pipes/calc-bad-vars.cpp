@@ -307,7 +307,7 @@ public:
   }
 
   void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
-    if (func->type != FunctionData::func_local) {
+    if (func->type != FunctionData::func_local || callstack.size() >= 50) {
       return;
     }
 
@@ -332,9 +332,6 @@ public:
     for (const auto &next : call_graph.graph[func]) {
       if (callstack.contains(next)) {
         continue;
-      }
-      if (callstack.size() >= 50) {
-        break;
       }
 
       check_func(colors, callstack, next);
