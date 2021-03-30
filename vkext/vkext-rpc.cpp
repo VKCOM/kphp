@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "common/rpc-headers.h"
 #include "common/crc32.h"
 #include "common/c-tree.h"
 #include "common/macos-ports.h"
@@ -1331,7 +1332,7 @@ static struct rpc_server *choose_writable_server(struct rpc_server_collection *s
 
 /* }}} */
 
-static int rpc_write(struct rpc_connection *c, long long qid, double timeout) { /* {{{ */
+static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bool ignore_answer) { /* {{{ */
   ADD_CNT (rpc_write);
   START_TIMER (rpc_write);
 //  struct rpc_server *server = c->server;
@@ -1352,24 +1353,23 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout) { 
     return -1;
   }
 
-  if (c->default_actor_id) {
-    auto x = *(unsigned int *)outbuf->rptr;
-    if (x != TL_RPC_DEST_ACTOR && x != TL_RPC_DEST_ACTOR_FLAGS) {
-      outbuf->rptr -= 12;
-      assert (outbuf->rptr >= outbuf->sptr);
-      *(int *)outbuf->rptr = TL_RPC_DEST_ACTOR;
-      *(long long *)(outbuf->rptr + 4) = c->default_actor_id;
-    }
-  }
-  int len = 24 + (outbuf->wptr - outbuf->rptr);
+  RpcExtraHeaders extra_headers{};
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, *reinterpret_cast<int *>(outbuf->rptr), c->default_actor_id, ignore_answer);
+
+  outbuf->rptr -= extra_headers_size;
+  memcpy(outbuf->rptr, &extra_headers, extra_headers_size);
+
   unsigned crc32 = 0;
-  outbuf->rptr -= 20;
+  int len = sizeof(RpcHeaders) + sizeof(crc32) + (outbuf->wptr - outbuf->rptr);
+
+  outbuf->rptr -= sizeof(RpcHeaders);
   assert (outbuf->rptr >= outbuf->sptr);
-  int *tmp = reinterpret_cast<int *>(outbuf->rptr);
-  tmp[0] = len;
-  tmp[1] = server->packet_num++;
-  tmp[2] = TL_RPC_INVOKE_REQ;
-  *(long long *)(tmp + 3) = qid;
+  auto *headers = reinterpret_cast<RpcHeaders *>(outbuf->rptr);
+  headers->length = len;
+  headers->num = server->packet_num++;
+  headers->op = TL_RPC_INVOKE_REQ;
+  headers->req_id = qid;
+
 #ifdef SEND_CRC32
   ADD_CNT (crc32);
   START_TICKS (crc32);
@@ -2428,7 +2428,7 @@ struct rpc_query *do_rpc_send_noflush(struct rpc_connection *c, double timeout, 
     END_TIMER (rpc_send);
     return 0;
   }
-  if (rpc_write(c, q->qid, timeout) < 0) {
+  if (rpc_write(c, q->qid, timeout, ignore_answer) < 0) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Fail, while writing query");
 //    rpc_server_failure (c->server);

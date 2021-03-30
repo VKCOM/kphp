@@ -6,6 +6,7 @@
 #define __VKEXT_RPC_INCLUDE_H__
 
 #include "common/tl/constants/common.h"
+#include "common/rpc-headers.h"
 
 #include "vkext/vkext-rpc.h"
 
@@ -396,6 +397,9 @@ static inline int buffer_read_string(struct rpc_buffer *buf, int *len, const cha
 
 /* }}} outbuf */
 
+static constexpr size_t RPC_HEADERS_RESERVED_BYTES = 40;
+static_assert(RPC_HEADERS_RESERVED_BYTES >= sizeof(RpcHeaders) + sizeof(RpcExtraHeaders), "Not enough reserved bytes");
+
 static void do_rpc_clean() UNUSED;
 static void do_rpc_clean() { /* {{{ */
   ADD_CNT (store);
@@ -405,7 +409,7 @@ static void do_rpc_clean() { /* {{{ */
   } else {
     outbuf = buffer_create(0);
   }
-  buffer_write_reserve(outbuf, 40);
+  buffer_write_reserve(outbuf, RPC_HEADERS_RESERVED_BYTES);
   END_TIMER (store);
 }
 /* }}} */

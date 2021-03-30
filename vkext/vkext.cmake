@@ -38,7 +38,8 @@ prepend(VKEXT_COMMON_SOURCES ${COMMON_DIR}/
         string-processing.cpp
         unicode/utf8-utils.cpp
         cpuid.cpp
-        version-string.cpp)
+        version-string.cpp
+        rpc-headers.cpp)
 
 prepend(VKEXT_SOURCES ${VKEXT_DIR}/
         vkext.cpp
