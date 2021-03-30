@@ -14,3 +14,4 @@ ltmain.sh
 missing
 mkinstalldirs
 modules*
+rpc-tests/VK

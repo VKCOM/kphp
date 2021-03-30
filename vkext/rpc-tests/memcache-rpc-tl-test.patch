@@ -1,8 +1,8 @@
 diff --git a/common/tl/schemas/memcache.tl b/common/tl/schemas/memcache.tl
-index cdf774eeb2..7bdd716d4c 100644
+index 69ee471dd2..4d8e2882ae 100644
 --- a/common/tl/schemas/memcache.tl
 +++ b/common/tl/schemas/memcache.tl
-@@ -93,10 +93,10 @@ memcache.oneSetWithTimes
+@@ -100,10 +100,10 @@ memcache.tokenHashMd5 hash:string = memcache.Token;
  // returns all entries. The prefix is removed from keys
  @read memcache.getWildcard prefix:string = Vector %(Map string string);
  @read memcache.getWildcardDict prefix:string = Dictionary string;
@@ -15,13 +15,10 @@ index cdf774eeb2..7bdd716d4c 100644
  @read memcache.getWildcardWithFlags prefix:string = Dictionary memcache.Value;
  
  // -1 for no expire, time before key is expired, false for no key
-@@ -118,3 +118,88 @@ memcache.oneSetWithTimes
- // keys[keys_len - 1] - most recent used, keys[0] was used a long time ago
- @any @internal memcache.updateLRU keys:%(Vector string) = Bool;
+@@ -127,3 +127,85 @@ memcache.tokenHashMd5 hash:string = memcache.Token;
  @read @internal memcache.multiExists keys:%(Vector string) = Vector Bool;
-+
-+
-+
+ 
+ @readwrite memcache.compareAndDelete key:string expected_token:memcache.Token = memcache.CompareAndDeleteResult;
 +
 +// ~~~~~~~~~~~~~~~~~~~~ FOR VKEXT TEST ONLY ~~~~~~~~~~~~~~~~~~~
 +
