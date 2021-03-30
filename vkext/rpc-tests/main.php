@@ -366,6 +366,30 @@ function generic_fm_test($maybe_y = null)
   assertEq($obj->y, $res->y);
 }
 
+function test_rpc_invoke_req_extra_headers($key, $value, $ignore_result, $use_actor) {
+  echo "##### test_rpc_invoke_req_extra_headers key=$key, ignore_result=$ignore_result, use_actor=$use_actor #####\n";
+
+  if ($use_actor) {
+    $conn = new_rpc_connection("127.0.0.1", PROXY_PORT, 1);
+  } else {
+    $conn = new_rpc_connection("127.0.0.1", MEMCACHE_PORT);
+  }
+
+  // @write memcache.set key:string flags:int delay:int value:string = Bool;
+  $set_query = ["_" => "memcache.set", "key" => $key, "value" => $value, "flags" => 0, "delay" => 0];
+  $set_ids = rpc_tl_query($conn, [$set_query], 1000, $ignore_result);
+  if (!$ignore_result) {
+    assertEq(true, rpc_tl_query_result($set_ids)[0]["result"]);
+  }
+  rpc_flush();
+  for ($_ = 0; $_ < 100000; $_++) {} // hang
+
+  $get_query = ["_" => "memcache.get", "key" => $key];
+  $id = rpc_tl_query_one($conn, $get_query);
+  $res = rpc_tl_query_result_one($id);
+
+  assertEq($value, $res["result"]["value"]);
+}
 
 function main()
 {
@@ -401,6 +425,10 @@ function main()
 
   generic_fm_test();
   generic_fm_test(100);
+
+  test_rpc_invoke_req_extra_headers("test1", "hello", false, true);
+  test_rpc_invoke_req_extra_headers("test2", "hello", true, false);
+  test_rpc_invoke_req_extra_headers("test3", "hello", true, true);
 
   global $FailedAsserts;
   echo "@@@@@@ TESTS ENDED @@@@@@\n";
