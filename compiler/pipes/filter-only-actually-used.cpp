@@ -54,6 +54,10 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
 }
 
 void propagate_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  if (callee->color_status != FunctionData::color_status::unknown) {
+    return;
+  }
+
   callee->color_status = FunctionData::color_status::call_or_has_color;
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
     caller->color_status = FunctionData::color_status::call_or_has_color;
