@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
+#include <chrono>
 
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
@@ -95,10 +96,10 @@ conn_type_t php_jobs_server = [] {
   res.writer = server_failed;
   res.init_outbound = server_failed;
   res.connected = server_failed;
-  res.close = server_failed;
   res.free_buffers = server_failed;
 
   // The following handlers will be set to default ones:
+  //    close
   //    flush
   //    check_ready
 
@@ -143,8 +144,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   running_job = job;
   reply_was_sent = false;
 
-  update_precise_now();
-  double timeout_sec = job->job_deadline_time - get_precise_now();
+  auto now = std::chrono::system_clock::now();
+  double timeout_sec = job->job_deadline_time - std::chrono::duration_cast<std::chrono::duration<double>>(now.time_since_epoch()).count();
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
