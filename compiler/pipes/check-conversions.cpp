@@ -34,6 +34,7 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_string,   tp_tuple},
   {op_conv_string_l, tp_tuple},
   {op_conv_object,   tp_tuple},
+  {op_conv_regexp,   tp_tuple},
 
   {op_conv_bool,     tp_shape},
   {op_conv_int,      tp_shape},
