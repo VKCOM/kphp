@@ -225,6 +225,7 @@ const char *qmem_pstr(char const *msg, ...) {
 }
 
 /** str_buffer **/
+str_buf_t *str_buf_create() ubsan_supp("alignment");
 
 str_buf_t *str_buf_create() {
   str_buf_t *buf = (str_buf_t *)qmem_malloc(sizeof(str_buf_t));
@@ -234,6 +235,8 @@ str_buf_t *str_buf_create() {
 
   return buf;
 }
+
+void str_buf_append(str_buf_t *buf, data_reader_t *reader) ubsan_supp("alignment");
 
 void str_buf_append(str_buf_t *buf, data_reader_t *reader) {
   int need = reader->len + buf->len;
@@ -252,10 +255,14 @@ void str_buf_append(str_buf_t *buf, data_reader_t *reader) {
   buf->len += reader->len;
 }
 
+char *str_buf_cstr(str_buf_t *buf) ubsan_supp("alignment");
+
 char *str_buf_cstr(str_buf_t *buf) {
   buf->buf[buf->len] = 0;
   return buf->buf;
 }
+
+int str_buf_len(str_buf_t *buf) ubsan_supp("alignment");
 
 int str_buf_len(str_buf_t *buf) {
   return buf->len;
@@ -366,6 +373,8 @@ bool net_ansgen_is_alive(net_ansgen_t *base_self) {
   return base_self->qmem_req_generation == qmem_generation;
 }
 
+void net_ansgen_timeout(net_ansgen_t *base_self) ubsan_supp("alignment");
+
 void net_ansgen_timeout(net_ansgen_t *base_self) {
 //  fprintf (stderr, "mc_ansgen_packet_timeout %p\n", base_self);
 
@@ -391,6 +400,8 @@ void net_ansgen_error(net_ansgen_t *base_self, const char *val) {
 
   base_self->state = st_ansgen_error;
 }
+
+void net_ansgen_set_desc(net_ansgen_t *base_self, const char *val) ubsan_supp("alignment");
 
 void net_ansgen_set_desc(net_ansgen_t *base_self, const char *val) {
   if (net_ansgen_is_alive(base_self)) {
@@ -508,6 +519,8 @@ void mc_ansgen_packet_other(mc_ansgen_t *mc_self, data_reader_t *reader) {
     base_self->state = st_ansgen_done;
   }
 }
+
+void mc_ansgen_packet_end(mc_ansgen_t *mc_self) ubsan_supp("alignment");
 
 void mc_ansgen_packet_end(mc_ansgen_t *mc_self) {
 //  fprintf (stderr, "mc_ansgen_packet_end\n");

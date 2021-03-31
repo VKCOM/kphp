@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "common/sanitizer.h"
 #include "server/slot-ids-factory.h"
 
 extern SlotIdsFactory parallel_job_ids_factory;
@@ -355,7 +356,7 @@ slot_id_t create_slot();
 void init_drivers();
 
 int mc_connect_to(const char *host_name, int port);
-void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len));
+void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) ubsan_supp("alignment");
 int db_proxy_connect();
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
 void set_server_status(const char *status, int status_len);
