@@ -48,7 +48,12 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::JobSharedMessag
     reply = copy_instance_into_script_memory(reply);
     ready_job.response = std::move(reply);
   } else {
-    ready_job.response = class_instance<C$KphpJobWorkerResponse>{}; // TODO: or C$KphpJobWorkerResponseError{.error_code = JOB_CLIENT_TIMEOUT} ?
+    class_instance<C$KphpJobWorkerResponseError> error;
+    error.alloc();  // TODO: handle OOM
+    error.get()->error = string{"Job client timeout"};
+    error.get()->error_code = -102;
+
+    ready_job.response = std::move(error);
   }
 
   if (ready_job.timer) {
