@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
-#include <cstdint>
 
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
@@ -12,6 +11,7 @@
 #include "net/net-events.h"
 #include "net/net-connections.h"
 
+#include "runtime/net_events.h"
 #include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 
@@ -55,6 +55,7 @@ void jobs_server_at_query_end(connection *c) {
 
   c->flags |= C_REPARSE;
   vk::singleton<JobWorkerServer>::get().reset_running_job();
+
   assert (c->status != conn_wait_net);
 }
 
@@ -110,7 +111,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   assert(c == read_job_connection);
 
   if (running_job) {
-    tvkprintf(job_workers, 1, "Get new job while another job is running. Goes back to event loop now\n");
+    tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;
     JobStats::get().job_worker_skip_job_due_another_is_running++;
     return 0;
@@ -142,7 +143,9 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   running_job = job;
   reply_was_sent = false;
 
-  double timeout_sec = job->script_execution_timeout < 0 ? MAX_SCRIPT_TIMEOUT : job->script_execution_timeout;
+  update_precise_now();
+  double timeout_sec = job->job_deadline_time - get_precise_now();
+
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });

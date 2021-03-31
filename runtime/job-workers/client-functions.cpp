@@ -103,7 +103,9 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
     return -1;
   }
 
-  memory_request->script_execution_timeout = timeout;
+  update_precise_now();
+  double job_deadline_time = get_precise_now() + timeout;
+  memory_request->job_deadline_time = job_deadline_time;
 
   const int job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
   if (job_id <= 0) {
@@ -114,8 +116,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
 
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});
 
-  update_precise_now();
-  kphp_event_timer *timer = allocate_event_timer(get_precise_now() + timeout, get_job_timeout_wakeup_id(), job_id);
+  kphp_event_timer *timer = allocate_event_timer(job_deadline_time, get_job_timeout_wakeup_id(), job_id);
 
   vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer});
   return job_resumable_id;
