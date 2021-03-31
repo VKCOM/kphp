@@ -54,13 +54,13 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
 }
 
 void propagate_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
-  if (callee->color_status != FunctionData::color_status::unknown) {
+  if (callee->color_status == FunctionData::color_status::call_or_has_color) {
     return;
   }
 
   callee->color_status = FunctionData::color_status::call_or_has_color;
+
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
-    caller->color_status = FunctionData::color_status::call_or_has_color;
     propagate_colors_functions_dfs(caller, colors_functions_graph);
   }
 }
@@ -70,10 +70,10 @@ void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<Funct
     return;
   }
 
-  if (callee->colors.empty()) {
-    callee->color_status = FunctionData::color_status::non_color;
-  } else {
+  if (!callee->colors.empty()) {
     callee->color_status = FunctionData::color_status::call_or_has_color;
+  } else {
+    callee->color_status = FunctionData::color_status::non_color;
   }
 
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {

@@ -279,12 +279,13 @@ public:
 
   void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
     callstack.push_back(func);
+    const auto has_colors = !func->colors.empty();
     const auto sep_colors = func->colors.sep_colors();
     for (const auto &sep_color : sep_colors) {
       colors.push_back(CallstackColor(sep_color, func));
     }
 
-    if (callstack.size() > 1 && !colors.empty()) {
+    if (callstack.size() > 1 && !colors.empty() && has_colors) {
       const auto matched_rules = match(colors);
 
       for (const auto &rule : matched_rules) {
@@ -336,15 +337,7 @@ public:
     while (true) {
       auto matched = false;
 
-      if (second_it->color == function_palette::special_colors::none) {
-        if (*first_it == function_palette::special_colors::any) {
-          matched = true;
-        } else {
-          matched = false;
-        }
-      } else if (*first_it == function_palette::special_colors::any) {
-        matched = true;
-      } else if (*first_it == second_it->color) {
+      if (*first_it == second_it->color) {
         matched = true;
       }
 
