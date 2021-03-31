@@ -2,22 +2,25 @@
 
 function do_job_worker() {
   $req = kphp_job_worker_fetch_request();
-  $x2_req = instance_cast($req, X2Request::class);
-
-  switch($x2_req->tag) {
-    case "x2_with_rpc_request":
-      return x2_with_rpc_request($x2_req);
-    case "x2_with_mc_request":
-      return x2_with_mc_request($x2_req);
-    case "x2_with_sleep":
-      return x2_with_sleep($x2_req);
-    case "x2_with_error":
-      return x2_with_error($x2_req);
+  if ($req instanceof X2Request) {
+    switch($req->tag) {
+      case "x2_with_rpc_request":
+        return x2_with_rpc_request($req);
+      case "x2_with_mc_request":
+        return x2_with_mc_request($req);
+      case "x2_with_sleep":
+        return x2_with_sleep($req);
+      case "x2_with_error":
+        return x2_with_error($req);
+    }
+    if ($req->tag !== "") {
+      critical_error("Unknown tag " + $req->tag);
+    }
+    return simple_x2($req);
+  } else {
+    require_once "ComplexScenario/_job_scenario.php";
+    run_job_complex_scenario($req);
   }
-  if ($x2_req->tag !== "") {
-    critical_error("Unknown tag " + $x2_req->tag);
-  }
-  return simple_x2($x2_req);
 }
 
 function simple_x2(X2Request $x2_req) {

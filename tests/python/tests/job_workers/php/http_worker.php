@@ -30,6 +30,11 @@ function do_http_worker() {
       test_several_waits_for_one_job();
       return;
     }
+    case "/test_complex_scenario": {
+      require_once "ComplexScenario/_http_scenario.php";
+      run_http_complex_scenario();
+      return;
+    }
   }
 
   critical_error("unknown test");
