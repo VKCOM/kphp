@@ -123,45 +123,7 @@ struct CallstackColor {
     : color(color), func(func) {}
 };
 
-class CallstackColors {
-  using const_it = std::vector<CallstackColor>::const_iterator;
-  using it = std::vector<CallstackColor>::iterator;
-
-  std::vector<CallstackColor> data;
-  size_t count_none_colors{0};
-
-public:
-  CallstackColors(size_t cap) {
-    data.reserve(cap);
-  }
-
-  void push_back(CallstackColor &&color) {
-    if (color.color == function_palette::special_colors::none) {
-      count_none_colors++;
-    }
-    data.push_back(color);
-  }
-
-  void pop_back() {
-    if (data.size() > 0 && data.back().color == function_palette::special_colors::none) {
-      count_none_colors--;
-    }
-    data.pop_back();
-  }
-
-  const_it begin() const { return data.begin(); }
-  const_it end() const { return data.end(); }
-  it begin() { return data.begin(); }
-  it end() { return data.end(); }
-
-  bool empty() const {
-    return data.empty();
-  }
-
-  bool contains_only_none() const {
-    return count_none_colors == 0;
-  }
-};
+using CallstackColors = std::vector<CallstackColor>;
 
 struct MatchedRule {
   function_palette::Rule rule{};
@@ -200,7 +162,7 @@ public:
   }
 
 public:
-  size_t size() {
+  size_t size() const {
     return data.size();
   }
 
@@ -286,22 +248,15 @@ public:
 public:
   void check() {
     Callstack callstack(50);
-    CallstackColors colors(50);
+    CallstackColors colors;
+    colors.reserve(50);
 
-    for (auto &func : call_graph.functions) {
-      if (func->type != FunctionData::func_local) {
-        continue;
-      }
-
-      const auto called_in = call_graph.rev_graph[func];
-
-      // we only check functions that are not called anywhere other than the main function
-      if (called_in.size() > 0 && !called_in[0]->is_main_function()) {
-        continue;
-      }
-
-      check_func(colors, callstack, func);
+    const auto main_func = G->get_main_file()->main_function;
+    if (!need_check(callstack, main_func)) {
+      return;
     }
+
+    check_func(colors, callstack, main_func);
 
     for (const auto &error : errors) {
       stage::set_function(error.second.first);
@@ -309,22 +264,27 @@ public:
     }
   }
 
-  void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
-    if (func->type != FunctionData::func_local || callstack.size() >= 50) {
-      return;
+  bool need_check(const Callstack &callstack, const FunctionPtr &func) {
+    if (callstack.contains(func)) {
+      return false;
     }
+    if (func->color_status != FunctionData::color_status::call_or_has_color) {
+      return false;
+    }
+    if (callstack.size() >= 50) {
+      return false;
+    }
+    return true;
+  }
 
+  void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
     callstack.push_back(func);
     const auto sep_colors = func->colors.sep_colors();
     for (const auto &sep_color : sep_colors) {
       colors.push_back(CallstackColor(sep_color, func));
     }
 
-    if (sep_colors.empty()) {
-      colors.push_back(CallstackColor(function_palette::special_colors::none, func));
-    }
-
-    if (callstack.size() > 1 && !colors.empty() && !colors.contains_only_none()) {
+    if (callstack.size() > 1 && !colors.empty()) {
       const auto matched_rules = match(colors);
 
       for (const auto &rule : matched_rules) {
@@ -333,7 +293,7 @@ public:
     }
 
     for (const auto &next : call_graph.graph[func]) {
-      if (callstack.contains(next)) {
+      if (!need_check(callstack, next)) {
         continue;
       }
 

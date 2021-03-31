@@ -109,6 +109,12 @@ public:
 
   function_palette::ColorContainer colors{};
 
+  enum class color_status : uint8_t {
+      call_or_has_color,
+      non_color,
+      unknown,
+  } color_status = color_status::unknown;
+
   enum class profiler_status : uint8_t {
     disable,
     // A function that is being profiled that starts and ends the profiling

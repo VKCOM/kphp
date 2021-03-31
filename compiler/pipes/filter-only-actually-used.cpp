@@ -53,9 +53,39 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
   }
 }
 
+void propagate_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  callee->color_status = FunctionData::color_status::call_or_has_color;
+  for (const FunctionPtr &caller : colors_functions_graph[callee]) {
+    caller->color_status = FunctionData::color_status::call_or_has_color;
+    propagate_colors_functions_dfs(caller, colors_functions_graph);
+  }
+}
+
+void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  if (callee->color_status != FunctionData::color_status::unknown) {
+    return;
+  }
+
+  if (callee->colors.empty()) {
+    callee->color_status = FunctionData::color_status::non_color;
+  } else {
+    callee->color_status = FunctionData::color_status::call_or_has_color;
+  }
+
+  for (const FunctionPtr &caller : colors_functions_graph[callee]) {
+    if (callee->color_status == FunctionData::color_status::call_or_has_color) {
+      propagate_colors_functions_dfs(caller, colors_functions_graph);
+      continue;
+    }
+
+    calc_colors_functions_dfs(caller, colors_functions_graph);
+  }
+}
+
 void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges> &all) {
   IdMap<std::vector<ThrowGraphNode>> throws_graph(static_cast<int>(all.size()));
   IdMap<std::vector<FunctionPtr>> non_empty_body_graph(static_cast<int>(all.size()));
+  IdMap<std::vector<FunctionPtr>> colors_functions_graph(static_cast<int>(all.size()));
   for (const auto &f_and_e : all) {
     for (const auto &edge : f_and_e.second) {
       if (edge.inside_fork) {
@@ -75,6 +105,9 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
           && edge.called_f->body_seq != FunctionData::body_value::empty) {
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
+      if (fun->color_status == FunctionData::color_status::unknown) {
+        colors_functions_graph[edge.called_f].emplace_back(fun);
+      }
     }
   }
 
@@ -85,6 +118,11 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
     }
     if (fun->body_seq == FunctionData::body_value::non_empty) {
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
+    }
+    if (fun->color_status == FunctionData::color_status::unknown) {
+      if (fun->type == FunctionData::func_local) {
+        calc_colors_functions_dfs(fun, colors_functions_graph);
+      }
     }
   }
 
