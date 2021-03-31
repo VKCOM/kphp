@@ -115,7 +115,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});
 
   update_precise_now();
-  kphp_event_timer *timer = allocate_event_timer(get_precise_now() + timeout, job_timeout_wakeup_id, job_id);
+  kphp_event_timer *timer = allocate_event_timer(get_precise_now() + timeout, get_job_timeout_wakeup_id(), job_id);
 
   vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer});
   return job_resumable_id;

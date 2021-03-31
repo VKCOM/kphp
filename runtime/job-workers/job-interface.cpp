@@ -12,14 +12,22 @@
 
 #include "runtime/job-workers/job-interface.h"
 
-bool f$is_kphp_job_workers_enabled() noexcept {
-  return vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num > 0;
-}
+namespace {
 
 int job_timeout_wakeup_id{-1};
 
-static void process_job_timeout(kphp_event_timer *timer) {
-  process_job_timeout(timer->wakeup_extra);
+void process_job_timeout(kphp_event_timer *timer) {
+  ::process_job_timeout(timer->wakeup_extra);
+}
+
+} // namespace
+
+int get_job_timeout_wakeup_id() {
+  return job_timeout_wakeup_id;
+}
+
+bool f$is_kphp_job_workers_enabled() noexcept {
+  return vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num > 0;
 }
 
 void global_init_job_workers_lib() noexcept {
