@@ -583,6 +583,7 @@ int hts_func_execute(connection *c, int op) {
     qGetLen = 0;
   }
 
+  // TODO drop it?
   if (qUriLen >= 200) {
     return -418;
   }
