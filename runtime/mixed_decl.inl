@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2021 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -117,10 +121,10 @@ public:
   inline void unset(const mixed &v);
   inline void unset(double double_key);
 
-  inline void destroy();
-  inline ~mixed();
+  void destroy() noexcept;
+  ~mixed() noexcept;
 
-  inline void clear();
+  void clear() noexcept;
 
   inline const mixed to_numeric() const;
   inline bool to_bool() const;

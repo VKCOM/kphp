@@ -75,7 +75,7 @@ public:
   inline explicit string(double f);
 
 
-  inline ~string();
+  ~string() noexcept;
 
   inline string &operator=(const string &str) noexcept;
   inline string &operator=(string &&str) noexcept;

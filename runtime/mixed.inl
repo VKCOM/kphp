@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2021 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #include "common/algorithms/find.h"
@@ -481,34 +485,6 @@ mixed &mixed::append(const string &v) {
   as_string().append(v);
   return *this;
 }
-
-
-void mixed::destroy() {
-  switch (get_type()) {
-    case type::STRING:
-      as_string().~string();
-      break;
-    case type::ARRAY:
-      as_array().~array<mixed>();
-      break;
-    default: {
-    }
-  }
-}
-
-mixed::~mixed() {
-  // do not remove copy-paste from clear.
-  // It makes stacktraces unreadable
-  destroy();
-  type_ = type::NUL;
-}
-
-
-void mixed::clear() {
-  destroy();
-  type_ = type::NUL;
-}
-
 
 const mixed mixed::to_numeric() const {
   switch (get_type()) {

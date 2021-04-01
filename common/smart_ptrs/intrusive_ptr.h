@@ -50,7 +50,7 @@ public:
     return *this;
   }
 
-  ~intrusive_ptr() __attribute__((always_inline)){
+  ~intrusive_ptr() noexcept {
     if (ptr) {
       ptr->release();
     }

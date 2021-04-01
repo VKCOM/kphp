@@ -217,7 +217,7 @@ private:
   template<class T1>
   inline void move_from(array<T1> &&other) noexcept;
 
-  inline void destroy() __attribute__ ((always_inline));
+  inline void destroy();
 
 public:
   friend class array_iterator<T>;
