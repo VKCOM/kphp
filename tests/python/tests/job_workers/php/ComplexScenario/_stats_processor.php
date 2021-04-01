@@ -4,14 +4,22 @@ use \ComplexScenario\NetPid;
 use ComplexScenario\StatTraits;
 use ComplexScenario\Stats;
 
-function mc_get(string $key, int $master_port) {
+function mc_get(string $key, int $master_port) : string {
   static $mc = null;
   if ($mc === null) {
     $mc = new McMemcache();
-    $mc->addServer("localhost", $master_port);
+    $mc->addServer("localhost", $master_port, true, 1, 10);
   }
   sched_yield();
-  return $mc->get($key);
+  $attempts = 3;
+  do {
+   $result = $mc->get($key);
+   if (is_string($result)) {
+     return $result;
+   }
+  } while(--$attempts >= 0);
+  critical_error("mc get timeout!");
+  return "";
 }
 
 function rpc_query(array $request, int $master_port) {
