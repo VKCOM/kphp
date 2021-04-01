@@ -35,8 +35,6 @@
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
-using std::exception;
-
 void PHPScriptBase::error(const char *error_message, script_error_t error_type) {
   assert (is_running == true);
   is_running = false;

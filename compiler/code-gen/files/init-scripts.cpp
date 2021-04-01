@@ -95,7 +95,7 @@ struct RunFunction {
   void compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN
       << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
-      << "finish (0);" << NL
+      << "finish (0, true);" << NL
       << END;
     W << NL;
   }

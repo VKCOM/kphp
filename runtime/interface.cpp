@@ -543,7 +543,7 @@ bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
   return wait;
 }
 
-void finish(int64_t exit_code) {
+void finish(int64_t exit_code, bool allow_forks_waiting) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
@@ -553,7 +553,7 @@ void finish(int64_t exit_code) {
         shutdown_functions[i]();
       }
     }
-    if (wait_all_forks_on_finish) {
+    if (allow_forks_waiting && wait_all_forks_on_finish) {
       wait_all_forks();
     }
   }
@@ -569,9 +569,9 @@ void finish(int64_t exit_code) {
 void f$exit(const mixed &v) {
   if (v.is_string()) {
     *coub << v;
-    finish(0);
+    finish(0, false);
   } else {
-    finish(v.to_int());
+    finish(v.to_int(), false);
   }
 }
 
