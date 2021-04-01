@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstring>
+#include <type_traits>
+
 #include "common/stats/buffer.h"
 
 #define AM_GET_MEMORY_USAGE_SELF 1
@@ -22,9 +25,28 @@ typedef struct {
 
 char *statsd_normalize_key(const char *key);
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__ ((format (printf, 3, 4)));
+
 void add_histogram_stat_long(stats_t *stats, const char *key, long long value);
-void add_gauge_stat_long(stats_t *stats, const char *key, long long value);
 void add_histogram_stat_double(stats_t *stats, const char *key, double value);
+
+void add_gauge_stat_long(stats_t *stats, const char *key, long long value);
+void add_gauge_stat_double(stats_t *stats, const char *key, double value);
+
+template<class T>
+void add_gauge_stat(stats_t *stats, T value, const char *key1, const char *key2 = "") noexcept {
+  static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
+  const size_t key1_len = std::strlen(key1);
+  const size_t key2_len = std::strlen(key2);
+  char stat_key[key1_len + key2_len + 1];
+  std::memcpy(stat_key, key1, key1_len);
+  std::memcpy(stat_key + key1_len, key2, key2_len + 1);
+  if (std::is_integral<T>{}) {
+    add_gauge_stat_long(stats, stat_key, static_cast<long long>(value));
+  } else {
+    add_gauge_stat_double(stats, stat_key, static_cast<double>(value));
+  }
+}
+
 char *stat_temp_format(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 int am_get_memory_usage(pid_t pid, long long *a, int m);
 

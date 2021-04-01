@@ -12,20 +12,11 @@ double to_seconds(std::chrono::nanoseconds t) noexcept {
   return std::chrono::duration<double>(t).count();
 }
 
-void write_if_not_zero(stats_t *stats, const char *name, size_t value, const char *suffix = "") noexcept {
-  if (value) {
-    char buffer[256]{0};
-    const int len = snprintf(buffer, sizeof(buffer) - 1, "%s%s", name, suffix);
-    assert(len > 0 && sizeof(buffer) >= static_cast<size_t>(len + 1));
-    add_histogram_stat_long(stats, buffer, value);
-  }
-}
-
 void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::EventCounters::Event &event) noexcept {
-  write_if_not_zero(stats, name, event.total, ".total");
-  write_if_not_zero(stats, name, event.blacklisted, ".blacklisted");
-  write_if_not_zero(stats, name, event.ignored, ".ignored");
-  write_if_not_zero(stats, name, event.ttl_updated, ".ttl_updated");
+  add_gauge_stat(stats, event.total, name, ".total");
+  add_gauge_stat(stats, event.blacklisted, name, ".blacklisted");
+  add_gauge_stat(stats, event.ignored, name, ".ignored");
+  add_gauge_stat(stats, event.ttl_updated, name, ".ttl_updated");
 }
 
 } // namespace
@@ -85,24 +76,24 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
 void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) noexcept {
   memory_stats.write_stats_to(stats, "confdata");
 
-  add_histogram_stat_double(stats, "confdata.initial_loading_duration", to_seconds(initial_loading_time));
-  add_histogram_stat_double(stats, "confdata.total_updating_time", to_seconds(total_updating_time));
-  add_histogram_stat_double(stats, "confdata.seconds_since_last_update",
+  add_gauge_stat_double(stats, "confdata.initial_loading_duration", to_seconds(initial_loading_time));
+  add_gauge_stat_double(stats, "confdata.total_updating_time", to_seconds(total_updating_time));
+  add_gauge_stat_double(stats, "confdata.seconds_since_last_update",
                             to_seconds(std::chrono::steady_clock::now() - last_update_time_point));
 
-  add_histogram_stat_long(stats, "confdata.updates.ignored", ignored_updates);
-  add_histogram_stat_long(stats, "confdata.updates.total", total_updates);
+  add_gauge_stat_long(stats, "confdata.updates.ignored", ignored_updates);
+  add_gauge_stat_long(stats, "confdata.updates.total", total_updates);
 
-  add_histogram_stat_long(stats, "confdata.elements.total", total_elements);
-  add_histogram_stat_long(stats, "confdata.elements.simple_key", simple_key_elements);
-  add_histogram_stat_long(stats, "confdata.elements.one_dot_wildcard", one_dot_wildcard_elements);
-  add_histogram_stat_long(stats, "confdata.elements.two_dots_wildcard", two_dots_wildcard_elements);
-  add_histogram_stat_long(stats, "confdata.elements.predefined_wildcard", predefined_wildcard_elements);
-  add_histogram_stat_long(stats, "confdata.elements.with_delay", elements_with_delay);
+  add_gauge_stat_long(stats, "confdata.elements.total", total_elements);
+  add_gauge_stat_long(stats, "confdata.elements.simple_key", simple_key_elements);
+  add_gauge_stat_long(stats, "confdata.elements.one_dot_wildcard", one_dot_wildcard_elements);
+  add_gauge_stat_long(stats, "confdata.elements.two_dots_wildcard", two_dots_wildcard_elements);
+  add_gauge_stat_long(stats, "confdata.elements.predefined_wildcard", predefined_wildcard_elements);
+  add_gauge_stat_long(stats, "confdata.elements.with_delay", elements_with_delay);
 
-  add_histogram_stat_long(stats, "confdata.wildcards.one_dot", one_dot_wildcards);
-  add_histogram_stat_long(stats, "confdata.wildcards.two_dots", two_dots_wildcards);
-  add_histogram_stat_long(stats, "confdata.wildcards.predefined", predefined_wildcards);
+  add_gauge_stat_long(stats, "confdata.wildcards.one_dot", one_dot_wildcards);
+  add_gauge_stat_long(stats, "confdata.wildcards.two_dots", two_dots_wildcards);
+  add_gauge_stat_long(stats, "confdata.wildcards.predefined", predefined_wildcards);
 
   size_t last_100_garbage_max = 0;
   double last_100_garbage_avg = 0;
@@ -115,9 +106,9 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
     last_100_garbage_avg /= static_cast<double>(garbage_last - garbage_statistic_.cbegin());
   }
 
-  add_histogram_stat_long(stats, "confdata.vars_in_garbage_last", last_garbage_size);
-  add_histogram_stat_long(stats, "confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
-  add_histogram_stat_double(stats, "confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
+  add_gauge_stat_long(stats, "confdata.vars_in_garbage_last", last_garbage_size);
+  add_gauge_stat_long(stats, "confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
+  add_gauge_stat_double(stats, "confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
 
   write_event_stats(stats, "confdata.binlog_events.snapshot_entry", event_counters.snapshot_entry);
 
@@ -132,9 +123,9 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   write_event_stats(stats, "confdata.binlog_events.set_forever", event_counters.set_forever_events);
   write_event_stats(stats, "confdata.binlog_events.replace_forever", event_counters.replace_forever_events);
 
-  write_if_not_zero(stats, "confdata.binlog_events.get", event_counters.get_events);
-  write_if_not_zero(stats, "confdata.binlog_events.incr", event_counters.incr_events);
-  write_if_not_zero(stats, "confdata.binlog_events.incr_tiny", event_counters.incr_tiny_events);
-  write_if_not_zero(stats, "confdata.binlog_events.append", event_counters.append_events);
-  write_if_not_zero(stats, "confdata.binlog_events.unsupported_total", event_counters.unsupported_total_events);
+  add_gauge_stat_long(stats, "confdata.binlog_events.get", event_counters.get_events);
+  add_gauge_stat_long(stats, "confdata.binlog_events.incr", event_counters.incr_events);
+  add_gauge_stat_long(stats, "confdata.binlog_events.incr_tiny", event_counters.incr_tiny_events);
+  add_gauge_stat_long(stats, "confdata.binlog_events.append", event_counters.append_events);
+  add_gauge_stat_long(stats, "confdata.binlog_events.unsupported_total", event_counters.unsupported_total_events);
 }

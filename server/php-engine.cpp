@@ -57,6 +57,7 @@
 #include "runtime/profiler.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/rpc.h"
+#include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
@@ -1893,7 +1894,10 @@ int main_args_handler(int i) {
       return 0;
     }
     case 's': {
-      cluster_name = optarg;
+      if (const char *err = vk::singleton<ClusterName>::get().set_cluster_name(optarg)) {
+        kprintf("-s option: %s\n", err);
+        return -1;
+      }
       return 0;
     }
     case 't': {

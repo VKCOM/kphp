@@ -2,6 +2,7 @@ import os
 import subprocess
 import signal
 import time
+import re
 
 import psutil
 
@@ -73,5 +74,6 @@ class StatsReceiver:
             return False
         if self._stats and len(self._stats) > len(new_stats):
             raise RuntimeError("Got inconsistent stats count: old={} new={}".format(len(self._stats), len(new_stats)))
-        self._stats = new_stats
+        # HACK: replace prefix for kphp server stats
+        self._stats = {re.sub("^kphp_stats\\..+\\.", "kphp_server.", k): v for k, v in new_stats.items()}
         return True

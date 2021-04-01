@@ -9,24 +9,12 @@
 #include <cstring>
 
 namespace {
-const char *concat_stat(std::array<char, 256> &buffer, const char *prefix, const char *suffix) {
-  int len = snprintf(buffer.data(), buffer.size() - 1, "%s%s", prefix, suffix);
-  assert(len > 0 && buffer.size() >= static_cast<size_t>(len + 1));
-  return buffer.data();
-}
 
-void write_percentile(stats_t *stats, const char *prefix, std::array<double, 3> value) noexcept {
-  std::array<char, 256> buffer{};
-  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_50"), value[0]);
-  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_95"), value[1]);
-  add_histogram_stat_double(stats, concat_stat(buffer, prefix, ".percentile_99"), value[2]);
-}
-
-void write_percentile(stats_t *stats, const char *prefix, std::array<int64_t, 3> value) noexcept {
-  std::array<char, 256> buffer{};
-  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_50"), value[0]);
-  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_95"), value[1]);
-  add_histogram_stat_long(stats, concat_stat(buffer, prefix, ".percentile_99"), value[2]);
+template<class T>
+void write_percentile(stats_t *stats, const char *prefix, std::array<T, 3> value) noexcept {
+  add_gauge_stat(stats, value[0], prefix, ".percentile_50");
+  add_gauge_stat(stats, value[1], prefix, ".percentile_95");
+  add_gauge_stat(stats, value[2], prefix, ".percentile_99");
 }
 
 template<size_t P1, size_t P2, size_t P3, class T, size_t N>
@@ -165,11 +153,11 @@ std::string PhpWorkerStats::to_string(const std::string &pid_s) const noexcept {
 }
 
 void PhpWorkerStats::to_stats(stats_t *stats) const noexcept {
-  add_histogram_stat_long(stats, "requests.total_incoming_queries", internal_.tot_queries_);
-  add_histogram_stat_long(stats, "requests.total_outgoing_queries", internal_.tot_script_queries_);
-  add_histogram_stat_double(stats, "requests.script_time.total", internal_.script_time_);
+  add_gauge_stat_long(stats, "requests.total_incoming_queries", internal_.tot_queries_);
+  add_gauge_stat_long(stats, "requests.total_outgoing_queries", internal_.tot_script_queries_);
+  add_gauge_stat_double(stats, "requests.script_time.total", internal_.script_time_);
   write_percentile(stats, "requests.script_time", internal_.script_time_percentiles_);
-  add_histogram_stat_double(stats, "requests.net_time.total", internal_.net_time_);
+  add_gauge_stat_double(stats, "requests.net_time.total", internal_.net_time_);
   write_percentile(stats, "requests.net_time", internal_.net_time_percentiles_);
   write_percentile(stats, "requests.working_time", internal_.working_time_percentiles_);
 
@@ -184,9 +172,9 @@ void PhpWorkerStats::to_stats(stats_t *stats) const noexcept {
   write_error_stat_to(stats, "terminated_requests.post_data_loading_error", script_error_t::post_data_loading_error);
   write_error_stat_to(stats, "terminated_requests.unclassified", script_error_t::memory_limit);
 
-  add_histogram_stat_long(stats, "memory.script_usage.max", internal_.script_max_memory_used_);
+  add_gauge_stat_long(stats, "memory.script_usage.max", internal_.script_max_memory_used_);
   write_percentile(stats, "memory.script_usage", internal_.script_memory_used_percentiles_);
-  add_histogram_stat_long(stats, "memory.script_real_usage.max", internal_.script_max_real_memory_used_);
+  add_gauge_stat_long(stats, "memory.script_real_usage.max", internal_.script_max_real_memory_used_);
   write_percentile(stats, "memory.script_real_usage", internal_.script_real_memory_used_percentiles_);
 }
 
@@ -224,5 +212,5 @@ void PhpWorkerStats::reset_memory_and_percentiles_stats() noexcept {
 }
 
 void PhpWorkerStats::write_error_stat_to(stats_t *stats, const char *stat_name, script_error_t error) const noexcept {
-  add_histogram_stat_long(stats, stat_name, internal_.errors_[static_cast<size_t>(error)]);
+  add_gauge_stat_long(stats, stat_name, internal_.errors_[static_cast<size_t>(error)]);
 }

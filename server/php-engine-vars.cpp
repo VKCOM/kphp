@@ -55,7 +55,6 @@ int sigterm_on = 0;
 int rpc_stopped = 0;
 
 /** master **/
-const char *cluster_name = "default";
 int master_port = -1;
 int master_sfd = -1;
 int master_sfd_inited = 0;
