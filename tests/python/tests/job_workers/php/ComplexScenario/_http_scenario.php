@@ -31,7 +31,7 @@ function collect_stats_locally(StatTraits $traits, int $master_port) {
   return tuple($local_stats, $workers_pids, $net_pid);
 }
 
-function compare_job_and_local_stats(StatTraits $traits, int $master_port, string $type) : array {
+function compare_job_and_local_stats(StatTraits $traits, int $master_port, string $type) : int {
   $job_wait_id = fork(collect_stats_with_job($traits, $master_port));
   $local_wait_id = fork(collect_stats_locally($traits, $master_port));
 
@@ -62,11 +62,7 @@ function compare_job_and_local_stats(StatTraits $traits, int $master_port, strin
     critical_error("Keys of the int $type stats are different!");
   }
 
-  return [
-    "string_stats" => sizeof($job_stats->string_stats),
-    "float_stats" => sizeof($job_stats->float_stats),
-    "int_stats" => sizeof($job_stats->int_stats)
-  ];
+  return sizeof($job_stats->string_stats) + sizeof($job_stats->float_stats) + sizeof($job_stats->int_stats);
 }
 
 function run_http_complex_scenario() {

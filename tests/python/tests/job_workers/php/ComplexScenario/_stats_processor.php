@@ -41,7 +41,7 @@ function start_stats_processing(StatTraits $traits, int $master_port) {
 
 function add_stat_to(Stats $stats, array $allowed_stat_names, $key, $value) {
   $key = trim($key);
-  if (!strlen($key) || strpos($key, " ")) {
+  if (!preg_match("/^[a-zA-Z]+$/", $key)) {
     return;
   }
   $value = trim($value);
