@@ -637,7 +637,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 }
 
 
-Optional<int64_t> regexp::match(const string &subject, bool all_matches __attribute__((unused))) const {
+Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -669,6 +669,10 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches __attrib
     }
 
     result++;
+
+    if (!all_matches) {
+      break;
+    }
 
     second_try = (submatch[0] == submatch[1]);
 
