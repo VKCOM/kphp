@@ -7,19 +7,16 @@
 
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
-#include "common/timer.h"
 
 #include "net/net-events.h"
 #include "net/net-connections.h"
 
-#include "runtime/net_events.h"
 #include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/shared-memory-manager.h"
 
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
-#include "server/php-engine-vars.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 
@@ -97,9 +94,9 @@ conn_type_t php_jobs_server = [] {
   res.init_outbound = server_failed;
   res.connected = server_failed;
   res.free_buffers = server_failed;
+  res.close = server_noop;    // can be on master termination, when fd is closed before SIGKILL is received
 
   // The following handlers will be set to default ones:
-  //    close
   //    flush
   //    check_ready
 

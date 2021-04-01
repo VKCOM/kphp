@@ -259,6 +259,7 @@ int server_read_write(struct connection *c);
 int server_reader(struct connection *c);
 int server_writer(struct connection *c);
 int server_noop(struct connection *c);
+int server_noop(struct connection *c, int who);
 int server_failed(struct connection *c);
 int server_failed(struct connection *c, int who);
 
