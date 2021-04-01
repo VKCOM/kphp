@@ -1351,3 +1351,9 @@ function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
 function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
 
 function is_kphp_job_workers_enabled() ::: bool;
+
+// zstd api
+function zstd_compress(string $data, int $level = 3) ::: string | false;
+function zstd_uncompress(string $data) ::: string | false;
+function zstd_compress_dict(string $data, string $dict) ::: string | false;
+function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
