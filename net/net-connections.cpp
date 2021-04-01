@@ -1194,6 +1194,8 @@ void ancillary_data_received(struct connection *c, const struct cmsghdr *cmsg) {
 
 int server_noop(struct connection *c __attribute__((unused))) { return 0; }
 
+int server_noop(struct connection *c __attribute__((unused)), int who __attribute__((unused))) { return 0; }
+
 int server_failed(struct connection *c) {
   kprintf("connection %d: call to pure virtual method\n", c->fd);
   assert(0);
