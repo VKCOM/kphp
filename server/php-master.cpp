@@ -81,17 +81,6 @@ static sigset_t empty_mask;
 
 static double my_now;
 
-/*** Shared data functions ***/
-void mem_info_add(mem_info_t *dst, const mem_info_t &other) {
-  dst->vm_peak += other.vm_peak;
-  dst->vm += other.vm;
-  dst->rss_peak += other.rss_peak;
-  dst->rss += other.rss;
-  // do not accumulate rss_file and rss_shmem,
-  // because they are about shared memory and accumulated value will show strange stat
-}
-
-
 /*** Stats ***/
 static long tot_workers_started{0};
 static long tot_workers_dead{0};
@@ -283,15 +272,11 @@ struct Stats {
     }
 
     char buffer[1000];
-
     std::string pid_s;
     if (!is_main) {
       assert (snprintf(buffer, 1000, " %d", pid) < 1000);
       pid_s = buffer;
     }
-
-//    sprintf (buffer, "is_running = %d\n", istats.is_running);
-//    sprintf (buffer, "is_paused = %d\n", istats.is_wait_net);
 
     std::string cpu_vals;
     for (auto &i_cpu : cpu) {
@@ -301,14 +286,6 @@ struct Stats {
       cpu_vals += buffer;
     }
     res += "cpu_usage" + pid_s + "(" + cpu_desc + ")\t" + cpu_vals + "\n";
-    sprintf(buffer, "VM%s\t%lluKb\n", pid_s.c_str(), mem_info.vm);
-    res += buffer;
-    sprintf(buffer, "VM_max%s\t%lluKb\n", pid_s.c_str(), mem_info.vm_peak);
-    res += buffer;
-    sprintf(buffer, "RSS%s\t%lluKb\n", pid_s.c_str(), mem_info.rss);
-    res += buffer;
-    sprintf(buffer, "RSS_max%s\t%lluKb\n", pid_s.c_str(), mem_info.rss_peak);
-    res += buffer;
 
     if (is_main) {
       std::string running_workers_max_vals;
@@ -461,7 +438,7 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  dead_worker_stats.add_from(w->stats->worker_stats);
+  dead_worker_stats.add_worker_stats_from(w->stats->worker_stats);
   // ignore dead workers memory and percentiles stats
   dead_worker_stats.reset_memory_and_percentiles_stats();
   worker_free(w);
@@ -1210,8 +1187,6 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
   return 0;
 }
 
-int update_mem_stats();
-
 std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   std::string res, header;
   header = server_stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
@@ -1239,7 +1214,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
       }
 
       if (full_flag) {
-        worker_stats.add_from(w->stats->worker_stats);
+        worker_stats.add_worker_stats_from(w->stats->worker_stats);
       }
 
       if (worker_pid == -1 || w->pid == worker_pid) {
@@ -1319,7 +1294,6 @@ int php_master_wakeup(connection *c) {
   int worker_pid = D->worker_pid;
 
   update_workers();
-  update_mem_stats();
 
   std::string res = php_master_prepare_stats(full_flag, worker_pid);
   return_one_key_val(c, (char *)res.c_str(), (int)res.size());
@@ -1493,20 +1467,23 @@ public:
   }
 
   void update(double time_point, const PhpWorkerStats &new_worker_stats) {
-    if (!prev_worker_stats_.total_queries()) {
-      prev_worker_stats_ = new_worker_stats;
+    if (!prev_total_queries_) {
+      prev_total_queries_ = new_worker_stats.total_queries();
+      prev_total_script_queries_ = new_worker_stats.total_script_queries();
       prev_time_ = time_point;
       return;
     }
 
-    const auto delta_incoming_queries = new_worker_stats.total_queries() - prev_worker_stats_.total_queries();
+    const auto delta_incoming_queries = new_worker_stats.total_queries() - prev_total_queries_;
     if (delta_incoming_queries > 0) {
       const auto delta_time = time_point - prev_time_;
       incoming_qps_ = static_cast<double>(delta_incoming_queries) / delta_time;
-      const auto delta_outgoing_queries = new_worker_stats.total_script_queries() - prev_worker_stats_.total_script_queries();
+      const auto delta_outgoing_queries = new_worker_stats.total_script_queries() - prev_total_script_queries_;
       outgoing_qps_ = static_cast<double>(delta_outgoing_queries) / delta_time;
       prev_time_ = time_point;
-      prev_worker_stats_ = new_worker_stats;
+
+      prev_total_queries_ = new_worker_stats.total_queries();
+      prev_total_script_queries_ = new_worker_stats.total_script_queries();
     } else if (time_point - prev_time_ >= cooldown_period_) {
       incoming_qps_ = 0;
       outgoing_qps_ = 0;
@@ -1521,7 +1498,9 @@ private:
   double incoming_qps_{0};
   double outgoing_qps_{0};
   double prev_time_{0};
-  PhpWorkerStats prev_worker_stats_;
+
+  long prev_total_queries_{0};
+  long prev_total_script_queries_{0};
   const double cooldown_period_{0};
 };
 
@@ -1587,7 +1566,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
                           instance_cache_element_stats.elements_logically_expired_but_fetched.load(std::memory_order_relaxed));
 
   write_confdata_stats_to(stats);
-  server_stats.worker_stats.recalc_master_percentiles();
   server_stats.worker_stats.to_stats(stats);
 
   static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
@@ -1616,24 +1594,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
                           job_workers_stats.job_worker_skip_job_due_overload.load(std::memory_order_relaxed));
   add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_steal",
                           job_workers_stats.job_worker_skip_job_due_steal.load(std::memory_order_relaxed));
-
-  update_mem_stats();
-  unsigned long long max_vms = 0;
-  unsigned long long max_rss = 0;
-  unsigned long long max_shared = 0;
-  for (int i = 0; i < me_all_workers_n; i++) {
-    worker_info_t *w = workers[i];
-    if (!w->is_dying) {
-      const mem_info_t &mem_stats = w->stats->mem_info;
-      max_vms = std::max(max_vms, mem_stats.vm_peak);
-      max_rss = std::max(max_rss, mem_stats.rss_peak);
-      max_shared = std::max(max_shared, mem_stats.rss_shmem + mem_stats.rss_file);
-    }
-  }
-
-  add_gauge_stat_long(stats, "memory.vms_max", max_vms * 1024);
-  add_gauge_stat_long(stats, "memory.rss_max", max_rss * 1024);
-  add_gauge_stat_long(stats, "memory.shared_max", max_shared * 1024);
 }
 
 int php_master_http_execute(struct connection *c, int op) {
@@ -1837,19 +1797,6 @@ int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute_
   return 0;
 }
 
-int update_mem_stats() {
-  get_mem_stats(me->pid, &server_stats.mem_info);
-  for (int i = 0; i < me_all_workers_n; i++) {
-    worker_info_t *w = workers[i];
-
-    if (get_mem_stats(w->pid, &w->stats->mem_info) != 1) {
-      continue;
-    }
-    mem_info_add(&server_stats.mem_info, w->stats->mem_info);
-  }
-  return 0;
-}
-
 void check_and_instance_cache_try_swap_memory() {
   switch(instance_cache_try_swap_memory()) {
     case InstanceCacheSwapStatus::no_need:
@@ -1881,6 +1828,7 @@ static void cron() {
 #endif
   server_stats.worker_stats.copy_internal_from(dead_worker_stats);
   server_stats.worker_stats.reset_memory_and_percentiles_stats();
+  server_stats.worker_stats.update_mem_info();
   int running_workers = 0;
   for (int i = 0; i < me_all_workers_n; i++) {
     worker_info_t *w = workers[i];
@@ -1895,7 +1843,7 @@ static void cron() {
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
     running_workers += w->stats->istats.is_running;
-    server_stats.worker_stats.add_from(w->stats->worker_stats);
+    server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats);
   }
   MiscStatTimestamp misc_timestamp{my_now, running_workers};
   server_stats.update(misc_timestamp);

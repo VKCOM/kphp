@@ -251,7 +251,7 @@ void PHPScriptBase::finish() {
   update_net_time();
   PhpWorkerStats::get_local().add_stats(script_time, net_time, queries_cnt,
                                         script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
-                                        error_type);
+                                        dl::get_heap_memory_used(), error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -295,7 +295,6 @@ void PHPScriptBase::clear() {
   run_main->clear();
   free_runtime_environment();
   state = run_state_t::empty;
-  error_type = script_error_t::no_error;
   if (use_madvise_dontneed) {
     if (dl::get_script_memory_stats().real_memory_used > memory_used_to_recreate_script) {
       const int advice = madvise_madv_free_supported() ? MADV_FREE : MADV_DONTNEED;

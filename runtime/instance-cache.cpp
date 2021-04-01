@@ -556,8 +556,7 @@ private:
 
     InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     for (auto it = storing_delayed_.cbegin(); it != storing_delayed_.cend(); it = storing_delayed_.cbegin()) {
-      php_assert(it.is_string_key());
-      const auto &key = it.get_string_key();
+      string key = it.get_key().to_string();
       const auto &delayed_instance = *it.get_value().get();
       auto &data = current_->get_data(key);
       update_now();

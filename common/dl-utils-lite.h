@@ -42,24 +42,24 @@ void dl_assert__ (const char *expr, const char *file_name, const char *func_name
 #define dl_passert(f, str) dl_assert_impl (f, str, 1)
 #define dl_unreachable(str) dl_assert (0, str)
 
-typedef struct {
+struct pid_info_t {
   unsigned long long utime;
   unsigned long long stime;
   unsigned long long cutime;
   unsigned long long cstime;
   unsigned long long starttime;
-} pid_info_t;
+};
 
-typedef struct {
-  unsigned long long vm_peak;
-  unsigned long long vm;
-  unsigned long long rss_peak;
-  unsigned long long rss;
-  unsigned long long rss_file;
-  unsigned long long rss_shmem;
-} mem_info_t;
+struct mem_info_t {
+  uint32_t vm_peak;
+  uint32_t vm;
+  uint32_t rss_peak;
+  uint32_t rss;
+  uint32_t rss_file;
+  uint32_t rss_shmem;
+};
 
-int get_mem_stats (pid_t pid, mem_info_t *info);
+mem_info_t get_self_mem_stats();
 int get_pid_info (pid_t pid, pid_info_t *info);
 unsigned long long get_pid_start_time (pid_t pid);
 int get_cpu_total (unsigned long long *cpu_total);

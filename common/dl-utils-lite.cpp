@@ -6,8 +6,10 @@
 
 #include <array>
 #include <cassert>
+#include <cinttypes>
 #include <execinfo.h>
 #include <fcntl.h>
+#include <limits>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -179,56 +181,55 @@ char *dl_pstr (char const *msg, ...) {
 }
 
 /** Memory and cpu stats **/
-int get_mem_stats (pid_t pid, mem_info_t *info) {
-#define TMEM_SIZE 10000
-  static char mem[TMEM_SIZE];
-  snprintf (mem, TMEM_SIZE, "/proc/%lu/status", (unsigned long)pid);
-  int fd = open (mem, O_RDONLY);
-
+mem_info_t get_self_mem_stats() {
+  int fd = open ("/proc/self/status", O_RDONLY);
   if (fd == -1) {
-    return 0;
+    return {};
   }
 
-  int size = (int)read (fd, mem, TMEM_SIZE - 1);
+  constexpr size_t TMEM_SIZE = 10000;
+  static char mem[TMEM_SIZE];
+  const auto size = read(fd, mem, TMEM_SIZE - 1);
   if (size <= 0) {
     close (fd);
-    return 0;
+    return {};
   }
   mem[size] = 0;
 
+  mem_info_t info{};
   char *s = mem;
   while (*s) {
     char *st = s;
     while (*s != 0 && *s != '\n') {
       s++;
     }
-    unsigned long long *x = NULL;
+    uint32_t *x = nullptr;
     if (strncmp (st, "VmPeak", 6) == 0) {
-      x = &info->vm_peak;
+      x = &info.vm_peak;
     }
     if (strncmp (st, "VmSize", 6) == 0) {
-      x = &info->vm;
+      x = &info.vm;
     }
     if (strncmp (st, "VmHWM", 5) == 0) {
-      x = &info->rss_peak;
+      x = &info.rss_peak;
     }
     if (strncmp (st, "VmRSS", 5) == 0) {
-      x = &info->rss;
+      x = &info.rss;
     }
     if (strncmp (st, "RssFile", 7) == 0) {
-      x = &info->rss_file;
+      x = &info.rss_file;
     }
     if (strncmp (st, "RssShmem", 8) == 0) {
-      x = &info->rss_shmem;
+      x = &info.rss_shmem;
     }
-    if (x != NULL) {
+    if (x) {
       while (st < s && *st != ' ' && *st != '\t') {
         st++;
       }
-      *x = (unsigned long long)-1;
+      *x = std::numeric_limits<uint32_t>::max();
 
       if (st < s) {
-        sscanf (st, "%llu", x);
+        sscanf (st, "%" PRIu32, x);
       }
     }
     if (*s == 0) {
@@ -238,12 +239,11 @@ int get_mem_stats (pid_t pid, mem_info_t *info) {
   }
 
   close (fd);
-  return 1;
-#undef TMEM_SIZE
+  return info;
 }
 
 int get_pid_info (pid_t pid, pid_info_t *info) {
-#define TMEM_SIZE 10000
+  constexpr size_t TMEM_SIZE = 10000;
   static char mem[TMEM_SIZE];
   snprintf (mem, TMEM_SIZE, "/proc/%lu/stat", (unsigned long)pid);
   int fd = open (mem, O_RDONLY);
@@ -268,7 +268,7 @@ int get_pid_info (pid_t pid, pid_info_t *info) {
     }
     if (pass_cnt == 14) {
       sscanf (s, "%llu", &info->stime);
-   }
+    }
     if (pass_cnt == 15) {
       sscanf (s, "%llu", &info->cutime);
     }
@@ -292,7 +292,6 @@ int get_pid_info (pid_t pid, pid_info_t *info) {
 
   close (fd);
   return 1;
-#undef TMEM_SIZE
 }
 
 unsigned long long get_pid_start_time (pid_t pid) {
@@ -306,7 +305,7 @@ unsigned long long get_pid_start_time (pid_t pid) {
 }
 
 int get_cpu_total (unsigned long long *cpu_total) {
-#define TMEM_SIZE 10000
+  constexpr size_t TMEM_SIZE = 10000;
   static char mem[TMEM_SIZE];
   snprintf (mem, TMEM_SIZE, "/proc/stat");
   int fd = open (mem, O_RDONLY);
@@ -340,5 +339,4 @@ int get_cpu_total (unsigned long long *cpu_total) {
 
   close (fd);
   return 1;
-#undef TMEM_SIZE
 }

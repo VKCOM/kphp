@@ -50,9 +50,7 @@ void Stats::on_function_processed(FunctionPtr function) {
 }
 
 void Stats::update_memory_stats() {
-  mem_info_t mem_info;
-  get_mem_stats(getpid(), &mem_info);
-
+  const mem_info_t mem_info = get_self_mem_stats();
   memory_rss_ = mem_info.rss;
   memory_rss_peak_ = mem_info.rss_peak;
 }
