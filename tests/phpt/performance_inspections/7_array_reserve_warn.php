@@ -1,9 +1,9 @@
 @kphp_should_warn
-/variable \$y1 can be reserved with array_reserve or array_reserve_from out of loop/
-/variable \$y2 can be reserved with array_reserve or array_reserve_from out of loop/
-/variable \$y3 can be reserved with array_reserve or array_reserve_from out of loop/
-/variable \$y4 can be reserved with array_reserve or array_reserve_from out of loop/
-/variable \$y5 can be reserved with array_reserve or array_reserve_from out of loop/
+/variable \$y1 can be reserved with array_reserve functions family out of loop/
+/variable \$y2 can be reserved with array_reserve functions family out of loop/
+/variable \$y3 can be reserved with array_reserve functions family out of loop/
+/variable \$y4 can be reserved with array_reserve functions family out of loop/
+/variable \$y5 can be reserved with array_reserve functions family out of loop/
 <?php
 
 /**

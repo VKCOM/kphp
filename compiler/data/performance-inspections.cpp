@@ -35,7 +35,7 @@ PerformanceInspections::PerformanceInspections(Inspections enabled) noexcept
   : enabled_inspections_(enabled) {
 }
 
-void PerformanceInspections::add_from_php_doc(vk::string_view php_doc_tag) {
+void PerformanceInspections::set_from_php_doc(vk::string_view php_doc_tag) {
   const auto raw_inspections = split_skipping_delimeters(php_doc_tag);
   if (raw_inspections.empty()) {
     throw std::runtime_error{"there are no any inspection"};
@@ -51,8 +51,8 @@ void PerformanceInspections::add_from_php_doc(vk::string_view php_doc_tag) {
       enabled_inspections |= string2inspection(inspection);
     }
   }
-  enabled_inspections_ |= enabled_inspections;
-  disabled_inspections_ |= disabled_inspections;
+  enabled_inspections_ = enabled_inspections;
+  disabled_inspections_ = disabled_inspections;
 }
 
 std::pair<PerformanceInspections::InheritStatus, PerformanceInspections::Inspections>

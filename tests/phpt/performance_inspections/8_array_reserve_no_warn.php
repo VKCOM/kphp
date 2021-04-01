@@ -2,6 +2,8 @@
 KPHP_ERROR_ON_WARNINGS=1
 <?php
 
+require_once 'kphp_tester_include.php';
+
 $y2 = [];
 
 class A {
@@ -10,7 +12,7 @@ class A {
 /**
  * @kphp-warn-performance array-reserve
  */
-function test() {
+function test1() {
   global $y2;
 
   $y1 = ["hello" => []];
@@ -44,4 +46,41 @@ function test() {
   } while ($i--);
 }
 
-test();
+/**
+ * @kphp-warn-performance array-reserve
+ */
+function test2() {
+  $y1 = [];
+  array_reserve($y1, 1000, 0, true);
+  for ($i = 0; $i != 1000; ++$i) {
+    $y1[] = $i + 2;
+  }
+
+  $y2 = [];
+  array_reserve_from($y2, $y1);
+  foreach ($y1 as $v) {
+    $y2[] = $v;
+  }
+
+  $y3 = [];
+  array_reserve_map_int_keys($y3, count($y2));
+  foreach ($y2 as $k => $v) {
+    $y3[$k] = $v;
+  }
+
+  $y4 = [];
+  $i = 1;
+  array_reserve_map_string_keys($y4, 1000);
+  while ($i < 1000) {
+    $y4["$i xx"] = ++$i;
+  }
+
+  $y5 = [];
+  array_reserve_vector($y5, $i);
+  do {
+    $y5[] = $i;
+  } while ($i--);
+}
+
+test1();
+test2();
