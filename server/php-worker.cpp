@@ -10,6 +10,7 @@
 #include "net/net-connections.h"
 #include "runtime/rpc.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/job-worker-server.h"
 #include "server/php-engine.h"
 #include "server/php-lease.h"
 #include "server/php-mc-connections.h"
@@ -291,8 +292,12 @@ void php_worker_run(php_worker *worker) {
                 server_rpc_error(worker->conn, worker->req_id, -504, php_script_get_error(php_script));
               }
               break;
-            case job_worker:
+            case job_worker: {
+              const char *error = php_script_get_error(php_script);
+              int error_code = -100 - static_cast<int>(php_script_get_error_type(php_script));
+              vk::singleton<job_workers::JobWorkerServer>::get().try_store_job_response_error(error, error_code);
               break;
+            }
             default:;
           }
         }

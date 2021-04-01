@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
-#include <cstdint>
+#include <chrono>
 
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
@@ -12,11 +12,14 @@
 #include "net/net-events.h"
 #include "net/net-connections.h"
 
+#include "runtime/net_events.h"
 #include "runtime/job-workers/job-message.h"
+#include "runtime/job-workers/shared-memory-manager.h"
 
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-engine-vars.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 
@@ -53,6 +56,7 @@ void jobs_server_at_query_end(connection *c) {
 
   c->flags |= C_REPARSE;
   vk::singleton<JobWorkerServer>::get().reset_running_job();
+
   assert (c->status != conn_wait_net);
 }
 
@@ -92,10 +96,10 @@ conn_type_t php_jobs_server = [] {
   res.writer = server_failed;
   res.init_outbound = server_failed;
   res.connected = server_failed;
-  res.close = server_failed;
   res.free_buffers = server_failed;
 
   // The following handlers will be set to default ones:
+  //    close
   //    flush
   //    check_ready
 
@@ -108,7 +112,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   assert(c == read_job_connection);
 
   if (running_job) {
-    tvkprintf(job_workers, 1, "Get new job while another job is running. Goes back to event loop now\n");
+    tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;
     JobStats::get().job_worker_skip_job_due_another_is_running++;
     return 0;
@@ -140,7 +144,9 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   running_job = job;
   reply_was_sent = false;
 
-  double timeout_sec = DEFAULT_SCRIPT_TIMEOUT;
+  auto now = std::chrono::system_clock::now();
+  double timeout_sec = job->job_deadline_time - std::chrono::duration_cast<std::chrono::duration<double>>(now.time_since_epoch()).count();
+
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });
@@ -204,6 +210,33 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   JobStats::get().jobs_replied++;
   reply_was_sent = true;
   return nullptr;
+}
+
+void JobWorkerServer::try_store_job_response_error(const char *error_msg, int error_code) {
+  php_assert(running_job);
+  if (reply_was_sent) {
+    return;
+  }
+  auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
+  if (!response_memory) {
+    kprintf("Can't store job response error: not enough shared memory");
+    return;
+  }
+
+  dl::set_current_script_allocator(response_memory->resource, false);
+
+  class_instance<C$KphpJobWorkerResponseError> error;
+  error.alloc();  // TODO: handle OOM
+  error.get()->error = string{error_msg};
+  error.get()->error_code = error_code;
+  response_memory->instance = std::move(error);
+
+  dl::restore_default_script_allocator(false);
+
+  if (const char *err = send_job_reply(response_memory)) {
+    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    kprintf("Can't store job response: %s", err);
+  }
 }
 
 } // namespace job_workers

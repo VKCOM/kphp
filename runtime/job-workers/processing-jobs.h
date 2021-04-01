@@ -8,6 +8,7 @@
 #include "common/smart_ptrs/singleton.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/net_events.h"
 
 #include "runtime/job-workers/job-interface.h"
 
@@ -15,34 +16,39 @@ namespace job_workers {
 
 struct JobSharedMessage;
 
+struct JobRequestInfo {
+  int64_t resumable_id{0};
+  kphp_event_timer *timer{nullptr};
+  class_instance<C$KphpJobWorkerResponse> response;
+
+  JobRequestInfo() = default;
+
+  JobRequestInfo(int64_t resumable_id, kphp_event_timer *timer)
+    : resumable_id(resumable_id)
+    , timer(timer) {}
+};
+
 class ProcessingJobs : vk::not_copyable {
 public:
-  void start_job_processing(int job_slot_id) noexcept {
-    processing_[job_slot_id] = ProcessingJobAwait{};
-  }
+  void start_job_processing(int job_id, JobRequestInfo &&job_request_info) noexcept;
 
-  bool is_started(int job_slot_id) const noexcept {
-    return processing_.has_key(job_slot_id);
-  }
+  int64_t finish_job_on_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+  int64_t finish_job_on_timeout(int job_id) noexcept;
 
-  void finish_job_processing(job_workers::JobSharedMessage *job_result) noexcept;
-  bool is_ready(int job_slot_id) const noexcept;
-  class_instance<C$KphpJobWorkerResponse> withdraw(int job_slot_id) noexcept;
+  class_instance<C$KphpJobWorkerResponse> withdraw(int job_id) noexcept;
 
   void reset() noexcept {
     hard_reset_var(processing_);
   }
 
 private:
-  ProcessingJobs() = default;
-
   friend class vk::singleton<ProcessingJobs>;
 
-  struct ProcessingJobAwait {
-    class_instance<C$KphpJobWorkerResponse> reply;
-    bool ready{false};
-  };
-  array<ProcessingJobAwait> processing_;
+  array<JobRequestInfo> processing_;
+
+  ProcessingJobs() = default;
+
+  int64_t finish_job_impl(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
 };
 
 } // namespace job_workers

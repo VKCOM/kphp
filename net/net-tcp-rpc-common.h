@@ -8,6 +8,7 @@
 #include <sys/cdefs.h>
 
 #include "common/pid.h"
+#include "common/sanitizer.h"
 
 #include "net/net-connections.h"
 #include "net/net-msg.h"
@@ -85,6 +86,6 @@ struct tcp_rpc_data {
 
 extern int default_rpc_flags;  /* 0 = compatibility mode, RPC_CRYPTO_USE_CRC32C = allow both CRC32C and CRC32 */
 
-void net_rpc_send_ping (struct connection *c, long long ping_id);
+void net_rpc_send_ping (struct connection *c, long long ping_id) ubsan_supp("alignment");
 
 #endif

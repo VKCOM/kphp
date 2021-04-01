@@ -712,7 +712,7 @@ protected:
   }
 
 private:
-  event_timer *timer_{nullptr};
+  kphp_event_timer *timer_{nullptr};
 };
 
 static int32_t wait_timeout_wakeup_id = -1;
@@ -781,7 +781,7 @@ private:
 };
 
 
-static void process_wait_timeout(event_timer *timer) {
+static void process_wait_timeout(kphp_event_timer *timer) {
   int64_t wait_resumable_id = timer->wakeup_extra;
   php_assert(is_started_resumable_id(wait_resumable_id));
 
@@ -1124,7 +1124,7 @@ private:
   int64_t queue_id_;
 };
 
-static void process_wait_queue_timeout(event_timer *timer) {
+static void process_wait_queue_timeout(kphp_event_timer *timer) {
   int64_t wait_queue_resumable_id = timer->wakeup_extra;
   php_assert(is_started_resumable_id(wait_queue_resumable_id));
 
@@ -1216,7 +1216,7 @@ void f$sched_yield_sleep(double timeout) {
   allocate_event_timer(timeout + get_precise_now(), yield_wakeup_id, static_cast<int32_t>(id));
 }
 
-void yielded_resumable_timeout(event_timer *timer) {
+void yielded_resumable_timeout(kphp_event_timer *timer) {
   int64_t resumable_id = timer->wakeup_extra;
   php_assert(is_started_resumable_id(resumable_id));
 

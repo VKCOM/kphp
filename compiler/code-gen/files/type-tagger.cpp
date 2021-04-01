@@ -36,6 +36,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
     "Optional < string >",
     "Optional < array< mixed > >",
     "array< array< mixed > >",
+    "class_instance<C$KphpJobWorkerResponse>",
     "class_instance<C$VK$TL$RpcResponse>",
     "array< class_instance<C$VK$TL$RpcResponse> >"
   };

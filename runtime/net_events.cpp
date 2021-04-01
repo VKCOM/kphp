@@ -47,7 +47,7 @@ static bool process_net_event(net_event_t *e) {
       process_rpc_error(e->slot_id, e->error_code, e->error_message);
       break;
     case net_event_type_t::job_worker_answer:
-      process_job_worker_answer_event(e->job_result);
+      process_job_answer(e->slot_id, e->job_result);
       break;
     default:
       php_critical_error ("unsupported net event %d", static_cast<int>(e->type));
@@ -67,10 +67,10 @@ static int process_net_events() {
 
 const int MAX_WAKEUP_CALLBACKS_EXP = 3;
 const int EVENT_TIMERS_HEAP_INDEX_MASK = ((1 << (31 - MAX_WAKEUP_CALLBACKS_EXP)) - 1);
-static void (*wakeup_callbacks[1 << MAX_WAKEUP_CALLBACKS_EXP ])(event_timer *timer);
+static void (*wakeup_callbacks[1 << MAX_WAKEUP_CALLBACKS_EXP ])(kphp_event_timer *timer);
 static int wakeup_callbacks_size;
 
-int register_wakeup_callback(void (*wakeup)(event_timer *timer)) {
+int register_wakeup_callback(void (*wakeup)(kphp_event_timer *timer)) {
   php_assert (dl::query_num == 0);
   php_assert (wakeup != nullptr);
   php_assert (wakeup_callbacks_size < (1 << MAX_WAKEUP_CALLBACKS_EXP));
@@ -78,7 +78,7 @@ int register_wakeup_callback(void (*wakeup)(event_timer *timer)) {
   return wakeup_callbacks_size++;
 }
 
-static event_timer **event_timers_heap;
+static kphp_event_timer **event_timers_heap;
 static int event_timers_heap_size;
 static int event_timers_max_heap_size;
 
@@ -112,8 +112,8 @@ static inline int event_timer_heap_move_down(double wakeup_time, int i) {
   return i;
 }
 
-event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra) {
-  event_timer *et = static_cast <event_timer *> (dl::allocate(sizeof(event_timer)));
+kphp_event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, int wakeup_extra) {
+  kphp_event_timer *et = static_cast <kphp_event_timer *> (dl::allocate(sizeof(kphp_event_timer)));
   php_assert (0 <= wakeup_callback_id && wakeup_callback_id < wakeup_callbacks_size);
   php_assert (get_precise_now() < wakeup_time);
 
@@ -122,7 +122,7 @@ event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, in
 
   int i = ++event_timers_heap_size;
   if (i == event_timers_max_heap_size) {
-    event_timers_heap = static_cast <event_timer **> (dl::reallocate(event_timers_heap, sizeof(event_timer *) * 2 * event_timers_max_heap_size, sizeof(event_timer *) * event_timers_max_heap_size));
+    event_timers_heap = static_cast <kphp_event_timer **> (dl::reallocate(event_timers_heap, sizeof(kphp_event_timer *) * 2 * event_timers_max_heap_size, sizeof(kphp_event_timer *) * event_timers_max_heap_size));
     event_timers_max_heap_size *= 2;
     if (event_timers_max_heap_size > EVENT_TIMERS_HEAP_INDEX_MASK) {
       php_critical_error ("maximum number of event timers exceeded");
@@ -134,11 +134,11 @@ event_timer *allocate_event_timer(double wakeup_time, int wakeup_callback_id, in
   return et;
 }
 
-void remove_event_timer(event_timer *et) {
+void remove_event_timer(kphp_event_timer *et) {
   int i = (et->heap_index & EVENT_TIMERS_HEAP_INDEX_MASK);
   php_assert (i > 0 && i <= event_timers_heap_size && event_timers_heap[i] == et);
   et->heap_index = 0;//TODO remove after testing
-  dl::deallocate(et, sizeof(event_timer));
+  dl::deallocate(et, sizeof(kphp_event_timer));
 
   et = event_timers_heap[event_timers_heap_size--];
   if (i > event_timers_heap_size) {
@@ -155,7 +155,7 @@ void remove_event_timer(event_timer *et) {
 int remove_expired_event_timers() {
   int expired_events = 0;
   while (event_timers_heap_size > 0 && event_timers_heap[1]->wakeup_time <= get_precise_now()) {
-    event_timer *et = event_timers_heap[1];
+    kphp_event_timer *et = event_timers_heap[1];
     wakeup_callbacks[et->heap_index >> (31 - MAX_WAKEUP_CALLBACKS_EXP)](et);
     expired_events++;
   }
@@ -200,7 +200,7 @@ int wait_net(int timeout_ms) {
 void init_net_events_lib() {
   event_timers_heap_size = 0;
   event_timers_max_heap_size = 1023;
-  event_timers_heap = static_cast <event_timer **> (dl::allocate(sizeof(event_timer *) * event_timers_max_heap_size));
+  event_timers_heap = static_cast <kphp_event_timer **> (dl::allocate(sizeof(kphp_event_timer *) * event_timers_max_heap_size));
 
   update_precise_now();
 }

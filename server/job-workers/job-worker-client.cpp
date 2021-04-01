@@ -16,6 +16,7 @@
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-engine.h"
 #include "server/php-queries.h"
 
 namespace job_workers {
@@ -46,10 +47,11 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
     }
     if (status == PipeJobReader::READ_OK) {
       tvkprintf(job_workers, 2, "got job result: ready_job_id = %d, job_result_memory_ptr = %p\n", job_result->job_id, job_result);
-      if (create_job_worker_answer_event(job_result) <= 0) {
-        // TODO ERROR?
+      int event_status = create_job_worker_answer_event(job_result);
+      if (event_status <= 0) {
         vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
       }
+      on_net_event(event_status);
     }
   } while (status != PipeJobReader::READ_BLOCK);
 
