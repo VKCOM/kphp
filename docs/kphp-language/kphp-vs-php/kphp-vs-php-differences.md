@@ -144,7 +144,6 @@ KPHP may differ (and may not) in the following scenarios:
 * strange math operations with invalid argument types; for example, if you subtract a number from an array, or if you calculate the tangent of a literal string
 * standard library functions invoked with invalid arguments — like calling *substr()* with non-numeric limits
 * some standard PHP functions work differently depending on PHP version; KPHP works as of luck
-* *strtotime()* doesn't cover all cases
 * bitwise operators assume integer operands (in PHP, they sometimes work for non-numeric strings)
 * integer overflow behaves like native 64-bit (in PHP, an integer may be converted to floating-point)
 * getting an unexisting element from a typed array [may return not null](../static-type-system/typed-arrays.md); typically, it's not a problem

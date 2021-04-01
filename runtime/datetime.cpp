@@ -11,9 +11,25 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
+#include "runtime/timelib_wrapper.h"
 
 extern long timezone;
 
+static const char *default_timezone_id = "";
+
+// this function should only be called with supported timezone_id values;
+// it could be "Etc/GMT-3" or "Europe/Moscow"
+static void set_default_timezone_id(const char *timezone_id) {
+  if (strcmp(default_timezone_id, timezone_id) == 0) {
+    return;
+  }
+  {
+    dl::CriticalSectionGuard critical_section;
+    setenv("TZ", timezone_id, 1);
+    tzset();
+  }
+  default_timezone_id = timezone_id;
+}
 
 static const char *day_of_week_names_short[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 static const char *day_of_week_names_full[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
@@ -21,7 +37,6 @@ static const char *suffix[] = {"st", "nd", "rd", "th"};
 static const char *month_names_short[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 static const char *month_names_full[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November",
                                          "December"};
-static const int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 static time_t gmmktime(struct tm *tm) {
   char *tz = getenv("TZ");
@@ -45,9 +60,7 @@ static inline int32_t is_leap(int32_t year) {
 }
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
-  return (1 <= month && month <= 12) &&
-         (1 <= year && year <= 32767) &&
-         (1 <= day && day <= days_in_month[month - 1] + (month == 2 && is_leap(static_cast<int32_t>(year))));
+  return php_timelib_is_valid_date(month, day, year);
 }
 
 static inline int32_t fix_year(int32_t year) {
@@ -59,24 +72,6 @@ static inline int32_t fix_year(int32_t year) {
     }
   }
   return year;
-}
-
-static int month_by_full_name(const char *month_name) {
-  for (int i = 0; i < 12; i++) {
-    if (!strcmp(month_names_full[i], month_name)) {
-      return i + 1;
-    }
-  }
-  return 0;
-}
-
-static int day_of_week_by_full_name(const char *day_of_week_name) {
-  for (int i = 0; i < 7; i++) {
-    if (!strcmp(day_of_week_names_full[i], day_of_week_name)) {
-      return i + 1;
-    }
-  }
-  return 0;
 }
 
 void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
@@ -207,7 +202,7 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         SB << month;
         break;
       case 't':
-        SB << days_in_month[month - 1] + (month == 2 && is_leap(year));
+        SB << php_timelib_days_in_month(month, year);
         break;
       case 'L':
         SB << (int)is_leap(year);
@@ -262,7 +257,7 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         break;
       case 'e':
         if (local) {
-          SB << "Europe/Moscow";
+          SB << PHP_TIMELIB_TZ_MOSCOW;
         } else {
           SB << "UTC";
         }
@@ -372,18 +367,24 @@ string f$date(const string &format, int64_t timestamp) {
 }
 
 bool f$date_default_timezone_set(const string &s) {
-  if (s != string("Etc/GMT-3", 9) && s != string("Europe/Moscow", 13)) {//TODO
-    if (s == string("Etc/GMT-4", 9)) {
-      php_warning("Timezone Etc/GMT-4 is not supported, use Etc/GMT-3 instead");
-      return true;
-    }
-    php_critical_error ("unsupported default timezone \"%s\"", s.c_str());
+  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_GMT3) == 0) {
+    set_default_timezone_id(PHP_TIMELIB_TZ_GMT3);
+    return true;
   }
-  return true;
+  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_MOSCOW) == 0) {
+    set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
+    return true;
+  }
+  // TODO: this branch is weird; remove it?
+  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_GMT4) == 0) {
+    php_warning("Timezone %s is not supported, use %s instead", PHP_TIMELIB_TZ_GMT4, PHP_TIMELIB_TZ_GMT3);
+    return false;
+  }
+  php_critical_error ("unsupported default timezone \"%s\"", s.c_str());
 }
 
 string f$date_default_timezone_get() {
-  return string("Europe/Moscow", 13);
+  return string(default_timezone_id);
 }
 
 array<mixed> f$getdate(int64_t timestamp) {
@@ -564,254 +565,11 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
-  tm t;
-  time_t timestamp_t = timestamp;
-  localtime_r(&timestamp_t, &t);
-
-  string s = f$trim(time_str);
-
-  char str[21];
-  bool time_set = false;
-
-  int64_t old_size;
-  do {
-    old_size = s.size();
-
-    int d, m, y, pos = -1;
-    if ((sscanf(s.c_str(), "%d.%d.%d %n", &d, &m, &y, &pos) == 3 ||
-         sscanf(s.c_str(), "%d-%d-%d %n", &y, &m, &d, &pos) == 3 ||
-         sscanf(s.c_str(), "%4d%2d%2d %n", &y, &m, &d, &pos) == 3 ||
-         (sscanf(s.c_str(), "%d %20s %d %n", &d, str, &y, &pos) == 3 && (m = month_by_full_name(str))) ||
-         (sscanf(s.c_str(), "%d %20s %n", &d, str, &pos) == 2 && (m = month_by_full_name(str)) && (y = t.tm_year + 1900))) &&
-        pos != -1) {
-      t.tm_mday = d;
-      t.tm_mon = m - 1;
-      t.tm_year = fix_year(y) - 1900;
-
-      if (!time_set) {
-        t.tm_sec = 0;
-        t.tm_min = 0;
-        t.tm_hour = 0;
-      }
-
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    if (((pos = 8) > 0 && !strncmp(s.c_str(), "tomorrow", pos)) ||
-        ((pos = 5) > 0 && !strncmp(s.c_str(), "today", pos)) ||
-        ((pos = 8) > 0 && !strncmp(s.c_str(), "midnight", pos))) {
-      t.tm_mday += (s[3] == 'o' || s[3] == 't');
-
-      if (!time_set) {
-        t.tm_sec = 0;
-        t.tm_min = 0;
-        t.tm_hour = 0;
-      }
-
-      while (s[pos] == ' ') {
-        pos++;
-      }
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    if (!strncmp(s.c_str(), "now", 3)) {
-      pos = 3;
-      while (s[pos] == ' ') {
-        pos++;
-      }
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    if (!strncmp(s.c_str(), "next day", 8)) {
-      t.tm_mday++;
-      pos = 8;
-      while (s[pos] == ' ') {
-        pos++;
-      }
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    if (!strncmp(s.c_str(), "next month", 10)) {
-      t.tm_mon++;
-      pos = 10;
-      while (s[pos] == ' ') {
-        pos++;
-      }
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    pos = -1;
-    if ((!strncmp(s.c_str(), "next ", 5) || !strncmp(s.c_str(), "last ", 5)) && sscanf(s.c_str() + 5, "%20s %n", str, &pos) == 1 && (d = day_of_week_by_full_name(str)) > 0 && pos != -1) {
-      d = (d + 6) % 7;
-      if (!strncmp(s.c_str(), "next ", 5)) {
-        if (d > t.tm_wday) {
-          t.tm_mday += d - t.tm_wday;
-        } else {
-          t.tm_mday += d + 7 - t.tm_wday;
-        }
-      } else {
-        if (d < t.tm_wday) {
-          t.tm_mday += d - t.tm_wday;
-        } else {
-          t.tm_mday += d - 7 - t.tm_wday;
-        }
-      }
-
-      if (!time_set) {
-        t.tm_sec = 0;
-        t.tm_min = 0;
-        t.tm_hour = 0;
-      }
-
-      s = s.substr(5 + pos, s.size() - pos - 5);
-    }
-
-    int ho, mi, se;
-    pos = -1;
-    if ((sscanf(s.c_str(), "%d:%d:%d %n", &ho, &mi, &se, &pos) == 3 ||
-         (sscanf(s.c_str(), "%d:%d %n", &ho, &mi, &pos) == 2 && (se = 0) == 0)) &&
-        pos != -1) {
-      t.tm_sec = se;
-      t.tm_min = mi;
-      t.tm_hour = ho;
-
-      time_set = true;
-
-      s = s.substr(pos, s.size() - pos);
-    }
-
-    if (s[0] == '-' || (s[0] == '+' || ('0' <= s[0] && s[0] <= '9'))) {
-      int cnt;
-      pos = -1;
-      if (sscanf(s.c_str(), "%d%20s %n", &cnt, str, &pos) == 2 && pos != -1) {
-        bool error = false;
-        switch (str[0]) {
-          case 'd':
-            if (str[1] == 'a' && str[2] == 'y' && ((str[3] == 's' && str[4] == 0) || str[3] == 0)) {
-              t.tm_mday += cnt;
-              break;
-            }
-            error = true;
-            break;
-          case 'h':
-            if (str[1] == 'o' && str[2] == 'u' && str[3] == 'r' && ((str[4] == 's' && str[5] == 0) || str[4] == 0)) {
-              t.tm_hour += cnt;
-              break;
-            }
-            error = true;
-            break;
-          case 'm':
-            if (str[1] == 'o' && str[2] == 'n' && str[3] == 't' && str[4] == 'h' && ((str[5] == 's' && str[6] == 0) || str[5] == 0)) {
-              t.tm_mon += cnt;
-              break;
-            }
-            if (str[1] == 'i' && str[2] == 'n' && str[3] == 'u' && str[4] == 't' && str[5] == 'e' && ((str[6] == 's' && str[7] == 0) || str[6] == 0)) {
-              t.tm_min += cnt;
-              break;
-            }
-            error = true;
-            break;
-          case 'w':
-            if (str[1] == 'e' && str[2] == 'e' && str[3] == 'k' && ((str[4] == 's' && str[5] == 0) || str[4] == 0)) {
-              t.tm_mday += cnt * 7;
-              if (!strncmp(s.c_str() + pos, "1 day", 5)) {
-                t.tm_mday += (s[0] == '+' ? 1 : -1);
-                pos += 5;
-                while (s[pos] == ' ') {
-                  pos++;
-                }
-              }
-              break;
-            }
-            error = true;
-            break;
-          case 'y':
-            if (str[1] == 'e' && str[2] == 'a' && str[3] == 'r' && ((str[4] == 's' && str[5] == 0) || str[4] == 0)) {
-              t.tm_year += cnt;
-              break;
-            }
-            error = true;
-            break;
-          default:
-            error = true;
-            break;
-        }
-
-        if (!error) {
-          s = s.substr(pos, s.size() - pos);
-        }
-      }
-    }
-  } while (old_size != (int)s.size() && !s.empty());
-
-  bool need_gmt = false;
-  if ((int)s.size() != 0) {
-    const char *patterns[] = {"%c", "%Ec", "%FT%T", "%x", "%Ex", "%X", "%EX", "%A, %B %d, %Y %I:%M:%S %p", "%A, %d %b %Y %T"};
-    int patterns_size = sizeof(patterns) / sizeof(patterns[0]);
-
-    bool found = false;
-    string cur_locale;
-
-    for (int tr = 0; tr < 2 && !found; tr++) {
-      for (int i = 0; i < patterns_size && !found; i++) {
-        const char *res = strptime(s.c_str(), patterns[i], &t);
-        if (res != nullptr) {
-          while (*res == ' ') {
-            res++;
-          }
-//          fprintf (stderr, "%d %d: %s !!! \"%s\"\n", tr, i, patterns[i], res);
-          if (*res == 0 || !strcmp("MSK", res)) {
-            found = true;
-          } else if (!strcmp("GMT", res)) {
-            need_gmt = true;
-//            t.tm_hour -= 3;
-            found = true;
-          } else if (*res == '-' || *res == '+') {
-            int val = 0;
-            int mul = (*res++ == '+') * 2 - 1;
-            int n;
-            for (n = 0; n < 4 && *res >= '0' && *res <= '9'; n++) {
-              val = val * 10 + (*res++ - '0');
-            }
-            if (n == 2) {
-              val *= 100;
-              n = 4;
-            } else if (n == 4 && val % 100 < 60) {
-              val = (val / 100) * 100 + ((val % 100) * 50) / 30;
-            }
-            if (n == 4 && val <= 1200) {
-              t.tm_sec -= mul * val * 36;
-              need_gmt = true;
-              found = true;
-            }
-          }
-        }
-      }
-
-      if (tr == 0) {
-        if (!found) {
-          const char *cur_locale_c_ctr = setlocale(LC_TIME, nullptr);
-          php_assert (cur_locale_c_ctr != nullptr);
-          cur_locale.assign(cur_locale_c_ctr);
-          setlocale(LC_TIME, "C");
-        }
-      } else {
-        setlocale(LC_TIME, cur_locale.c_str());
-      }
-    }
-
-    if (found) {
-      s = string();
-    }
-  }
-
-  if ((int)s.size() == 0) {
-    t.tm_isdst = -1;
-    return need_gmt ? gmmktime(&t) : mktime(&t);
-  }
-
-  php_critical_error ("strtotime can't parse string \"%s\", unparsed part: \"%s\"", time_str.c_str(), s.c_str());
-  return false;
+  // TODO: use structured bindings when we have C++17
+  int64_t ts = 0;
+  bool ok = false;
+  std::tie(ts, ok) = php_timelib_strtotime(f$date_default_timezone_get(), time_str, timestamp);
+  return ok ? Optional<int64_t>(ts) : Optional<int64_t>(false);
 }
 
 int64_t f$time() {
@@ -829,12 +587,10 @@ mixed f$hrtime(bool as_number) {
   );
 }
 
-
 void init_datetime_lib() {
   dl::enter_critical_section();//OK
 
-  setenv("TZ", "Etc/GMT-3", 1);
-  tzset();
+  set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
 
   dl::leave_critical_section();
 }
