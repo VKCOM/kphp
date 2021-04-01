@@ -53,12 +53,27 @@ function compare_job_and_local_stats(StatTraits $traits, int $master_port, strin
     critical_error("Net pids are different!");
   }
   if (array_keys($job_stats->string_stats) !== array_keys($local_stats->string_stats)) {
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($job_stats->string_stats)));
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($local_stats->string_stats)));
+    fprintf(STDERR, "\n");
     critical_error("Keys of the string $type stats are different!");
   }
   if (array_keys($job_stats->float_stats) !== array_keys($local_stats->float_stats)) {
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($job_stats->float_stats)));
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($local_stats->float_stats)));
+    fprintf(STDERR, "\n");
     critical_error("Keys of the float $type stats are different!");
   }
   if (array_keys($job_stats->int_stats) !== array_keys($local_stats->int_stats)) {
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($job_stats->int_stats)));
+    fprintf(STDERR, "\n");
+    fprintf(STDERR, json_encode(array_keys($local_stats->int_stats)));
+    fprintf(STDERR, "\n");
     critical_error("Keys of the int $type stats are different!");
   }
 
