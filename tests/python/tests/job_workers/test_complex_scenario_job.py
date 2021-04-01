@@ -7,8 +7,8 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
-            "--job-workers-num": 3,
-            "--workers-num": 5
+            "--job-workers-num": 2,
+            "--workers-num": 4
         })
 
     def assert_stats_count(self, stats):
@@ -56,7 +56,7 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
             self.do_filter_scenario()
 
     def test_complex_scenario_job(self):
-        requests_count = 500
+        requests_count = 100
         with ThreadPool(10) as pool:
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
