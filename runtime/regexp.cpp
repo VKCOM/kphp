@@ -1062,6 +1062,7 @@ string f$preg_quote(const string &str, const string &delimiter) {
       case '|':
       case ':':
       case '-':
+      case '#':
         static_SB.append_char('\\');
         static_SB.append_char(str[i]);
         break;

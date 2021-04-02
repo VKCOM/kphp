@@ -212,7 +212,6 @@ ext/pcre/tests/bug70232.phpt
 ext/pcre/tests/bug71537.phpt
 ext/pcre/tests/bug72463_2.phpt
 ext/pcre/tests/bug72688.phpt
-ext/pcre/tests/bug75355.phpt
 ext/pcre/tests/bug76512.phpt
 ext/pcre/tests/bug78338.phpt
 ext/pcre/tests/dollar_endonly.phpt
