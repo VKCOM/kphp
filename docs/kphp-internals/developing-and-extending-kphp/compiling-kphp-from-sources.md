@@ -17,7 +17,8 @@ These are sources of KPHP, vkext, flex data (for Russian declensions), and all T
 KPHP linkage depends on some custom packages, that are also compiled from source:
 * patched curl build [on Github]({{site.url_package_curl}}) (branch *dpkg-build-7.60.0*)
 * custom uber-h3 build [on Github]({{site.url_package_h3}}) (branch *dpkg-build*)
-* epoll implementation for MacOS [on Github]({{site.url_package_epoll_shim}}) (branch *osx-platform*) 
+* epoll implementation for MacOS [on Github]({{site.url_package_epoll_shim}}) (branch *osx-platform*)
+* custom timelib build [on Github]({{site.url_package_timelib}}) (branch *master*)
 
 KPHP compilation depends on some third-party libraries, which are just copied to the `third_party/` folder as is, containing all references to originals. 
 
@@ -73,7 +74,7 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ##### MacOS
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
-brew install cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
+brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
 brew link --overwrite php@7.4
 pip3 install jsonschema
 ```
