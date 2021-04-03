@@ -1,9 +1,7 @@
 @kphp_should_fail
-/Calling no-highload function from highload function \(f1\(\) call f5\(\)\)/
-/  f1\(\) with following colors: \{highload\}/
-/  f2\(\)/
-/  f4\(\)/
-/  f5\(\) with following colors: \{no-highload\}/
+/Calling no-highload function from highload function \(f6\(\) call f7\(\)\)/
+/  f6\(\) with following colors: \{highload\}/
+/  f7\(\) with following colors: \{no-highload\}/
 /Produced according to the following rule:/
 /  "highload no-highload" => Calling no-highload function from highload function/
 <?php
@@ -34,21 +32,29 @@ class KphpConfiguration {
 }
 
 /**
- * @kphp-color highload
+ * @kphp-color ssr
  */
 function f1() { f2(); }
-function f2() { f3(); f4(); f6(); }
-function f3() { echo 1; }
-function f4() { f5(); }
+/**
+ * @kphp-color ssr-allow-db
+ */
+function f2() { f6(); /* error */ }
+/**
+ * @kphp-color has-db-access
+ */
+function f3() { f4(); }
 
+function f4() { f5(); }
+function f5() { f6(); /* error */ }
+
+/**
+ * @kphp-color highload
+ */
+function f6() { f7(); }
 /**
  * @kphp-color no-highload
  */
-function f5() { echo 1; }
-
-/**
- * @kphp-color highload
- */
-function f6() { echo 1; }
+function f7() { echo 1; /* error that should not be displayed because the exact same error has already been displayed */ }
 
 f1();
+f3();

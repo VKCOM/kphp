@@ -192,6 +192,10 @@ public:
     return desc;
   }
 
+  size_t hash() {
+    return front()->id + (back()->id * 100);
+  }
+
   void reset_narrow() {
     begin = data.begin();
     end = data.end();
@@ -229,6 +233,8 @@ public:
 class CheckFunctionsColors {
   FuncCallGraph call_graph;
   function_palette::Palette palette;
+
+  std::unordered_set<size_t> handled;
 
 public:
   CheckFunctionsColors(const FuncCallGraph &call_graph)
@@ -379,6 +385,14 @@ public:
     callstack.narrow(rule);
 
     stage::set_function(callstack.front());
+
+    const auto hash = callstack.hash() * (rule.id + 1);
+    const auto was_handled = handled.count(hash) == 1;
+    if (was_handled) {
+      callstack.reset_narrow();
+      return;
+    }
+    handled.insert(hash);
 
     const auto parent_name = callstack.front()->get_human_readable_name() + "()";
     const auto child_name = callstack.back()->get_human_readable_name() + "()";
