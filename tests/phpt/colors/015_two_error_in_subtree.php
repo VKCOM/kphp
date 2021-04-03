@@ -1,4 +1,9 @@
-@ok
+@kphp_should_fail
+/Calling no-highload function from highload function \(f1\(\) call f2\(\)\)/
+/  f1\(\) with following colors: \{highload\}/
+/  f2\(\) with following colors: \{no-highload\}/
+/Produced according to the following rule:/
+/  "highload no-highload" => Calling no-highload function from highload function/
 <?php
 
 class KphpConfiguration {
@@ -27,78 +32,20 @@ class KphpConfiguration {
 }
 
 /**
- * @kphp-color ssr
+ * @kphp-color highload
  */
-function someSsr() {
-    hasDbAccess();
-}
-
+function f1() { f2(); /* error 1 */ }
 /**
- * @kphp-color ssr-allow-db has-db-access
+ * @kphp-color no-highload
  */
-function hasDbAccess() {
-    echo 1;
-}
-
-someSsr();
-
-
+function f2() { f3(); }
 /**
- * @kphp-color api
+ * @kphp-color highload
  */
-function api() {
-    hasCurl();
-}
-
+function f3() { f4(); /* error 2 (not displayed until error 1 is fixed) */ }
 /**
- * @kphp-color api-allow-curl has-curl
+ * @kphp-color no-highload
  */
-function hasCurl() {
-    echo 1;
-}
+function f4() { echo 1; }
 
-api();
-
-
-/**
- * @kphp-color api
- */
-function apiCallApiCallback() {
-    apiCallback();
-}
-
-/**
- * @kphp-color api-callback
- */
-function apiCallback() {
-    hasCurl();
-}
-
-apiCallApiCallback();
-
-
-/**
- * @kphp-color api api-callback
- */
-function apiWithApiCallback() {
-    hasCurl();
-}
-
-apiWithApiCallback();
-
-
-/**
- * @kphp-color message-internals
- */
-function messageInternals() {
-    echo 1;
-}
-
-/**
- * @kphp-color message-module
- */
-function messageModule() {
-    messageInternals();
-}
-
-messageModule();
+f1();

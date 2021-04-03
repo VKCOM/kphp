@@ -29,76 +29,26 @@ class KphpConfiguration {
 /**
  * @kphp-color ssr
  */
-function someSsr() {
-    hasDbAccess();
-}
+function f1() { f2(); }
+/**
+ * @kphp-color ssr-allow-db
+ */
+function f2() { f3(); }
+/**
+ * @kphp-color has-db-access
+ */
+function f3() { f4(); }
+
+function f4() { echo 1; }
+function f5() { echo 1; }
 
 /**
- * @kphp-color ssr-allow-db has-db-access
+ * @kphp-color ssr
  */
-function hasDbAccess() {
-    echo 1;
-}
-
-someSsr();
-
-
+function f6() { f7(); }
 /**
- * @kphp-color api
+ * @kphp-color has-db-access
  */
-function api() {
-    hasCurl();
-}
+function f7() { echo 1; /* not an error, since above in the f2() function there was a color allowing this */ }
 
-/**
- * @kphp-color api-allow-curl has-curl
- */
-function hasCurl() {
-    echo 1;
-}
-
-api();
-
-
-/**
- * @kphp-color api
- */
-function apiCallApiCallback() {
-    apiCallback();
-}
-
-/**
- * @kphp-color api-callback
- */
-function apiCallback() {
-    hasCurl();
-}
-
-apiCallApiCallback();
-
-
-/**
- * @kphp-color api api-callback
- */
-function apiWithApiCallback() {
-    hasCurl();
-}
-
-apiWithApiCallback();
-
-
-/**
- * @kphp-color message-internals
- */
-function messageInternals() {
-    echo 1;
-}
-
-/**
- * @kphp-color message-module
- */
-function messageModule() {
-    messageInternals();
-}
-
-messageModule();
+f1();

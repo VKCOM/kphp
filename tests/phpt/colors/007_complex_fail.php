@@ -1,4 +1,9 @@
 @kphp_should_fail
+/Calling function marked as internal outside of functions with the color message\-module \(dangerZoneCallingMessageInternals\(\) call messageInternals\(\)\)/
+/  dangerZoneCallingMessageInternals\(\) with following colors\: \{danger\-zone\}/
+/  messageInternals\(\) with following colors\: \{message-internals}/
+/Produced according to the following rule:/
+/  "message-internals" => Calling function marked as internal outside of functions with the color message-module/
 /Calling no\-highload function from highload function \(functionWithSsrAndMessageModuleAndHighload\(\) call functionWithAllowDbAccessAndNoHighload\(\)\)/
 /  functionWithSsrAndMessageModuleAndHighload\(\) with following colors\: \{highload, ssr, message-module\}/
 /  functionWithMessageModule\(\) with following colors\: \{message\-module\}/
@@ -11,11 +16,6 @@
 /  functionWithDbAccessWithoutAllow\(\) with following colors\: \{has\-db\-access\}/
 /Produced according to the following rule:/
 /  "ssr has-db-access" => Calling function working with the database in the server side rendering function/
-/Calling function marked as internal outside of functions with the color message\-module \(dangerZoneCallingMessageInternals\(\) call messageInternals\(\)\)/
-/  dangerZoneCallingMessageInternals\(\) with following colors\: \{danger\-zone\}/
-/  messageInternals\(\) with following colors\: \{message-internals}/
-/Produced according to the following rule:/
-/  "\* message-internals" => Calling function marked as internal outside of functions with the color message-module/
 <?php
 
 class KphpConfiguration {
@@ -25,15 +25,15 @@ class KphpConfiguration {
     ],
     [
       "ssr has-db-access"                 => "Calling function working with the database in the server side rendering function",
-      "ssr has-db-access ssr-allow-db"    => 1,
+      "ssr ssr-allow-db has-db-access"    => 1,
     ],
     [
       "api has-curl"                      => "Calling curl function from API functions",
       "api api-callback has-curl"         => 1,
-      "api has-curl api-allow-curl"       => 1,
+      "api api-allow-curl has-curl"       => 1,
     ],
     [
-      "* message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
+      "message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
       "message-module message-internals"  => 1,
     ],
     [

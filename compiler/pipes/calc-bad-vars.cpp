@@ -8,7 +8,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/function-pass.h"
 #include "compiler/utils/idmap.h"
 
 /*** Common algorithm ***/
@@ -115,31 +114,7 @@ struct FuncCallGraph {
   }
 };
 
-struct CallstackColor {
-  function_palette::color_t color;
-  FunctionPtr func;
-
-  CallstackColor(function_palette::color_t color, const FunctionPtr &func)
-    : color(color), func(func) {}
-};
-
-using CallstackColors = std::vector<CallstackColor>;
-
-struct MatchedRule {
-  function_palette::Rule rule{};
-  FunctionPtr start_func{nullptr};
-  FunctionPtr end_func{nullptr};
-  bool matched{false};
-
-  MatchedRule() = default;
-
-  MatchedRule(const function_palette::Rule &rule, const FunctionPtr &start, const FunctionPtr &end)
-    : rule(rule), start_func(start), end_func(end), matched(true) {}
-
-  uint64_t hash() const {
-    return (start_func->id + end_func->id + 1000) * (rule.id + 1);
-  }
-};
+using CallstackColors = std::vector<function_palette::color_t>;
 
 class Callstack {
   using raw = std::vector<FunctionPtr>;
@@ -171,7 +146,7 @@ public:
   }
 
   element &back() {
-    return *end;
+    return *(end - 1);
   }
 
   void push_back(const element &el) {
@@ -190,10 +165,14 @@ public:
     return vk::contains(data_set, el);
   }
 
-  std::string format(const function_palette::Palette& palette) const {
+  std::string format(const function_palette::Palette &palette) const {
+    if (data.empty()) {
+      return "";
+    }
+
     std::string desc;
 
-    for (auto it = begin; it != end + 1; ++it) {
+    for (auto it = begin; it != end; ++it) {
       const auto frame = *it;
       const auto name = frame->get_human_readable_name() + "()";
 
@@ -205,7 +184,7 @@ public:
         desc += frame->colors.to_string(palette);
       }
 
-      if (it != end) {
+      if (it != end - 1) {
         desc += "\n\n";
       }
     }
@@ -218,19 +197,31 @@ public:
     end = data.end();
   }
 
-  void narrow(const element &from, const element &to) {
+  void narrow(const function_palette::Rule &rule) {
+    const auto start_color = rule.colors.front();
+    const auto end_color = rule.colors.back();
+
     while (begin != data.end()) {
-      if (*begin == from) {
+      if ((*begin)->colors.contains(start_color)) {
         break;
       }
       ++begin;
     }
 
     while (end != data.begin()) {
-      if (*end == to) {
+      --end;
+
+      if ((*end)->colors.contains(end_color)) {
         break;
       }
-      --end;
+    }
+
+    if (rule.colors.size() == 1) {
+      --begin;
+    }
+
+    if (end != data.end()) {
+      ++end;
     }
   }
 };
@@ -238,8 +229,6 @@ public:
 class CheckFunctionsColors {
   FuncCallGraph call_graph;
   function_palette::Palette palette;
-
-  std::map<uint64_t, std::pair<FunctionPtr, std::string>> errors;
 
 public:
   CheckFunctionsColors(const FuncCallGraph &call_graph)
@@ -257,21 +246,16 @@ public:
     }
 
     check_func(colors, callstack, main_func);
-
-    for (const auto &error : errors) {
-      stage::set_function(error.second.first);
-      kphp_error(0, error.second.second);
-    }
   }
 
   bool need_check(const Callstack &callstack, const FunctionPtr &func) {
-    if (callstack.contains(func)) {
-      return false;
-    }
     if (func->color_status != FunctionData::color_status::call_or_has_color) {
       return false;
     }
     if (callstack.size() >= 50) {
+      return false;
+    }
+    if (callstack.contains(func)) {
       return false;
     }
     return true;
@@ -279,26 +263,38 @@ public:
 
   void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
     callstack.push_back(func);
+
+//    fmt_print("{}\n", callstack.format(palette));
+
     const auto has_colors = !func->colors.empty();
     const auto sep_colors = func->colors.sep_colors();
     for (const auto &sep_color : sep_colors) {
-      colors.push_back(CallstackColor(sep_color, func));
+      colors.push_back(sep_color);
     }
+
+    auto need_check_subtree = true;
 
     if (callstack.size() > 1 && !colors.empty() && has_colors) {
       const auto matched_rules = match(colors);
 
-      for (const auto &rule : matched_rules) {
-        error(callstack, rule);
+      if (!matched_rules.empty()) {
+        for (const auto &rule : matched_rules) {
+          error(callstack, rule);
+        }
+
+        // we do not continue checking the subtree further, since an error was found
+        need_check_subtree = false;
       }
     }
 
-    for (const auto &next : call_graph.graph[func]) {
-      if (!need_check(callstack, next)) {
-        continue;
-      }
+    if (need_check_subtree) {
+      for (const auto &next : call_graph.graph[func]) {
+        if (!need_check(callstack, next)) {
+          continue;
+        }
 
-      check_func(colors, callstack, next);
+        check_func(colors, callstack, next);
+      }
     }
 
     for (int i = 0; i < sep_colors.size(); ++i) {
@@ -310,26 +306,24 @@ public:
   static function_palette::colors_t calc_mask(const CallstackColors &colors) {
     function_palette::colors_t mask = 0;
     for (const auto &color : colors) {
-      mask |= color.color;
+      mask |= color;
     }
     return mask;
   }
 
-  static MatchedRule match_rule(const function_palette::Rule& rule, CallstackColors& colors) {
+  static bool match_rule(const function_palette::Rule& rule, CallstackColors& colors) {
     const auto match_mask = calc_mask(colors);
     if (!rule.contains_in(match_mask)) {
-      return {};
+      return false;
     }
 
-    return match_two_vectors(rule, rule.colors, colors);
+    return match_two_vectors(rule.colors, colors);
   }
 
-  static MatchedRule match_two_vectors(const function_palette::Rule& rule, const std::vector<function_palette::colors_t> &first, CallstackColors& second) {
+  static bool match_two_vectors(const std::vector<function_palette::colors_t> &first, CallstackColors& second) {
     if (first.empty() || second.empty()) {
-      return {};
+      return false;
     }
-
-    FunctionPtr* end_func = nullptr;
 
     auto first_it = first.end() - 1;
     auto second_it = second.end() - 1;
@@ -337,50 +331,42 @@ public:
     while (true) {
       auto matched = false;
 
-      if (*first_it == second_it->color) {
+      if (*first_it == *second_it) {
         matched = true;
       }
 
       if (matched) {
-        if (end_func == nullptr) {
-          end_func = &second_it->func;
-        }
-
         if (first_it == first.begin()) {
-          return MatchedRule(rule, second_it->func, *end_func);
+          return true;
         }
         if (second_it == second.begin()) {
-          return {};
+          return false;
         }
-        first_it--;
-        second_it--;
+        --first_it;
+        --second_it;
       } else {
         if (second_it == second.begin()) {
           return {};
         }
-        second_it--;
+        --second_it;
       }
     }
   }
 
-  std::vector<MatchedRule> match(CallstackColors &colors) {
-    std::vector<MatchedRule> rules;
+  std::vector<function_palette::Rule> match(CallstackColors &colors) {
+    std::vector<function_palette::Rule> rules;
 
     for (const auto &group : palette.groups()) {
       for (auto it = group.rules().rbegin(); it != group.rules().rend(); ++it) {
         const auto rule = *it;
-        const auto matched_rule = match_rule(rule, colors);
+        const auto matched = match_rule(rule, colors);
 
-        if (!matched_rule.matched) {
+        if (!matched) {
           continue;
         }
 
-        if (errors.count(matched_rule.hash()) != 0) {
-          break;
-        }
-
         if (rule.is_error()) {
-          rules.push_back(matched_rule);
+          rules.push_back(rule);
         }
         break;
       }
@@ -389,11 +375,11 @@ public:
     return rules;
   }
 
-  void error(Callstack& callstack, const MatchedRule &rule) {
-    callstack.narrow(rule.start_func, rule.end_func);
+  void error(Callstack& callstack, const function_palette::Rule &rule) {
+    callstack.narrow(rule);
 
-    const auto hash = rule.hash();
-    const auto parent = callstack.front();
+    stage::set_function(callstack.front());
+
     const auto parent_name = callstack.front()->get_human_readable_name() + "()";
     const auto child_name = callstack.back()->get_human_readable_name() + "()";
     const auto callstack_format = callstack.format(palette);
@@ -401,14 +387,14 @@ public:
     callstack.reset_narrow();
 
     const auto description = fmt_format("{} ({} call {})\n\n{}\n\nProduced according to the following rule:\n  {}",
-                             rule.rule.error,
+                             rule.error,
                              TermStringFormat::paint_green(parent_name),
                              TermStringFormat::paint_green(child_name),
                              callstack_format,
-                             rule.rule.to_string(palette)
+                             rule.to_string(palette)
     );
 
-    errors.insert(std::make_pair(hash, std::make_pair(parent, std::move(description))));
+    kphp_error(0, description);
   }
 };
 

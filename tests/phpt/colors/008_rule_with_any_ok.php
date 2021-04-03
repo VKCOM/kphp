@@ -9,20 +9,21 @@ class KphpConfiguration {
     ],
   ];
 }
-
-/**
- * @kphp-color danger-zone
- */
-function dangerZone() {
-    dangerZoneToo(); // ok, has color
-    echo 1; // ok, is extern
-}
-
-/**
- * @kphp-color danger-zone
- */
-function dangerZoneToo() {
-    echo 1;
-}
-
-dangerZone();
+// disabled until any support
+//
+// /**
+//  * @kphp-color danger-zone
+//  */
+// function dangerZone() {
+//     dangerZoneToo(); // ok, has color
+//     echo 1; // ok, is extern
+// }
+//
+// /**
+//  * @kphp-color danger-zone
+//  */
+// function dangerZoneToo() {
+//     echo 1;
+// }
+//
+// dangerZone();

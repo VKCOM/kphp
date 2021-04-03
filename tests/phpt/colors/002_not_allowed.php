@@ -19,7 +19,7 @@ class KphpConfiguration {
     ],
     [
       "ssr has-db-access"                 => "Calling function working with the database in the server side rendering function",
-      "ssr has-db-access ssr-allow-db"    => 1,
+      "ssr ssr-allow-db has-db-access"    => 1,
     ],
     [
       "api has-curl"                      => "Calling curl function from API functions",
@@ -27,7 +27,7 @@ class KphpConfiguration {
       "api api-allow-curl has-curl"       => 1,
     ],
     [
-      "* message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
+      "message-internals"                 => "Calling function marked as internal outside of functions with the color message-module",
       "message-module message-internals"  => 1,
     ],
     [

@@ -1,4 +1,4 @@
-@kphp_should_fail
+@ok
 /Calling function without color danger\-zone in a function with color danger\-zone \(dangerZone\(\) call noHighload\(\)\)/
 /  dangerZone\(\) with following colors\: \{danger\-zone\}/
 /  noHighload\(\) with following colors\: \{no\-highload\}/
@@ -29,59 +29,60 @@ class KphpConfiguration {
     ],
   ];
 }
-
-/**
- * @kphp-color danger-zone
- */
-function dangerZone() {
-    dangerZoneToo(); // ok
-    highload(); // ok
-    ssr(); // ok
-    noHighload(); // error
-}
-
-/**
- * @kphp-color danger-zone
- */
-function dangerZoneToo() {
-    echo 1;
-}
-
-/**
- * @kphp-color highload
- */
-function highload() {
-    highloadToo(); // ok
-    ssr(); // error
-}
-
-/**
- * @kphp-color has-curl
- */
-function hasCurl() {
-    echo 1;
-}
-
-
-/**
- * @kphp-color highload
- */
-function highloadToo() {
-    echo 1;
-}
-
-/**
- * @kphp-color ssr
- */
-function ssr() {
-    echo 1;
-}
-
-/**
- * @kphp-color no-highload
- */
-function noHighload() {
-    echo 1;
-}
-
-dangerZone();
+// disabled until any support
+//
+// /**
+//  * @kphp-color danger-zone
+//  */
+// function dangerZone() {
+//     dangerZoneToo(); // ok
+//     highload(); // ok
+//     ssr(); // ok
+//     noHighload(); // error
+// }
+//
+// /**
+//  * @kphp-color danger-zone
+//  */
+// function dangerZoneToo() {
+//     echo 1;
+// }
+//
+// /**
+//  * @kphp-color highload
+//  */
+// function highload() {
+//     highloadToo(); // ok
+//     ssr(); // error
+// }
+//
+// /**
+//  * @kphp-color has-curl
+//  */
+// function hasCurl() {
+//     echo 1;
+// }
+//
+//
+// /**
+//  * @kphp-color highload
+//  */
+// function highloadToo() {
+//     echo 1;
+// }
+//
+// /**
+//  * @kphp-color ssr
+//  */
+// function ssr() {
+//     echo 1;
+// }
+//
+// /**
+//  * @kphp-color no-highload
+//  */
+// function noHighload() {
+//     echo 1;
+// }
+//
+// dangerZone();
