@@ -9,6 +9,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/compiler-core.h"
 #include "compiler/threading/profiler.h"
+#include "common/algorithms/contains.h"
 
 namespace {
 
@@ -53,37 +54,63 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
   }
 }
 
-void propagate_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
-  if (callee->color_status == FunctionData::color_status::call_or_has_color) {
-    return;
+void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr callee, std::forward_list<FunctionPtr> &callstack_between_func, std::forward_list<FunctionPtr> &general_callstack, bool first_frame, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  general_callstack.push_front(callee);
+
+  if (!first_frame) {
+    callstack_between_func.push_front(callee);
   }
 
-  callee->color_status = FunctionData::color_status::call_or_has_color;
+  const auto main_func = G->get_main_file()->main_function;
 
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
-    propagate_colors_functions_dfs(caller, colors_functions_graph);
-  }
-}
-
-void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
-  if (callee->color_status != FunctionData::color_status::unknown) {
-    return;
-  }
-
-  if (!callee->colors.empty()) {
-    callee->color_status = FunctionData::color_status::call_or_has_color;
-  } else {
-    callee->color_status = FunctionData::color_status::non_color;
-  }
-
-  for (const FunctionPtr &caller : colors_functions_graph[callee]) {
-    if (callee->color_status == FunctionData::color_status::call_or_has_color) {
-      propagate_colors_functions_dfs(caller, colors_functions_graph);
+    if (vk::contains(general_callstack, caller)) {
       continue;
     }
 
-    calc_colors_functions_dfs(caller, colors_functions_graph);
+    if (caller == main_func) {
+      main_func->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
+      continue;
+    }
+
+    if (!caller->colors.empty()) {
+      caller->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
+
+      std::forward_list<FunctionPtr> new_callstack;
+      propagate_colors_functions_dfs(caller, caller, new_callstack, general_callstack, false, colors_functions_graph);
+      continue;
+    }
+
+    propagate_colors_functions_dfs(propagate_func, caller, callstack_between_func, general_callstack, false, colors_functions_graph);
   }
+
+  if (!first_frame) {
+    callstack_between_func.pop_front();
+  }
+
+  general_callstack.pop_front();
+}
+
+void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph, std::forward_list<FunctionPtr> &general_callstack) {
+  const auto callee_has_colors = !callee->colors.empty();
+
+  if (callee_has_colors) {
+    std::forward_list<FunctionPtr> callstack_between_func;
+    propagate_colors_functions_dfs(callee, callee, callstack_between_func, general_callstack, true, colors_functions_graph);
+    return;
+  }
+
+  general_callstack.push_front(callee);
+
+  for (const FunctionPtr &caller : colors_functions_graph[callee]) {
+    if (vk::contains(general_callstack, caller)) {
+      continue;
+    }
+
+    calc_colors_functions_dfs(caller, colors_functions_graph, general_callstack);
+  }
+
+  general_callstack.pop_front();
 }
 
 void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges> &all) {
@@ -109,9 +136,8 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
           && edge.called_f->body_seq != FunctionData::body_value::empty) {
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
-      if (fun->color_status == FunctionData::color_status::unknown) {
-        colors_functions_graph[edge.called_f].emplace_back(fun);
-      }
+
+      colors_functions_graph[edge.called_f].emplace_back(fun);
     }
   }
 
@@ -123,10 +149,9 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
     if (fun->body_seq == FunctionData::body_value::non_empty) {
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
     }
-    if (fun->color_status == FunctionData::color_status::unknown) {
-      if (fun->type == FunctionData::func_local) {
-        calc_colors_functions_dfs(fun, colors_functions_graph);
-      }
+    if (fun->type == FunctionData::func_local) {
+      std::forward_list<FunctionPtr> general_callstack;
+      calc_colors_functions_dfs(fun, colors_functions_graph, general_callstack);
     }
   }
 

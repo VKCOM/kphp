@@ -255,9 +255,6 @@ public:
   }
 
   bool need_check(const Callstack &callstack, const FunctionPtr &func) {
-    if (func->color_status != FunctionData::color_status::call_or_has_color) {
-      return false;
-    }
     if (callstack.size() >= 50) {
       return false;
     }
@@ -270,9 +267,6 @@ public:
   void check_func(CallstackColors &colors, Callstack &callstack, const FunctionPtr &func) {
     callstack.push_back(func);
 
-//    fmt_print("{}\n", callstack.format(palette));
-
-    const auto has_colors = !func->colors.empty();
     const auto sep_colors = func->colors.sep_colors();
     for (const auto &sep_color : sep_colors) {
       colors.push_back(sep_color);
@@ -280,7 +274,7 @@ public:
 
     auto need_check_subtree = true;
 
-    if (callstack.size() > 1 && !colors.empty() && has_colors) {
+    if (callstack.size() > 1) {
       const auto matched_rules = match(colors);
 
       if (!matched_rules.empty()) {
@@ -294,12 +288,22 @@ public:
     }
 
     if (need_check_subtree) {
-      for (const auto &next : call_graph.graph[func]) {
-        if (!need_check(callstack, next)) {
+      for (const auto &next : func->next_with_colors) {
+        if (!need_check(callstack, next.first)) {
           continue;
         }
 
-        check_func(colors, callstack, next);
+        size_t count_added = 0;
+        for (const auto &call_func : next.second) {
+          callstack.push_back(call_func);
+          ++count_added;
+        }
+
+        check_func(colors, callstack, next.first);
+
+        for (int i = 0; i < count_added; ++i) {
+          callstack.pop_back();
+        }
       }
     }
 

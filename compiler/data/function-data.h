@@ -108,12 +108,9 @@ public:
   bool is_pure = false;
 
   function_palette::ColorContainer colors{};
-
-  enum class color_status : uint8_t {
-      call_or_has_color,
-      non_color,
-      unknown,
-  } color_status = color_status::unknown;
+  std::map<FunctionPtr, std::forward_list<FunctionPtr>> next_with_colors;
+  bool handled{false};
+  bool propagated{false};
 
   enum class profiler_status : uint8_t {
     disable,
