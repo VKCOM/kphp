@@ -15,6 +15,12 @@
 
 namespace {
 
+enum {
+  ServerLogCritical = -1,
+  ServerLogError = -2,
+  ServerLogWarning = -3
+};
+
 template<size_t N>
 void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<char, N> &buffer, volatile std::atomic<bool> &availability_flag) noexcept {
   if (src.size() <= buffer.size()) {
@@ -237,16 +243,20 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_stack_overflow_log(int type, bool uncaught) noexcept {
-  std::array<void *, 64> trace{};
-  const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
-  write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, uncaught);
-}
-
-void JsonLogger::write_script_timeout_log(int type, bool uncaught) noexcept {
+void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
   std::array<void *, 64> trace{};
   const int trace_size = backtrace(trace.data(), trace.size());
-  write_log(script_timeout_message_.data(), type, time(nullptr), trace.data(), trace_size, uncaught);
+  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
+}
+
+void JsonLogger::write_stack_overflow_log(int type) noexcept {
+  std::array<void *, 64> trace{};
+  const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
+  write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, true);
+}
+
+void JsonLogger::write_script_timeout_log(int type) noexcept {
+  write_log_with_backtrace(script_timeout_message_.data(), type);
 }
 
 void JsonLogger::reset_buffers() noexcept {

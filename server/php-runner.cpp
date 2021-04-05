@@ -31,6 +31,7 @@
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
+#include "server/server-log.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -430,7 +431,7 @@ static void sigalrm_handler(int signum) {
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PHPScriptBase::tl_flag = true;
     if (PHPScriptBase::is_running) {
-      vk::singleton<JsonLogger>::get().write_script_timeout_log(E_ERROR, true);
+      vk::singleton<JsonLogger>::get().write_script_timeout_log(E_ERROR);
     }
     perform_error_if_running("timeout exit\n", script_error_t::timeout);
   }
@@ -515,7 +516,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
 
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
-    vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR, true);
+    vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
     write_str(2, "Error -1: Callstack overflow");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
@@ -527,9 +528,8 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
       PHPScriptBase::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
     }
   } else {
-    char message[32];
-    strcpy(message, signum == SIGBUS ? "SIGBUS" : "SIGSEGV");
-    vk::singleton<JsonLogger>::get().write_log(strcat(message, " terminating program"), -1, cur_time, trace, trace_size, true);
+    const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
+    vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
     vk::singleton<JsonLogger>::get().fsync_log_file();
     write_str(2, "Error -2: Segmentation fault");
     print_http_data();
@@ -548,7 +548,7 @@ void sigabrt_handler(int) {
   if (msg.empty()) {
     msg = "SIGABRT terminating program";
   }
-  vk::singleton<JsonLogger>::get().write_log(msg, -1, cur_time, trace, trace_size, true);
+  vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
   vk::singleton<JsonLogger>::get().fsync_log_file();
 
   print_prologue(cur_time);
@@ -569,7 +569,7 @@ void check_stack_overflow() {
   if (PHPScriptBase::is_running) {
     void *sp = get_sp();
     if (PHPScriptBase::current_script->check_stack_overflow(static_cast<char *>(sp))) {
-      vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR, true);
+      vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
       raise(SIGSTACKOVERFLOW);
       fprintf(stderr, "_exiting in check_stack_overflow\n");
       _exit(1);

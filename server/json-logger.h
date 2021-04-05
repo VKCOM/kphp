@@ -29,8 +29,9 @@ public:
   // ATTENTION: this functions are used in signal handlers, therefore they are expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
   void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
-  void write_stack_overflow_log(int type, bool uncaught) noexcept;
-  void write_script_timeout_log(int type, bool uncaught) noexcept;
+  void write_log_with_backtrace(vk::string_view message, int type) noexcept;
+  void write_stack_overflow_log(int type) noexcept;
+  void write_script_timeout_log(int type) noexcept;
 
   void reset_buffers() noexcept;
 

@@ -19,6 +19,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-sql-connections.cpp
         php-worker.cpp
         php-worker-stats.cpp
+        server-log.cpp
         slot-ids-factory.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
