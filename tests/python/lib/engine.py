@@ -229,6 +229,7 @@ class Engine:
 
         s = time.time()
         done = False
+        got_added_stats = {}
         while not done:
             try:
                 got_stats = self.get_stats(prefix, timeout - (time.time() - s))
@@ -240,7 +241,13 @@ class Engine:
                     indent=2,
                     default=lambda obj: str(obj)
                 )
-                raise RuntimeError("{}; Expected: {}".format(message, expected_str))
+                got_str = json.dumps(
+                    obj={k: got_added_stats.get(k) for k in expected_added_stats.keys()},
+                    sort_keys=True,
+                    indent=2,
+                    default=lambda obj: str(obj)
+                )
+                raise RuntimeError("{}; Expected: {}\nGot: {}\n".format(message, expected_str, got_str))
             done = True
             for k, v in expected_added_stats.items():
                 if k not in got_added_stats or v != got_added_stats[k]:
