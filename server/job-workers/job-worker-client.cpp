@@ -18,6 +18,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/php-engine.h"
 #include "server/php-queries.h"
+#include "server/server-log.h"
 
 namespace job_workers {
 
@@ -27,12 +28,12 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
   auto &job_worker_client = vk::singleton<JobWorkerClient>::get();
   assert(fd == job_worker_client.read_job_result_fd);
   if (ev->ready & EVT_SPEC) {
-    kprintf("job worker client special event: fd = %d, flags = %d\n", fd, ev->ready);
+    log_server_error("job worker client special event: fd = %d, flags = %d\n", fd, ev->ready);
     // TODO:
     return 0;
   }
   if (!(ev->ready & EVT_READ)) {
-    kprintf("Strange event in client: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
+    log_server_error("Strange event in client: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
     return 0;
   }
 

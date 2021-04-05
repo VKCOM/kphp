@@ -19,6 +19,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
+#include "server/server-log.h"
 
 namespace job_workers {
 
@@ -216,7 +217,7 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   }
   auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
   if (!response_memory) {
-    kprintf("Can't store job response error: not enough shared memory");
+    log_server_error("Can't store job response error: not enough shared memory");
     return;
   }
 
@@ -232,7 +233,7 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
 
   if (const char *err = send_job_reply(response_memory)) {
     vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
-    kprintf("Can't store job response: %s", err);
+    log_server_error("Can't store job response: %s", err);
   }
 }
 

@@ -17,7 +17,7 @@ enum class ServerLog {
 // This api should be used only from the master process or from the worker processes net coroutine context
 void write_log_server_impl(ServerLog type, const char *format, ...) noexcept __attribute__ ((format (printf, 2, 3)));
 
-#define log_server_critical(format, ...) write_log_server_impl(ServerLog::Critical, format, __VA_ARGS__)
-#define log_server_error(format, ...) write_log_server_impl(ServerLog::Error, format, __VA_ARGS__)
-#define log_server_warning(format, ...) write_log_server_impl(ServerLog::Warning, format, __VA_ARGS__)
+#define log_server_critical(...) write_log_server_impl(ServerLog::Critical, __VA_ARGS__)
+#define log_server_error(...) write_log_server_impl(ServerLog::Error, __VA_ARGS__)
+#define log_server_warning(...) write_log_server_impl(ServerLog::Warning, __VA_ARGS__)
 
