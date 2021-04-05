@@ -164,13 +164,17 @@ class KphpServerAutoTestCase(BaseTestCase):
         pathlib.Path(kphp_build_lock_file, exist_ok=True).touch()
         with open(kphp_build_lock_file, "r+") as lock:
             portalocker.lock(lock, portalocker.LOCK_EX)
+            kphp_env = {
+                # disable KPHP_DYNAMIC_INCREMENTAL_LINKAGE to avoid compilation races
+                "KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0",
+                "KPHP_VERBOSITY": "3",
+            }
             if tl_schema_required:
-                os.environ["KPHP_GEN_TL_INTERNALS"] = "1"
-                os.environ["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
+                kphp_env["KPHP_GEN_TL_INTERNALS"] = "1"
+                kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
             print("\nCompiling kphp server")
-            # Специально выключаем KPHP_DYNAMIC_INCREMENTAL_LINKAGE, чтобы не было рейзов
-            if not cls.kphp_builder.compile_with_kphp({"KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0"}):
+            if not cls.kphp_builder.compile_with_kphp(kphp_env):
                 raise RuntimeError("Can't compile php script")
             cls.kphp_server_bin = os.path.join(cls.kphp_server_working_dir, "kphp_server")
             os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)
