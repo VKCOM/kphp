@@ -31,8 +31,9 @@ bool f$is_kphp_job_workers_enabled() noexcept {
 }
 
 void global_init_job_workers_lib() noexcept {
+  // Always init the job stats, because the instance of stats can be used without job workers
+  job_workers::JobStats::get();
   if (f$is_kphp_job_workers_enabled()) {
-    job_workers::JobStats::get();
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
     job_timeout_wakeup_id = register_wakeup_callback(&process_job_timeout);
   }
