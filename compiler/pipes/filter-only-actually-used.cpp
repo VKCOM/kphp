@@ -54,8 +54,12 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
   }
 }
 
-void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr callee, std::forward_list<FunctionPtr> &callstack_between_func, std::forward_list<FunctionPtr> &general_callstack, bool first_frame, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
-  general_callstack.push_front(callee);
+void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr callee, std::forward_list<FunctionPtr> &callstack_between_func, bool first_frame, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  if (callee->propagated_last == propagate_func) {
+    return;
+  }
+
+  callee->propagated_last = propagate_func;
 
   if (!first_frame) {
     callstack_between_func.push_front(callee);
@@ -64,10 +68,6 @@ void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr call
   const auto main_func = G->get_main_file()->main_function;
 
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
-    if (vk::contains(general_callstack, caller)) {
-      continue;
-    }
-
     if (caller == main_func) {
       main_func->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
       continue;
@@ -77,40 +77,36 @@ void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr call
       caller->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
 
       std::forward_list<FunctionPtr> new_callstack;
-      propagate_colors_functions_dfs(caller, caller, new_callstack, general_callstack, false, colors_functions_graph);
+      propagate_colors_functions_dfs(caller, caller, new_callstack, false, colors_functions_graph);
       continue;
     }
 
-    propagate_colors_functions_dfs(propagate_func, caller, callstack_between_func, general_callstack, false, colors_functions_graph);
+    propagate_colors_functions_dfs(propagate_func, caller, callstack_between_func, false, colors_functions_graph);
   }
 
   if (!first_frame) {
     callstack_between_func.pop_front();
   }
-
-  general_callstack.pop_front();
 }
 
-void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph, std::forward_list<FunctionPtr> &general_callstack) {
+void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+  if (callee->color_status != FunctionData::color_status::unknown) {
+    return;
+  }
+
   const auto callee_has_colors = !callee->colors.empty();
 
   if (callee_has_colors) {
     std::forward_list<FunctionPtr> callstack_between_func;
-    propagate_colors_functions_dfs(callee, callee, callstack_between_func, general_callstack, true, colors_functions_graph);
+    propagate_colors_functions_dfs(callee, callee, callstack_between_func, true, colors_functions_graph);
     return;
   }
 
-  general_callstack.push_front(callee);
+  callee->color_status = FunctionData::color_status::non_color;
 
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
-    if (vk::contains(general_callstack, caller)) {
-      continue;
-    }
-
-    calc_colors_functions_dfs(caller, colors_functions_graph, general_callstack);
+    calc_colors_functions_dfs(caller, colors_functions_graph);
   }
-
-  general_callstack.pop_front();
 }
 
 void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges> &all) {
@@ -150,8 +146,7 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
     }
     if (fun->type == FunctionData::func_local) {
-      std::forward_list<FunctionPtr> general_callstack;
-      calc_colors_functions_dfs(fun, colors_functions_graph, general_callstack);
+      calc_colors_functions_dfs(fun, colors_functions_graph);
     }
   }
 

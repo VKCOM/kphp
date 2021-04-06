@@ -109,8 +109,13 @@ public:
 
   function_palette::ColorContainer colors{};
   std::map<FunctionPtr, std::forward_list<FunctionPtr>> next_with_colors;
-  bool handled{false};
-  bool propagated{false};
+
+  FunctionPtr propagated_last;
+  enum class color_status : uint8_t {
+      call_or_has_color,
+      non_color,
+      unknown,
+  } color_status = color_status::unknown;
 
   enum class profiler_status : uint8_t {
     disable,

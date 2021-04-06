@@ -42,3 +42,5 @@ function highloadToo(int $a) {
         highload($a);
     }
 }
+
+highload((int)$_POST["id"]);
