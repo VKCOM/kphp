@@ -77,7 +77,7 @@ void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr call
       caller->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
 
       std::forward_list<FunctionPtr> new_callstack;
-      propagate_colors_functions_dfs(caller, caller, new_callstack, false, colors_functions_graph);
+      propagate_colors_functions_dfs(caller, caller, new_callstack, true, colors_functions_graph);
       continue;
     }
 
