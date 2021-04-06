@@ -548,8 +548,6 @@ private:
   }
 };
 
-int count_set_colors = 0;
-
 void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
   if (function->is_template) {
     return;
@@ -558,16 +556,6 @@ void PreprocessFunctionF::execute(FunctionPtr function, OStreamT &os) {
   PreprocessFunctionPass pass(tmp_stream);
 
   run_function_pass(function, &pass);
-
-  if (function->name.find("api") == 0) {
-    function->colors.add(G->get_function_palette().parse_color("api"));
-    ++count_set_colors;
-    fmt_print("set {} color\n", count_set_colors);
-  } else if (function->name.find("curl") == 0) {
-    function->colors.add(G->get_function_palette().parse_color("has-curl"));
-    ++count_set_colors;
-    fmt_print("set {} color\n", count_set_colors);
-  }
 
   for (auto fun: tmp_stream.flush()) {
     *os.project_to_nth_data_stream<1>() << fun;
