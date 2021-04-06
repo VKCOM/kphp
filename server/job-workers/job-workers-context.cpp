@@ -10,6 +10,7 @@
 
 #include "common/macos-ports.h"
 #include "server/job-workers/job-workers-context.h"
+#include "server/server-log.h"
 
 DEFINE_VERBOSITY(job_workers);
 
@@ -22,7 +23,7 @@ void JobWorkersContext::master_init_pipes(int job_result_slots_num) {
 
   int err = pipe2(job_pipe.data(), O_NONBLOCK);
   if (err) {
-    kprintf("Unable to create job pipe: %s", strerror(errno));
+    log_server_critical("Unable to create job pipe: %s", strerror(errno));
     assert(false);
     return;
   }
@@ -32,7 +33,7 @@ void JobWorkersContext::master_init_pipes(int job_result_slots_num) {
     auto &result_pipe = result_pipes.at(i);
     err = pipe2(result_pipe.data(), O_NONBLOCK);
     if (err) {
-      kprintf("Unable to create job result pipe: %s", strerror(errno));
+      log_server_critical("Unable to create job result pipe: %s", strerror(errno));
       assert(false);
       return;
     }

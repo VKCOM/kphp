@@ -299,7 +299,7 @@ class_instance<T> copy_instance_into_other_memory(const class_instance<T> &insta
   class_instance<T> copied_instance = instance;
   InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt};
   copyVisitor.process(copied_instance);
-  if (unlikely(copyVisitor.is_depth_limit_exceeded())) {
+  if (unlikely(copyVisitor.is_depth_limit_exceeded() || copyVisitor.is_memory_limit_exceeded())) {
     InstanceDeepDestroyVisitor{memory_ref_cnt}.process(copied_instance);
     copied_instance = class_instance<T>{};
   }
@@ -313,7 +313,7 @@ class_instance<T> copy_instance_into_script_memory(const class_instance<T> &inst
   class_instance<T> copied_instance = instance;
   InstanceDeepCopyVisitor copyVisitor{dl::get_default_script_allocator()};
   copyVisitor.process(copied_instance);
-  if (unlikely(copyVisitor.is_depth_limit_exceeded())) {
+  if (unlikely(copyVisitor.is_depth_limit_exceeded() || copyVisitor.is_memory_limit_exceeded())) {
     copied_instance = class_instance<T>{};
   }
   return copied_instance;
