@@ -140,6 +140,16 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
 
+      if (fun->name.find("api") == 0) {
+        fun->colors.add(G->get_function_palette().parse_color("api"));
+        ++count_set_colors;
+        fmt_print("set {} color\n", count_set_colors);
+      } else if (fun->name.find("curl") == 0) {
+        fun->colors.add(G->get_function_palette().parse_color("has-curl"));
+        ++count_set_colors;
+        fmt_print("set {} color\n", count_set_colors);
+      }
+
       colors_functions_graph[edge.called_f].emplace_back(fun);
     }
   }
@@ -153,15 +163,6 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
     }
     if (fun->type == FunctionData::func_local) {
-      if (fun->name.find("api") == 0) {
-        fun->colors.add(G->get_function_palette().parse_color("api"));
-        ++count_set_colors;
-        fmt_print("set {} color\n", count_set_colors);
-      } else if (fun->name.find("curl") == 0) {
-        fun->colors.add(G->get_function_palette().parse_color("has-curl"));
-        ++count_set_colors;
-        fmt_print("set {} color\n", count_set_colors);
-      }
       {
         AutoProfiler pp{get_p_check_func()};
         calc_colors_functions_dfs(fun, colors_functions_graph);
