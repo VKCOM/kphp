@@ -230,6 +230,11 @@ public:
   }
 };
 
+ProfilerRaw &get_p_check_func() {
+  static CachedProfiler profiler{"!!! check color func"};
+  return *profiler;
+}
+
 class CheckFunctionsColors {
   FuncCallGraph call_graph;
   function_palette::Palette palette;
@@ -251,7 +256,10 @@ public:
       return;
     }
 
-    check_func(colors, callstack, main_func);
+    {
+      AutoProfiler pp{get_p_check_func()};
+      check_func(colors, callstack, main_func);
+    }
   }
 
   bool need_check(const Callstack &callstack, const FunctionPtr &func) {

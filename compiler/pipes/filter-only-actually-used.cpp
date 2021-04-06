@@ -109,6 +109,11 @@ void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<Funct
   }
 }
 
+ProfilerRaw &get_p_check_func() {
+  static CachedProfiler profiler{"!!! set link for functions with color"};
+  return *profiler;
+}
+
 void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges> &all) {
   IdMap<std::vector<ThrowGraphNode>> throws_graph(static_cast<int>(all.size()));
   IdMap<std::vector<FunctionPtr>> non_empty_body_graph(static_cast<int>(all.size()));
@@ -133,7 +138,10 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
 
-      colors_functions_graph[edge.called_f].emplace_back(fun);
+      {
+        AutoProfiler pp{get_p_check_func()};
+        colors_functions_graph[edge.called_f].emplace_back(fun);
+      }
     }
   }
 
