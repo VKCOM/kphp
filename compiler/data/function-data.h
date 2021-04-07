@@ -108,7 +108,7 @@ public:
   bool is_pure = false;
 
   function_palette::ColorContainer colors{};
-  std::map<FunctionPtr, std::forward_list<FunctionPtr>> next_with_colors;
+  std::forward_list<FunctionPtr> next_with_colors;
 
   FunctionPtr propagated_last;
   enum class color_status : uint8_t {

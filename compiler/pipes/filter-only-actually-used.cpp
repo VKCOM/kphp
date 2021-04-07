@@ -54,38 +54,29 @@ void calc_non_empty_body_dfs(FunctionPtr callee, const IdMap<std::vector<Functio
   }
 }
 
-void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr callee, std::forward_list<FunctionPtr> &callstack_between_func, bool first_frame, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
+void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr callee, const IdMap<std::vector<FunctionPtr>> &colors_functions_graph) {
   if (callee->propagated_last == propagate_func) {
     return;
   }
 
   callee->propagated_last = propagate_func;
 
-  if (!first_frame) {
-    callstack_between_func.push_front(callee);
-  }
-
   const auto main_func = G->get_main_file()->main_function;
 
   for (const FunctionPtr &caller : colors_functions_graph[callee]) {
     if (caller == main_func) {
-      main_func->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
+      main_func->next_with_colors.push_front(propagate_func);
       continue;
     }
 
     if (!caller->colors.empty()) {
-      caller->next_with_colors.insert(std::make_pair(propagate_func, callstack_between_func));
+      caller->next_with_colors.push_front(propagate_func);
 
-      std::forward_list<FunctionPtr> new_callstack;
-      propagate_colors_functions_dfs(caller, caller, new_callstack, true, colors_functions_graph);
+      propagate_colors_functions_dfs(caller, caller, colors_functions_graph);
       continue;
     }
 
-    propagate_colors_functions_dfs(propagate_func, caller, callstack_between_func, false, colors_functions_graph);
-  }
-
-  if (!first_frame) {
-    callstack_between_func.pop_front();
+    propagate_colors_functions_dfs(propagate_func, caller, colors_functions_graph);
   }
 }
 
@@ -97,8 +88,7 @@ void calc_colors_functions_dfs(FunctionPtr callee, const IdMap<std::vector<Funct
   const auto callee_has_colors = !callee->colors.empty();
 
   if (callee_has_colors) {
-    std::forward_list<FunctionPtr> callstack_between_func;
-    propagate_colors_functions_dfs(callee, callee, callstack_between_func, true, colors_functions_graph);
+    propagate_colors_functions_dfs(callee, callee, colors_functions_graph);
     return;
   }
 

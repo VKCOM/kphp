@@ -236,14 +236,12 @@ ProfilerRaw &get_p_check_func() {
 }
 
 class CheckFunctionsColors {
-  FuncCallGraph call_graph;
   function_palette::Palette palette;
-
   std::unordered_set<size_t> handled;
 
 public:
-  CheckFunctionsColors(const FuncCallGraph &call_graph)
-    : call_graph(call_graph), palette(G->get_function_palette()) {}
+  CheckFunctionsColors()
+    : palette(G->get_function_palette()) {}
 
 public:
   void check() {
@@ -297,21 +295,11 @@ public:
 
     if (need_check_subtree) {
       for (const auto &next : func->next_with_colors) {
-        if (!need_check(callstack, next.first)) {
+        if (!need_check(callstack, next)) {
           continue;
         }
 
-        size_t count_added = 0;
-        for (const auto &call_func : next.second) {
-          callstack.push_back(call_func);
-          ++count_added;
-        }
-
-        check_func(colors, callstack, next.first);
-
-        for (int i = 0; i < count_added; ++i) {
-          callstack.pop_back();
-        }
+        check_func(colors, callstack, next);
       }
     }
 
@@ -632,7 +620,7 @@ public:
       FuncCallGraph call_graph(std::move(functions), dep_datas);
       calc_resumable(call_graph, dep_datas);
       generate_bad_vars(call_graph, dep_datas);
-      CheckFunctionsColors(call_graph).check();
+      CheckFunctionsColors().check();
       save_func_dep(call_graph);
     }
 
