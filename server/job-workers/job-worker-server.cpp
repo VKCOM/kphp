@@ -221,15 +221,7 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
     return;
   }
 
-  dl::set_current_script_allocator(response_memory->resource, false);
-
-  class_instance<C$KphpJobWorkerResponseError> error;
-  error.alloc();  // TODO: handle OOM
-  error.get()->error = string{error_msg};
-  error.get()->error_code = error_code;
-  response_memory->instance = std::move(error);
-
-  dl::restore_default_script_allocator(false);
+  response_memory->instance = create_error_on_other_memory(error_code, error_msg, response_memory->resource);
 
   if (const char *err = send_job_reply(response_memory)) {
     vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);

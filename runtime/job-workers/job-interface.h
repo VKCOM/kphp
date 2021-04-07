@@ -89,6 +89,9 @@ class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__con
 string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
 int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
 
+class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char *error_msg,
+                                                                          memory_resource::unsynchronized_pool_resource &resource) noexcept;
+
 bool f$is_kphp_job_workers_enabled() noexcept;
 
 void global_init_job_workers_lib() noexcept;

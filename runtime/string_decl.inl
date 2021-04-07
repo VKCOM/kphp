@@ -183,6 +183,7 @@ public:
   inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
   inline size_type estimate_memory_usage() const;
+  inline static size_type estimate_memory_usage(size_t len) noexcept;
 
   inline static constexpr size_t inner_sizeof() noexcept { return sizeof(string_inner); }
   inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size);

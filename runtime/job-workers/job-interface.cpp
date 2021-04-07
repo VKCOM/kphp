@@ -70,3 +70,19 @@ string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResp
 int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
   return v$this.get()->error_code;
 }
+
+class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char *error_msg,
+                                                                          memory_resource::unsynchronized_pool_resource &resource) noexcept {
+  dl::set_current_script_allocator(resource, false);
+  class_instance<C$KphpJobWorkerResponseError> error;
+  assert(resource.is_enough_memory_for(sizeof(C$KphpJobWorkerResponseError)));
+  error.alloc();
+
+  const size_t error_msg_len = std::min(std::strlen(error_msg), size_t{512});
+  assert(resource.is_enough_memory_for(string::estimate_memory_usage(error_msg_len)));
+  error.get()->error = string{error_msg, static_cast<string::size_type>(error_msg_len)};
+  error.get()->error_code = error_code;
+
+  dl::restore_default_script_allocator(false);
+  return error;
+}
