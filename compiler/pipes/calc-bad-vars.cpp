@@ -165,33 +165,6 @@ public:
     return vk::contains(data_set, el);
   }
 
-  std::string format(const function_palette::Palette &palette) const {
-    if (data.empty()) {
-      return "";
-    }
-
-    std::string desc;
-
-    for (auto it = begin; it != end; ++it) {
-      const auto frame = *it;
-      const auto name = frame->get_human_readable_name() + "()";
-
-      desc += "  ";
-      desc += TermStringFormat::paint(name, TermStringFormat::yellow);
-
-      if (!frame->colors.empty()) {
-        desc += " with following ";
-        desc += frame->colors.to_string(palette);
-      }
-
-      if (it != end - 1) {
-        desc += "\n\n";
-      }
-    }
-
-    return desc;
-  }
-
   size_t hash() {
     return front()->id + (back()->id * 100);
   }
@@ -236,12 +209,13 @@ ProfilerRaw &get_p_check_func() {
 }
 
 class CheckFunctionsColors {
+  FuncCallGraph call_graph;
   function_palette::Palette palette;
   std::unordered_set<size_t> handled;
 
 public:
-  CheckFunctionsColors()
-    : palette(G->get_function_palette()) {}
+  CheckFunctionsColors(FuncCallGraph& call_graph)
+    : call_graph(call_graph), palette(G->get_function_palette()) {}
 
 public:
   void check() {
@@ -381,6 +355,62 @@ public:
     return rules;
   }
 
+  bool find_callstack(FunctionPtr start, FunctionPtr end, std::vector<FunctionPtr> &callstack) {
+    if (callstack.size() > 20) {
+      return false;
+    }
+
+    callstack.push_back(start);
+
+    const auto callees = call_graph.graph[start];
+    for (const auto &callee : callees) {
+      if (callee->color_status == FunctionData::color_status::non_color) {
+        continue;
+      }
+
+      if (callee == end) {
+        callstack.push_back(callee);
+        return true;
+      }
+
+      const auto found = find_callstack(callee, end, callstack);
+      if (!found) {
+        continue;
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  std::string format_callstack(std::vector<FunctionPtr> &callstack) const {
+    if (callstack.empty()) {
+      return "";
+    }
+
+    std::string desc;
+
+    for (auto it = callstack.begin(); it != callstack.end(); ++it) {
+      const auto frame = *it;
+      const auto name = frame->get_human_readable_name() + "()";
+
+      desc += "  ";
+      desc += TermStringFormat::paint(name, TermStringFormat::yellow);
+
+      if (!frame->colors.empty()) {
+        desc += " with following ";
+        desc += frame->colors.to_string(palette);
+      }
+
+      if (it != callstack.end() - 1) {
+        desc += "\n\n";
+      }
+    }
+
+    return desc;
+  }
+
   void error(Callstack& callstack, const function_palette::Rule &rule) {
     callstack.narrow(rule);
 
@@ -394,9 +424,16 @@ public:
     }
     handled.insert(hash);
 
+    std::vector<FunctionPtr> found_callstack;
+    found_callstack.reserve(20);
+    const auto found = find_callstack(callstack.front(), callstack.back(), found_callstack);
+    if (!found) {
+
+    }
+
     const auto parent_name = callstack.front()->get_human_readable_name() + "()";
     const auto child_name = callstack.back()->get_human_readable_name() + "()";
-    const auto callstack_format = callstack.format(palette);
+    const auto callstack_format = format_callstack(found_callstack);
 
     callstack.reset_narrow();
 
@@ -620,7 +657,7 @@ public:
       FuncCallGraph call_graph(std::move(functions), dep_datas);
       calc_resumable(call_graph, dep_datas);
       generate_bad_vars(call_graph, dep_datas);
-      CheckFunctionsColors().check();
+      CheckFunctionsColors(call_graph).check();
       save_func_dep(call_graph);
     }
 

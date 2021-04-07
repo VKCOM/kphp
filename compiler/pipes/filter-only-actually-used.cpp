@@ -60,6 +60,7 @@ void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr call
   }
 
   callee->propagated_last = propagate_func;
+  callee->color_status = FunctionData::color_status::call_or_has_color;
 
   const auto main_func = G->get_main_file()->main_function;
 
@@ -71,7 +72,6 @@ void propagate_colors_functions_dfs(FunctionPtr propagate_func, FunctionPtr call
 
     if (!caller->colors.empty()) {
       caller->next_with_colors.push_front(propagate_func);
-
       propagate_colors_functions_dfs(caller, caller, colors_functions_graph);
       continue;
     }
@@ -104,8 +104,6 @@ ProfilerRaw &get_p_check_func() {
   return *profiler;
 }
 
-int count_set_colors = 0;
-
 void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges> &all) {
   IdMap<std::vector<ThrowGraphNode>> throws_graph(static_cast<int>(all.size()));
   IdMap<std::vector<FunctionPtr>> non_empty_body_graph(static_cast<int>(all.size()));
@@ -130,16 +128,6 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
 
-      if (fun->name.find("api") == 0) {
-        fun->colors.add(G->get_function_palette().parse_color("api"));
-        ++count_set_colors;
-        fmt_print("set {} color\n", count_set_colors);
-      } else if (fun->name.find("curl") == 0) {
-        fun->colors.add(G->get_function_palette().parse_color("has-curl"));
-        ++count_set_colors;
-        fmt_print("set {} color\n", count_set_colors);
-      }
-
       colors_functions_graph[edge.called_f].emplace_back(fun);
     }
   }
@@ -152,7 +140,7 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
     if (fun->body_seq == FunctionData::body_value::non_empty) {
       calc_non_empty_body_dfs(fun, non_empty_body_graph);
     }
-    if (fun->type == FunctionData::func_local) {
+    if (fun->type == FunctionData::func_local && !fun->colors.empty()) {
       {
         AutoProfiler pp{get_p_check_func()};
         calc_colors_functions_dfs(fun, colors_functions_graph);
