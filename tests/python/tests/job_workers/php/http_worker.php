@@ -49,15 +49,20 @@ function send_jobs($context, float $timeout = -1.0): array {
     $req->arr_request = (array)$arr;
     $req->sleep_time_sec = (int)$context["job-sleep-time-sec"];
     $req->error_type = (string)$context["error-type"];
-    $ids[] = kphp_job_worker_start($req, $timeout);
+    $id = kphp_job_worker_start($req, $timeout);
+    if ($id) {
+      $ids[] = $id;
+    } else {
+      critical_error("Can't send job");
+    }
   }
   return $ids;
 }
 
-function gather_jobs(array $ids): array {
+function gather_jobs(array $ids, bool $use_wait = false): array {
   $result = [];
   foreach($ids as $id) {
-    $resp = kphp_job_worker_wait($id);
+    $resp = $use_wait ? wait($id) : kphp_job_worker_wait($id);
     if ($resp instanceof X2Response) {
       $result[] = ["data" => $resp->arr_reply, "stats" => $resp->stats];
     } else if ($resp instanceof KphpJobWorkerResponseError) {
@@ -115,9 +120,9 @@ function test_jobs_in_wait_queue() {
   $context = json_decode(file_get_contents('php://input'));
   $ids = send_jobs($context);
 
-  $wait_queue = rpc_queue_create($ids);
+  $wait_queue = wait_queue_create($ids);
 
-  $id = rpc_queue_next($wait_queue, 0.2);
+  $id = wait_queue_next($wait_queue, 0.2);
   if ($id !== false) {
     raise_error("Too short wait time in wait_queue");
     return;
@@ -125,13 +130,13 @@ function test_jobs_in_wait_queue() {
 
   $job_sleep_time = (float)$context["job-sleep-time-sec"];
   $result = [];
-  while (!rpc_queue_empty($wait_queue)) {
-    $ready_id = rpc_queue_next($wait_queue, $job_sleep_time + 0.2);
+  while (!wait_queue_empty($wait_queue)) {
+    $ready_id = wait_queue_next($wait_queue, $job_sleep_time + 0.2);
     if ($ready_id === false) {
       raise_error("Too long wait time in wait_queue");
       return;
     }
-    $result[$ready_id] = gather_jobs([$ready_id])[0];
+    $result[$ready_id] = gather_jobs([$ready_id], true)[0];
   }
   ksort($result);
 
