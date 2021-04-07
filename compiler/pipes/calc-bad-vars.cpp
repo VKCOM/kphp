@@ -369,7 +369,6 @@ public:
       }
 
       if (callee == end) {
-        callstack.push_back(callee);
         return true;
       }
 
@@ -380,6 +379,8 @@ public:
 
       return true;
     }
+
+    callstack.pop_back();
 
     return false;
   }
@@ -427,8 +428,8 @@ public:
     std::vector<FunctionPtr> found_callstack;
     found_callstack.reserve(20);
     const auto found = find_callstack(callstack.front(), callstack.back(), found_callstack);
-    if (!found) {
-
+    if (found) {
+      found_callstack.push_back(callstack.back());
     }
 
     const auto parent_name = callstack.front()->get_human_readable_name() + "()";
