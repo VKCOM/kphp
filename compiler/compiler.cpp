@@ -241,6 +241,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<ResolveSelfStaticParentPass>{}
     >> PassC<RegisterDefinesPass>{}
     >> SyncC<CalcRealDefinesValuesF>{}
+    >> SyncC<RegisterKphpConfiguration>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
@@ -290,7 +291,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CheckAccessModifiersPass>{}
     >> PassC<AnalyzePerformance>{}
     >> PassC<FinalCheckPass>{}
-    >> PassC<RegisterKphpConfiguration>{}
     >> PassC<CollectForkableTypesPass>{}
     >> SyncC<CodeGenF>{}              // create all codegen commands and launch them in "just calc hashes" mode
     >> PipeC<CodeGenForDiffF>{}       // re-launch codegen commands that diff from the previous kphp launch

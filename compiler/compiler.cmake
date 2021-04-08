@@ -168,6 +168,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         cpp-dest-dir-initializer.cpp
         debug.cpp
         compiler-settings.cpp
+        function-colors.cpp
         gentree.cpp
         index.cpp
         lexer.cpp
