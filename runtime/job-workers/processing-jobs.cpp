@@ -56,10 +56,10 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
     error.alloc();
     if (timeout) {
       error.get()->error = string{"Job client timeout"};
-      error.get()->error_code = -102;
+      error.get()->error_code = client_timeout_error;
     } else {
       error.get()->error = string{"Not enough memory for accepting job response"};
-      error.get()->error_code = -103;
+      error.get()->error_code = client_oom_error;
     }
     ready_job.response = std::move(error);
   }

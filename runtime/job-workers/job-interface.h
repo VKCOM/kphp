@@ -21,6 +21,12 @@ class InstanceMemoryEstimateVisitor;
 
 namespace job_workers {
 
+enum {
+  server_php_script_error_offset = -100,
+  client_timeout_error = -1001,
+  client_oom_error = -1002
+};
+
 struct SendingInstanceBase : abstract_refcountable_php_interface {
   virtual const char *get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
