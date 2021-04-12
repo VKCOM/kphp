@@ -75,14 +75,14 @@ private:
   double timeout;
 };
 
-int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't send job: job workers disabled");
-    return -1;
+    return false;
   }
   if (request.is_null()) {
     php_warning("Can't send job: the request shouldn't be null");
-    return -1;
+    return false;
   }
   if (timeout < 0) {
     timeout = DEFAULT_SCRIPT_TIMEOUT;
@@ -95,14 +95,14 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   auto *memory_request = memory_manager.acquire_shared_message();
   if (memory_request == nullptr) {
     php_warning("Can't send job: not enough shared memory");
-    return -1;
+    return false;
   }
 
   memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource, ExtraRefCnt::for_job_worker_communication);
   if (memory_request->instance.is_null()) {
     memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: too big request");
-    return -1;
+    return false;
   }
 
   auto now = std::chrono::system_clock::now();
@@ -113,7 +113,7 @@ int64_t f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &re
   if (job_id <= 0) {
     memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: probably jobs queue is full");
-    return -1;
+    return false;
   }
 
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});
