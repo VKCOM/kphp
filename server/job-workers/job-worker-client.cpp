@@ -49,10 +49,8 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
     if (status == PipeJobReader::READ_OK) {
       tvkprintf(job_workers, 2, "got job result: ready_job_id = %d, job_result_memory_ptr = %p\n", job_result->job_id, job_result);
       vk::singleton<SharedMemoryManager>::get().attach_shared_message_to_this_proc(job_result);
-      int event_status = create_job_worker_answer_event(job_result);
-      if (event_status <= 0) {
-        vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
-      }
+      const int event_status = create_job_worker_answer_event(job_result);
+      vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
       on_net_event(event_status);
     }
   } while (status != PipeJobReader::READ_BLOCK);

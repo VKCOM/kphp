@@ -45,7 +45,7 @@ void free_job_workers_interface_lib() noexcept {
   }
 }
 
-void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
+void process_job_answer(int job_id, job_workers::FinishedJob *job_result) noexcept {
   int64_t job_resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().finish_job_on_answer(job_id, job_result);
 
   if (job_resumable_id == 0) {

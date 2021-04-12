@@ -38,6 +38,8 @@ struct SendingInstanceBase : abstract_refcountable_php_interface {
   virtual ~SendingInstanceBase() = default;
 };
 
+struct FinishedJob;
+
 struct JobSharedMessage;
 
 } // job_workers
@@ -99,6 +101,6 @@ void free_job_workers_interface_lib() noexcept;
 
 int get_job_timeout_wakeup_id();
 
-void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+void process_job_answer(int job_id, job_workers::FinishedJob *job_result) noexcept;
 
 void process_job_timeout(int job_id) noexcept;
