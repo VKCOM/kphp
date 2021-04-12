@@ -28,6 +28,7 @@ class KphpServer(Engine):
             "kphp_server_{}".format("".join(chr(ord('A') + int(c)) for c in str(self._http_port)))
         self._options["--disable-sql"] = True
         self._options["--workers-num"] = 2
+        self._options["--allow-loopback"] = None
         self._json_log_file_read_fd = None
         self._json_logs = []
         if options:
