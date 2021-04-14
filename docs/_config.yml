@@ -19,6 +19,7 @@ url_website_kphpstorm: https://unserialize.github.io/kphpstorm/
 url_package_curl: https://github.com/VKCOM/curl/tree/dpkg-build-7.60.0
 url_package_h3: https://github.com/VKCOM/uber-h3/tree/dpkg-build
 url_package_epoll_shim: https://github.com/VKCOM/epoll-shim/tree/osx-platform
+url_package_timelib: https://github.com/VKCOM/timelib/tree/master
 
 copyright:
   revision: false
