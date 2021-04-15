@@ -293,7 +293,7 @@ VertexRange FunctionData::get_params() const {
   return root->param_list()->params();
 }
 
-bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
+bool FunctionData::can_take_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
   if (!called_func) {
     return false;
   }

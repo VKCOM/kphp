@@ -131,7 +131,7 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
   auto func_param_callback = callback_it->as<op_func_param>();
   const auto *type_hint_callable = func_param_callback->type_hint->try_as<TypeHintCallable>();
-  if (!FunctionData::check_cnt_params(type_hint_callable->arg_types.size(), *template_of_invoke_method)) {
+  if (!FunctionData::can_take_cnt_params(type_hint_callable->arg_types.size(), *template_of_invoke_method)) {
     return "";
   }
 

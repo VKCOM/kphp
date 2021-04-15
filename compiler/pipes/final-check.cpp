@@ -156,7 +156,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     }
 
     auto expected_arguments_count = type_hint_callable->arg_types.size();
-    if (!FunctionData::check_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
+    if (!FunctionData::can_take_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
       continue;
     }
   }
