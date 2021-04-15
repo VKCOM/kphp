@@ -52,14 +52,17 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
 
   for (int i = 0; i < call_params.size(); i++) {
     auto func_param = func_params[i].as<op_func_param>();
-    if (f->is_extern() && func_param->type_hint && func_param->type_hint->try_as<TypeHintCallable>()) {
+    if (!f->is_extern() || !func_param->type_hint) {
+      continue;
+    }
+    if (const auto *param_type_hint = func_param->type_hint->try_as<TypeHintCallable>()) {
       auto call_param = call_params[i].try_as<op_func_ptr>();
       kphp_error_return(call_param,
                         fmt_format("Argument '{}' should be function pointer, but {} found",
                                    func_param->var()->get_string(),
                                    OpInfo::str(call_params[i]->type())));
 
-      if (!call_param->func_id->can_take_cnt_params(func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size())) {
+      if (!call_param->func_id->can_take_cnt_params(param_type_hint->arg_types.size())) {
         return;
       }
     }
