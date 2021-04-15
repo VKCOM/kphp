@@ -9,9 +9,11 @@ InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized
   memory_pool_(memory_pool) {
 }
 
-InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept:
+InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
+                                                 ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept:
   Basic(*this, true, memory_ref_cnt),
-  memory_pool_(memory_pool) {
+  memory_pool_(memory_pool),
+  oom_callback_(oom_callback) {
 }
 
 InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:

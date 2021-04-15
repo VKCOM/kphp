@@ -10,9 +10,10 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
-namespace job_workers {
+#include "runtime/job-workers/job-message.h"
+#include "runtime/memory_resource/extra-memory-pool.h"
 
-struct JobSharedMessage;
+namespace job_workers {
 
 struct SharedMemoryProcessOwnersTable;
 
@@ -36,16 +37,27 @@ public:
     return messages_count_;
   }
 
+  bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
+
 private:
   SharedMemoryManager() = default;
 
   friend class vk::singleton<SharedMemoryManager>;
 
+  std::random_device rd_;
+
   size_t memory_limit_{0};
   SharedMemoryProcessOwnersTable *owners_table_{nullptr};
+
   JobSharedMessage *messages_{nullptr};
   size_t messages_count_{0};
-  std::random_device rd_;
+  //  index => (1 << index) MB:
+  //    0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
+  std::array<memory_resource::extra_memory_pool_storage, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory_;
 };
+
+inline bool request_extra_shared_memory(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept {
+  return vk::singleton<SharedMemoryManager>::get().request_extra_memory_for_resource(resource, required_size);
+}
 
 } // namespace job_workers

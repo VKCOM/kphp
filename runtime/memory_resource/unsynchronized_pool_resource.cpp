@@ -18,6 +18,8 @@ void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size) noexce
   huge_pieces_.hard_reset();
   fallback_resource_.init(nullptr, 0);
   free_chunks_.fill(details::memory_chunk_list{});
+
+  extra_memory_head_ = &extra_memory_tail_;
 }
 
 void unsynchronized_pool_resource::hard_reset() noexcept {
@@ -85,6 +87,17 @@ void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_pi
   // the body of this function is moved to the cpp file intentionally, so it doesn't get inlined into the allocate method
   perform_defragmentation();
   return allocate_huge_piece(aligned_size, false);
+}
+
+bool unsynchronized_pool_resource::is_memory_from_extra_pool(void *mem, size_t size) const noexcept {
+  auto *extra_pool = extra_memory_head_;
+  do {
+    if (extra_pool->is_memory_from_this_pool(mem, size)) {
+      return true;
+    }
+    extra_pool = extra_pool->next_in_chain;
+  } while (extra_pool && extra_pool->get_pool_payload_size());
+  return false;
 }
 
 } // namespace memory_resource

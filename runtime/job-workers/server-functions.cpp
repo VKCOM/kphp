@@ -61,7 +61,8 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
     php_warning("Can't store job response: not enough shared memory");
     return;
   }
-  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource, ExtraRefCnt::for_job_worker_communication);
+  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
+                                                              ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
     php_warning("Can't store job response: too big response");
     memory_manager.release_shared_message(response_memory);

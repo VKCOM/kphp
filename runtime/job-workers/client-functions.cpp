@@ -99,7 +99,8 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
     return false;
   }
 
-  memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource, ExtraRefCnt::for_job_worker_communication);
+  memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource,
+                                                             ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (memory_request->instance.is_null()) {
     memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: too big request");

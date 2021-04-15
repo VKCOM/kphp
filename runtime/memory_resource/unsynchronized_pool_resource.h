@@ -9,6 +9,7 @@
 #include "runtime/memory_resource/details/memory_chunk_list.h"
 #include "runtime/memory_resource/details/memory_chunk_tree.h"
 #include "runtime/memory_resource/details/universal_reallocate.h"
+#include "runtime/memory_resource/extra-memory-pool.h"
 #include "runtime/memory_resource/monotonic_buffer_resource.h"
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/php_assert.h"
@@ -72,6 +73,16 @@ public:
     return static_cast<size_t>(memory_end_ - memory_current_) >= aligned_size || huge_pieces_.has_memory_for(aligned_size);
   }
 
+  extra_memory_pool *get_extra_memory_head() noexcept {
+    return extra_memory_head_;
+  }
+
+  void add_extra_memory(extra_memory_pool *extra_memory) noexcept {
+    extra_memory->next_in_chain = extra_memory_head_;
+    extra_memory_head_ = extra_memory;
+    put_memory_back(extra_memory->memory_begin(), extra_memory->get_pool_payload_size());
+  }
+
 private:
   void *try_allocate_small_piece(size_t aligned_size) noexcept {
     const auto chunk_id = details::get_chunk_id(aligned_size);
@@ -105,9 +116,11 @@ private:
 
   void *allocate_small_piece_from_fallback_resource(size_t aligned_size) noexcept;
   void *perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept;
+  bool is_memory_from_extra_pool(void *mem, size_t size) const noexcept;
 
   void put_memory_back(void *mem, size_t size) noexcept {
-    if (!monotonic_buffer_resource::put_memory_back(mem, size)) {
+    const bool from_extra_pool = (extra_memory_head_ != &extra_memory_tail_) && is_memory_from_extra_pool(mem, size);
+    if (from_extra_pool || !monotonic_buffer_resource::put_memory_back(mem, size)) {
       if (size < MAX_CHUNK_BLOCK_SIZE_) {
         size_t chunk_id = details::get_chunk_id(size);
         free_chunks_[chunk_id].put_mem(mem);
@@ -121,6 +134,9 @@ private:
 
   details::memory_chunk_tree huge_pieces_;
   monotonic_buffer_resource fallback_resource_;
+
+  extra_memory_pool *extra_memory_head_{nullptr};
+  extra_memory_pool extra_memory_tail_{sizeof(extra_memory_pool)};
 
   static constexpr size_t MAX_CHUNK_BLOCK_SIZE_{16u * 1024u};
   std::array<details::memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunks_;

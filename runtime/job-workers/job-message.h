@@ -12,8 +12,20 @@
 
 namespace job_workers {
 
+// the value of counter for the free messages
 constexpr uint32_t JOB_SHARED_MESSAGE_FREE_CNT = std::numeric_limits<uint32_t>::max();
-constexpr size_t JOB_SHARED_MESSAGE_SIZE = 1024 * 1024;
+// this constant is used for calculating total available messages count:
+//    messages count = the processes number * JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER
+constexpr size_t JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER = 2;
+// the size of the job shared message (without extra memory)
+constexpr size_t JOB_SHARED_MESSAGE_BYTES = 512 * 1024; // 512KB
+// the number of buckets for extra shared memory,
+//    it is started from (2 * JOB_SHARED_MESSAGE_BYTES) Bytes and double for the next:
+//      0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
+constexpr size_t JOB_EXTRA_MEMORY_BUFFER_BUCKETS = 7;
+// the default multiplier for getting shared memory limit for job workers messaging:
+//    the default value for shared memory = the processes number * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER
+constexpr size_t JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER = 8 * 1024 * 1024; // 8MB for 1 process
 
 struct alignas(8) JobSharedMessageMetadata : vk::not_copyable {
 public:
@@ -31,9 +43,9 @@ protected:
   ~JobSharedMessageMetadata() = default;
 };
 
-struct JobSharedMessage : JobSharedMessageMetadata {
+struct alignas(8) JobSharedMessage : JobSharedMessageMetadata {
 private:
-  static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_SIZE - sizeof(JobSharedMessageMetadata);
+  static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_BYTES - sizeof(JobSharedMessageMetadata);
 
 public:
   JobSharedMessage() noexcept {
@@ -41,9 +53,9 @@ public:
   }
 
 private:
-  alignas(8) char memory_pool_buffer_[MEMORY_POOL_BUFFER_SIZE];
+  alignas(8) uint8_t memory_pool_buffer_[MEMORY_POOL_BUFFER_SIZE];
 };
 
-static_assert(sizeof(JobSharedMessage) == JOB_SHARED_MESSAGE_SIZE, "check yourself");
+static_assert(sizeof(JobSharedMessage) == JOB_SHARED_MESSAGE_BYTES, "check yourself");
 
 } // namespace job_workers

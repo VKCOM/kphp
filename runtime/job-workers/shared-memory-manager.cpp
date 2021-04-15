@@ -9,7 +9,6 @@
 #include "server/php-engine-vars.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/job-workers/job-message.h"
 
 #include "runtime/job-workers/shared-memory-manager.h"
 
@@ -52,26 +51,30 @@ void SharedMemoryManager::init() noexcept {
   assert(!messages_);
   assert(!owners_table_);
 
-  const size_t processes_count = vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1);
+  const size_t processes = vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1);
   if (!memory_limit_) {
-    memory_limit_ = processes_count * 8 * 1024 * 1024;
+    memory_limit_ = processes * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER + sizeof(SharedMemoryProcessOwnersTable);
   }
-  auto *raw_mem = static_cast<uint8_t *>(mmap(nullptr, sizeof(SharedMemoryProcessOwnersTable) + memory_limit_,
+  auto *raw_mem = static_cast<uint8_t *>(mmap(nullptr, memory_limit_,
                                               PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
   assert(raw_mem);
   owners_table_ = new(raw_mem) SharedMemoryProcessOwnersTable{};
   raw_mem += sizeof(SharedMemoryProcessOwnersTable);
+  size_t left_memory = memory_limit_ - sizeof(SharedMemoryProcessOwnersTable);
 
-  size_t left_memory = memory_limit_;
-  const size_t messages_count_limit = 2 * (vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1));
+  const size_t messages_count_limit = JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER *
+                                      (vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1));
   messages_count_ = std::min(messages_count_limit, left_memory / sizeof(JobSharedMessage));
   messages_ = new(raw_mem) JobSharedMessage[messages_count_];
+  raw_mem += sizeof(JobSharedMessage) * messages_count_;
+  left_memory -= sizeof(JobSharedMessage) * messages_count_;
+  memory_resource::distribute_memory(extra_memory_, processes, raw_mem, left_memory);
 }
 
 JobSharedMessage *SharedMemoryManager::acquire_shared_message() noexcept {
   assert(messages_);
-  const size_t random_slice_idx = rd_() % messages_count_;
-  size_t i = random_slice_idx;
+  const size_t random_index = rd_() % messages_count_;
+  size_t i = random_index;
 
   do {
     auto *message = messages_ + i;
@@ -90,7 +93,7 @@ JobSharedMessage *SharedMemoryManager::acquire_shared_message() noexcept {
     if (++i == messages_count_) {
       i = 0;
     }
-  } while (i != random_slice_idx);
+  } while (i != random_index);
   return nullptr;
 }
 
@@ -99,6 +102,14 @@ void SharedMemoryManager::release_shared_message(JobSharedMessage *message) noex
   owners_table_->workers_table[logname_id].detach(message);
   if (--message->owners_counter == 0) {
     hard_reset_var(message->instance);
+    auto *extra_memory = message->resource.get_extra_memory_head();
+    while (extra_memory->get_pool_payload_size()) {
+      auto *releasing_extra_memory = extra_memory;
+      extra_memory = extra_memory->next_in_chain;
+      std::atomic_thread_fence(std::memory_order_release);
+      const bool result = __sync_bool_compare_and_swap(&releasing_extra_memory->next_in_chain, extra_memory, nullptr);
+      assert(result);
+    }
     message->resource.hard_reset();
     message->job_id = 0;
     message->job_result_fd_idx = -1;
@@ -131,6 +142,36 @@ void SharedMemoryManager::forcibly_release_all_attached_messages() noexcept {
       }
     }
   }
+}
+
+bool SharedMemoryManager::request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept {
+  for (auto &extra_buffers: extra_memory_) {
+    const size_t total_buffers = extra_buffers.buffers_count();
+    if (extra_buffers.get_buffer_payload_size() < required_size || total_buffers == 0) {
+      continue;
+    }
+
+    // TODO random is not the best choice?
+    const size_t random_index = rd_() % total_buffers;
+    size_t i = random_index;
+    do {
+      {
+        dl::CriticalSectionGuard critical_section;
+        memory_resource::extra_memory_pool *extra_pool = extra_buffers.get_extra_pool(i);
+        if (__sync_bool_compare_and_swap(&extra_pool->next_in_chain, nullptr,
+                                         resource.get_extra_memory_head())) {
+          std::atomic_thread_fence(std::memory_order_acquire);
+          resource.add_extra_memory(extra_pool);
+          return true;
+        }
+      }
+
+      if (++i == total_buffers) {
+        i = 0;
+      }
+    } while (i != random_index);
+  }
+  return false;
 }
 
 } // namespace job_workers
