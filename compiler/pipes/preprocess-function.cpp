@@ -166,7 +166,7 @@ private:
 
       if (auto template_of_invoke_method = lambda_class->get_template_of_invoke_function()) {
         std::map<int, Assumption> template_type_id_to_ClassPtr;
-        invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, &template_of_invoke_method);
+        invoke_name = lambda_class->get_name_of_invoke_function_for_extern(call, current_function, &template_type_id_to_ClassPtr, template_of_invoke_method);
 
         instance_of_template_invoke = generate_instance_template_function_by_name(template_type_id_to_ClassPtr, template_of_invoke_method, invoke_name);
         instance_of_template_invoke->instantiation_of_template_function_location = call_arg->get_location();

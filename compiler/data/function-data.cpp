@@ -293,13 +293,9 @@ VertexRange FunctionData::get_params() const {
   return root->param_list()->params();
 }
 
-bool FunctionData::can_take_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
-  if (!called_func) {
-    return false;
-  }
-
-  int min_cnt_params = called_func->get_min_argn() - called_func->has_implicit_this_arg();
-  int max_cnt_params = static_cast<int>(called_func->get_params().size()) - called_func->has_implicit_this_arg();
+bool FunctionData::can_take_cnt_params(int expected_cnt_params) {
+  int min_cnt_params = get_min_argn() - has_implicit_this_arg();
+  int max_cnt_params = static_cast<int>(get_params().size()) - has_implicit_this_arg();
   if (expected_cnt_params < min_cnt_params || max_cnt_params < expected_cnt_params) {
     kphp_error(false, fmt_format("Wrong arguments count: {} (expected {}..{})", expected_cnt_params, min_cnt_params, max_cnt_params));
     return false;

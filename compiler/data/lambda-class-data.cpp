@@ -113,7 +113,7 @@ void infer_type_of_callback_arg(const TypeHint *type_hint, VertexAdaptor<op_func
 std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdaptor<op_func_call> extern_function_call,
                                                                     FunctionPtr function_context,
                                                                     std::map<int, Assumption> *template_type_id_to_ClassPtr /*= nullptr*/,
-                                                                    FunctionPtr *template_of_invoke_method /*= nullptr*/) const {
+                                                                    FunctionPtr template_of_invoke_method /*= {}*/) const {
   std::string invoke_method_name = replace_backslashes(construct_function->class_id->name) + "$$" + NAME_OF_INVOKE_METHOD;
 
   VertexRange call_params = extern_function_call->args();
@@ -131,11 +131,11 @@ std::string LambdaClassData::get_name_of_invoke_function_for_extern(VertexAdapto
 
   auto func_param_callback = callback_it->as<op_func_param>();
   const auto *type_hint_callable = func_param_callback->type_hint->try_as<TypeHintCallable>();
-  if (!FunctionData::can_take_cnt_params(type_hint_callable->arg_types.size(), *template_of_invoke_method)) {
+  if (!template_of_invoke_method->can_take_cnt_params(type_hint_callable->arg_types.size())) {
     return "";
   }
 
-  auto template_invoke_params = (*template_of_invoke_method)->get_params();
+  auto template_invoke_params = template_of_invoke_method->get_params();
   for (int i = 0; i < type_hint_callable->arg_types.size(); ++i) {
     Assumption assumption;
     auto lambda_param = template_invoke_params[i + 1].as<op_func_param>();

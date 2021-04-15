@@ -59,7 +59,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
                                    func_param->var()->get_string(),
                                    OpInfo::str(call_params[i]->type())));
 
-      if (!FunctionData::can_take_cnt_params(func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size(), call_param->func_id)) {
+      if (!call_param->func_id->can_take_cnt_params(func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size())) {
         return;
       }
     }
