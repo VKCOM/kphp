@@ -112,10 +112,32 @@ void lease_on_worker_finish(php_worker *worker) {
   }
 }
 
+static int wrap_rpc_dest_actor_raw(int *raw_rpc_query_buf, int actor_id, int magic) {
+  int pos = 0;
+  *reinterpret_cast<long long *>(&raw_rpc_query_buf[pos]) = 0;
+  pos += 2;
+  raw_rpc_query_buf[pos++] = TL_RPC_DEST_ACTOR;
+  *reinterpret_cast<long long *>(&raw_rpc_query_buf[pos]) = actor_id;
+  pos += 2;
+  raw_rpc_query_buf[pos++] = magic;
+  return pos;
+}
+
 static void rpc_send_stopped(connection *c) {
-  int q[100], qn = 0;
+  static constexpr int QUERY_INT_BUF_LEN = 1000;
+  static int q[QUERY_INT_BUF_LEN];
+  int qn = 0;
   qn += 2;
+
+  int magic = TL_KPHP_STOP_READY;
   q[qn++] = -1;
+
+  int actor_id = lease_actor_id;
+  if (actor_id != -1) {
+    qn += wrap_rpc_dest_actor_raw(q + qn, actor_id, magic);
+    magic = TL_RPC_INVOKE_REQ;
+  }
+
   q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
   q[qn++] = pid; // pid
@@ -123,7 +145,7 @@ static void rpc_send_stopped(connection *c) {
   q[qn++] = worker_id; // id
   q[qn++] = ready_cnt++; // ready_cnt
   qn++;
-  send_rpc_query(c, TL_KPHP_STOP_READY, -1, q, qn * 4);
+  send_rpc_query(c, magic, -1, q, qn * 4);
 }
 
 static void rpc_send_lease_stats(connection *c) {
@@ -169,12 +191,7 @@ static void rpc_send_ready(connection *c) {
   q[qn++] = -1; // will be replaced by op
   int actor_id = get_current_actor_id();
   if (actor_id != -1) { // we don't want to update all tasks
-    *reinterpret_cast<long long *>(&q[qn]) = 0;
-    qn += 2;
-    q[qn++] = TL_RPC_DEST_ACTOR;
-    *reinterpret_cast<long long *>(&q[qn]) = actor_id;
-    qn += 2;
-    q[qn++] = magic;
+    qn += wrap_rpc_dest_actor_raw(q + qn, actor_id, magic);
     magic = TL_RPC_INVOKE_REQ;
   }
   if (use_ready_v2) {
@@ -204,7 +221,6 @@ static void rpc_send_ready(connection *c) {
   qn++;
   send_rpc_query(c, magic, -1, q, qn * 4);
 }
-
 
 static int rpct_ready(int target_fd) {
   if (target_fd == -1) {
