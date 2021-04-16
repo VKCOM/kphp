@@ -303,7 +303,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
   };
   std::map<vk::string_view, FunctionPtr> all_traits_methods;
 
-  auto check_other_traits_doesnt_contain_method_and_clone = [&](FunctionPtr new_method) {
+  auto check_signatures_and_collisions = [&](FunctionPtr new_method) {
     if (has_class_method(new_method->local_name())) {
       return;
     }
@@ -332,15 +332,15 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
   };
 
 
-  for (size_t i = 0; i < traits.size(); ++i) {
-    traits[i]->members.for_each([&](ClassMemberInstanceMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
-    traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
+  for (auto &trait : traits) {
+    trait->members.for_each([&](ClassMemberInstanceMethod &m) { check_signatures_and_collisions(m.function); });
+    trait->members.for_each([&](ClassMemberStaticMethod   &m) { check_signatures_and_collisions(m.function); });
 
-    traits[i]->members.for_each([&](const ClassMemberInstanceField &f) {
+    trait->members.for_each([&](const ClassMemberInstanceField &f) {
       ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str, f.type_hint);
     });
 
-    traits[i]->members.for_each([&](const ClassMemberStaticField &f) {
+    trait->members.for_each([&](const ClassMemberStaticField &f) {
       ready_class->members.add_static_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str, f.type_hint);
     });
   }
@@ -349,13 +349,12 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     clone_method(name_and_method.second, ready_class, function_stream);
   }
 
-  if (ready_class->is_class()) {
+  if (ready_class->is_class() && !ready_class->modifiers.is_abstract()) {
     ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
-    if (m.function->modifiers.is_abstract()) {
-      kphp_error(ready_class->modifiers.is_abstract(), fmt_format("class: {} must be declared abstract, because of abstract method: {}",
-                                                                  ready_class->get_name(), m.function->get_human_readable_name()));
-    }
-    });
+                                  bool is_abstract_method = m.function->modifiers.is_abstract();
+                                  kphp_error(!is_abstract_method, fmt_format("class: {} must be declared abstract, because of abstract method: {}",
+                                                                             ready_class->get_name(), m.function->get_human_readable_name()));
+                                  });
   }
 }
 
