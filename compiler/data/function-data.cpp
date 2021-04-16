@@ -192,15 +192,25 @@ bool FunctionData::can_override_method(FunctionPtr interface_method) {
   }
 
   auto cur_params = get_params();
-  int32_t pos_after_this = 1;
+  int32_t pos_after_this = interface_method->has_implicit_this_arg();
   for (int32_t i = pos_after_this; i < interface_params.size(); ++i) {
-    const auto *cur_param_hint = cur_params[i].try_as<op_func_param>()->type_hint;
-    const auto *interface_param_hint = interface_params[i].try_as<op_func_param>()->type_hint;
+    const auto cur_param = cur_params[i].try_as<op_func_param>();
+    const auto interface_param = interface_params[i].try_as<op_func_param>();
+    if (!cur_param->type_as_part_of_signature) {
+      continue;
+    }
+
+    const auto *cur_signature{cur_param->type_as_part_of_signature};
+    const auto *interface_signature{interface_param->type_as_part_of_signature};
     // equal TypeHint-s have equal addresses
-    if (cur_param_hint != interface_param_hint) {
+    if (cur_signature != interface_signature) {
+      if (const auto *optional_signature = cur_signature->try_as<TypeHintOptional>()) {
+        return optional_signature->inner == interface_signature;
+      }
       return false;
     }
   }
+
   return true;
 }
 

@@ -53,6 +53,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
   kphp_assert(derived_method);
 
   if (!derived_method->can_override_method(interface_function)) {
+    stage::set_location(derived_method->root->location);
     kphp_error(false, fmt_format("Declaration of {} must be compatible with version in class {}",
                                  interface_function->get_human_readable_name(),
                                  context_class->name));

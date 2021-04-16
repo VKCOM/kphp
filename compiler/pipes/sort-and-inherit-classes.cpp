@@ -129,13 +129,7 @@ public:
   }
 };
 
-bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
-  if (from->modifiers.is_instance() && to_class->members.has_instance_method(from->local_name())) {
-    return false;
-  } else if (from->modifiers.is_static() && to_class->members.has_static_method(from->local_name())) {
-    return false;
-  }
-
+void clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
   auto new_root = from->root.clone();
   auto cloned_fun = FunctionData::clone_from(replace_backslashes(to_class->name) + "$$" + from->local_name(), from, new_root);
   if (from->modifiers.is_instance()) {
@@ -145,7 +139,6 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
   }
 
   G->register_and_require_function(cloned_fun, function_stream, true);
-  return true;
 };
 
 } // namespace
@@ -305,19 +298,41 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
 }
 
 void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream) {
+  auto has_class_method = [ready_class](vk::string_view name) {
+    return ready_class->members.has_instance_method(name) || ready_class->members.has_static_method(name);
+  };
+  std::map<vk::string_view, FunctionPtr> all_traits_methods;
+
+  auto check_other_traits_doesnt_contain_method_and_clone = [&](FunctionPtr new_method) {
+    if (has_class_method(new_method->local_name())) {
+      return;
+    }
+
+    auto existing_method_it = all_traits_methods.find(new_method->local_name());
+    if (existing_method_it != all_traits_methods.end()) {
+      auto existing_method = existing_method_it->second;
+      kphp_error(new_method->modifiers.is_abstract() || existing_method->modifiers.is_abstract(),
+                 fmt_format("in class: {}, you have methods collision: {}", ready_class->get_name(), new_method->get_human_readable_name()));
+
+      if (!existing_method->modifiers.is_abstract() && new_method->modifiers.is_abstract()) {
+        std::swap(existing_method, new_method);
+      }
+
+      kphp_error(new_method->can_override_method(existing_method), fmt_format("Declaration of {} must be compatible with version in trait {}",
+                                                                              new_method->get_human_readable_name(),
+                                                                              existing_method->class_id->name));
+
+      if (existing_method_it->second->modifiers.is_abstract()) {
+        existing_method_it->second = new_method;
+      }
+      return;
+    }
+
+    all_traits_methods.insert(existing_method_it, {new_method->local_name(), new_method});
+  };
+
+
   for (size_t i = 0; i < traits.size(); ++i) {
-    auto check_other_traits_doesnt_contain_method_and_clone = [&](FunctionPtr method) {
-      if (!clone_method(method, ready_class, function_stream)) {
-        return;
-      }
-
-      for (size_t j = i + 1; j < traits.size(); ++j) {
-        if (traits[j]->members.has_instance_method(method->local_name()) || traits[j]->members.has_static_method(method->local_name())) {
-          kphp_error(false, fmt_format("in class: {}, you have methods collision: {}", ready_class->get_name(), method->get_human_readable_name()));
-        }
-      }
-    };
-
     traits[i]->members.for_each([&](ClassMemberInstanceMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
     traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
 
@@ -330,12 +345,16 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     });
   }
 
+  for (auto &name_and_method : all_traits_methods) {
+    clone_method(name_and_method.second, ready_class, function_stream);
+  }
+
   if (ready_class->is_class()) {
     ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
-      if (m.function->modifiers.is_abstract()) {
-        kphp_error(ready_class->modifiers.is_abstract(), fmt_format("class: {} must be declared abstract, because of abstract method: {}",
-                                                                    ready_class->get_name(), m.function->get_human_readable_name()));
-      }
+    if (m.function->modifiers.is_abstract()) {
+      kphp_error(ready_class->modifiers.is_abstract(), fmt_format("class: {} must be declared abstract, because of abstract method: {}",
+                                                                  ready_class->get_name(), m.function->get_human_readable_name()));
+    }
     });
   }
 }

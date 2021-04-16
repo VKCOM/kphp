@@ -849,6 +849,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
       type_hint = TypeHintOptional::create(type_hint, true, false);
     }
     v->type_hint = type_hint;
+    v->type_as_part_of_signature = type_hint;
   }
   v->is_cast_param = is_cast_param;
 

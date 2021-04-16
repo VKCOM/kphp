@@ -84,6 +84,7 @@ void LambdaInterfaceGenerator::add_type_hints(FunctionPtr invoke_method) noexcep
   auto params = invoke_method->get_params();
   for (int i = 1; i < params.size(); ++i) {
     params[i].as<op_func_param>()->type_hint = arg_types[i - 1];
+    params[i].as<op_func_param>()->type_as_part_of_signature = arg_types[i - 1];
   }
   invoke_method->return_typehint = return_type;
 }
