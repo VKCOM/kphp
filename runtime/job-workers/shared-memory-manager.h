@@ -4,18 +4,14 @@
 
 #pragma once
 
-#include <atomic>
-#include <random>
-
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
-#include "runtime/job-workers/job-message.h"
 #include "runtime/memory_resource/extra-memory-pool.h"
 
 namespace job_workers {
 
-struct SharedMemoryProcessOwnersTable;
+struct JobSharedMessage;
 
 class SharedMemoryManager : vk::not_copyable {
 public:
@@ -44,16 +40,11 @@ private:
 
   friend class vk::singleton<SharedMemoryManager>;
 
-  std::random_device rd_;
-
   size_t memory_limit_{0};
-  SharedMemoryProcessOwnersTable *owners_table_{nullptr};
-
-  JobSharedMessage *messages_{nullptr};
   size_t messages_count_{0};
-  //  index => (1 << index) MB:
-  //    0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
-  std::array<memory_resource::extra_memory_pool_storage, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory_;
+
+  struct ControlBlock;
+  ControlBlock *control_block_{nullptr};
 };
 
 inline bool request_extra_shared_memory(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept {

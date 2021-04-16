@@ -1567,7 +1567,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   const auto &job_workers_stats = job_workers::JobStats::get();
   add_gauge_stat(stats, job_workers_stats.job_queue_size, "job_workers.job_queue_size");
   add_gauge_stat(stats, job_workers_stats.currently_messages_acquired, "job_workers.currently_messages_acquired");
-  add_gauge_stat(stats, job_workers_stats.message_acquire_false_iterations, "job_workers.message_acquire_false_iterations");
   add_gauge_stat(stats, vk::singleton<job_workers::SharedMemoryManager>::get().get_messages_count(), "job_workers.messages_total_limit");
   add_gauge_stat(stats, job_workers_stats.jobs_sent, "job_workers.jobs_sent");
   add_gauge_stat(stats, job_workers_stats.jobs_replied, "job_workers.jobs_replied");

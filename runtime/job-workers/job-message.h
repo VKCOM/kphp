@@ -12,8 +12,6 @@
 
 namespace job_workers {
 
-// the value of counter for the free messages
-constexpr uint32_t JOB_SHARED_MESSAGE_FREE_CNT = std::numeric_limits<uint32_t>::max();
 // this constant is used for calculating total available messages count:
 //    messages count = the processes number * JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER
 constexpr size_t JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER = 2;
@@ -32,7 +30,7 @@ public:
   memory_resource::unsynchronized_pool_resource resource;
   class_instance<SendingInstanceBase> instance;
 
-  std::atomic<uint32_t> owners_counter{JOB_SHARED_MESSAGE_FREE_CNT};
+  std::atomic<uint32_t> owners_counter{1};
 
   int32_t job_id{0};
   int32_t job_result_fd_idx{-1};

@@ -13,7 +13,6 @@ namespace job_workers {
 
 class JobStats : vk::not_copyable {
 public:
-  std::atomic<size_t> message_acquire_false_iterations{0};
   std::atomic<int> currently_messages_acquired{0};
 
   std::atomic<int> job_queue_size{0};
