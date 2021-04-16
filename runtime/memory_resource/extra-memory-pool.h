@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cassert>
+#include <cinttypes>
 
 #include "common/mixin/not_copyable.h"
 

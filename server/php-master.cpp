@@ -49,7 +49,6 @@
 
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
@@ -63,6 +62,7 @@
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 using job_workers::JobWorkersContext;
 
@@ -1564,21 +1564,9 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
-  const auto &job_workers_stats = job_workers::JobStats::get();
-  add_gauge_stat(stats, job_workers_stats.job_queue_size, "job_workers.job_queue_size");
-  add_gauge_stat(stats, job_workers_stats.currently_messages_acquired, "job_workers.currently_messages_acquired");
-  add_gauge_stat(stats, vk::singleton<job_workers::SharedMemoryManager>::get().get_messages_count(), "job_workers.messages_total_limit");
-  add_gauge_stat(stats, job_workers_stats.jobs_sent, "job_workers.jobs_sent");
-  add_gauge_stat(stats, job_workers_stats.jobs_replied, "job_workers.jobs_replied");
-
-  add_gauge_stat(stats, job_workers_stats.errors_pipe_server_write, "job_workers.errors_pipe_server_write");
-  add_gauge_stat(stats, job_workers_stats.errors_pipe_server_read, "job_workers.errors_pipe_server_read");
-  add_gauge_stat(stats, job_workers_stats.errors_pipe_client_write, "job_workers.errors_pipe_client_write");
-  add_gauge_stat(stats, job_workers_stats.errors_pipe_client_read, "job_workers.errors_pipe_client_read");
-
-  add_gauge_stat(stats, job_workers_stats.job_worker_skip_job_due_another_is_running, "job_workers.job_worker_skip_job_due_another_is_running");
-  add_gauge_stat(stats, job_workers_stats.job_worker_skip_job_due_overload, "job_workers.job_worker_skip_job_due_overload");
-  add_gauge_stat(stats, job_workers_stats.job_worker_skip_job_due_steal, "job_workers.job_worker_skip_job_due_steal");
+  if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {
+    vk::singleton<job_workers::SharedMemoryManager>::get().get_stats().write_stats_to(stats);
+  }
 }
 
 int php_master_http_execute(struct connection *c, int op) {
@@ -1902,7 +1890,6 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(job_workers, 3, "Job queue size = %d\n", job_workers::JobStats::get().job_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 

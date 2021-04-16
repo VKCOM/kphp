@@ -126,9 +126,8 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   const bool allocations_allowed = !out_of_memory && !dl::in_critical_section;
   dl::enter_critical_section();//OK
 
-  fprintf(stderr, "%s%" PRIi64 "%sWarning: ", engine_tag, cur_time, engine_pid);
   vsnprintf(buf, BUF_SIZE, message, args);
-  fprintf(stderr, "%s\n", buf);
+  fprintf(stderr, "%s%" PRIi64 "%sWarning: %s\n", engine_tag, cur_time, engine_pid, buf);
 
   int nptrs = 0;
   void *buffer[64];

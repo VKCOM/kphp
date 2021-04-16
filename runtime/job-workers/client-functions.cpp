@@ -9,13 +9,13 @@
 #include "runtime/critical_section.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/resumable.h"
 
+#include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
 
 #include "runtime/job-workers/client-functions.h"

@@ -11,18 +11,18 @@
 #include "server/php-engine-vars.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/job-workers/job-message.h"
 
-#include "runtime/job-workers/shared-memory-manager.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 namespace job_workers {
 
 struct WorkerProcessMeta {
-  // We can use only 2 messages at once for one worker process:
-  //  for HTTP/RPC workers: one mutable request data, one immutable request data
-  //  for Job workers: one for request, one for response
-  // TODO use more?
-  std::array<JobSharedMessage *, 2> attached_messages{};
+  // We can use only 4 messages at once for one worker process:
+  //    mutable request data
+  //    immutable request data
+  //    ok response
+  //    error response (only for job workers)
+  std::array<JobSharedMessage *, 4> attached_messages{};
 
   void attach(JobSharedMessage *message) noexcept {
     replace(nullptr, message);
@@ -52,6 +52,7 @@ struct alignas(8) SharedMemoryManager::ControlBlock {
     }
   }
 
+  JobStats stats;
   std::array<WorkerProcessMeta, MAX_WORKERS> workers_table{};
   freelist_t free_messages{};
 
@@ -71,28 +72,37 @@ void SharedMemoryManager::init() noexcept {
   auto *raw_mem = static_cast<uint8_t *>(mmap(nullptr, memory_limit_,
                                               PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
   assert(raw_mem);
+  const size_t left_memory = memory_limit_ - sizeof(ControlBlock);
+  const uint32_t messages_count = std::min(JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER * processes, left_memory / sizeof(JobSharedMessage));
   control_block_ = new(raw_mem) ControlBlock{};
   raw_mem += sizeof(ControlBlock);
-  const size_t left_memory = memory_limit_ - sizeof(ControlBlock);
-
-  const size_t messages_count_limit = JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER *
-                                      (vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1));
-  messages_count_ = std::min(messages_count_limit, left_memory / sizeof(JobSharedMessage));
-  for (size_t i = 0; i != messages_count_; ++i) {
+  for (uint32_t i = 0; i != messages_count; ++i) {
     freelist_put(&control_block_->free_messages, raw_mem);
     raw_mem += sizeof(JobSharedMessage);
   }
 
   std::array<memory_resource::extra_memory_raw_bucket, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory;
-  memory_resource::distribute_memory(extra_memory, processes, raw_mem,
-                                     left_memory - sizeof(JobSharedMessage) * messages_count_);
+  control_block_->stats.unused_memory = memory_resource::distribute_memory(extra_memory, processes, raw_mem,
+                                                                           left_memory - sizeof(JobSharedMessage) * messages_count);
   for (size_t i = 0; i != extra_memory.size(); ++i) {
     auto &free_extra_buffers = control_block_->free_extra_memory[i];
     auto &extra_buffers = extra_memory[i];
     for (size_t mem_index = 0; mem_index != extra_buffers.buffers_count(); ++mem_index) {
       freelist_put(&free_extra_buffers, extra_buffers.get_extra_pool_raw(mem_index));
     }
+    control_block_->stats.extra_memory[i].count = extra_buffers.buffers_count();
   }
+
+  control_block_->stats.memory_limit = memory_limit_;
+  control_block_->stats.messages.count = messages_count;
+}
+
+bool SharedMemoryManager::set_memory_limit(size_t memory_limit) noexcept {
+  if (memory_limit < 3 * sizeof(JobSharedMessage) + sizeof(ControlBlock)) {
+    return false;
+  }
+  memory_limit_ = memory_limit;
+  return true;
 }
 
 JobSharedMessage *SharedMemoryManager::acquire_shared_message() noexcept {
@@ -101,9 +111,10 @@ JobSharedMessage *SharedMemoryManager::acquire_shared_message() noexcept {
   if (void *free_mem = freelist_get(&control_block_->free_messages)) {
     auto *message = new(free_mem) JobSharedMessage{};
     control_block_->workers_table[logname_id].attach(message);
-    ++JobStats::get().currently_messages_acquired;
+    ++control_block_->stats.messages.acquired;
     return message;
   }
+  ++control_block_->stats.messages.acquire_fails;
   return nullptr;
 }
 
@@ -116,11 +127,12 @@ void SharedMemoryManager::release_shared_message(JobSharedMessage *message) noex
       auto *releasing_extra_memory = extra_memory;
       extra_memory = extra_memory->next_in_chain;
       const int i = memory_resource::extra_memory_raw_bucket::get_bucket(*releasing_extra_memory);
-      assert(i >= 0);
+      assert(i >= 0 && i < control_block_->free_extra_memory.size());
       freelist_put(&control_block_->free_extra_memory[i], releasing_extra_memory);
+      ++control_block_->stats.extra_memory[i].released;
     }
     freelist_put(&control_block_->free_messages, message);
-    --JobStats::get().currently_messages_acquired;
+    ++control_block_->stats.messages.released;
   }
 }
 
@@ -161,10 +173,17 @@ bool SharedMemoryManager::request_extra_memory_for_resource(memory_resource::uns
     dl::CriticalSectionGuard critical_section;
     if (auto *extra_mem = freelist_get(&free_extra_buffers)) {
       resource.add_extra_memory(new(extra_mem) memory_resource::extra_memory_pool{buffer_real_size});
+      ++control_block_->stats.extra_memory[i].acquired;
       return true;
     }
+    ++control_block_->stats.extra_memory[i].acquire_fails;
   }
   return false;
+}
+
+JobStats &SharedMemoryManager::get_stats() noexcept {
+  assert(control_block_);
+  return control_block_->stats;
 }
 
 } // namespace job_workers

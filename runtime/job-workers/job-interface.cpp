@@ -4,9 +4,9 @@
 
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/resumable.h"
 #include "runtime/net_events.h"
 
@@ -31,8 +31,6 @@ bool f$is_kphp_job_workers_enabled() noexcept {
 }
 
 void global_init_job_workers_lib() noexcept {
-  // Always init the job stats, because the instance of stats can be used without job workers
-  job_workers::JobStats::get();
   if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
     job_timeout_wakeup_id = register_wakeup_callback(&process_job_timeout);

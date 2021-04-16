@@ -10,12 +10,11 @@
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 
-#include "runtime/job-workers/job-message.h"
-#include "runtime/job-workers/shared-memory-manager.h"
-
+#include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine.h"
 #include "server/php-queries.h"
 #include "server/server-log.h"
@@ -43,7 +42,7 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
     JobSharedMessage *job_result = nullptr;
     status = job_worker_client.job_reader.read_job_result(job_result);
     if (status == PipeJobReader::READ_FAIL) {
-      JobStats::get().errors_pipe_client_read++;
+      ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_client_read;
       return -1;
     }
     if (status == PipeJobReader::READ_OK) {
@@ -97,12 +96,12 @@ int JobWorkerClient::send_job(JobSharedMessage *job_request) {
   job_request->job_result_fd_idx = job_result_fd_idx;
   bool success = job_writer.write_job(job_request, write_job_fd);
   if (!success) {
-    JobStats::get().errors_pipe_client_write++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_client_write;
     return -1;
   }
 
-  JobStats::get().job_queue_size++;
-  JobStats::get().jobs_sent++;
+  ++vk::singleton<SharedMemoryManager>::get().get_stats().job_queue_size;
+  ++vk::singleton<SharedMemoryManager>::get().get_stats().jobs_sent;
   return job_id;
 }
 

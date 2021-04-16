@@ -63,9 +63,10 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             prefix="kphp_server.job_workers_",
             expected_added_stats={
+                "memory_messages_buffers_acquired": requests_count * 10,
+                "memory_messages_buffers_released": requests_count * 10,
+                "memory_messages_buffers_reserved": 2 * (15 + 3),
                 "job_queue_size": 0,
-                "currently_messages_acquired": 0,
-                "messages_total_limit": 2 * (15 + 3),
                 "jobs_sent": requests_count * 5,
                 "jobs_replied": requests_count * 5,
                 "errors_pipe_server_write": 0,

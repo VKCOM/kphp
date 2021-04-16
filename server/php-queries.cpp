@@ -12,9 +12,9 @@
 #include "common/precise-time.h"
 
 #include "runtime/allocator.h"
-#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/processing-jobs.h"
 
+#include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"

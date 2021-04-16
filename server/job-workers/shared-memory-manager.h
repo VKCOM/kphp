@@ -9,7 +9,13 @@
 
 #include "runtime/memory_resource/extra-memory-pool.h"
 
+namespace memory_resource {
+class unsynchronized_pool_resource;
+} // memory_resource
+
 namespace job_workers {
+
+class JobStats;
 
 struct JobSharedMessage;
 
@@ -25,15 +31,15 @@ public:
 
   void forcibly_release_all_attached_messages() noexcept;
 
-  void set_memory_limit(size_t memory_limit) {
-    memory_limit_ = memory_limit;
-  }
-
-  size_t get_messages_count() const noexcept {
-    return messages_count_;
-  }
+  bool set_memory_limit(size_t memory_limit) noexcept;
 
   bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
+
+  JobStats &get_stats() noexcept;
+
+  bool is_initialized() const noexcept {
+    return control_block_;
+  }
 
 private:
   SharedMemoryManager() = default;
@@ -41,7 +47,6 @@ private:
   friend class vk::singleton<SharedMemoryManager>;
 
   size_t memory_limit_{0};
-  size_t messages_count_{0};
 
   struct ControlBlock;
   ControlBlock *control_block_{nullptr};

@@ -108,7 +108,7 @@ function test_job_script_timeout_error() {
 
 function test_job_errors() {
   $context = json_decode(file_get_contents('php://input'));
-  $ids = send_jobs($context);
+  $ids = send_jobs($context, 5);
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }
 

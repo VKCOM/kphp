@@ -192,12 +192,18 @@ class Engine:
             for index, log_line in enumerate(self._engine_logs):
                 if not expected_msgs:
                     return
-                expected_msg = expected_msgs[0]
-                if re.search(expected_msg, log_line):
-                    expected_msgs.pop(0)
-                    self._engine_logs[index] = ''
-                else:
+
+                remove_expected_index = None
+                for i, expected_msg in enumerate(expected_msgs):
+                    if re.search(expected_msg, log_line):
+                        remove_expected_index = i
+                        self._engine_logs[index] = ''
+                        break
+
+                if remove_expected_index is None:
                     self._assert_no_errors_in_log(log_line)
+                else:
+                    expected_msgs.pop(remove_expected_index)
 
             time.sleep(0.05)
             if time.time() - start > timeout:
@@ -325,7 +331,6 @@ class Engine:
         for signal in ("SIGABRT", "SIGSEGV", "SIGBUS", "SIGFPE", "SIGILL", "SIGQUIT", "SIGSYS", "SIGXCPU", "SIGXFSZ"):
             if signal in log_line:
                 raise RuntimeError("Got unexpected signal: {}".format(log_line))
-        if "Assertion" in log_line:
-            raise RuntimeError("Got unexpected assertion: {}".format(log_line))
-        if "Warning" in log_line:
-            raise RuntimeError("Got unexpected warning: {}".format(log_line))
+        for issue in ("Warning", "Error", "Critical error", "Assertion", "dl_assert"):
+            if issue in log_line:
+                raise RuntimeError("Got unexpected {}: {}".format(issue, log_line))

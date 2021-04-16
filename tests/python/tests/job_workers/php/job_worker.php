@@ -62,7 +62,11 @@ function x2_with_sleep(X2Request $x2_req) {
   foreach ($x2_req->arr_request as $value) {
     $x2_resp->arr_reply[] = $value ** 2;
   }
-  sleep($x2_req->sleep_time_sec);
+  $s = microtime(true);
+  do {
+    sched_yield_sleep(1);
+  } while(microtime(true) - $s < $x2_req->sleep_time_sec);
+
   kphp_job_worker_store_response($x2_resp);
 }
 
@@ -92,6 +96,8 @@ function x2_with_error(X2Request $x2_req) {
     stack_overflow();
   } else if ($x2_req->error_type === "php_assert") {
     critical_error("Test php_assert");
+  }if ($x2_req->error_type === "sigsegv") {
+    raise_sigsegv();
   }
 
   kphp_job_worker_store_response($x2_resp);
