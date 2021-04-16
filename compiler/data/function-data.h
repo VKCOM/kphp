@@ -168,6 +168,7 @@ public:
   std::string get_name_of_self_method() const;
 
   int get_min_argn();
+  bool can_override_method(FunctionPtr interface_method);
 
   bool is_lambda() const {
     return static_cast<bool>(function_in_which_lambda_was_created);
@@ -187,7 +188,7 @@ public:
 
   VertexRange get_params() const;
 
-  bool can_take_cnt_params(int expected_cnt_params);
+  bool can_take_cnt_params(int expected_cnt_params, bool is_silent = false);
 
   vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
   vk::string_view local_name() const && = delete;
