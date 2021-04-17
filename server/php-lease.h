@@ -4,12 +4,15 @@
 
 #pragma once
 
+#include "common/kprintf.h"
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/kphp-tasks-lease/lease-worker-settings.h"
 #include "common/pid.h"
 
 #include "server/lease-rpc-client.h"
 #include "server/php-worker.h"
+
+DECLARE_VERBOSITY(lease);
 
 void lease_on_worker_finish(php_worker *worker);
 void lease_set_ready();

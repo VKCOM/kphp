@@ -4,6 +4,7 @@
 
 #include "server/php-lease.h"
 
+#include "common/kprintf.h"
 #include "common/options.h"
 #include "common/precise-time.h"
 #include "common/timer.h"
@@ -21,6 +22,8 @@
 #include "server/lease-context.h"
 #include "server/php-engine-vars.h"
 #include "server/php-worker.h"
+
+DEFINE_VERBOSITY(lease);
 
 namespace {
 
@@ -57,6 +60,14 @@ enum class lease_state_t {
   finish,            // wait TL_KPHP_STOP_READY_ACKNOWLEDGMENT from target with 1 sec timeout, then change state to lease_state_t::off
 };
 
+const char *lease_state_to_str[] = {
+  "off",
+  "start",
+  "on",
+  "initiating_finish",
+  "finish",
+};
+
 lease_state_t lease_state = lease_state_t::off;
 int lease_ready_flag = 0; // waiting for something -> equal 0
 
@@ -87,6 +98,7 @@ static int get_lease_target_by_pid(int ip, int port, conn_target_t *ct) {
 
 static void lease_change_state(lease_state_t new_state) {
   if (lease_state != new_state) {
+    tvkprintf(lease, 2, "Change lease state: %s -> %s\n", lease_state_to_str[static_cast<int>(lease_state)], lease_state_to_str[static_cast<int>(new_state)]);
     lease_state = new_state;
     lease_ready_flag = 0;
   }
@@ -252,6 +264,7 @@ static int lease_off() {
   set_main_target(RpcClients::get().get_random_alive_client());
   // query the rpc-proxy to get the tasks pid
   if (rpct_ready(rpc_proxy_target) >= 0) {
+    tvkprintf(lease, 1, "Start lease cycle: send RPC_READY to balancer proxy\n");
     lease_ready_flag = 0;
     return 1;
   }
@@ -349,11 +362,13 @@ void lease_cron() {
   int need = 0;
 
   if (lease_state == lease_state_t::on && rpc_lease_timeout < precise_now) {
+    tvkprintf(lease, 1, "Lease time is over, send STOP_READY and initiate finish\n");
     lease_change_state(lease_state_t::initiating_finish);
     need = 1;
   }
 
-  if (lease_state == lease_state_t::finish && is_finish_ack_timeout_expired()) {
+  if (lease_state == lease_state_t::finish && is_stop_ready_timeout_expired()) {
+    tvkprintf(lease, 1, "STOP_READY_ACKNOWLEDGMENT wasn't received, finish lease hardly\n");
     need = 1;
   }
 
@@ -375,6 +390,7 @@ void do_rpc_stop_lease() {
 }
 
 int do_rpc_start_lease(process_id_t pid, double timeout, int actor_id) {
+  tvkprintf(lease, 1, "Got START_LEASE: pid = %s, timeout = %f, actor_id = %d\n", pid_to_print(&pid), timeout - precise_now, actor_id);
   if (rpc_proxy_target == -1) {
     return -1;
   }
@@ -414,6 +430,7 @@ void do_rpc_finish_lease() {
     return;
   }
   stop_ready_ack_received = true;
+  tvkprintf(lease, 1, "Got STOP_READY_ACKNOWLEDGMENT, finish lease\n");
   run_rpc_lease();
 }
 
