@@ -162,16 +162,16 @@ stage::StageInfo *stage::get_stage_info_ptr() {
 
 void stage::set_name(std::string &&name) {
   get_stage_info_ptr()->name = std::move(name);
-  get_stage_info_ptr()->error_flag = false;
+  get_stage_info_ptr()->cnt_errors = 0;
 }
 
 void stage::error() {
   get_stage_info_ptr()->global_error_flag = true;
-  get_stage_info_ptr()->error_flag = true;
+  get_stage_info_ptr()->cnt_errors++;
 }
 
 bool stage::has_error() {
-  return get_stage_info_ptr()->error_flag;
+  return get_stage_info_ptr()->cnt_errors > 0;
 }
 
 bool stage::has_global_error() {

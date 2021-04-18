@@ -17,12 +17,13 @@ from python.lib.file_utils import read_distcc_hosts, error_can_be_ignored
 
 
 class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, env_vars: dict, out_regexps=None):
+    def __init__(self, file_path, test_tmp_dir, tags, env_vars: dict, out_regexps=None, forbidden_regexps=None):
         self.test_tmp_dir = test_tmp_dir
         self.file_path = file_path
         self.tags = tags
         self.env_vars = env_vars
         self.out_regexps = out_regexps
+        self.forbidden_regexps = forbidden_regexps
 
     def is_ok(self):
         return "ok" in self.tags
@@ -199,19 +200,22 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
         if not test_acceptable:
             return None
 
+        forbidden_regexps = []
         out_regexps = []
         env_vars = {}  # string -> string, e.g. {"KPHP_REQUIRE_FUNCTIONS_TYPING" -> "1"}
         while True:
             second_line = f.readline().decode('utf-8').strip()
             if len(second_line) > 1 and second_line.startswith("/") and second_line.endswith("/"):
                 out_regexps.append(re.compile(second_line[1:-1]))
+            elif len(second_line) > 2 and second_line.startswith("!/") and second_line.endswith("/"):
+                forbidden_regexps.append(re.compile(second_line[2:-1]))
             elif second_line.startswith("KPHP_") and "=" in second_line:
                 env_name, env_value = parse_env_var_from_test_header(file_path, second_line)
                 env_vars[env_name] = env_value
             else:  # <?php
                 break
 
-        return TestFile(file_path, test_tmp_dir, tags, env_vars, out_regexps)
+        return TestFile(file_path, test_tmp_dir, tags, env_vars, out_regexps, forbidden_regexps)
 
 
 def parse_env_var_from_test_header(file_path, line):
@@ -322,7 +326,7 @@ def run_fail_test(test: TestFile, runner):
     if runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
 
-    if test.out_regexps:
+    if test.out_regexps or test.forbidden_regexps:
         if not runner.kphp_build_stderr_artifact:
             return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
 
@@ -331,6 +335,10 @@ def run_fail_test(test: TestFile, runner):
             for index, msg_regex in enumerate(test.out_regexps, start=1):
                 if not msg_regex.search(stderr_log):
                     return TestResult.failed(test, runner.artifacts, "can't find {}th error pattern".format(index))
+
+            for index, forbidden_regex in enumerate(test.forbidden_regexps, start=1):
+                if forbidden_regex.search(stderr_log):
+                    return TestResult.failed(test, runner.artifacts, "{}th forbidden error pattern is found".format(index))
 
     if runner.kphp_build_sanitizer_log_artifact:
         return TestResult.failed(test, runner.artifacts, "got sanitizer log")
@@ -352,6 +360,10 @@ def run_warn_test(test: TestFile, runner):
         for index, msg_regex in enumerate(test.out_regexps, start=1):
             if not msg_regex.search(stderr_log):
                 return TestResult.failed(test, runner.artifacts, "can't find {}th warning pattern".format(index))
+
+        for index, forbidden_regex in enumerate(test.forbidden_regexps, start=1):
+            if forbidden_regex.search(stderr_log):
+                return TestResult.failed(test, runner.artifacts, "{}th forbidden warning pattern is found".format(index))
 
     if runner.kphp_build_sanitizer_log_artifact:
         return TestResult.failed(test, runner.artifacts, "got sanitizer log")

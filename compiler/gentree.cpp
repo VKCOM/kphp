@@ -1457,6 +1457,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
 
   std::string func_name;
   bool is_lambda = uses_of_lambda != nullptr;
+  auto cnt_errors_before = stage::get_stage_info_ptr()->cnt_errors;
 
   // a function name is a token that immediately follow a 'function' token (full$$name inside a class)
   if (is_lambda) {
@@ -1555,7 +1556,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     }
 
     require_lambdas();
-  } else if (!stage::has_error()) {
+  } else if (stage::get_stage_info_ptr()->cnt_errors == cnt_errors_before) {
     return cur_function->root;
   }
 
