@@ -69,7 +69,7 @@ const char *lease_state_to_str[] = {
 };
 
 lease_state_t lease_state = lease_state_t::off;
-int lease_ready_flag = 0; // waiting for something -> equal 0
+bool lease_ready_flag = false; // waiting for something -> equal false
 
 } // namespace
 
@@ -100,7 +100,7 @@ static void lease_change_state(lease_state_t new_state) {
   if (lease_state != new_state) {
     tvkprintf(lease, 2, "Change lease state: %s -> %s\n", lease_state_to_str[static_cast<int>(lease_state)], lease_state_to_str[static_cast<int>(new_state)]);
     lease_state = new_state;
-    lease_ready_flag = 0;
+    lease_ready_flag = false;
   }
 }
 
@@ -281,7 +281,7 @@ static int lease_off() {
   // query the rpc-proxy to get the tasks pid
   if (rpct_ready(rpc_proxy_target) >= 0) {
     tvkprintf(lease, 1, "Start lease cycle: send RPC_READY to balancer proxy\n");
-    lease_ready_flag = 0;
+    lease_ready_flag = false;
     return 1;
   }
   return 0;
@@ -293,7 +293,7 @@ static int lease_start() {
     return 0;
   }
   lease_change_state(lease_state_t::on);
-  lease_ready_flag = 1;
+  lease_ready_flag = true;
   if (rpc_stopped) {
     lease_change_state(lease_state_t::initiating_finish);
   }
@@ -310,7 +310,7 @@ static int lease_on() {
   }
   // query the tasks engine to get new tasks
   if (rpct_ready(rpc_lease_target) >= 0) {
-    lease_ready_flag = 0;
+    lease_ready_flag = false;
     return 1;
   }
   return 0;
@@ -326,7 +326,7 @@ static int lease_initiating_finish() {
 
   rpct_lease_stats(rpc_proxy_target);
   lease_change_state(lease_state_t::finish);
-  lease_ready_flag = 0; // waiting TL_KPHP_STOP_READY_ACKNOWLEDGMENT
+  lease_ready_flag = false; // waiting TL_KPHP_STOP_READY_ACKNOWLEDGMENT
   return 1;
 }
 
@@ -337,13 +337,13 @@ static int lease_finish() {
   }
   if (stop_ready_ack_received || is_stop_ready_timeout_expired()) {
     lease_change_state(lease_state_t::off);
-    lease_ready_flag = 1;
+    lease_ready_flag = true;
 
     stop_ready_ack_received = false;
     stop_ready_ack_timer.reset();
     return 1;
   } else {
-    lease_ready_flag = 0; // waiting TL_KPHP_STOP_READY_ACKNOWLEDGMENT,
+    lease_ready_flag = false; // waiting TL_KPHP_STOP_READY_ACKNOWLEDGMENT,
                           // then lease_ready_flag set to 1 in rpcx_execute on ACK receiving or run run_rpc_lease directly in lease_cron on timeout expiring
     return 0;
   }
@@ -452,7 +452,7 @@ void do_rpc_finish_lease() {
 
 
 void lease_set_ready() {
-  lease_ready_flag = 1;
+  lease_ready_flag = true;
 }
 
 void lease_on_stop() {
