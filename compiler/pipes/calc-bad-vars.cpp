@@ -141,24 +141,11 @@ private:
   };
 
   void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
-    FunctionPtr wait_func = G->get_function("wait");
-    if (!wait_func) { // when functions.txt is empty or disabled for dev
-      return;
-    }
-
     IdMap<std::vector<VarPtr>> tmp_vars(call_graph.n);
 
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr func = call_graph.functions[i];
       tmp_vars[func] = std::move(dep_datas[i].used_global_vars);
-
-      if (func->is_resumable) {
-        call_graph.graph[wait_func].push_back(func);
-        call_graph.rev_graph[func].push_back(wait_func);
-
-        call_graph.graph[func].push_back(wait_func);
-        call_graph.rev_graph[wait_func].push_back(func);
-      }
     }
 
     MergeBadVarsCallback callback(std::move(tmp_vars));
