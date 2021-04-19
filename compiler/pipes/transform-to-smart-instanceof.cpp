@@ -4,7 +4,26 @@
 
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
+#include "common/algorithms/contains.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/data/class-data.h"
 #include "compiler/name-gen.h"
+
+namespace {
+  ClassPtr get_first_common_child(ClassPtr base1, ClassPtr base2) {
+    auto base1_children = base1->get_all_inheritors();
+    std::unordered_set<ClassPtr> derived_base1{base1_children.begin(), base1_children.end()};
+
+    for (auto base2_child : base2->get_all_inheritors()) {
+      if (vk::contains(derived_base1, base2_child)) {
+        return base2_child;
+      }
+    }
+
+    return {};
+  }
+} // namespace
 
 bool TransformToSmartInstanceof::user_recursion(VertexPtr v) {
   auto if_vertex = v.try_as<op_if>();
@@ -14,14 +33,24 @@ bool TransformToSmartInstanceof::user_recursion(VertexPtr v) {
     return false;
   }
 
-  if (!infer_class_of_expr(current_function, instance_var).try_as_class()) {
-    kphp_error(false, "left operand of `instanceof` should be instance of class");
-    return false;
-  }
+  auto type_of_lhs = infer_class_of_expr(current_function, instance_var).try_as_class();
+  kphp_error_act(type_of_lhs, "left operand of `instanceof` should be instance of class", return false);
 
   run_function_pass(if_vertex->cond(), this);
 
-  add_tmp_var_with_instance_cast(instance_var, condition->rhs(), if_vertex->true_cmd_ref());
+  auto name_of_rhs_class_vertex = condition->rhs().as<op_string>();
+  const std::string &name_of_rhs_class = name_of_rhs_class_vertex->str_val;
+  ClassPtr rhs_class = G->get_class(name_of_rhs_class);
+  kphp_error_act(rhs_class, fmt_format("can't find right operand of `instanceof`: {}", name_of_rhs_class), return false);
+
+  if (!rhs_class->is_parent_of(type_of_lhs) && !type_of_lhs->is_parent_of(rhs_class)) {
+    rhs_class = get_first_common_child(rhs_class, type_of_lhs);
+    kphp_error_act(rhs_class, fmt_format("{} and {} are not compatible, always false", type_of_lhs->name, name_of_rhs_class), return false);
+    name_of_rhs_class_vertex = name_of_rhs_class_vertex.clone();
+    name_of_rhs_class_vertex->str_val = rhs_class->name;
+  }
+
+  add_tmp_var_with_instance_cast(instance_var, name_of_rhs_class_vertex, if_vertex->true_cmd_ref());
   new_names_of_var[instance_var->str_val].pop();
 
   if (if_vertex->has_false_cmd()) {
