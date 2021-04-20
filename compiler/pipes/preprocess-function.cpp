@@ -531,6 +531,14 @@ private:
 
       kphp_error(!f->modifiers.is_static() || call->extra_type != op_ex_func_call_arrow, "It's not allowed to call static method through instance var");
       call = set_func_id(call, f);
+      if (!f->is_required && f->is_virtual_method && !f->is_template && f->local_name() == ClassData::NAME_OF_INVOKE_METHOD) {
+        /**
+         * Typed lambda's interfaces should be generated before. If it doesn't happen, they will be created implicitly in resolving the assumptions above.
+         * So we have registered invoke methods that are not passed through pipes. Some kphp_asserts will fail due to this.
+         * As the result, such functions are passed next and will be thrown away later.
+         */
+        instance_of_function_template_stream << f;
+      }
     } else {
       print_why_cant_set_func_id_error(call, name);
     }
