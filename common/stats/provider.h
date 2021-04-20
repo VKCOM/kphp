@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstring>
 #include <type_traits>
 
@@ -45,6 +46,11 @@ void add_gauge_stat(stats_t *stats, T value, const char *key1, const char *key2 
   } else {
     add_gauge_stat_double(stats, stat_key, static_cast<double>(value));
   }
+}
+
+template<class T>
+void add_gauge_stat(stats_t *stats, const std::atomic<T> &value, const char *key1, const char *key2 = "") noexcept {
+  add_gauge_stat(stats, value.load(std::memory_order_relaxed), key1, key2);
 }
 
 char *stat_temp_format(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
