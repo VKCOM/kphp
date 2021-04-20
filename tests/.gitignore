@@ -7,5 +7,5 @@ regexdna*
 tmp
 dev
 TL-tests/
-python/tests/*/_tmp/
+python/_tmp/
 confdata_g9.*
