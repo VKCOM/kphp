@@ -96,8 +96,10 @@ function x2_with_error(X2Request $x2_req) {
     stack_overflow();
   } else if ($x2_req->error_type === "php_assert") {
     critical_error("Test php_assert");
-  }if ($x2_req->error_type === "sigsegv") {
+  } else if ($x2_req->error_type === "sigsegv") {
     raise_sigsegv();
+  } else if ($x2_req->error_type === "big_response") {
+    $x2_resp->arr_reply = make_big_fake_array();
   }
 
   kphp_job_worker_store_response($x2_resp);

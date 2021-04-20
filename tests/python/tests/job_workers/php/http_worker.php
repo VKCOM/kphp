@@ -35,6 +35,10 @@ function do_http_worker() {
       run_http_complex_scenario();
       return;
     }
+    case "/test_client_too_big_request": {
+      test_client_too_big_request();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -114,6 +118,12 @@ function test_job_errors() {
 
 function raise_error(string $err) {
   echo json_encode(["error" => $err]);
+}
+
+function test_client_too_big_request() {
+  $req = new X2Request;
+  $req->arr_request = make_big_fake_array();
+  echo json_encode(["job-id" => kphp_job_worker_start($req)]);
 }
 
 function test_jobs_in_wait_queue() {

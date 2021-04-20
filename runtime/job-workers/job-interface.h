@@ -24,7 +24,8 @@ namespace job_workers {
 enum {
   server_php_script_error_offset = -100,
   client_timeout_error = -102, // same as script timeout
-  client_oom_error = -1001
+  client_oom_error = -1001,
+  server_nothing_replied_error = -2001
 };
 
 struct SendingInstanceBase : abstract_refcountable_php_interface {

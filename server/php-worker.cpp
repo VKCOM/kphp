@@ -593,6 +593,11 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
     } else if (worker->mode == once_worker) {
       assert (write(1, res->body, (size_t)res->body_len) == res->body_len);
       run_once_return_code = res->exit_code;
+    } else if (worker->mode == job_worker) {
+      auto &job_server = vk::singleton<job_workers::JobWorkerServer>::get();
+      if (job_server.reply_is_expected()) {
+        job_server.try_store_job_response_error("Nothing replied", job_workers::server_nothing_replied_error);
+      }
     }
   }
 }
