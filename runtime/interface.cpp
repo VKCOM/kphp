@@ -2194,14 +2194,16 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
-  vk::singleton<JsonLogger>::get().reset_buffers();
+
   free_job_client_interface_lib();
   free_job_server_interface_lib();
+  free_job_workers_interface_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
   free_kphp_backtrace();
 
+  vk::singleton<JsonLogger>::get().reset_buffers();
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
@@ -2210,7 +2212,6 @@ static void free_runtime_libs() {
     }
     uploaded_files_last_query_num--;
   }
-
   dl::leave_critical_section();
 }
 

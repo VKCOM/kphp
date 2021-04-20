@@ -830,6 +830,7 @@ int run_worker(WorkerType worker_type) {
 
     instance_cache_release_all_resources_acquired_by_this_proc();
     ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
+    vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
     return 1;
   }
 

@@ -31,7 +31,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         job_result = resp.json()["jobs-result"]
         self.assertEqual(job_result[0]["error_code"], self.JOB_TIMEOUT_ERROR)
         self.assertEqual(job_result[1]["error_code"], self.JOB_TIMEOUT_ERROR)
-        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_memory_slices_used": self.cmpEq(0)})
+        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_messages_acquired": self.cmpEq(0)})
 
     def job_error_test_impl(self, error_type, error_code, ignore_stats = False):
         resp = self.kphp_server.http_post(
@@ -48,7 +48,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         self.assertEqual(job_result[0]["error_code"], error_code)
         self.assertEqual(job_result[1]["error_code"], error_code)
         if not ignore_stats:
-            self.kphp_server.assert_stats({"kphp_server.job_workers_currently_memory_slices_used": self.cmpEq(0)})
+            self.kphp_server.assert_stats({"kphp_server.job_workers_currently_messages_acquired": self.cmpEq(0)})
 
     def test_job_memory_limit_error(self):
         self.job_error_test_impl("memory_limit", self.JOB_MEMORY_LIMIT_ERROR)

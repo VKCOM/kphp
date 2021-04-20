@@ -22,7 +22,7 @@ class TestJobResumable(KphpServerAutoTestCase):
                 {"data": [1 * 1, 2 * 2, 3 * 3, 4 * 4], "stats": []},
                 {"data": [7 * 7, 9 * 9, 12 * 12], "stats": []},
             ]})
-        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_memory_slices_used": self.cmpEq(0)})
+        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_messages_acquired": self.cmpEq(0)})
 
     def test_several_waits_for_one_job(self):
         resp = self.kphp_server.http_post(
@@ -37,5 +37,5 @@ class TestJobResumable(KphpServerAutoTestCase):
             "jobs-result": [
                 {"data": [1 * 1, 2 * 2, 3 * 3, 4 * 4], "stats": []},
             ]})
-        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_memory_slices_used": self.cmpEq(0)})
+        self.kphp_server.assert_stats({"kphp_server.job_workers_currently_messages_acquired": self.cmpEq(0)})
 

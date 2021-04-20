@@ -39,6 +39,12 @@ void global_init_job_workers_lib() noexcept {
   }
 }
 
+void free_job_workers_interface_lib() noexcept {
+  if (f$is_kphp_job_workers_enabled()) {
+    vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
+  }
+}
+
 void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
   int64_t job_resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().finish_job_on_answer(job_id, job_result);
 

@@ -12,15 +12,38 @@
 
 namespace job_workers {
 
-struct JobSharedMessage : vk::not_copyable {
+constexpr uint32_t JOB_SHARED_MESSAGE_FREE_CNT = std::numeric_limits<uint32_t>::max();
+constexpr size_t JOB_SHARED_MESSAGE_SIZE = 1024 * 1024;
+
+struct alignas(8) JobSharedMessageMetadata : vk::not_copyable {
+public:
   memory_resource::unsynchronized_pool_resource resource;
   class_instance<SendingInstanceBase> instance;
 
-  std::atomic<pid_t> owner_pid{0};
+  std::atomic<uint32_t> owners_counter{JOB_SHARED_MESSAGE_FREE_CNT};
 
-  int job_id{0};
-  int job_result_fd_idx{-1};
+  int32_t job_id{0};
+  int32_t job_result_fd_idx{-1};
   double job_deadline_time{-1.0};
+
+protected:
+  JobSharedMessageMetadata() = default;
+  ~JobSharedMessageMetadata() = default;
 };
+
+struct JobSharedMessage : JobSharedMessageMetadata {
+private:
+  static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_SIZE - sizeof(JobSharedMessageMetadata);
+
+public:
+  JobSharedMessage() noexcept {
+    resource.init(memory_pool_buffer_, MEMORY_POOL_BUFFER_SIZE);
+  }
+
+private:
+  alignas(8) char memory_pool_buffer_[MEMORY_POOL_BUFFER_SIZE];
+};
+
+static_assert(sizeof(JobSharedMessage) == JOB_SHARED_MESSAGE_SIZE, "check yourself");
 
 } // namespace job_workers

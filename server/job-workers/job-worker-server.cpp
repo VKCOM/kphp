@@ -139,11 +139,12 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   }
 
   JobStats::get().job_queue_size--;
+  vk::singleton<job_workers::SharedMemoryManager>::get().attach_shared_message_to_this_proc(job);
   running_job = job;
   reply_was_sent = false;
 
   auto now = std::chrono::system_clock::now();
-  double timeout_sec = job->job_deadline_time - std::chrono::duration_cast<std::chrono::duration<double>>(now.time_since_epoch()).count();
+  double timeout_sec = job->job_deadline_time - std::chrono::duration<double>{now.time_since_epoch()}.count();
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
@@ -215,17 +216,20 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   if (reply_was_sent) {
     return;
   }
-  auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
+
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto *response_memory = memory_manager.acquire_shared_message();
   if (!response_memory) {
     log_server_error("Can't store job response error: not enough shared memory");
     return;
   }
 
   response_memory->instance = create_error_on_other_memory(error_code, error_msg, response_memory->resource);
-
   if (const char *err = send_job_reply(response_memory)) {
-    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    memory_manager.release_shared_message(response_memory);
     log_server_error("Can't store job response: %s", err);
+  } else {
+    memory_manager.detach_shared_message_from_this_proc(response_memory);
   }
 }
 

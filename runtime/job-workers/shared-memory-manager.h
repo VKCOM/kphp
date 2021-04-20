@@ -14,19 +14,26 @@ namespace job_workers {
 
 struct JobSharedMessage;
 
+struct SharedMemoryProcessOwnersTable;
+
 class SharedMemoryManager : vk::not_copyable {
 public:
   void init() noexcept;
 
   JobSharedMessage *acquire_shared_message() noexcept;
-  void release_shared_message(JobSharedMessage *slice) noexcept;
+  void release_shared_message(JobSharedMessage *message) noexcept;
+
+  void attach_shared_message_to_this_proc(JobSharedMessage *message) noexcept;
+  void detach_shared_message_from_this_proc(JobSharedMessage *message) noexcept;
+
+  void forcibly_release_all_attached_messages() noexcept;
 
   void set_memory_limit(size_t memory_limit) {
     memory_limit_ = memory_limit;
   }
 
-  size_t get_total_slices_count() const noexcept {
-    return slices_count_;
+  size_t get_messages_count() const noexcept {
+    return messages_count_;
   }
 
 private:
@@ -34,15 +41,10 @@ private:
 
   friend class vk::singleton<SharedMemoryManager>;
 
-  JobSharedMessage *get_message(size_t index) noexcept {
-    return reinterpret_cast<JobSharedMessage *>(static_cast<uint8_t *>(memory_) + index * memory_slice_size_);
-  }
-
-  static constexpr size_t memory_slice_size_ = 1024 * 1024;
-
-  size_t memory_limit_{1024 * 1024 * 1024};
-  size_t slices_count_{0};
-  void *memory_{nullptr};
+  size_t memory_limit_{0};
+  SharedMemoryProcessOwnersTable *owners_table_{nullptr};
+  JobSharedMessage *messages_{nullptr};
+  size_t messages_count_{0};
   std::random_device rd_;
 };
 

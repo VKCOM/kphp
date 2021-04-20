@@ -22,6 +22,7 @@ public:
   using monotonic_buffer_resource::memory_begin;
 
   void init(void *buffer, size_t buffer_size) noexcept;
+  void hard_reset() noexcept;
 
   void *allocate(size_t size) noexcept {
     void *mem = nullptr;

@@ -20,6 +20,10 @@ void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size) noexce
   free_chunks_.fill(details::memory_chunk_list{});
 }
 
+void unsynchronized_pool_resource::hard_reset() noexcept {
+  init(memory_begin_, memory_end_ - memory_begin_);
+}
+
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   memory_debug("perform memory defragmentation\n");
   details::memory_ordered_chunk_list mem_list{memory_begin_};
