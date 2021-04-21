@@ -136,3 +136,8 @@ class TestJobErrors(KphpServerAutoTestCase):
                 "64mb_buffer_acquire_fails": self.cmpGe(1), "64mb_buffers_acquired": self.cmpGe(0),
                 "64mb_buffers_released": self.cmpGe(0),
             })
+
+    def test_client_wait_false(self):
+        resp = self.kphp_server.http_get("/test_client_wait_false")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {"jobs-result": "null"})

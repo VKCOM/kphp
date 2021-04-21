@@ -39,6 +39,10 @@ function do_http_worker() {
       test_client_too_big_request();
       return;
     }
+    case "/test_client_wait_false": {
+      test_client_wait_false();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -169,4 +173,13 @@ function test_several_waits_for_one_job() {
   }
 
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
+}
+
+function test_client_wait_false() {
+  $id = false;
+  if ($id) {
+    $id = kphp_job_worker_start(new X2Request);
+  }
+  $result = kphp_job_worker_wait($id);
+  echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
 }
