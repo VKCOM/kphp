@@ -17,6 +17,9 @@ int64_t preg_replace_count_dummy;
 #ifndef PCRE2_ERROR_BADOFFSET
 #  define PCRE2_ERROR_BADOFFSET -33
 #endif
+#ifndef PCRE2_UNSET
+#  define PCRE2_UNSET -1
+#endif
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 // refactor me please :(
@@ -607,8 +610,8 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
         submatch[i + i + 1] = static_cast<int32_t>(submatch[i + i] + RE2_submatch[i].size());
         count = i;
       } else {
-        submatch[i + i] = -1;
-        submatch[i + i + 1] = -1;
+        submatch[i + i] = PCRE2_UNSET;
+        submatch[i + i + 1] = PCRE2_UNSET;
       }
     }
     php_assert (count >= 0);
@@ -832,7 +835,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
   bool second_try = false;//set after matching an empty string
 
   int64_t result = 0;
-  auto empty_match = array<mixed>::create(string(), -1);
+  auto empty_match = array<mixed>::create(string(), PCRE2_UNSET);
   offset = std::max(subject.get_correct_index(offset), 0_i64);
   if (offset > subject.size()) {
     matches = array<mixed>();
@@ -857,20 +860,26 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     result++;
 
     if (pattern_order) {
+      // push_match() is almost preg_add_match(), but we do a push_back for named matches here;
+      // TODO: can we generalize match collection? offset_capture handling is also copied in several places
+      const auto push_match = [this](mixed &matches, int i, const mixed &match) {
+        if (named_subpatterns_count && !subpattern_names[i].empty()) {
+          matches[subpattern_names[i]].push_back(match);
+        }
+        matches[i].push_back(match);
+      };
+
       for (int32_t i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
         if (offset_capture && (fix_php_bugs || i < count)) {
           auto match = array<mixed>::create(match_str, submatch[i + i]);
-
-          if (named_subpatterns_count && !subpattern_names[i].empty()) {
-            matches[subpattern_names[i]].push_back(match);
-          }
-          matches[i].push_back(match);
+          push_match(matches, i, match);
         } else {
-          if (named_subpatterns_count && !subpattern_names[i].empty()) {
-            matches[subpattern_names[i]].push_back(match_str);
+          if (offset_capture) {
+            push_match(matches, i, empty_match);
+          } else {
+            push_match(matches, i, match_str);
           }
-          matches[i].push_back(match_str);
         }
       }
     } else {
