@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/check-classes.h"
 
+#include "common/termformat/termformat.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
@@ -92,6 +94,14 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
     kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
     if (vk::string_view(*kphp_serialized_field_str).starts_with("none")) {
       return;
+    }
+
+    const auto *field_type = f.root->var_id->tinf_node.get_type();
+    std::unordered_set<ClassPtr> classes_inside;
+    field_type->get_all_class_types_inside(classes_inside);
+    for (auto inner_c : classes_inside) {
+      kphp_error(inner_c->is_serializable, fmt_format("class {} must be serializable as it is used in field {}::{}",
+                                                      TermStringFormat::paint_red(inner_c->name), klass->name, f.local_name()));
     }
 
     try {
