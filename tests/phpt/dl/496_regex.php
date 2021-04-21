@@ -124,11 +124,6 @@ $str = 'hypertext language programming';
 $chars = preg_split('/ /', $str, -1, PREG_SPLIT_OFFSET_CAPTURE);
 print_r($chars);
 
-$range = implode ('', range (chr(0), chr (255)));
-
-var_dump (preg_quote ($range));
-var_dump (preg_quote ($range, '/'));
-
 var_dump (preg_replace ('~a|~', 'b', 'a'));
 var_dump (preg_replace ('~a|~', 'a', 'b'));
 
