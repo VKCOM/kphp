@@ -722,7 +722,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     return false;
   }
   while (offset <= int64_t{subject.size()}) {
-    int64_t count = exec(subject, offset, second_try);
+    const int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
       if (second_try) {
@@ -751,17 +751,16 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
         matches[i].push_back(match_str);
       }
     } else {
-      int64_t size = fix_php_bugs ? subpatterns_count : count;
-      array<mixed> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
-        for (int64_t i = 0; i < size; i++) {
+        for (int64_t i = 0; i < count; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           preg_add_match(result_set, match_str, subpattern_names[i]);
         }
       } else {
-        for (int64_t i = 0; i < size; i++) {
+        for (int64_t i = 0; i < count; i++) {
           result_set.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
         }
       }
@@ -840,7 +839,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     return false;
   }
   while (offset <= int64_t{subject.size()}) {
-    int64_t count = exec(subject, offset, second_try);
+    const int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
       if (second_try) {
@@ -859,7 +858,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     if (pattern_order) {
       for (int32_t i = 0; i < subpatterns_count; i++) {
         const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
-        if (offset_capture && (fix_php_bugs || i < count)) {
+        if (offset_capture && i < count) {
           auto match = array<mixed>::create(match_str, submatch[i + i]);
 
           if (named_subpatterns_count && !subpattern_names[i].empty()) {
@@ -874,11 +873,10 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
         }
       }
     } else {
-      int64_t size = fix_php_bugs ? subpatterns_count : count;
-      array<mixed> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
-        for (int64_t i = 0; i < size; i++) {
+        for (int64_t i = 0; i < count; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
@@ -888,7 +886,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
           }
         }
       } else {
-        for (int64_t i = 0; i < size; i++) {
+        for (int64_t i = 0; i < count; i++) {
           const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
           if (offset_capture) {
