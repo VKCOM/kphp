@@ -426,8 +426,8 @@ private:
         if (!func->is_template && !func->is_instantiation_of_template_function()) {
           if (auto arg_assum = infer_class_of_expr(current_function, call_arg).try_as_class()) {
             ClassPtr lambda_interface_klass = infer_class_of_expr(func, param->var()).try_as_class();
-            auto is_correct_lambda = arg_assum->is_lambda() && lambda_interface_klass && lambda_interface_klass->is_parent_of(arg_assum);
-            kphp_error_act(is_correct_lambda, fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
+            kphp_error_act(lambda_interface_klass && lambda_interface_klass->is_parent_of(arg_assum),
+                           fmt_format("Can't infer lambda from expression passed as argument: {}", param->var()->str_val), return call);
           } else {
             kphp_error_act(false, fmt_format("You must passed lambda as argument: {}", param->var()->str_val), return call);
           }
