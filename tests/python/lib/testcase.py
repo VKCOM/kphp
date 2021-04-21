@@ -35,9 +35,17 @@ def _sync_data(tmp_dir, test_parent_dir):
 
 def _get_tmp_folder_path(test_script_file):
     test_script_dir = os.path.dirname(os.path.realpath(test_script_file))
+    tests_root_dir = test_script_dir
+    while not tests_root_dir.endswith("python/tests"):
+        tests_root_dir = os.path.dirname(tests_root_dir)
+        if "python/tests" not in tests_root_dir:
+            raise RuntimeError("Can't find tests root dir")
+
+    python_tests_dir = os.path.dirname(tests_root_dir)
+    tmp_dir = os.path.join(python_tests_dir, "_tmp/", test_script_dir[len(tests_root_dir) + 1:])
     test_suite_name, _ = os.path.splitext(os.path.basename(test_script_file))
-    working_dir = os.path.join(test_script_dir, "_tmp/working_dir")
-    artifacts_dir = os.path.join(test_script_dir, "_tmp/artifacts")
+    working_dir = os.path.join(tmp_dir, "working_dir")
+    artifacts_dir = os.path.join(tmp_dir, "artifacts")
     tmp_dir_root = os.path.join(artifacts_dir, "tmp_{}".format(test_suite_name))
     return working_dir, tmp_dir_root, artifacts_dir, test_script_dir
 
