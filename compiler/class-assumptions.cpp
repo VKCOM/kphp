@@ -551,10 +551,14 @@ Assumption calc_assumption_for_var(FunctionPtr f, vk::string_view var_name, size
 Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call> call) {
   if (f->is_extern()) {
     if (f->return_typehint) {
-      if (const auto *as_instance = f->return_typehint->try_as<TypeHintInstance>()) {
+      const auto *return_typehint = f->return_typehint;
+      if (const auto *optional_arg = return_typehint->try_as<TypeHintOptional>()) {
+        return_typehint = optional_arg->inner;
+      }
+      if (const auto *as_instance = return_typehint->try_as<TypeHintInstance>()) {
         return Assumption(as_instance->resolve());
       }
-      if (const auto *as_arg_ref = f->return_typehint->try_as<TypeHintArgRefInstance>()) {
+      if (const auto *as_arg_ref = return_typehint->try_as<TypeHintArgRefInstance>()) {
         if (auto arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, call)) {
           if (const auto *class_name = GenTree::get_constexpr_string(arg)) {
             if (auto klass = G->get_class(*class_name)) {
