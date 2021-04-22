@@ -22,7 +22,7 @@ struct StageInfo {
   std::string name;
   Location location;
   bool global_error_flag{false};
-  bool error_flag{false};
+  uint32_t cnt_errors{0};
 };
 
 StageInfo *get_stage_info_ptr();
