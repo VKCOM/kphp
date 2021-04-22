@@ -1617,8 +1617,12 @@ void run_master_off_in_graceful_shutdown() {
   assert(state == master_state::off_in_graceful_shutdown);
   to_kill = me_running_http_workers_n;
   if (all_http_workers_killed()) {
-    to_exit = 1;
-    me->is_alive = false;
+    if (all_job_workers_killed()) {
+      to_exit = 1;
+      me->is_alive = false;
+    } else {
+      job_workers_to_kill = vk::singleton<JobWorkersContext>::get().running_job_workers;
+    }
   }
 }
 
@@ -1641,9 +1645,13 @@ void run_master_off_in_graceful_restart() {
   }
 
   if (all_http_workers_killed()) {
-    to_exit = 1;
-    changed = 1;
-    me->is_alive = false;
+    if (all_job_workers_killed()) {
+      to_exit = 1;
+      changed = 1;
+      me->is_alive = false;
+    } else {
+      job_workers_to_kill = vk::singleton<JobWorkersContext>::get().running_job_workers;
+    }
   }
 }
 
@@ -1944,7 +1952,14 @@ void run_master() {
 
     me->generation = generation;
 
-    const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
+
+    if (to_kill != 0 || to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
+      vkprintf(1, "[to_kill = %d] [to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n", to_kill, to_run, job_workers_to_kill, job_workers_to_run);
+    }
+
+    for (int i = 0; i < job_workers_to_kill; ++i) {
+      kill_worker(WorkerType::job_worker);
+    }
     for (int i = 0; i < job_workers_to_run; ++i) {
       if (run_worker(WorkerType::job_worker)) {
         tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
@@ -1952,9 +1967,6 @@ void run_master() {
       }
     }
 
-    if (to_kill != 0 || to_run != 0) {
-      vkprintf(1, "[to_kill = %d] [to_run = %d]\n", to_kill, to_run);
-    }
     while (to_kill-- > 0) {
       kill_worker(WorkerType::http_worker);
     }
@@ -1979,7 +1991,7 @@ void run_master() {
     shared_data_unlock(shared_data);
 
     if (to_exit) {
-      vkprintf(1, "all HTTP workers killed. Exit\n");
+      vkprintf(1, "all workers killed. Exit\n");
       _exit(0);
     }
 

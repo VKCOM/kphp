@@ -1667,10 +1667,16 @@ static void generic_event_loop(RunMode mode) {
       main_thread_reactor.pre_event();
     }
 
-    if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag &&
-        pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
-      vkprintf (1, "Quitting because of sigterm\n");
-      break;
+    if (vk::any_of_equal(mode, RunMode::http_worker, RunMode::master)) {
+      if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
+        vkprintf(1, "Quitting because of sigterm\n");
+        break;
+      }
+    } else if (mode == RunMode::job_worker) {
+      if (sigterm_on && (precise_now > sigterm_time || !php_worker_run_flag)) {
+        kprintf("Job worker is quitting because of SIGTERM\n");
+        break;
+      }
     }
   }
 
