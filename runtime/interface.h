@@ -64,9 +64,6 @@ Optional<string> f$ip2ulong(const string &ip);
 
 string f$long2ip(int64_t num);
 
-template<class T>
-inline string f$long2ip(const T &v);//shut up warning on converting to int
-
 Optional<array<string>> f$gethostbynamel(const string &name);
 
 Optional<string> f$inet_pton(const string &address);
@@ -173,11 +170,6 @@ void free_runtime_environment();
  *     IMPLEMENTATION
  *
  */
-
-template<class T>
-string f$long2ip(const T &v) {
-  return f$long2ip(f$intval(v));
-}
 
 // for degug use only
 void f$raise_sigsegv();
