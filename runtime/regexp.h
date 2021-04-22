@@ -17,8 +17,6 @@ class RE2;
 
 extern int64_t preg_replace_count_dummy;
 
-constexpr bool fix_php_bugs = false;
-
 constexpr int64_t PREG_PATTERN_ORDER = 1;
 constexpr int64_t PREG_SET_ORDER = 2;
 constexpr int64_t PREG_OFFSET_CAPTURE = 4;
@@ -245,18 +243,17 @@ inline string regexp::get_replacement(const string &replace_val, const string &s
 }
 
 template<class T>
-string regexp::get_replacement(const T &replace_val, const string &subject, int64_t count) const {
-  int64_t size = fix_php_bugs ? subpatterns_count : count;
-  array<string> result_set(array_size(size, named_subpatterns_count, named_subpatterns_count == 0));
+string regexp::get_replacement(const T &replace_val, const string &subject, const int64_t count) const {
+  array<string> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
 
   if (named_subpatterns_count) {
-    for (int64_t i = 0; i < size; i++) {
+    for (int64_t i = 0; i < count; i++) {
       const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
 
       preg_add_match(result_set, match_str, subpattern_names[i]);
     }
   } else {
-    for (int64_t i = 0; i < size; i++) {
+    for (int64_t i = 0; i < count; i++) {
       result_set.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
     }
   }
