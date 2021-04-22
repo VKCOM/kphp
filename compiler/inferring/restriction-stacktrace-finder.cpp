@@ -128,7 +128,7 @@ bool RestrictionStacktraceFinder::find_call_trace_with_error(tinf::Node *cur_nod
     tinf::Node *to = e->to;
     kphp_assert(e->from == cur_node && e->to != cur_node);
 
-    if (vk::contains(node_path, to)) {
+    if (vk::contains(node_path, to) && dynamic_cast<tinf::VarNode *>(to) == nullptr) {
       continue;
     }
     if (node_path.size() == max_cnt_nodes_in_path) {
