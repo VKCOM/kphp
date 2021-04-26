@@ -619,7 +619,7 @@ function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n
 
 function ip2long ($ip ::: string) ::: int | false;
 function ip2ulong ($ip ::: string) ::: string | false;
-function long2ip ($ip) ::: string;
+function long2ip ($ip ::: int) ::: string;
 
 function get_magic_quotes_gpc() ::: bool;
 function php_sapi_name() ::: string;
