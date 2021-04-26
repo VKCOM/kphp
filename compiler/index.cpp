@@ -38,8 +38,21 @@ int64_t get_mtime(const struct stat &sb) {
 //  for a start, files will be indexed by their names
 //               hashes will be used in future
 
-File::File(const string &path) :
-  path(path) {
+void File::calc_name_ext_and_others(const std::string &basedir) {
+  kphp_assert(vk::string_view{path}.starts_with(basedir));
+  name = vk::string_view{path}.substr(basedir.size());
+  auto dot_i = name.rfind('.');
+  if (dot_i == string::npos) {
+    dot_i = name.size();
+  }
+  auto slash_i = name.rfind('/', dot_i - 1);
+  if (slash_i != string::npos) {
+    subdir = name.substr(0, slash_i + 1);
+  } else {
+    subdir = vk::string_view{};
+  }
+  ext = name.substr(dot_i);
+  name_without_ext = name.substr(0, dot_i);
 }
 
 void File::set_mtime(long long mtime_value) {
@@ -114,7 +127,7 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
       return 0;
     }
     char full_path[PATH_MAX + 1];
-    File *f = current_index->insert_file(realpath(fpath, full_path));
+    File *f = current_index->on_new_file_during_scan_dir(realpath(fpath, full_path));
     f->on_disk = true;
     long long new_mtime = get_mtime(*sb);
     //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
@@ -130,27 +143,18 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
   return 0;
 }
 
-void Index::sync_with_dir(const string &new_dir) {
-  set_dir(new_dir);
-  for (const auto &path_and_file : files) {
-    path_and_file.second->on_disk = false;
-  }
+void Index::sync_with_dir(const string &dir) {
+  kphp_assert(files_prev_launch.empty() && files_only_cur_launch.empty() && this->dir.empty());
+  set_dir(dir);
   current_index = this;
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
   kphp_assert_msg(err == 0, fmt_format("ftw [{}] failed", dir));
-
-  for (auto it = files.begin(); it != files.end();) {
-    if (it->second->on_disk) {
-      ++it;
-    } else {
-      delete it->second;
-      it = files.erase(it);
-    }
-  }
 }
 
 void Index::del_extra_files() {
-  for (auto it = files.begin(); it != files.end();) {
+  // delete files that were not emerged by the current launch
+  // we need only to iterate through files_prev_codegen and unlink if !file->needed
+  for (auto it = files_prev_launch.begin(); it != files_prev_launch.end();) {
     File *file = it->second;
     if (!file->needed) {
       if (file->on_disk) {
@@ -165,7 +169,7 @@ void Index::del_extra_files() {
       }
 
       delete file;
-      it = files.erase(it);
+      it = files_prev_launch.erase(it);
     } else {
       ++it;
     }
@@ -173,7 +177,7 @@ void Index::del_extra_files() {
 }
 
 void Index::create_subdir(vk::string_view subdir) {
-  if (!subdirs.insert(subdir).second) {
+  if (subdir.empty() || !subdirs.insert(subdir).second) {
     return;
   }
   string full_path = get_dir() + subdir;
@@ -195,36 +199,69 @@ void Index::fix_path(std::string &path) const {
 
 File *Index::get_file(std::string path) const {
   fix_path(path);
-  auto it = files.find(path);
-  return it == files.end() ? nullptr : it->second;
+  auto it = files_prev_launch.find(path);
+  if (it != files_prev_launch.end()) {
+    return it->second;
+  }
+  if (files_only_cur_launch.empty()) {
+    return nullptr;
+  }
+
+  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
+  it = files_only_cur_launch.find(path);
+  if (it != files_only_cur_launch.end()) {
+    return it->second;
+  }
+  return nullptr;
 }
 
 File *Index::insert_file(std::string path) {
   fix_path(path);
-  File *&f = files[path];
-  if (f == nullptr) {
-    f = new File();
-    f->path = std::move(path);
-    kphp_assert (f->path.size() > get_dir().size());
-    kphp_assert (strncmp(f->path.c_str(), get_dir().c_str(), get_dir().size()) == 0);
-    f->name = vk::string_view{f->path}.substr(get_dir().size());
-    auto dot_i = f->name.rfind('.');
-    if (dot_i == string::npos) {
-      dot_i = f->name.size();
-    }
-    auto slash_i = f->name.rfind('/', dot_i - 1);
-    if (slash_i != string::npos) {
-      f->subdir = f->name.substr(0, slash_i + 1);
-      create_subdir(f->subdir);
-    } else {
-      f->subdir = vk::string_view{};
-    }
-    f->ext = f->name.substr(dot_i);
-    f->name_without_ext = f->name.substr(0, dot_i);
+
+  File *f = get_file(path);
+  if (f != nullptr) {
+    return f;
   }
+//  printf("%s not found in index, creating\n", file_name.c_str());
+
+  f = new File(path);
+  f->calc_name_ext_and_others(get_dir());
+  create_subdir(f->subdir);
+
+  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
+  files_only_cur_launch[path] = f;
   return f;
 }
 
+File *Index::on_new_file_during_scan_dir(std::string path) {
+  fix_path(path);
+
+  File *f = new File(path);
+  f->calc_name_ext_and_others(get_dir());
+  create_subdir(f->subdir);
+
+  files_prev_launch[path] = f;
+  return f;
+}
+
+std::vector<File *> Index::get_files() const {
+  // return a vector to traverse values of files_prev_codegen, then files_cur_codegen
+  // can be improved by returning a custom iterator; for now, leave a stupid version
+  std::vector<File *> files_joined;
+  for (const auto &it : files_prev_launch) {
+    files_joined.emplace_back(it.second);
+  }
+  for (const auto &it : files_only_cur_launch) {
+    files_joined.emplace_back(it.second);
+  }
+  return files_joined;
+}
+
+size_t Index::get_files_count() const {
+  return files_prev_launch.size() + files_only_cur_launch.size();
+}
+
+// save hashes of all files into a single index file — to load them in the future instead of reading every file contents
 // stupid text version. to be improved
 void Index::save_into_index_file() {
   if (index_file.empty()) {
@@ -241,7 +278,7 @@ void Index::save_into_index_file() {
   kphp_assert(f);
   auto file_deleter = vk::finally([&index_file_tmp_name]() { unlink(index_file_tmp_name.c_str()); });
 
-  if (fprintf(f.get(), "%zu\n", files.size()) <= 0) {
+  if (fprintf(f.get(), "%zu\n", get_files_count()) <= 0) {
     kphp_warning(fmt_format("Can't write the number of files into tmp index file '{}'", index_file_tmp_name));
     return;
   }
@@ -260,6 +297,9 @@ void Index::save_into_index_file() {
   }
 }
 
+// load a list of crc64 from an index file — hashes of prev codegeneration for cpp/h
+// this is an optimization: avoid reading every file contents
+// (hashes are also saved in every cpp/h file at the top, so everything works without this index file, but slower)
 void Index::load_from_index_file() {
   if (index_file.empty()) {
     return;
