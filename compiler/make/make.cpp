@@ -103,7 +103,7 @@ public:
 static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_dir;
   out_dir.set_dir(G->settings().static_lib_out_dir.get());
-  out_dir.del_extra_files();
+  out_dir.del_extra_files();    // todo seems that this invocation does nothing, as files are empty
 
   // copy static archive
   LibData out_lib(G->settings().static_lib_name.get(), out_dir.get_dir());
