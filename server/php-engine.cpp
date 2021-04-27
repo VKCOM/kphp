@@ -76,6 +76,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/server-log.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -2137,9 +2138,9 @@ void parse_main_args_till_option(int argc, char *argv[], const char *till_option
 }
 
 DEPRECATED_OPTION("use-unix", no_argument);
-DEPRECATED_OPTION_SHORT("json-log", 'j', no_argument);
-DEPRECATED_OPTION_SHORT("crc32c", 'C', no_argument);
-DEPRECATED_OPTION_SHORT("tl-schema", 'T', required_argument);
+DEPRECATED_OPTION_SHORT("json-log", "j", no_argument);
+DEPRECATED_OPTION_SHORT("crc32c", "C", no_argument);
+DEPRECATED_OPTION_SHORT("tl-schema", "T", required_argument);
 
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
@@ -2229,6 +2230,13 @@ void init_default() {
   if (logname) {
     reopen_logs();
     reopen_json_log();
+  }
+
+  for(auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
+    if (deprecation_warning.empty()) {
+      break;
+    }
+    log_server_warning(deprecation_warning);
   }
 }
 

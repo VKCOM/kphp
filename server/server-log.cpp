@@ -31,7 +31,11 @@ void write_log_server_impl(ServerLog type, const char *format, ...) noexcept {
   vsnprintf(buffer.data(), buffer.size(), format, ap);
   va_end (ap);
 
-  kprintf("%s:%s", level2str(type), buffer.data());
+  kprintf("%s: %s\n", level2str(type), buffer.data());
   vk::singleton<JsonLogger>::get().write_log_with_backtrace(buffer.data(), static_cast<int>(type));
 }
 
+void write_log_server_impl(ServerLog type, vk::string_view msg) noexcept {
+  kprintf("%s: %.*s\n", level2str(type), static_cast<int>(msg.size()), msg.data());
+  vk::singleton<JsonLogger>::get().write_log_with_backtrace(msg, static_cast<int>(type));
+}

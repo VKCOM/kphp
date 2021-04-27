@@ -27,12 +27,12 @@ int JobWorkerClient::read_job_results(int fd, void *data __attribute__((unused))
   auto &job_worker_client = vk::singleton<JobWorkerClient>::get();
   assert(fd == job_worker_client.read_job_result_fd);
   if (ev->ready & EVT_SPEC) {
-    log_server_error("job worker client special event: fd = %d, flags = %d\n", fd, ev->ready);
+    log_server_error("job worker client special event: fd = %d, flags = %d", fd, ev->ready);
     // TODO:
     return 0;
   }
   if (!(ev->ready & EVT_READ)) {
-    log_server_error("Strange event in client: fd = %d, ev->ready = 0x%08x\n", fd, ev->ready);
+    log_server_error("Strange event in client: fd = %d, ev->ready = 0x%08x", fd, ev->ready);
     return 0;
   }
 

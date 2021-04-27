@@ -18,15 +18,15 @@ bool PipeJobWriter::write_to_pipe(int write_fd, const char *description) {
 
   if (written == -1) {
     if (errno == EWOULDBLOCK) {
-      log_server_error("Fail on %s to pipe: pipe is full\n", description);
+      log_server_error("Fail on %s to pipe: pipe is full", description);
     } else {
-      log_server_error("Fail on %s to pipe: %s\n", description, strerror(errno));
+      log_server_error("Fail on %s to pipe: %s", description, strerror(errno));
     }
     return false;
   }
 
   if (written != bytes_to_write) {
-    log_server_error("Fail on %s to pipe: written bytes = %zd, but requested = %zd\n", description, written, bytes_to_write);
+    log_server_error("Fail on %s to pipe: written bytes = %zd, but requested = %zd", description, written, bytes_to_write);
     return false;
   }
 
@@ -70,11 +70,11 @@ PipeJobReader::ReadStatus PipeJobReader::read_from_pipe(size_t bytes_cnt, const 
     if (errno == EWOULDBLOCK) {
       return READ_BLOCK;
     }
-    log_server_error("Couldn't %s: %s\n", description, strerror(errno));
+    log_server_error("Couldn't %s: %s", description, strerror(errno));
     return READ_FAIL;
   }
   if (read_bytes != bytes_cnt) {
-    log_server_error("Couldn't %s. Got %zd bytes, but expected %zd. Probably some jobs are written not atomically\n", description, bytes_cnt, read_bytes);
+    log_server_error("Couldn't %s. Got %zd bytes, but expected %zd. Probably some jobs are written not atomically", description, bytes_cnt, read_bytes);
     return READ_FAIL;
   }
   return READ_OK;
