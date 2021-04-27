@@ -52,6 +52,7 @@
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
+#include "server/workers-control.h"
 
 static enum {
   QUERY_TYPE_NONE,
@@ -1699,7 +1700,7 @@ string f$get_engine_version() {
 }
 
 int64_t f$get_engine_workers_number() {
-  return workers_n;
+  return vk::singleton<WorkersControl>::get().get_total_workers_count();
 }
 
 static char ini_vars_storage[sizeof(array<string>)];

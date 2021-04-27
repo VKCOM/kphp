@@ -11,6 +11,7 @@
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
+#include "server/workers-control.h"
 
 using namespace job_workers;
 using SHMM = vk::singleton<SharedMemoryManager>;
@@ -112,8 +113,7 @@ void worker_function() {
 
 TEST(shared_memory_manager_test, test_manager) {
   SHMM::get().set_memory_limit(256 * 1024 * 1024);
-  workers_n = 5;
-  vk::singleton<JobWorkersContext>::get().job_workers_num = 2;
+  vk::singleton<WorkersControl>::get().set_total_workers_count(7);
   SHMM::get().init();
 
   const auto &stats = SHMM::get().get_stats();

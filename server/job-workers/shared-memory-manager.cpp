@@ -9,6 +9,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/php-engine-vars.h"
+#include "server/workers-control.h"
 
 #include "runtime/critical_section.h"
 
@@ -53,7 +54,7 @@ struct alignas(8) SharedMemoryManager::ControlBlock {
   }
 
   JobStats stats;
-  std::array<WorkerProcessMeta, MAX_WORKERS> workers_table{};
+  std::array<WorkerProcessMeta, WorkersControl::max_workers_count> workers_table{};
   freelist_t free_messages{};
 
   //  index => (1 << index) MB:
@@ -65,7 +66,8 @@ void SharedMemoryManager::init() noexcept {
   static_assert(sizeof(ControlBlock) % 8 == 0, "check yourself");
   assert(!control_block_);
 
-  const size_t processes = vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num + std::max(workers_n, 1);
+  const size_t processes = vk::singleton<WorkersControl>::get().get_total_workers_count();
+  assert(processes);
   if (!memory_limit_) {
     memory_limit_ = processes * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER + sizeof(ControlBlock);
   }

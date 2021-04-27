@@ -55,6 +55,7 @@
 #include "server/php-engine.h"
 #include "server/php-worker-stats.h"
 #include "server/php-master-tl-handlers.h"
+#include "server/workers-control.h"
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
@@ -343,8 +344,6 @@ struct pipe_info_t {
   connection pending_stat_queue;
 };
 
-enum class WorkerType { http_worker, job_worker };
-
 struct worker_info_t {
   worker_info_t *next_worker;
 
@@ -374,7 +373,7 @@ using worker_slots_t = std::stack<int, std::vector<int>>;
 worker_slots_t http_worker_slot_ids;
 worker_slots_t job_worker_slot_ids;
 
-worker_info_t *workers[MAX_WORKERS];
+worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
 unsigned long long dead_stime, dead_utime;
 PhpWorkerStats dead_worker_stats;
@@ -421,12 +420,14 @@ worker_info_t *new_worker() {
 void delete_worker(worker_info_t *w) {
   w->generation = ++conn_generation;
   switch (w->type) {
-    case WorkerType::http_worker:
+    case WorkerType::general_worker:
       http_worker_slot_ids.push(w->slot_id);
       break;
     case WorkerType::job_worker:
       job_worker_slot_ids.push(w->slot_id);
       break;
+    default:
+      assert(0);
   }
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
@@ -447,38 +448,31 @@ void terminate_worker(worker_info_t *w) {
   w->kill_time = my_now + 35;
   w->kill_flag = 0;
 
-  switch (w->type) {
-    case WorkerType::http_worker:
-      workers_terminated++;
-      me_running_http_workers_n--;
-      me_dying_http_workers_n++;
-      changed = 1;
-      break;
-    case WorkerType::job_worker:
-      auto &ctx = vk::singleton<JobWorkersContext>::get();
-      ctx.running_job_workers--;
-      ctx.dying_job_workers++;
-      break;
+  vk::singleton<WorkersControl>::get().on_worker_terminating(w->type);
+  if (w->type == WorkerType::general_worker) {
+    workers_terminated++;
+    changed = 1;
   }
 }
 
 int kill_worker(WorkerType worker_type) {
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     if (workers[i]->type == worker_type && !workers[i]->is_dying) {
       terminate_worker(workers[i]);
       return 1;
     }
   }
-
   return 0;
 }
 
 static int get_max_hanging_time_sec(WorkerType worker_type) {
   switch (worker_type) {
-    case WorkerType::http_worker:
+    case WorkerType::general_worker:
       return max(script_timeout + 1, 65); // + 1 sec for terminating
     case WorkerType::job_worker:
       return JobWorkersContext::MAX_HANGING_TIME_SEC;
+    default:
+      assert(0);
   }
   return 0;
 }
@@ -486,7 +480,7 @@ static int get_max_hanging_time_sec(WorkerType worker_type) {
 void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
-    for (int i = 0; i < me_all_workers_n; i++) {
+    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
         if (workers[i]->type == WorkerType::job_worker) {
@@ -500,7 +494,7 @@ void kill_hanging_workers() {
     }
   }
 
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
       vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
       if (workers[i]->type == WorkerType::job_worker) {
@@ -517,7 +511,7 @@ void kill_hanging_workers() {
 }
 
 void workers_send_signal(int sig) {
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     if (!workers[i]->is_dying) {
       kill(workers[i]->pid, sig);
     }
@@ -525,23 +519,20 @@ void workers_send_signal(int sig) {
 }
 
 bool all_http_workers_killed() {
-  return me_running_http_workers_n + me_dying_http_workers_n == 0;
+  return vk::singleton<WorkersControl>::get().get_alive_count(WorkerType::general_worker) == 0;
 }
 
 bool all_job_workers_killed() {
-  static const auto &ctx = vk::singleton<JobWorkersContext>::get();
-  return ctx.running_job_workers + ctx.dying_job_workers == 0;
+  return vk::singleton<WorkersControl>::get().get_alive_count(WorkerType::job_worker) == 0;
 }
 
 } // namespace
 
 void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
   initial_verbosity = verbosity;
-  if (verbosity < 1) {
-    //verbosity = 1;
-  }
-  for (int slot_id = MAX_WORKERS - 1; slot_id >= 0; slot_id--) {
-    if (slot_id < workers_n) {
+
+  for (int slot_id = WorkersControl::max_workers_count - 1; slot_id >= 0; slot_id--) {
+    if (slot_id < vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker)) {
       http_worker_slot_ids.push(slot_id);
     } else {
       job_worker_slot_ids.push(slot_id);
@@ -739,14 +730,14 @@ int run_worker(WorkerType worker_type) {
   dl_block_all_signals();
 
   int err;
-  assert (me_all_workers_n < MAX_WORKERS);
+  assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
 
   int new_pipe[2];
   err = pipe2(new_pipe, O_CLOEXEC);
-  dl_assert (err != -1, "failed to create a pipe");
+  dl_assert(err != -1, "failed to create a pipe");
   int new_fast_pipe[2];
   err = pipe2(new_fast_pipe, O_CLOEXEC);
-  dl_assert (err != -1, "failed to create a pipe");
+  dl_assert(err != -1, "failed to create a pipe");
 
   tot_workers_started++;
 
@@ -755,7 +746,7 @@ int run_worker(WorkerType worker_type) {
 
   int worker_slot_id = -1;
   switch (worker_type) {
-    case WorkerType::http_worker:
+    case WorkerType::general_worker:
       worker_slot_id = http_worker_slot_ids.top();
       http_worker_slot_ids.pop();
       break;
@@ -763,15 +754,19 @@ int run_worker(WorkerType worker_type) {
       worker_slot_id = job_worker_slot_ids.top();
       job_worker_slot_ids.pop();
       break;
+    default:
+      assert(0);
   }
   if (new_pid == 0) {
     switch (worker_type) {
-      case WorkerType::http_worker:
+      case WorkerType::general_worker:
         run_mode = RunMode::http_worker;
         break;
       case WorkerType::job_worker:
         run_mode = RunMode::job_worker;
         break;
+      default:
+        assert(0);
     }
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
@@ -843,7 +838,8 @@ int run_worker(WorkerType worker_type) {
 
   vkprintf(1, "new worker launched [pid = %d]\n", (int)new_pid);
 
-  worker_info_t *worker = workers[me_all_workers_n++] = new_worker();
+  worker_info_t *worker = workers[vk::singleton<WorkersControl>::get().get_all_alive()] = new_worker();
+  vk::singleton<WorkersControl>::get().on_worker_starting(worker_type);
   worker->pid = new_pid;
 
   worker->is_dying = 0;
@@ -859,53 +855,31 @@ int run_worker(WorkerType worker_type) {
   close(new_pipe[1]);
   close(new_fast_pipe[1]);
 
-  switch (worker_type) {
-    case WorkerType::http_worker:
-      me_running_http_workers_n++;
-      break;
-    case WorkerType::job_worker:
-      vk::singleton<JobWorkersContext>::get().running_job_workers++;
-      break;
-  }
-
   changed = 1;
 
   return 0;
 }
 
 void remove_worker(pid_t pid) {
-  vkprintf(2, "remove workers [pid = %d]\n", (int)pid);
-  for (int i = 0; i < me_all_workers_n; i++) {
+  vkprintf(2, "remove workers [pid = %d]\n", static_cast<int>(pid));
+  const auto &workers_control = vk::singleton<WorkersControl>::get();
+  for (int i = 0; i < workers_control.get_all_alive(); i++) {
     if (workers[i]->pid == pid) {
-      switch (workers[i]->type) {
-        case WorkerType::http_worker:
-          if (workers[i]->is_dying) {
-            me_dying_http_workers_n--;
-          } else {
-            me_running_http_workers_n--;
-            last_failed = my_now;
-            failed++;
-            workers_failed++;
-          }
-          break;
-        case WorkerType::job_worker:
-          auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
-          if (workers[i]->is_dying) {
-            job_workers_ctx.dying_job_workers--;
-          } else {
-            job_workers_ctx.running_job_workers--;
-          }
-          break;
+      vk::singleton<WorkersControl>::get().on_worker_removing(workers[i]->type, workers[i]->is_dying);
+      if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
+        last_failed = my_now;
+        failed++;
+        workers_failed++;
       }
 
       clear_pipe_info(&workers[i]->pipes[0]);
       clear_pipe_info(&workers[i]->pipes[1]);
       delete_worker(workers[i]);
 
-      me_all_workers_n--;
-      workers[i] = workers[me_all_workers_n];
-
-      vkprintf(1, "worker_removed: [running = %d] [dying = %d]\n", me_running_http_workers_n, me_dying_http_workers_n);
+      workers[i] = workers[workers_control.get_all_alive()];
+      vkprintf(1, "worker removed: [general running = %d] [general dying = %d]\n",
+               int{workers_control.get_running_count(WorkerType::general_worker)},
+               int{workers_control.get_dying_count(WorkerType::general_worker)});
       return;
     }
   }
@@ -1148,7 +1122,7 @@ void create_stats_queries(connection *c, int op, int worker_pid) {
 #endif
   sigval to_send;
   to_send.sival_int = op;
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     workers[i]->stats_flag = 0;
     if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
       pipe_info_t *pipe_info = nullptr;
@@ -1157,7 +1131,7 @@ void create_stats_queries(connection *c, int op, int worker_pid) {
       } else if (op & SPOLL_SEND_FULL_STATS) {
         pipe_info = &workers[i]->pipes[0];
       }
-      dl_assert (pipe_info != nullptr, "bug in code");
+      dl_assert(pipe_info != nullptr, "bug in code");
 #if defined(__APPLE__)
       kill(workers[i]->pid, SIGSTAT);
 #else
@@ -1205,7 +1179,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
 
   double min_uptime = 1e9;
   double max_uptime = -1;
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     worker_info_t *w = workers[i];
     if (!w->is_dying) {
       total_workers_n++;
@@ -1250,8 +1224,6 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   header += buf;
   sprintf(buf, "paused_workers\t%d\n", paused_workers_n);
   header += buf;
-  sprintf(buf, "dying_workers\t%d\n", me_dying_http_workers_n);
-  header += buf;
   sprintf(buf, "tot_workers_started\t%ld\n", tot_workers_started);
   header += buf;
   sprintf(buf, "tot_workers_dead\t%ld\n", tot_workers_dead);
@@ -1272,7 +1244,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   }
   if (!full_flag && worker_pid == -2) {
     header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
-    for (int i = 0; i < me_all_workers_n; i++) {
+    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         php_immediate_stats_t *imm = &w->stats->istats;
@@ -1348,7 +1320,7 @@ int php_master_get(connection *c, const char *old_key, int old_key_len) {
   //workers_pids
   if (key_len == 12 && strncmp(key, "workers_pids", 12) == 0) {
     std::string res;
-    for (int i = 0; i < workers_n; i++) {
+    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       if (!workers[i]->is_dying) {
         char buf[30];
         sprintf(buf, "%d", workers[i]->pid);
@@ -1428,7 +1400,7 @@ struct WorkerStats {
 
   static WorkerStats collect() {
     WorkerStats result;
-    for (int i = 0; i < me_all_workers_n; i++) {
+    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       worker_info_t *w = workers[i];
       if (!w->is_dying) {
         result.total_workers_n++;
@@ -1615,13 +1587,13 @@ int php_master_http_execute(struct connection *c, int op) {
 void run_master_off_in_graceful_shutdown() {
   vkprintf(2, "state: master_state::off_in_graceful_shutdown\n");
   assert(state == master_state::off_in_graceful_shutdown);
-  to_kill = me_running_http_workers_n;
+  to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
   if (all_http_workers_killed()) {
     if (all_job_workers_killed()) {
       to_exit = 1;
       me->is_alive = false;
     } else {
-      job_workers_to_kill = vk::singleton<JobWorkersContext>::get().running_job_workers;
+      job_workers_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::job_worker);
     }
   }
 }
@@ -1650,7 +1622,7 @@ void run_master_off_in_graceful_restart() {
       changed = 1;
       me->is_alive = false;
     } else {
-      job_workers_to_kill = vk::singleton<JobWorkersContext>::get().running_job_workers;
+      job_workers_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::job_worker);
     }
   }
 }
@@ -1680,8 +1652,8 @@ void run_master_on() {
     }
   }
 
-  if (vk::singleton<JobWorkersContext>::get().job_workers_num > 0) {
-    vk::singleton<JobWorkersContext>::get().master_init_pipes(workers_n);
+  if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
+    vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker));
   }
 
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
@@ -1731,10 +1703,10 @@ void run_master_on() {
   }
 
   if (!need_http_fd) {
-    int total_workers = me_running_http_workers_n + me_dying_http_workers_n + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
-    to_run = std::max(0, workers_n - total_workers);
-    const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
-    job_workers_to_run = job_workers_ctx.job_workers_num - (job_workers_ctx.running_job_workers + job_workers_ctx.dying_job_workers);
+    const auto &control = vk::singleton<WorkersControl>::get();
+    const int total_workers = control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
+    to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
+    job_workers_to_run = control.get_count(WorkerType::job_worker) - control.get_alive_count(WorkerType::job_worker);
 
     if (other->is_alive) {
       auto &warm_up_ctx = WarmUpContext::get();
@@ -1743,7 +1715,7 @@ void run_master_on() {
       int set_to_kill = vk::clamp(MAX_KILL - other->dying_http_workers_n, 0, other->running_http_workers_n);
       bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
       bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
-      bool warmup_timeout_expired       = warm_up_ctx.warmup_timeout_expired();
+      bool warmup_timeout_expired = warm_up_ctx.warmup_timeout_expired();
       if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
         vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
@@ -1818,7 +1790,7 @@ static void cron() {
   server_stats.worker_stats.reset_memory_and_percentiles_stats();
   server_stats.worker_stats.update_mem_info();
   int running_workers = 0;
-  for (int i = 0; i < me_all_workers_n; i++) {
+  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     worker_info_t *w = workers[i];
     const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
@@ -1968,17 +1940,17 @@ void run_master() {
     }
 
     while (to_kill-- > 0) {
-      kill_worker(WorkerType::http_worker);
+      kill_worker(WorkerType::general_worker);
     }
     while (to_run-- > 0 && !failed) {
-      if (run_worker(WorkerType::http_worker)) {
+      if (run_worker(WorkerType::general_worker)) {
         return;
       }
     }
     kill_hanging_workers();
 
-    me->running_http_workers_n = me_running_http_workers_n;
-    me->dying_http_workers_n = me_dying_http_workers_n;
+    me->running_http_workers_n = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
+    me->dying_http_workers_n = vk::singleton<WorkersControl>::get().get_dying_count(WorkerType::general_worker);;
     me->instance_cache_elements_cached = static_cast<uint32_t>(instance_cache_get_stats().elements_cached.load(std::memory_order_relaxed));
 
     if (state != master_state::off_in_graceful_shutdown) {

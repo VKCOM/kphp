@@ -78,6 +78,7 @@
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
 #include "server/server-log.h"
+#include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -1588,7 +1589,7 @@ static void generic_event_loop(RunMode mode) {
         set_main_target(rpc_clients.front());
       }
 
-      if (vk::singleton<JobWorkersContext>::get().job_workers_num > 0) {
+      if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
         vk::singleton<JobWorkerClient>::get().init(logname_id);
       }
       break;
@@ -1921,7 +1922,9 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 'f': {
       master_flag = 1;
-      return read_option_to(long_option, 1, MAX_WORKERS, workers_n);
+      return parse_numeric_option(long_option, 1, int{WorkersControl::max_workers_count}, [](int workers_count) {
+        vk::singleton<WorkersControl>::get().set_total_workers_count(static_cast<uint16_t>(workers_count));
+      });
     }
     case 'p': {
       master_port = atoi(optarg);
@@ -2076,7 +2079,9 @@ int main_args_handler(int i, const char *long_option) {
       });
     }
     case 2016: {
-      return read_option_to(long_option, 0.0, 0.99, vk::singleton<JobWorkersContext>::get().job_workers_ratio);
+      return parse_numeric_option(long_option, 0.0, 0.99, [](double ratio) {
+        vk::singleton<WorkersControl>::get().set_ratio(WorkerType::job_worker, ratio);
+      });
     }
     case 2017: {
       const int64_t job_workers_shared_memory_size = parse_memory_limit(optarg);
@@ -2137,7 +2142,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("sql-port", required_argument, 'Q', "sql port");
   parse_option("static-buffers-size", required_argument, 'L', "limit for static buffers length (e.g. limits script output size)");
   parse_option("error-tag", required_argument, 'E', "name of file with engine tag showed on every warning");
-  parse_option("workers-num", required_argument, 'f', "run workers_n workers");
+  parse_option("workers-num", required_argument, 'f', "the total workers number");
   parse_option("once", no_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
   parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
@@ -2170,6 +2175,11 @@ void parse_main_args(int argc, char *argv[]) {
 
 
 void init_default() {
+  if (!vk::singleton<WorkersControl>::get().init()) {
+    kprintf ("fatal: not enough workers for general purposes\n");
+    exit(1);
+  }
+
   dl_set_default_handlers();
   now = (int)time(nullptr);
 
@@ -2244,12 +2254,6 @@ int run_main(int argc, char **argv, php_mode mode) {
   }
 
   parse_main_args(argc, argv);
-
-  size_t total_workers = workers_n + vk::singleton<JobWorkersContext>::get().job_workers_num;
-  if (total_workers > MAX_WORKERS) {
-    kprintf("Too many workers: %zu, maximum is %d\n", total_workers, MAX_WORKERS);
-    exit(1);
-  }
 
   if (run_once) {
     master_flag = 0;

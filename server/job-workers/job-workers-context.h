@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <queue>
 #include <unordered_set>
+#include <climits>
 
 #include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"
@@ -27,11 +28,6 @@ public:
   using Pipe = std::array<int, 2>;
 
   static constexpr int MAX_HANGING_TIME_SEC = 20; // TODO: tune it
-
-  size_t running_job_workers{0};
-  size_t dying_job_workers{0};
-  size_t job_workers_num{0};
-  double job_workers_ratio{0};
 
   Pipe job_pipe{};
   std::vector<Pipe> result_pipes;

@@ -4,10 +4,10 @@
 
 void set_pid_and_user_id(pid_t p) {
   // прибиваем гвоздями, используется в InterProcessResourceControl для определения кол-ва воркеров
-  workers_n = 10;
+  vk::singleton<WorkersControl>::get().set_total_workers_count(10);
   // pid используется как уникальный идентификатор в InterProcessResourceControl
   pid = p;
-  // logname_id используется как id процесса от 0 до workers_n
+  // logname_id используется как id процесса от 0 до workers_count
   logname_id = p;
 }
 

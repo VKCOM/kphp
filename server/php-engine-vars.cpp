@@ -27,7 +27,6 @@ int pid = -1;
 int no_sql = 0;
 
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
-int workers_n = 0;
 
 RunMode run_mode;
 
@@ -44,7 +43,6 @@ int http_port = -1;
 int http_sfd = -1;
 
 /** rpc **/
-long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_received_news_redirect;
 int rpc_port = -1;
 int rpc_sfd = -1;
 long long rpc_client_actor = -1;
@@ -65,7 +63,6 @@ int master_pipe_fast_write = -1;
   GLOBAL VARIABLES
  ***/
 int sql_target_id = -1;
-int in_ready = 0;
 int script_timeout = 0;
 int disable_access_log = 0;
 int force_clear_sql_connection = 0;

@@ -5,6 +5,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/shared-memory-manager.h"
+#include "server/workers-control.h"
 
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/resumable.h"
@@ -27,7 +28,7 @@ int get_job_timeout_wakeup_id() {
 }
 
 bool f$is_kphp_job_workers_enabled() noexcept {
-  return vk::singleton<job_workers::JobWorkersContext>::get().job_workers_num > 0;
+  return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0;
 }
 
 void global_init_job_workers_lib() noexcept {
