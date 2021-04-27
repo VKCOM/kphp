@@ -5,7 +5,6 @@
 #pragma once
 
 #include <array>
-#include <limits>
 #include <cinttypes>
 
 #include "common/mixin/not_copyable.h"
@@ -60,12 +59,9 @@ public:
     meta_[static_cast<size_t>(worker_type)].ratio = ratio;
   }
 
-  void on_worker_starting(WorkerType worker_type) noexcept {
-    ++meta_[static_cast<size_t>(worker_type)].running;
-  }
-
+  uint16_t on_worker_creating(WorkerType worker_type) noexcept;
   void on_worker_terminating(WorkerType worker_type) noexcept;
-  void on_worker_removing(WorkerType worker_type, bool dying) noexcept;
+  void on_worker_removing(WorkerType worker_type, bool dying, uint16_t worker_unique_id) noexcept;
 
 private:
   WorkersControl() = default;
@@ -73,12 +69,14 @@ private:
   friend class vk::singleton<WorkersControl>;
 
   struct WorkerGroupMetadata : vk::not_copyable {
-    uint16_t count{0};
+    double ratio{0};
 
+    uint16_t count{0};
     uint16_t running{0};
+
     uint16_t dying{0};
 
-    double ratio{std::numeric_limits<double>::quiet_NaN()};
+    std::array<uint16_t, max_workers_count> unique_ids_{};
   };
   uint16_t total_workers_count_{0};
   std::array<WorkerGroupMetadata, static_cast<size_t>(WorkerType::types_count)> meta_;

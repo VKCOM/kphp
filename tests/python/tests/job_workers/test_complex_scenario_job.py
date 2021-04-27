@@ -7,8 +7,8 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
-            "--job-workers-num": 3,
-            "--workers-num": 15
+            "--workers-num": 18,
+            "--job-workers-ratio": 0.16
         })
 
     def assert_stats_count(self, stats):

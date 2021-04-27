@@ -363,15 +363,11 @@ struct worker_info_t {
   pid_info_t my_info;
   int valid_my_info;
 
-  int slot_id;
+  int unique_id;
 
   Stats *stats;
   WorkerType type;
 };
-
-using worker_slots_t = std::stack<int, std::vector<int>>;
-worker_slots_t http_worker_slot_ids;
-worker_slots_t job_worker_slot_ids;
 
 worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
@@ -419,16 +415,6 @@ worker_info_t *new_worker() {
 
 void delete_worker(worker_info_t *w) {
   w->generation = ++conn_generation;
-  switch (w->type) {
-    case WorkerType::general_worker:
-      http_worker_slot_ids.push(w->slot_id);
-      break;
-    case WorkerType::job_worker:
-      job_worker_slot_ids.push(w->slot_id);
-      break;
-    default:
-      assert(0);
-  }
   if (w->valid_my_info) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
@@ -530,14 +516,6 @@ bool all_job_workers_killed() {
 
 void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
   initial_verbosity = verbosity;
-
-  for (int slot_id = WorkersControl::max_workers_count - 1; slot_id >= 0; slot_id--) {
-    if (slot_id < vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker)) {
-      http_worker_slot_ids.push(slot_id);
-    } else {
-      job_worker_slot_ids.push(slot_id);
-    }
-  }
 
   kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
 
@@ -741,22 +719,10 @@ int run_worker(WorkerType worker_type) {
 
   tot_workers_started++;
 
+  const int worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
-  int worker_slot_id = -1;
-  switch (worker_type) {
-    case WorkerType::general_worker:
-      worker_slot_id = http_worker_slot_ids.top();
-      http_worker_slot_ids.pop();
-      break;
-    case WorkerType::job_worker:
-      worker_slot_id = job_worker_slot_ids.top();
-      job_worker_slot_ids.pop();
-      break;
-    default:
-      assert(0);
-  }
   if (new_pid == 0) {
     switch (worker_type) {
       case WorkerType::general_worker:
@@ -821,10 +787,10 @@ int run_worker(WorkerType worker_type) {
     //
 
     signal_fd = -1;
-    logname_id = worker_slot_id;
+    logname_id = worker_unique_id;
     if (logname_pattern) {
       char buf[100];
-      snprintf(buf, 100, logname_pattern, worker_slot_id);
+      snprintf(buf, 100, logname_pattern, worker_unique_id);
       logname = strdup(buf);
     }
 
@@ -838,14 +804,13 @@ int run_worker(WorkerType worker_type) {
 
   vkprintf(1, "new worker launched [pid = %d]\n", (int)new_pid);
 
-  worker_info_t *worker = workers[vk::singleton<WorkersControl>::get().get_all_alive()] = new_worker();
-  vk::singleton<WorkersControl>::get().on_worker_starting(worker_type);
+  worker_info_t *worker = workers[vk::singleton<WorkersControl>::get().get_all_alive() - 1] = new_worker();
   worker->pid = new_pid;
 
   worker->is_dying = 0;
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
-  worker->slot_id = worker_slot_id;
+  worker->unique_id = worker_unique_id;
   worker->last_activity_time = my_now;
   worker->type = worker_type;
 
@@ -865,7 +830,7 @@ void remove_worker(pid_t pid) {
   const auto &workers_control = vk::singleton<WorkersControl>::get();
   for (int i = 0; i < workers_control.get_all_alive(); i++) {
     if (workers[i]->pid == pid) {
-      vk::singleton<WorkersControl>::get().on_worker_removing(workers[i]->type, workers[i]->is_dying);
+      vk::singleton<WorkersControl>::get().on_worker_removing(workers[i]->type, workers[i]->is_dying, workers[i]->unique_id);
       if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
         last_failed = my_now;
         failed++;
