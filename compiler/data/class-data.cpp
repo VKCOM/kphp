@@ -247,8 +247,67 @@ std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) co
   return lcas;
 }
 
+static const ClassMemberInstanceMethod *find_method_in_interface(InterfacePtr interface, vk::string_view local_name) {
+  {
+    AutoLocker<Lockable*> locker(&(*interface));
+    if (const auto *member = interface->members.find_by_local_name<ClassMemberInstanceMethod>(local_name)) {
+      return member;
+    }
+  }
+
+  // interfaces can extend multiple other interfaces; these interfaces are stored in 'implements' member
+  for (InterfacePtr base_interface : interface->implements) {
+    if (const auto *member = find_method_in_interface(base_interface, local_name)) {
+      return member;
+    }
+  }
+  return nullptr;
+}
+
+static const ClassMemberInstanceMethod *find_method_in_interface_list(const std::vector<InterfacePtr> &interfaces, vk::string_view local_name) {
+  for (InterfacePtr interface : interfaces) {
+    if (const auto *member = find_method_in_interface(interface, local_name)) {
+      return member;
+    }
+  }
+  return nullptr;
+}
+
+const ClassMemberInstanceMethod *ClassData::find_instance_method_by_local_name(vk::string_view local_name) const {
+  const ClassMemberInstanceMethod *result{nullptr};
+
+  ClassPtr current = get_self();
+  while (true) {
+    const auto *member = ({
+      AutoLocker<Lockable*> locker(&(*current));
+      current->members.find_by_local_name<ClassMemberInstanceMethod>(local_name);
+    });
+
+    if (member) {
+      if (!member->function->modifiers.is_abstract()) {
+        return member;
+      }
+      if (!result) {
+        result = member;
+      }
+    }
+
+    // if we already found some abstract implementation, don't bother with interfaces traversal
+    if (!result) {
+      result = find_method_in_interface_list(current->implements, local_name);
+    }
+
+    if (!current->parent_class) {
+      break;
+    }
+    current = current->parent_class;
+  }
+
+  return result;
+}
+
 const ClassMemberInstanceMethod *ClassData::get_instance_method(vk::string_view local_name) const {
-  return find_by_local_name<ClassMemberInstanceMethod>(local_name);
+  return find_instance_method_by_local_name(local_name);
 }
 
 const ClassMemberInstanceField *ClassData::get_instance_field(vk::string_view local_name) const {
