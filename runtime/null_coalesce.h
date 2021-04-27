@@ -8,79 +8,131 @@
 #include "runtime/include.h"
 
 namespace impl_ {
+
 template<class ReturnType, class FallbackType>
-auto perform_fallback_impl(const FallbackType &lambda_fallback,
-                                 std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
+auto perform_fallback_impl(FallbackType &&lambda_fallback,
+                           std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
   return ReturnType(lambda_fallback());
 }
 
 template<class ReturnType, class FallbackType>
-ReturnType perform_fallback_impl(const FallbackType &value_fallback, ...) noexcept {
-  return ReturnType(value_fallback);
+ReturnType perform_fallback_impl(FallbackType &&value_fallback, ...) noexcept {
+  return ReturnType(std::forward<FallbackType>(value_fallback));
 }
 
 template<class ReturnType, class FallbackType>
-ReturnType perform_fallback(const FallbackType &value_fallback) noexcept {
-  return perform_fallback_impl<ReturnType>(value_fallback, nullptr);
+ReturnType perform_fallback(FallbackType &&value_fallback) noexcept {
+  return perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback), nullptr);
 }
 
-template<class ReturnType, class ValueType, class FallbackType>
-ReturnType null_coalesce_resolve_or_false(std::true_type, const Optional<ValueType> &value, const FallbackType &fallback) noexcept {
-  php_assert(value.value_state() == OptionalState::null_value);
-  return perform_fallback<ReturnType>(fallback);
-}
-
-template<class ReturnType, class ValueType, class FallbackType>
-ReturnType null_coalesce_resolve_or_false(std::false_type, const Optional<ValueType> &value, const FallbackType &fallback) noexcept {
-  return f$is_null(value) ? impl_::perform_fallback<ReturnType>(fallback) : ReturnType(value.val());
-}
 } // namespace impl_
 
+template<typename ResultType>
+struct NullCoalesce {
+public:
+  template<class ValueType>
+  explicit NullCoalesce(ValueType &&value) noexcept {
+    set_result(std::forward<ValueType>(value));
+  }
 
-template<class ReturnType, class ValueType, class FallbackType>
-ReturnType null_coalesce(const ValueType &value, const FallbackType &fallback) noexcept {
-  return f$is_null(value) ? impl_::perform_fallback<ReturnType>(fallback) : ReturnType(value);
-}
+  template<class ValueType, class KeyType, class = vk::enable_if_constructible<mixed, KeyType>>
+  NullCoalesce(const array<ValueType> &arr, const KeyType &key) noexcept {
+    if (auto *value = arr.find_value(key)) {
+      set_result(*value);
+    }
+  }
 
-template<class ReturnType, class ValueType, class FallbackType>
-enable_if_t_is_not_optional<ReturnType, ReturnType>
-null_coalesce(const Optional<ValueType> &value, const FallbackType &fallback) noexcept {
-  // keep in mind that ReturnType is not an optional here!
-  using result_can_be_false = vk::is_type_in_list<ReturnType, bool, mixed>;
-  using false_cast_immposible = std::integral_constant<bool, std::is_same<ValueType, bool>{} && !result_can_be_false{}>;
+  template<class ValueType>
+  NullCoalesce(const array<ValueType> &arr, const string &string_key, int64_t precomuted_hash) noexcept {
+    if (auto *value = arr.find_value(string_key, precomuted_hash)) {
+      set_result(*value);
+    }
+  }
 
-  php_assert((result_can_be_false{} || !value.is_false()));
-  return impl_::null_coalesce_resolve_or_false<ReturnType>(false_cast_immposible{}, value, fallback);
-}
+  template<class KeyType, class = vk::enable_if_constructible<mixed, KeyType>>
+  NullCoalesce(const string &str, const KeyType &key) noexcept {
+    set_result(str, key);
+  }
 
-template<class ReturnType, class ValueType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
-ReturnType null_coalesce(const array<ValueType> &arr, const KeyType &key, const FallbackType &fallback) noexcept {
-  auto *value = arr.find_value(key);
-  return value ? null_coalesce<ReturnType>(*value, fallback) : impl_::perform_fallback<ReturnType>(fallback);
-}
+  template<class KeyType, class = vk::enable_if_constructible<mixed, KeyType>>
+  NullCoalesce(const mixed &v, const KeyType &key) noexcept {
+    if (v.is_string()) {
+      set_result(v.as_string(), key);
+    } else {
+      set_result(v.get_value(key));
+    }
+  }
 
-template<typename ReturnType, class ValueType, typename FallbackType>
-ReturnType null_coalesce(const array<ValueType> &arr, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
-  auto *value = arr.find_value(string_key, precomuted_hash);
-  return value ? null_coalesce<ReturnType>(*value, fallback) : impl_::perform_fallback<ReturnType>(fallback);
-}
+  NullCoalesce(const mixed &v, const string &string_key, int64_t precomuted_hash) noexcept {
+    if (v.is_string()) {
+      set_result(v.as_string(), string_key);
+    } else {
+      set_result(v.get_value(string_key, precomuted_hash));
+    }
+  }
 
-template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
-ReturnType null_coalesce(const string &str, const KeyType &key, const FallbackType &fallback) noexcept {
-  string value = str.get_value(key);
-  return value.empty() ? impl_::perform_fallback<ReturnType>(fallback) : std::move(value);
-}
+  template<class FallbackType>
+  ResultType finalize(FallbackType &&fallback) noexcept {
+    return result_ ? std::move(*result_) : impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+  }
 
-template<class ReturnType, class KeyType, class FallbackType, class = vk::enable_if_constructible<mixed, KeyType>>
-ReturnType null_coalesce(const mixed &v, const KeyType &key, const FallbackType &fallback) noexcept {
-  return v.is_string()
-         ? null_coalesce<ReturnType>(v.as_string(), key, fallback)
-         : null_coalesce<ReturnType>(v.get_value(key), fallback);
-}
+  ~NullCoalesce() noexcept {
+    if (result_) {
+      result_->~ResultType();
+    }
+  }
 
-template<typename ReturnType, typename FallbackType>
-ReturnType null_coalesce(const mixed &v, const string &string_key, int64_t precomuted_hash, const FallbackType &fallback) noexcept {
-  return v.is_string()
-         ? null_coalesce<ReturnType>(v.as_string(), string_key, fallback)
-         : null_coalesce<ReturnType>(v.get_value(string_key, precomuted_hash), fallback);
-}
+private:
+  template<class ValueType>
+  using IsOptionalValueAndNonOptionalReturn = std::integral_constant<bool,
+    (is_optional<std::decay_t<ValueType>>{} && !is_optional<std::decay_t<ResultType>>{})>;
+
+  template<class ValueType>
+  std::enable_if_t<!IsOptionalValueAndNonOptionalReturn<ValueType>{}> set_result(ValueType &&value) noexcept {
+    if (!f$is_null(value)) {
+      result_ = new(&result_storage_) ResultType(std::forward<ValueType>(value));
+    }
+  }
+
+  template<class OptionalValueType>
+  std::enable_if_t<IsOptionalValueAndNonOptionalReturn<OptionalValueType>{}> set_result(OptionalValueType &&value) noexcept {
+    // keep in mind that ReturnType is not an optional here!
+    using result_can_be_false = vk::is_type_in_list<ResultType, bool, mixed>;
+    using is_bool_inside = std::is_same<typename std::decay_t<OptionalValueType>::InnerType, bool>;
+    using false_cast_immposible = std::integral_constant<bool, is_bool_inside{} && !result_can_be_false{}>;
+
+    php_assert((result_can_be_false{} || !value.is_false()));
+    set_result_resolve_or_false(false_cast_immposible{}, std::forward<OptionalValueType>(value));
+  }
+
+  template<class KeyType>
+  void set_result(const string &str, const KeyType &key) noexcept {
+    string value = str.get_value(key);
+    if (!value.empty()) {
+      result_ = new(&result_storage_) ResultType(std::move(value));
+    }
+  }
+
+  template<class ValueType>
+  void set_result_resolve_or_false(std::true_type, const Optional<ValueType> &value) noexcept {
+    php_assert(value.value_state() == OptionalState::null_value);
+  }
+
+  template<class ValueType>
+  void set_result_resolve_or_false(std::false_type, const Optional<ValueType> &value) noexcept {
+    if (!f$is_null(value)) {
+      result_ = new(&result_storage_) ResultType(value.val());
+    }
+  }
+
+  template<class ValueType>
+  void set_result_resolve_or_false(std::false_type, Optional<ValueType> &&value) noexcept {
+    if (!f$is_null(value)) {
+      result_ = new(&result_storage_) ResultType(std::move(value.val()));
+      value = {};
+    }
+  }
+
+  ResultType *result_{nullptr};
+  std::aligned_storage_t<sizeof(ResultType), alignof(ResultType)> result_storage_;
+};

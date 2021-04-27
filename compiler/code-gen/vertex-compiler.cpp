@@ -348,20 +348,22 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   if (rhs->throw_flag) {
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
-  W << "null_coalesce< " << TypeName{type} << " >(";
+  W << "NullCoalesce< " << TypeName{type} << " >{";
   const auto index = lhs.try_as<op_index>();
   const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_any;
   if (index && vk::none_of_equal(array_ptype, tp_shape, tp_tuple)) {
     kphp_assert (index->has_key());
-    W << index->array() << ", " << index->key() << ", ";
+    W << index->array() << ", " << index->key();
     if (vk::any_of_equal(array_ptype, tp_array, tp_mixed)) {
       if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
-        W << precomputed_hash << "_i64, ";
+        W << ", " << precomputed_hash << "_i64";
       }
     }
   } else {
-    W << lhs << ", ";
+    W << lhs;
   }
+
+  W << "}.finalize(";
 
   if (vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null)) {
     W << rhs;
@@ -369,9 +371,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     auto &context = W.get_context();
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
-    FunctionSignatureGenerator(W) << "[&] ()"; W << " -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
-                                  << " return " << rhs << ";" << NL
-                                  << END;
+    FunctionSignatureGenerator(W) << "[&] ()";
+    W << " -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
+      << " return " << rhs << ";" << NL
+      << END;
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;
