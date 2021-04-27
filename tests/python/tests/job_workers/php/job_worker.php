@@ -12,6 +12,8 @@ function do_job_worker() {
         return x2_with_sleep($req);
       case "x2_with_error":
         return x2_with_error($req);
+      case "x2_with_work_after_response":
+        return x2_with_work_after_response($req);
     }
     if ($req->tag !== "") {
       critical_error("Unknown tag " + $req->tag);
@@ -57,16 +59,19 @@ function x2_with_mc_request(X2Request $x2_req) {
   kphp_job_worker_store_response($x2_resp);
 }
 
+function safe_sleep(int $sleep_time_sec) {
+  $s = microtime(true);
+  do {
+    sched_yield_sleep(1);
+  } while(microtime(true) - $s < $sleep_time_sec);
+}
+
 function x2_with_sleep(X2Request $x2_req) {
   $x2_resp = new X2Response;
   foreach ($x2_req->arr_request as $value) {
     $x2_resp->arr_reply[] = $value ** 2;
   }
-  $s = microtime(true);
-  do {
-    sched_yield_sleep(1);
-  } while(microtime(true) - $s < $x2_req->sleep_time_sec);
-
+  safe_sleep($x2_req->sleep_time_sec);
   kphp_job_worker_store_response($x2_resp);
 }
 
@@ -103,4 +108,11 @@ function x2_with_error(X2Request $x2_req) {
   }
 
   kphp_job_worker_store_response($x2_resp);
+}
+
+function x2_with_work_after_response(X2Request $x2_req) {
+  simple_x2($x2_req);
+  fprintf(STDERR, "start work after response\n");
+  safe_sleep($x2_req->sleep_time_sec);
+  fprintf(STDERR, "finish work after response\n");
 }

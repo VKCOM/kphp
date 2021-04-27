@@ -108,6 +108,11 @@ conn_type_t php_jobs_server = [] {
 int JobWorkerServer::job_parse_execute(connection *c) {
   assert(c == read_job_connection);
 
+  if (sigterm_on) {
+    tvkprintf(job_workers, 1, "Get new job after SIGTERM. Ignore it\n");
+    return 0;
+  }
+
   if (running_job) {
     tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;

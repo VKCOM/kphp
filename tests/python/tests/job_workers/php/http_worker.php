@@ -43,6 +43,10 @@ function do_http_worker() {
       test_client_wait_false();
       return;
     }
+    case "/test_job_graceful_shutdown": {
+      test_job_graceful_shutdown();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -182,4 +186,10 @@ function test_client_wait_false() {
   }
   $result = kphp_job_worker_wait($id);
   echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
+}
+
+function test_job_graceful_shutdown() {
+  $context = json_decode(file_get_contents('php://input'));
+  $ids = send_jobs($context);
+  echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }
