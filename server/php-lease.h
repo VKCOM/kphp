@@ -4,20 +4,24 @@
 
 #pragma once
 
+#include "common/kprintf.h"
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/kphp-tasks-lease/lease-worker-settings.h"
 #include "common/pid.h"
-#include "common/wrappers/optional.h"
 
 #include "server/lease-rpc-client.h"
 #include "server/php-worker.h"
+
+DECLARE_VERBOSITY(lease);
 
 void lease_on_worker_finish(php_worker *worker);
 void lease_set_ready();
 void lease_on_stop();
 void run_rpc_lease();
+
 void do_rpc_stop_lease();
 int do_rpc_start_lease(process_id_t pid, double timeout, int actor_id);
+void do_rpc_finish_lease();
 void lease_cron();
 void set_main_target(const LeaseRpcClient &client);
 int get_current_target();

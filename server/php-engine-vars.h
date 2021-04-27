@@ -7,7 +7,6 @@
 // for: struct in_addr
 #include <netinet/in.h>
 
-#include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/version-string.h"
 
 // Names and versions
@@ -104,7 +103,6 @@ extern int force_clear_sql_connection;
 extern long long static_buffer_length_limit;
 extern int use_madvise_dontneed;
 extern long long memory_used_to_recreate_script;
-extern vk::optional<QueueTypesLeaseWorkerMode> cur_lease_mode;
 
 #define RPC_PHP_IMMEDIATE_STATS 0x3d27a21b
 #define RPC_PHP_FULL_STATS 0x1f8ae120

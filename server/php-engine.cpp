@@ -54,6 +54,7 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
@@ -64,6 +65,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
+#include "server/lease-context.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
 #include "server/php-master-warmup.h"
@@ -883,7 +885,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
   c->last_response_time = precise_now;
 
   auto MAX_RPC_QUERY_LEN = 126214400;
-  if (len < sizeof(long long) || MAX_RPC_QUERY_LEN < len) {
+  if ((len < sizeof(long long) && op != TL_KPHP_STOP_READY_ACKNOWLEDGMENT) || MAX_RPC_QUERY_LEN < len) {
     return 0;
   }
 
@@ -891,6 +893,14 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
   process_id remote_pid = TCP_RPC_DATA(c)->remote_pid;
 
   switch (static_cast<unsigned int>(op)) {
+    case TL_KPHP_STOP_READY_ACKNOWLEDGMENT: {
+      if (!check_tasks_invoker_pid(remote_pid)) {
+        kprintf("Got TL_KPHP_STOP_READY_ACKNOWLEDGMENT from invalid task invoker pid = %s\n", pid_to_print(&remote_pid));
+        return 0;
+      }
+      do_rpc_finish_lease();
+      break;
+    }
     case TL_KPHP_STOP_LEASE: {
       if (in_sigterm) {
         return 0;
@@ -2098,6 +2108,14 @@ int main_args_handler(int i) {
       }
       return 0;
     }
+    case 2018: {
+      double stop_ready_timeout = parse_double_option("--lease-stop-ready-timeout", 0, 10);
+      if (std::isnan(stop_ready_timeout)) {
+        return -1;
+      }
+      vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout = stop_ready_timeout;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2167,6 +2185,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-num", required_argument, 2016, "number of job workers to run");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
+  parse_option("lease-stop-ready-timeout", required_argument, 2018, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
