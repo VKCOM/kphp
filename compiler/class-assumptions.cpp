@@ -114,6 +114,56 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
     a = as_optional->inner;
   }
 
+  if (const auto *as_pipe = a->try_as<TypeHintPipe>()) {
+    kphp_assert(as_pipe->items.size() >= 2);
+    // to avoid the redundant work, check whether all union variants are classes
+    // and that they have some parent or interface (otherwise they would never
+    // have a common base)
+    for (const auto *item : as_pipe->items) {
+      if (auto as_primitive = item->try_as<TypeHintPrimitive>()) {
+        if (as_primitive->ptype != tp_Null) {
+          return ClassPtr{};
+        }
+        continue; // allow cases like `A|B|null`
+      }
+      const auto *as_instance = item->try_as<TypeHintInstance>();
+      if (!as_instance) {
+        return ClassPtr{};
+      }
+      ClassPtr klass = as_instance->resolve();
+      if (!klass) {
+        return ClassPtr{};
+      }
+      if (!klass->parent_class && klass->implements.empty()) {
+        return ClassPtr{};
+      }
+    }
+
+    // now we know that there is a chance to find something in common
+    // between them, so we can call a more expensive get_common_base_or_interface() method here;
+    // the method below is somewhat conservative, but it's good enough in the usual cases
+    ClassPtr result;
+    ClassPtr first = as_pipe->items[0]->try_as<TypeHintInstance>()->resolve();
+    for (int i = 1; i < as_pipe->items.size(); ++i) {
+      if (as_pipe->items[i]->try_as<TypeHintPrimitive>()) {
+        continue; // we know that it's tp_Null
+      }
+      ClassPtr other = as_pipe->items[i]->try_as<TypeHintInstance>()->resolve();
+      const auto common_bases = first->get_common_base_or_interface(other);
+      if (common_bases.size() != 1) {
+        return ClassPtr{};
+      }
+      if (!result || common_bases[0]->is_parent_of(result)) {
+        result = common_bases[0];
+      } else if (result == common_bases[0] || result->is_parent_of(common_bases[0])) {
+        // OK: still compatible.
+      } else {
+        return ClassPtr{};
+      }
+    }
+    return result;
+  }
+
   if (const auto *as_instance = a->try_as<TypeHintInstance>()) {
     return as_instance->resolve();
   }
