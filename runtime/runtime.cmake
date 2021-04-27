@@ -11,8 +11,7 @@ prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         client-functions.cpp
         job-interface.cpp
         processing-jobs.cpp
-        server-functions.cpp
-        shared-memory-manager.cpp)
+        server-functions.cpp)
 
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}

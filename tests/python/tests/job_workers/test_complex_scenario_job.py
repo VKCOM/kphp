@@ -7,8 +7,8 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
-            "--job-workers-num": 2,
-            "--workers-num": 4
+            "--job-workers-num": 3,
+            "--workers-num": 15
         })
 
     def assert_stats_count(self, stats):
@@ -57,15 +57,16 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
 
     def test_complex_scenario_job(self):
         requests_count = 100
-        with ThreadPool(10) as pool:
+        with ThreadPool(5) as pool:
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
         self.kphp_server.assert_stats(
             prefix="kphp_server.job_workers_",
             expected_added_stats={
+                "memory_messages_buffers_acquired": requests_count * 10,
+                "memory_messages_buffers_released": requests_count * 10,
+                "memory_messages_buffers_reserved": 2 * (15 + 3),
                 "job_queue_size": 0,
-                "currently_memory_slices_used": 0,
-                "max_shared_memory_slices_count": 1024,
                 "jobs_sent": requests_count * 5,
                 "jobs_replied": requests_count * 5,
                 "errors_pipe_server_write": 0,

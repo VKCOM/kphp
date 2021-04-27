@@ -13,6 +13,7 @@
 extern SlotIdsFactory parallel_job_ids_factory;
 
 namespace job_workers {
+struct FinishedJob;
 struct JobSharedMessage;
 } // namespace job_workers
 
@@ -39,7 +40,7 @@ struct net_event_t {
       const char *error_message;
     };
     struct { // job_worker_answer
-      job_workers::JobSharedMessage *job_result;
+      job_workers::FinishedJob *job_result;
     };
   };
 };

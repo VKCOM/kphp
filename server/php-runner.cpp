@@ -517,7 +517,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   void *addr = info->si_addr;
   if (PHPScriptBase::is_running && PHPScriptBase::current_script->is_protected(static_cast<char *>(addr))) {
     vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
-    write_str(2, "Error -1: Callstack overflow");
+    write_str(2, "Error -1: Callstack overflow\n");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
     if (dl::in_critical_section) {
@@ -531,7 +531,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
     const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
     vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
     vk::singleton<JsonLogger>::get().fsync_log_file();
-    write_str(2, "Error -2: Segmentation fault");
+    write_str(2, "Error -2: Segmentation fault\n");
     print_http_data();
     dl_print_backtrace(trace, trace_size);
     kill_workers();
@@ -553,8 +553,8 @@ void sigabrt_handler(int) {
 
   print_prologue(cur_time);
   write_str(2, "SIGABRT terminating program\n");
-  dl_print_backtrace(trace, trace_size);
   print_http_data();
+  dl_print_backtrace(trace, trace_size);
   kill_workers();
   _exit(EXIT_FAILURE);
 }

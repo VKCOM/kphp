@@ -6,15 +6,16 @@
 
 #include "common/algorithms/clamp.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/resumable.h"
 
+#include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
 
 #include "runtime/job-workers/client-functions.h"
@@ -98,22 +99,28 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
     return false;
   }
 
-  memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource, ExtraRefCnt::for_job_worker_communication);
+  memory_request->instance = copy_instance_into_other_memory(request, memory_request->resource,
+                                                             ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (memory_request->instance.is_null()) {
     memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job: too big request");
     return false;
   }
 
-  auto now = std::chrono::system_clock::now();
-  double job_deadline_time = std::chrono::duration_cast<std::chrono::duration<double>>(now.time_since_epoch()).count() + timeout;
-  memory_request->job_deadline_time = job_deadline_time;
-
-  const int job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
-  if (job_id <= 0) {
-    memory_manager.release_shared_message(memory_request);
-    php_warning("Can't send job: probably jobs queue is full");
-    return false;
+  const auto now = std::chrono::system_clock::now();
+  memory_request->job_deadline_time = std::chrono::duration<double>{now.time_since_epoch()}.count() + timeout;
+  int job_id = 0;
+  {
+    dl::CriticalSectionSmartGuard critical_section;
+    job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
+    if (job_id > 0) {
+      memory_manager.detach_shared_message_from_this_proc(memory_request);
+    } else {
+      memory_manager.release_shared_message(memory_request);
+      critical_section.leave_critical_section();
+      php_warning("Can't send job: probably jobs queue is full");
+      return false;
+    }
   }
 
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});

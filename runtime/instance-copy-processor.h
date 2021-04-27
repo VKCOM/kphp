@@ -105,6 +105,8 @@ private:
 
 } // namespace impl_
 
+using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource &, size_t);
+
 class InstanceDeepCopyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor> {
 public:
   using Basic = InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
@@ -114,7 +116,8 @@ public:
   using Basic::get_memory_ref_cnt;
 
   explicit InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept;
-  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt) noexcept;
+  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt,
+                          ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
   template<typename T>
   bool process(array<T> &arr) noexcept {
@@ -182,7 +185,13 @@ public:
 
   bool is_enough_memory_for(size_t size) noexcept {
     if (!memory_limit_exceeded_) {
-      memory_limit_exceeded_ = !memory_pool_.is_enough_memory_for(size);
+      if (!memory_pool_.is_enough_memory_for(size)) {
+        if (!oom_callback_) {
+          memory_limit_exceeded_ = true;
+        } else {
+          memory_limit_exceeded_ = !oom_callback_(memory_pool_, size);
+        }
+      }
     }
     return !memory_limit_exceeded_;
   }
@@ -197,6 +206,7 @@ private:
   uint8_t instance_depth_level_{0u};
   const uint8_t instance_depth_level_limit_{128u};
   memory_resource::unsynchronized_pool_resource &memory_pool_;
+  ResourceCallbackOOM oom_callback_{nullptr};
 };
 
 class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
@@ -293,11 +303,11 @@ private:
 template<class T>
 class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
                                                   memory_resource::unsynchronized_pool_resource &memory_pool,
-                                                  ExtraRefCnt memory_ref_cnt) noexcept {
+                                                  ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept {
   dl::set_current_script_allocator(memory_pool, false);
 
   class_instance<T> copied_instance = instance;
-  InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt};
+  InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt, oom_callback};
   copyVisitor.process(copied_instance);
   if (unlikely(copyVisitor.is_depth_limit_exceeded() || copyVisitor.is_memory_limit_exceeded())) {
     InstanceDeepDestroyVisitor{memory_ref_cnt}.process(copied_instance);

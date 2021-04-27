@@ -21,6 +21,13 @@ class InstanceMemoryEstimateVisitor;
 
 namespace job_workers {
 
+enum {
+  server_php_script_error_offset = -100,
+  client_timeout_error = -102, // same as script timeout
+  client_oom_error = -1001,
+  server_nothing_replied_error = -2001
+};
+
 struct SendingInstanceBase : abstract_refcountable_php_interface {
   virtual const char *get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
@@ -37,6 +44,8 @@ struct SendingInstanceBase : abstract_refcountable_php_interface {
 
   virtual ~SendingInstanceBase() = default;
 };
+
+struct FinishedJob;
 
 struct JobSharedMessage;
 
@@ -89,12 +98,16 @@ class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__con
 string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
 int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
 
+class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char *error_msg,
+                                                                          memory_resource::unsynchronized_pool_resource &resource) noexcept;
+
 bool f$is_kphp_job_workers_enabled() noexcept;
 
 void global_init_job_workers_lib() noexcept;
+void free_job_workers_interface_lib() noexcept;
 
 int get_job_timeout_wakeup_id();
 
-void process_job_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+void process_job_answer(int job_id, job_workers::FinishedJob *job_result) noexcept;
 
 void process_job_timeout(int job_id) noexcept;

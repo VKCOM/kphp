@@ -49,7 +49,6 @@
 
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
@@ -63,6 +62,7 @@
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 using job_workers::JobWorkersContext;
 
@@ -830,6 +830,7 @@ int run_worker(WorkerType worker_type) {
 
     instance_cache_release_all_resources_acquired_by_this_proc();
     ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
+    vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
     return 1;
   }
 
@@ -1538,32 +1539,19 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 
   const auto &instance_cache_element_stats = instance_cache_get_stats();
-  add_gauge_stat_long(stats, "instance_cache.elements.stored",
-                          instance_cache_element_stats.elements_stored.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.stored_with_delay",
-                          instance_cache_element_stats.elements_stored_with_delay.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.storing_skipped_due_recent_update",
-                          instance_cache_element_stats.elements_storing_skipped_due_recent_update.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.storing_delayed_due_mutex",
-                          instance_cache_element_stats.elements_storing_delayed_due_mutex.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.fetched",
-                          instance_cache_element_stats.elements_fetched.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.missed",
-                          instance_cache_element_stats.elements_missed.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.missed_earlier",
-                          instance_cache_element_stats.elements_missed_earlier.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.expired",
-                          instance_cache_element_stats.elements_expired.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.created",
-                          instance_cache_element_stats.elements_created.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.destroyed",
-                          instance_cache_element_stats.elements_destroyed.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.cached",
-                          instance_cache_element_stats.elements_cached.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.logically_expired_and_ignored",
-                          instance_cache_element_stats.elements_logically_expired_and_ignored.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "instance_cache.elements.logically_expired_but_fetched",
-                          instance_cache_element_stats.elements_logically_expired_but_fetched.load(std::memory_order_relaxed));
+  add_gauge_stat(stats, instance_cache_element_stats.elements_stored, "instance_cache.elements.stored");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_stored_with_delay, "instance_cache.elements.stored_with_delay");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_storing_skipped_due_recent_update, "instance_cache.elements.storing_skipped_due_recent_update");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_storing_delayed_due_mutex, "instance_cache.elements.storing_delayed_due_mutex");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_fetched, "instance_cache.elements.fetched");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_missed, "instance_cache.elements.missed");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_missed_earlier, "instance_cache.elements.missed_earlier");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_expired, "instance_cache.elements.expired");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_created, "instance_cache.elements.created");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_destroyed, "instance_cache.elements.destroyed");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_cached, "instance_cache.elements.cached");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_and_ignored, "instance_cache.elements.logically_expired_and_ignored");
+  add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
   server_stats.worker_stats.to_stats(stats);
@@ -1576,24 +1564,9 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
 
-  const auto &job_workers_stats = job_workers::JobStats::get();
-  add_gauge_stat_long(stats, "job_workers.job_queue_size", job_workers_stats.job_queue_size.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.currently_memory_slices_used", job_workers_stats.currently_memory_slices_used.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.max_shared_memory_slices_count", vk::singleton<job_workers::SharedMemoryManager>::get().get_total_slices_count());
-  add_gauge_stat_long(stats, "job_workers.jobs_sent", job_workers_stats.jobs_sent.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.jobs_replied", job_workers_stats.jobs_replied.load(std::memory_order_relaxed));
-
-  add_gauge_stat_long(stats, "job_workers.errors_pipe_server_write", job_workers_stats.errors_pipe_server_write.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.errors_pipe_server_read", job_workers_stats.errors_pipe_server_read.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.errors_pipe_client_write", job_workers_stats.errors_pipe_client_write.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.errors_pipe_client_read", job_workers_stats.errors_pipe_client_read.load(std::memory_order_relaxed));
-
-  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_another_is_running",
-                          job_workers_stats.job_worker_skip_job_due_another_is_running.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_overload",
-                          job_workers_stats.job_worker_skip_job_due_overload.load(std::memory_order_relaxed));
-  add_gauge_stat_long(stats, "job_workers.job_worker_skip_job_due_steal",
-                          job_workers_stats.job_worker_skip_job_due_steal.load(std::memory_order_relaxed));
+  if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {
+    vk::singleton<job_workers::SharedMemoryManager>::get().get_stats().write_stats_to(stats);
+  }
 }
 
 int php_master_http_execute(struct connection *c, int op) {
@@ -1917,7 +1890,6 @@ void run_master() {
   WarmUpContext::get().reset();
   while (true) {
     vkprintf(2, "run_master iteration: begin\n");
-    tvkprintf(job_workers, 3, "Job queue size = %d\n", job_workers::JobStats::get().job_queue_size.load(std::memory_order_relaxed));
 
     my_now = dl_time();
 

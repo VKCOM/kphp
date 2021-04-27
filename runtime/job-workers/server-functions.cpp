@@ -2,10 +2,11 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/job-workers/job-message.h"
-#include "runtime/job-workers/shared-memory-manager.h"
+#include "runtime/critical_section.h"
 #include "runtime/instance-copy-processor.h"
 
+#include "server/job-workers/job-message.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-query-data.h"
 
 #include "runtime/job-workers/server-functions.h"
@@ -54,19 +55,26 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
     php_warning("Can't store job response: this is a not job request");
     return;
   }
-  auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto *response_memory = memory_manager.acquire_shared_message();
   if (!response_memory) {
     php_warning("Can't store job response: not enough shared memory");
     return;
   }
-  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource, ExtraRefCnt::for_job_worker_communication);
+  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
+                                                              ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
     php_warning("Can't store job response: too big response");
-    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    memory_manager.release_shared_message(response_memory);
     return;
   }
+
+  dl::CriticalSectionSmartGuard critical_section;
   if (const char *err = current_job.send_reply(response_memory)) {
-    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    memory_manager.release_shared_message(response_memory);
+    critical_section.leave_critical_section();
     php_warning("Can't store job response: %s", err);
+  } else {
+    memory_manager.detach_shared_message_from_this_proc(response_memory);
   }
 }

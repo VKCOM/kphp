@@ -951,6 +951,10 @@ inline string::size_type string::estimate_memory_usage() const {
   return inner()->get_memory_usage();
 }
 
+inline string::size_type string::estimate_memory_usage(size_t len) noexcept {
+  return static_cast<size_type>(sizeof(string_inner)) + string_inner::new_capacity(len, 0);
+}
+
 inline string string::make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size) {
   php_assert(len + inner_sizeof() + 1 <= memory_size);
   auto *inner = new (memory) string_inner {len, len, ExtraRefCnt::for_global_const};

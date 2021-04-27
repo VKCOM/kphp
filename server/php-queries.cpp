@@ -12,8 +12,9 @@
 #include "common/precise-time.h"
 
 #include "runtime/allocator.h"
-#include "runtime/job-workers/job-message.h"
+#include "runtime/job-workers/processing-jobs.h"
 
+#include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
@@ -874,7 +875,7 @@ int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
   if (status <= 0) {
     return status;
   }
-  event->job_result = job_result;
+  event->job_result = job_workers::copy_finished_job_to_script_memory(job_result);
   return 1;
 }
 

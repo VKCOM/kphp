@@ -11,12 +11,11 @@
 #include "net/net-events.h"
 #include "net/net-connections.h"
 
-#include "runtime/job-workers/job-message.h"
-#include "runtime/job-workers/shared-memory-manager.h"
-
+#include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
 #include "server/server-log.h"
@@ -112,14 +111,14 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   if (running_job) {
     tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     has_delayed_jobs = true;
-    JobStats::get().job_worker_skip_job_due_another_is_running++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_another_is_running;
     return 0;
   }
 
   if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
     tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
     has_delayed_jobs = true;
-    JobStats::get().job_worker_skip_job_due_overload++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_overload;
     return 0;
   }
 
@@ -131,19 +130,20 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
     has_delayed_jobs = false;
-    JobStats::get().job_worker_skip_job_due_steal++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_steal;
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
-    JobStats::get().errors_pipe_server_read++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_read;
     return -1;
   }
 
-  JobStats::get().job_queue_size--;
+  --vk::singleton<SharedMemoryManager>::get().get_stats().job_queue_size;
+  vk::singleton<job_workers::SharedMemoryManager>::get().attach_shared_message_to_this_proc(job);
   running_job = job;
   reply_was_sent = false;
 
   auto now = std::chrono::system_clock::now();
-  double timeout_sec = job->job_deadline_time - std::chrono::duration_cast<std::chrono::duration<double>>(now.time_since_epoch()).count();
+  double timeout_sec = job->job_deadline_time - std::chrono::duration<double>{now.time_since_epoch()}.count();
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
@@ -202,10 +202,10 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
   job_response->job_id = running_job->job_id;
   if (!job_writer.write_job_result(job_response, write_job_result_fd)) {
-    JobStats::get().errors_pipe_server_write++;
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_write;
     return "Can't write job reply to the pipe";
   }
-  JobStats::get().jobs_replied++;
+  ++vk::singleton<SharedMemoryManager>::get().get_stats().jobs_replied;
   reply_was_sent = true;
   return nullptr;
 }
@@ -215,25 +215,20 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   if (reply_was_sent) {
     return;
   }
-  auto *response_memory = vk::singleton<job_workers::SharedMemoryManager>::get().acquire_shared_message();
+
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto *response_memory = memory_manager.acquire_shared_message();
   if (!response_memory) {
     log_server_error("Can't store job response error: not enough shared memory");
     return;
   }
 
-  dl::set_current_script_allocator(response_memory->resource, false);
-
-  class_instance<C$KphpJobWorkerResponseError> error;
-  error.alloc();  // TODO: handle OOM
-  error.get()->error = string{error_msg};
-  error.get()->error_code = error_code;
-  response_memory->instance = std::move(error);
-
-  dl::restore_default_script_allocator(false);
-
+  response_memory->instance = create_error_on_other_memory(error_code, error_msg, response_memory->resource);
   if (const char *err = send_job_reply(response_memory)) {
-    vk::singleton<job_workers::SharedMemoryManager>::get().release_shared_message(response_memory);
+    memory_manager.release_shared_message(response_memory);
     log_server_error("Can't store job response: %s", err);
+  } else {
+    memory_manager.detach_shared_message_from_this_proc(response_memory);
   }
 }
 

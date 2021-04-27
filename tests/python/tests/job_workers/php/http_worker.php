@@ -35,6 +35,14 @@ function do_http_worker() {
       run_http_complex_scenario();
       return;
     }
+    case "/test_client_too_big_request": {
+      test_client_too_big_request();
+      return;
+    }
+    case "/test_client_wait_false": {
+      test_client_wait_false();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -108,12 +116,18 @@ function test_job_script_timeout_error() {
 
 function test_job_errors() {
   $context = json_decode(file_get_contents('php://input'));
-  $ids = send_jobs($context);
+  $ids = send_jobs($context, 5);
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }
 
 function raise_error(string $err) {
   echo json_encode(["error" => $err]);
+}
+
+function test_client_too_big_request() {
+  $req = new X2Request;
+  $req->arr_request = make_big_fake_array();
+  echo json_encode(["job-id" => kphp_job_worker_start($req)]);
 }
 
 function test_jobs_in_wait_queue() {
@@ -159,4 +173,13 @@ function test_several_waits_for_one_job() {
   }
 
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
+}
+
+function test_client_wait_false() {
+  $id = false;
+  if ($id) {
+    $id = kphp_job_worker_start(new X2Request);
+  }
+  $result = kphp_job_worker_wait($id);
+  echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
 }

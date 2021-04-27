@@ -16,6 +16,10 @@ namespace job_workers {
 
 struct JobSharedMessage;
 
+struct FinishedJob;
+
+FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) noexcept;
+
 struct JobRequestInfo {
   int64_t resumable_id{0};
   kphp_event_timer *timer{nullptr};
@@ -32,7 +36,7 @@ class ProcessingJobs : vk::not_copyable {
 public:
   void start_job_processing(int job_id, JobRequestInfo &&job_request_info) noexcept;
 
-  int64_t finish_job_on_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+  int64_t finish_job_on_answer(int job_id, job_workers::FinishedJob *job_result) noexcept;
   int64_t finish_job_on_timeout(int job_id) noexcept;
 
   class_instance<C$KphpJobWorkerResponse> withdraw(int job_id) noexcept;
@@ -48,7 +52,7 @@ private:
 
   ProcessingJobs() = default;
 
-  int64_t finish_job_impl(int job_id, job_workers::JobSharedMessage *job_result) noexcept;
+  int64_t finish_job_impl(int job_id, job_workers::FinishedJob *job_result, bool timeout) noexcept;
 };
 
 } // namespace job_workers

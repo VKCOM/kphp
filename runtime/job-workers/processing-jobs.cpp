@@ -3,36 +3,44 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/net_events.h"
-#include "runtime/job-workers/job-message.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/instance-copy-processor.h"
+
+#include "server/job-workers/job-message.h"
+#include "server/job-workers/shared-memory-manager.h"
 
 #include "runtime/job-workers/processing-jobs.h"
 
 namespace job_workers {
 
+struct FinishedJob {
+  class_instance<C$KphpJobWorkerResponse> response;
+};
+
+FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) noexcept {
+  auto response = job_message->instance.cast_to<C$KphpJobWorkerResponse>();
+  php_assert(!response.is_null());
+  response = copy_instance_into_script_memory(response);
+  if (!response.is_null()) {
+    if (void *mem = dl::allocate(sizeof(FinishedJob))) {
+      return new(mem) FinishedJob{std::move(response)};
+    }
+  }
+  return nullptr;
+}
+
 void ProcessingJobs::start_job_processing(int job_id, JobRequestInfo &&job_request_info) noexcept {
   processing_[job_id] = std::move(job_request_info);
 }
 
-int64_t ProcessingJobs::finish_job_on_answer(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
-  php_assert(job_result);
-  php_assert(job_id == job_result->job_id);
-
-  return finish_job_impl(job_id, job_result);
+int64_t ProcessingJobs::finish_job_on_answer(int job_id, job_workers::FinishedJob *job_result) noexcept {
+  return finish_job_impl(job_id, job_result, false);
 }
 
 int64_t ProcessingJobs::finish_job_on_timeout(int job_id) noexcept {
-  return finish_job_impl(job_id, nullptr);
+  return finish_job_impl(job_id, nullptr, true);
 }
 
-int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::JobSharedMessage *job_result) noexcept {
-  auto release_job_result = vk::finally([=]() {
-    if (job_result) {
-      vk::singleton<SharedMemoryManager>::get().release_shared_message(job_result);
-    }
-  });
-
+int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *job_result, bool timeout) noexcept {
   if (!processing_.has_key(job_id)) {
     // possible in case of answer after timeout
     return 0;
@@ -41,18 +49,19 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::JobSharedMessag
   auto &ready_job = processing_[job_id];
 
   if (job_result) {
-    auto reply = job_result->instance.cast_to<C$KphpJobWorkerResponse>();
-    php_assert(!reply.is_null());
-
-    // TODO Check if reply is null => OOM
-    reply = copy_instance_into_script_memory(reply);
-    ready_job.response = std::move(reply);
+    ready_job.response = std::move(job_result->response);
+    job_result->~FinishedJob();
+    dl::deallocate(job_result, sizeof(job_workers::FinishedJob));
   } else {
     class_instance<C$KphpJobWorkerResponseError> error;
-    error.alloc();  // TODO: handle OOM
-    error.get()->error = string{"Job client timeout"};
-    error.get()->error_code = -102;
-
+    error.alloc();
+    if (timeout) {
+      error.get()->error = string{"Job client timeout"};
+      error.get()->error_code = client_timeout_error;
+    } else {
+      error.get()->error = string{"Not enough memory for accepting job response"};
+      error.get()->error_code = client_oom_error;
+    }
     ready_job.response = std::move(error);
   }
 

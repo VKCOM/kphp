@@ -27,7 +27,8 @@ prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-worker-server.cpp
         job-worker-client.cpp
         job-workers-context.cpp
-        pipe-io.cpp)
+        pipe-io.cpp
+        shared-memory-manager.cpp)
 
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}

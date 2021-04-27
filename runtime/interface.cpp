@@ -27,7 +27,6 @@
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
-#include "runtime/job-workers/job-message.h"
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/kphp-backtrace.h"
@@ -48,6 +47,7 @@
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "runtime/timelib_wrapper.h"
+#include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
@@ -2194,14 +2194,16 @@ static void free_runtime_libs() {
   free_streams_lib();
   free_udp_lib();
   OnKphpWarningCallback::get().reset();
-  vk::singleton<JsonLogger>::get().reset_buffers();
+
   free_job_client_interface_lib();
   free_job_server_interface_lib();
+  free_job_workers_interface_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();
   free_kphp_backtrace();
 
+  vk::singleton<JsonLogger>::get().reset_buffers();
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
@@ -2210,7 +2212,6 @@ static void free_runtime_libs() {
     }
     uploaded_files_last_query_num--;
   }
-
   dl::leave_critical_section();
 }
 

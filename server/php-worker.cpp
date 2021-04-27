@@ -9,6 +9,7 @@
 #include "common/rpc-error-codes.h"
 #include "net/net-connections.h"
 #include "runtime/rpc.h"
+#include "runtime/job-workers/job-interface.h"
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/php-engine.h"
@@ -294,7 +295,7 @@ void php_worker_run(php_worker *worker) {
               break;
             case job_worker: {
               const char *error = php_script_get_error(php_script);
-              int error_code = -100 - static_cast<int>(php_script_get_error_type(php_script));
+              int error_code = job_workers::server_php_script_error_offset - static_cast<int>(php_script_get_error_type(php_script));
               vk::singleton<job_workers::JobWorkerServer>::get().try_store_job_response_error(error, error_code);
               break;
             }
@@ -592,6 +593,11 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
     } else if (worker->mode == once_worker) {
       assert (write(1, res->body, (size_t)res->body_len) == res->body_len);
       run_once_return_code = res->exit_code;
+    } else if (worker->mode == job_worker) {
+      auto &job_server = vk::singleton<job_workers::JobWorkerServer>::get();
+      if (job_server.reply_is_expected()) {
+        job_server.try_store_job_response_error("Nothing replied", job_workers::server_nothing_replied_error);
+      }
     }
   }
 }

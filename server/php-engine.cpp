@@ -55,13 +55,13 @@
 
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
-#include "runtime/job-workers/shared-memory-manager.h"
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/php-engine-vars.h"
@@ -1433,10 +1433,14 @@ sig_atomic_t pipe_fast_packet_id = 0;
 
 void write_immediate_stats_to_pipe() {
   if (master_pipe_fast_write != -1) {
-#define QSIZE (sizeof (php_immediate_stats_t) + 1 + sizeof (int) * 5 + 3) & -4
-    int q[QSIZE] = {0};
-    int qsize = QSIZE;
-#undef QSIZE
+    constexpr size_t query_size = (sizeof(php_immediate_stats_t) + 1 + sizeof(int) * 5 + 3) & -4;
+#if ASAN_ENABLED
+    // sometimes asan leads stack underflow
+    // TODO: use static constantly?
+    static
+#endif
+    int q[query_size] = {0};
+    int qsize = query_size;
 
     q[2] = RPC_PHP_IMMEDIATE_STATS;
     memcpy(q + 3, get_imm_stats(), sizeof(php_immediate_stats_t));
@@ -2077,9 +2081,15 @@ int main_args_handler(int i) {
       return 0;
     }
     case 2017: {
-      // TODO: add check
-      size_t mbs = atoi(optarg);
-      vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_limit(mbs * 1024 * 1024);
+      const int64_t job_workers_shared_memory_size = parse_memory_limit(optarg);
+      if (job_workers_shared_memory_size <= 0) {
+        kprintf("couldn't parse job-workers-shared-memory-size argument\n");
+        return -1;
+      }
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_limit(job_workers_shared_memory_size)) {
+        kprintf("couldn't set job-workers-shared-memory-size: too small\n");
+        return -1;
+      }
       return 0;
     }
     default:
@@ -2150,7 +2160,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-num", required_argument, 2016, "number of job workers to run");
-  parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory in MBs used for job workers related communication");
+  parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
