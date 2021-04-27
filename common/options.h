@@ -46,7 +46,7 @@ static inline const char *get_option_section_name(option_section_t section) {
   return NULL;
 }
 
-typedef int (*options_parser)(int);
+typedef int (*options_parser)(int, const char *);
 
 void parse_usage();
 void remove_all_options();
@@ -70,12 +70,12 @@ void usage_set_other_args_desc(const char *s);
 
 
 #define COMMON_OPTION_PARSER__(suffix, section, name, letter, has_arg, ...)                                     \
-static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused);                                                      \
+static int OPTION_PARSER_FUNCTION_ ## suffix(int, const char *);                                                \
 __attribute__((constructor))                                                                                    \
 static void REGISTER_OPTION_PARSER_FUNCTION_ ## suffix() {                                                      \
   parse_common_option((section), OPTION_PARSER_FUNCTION_ ## suffix, (name), (has_arg), (letter), __VA_ARGS__);  \
 }                                                                                                               \
-static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused __attribute__((unused)))
+static int OPTION_PARSER_FUNCTION_ ## suffix(int, const char *)
 
 #define COMMON_OPTION_PARSER_(...) COMMON_OPTION_PARSER__(__VA_ARGS__)
 #define OPTION_PARSER(section, name, has_arg, ...) COMMON_OPTION_PARSER_(__COUNTER__, section, name, -1, has_arg, __VA_ARGS__)

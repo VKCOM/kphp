@@ -326,7 +326,7 @@ void usage_and_exit() {
   exit(2);
 }
 
-int parse_engine_options_long(int argc, char **argv, int (*execute)(int val)) {
+int parse_engine_options_long(int argc, char **argv, options_parser execute) {
   usage_progname = argv[0];
   std::string opt_string;
   std::vector<option> long_opts;
@@ -402,9 +402,9 @@ int parse_engine_options_long(int argc, char **argv, int (*execute)(int val)) {
     }
     int res;
     if (options[c].parser == nullptr) {
-      res = execute ? execute(c) : -1;
+      res = execute ? execute(c, options[c].name.c_str()) : -1;
     } else {
-      res = options[c].parser(c);
+      res = options[c].parser(c, options[c].name.c_str());
     }
     if (res < 0) {
       kprintf("Failed to parse option %s\n", options[c].name.c_str());
@@ -422,6 +422,6 @@ void always_enable_option(const char *name, char *arg) {
   char *old_optarg = optarg;
   optarg = arg;
   options[c].help += " [enabled by default]";
-  options[c].parser(c);
+  options[c].parser(c, options[c].name.c_str());
   optarg = old_optarg;
 }

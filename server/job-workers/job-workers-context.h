@@ -31,6 +31,7 @@ public:
   size_t running_job_workers{0};
   size_t dying_job_workers{0};
   size_t job_workers_num{0};
+  double job_workers_ratio{0};
 
   Pipe job_pipe{};
   std::vector<Pipe> result_pipes;

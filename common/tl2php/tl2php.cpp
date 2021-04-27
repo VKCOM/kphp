@@ -74,7 +74,7 @@ static bool generate_tests = false;
 static bool generate_tl_internals = false;
 static std::string combined2_tl_file;
 
-int tl2php_parse_f(int i) {
+int tl2php_parse_f(int i, const char *) {
   switch (i) {
     case 'f': {
       forcibly_overwrite_dir = true;
