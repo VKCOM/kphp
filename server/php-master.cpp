@@ -1403,50 +1403,6 @@ static long long int instance_cache_memory_swaps_ok = 0;
 static long long int instance_cache_memory_swaps_fail = 0;
 static const double FULL_STATS_PERIOD = 5.0;
 
-class QPSCalculator {
-public:
-  explicit QPSCalculator(double cooldown_period) :
-    cooldown_period_(cooldown_period) {
-  }
-
-  void update(double time_point, const PhpWorkerStats &new_worker_stats) {
-    if (!prev_total_queries_) {
-      prev_total_queries_ = new_worker_stats.total_queries();
-      prev_total_script_queries_ = new_worker_stats.total_script_queries();
-      prev_time_ = time_point;
-      return;
-    }
-
-    const auto delta_incoming_queries = new_worker_stats.total_queries() - prev_total_queries_;
-    if (delta_incoming_queries > 0) {
-      const auto delta_time = time_point - prev_time_;
-      incoming_qps_ = static_cast<double>(delta_incoming_queries) / delta_time;
-      const auto delta_outgoing_queries = new_worker_stats.total_script_queries() - prev_total_script_queries_;
-      outgoing_qps_ = static_cast<double>(delta_outgoing_queries) / delta_time;
-      prev_time_ = time_point;
-
-      prev_total_queries_ = new_worker_stats.total_queries();
-      prev_total_script_queries_ = new_worker_stats.total_script_queries();
-    } else if (time_point - prev_time_ >= cooldown_period_) {
-      incoming_qps_ = 0;
-      outgoing_qps_ = 0;
-      prev_time_ = time_point;
-    }
-  }
-
-  double get_incoming_qps() const { return incoming_qps_; }
-  double get_outgoing_qps() const { return outgoing_qps_; }
-
-private:
-  double incoming_qps_{0};
-  double outgoing_qps_{0};
-  double prev_time_{0};
-
-  long prev_total_queries_{0};
-  long prev_total_script_queries_{0};
-  const double cooldown_period_{0};
-};
-
 STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
     add_gauge_stat_long(stats, "kphp_version", atoll(engine_tag));
@@ -1497,11 +1453,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   write_confdata_stats_to(stats);
   server_stats.worker_stats.to_stats(stats);
-
-  static QPSCalculator qps_calculator{FULL_STATS_PERIOD * 2};
-  qps_calculator.update(my_now, server_stats.worker_stats);
-  add_gauge_stat_double(stats, "requests.incoming_queries_per_second", qps_calculator.get_incoming_qps());
-  add_gauge_stat_double(stats, "requests.outgoing_queries_per_second", qps_calculator.get_outgoing_qps());
 
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
