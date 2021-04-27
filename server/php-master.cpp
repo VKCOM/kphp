@@ -230,13 +230,15 @@ struct Stats {
   php_immediate_stats_t istats = php_immediate_stats_t();
   mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
-  StatImpl<MiscStatSegment, MiscStatTimestamp> misc[periods_n];
+  StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_general_workers[periods_n];
+  StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_job_workers[periods_n];
   PhpWorkerStats worker_stats;
 
   Stats() {
     for (int i = 0; i < periods_n; i++) {
       cpu[i].set_period(periods_len[i]);
-      misc[i].set_period(periods_len[i]);
+      misc_stat_for_general_workers[i].set_period(periods_len[i]);
+      misc_stat_for_job_workers[i].set_period(periods_len[i]);
     }
 
     for (auto period : periods_desc) {
@@ -259,9 +261,15 @@ struct Stats {
     }
   }
 
-  void update(const MiscStatTimestamp &misc_timestamp) {
+  void update_misc_stat_for_general_workers(const MiscStatTimestamp &misc_timestamp) {
     for (int i = 1; i < periods_n; i++) {
-      misc[i].add_timestamp(misc_timestamp);
+      misc_stat_for_general_workers[i].add_timestamp(misc_timestamp);
+    }
+  }
+
+  void update_misc_stat_for_job_workers(const MiscStatTimestamp &misc_timestamp) {
+    for (int i = 1; i < periods_n; i++) {
+      misc_stat_for_job_workers[i].add_timestamp(misc_timestamp);
     }
   }
 
@@ -292,7 +300,7 @@ struct Stats {
       std::string running_workers_max_vals;
       std::string running_workers_avg_vals;
       for (int i = 1; i < periods_n; i++) {
-        MiscStat s = misc[i].get_stat();
+        MiscStat s = misc_stat_for_general_workers[i].get_stat();
         sprintf(buffer, " %7.3lf", s.running_workers_avg);
         running_workers_avg_vals += buffer;
         sprintf(buffer, " %7d", s.running_workers_max);
@@ -436,9 +444,9 @@ void terminate_worker(worker_info_t *w) {
 
   vk::singleton<WorkersControl>::get().on_worker_terminating(w->type);
   if (w->type == WorkerType::general_worker) {
-    workers_terminated++;
     changed = 1;
   }
+  workers_terminated++;
 }
 
 int kill_worker(WorkerType worker_type) {
@@ -834,8 +842,8 @@ void remove_worker(pid_t pid) {
       if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
         last_failed = my_now;
         failed++;
-        workers_failed++;
       }
+      workers_failed++;
 
       clear_pipe_info(&workers[i]->pipes[0]);
       clear_pipe_info(&workers[i]->pipes[1]);
@@ -1363,11 +1371,11 @@ struct WorkerStats {
   int paused_workers_n{0};
   int ready_for_accept_workers_n{0};
 
-  static WorkerStats collect() {
+  static WorkerStats collect(WorkerType worker_type) noexcept {
     WorkerStats result;
     for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       worker_info_t *w = workers[i];
-      if (!w->is_dying) {
+      if (!w->is_dying && w->type == worker_type) {
         result.total_workers_n++;
         result.running_workers_n += w->stats->istats.is_running;
         result.paused_workers_n += w->stats->istats.is_wait_net;
@@ -1379,7 +1387,7 @@ struct WorkerStats {
 };
 
 std::string get_master_stats_html() {
-  const auto worker_stats = WorkerStats::collect();
+  const auto worker_stats = WorkerStats::collect(WorkerType::general_worker);
 
   std::string html;
   char buf[100];
@@ -1392,7 +1400,7 @@ std::string get_master_stats_html() {
   sprintf(buf, "working_but_waiting_workers\t%d\n", worker_stats.paused_workers_n);
   html += buf;
   for (int i = 1; i <= 3; ++i) {
-    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], server_stats.misc[i].get_stat().running_workers_avg);
+    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg);
     html += buf;
   }
 
@@ -1410,23 +1418,33 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   add_gauge_stat_long(stats, "uptime", get_uptime());
 
-  const auto worker_stats = WorkerStats::collect();
-  add_gauge_stat_long(stats, "workers.current.total", worker_stats.total_workers_n);
-  add_gauge_stat_long(stats, "workers.current.working", worker_stats.running_workers_n);
-  add_gauge_stat_long(stats, "workers.current.working_but_waiting", worker_stats.paused_workers_n);
-  add_gauge_stat_long(stats, "workers.current.ready_for_accept", worker_stats.ready_for_accept_workers_n);
+  const auto general_worker_group = WorkerStats::collect(WorkerType::general_worker);
+  add_gauge_stat_long(stats, "workers.general.total", general_worker_group.total_workers_n);
+  add_gauge_stat_long(stats, "workers.general.working", general_worker_group.running_workers_n);
+  add_gauge_stat_long(stats, "workers.general.working_but_waiting", general_worker_group.paused_workers_n);
+  add_gauge_stat_long(stats, "workers.general.ready_for_accept", general_worker_group.ready_for_accept_workers_n);
 
-  add_gauge_stat_long(stats, "workers.total.started", tot_workers_started);
-  add_gauge_stat_long(stats, "workers.total.dead", tot_workers_dead);
-  add_gauge_stat_long(stats, "workers.total.strange_dead", tot_workers_strange_dead);
-  add_gauge_stat_long(stats, "workers.total.killed", workers_killed);
-  add_gauge_stat_long(stats, "workers.total.hung", workers_hung);
-  add_gauge_stat_long(stats, "workers.total.terminated", workers_terminated);
-  add_gauge_stat_long(stats, "workers.total.failed", workers_failed);
+  auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
+  add_gauge_stat_double(stats, "workers.general.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.general.running.max_1m", running_stats.running_workers_max);
 
-  const auto workers_stats = server_stats.misc[1].get_stat();
-  add_gauge_stat_double(stats, "workers.running.avg_1m", workers_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.running.max_1m", workers_stats.running_workers_max);
+  const auto job_worker_group = WorkerStats::collect(WorkerType::job_worker);
+  add_gauge_stat_long(stats, "workers.job.total", job_worker_group.total_workers_n);
+  add_gauge_stat_long(stats, "workers.job.working", job_worker_group.running_workers_n);
+  add_gauge_stat_long(stats, "workers.job.working_but_waiting", job_worker_group.paused_workers_n);
+
+  running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
+  add_gauge_stat_double(stats, "workers.job.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.job.running.max_1m", running_stats.running_workers_max);
+
+  add_gauge_stat_long(stats, "workers.all.started", tot_workers_started);
+  add_gauge_stat_long(stats, "workers.all.dead", tot_workers_dead);
+  add_gauge_stat_long(stats, "workers.all.strange_dead", tot_workers_strange_dead);
+  add_gauge_stat_long(stats, "workers.all.killed", workers_killed);
+  add_gauge_stat_long(stats, "workers.all.hung", workers_hung);
+  add_gauge_stat_long(stats, "workers.all.terminated", workers_terminated);
+  add_gauge_stat_long(stats, "workers.all.failed", workers_failed);
+
 
   const auto cpu_stats = server_stats.cpu[1].get_stat();
   add_gauge_stat_double(stats, "cpu.stime", cpu_stats.cpu_s_usage);
@@ -1705,7 +1723,8 @@ static void cron() {
   server_stats.worker_stats.copy_internal_from(dead_worker_stats);
   server_stats.worker_stats.reset_memory_and_percentiles_stats();
   server_stats.worker_stats.update_mem_info();
-  int running_workers = 0;
+  int running_general_workers = 0;
+  int running_job_workers = 0;
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     worker_info_t *w = workers[i];
     const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
@@ -1718,11 +1737,12 @@ static void cron() {
     utime += w->my_info.utime;
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
-    running_workers += w->stats->istats.is_running;
+    running_general_workers += w->stats->istats.is_running && (w->type == WorkerType::general_worker);
+    running_job_workers += w->stats->istats.is_running && (w->type == WorkerType::job_worker);
     server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats);
   }
-  MiscStatTimestamp misc_timestamp{my_now, running_workers};
-  server_stats.update(misc_timestamp);
+  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, running_general_workers});
+  server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, running_job_workers});
 
   utime += dead_utime;
   stime += dead_stime;
