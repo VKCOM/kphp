@@ -348,7 +348,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   if (rhs->throw_flag) {
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
-  W << "NullCoalesce< " << TypeName{type} << " >{";
+  W << "NullCoalesce< " << TypeName{type} << " >(";
   const auto index = lhs.try_as<op_index>();
   const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_any;
   if (index && vk::none_of_equal(array_ptype, tp_shape, tp_tuple)) {
@@ -363,7 +363,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << lhs;
   }
 
-  W << "}.finalize(";
+  W << ").finalize(";
 
   if (vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null)) {
     W << rhs;
