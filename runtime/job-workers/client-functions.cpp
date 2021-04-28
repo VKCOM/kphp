@@ -81,6 +81,11 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
     php_warning("Can't send job: job workers disabled");
     return false;
   }
+  auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
+  if (!client.is_inited()) {
+    php_warning("Can't send job: call from job worker");
+    return false;
+  }
   if (request.is_null()) {
     php_warning("Can't send job: the request shouldn't be null");
     return false;
@@ -112,7 +117,7 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
   int job_id = 0;
   {
     dl::CriticalSectionSmartGuard critical_section;
-    job_id = vk::singleton<job_workers::JobWorkerClient>::get().send_job(memory_request);
+    job_id = client.send_job(memory_request);
     if (job_id > 0) {
       memory_manager.detach_shared_message_from_this_proc(memory_request);
     } else {
