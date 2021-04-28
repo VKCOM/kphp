@@ -2,7 +2,8 @@ prepend(SERVER_TESTS_SOURCES ${BASE_DIR}/tests/cpp/server/
         job-workers/shared-memory-manager-test.cpp
         cluster-name-test.cpp
         confdata-binlog-events-test.cpp
-        php-engine-test.cpp)
+        php-engine-test.cpp
+        workers-control-test.cpp)
 
 if(COMPILER_GCC)
     set_source_files_properties(${BASE_DIR}/tests/cpp/server/confdata-binlog-events-test.cpp PROPERTIES COMPILE_FLAGS -Wno-stringop-overflow)

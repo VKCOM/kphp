@@ -7,6 +7,7 @@
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/tl/rpc_response.h"
 #include "server/php-engine-vars.h"
+#include "server/workers-control.h"
 
 // Используется в некоторых тестах, что бы обмануть clang и не дать ему выкинуть вызов std::malloc из кода
 void *alloc_no_inline(int x) {
@@ -20,7 +21,7 @@ public:
   static void reset_global_vars() {
     pid = 0;
     logname_id = 0;
-    workers_n = 1;
+    vk::singleton<WorkersControl>::get().set_total_workers_count(1);
   }
 
   void SetUp() final {

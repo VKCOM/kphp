@@ -143,7 +143,7 @@ public:
 
   void unsupported_operation(const char *operation_name, const char *key, int key_len) noexcept {
     ++event_counters_.unsupported_total_events;
-    log_server_warning("Confdata binlog reading error: got unsupported operation '%s' with key '%.*s'\n", operation_name, std::max(key_len, 0), key);
+    log_server_warning("Confdata binlog reading error: got unsupported operation '%s' with key '%.*s'", operation_name, std::max(key_len, 0), key);
   }
 
   void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {

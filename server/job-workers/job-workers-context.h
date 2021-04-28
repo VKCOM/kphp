@@ -28,10 +28,6 @@ public:
 
   static constexpr int MAX_HANGING_TIME_SEC = 20; // TODO: tune it
 
-  size_t running_job_workers{0};
-  size_t dying_job_workers{0};
-  size_t job_workers_num{0};
-
   Pipe job_pipe{};
   std::vector<Pipe> result_pipes;
   bool pipes_inited{false};

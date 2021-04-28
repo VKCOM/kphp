@@ -20,7 +20,8 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-worker.cpp
         php-worker-stats.cpp
         server-log.cpp
-        slot-ids-factory.cpp)
+        slot-ids-factory.cpp
+        workers-control.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp

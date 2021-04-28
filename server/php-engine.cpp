@@ -38,6 +38,7 @@
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
 #include "common/tl/query-header.h"
+#include "common/type_traits/function_traits.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -76,6 +77,8 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/server-log.h"
+#include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -1586,7 +1589,7 @@ static void generic_event_loop(RunMode mode) {
         set_main_target(rpc_clients.front());
       }
 
-      if (vk::singleton<JobWorkersContext>::get().job_workers_num > 0) {
+      if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
         vk::singleton<JobWorkerClient>::get().init(logname_id);
       }
       break;
@@ -1809,29 +1812,41 @@ void init_logname(const char *src) {
   logname_pattern = strdup(pattern_buf);
 }
 
-static double parse_double_option(const char *option_name, const double min_value, const double max_value) {
-  double result{};
+namespace {
+
+template<class T, class F>
+int parse_numeric_option(const char *option_name, T min_value, T max_value, const F &setter) noexcept {
+  static_assert(std::is_same<vk::decay_function_arg_t<F, 0>, T>{}, "expected to be the same");
+  T result{};
   try {
-    result = std::stod(optarg);
+    result = std::is_floating_point<T>{} ? static_cast<T>(std::stod(optarg)) : static_cast<T>(std::stoi(optarg));
   } catch (const std::exception &e) {
-    kprintf("%s option parse error: %s", option_name, e.what());
-    return std::numeric_limits<double>::quiet_NaN();
+    kprintf("--%s option: parse error: %s", option_name, e.what());
+    return -1;
   }
   if (min_value <= result && result <= max_value) {
-    return result;
+    setter(result);
+    return 0;
   }
-  kprintf("%s should be in [%f; %f]", option_name, min_value, max_value);
-  return std::numeric_limits<double>::quiet_NaN();
+  kprintf("--%s option: the argument value should be in [%s; %s]", option_name, std::to_string(min_value).c_str(), std::to_string(max_value).c_str());
+  return -1;
 }
 
+template<class T>
+int read_option_to(const char *option_name, T min_value, T max_value, T &out) noexcept {
+  return parse_numeric_option(option_name, min_value, max_value, [&out](T arg) { out = arg; });
+}
+
+} // namespace
+
 /** main arguments parsing **/
-int main_args_handler(int i) {
+int main_args_handler(int i, const char *long_option) {
   switch (i) {
     case 'D': {
       char *key = optarg, *value;
       char *eq = strchr(key, '=');
       if (eq == nullptr) {
-        kprintf("-D option, can't find '='\n");
+        kprintf("--%s option: can't find '='\n", long_option);
         return -1;
       }
       value = eq + 1;
@@ -1844,9 +1859,9 @@ int main_args_handler(int i) {
       const char *config_file_name = optarg;
       if (int failed_line = ini_set_from_config(config_file_name)) {
         if (failed_line == -1) {
-          kprintf("-i option, can't open ini_get config file: %s\n", config_file_name);
+          kprintf("--%s option: can't open ini_get config file: %s\n", long_option, config_file_name);
         } else {
-          kprintf("-i option, can't find '=' (line %d at file %s)\n", failed_line, config_file_name);
+          kprintf("--%s option: can't find '=' (line %d at file %s)\n", long_option, failed_line, config_file_name);
         }
         return -1;
       }
@@ -1875,7 +1890,7 @@ int main_args_handler(int i) {
     case 'w': {
       char *colon = strrchr(optarg, ':');
       if (colon == nullptr) {
-        kprintf("-w option, can't find ':'\n");
+        kprintf("--%s option: can't find ':'\n", long_option);
         return -1;
       }
       LeaseRpcClient rpc_client;
@@ -1890,7 +1905,7 @@ int main_args_handler(int i) {
         rpc_client.actor = atoi(at + 1);
       }
       if (const char *err = rpc_client.check()) {
-        kprintf("-w option: %s\n", err);
+        kprintf("--%s option: %s\n", long_option, err);
         return -1;
       }
       RpcClients::get().rpc_clients.push_back(std::move(rpc_client));
@@ -1906,14 +1921,10 @@ int main_args_handler(int i) {
       return 0;
     }
     case 'f': {
-      workers_n = atoi(optarg);
-      if (workers_n >= 0) {
-        if (workers_n > MAX_WORKERS) {
-          workers_n = MAX_WORKERS;
-        }
-        master_flag = 1;
-      }
-      return 0;
+      master_flag = 1;
+      return parse_numeric_option(long_option, 1, int{WorkersControl::max_workers_count}, [](int workers_count) {
+        vk::singleton<WorkersControl>::get().set_total_workers_count(static_cast<uint16_t>(workers_count));
+      });
     }
     case 'p': {
       master_port = atoi(optarg);
@@ -1921,7 +1932,7 @@ int main_args_handler(int i) {
     }
     case 's': {
       if (const char *err = vk::singleton<ClusterName>::get().set_cluster_name(optarg)) {
-        kprintf("-s option: %s\n", err);
+        kprintf("--%s option: %s\n", long_option, err);
         return -1;
       }
       return 0;
@@ -1939,12 +1950,7 @@ int main_args_handler(int i) {
       return 0;
     }
     case 'Q': {
-      db_port = atoi(optarg);
-      if (!(1000 <= db_port && db_port <= 0xffff)) {
-        kprintf("-Q option: %d is strange port\n", db_port);
-        return -1;
-      }
-      return 0;
+      return read_option_to(long_option, 1000, 0xffff, db_port);
     }
     case 'U': {
       if (optarg) {
@@ -1969,12 +1975,7 @@ int main_args_handler(int i) {
       return LeaseConfigParser::parse_lease_options_config(lease_config);
     }
     case 2000: {
-      queries_to_recreate_script = atoi(optarg);
-      if (queries_to_recreate_script <= 0) {
-        kprintf("worker-queries-to-reload has to be positive\n");
-        return -1;
-      }
-      return 0;
+      return read_option_to(long_option, 1, std::numeric_limits<int>::max(), queries_to_recreate_script);
     }
     case 2001: {
       memory_used_to_recreate_script = parse_memory_limit(optarg);
@@ -1982,7 +1983,7 @@ int main_args_handler(int i) {
       const size_t page_size = 4096;
       memory_used_to_recreate_script = ((memory_used_to_recreate_script + (page_size - 1)) / page_size) * page_size;
       if (memory_used_to_recreate_script <= 0) {
-        kprintf("couldn't parse worker-memory-to-reload argument\n");
+        kprintf("--%s option: couldn't parse argument\n", long_option);
         return -1;
       }
       return 0;
@@ -1994,7 +1995,7 @@ int main_args_handler(int i) {
     case 2003: {
       int64_t instance_cache_memory_limit = parse_memory_limit(optarg);
       if (instance_cache_memory_limit <= 0 || instance_cache_memory_limit > memory_resource::memory_buffer_limit()) {
-        kprintf("couldn't parse instance-cache-memory-limit argument\n");
+        kprintf("--%s option: couldn't parse argument\n", long_option);
         return -1;
       }
       set_instance_cache_memory_limit(static_cast<size_t>(instance_cache_memory_limit));
@@ -2007,7 +2008,7 @@ int main_args_handler(int i) {
     case 2005: {
       int64_t confdata_memory_limit = parse_memory_limit(optarg);
       if (confdata_memory_limit <= 0 || confdata_memory_limit > memory_resource::memory_buffer_limit()) {
-        kprintf("couldn't parse confdata-memory-limit argument\n");
+        kprintf("--%s option: couldn't parse argument\n", long_option);
         return -1;
       }
       set_confdata_memory_limit(static_cast<size_t>(confdata_memory_limit));
@@ -2020,7 +2021,7 @@ int main_args_handler(int i) {
       }
       auto re2_pattern = std::make_unique<re2::RE2>(optarg, re2::RE2::Quiet);
       if (!re2_pattern->ok()) {
-        kprintf("couldn't parse confdata-blacklist pattern: %s\n", re2_pattern->error().c_str());
+        kprintf("--%s option: couldn't parse pattern: %s\n", long_option, re2_pattern->error().c_str());
         return -1;
       }
       set_confdata_blacklist_pattern(std::move(re2_pattern));
@@ -2039,82 +2040,78 @@ int main_args_handler(int i) {
       exit(0);
     }
     case 2009: {
-      php_warning_minimum_level = atoi(optarg);
-      if (php_warning_minimum_level < 0 || php_warning_minimum_level > 3) {
-        kprintf("--php-warnings-minimal-verbosity has to be [0, 3]\n");
-        return -1;
-      }
-      return 0;
+      return read_option_to(long_option, 0, 3, php_warning_minimum_level);
     }
     case 2010: {
       if (set_profiler_log_path(optarg)) {
         return 0;
       }
-      kprintf("couldn't set profiler-log-prefix '%s'\n", optarg);
+      kprintf("--%s option: couldn't set prefix '%s'\n", long_option, optarg);
       return -1;
     }
     case 2011: {
       if (set_mysql_db_name(optarg)) {
         return 0;
       }
-      kprintf("couldn't set mysql-db-name '%s'\n", optarg);
+      kprintf("--%s option: couldn't set name '%s'\n", long_option, optarg);
       return -1;
     }
     case 2012: {
       if (add_dc_by_ipv4_config(optarg)) {    // can appear multiple times, each adding a new dc config
         return 0;
       }
-      kprintf("couldn't set net-dc-mask '%s'\n", optarg);
+      kprintf("--%s option: couldn't set mask '%s'\n", long_option, optarg);
       return -1;
     }
     case 2013: {
-      double warmup_workers_part = parse_double_option("--warmup-workers-ratio", 0, 1);
-      if (std::isnan(warmup_workers_part)) {
-        return -1;
-      }
-      WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
-      return 0;
+      return parse_numeric_option(long_option, 0.0, 1.0, [](double warmup_workers_part) {
+        WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
+      });
     }
     case 2014: {
-      double warmup_instance_cache_elements_part = parse_double_option("--warmup-instance-cache-elements-ratio", 0, 1);
-      if (std::isnan(warmup_instance_cache_elements_part)) {
-        return -1;
-      }
-      WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
-      return 0;
+      return parse_numeric_option(long_option, 0.0, 1.0, [](double warmup_instance_cache_elements_part) {
+        WarmUpContext::get().set_target_instance_cache_elements_part(warmup_instance_cache_elements_part);
+      });
     }
     case 2015: {
-      double warmup_timeout_sec = parse_double_option("--warmup-timeout", 0, DEFAULT_SCRIPT_TIMEOUT);
-      if (std::isnan(warmup_timeout_sec)) {
-        return -1;
-      }
-      WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
-      return 0;
+      return parse_numeric_option(long_option, 0.0, double{DEFAULT_SCRIPT_TIMEOUT}, [](double warmup_timeout_sec) {
+        WarmUpContext::get().set_warm_up_max_time(std::chrono::duration<double>{warmup_timeout_sec});
+      });
     }
     case 2016: {
-      // TODO: add check
-      vk::singleton<JobWorkersContext>::get().job_workers_num = vk::clamp(atoi(optarg), 0, MAX_WORKERS / 3);
-      return 0;
+      return parse_numeric_option(long_option, 0.0, 0.99, [](double ratio) {
+        vk::singleton<WorkersControl>::get().set_ratio(WorkerType::job_worker, ratio);
+      });
     }
     case 2017: {
       const int64_t job_workers_shared_memory_size = parse_memory_limit(optarg);
       if (job_workers_shared_memory_size <= 0) {
-        kprintf("couldn't parse job-workers-shared-memory-size argument\n");
+        kprintf("--%s option: couldn't parse argument\n", long_option);
         return -1;
       }
       if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_memory_limit(job_workers_shared_memory_size)) {
-        kprintf("couldn't set job-workers-shared-memory-size: too small\n");
+        kprintf("--%s option: too small\n", long_option);
         return -1;
       }
       return 0;
     }
     case 2018: {
-      double stop_ready_timeout = parse_double_option("--lease-stop-ready-timeout", 0, 10);
-      if (std::isnan(stop_ready_timeout)) {
-        return -1;
-      }
-      vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout = stop_ready_timeout;
-      return 0;
+      return read_option_to(long_option, 0.0, 10.0, vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout);
+    }
+    case 2019: {
+      // TODO REMOVE ME!
+      OPTION_ADD_DEPRECATION_MESSAGE("--job-workers-num");
+      return parse_numeric_option(long_option, 0, int{WorkersControl::max_workers_count} / 2, [](int job_workers_num) {
+        auto &control = vk::singleton<WorkersControl>::get();
+        uint16_t total_workers = control.get_total_workers_count();
+        // expect that -f options is set in advance
+        assert(total_workers);
+        total_workers += job_workers_num;
+        assert(total_workers <= WorkersControl::max_workers_count);
+        control.set_total_workers_count(total_workers);
+        const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(total_workers);
+        control.set_ratio(WorkerType::job_worker, ratio);
+      });
     }
     default:
       return -1;
@@ -2137,9 +2134,9 @@ void parse_main_args_till_option(int argc, char *argv[], const char *till_option
 }
 
 DEPRECATED_OPTION("use-unix", no_argument);
-DEPRECATED_OPTION_SHORT("json-log", 'j', no_argument);
-DEPRECATED_OPTION_SHORT("crc32c", 'C', no_argument);
-DEPRECATED_OPTION_SHORT("tl-schema", 'T', required_argument);
+DEPRECATED_OPTION_SHORT("json-log", "j", no_argument);
+DEPRECATED_OPTION_SHORT("crc32c", "C", no_argument);
+DEPRECATED_OPTION_SHORT("tl-schema", "T", required_argument);
 
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
@@ -2159,7 +2156,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("sql-port", required_argument, 'Q', "sql port");
   parse_option("static-buffers-size", required_argument, 'L', "limit for static buffers length (e.g. limits script output size)");
   parse_option("error-tag", required_argument, 'E', "name of file with engine tag showed on every warning");
-  parse_option("workers-num", required_argument, 'f', "run workers_n workers");
+  parse_option("workers-num", required_argument, 'f', "the total workers number");
   parse_option("once", no_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
   parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
@@ -2183,15 +2180,21 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
-  parse_option("job-workers-num", required_argument, 2016, "number of job workers to run");
+  parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
   parse_option("lease-stop-ready-timeout", required_argument, 2018, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
+  parse_option("job-workers-num", required_argument, 2019, "DEPRECATED");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
 
 
 void init_default() {
+  if (!vk::singleton<WorkersControl>::get().init()) {
+    kprintf ("fatal: not enough workers for general purposes\n");
+    exit(1);
+  }
+
   dl_set_default_handlers();
   now = (int)time(nullptr);
 
@@ -2230,6 +2233,13 @@ void init_default() {
     reopen_logs();
     reopen_json_log();
   }
+
+  for(auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
+    if (deprecation_warning.empty()) {
+      break;
+    }
+    log_server_warning(deprecation_warning);
+  }
 }
 
 int run_main(int argc, char **argv, php_mode mode) {
@@ -2259,12 +2269,6 @@ int run_main(int argc, char **argv, php_mode mode) {
   }
 
   parse_main_args(argc, argv);
-
-  size_t total_workers = workers_n + vk::singleton<JobWorkersContext>::get().job_workers_num;
-  if (total_workers > MAX_WORKERS) {
-    kprintf("Too many workers: %zu, maximum is %d\n", total_workers, MAX_WORKERS);
-    exit(1);
-  }
 
   if (run_once) {
     master_flag = 0;

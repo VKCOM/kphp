@@ -14,6 +14,7 @@
 #include "runtime/inter-process-mutex.h"
 #include "runtime/php_assert.h"
 #include "server/php-engine-vars.h"
+#include "server/workers-control.h"
 
 template<size_t RESOURCE_AMOUNT>
 class InterProcessResourceControl {
@@ -56,8 +57,9 @@ public:
 
   bool is_resource_unused(uint32_t resource_id) noexcept {
     php_assert(resource_id < RESOURCE_AMOUNT);
-    constexpr static std::array<pid_t, MAX_WORKERS> zeros = {0};
-    return acquired_pids_[resource_id] == zeros;
+    constexpr static std::array<pid_t, WorkersControl::max_workers_count> zeros = {0};
+    const auto worker_pid_it = acquired_pids_[resource_id].begin();
+    return std::equal(worker_pid_it, worker_pid_it + vk::singleton<WorkersControl>::get().get_total_workers_count(), zeros.begin());
   }
 
   uint32_t switch_active_to_next() noexcept {
@@ -68,12 +70,12 @@ public:
 
 private:
   static size_t get_user_index() noexcept {
-    php_assert(logname_id >= 0 && logname_id < MAX_WORKERS);
+    php_assert(logname_id >= 0 && logname_id < WorkersControl::max_workers_count);
     return static_cast<size_t>(logname_id);
   }
 
   uint32_t active_resource_id_{0};
-  std::array<std::array<pid_t, MAX_WORKERS>, RESOURCE_AMOUNT> acquired_pids_;
+  std::array<std::array<pid_t, WorkersControl::max_workers_count>, RESOURCE_AMOUNT> acquired_pids_;
 };
 
 template<typename T, size_t RESOURCE_AMOUNT>

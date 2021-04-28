@@ -260,7 +260,7 @@ static void verbosity_option_set(int *v) {
   }
 }
 
-int verbosity_options_parser(int c) {
+int verbosity_options_parser(int c, const char *) {
   if (VERBOSITY_OPTION_SHIFT <= c && c < VERBOSITY_OPTION_SHIFT + verbosity_types_num){
     verbosity_option_set(verbosity_types[c - VERBOSITY_OPTION_SHIFT].value);
     return 0;

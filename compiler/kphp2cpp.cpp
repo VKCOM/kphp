@@ -77,7 +77,7 @@ public:
   }
 
   void process_args(int32_t argc, char **argv) {
-    parse_engine_options_long(argc, argv, [](int32_t option_id) {
+    parse_engine_options_long(argc, argv, [](int32_t option_id, const char *) {
       if (option_id == 'h') {
         usage_and_exit();
       }

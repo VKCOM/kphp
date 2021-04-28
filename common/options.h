@@ -4,9 +4,14 @@
 
 #pragma once
 
-#include <assert.h>
+#include <array>
+#include <cassert>
+#include <cstddef>
 #include <getopt.h> // IWYU pragma: export
-#include <stddef.h>
+
+#include "common/mixin/not_copyable.h"
+#include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/string_view.h"
 
 #define MAX_OPTION_ID 10000
 
@@ -41,7 +46,7 @@ static inline const char *get_option_section_name(option_section_t section) {
   return NULL;
 }
 
-typedef int (*options_parser)(int);
+typedef int (*options_parser)(int, const char *);
 
 void parse_usage();
 void remove_all_options();
@@ -65,12 +70,12 @@ void usage_set_other_args_desc(const char *s);
 
 
 #define COMMON_OPTION_PARSER__(suffix, section, name, letter, has_arg, ...)                                     \
-static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused);                                                      \
+static int OPTION_PARSER_FUNCTION_ ## suffix(int, const char *);                                                \
 __attribute__((constructor))                                                                                    \
 static void REGISTER_OPTION_PARSER_FUNCTION_ ## suffix() {                                                      \
   parse_common_option((section), OPTION_PARSER_FUNCTION_ ## suffix, (name), (has_arg), (letter), __VA_ARGS__);  \
 }                                                                                                               \
-static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused __attribute__((unused)))
+static int OPTION_PARSER_FUNCTION_ ## suffix(int, const char *)
 
 #define COMMON_OPTION_PARSER_(...) COMMON_OPTION_PARSER__(__VA_ARGS__)
 #define OPTION_PARSER(section, name, has_arg, ...) COMMON_OPTION_PARSER_(__COUNTER__, section, name, -1, has_arg, __VA_ARGS__)
@@ -94,17 +99,42 @@ static int OPTION_PARSER_FUNCTION_ ## suffix(int _unused __attribute__((unused))
     if (var ## _option_passed) free((char *)var);                       \
   }
 
-#define OPTION_PRINT_DEPRECATION_MESSAGE_(option_pattern, ...) \
-  kprintf ("warning: option '" option_pattern "' is deprecated and is going to be removed soon, don't use them!\n", __VA_ARGS__);
+class DeprecatedOptions : vk::not_copyable {
+public:
+  void add_warning(const char *msg) noexcept {
+    if (deprecation_warnings_count_ < deprecation_warnings_.size()) {
+      deprecation_warnings_[deprecation_warnings_count_++] = msg;
+    }
+  }
+
+  const auto &get_warnings() const noexcept {
+    return deprecation_warnings_;
+  }
+
+private:
+  friend class vk::singleton<DeprecatedOptions>;
+
+  DeprecatedOptions() = default;
+
+  std::array<vk::string_view, 16> deprecation_warnings_;
+  size_t deprecation_warnings_count_{0};
+};
+
+#define OPTION_ADD_DEPRECATION_MESSAGE(options) { \
+    const char *msg = "option '" options "' is deprecated and is going to be removed soon, don't use them!";  \
+    vk::singleton<DeprecatedOptions>::get().add_warning(msg);                                                 \
+  }
 
 #define DEPRECATED_OPTION(name, has_arg)              \
   OPTION_PARSER(OPT_DEPRECATED, name, has_arg, " ") { \
-    OPTION_PRINT_DEPRECATION_MESSAGE_("--%s", name);  \
+    OPTION_ADD_DEPRECATION_MESSAGE("--" name);  \
     return 0;                                         \
   }
 
-#define DEPRECATED_OPTION_SHORT(name, letter, has_arg)              \
-  OPTION_PARSER_SHORT(OPT_DEPRECATED, name, letter, has_arg, " ") { \
-    OPTION_PRINT_DEPRECATION_MESSAGE_("--%s/-%c", name, letter);    \
-    return 0;                                                       \
+#define DEPRECATED_OPTION_SHORT(name, letter, has_arg)                    \
+  OPTION_PARSER_SHORT(OPT_DEPRECATED, name, (letter)[0], has_arg, " ") {  \
+    static_assert(sizeof(letter) == 2, "1 char string is expected");      \
+    OPTION_ADD_DEPRECATION_MESSAGE("--" name "/-" letter);                \
+    return 0;                                                             \
   }
+

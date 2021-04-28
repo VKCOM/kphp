@@ -9,6 +9,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/timer.h"
 #include "server/php-master-restart.h"
+#include "server/workers-control.h"
 
 class WarmUpContext : public vk::singleton<WarmUpContext> {
 public:
@@ -29,7 +30,7 @@ public:
   }
 
   void try_start_warmup() {
-    if (me_running_http_workers_n > 0 && !timer_.is_started()) {
+    if (control_.get_running_count(WorkerType::general_worker) > 0 && !timer_.is_started()) {
       timer_.start();
     }
   }
@@ -42,7 +43,7 @@ public:
   }
 
   bool need_more_workers_for_warmup() const {
-    return me_running_http_workers_n < workers_part_for_warm_up_ * workers_n;
+    return control_.get_running_count(WorkerType::general_worker) < workers_part_for_warm_up_ * control_.get_count(WorkerType::general_worker);
   }
 
   bool is_instance_cache_hot_enough() const {
@@ -64,6 +65,7 @@ public:
   void set_warm_up_max_time(const std::chrono::duration<double> &warm_up_max_time) {
     this->warm_up_max_time_ = warm_up_max_time;
   }
+
 private:
   double workers_part_for_warm_up_{1};
   double target_instance_cache_elements_part_{0};
@@ -75,7 +77,11 @@ private:
   uint32_t final_old_instance_cache_size_{0};
   bool final_instance_cache_sizes_saved_{false};
 
-  WarmUpContext() = default;
+  const WorkersControl &control_;
+
+  WarmUpContext() noexcept:
+    control_(vk::singleton<WorkersControl>::get()) {
+  }
 
   friend vk::singleton<WarmUpContext>;
 };

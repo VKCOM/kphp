@@ -23,10 +23,6 @@
 shared_data_t *shared_data;
 master_data_t *me, *other; // these are pointers to shared memory
 
-int me_all_workers_n;
-int me_running_http_workers_n;
-int me_dying_http_workers_n;
-
 void init_mutex(pthread_mutex_t *mutex) {
   pthread_mutexattr_t attr;
 

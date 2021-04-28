@@ -34,7 +34,6 @@ extern int pid;
 extern int no_sql;
 
 extern int master_flag;
-extern int workers_n;
 
 enum class RunMode {
   master,
@@ -58,7 +57,6 @@ extern int http_port;
 extern int http_sfd;
 
 /** rpc **/
-extern long long rpc_failed, rpc_sent, rpc_received, rpc_received_news_subscr, rpc_received_news_redirect;
 extern int rpc_port;
 extern int rpc_sfd;
 extern long long rpc_client_actor;
@@ -96,7 +94,6 @@ struct php_immediate_stats_t {
   GLOBAL VARIABLES
  ***/
 extern int sql_target_id;
-extern int in_ready;
 extern int script_timeout;
 extern int disable_access_log;
 extern int force_clear_sql_connection;
@@ -123,8 +120,6 @@ extern long long memory_used_to_recreate_script;
 #define SIGPHPASSERT (SIGRTMIN + 1)
 #define SIGSTACKOVERFLOW (SIGRTMIN + 2)
 #endif
-
-#define MAX_WORKERS 999
 
 /***
   save of stdout/stderr fd
