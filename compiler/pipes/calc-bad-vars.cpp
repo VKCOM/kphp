@@ -65,6 +65,7 @@ public:
     int vertex_n = (int)vertices.size();
     IdMap<int> was(vertex_n);
     vector<VertexT> topsorted;
+    topsorted.reserve(vertex_n);
     for (const auto &vertex : vertices) {
       dfs(vertex, rev_graph, &was, &topsorted);
     }
@@ -118,22 +119,66 @@ struct FuncCallGraph {
 class CalcBadVars {
 private:
   class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
-    IdMap<vector<VarPtr>> tmp_vars;
+    IdMap<vector<VarPtr>> modified_global_vars;
   public:
-    explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> tmp_vars) : tmp_vars(std::move(tmp_vars)) {}
+    explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> &&modified_global_vars) :
+      modified_global_vars(std::move(modified_global_vars)) {}
+
+    // here we calculate "bad vars" for a function — they will be used in check-ub.cpp
+    // "bad vars" are modified non-primitive globals, that can lead to a potential ub when modified and accessed in subcalls
+    // this method just unions all edges' bad_vars to the current function
+    // this works in a single thread and uses some heuristic for speedup, but generally it means
+    // "for f in component { for e in edge { f.bad_vars += e.bad_vars } }"
     void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
-      std::unordered_set<VarPtr> bad_vars_uniq;
+      // optimization 1: lots of functions don't modify globals at all
+      // then we leave f->bad_vars nullptr
+      bool empty = vk::all_of(component, [&](FunctionPtr f) { return modified_global_vars[f].empty(); })
+                && vk::all_of(edges, [&](FunctionPtr e) { return e->bad_vars == nullptr; });
+      if (empty) {
+        return;
+      }
+
+      // optimization 2: maybe, one of the edges has bad_vars that includes all other edges
+      // then we just assign f->bad_vars = largest_edge->bad_vars
+      std::unordered_set<VarPtr> *largest_e{nullptr};
+      for (FunctionPtr e : edges) {
+        if (e->bad_vars != nullptr && (!largest_e || e->bad_vars->size() > largest_e->size())) {
+          largest_e = e->bad_vars;
+        }
+      }
+      if (largest_e) {
+        bool all_in_largest_e = vk::all_of(component, [&](FunctionPtr f) {
+          return vk::all_of(modified_global_vars[f], [&](VarPtr v_in_self) {
+            return largest_e->find(v_in_self) != largest_e->end();
+          });
+        });
+        all_in_largest_e &= vk::all_of(edges, [&](FunctionPtr e) {
+          return e->bad_vars == nullptr || e->bad_vars == largest_e || vk::all_of(*e->bad_vars, [&](VarPtr v_in_e) {
+            return largest_e->find(v_in_e) != largest_e->end();
+          });
+        });
+        if (all_in_largest_e) {
+          for (FunctionPtr f : component) {
+            f->bad_vars = largest_e;
+          }
+          return;
+        }
+      }
+
+      // if not, allocate and fill the set which unites all edges
+      // optimization 3: start from largest_e and unite all others into result
+      auto *bad_vars = largest_e ? new std::unordered_set<VarPtr>(*largest_e) : new std::unordered_set<VarPtr>();
 
       for (FunctionPtr f : component) {
-        bad_vars_uniq.insert(tmp_vars[f].begin(), tmp_vars[f].end());
+        bad_vars->insert(modified_global_vars[f].begin(), modified_global_vars[f].end());
       }
-
       for (FunctionPtr f : edges) {
-        kphp_assert(f->bad_vars != nullptr);
-        bad_vars_uniq.insert(f->bad_vars->begin(), f->bad_vars->end());
+        if (f->bad_vars != nullptr && f->bad_vars != largest_e) {
+          bad_vars->insert(f->bad_vars->begin(), f->bad_vars->end());
+        }
       }
+      kphp_assert(!bad_vars->empty());
 
-      auto bad_vars = new vector<VarPtr>(bad_vars_uniq.begin(), bad_vars_uniq.end());
       for (FunctionPtr f : component) {
         f->bad_vars = bad_vars;
       }
@@ -141,14 +186,14 @@ private:
   };
 
   void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
-    IdMap<std::vector<VarPtr>> tmp_vars(call_graph.n);
+    IdMap<std::vector<VarPtr>> modified_global_vars(call_graph.n);
 
     for (int i = 0; i < call_graph.n; i++) {
       FunctionPtr func = call_graph.functions[i];
-      tmp_vars[func] = std::move(dep_datas[i].used_global_vars);
+      modified_global_vars[func] = std::move(dep_datas[i].modified_global_vars);
     }
 
-    MergeBadVarsCallback callback(std::move(tmp_vars));
+    MergeBadVarsCallback callback(std::move(modified_global_vars));
     MergeReachalbe<FunctionPtr> merge_bad_vars;
     merge_bad_vars.run(call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
   }
@@ -249,16 +294,15 @@ private:
     }
 
     void for_component(const vector<VarPtr> &component, const vector<VarPtr> &edges) {
-      vector<VarPtr> *res = new vector<VarPtr>();
+      auto *res = new std::unordered_set<VarPtr>();
       for (const auto &var : component) {
-        res->insert(res->end(), to_merge_[var].begin(), to_merge_[var].end());
+        res->insert(to_merge_[var].begin(), to_merge_[var].end());
       }
       for (const auto &var : edges) {
         if (var->bad_vars != nullptr) {
-          res->insert(res->end(), var->bad_vars->begin(), var->bad_vars->end());
+          res->insert(var->bad_vars->begin(), var->bad_vars->end());
         }
       }
-      my_unique(res);
       if (res->empty()) {
         delete res;
         return;
@@ -272,13 +316,11 @@ private:
   void generate_ref_vars(vector<DepData> &dep_datas) {
     vector<VarPtr> vars;
     for (const auto &data : dep_datas) {
-      vars.insert(vars.end(), data.used_ref_vars.begin(), data.used_ref_vars.end());
+      vars.insert(vars.end(), data.ref_param_vars.begin(), data.ref_param_vars.end());
     }
-    int vars_n = (int)vars.size();
-    my_unique(&vars);
-    assert ((int)vars.size() == vars_n);
-    for (int cur_id = 0, i = 0; i < vars_n; i++, cur_id++) {
-      set_index(vars[i], cur_id);
+    int vars_n = static_cast<int>(vars.size());
+    for (int i = 0; i < vars_n; ++i) {
+      set_index(vars[i], i);
     }
 
     IdMap<vector<VarPtr>> rev_graph(vars_n), graph(vars_n), ref_vars(vars_n);

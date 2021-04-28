@@ -1,5 +1,5 @@
 @kphp_should_warn
-/Dangerous undefined behaviour \+, \[var = x\]/
+/Dangerous undefined behaviour \+, \[var = \$x\]/
 <?php
 
 try {

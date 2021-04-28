@@ -49,7 +49,16 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;
-    data.dep.push_back(other_function);
+    // instead of just
+    // data.dep.push_back(other_function);
+    // we don't add extern function calls, except resumables; why?
+    // .dep is used to
+    // 1) build call graph — we actually need only user-defined function
+    // 2) build resumable call graph — to propagate resumable state and to calc resumable chains
+    // adding all built-in calls won't affect codegen, it will just overhead call graphs and execution time
+    if (!other_function->is_extern() || other_function->is_resumable) {
+      data.dep.push_back(other_function);
+    }
     calls.push_back(other_function);
     if (other_function->is_extern()) {
       if (other_function->cpp_template_call) {
@@ -76,13 +85,13 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
       VarPtr to_var = other_function->param_ids[ii];
       if (to_var->is_reference) { //passed as reference
         while (val->type() == op_index) {
-          val = val.as<op_index>()->array();
+          val = val.as<op_index>()->array();    // from $a['b'] extract $a
         }
         VarPtr from_var = (val->type() == op_var ? val.as<op_var>()->var_id : val.as<op_instance_prop>()->var_id);
         if (from_var->is_in_global_scope()) {
-          data.global_ref_edges.emplace_back(from_var, to_var);
+          data.global_ref_edges.emplace_front(from_var, to_var);
         } else if (from_var->is_reference) {
-          data.ref_ref_edges.emplace_back(from_var, to_var);
+          data.ref_ref_edges.emplace_front(from_var, to_var);
         }
       }
     }
@@ -90,16 +99,19 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     data.dep.push_back(ptr->func_id);
   } else if (auto var_vertex = vertex.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
-    if (var->is_in_global_scope()) {
-      data.used_global_vars.push_back(var);
+    // here we add var for later ub check; we store only vars that can potentially lead to ub, see check-ub.cpp
+    if ((var->is_global_var() || var->is_class_static_var()) &&   // only globals (not even static inside functions)
+        vertex->rl_type == val_l &&                               // only modified in one way or another
+        vk::any_of_equal(tinf::get_type(var)->ptype(), tp_array, tp_mixed)) { // only indexable that can be ref-passed
+      data.modified_global_vars.push_back(var);
     }
   } else if (auto param = vertex.try_as<op_func_param>()) {
     VarPtr var = param->var()->var_id;
     if (var->is_reference) {
-      data.used_ref_vars.push_back(var);
+      data.ref_param_vars.emplace_front(var);
     }
   } else if (auto fork = vertex.try_as<op_fork>()) {
-    data.forks.push_back(fork->func_call()->func_id);
+    data.forks.emplace_front(fork->func_call()->func_id);
   }
 
   return vertex;
@@ -116,6 +128,6 @@ VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex) {
 
 DepData CalcFuncDepPass::get_data() {
   my_unique(&data.dep);
-  my_unique(&data.used_global_vars);
+  my_unique(&data.modified_global_vars);
   return std::move(data);
 }

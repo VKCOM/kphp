@@ -8,26 +8,52 @@
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 
-/*** C++ undefined behaviour fixes ***/
+/*
+ * C++ undefined behaviour fixes.
+ *
+ * What is UB and where does it come from? See this:
+ *  function f1() { global $arr; $arr[0][] = 1; return 1; }
+ *  function f2() { global $arr; $arr[0][0] = f1(); }
+ * Without fixes, f2() is codegenerated as
+ *  (v$arr[0]).set_value(0, f$f1());
+ * But during f1() evaluation, v$arr[0] can become reallocated.
+ * With fixes, f2() is codegenerated as
+ *  SAFE_SET_VALUE(v$arr[0], 0, int, f$f1(), int)
+ * Which generally means creating a temporary variable for f$f1() result storing and assigning it only after.
+ *
+ * Another example:
+ *  $s .= f($s);
+ * When one variable is on the left and on the right, it's safer to extract rhs as a separate variable.
+ *
+ * Another example:
+ *  $r = $s++ + $s++;
+ * This is a warning (undefined behavior).
+ *
+ * Another example:
+ *  function f($v) { A::$ids[] = $v; }
+ *  foreach (A::$ids as &$v) f($v);
+ * This is an UB, because f() reallocates A::$ids, that can invalid the &$v reference.
+ *
+ * So, this pipe finds such occations and either fixes them with safe operations or produces a warning.
+ */
 const int UB_SIGSEGV = 3;
 TLS<VarPtr> last_ub_error;
 
-template<class T>
-bool in_vector(const vector<T> *vec, const T &val) {
-  if (vec != nullptr && std::find(vec->begin(), vec->end(), val) != vec->end()) {
-    *last_ub_error = val;
+
+static inline bool in_set(const std::unordered_set<VarPtr> *a, VarPtr elem) {
+  if (a != nullptr && a->find(elem) != a->end()) {
+    *last_ub_error = elem;
     return true;
   }
   return false;
 }
 
-template<class T>
-bool vectors_intersect(const vector<T> *a, const vector<T> *b) {
+static bool sets_intersect(const std::unordered_set<VarPtr> *a, const std::unordered_set<VarPtr> *b) {
   if (a == nullptr || b == nullptr) {
     return false;
   }
-  for (const T &ai : *a) {
-    if (in_vector(b, ai)) {
+  for (VarPtr a_elem : *a) {
+    if (in_set(b, a_elem)) {
       return true;
     }
   }
@@ -39,44 +65,20 @@ bool is_same_var(const VarPtr &a, const VarPtr &b) {
     *last_ub_error = a;
     return true;
   }
-  return in_vector(a->bad_vars, b) || in_vector(b->bad_vars, a) ||
-         vectors_intersect(a->bad_vars, b->bad_vars);
+  return in_set(a->bad_vars, b) || in_set(b->bad_vars, a) ||
+         sets_intersect(a->bad_vars, b->bad_vars);
 }
 
 bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
   if (function->bad_vars == nullptr || (!var->is_in_global_scope() && var->bad_vars == nullptr)) {
     return false;
   }
-  if (in_vector(function->bad_vars, var)) {
+  if (in_set(function->bad_vars, var)) {
     return true;
   }
-  return vectors_intersect(var->bad_vars, function->bad_vars);
+  return sets_intersect(var->bad_vars, function->bad_vars);
 }
 
-bool is_ub_functions(const FunctionPtr &first, const FunctionPtr &second) {
-  //TODO
-  vector<VarPtr> *a = first->bad_vars;
-  vector<VarPtr> *b = second->bad_vars;
-
-  if (a == nullptr || b == nullptr) {
-    return false;
-  }
-  if (a->size() > b->size()) {
-    swap(a, b);
-  }
-  auto begin = b->begin();
-  auto end = b->end();
-  for (const auto &i : *a) {
-    begin = lower_bound(begin, end, i);
-    if (begin == end) {
-      break;
-    }
-    if (*begin == i) {
-      return true;
-    }
-  }
-  return false;
-}
 
 class UBMergeData {
 private:
@@ -210,7 +212,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {
-        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->name));
+        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->get_human_readable_name()));
       }
     }
   }
@@ -247,26 +249,17 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
   fix_ub_dfs(v, &data);
   int err = data.check_index_refs(*foreach_vars);
   if (err > 0) {
-    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->name));
+    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->get_human_readable_name()));
   }
 }
-
-void fix_undefined_behaviour(FunctionPtr function) {
-  if (function->root->type() != op_function) {
-    return;
-  }
-  stage::set_function(function);
-  vector<VarPtr> foreach_vars;
-  fix_ub(function->root->cmd(), &foreach_vars);
-}
-
 
 void CheckUBF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_name("Check for undefined behaviour");
   stage::set_function(function);
 
-  if (function->root->type() == op_function) {
-    fix_undefined_behaviour(function);
+  if (!function->is_extern()) {
+    vector<VarPtr> foreach_vars;
+    fix_ub(function->root->cmd(), &foreach_vars);
   }
 
   if (stage::has_error()) {

@@ -34,7 +34,7 @@ public:
   VertexPtr init_val;
   FunctionPtr holder_func;
   ClassPtr class_id;
-  std::vector<VarPtr> *bad_vars = nullptr;
+  std::unordered_set<VarPtr> *bad_vars = nullptr;
   bool is_reference = false;
   bool uninited_flag = false;
   bool optimize_flag = false;

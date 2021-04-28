@@ -1,5 +1,5 @@
 @kphp_should_warn
-/Dangerous undefined behaviour unset, \[foreach var = arr\]/
+/Dangerous undefined behaviour unset, \[foreach var = \$arr\]/
 <?php
 
 class MyException1 extends Exception {}

@@ -50,11 +50,10 @@ public:
   };
   func_type_t type = func_local;
 
-  vector<VarPtr> local_var_ids, global_var_ids, static_var_ids;
-  vector<VarPtr> *bad_vars = nullptr;
+  std::vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, param_ids;
+  std::unordered_set<VarPtr> *bad_vars = nullptr;     // for check ub and safe operations wrapper, see comments in check-ub.cpp
   std::set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
-  vector<VarPtr> param_ids;
-  vector<FunctionPtr> dep;
+  std::vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
   std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
