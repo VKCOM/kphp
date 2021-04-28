@@ -66,9 +66,9 @@ static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr> &vars, 
   return new_var;
 }
 
-static void merge_same_type(FunctionPtr function, const std::vector<std::vector<std::vector<VertexAdaptor<op_var>>>> &todo_parts) {
+static void merge_same_type(FunctionPtr function, const std::forward_list<std::vector<std::vector<VertexAdaptor<op_var>>>> &split_parts_list) {
   std::vector<MergeData> to_merge;
-  for (const auto &parts : todo_parts) {
+  for (const auto &parts : split_parts_list) {
     to_merge.clear();
     to_merge.reserve(parts.size());
     for (int i = 0; i < parts.size(); i++) {
@@ -104,14 +104,14 @@ static void merge_same_type(FunctionPtr function, const std::vector<std::vector<
   }
 }
 
-static void check_uninited(const std::vector<VertexAdaptor<op_var>> &uninited_vars) {
+static void check_uninited(const std::forward_list<VertexAdaptor<op_var>> &uninited_vars) {
   for (auto v : uninited_vars) {
     if (tinf::get_type(v)->ptype() == tp_mixed) {
       continue;
     }
 
     stage::set_location(v->get_location());
-    kphp_warning (fmt_format("Variable [{}] may be used uninitialized", v->var_id->name));
+    kphp_warning (fmt_format("Variable ${} may be used uninitialized", v->var_id->name));
   }
 }
 
@@ -119,7 +119,7 @@ void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
   stage::set_name("Control flow graph. End");
   stage::set_function(data.function);
   check_uninited(data.data.uninited_vars);
-  merge_same_type(data.function, data.data.todo_parts);
+  merge_same_type(data.function, data.data.split_parts_list);
 
   if (stage::has_error()) {
     return;
