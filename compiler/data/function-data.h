@@ -19,6 +19,7 @@
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
+#include "compiler/function-colors.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
@@ -104,6 +105,9 @@ public:
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
+
+  function_palette::ColorContainer colors{};            // colors specified with @kphp-color
+  std::vector<FunctionPtr> *next_with_colors{nullptr};  // next colored functions reachable via call graph
 
   enum class profiler_status : uint8_t {
     disable,

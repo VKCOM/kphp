@@ -300,6 +300,18 @@ private:
         break;
       }
 
+      case php_doc_tag::kphp_color: {
+        std::istringstream is(tag.value);
+        std::string color_name;
+        is >> color_name;
+
+        kphp_error_return(!color_name.empty(), "An empty tag value");
+        kphp_error_return(G->get_function_palette().color_exists(color_name), "Color missing in palette (either a misprint or a new color that needs to be added)");
+
+        f_->colors.add(G->get_function_palette().get_color_by_name(color_name));
+        break;
+      }
+
       default:
         break;
     }

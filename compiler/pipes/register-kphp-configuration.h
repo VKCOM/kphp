@@ -4,19 +4,18 @@
 
 #pragma once
 
-#include "compiler/function-pass.h"
+#include "compiler/pipes/sync.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/class-members.h"
+#include "compiler/function-colors.h"
 
-class RegisterKphpConfiguration final : public FunctionPassBase {
-public:
-  string get_description() final {
-    return "Register KPHP Configuration";
-  }
+class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
+  using need_profiler = std::false_type;
+  using Base = SyncPipeF<FunctionPtr>;
 
-  bool check_function(FunctionPtr function) const final;
-  bool user_recursion(VertexPtr) final { return true; }
-  void on_start() final;
+  void handle_KphpConfiguration_class(ClassPtr klass);
 
-private:
+  void handle_constant_runtime_options(const ClassMemberConstant &c);
   void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
 
   void register_confdata_blacklist(VertexPtr value) const noexcept;
@@ -27,9 +26,14 @@ private:
   void register_warmup_instance_cache_elements_part(VertexPtr value) const noexcept;
   void register_warmup_timeout_sec(VertexPtr value) const noexcept;
 
+  void handle_constant_function_palette(const ClassMemberConstant &c);
+  void parse_palette(VertexPtr const_val, function_palette::Palette &palette);
+  void parse_palette_ruleset(VertexAdaptor<op_array> arr, function_palette::Palette &palette);
+  void parse_palette_rule(VertexAdaptor<op_double_arrow> pair, function_palette::Palette &palette, function_palette::PaletteRuleset &add_to);
 
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
+  const vk::string_view function_color_palette_name_{"FUNCTION_PALETTE"};
   
   const vk::string_view confdata_blacklist_key_{"--confdata-blacklist"};
   const vk::string_view confdata_predefined_wildcard_key_{"--confdata-predefined-wildcard"};
@@ -39,4 +43,8 @@ private:
   const vk::string_view warmup_workers_part_key_{"--warmup-workers-ratio"};
   const vk::string_view warmup_instance_cache_elements_part_key_{"--warmup-instance-cache-elements-ratio"};
   const vk::string_view warmup_timeout_sec_key_{"--warmup-timeout"};
+
+public:
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
+  void on_finish(DataStream<FunctionPtr> &os) override;
 };
