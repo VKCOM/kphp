@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include "common/algorithms/find.h"
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "server/job-workers/pipe-io.h"
@@ -30,6 +31,10 @@ public:
   PipeJobReader job_reader;
 
   void init(int job_result_slot);
+
+  bool is_inited() const {
+    return vk::none_of_equal(-1, job_result_fd_idx, read_job_result_fd, write_job_fd);
+  }
 
   int send_job(JobSharedMessage *job_request);
 
