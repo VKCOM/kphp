@@ -41,7 +41,7 @@ void WorkersControl::on_worker_terminating(WorkerType worker_type) noexcept {
   auto &meta = meta_[static_cast<size_t>(worker_type)];
   assert(meta.running);
   --meta.running;
-  meta.dying++;
+  ++meta.dying;
 }
 
 void WorkersControl::on_worker_removing(WorkerType worker_type, bool dying, uint16_t worker_unique_id) noexcept {

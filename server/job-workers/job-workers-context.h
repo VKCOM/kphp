@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <queue>
 #include <unordered_set>
-#include <climits>
 
 #include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"

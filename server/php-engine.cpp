@@ -2103,11 +2103,13 @@ int main_args_handler(int i, const char *long_option) {
       OPTION_ADD_DEPRECATION_MESSAGE("--job-workers-num");
       return parse_numeric_option(long_option, 0, int{WorkersControl::max_workers_count} / 2, [](int job_workers_num) {
         auto &control = vk::singleton<WorkersControl>::get();
-        const uint16_t total_workers = control.get_total_workers_count();
+        uint16_t total_workers = control.get_total_workers_count();
         // expect that -f options is set in advance
         assert(total_workers);
-        control.set_total_workers_count(total_workers + job_workers_num);
-        const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(control.get_total_workers_count());
+        total_workers += job_workers_num;
+        assert(total_workers <= WorkersControl::max_workers_count);
+        control.set_total_workers_count(total_workers);
+        const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(total_workers);
         control.set_ratio(WorkerType::job_worker, ratio);
       });
     }
