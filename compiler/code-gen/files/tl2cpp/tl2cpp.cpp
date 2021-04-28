@@ -184,3 +184,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   modules_with_functions.clear();
 }
 } // namespace tl_gen
+
+void TlSchemaToCpp::compile(CodeGenerator &W) const {
+  tl2cpp::write_tl_query_handlers(W);
+}

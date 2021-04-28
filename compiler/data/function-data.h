@@ -192,6 +192,8 @@ public:
   vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
   vk::string_view local_name() const && = delete;
 
+  static bool does_need_codegen(FunctionPtr f);
+
 private:
   FunctionPtr get_self() const {
     return FunctionPtr{const_cast<FunctionData *>(this)};

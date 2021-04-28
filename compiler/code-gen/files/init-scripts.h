@@ -11,7 +11,14 @@
 
 struct InitScriptsCpp {
   SrcFilePtr main_file_id;
-  std::vector<FunctionPtr> all_functions;
-  InitScriptsCpp(SrcFilePtr main_file_id, std::vector<FunctionPtr> &&all_functions);
+  explicit InitScriptsCpp(SrcFilePtr main_file_id);
+  void compile(CodeGenerator &W) const;
+};
+
+struct LibVersionHFile {
+  void compile(CodeGenerator &W) const;
+};
+
+struct CppMainFile {
   void compile(CodeGenerator &W) const;
 };

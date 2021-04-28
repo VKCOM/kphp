@@ -449,10 +449,6 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
   return var;
 }
 
-SrcFilePtr CompilerCore::get_main_file() {
-  return main_file;
-}
-
 vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
