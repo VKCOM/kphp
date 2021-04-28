@@ -93,10 +93,17 @@ public:
 
 private:
   FunctionPtr get_phpdoc_from_fun_considering_inheritance() {
-    bool is_phpdoc_inherited = f_->is_overridden_method || (f_->modifiers.is_static() && f_->class_id->parent_class);
-    // inherit phpDoc only if it's not overridden in derived class
-    is_phpdoc_inherited &= f_->phpdoc_str.empty() ||
-                           (!vk::contains(f_->phpdoc_str, "@param") && !vk::contains(f_->phpdoc_str, "@return"));
+    bool is_phpdoc_inherited = false;
+    if (f_->is_overridden_method || (f_->modifiers.is_static() && f_->class_id->parent_class)) {
+      // inherit phpDoc only if it's not overridden in derived class
+      if (f_->phpdoc_str.empty() || (!vk::contains(f_->phpdoc_str, "@param") && !vk::contains(f_->phpdoc_str, "@return"))) {
+        is_phpdoc_inherited = true;
+      }
+    } else if (f_->is_constructor() && f_->is_auto_inherited) {
+      // inherited constructors copy phpdoc strings, but they still should
+      // be analyzer via the base method context (see #210)
+      is_phpdoc_inherited = true;
+    }
 
     if (!is_phpdoc_inherited) {
       return f_;

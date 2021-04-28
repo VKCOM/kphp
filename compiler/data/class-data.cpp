@@ -145,6 +145,7 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os)
   has_custom_constructor = true;
 
   create_constructor(list, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc_str, os);
+  construct_function->is_auto_inherited = true;
 }
 
 void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
