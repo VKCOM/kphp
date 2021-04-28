@@ -113,6 +113,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-function-calls.cpp
         check-modifications-of-const-vars.cpp
         check-nested-foreach.cpp
+        check-type-hint-variance.cpp
         check-tl-classes.cpp
         check-ub.cpp
         clone-strange-const-params.cpp

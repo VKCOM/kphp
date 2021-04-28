@@ -53,8 +53,6 @@ Zend/tests/bug47596.phpt
 Zend/tests/bug52355.phpt
 Zend/tests/bug53632.phpt
 Zend/tests/bug55135.phpt
-Zend/tests/bug60573.phpt
-Zend/tests/bug60573_2.phpt
 Zend/tests/bug61095.phpt
 Zend/tests/bug61225.phpt
 Zend/tests/bug62956.phpt
@@ -159,10 +157,8 @@ Zend/tests/traits/no_static_arg_binding.phpt
 Zend/tests/traits/static_001.phpt
 Zend/tests/traits/static_003.phpt
 Zend/tests/type_declarations/default_boolean_hint_values.phpt
-Zend/tests/type_declarations/parameter_type_variance.phpt
 Zend/tests/type_declarations/parent_is_not_proto.phpt
 Zend/tests/type_declarations/scalar_float_with_integer_default_weak.phpt
-Zend/tests/type_declarations/variance/parent_in_class_failure2.phpt
 Zend/tests/unset_cv01.phpt
 Zend/tests/unset_cv03.phpt
 Zend/tests/unset_cv11.phpt
