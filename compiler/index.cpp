@@ -224,11 +224,12 @@ File *Index::insert_file(std::string path) {
   }
 //  printf("%s not found in index, creating\n", file_name.c_str());
 
+  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
+
   f = new File(path);
   f->calc_name_ext_and_others(get_dir());
   create_subdir(f->subdir);
 
-  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
   files_only_cur_launch[path] = f;
   return f;
 }
