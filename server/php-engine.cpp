@@ -2098,6 +2098,19 @@ int main_args_handler(int i, const char *long_option) {
     case 2018: {
       return read_option_to(long_option, 0.0, 10.0, vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout);
     }
+    case 2019: {
+      // TODO REMOVE ME!
+      OPTION_ADD_DEPRECATION_MESSAGE("--job-workers-num");
+      return parse_numeric_option(long_option, 0, int{WorkersControl::max_workers_count} / 2, [](int job_workers_num) {
+        auto &control = vk::singleton<WorkersControl>::get();
+        const uint16_t total_workers = control.get_total_workers_count();
+        // expect that -f options is set in advance
+        assert(total_workers);
+        control.set_total_workers_count(total_workers + job_workers_num);
+        const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(control.get_total_workers_count());
+        control.set_ratio(WorkerType::job_worker, ratio);
+      });
+    }
     default:
       return -1;
   }
@@ -2119,7 +2132,6 @@ void parse_main_args_till_option(int argc, char *argv[], const char *till_option
 }
 
 DEPRECATED_OPTION("use-unix", no_argument);
-DEPRECATED_OPTION("job-workers-num", required_argument);
 DEPRECATED_OPTION_SHORT("json-log", "j", no_argument);
 DEPRECATED_OPTION_SHORT("crc32c", "C", no_argument);
 DEPRECATED_OPTION_SHORT("tl-schema", "T", required_argument);
@@ -2169,6 +2181,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
   parse_option("lease-stop-ready-timeout", required_argument, 2018, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
+  parse_option("job-workers-num", required_argument, 2019, "DEPRECATED");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

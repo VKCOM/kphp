@@ -120,21 +120,21 @@ private:
   size_t deprecation_warnings_count_{0};
 };
 
-#define OPTION_PRINT_DEPRECATION_MESSAGE_(options) { \
+#define OPTION_ADD_DEPRECATION_MESSAGE(options) { \
     const char *msg = "option '" options "' is deprecated and is going to be removed soon, don't use them!";  \
     vk::singleton<DeprecatedOptions>::get().add_warning(msg);                                                 \
   }
 
 #define DEPRECATED_OPTION(name, has_arg)              \
   OPTION_PARSER(OPT_DEPRECATED, name, has_arg, " ") { \
-    OPTION_PRINT_DEPRECATION_MESSAGE_("--" name);  \
+    OPTION_ADD_DEPRECATION_MESSAGE("--" name);  \
     return 0;                                         \
   }
 
 #define DEPRECATED_OPTION_SHORT(name, letter, has_arg)                    \
   OPTION_PARSER_SHORT(OPT_DEPRECATED, name, (letter)[0], has_arg, " ") {  \
     static_assert(sizeof(letter) == 2, "1 char string is expected");      \
-    OPTION_PRINT_DEPRECATION_MESSAGE_("--" name "/-" letter);             \
+    OPTION_ADD_DEPRECATION_MESSAGE("--" name "/-" letter);                \
     return 0;                                                             \
   }
 
