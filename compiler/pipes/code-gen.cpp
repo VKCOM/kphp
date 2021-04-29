@@ -34,7 +34,7 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
 
 
 void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
-  if (FunctionData::does_need_codegen(function)) {
+  if (FunctionData::does_need_codegen(function) || function->is_imported_from_static_lib()) {
     prepare_generate_function(function);
     G->stats.on_function_processed(function);
     tmp_stream << function;
