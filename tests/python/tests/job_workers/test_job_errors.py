@@ -1,3 +1,5 @@
+import os
+
 from python.lib.testcase import KphpServerAutoTestCase
 
 
@@ -88,6 +90,10 @@ class TestJobErrors(KphpServerAutoTestCase):
         self.kphp_server.assert_log(2 * [
             "Error -2: Segmentation fault"
         ])
+        try:
+            os.remove(os.path.join(self.kphp_server_working_dir, "core"))
+        except:
+            pass
 
     def test_job_client_oom(self):
         stats_messages_before = self.kphp_server.get_stats("kphp_server.job_workers_memory_messages_")

@@ -120,7 +120,7 @@ class KphpBuilder:
         if sys.platform != "darwin":
             env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
         if "KPHP_INCLUDE_DIR" in env:
-            self._include_dirs.append(env["KPHP_INCLUDE_DIR"])
+            self._include_dirs = [env["KPHP_INCLUDE_DIR"]] + self._include_dirs
         env["KPHP_INCLUDE_DIR"] = ":".join(self._include_dirs)
         env["KPHP_DEST_DIR"] = os.path.abspath(self._kphp_build_tmp_dir)
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")

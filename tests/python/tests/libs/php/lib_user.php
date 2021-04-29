@@ -1,4 +1,3 @@
-@ok libs
 <?php
 
 require_once 'autoload.php';

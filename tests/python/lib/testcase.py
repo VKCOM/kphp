@@ -293,3 +293,4 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")
         self.assertTrue(once_runner.run_with_kphp(), "Got KPHP runtime error")
         self.assertTrue(once_runner.compare_php_and_kphp_stdout(), "Got PHP and KPHP diff")
+        return once_runner
