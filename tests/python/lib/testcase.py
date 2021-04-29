@@ -286,3 +286,10 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         )
         self.once_runner_trash_bin.append(once_runner)
         return once_runner
+
+    def build_and_compare_with_php(self, php_script_path, kphp_env=None):
+        once_runner = self.make_kphp_once_runner(php_script_path)
+        self.assertTrue(once_runner.run_with_php(), "Got PHP error")
+        self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")
+        self.assertTrue(once_runner.run_with_kphp(), "Got KPHP runtime error")
+        self.assertTrue(once_runner.compare_php_and_kphp_stdout(), "Got PHP and KPHP diff")
