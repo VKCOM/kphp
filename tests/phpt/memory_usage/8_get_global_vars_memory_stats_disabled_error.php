@@ -1,14 +1,14 @@
+@kphp_should_fail
+KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=0
+/use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable/
 <?php
 
-$result = ["initial" => get_global_vars_memory_stats()];
 
 $arr = [1, 2, 3, 4, 5];
 $arr[] = 6;
 
 $str = "hello";
 $str .= " world";
-
-$result["globals"] = get_global_vars_memory_stats();
 
 function function_with_static_var() {
   static $static_array = [9, 10, 11, 12, "13", 14.5];
@@ -20,6 +20,8 @@ function function_with_static_var() {
 
 function_with_static_var();
 
-$result["static"] = get_global_vars_memory_stats();
+function test() {
+  var_dump(get_global_vars_memory_stats());
+}
 
-echo json_encode($result);
+test();

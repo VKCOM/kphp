@@ -10,7 +10,8 @@ from unittest import TestCase
 
 from .kphp_server import KphpServer
 from .kphp_builder import KphpBuilder
-from .file_utils import search_combined_tlo, read_distcc_hosts, can_ignore_sanitizer_log
+from .kphp_run_once import KphpRunOnce
+from .file_utils import search_combined_tlo, read_distcc_hosts, can_ignore_sanitizer_log, search_php_bin
 
 logging.disable(logging.DEBUG)
 
@@ -246,6 +247,8 @@ class KphpServerAutoTestCase(BaseTestCase):
 
 
 class KphpCompilerAutoTestCase(BaseTestCase):
+    once_runner_trash_bin = []
+
     @classmethod
     def extra_class_setup(cls):
         """
@@ -270,3 +273,24 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     @classmethod
     def custom_teardown(cls):
         cls.extra_class_teardown()
+        for once_runner in cls.once_runner_trash_bin:
+            once_runner.try_remove_kphp_build_trash()
+
+    def make_kphp_once_runner(self, php_script_path):
+        once_runner = KphpRunOnce(
+            php_script_path=os.path.join(self.test_dir, php_script_path),
+            artifacts_dir=self.kphp_server_working_dir,
+            working_dir=self.kphp_build_working_dir,
+            php_bin=search_php_bin(),
+            distcc_hosts=read_distcc_hosts(os.environ.get("KPHP_TESTS_DISTCC_FILE", None))
+        )
+        self.once_runner_trash_bin.append(once_runner)
+        return once_runner
+
+    def build_and_compare_with_php(self, php_script_path, kphp_env=None):
+        once_runner = self.make_kphp_once_runner(php_script_path)
+        self.assertTrue(once_runner.run_with_php(), "Got PHP error")
+        self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")
+        self.assertTrue(once_runner.run_with_kphp(), "Got KPHP runtime error")
+        self.assertTrue(once_runner.compare_php_and_kphp_stdout(), "Got PHP and KPHP diff")
+        return once_runner
