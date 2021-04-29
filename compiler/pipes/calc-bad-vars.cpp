@@ -93,6 +93,7 @@ struct FuncCallGraph {
   vector<FunctionPtr> functions;
   IdMap<vector<FunctionPtr>> graph;
   IdMap<vector<FunctionPtr>> rev_graph;
+  std::vector<std::pair<FunctionPtr, std::vector<FunctionPtr>>> temporarily_removed;
 
   FuncCallGraph(vector<FunctionPtr> other_functions, vector<DepData> &dep_datas) :
     n((int)other_functions.size()),
@@ -114,6 +115,23 @@ struct FuncCallGraph {
       graph[to] = std::move(data.dep);
     }
   }
+
+  void remove(FunctionPtr to_remove) {
+    for (FunctionPtr caller : rev_graph[to_remove]) {
+      graph[caller].erase(std::find(graph[caller].begin(), graph[caller].end(), to_remove));
+    }
+    temporarily_removed.emplace_back(to_remove, std::move(rev_graph[to_remove]));
+  };
+
+  void restore_all_removed() {
+    for (auto &pair : temporarily_removed) {
+      for (FunctionPtr caller : pair.second) {
+        graph[caller].emplace_back(pair.first);
+      }
+      rev_graph[pair.first] = std::move(pair.second);
+    }
+    temporarily_removed.clear();
+  };
 };
 
 class CallstackOfColoredFunctions {
@@ -189,11 +207,6 @@ public:
   explicit CheckFunctionsColors(const FuncCallGraph &call_graph)
     : call_graph(call_graph)
     , palette(G->get_function_palette()) {}
-
-  void check() {
-    CallstackOfColoredFunctions callstack;
-    check_func_dfs(callstack, G->get_main_file()->main_function);
-  }
 
   void check_func_dfs(CallstackOfColoredFunctions &callstack, const FunctionPtr &func) {
     callstack.push_back(func);
@@ -358,13 +371,10 @@ public:
 };
 
 class CalcBadVars {
-private:
-  // we use the same call graph to fill f->bad_vars and f->next_with_colors, approaches are very similar
-  // using the same call graph reduces memory footprint and allows to find connectivity components only once
-  class MergeBadVarsAndColorsCallback : public MergeReachalbeCallback<FunctionPtr> {
+  class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
     IdMap<vector<VarPtr>> modified_global_vars;
   public:
-    explicit MergeBadVarsAndColorsCallback(IdMap<vector<VarPtr>> &&modified_global_vars) :
+    explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> &&modified_global_vars) :
       modified_global_vars(std::move(modified_global_vars)) {}
 
     // here we calculate "bad vars" for a function — they will be used in check-ub.cpp
@@ -373,46 +383,6 @@ private:
     // this works in a single thread and uses some heuristic for speedup, but generally it means
     // "for f in component { for e in edge { f.bad_vars += e.bad_vars } }"
     void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
-      // 1) fill f->next_with_colors
-      // (this can be optimized if many functions are marked with colors, for now left simple to me more understandable)
-      std::unordered_set<FunctionPtr> next_colored_uniq;
-
-      // if an edge is colored, append this edge
-      // if not, append next_with_colors from this edge
-      for (FunctionPtr f: edges) {
-        if (!f->colors.empty()) {
-          next_colored_uniq.insert(f);
-        } else if (f->next_with_colors != nullptr) {
-          next_colored_uniq.insert(f->next_with_colors->begin(), f->next_with_colors->end());
-        }
-      }
-
-      // for a recursive bunch of functions (e.g. f1 -> f2 -> f1)
-      // assume that "every functions is reachable from any of them" — so, append all colored functions from a recurse
-      // this is not true in all cases, but enough for practical usage
-      // also, to reduce a number of permutations for next colored path searching, choose only one representative of each color
-      bool has_colors_in_component = std::any_of(component.begin(), component.end(), [](FunctionPtr f) { return !f->colors.empty(); });
-      if (has_colors_in_component && component.size() > 1) {
-        function_palette::colors_mask_t added{0};
-        for (FunctionPtr f : component) {
-          for (function_palette::color_t c : f->colors) {
-            if (!(added & c)) {
-              added |= c;
-              next_colored_uniq.insert(f);
-            }
-          }
-        }
-      }
-
-      if (!next_colored_uniq.empty()) {
-        auto *next_with_colors = new std::vector<FunctionPtr>(next_colored_uniq.begin(), next_colored_uniq.end());
-        for (FunctionPtr f : component) {
-          f->next_with_colors = next_with_colors;
-        }
-      }
-
-      // 2) fill f->bad_vars
-
       // optimization 1: lots of functions don't modify globals at all
       // then we leave f->bad_vars nullptr
       bool empty = vk::all_of(component, [&](FunctionPtr f) { return modified_global_vars[f].empty(); })
@@ -468,7 +438,52 @@ private:
     }
   };
 
-  void generate_bad_vars(FuncCallGraph &call_graph, vector<DepData> &dep_datas) {
+  class MergeNextColoredCallback : public MergeReachalbeCallback<FunctionPtr> {
+
+    // here we calculate next_with_colors for every function
+    // we'll use it for perform dfs only for colored nodes of a call graph
+    // (this precalculation is needed, because dfs for a whole call graph is too heavy on a large code base)
+    void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
+      // (this can be optimized if many functions are marked with colors, for now left simple to me more understandable)
+      std::unordered_set<FunctionPtr> next_colored_uniq;
+
+      // if an edge is colored, append this edge
+      // if not, append next_with_colors from this edge
+      for (FunctionPtr f: edges) {
+        if (!f->colors.empty()) {
+          next_colored_uniq.insert(f);
+        } else if (f->next_with_colors != nullptr) {
+          next_colored_uniq.insert(f->next_with_colors->begin(), f->next_with_colors->end());
+        }
+      }
+
+      // for a recursive bunch of functions (e.g. f1 -> f2 -> f1)
+      // assume that "every functions is reachable from any of them" — so, append all colored functions from a recurse
+      // this is not true in all cases, but enough for practical usage
+      // also, to reduce a number of permutations for next colored path searching, choose only one representative of each color
+      bool has_colors_in_component = std::any_of(component.begin(), component.end(), [](FunctionPtr f) { return !f->colors.empty(); });
+      if (has_colors_in_component && component.size() > 1) {
+        function_palette::colors_mask_t added{0};
+        for (FunctionPtr f : component) {
+          for (function_palette::color_t c : f->colors) {
+            if (!(added & c)) {
+              added |= c;
+              next_colored_uniq.insert(f);
+            }
+          }
+        }
+      }
+
+      if (!next_colored_uniq.empty()) {
+        auto *next_with_colors = new std::vector<FunctionPtr>(next_colored_uniq.begin(), next_colored_uniq.end());
+        for (FunctionPtr f : component) {
+          f->next_with_colors = next_with_colors;
+        }
+      }
+    }
+  };
+
+  void generate_bad_vars(const FuncCallGraph &call_graph, std::vector<DepData> &dep_datas) {
     IdMap<std::vector<VarPtr>> modified_global_vars(call_graph.n);
 
     for (int i = 0; i < call_graph.n; i++) {
@@ -476,9 +491,27 @@ private:
       modified_global_vars[func] = std::move(dep_datas[i].modified_global_vars);
     }
 
-    MergeBadVarsAndColorsCallback callback(std::move(modified_global_vars));
+    MergeBadVarsCallback callback(std::move(modified_global_vars));
     MergeReachalbe<FunctionPtr> merge_bad_vars;
     merge_bad_vars.run(call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
+  }
+
+  void check_func_colors(FuncCallGraph &call_graph) {
+    // to perform calculating next_with_colors and checking color rules from the palette,
+    // we need to drop '@kphp-color remover' functions from a call graph completely, like they don't exist at all
+    // this special color is for manual cutting connectivity rules, allowing to explicitly separate recursively-joint components
+    for (FunctionPtr f : call_graph.functions) {
+      if (!f->colors.empty() && f->colors.contains(function_palette::special_color_remover)) {
+        call_graph.remove(f);
+      }
+    }
+
+    MergeNextColoredCallback callback;
+    MergeReachalbe<FunctionPtr> merge_next_colored;
+    merge_next_colored.run(call_graph.graph, call_graph.rev_graph, call_graph.functions, &callback);
+    CallstackOfColoredFunctions callstack;
+    CheckFunctionsColors(call_graph).check_func_dfs(callstack, G->get_main_file()->main_function);
+    call_graph.restore_all_removed();
   }
 
   static void mark(const IdMap<vector<FunctionPtr>> &graph, IdMap<char> &was, FunctionPtr start, IdMap<FunctionPtr> &parents) {
@@ -636,7 +669,7 @@ public:
       FuncCallGraph call_graph(std::move(functions), dep_datas);
       calc_resumable(call_graph, dep_datas);
       generate_bad_vars(call_graph, dep_datas);
-      CheckFunctionsColors(call_graph).check();
+      check_func_colors(call_graph);
       save_func_dep(call_graph);
     }
 

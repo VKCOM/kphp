@@ -23,17 +23,22 @@ std::string PaletteRule::as_human_readable(const Palette &palette) const {
 
 // --------------------------------------------
 
+Palette::Palette() {
+  color_names_mapping["transparent"] = special_color_transparent;
+  color_names_mapping["remover"] = special_color_remover;
+}
+
 color_t Palette::register_color_name(const std::string &color_name) {
   auto found = color_names_mapping.find(color_name);
   if (found != color_names_mapping.end()) {
     return found->second;
   }
 
-  int bit_shift = 1 + color_names_mapping.size();
+  int bit_shift = color_names_mapping.size() - 1;   // user-defined colors are 1<<1, 1<<2, and so on
   color_t color = 1ULL << bit_shift;
 
   color_names_mapping[color_name] = color;
-  kphp_error(color_names_mapping.size() != 62, "Reached limit of colors in palette — more than 62 colors");
+  kphp_error(color_names_mapping.size() != 64, "Reached limit of colors in palette — more than 64 colors");
   return color;
 }
 
@@ -55,6 +60,9 @@ std::string Palette::get_name_by_color(color_t color) const {
 // --------------------------------------------
 
 void ColorContainer::add(color_t color) {
+  if (color == special_color_transparent) {
+    return;
+  }
   // append color to the end of forward list
   // a bit inconvenient, but we use forward_list intentionally to consume only 8 bytes on emptiness (the most common case)
   auto before_end = std::next(sep_colors.before_begin(), std::distance(sep_colors.begin(), sep_colors.end()));
