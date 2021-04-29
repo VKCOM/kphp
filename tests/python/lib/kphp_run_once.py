@@ -7,74 +7,28 @@ from .kphp_builder import KphpBuilder
 from .file_utils import error_can_be_ignored
 
 
-class TestFile:
-    def __init__(self, file_path, test_tmp_dir, tags, env_vars: dict, out_regexps=None, forbidden_regexps=None):
-        self.test_tmp_dir = test_tmp_dir
-        self.file_path = file_path
-        self.tags = tags
-        self.env_vars = env_vars
-        self.out_regexps = out_regexps
-        self.forbidden_regexps = forbidden_regexps
-
-    def is_ok(self):
-        return "ok" in self.tags
-
-    def is_kphp_should_fail(self):
-        return "kphp_should_fail" in self.tags
-
-    def is_kphp_should_warn(self):
-        return "kphp_should_warn" in self.tags
-
-    def is_php5(self):
-        return "php5" in self.tags
-
-    def is_php7_4(self):
-        return "php7_4" in self.tags
-
-
 class KphpRunOnce(KphpBuilder):
-    def __init__(self, test_file: TestFile, distcc_hosts):
+    def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin,
+                 extra_include_dirs=None, vkext_dir=None, distcc_hosts=None):
         super(KphpRunOnce, self).__init__(
-            php_script_path=test_file.file_path,
-            artifacts_dir=os.path.join(test_file.test_tmp_dir, "artifacts"),
-            working_dir=os.path.abspath(os.path.join(test_file.test_tmp_dir, "working_dir")),
+            php_script_path=php_script_path,
+            artifacts_dir=artifacts_dir,
+            working_dir=working_dir,
             distcc_hosts=distcc_hosts
         )
 
-        self._test_file = test_file
         self._php_stdout = None
         self._kphp_server_stdout = None
         self._php_tmp_dir = os.path.join(self._working_dir, "php")
         self._kphp_runtime_tmp_dir = os.path.join(self._working_dir, "kphp_runtime")
-        self._tester_dir = os.path.abspath(os.path.dirname(__file__))
-        self._include_dirs.append(os.path.join(self._tester_dir, "php_include"))
-        self._vkext_dir = os.path.abspath(os.path.join(self._tester_dir, os.path.pardir, "objs", "vkext"))
+        if extra_include_dirs:
+            self._include_dirs.extend(extra_include_dirs)
+        self._vkext_dir = vkext_dir
+        self._php_bin = php_bin
 
-    def _get_php_bin(self):
+    def _get_extensions(self):
         if sys.platform == "darwin":
-            return shutil.which("php")
-        if self._test_file.is_php5():
-            return shutil.which("php5.6") or shutil.which("php5")
-        if self._test_file.is_php7_4():
-            return shutil.which("php7.4")
-        return shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
-
-    def _get_extensions_and_php_path(self):
-        php_bin = self._get_php_bin()
-        if php_bin is None:
-            raise RuntimeError("Can't find php executable")
-
-        if sys.platform == "darwin":
-            return php_bin, []
-
-        vkext_so = None
-        if php_bin.endswith("php7.2"):
-            vkext_so = os.path.join(self._vkext_dir, "modules7.2", "vkext.so")
-        elif php_bin.endswith("php7.4"):
-            vkext_so = os.path.join(self._vkext_dir, "modules7.4", "vkext.so")
-
-        if not vkext_so or not os.path.exists(vkext_so):
-            vkext_so = "vkext.so"
+            return []
 
         extensions = [
             ("extension", "json.so"),
@@ -85,13 +39,24 @@ class KphpRunOnce(KphpBuilder):
             ("extension", "tokenizer.so"),
             ("extension", "h3.so"),
             ("extension", "zstd.so"),
-            ("extension", vkext_so)
         ]
-        return php_bin, extensions
+
+        if self._vkext_dir:
+            vkext_so = None
+            if self._php_bin.endswith("php7.2"):
+                vkext_so = os.path.join(self._vkext_dir, "modules7.2", "vkext.so")
+            elif self._php_bin.endswith("php7.4"):
+                vkext_so = os.path.join(self._vkext_dir, "modules7.4", "vkext.so")
+
+            if not vkext_so or not os.path.exists(vkext_so):
+                vkext_so = "vkext.so"
+            extensions.append(("extension", vkext_so))
+
+        return extensions
 
     def run_with_php(self):
         self._clear_working_dir(self._php_tmp_dir)
-        php_bin, options = self._get_extensions_and_php_path()
+        options = self._get_extensions()
         options.extend([
             ("display_errors", 0),
             ("log_errors", 1),
@@ -99,10 +64,10 @@ class KphpRunOnce(KphpBuilder):
             ("xdebug.var_display_max_depth", -1),
             ("xdebug.var_display_max_children", -1),
             ("xdebug.var_display_max_data", -1),
-            ("include_path", "{}:{}".format(*self._include_dirs))
+            ("include_path", ":".join(self._include_dirs))
         ])
 
-        cmd = [php_bin, "-n"]
+        cmd = [self._php_bin, "-n"]
         for k, v in options:
             cmd.append("-d {}='{}'".format(k, v))
         cmd.append(self._test_file_path)

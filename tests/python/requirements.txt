@@ -3,3 +3,4 @@ psutil
 requests-toolbelt
 pytest
 pytest-xdist
+zstandard

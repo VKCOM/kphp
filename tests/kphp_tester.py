@@ -10,8 +10,45 @@ from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 
 from python.lib.colors import red, green, yellow, blue
-from python.lib.file_utils import read_distcc_hosts
-from python.lib.kphp_run_once import KphpRunOnce, TestFile
+from python.lib.file_utils import read_distcc_hosts, search_php_bin
+from python.lib.kphp_run_once import KphpRunOnce
+
+
+class TestFile:
+    def __init__(self, file_path, test_tmp_dir, tags, env_vars: dict, out_regexps=None, forbidden_regexps=None):
+        self.test_tmp_dir = test_tmp_dir
+        self.file_path = file_path
+        self.tags = tags
+        self.env_vars = env_vars
+        self.out_regexps = out_regexps
+        self.forbidden_regexps = forbidden_regexps
+
+    def is_ok(self):
+        return "ok" in self.tags
+
+    def is_kphp_should_fail(self):
+        return "kphp_should_fail" in self.tags
+
+    def is_kphp_should_warn(self):
+        return "kphp_should_warn" in self.tags
+
+    def is_php5(self):
+        return "php5" in self.tags
+
+    def is_php7_4(self):
+        return "php7_4" in self.tags
+
+    def make_kphp_once_runner(self, distcc_hosts):
+        tester_dir = os.path.abspath(os.path.dirname(__file__))
+        return KphpRunOnce(
+            php_script_path=self.file_path,
+            working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
+            artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
+            php_bin=search_php_bin(php5_require=self.is_php5(), php7_4_require=self.is_php7_4()),
+            extra_include_dirs=[os.path.join(tester_dir, "php_include")],
+            vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
+            distcc_hosts=distcc_hosts
+        )
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
@@ -227,11 +264,11 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(distcc_hosts, test):
+def run_test(distcc_hosts, test: TestFile):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = KphpRunOnce(test, distcc_hosts)
+    runner = test.make_kphp_once_runner(distcc_hosts)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():

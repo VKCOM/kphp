@@ -1,6 +1,8 @@
 import os
 import subprocess
 import re
+import sys
+import shutil
 
 
 def _check_file(file_name, file_dir, file_checker):
@@ -119,3 +121,13 @@ def make_distcc_env(distcc_hosts, distcc_dir):
         "DISTCC_DIR": distcc_dir,
         "DISTCC_LOG": os.path.join(distcc_dir, "distcc.log")
     }
+
+
+def search_php_bin(php5_require=False, php7_4_require=False):
+    if sys.platform == "darwin":
+        return shutil.which("php")
+    if php5_require:
+        return shutil.which("php5.6") or shutil.which("php5")
+    if php7_4_require:
+        return shutil.which("php7.4")
+    return shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
