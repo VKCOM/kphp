@@ -15,6 +15,9 @@ namespace function_palette {
 using color_t = uint64_t;
 using colors_mask_t = uint64_t;
 
+constexpr color_t special_color_transparent = 0;        // all functions without any colors are transparent: C + transparent = C
+constexpr color_t special_color_remover = 1ULL << 63;   // @kphp-color remover works so: C + remover = transparent
+
 class Palette;
 
 // rules are representation of human-written "api has-curl" => "error text" or "api allow-curl has-curl" => 1
@@ -49,6 +52,8 @@ class Palette {
   std::map<std::string, color_t> color_names_mapping;
 
 public:
+  Palette();
+
   color_t register_color_name(const std::string &color_name);
 
   void add_ruleset(PaletteRuleset &&ruleset) {
