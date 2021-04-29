@@ -1753,6 +1753,12 @@ void init_all() {
   }
   const auto *tag = engine_tag ?: "0";
   vk::singleton<JsonLogger>::get().init(string::to_int(tag, static_cast<string::size_type>(strlen(tag))), script_timeout);
+  for (auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
+    if (deprecation_warning.empty()) {
+      break;
+    }
+    log_server_warning(deprecation_warning);
+  }
 
   global_init_runtime_libs();
   global_init_php_scripts();
@@ -2232,13 +2238,6 @@ void init_default() {
   if (logname) {
     reopen_logs();
     reopen_json_log();
-  }
-
-  for(auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
-    if (deprecation_warning.empty()) {
-      break;
-    }
-    log_server_warning(deprecation_warning);
   }
 }
 
