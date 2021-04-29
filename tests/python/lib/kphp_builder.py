@@ -1,9 +1,7 @@
-import copy
 import glob
 import os
 import subprocess
 import shutil
-import multiprocessing
 import sys
 
 from .file_utils import search_kphp2cpp, error_can_be_ignored, can_ignore_sanitizer_log, make_distcc_env
