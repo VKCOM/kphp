@@ -52,6 +52,11 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
       kphp_error(current_function->class_id && current_function->class_id->is_trait(), fmt_format("you may not use trait directly: {}", ref_class->get_name()));
     }
 
+    // handle access to a class constant when the class is not found
+    if (v->type() == op_func_name && !ref_class) {
+      kphp_error(0, fmt_format("Class {} not found", class_name));
+    }
+
     if (ref_class && current_function->modifiers.is_instance()) {
       if (auto found_method = ref_class->get_instance_method(original_name.substr(pos + 2))) {
         auto method = found_method->function;
