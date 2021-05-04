@@ -10,7 +10,7 @@
 static DataStream<WriterData *> dummy_os;
 
 ProfilerRaw &get_code_gen_profiler() {
-  static CachedProfiler profiler{"Code generation — calc hashes"};
+  static CachedProfiler profiler{"Code generation - calc hashes"};
   return *profiler;
 }
 
