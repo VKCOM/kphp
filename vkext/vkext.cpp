@@ -92,14 +92,6 @@ static zend_function_entry vkext_functions[] = {
   PHP_FE(vk_sp_to_cyrillic, NULL)
   PHP_FE(vk_sp_words_only, NULL)
   PHP_FE(tl_config_load_file, NULL)
-  PHP_FE(rpc_memcache_connect, NULL)
-  PHP_FE(rpc_memcache_delete, NULL)
-  PHP_FE(rpc_memcache_increment, NULL)
-  PHP_FE(rpc_memcache_decrement, NULL)
-  PHP_FE(rpc_memcache_set, NULL)
-  PHP_FE(rpc_memcache_add, NULL)
-  PHP_FE(rpc_memcache_replace, NULL)
-  PHP_FE(rpc_memcache_get, NULL)
   PHP_FE(vk_stats_hll_merge, NULL)
   PHP_FE(vk_stats_hll_count, NULL)
   PHP_FE(vk_stats_hll_create, NULL)
@@ -132,22 +124,8 @@ zend_module_entry vkext_module_entry = {
   VKEXT_VERSION,
   STANDARD_MODULE_PROPERTIES
 };
-static zend_class_entry *rpc_memcache_class_entry_ptr;
 
 ZEND_GET_MODULE(vkext)
-
-static zend_function_entry php_rpc_memcache_class_functions[] = {
-  PHP_FALIAS(rpc_connect, rpc_memcache_connect, NULL)
-  PHP_FALIAS(delete, rpc_memcache_delete, NULL)
-  PHP_FALIAS(increment, rpc_memcache_increment, NULL)
-  PHP_FALIAS(decrement, rpc_memcache_decrement, NULL)
-  PHP_FALIAS(add, rpc_memcache_add, NULL)
-  PHP_FALIAS(set, rpc_memcache_set, NULL)
-  PHP_FALIAS(replace, rpc_memcache_replace, NULL)
-  PHP_FALIAS(get, rpc_memcache_get, NULL)
-  PHP_FALIAS(__construct, rpc_memcache_construct, NULL)
-  {NULL, NULL, NULL}
-};
 
 int verbosity = 0;
 
@@ -552,9 +530,6 @@ PHP_MINIT_FUNCTION (vkext) {
   REGISTER_INI_ENTRIES();
   rpc_on_minit(module_number);
 
-  zend_class_entry rpc_memcache_class_entry;
-  INIT_CLASS_ENTRY(rpc_memcache_class_entry, "RpcMemcache", php_rpc_memcache_class_functions);
-  rpc_memcache_class_entry_ptr = zend_register_internal_class(&rpc_memcache_class_entry TSRMLS_CC);
   init_version_string("vkext");
   return SUCCESS;
 }
@@ -1122,79 +1097,6 @@ PHP_FUNCTION (vkext_prepare_stats) {
   ADD_CNT(total);
   START_TIMER(total);
   php_vk_prepare_stats(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_connect) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_construct) {
-  VK_ZVAL_API_ARRAY z;
-  if (ZEND_NUM_ARGS() != 1) {
-    return;
-  }
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
-    RETURN_FALSE;
-  }
-  zval *obj = getThis ();
-  if (!obj) {
-    RETURN_FALSE;
-  }
-  add_property_zval (obj, "fake", VK_ZVAL_API_TO_ZVALP(VK_ZVAL_ARRAY_TO_API_P(z)));
-}
-
-
-PHP_FUNCTION (rpc_memcache_delete) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_increment) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_incr(0, INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_decrement) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_incr(1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_set) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_store(0, INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_add) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_store(1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_replace) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_store(2, INTERNAL_FUNCTION_PARAM_PASSTHRU);
-  END_TIMER(total);
-}
-
-PHP_FUNCTION (rpc_memcache_get) {
-  ADD_CNT(total);
-  START_TIMER(total);
-  rpc_memcache_get(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
