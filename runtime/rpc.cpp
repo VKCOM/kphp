@@ -274,6 +274,10 @@ int64_t f$fetch_string_as_int() {
 }
 
 mixed f$fetch_memcache_value() {
+  static constexpr int32_t MEMCACHE_VALUE_NOT_FOUND = 0x32c42422;
+  static constexpr int32_t MEMCACHE_VALUE_LONG = 0x9729c42;
+  static constexpr int32_t MEMCACHE_VALUE_STRING = 0xa6bebb1a;
+
   int res = TRY_CALL(int, bool, rpc_fetch_int());
   switch (res) {
     case MEMCACHE_VALUE_STRING: {
