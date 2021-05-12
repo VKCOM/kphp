@@ -112,24 +112,6 @@ final class McMemcache implements Memcache {
     public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
 }
 
-final class RpcMemcache implements Memcache {
-    public function __construct(bool $fake = false) ::: RpcMemcache;
-
-    public function get (string|string[] $key) ::: mixed;
-    public function delete (string $key) ::: bool;
-    public function add (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    public function set (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    public function replace (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    public function decrement (string $key, int $v = 1) ::: mixed;
-    public function increment (string $key, int $v = 1) ::: mixed;
-
-    public function getVersion () ::: mixed;
-    public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
-
-    public function addServer (string $host, int $port = 11211, bool $persistent = true, int $weight = 1, float $timeout = 1, int $retry_interval = 15, bool $status = true, mixed $failure_callback = null, int $timeoutms = 0) ::: bool;
-}
-
-
 final class mysqli {
     private function __construct() ::: \mysqli;
 }
@@ -769,8 +751,6 @@ define('IMAGETYPE_JP2', 10);
 /** Memcached **/
 
 define('MEMCACHE_COMPRESSED', 2);
-
-function new_RpcMemcache($fake ::: bool = false) ::: Memcache;
 
 /** vkext **/
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
