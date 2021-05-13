@@ -327,6 +327,7 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
   ld_flags.value_ += " -rdynamic";
 
+  runtime_headers.value_ = "runtime-headers.h";
   runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
 
   auto full_path = get_full_path(main_file.get());

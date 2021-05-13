@@ -78,6 +78,10 @@ public:
     return create_target(new Cpp2ObjTarget(), to_targets(cpp), obj);
   }
 
+  Target *create_pch_target(File *header_h, File *pch) {
+    return create_target(new Cpp2ObjTarget(true), to_targets(header_h), pch);
+  }
+
   Target *create_objs2obj_target(vector<File *> objs, File *obj) {
     return create_target(new Objs2ObjTarget(), to_targets(std::move(objs)), obj);
   }
@@ -181,7 +185,7 @@ File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_
   }
   auto *runtime_header_h_pch = obj_dir->insert_file(settings.dest_objs_dir.get() + pch_filename + "." + flags.flags_sha256.get());
   runtime_header_h_pch->compile_with_debug_info_flag = with_debug;
-  make.create_cpp2obj_target(&runtime_headers_h, runtime_header_h_pch);
+  make.create_pch_target(&runtime_headers_h, runtime_header_h_pch);
   return runtime_header_h_pch;
 }
 
@@ -202,8 +206,7 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
   File sha256_version_file(settings.runtime_sha256_file.get());
   kphp_assert(sha256_version_file.read_stat() > 0);
 
-  const std::string header_filename = "runtime-headers.h";
-  File runtime_headers_h{settings.generated_runtime_path.get() + header_filename};
+  File runtime_headers_h{settings.generated_runtime_path.get() + settings.runtime_headers.get()};
   kphp_assert(runtime_headers_h.read_stat() > 0);
   make.create_cpp_target(&runtime_headers_h);
   runtime_headers_h.target->force_changed(sha256_version_file.mtime);

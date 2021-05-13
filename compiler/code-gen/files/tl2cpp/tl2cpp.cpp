@@ -86,7 +86,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
     }
   }
   W << deps << NL;
-  W << ExternInclude{"runtime-headers.h"} << NL;
+  W << ExternInclude{G->settings().runtime_headers.get()} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
   W << "auto function_magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
@@ -159,14 +159,14 @@ void write_tl_query_handlers(CodeGenerator &W) {
   // Const string literals that were extracted from the scheme
   W << OpenFile("tl_const_vars.h", "tl");
   W << "#pragma once" << NL;
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
     W << "extern string " << cpp_tl_const_str(s) << ";" << NL;
   });
   W << CloseFile();
 
   W << OpenFile("tl_const_vars.cpp", "tl", false);
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
   W << Include("tl/tl_const_vars.h");
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
     W << "string " << cpp_tl_const_str(s) << ";" << NL;

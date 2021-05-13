@@ -21,7 +21,7 @@ TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vect
 void TypeTagger::compile(CodeGenerator &W) const {
   W << OpenFile("_tagger.cpp");
 
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
 
   // Be care, do not remove spaces from these types
   // TODO fix it?

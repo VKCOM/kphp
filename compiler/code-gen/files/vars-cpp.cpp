@@ -66,7 +66,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   std::string file_name = "vars" + std::to_string(part_id) + ".cpp";
   W << OpenFile(file_name, "o_vars_" + std::to_string(part_id / 100), false);
 
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
 
   std::vector<VarPtr> const_raw_string_vars;
   std::vector<VarPtr> const_raw_array_vars;

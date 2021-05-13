@@ -177,6 +177,7 @@ public:
   KphpImplicitOption generated_runtime_path;
   KphpImplicitOption performance_analyze_report_path;
 
+  KphpImplicitOption runtime_headers;
   KphpImplicitOption runtime_sha256;
 
   KphpImplicitOption tl_namespace_prefix;
