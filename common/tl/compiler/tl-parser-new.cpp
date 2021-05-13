@@ -102,7 +102,7 @@ struct parse save_parse() {
 
 void load_parse(struct parse _parse) {
   parse = _parse;
-  curch = parse.pos > parse.len ? 0 : parse.text[parse.pos];
+  curch = parse.pos >= parse.len ? 0 : parse.text[parse.pos];
 }
 
 int is_whitespace(char c) {
