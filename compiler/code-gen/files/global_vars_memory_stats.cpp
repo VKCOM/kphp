@@ -31,7 +31,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
   }
 
   W << OpenFile(getter_name_ + ".cpp", "", false)
-    << ExternInclude("runtime-headers.h")
+    << ExternInclude(G->settings().runtime_headers.get())
     << OpenNamespace();
 
   FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
@@ -54,7 +54,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 
 void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const {
   W << OpenFile(getter_name_ + "_" + std::to_string(part_id) + ".cpp", "o_" + getter_name_, false)
-    << ExternInclude("runtime-headers.h");
+    << ExternInclude(G->settings().runtime_headers.get());
 
   IncludesCollector includes;
   std::vector<std::string> var_names;

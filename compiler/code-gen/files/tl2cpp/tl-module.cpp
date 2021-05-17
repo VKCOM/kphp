@@ -44,7 +44,7 @@ void Module::compile_tl_h_file(CodeGenerator &W) const {
 
 void Module::compile_tl_cpp_file(CodeGenerator &W) const {
   W << OpenFile(name + ".cpp", "tl", false);
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
   W << Include("tl/" + name + ".h") << NL;
   W << cpp_includes;
 

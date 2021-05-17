@@ -39,7 +39,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
     return;
   }
   W << OpenFile(function->src_name, function->subdir);
-  W << ExternInclude("runtime-headers.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
   W << Include(function->header_full_name);
 
   stage::set_function(function);
