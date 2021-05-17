@@ -1150,7 +1150,13 @@ void global_init_openssl_lib() {
 
   register_stream_functions(&ssl_stream_functions, false);
 
-  reinit_openssl_lib_hack();
+  OPENSSL_config(nullptr);
+  SSL_library_init();
+  OpenSSL_add_all_ciphers();
+  OpenSSL_add_all_digests();
+  OpenSSL_add_all_algorithms();
+
+  SSL_load_error_strings();
 }
 
 namespace {
@@ -1818,17 +1824,6 @@ Optional<string> f$openssl_decrypt(string data, const string &method, const stri
     data = std::move(decoding_data.val());
   }
   return eval_cipher(CipherCtx::decrypt, data, method, key, options, iv, tag, aad);
-}
-
-// TODO: When we'll fix curl, inline this function inside the global_init_openssl_lib
-void reinit_openssl_lib_hack() {
-  OPENSSL_config(nullptr);
-  SSL_library_init();
-  OpenSSL_add_all_ciphers();
-  OpenSSL_add_all_digests();
-  OpenSSL_add_all_algorithms();
-
-  SSL_load_error_strings();
 }
 
 void init_openssl_lib() {

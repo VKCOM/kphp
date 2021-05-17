@@ -44,7 +44,7 @@ private:
   TzinfoCache() = default;
 };
 
-void php_timelib_init() {
+void global_init_php_timelib() {
   vk::singleton<TzinfoCache>::get().init();
 }
 

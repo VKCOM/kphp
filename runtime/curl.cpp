@@ -11,9 +11,9 @@
 #include <curl/multi.h>
 
 #include "runtime/critical_section.h"
-#include "runtime/global_storage.h"
 #include "runtime/interface.h"
-#include "runtime/openssl.h"
+#include "runtime/string-list.h"
+
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
 
@@ -38,19 +38,25 @@ constexpr int64_t BAD_CURL_OPTION = static_cast<int>(CURL_LAST) + static_cast<in
 
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 
-class BaseContext {
+class BaseContext : vk::not_copyable {
 public:
   int64_t error_num{0};
   char error_msg[CURL_ERROR_SIZE + 1]{'\0'};
 
+  template<size_t N>
+  void on_bad_option_error(const char (&msg)[N], bool save_error = true) noexcept {
+    static_assert(N <= CURL_ERROR_SIZE, "Too long error");
+    php_warning("%s", msg);
+    if (save_error) {
+      error_num = BAD_CURL_OPTION;
+      std::memcpy(error_msg, msg, N);
+    }
+  }
+
   template<size_t OPTION_OFFSET, size_t OPTIONS_COUNT>
-  bool check_option_value(long opt_value, const char *what, const char *function, bool save_error = true) noexcept {
+  bool check_option_value(long opt_value, bool save_error = true) noexcept {
     if (unlikely(opt_value < static_cast<long>(OPTION_OFFSET) || opt_value - OPTION_OFFSET >= OPTIONS_COUNT)) {
-      php_warning("Wrong %s %ld in function %s", what, opt_value, function);
-      if (save_error) {
-        error_num = BAD_CURL_OPTION;
-        snprintf(error_msg, CURL_ERROR_SIZE, "Wrong %s %ld", what, opt_value);
-      }
+      on_bad_option_error("Wrong option value", save_error);
       return false;
     }
     return true;
@@ -62,18 +68,17 @@ protected:
 
 class EasyContext : public BaseContext {
 public:
-  explicit EasyContext(CURL *handle, int64_t self_handler_id) noexcept:
-    easy_handle(handle),
+  explicit EasyContext(int64_t self_handler_id) noexcept:
     self_id(self_handler_id) {
   }
 
-  template<typename T>
+  template<class T>
   void set_option(CURLoption option, const T &value) noexcept {
     const CURLcode res = dl::critical_section_call([&] { return curl_easy_setopt(easy_handle, option, value); });
     php_assert (res == CURLE_OK);
   }
 
-  template<typename T>
+  template<class T>
   int64_t set_option_safe(CURLoption option, const T &value) noexcept {
     dl::CriticalSectionGuard critical_section;
     error_num = curl_easy_setopt(easy_handle, option, value);
@@ -131,35 +136,33 @@ public:
   }
 
   void cleanup_for_next_request() noexcept {
-    header = string{};
-    result = string{};
+    received_header.reset();
+    received_data.reset();
     error_num = 0;
     error_msg[0] = '\0';
   }
 
   void cleanup_slists_and_posts() noexcept {
-    const auto last_slist = slists_to_free.cend();
-    for (auto p = slists_to_free.cbegin(); p != last_slist; ++p) {
-      curl_slist *v = p.get_value();
-      php_assert (v != nullptr);
-      dl::critical_section_call(curl_slist_free_all, v);
+    while (!slists_to_free.empty()) {
+      curl_slist_free_all(slists_to_free.pop());
     }
-    slists_to_free = array<curl_slist *>{};
-
-    const auto last_post = httpposts_to_free.cend();
-    for (auto p = httpposts_to_free.cbegin(); p != last_post; ++p) {
-      curl_httppost *v = p.get_value();
-      php_assert (v != nullptr);
-      dl::critical_section_call(curl_formfree, v);
+    while (!httpposts_to_free.empty()) {
+      curl_formfree(httpposts_to_free.pop());
     }
-    httpposts_to_free = array<curl_httppost *>{};
   }
 
-  CURL *easy_handle;
+  void release() noexcept {
+    curl_easy_cleanup(easy_handle);
+    cleanup_slists_and_posts();
+    this->~EasyContext();
+    dl::deallocate(this, sizeof(EasyContext));
+  }
+
+  CURL *easy_handle{nullptr};
   const int64_t self_id{-1};
 
-  string header;
-  string result;
+  string_list received_header;
+  string_list received_data;
 
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
@@ -170,10 +173,6 @@ public:
 
 class MultiContext : public BaseContext {
 public:
-  explicit MultiContext(CURLM *handle) noexcept :
-    multi_handle(handle) {
-  }
-
   template<typename T>
   int64_t set_option_safe(CURLMoption option, const T &value) noexcept {
     dl::CriticalSectionGuard critical_section;
@@ -181,78 +180,64 @@ public:
     return error_num;
   }
 
-  CURLM *multi_handle;
+  void release() noexcept {
+    curl_multi_cleanup(multi_handle);
+    this->~MultiContext();
+    dl::deallocate(this, sizeof(MultiContext));
+  }
+
+  CURLM *multi_handle{nullptr};
 };
 
-struct CurlContexts_ {
+struct CurlContexts : vk::not_copyable {
   array<EasyContext *> easy_contexts;
   array<MultiContext *> multi_contexts;
 
-  template<typename T>
+  template<class T>
   T *get_value(int64_t id) const noexcept;
+
+private:
+  CurlContexts() = default;
+
+  friend class vk::singleton<CurlContexts>;
 };
 
 template<>
-EasyContext *CurlContexts_::get_value<EasyContext>(int64_t easy_id) const noexcept {
+EasyContext *CurlContexts::get_value<EasyContext>(int64_t easy_id) const noexcept {
   return easy_contexts.get_value(easy_id - 1);
 }
 
 template<>
-MultiContext *CurlContexts_::get_value<MultiContext>(int64_t multi_id) const noexcept {
+MultiContext *CurlContexts::get_value<MultiContext>(int64_t multi_id) const noexcept {
   return multi_contexts.get_value(multi_id - 1);
 }
 
-using CurlContexts = vk::singleton<GlobalStorage<CurlContexts_>>;
-
-template<typename T>
+template<class T>
 T *get_context(int64_t id) noexcept {
-  T *context = nullptr;
-  if (likely(dl::query_num == CurlContexts::get().get_query_tag())) {
-    context = CurlContexts::get()->get_value<T>(id);
-  }
-
+  T *context = vk::singleton<CurlContexts>::get().get_value<T>(id);
   if (unlikely(!context)) {
     php_warning("Wrong context id specified");
   }
   return context;
 }
 
-void easy_close(EasyContext *easy_context) noexcept {
-  dl::critical_section_call(curl_easy_cleanup, easy_context->easy_handle);
-  easy_context->cleanup_slists_and_posts();
-  easy_context->~EasyContext();
-  dl::deallocate(easy_context, sizeof(EasyContext));
-}
-
-void multi_close(MultiContext *multi_context) noexcept {
-  dl::critical_section_call(curl_multi_cleanup, multi_context->multi_handle);
-  multi_context->~MultiContext();
-  dl::deallocate(multi_context, sizeof(MultiContext));
-}
-
 // this is a callback called from curl_easy_perform
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
-  dl::leave_critical_section();
-
-  auto length = static_cast<string::size_type>(size * nmemb);
   auto *easy_context = static_cast<EasyContext *>(userdata);
+  const size_t length = size * nmemb;
 
   if (easy_context->return_transfer) {
-    easy_context->result.append(data, length);
-  } else {
-    print(data, length);
+    return easy_context->received_data.push_string(data, length) ? length : 0;
   }
-
-  dl::enter_critical_section();
-  return size * nmemb;
+  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  print(data, length);
+  return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
 }
 
 // this is a callback called from curl_easy_perform
 int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
   if (type == CURLINFO_HEADER_OUT) {
-    dl::leave_critical_section();
-    static_cast<EasyContext *>(userdata)->header = string{buf, static_cast<string::size_type>(buf_len)};
-    dl::enter_critical_section();
+    static_cast<EasyContext *>(userdata)->received_header.push_string(buf, buf_len);
   }
   return 0;
 }
@@ -271,26 +256,31 @@ void off_option_setter(EasyContext *easy_context, CURLoption option, const mixed
 
 void linked_list_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   if (unlikely(!value.is_array())) {
-    php_warning("Value must be an array in function curl_setopt");
-    easy_context->error_num = BAD_CURL_OPTION;
-    snprintf(easy_context->error_msg, CURL_ERROR_SIZE, "Value must be an array, type of value is %s", value.get_type_c_str());
+    easy_context->on_bad_option_error("Value must be an array in function curl_setopt");
     return;
   }
 
-  const array<mixed> &v = value.to_array();
-  curl_slist *slist = nullptr;
-  for (auto p = v.begin(); p != v.end(); ++p) {
-    slist = dl::critical_section_call(curl_slist_append, slist, f$strval(p.get_value()).c_str());
-    if (unlikely(!slist)) {
-      php_warning("Can't build curl_slist. How is it possible?");
-      easy_context->error_num = BAD_CURL_OPTION;
-      snprintf(easy_context->error_msg, CURL_ERROR_SIZE, "Can't build curl_slist. How is it possible?");
-      return;
+  const auto &arr = value.as_array();
+  if (arr.empty()) {
+    return;
+  }
+
+  curl_slist *&slist = easy_context->slists_to_free.emplace_back();
+  for (auto p : arr) {
+    const auto str_value = f$strval(p.get_value());
+    {
+      dl::CriticalSectionGuard critical_section;
+      if (curl_slist *new_slist = curl_slist_append(slist, str_value.c_str())) {
+        slist = new_slist;
+        continue;
+      }
+      curl_slist_free_all(easy_context->slists_to_free.pop());
     }
+    easy_context->on_bad_option_error("Can't build curl_slist. How is it possible?");
+    return;
   }
 
   if (slist) {
-    easy_context->slists_to_free.push_back(slist);
     easy_context->set_option_safe(option, slist);
   }
 }
@@ -300,10 +290,10 @@ void private_option_setter(EasyContext *easy_context, CURLoption option, const m
   easy_context->private_data = value.to_string();
 }
 
-template<size_t OPTION_OFFSET, typename T, size_t N>
+template<size_t OPTION_OFFSET, class T, size_t N>
 void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_context, CURLoption option, const mixed &value) noexcept {
   long val = static_cast<long>(value.to_int());
-  if (easy_context->check_option_value<OPTION_OFFSET, N>(val, "parameter value", "curl_setopt")) {
+  if (easy_context->check_option_value<OPTION_OFFSET, N>(val)) {
     val = options[val - OPTION_OFFSET];
     easy_context->set_option_safe(option, val);
   }
@@ -339,7 +329,7 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
 void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   long val = static_cast<long>(value.to_int());
   constexpr size_t OPTION_OFFSET = 600000;
-  if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val, "parameter value", "curl_setopt")) {
+  if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val)) {
     val -= OPTION_OFFSET;
     val = (val & 1) * CURLAUTH_BASIC +
           ((val >> 1) & 1) * CURLAUTH_DIGEST +
@@ -366,49 +356,49 @@ void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, cons
 }
 
 void post_fields_option_setter(EasyContext *easy_context, CURLoption, const mixed &value) {
-  if (value.is_array()) {
-    const array<mixed> &postfields = value.to_array();
-
-    curl_httppost *first = nullptr;
-    curl_httppost *last = nullptr;
-
-    for (auto p = postfields.begin(); p != postfields.end(); ++p) {
-      const string key = f$strval(p.get_key());
-      const string v = f$strval(p.get_value());
-
-      if (unlikely(v[0] == '@')) {
-        php_critical_error ("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
-      }
-
-      dl::CriticalSectionGuard critical_section;
-      easy_context->error_num = curl_formadd(&first, &last,
-                                             CURLFORM_COPYNAME, key.c_str(),
-                                             CURLFORM_NAMELENGTH, static_cast<long>(key.size()),
-                                             CURLFORM_COPYCONTENTS, v.c_str(),
-                                             CURLFORM_CONTENTSLENGTH, static_cast<long>(v.size()),
-                                             CURLFORM_END);
-      if (easy_context->error_num != 0) {
-        easy_context->error_num += CURL_LAST;
-        break;
-      }
-    }
-
-    if (unlikely(easy_context->error_num != CURLE_OK)) {
-      dl::critical_section_call(curl_formfree, first);
-      php_warning("Call to curl_formadd has failed");
-      easy_context->error_num = BAD_CURL_OPTION;
-      snprintf(easy_context->error_msg, CURL_ERROR_SIZE, "Call to curl_formadd has failed");
-      return;
-    }
-
-    if (first != nullptr) {
-      easy_context->httpposts_to_free.push_back(first);
-      easy_context->set_option_safe(CURLOPT_HTTPPOST, first);
-    }
-  } else {
-    string post = value.to_string();
+  if (!value.is_array()) {
+    const string post = value.to_string();
     easy_context->set_option(CURLOPT_POSTFIELDSIZE, post.size());
     easy_context->set_option_safe(CURLOPT_COPYPOSTFIELDS, post.c_str());
+    return;
+  }
+
+  const auto &arr = value.as_array();
+  if (arr.empty()) {
+    return;
+  }
+
+  curl_httppost *&first = easy_context->httpposts_to_free.emplace_back();
+  curl_httppost *last = nullptr;
+  for (auto p : arr) {
+    const string key = f$strval(p.get_key());
+    const string v = f$strval(p.get_value());
+
+    if (unlikely(!v.empty() && v[0] == '@')) {
+      php_critical_error ("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
+    }
+
+    dl::CriticalSectionGuard critical_section;
+    easy_context->error_num = curl_formadd(&first, &last,
+                                           CURLFORM_COPYNAME, key.c_str(),
+                                           CURLFORM_NAMELENGTH, static_cast<long>(key.size()),
+                                           CURLFORM_COPYCONTENTS, v.c_str(),
+                                           CURLFORM_CONTENTSLENGTH, static_cast<long>(v.size()),
+                                           CURLFORM_END);
+    if (easy_context->error_num != CURL_FORMADD_OK) {
+      easy_context->error_num += CURL_LAST;
+      break;
+    }
+  }
+
+  if (unlikely(easy_context->error_num != CURLE_OK)) {
+    dl::critical_section_call([&] { curl_formfree(easy_context->httpposts_to_free.pop()); });
+    easy_context->on_bad_option_error("Call to curl_formadd has failed");
+    return;
+  }
+
+  if (first != nullptr) {
+    easy_context->set_option_safe(CURLOPT_HTTPPOST, first);
   }
 }
 
@@ -583,7 +573,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
-  if (easy_context->check_option_value<CURLOPT_OPTION_OFFSET, curlopt_options.size()>(option, "parameter option", "curl_setopt")) {
+  if (easy_context->check_option_value<CURLOPT_OPTION_OFFSET, curlopt_options.size()>(option)) {
     auto curl_option = curlopt_options[option - CURLOPT_OPTION_OFFSET];
     easy_context->error_num = CURLE_OK;
     curl_option.option_setter(easy_context, curl_option.option, value);
@@ -601,34 +591,30 @@ void off_multi_option_setter(MultiContext *multi_context, CURLMoption option, in
 
 } // namespace
 
-void init_curl_lib() noexcept;
-
 curl_easy f$curl_init(const string &url) noexcept {
-  init_curl_lib();
+  auto &easy_contexts = vk::singleton<CurlContexts>::get().easy_contexts;
+  EasyContext *&easy_context = easy_contexts.emplace_back();
+  easy_context = new(dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
 
-  CURL *easy_handle = dl::critical_section_call(curl_easy_init);
-  if (unlikely(easy_handle == nullptr)) {
+  dl::critical_section_call([&easy_context] { easy_context->easy_handle = curl_easy_init(); });
+  if (unlikely(!easy_context->easy_handle)) {
+    dl::critical_section_call([&easy_contexts] { easy_contexts.pop()->release(); });
     php_warning("Could not initialize a new curl easy handle");
     return 0;
   }
 
-  const int64_t curl_handler_id = CurlContexts::get()->easy_contexts.count() + 1;
-  auto *easy_context = static_cast<EasyContext *>(dl::allocate(sizeof(EasyContext)));
-  new(easy_context) EasyContext(easy_handle, curl_handler_id);
   easy_context->set_default_options();
-
-  if (!url.empty() && easy_context->set_option_safe(CURLOPT_URL, url.c_str()) != CURLE_OK) {
+  if (unlikely(!url.empty() && easy_context->set_option_safe(CURLOPT_URL, url.c_str()) != CURLE_OK)) {
+    dl::critical_section_call([&easy_contexts] { easy_contexts.pop()->release(); });
     php_warning("Could not set url to a new curl easy handle");
-    easy_close(easy_context);
     return 0;
   }
-
-  CurlContexts::get()->easy_contexts.push_back(easy_context);
-  return curl_handler_id;
+  return easy_context->self_id;
 }
 
 void f$curl_reset(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    dl::CriticalSectionGuard critical_section;
     curl_easy_reset(easy_context->easy_handle);
     easy_context->return_transfer = false;
     easy_context->private_data = false;
@@ -650,7 +636,7 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexce
 
 bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    for (auto p = options.begin(); p != options.end(); ++p) {
+    for (auto p : options) {
       if (!curl_setopt(easy_context, p.get_key().to_int(), p.get_value())) {
         php_warning("Can't set curl option \"%s\"", p.get_key().to_string().c_str());
         return false;
@@ -675,7 +661,7 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   }
 
   if (easy_context->return_transfer) {
-    return easy_context->result;
+    return easy_context->received_data.concat_and_get_string();
   }
 
   return true;
@@ -714,12 +700,12 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     easy_context->add_info_into_array(result, "primary_port", CURLINFO_PRIMARY_PORT);
     easy_context->add_info_into_array(result, "local_ip", CURLINFO_LOCAL_IP);
     easy_context->add_info_into_array(result, "local_port", CURLINFO_LOCAL_PORT);
-    result.set_value(string{"request_header"}, easy_context->header);
+    result.set_value(string{"request_header"}, easy_context->received_header.concat_and_get_string());
     return result;
   }
 
   if (option == CURLOPT_INFO_HEADER_OUT) {
-    return easy_context->header;
+    return easy_context->received_header.concat_and_get_string();
   }
 
   constexpr static auto curlinfo_options = vk::to_array<CURLINFO>(
@@ -765,7 +751,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     });
 
   constexpr size_t CURLINFO_OPTION_OFFSET = 100000;
-  return easy_context->check_option_value<CURLINFO_OPTION_OFFSET, curlinfo_options.size()>(option, "parameter option", "curl_getinfo", false)
+  return easy_context->check_option_value<CURLINFO_OPTION_OFFSET, curlinfo_options.size()>(option, false)
          ? easy_context->get_info(curlinfo_options[option - CURLINFO_OPTION_OFFSET])
          : false;
 }
@@ -782,25 +768,24 @@ int64_t f$curl_errno(curl_easy easy_id) noexcept {
 
 void f$curl_close(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    CurlContexts::get()->easy_contexts.set_value(easy_id - 1, nullptr);
-    easy_close(easy_context);
+    dl::CriticalSectionGuard critical_section;
+    vk::singleton<CurlContexts>::get().easy_contexts.set_value(easy_id - 1, nullptr);
+    easy_context->release();
   }
 }
 
 curl_multi f$curl_multi_init() noexcept {
-  init_curl_lib();
+  auto &multi_contexts = vk::singleton<CurlContexts>::get().multi_contexts;
+  MultiContext *&multi = multi_contexts.emplace_back();
+  multi = new(dl::allocate(sizeof(MultiContext))) MultiContext;
 
-  CURLM *multi_handle = dl::critical_section_call(curl_multi_init);
-  if (unlikely(multi_handle == nullptr)) {
+  dl::critical_section_call([&multi] { multi->multi_handle = curl_multi_init(); });
+  if (unlikely(multi->multi_handle == nullptr)) {
+    dl::critical_section_call([&multi_contexts] { multi_contexts.pop()->release(); });
     php_warning("Could not initialize a new curl multi handle");
     return 0;
   }
-
-  auto *multi = static_cast<MultiContext *>(dl::allocate(sizeof(MultiContext)));
-  new(multi) MultiContext{multi_handle};
-
-  CurlContexts::get()->multi_contexts.push_back(multi);
-  return CurlContexts::get()->multi_contexts.count();
+  return multi_contexts.count();
 }
 
 Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
@@ -816,7 +801,7 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
 
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    return easy_context->return_transfer ? easy_context->result : Optional<string>{};
+    return easy_context->return_transfer ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
   return false;
 }
@@ -845,7 +830,7 @@ bool f$curl_multi_setopt(curl_multi multi_id, int64_t option, int64_t value) noe
     });
 
   constexpr size_t CURLMULTI_OPTION_OFFSET = 1000;
-  if (multi_context->check_option_value<CURLMULTI_OPTION_OFFSET, multi_options.size()>(option, "parameter option", "curl_multi_setopt")) {
+  if (multi_context->check_option_value<CURLMULTI_OPTION_OFFSET, multi_options.size()>(option)) {
     auto multi_option = multi_options[option - CURLMULTI_OPTION_OFFSET];
     multi_context->error_num = CURLM_OK;
     multi_option.option_setter(multi_context, multi_option.option, value);
@@ -890,7 +875,7 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
       void *id_as_ptr = nullptr;
       dl::critical_section_call([&] { curl_easy_getinfo (msg->easy_handle, CURLINFO_PRIVATE, &id_as_ptr); });
       const auto curl_handler_id = static_cast<int64_t>(reinterpret_cast<size_t>(id_as_ptr));
-      const auto *easy_handle = CurlContexts::get()->easy_contexts.find_value(curl_handler_id - 1);
+      const auto *easy_handle = vk::singleton<CurlContexts>::get().easy_contexts.find_value(curl_handler_id - 1);
       if (easy_handle && (*easy_handle)->easy_handle == msg->easy_handle) {
         (*easy_handle)->error_num = msg->data.result;
         result.set_value(string{"handle"}, curl_handler_id);
@@ -918,8 +903,8 @@ Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
 
 void f$curl_multi_close(curl_multi multi_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
-    CurlContexts::get()->multi_contexts.set_value(multi_id - 1, nullptr);
-    multi_close(multi_context);
+    vk::singleton<CurlContexts>::get().multi_contexts.set_value(multi_id - 1, nullptr);
+    multi_context->release();
   }
 }
 
@@ -931,45 +916,24 @@ Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept {
   return err_str ? string{err_str} : Optional<string>{};
 }
 
-void init_curl_lib() noexcept {
-  if (dl::query_num != CurlContexts::get().get_query_tag()) {
-    const CURLcode result = dl::critical_section_call([] {
-      return curl_global_init_mem(
-        CURL_GLOBAL_ALL,
-        dl::script_allocator_malloc,
-        dl::script_allocator_free,
-        dl::script_allocator_realloc,
-        dl::script_allocator_strdup,
-        dl::script_allocator_calloc);
-    });
-
-    if (result != CURLE_OK) {
-      php_critical_error ("can't initialize curl");
-    }
-
-    CurlContexts::get().init(dl::query_num);
+void global_init_curl_lib() noexcept {
+  if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+    php_critical_error ("can't initialize curl");
   }
+}
+
+template<class CTX>
+void clear_contexts(array<CTX *> &contexts) {
+  for (auto it : contexts) {
+    if (auto easy_context = it.get_value()) {
+      easy_context->release();
+    }
+  }
+  hard_reset_var(contexts);
 }
 
 void free_curl_lib() noexcept {
   dl::CriticalSectionGuard critical_section;
-  if (dl::query_num == CurlContexts::get().get_query_tag()) {
-    for (auto it = CurlContexts::get()->easy_contexts.cbegin(); it != CurlContexts::get()->easy_contexts.cend(); ++it) {
-      if (auto easy_context = it.get_value()) {
-        easy_close(easy_context);
-      }
-    }
-
-    for (auto it = CurlContexts::get()->multi_contexts.cbegin(); it != CurlContexts::get()->multi_contexts.cend(); ++it) {
-      if (auto multi_context = it.get_value()) {
-        multi_close(multi_context);
-      }
-    }
-
-    curl_global_cleanup();
-    CurlContexts::get().hard_reset();
-    // curl_global_cleanup() from libcurl de-initializes openssl completely
-    // TODO: understand how to live without curl_global_cleanup() and remove this kludge from here
-    reinit_openssl_lib_hack();
-  }
+  clear_contexts(vk::singleton<CurlContexts>::get().easy_contexts);
+  clear_contexts(vk::singleton<CurlContexts>::get().multi_contexts);
 }

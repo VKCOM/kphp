@@ -52,6 +52,7 @@ void f$curl_multi_close(curl_multi multi_id) noexcept;
 
 Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept;
 
+void global_init_curl_lib() noexcept;
 void free_curl_lib() noexcept;
 
 
