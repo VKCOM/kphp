@@ -10,9 +10,10 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <libkern/OSByteOrder.h>
+#include <malloc/malloc.h>
 #include <sys/socket.h>
-#include <unistd.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 
 #define htobe64(x) OSSwapHostToBigInt64(x)
 #define htole64(x) OSSwapHostToLittleInt64(x)
@@ -136,6 +137,10 @@ struct mallinfo_port {
 inline mallinfo_port mallinfo() noexcept {
   return mallinfo_port{};
 };
+
+inline size_t malloc_usable_size(void *ptr) noexcept {
+  return malloc_size(ptr);
+}
 
 #else
 

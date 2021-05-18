@@ -9,12 +9,12 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <curl/multi.h>
-#include <malloc.h>
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/string-list.h"
 
+#include "common/macos-ports.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
 
@@ -199,7 +199,6 @@ struct CurlContexts : vk::not_copyable {
 
 private:
   CurlContexts() = default;
-
   friend class vk::singleton<CurlContexts>;
 };
 
