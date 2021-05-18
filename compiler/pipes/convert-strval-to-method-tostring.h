@@ -17,4 +17,5 @@ public:
 private:
   static VertexPtr process_convert(VertexAdaptor<op_conv_string> conv);
   static VertexPtr convert_var_to_call_to_string_method(VertexAdaptor<op_var> var);
+  static void handle_print_r_call(VertexAdaptor<op_func_call> &call);
 };

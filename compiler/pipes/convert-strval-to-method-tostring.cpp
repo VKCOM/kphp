@@ -49,9 +49,33 @@ VertexPtr ConvertStrValToMagicMethodToStringPass::convert_var_to_call_to_string_
 }
 
 VertexPtr ConvertStrValToMagicMethodToStringPass::on_exit_vertex(VertexPtr root) {
+  if (root->type() == op_func_call) {
+    auto call = root.as<op_func_call>();
+    if (call->func_id->name == "print_r") {
+      handle_print_r_call(call);
+    }
+  }
+
   if (root->type() == op_conv_string) {
     return process_convert(root.as<op_conv_string>());
   }
 
   return root;
+}
+
+void ConvertStrValToMagicMethodToStringPass::handle_print_r_call(VertexAdaptor<op_func_call> &call) {
+  auto args = call->args();
+  for (auto &arg : args) {
+    auto var = arg.try_as<op_var>();
+    if (!var) {
+      continue;
+    }
+
+    auto call_func = convert_var_to_call_to_string_method(var);
+    if (!call_func) {
+      continue;
+    }
+
+    arg = call_func;
+  }
 }
