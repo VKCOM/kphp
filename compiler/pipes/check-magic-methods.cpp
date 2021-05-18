@@ -23,14 +23,14 @@ VertexPtr CheckMagicMethods::process_func(VertexAdaptor<op_function> func) {
   stage::set_function(fun);
 
   auto count_args = fun->param_ids.size();
-  kphp_error(count_args == 1, fmt_format("magic method {} cannot take arguments", fun->get_human_readable_name()));
+  kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
 
   const auto *ret_type = tinf::get_type(fun, -1);
   if (!ret_type) {
     return func;
   }
 
-  kphp_error(ret_type->ptype() == tp_string, fmt_format("magic method {} must have string return type", fun->get_human_readable_name()));
+  kphp_error(ret_type->ptype() == tp_string, fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
 
   return func;
 }
