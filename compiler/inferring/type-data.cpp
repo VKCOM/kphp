@@ -769,6 +769,22 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
         }
         break;
       case tp_string:
+// TODO:
+
+//        if (tp == tp_Class) {
+//          auto klass = given->class_type();
+//          if (klass && klass->has_to_string) {
+//            return true;
+//          }
+//
+//          return false;
+//        }
+
+        if (tp == expected->ptype()) {
+          return true;
+        }
+        break;
+
       case tp_int:
       case tp_float:
       case tp_bool:

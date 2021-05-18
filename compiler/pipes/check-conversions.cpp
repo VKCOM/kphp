@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/check-conversions.h"
+#include "compiler/data/class-data.h"
 
 #include "common/termformat/termformat.h"
 
@@ -59,6 +60,13 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
     }
 
     auto is_forbidden_conversion = std::any_of(range.first, range.second, [=](auto &operation_and_type) {
+      const auto klass = converted_expr_type->class_type();
+      if (klass && operation_and_type.first == op_conv_string) {
+        if (klass->has_to_string) {
+          return false;
+        }
+      }
+
       // we do this so the op_conv_bool doesn't report T|false and T|null, but report T.
       bool is_conversion_of_optional = operation_and_type.first == op_conv_bool && converted_expr_type->use_optional();
 

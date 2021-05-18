@@ -59,6 +59,7 @@ public:
   bool is_tl_class{false};
   bool has_custom_constructor{false};
   bool is_serializable{false};
+  bool has_to_string{false};
 
   SrcFilePtr file_id;
   int location_line_num{-1};
@@ -78,6 +79,7 @@ public:
   static const char *NAME_OF_CLONE;
   static const char *NAME_OF_CONSTRUCT;
   static const char *NAME_OF_INVOKE_METHOD;
+  static const char *NAME_OF_TO_STRING;
 
   ClassData();
 

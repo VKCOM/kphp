@@ -28,8 +28,8 @@
 #include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/lexer.h"
 #include "compiler/make/make.h"
-#include "compiler/pipes/analyzer.h"
 #include "compiler/pipes/analyze-performance.h"
+#include "compiler/pipes/analyzer.h"
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
@@ -40,17 +40,18 @@
 #include "compiler/pipes/calc-val-ref.h"
 #include "compiler/pipes/cfg-end.h"
 #include "compiler/pipes/cfg.h"
-#include "compiler/pipes/check-type-hint-variance.h"
 #include "compiler/pipes/check-abstract-function-defaults.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-function-calls.h"
+#include "compiler/pipes/check-magic-methods.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
 #include "compiler/pipes/check-restrictions.h"
 #include "compiler/pipes/check-tl-classes.h"
+#include "compiler/pipes/check-type-hint-variance.h"
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/clone-strange-const-params.h"
 #include "compiler/pipes/code-gen.h"
@@ -59,6 +60,7 @@
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
+#include "compiler/pipes/convert-strval-to-method-tostring.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
@@ -68,12 +70,12 @@
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
-#include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/inline-defines-usages.h"
+#include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
-#include "compiler/pipes/parse.h"
 #include "compiler/pipes/parse-and-apply-phpdoc.h"
+#include "compiler/pipes/parse.h"
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-exceptions.h"
@@ -274,8 +276,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
+    >> PassC<CheckMagicMethods>{}
     >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}
+    >> PassC<ConvertStrValToMagicMethodToStringPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<FixReturnsPass>{}
     >> PassC<CalcValRefPass>{}
