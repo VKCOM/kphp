@@ -1021,6 +1021,11 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       int result_len = raw->total_bytes - static_cast<int>(sizeof(int) + sizeof(long long));
       assert(result_len >= 0);
 
+      if (result_len == 0) {
+        log_server_warning("Got empty RPC result from %s, op = 0x%08x", pid_to_print(&remote_pid), static_cast<unsigned>(op));
+        return 0;
+      }
+
       tl_fetch_init_raw_message(raw);
 
       auto op_from_tl = tl_fetch_int();
