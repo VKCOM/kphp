@@ -78,6 +78,9 @@ public:
   }
 
   IdData *operator->() const {
+    if (!ptr) {
+      printf("bp\n");
+    }
     kphp_assert(ptr != nullptr);
     return ptr;
   }

@@ -83,6 +83,7 @@ public:
 
   bool register_define(DefinePtr def_id);
   DefinePtr get_define(const string &name);
+  std::pair<DefinePtr, std::string> find_define(SrcFilePtr context, const std::string &define_name);
 
   VarPtr create_var(const string &name, VarData::Type type);
   VarPtr get_global_var(const string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);

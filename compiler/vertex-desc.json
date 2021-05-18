@@ -139,7 +139,13 @@
     "base_name": "meta_op_base"
   },
   {
-    "comment": "define(name(), value())",
+    "comment": "`define(name(), value())` or `const name() = value()`",
+    "extra_fields": {
+      "is_const_stmt": {
+        "type": "bool",
+        "default": "false"
+      }
+    },
     "sons": {
       "name": 0,
       "value": 1

@@ -5,6 +5,7 @@
 #include "compiler/pipes/collect-required-and-classes.h"
 
 #include "common/wrappers/likely.h"
+#include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -144,7 +145,7 @@ private:
     auto file = require_file(name, true);
     kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
     VertexPtr call = VertexAdaptor<op_func_call>::create();
-    call->set_string(file->main_func_name);
+    call->set_string("\\" + file->main_func_name);
     call->location = root->location;
     if (once) {
       VertexPtr cond = VertexAdaptor<op_log_not>::create(file->get_main_func_run_var());
@@ -210,9 +211,15 @@ public:
     }
 
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
-      auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);
-      if (!full_static_name.empty()) {
-        require_function(full_static_name);
+      auto func_name = resolve_func_name(current_function, root);
+      if (!func_name.value.empty()) {
+        printf("{require} %s\n", func_name.value.c_str());
+        require_function(func_name.value);
+        if (func_name.is_unqualified() && !current_function->file_id->namespace_name.empty()) {
+          auto namespaced_name = replace_backslashes(current_function->file_id->namespace_name) + "$" + func_name.value;
+          printf("<require> %s\n", namespaced_name.c_str());
+          require_function(namespaced_name);
+        }
       }
     }
 

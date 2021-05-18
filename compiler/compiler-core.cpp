@@ -361,6 +361,17 @@ DefinePtr CompilerCore::get_define(const string &name) {
   return defines_ht.at(vk::std_hash(name))->data;
 }
 
+std::pair<DefinePtr, std::string> CompilerCore::find_define(SrcFilePtr context, const std::string &define_name) {
+  auto name = resolve_define_name(context, define_name);
+  if (name.is_unqualified() && !context->namespace_name.empty()) {
+    std::string namespaced_name = context->namespace_name + "$" + define_name;
+    if (auto d = G->get_define(namespaced_name)) {
+      return {d, namespaced_name};
+    }
+  }
+  return {G->get_define(name.value), name.value};
+}
+
 VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
   VarPtr var = VarPtr(new VarData(type));
   var->name = name;

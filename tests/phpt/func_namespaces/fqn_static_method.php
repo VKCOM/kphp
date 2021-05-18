@@ -12,6 +12,8 @@ class Foo {
 
 \Foo::f();
 var_dump(\VK\Utils\Foo::f());
+var_dump(VK\Utils\Foo::f());
 var_dump(\Utils\Foo::f());
+var_dump(Utils\Foo::f());
 var_dump(VK\Utils\Foo::f());
 var_dump(Utils\Foo::f());

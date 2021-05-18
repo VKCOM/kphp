@@ -38,7 +38,12 @@ private:
 public:
   int id = -1;
 
-  string name;        // full function name; when it belongs to a class it looks like VK$Namespace$funcname
+  // get_full_static_member_name should be used to get a fully resolved name
+  //
+  // when it belongs to a class it looks like Namespace$Class$funcname
+  // when it's a freestanding function it looks like Namespace$funcname
+  string name;
+
   VertexAdaptor<op_function> root;
   bool is_required = false;
 

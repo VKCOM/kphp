@@ -171,7 +171,8 @@ protected:
 struct CheckConstWithDefines final
   : CheckConst {
 public:
-  bool is_const(VertexPtr v) {
+  bool is_const(VertexPtr v, SrcFilePtr src_file) {
+    file = src_file;
     return visit(v);
   }
 
@@ -181,8 +182,8 @@ protected:
   }
 
   bool on_func_name(VertexAdaptor<op_func_name> v) final {
-    std::string name = resolve_define_name(v->str_val);
-    DefinePtr define = G->get_define(name);
+    DefinePtr define;
+    std::tie(define, std::ignore) = G->find_define(file, v->get_string());
     if (define) {
       return visit(define->val);
     }
@@ -208,21 +209,25 @@ protected:
 
 private:
   int in_concat = 0;
+  SrcFilePtr file;
 };
 
 struct CheckConstAccess final
   : CheckConst {
 private:
   ClassPtr caller_class_id;
+  SrcFilePtr file;
 public:
-  void check(VertexPtr v, ClassPtr class_id) {
+  void check(VertexPtr v, ClassPtr class_id, SrcFilePtr src_file) {
     caller_class_id = class_id;
+    file = src_file;
     visit(v);
   }
 
   bool on_func_name(VertexAdaptor<op_func_name> v) final {
-    auto define = G->get_define(resolve_define_name(v->str_val));
-    if (define->class_id) {
+    DefinePtr define;
+    std::tie(define, std::ignore) = G->find_define(file, v->get_string());
+    if (define && define->class_id) {
       check_access(caller_class_id, ClassPtr{nullptr}, FieldModifiers{define->access}, define->class_id, "const", define->name);
     }
 
@@ -233,6 +238,14 @@ public:
 struct MakeConst final
   : ConstManipulations<VertexPtr> {
 public:
+  VertexPtr make_const(VertexPtr v, SrcFilePtr src_file) {
+    file = src_file;
+    return make_const(v);
+  }
+
+private:
+  SrcFilePtr file;
+
   VertexPtr make_const(VertexPtr v) {
     return visit(v);
   }
@@ -274,8 +287,9 @@ protected:
   }
 
   VertexPtr on_func_name(VertexAdaptor<op_func_name> v) final {
-    std::string name = resolve_define_name(v->str_val);
-    return G->get_define(name)->val;
+    DefinePtr define;
+    std::tie(define, std::ignore) = G->find_define(file, v->get_string());
+    return define->val;
   }
 
   VertexPtr on_non_const(VertexPtr v) final {

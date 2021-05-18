@@ -18,7 +18,7 @@ private:
   CheckConstAccess check_const_access;
   MakeConst make_const;
 
-  void process_define_recursive(VertexPtr root);
+  void process_define_recursive(SrcFilePtr file, VertexPtr root);
   void process_define(DefinePtr def);
 
   void print_error_infinite_define(DefinePtr cur_def);

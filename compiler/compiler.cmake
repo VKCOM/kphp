@@ -116,6 +116,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-type-hint-variance.cpp
         check-tl-classes.cpp
         check-ub.cpp
+        check-requires.cpp
         clone-strange-const-params.cpp
         code-gen.cpp
         collect-const-vars.cpp

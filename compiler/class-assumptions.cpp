@@ -633,11 +633,8 @@ Assumption infer_from_var(FunctionPtr f,
 Assumption infer_from_call(FunctionPtr f,
                            VertexAdaptor<op_func_call> call,
                            size_t depth) {
-  const std::string &fname = call->extra_type == op_ex_func_call_arrow
-                             ? resolve_instance_func_name(f, call)
-                             : get_full_static_member_name(f, call->str_val);
-
-  const FunctionPtr ptr = G->get_function(fname);
+  auto fname = call->get_string();
+  FunctionPtr ptr = G->get_function(resolve_func_name(f, call).value);
   if (!ptr) {
     kphp_error(0, fmt_format("{}() is undefined, can not infer class", fname));
     return Assumption::not_instance();

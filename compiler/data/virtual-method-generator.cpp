@@ -27,7 +27,7 @@ VertexAdaptor<op_func_call> create_call_with_var_and_class_name_params(VertexAda
 
 VertexAdaptor<op_func_call> create_instance_cast_to(VertexAdaptor<op_var> instance_var, ClassPtr derived) {
   auto cast_to_derived = create_call_with_var_and_class_name_params(instance_var, derived);
-  cast_to_derived->set_string("instance_cast");
+  cast_to_derived->set_string("\\instance_cast");
   return cast_to_derived;
 }
 

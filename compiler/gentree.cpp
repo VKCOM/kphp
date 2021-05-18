@@ -224,6 +224,8 @@ VertexAdaptor<op_require> GenTree::get_require(bool once) {
 
 template<Operation Op, Operation EmptyOp>
 VertexAdaptor<Op> GenTree::get_func_call() {
+  use_function_allowed_ = false;
+
   auto location = auto_location();
   string name{cur->str_val};
   next_cur();
@@ -430,7 +432,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       if (is_anonymous_function_name(cur_function->name)) {
         fun_name = "{closure}";
       } else if (!cur_function->is_main_function()) {
-        fun_name = cur_function->name.substr(cur_function->name.rfind('$') + 1);
+        if (vk::contains(cur_function->name, "$$")) {
+          fun_name = cur_function->name.substr(cur_function->name.rfind('$') + 1);
+        } else {
+          fun_name = replace_characters(cur_function->name, '$', '\\');
+        }
       }
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, fun_name);
       next_cur();
@@ -504,7 +510,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       first_node = get_expression();
       CE (!kphp_error(first_node, "Failed to get print argument"));
       auto print = VertexAdaptor<op_func_call>::create(first_node).set_location(location);
-      print->str_val = "print";
+      print->str_val = "\\print";
       res = print;
       break;
     }
@@ -541,16 +547,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       }
       cur--;
 
-      // we don't support namespaces for functions yet, but we
-      // permit \func() syntax and interpret it as func();
-      // this logic is compatible with what we'll get after the
-      // function namespaces will be implemented
-      auto func_call = get_func_call<op_func_call, op_none>();
-      if (func_call->str_val[0] == '\\' && !vk::contains(func_call->str_val, "::")) {
-        func_call->str_val.erase(0, 1);
-      }
-
-      res = func_call;
+      res = get_func_call<op_func_call, op_none>();
       return_flag = was_arrow;
       break;
     }
@@ -1471,6 +1468,11 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     }
     if (cur_class) { // fname inside a class is full$class$name$$fname
       func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
+    } else {
+      if (!processing_file->namespace_name.empty()) {
+        func_name = replace_backslashes(processing_file->namespace_name) + "$" + func_name;
+      }
+      kphp_error(!vk::contains(file_function_aliases, func_name), fmt_format("Cannot declare function {} because the name is already in use", func_name));
     }
   }
 
@@ -1753,7 +1755,7 @@ VertexAdaptor<op_func_call> GenTree::generate_critical_error(std::string msg) {
   msg_v->str_val = std::move(msg);
 
   auto critical_error_v = VertexAdaptor<op_func_call>::create(msg_v);
-  critical_error_v->str_val = "critical_error";
+  critical_error_v->str_val = "\\critical_error";
 
   return critical_error_v;
 }
@@ -1773,9 +1775,22 @@ void GenTree::get_traits_uses() {
 void GenTree::get_use() {
   kphp_assert(test_expect(tok_use));
 
+  auto *dst = &processing_file->namespace_uses;
+
   do {
     next_cur();
+
+    auto tok = cur;
+    if (tok->type() == tok_function) {
+      dst = &processing_file->function_uses;
+      next_cur();
+    } else if (tok->type() == tok_const) {
+      dst = &processing_file->const_uses;
+      next_cur();
+    }
+
     auto name = cur->str_val;
+
     if (!expect(tok_func_name, "<namespace path>")) {
       return;
     }
@@ -1796,7 +1811,15 @@ void GenTree::get_use() {
       }
     }
 
-    kphp_error(processing_file->namespace_uses.emplace(alias, name).second, "Duplicate 'use' at the top of the file");
+    if (dst == &processing_file->function_uses) {
+      kphp_error(use_function_allowed_, "'use' should be used at the top of the file");
+      file_function_aliases.emplace(alias);
+    }
+    if (dst == &processing_file->const_uses) {
+      kphp_error(use_const_allowed_, "'use' should be used at the top of the file");
+      file_const_aliases.emplace(alias);
+    }
+    kphp_error(dst->emplace(alias, name).second, "Duplicate 'use' at the top of the file");
   } while (test_expect(tok_comma));
 
   expect(tok_semicolon, "';'");
@@ -1974,7 +1997,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       auto res = get_multi_call<op_func_call, op_none>(&GenTree::get_expression, true);
       CE (res && check_statement_end());
       for (VertexPtr x : res->args()) {
-        x.as<op_func_call>()->str_val = "var_dump";
+        x.as<op_func_call>()->str_val = "\\var_dump";
       }
       if (res->size() == 1) {
         return res->args()[0];
@@ -1982,6 +2005,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return res;
     }
     case tok_define: {
+      use_const_allowed_ = false;
       auto res = get_func_call<op_define, op_err>();
       CE (check_statement_end());
       return res;
@@ -2035,7 +2059,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_echo: {
       auto res = get_multi_call<op_func_call, op_err>(&GenTree::get_expression);
       for (VertexPtr x : res->args()) {
-        x.as<op_func_call>()->str_val = "echo";
+        x.as<op_func_call>()->str_val = "\\echo";
       }
       CE (check_statement_end());
       return res;
@@ -2043,7 +2067,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_dbg_echo: {
       auto res = get_multi_call<op_func_call, op_err>(&GenTree::get_expression);
       for (VertexPtr x : res->args()) {
-        x.as<op_func_call>()->str_val = "dbg_echo";
+        x.as<op_func_call>()->str_val = "\\dbg_echo";
       }
       CE (check_statement_end());
       return res;
@@ -2083,6 +2107,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return get_phpdoc_inside_function();
     }
     case tok_function:
+      use_function_allowed_ = false;
       if (cur_class) {      // no access modifier implies 'public'
         return get_class_member(phpdoc_str);
       }
@@ -2110,7 +2135,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       html_code->str_val = static_cast<string>(cur->str_val);
 
       auto echo_cmd = VertexAdaptor<op_func_call>::create(html_code).set_location(auto_location());
-      echo_cmd->str_val = "print";
+      echo_cmd->str_val = "\\print";
       next_cur();
       return echo_cmd;
     }
@@ -2125,6 +2150,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return {};
     }
     case tok_const: {
+      use_const_allowed_ = false;
       return get_const(AccessModifiers::public_);
     }
     case tok_use: {
@@ -2196,7 +2222,9 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
 
   auto name = VertexAdaptor<op_string>::create();
   name->str_val = const_name;
-  return VertexAdaptor<op_define>::create(name, v).set_location(location);
+  auto define = VertexAdaptor<op_define>::create(name, v).set_location(location);
+  define->is_const_stmt = true;
+  return define;
 }
 
 void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint) {

@@ -31,8 +31,11 @@ public:
   std::vector<vk::string_view> lines;
 
   std::string namespace_name;
+
   // 'use' mappings from the beginning of the file
-  std::map<vk::string_view, vk::string_view> namespace_uses;
+  std::map<vk::string_view, vk::string_view> namespace_uses; // use <typename_or_namespace>
+  std::map<vk::string_view, vk::string_view> function_uses; // use function <func>
+  std::map<vk::string_view, vk::string_view> const_uses; // use const <const>
 
   SrcFile() = default;
   SrcFile(std::string file_name, std::string short_file_name, LibPtr owner_lib_id) :

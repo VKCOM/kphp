@@ -12,7 +12,8 @@ VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root) {
   // define('NAME', constval) -> nothing (const values will be inlined)
   // define('NAME', f())      -> d$NAME = f()
   if (auto define_op = root.try_as<op_define>()) {
-    DefinePtr define = G->get_define(define_op->name()->get_string());
+    auto define_name = gen_define_name(current_function->file_id, define_op);
+    DefinePtr define = G->get_define(define_name);
 
     if (define->type() == DefineData::def_var) {
       auto var = VertexAdaptor<op_var>::create().set_location(root);

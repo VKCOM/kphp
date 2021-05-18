@@ -7,6 +7,8 @@
 #include "common/version-string.h"
 #include "common/wrappers/likely.h"
 
+#include "compiler/data/src-file.h"
+
 CalcRealDefinesValuesF::CalcRealDefinesValuesF() : Base() {
   auto val = VertexAdaptor<op_string>::create();
   val->set_string(G->settings().get_version());
@@ -28,10 +30,11 @@ void CalcRealDefinesValuesF::on_finish(DataStream<FunctionPtr> &os) {
   Base::on_finish(os);
 }
 
-void CalcRealDefinesValuesF::process_define_recursive(VertexPtr root) {
+void CalcRealDefinesValuesF::process_define_recursive(SrcFilePtr file, VertexPtr root) {
   if (root->type() == op_func_name) {
-    auto define_name = resolve_define_name(root->get_string());
-    DefinePtr define = G->get_define(define_name);
+    DefinePtr define;
+    std::string define_name;
+    std::tie(define, define_name) = G->find_define(file, root->get_string());
     if (define) {
       process_define(define);
     } else {
@@ -39,7 +42,7 @@ void CalcRealDefinesValuesF::process_define_recursive(VertexPtr root) {
     }
   }
   for (auto i : *root) {
-    process_define_recursive(i);
+    process_define_recursive(file, i);
   }
 }
 
@@ -59,18 +62,18 @@ void CalcRealDefinesValuesF::process_define(DefinePtr def) {
   in_progress.insert(&def->name);
   stack.push_back(&def->name);
 
-  process_define_recursive(def->val);
+  process_define_recursive(def->file_id, def->val);
   stage::set_location(def->val->location);
 
   in_progress.erase(&def->name);
   stack.pop_back();
 
-  if (check_const.is_const(def->val)) {
+  if (check_const.is_const(def->val, def->file_id)) {
     if (def->class_id) {
-      check_const_access.check(def->val, def->class_id);
+      check_const_access.check(def->val, def->class_id, def->file_id);
     }
     def->type() = DefineData::def_const;
-    def->val = make_const.make_const(def->val);
+    def->val = make_const.make_const(def->val, def->file_id);
     def->val->const_type = cnst_const_val;
   } else {
     def->type() = DefineData::def_var;

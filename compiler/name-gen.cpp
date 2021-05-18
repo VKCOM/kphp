@@ -5,6 +5,7 @@
 #include "compiler/name-gen.h"
 
 #include "common/algorithms/hashes.h"
+#include "common/algorithms/contains.h"
 #include "common/wrappers/likely.h"
 
 #include "compiler/compiler-core.h"
@@ -48,6 +49,63 @@ string gen_unique_name(const string& prefix, FunctionPtr function) {
   auto ph = vk::std_hash(prefix);
   auto &index = function->name_gen_map[ph];
   return replace_non_alphanum(prefix) + fmt_format("$u{:x}_{}", h, index++);
+}
+
+std::string gen_define_name(SrcFilePtr context, VertexAdaptor<op_define> def) {
+  VertexPtr name_expr = def->name();
+
+  kphp_error_act(name_expr->type() == op_string, "Define name should be a valid string", return "");
+
+  std::string name = name_expr->get_string();
+  if (def->is_const_stmt) {
+    if (!context->namespace_name.empty()) {
+      name = replace_backslashes(context->namespace_name) + "$" + name;
+    }
+  } else {
+    // define() argument can be FQN
+    name = replace_backslashes(name);
+  }
+  return name;
+}
+
+ResolveSymbolResult resolve_symbol_uses(SrcFilePtr resolve_context, const std::map<vk::string_view, vk::string_view> &uses, string symbol_name) {
+  if (symbol_name[0] == '\\') {
+    return {symbol_name.substr(1), ResolveSymbolResult::Kind::ResolvedName};
+  }
+
+  size_t slash_pos = symbol_name.find('\\');
+  if (slash_pos != string::npos) {
+    string first_name_part = symbol_name.substr(0, slash_pos);
+    auto uses_it = resolve_context->namespace_uses.find(first_name_part);
+    if (uses_it != resolve_context->namespace_uses.end()) {
+      return {static_cast<std::string>(uses_it->second) + symbol_name.substr(first_name_part.length()), ResolveSymbolResult::Kind::ResolvedName};
+    }
+    return {resolve_context->namespace_name.empty() ? symbol_name : resolve_context->namespace_name + "\\" + symbol_name, ResolveSymbolResult::Kind::ResolvedName};
+  }
+
+  if (!uses.empty()) {
+    auto uses_it = uses.find(symbol_name);
+    if (uses_it != uses.end()) {
+      return {static_cast<std::string>(uses_it->second), ResolveSymbolResult::Kind::ResolvedName};
+    }
+  }
+  return {symbol_name, ResolveSymbolResult::Kind::UnqualifiedName};
+}
+
+ResolveSymbolResult resolve_function_uses(SrcFilePtr resolve_context, const std::string &function_name, char delim) {
+  auto result = resolve_symbol_uses(resolve_context, resolve_context->function_uses, function_name);
+  if (delim != '\\') {
+    std::replace(result.value.begin(), result.value.end(), '\\', delim);
+  }
+  return result;
+}
+
+ResolveSymbolResult resolve_const_uses(SrcFilePtr resolve_context, const std::string &const_name, char delim) {
+  auto result = resolve_symbol_uses(resolve_context, resolve_context->const_uses, const_name);
+  if (delim != '\\') {
+    std::replace(result.value.begin(), result.value.end(), '\\', delim);
+  }
+  return result;
 }
 
 string resolve_uses(FunctionPtr resolve_context, string class_name, char delim) {
@@ -257,25 +315,40 @@ string get_full_static_member_name(FunctionPtr function, const string &name, boo
   return new_name;
 }
 
-string resolve_define_name(string name) {
-  size_t pos$$ = name.find("$$");
-  if (pos$$ != string::npos) {
-    string class_name = name.substr(0, pos$$);
-    string define_name = name.substr(pos$$ + 2);
-    const string &real_class_name = replace_characters(class_name, '$', '\\');
-    if (auto klass = G->get_class(real_class_name)) {
-      ClassPtr last_ancestor;
-      for (const auto &ancestor : klass->get_all_ancestors()) {
-        if (ancestor->members.has_constant(define_name)) {
-          if (!last_ancestor) {
-            name = "c#" + replace_backslashes(ancestor->name) + "$$" + define_name;
-            last_ancestor = ancestor;
-          } else if (!ancestor->is_parent_of(last_ancestor)) {
-            return {};
-          }
+ResolveSymbolResult resolve_define_name(SrcFilePtr resolve_context, const std::string &const_name, char delim) {
+  size_t pos$$ = const_name.find("$$");
+  if (pos$$ == string::npos) {
+    return resolve_const_uses(resolve_context, const_name, delim);
+  }
+  auto name = const_name;
+  string class_name = name.substr(0, pos$$);
+  string define_name = name.substr(pos$$ + 2);
+  const string &real_class_name = replace_characters(class_name, '$', '\\');
+  if (auto klass = G->get_class(real_class_name)) {
+    ClassPtr last_ancestor;
+    for (const auto &ancestor : klass->get_all_ancestors()) {
+      if (ancestor->members.has_constant(define_name)) {
+        if (!last_ancestor) {
+          name = "c#" + replace_backslashes(ancestor->name) + "$$" + define_name;
+          last_ancestor = ancestor;
+        } else if (!ancestor->is_parent_of(last_ancestor)) {
+          return {};
         }
       }
     }
   }
-  return name;
+  return {name, ResolveSymbolResult::Kind::ClassMember};
+}
+
+ResolveSymbolResult resolve_func_name(FunctionPtr context, VertexPtr call, char delim) {
+  if (call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow) {
+    auto method_name = resolve_instance_func_name(context, call.as<op_func_call>());
+    return {method_name, ResolveSymbolResult::Kind::ClassMember};
+  }
+  auto orig_name = call->get_string();
+  size_t colons_pos = orig_name.find("::");
+  if (colons_pos != string::npos || vk::contains(orig_name, "$$")) {
+    return {get_full_static_member_name(context, orig_name, true), ResolveSymbolResult::Kind::ClassMember};
+  }
+  return resolve_function_uses(context->file_id, orig_name, delim);
 }

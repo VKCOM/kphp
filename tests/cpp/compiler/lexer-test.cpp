@@ -110,8 +110,18 @@ TEST(lexer_test, test_php_tokens) {
     {"[1]", {"tok_opbrk([)", "tok_int_const(1)", "tok_clbrk(])"}},
     {"array(1)", {"tok_array(array)", "tok_oppar(()", "tok_int_const(1)", "tok_clpar())"}},
 
+    {"__FUNCTION__", {"tok_func_c(__FUNCTION__)"}},
+    {"__METHOD__", {"tok_method_c(__METHOD__)"}},
+
+    {"C1", {"tok_func_name(C1)"}},
+    {"\\C1", {"tok_func_name(\\C1)"}},
+    {"\\C1\\C2", {"tok_func_name(\\C1\\C2)"}},
+
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
+    {"use function Ns\\func", {"tok_use(use)", "tok_function(function)", "tok_func_name(Ns\\func)"}},
+    {"use const Ns\\constant", {"tok_use(use)", "tok_const(const)", "tok_func_name(Ns\\constant)"}},
+    {"use function Utils\\rand as my_rand", {"tok_use(use)", "tok_function(function)", "tok_func_name(Utils\\rand)", "tok_as(as)", "tok_func_name(my_rand)"}},
   };
 
   for (const auto &test : tests) {

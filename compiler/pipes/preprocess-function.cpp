@@ -307,9 +307,9 @@ private:
           }
         }
         auto merge_arrays = VertexAdaptor<op_func_call>::create(array_from_varargs_passed_as_positional, unpacking_args_converted_to_array);
-        merge_arrays->set_string("array_merge");
+        merge_arrays->set_string("\\array_merge");
         merge_arrays.set_location(call);
-        merge_arrays->func_id = G->get_function("array_merge");
+        merge_arrays->func_id = G->get_function("\\array_merge");
 
         new_call_args.emplace_back(merge_arrays);
       } else {
@@ -518,12 +518,9 @@ private:
       return call;
     }
 
-    const string &name =
-        call->type() == op_func_call && call->extra_type == op_ex_func_call_arrow
-        ? resolve_instance_func_name(current_function, call.as<op_func_call>())
-        : call->get_string();
-
-    if (auto f = G->get_function(name)) {
+    auto name = call->get_string();
+    FunctionPtr f = G->get_function(resolve_func_name(current_function, call).value);
+    if (f) {
       kphp_error(!(f->modifiers.is_static() && f->modifiers.is_abstract()),
                  fmt_format("you may not call abstract static method: {}", f->get_human_readable_name()));
       kphp_error(!f->modifiers.is_instance() || !f->class_id->is_trait(),

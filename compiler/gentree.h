@@ -177,6 +177,8 @@ private:
   const vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_{false};
+  bool use_function_allowed_{true};
+  bool use_const_allowed_{true};
   decltype(tokens)::const_iterator cur, end;
   vector<ClassPtr> class_stack;
   ClassPtr cur_class;               // = class_stack.back()
@@ -184,6 +186,9 @@ private:
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
   std::vector<LambdaGenerator> lambda_generators;
+
+  std::unordered_set<std::string> file_function_aliases;
+  std::unordered_set<std::string> file_const_aliases;
 };
 
 template<PrimitiveType ToT>

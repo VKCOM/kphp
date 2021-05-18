@@ -58,7 +58,7 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v) {
 
 VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex) {
   auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var, derived_name_vertex).set_location(instance_var);
-  cast_to_derived->set_string("instance_cast");
+  cast_to_derived->set_string("\\instance_cast");
 
   auto tmp_var = VertexAdaptor<op_var>::create().set_location(instance_var);
   tmp_var->set_string(gen_unique_name(instance_var->get_string()));

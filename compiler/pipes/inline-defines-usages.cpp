@@ -18,7 +18,12 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
       return VertexPtr()
     );
 
-    DefinePtr def = G->get_define(defined->expr()->get_string());
+    // defined() does not resolve its argument, so we should not use resolve_define_name() here
+    auto define_name = defined->expr()->get_string();
+    if (define_name[0] == '\\') {
+      define_name.erase(define_name.begin());
+    }
+    DefinePtr def = G->get_define(replace_backslashes(define_name));
 
     if (def) {
       root = VertexAdaptor<op_true>::create().set_location(root);
@@ -30,7 +35,8 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // const value defines are replaced by their value;
   // non-const defines are replaced by d$ variables
   if (root->type() == op_func_name) {
-    DefinePtr d = G->get_define(resolve_define_name(root->get_string()));
+    DefinePtr d;
+    std::tie(d, std::ignore) = G->find_define(current_function->file_id, root->get_string());
     if (d) {
       if (d->type() == DefineData::def_var) {
         auto var = VertexAdaptor<op_var>::create().set_location(root);

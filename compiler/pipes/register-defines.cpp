@@ -5,19 +5,21 @@
 #include "compiler/pipes/register-defines.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/name-gen.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 
 VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
   // 1. an explicit define('name', value)
   if (auto define = root.try_as<op_define>()) {
-    VertexPtr name = define->name();
     VertexPtr val = define->value();
 
-    kphp_error_act(name->type() == op_string, "Define name should be a valid string", return root);
+    SrcFilePtr file = stage::get_file();
+    auto name = gen_define_name(file, define);
+    printf("DEFINE %s\n", name.c_str());
 
-    auto data = new DefineData(name->get_string(), val, DefineData::def_unknown);
-    data->file_id = stage::get_file();
+    auto *data = new DefineData(name, val, DefineData::def_unknown);
+    data->file_id = file;
     G->register_define(DefinePtr(data));
 
     // we keep the define() call for now; if it'll end up being a constant,
