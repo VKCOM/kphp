@@ -8,6 +8,8 @@
 
 #include "common/macos-ports.h"
 
+#include "runtime/curl.h"
+
 #include "server/php-worker-stats.h"
 
 namespace {
@@ -48,18 +50,19 @@ void append_samples(const std::array<T, M> &from, std::array<T, N> &to, size_t o
   std::copy_n(from.begin(), M, to.begin() + offset);
 }
 
-int64_t get_shm(mem_info_t mem) noexcept {
+uint32_t get_shm(mem_info_t mem) noexcept {
   return mem.rss_file + mem.rss_shmem;
 }
 
 int64_t get_rss_without_shm(mem_info_t mem) noexcept {
-  return int64_t{mem.rss} - get_shm(mem);
+  return int64_t{mem.rss} - int64_t{get_shm(mem)};
 }
 
 } // namespace
 
 void PhpWorkerStats::add_stats(double script_time, double net_time, int64_t script_queries,
-                               int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used, script_error_t error) noexcept {
+                               int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used,
+                               int64_t curl_total_allocated, script_error_t error) noexcept {
   internal_.tot_queries_++;
   internal_.net_time_ += net_time;
   internal_.script_time_ += script_time;
@@ -77,6 +80,7 @@ void PhpWorkerStats::add_stats(double script_time, double net_time, int64_t scri
   script_time_samples_[sample] = script_time;
   script_memory_used_samples_[sample] = max_memory_used;
   script_real_memory_used_samples_[sample] = max_real_memory_used;
+  script_total_allocated_by_curl_samples_[sample] = curl_total_allocated;
 }
 
 void PhpWorkerStats::update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept {
@@ -93,6 +97,7 @@ void PhpWorkerStats::update_mem_info() noexcept {
 
   rss_kb_max_ = internal_.mem_info_.rss_peak;
   vms_kb_max_ = internal_.mem_info_.vm_peak;
+  shm_kb_max_ = get_shm(internal_.mem_info_);
 
   rss_no_shm_kb_sum_ = get_rss_without_shm(internal_.mem_info_);
 
@@ -100,6 +105,8 @@ void PhpWorkerStats::update_mem_info() noexcept {
   internal_.malloc_stats_.total_mmaped_bytes_ = malloc_stats.hblkhd;
   internal_.malloc_stats_.total_non_mmaped_allocated_bytes_ = malloc_stats.uordblks;
   internal_.malloc_stats_.total_non_mmaped_free_bytes_ = malloc_stats.fordblks;
+
+  internal_.curl_memory_currently_usage_ = vk::singleton<CurlMemoryUsage>::get().currently_allocated;
 }
 
 void PhpWorkerStats::recalc_worker_percentiles() noexcept {
@@ -110,6 +117,7 @@ void PhpWorkerStats::recalc_worker_percentiles() noexcept {
 
   internal_.script_memory_used_percentiles_ = calc_timed_50_95_99_percentiles(script_memory_used_samples_, samples_tp_, now_tp);
   internal_.script_real_memory_used_percentiles_ = calc_timed_50_95_99_percentiles(script_real_memory_used_samples_, samples_tp_, now_tp);
+  internal_.script_total_allocated_by_curl_percentiles_ = calc_timed_50_95_99_percentiles(script_total_allocated_by_curl_samples_, samples_tp_, now_tp);
 }
 
 void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from) noexcept {
@@ -137,6 +145,7 @@ void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from) noexcept 
 
   append_samples(from.internal_.script_memory_used_percentiles_, script_memory_used_samples_, request_offset);
   append_samples(from.internal_.script_real_memory_used_percentiles_, script_real_memory_used_samples_, request_offset);
+  append_samples(from.internal_.script_total_allocated_by_curl_percentiles_, script_total_allocated_by_curl_samples_, request_offset);
 
   const size_t worker_offset = worker_circular_percentiles_counter_++;
   worker_circular_percentiles_counter_ %= PERCENTILE_SAMPLES;
@@ -145,16 +154,18 @@ void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from) noexcept 
   workers_malloc_non_mapped_allocated_bytes_[worker_offset] = from.internal_.malloc_stats_.total_non_mmaped_allocated_bytes_;
   workers_malloc_non_mapped_free_bytes_[worker_offset] = from.internal_.malloc_stats_.total_non_mmaped_free_bytes_;
   workers_malloc_mmaped_bytes_[worker_offset] = from.internal_.malloc_stats_.total_mmaped_bytes_;
+  workers_currently_allocated_by_curl_bytes_[worker_offset] = from.internal_.curl_memory_currently_usage_;
 
   workers_rss_usage_[worker_offset] = int64_t{from.internal_.mem_info_.rss} * 1024;
   workers_vms_usage_[worker_offset] = int64_t{from.internal_.mem_info_.vm} * 1024;
-  workers_shm_usage_[worker_offset] = get_shm(from.internal_.mem_info_) * 1024;
+  workers_shm_usage_[worker_offset] = int64_t{get_shm(from.internal_.mem_info_)} * 1024;
 
   rss_kb_sum_ += from.internal_.mem_info_.rss;
   vms_kb_sum_ += from.internal_.mem_info_.vm;
 
   rss_kb_max_ = std::max(rss_kb_max_, from.internal_.mem_info_.rss_peak);
   vms_kb_max_ = std::max(vms_kb_max_, from.internal_.mem_info_.vm_peak);
+  shm_kb_max_ = std::max(shm_kb_max_, get_shm(from.internal_.mem_info_));
 
   rss_no_shm_kb_sum_ += get_rss_without_shm(from.internal_.mem_info_);
 }
@@ -227,6 +238,7 @@ void PhpWorkerStats::to_stats(stats_t *stats) noexcept {
   write_percentile<17, 65, 99>(stats, "requests.working_time", working_time_samples_);
   write_percentile<17, 65, 99>(stats, "memory.script_usage", script_memory_used_samples_);
   write_percentile<17, 65, 99>(stats, "memory.script_real_usage", script_real_memory_used_samples_);
+  write_percentile<17, 65, 99>(stats, "memory.script_total_allocated_by_curl", script_total_allocated_by_curl_samples_);
 
   // here we use 1 sample from 1 worker, therefore no magic
   write_percentile<50, 95, 99>(stats, "memory.workers_script_heap_usage_bytes", workers_script_heap_usage_bytes_);
@@ -234,6 +246,7 @@ void PhpWorkerStats::to_stats(stats_t *stats) noexcept {
   write_percentile<50, 95, 99>(stats, "memory.workers_malloc_non_mapped_allocated_bytes", workers_malloc_non_mapped_allocated_bytes_);
   write_percentile<50, 95, 99>(stats, "memory.workers_malloc_non_mapped_free_bytes", workers_malloc_non_mapped_free_bytes_);
   write_percentile<50, 95, 99>(stats, "memory.workers_malloc_mapped_bytes", workers_malloc_mmaped_bytes_);
+  write_percentile<50, 95, 99>(stats, "memory.workers_currently_allocated_by_curl_bytes", workers_currently_allocated_by_curl_bytes_);
   write_percentile<50, 95, 99>(stats, "memory.workers_rss_bytes", workers_rss_usage_);
   write_percentile<50, 95, 99>(stats, "memory.workers_vms_bytes", workers_vms_usage_);
   write_percentile<50, 95, 99>(stats, "memory.workers_shm_bytes", workers_shm_usage_);
@@ -244,10 +257,11 @@ void PhpWorkerStats::to_stats(stats_t *stats) noexcept {
 
   add_gauge_stat_long(stats, "memory.master_rss_bytes", int64_t{internal_.mem_info_.rss} * 1024);
   add_gauge_stat_long(stats, "memory.master_vms_bytes", int64_t{internal_.mem_info_.vm} * 1024);
-  add_gauge_stat_long(stats, "memory.master_shm_bytes", get_shm(internal_.mem_info_) * 1024);
+  add_gauge_stat_long(stats, "memory.master_shm_bytes", int64_t{get_shm(internal_.mem_info_)} * 1024);
 
   add_gauge_stat_long(stats, "memory.server_vms_max_bytes", int64_t{vms_kb_max_} * 1024);
   add_gauge_stat_long(stats, "memory.server_rss_max_bytes", int64_t{rss_kb_max_} * 1024);
+  add_gauge_stat_long(stats, "memory.server_shm_max_bytes", int64_t{shm_kb_max_} * 1024);
   add_gauge_stat_long(stats, "memory.server_rss_no_shm_total_bytes", rss_no_shm_kb_sum_ * 1024);
 
   write_error_stat_to(stats, "terminated_requests.memory_limit_exceeded", script_error_t::memory_limit);
@@ -286,6 +300,7 @@ void PhpWorkerStats::reset_memory_and_percentiles_stats() noexcept {
   internal_.script_time_percentiles_ = {};
   internal_.script_memory_used_percentiles_ = {};
   internal_.script_real_memory_used_percentiles_ = {};
+  internal_.script_total_allocated_by_curl_percentiles_ = {};
 
   samples_tp_ = {};
   working_time_samples_ = {};
@@ -300,6 +315,7 @@ void PhpWorkerStats::reset_memory_and_percentiles_stats() noexcept {
   workers_malloc_non_mapped_allocated_bytes_ = {};
   workers_malloc_non_mapped_free_bytes_ = {};
   workers_malloc_mmaped_bytes_ = {};
+  workers_currently_allocated_by_curl_bytes_ = {};
 
   workers_rss_usage_ = {};
   workers_vms_usage_ = {};
@@ -310,6 +326,7 @@ void PhpWorkerStats::reset_memory_and_percentiles_stats() noexcept {
 
   rss_kb_max_ = 0;
   vms_kb_max_ = 0;
+  shm_kb_max_ = 0;
 
   rss_no_shm_kb_sum_ = 0;
 }

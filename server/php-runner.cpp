@@ -25,6 +25,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
+#include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
@@ -252,7 +253,7 @@ void PHPScriptBase::finish() {
   update_net_time();
   PhpWorkerStats::get_local().add_stats(script_time, net_time, queries_cnt,
                                         script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
-                                        dl::get_heap_memory_used(), error_type);
+                                        dl::get_heap_memory_used(), vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);

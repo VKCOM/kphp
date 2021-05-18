@@ -21,7 +21,8 @@
 class PhpWorkerStats {
 public:
   void add_stats(double script_time, double net_time, int64_t script_queries,
-                 int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used, script_error_t error) noexcept;
+                 int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used,
+                 int64_t curl_total_allocated, script_error_t error) noexcept;
 
   void update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept;
   void update_mem_info() noexcept;
@@ -63,6 +64,7 @@ private:
 
   std::array<int64_t, PERCENTILE_SAMPLES> script_memory_used_samples_{};
   std::array<int64_t, PERCENTILE_SAMPLES> script_real_memory_used_samples_{};
+  std::array<int64_t, PERCENTILE_SAMPLES> script_total_allocated_by_curl_samples_{};
 
   size_t worker_circular_percentiles_counter_{0};
   std::array<int64_t, PERCENTILE_SAMPLES> workers_script_heap_usage_bytes_{};
@@ -70,6 +72,7 @@ private:
   std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_non_mapped_allocated_bytes_{};
   std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_non_mapped_free_bytes_{};
   std::array<uint32_t, PERCENTILE_SAMPLES> workers_malloc_mmaped_bytes_{};
+  std::array<int64_t, PERCENTILE_SAMPLES> workers_currently_allocated_by_curl_bytes_{};
 
   std::array<int64_t, PERCENTILE_SAMPLES> workers_rss_usage_{};
   std::array<int64_t, PERCENTILE_SAMPLES> workers_vms_usage_{};
@@ -80,6 +83,7 @@ private:
 
   uint32_t rss_kb_max_{0};
   uint32_t vms_kb_max_{0};
+  uint32_t shm_kb_max_{0};
 
   int64_t rss_no_shm_kb_sum_{0};
 
@@ -98,6 +102,7 @@ private:
     int64_t script_max_real_memory_used_{0};
     int64_t script_heap_memory_usage_{0};
 
+    int64_t curl_memory_currently_usage_{0};
     mem_info_t mem_info_{};
     struct {
       uint32_t total_non_mmaped_allocated_bytes_{0};
@@ -114,5 +119,6 @@ private:
 
     std::array<int64_t, PERCENTILES_COUNT> script_memory_used_percentiles_{};
     std::array<int64_t, PERCENTILES_COUNT> script_real_memory_used_percentiles_{};
+    std::array<int64_t, PERCENTILES_COUNT> script_total_allocated_by_curl_percentiles_{};
   } internal_;
 };

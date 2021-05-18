@@ -9,6 +9,7 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <curl/multi.h>
+#include <malloc.h>
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
@@ -916,10 +917,50 @@ Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept {
   return err_str ? string{err_str} : Optional<string>{};
 }
 
+void *register_curl_allocation(void *ptr) noexcept {
+  const size_t memory_used = malloc_usable_size(ptr);
+  auto &stats = vk::singleton<CurlMemoryUsage>::get();
+  stats.currently_allocated += memory_used;
+  stats.total_allocated += memory_used;
+  return ptr;
+}
+
+void register_curl_deallocation(size_t memory_used) noexcept {
+  vk::singleton<CurlMemoryUsage>::get().currently_allocated -= memory_used;
+}
+
 void global_init_curl_lib() noexcept {
-  if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+  if (curl_global_init_mem(
+    CURL_GLOBAL_ALL,
+    [](size_t size) {
+      return register_curl_allocation(malloc(size));
+    },
+    [](void *ptr) {
+      const size_t memory_used = malloc_usable_size(ptr);
+      free(ptr);
+      register_curl_deallocation(memory_used);
+    },
+    [](void *ptr, size_t size) {
+      const size_t memory_used = malloc_usable_size(ptr);
+      void *new_mem = register_curl_allocation(realloc(ptr, size));
+      if (new_mem) {
+        register_curl_deallocation(memory_used);
+      }
+      return new_mem;
+    },
+    [](const char *str) {
+      const size_t size = std::strlen(str);
+      void *mem = register_curl_allocation(malloc(size + 1));
+      return mem ? static_cast<char *>(std::memcpy(mem, str, size + 1)) : nullptr;
+    },
+    [](size_t nmemb, size_t size) {
+      return register_curl_allocation(calloc(nmemb, size));
+    }
+  ) != CURLE_OK) {
     php_critical_error ("can't initialize curl");
   }
+
+  vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
 }
 
 template<class CTX>
@@ -936,4 +977,5 @@ void free_curl_lib() noexcept {
   dl::CriticalSectionGuard critical_section;
   clear_contexts(vk::singleton<CurlContexts>::get().easy_contexts);
   clear_contexts(vk::singleton<CurlContexts>::get().multi_contexts);
+  vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
 }
