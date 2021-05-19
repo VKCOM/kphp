@@ -3,7 +3,7 @@
 
 trait StringableTrait {
     public function __toString(): string {
-        return "Foo class";
+        return "StringableTrait trait";
     }
 }
 

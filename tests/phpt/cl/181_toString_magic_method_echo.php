@@ -8,9 +8,7 @@ class Foo {
 
 function test() {
     $f = new Foo();
-
     echo $f;
-    print $f;
 }
 
 test();

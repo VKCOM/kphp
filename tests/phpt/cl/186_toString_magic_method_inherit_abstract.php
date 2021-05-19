@@ -3,7 +3,7 @@
 
 abstract class AbstractStringable {
     public function __toString(): string {
-        return "Foo class";
+        return "AbstractStringable class";
     }
 }
 

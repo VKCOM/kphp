@@ -10,6 +10,6 @@ class Foo {
 
 class Goo {
     public function __toString(): int {
-        return $a;
+        return "Goo class";
     }
 }

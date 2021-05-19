@@ -3,7 +3,7 @@
 
 class StringableClass {
     public function __toString(): string {
-        return "Foo class";
+        return "StringableClass class";
     }
 }
 
