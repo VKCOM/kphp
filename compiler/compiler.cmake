@@ -111,7 +111,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-classes.cpp
         check-conversions.cpp
         check-function-calls.cpp
-        check-magic-methods.cpp
         check-modifications-of-const-vars.cpp
         check-nested-foreach.cpp
         check-type-hint-variance.cpp
@@ -124,7 +123,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         collect-main-edges.cpp
         collect-required-and-classes.cpp
         convert-list-assignments.cpp
-        convert-strval-to-method-tostring.cpp
         erase-defines-declarations.cpp
         extract-async.cpp
         extract-resumable-calls.cpp

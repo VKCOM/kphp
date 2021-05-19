@@ -13,7 +13,7 @@ const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_co
   {op_conv_int,      tp_Class},
   {op_conv_int_l,    tp_Class},
   {op_conv_float,    tp_Class},
-  {op_conv_string,   tp_Class},
+  // {op_conv_string,   tp_Class}, // allowed for classes with __toString()
   {op_conv_string_l, tp_Class},
   {op_conv_array,    tp_Class},
   {op_conv_array_l,  tp_Class},
@@ -60,13 +60,6 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
     }
 
     auto is_forbidden_conversion = std::any_of(range.first, range.second, [=](auto &operation_and_type) {
-      const auto klass = converted_expr_type->class_type();
-      if (klass && operation_and_type.first == op_conv_string) {
-        if (klass->has_to_string) {
-          return false;
-        }
-      }
-
       // we do this so the op_conv_bool doesn't report T|false and T|null, but report T.
       bool is_conversion_of_optional = operation_and_type.first == op_conv_bool && converted_expr_type->use_optional();
 

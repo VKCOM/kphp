@@ -45,7 +45,6 @@
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-function-calls.h"
-#include "compiler/pipes/check-magic-methods.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
@@ -60,7 +59,6 @@
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
-#include "compiler/pipes/convert-strval-to-method-tostring.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
@@ -276,10 +274,8 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
-    >> PassC<CheckMagicMethodsPass>{}
     >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}
-    >> PassC<ConvertStrValToMagicMethodToStringPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<FixReturnsPass>{}
     >> PassC<CalcValRefPass>{}

@@ -174,7 +174,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   }
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_TO_STRING)) {
-    klass->has_to_string = true;
+    klass->has_tostring = true;
   }
 }
 

@@ -162,15 +162,6 @@ std::string FunctionData::get_name_of_self_method() const {
 }
 
 int FunctionData::get_min_argn() {
-  // The toString method cannot have arguments, so we return 0
-  // here to avoid situations where the method signature has an
-  // error and method have arguments, and calls to toString will
-  // throw an error about insufficient number of arguments, which
-  // can be confusing.
-  if (this->local_name() == ClassData::NAME_OF_TO_STRING) {
-    return 0;
-  }
-
   if (min_argn != -1) {
     return min_argn;
   }
