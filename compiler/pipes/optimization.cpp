@@ -228,7 +228,7 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
     return {};
   }
 
-  auto klass = type->class_type();
+  const auto klass = type->class_type();
   if (!klass) {
     return {};
   }
@@ -244,7 +244,7 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
     return {};
   }
 
-  auto args = std::vector<VertexPtr>{expr};
+  const auto args = std::vector<VertexPtr>{expr};
   auto call_function = VertexAdaptor<op_func_call>::create(args);
   call_function->set_string(std::string{to_string_method->local_name()});
   call_function->func_id = to_string_method->function;
@@ -253,8 +253,8 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
 }
 
 VertexPtr OptimizationPass::convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv) {
-  auto expr = conv->expr();
-  auto call = try_convert_expr_to_call_to_string_method(expr);
+  const auto expr = conv->expr();
+  const auto call = try_convert_expr_to_call_to_string_method(expr);
   if (!call) {
     return conv;
   }
@@ -300,7 +300,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     if (func->name == "print_r") {
       auto &arg = func_call->args()[0];
 
-      auto call = try_convert_expr_to_call_to_string_method(arg);
+      const auto call = try_convert_expr_to_call_to_string_method(arg);
       if (call) {
         arg = call;
       }

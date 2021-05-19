@@ -143,7 +143,7 @@ void CheckClassesPass::check_magic_methods(ClassPtr klass) {
 void CheckClassesPass::check_magic_tostring_method(FunctionPtr fun) {
   stage::set_function(fun);
 
-  auto count_args = fun->param_ids.size();
+  const auto count_args = fun->param_ids.size();
   kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
 
   const auto *ret_type = tinf::get_type(fun, -1);
