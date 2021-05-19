@@ -31,6 +31,11 @@ bool f$is_kphp_job_workers_enabled() noexcept {
   return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0;
 }
 
+int64_t f$kphp_job_workers_count() noexcept {
+  return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker);
+}
+
+
 void global_init_job_workers_lib() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
