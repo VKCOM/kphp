@@ -164,10 +164,6 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
 
   function->get_params()[0].as<op_func_param>()->type_hint = TypeHintInstance::create(klass->name);
 
-  if (vk::ends_with(function->name, ClassData::NAME_OF_TO_STRING)) {
-    klass->has_to_string = true;
-  }
-
   if (klass->is_interface()) {
     function->modifiers.set_abstract();
   }
@@ -175,6 +171,10 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;
+  }
+
+  if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_TO_STRING)) {
+    klass->has_to_string = true;
   }
 }
 

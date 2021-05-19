@@ -16,4 +16,5 @@ public:
 
 private:
   static VertexPtr process_func(VertexAdaptor<op_function> fun);
+  static void check_to_string(VertexAdaptor<op_function> fun);
 };

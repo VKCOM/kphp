@@ -6,21 +6,11 @@
 #include "compiler/data/class-data.h"
 #include "compiler/inferring/public.h"
 
-VertexPtr ConvertStrValToMagicMethodToStringPass::process_convert(VertexAdaptor<op_conv_string> conv) {
-  auto expr = conv->expr();
-  auto var = expr.try_as<op_var>();
-  if (!var) {
-    return conv;
-  }
-
-  auto call = convert_var_to_call_to_string_method(var);
-  if (!call) {
-    return conv;
-  }
-
-  return call;
-}
-VertexPtr ConvertStrValToMagicMethodToStringPass::convert_var_to_call_to_string_method(VertexAdaptor<op_var> var) {
+// The function will try to convert the variable to a call to the
+// __toString method if the variable has a class type and the class
+// has such a method.
+// If the conversion fails, an empty VertexPtr will be returned.
+VertexPtr ConvertStrValToMagicMethodToStringPass::try_convert_var_to_call_to_string_method(VertexAdaptor<op_var> var) {
   const auto *type = tinf::get_type(var);
   if (type == nullptr) {
     return {};
@@ -48,6 +38,38 @@ VertexPtr ConvertStrValToMagicMethodToStringPass::convert_var_to_call_to_string_
   return call_function;
 }
 
+VertexPtr ConvertStrValToMagicMethodToStringPass::process_convert(VertexAdaptor<op_conv_string> conv) {
+  auto expr = conv->expr();
+  auto var = expr.try_as<op_var>();
+  if (!var) {
+    return conv;
+  }
+
+  auto call = try_convert_var_to_call_to_string_method(var);
+  if (!call) {
+    return conv;
+  }
+
+  return call;
+}
+
+void ConvertStrValToMagicMethodToStringPass::handle_print_r_call(VertexAdaptor<op_func_call> &call) {
+  auto args = call->args();
+  for (auto &arg : args) {
+    auto var = arg.try_as<op_var>();
+    if (!var) {
+      continue;
+    }
+
+    auto call_func = try_convert_var_to_call_to_string_method(var);
+    if (!call_func) {
+      continue;
+    }
+
+    arg = call_func;
+  }
+}
+
 VertexPtr ConvertStrValToMagicMethodToStringPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_func_call) {
     auto call = root.as<op_func_call>();
@@ -61,21 +83,4 @@ VertexPtr ConvertStrValToMagicMethodToStringPass::on_exit_vertex(VertexPtr root)
   }
 
   return root;
-}
-
-void ConvertStrValToMagicMethodToStringPass::handle_print_r_call(VertexAdaptor<op_func_call> &call) {
-  auto args = call->args();
-  for (auto &arg : args) {
-    auto var = arg.try_as<op_var>();
-    if (!var) {
-      continue;
-    }
-
-    auto call_func = convert_var_to_call_to_string_method(var);
-    if (!call_func) {
-      continue;
-    }
-
-    arg = call_func;
-  }
 }
