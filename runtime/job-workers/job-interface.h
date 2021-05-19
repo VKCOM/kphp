@@ -106,7 +106,7 @@ bool f$is_kphp_job_workers_enabled() noexcept;
 int64_t f$kphp_job_workers_count() noexcept;
 
 void global_init_job_workers_lib() noexcept;
-void free_job_workers_interface_lib() noexcept;
+void clear_shared_job_messages() noexcept;
 
 int get_job_timeout_wakeup_id();
 

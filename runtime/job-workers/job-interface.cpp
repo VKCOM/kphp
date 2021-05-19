@@ -43,7 +43,7 @@ void global_init_job_workers_lib() noexcept {
   }
 }
 
-void free_job_workers_interface_lib() noexcept {
+void clear_shared_job_messages() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
   }
