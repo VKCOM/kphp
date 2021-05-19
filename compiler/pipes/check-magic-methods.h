@@ -6,7 +6,7 @@
 
 #include "compiler/function-pass.h"
 
-class CheckMagicMethods final : public FunctionPassBase {
+class CheckMagicMethodsPass final : public FunctionPassBase {
 public:
   string get_description() final {
     return "Check magic methods";

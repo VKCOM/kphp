@@ -276,7 +276,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<TypeInfererF>{}
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
-    >> PassC<CheckMagicMethods>{}
+    >> PassC<CheckMagicMethodsPass>{}
     >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}
     >> PassC<ConvertStrValToMagicMethodToStringPass>{}

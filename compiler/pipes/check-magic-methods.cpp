@@ -6,7 +6,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/inferring/public.h"
 
-VertexPtr CheckMagicMethods::on_exit_vertex(VertexPtr root) {
+VertexPtr CheckMagicMethodsPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_function) {
     return process_func(root.as<op_function>());
   }
@@ -14,7 +14,7 @@ VertexPtr CheckMagicMethods::on_exit_vertex(VertexPtr root) {
   return root;
 }
 
-void CheckMagicMethods::check_to_string(VertexAdaptor<op_function> func) {
+void CheckMagicMethodsPass::check_to_string(VertexAdaptor<op_function> func) {
   auto fun = func->func_id;
   stage::set_function(fun);
 
@@ -29,7 +29,7 @@ void CheckMagicMethods::check_to_string(VertexAdaptor<op_function> func) {
   kphp_error(ret_type->ptype() == tp_string, fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
 }
 
-VertexPtr CheckMagicMethods::process_func(VertexAdaptor<op_function> func) {
+VertexPtr CheckMagicMethodsPass::process_func(VertexAdaptor<op_function> func) {
   auto local_name = func->func_id->local_name();
 
   if (local_name == ClassData::NAME_OF_TO_STRING) {
