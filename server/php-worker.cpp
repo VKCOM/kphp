@@ -160,8 +160,8 @@ void php_worker_try_start(php_worker *worker) {
 
 void php_worker_init_script(php_worker *worker) {
   double timeout = worker->finish_time - precise_now - 0.01;
-  if (worker->terminate_flag || timeout < 0.2) {
-    worker->state = phpq_finish;
+  if (worker->terminate_flag) {
+    worker->state = phpq_finish; // TODO: fix job memory leak here: forcibly_release_all_attached_messages() is called only at `phpq_free_script` state
     return;
   }
 
