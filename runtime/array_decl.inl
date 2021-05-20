@@ -433,7 +433,9 @@ private:
   template<class Arg, class...Args>
   void push_back_values(Arg &&arg, Args &&... args);
 
-private:
+  template<class T1>
+  void push_back_iterator(const array_iterator<T1> &it) noexcept;
+
   array_inner *p;
 
   template<class T1>
