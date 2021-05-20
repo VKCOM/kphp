@@ -184,6 +184,8 @@ private:
     inline T &get_vector_value(int64_t int_key);//unsafe
     inline void unset_map_value(const string &string_key, int64_t precomuted_hash);
 
+    bool is_vector_internal_or_last_index(int64_t key) const noexcept;
+
     size_t estimate_memory_usage() const;
 
     inline array_inner(int ref_cnt, int64_t max_key, list_hash_entry end_, uint32_t int_size, uint32_t int_buf_size, uint32_t string_size, uint32_t string_buf_size) :

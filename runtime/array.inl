@@ -612,6 +612,11 @@ void array<T>::array_inner::unset_map_value(const string &string_key, int64_t pr
 }
 
 template<class T>
+bool array<T>::array_inner::is_vector_internal_or_last_index(int64_t key) const noexcept {
+  return key >= 0 && key <= int_size;
+}
+
+template<class T>
 size_t array<T>::array_inner::estimate_memory_usage() const {
   int64_t int_elements = int_size;
   int64_t string_elements = 0;
@@ -1070,7 +1075,7 @@ void array<T>::clear() {
 template<class T>
 T &array<T>::operator[](int64_t int_key) {
   if (is_vector()) {
-    if (int_key >= 0 && int_key <= p->int_size) {
+    if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         return p->emplace_back_vector_value();
@@ -1151,7 +1156,7 @@ T &array<T>::operator[](const const_iterator &it) noexcept {
     bool is_string_entry = it.self_->is_string_hash_entry(entry);
 
     if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
+      if (!is_string_entry && p->is_vector_internal_or_last_index(entry->int_key)) {
         if (entry->int_key == p->int_size) {
           mutate_if_vector_needed_int();
           return p->emplace_back_vector_value();
@@ -1187,7 +1192,7 @@ template<class T>
 template<class ...Args>
 void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
   if (is_vector()) {
-    if (int_key >= 0 && int_key <= p->int_size) {
+    if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         p->emplace_back_vector_value(std::forward<Args>(args)...);
@@ -1342,7 +1347,7 @@ void array<T>::set_value(const const_iterator &it) noexcept {
     bool is_string_entry = it.self_->is_string_hash_entry(entry);
 
     if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
+      if (!is_string_entry && p->is_vector_internal_or_last_index(entry->int_key)) {
         if (entry->int_key == p->int_size) {
           mutate_if_vector_needed_int();
           p->push_back_vector_value(entry->value);
