@@ -268,8 +268,8 @@ public:
   T &operator[](const string &s);
   T &operator[](const mixed &v);
   T &operator[](double double_key);
-  T &operator[](const const_iterator &it);
-  T &operator[](const iterator &it);
+  T &operator[](const const_iterator &it) noexcept;
+  T &operator[](const iterator &it) noexcept;
 
   template<class ...Args>
   void emplace_value(int64_t int_key, Args &&... args) noexcept;
@@ -301,8 +301,8 @@ public:
   template<class OptionalT>
   void set_value(const Optional<OptionalT> &key, const T &value) noexcept;
 
-  void set_value(const const_iterator &it);
-  void set_value(const iterator &it);
+  void set_value(const const_iterator &it) noexcept;
+  void set_value(const iterator &it) noexcept;
 
   // assign binary array_inner representation
   // can be used only on empty arrays to receive logically const array
@@ -334,8 +334,8 @@ public:
   void push_back(T &&v) noexcept;
   void push_back(const T &v) noexcept;
 
-  void push_back(const const_iterator &it);
-  void push_back(const iterator &it);
+  void push_back(const const_iterator &it) noexcept;
+  void push_back(const iterator &it) noexcept;
 
   const T push_back_return(const T &v);
   const T push_back_return(T &&v);
