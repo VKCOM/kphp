@@ -116,13 +116,13 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
-  static array_inner empty_array{
-    ExtraRefCnt::for_global_const, -1,
+  static array_inner_control empty_array{
+    0, ExtraRefCnt::for_global_const, -1,
     {0, 0},
     0, 2,
     0, std::numeric_limits<uint32_t>::max()
   };
-  return &empty_array;
+  return static_cast<array<Unknown>::array_inner *>(&empty_array);
 }
 
 template<class T>
@@ -166,7 +166,7 @@ typename array<T>::entry_pointer_type array<T>::array_inner::get_pointer(list_ha
 
 template<class T>
 const typename array<T>::string_hash_entry *array<T>::array_inner::begin() const {
-  return (const string_hash_entry *)get_entry(end_.next);
+  return (const string_hash_entry *)get_entry(last.next);
 }
 
 template<class T>
@@ -201,7 +201,7 @@ typename array<T>::string_hash_entry *array<T>::array_inner::prev(string_hash_en
 
 template<class T>
 typename array<T>::string_hash_entry *array<T>::array_inner::end() {
-  return (string_hash_entry * ) &end_;
+  return (string_hash_entry * ) &last;
 }
 
 template<class T>
