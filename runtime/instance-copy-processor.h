@@ -119,31 +119,12 @@ public:
   InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt,
                           ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
-  template<typename T>
+  template<class T>
   bool process(array<T> &arr) noexcept {
-    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
-      return true;
-    }
-    if (unlikely(!is_enough_memory_for(arr.estimate_memory_usage()))) {
-      arr = array<T>();
-      memory_limit_exceeded_ = true;
-      return false;
-    }
-    // begin mutates array implicitly, therefore call it separately
-    auto first = arr.begin();
-    // mutates may make array as constant again (e.g. empty array), therefore check again
-    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
-      php_assert(first == arr.end());
-      return true;
-    }
-    php_assert(arr.get_reference_counter() == 1);
-    if (set_memory_ref_cnt_) {
-      arr.set_reference_counter_to(get_memory_ref_cnt());
-    }
-    return Basic::process_range(first, arr.end());
+    return process_array(arr);
   }
 
-  template<typename I>
+  template<class I>
   bool process(class_instance<I> &instance) noexcept {
     if (++instance_depth_level_ >= instance_depth_level_limit_) {
       instance.destroy();
@@ -201,6 +182,49 @@ public:
   }
 
 private:
+  template<class T>
+  struct PrimitiveArrayProcessor {
+    static bool process(InstanceDeepCopyVisitor &self, array<T> &arr) noexcept;
+  };
+
+  template<class T>
+  using is_primitive = vk::is_type_in_list<T, int64_t, double, bool, Optional<int64_t>, Optional<double>, Optional<bool>>;
+
+  template<class T>
+  bool process_array_impl(array<T> &arr) noexcept {
+    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      return true;
+    }
+    if (unlikely(!is_enough_memory_for(arr.estimate_memory_usage()))) {
+      arr = array<T>();
+      memory_limit_exceeded_ = true;
+      return false;
+    }
+    // begin mutates array implicitly, therefore call it separately
+    auto first = arr.begin();
+    // mutates may make array as constant again (e.g. empty array), therefore check again
+    if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
+      php_assert(first == arr.end());
+      return true;
+    }
+    php_assert(arr.get_reference_counter() == 1);
+    if (set_memory_ref_cnt_) {
+      arr.set_reference_counter_to(get_memory_ref_cnt());
+    }
+    const bool primitive_array = is_primitive<T>{} && arr.size().string_size == 0;
+    return primitive_array || Basic::process_range(first, arr.end());
+  }
+
+  template<class T>
+  std::enable_if_t<!is_primitive<T>{}, bool> process_array(array<T> &arr) noexcept {
+    return process_array_impl(arr);
+  }
+
+  template<class T>
+  std::enable_if_t<is_primitive<T>{}, bool> process_array(array<T> &arr) noexcept {
+    return PrimitiveArrayProcessor<T>::process(*this, arr);
+  }
+
   bool memory_limit_exceeded_{false};
   bool is_depth_limit_exceeded_{false};
   uint8_t instance_depth_level_{0u};
