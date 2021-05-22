@@ -19,6 +19,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
+        city_hash64.cpp
+        city_hash/city.cc
         confdata-functions.cpp
         confdata-global-manager.cpp
         confdata-keys.cpp

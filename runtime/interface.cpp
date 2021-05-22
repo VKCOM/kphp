@@ -20,6 +20,7 @@
 
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
+#include "runtime/city_hash64.h"
 #include "runtime/confdata-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"

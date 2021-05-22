@@ -428,6 +428,8 @@ function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | fal
 function crc32 ($s ::: string) ::: int;
 function crc32_file ($s ::: string) ::: int;
 function hash_equals(string $known_string, string $user_string) ::: bool;
+function CityHash64(string $string) ::: string;
+
 /** @kphp-pure-function */
 function cp1251 ($utf8_string ::: string) ::: string;
 
