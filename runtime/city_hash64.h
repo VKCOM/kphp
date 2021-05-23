@@ -5,6 +5,6 @@
 #pragma once
 
 #include "runtime/kphp_core.h"
-#include "city_hash/citycrc.h"
+#include "city_hash/city.h"
 
 ::string f$CityHash64(const ::string &s);
