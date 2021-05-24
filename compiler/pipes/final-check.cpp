@@ -231,10 +231,7 @@ void FinalCheckPass::on_start() {
     process_job_worker_class(current_function->class_id);
   }
 
-  if (current_function->modifiers.is_instance() && current_function->local_name() == ClassData::NAME_OF_CLONE) {
-    kphp_error(!current_function->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE));
-    kphp_error(!current_function->can_throw(), fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE));
-  }
+  check_magic_methods(current_function);
 
   if (current_function->should_not_throw && current_function->can_throw()) {
     kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}",
@@ -586,4 +583,38 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
   } else {
     kphp_error(0, "Using Unknown type");
   }
+}
+
+void FinalCheckPass::check_magic_methods(FunctionPtr fun) {
+  if (!fun->modifiers.is_instance()) {
+    return;
+  }
+
+  const auto name = fun->local_name();
+
+  if (name == ClassData::NAME_OF_TO_STRING) {
+    check_magic_tostring_method(fun);
+  } else if (name == ClassData::NAME_OF_CLONE) {
+    check_magic_clone_method(fun);
+  }
+}
+
+void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
+  stage::set_function(fun);
+
+  const auto count_args = fun->param_ids.size();
+  kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
+
+  const auto *ret_type = tinf::get_type(fun, -1);
+  if (!ret_type) {
+    return;
+  }
+
+  kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0,
+             fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
+}
+
+void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
+  kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE));
+  kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE));
 }

@@ -40,7 +40,6 @@ void CheckClassesPass::on_finish() {
 inline void CheckClassesPass::analyze_class(ClassPtr klass) {
   check_static_fields_inited(klass);
   check_serialized_fields(klass);
-  check_magic_methods(klass);
   if (ClassData::does_need_codegen(klass)) {
     check_instance_fields_inited(klass);
   }
@@ -130,29 +129,6 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
                       !phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_float32),
                       fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
   });
-}
-
-void CheckClassesPass::check_magic_methods(ClassPtr klass) {
-  klass->members.for_each([&](const ClassMemberInstanceMethod &f) {
-    if (vk::ends_with(f.function->name, ClassData::NAME_OF_TO_STRING)) {
-      check_magic_tostring_method(f.function);
-    }
-  });
-}
-
-void CheckClassesPass::check_magic_tostring_method(FunctionPtr fun) {
-  stage::set_function(fun);
-
-  const auto count_args = fun->param_ids.size();
-  kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
-
-  const auto *ret_type = tinf::get_type(fun, -1);
-  if (!ret_type) {
-    return;
-  }
-
-  kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0,
-             fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
 }
 
 void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
