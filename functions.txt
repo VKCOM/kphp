@@ -348,6 +348,11 @@ function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | fa
 function time() ::: int;
 function hrtime (bool $as_number = false): mixed; // array|int
 
+// microtime(false) specialization
+function microtime_string () : string;
+// microtime(true) specialization
+function microtime_float () : float;
+
 function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
@@ -391,6 +396,12 @@ function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string 
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
+
+// A preg_match() form that returns string-typed array result through a tuple.
+function preg_match_strings ($regex ::: regexp, $subject ::: string, $offset ::: int = 0) ::: tuple(int|false, string[]);
+
+// A preg_match_all() form that returns string-typed array result through a tuple.
+function preg_match_all_strings ($regex ::: regexp, $subject ::: string) ::: tuple(int|false, string[][]);
 
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);

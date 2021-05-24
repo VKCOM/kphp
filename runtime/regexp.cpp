@@ -641,15 +641,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
 
 Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
-  pcre_last_error = 0;
-
-  check_pattern_compilation_warning();
-  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    return false;
-  }
-
-  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    pcre_last_error = PCRE_ERROR_BADUTF8;
+  if (!check_errors(subject)) {
     return false;
   }
 
@@ -689,41 +681,80 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
   return result;
 }
 
-Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_matches, int64_t offset) const {
+bool regexp::check_errors(const string &subject) const {
+  int64_t dummy_offset = 0;
+  return check_errors(subject, dummy_offset);
+}
+
+bool regexp::check_errors(const string &subject, int64_t &offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    matches = array<mixed>();
     return false;
   }
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<mixed>();
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
 
-  if (all_matches) {
-    matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
-    for (int32_t i = 0; i < subpatterns_count; i++) {
-      if (named_subpatterns_count && !subpattern_names[i].empty()) {
-        matches.set_value(subpattern_names[i], array<mixed>());
-      }
-      matches.push_back(array<mixed>());
+  if (offset != 0) {
+    offset = std::max(subject.get_correct_index(offset), 0_i64);
+    if (offset > subject.size()) {
+      pcre_last_error = PCRE2_ERROR_BADOFFSET;
+      return false;
     }
   }
 
-  bool second_try = false;//set after matching an empty string
-  pcre_last_error = 0;
+  return true;
+}
 
-  int64_t result = 0;
-  offset = std::max(subject.get_correct_index(offset), 0_i64);
-  if (offset > subject.size()) {
-    matches = array<mixed>();
-    pcre_last_error = PCRE2_ERROR_BADOFFSET;
+Optional<int64_t> regexp::match_one(const string &subject, array<string> &matches, int64_t offset) const {
+  if (!check_errors(subject, offset)) {
+    matches = array<string>();
     return false;
   }
+
+  const int64_t count = exec(subject, offset, false);
+  if (count == 0) {
+    matches = array<string>();
+    return 0;
+  }
+
+  matches = array<string>(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
+  if (named_subpatterns_count) {
+    for (int64_t i = 0; i < count; i++) {
+      const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
+      preg_add_match(matches, match_str, subpattern_names[i]);
+    }
+  } else {
+    for (int64_t i = 0; i < count; i++) {
+      matches.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
+    }
+  }
+
+  return 1;
+}
+
+Optional<int64_t> regexp::match_all(const string &subject, array<array<string>> &matches, int64_t offset) const {
+  if (!check_errors(subject, offset)) {
+    matches = array<array<string>>();
+    return false;
+  }
+
+  matches = array<array<string>>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+  for (int32_t i = 0; i < subpatterns_count; i++) {
+    if (named_subpatterns_count && !subpattern_names[i].empty()) {
+      matches.set_value(subpattern_names[i], array<string>());
+    }
+    matches.push_back(array<string>());
+  }
+
+  bool second_try = false; // set after matching an empty string
+  pcre_last_error = 0;
+  int64_t result = 0;
+
   while (offset <= int64_t{subject.size()}) {
     const int64_t count = exec(subject, offset, second_try);
 
@@ -736,44 +767,20 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
         continue;
       }
 
-      if (!all_matches) {
-        matches = array<mixed>();
-      }
-
       break;
     }
 
     result++;
 
-    if (all_matches) {
-      for (int32_t i = 0; i < subpatterns_count; i++) {
-        const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
-        if (named_subpatterns_count && !subpattern_names[i].empty()) {
-          matches[subpattern_names[i]].push_back(match_str);
-        }
-        matches[i].push_back(match_str);
+    for (int32_t i = 0; i < subpatterns_count; i++) {
+      const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
+      if (named_subpatterns_count && !subpattern_names[i].empty()) {
+        matches[subpattern_names[i]].push_back(match_str);
       }
-    } else {
-      array<mixed> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
-
-      if (named_subpatterns_count) {
-        for (int64_t i = 0; i < count; i++) {
-          const string match_str(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]);
-
-          preg_add_match(result_set, match_str, subpattern_names[i]);
-        }
-      } else {
-        for (int64_t i = 0; i < count; i++) {
-          result_set.push_back(string(subject.c_str() + submatch[i + i], submatch[i + i + 1] - submatch[i + i]));
-        }
-      }
-
-      matches = result_set;
-      break;
+      matches[i].push_back(match_str);
     }
 
     second_try = (submatch[0] == submatch[1]);
-
     offset = submatch[1];
   }
 
@@ -785,17 +792,8 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
 }
 
 Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset) const {
-  pcre_last_error = 0;
-
-  check_pattern_compilation_warning();
-  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
+  if (!check_errors(subject, offset)) {
     matches = array<mixed>();
-    return false;
-  }
-
-  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<mixed>();
-    pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
   }
 
@@ -832,15 +830,9 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
   }
 
   bool second_try = false;//set after matching an empty string
-
-  int64_t result = 0;
   auto empty_match = array<mixed>::create(string(), PCRE2_UNSET);
-  offset = std::max(subject.get_correct_index(offset), 0_i64);
-  if (offset > subject.size()) {
-    matches = array<mixed>();
-    pcre_last_error = PCRE2_ERROR_BADOFFSET;
-    return false;
-  }
+  int64_t result = 0;
+
   while (offset <= int64_t{subject.size()}) {
     const int64_t count = exec(subject, offset, second_try);
 
@@ -927,15 +919,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
 }
 
 Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
-  pcre_last_error = 0;
-
-  check_pattern_compilation_warning();
-  if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
-    return false;
-  }
-
-  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    pcre_last_error = PCRE_ERROR_BADUTF8;
+  if (!check_errors(subject)) {
     return false;
   }
 
