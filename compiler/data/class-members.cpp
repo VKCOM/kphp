@@ -172,10 +172,6 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;
   }
-
-  if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_TO_STRING)) {
-    klass->has_tostring = true;
-  }
 }
 
 void ClassMembersContainer::add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint) {

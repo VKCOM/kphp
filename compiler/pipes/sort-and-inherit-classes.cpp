@@ -286,7 +286,6 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
                    fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
       }
     });
-    child_class->has_tostring |= parent_class->has_tostring;
   }
 
   if (child_class->parent_class) {

@@ -233,14 +233,10 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
     return {};
   }
 
-  if (!klass->has_tostring) {
-    kphp_error(0, fmt_format("Converting to a string of a class {} that does not contain a __toString() method",
-                             klass->get_name()));
-    return {};
-  }
-
   const auto *to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
   if (to_string_method == nullptr) {
+    kphp_error(0, fmt_format("Converting to a string of a class {} that does not contain a __toString() method",
+                             klass->get_name()));
     return {};
   }
 

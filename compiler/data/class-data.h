@@ -59,7 +59,6 @@ public:
   bool is_tl_class{false};
   bool has_custom_constructor{false};
   bool is_serializable{false};
-  bool has_tostring{false};
 
   SrcFilePtr file_id;
   int location_line_num{-1};
