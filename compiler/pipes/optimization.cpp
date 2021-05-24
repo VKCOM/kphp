@@ -297,14 +297,6 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
         explicit_cast_array_type(args[index], tinf::get_type(params[index]), &current_function->explicit_const_var_ids);
       }
     }
-    if (func->name == "print_r") {
-      auto &arg = func_call->args()[0];
-
-      const auto call = try_convert_expr_to_call_to_string_method(arg);
-      if (call) {
-        arg = call;
-      }
-    }
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
     if (!var_init_expression_optimization_depth_) {
       for (auto &array_element : *op_array_vertex) {
