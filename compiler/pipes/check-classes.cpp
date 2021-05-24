@@ -151,7 +151,8 @@ void CheckClassesPass::check_magic_tostring_method(FunctionPtr fun) {
     return;
   }
 
-  kphp_error(ret_type->ptype() == tp_string, fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
+  kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0,
+             fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
 }
 
 void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
