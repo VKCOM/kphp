@@ -134,6 +134,10 @@ void OptimizationPass::collect_concat(VertexPtr root, vector<VertexPtr> *collect
       collect_concat(i, collected);
     }
   } else {
+    const auto call = try_convert_expr_to_call_to_string_method(root);
+    if (call) {
+      root = call;
+    }
     collected->push_back(root);
   }
 }
