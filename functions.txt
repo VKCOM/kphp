@@ -1338,7 +1338,7 @@ function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: voi
 
 function is_kphp_job_workers_enabled() ::: bool;
 
-function kphp_job_workers_count() ::: int;
+function get_job_workers_number() ::: int;
 
 // zstd api
 function zstd_compress(string $data, int $level = 3) ::: string | false;

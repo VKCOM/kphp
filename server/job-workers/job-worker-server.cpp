@@ -150,6 +150,9 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   auto now = std::chrono::system_clock::now();
   double timeout_sec = job->job_deadline_time - std::chrono::duration<double>{now.time_since_epoch()}.count();
 
+  tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, left_job_time = %f\n",
+            job->job_result_fd_idx, job->job_id, job, timeout_sec);
+
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });

@@ -28,10 +28,10 @@ int get_job_timeout_wakeup_id() {
 }
 
 bool f$is_kphp_job_workers_enabled() noexcept {
-  return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0;
+  return f$get_job_workers_number() > 0;
 }
 
-int64_t f$kphp_job_workers_count() noexcept {
+int64_t f$get_job_workers_number() noexcept {
   return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker);
 }
 
