@@ -20,6 +20,7 @@ public:
   VertexPtr on_exit_vertex(VertexPtr vertex) final;
 
 private:
+  std::vector<VarPtr> foreach_iterable_non_local_vars_;
   std::vector<VarPtr> foreach_vars_;
   std::vector<VarPtr> foreach_ref_vars_;
   std::vector<VarPtr> foreach_key_vars_;

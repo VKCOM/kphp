@@ -9,6 +9,20 @@
 
 #include "compiler/data/var-data.h"
 
+VarPtr get_non_local_scope_visible_var(VertexAdaptor<op_foreach_param> params) noexcept {
+  if (auto iterable_instance = params->xs().try_as<op_instance_prop>()) {
+    return iterable_instance->var_id;
+  }
+
+  if (auto iterable_var = params->xs().try_as<op_var>()) {
+    if (iterable_var->var_id->is_in_global_scope()) {
+      return iterable_var->var_id;
+    }
+  }
+
+  return {};
+}
+
 VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
   auto already_used = [&](VarPtr v) {
     return vk::contains(foreach_vars_, v) || vk::contains(foreach_key_vars_, v);
@@ -32,6 +46,9 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
       }
       foreach_key_vars_.push_back(key->var_id);
     }
+    if (auto iterable_var = get_non_local_scope_visible_var(params)) {
+      foreach_iterable_non_local_vars_.emplace_back(iterable_var);
+    }
   }
   if (auto unset = vertex.try_as<op_unset>()) {
     if (auto var = unset->expr().try_as<op_var>()) {
@@ -53,8 +70,18 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
       }
     }
   }
+  if (!foreach_iterable_non_local_vars_.empty()) {
+    if (auto call = vertex.try_as<op_func_call>()) {
+      if (call->func_id->is_resumable || call->func_id->can_be_implicitly_interrupted_by_other_resumable) {
+        kphp_error(foreach_ref_vars_.empty(),
+                   fmt_format("It is forbidden to call resumable functions inside foreach with reference by var {} with non local scope visibility",
+                              foreach_iterable_non_local_vars_.back()->get_human_readable_name()));
+      }
+    }
+  }
   return vertex;
 }
+
 VertexPtr CheckNestedForeachPass::on_exit_vertex(VertexPtr vertex) {
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
     auto params = foreach_v->params();
@@ -64,6 +91,10 @@ VertexPtr CheckNestedForeachPass::on_exit_vertex(VertexPtr vertex) {
     }
     if (params->has_key()) {
       foreach_key_vars_.pop_back();
+    }
+    if (auto iterable_var = get_non_local_scope_visible_var(params)) {
+      kphp_assert(foreach_iterable_non_local_vars_.back() == iterable_var);
+      foreach_iterable_non_local_vars_.pop_back();
     }
   }
   return vertex;

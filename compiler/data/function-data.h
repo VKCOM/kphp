@@ -99,6 +99,7 @@ public:
   bool cpp_template_call = false;
   bool cpp_variadic_call = false;
   bool is_resumable = false;
+  bool can_be_implicitly_interrupted_by_other_resumable = false;
   bool is_virtual_method = false;
   bool is_overridden_method = false;
   bool is_no_return = false;
