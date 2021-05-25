@@ -734,7 +734,7 @@ int run_worker(WorkerType worker_type) {
   if (new_pid == 0) {
     switch (worker_type) {
       case WorkerType::general_worker:
-        run_mode = RunMode::http_worker;
+        run_mode = RunMode::general_worker;
         break;
       case WorkerType::job_worker:
         run_mode = RunMode::job_worker;
