@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/check-nested-foreach.h"
@@ -11,7 +11,7 @@
 
 VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
   auto already_used = [&](VarPtr v) {
-    return vk::contains(foreach_vars, v) || vk::contains(foreach_key_vars, v);
+    return vk::contains(foreach_vars_, v) || vk::contains(foreach_key_vars_, v);
   };
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
     auto params = foreach_v->params();
@@ -20,9 +20,9 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
       kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
                                TermStringFormat::add_text_attribute("&$" + x->var_id->name, TermStringFormat::bold)));
     }
-    foreach_vars.push_back(x->var_id);
+    foreach_vars_.push_back(x->var_id);
     if (x->ref_flag) {
-      foreach_ref_vars.push_back(x->var_id);
+      foreach_ref_vars_.push_back(x->var_id);
     }
     if (params->has_key()) {
       auto key = params->key();
@@ -30,12 +30,12 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
         kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
                                  TermStringFormat::add_text_attribute("&$" + key->var_id->name, TermStringFormat::bold)));
       }
-      foreach_key_vars.push_back(key->var_id);
+      foreach_key_vars_.push_back(key->var_id);
     }
   }
   if (auto unset = vertex.try_as<op_unset>()) {
     if (auto var = unset->expr().try_as<op_var>()) {
-      if (vk::contains(foreach_ref_vars, var->var_id)) {
+      if (vk::contains(foreach_ref_vars_, var->var_id)) {
         kphp_error(0, "Unsetting reference variable is not implemented");
       }
       if (var->var_id->is_foreach_reference) {
@@ -46,8 +46,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
   if (auto var_v = vertex.try_as<op_var>()) {
     VarPtr var = var_v->var_id;
     if (var->is_foreach_reference) {
-      if (!vk::contains(foreach_ref_vars, var) && !vk::contains(errored_vars, var)) {
-        errored_vars.push_back(var);
+      if (!vk::contains(foreach_ref_vars_, var) && !vk::contains(errored_vars_, var)) {
+        errored_vars_.push_back(var);
         kphp_error(0, fmt_format("Foreach reference variable {} used outside of loop",
                                  TermStringFormat::add_text_attribute("&$" + var->name, TermStringFormat::bold)));
       }
@@ -58,12 +58,12 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
 VertexPtr CheckNestedForeachPass::on_exit_vertex(VertexPtr vertex) {
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
     auto params = foreach_v->params();
-    foreach_vars.pop_back();
+    foreach_vars_.pop_back();
     if (params->x()->ref_flag) {
-      foreach_ref_vars.pop_back();
+      foreach_ref_vars_.pop_back();
     }
     if (params->has_key()) {
-      foreach_key_vars.pop_back();
+      foreach_key_vars_.pop_back();
     }
   }
   return vertex;
