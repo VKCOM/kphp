@@ -115,14 +115,12 @@ int JobWorkerServer::job_parse_execute(connection *c) {
 
   if (running_job) {
     tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
-    has_delayed_jobs = true;
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_another_is_running;
     return 0;
   }
 
   if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
     tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
-    has_delayed_jobs = true;
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_overload;
     return 0;
   }
@@ -134,7 +132,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     assert(errno == EWOULDBLOCK);
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
-    has_delayed_jobs = false;
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_steal;
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
@@ -185,13 +182,6 @@ void JobWorkerServer::init() {
   tvkprintf(job_workers, 1, "insert read job connection [fd = %d] to epoll\n", read_job_connection->fd);
 
   job_reader = PipeJobReader{read_job_fd};
-}
-
-void JobWorkerServer::try_complete_delayed_jobs() {
-  if (!running_job && has_delayed_jobs) {
-    tvkprintf(job_workers, 1, "There are delayed jobs. Let's complete them\n");
-    job_parse_execute(read_job_connection);
-  }
 }
 
 void JobWorkerServer::reset_running_job() noexcept {

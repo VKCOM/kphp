@@ -1629,9 +1629,7 @@ static void generic_event_loop(RunMode mode) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
     }
-    if (mode == RunMode::job_worker) {
-      job_worker_server.try_complete_delayed_jobs();
-    }
+
     epoll_work(57);
 
     if (precise_now > next_create_outbound) {
