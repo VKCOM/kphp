@@ -1,15 +1,18 @@
 <?php
 
-use \ComplexScenario\CollectStatsJobRequest;
-use \ComplexScenario\CollectStatsJobResponse;
-use \ComplexScenario\NetPid;
-use \ComplexScenario\Stats;
-use \ComplexScenario\StatTraits;
+use ComplexScenario\CollectStatsJobRequest;
+use ComplexScenario\CollectStatsJobResponse;
+use ComplexScenario\NetPid;
+use ComplexScenario\Stats;
+use ComplexScenario\StatsInterface;
+use ComplexScenario\StatsMC;
+use ComplexScenario\StatsRPCFiltered;
+use ComplexScenario\StatsRPCSimple;
 
 require_once "_stats_processor.php";
 
-function collect_stats_with_job(StatTraits $traits, int $master_port) {
-  $job_id = kphp_job_worker_start(new CollectStatsJobRequest($master_port, $traits));
+function collect_stats_with_job(StatsInterface $stat, int $master_port) {
+  $job_id = kphp_job_worker_start(new CollectStatsJobRequest($master_port, $stat));
   if (!$job_id) {
     critical_error("Can't send job");
   }
@@ -21,22 +24,22 @@ function collect_stats_with_job(StatTraits $traits, int $master_port) {
   return tuple($result_stats->stats, $result_stats->workers_pids, $result_stats->server_net_pid);
 }
 
-function collect_stats_locally(StatTraits $traits, int $master_port) {
-  $local_processing_id = start_stats_processing($traits, $master_port);
+function collect_stats_locally(StatsInterface $stat, int $master_port) {
+  $local_processing_id = $stat->start_processing($master_port);
   sched_yield();
 
   $net_pid_processing_id = start_net_pid_processing($master_port);
   sched_yield();
 
   $workers_pids = get_worker_pids($master_port);
-  $local_stats = finish_stats_processing($traits, $local_processing_id);
+  $local_stats = $stat->finish_processing($local_processing_id);
   $net_pid = finish_net_pid_processing($net_pid_processing_id);
   return tuple($local_stats, $workers_pids, $net_pid);
 }
 
-function compare_job_and_local_stats(StatTraits $traits, int $master_port, string $type) : int {
-  $job_wait_id = fork(collect_stats_with_job($traits, $master_port));
-  $local_wait_id = fork(collect_stats_locally($traits, $master_port));
+function compare_job_and_local_stats(StatsInterface $stat, int $master_port, string $type): int {
+  $job_wait_id = fork(collect_stats_with_job($stat, $master_port));
+  $local_wait_id = fork(collect_stats_locally($stat, $master_port));
 
   /**
    * @var ?NetPid $job_net_pid
@@ -86,14 +89,14 @@ function compare_job_and_local_stats(StatTraits $traits, int $master_port, strin
 function run_http_complex_scenario() {
   $context = json_decode(file_get_contents('php://input'));
   $master_port = (int)$context["master-port"];
-  $stat_names = array_map("strval", $context["stat-names"]);
+  $filter = array_map("strval", $context["stat-names"]);
 
   $ids = [
-    "mc_stats" => fork(compare_job_and_local_stats(new StatTraits($stat_names, StatTraits::MC_STATS), $master_port, "mc_stats")),
-    "mc_stats_full" => fork(compare_job_and_local_stats(new StatTraits($stat_names, StatTraits::MC_STATS_FULL), $master_port, "mc_stats_full")),
-    "mc_stats_fast" => fork(compare_job_and_local_stats(new StatTraits($stat_names, StatTraits::MC_STATS_FAST), $master_port, "mc_stats_fast")),
-    "rpc_stats" => fork(compare_job_and_local_stats(new StatTraits($stat_names, StatTraits::RPC_STATS), $master_port, "rpc_stats")),
-    "rpc_filtered_stats" => fork(compare_job_and_local_stats(new StatTraits($stat_names, StatTraits::RPC_FILTERED_STATS), $master_port, "rpc_filtered_stats")),
+    "mc_stats" => fork(compare_job_and_local_stats(new StatsMC(StatsMC::DEFAULT_TYPE, $filter), $master_port, "mc_stats")),
+    "mc_stats_full" => fork(compare_job_and_local_stats(new StatsMC(StatsMC::FULL_TYPE, $filter), $master_port, "mc_stats_full")),
+    "mc_stats_fast" => fork(compare_job_and_local_stats(new StatsMC(StatsMC::FAST_TYPE, $filter), $master_port, "mc_stats_fast")),
+    "rpc_stats" => fork(compare_job_and_local_stats(new StatsRPCSimple($filter), $master_port, "rpc_stats")),
+    "rpc_filtered_stats" => fork(compare_job_and_local_stats(new StatsRPCFiltered($filter), $master_port, "rpc_filtered_stats")),
   ];
 
   $result = [];
