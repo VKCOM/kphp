@@ -253,12 +253,12 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
 
 VertexPtr OptimizationPass::convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv) {
   const auto expr = conv->expr();
-  const auto call = try_convert_expr_to_call_to_string_method(expr);
-  if (!call) {
-    return conv;
+
+  if (const auto call = try_convert_expr_to_call_to_string_method(expr)) {
+    return call;
   }
 
-  return call;
+  return conv;
 }
 
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
