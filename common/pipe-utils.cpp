@@ -14,7 +14,7 @@
 #include "common/crc32c.h"
 #include "common/server/limits.h"
 
-struct connection *epoll_insert_pipe(enum pipe_type type, int pipe_fd, conn_type_t *conn_type, void *extra) {
+struct connection *epoll_insert_pipe(enum pipe_type type, int pipe_fd, conn_type_t *conn_type, void *extra, int extra_flags) {
   if (check_conn_functions(conn_type) < 0) {
     return NULL;
   }
@@ -61,7 +61,7 @@ struct connection *epoll_insert_pipe(enum pipe_type type, int pipe_fd, conn_type
   }
 
   epoll_sethandler(pipe_fd, 0, server_read_write_gateway, c);
-  epoll_insert(pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | EVT_SPEC);
+  epoll_insert(pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | extra_flags);
   return c;
 }
 

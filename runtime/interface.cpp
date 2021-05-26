@@ -2198,7 +2198,6 @@ static void free_runtime_libs() {
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
-  free_job_workers_interface_lib();
 
   free_confdata_functions_lib();
   free_instance_cache_lib();

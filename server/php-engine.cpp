@@ -1563,7 +1563,7 @@ static void generic_event_loop(RunMode mode) {
       }
     }
     // fall through
-    case RunMode::http_worker: {
+    case RunMode::general_worker: {
       if (http_port > 0 && http_sfd < 0) {
         dl_assert (!master_flag, "failed to get http_fd\n");
         if (master_flag) {
@@ -1634,9 +1634,7 @@ static void generic_event_loop(RunMode mode) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
     }
-    if (mode == RunMode::job_worker) {
-      job_worker_server.try_complete_delayed_jobs();
-    }
+
     epoll_work(57);
 
     if (precise_now > next_create_outbound) {
@@ -1671,7 +1669,7 @@ static void generic_event_loop(RunMode mode) {
       cron();
     }
 
-    if (vk::any_of_equal(mode, RunMode::http_worker, RunMode::master)) {
+    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
       lease_cron();
       if (sigterm_on && !rpc_stopped) {
         rpcc_stop();
@@ -1685,7 +1683,7 @@ static void generic_event_loop(RunMode mode) {
       main_thread_reactor.pre_event();
     }
 
-    if (vk::any_of_equal(mode, RunMode::http_worker, RunMode::master)) {
+    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
       if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
         vkprintf(1, "Quitting because of sigterm\n");
         break;
@@ -1702,7 +1700,7 @@ static void generic_event_loop(RunMode mode) {
     vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
-  if (mode == RunMode::http_worker && http_sfd >= 0) {
+  if (mode == RunMode::general_worker && http_sfd >= 0) {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }

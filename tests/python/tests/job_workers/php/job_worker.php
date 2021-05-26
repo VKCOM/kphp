@@ -14,6 +14,8 @@ function do_job_worker() {
         return x2_with_error($req);
       case "x2_with_work_after_response":
         return x2_with_work_after_response($req);
+      case "sync_job":
+        return sync_job($req);
     }
     if ($req->tag !== "") {
       critical_error("Unknown tag " + $req->tag);
@@ -115,4 +117,14 @@ function x2_with_work_after_response(X2Request $x2_req) {
   fprintf(STDERR, "start work after response\n");
   safe_sleep($x2_req->sleep_time_sec);
   fprintf(STDERR, "finish work after response\n");
+}
+
+function sync_job(X2Request $req) {
+  $id = $req->arr_request[0];
+  instance_cache_store("sync_job_started_$id", new SyncJobCommand('started'));
+
+  while (instance_cache_fetch(SyncJobCommand::class, "finish_sync_job_$id") === null) {
+  }
+
+  kphp_job_worker_store_response(new X2Response);
 }

@@ -30,7 +30,8 @@ void check_new_message(JobSharedMessage *message) {
   ASSERT_EQ(message->owners_counter, 1);
   ASSERT_EQ(message->job_id, 0);
   ASSERT_EQ(message->job_result_fd_idx, -1);
-  ASSERT_EQ(message->job_deadline_time, -1.0);
+  ASSERT_EQ(message->job_start_time, -1.0);
+  ASSERT_EQ(message->job_timeout, -1.0);
 }
 
 struct AcquiredReleased {

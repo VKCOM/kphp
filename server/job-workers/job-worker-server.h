@@ -30,8 +30,6 @@ public:
 
   int job_parse_execute(connection *c);
 
-  void try_complete_delayed_jobs();
-
   void reset_running_job() noexcept;
 
   void try_store_job_response_error(const char *error_msg, int error_code);
@@ -46,7 +44,6 @@ private:
   JobSharedMessage *running_job{nullptr};
   PipeJobWriter job_writer;
   PipeJobReader job_reader;
-  bool has_delayed_jobs{false};
   int read_job_fd{-1};
   connection *read_job_connection{nullptr};
   bool reply_was_sent{false};

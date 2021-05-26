@@ -427,7 +427,7 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  dead_worker_stats.add_worker_stats_from(w->stats->worker_stats);
+  dead_worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
   // ignore dead workers memory and percentiles stats
   dead_worker_stats.reset_memory_and_percentiles_stats();
   worker_free(w);
@@ -734,7 +734,7 @@ int run_worker(WorkerType worker_type) {
   if (new_pid == 0) {
     switch (worker_type) {
       case WorkerType::general_worker:
-        run_mode = RunMode::http_worker;
+        run_mode = RunMode::general_worker;
         break;
       case WorkerType::job_worker:
         run_mode = RunMode::job_worker;
@@ -1167,7 +1167,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
       }
 
       if (full_flag) {
-        worker_stats.add_worker_stats_from(w->stats->worker_stats);
+        worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
       }
 
       if (worker_pid == -1 || w->pid == worker_pid) {
@@ -1739,7 +1739,7 @@ static void cron() {
     w->stats->update(cpu_timestamp);
     running_general_workers += w->stats->istats.is_running && (w->type == WorkerType::general_worker);
     running_job_workers += w->stats->istats.is_running && (w->type == WorkerType::job_worker);
-    server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats);
+    server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
   }
   server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, running_general_workers});
   server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, running_job_workers});

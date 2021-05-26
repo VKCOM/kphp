@@ -47,6 +47,10 @@ function do_http_worker() {
       test_job_graceful_shutdown();
       return;
     }
+    case "/test_job_worker_wakeup_on_merged_events": {
+      test_job_worker_wakeup_on_merged_events();
+      return;
+    }
   }
 
   critical_error("unknown test");
@@ -191,5 +195,41 @@ function test_client_wait_false() {
 function test_job_graceful_shutdown() {
   $context = json_decode(file_get_contents('php://input'));
   $ids = send_jobs($context);
+  echo json_encode(["jobs-result" => gather_jobs($ids)]);
+}
+
+function test_job_worker_wakeup_on_merged_events() {
+  $waiting_workers = [];
+  $sync_job_ids = [];
+  for ($i = 0; $i < get_job_workers_number(); $i++) {
+    $waiting_worker_id = $i + 1;
+    $req = new X2Request;
+    $req->arr_request = [$waiting_worker_id];
+    $req->tag = 'sync_job';
+    $sync_job_ids[] = kphp_job_worker_start($req);
+    $waiting_workers[] = $waiting_worker_id;
+  }
+
+  foreach ($waiting_workers as $id) {
+    while (instance_cache_fetch(SyncJobCommand::class, "sync_job_started_$id") === null) {}
+  }
+
+  fwrite(STDERR, "Sync jobs started\n");
+
+  $context = json_decode(file_get_contents('php://input'));
+  $ids = send_jobs($context, 10);
+
+  fwrite(STDERR, "Simple jobs were sent\n");
+
+  foreach ($waiting_workers as $id) {
+    instance_cache_store("finish_sync_job_$id", new SyncJobCommand('finish'));
+  }
+
+  foreach (gather_jobs($sync_job_ids) as $res) {
+    if (!isset($res['data'])) {
+      raise_error('Error in sync job response');
+    }
+  }
+
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }

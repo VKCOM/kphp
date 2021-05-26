@@ -92,9 +92,9 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
   }
   if (timeout < 0) {
     timeout = DEFAULT_SCRIPT_TIMEOUT;
-  } else if (timeout < 1 || timeout > MAX_SCRIPT_TIMEOUT) {
-    timeout = vk::clamp(timeout, 1.0, MAX_SCRIPT_TIMEOUT * 1.0);
-    php_warning("timeout value was clamped to [%d; %d]", 1, MAX_SCRIPT_TIMEOUT);
+  } else if (timeout < 0.05 || timeout > MAX_SCRIPT_TIMEOUT) {
+    timeout = vk::clamp(timeout, 0.05, MAX_SCRIPT_TIMEOUT * 1.0);
+    php_warning("timeout value was clamped to [%f; %d]", 0.05, MAX_SCRIPT_TIMEOUT);
   }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
@@ -113,7 +113,9 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
   }
 
   const auto now = std::chrono::system_clock::now();
-  memory_request->job_deadline_time = std::chrono::duration<double>{now.time_since_epoch()}.count() + timeout;
+  memory_request->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+  memory_request->job_timeout = timeout;
+
   int job_id = 0;
   {
     dl::CriticalSectionSmartGuard critical_section;

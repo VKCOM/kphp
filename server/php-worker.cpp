@@ -160,7 +160,7 @@ void php_worker_try_start(php_worker *worker) {
 
 void php_worker_init_script(php_worker *worker) {
   double timeout = worker->finish_time - precise_now - 0.01;
-  if (worker->terminate_flag || timeout < 0.2) {
+  if (worker->terminate_flag) {
     worker->state = phpq_finish;
     return;
   }
@@ -650,6 +650,7 @@ void php_worker_free_script(php_worker *worker) {
 
 void php_worker_finish(php_worker *worker) {
   vkprintf (2, "free php script [req_id = %016llx]\n", worker->req_id);
+  clear_shared_job_messages(); // it's here because `phpq_free_script` state is skipped when worker->terminate_flag == true
   lease_on_worker_finish(worker);
   php_worker_free(worker);
 }

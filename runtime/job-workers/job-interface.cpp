@@ -28,8 +28,13 @@ int get_job_timeout_wakeup_id() {
 }
 
 bool f$is_kphp_job_workers_enabled() noexcept {
-  return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0;
+  return f$get_job_workers_number() > 0;
 }
+
+int64_t f$get_job_workers_number() noexcept {
+  return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker);
+}
+
 
 void global_init_job_workers_lib() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
@@ -38,7 +43,7 @@ void global_init_job_workers_lib() noexcept {
   }
 }
 
-void free_job_workers_interface_lib() noexcept {
+void clear_shared_job_messages() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
   }

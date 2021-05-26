@@ -103,8 +103,10 @@ class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_
 
 bool f$is_kphp_job_workers_enabled() noexcept;
 
+int64_t f$get_job_workers_number() noexcept;
+
 void global_init_job_workers_lib() noexcept;
-void free_job_workers_interface_lib() noexcept;
+void clear_shared_job_messages() noexcept;
 
 int get_job_timeout_wakeup_id();
 

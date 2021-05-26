@@ -11,6 +11,7 @@
 #include "common/stats/provider.h"
 
 #include "server/php-runner.h"
+#include "server/workers-control.h"
 
 // TODO Split this class into different entities:
 //    KphpProcessStats - stats about general staff: memory, cpu, idle, ...
@@ -23,11 +24,13 @@ public:
   void add_stats(double script_time, double net_time, int64_t script_queries,
                  int64_t max_memory_used, int64_t max_real_memory_used, int64_t heap_memory_used, script_error_t error) noexcept;
 
+  void add_job_wait_time_stats(double job_wait_time) noexcept;
+
   void update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept;
   void update_mem_info() noexcept;
   void recalc_worker_percentiles() noexcept;
 
-  void add_worker_stats_from(const PhpWorkerStats &from) noexcept;
+  void add_worker_stats_from(const PhpWorkerStats &from, WorkerType worker_type) noexcept;
   void copy_internal_from(const PhpWorkerStats &from) noexcept;
 
   std::string to_string(const std::string &pid_s = {}) const noexcept;
@@ -54,6 +57,10 @@ private:
   // the number of samples in the selection
   static constexpr size_t PERCENTILE_SAMPLES{600};
   static_assert(PERCENTILE_SAMPLES % PERCENTILES_COUNT == 0, "bad PERCENTILE_SAMPLES value");
+
+  size_t job_wait_time_percentiles_counter_{0};
+  std::array<double, PERCENTILE_SAMPLES> job_wait_time_samples_{};
+  std::array<std::chrono::steady_clock::time_point, PERCENTILE_SAMPLES> job_samples_tp_{};
 
   size_t request_circular_percentiles_counter_{0};
   std::array<std::chrono::steady_clock::time_point, PERCENTILE_SAMPLES> samples_tp_{};
@@ -111,6 +118,8 @@ private:
     std::array<double, PERCENTILES_COUNT> working_time_percentiles_{};
     std::array<double, PERCENTILES_COUNT> net_time_percentiles_{};
     std::array<double, PERCENTILES_COUNT> script_time_percentiles_{};
+
+    std::array<double, PERCENTILES_COUNT> job_wait_time_percentiles_{};
 
     std::array<int64_t, PERCENTILES_COUNT> script_memory_used_percentiles_{};
     std::array<int64_t, PERCENTILES_COUNT> script_real_memory_used_percentiles_{};

@@ -658,8 +658,6 @@ long long php_script_memory_get_total_usage(void *ptr) {
 }
 
 void php_script_set_timeout(double t) {
-  assert (t >= 0.1);
-
   static itimerval timer;
   timer.it_interval.tv_sec = 0;
   timer.it_interval.tv_usec = 0;

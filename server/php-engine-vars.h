@@ -37,7 +37,7 @@ extern int master_flag;
 
 enum class RunMode {
   master,
-  http_worker,
+  general_worker,
   job_worker,
 };
 

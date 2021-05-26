@@ -79,6 +79,14 @@ void PhpWorkerStats::add_stats(double script_time, double net_time, int64_t scri
   script_real_memory_used_samples_[sample] = max_real_memory_used;
 }
 
+void PhpWorkerStats::add_job_wait_time_stats(double job_wait_time) noexcept {
+  const size_t sample = job_wait_time_percentiles_counter_++;
+  job_wait_time_percentiles_counter_ %= PERCENTILE_SAMPLES;
+
+  job_samples_tp_[sample] = std::chrono::steady_clock::now();
+  job_wait_time_samples_[sample] = job_wait_time;
+}
+
 void PhpWorkerStats::update_idle_time(double tot_idle_time, int uptime, double average_idle_time, double average_idle_quotient) noexcept {
   internal_.tot_idle_time_ = tot_idle_time;
   internal_.tot_idle_percent_ = uptime > 0 ? tot_idle_time / uptime * 100 : 0;
@@ -107,12 +115,13 @@ void PhpWorkerStats::recalc_worker_percentiles() noexcept {
   internal_.working_time_percentiles_ = calc_timed_50_95_99_percentiles(working_time_samples_, samples_tp_, now_tp);
   internal_.net_time_percentiles_ = calc_timed_50_95_99_percentiles(net_time_samples_, samples_tp_, now_tp);
   internal_.script_time_percentiles_ = calc_timed_50_95_99_percentiles(script_time_samples_, samples_tp_, now_tp);
+  internal_.job_wait_time_percentiles_ = calc_timed_50_95_99_percentiles(job_wait_time_samples_, job_samples_tp_, now_tp);
 
   internal_.script_memory_used_percentiles_ = calc_timed_50_95_99_percentiles(script_memory_used_samples_, samples_tp_, now_tp);
   internal_.script_real_memory_used_percentiles_ = calc_timed_50_95_99_percentiles(script_real_memory_used_samples_, samples_tp_, now_tp);
 }
 
-void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from) noexcept {
+void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from, WorkerType worker_type) noexcept {
   internal_.tot_queries_ += from.internal_.tot_queries_;
   internal_.net_time_ += from.internal_.net_time_;
   internal_.script_time_ += from.internal_.script_time_;
@@ -145,6 +154,12 @@ void PhpWorkerStats::add_worker_stats_from(const PhpWorkerStats &from) noexcept 
   workers_malloc_non_mapped_allocated_bytes_[worker_offset] = from.internal_.malloc_stats_.total_non_mmaped_allocated_bytes_;
   workers_malloc_non_mapped_free_bytes_[worker_offset] = from.internal_.malloc_stats_.total_non_mmaped_free_bytes_;
   workers_malloc_mmaped_bytes_[worker_offset] = from.internal_.malloc_stats_.total_mmaped_bytes_;
+
+  if (worker_type == WorkerType::job_worker) {
+    const size_t job_wait_time_offset = job_wait_time_percentiles_counter_;
+    job_wait_time_percentiles_counter_ = (job_wait_time_percentiles_counter_ + PERCENTILES_COUNT) % PERCENTILE_SAMPLES;
+    append_samples(from.internal_.job_wait_time_percentiles_, job_wait_time_samples_, job_wait_time_offset);
+  }
 
   workers_rss_usage_[worker_offset] = int64_t{from.internal_.mem_info_.rss} * 1024;
   workers_vms_usage_[worker_offset] = int64_t{from.internal_.mem_info_.vm} * 1024;
@@ -223,6 +238,7 @@ void PhpWorkerStats::to_stats(stats_t *stats) noexcept {
   // 95 percentile worker processes, take 95 percentile of the interval => 65 percentile of all samples
   // 99 percentile worker processes, take 99 percentile of the interval => 99 percentile of all samples
   write_percentile<17, 65, 99>(stats, "requests.script_time", script_time_samples_);
+  write_percentile<17, 65, 99>(stats, "job_workers.job_wait_time", job_wait_time_samples_);
   write_percentile<17, 65, 99>(stats, "requests.net_time", net_time_samples_);
   write_percentile<17, 65, 99>(stats, "requests.working_time", working_time_samples_);
   write_percentile<17, 65, 99>(stats, "memory.script_usage", script_memory_used_samples_);
@@ -284,17 +300,21 @@ void PhpWorkerStats::reset_memory_and_percentiles_stats() noexcept {
   internal_.working_time_percentiles_ = {};
   internal_.net_time_percentiles_ = {};
   internal_.script_time_percentiles_ = {};
+  internal_.job_wait_time_percentiles_ = {};
   internal_.script_memory_used_percentiles_ = {};
   internal_.script_real_memory_used_percentiles_ = {};
 
   samples_tp_ = {};
+  job_samples_tp_ = {};
   working_time_samples_ = {};
   net_time_samples_ = {};
   script_time_samples_ = {};
+  job_wait_time_samples_ = {};
   script_memory_used_samples_ = {};
   script_real_memory_used_samples_ = {};
 
   worker_circular_percentiles_counter_ = 0;
+  job_wait_time_percentiles_counter_ = 0;
   workers_script_heap_usage_bytes_ = {};
   workers_malloc_non_mapped_total_used_bytes_ = {};
   workers_malloc_non_mapped_allocated_bytes_ = {};
