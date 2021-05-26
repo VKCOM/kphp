@@ -600,8 +600,6 @@ void FinalCheckPass::check_magic_methods(FunctionPtr fun) {
 }
 
 void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
-  stage::set_function(fun);
-
   const auto count_args = fun->param_ids.size();
   kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
 
