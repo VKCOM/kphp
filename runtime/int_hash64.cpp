@@ -4,7 +4,7 @@
 
 #include "int_hash64.h"
 
-int64_t f$IntHash64(int64_t x) {
+uint64_t f$IntHash64(uint64_t x) {
   x ^= 0x4CF2D2BAAE6DA887ULL;
   x ^= x >> 33;
   x *= 0xff51afd7ed558ccdULL;

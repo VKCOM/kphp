@@ -6,4 +6,4 @@
 
 #include "runtime/kphp_core.h"
 
-int64_t f$IntHash64(int64_t x);
+uint64_t f$IntHash64(uint64_t x);
