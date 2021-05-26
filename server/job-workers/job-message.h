@@ -34,7 +34,12 @@ public:
 
   int32_t job_id{0};
   int32_t job_result_fd_idx{-1};
-  double job_deadline_time{-1.0};
+  double job_start_time{-1.0};
+  double job_timeout{-1.0};
+
+  double job_deadline_time() const noexcept {
+    return job_start_time + job_timeout;
+  }
 
 protected:
   JobSharedMessageMetadata() = default;

@@ -18,6 +18,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
+#include "server/php-worker-stats.h"
 #include "server/server-log.h"
 
 namespace job_workers {
@@ -145,17 +146,22 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   reply_was_sent = false;
 
   auto now = std::chrono::system_clock::now();
-  double timeout_sec = job->job_deadline_time - std::chrono::duration<double>{now.time_since_epoch()}.count();
+  double now_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
 
-  tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, left_job_time = %f\n",
-            job->job_result_fd_idx, job->job_id, job, timeout_sec);
+  double job_wait_time = now_time - job->job_start_time;
+  double left_job_time = job->job_deadline_time() - now_time;
+
+  tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, left_job_time = %f, job_wait_time = %f\n",
+            job->job_result_fd_idx, job->job_id, job, left_job_time, job_wait_time);
+
+  PhpWorkerStats::get_local().add_job_wait_time_stats(job_wait_time);
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });
-  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job->job_id, timeout_sec);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job->job_id, left_job_time);
 
-  set_connection_timeout(c, timeout_sec);
+  set_connection_timeout(c, left_job_time);
   c->status = conn_wait_net;
   jobs_server_php_wakeup(c);
 

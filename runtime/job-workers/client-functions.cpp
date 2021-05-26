@@ -113,7 +113,9 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
   }
 
   const auto now = std::chrono::system_clock::now();
-  memory_request->job_deadline_time = std::chrono::duration<double>{now.time_since_epoch()}.count() + timeout;
+  memory_request->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+  memory_request->job_timeout = timeout;
+
   int job_id = 0;
   {
     dl::CriticalSectionSmartGuard critical_section;
