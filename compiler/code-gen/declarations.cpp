@@ -498,19 +498,25 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
-  bool has_parent = ClassData::does_need_codegen(klass->parent_class) || vk::any_of(klass->implements, ClassData::does_need_codegen);
-  bool has_derived = !klass->derived_classes.empty();
-  bool is_overridden = has_parent && has_derived;
-  bool is_final = has_parent && !has_derived;
+  const bool has_parent = ClassData::does_need_codegen(klass->parent_class) || vk::any_of(klass->implements, ClassData::does_need_codegen);
+  const bool has_derived = !klass->derived_classes.empty();
+  const bool is_overridden = has_parent && has_derived;
+  const bool is_final = has_parent && !has_derived;
+  const bool is_pure_virtual = klass->class_type == ClassType::interface;
 
-  std::move(W)
-    .set_is_virtual(has_derived)
+  FunctionSignatureGenerator &&signature = std::move(W)
+    .set_is_virtual(is_pure_virtual || has_derived)
     .set_final(is_final)
     .set_overridden(is_overridden)
-    << method_signature <<
-    BEGIN
-    << "return " << return_value << ";" << NL <<
-    END << NL << NL;
+    .set_pure_virtual(is_pure_virtual)
+    << method_signature;
+
+  if (is_pure_virtual) {
+    std::move(signature) << SemicolonAndNL{};
+  } else {
+    std::move(signature) << BEGIN << "return " << return_value << SemicolonAndNL{} << END << NL;
+  }
+  std::move(signature) << NL;
 }
 
 void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {

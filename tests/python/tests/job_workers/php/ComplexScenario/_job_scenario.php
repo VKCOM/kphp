@@ -1,13 +1,13 @@
 <?php
 
-use \ComplexScenario\CollectStatsJobResponse;
-use \ComplexScenario\CollectStatsJobRequest;
-use \ComplexScenario\NetPid;
-use \ComplexScenario\StatTraits;
+use ComplexScenario\CollectStatsJobResponse;
+use ComplexScenario\CollectStatsJobRequest;
+use ComplexScenario\NetPid;
+use ComplexScenario\StatsInterface;
 
-function process_stats(StatTraits $traits, int $master_port) {
-  $processing_id = start_stats_processing($traits, $master_port);
-  return finish_stats_processing($traits, $processing_id);
+function process_stats(StatsInterface $stat, int $master_port) {
+  $processing_id = $stat->start_processing($master_port);
+  return $stat->finish_processing($processing_id);
 }
 
 function process_net_pid(int $master_port) : NetPid {
@@ -21,7 +21,7 @@ function process_worker_pids(int $master_port) : array {
 
 function run_job_complex_scenario(KphpJobWorkerRequest $request) {
   if ($request instanceof CollectStatsJobRequest) {
-    $stats_fork_id = fork(process_stats($request->traits, $request->master_port));
+    $stats_fork_id = fork(process_stats($request->stat, $request->master_port));
     $net_pid_fork_id = fork(process_net_pid($request->master_port));
     $workers_pids_fork_id = fork(process_worker_pids($request->master_port));
 

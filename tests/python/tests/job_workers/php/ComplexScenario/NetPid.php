@@ -12,7 +12,7 @@ class NetPid {
   /** @var int */
   public $utime = 0;
 
-  function equals(?NetPid $other) : bool {
+  function equals(?NetPid $other): bool {
     if ($other === null) {
       return false;
     }
