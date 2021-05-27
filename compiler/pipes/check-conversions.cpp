@@ -4,15 +4,13 @@
 
 #include "compiler/pipes/check-conversions.h"
 
-#include "common/termformat/termformat.h"
-
 #include "compiler/inferring/public.h"
 
 const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_conversions = {
   {op_conv_int,      tp_Class},
   {op_conv_int_l,    tp_Class},
   {op_conv_float,    tp_Class},
-  {op_conv_string,   tp_Class},
+//  {op_conv_string,   tp_Class}, // allowed for classes with __toString()
   {op_conv_string_l, tp_Class},
   {op_conv_array,    tp_Class},
   {op_conv_array_l,  tp_Class},

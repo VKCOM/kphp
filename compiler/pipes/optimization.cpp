@@ -134,6 +134,9 @@ void OptimizationPass::collect_concat(VertexPtr root, vector<VertexPtr> *collect
       collect_concat(i, collected);
     }
   } else {
+    if (const auto call = try_convert_expr_to_call_to_string_method(root)) {
+      root = call;
+    }
     collected->push_back(root);
   }
 }
@@ -218,6 +221,46 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
   return root;
 }
 
+// The function will try to convert the expression to a call to the
+// __toString method if the expression has a class type and the class
+// has such a method.
+// If the conversion fails, an empty VertexPtr will be returned.
+VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr expr) {
+  const auto *type = tinf::get_type(expr);
+  if (type == nullptr) {
+    return {};
+  }
+
+  const auto klass = type->class_type();
+  if (!klass) {
+    return {};
+  }
+
+  const auto *to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
+  if (to_string_method == nullptr) {
+    kphp_error(0, fmt_format("Converting to a string of a class {} that does not contain a __toString() method",
+                             klass->get_name()));
+    return {};
+  }
+
+  const auto args = std::vector<VertexPtr>{expr};
+  auto call_function = VertexAdaptor<op_func_call>::create(args);
+  call_function->set_string(std::string{to_string_method->local_name()});
+  call_function->func_id = to_string_method->function;
+
+  return call_function;
+}
+
+VertexPtr OptimizationPass::convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv) {
+  const auto expr = conv->expr();
+
+  if (const auto call = try_convert_expr_to_call_to_string_method(expr)) {
+    return call;
+  }
+
+  return conv;
+}
+
 VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   root = remove_extra_conversions(root);
 
@@ -268,6 +311,8 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     if (op_return_vertex->has_expr()) {
       explicit_cast_array_type(op_return_vertex->expr(), tinf::get_type(current_function, -1), &current_function->explicit_const_var_ids);
     }
+  } else if (auto op_conv_string_vertex = root.try_as<op_conv_string>()) {
+    root = convert_strval_to_magic_tostring_method_call(op_conv_string_vertex);
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {

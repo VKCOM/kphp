@@ -78,6 +78,7 @@ public:
   static const char *NAME_OF_CLONE;
   static const char *NAME_OF_CONSTRUCT;
   static const char *NAME_OF_INVOKE_METHOD;
+  static const char *NAME_OF_TO_STRING;
 
   ClassData();
 

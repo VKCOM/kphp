@@ -2291,6 +2291,7 @@ bool GenTree::is_magic_method_name_allowed(const string &name) {
   static std::set<std::string> names = {
     ClassData::NAME_OF_CONSTRUCT,
     ClassData::NAME_OF_CLONE,
+    ClassData::NAME_OF_TO_STRING,
     // other __-staring methods like __invoke/_self$ are implicitly generated and aren't allowed to occur in php
   };
 
