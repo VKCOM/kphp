@@ -1,7 +1,7 @@
 @ok
 <?php
 class Foo {
-    private string $field = "";
+    private $field = "";
 
     public function __construct(string $a) {
         $this->field = $a;

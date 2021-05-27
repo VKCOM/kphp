@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Cannot convert type \[class_instance<C\$Y>\] to string/
+/Converting to a string of a class Y that does not contain a __toString\(\) method/
 <?php
 
 class X {
