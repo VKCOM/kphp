@@ -549,6 +549,7 @@ class CalcBadVars {
       }
     }
     for (const auto &func : call_graph.functions) {
+      func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
       if (from_resumable[func] && into_resumable[func]) {
         func->is_resumable = true;
         func->fork_prev = from_parents[func];
