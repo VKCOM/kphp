@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/smart_ptrs/singleton.h"
+
 #include "runtime/kphp_core.h"
 
 using curl_easy = int64_t;
@@ -52,6 +54,16 @@ void f$curl_multi_close(curl_multi multi_id) noexcept;
 
 Optional<string> f$curl_multi_strerror(int64_t error_num) noexcept;
 
+void global_init_curl_lib() noexcept;
 void free_curl_lib() noexcept;
 
+struct CurlMemoryUsage : vk::not_copyable {
+public:
+  size_t currently_allocated{0};
+  size_t total_allocated{0};
 
+private:
+  CurlMemoryUsage() = default;
+
+  friend class vk::singleton<CurlMemoryUsage>;
+};

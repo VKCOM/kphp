@@ -2226,7 +2226,8 @@ void global_init_runtime_libs() {
   global_init_rpc_lib();
   global_init_udp_lib();
   global_init_job_workers_lib();
-  php_timelib_init();
+  global_init_php_timelib();
+  global_init_curl_lib();
 }
 
 void global_init_script_allocator() {

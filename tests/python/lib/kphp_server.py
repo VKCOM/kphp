@@ -61,6 +61,13 @@ class KphpServer(Engine):
         """
         return self._master_port
 
+    @property
+    def http_port(self):
+        """
+        :return: http port listened by workers
+        """
+        return self._http_port
+
     def http_request(self, uri='/', method='GET', **kwargs):
         """
         Послать запрос в kphp сервер

@@ -9,7 +9,7 @@ const char* const PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
 const char* const PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
 const char* const PHP_TIMELIB_TZ_GMT4 = "Etc/GMT-4";
 
-void php_timelib_init();
+void global_init_php_timelib();
 
 int php_timelib_days_in_month(int64_t month, int64_t year);
 
