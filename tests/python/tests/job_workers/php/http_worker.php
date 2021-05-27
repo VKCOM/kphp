@@ -208,10 +208,7 @@ function test_job_worker_wakeup_on_merged_events() {
     $req->tag = 'sync_job';
     $sync_job_ids[] = kphp_job_worker_start($req);
     $waiting_workers[] = $waiting_worker_id;
-  }
-
-  foreach ($waiting_workers as $id) {
-    while (instance_cache_fetch(SyncJobCommand::class, "sync_job_started_$id") === null) {}
+    while (instance_cache_fetch(SyncJobCommand::class, "sync_job_started_$waiting_worker_id") === null) {}
   }
 
   fwrite(STDERR, "Sync jobs started\n");
