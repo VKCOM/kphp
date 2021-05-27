@@ -116,13 +116,13 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
-  static array_inner empty_array{
-    ExtraRefCnt::for_global_const, -1,
+  static array_inner_control empty_array{
+    0, ExtraRefCnt::for_global_const, -1,
     {0, 0},
     0, 2,
     0, std::numeric_limits<uint32_t>::max()
   };
-  return &empty_array;
+  return static_cast<array<Unknown>::array_inner *>(&empty_array);
 }
 
 template<class T>
@@ -166,7 +166,7 @@ typename array<T>::entry_pointer_type array<T>::array_inner::get_pointer(list_ha
 
 template<class T>
 const typename array<T>::string_hash_entry *array<T>::array_inner::begin() const {
-  return (const string_hash_entry *)get_entry(end_.next);
+  return (const string_hash_entry *)get_entry(last.next);
 }
 
 template<class T>
@@ -201,7 +201,7 @@ typename array<T>::string_hash_entry *array<T>::array_inner::prev(string_hash_en
 
 template<class T>
 typename array<T>::string_hash_entry *array<T>::array_inner::end() {
-  return (string_hash_entry * ) &end_;
+  return (string_hash_entry * ) &last;
 }
 
 template<class T>
@@ -609,6 +609,11 @@ void array<T>::array_inner::unset_map_value(const string &string_key, int64_t pr
 #undef FIXU
 #undef FIXD
   }
+}
+
+template<class T>
+bool array<T>::array_inner::is_vector_internal_or_last_index(int64_t key) const noexcept {
+  return key >= 0 && key <= int_size;
 }
 
 template<class T>
@@ -1070,7 +1075,7 @@ void array<T>::clear() {
 template<class T>
 T &array<T>::operator[](int64_t int_key) {
   if (is_vector()) {
-    if (int_key >= 0 && int_key <= p->int_size) {
+    if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         return p->emplace_back_vector_value();
@@ -1126,117 +1131,29 @@ T &array<T>::operator[](double double_key) {
 }
 
 template<class T>
-T &array<T>::operator[](const const_iterator &it) {
+T &array<T>::operator[](const const_iterator &it) noexcept {
   if (it.self_->is_vector()) {
-    const auto key = static_cast<uint32_t>((T *)it.entry_ - (T *)it.self_->int_entries);
-    if (is_vector()) {
-      if (key <= p->int_size) {
-        if (key == p->int_size) {
-          mutate_if_vector_needed_int();
-          return p->emplace_back_vector_value();
-        } else {
-          mutate_if_vector_shared();
-          return p->get_vector_value(key);
-        }
-      }
-
-      convert_to_map();
-    } else {
-      mutate_if_map_needed_int();
-    }
-
-    return p->emplace_int_key_map_value(overwrite_element::NO, key);
-  } else {
-    string_hash_entry *entry = (string_hash_entry *)it.entry_;
-    bool is_string_entry = it.self_->is_string_hash_entry(entry);
-
-    if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
-        if (entry->int_key == p->int_size) {
-          mutate_if_vector_needed_int();
-          return p->emplace_back_vector_value();
-        } else {
-          mutate_if_vector_shared();
-          return p->get_vector_value(entry->int_key);
-        }
-      }
-
-      convert_to_map();
-    } else {
-      if (is_string_entry) {
-        mutate_if_map_needed_string();
-      } else {
-        mutate_if_map_needed_int();
-      }
-    }
-
-    if (is_string_entry) {
-      return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
-    } else {
-      return p->emplace_int_key_map_value(overwrite_element::NO, entry->int_key);
-    }
+    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
+    return operator[](key);
   }
+  auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry_);
+  if (it.self_->is_string_hash_entry(entry)) {
+    mutate_to_map_if_vector_or_map_need_string();
+    return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
+  }
+  return operator[](entry->int_key);
 }
 
 template<class T>
-T &array<T>::operator[](const iterator &it) {
-  if (it.self_->is_vector()) {
-    const auto key = static_cast<uint32_t>((T *)it.entry_ - (T *)it.self_->int_entries);
-
-    if (is_vector()) {
-      if (key <= p->int_size) {
-        if (key == p->int_size) {
-          mutate_if_vector_needed_int();
-          return p->emplace_back_vector_value();
-        } else {
-          mutate_if_vector_shared();
-          return p->get_vector_value(key);
-        }
-      }
-
-      convert_to_map();
-    } else {
-      mutate_if_map_needed_int();
-    }
-
-    return p->emplace_int_key_map_value(overwrite_element::NO, key);
-  } else {
-    const string_hash_entry *entry = (const string_hash_entry *)it.entry_;
-    bool is_string_entry = it.self_->is_string_hash_entry(entry);
-
-    if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
-        if (entry->int_key == p->int_size) {
-          mutate_if_vector_needed_int();
-          return p->emplace_back_vector_value();
-        } else {
-          mutate_if_vector_shared();
-          return p->get_vector_value(entry->int_key);
-        }
-      }
-
-      convert_to_map();
-    } else {
-      if (is_string_entry) {
-        mutate_if_map_needed_string();
-      } else {
-        mutate_if_map_needed_int();
-      }
-    }
-
-    if (is_string_entry) {
-      return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
-    } else {
-      return p->emplace_int_key_map_value(overwrite_element::NO, entry->int_key);
-    }
-  }
+T &array<T>::operator[](const iterator &it) noexcept {
+  return operator[](const_iterator{it.self_, it.entry_});
 }
 
 template<class T>
 template<class ...Args>
 void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
   if (is_vector()) {
-    if (int_key >= 0 && int_key <= p->int_size) {
+    if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->int_size) {
         mutate_if_vector_needed_int();
         p->emplace_back_vector_value(std::forward<Args>(args)...);
@@ -1364,117 +1281,25 @@ void array<T>::set_value(const Optional<OptionalT> &key, const T &value) noexcep
 }
 
 template<class T>
-void array<T>::set_value(const const_iterator &it) {
+void array<T>::set_value(const const_iterator &it) noexcept {
   if (it.self_->is_vector()) {
-    const auto key = static_cast<uint32_t>((T *)it.entry_ - (T *)it.self_->int_entries);
-
-    if (is_vector()) {
-      if (key <= p->int_size) {
-        if (key == p->int_size) {
-          mutate_if_vector_needed_int();
-          p->push_back_vector_value(*(T *)it.entry_);
-        } else {
-          mutate_if_vector_shared();
-          p->set_vector_value(key, *(T *)it.entry_);
-        }
-        return;
-      }
-
-      convert_to_map();
-    } else {
-      mutate_if_map_needed_int();
-    }
-
-    p->set_map_value(overwrite_element::YES, key, *(T *)it.entry_);
+    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
+    emplace_value(key, *reinterpret_cast<const T *>(it.entry_));
+    return;
+  }
+  auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry_);
+  if (it.self_->is_string_hash_entry(entry)) {
+    mutate_to_map_if_vector_or_map_need_string();
+    p->emplace_string_key_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
   } else {
-    string_hash_entry *entry = (string_hash_entry *)it.entry_;
-    bool is_string_entry = it.self_->is_string_hash_entry(entry);
-
-    if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
-        if (entry->int_key == p->int_size) {
-          mutate_if_vector_needed_int();
-          p->push_back_vector_value(entry->value);
-        } else {
-          mutate_if_vector_shared();
-          p->set_vector_value(entry->int_key, entry->value);
-        }
-        return;
-      }
-
-      convert_to_map();
-    } else {
-      if (is_string_entry) {
-        mutate_if_map_needed_string();
-      } else {
-        mutate_if_map_needed_int();
-      }
-    }
-
-    if (is_string_entry) {
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
-    } else {
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->value);
-    }
+    emplace_value(entry->int_key, entry->value);
   }
 }
 
 template<class T>
-void array<T>::set_value(const iterator &it) {
-  if (it.self_->is_vector()) {
-    const auto key = static_cast<uint32_t>((T *)it.entry_ - (T *)it.self_->int_entries);
-
-    if (is_vector()) {
-      if (key <= p->int_size) {
-        if (key == p->int_size) {
-          mutate_if_vector_needed_int();
-          p->push_back_vector_value(*(T *)it.entry_);
-        } else {
-          mutate_if_vector_shared();
-          p->set_vector_value(key, *(T *)it.entry_);
-        }
-        return;
-      }
-
-      convert_to_map();
-    } else {
-      mutate_if_map_needed_int();
-    }
-
-    p->set_map_value(overwrite_element::YES, key, *(T *)it.entry_);
-  } else {
-    string_hash_entry *entry = (string_hash_entry *)it.entry_;
-    bool is_string_entry = it.self_->is_string_hash_entry(entry);
-
-    if (is_vector()) {
-      if (!is_string_entry && entry->int_key <= p->int_size) {
-        if (entry->int_key == p->int_size) {
-          mutate_if_vector_needed_int();
-          p->push_back_vector_value(entry->value);
-        } else {
-          mutate_if_vector_shared();
-          p->set_vector_value(entry->int_key, entry->value);
-        }
-        return;
-      }
-
-      convert_to_map();
-    } else {
-      if (is_string_entry) {
-        mutate_if_map_needed_string();
-      } else {
-        mutate_if_map_needed_int();
-      }
-    }
-
-    if (is_string_entry) {
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
-    } else {
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->value);
-    }
-  }
+void array<T>::set_value(const iterator &it) noexcept {
+  set_value(const_iterator{it.self_, it.entry_});
 }
-
 
 template<class T>
 void array<T>::assign_raw(const char *s) {
@@ -1711,32 +1536,8 @@ array_size array<T>::size() const {
 template<class T>
 template<class T1, class>
 void array<T>::merge_with(const array<T1> &other) {
-  for (typename array<T1>::const_iterator it = other.begin(); it != other.end(); ++it) {
-    if (it.self_->is_vector()) {//TODO move if outside for
-      if (is_vector()) {
-        mutate_if_vector_needed_int();
-        p->push_back_vector_value(*reinterpret_cast<const T1 *>(it.entry_));
-      } else {
-        mutate_if_map_needed_int();
-        p->set_map_value(overwrite_element::YES, get_next_key(), *reinterpret_cast<const T1 *>(it.entry_));
-      }
-    } else {
-      const typename array<T1>::string_hash_entry *entry = (const typename array<T1>::string_hash_entry *)it.entry_;
-      const T1 &value = entry->value;
-
-      if (it.self_->is_string_hash_entry(entry)) {
-        mutate_to_map_if_vector_or_map_need_string();
-        p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, value);
-      } else {
-        if (is_vector()) {
-          mutate_if_vector_needed_int();
-          p->push_back_vector_value(value);
-        } else {
-          mutate_if_map_needed_int();
-          p->set_map_value(overwrite_element::YES, get_next_key(), value);
-        }
-      }
-    }
+  for (auto it : other) {
+    push_back_iterator(it);
   }
 }
 
@@ -1908,18 +1709,12 @@ void array<T>::push_back(const T &v) noexcept {
 }
 
 template<class T>
-void array<T>::push_back(const const_iterator &it) {
+template<class T1>
+void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
   if (it.self_->is_vector()) {
-    if (is_vector()) {
-      mutate_if_vector_needed_int();
-      p->push_back_vector_value(*(T *)it.entry_);
-    } else {
-      mutate_if_map_needed_int();
-      p->set_map_value(overwrite_element::YES, get_next_key(), *(T *)it.entry_);
-    }
+    emplace_back(*reinterpret_cast<const T1 *>(it.entry_));
   } else {
-    string_hash_entry *entry = (string_hash_entry *)it.entry_;
-
+    auto *entry = reinterpret_cast<typename array_iterator<T1>::string_hash_type *>(it.entry_);
     if (it.self_->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
       p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
@@ -1936,31 +1731,13 @@ void array<T>::push_back(const const_iterator &it) {
 }
 
 template<class T>
-void array<T>::push_back(const iterator &it) {
-  if (it.self_->is_vector()) {
-    if (is_vector()) {
-      mutate_if_vector_needed_int();
-      p->push_back_vector_value(*(T *)it.entry_);
-    } else {
-      mutate_if_map_needed_int();
-      p->set_map_value(overwrite_element::YES, get_next_key(), *(T *)it.entry_);
-    }
-  } else {
-    string_hash_entry *entry = (string_hash_entry *)it.entry_;
+void array<T>::push_back(const const_iterator &it) noexcept {
+  push_back_iterator(it);
+}
 
-    if (it.self_->is_string_hash_entry(entry)) {
-      mutate_to_map_if_vector_or_map_need_string();
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
-    } else {
-      if (is_vector()) {
-        mutate_if_vector_needed_int();
-        p->push_back_vector_value(entry->value);
-      } else {
-        mutate_if_map_needed_int();
-        p->set_map_value(overwrite_element::YES, get_next_key(), entry->value);
-      }
-    }
-  }
+template<class T>
+void array<T>::push_back(const iterator &it) noexcept {
+  push_back_iterator(it);
 }
 
 template<class T>

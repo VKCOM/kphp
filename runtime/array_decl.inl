@@ -45,25 +45,39 @@ enum class overwrite_element {
   NO
 };
 
+using list_entry_pointer_type = uint32_t;
+
+struct array_list_hash_entry {
+  list_entry_pointer_type next;
+  list_entry_pointer_type prev;
+};
+
+struct array_inner_control {
+  // This stub field is needed to ensure the alignment during the const arrays generation
+  // TODO: figure out something smarter
+  int stub;
+  int ref_cnt;
+  int64_t max_key;
+  array_list_hash_entry last;
+  uint32_t int_size;
+  uint32_t int_buf_size;
+  uint32_t string_size;
+  uint32_t string_buf_size;
+};
+
 template<class T>
 class array {
-
 public:
+  // TODO why we need 2 value types?
   using ValueType = T;
-
-  typedef mixed key_type;
-  typedef T value_type;
+  using value_type = T;
+  using key_type = mixed;
 
   inline static bool is_int_key(const key_type &key);
 
 private:
-
-  using entry_pointer_type = uint32_t;
-
-  struct list_hash_entry {
-    entry_pointer_type next;
-    entry_pointer_type prev;
-  };
+  using entry_pointer_type = list_entry_pointer_type;
+  using list_hash_entry = array_list_hash_entry;
 
   struct int_hash_entry : list_hash_entry {
     T value;
@@ -90,7 +104,7 @@ private:
     uint64_t modulo_helper_string_buf_size{0};
   };
 
-  struct array_inner {
+  struct array_inner : array_inner_control {
     //if key is number, int_key contains this number, there is no string_key.
     //if key is string, int_key contains hash of this string, string_key contains this string.
     //empty hash_entry identified by (next == EMPTY_POINTER)
@@ -100,16 +114,6 @@ private:
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    // This stub field is needed to ensure the alignment during the const arrays generation
-    // TODO: figure out something smarter
-    int stub{0};
-    int ref_cnt;
-    int64_t max_key;
-    list_hash_entry end_;
-    uint32_t int_size;
-    uint32_t int_buf_size;
-    uint32_t string_size;
-    uint32_t string_buf_size;
     int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
@@ -184,16 +188,12 @@ private:
     inline T &get_vector_value(int64_t int_key);//unsafe
     inline void unset_map_value(const string &string_key, int64_t precomuted_hash);
 
+    bool is_vector_internal_or_last_index(int64_t key) const noexcept;
+
     size_t estimate_memory_usage() const;
 
-    inline array_inner(int ref_cnt, int64_t max_key, list_hash_entry end_, uint32_t int_size, uint32_t int_buf_size, uint32_t string_size, uint32_t string_buf_size) :
-      ref_cnt(ref_cnt),
-      max_key(max_key),
-      end_(end_),
-      int_size(int_size),
-      int_buf_size(int_buf_size),
-      string_size(string_size),
-      string_buf_size(string_buf_size) {
+    constexpr array_inner(int ref_cnt, int64_t max_key, list_hash_entry end, uint32_t int_size, uint32_t int_buf_size, uint32_t string_size, uint32_t string_buf_size) noexcept :
+      array_inner_control{0, ref_cnt, max_key, end, int_size, int_buf_size, string_size, string_buf_size} {
     }
 
     inline array_inner(const array_inner &other) = delete;
@@ -268,8 +268,8 @@ public:
   T &operator[](const string &s);
   T &operator[](const mixed &v);
   T &operator[](double double_key);
-  T &operator[](const const_iterator &it);
-  T &operator[](const iterator &it);
+  T &operator[](const const_iterator &it) noexcept;
+  T &operator[](const iterator &it) noexcept;
 
   template<class ...Args>
   void emplace_value(int64_t int_key, Args &&... args) noexcept;
@@ -301,8 +301,8 @@ public:
   template<class OptionalT>
   void set_value(const Optional<OptionalT> &key, const T &value) noexcept;
 
-  void set_value(const const_iterator &it);
-  void set_value(const iterator &it);
+  void set_value(const const_iterator &it) noexcept;
+  void set_value(const iterator &it) noexcept;
 
   // assign binary array_inner representation
   // can be used only on empty arrays to receive logically const array
@@ -334,8 +334,8 @@ public:
   void push_back(T &&v) noexcept;
   void push_back(const T &v) noexcept;
 
-  void push_back(const const_iterator &it);
-  void push_back(const iterator &it);
+  void push_back(const const_iterator &it) noexcept;
+  void push_back(const iterator &it) noexcept;
 
   const T push_back_return(const T &v);
   const T push_back_return(T &&v);
@@ -431,7 +431,9 @@ private:
   template<class Arg, class...Args>
   void push_back_values(Arg &&arg, Args &&... args);
 
-private:
+  template<class T1>
+  void push_back_iterator(const array_iterator<T1> &it) noexcept;
+
   array_inner *p;
 
   template<class T1>

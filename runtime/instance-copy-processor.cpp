@@ -51,3 +51,15 @@ bool InstanceDeepDestroyVisitor::process(string &str) noexcept {
   }
   return true;
 }
+
+template<class T>
+bool InstanceDeepCopyVisitor::PrimitiveArrayProcessor<T>::process(InstanceDeepCopyVisitor &self, array<T> &arr) noexcept {
+  return self.process_array_impl(arr);
+}
+
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<int64_t>;
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<double>;
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<bool>;
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<Optional<int64_t>>;
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<Optional<double>>;
+template struct InstanceDeepCopyVisitor::PrimitiveArrayProcessor<Optional<bool>>;
