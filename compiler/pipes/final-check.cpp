@@ -613,6 +613,6 @@ void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
 }
 
 void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
-  kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", ClassData::NAME_OF_CLONE));
-  kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", ClassData::NAME_OF_CLONE));
+  kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", fun->get_human_readable_name()));
+  kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", fun->get_human_readable_name()));
 }
