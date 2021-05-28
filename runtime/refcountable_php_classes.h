@@ -51,11 +51,15 @@ private:
 
 template<class ...Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
+public:
+  refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
 };
 
 template<>
 class refcountable_polymorphic_php_classes_virt<> : public virtual abstract_refcountable_php_interface {
 public:
+  refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
+
   void add_ref() noexcept final {
     if (refcnt < ExtraRefCnt::for_global_const) {
       ++refcnt;
