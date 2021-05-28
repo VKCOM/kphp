@@ -164,12 +164,13 @@ string f$str_pad(const string &input, int64_t len, const string &pad_str = SPACE
 string f$str_repeat(const string &s, int64_t multiplier);
 
 string f$str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
+string f$str_ireplace(const string &search, const string &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
-void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count);
-string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count);
+void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count, bool with_case);
+string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case);
 
 template<typename T1, typename T2>
-string str_replace_string_array(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count) {
+string str_replace_string_array(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count, bool with_case) {
   string result = subject;
 
   string replace_value;
@@ -186,9 +187,9 @@ string str_replace_string_array(const array<T1> &search, const array<T2> &replac
 
     const string &search_string = f$strval(it.get_value());
     if (search_string.size() >= replace_value.size()) {
-      str_replace_inplace(search_string, replace_value, result, replace_count);
+      str_replace_inplace(search_string, replace_value, result, replace_count, with_case);
     } else {
-      result = str_replace(search_string, replace_value, result, replace_count);
+      result = str_replace(search_string, replace_value, result, replace_count, with_case);
     }
   }
 
@@ -198,17 +199,28 @@ string str_replace_string_array(const array<T1> &search, const array<T2> &replac
 template<typename T1, typename T2>
 string f$str_replace(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy) {
   replace_count = 0;
-  return str_replace_string_array(search, replace, subject, replace_count);
+  return str_replace_string_array(search, replace, subject, replace_count, true);
+}
+template<typename T1, typename T2>
+string f$str_ireplace(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy) {
+  replace_count = 0;
+  return str_replace_string_array(search, replace, subject, replace_count, false);
 }
 
 string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
+string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
 SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
+template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
+SubjectT f$str_ireplace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
+  return f$str_ireplace(search, replace, subject.val(), replace_count);
+}
 
 mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count = str_replace_count_dummy);
+mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count = str_replace_count_dummy);
 
 array<string> f$str_split(const string &str, int64_t split_length = 1);
 

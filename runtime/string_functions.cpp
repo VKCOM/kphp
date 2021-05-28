@@ -1957,15 +1957,29 @@ string f$str_repeat(const string &s, int64_t multiplier) {
   return result;
 }
 
-static string str_replace_char(char c, const string &replace, const string &subject, int64_t &replace_count) {
+static string str_replace_char(char c, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
   int count = 0;
-  const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
+
   string result;
   if (!replace.empty()) {
     result.reserve_at_least(subject.size());
   }
+
   while (true) {
-    const char *pos = (const char *)memchr(piece, c, piece_end - piece);
+    const char *pos = nullptr;
+    if (with_case) {
+      pos = static_cast<const char *>(memchr(piece, c, piece_end - piece));
+    } else {
+      for (int i = 0; i < piece_end - piece; ++i) {
+        if (std::toupper(piece[i], std::locale()) == std::toupper(c, std::locale())) {
+          pos = piece + i;
+          break;
+        }
+      }
+    }
+
     if (pos == nullptr) {
       if (count == 0) {
         return subject;
@@ -1982,12 +1996,24 @@ static string str_replace_char(char c, const string &replace, const string &subj
 
     piece = pos + 1;
   }
-  php_assert (0);//unreacheable
+  php_assert (0); // unreachable
   return string();
 }
 
-void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count) {
-  if ((int)search.size() == 0) {
+static const char *find_substr(const char *where, const char *where_end, const string &what, bool with_case) {
+  if (with_case) {
+    return static_cast<char *>(memmem(where, where_end - where, what.c_str(), what.size()));
+  }
+
+  const auto *it = std::search(where, where_end, what.c_str(), what.c_str() + what.size(), [](char ch1, char ch2) {
+    return std::toupper(ch1, std::locale()) == std::toupper(ch2, std::locale());
+  });
+
+  return it == where_end ? nullptr : it;
+}
+
+void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count, bool with_case) {
+  if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return;
   }
@@ -1995,11 +2021,14 @@ void str_replace_inplace(const string &search, const string &replace, string &su
   subject.make_not_shared();
 
   int count = 0;
-  const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
+
   char *output = subject.buffer();
   bool length_no_change = search.size() == replace.size();
+
   while (true) {
-    const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
+    const char *pos = find_substr(piece, piece_end, search, with_case);
     if (pos == nullptr) {
       if (count == 0) {
         return;
@@ -2010,7 +2039,7 @@ void str_replace_inplace(const string &search, const string &replace, string &su
       }
       output += piece_end - piece;
       if (!length_no_change) {
-        subject.shrink(static_cast <string::size_type> (output - subject.c_str()));
+        subject.shrink(static_cast<string::size_type>(output - subject.c_str()));
       }
       return;
     }
@@ -2029,17 +2058,19 @@ void str_replace_inplace(const string &search, const string &replace, string &su
   php_assert (0); // unreachable
 }
 
-string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count) {
-  if ((int)search.size() == 0) {
+string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
+  if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return subject;
   }
 
   int count = 0;
-  const char *piece = subject.c_str(), *piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
+
   string result;
   while (true) {
-    const char *pos = static_cast <const char *> (memmem(piece, piece_end - piece, search.c_str(), search.size()));
+    const char *pos = find_substr(piece, piece_end, search, with_case);
     if (pos == nullptr) {
       if (count == 0) {
         return subject;
@@ -2056,13 +2087,16 @@ string str_replace(const string &search, const string &replace, const string &su
 
     piece = pos + search.size();
   }
-  php_assert (0);//unreacheable
+  php_assert (0); // unreachable
   return string();
 }
 
-string str_replace_string(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) {
+// common for f$str_replace(string) and f$str_ireplace(string)
+string str_replace_gen(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case);
+
+string str_replace_string(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count, bool with_case) {
   if (search.is_array() && replace.is_array()) {
-    return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count);
+    return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count, with_case);
   } else if (search.is_array()) {
     string result = subject;
     const string &replace_value = replace.to_string();
@@ -2070,9 +2104,9 @@ string str_replace_string(const mixed &search, const mixed &replace, const strin
     for (array<mixed>::const_iterator it = search.begin(); it != search.end(); ++it) {
       const string &search_string = f$strval(it.get_value());
       if (search_string.size() >= replace_value.size()) {
-        str_replace_inplace(search_string, replace_value, result, replace_count);
+        str_replace_inplace(search_string, replace_value, result, replace_count, with_case);
       } else {
-        result = str_replace(search_string, replace_value, result, replace_count);
+        result = str_replace(search_string, replace_value, result, replace_count, with_case);
       }
     }
     return result;
@@ -2082,37 +2116,59 @@ string str_replace_string(const mixed &search, const mixed &replace, const strin
       //return false;
     }
 
-    return f$str_replace(f$strval(search), f$strval(replace), subject, replace_count);
+    return str_replace_gen(f$strval(search), f$strval(replace), subject, replace_count, with_case);
+  }
+}
+
+// common for f$str_replace(string) and f$str_ireplace(string)
+string str_replace_gen(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
+  replace_count = 0;
+  if (search.size() == 1) {
+    return str_replace_char(search[0], replace, subject, replace_count, with_case);
+  } else {
+    return str_replace(search, replace, subject, replace_count, with_case);
   }
 }
 
 string f$str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count) {
-  replace_count = 0;
-  if ((int)search.size() == 1) {
-    return str_replace_char(search[0], replace, subject, replace_count);
-  } else {
-    return str_replace(search, replace, subject, replace_count);
-  }
+  return str_replace_gen(search, replace, subject, replace_count, true);
+}
+
+string f$str_ireplace(const string &search, const string &replace, const string &subject, int64_t &replace_count) {
+  return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
 string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) {
-  return str_replace_string(search, replace, subject, replace_count);
+  return str_replace_string(search, replace, subject, replace_count, true);
 }
 
-mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) {
+string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) {
+  return str_replace_string(search, replace, subject, replace_count, false);
+}
+
+// common for f$str_replace(mixed) and f$str_ireplace(mixed)
+mixed str_replace_gen(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count, bool with_case) {
   replace_count = 0;
   if (subject.is_array()) {
     array<mixed> result;
     for (array<mixed>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
-      mixed cur_result = str_replace_string(search, replace, it.get_value().to_string(), replace_count);
+      mixed cur_result = str_replace_string(search, replace, it.get_value().to_string(), replace_count, with_case);
       if (!cur_result.is_null()) {
         result.set_value(it.get_key(), cur_result);
       }
     }
     return result;
   } else {
-    return str_replace_string(search, replace, subject.to_string(), replace_count);
+    return str_replace_string(search, replace, subject.to_string(), replace_count, with_case);
   }
+}
+
+mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) {
+  return str_replace_gen(search, replace, subject, replace_count, true);
+}
+
+mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) {
+  return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
 array<string> f$str_split(const string &str, int64_t split_length) {
