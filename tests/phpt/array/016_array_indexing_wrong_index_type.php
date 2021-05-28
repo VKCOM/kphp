@@ -3,8 +3,8 @@
 /but bool type is passed/
 /but int\[\] type is passed/
 /but Foo type is passed/
-/but ?string type is passed/
-/but string|false type is passed/
+/but \?string type is passed/
+/but string\|false type is passed/
 <?php
 
 class Foo {}

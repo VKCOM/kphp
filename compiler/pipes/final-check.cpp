@@ -414,7 +414,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     if (key_type != nullptr) {
       const auto ptype = key_type->ptype();
       const auto is_raw = !key_type->or_false_flag() && !key_type->or_null_flag();
-      const auto is_allowed = is_raw && (ptype == tp_string || ptype == tp_int);
+      const auto is_allowed = is_raw && (ptype == tp_string || ptype == tp_int || ptype == tp_mixed);
       kphp_error(is_allowed, fmt_format("Only int and string types are allowed for indexing, but {} type is passed", key_type->as_human_readable()));
     }
   }
