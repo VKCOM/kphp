@@ -408,6 +408,17 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_null_usage_in_binary_operations(binary_vertex);
   }
 
+  if (vertex->type() == op_index) {
+    const auto key = vertex.as<op_index>()->key();
+    const auto *key_type = tinf::get_type(key);
+    if (key_type != nullptr) {
+      const auto ptype = key_type->ptype();
+      const auto is_raw = !key_type->or_false_flag() && !key_type->or_null_flag();
+      const auto is_allowed = is_raw && (ptype == tp_string || ptype == tp_int);
+      kphp_error(is_allowed, fmt_format("Only int and string types are allowed for indexing, but {} type is passed", key_type->as_human_readable()));
+    }
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
 }
