@@ -6,6 +6,7 @@
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/algorithms/format_parse.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
@@ -435,6 +436,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
+    } else if (function_name == "sprintf") {
+      check_sprintf_call(call);
     }
 
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
@@ -449,6 +452,28 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   }
 
   check_func_call_params(call);
+}
+
+void FinalCheckPass::check_sprintf_call(VertexAdaptor<op_func_call> &call) {
+  const auto args = call->args();
+  const auto format_arg = args[0].try_as<op_var>();
+  if (!format_arg) {
+    return;
+  }
+
+  const auto format_var = format_arg->var_id;
+  const auto format_string = format_var->init_val.try_as<op_string>();
+  if (!format_string) {
+    return;
+  }
+
+  const auto format_string_val = format_string->str_val;
+  const auto parsed = FormatString::parse_format(format_string_val);
+  if (!parsed.ok()) {
+    for (const auto &error : parsed.errors) {
+      kphp_error(0, error);
+    }
+  }
 }
 
 // Inspection: static-var should be initialized at the declaration (with the exception of tp_mixed).
