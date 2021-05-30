@@ -17,6 +17,8 @@
 /For format specifier '%s', type 'string' is expected, but 1 argument has type '\?string'/
 // or false arg
 /For format specifier '%s', type 'string' is expected, but 1 argument has type 'string|false'/
+// with constant
+/For format specifier '%s', type 'string' is expected, but 1 argument has type 'int'/
 <?php
 
 function nullableString(): ?string {
@@ -28,6 +30,10 @@ function nullableString(): ?string {
  */
 function orFalseString(): string {
     return false;
+}
+
+function getString(): string {
+    return "";
 }
 
 $int = 1;
@@ -58,3 +64,8 @@ sprintf('%s', nullableString());
 
 // or false arg
 sprintf('%s', orFalseString());
+
+// with constant
+const FORMAT = "%s%s";
+
+echo sprintf(FORMAT, $int, getString());
