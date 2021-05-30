@@ -42,29 +42,29 @@ $string = "Hello";
 $string = "Hello";
 
 // simple
-sprintf("%d", $string);
-sprintf("%X", $string);
-sprintf("%f", $string);
+vprintf("%d", [$string]);
+vprintf("%X", [$string]);
+vprintf("%f", [$string]);
 
 // with arg num
-sprintf('%1$d', $string, $int, $float);
-sprintf('%3$d', $string, $int, $float);
+vprintf('%1$d', [$string, $int, $float]);
+vprintf('%3$d', [$string, $int, $float]);
 
 // mixed with arg num and without
-sprintf('%s %3$d %f', $string, $int, $float);
+vprintf('%s %3$d %f', [$string, $int, $float]);
 
 // not enough, simple
-sprintf('%s %f', $string);
+vprintf('%s %f', [$string]);
 
 // not enough, with arg num
-sprintf('%s %5$f', $string);
+vprintf('%s %5$f', [$string]);
 
 // nullable arg
-sprintf('%s', nullableString());
+vprintf('%s', [nullableString()]);
 
 // or false arg
-sprintf('%s', orFalseString());
+vprintf('%s', [orFalseString()]);
 
 // with constant
 const FORMAT = "%s%s";
-sprintf(FORMAT, $int, getString());
+vprintf(FORMAT, [$int, getString()]);

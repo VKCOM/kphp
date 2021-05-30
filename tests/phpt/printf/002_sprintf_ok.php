@@ -51,5 +51,4 @@ echo sprintf($format, $int, getString());
 
 // with constant
 const FORMAT = "%d%s";
-
 echo sprintf(FORMAT, $int, getString());
