@@ -6,13 +6,13 @@
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
-#include "common/algorithms/format-parse.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
+#include "compiler/format-parser.h"
 #include "compiler/gentree.h"
 #include "compiler/type-hint.h"
 

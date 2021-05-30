@@ -1,7 +1,6 @@
 prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         algorithms/compare-test.cpp
         algorithms/contains-test.cpp
-        algorithms/format-parse-test.cpp
         algorithms/hashes-test.cpp
         algorithms/projections-test.cpp
         algorithms/simd-int-to-string-test.cpp

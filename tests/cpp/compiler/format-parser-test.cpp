@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "common/algorithms/format-parse.h"
+#include "compiler/format-parser.h"
 
 #define ADDITION_INFO(index, format) \
   "test case #" << (index) << " (format: " << (format) << ")"
@@ -401,6 +401,19 @@ TEST(format_parser_test, test_parse) {
           Part{.specifier=Spec{.type=SpecType::Decimal, .fact_symbol='d', .width=10, .precision=10, .arg_num=1, .with_precision=true, .show_sign=true, .pad_right=true, .placeholder='#'}},
           Part{.value=" word "},
           Part{.specifier=Spec{.type=SpecType::Decimal, .fact_symbol='d'}}
+        },
+        .errors={}
+      }
+    },
+    {
+      "Немного %1$'#-+10.10d русского %d текста вам в тесты",
+      PR{
+        .parts={
+          Part{.value="Немного "},
+          Part{.specifier=Spec{.type=SpecType::Decimal, .fact_symbol='d', .width=10, .precision=10, .arg_num=1, .with_precision=true, .show_sign=true, .pad_right=true, .placeholder='#'}},
+          Part{.value=" русского "},
+          Part{.specifier=Spec{.type=SpecType::Decimal, .fact_symbol='d'}},
+          Part{.value=" текста вам в тесты"}
         },
         .errors={}
       }

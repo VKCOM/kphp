@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "inferring/type-data.h"
+
 class FormatString final {
 private:
   enum class State {
