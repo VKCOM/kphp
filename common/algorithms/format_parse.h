@@ -30,6 +30,62 @@ public:
     bool pad_right{false};
     char placeholder{0};
 
+    std::string expected_type() const {
+      switch (type) {
+        case SpecifierType::Unknown:
+        case SpecifierType::Incomplete:
+          return "";
+
+        case SpecifierType::Binary:
+        case SpecifierType::Decimal:
+        case SpecifierType::Octal:
+        case SpecifierType::Hexadecimal:
+        case SpecifierType::Unsigned:
+        case SpecifierType::Char:
+          return "int";
+
+        case SpecifierType::Float:
+          return "float";
+
+        case SpecifierType::String:
+          return "string";
+      }
+
+      return "";
+    }
+
+    bool allowed_for(const TypeData *typ) const {
+      if (typ->or_null_flag() || typ->or_false_flag()) {
+        return false;
+      }
+
+      if (typ->ptype() == tp_mixed) {
+        return true;
+      }
+
+      switch (type) {
+        case SpecifierType::Unknown:
+        case SpecifierType::Incomplete:
+          return false;
+
+        case SpecifierType::Binary:
+        case SpecifierType::Decimal:
+        case SpecifierType::Octal:
+        case SpecifierType::Hexadecimal:
+        case SpecifierType::Unsigned:
+        case SpecifierType::Char:
+          return typ->ptype() == tp_int;
+
+        case SpecifierType::Float:
+          return typ->ptype() == tp_float;
+
+        case SpecifierType::String:
+          return typ->ptype() == tp_string;
+      }
+
+      return false;
+    }
+
     std::string to_string() const {
       std::string res;
 
@@ -88,8 +144,49 @@ public:
     std::vector<Part> parts;
     std::vector<std::string> errors;
 
-    bool ok() const {
-      return errors.empty();
+    int min_count() const {
+      int min = 0;
+      int min_with_number = 0;
+
+      for (const auto &part : parts) {
+        if (!part.is_specifier()) {
+          continue;
+        }
+
+        if (part.specifier.arg_num == -1) {
+          min++;
+        } else if (part.specifier.arg_num > min_with_number) {
+          min_with_number = part.specifier.arg_num;
+        }
+      }
+
+      return std::max(min, min_with_number);
+    }
+
+    std::vector<Part> get_by_index(size_t index) const {
+      std::vector<Part> res;
+      size_t index_spec_without_num = 0;
+
+      for (const auto &part : parts) {
+        if (!part.is_specifier()) {
+          continue;
+        }
+
+        if (part.specifier.arg_num == -1) {
+          index_spec_without_num++;
+
+          if (index_spec_without_num == index) {
+            res.push_back(part);
+          }
+        }
+
+        if (part.specifier.arg_num == index) {
+          res.push_back(part);
+          continue;
+        }
+      }
+
+      return res;
     }
   };
 
@@ -162,6 +259,13 @@ public:
             last_spec.fact_symbol = symbol;
             break;
           case 'c':
+            if (last_spec.width != 0) {
+              errors.emplace_back("The width value is ignored for the '%c' specifier");
+            }
+            if (last_spec.placeholder != 0) {
+              errors.emplace_back("The padding value is ignored for the '%c' specifier");
+            }
+
             last_spec.type = SpecifierType::Char;
             last_spec.fact_symbol = symbol;
             break;
@@ -182,7 +286,11 @@ public:
             last_value += " ";
             break;
           case '$':
-            state = State::SpecifierBody;
+            state = State::StartSpecifier;
+
+            if (last_spec.placeholder != 0) {
+              errors.emplace_back("The argument number must come before the padding symbol");
+            }
 
             last_spec.arg_num = last_spec.width;
             last_spec.width = 0;
