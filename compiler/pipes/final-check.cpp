@@ -6,7 +6,7 @@
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
-#include "common/algorithms/format_parse.h"
+#include "common/algorithms/format-parse.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"

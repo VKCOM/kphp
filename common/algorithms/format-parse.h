@@ -1,8 +1,20 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
+
+#include "compiler/inferring/type-data.h"
 
 class FormatString final {
 private:
-  enum class State { Text, StartSpecifier, StartPlaceholderSpecifier, SpecifierBody, EndSpecifier };
+  enum class State {
+    Text,
+    StartSpecifier,
+    StartPlaceholderSpecifier,
+    SpecifierBody,
+    EndSpecifier
+  };
 
 public:
   enum class SpecifierType {
@@ -197,7 +209,9 @@ public:
     Specifier last_spec = Specifier{SpecifierType::Incomplete};
     State state = State::Text;
 
-    for (const auto &symbol : format) {
+    for (int symbol_index = 0; symbol_index < format.size(); ++symbol_index) {
+      const auto &symbol = format[symbol_index];
+
       if (state == State::Text && symbol == '%') {
         state = State::StartSpecifier;
 
@@ -282,19 +296,22 @@ public:
             parts.push_back(Part{"%%"});
             break;
           case ' ':
-            check_if_incomplete_spec(parts, errors, last_spec);
+            check_if_incomplete_spec(state, parts, errors, last_spec);
             last_value += " ";
             break;
           case '$':
             state = State::StartSpecifier;
 
-            if (last_spec.placeholder != 0) {
+            if (last_spec.placeholder != 0 && last_spec.placeholder != '0') {
               errors.emplace_back("The argument number must come before the padding symbol");
             }
 
             last_spec.arg_num = last_spec.width;
             last_spec.width = 0;
-            last_spec.placeholder = 0;
+
+            if (last_spec.placeholder == '0') {
+              last_spec.placeholder = 0;
+            }
 
             if (last_spec.arg_num == 0) {
               errors.emplace_back("The argument number must be greater than zero");
@@ -308,7 +325,7 @@ public:
               if (last_spec.with_precision) {
                 last_spec.precision = last_spec.precision * 10 + number;
               } else {
-                if (last_spec.width == 0 && symbol == '0') {
+                if (last_spec.width == 0 && symbol == '0' && last_spec.placeholder == 0) {
                   last_spec.placeholder = '0';
                 } else {
                   last_spec.width = last_spec.width * 10 + number;
@@ -335,7 +352,7 @@ public:
         parts.push_back(Part{"", last_spec});
         last_spec = Specifier{};
 
-        last_value += symbol;
+        symbol_index--;
         continue;
       }
 
@@ -349,19 +366,19 @@ public:
       parts.push_back(Part{"", last_spec});
     }
 
-    check_if_incomplete_spec(parts, errors, last_spec);
+    check_if_incomplete_spec(state, parts, errors, last_spec);
 
     return ParseResult{parts, errors};
   }
 
-  static void check_if_incomplete_spec(std::vector<Part> &parts, std::vector<std::string> &errors, Specifier &last_spec) {
+  static void check_if_incomplete_spec(State state, std::vector<Part> &parts, std::vector<std::string> &errors, Specifier &last_spec) {
     if (last_spec.type != SpecifierType::Incomplete) {
       return;
     }
 
-    if (last_spec.placeholder != 0 || last_spec.arg_num != -1 || last_spec.width != 0) {
+    if (last_spec.placeholder != 0 || last_spec.arg_num != -1 || last_spec.width != 0 || state == State::StartSpecifier) {
       parts.push_back(Part{last_spec.to_string()});
-      errors.push_back(std::string("Incomplete type specifier \"") + parts.back().value + "\"");
+      errors.push_back(std::string("Incomplete type specifier '") + parts.back().value + "'");
       last_spec = Specifier{};
     }
   }
