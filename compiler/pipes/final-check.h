@@ -41,6 +41,5 @@ private:
   static void check_magic_methods(FunctionPtr fun);
   static void check_magic_tostring_method(FunctionPtr fun);
   static void check_magic_clone_method(FunctionPtr fun);
-  static void check_printf_like_call(VertexAdaptor<op_func_call> &call, int arg_shift = 0);
 };
 

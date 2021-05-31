@@ -42,6 +42,28 @@ public:
     bool pad_right{false};
     char placeholder{0};
 
+    bool is_simple() const {
+      if (width != 0 || precision != 0 || with_precision || show_sign || pad_right || placeholder != 0) {
+        return false;
+      }
+
+      switch (type) {
+        case SpecifierType::Decimal:
+        case SpecifierType::String:
+          return true;
+        case SpecifierType::Float:
+        case SpecifierType::Binary:
+        case SpecifierType::Octal:
+        case SpecifierType::Hexadecimal:
+        case SpecifierType::Unsigned:
+        case SpecifierType::Char:
+        default:
+          return false;
+      }
+
+      return false;
+    }
+
     std::string expected_type() const {
       switch (type) {
         case SpecifierType::Unknown:
@@ -67,12 +89,12 @@ public:
     }
 
     bool allowed_for(const TypeData *typ) const {
-      if (typ->or_null_flag() || typ->or_false_flag()) {
-        return false;
-      }
-
       if (typ->ptype() == tp_mixed) {
         return true;
+      }
+
+      if (typ->or_null_flag() || typ->or_false_flag()) {
+        return false;
       }
 
       switch (type) {
@@ -86,13 +108,9 @@ public:
         case SpecifierType::Hexadecimal:
         case SpecifierType::Unsigned:
         case SpecifierType::Char:
-          return typ->ptype() == tp_int;
-
         case SpecifierType::Float:
-          return typ->ptype() == tp_float;
-
         case SpecifierType::String:
-          return typ->ptype() == tp_string;
+          return vk::any_of_equal(typ->ptype(), tp_int, tp_float, tp_string);
       }
 
       return false;
@@ -153,6 +171,7 @@ public:
   };
 
   struct ParseResult {
+    std::string format;
     std::vector<Part> parts;
     std::vector<std::string> errors;
 
@@ -368,7 +387,7 @@ public:
 
     check_if_incomplete_spec(state, parts, errors, last_spec);
 
-    return ParseResult{parts, errors};
+    return ParseResult{format, parts, errors};
   }
 
   static void check_if_incomplete_spec(State state, std::vector<Part> &parts, std::vector<std::string> &errors, Specifier &last_spec) {

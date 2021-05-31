@@ -436,11 +436,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
-    } else if (vk::any_of_equal(function_name, "sprintf", "printf", "vsprintf", "vprintf")) {
-      check_printf_like_call(call);
-    } else if (vk::any_of_equal(function_name, "fprintf", "vfprintf")) {
-      check_printf_like_call(call, 1);
     }
+
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
     bool is_value_sort_function = vk::any_of_equal(function_name, "sort", "rsort", "asort", "arsort");
     if (is_value_sort_function) {
@@ -453,67 +450,6 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   }
 
   check_func_call_params(call);
-}
-
-void FinalCheckPass::check_printf_like_call(VertexAdaptor<op_func_call> &call, int arg_shift) {
-  const auto args = call->args();
-  const auto format_arg = args[0 + arg_shift].try_as<op_var>();
-  if (!format_arg) {
-    return;
-  }
-
-  const auto format_var = format_arg->var_id;
-  const auto format_string = format_var->init_val.try_as<op_string>();
-  if (!format_string) {
-    return;
-  }
-
-  const auto format_string_val = format_string->str_val;
-  const auto parsed = FormatString::parse_format(format_string_val);
-  for (const auto &error : parsed.errors) {
-    kphp_error(0, error);
-  }
-
-  const auto format_args_raw = args[1 + arg_shift];
-  VertexConstRange format_args(Vertex::const_iterator{}, Vertex::const_iterator{});
-
-  switch (format_args_raw->type()) {
-    case op_var: {
-      const auto format_args_var = format_args_raw.try_as<op_var>();
-      const auto format_args_array_val = format_args_var->var_id->init_val.try_as<op_array>();
-      if (!format_args_array_val) {
-        return;
-      }
-      format_args = format_args_array_val->args();
-      break;
-    }
-    case op_array: {
-      const auto format_args_array_val = format_args_raw.try_as<op_array>();
-      format_args = format_args_array_val->args();
-      break;
-    }
-    default:
-      return;
-  }
-
-  for (int i = 0; i < format_args.size(); ++i) {
-    const auto *arg_type = tinf::get_type(format_args[i]);
-    const auto expected_specs = parsed.get_by_index(i + 1);
-    for (const auto &spec : expected_specs) {
-      kphp_error(spec.specifier.allowed_for(arg_type),
-                 fmt_format("For format specifier '{}', type '{}' is expected, but {} argument has type '{}'",
-                            TermStringFormat::paint_green(spec.to_string()),
-                            TermStringFormat::paint_green(spec.specifier.expected_type()),
-                            i + 1, arg_type->as_human_readable()));
-    }
-  }
-
-  const auto expected_args = parsed.min_count();
-  kphp_error(format_args.size() >= expected_args,
-             fmt_format("Not enough parameters for format string '{}', expected number of arguments: {}, passed {}",
-                           TermStringFormat::paint_green(format_string_val),
-                           TermStringFormat::paint_green(std::to_string(expected_args)),
-                           TermStringFormat::paint_green(std::to_string(format_args.size()))));
 }
 
 // Inspection: static-var should be initialized at the declaration (with the exception of tp_mixed).
