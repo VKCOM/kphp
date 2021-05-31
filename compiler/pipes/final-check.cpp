@@ -12,7 +12,6 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
-#include "compiler/format-parser.h"
 #include "compiler/gentree.h"
 #include "compiler/type-hint.h"
 

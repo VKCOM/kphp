@@ -6,6 +6,8 @@
 
 #include "inferring/type-data.h"
 
+#include "common/algorithms/find.h"
+
 class FormatString final {
 private:
   enum class State {
