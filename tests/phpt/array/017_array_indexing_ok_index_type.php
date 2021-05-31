@@ -7,15 +7,11 @@ class Foo {
     }
 }
 
-function data(): string {
-    return "";
-}
-
 /**
  * @return int
  */
 function data2() {
-    return 12;
+    return 2;
 }
 
 function f() {
@@ -24,7 +20,6 @@ function f() {
     echo $array[(int)true];
     echo $array[$array[0]];
     echo $array[(string)(new Foo)];
-    echo $array[data()];
     echo $array[data2()];
     echo $array[1];
     echo $array["1"];
