@@ -40,15 +40,6 @@ function test_array_not_exist() {
   var_dump($arr["key"] ?? "xxxx");
 }
 
-function test_array_strange_keys() {
-  $arr = ["hello", "world", "b", "c", "x", "y", "z"];
-
-  var_dump($arr[1.2] ?? "x");
-  var_dump($arr[false] ?? "f");
-  var_dump($arr[true] ?? "t");
-  var_dump($arr[null ?? false] ?? "n");
-}
-
 function test_array_in_var() {
   $arr = 1 ? ["hello", "world", "b", 1, 2, [1, 2], null, "key" => "value"] : "x";
 
@@ -76,6 +67,5 @@ function test_array_with_function_calls() {
 
 test_array_exist();
 test_array_not_exist();
-test_array_strange_keys();
 test_array_in_var();
 test_array_with_function_calls();

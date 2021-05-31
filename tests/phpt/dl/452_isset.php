@@ -14,8 +14,8 @@
   var_dump (isset ($a['1 day']));
   var_dump (isset ($b['1 day']));
 
-  var_dump (isset ($a[1.5]));
-  var_dump (isset ($b[1.5]));
+  var_dump (isset ($a[(int)1.5]));
+  var_dump (isset ($b[(int)1.5]));
 
   $a = array (-1 => 1, 1 => false, 3 => null);
   $b = array (1, false, null);
@@ -32,7 +32,7 @@
   var_dump (array_key_exists ('1 day', $b));
 
   $c = array (0);
-  var_dump (isset($c[0.0])); //true
+  var_dump (isset($c[(int)0.0])); //true
   var_dump (array_key_exists(0, $c)); //false
 
 

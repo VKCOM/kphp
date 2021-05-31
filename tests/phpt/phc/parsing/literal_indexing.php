@@ -41,13 +41,13 @@ function array_indexing1() {
     $x === 0 => 'a',
     $x === 5 => 'b',
     $x === 10 => 'c',
-  ][true]);
+  ][(int)true]);
 
   var_dump([
     $x === 5 => 'b',
     $x === 10 => 'c',
     $x === 0 => 'a',
-  ][true]);
+  ][(int)true]);
 
   var_dump((ARR_CONST)[0]);
 }

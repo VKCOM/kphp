@@ -20,9 +20,7 @@ function data2() {
 
 function f() {
     $array = [1, 2, 3];
-    $tuple = tuple(1, 2);
 
-    echo $array[$tuple[0]];
     echo $array[(int)true];
     echo $array[$array[0]];
     echo $array[(string)(new Foo)];
