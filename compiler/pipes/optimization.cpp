@@ -299,11 +299,11 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     }
 
     if (vk::any_of_equal(func->name,"printf", "vprintf")) {
-      root = optimize_printf_like_call(func_call, true);
+      root = optimize_printf_like_call(func_call);
     } else if (vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
       root = optimize_printf_like_call(func_call, false);
     } else if (vk::any_of_equal(func->name, "fprintf", "vfprintf")) {
-      root = optimize_printf_like_call(func_call, true, 1);
+      root = optimize_printf_like_call(func_call, true, true, 1);
     }
 
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
@@ -331,22 +331,33 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
-VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output, int arg_shift) {
+struct FormatCallInfo {
+  FormatCallInfo() : args(VertexRange(Vertex::iterator{}, Vertex::iterator{})) {}
+  // stores a variable that contains all the call arguments,
+  // if all arguments are constant
+  VertexAdaptor<op_var> var;
+  // stores an array that contains all the call arguments,
+  // if at least one argument is a function call or a variable
+  VertexAdaptor<op_array> array;
+  // flag for the presence of a value in format_args_var
+  bool is_var{false};
+  // stores a set of vertices of the call arguments from var or array
+  VertexRange args;
+};
+
+VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output, bool to_file, int arg_shift) {
   const auto args = call->args();
   auto format_arg_raw = args[0 + arg_shift];
 
-  VertexAdaptor<op_string> format_string;
-  VertexAdaptor<op_array> format_args_array_val;
-
   if (format_arg_raw->type() == op_conv_string) {
-    const auto format_arg = format_arg_raw.try_as<op_conv_string>();
-    format_arg_raw = format_arg->expr();
+    format_arg_raw = format_arg_raw.as<op_conv_string>()->expr();
   }
+
+  VertexAdaptor<op_string> format_string;
 
   switch (format_arg_raw->type()) {
     case op_var: {
-      const auto format_arg = format_arg_raw.try_as<op_var>();
-      const auto format_var = format_arg->var_id;
+      const auto format_var = format_arg_raw.as<op_var>()->var_id;
       const auto format_string_val = format_var->init_val.try_as<op_string>();
       if (!format_string_val) {
         return call;
@@ -354,50 +365,50 @@ VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call
       format_string = format_string_val;
       break;
     }
-
     default:
       return call;
   }
 
-  const auto format_string_val = format_string->str_val;
-  const auto parsed = FormatString::parse_format(format_string_val);
-  for (const auto &error : parsed.errors) {
-    kphp_error(0, error);
-  }
-  if (stage::has_error()) {
+  const auto parsed = FormatString::parse_format(format_string->str_val);
+  if (!parsed.ok()) {
+    for (const auto &error : parsed.errors) {
+      kphp_error(0, error);
+    }
     return call;
   }
+
+  FormatCallInfo info;
 
   const auto format_args_raw = args[1 + arg_shift];
-  VertexAdaptor<op_var> format_args_var;
-  bool with_var = true;
-  VertexRange format_args(Vertex::iterator{}, Vertex::iterator{});
 
   switch (format_args_raw->type()) {
+    // if all arguments are constant
     case op_var: {
-      format_args_var = format_args_raw.try_as<op_var>();
-      format_args_array_val = format_args_var->var_id->init_val.try_as<op_array>();
-      if (!format_args_array_val) {
+      info.var = format_args_raw.as<op_var>();
+      info.array = info.var->var_id->init_val.try_as<op_array>();
+      if (!info.array) {
         return call;
       }
-      format_args = format_args_array_val->args();
+      info.args = info.array->args();
+      info.is_var = true;
       break;
     }
+    // if at least one argument calls a function or variable
     case op_array: {
-      format_args_array_val = format_args_raw.try_as<op_array>();
-      format_args = format_args_array_val->args();
-      with_var = false;
+      info.array = format_args_raw.as<op_array>();
+      info.args = info.array->args();
       break;
     }
     default:
       return call;
   }
 
-  check_printf_like_format(parsed, format_args);
+  check_printf_like_format(parsed, info.args);
   if (stage::has_error()) {
     return call;
   }
 
+  // if format is ""
   if (parsed.parts.empty()) {
     return VertexAdaptor<op_string>::create();
   }
@@ -407,78 +418,74 @@ VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call
 
   for (const auto &part : parsed.parts) {
     if (part.is_specifier()) {
-
       if (part.specifier.arg_num == -1) {
         index_spec_without_num++;
       }
 
-      size_t index = 0;
+      size_t arg_index = 0;
 
       if (part.specifier.arg_num != -1) {
-        index = part.specifier.arg_num - 1;
+        arg_index = part.specifier.arg_num - 1;
       } else {
-        index = index_spec_without_num - 1;
+        arg_index = index_spec_without_num - 1;
       }
 
-      auto vertex = convert_format_part_to_vertex(part,
-                                                  format_args_var,
-                                                  format_args_array_val,
-                                                  index, with_var);
+      const auto vertex = convert_format_part_to_vertex(part, arg_index, info);
       vertex_parts.push_back(vertex);
-
       continue;
     }
 
-    auto vertex = convert_format_part_to_vertex(part,
-                                                format_args_var,
-                                                format_args_array_val,
-                                                0, with_var);
+    const auto vertex = convert_format_part_to_vertex(part, 0, info);
     vertex_parts.push_back(vertex);
   }
 
-  auto build = VertexAdaptor<op_string_build>::create(vertex_parts);
+  const auto build_vertex = VertexAdaptor<op_string_build>::create(vertex_parts);
 
+  // turns into a call to printf/fprintf("%s", build_vertex)
+  // this is necessary because the return value might be used
   if (need_output) {
-    const auto echo_func = G->get_function("print");
-    auto echo_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{build});
-    echo_call->set_string(std::string(echo_func->local_name()));
-    echo_call->func_id = echo_func;
-    return echo_call;
-  }
-
-  return build;
-}
-
-VertexPtr OptimizationPass::convert_format_part_to_vertex(const FormatString::Part &part,
-                                                          VertexAdaptor<op_var> array_var,
-                                                          VertexAdaptor<op_array> array_val,
-                                                          size_t arg_index, bool is_var) {
-  if (part.is_specifier()) {
-    if (part.specifier.is_simple()) {
-      return convert_simple_spec_to_vertex(part.specifier, array_var, array_val, arg_index, is_var);
+    FunctionPtr print_func;
+    if (to_file) {
+      print_func = G->get_function("fprintf");
+    } else {
+      print_func = G->get_function("printf");
     }
 
-    return convert_complex_spec_to_vertex(part.specifier, array_var, array_val, arg_index, is_var);
+    auto format_arg = VertexAdaptor<op_string>::create();
+    format_arg->set_string("%s");
+    auto printf_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{format_arg, build_vertex});
+    printf_call->set_string(std::string(print_func->local_name()));
+    printf_call->func_id = print_func;
+    return printf_call;
+  }
+
+  return build_vertex;
+}
+
+VertexPtr OptimizationPass::convert_format_part_to_vertex(const FormatString::Part &part, size_t arg_index, const FormatCallInfo &info) {
+  if (part.is_specifier()) {
+    if (part.specifier.is_simple()) {
+      return convert_simple_spec_to_vertex(part.specifier, arg_index, info);
+    }
+    return convert_complex_spec_to_vertex(part.specifier, arg_index, info);
   }
 
   VertexAdaptor<op_string> vertex = VertexAdaptor<op_string>::create();
   vertex->set_string(part.value);
-
   return vertex;
 }
 
-VertexPtr OptimizationPass::convert_simple_spec_to_vertex(const FormatString::Specifier &spec,
-                                                          VertexAdaptor<op_var> array_var,
-                                                          VertexAdaptor<op_array> array_val,
-                                                          size_t arg_index, bool is_var) {
+// turns into a strval(strval/intval/floatval(argument))
+VertexPtr OptimizationPass::convert_simple_spec_to_vertex(const FormatString::Specifier &spec, size_t arg_index, const FormatCallInfo &info) {
   VertexPtr element;
 
-  if (is_var) {
+  if (info.is_var) {
+    // building $arr[$index]
     auto index_vertex = VertexAdaptor<op_int_const>::create();
     index_vertex->set_string(std::to_string(arg_index));
-    element = VertexAdaptor<op_index>::create(array_var, index_vertex);
+    element = VertexAdaptor<op_index>::create(info.var, index_vertex);
   } else {
-    element = array_val->args()[arg_index];
+    element = info.args[arg_index];
   }
 
   VertexPtr convert;
@@ -494,31 +501,30 @@ VertexPtr OptimizationPass::convert_simple_spec_to_vertex(const FormatString::Sp
       convert = VertexAdaptor<op_conv_string>::create(element);
       break;
     default:
-      return {};
+      return element;
   }
 
   return VertexAdaptor<op_conv_string>::create(convert);
 }
 
-VertexPtr OptimizationPass::convert_complex_spec_to_vertex(const FormatString::Specifier &spec,
-                                                          VertexAdaptor<op_var> array_var,
-                                                          VertexAdaptor<op_array> array_val,
-                                                          size_t arg_index, bool is_var) {
-
+// turns into a call to sprintf("specifier", argument)
+VertexPtr OptimizationPass::convert_complex_spec_to_vertex(const FormatString::Specifier &spec, size_t arg_index, const FormatCallInfo &info) {
   VertexPtr element;
 
-  if (is_var) {
+  if (info.is_var) {
+    // building $arr[$index]
     auto index_vertex = VertexAdaptor<op_int_const>::create();
     index_vertex->set_string(std::to_string(arg_index));
-    element = VertexAdaptor<op_index>::create(array_var, index_vertex);
+    element = VertexAdaptor<op_index>::create(info.var, index_vertex);
   } else {
-    element = array_val->args()[arg_index];
+    element = info.args[arg_index];
   }
 
   const auto sprintf_func = G->get_function("sprintf");
 
   auto new_spec = spec;
-  new_spec.arg_num = -1;
+  new_spec.arg_num = -1; // argument number no longer makes sense
+
   const auto spec_string = new_spec.to_string();
   auto format_vertex = VertexAdaptor<op_string>::create();
   format_vertex->set_string(spec_string);

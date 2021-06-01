@@ -8,6 +8,11 @@
 
 #include "common/algorithms/find.h"
 
+// The FormatString class provides functions for parsing PHP format strings,
+// as well as functions for interacting with parsed structures.
+//
+// The parser supports all the features of format strings described in docs
+// (https://www.php.net/manual/en/function.sprintf.php).
 class FormatString final {
 private:
   enum class State {
@@ -176,6 +181,10 @@ public:
     std::string format;
     std::vector<Part> parts;
     std::vector<std::string> errors;
+
+    bool ok() const {
+      return errors.empty();
+    }
 
     int min_count() const {
       int min = 0;
