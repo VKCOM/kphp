@@ -58,6 +58,17 @@ int64_t get_rss_without_shm(mem_info_t mem) noexcept {
   return int64_t{mem.rss} - int64_t{get_shm(mem)};
 }
 
+auto get_malloc_stats() noexcept {
+#ifdef __GLIBC_PREREQ
+  #if __GLIBC_PREREQ(2, 33)
+  return mallinfo2();
+  #else
+  return mallinfo();
+  #endif
+#else
+  return mallinfo();
+#endif
+}
 } // namespace
 
 void PhpWorkerStats::add_stats(double script_time, double net_time, int64_t script_queries,
@@ -109,10 +120,10 @@ void PhpWorkerStats::update_mem_info() noexcept {
 
   rss_no_shm_kb_sum_ = get_rss_without_shm(internal_.mem_info_);
 
-  const auto malloc_stats = mallinfo();
-  internal_.malloc_stats_.total_mmaped_bytes_ = malloc_stats.hblkhd;
-  internal_.malloc_stats_.total_non_mmaped_allocated_bytes_ = malloc_stats.uordblks;
-  internal_.malloc_stats_.total_non_mmaped_free_bytes_ = malloc_stats.fordblks;
+  auto malloc_stats = get_malloc_stats();
+  internal_.malloc_stats_.total_mmaped_bytes_ = static_cast<uint32_t>(malloc_stats.hblkhd);
+  internal_.malloc_stats_.total_non_mmaped_allocated_bytes_ = static_cast<uint32_t>(malloc_stats.uordblks);
+  internal_.malloc_stats_.total_non_mmaped_free_bytes_ = static_cast<uint32_t>(malloc_stats.fordblks);
 
   internal_.curl_memory_currently_usage_ = vk::singleton<CurlMemoryUsage>::get().currently_allocated;
 }

@@ -1185,8 +1185,7 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
     sprintf(buf + sprintf(buf, "kphp_version\t%s", engine_tag) - 2, "\n");
     header += buf;
   }
-  sprintf(buf, "cluster_name\t%s\n", vk::singleton<ClusterName>::get().get_cluster_name());
-  header += buf;
+  header.append("cluster_name\t").append(vk::singleton<ClusterName>::get().get_cluster_name()).append("\n");
   sprintf(buf, "min_worker_uptime\t%.0lf\n", min_uptime);
   header += buf;
   sprintf(buf, "max_worker_uptime\t%.0lf\n", max_uptime);
