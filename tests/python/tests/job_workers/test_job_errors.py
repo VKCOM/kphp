@@ -18,12 +18,12 @@ class TestJobErrors(KphpServerAutoTestCase):
             "--job-workers-ratio": 0.5
         })
 
-    def _assert_result(self, stats_before, resp, error_code, buffers=4):
+    def _assert_result(self, stats_before, resp, error_code, buffers=4, results=2):
         self.assertEqual(resp.status_code, 200)
 
         job_result = resp.json()["jobs-result"]
-        self.assertEqual(job_result[0]["error_code"], error_code)
-        self.assertEqual(job_result[1]["error_code"], error_code)
+        for i in range(results):
+            self.assertEqual(job_result[i]["error_code"], error_code)
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
@@ -52,10 +52,10 @@ class TestJobErrors(KphpServerAutoTestCase):
                 "tag": "x2_with_sleep",
                 "script-timeout": script_timeout_sec,
                 "job-sleep-time-sec": script_timeout_sec * 5,
-                "data": [[1, 2, 3, 4], [7, 9, 12]]
+                "data": [[1, 2, 3, 4]]
             })
-        self._assert_result(stats_before, resp, self.JOB_TIMEOUT_ERROR)
-        self.kphp_server.assert_log(2 * ["Critical error during script execution: timeout exit"])
+        self._assert_result(stats_before, resp, self.JOB_TIMEOUT_ERROR, self.cmpGeAndLe(1, 2), results=1)
+        self.kphp_server.assert_log(["Critical error during script execution: timeout exit"])
 
     def test_job_memory_limit_error(self):
         self.job_error_test_impl("memory_limit", self.JOB_MEMORY_LIMIT_ERROR)
