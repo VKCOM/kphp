@@ -298,10 +298,10 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
       }
     }
 
-    if (vk::any_of_equal(func->name,"printf", "vprintf")) {
+    if (vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
       root = optimize_printf_like_call(func_call);
-    } else if (vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
-      root = optimize_printf_like_call(func_call, false);
+    } else if (vk::any_of_equal(func->name, "printf", "vprintf")) {
+      root = optimize_printf_like_call(func_call, true);
     } else if (vk::any_of_equal(func->name, "fprintf", "vfprintf")) {
       root = optimize_printf_like_call(func_call, true, true, 1);
     }
