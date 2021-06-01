@@ -301,9 +301,12 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     if (vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
       root = optimize_printf_like_call(func_call);
     } else if (vk::any_of_equal(func->name, "printf", "vprintf")) {
-      root = optimize_printf_like_call(func_call, true);
+      constexpr auto need_output = true;
+      root = optimize_printf_like_call(func_call, need_output);
     } else if (vk::any_of_equal(func->name, "fprintf", "vfprintf")) {
-      root = optimize_printf_like_call(func_call, true, true, 1);
+      constexpr auto need_output = true;
+      constexpr auto to_file = true;
+      root = optimize_printf_like_call(func_call, need_output, to_file);
     }
 
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
@@ -345,7 +348,10 @@ struct FormatCallInfo {
   VertexRange args;
 };
 
-VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output, bool to_file, int arg_shift) {
+VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output, bool to_file) {
+  // fprintf, vfprintf have a format string as the second argument,
+  // so we need to shift the arguments when getting by index.
+  const auto arg_shift = to_file ? 1 : 0;
   const auto args = call->args();
   auto format_arg_raw = args[0 + arg_shift];
 
@@ -453,10 +459,11 @@ VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call
 
     auto format_arg = VertexAdaptor<op_string>::create();
     format_arg->set_string("%s");
-    auto printf_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{format_arg, build_vertex});
-    printf_call->set_string(std::string(print_func->local_name()));
-    printf_call->func_id = print_func;
-    return printf_call;
+    const auto array_vertex = VertexAdaptor<op_array>::create(build_vertex);
+    auto print_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{format_arg, array_vertex});
+    print_call->set_string(std::string(print_func->local_name()));
+    print_call->func_id = print_func;
+    return print_call;
   }
 
   return build_vertex;

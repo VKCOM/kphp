@@ -23,7 +23,7 @@ private:
   static VertexPtr try_convert_expr_to_call_to_string_method(VertexPtr expr);
   static VertexPtr convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv);
 
-  static VertexPtr optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output = false, bool to_file = false, int arg_shift = 0);
+  static VertexPtr optimize_printf_like_call(VertexAdaptor<op_func_call> &call, bool need_output = false, bool to_file = false);
   static void check_printf_like_format(const FormatString::ParseResult &parsed, const VertexRange &args);
   static VertexPtr convert_format_part_to_vertex(const FormatString::Part &part, size_t arg_index, const FormatCallInfo &info);
   static VertexPtr convert_simple_spec_to_vertex(const FormatString::Specifier &spec, size_t arg_index, const FormatCallInfo &info);
