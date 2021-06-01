@@ -447,20 +447,24 @@ VertexPtr OptimizationPass::optimize_printf_like_call(VertexAdaptor<op_func_call
 
   const auto build_vertex = VertexAdaptor<op_string_build>::create(vertex_parts);
 
-  // turns into a call to printf/fprintf("%s", build_vertex)
+  // turns into a call to printf("%s", build_vertex) or fprintf(args[0], "%s", build_vertex)
   // this is necessary because the return value might be used
   if (need_output) {
-    FunctionPtr print_func;
-    if (to_file) {
-      print_func = G->get_function("fprintf");
-    } else {
-      print_func = G->get_function("printf");
-    }
-
     auto format_arg = VertexAdaptor<op_string>::create();
     format_arg->set_string("%s");
     const auto array_vertex = VertexAdaptor<op_array>::create(build_vertex);
-    auto print_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{format_arg, array_vertex});
+
+    FunctionPtr print_func;
+    std::vector<VertexPtr> call_args;
+    if (to_file) {
+      print_func = G->get_function("fprintf");
+      call_args = {args[0], format_arg, array_vertex};
+    } else {
+      print_func = G->get_function("printf");
+      call_args = {format_arg, array_vertex};
+    }
+
+    auto print_call = VertexAdaptor<op_func_call>::create(call_args);
     print_call->set_string(std::string(print_func->local_name()));
     print_call->func_id = print_func;
     return print_call;
