@@ -964,11 +964,12 @@ void global_init_curl_lib() noexcept {
 
 template<class CTX>
 void clear_contexts(array<CTX *> &contexts) {
-  for (auto it : contexts) {
-    if (auto easy_context = it.get_value()) {
-      easy_context->release();
-    }
-  }
+  std::for_each(contexts.cbegin(), contexts.cend(),
+                [](const typename array<CTX *>::const_iterator &it) {
+                  if (auto easy_context = it.get_value()) {
+                    easy_context->release();
+                  }
+                });
   hard_reset_var(contexts);
 }
 
