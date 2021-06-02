@@ -135,6 +135,9 @@ class BaseTestCase(TestCase):
     def cmpGe(self, value):
         return self._Cmp(lambda x: x >= value, "x >= {}".format(value))
 
+    def cmpGeAndLe(self, ge, le):
+        return self._Cmp(lambda x: ge <= x <= le, "{} <= x <= {}".format(ge, le))
+
     def cmpAeq(self, value, delta):
         return self._Cmp(lambda x: abs(x - value) <= delta,
                          "abs(x - {}) <= {}".format(value, delta))
