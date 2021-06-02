@@ -20,7 +20,7 @@
 #include "common/kprintf.h"
 #include "common/server/crash-dump.h"
 #include "common/server/signals.h"
-#include "common/wrappers/madvise.h"
+#include "common/wrappers/memory-utils.h"
 #include "net/net-connections.h"
 
 #include "runtime/allocator.h"

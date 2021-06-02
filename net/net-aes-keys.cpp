@@ -20,7 +20,7 @@
 #include "common/kprintf.h"
 #include "common/secure-bzero.h"
 #include "common/server/signals.h"
-#include "common/wrappers/madvise.h"
+#include "common/wrappers/memory-utils.h"
 
 static_assert(AES_KEY_MIN_LEN >= sizeof(((aes_key_t *) NULL)->id), "key_size");
 
