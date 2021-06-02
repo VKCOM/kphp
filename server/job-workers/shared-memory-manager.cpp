@@ -2,7 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <sys/mman.h>
+#include "common/wrappers/memory-utils.h"
 
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
@@ -22,9 +22,7 @@ void SharedMemoryManager::init() noexcept {
   if (!memory_limit_) {
     memory_limit_ = processes * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER + sizeof(ControlBlock);
   }
-  auto *raw_mem = static_cast<uint8_t *>(mmap(nullptr, memory_limit_,
-                                              PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
-  assert(raw_mem);
+  auto *raw_mem = static_cast<uint8_t *>(mmap_shared(memory_limit_));
   const size_t left_memory = memory_limit_ - sizeof(ControlBlock);
   const uint32_t messages_count = std::min(JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER * processes, left_memory / sizeof(JobSharedMessage));
   control_block_ = new(raw_mem) ControlBlock{};

@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <cassert>
+#include <sys/mman.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 
 #ifndef MADV_FREE
   #define MADV_FREE 8
@@ -14,6 +17,16 @@
   #define MADV_DONTDUMP 16
 #endif
 
-static inline int our_madvise(void *addr, size_t len, int advice) {
-  return (int)syscall(SYS_madvise, addr, len, advice);
+inline int our_madvise(void *addr, size_t len, int advice) noexcept {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  return static_cast<int>(syscall(SYS_madvise, addr, len, advice));
+#pragma GCC diagnostic pop
+}
+
+inline void *mmap_shared(size_t size, int fd = -1) noexcept {
+  void *mem = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | (fd == -1 ? MAP_ANONYMOUS : 0), fd, 0);
+  assert(mem);
+  assert(mem != MAP_FAILED);
+  return mem;
 }

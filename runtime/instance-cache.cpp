@@ -11,6 +11,7 @@
 #include <unordered_set>
 
 #include "common/kprintf.h"
+#include "common/wrappers/memory-utils.h"
 
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -173,8 +174,7 @@ public:
     php_assert(!shared_memory_);
     shared_memory_pool_size_ = pool_size;
     share_memory_full_size_ = get_context_size() + get_data_size() + shared_memory_pool_size_;
-    shared_memory_ = mmap(nullptr, share_memory_full_size_, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    php_assert(shared_memory_);
+    shared_memory_ = mmap_shared(share_memory_full_size_);
     construct_data_inplace();
   }
 
