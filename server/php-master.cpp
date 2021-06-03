@@ -55,6 +55,7 @@
 #include "server/php-engine.h"
 #include "server/php-worker-stats.h"
 #include "server/php-master-tl-handlers.h"
+#include "server/server-stats.h"
 #include "server/workers-control.h"
 
 #include "server/php-master-restart.h"
@@ -342,10 +343,8 @@ void sigusr1_handler(const int sig) {
  */
 enum class master_state { on, off_in_graceful_restart, off_in_graceful_shutdown };
 
-#define MAX_WORKER_STATS_LEN 10000
 // TODO: save it as pointer
 struct pipe_info_t {
-  int pipe_read;
   int pipe_in_packet_num;
   int pipe_out_packet_num;
   connection *reader;
@@ -364,8 +363,6 @@ struct worker_info_t {
   double kill_time;
   int kill_flag;
 
-  int stats_flag;
-
   pipe_info_t pipes[2];
 
   pid_info_t my_info;
@@ -381,7 +378,7 @@ worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
 unsigned long long dead_stime, dead_utime;
 PhpWorkerStats dead_worker_stats;
-double last_failed;
+
 int *http_fd;
 int http_fd_port;
 int (*try_get_http_fd)();
@@ -688,7 +685,6 @@ tcp_rpc_client_functions pipe_reader_methods = [] {
 }();
 
 void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
-  info->pipe_read = pipe;
   info->pipe_out_packet_num = -1;
   info->pipe_in_packet_num = -1;
   connection *reader = epoll_insert_pipe(pipe_for_read, pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
@@ -708,7 +704,6 @@ void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
 }
 
 void clear_pipe_info(pipe_info_t *info) {
-  info->pipe_read = -1;
   info->reader = nullptr;
 }
 
@@ -795,6 +790,7 @@ int run_worker(WorkerType worker_type) {
     instance_cache_release_all_resources_acquired_by_this_proc();
     ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
     vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
+    vk::singleton<ServerStats>::get().after_fork(pid, worker_unique_id, worker_type);
     return 1;
   }
 
@@ -830,7 +826,6 @@ void remove_worker(pid_t pid) {
     if (workers[i]->pid == pid) {
       vk::singleton<WorkersControl>::get().on_worker_removing(workers[i]->type, workers[i]->is_dying, workers[i]->unique_id);
       if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
-        last_failed = my_now;
         failed++;
       }
       workers_failed++;
@@ -1086,7 +1081,6 @@ void create_stats_queries(connection *c, int op, int worker_pid) {
   sigval to_send;
   to_send.sival_int = op;
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-    workers[i]->stats_flag = 0;
     if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
       pipe_info_t *pipe_info = nullptr;
       if (op & SPOLL_SEND_IMMEDIATE_STATS) {
@@ -1701,6 +1695,7 @@ static void cron() {
     send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), STATS_TAG_KPHP_SERVER);
   }
   create_all_outbound_connections();
+  vk::singleton<ServerStats>::get().aggregate_stats();
 
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;

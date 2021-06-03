@@ -45,9 +45,6 @@ public:
     return this_;
   }
 
-  long total_queries() const noexcept { return internal_.tot_queries_; }
-  long total_script_queries() const noexcept { return internal_.tot_script_queries_; }
-
   void reset_memory_and_percentiles_stats() noexcept;
 
 private:
@@ -107,8 +104,8 @@ private:
 
     int64_t script_max_memory_used_{0};
     int64_t script_max_real_memory_used_{0};
-    int64_t script_heap_memory_usage_{0};
 
+    int64_t script_heap_memory_usage_{0};
     int64_t curl_memory_currently_usage_{0};
     mem_info_t mem_info_{};
     struct {

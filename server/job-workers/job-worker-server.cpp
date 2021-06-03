@@ -20,6 +20,7 @@
 #include "server/php-worker.h"
 #include "server/php-worker-stats.h"
 #include "server/server-log.h"
+#include "server/server-stats.h"
 
 namespace job_workers {
 
@@ -158,6 +159,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, left_job_time = %f, job_wait_time = %f\n",
             job->job_result_fd_idx, job->job_id, job, left_job_time, job_wait_time);
 
+  const auto &job_memory_stats = job->resource.get_memory_stats();
+  vk::singleton<ServerStats>::get().add_job_stats(job_wait_time, job_memory_stats.max_real_memory_used, job_memory_stats.max_memory_used);
   PhpWorkerStats::get_local().add_job_wait_time_stats(job_wait_time);
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {

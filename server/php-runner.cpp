@@ -33,6 +33,7 @@
 #include "server/php-engine-vars.h"
 #include "server/php-worker-stats.h"
 #include "server/server-log.h"
+#include "server/server-stats.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -254,6 +255,9 @@ void PHPScriptBase::finish() {
   PhpWorkerStats::get_local().add_stats(script_time, net_time, queries_cnt,
                                         script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
                                         dl::get_heap_memory_used(), vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt,
+                                                      script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
+                                                      vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);

@@ -9,6 +9,8 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include "common/macos-ports.h"
+
 #ifndef MADV_FREE
   #define MADV_FREE 8
 #endif
@@ -29,4 +31,16 @@ inline void *mmap_shared(size_t size, int fd = -1) noexcept {
   assert(mem);
   assert(mem != MAP_FAILED);
   return mem;
+}
+
+inline auto get_malloc_stats() noexcept {
+#ifdef __GLIBC_PREREQ
+  #if __GLIBC_PREREQ(2, 33)
+  return mallinfo2();
+  #else
+  return mallinfo();
+  #endif
+#else
+  return mallinfo();
+#endif
 }

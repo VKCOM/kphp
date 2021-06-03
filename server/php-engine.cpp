@@ -77,6 +77,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/server-stats.h"
 #include "server/server-log.h"
 #include "server/workers-control.h"
 
@@ -1497,6 +1498,7 @@ void cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
+  vk::singleton<ServerStats>::get().update_this_worker_stats();
 }
 
 int try_get_http_fd() {
@@ -2201,6 +2203,8 @@ void parse_main_args(int argc, char *argv[]) {
 
 
 void init_default() {
+  vk::singleton<ServerStats>::get();
+
   if (!vk::singleton<WorkersControl>::get().init()) {
     kprintf ("fatal: not enough workers for general purposes\n");
     exit(1);
