@@ -35,22 +35,10 @@ extern int no_sql;
 
 extern int master_flag;
 
-enum class RunMode {
-  master,
-  general_worker,
-  job_worker,
-};
-
-extern RunMode run_mode;
-
 extern int run_once;
 extern int run_once_return_code;
 
 extern int die_on_fail;
-
-/** stats **/
-extern double load_time;
-//uptime
 
 /** http **/
 extern int http_port;
@@ -126,5 +114,4 @@ extern long long memory_used_to_recreate_script;
  ***/
 extern int kstdout;
 extern int kstderr;
-extern int kproffd;
 

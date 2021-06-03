@@ -7,8 +7,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "common/wrappers/optional.h"
-
 /***
  DEFAULT GLOBAL VARIABLES
  ***/
@@ -28,15 +26,10 @@ int no_sql = 0;
 
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
 
-RunMode run_mode;
-
 int run_once = 0;
 int run_once_return_code = 0;
 
 int die_on_fail = 0;
-
-/** stats **/
-double load_time;
 
 /** http **/
 int http_port = -1;

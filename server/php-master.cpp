@@ -318,7 +318,7 @@ struct Stats {
   }
 };
 
-void run_master();
+WorkerType run_master();
 
 namespace {
 volatile long long local_pending_signals = 0;
@@ -522,7 +522,7 @@ bool all_job_workers_killed() {
 
 } // namespace
 
-void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
+WorkerType start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
   initial_verbosity = verbosity;
 
   kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
@@ -590,7 +590,7 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
 
   vkprintf(1, "start master: end\n");
 
-  run_master();
+  return run_master();
 }
 
 void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
@@ -732,16 +732,6 @@ int run_worker(WorkerType worker_type) {
   assert (new_pid != -1 && "failed to fork");
 
   if (new_pid == 0) {
-    switch (worker_type) {
-      case WorkerType::general_worker:
-        run_mode = RunMode::general_worker;
-        break;
-      case WorkerType::job_worker:
-        run_mode = RunMode::job_worker;
-        break;
-      default:
-        assert(0);
-    }
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
       vkprintf(0, "parent is dead just after start\n");
@@ -1797,7 +1787,7 @@ static master_state master_change_state() {
   return prev_state;
 }
 
-void run_master() {
+WorkerType run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
   me->own_http_fd = http_fd != nullptr && *http_fd != -1;
@@ -1859,7 +1849,6 @@ void run_master() {
 
     me->generation = generation;
 
-
     if (to_kill != 0 || to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
       vkprintf(1, "[to_kill = %d] [to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n", to_kill, to_run, job_workers_to_kill, job_workers_to_run);
     }
@@ -1870,7 +1859,7 @@ void run_master() {
     for (int i = 0; i < job_workers_to_run; ++i) {
       if (run_worker(WorkerType::job_worker)) {
         tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
-        return;
+        return WorkerType::job_worker;
       }
     }
 
@@ -1879,7 +1868,7 @@ void run_master() {
     }
     while (to_run-- > 0 && !failed) {
       if (run_worker(WorkerType::general_worker)) {
-        return;
+        return WorkerType::general_worker;
       }
     }
     kill_hanging_workers();

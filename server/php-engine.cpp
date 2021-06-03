@@ -1520,7 +1520,7 @@ void update_worker_stats() noexcept {
   local_worker_stats.recalc_worker_percentiles();
 }
 
-static void generic_event_loop(RunMode mode) {
+static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1529,50 +1529,50 @@ static void generic_event_loop(RunMode mode) {
   int prev_time = 0;
   double next_create_outbound = 0;
 
-  switch (mode) {
-    case RunMode::master: {
-      if (rpc_port > 0 && rpc_sfd < 0) {
-        rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-        if (rpc_sfd < 0) {
-          vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-          exit(1);
+  switch (worker_type) {
+    case WorkerType::general_worker: {
+      if (init_and_listen_rpc_port) {
+        if (rpc_port > 0 && rpc_sfd < 0) {
+          rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
+          if (rpc_sfd < 0) {
+            vkprintf(-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
+            exit(1);
+          }
+        }
+
+        if (rpc_sfd >= 0) {
+          init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
+        }
+
+        if (run_once) {
+          int pipe_fd[2];
+          pipe(pipe_fd);
+
+          int read_fd = pipe_fd[0];
+          int write_fd = pipe_fd[1];
+
+          rpc_client_methods.rpc_ready = nullptr;
+          epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+
+          int q[6];
+          int qsize = 6 * sizeof(int);
+          q[2] = TL_RPC_INVOKE_REQ;
+          for (int i = 0; i < run_once_count; i++) {
+            prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
+            assert (write(write_fd, q, (size_t)qsize) == qsize);
+          }
         }
       }
 
-      if (rpc_sfd >= 0) {
-        init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-      }
-
-      if (run_once) {
-        int pipe_fd[2];
-        pipe(pipe_fd);
-
-        int read_fd = pipe_fd[0];
-        int write_fd = pipe_fd[1];
-
-        rpc_client_methods.rpc_ready = nullptr;
-        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-        int q[6];
-        int qsize = 6 * sizeof(int);
-        q[2] = TL_RPC_INVOKE_REQ;
-        for (int i = 0; i < run_once_count; i++) {
-          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-          assert (write(write_fd, q, (size_t)qsize) == qsize);
-        }
-      }
-    }
-    // fall through
-    case RunMode::general_worker: {
       if (http_port > 0 && http_sfd < 0) {
         dl_assert (!master_flag, "failed to get http_fd\n");
         if (master_flag) {
-          vkprintf (-1, "try_get_http_fd after start_master\n");
+          vkprintf(-1, "try_get_http_fd after start_master\n");
           exit(1);
         }
         http_sfd = try_get_http_fd();
         if (http_sfd < 0) {
-          vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
+          vkprintf(-1, "cannot open http server socket at port %d: %m\n", http_port);
           exit(1);
         }
       }
@@ -1599,10 +1599,13 @@ static void generic_event_loop(RunMode mode) {
       }
       break;
     }
-    case RunMode::job_worker: {
+    case WorkerType::job_worker: {
+      assert(!init_and_listen_rpc_port);
       vk::singleton<JobWorkerServer>::get().init();
       break;
     }
+    default:
+      assert(0);
   }
 
   if (no_sql) {
@@ -1648,7 +1651,7 @@ static void generic_event_loop(RunMode mode) {
     while (spoll_send_stats > 0) {
       write_full_stats_to_pipe();
       spoll_send_stats--;
-      if (mode == RunMode::job_worker) {
+      if (worker_type == WorkerType::job_worker) {
         job_worker_server.last_stats.start();
       }
     }
@@ -1669,7 +1672,7 @@ static void generic_event_loop(RunMode mode) {
       cron();
     }
 
-    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
+    if (worker_type == WorkerType::general_worker) {
       lease_cron();
       if (sigterm_on && !rpc_stopped) {
         rpcc_stop();
@@ -1683,12 +1686,12 @@ static void generic_event_loop(RunMode mode) {
       main_thread_reactor.pre_event();
     }
 
-    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
+    if (worker_type == WorkerType::general_worker) {
       if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
         vkprintf(1, "Quitting because of sigterm\n");
         break;
       }
-    } else if (mode == RunMode::job_worker) {
+    } else if (worker_type == WorkerType::job_worker) {
       if (sigterm_on && (precise_now > sigterm_time || !php_worker_run_flag)) {
         kprintf("Job worker is quitting because of SIGTERM\n");
         break;
@@ -1700,7 +1703,7 @@ static void generic_event_loop(RunMode mode) {
     vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
-  if (mode == RunMode::general_worker && http_sfd >= 0) {
+  if (worker_type == WorkerType::general_worker && http_sfd >= 0) {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }
@@ -1726,13 +1729,12 @@ void start_server() {
   init_netbuffers();
 
   init_epoll();
+  WorkerType worker_type = WorkerType::general_worker;
   if (master_flag) {
-    start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
-  } else {
-    run_mode = RunMode::master;
+    worker_type = start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
   }
 
-  generic_event_loop(run_mode);
+  generic_event_loop(worker_type, !master_flag);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -2279,13 +2281,8 @@ int run_main(int argc, char **argv, php_mode mode) {
     setvbuf(stdout, nullptr, _IONBF, 0);
   }
 
-  load_time = -dl_time();
-
   init_default();
-
   init_all();
-
-  load_time += dl_time();
 
   init_uptime();
   preallocate_msg_buffers();
