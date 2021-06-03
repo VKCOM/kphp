@@ -1321,6 +1321,9 @@ final class UberH3 {
 
 /** Job workers interface **/
 
+/** @kphp-immutable-class */
+interface KphpJobWorkerSharedMemoryPiece {}
+
 interface KphpJobWorkerRequest {}
 interface KphpJobWorkerResponse {}
 
@@ -1330,6 +1333,8 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
 }
 
 function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout = -1.0) ::: future<KphpJobWorkerResponse> | false;
+function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout = -1.0) ::: (future<KphpJobWorkerResponse> | false)[];
+
 /** @kphp-extern-func-info resumable */
 function kphp_job_worker_wait(future<KphpJobWorkerResponse> | false $job_id, float $timeout = -1.0) ::: KphpJobWorkerResponse | null;
 

@@ -8,6 +8,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime/instance-copy-processor.h"
+#include "runtime/instance-to-array-processor.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
@@ -51,8 +52,15 @@ struct JobSharedMessage;
 
 } // job_workers
 
+struct C$KphpJobWorkerSharedMemoryPiece : job_workers::SendingInstanceBase {
+  C$KphpJobWorkerSharedMemoryPiece *virtual_builtin_clone() const noexcept override = 0;
+};
+
 struct C$KphpJobWorkerRequest : job_workers::SendingInstanceBase {
   C$KphpJobWorkerRequest *virtual_builtin_clone() const noexcept override = 0;
+
+  virtual class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece() const noexcept = 0;
+  virtual void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &) noexcept = 0;
 };
 
 struct C$KphpJobWorkerResponse : job_workers::SendingInstanceBase {
@@ -82,6 +90,10 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
   }
 
   void accept(InstanceDeepDestroyVisitor &visitor) noexcept {
+    return generic_accept(visitor);
+  }
+
+  void accept(InstanceToArrayVisitor &visitor) noexcept {
     return generic_accept(visitor);
   }
 

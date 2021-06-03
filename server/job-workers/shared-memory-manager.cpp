@@ -124,6 +124,9 @@ void SharedMemoryManager::release_shared_message(JobSharedMessage *message) noex
   dl::CriticalSectionGuard critical_section;
   control_block_->workers_table[logname_id].detach(message);
   if (--message->owners_counter == 0) {
+    if (message->parent_job) {
+      release_shared_message(message->parent_job);
+    }
     auto *extra_memory = message->resource.get_extra_memory_head();
     while (extra_memory->get_pool_payload_size()) {
       auto *releasing_extra_memory = extra_memory;

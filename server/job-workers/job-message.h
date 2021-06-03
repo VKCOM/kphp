@@ -36,6 +36,7 @@ public:
   int32_t job_result_fd_idx{-1};
   double job_start_time{-1.0};
   double job_timeout{-1.0};
+  JobSharedMessage *parent_job{nullptr};
 
   double job_deadline_time() const noexcept {
     return job_start_time + job_timeout;
@@ -53,6 +54,19 @@ private:
 public:
   JobSharedMessage() noexcept {
     resource.init(memory_pool_buffer_, MEMORY_POOL_BUFFER_SIZE);
+  }
+
+  void bind_parent_job(JobSharedMessage *parent) noexcept {
+    assert(parent);
+    parent_job = parent;
+    ++parent_job->owners_counter;
+  }
+
+  void unbind_parent_job() noexcept {
+    assert(parent_job);
+    --parent_job->owners_counter;
+    assert(parent_job->owners_counter != 0);
+    parent_job = nullptr;
   }
 
 private:
