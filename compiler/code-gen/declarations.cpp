@@ -488,10 +488,14 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << END << NL;
   }
 
+  compile_job_worker_shared_memory_piece_methods(W, true);
+
   W << END << ";" << NL;
   W << CloseNamespace();
 
   compile_back_includes(W, std::move(front_includes));
+
+  compile_job_worker_shared_memory_piece_methods(W);
 
   W << CloseFile();
 }
@@ -685,6 +689,36 @@ void ClassDeclaration::compile_back_includes(CodeGenerator &W, IncludesCollector
   });
 
   W << includes;
+}
+
+void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only) const {
+  auto request_interface = G->get_class("KphpJobWorkerRequest");
+  kphp_assert(request_interface);
+  if (!request_interface->is_parent_of(klass)) {
+    return;
+  }
+  if (compile_declaration_only) {
+    FunctionSignatureGenerator(W).set_overridden().set_const_this() << "class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece()" << SemicolonAndNL{};
+    FunctionSignatureGenerator(W).set_overridden() << "void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance)" << SemicolonAndNL{};
+    return;
+  }
+  const auto *field = G->get_job_worker_shared_memory_piece(klass->name);
+  W << NL;
+  FunctionSignatureGenerator(W).set_const_this().set_inline()
+    << "class_instance<C$KphpJobWorkerSharedMemoryPiece> " << klass->src_name << "::get_shared_memory_piece() " << BEGIN;
+  W << "return " << (field ? field->get_hash_name() : "{}") << SemicolonAndNL{};
+  W << END << NL << NL;
+
+  FunctionSignatureGenerator(W).set_inline() << "void " << klass->src_name
+                                                     << "::set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance) " << BEGIN;
+  if (field) {
+    W << "const auto &casted = instance.cast_to<" << field->get_inferred_type()->class_type()->src_name << ">();" << NL;
+    W << "php_assert(instance.is_null() || !casted.is_null());" << NL;
+    W << field->get_hash_name() << " = casted;" << NL;
+  } else {
+    W << "(void)instance;" << NL;
+  }
+  W << END << NL;
 }
 
 StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :

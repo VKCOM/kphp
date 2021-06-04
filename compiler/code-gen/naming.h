@@ -65,6 +65,9 @@ public:
   template<class T> 
   FunctionSignatureGenerator &&operator<<(const T &value) && noexcept {
     if (is_empty_) {
+      if (inline_) {
+        W_ << "inline ";
+      }
       if (virtual_) {
         W_ << "virtual ";
       }
@@ -112,6 +115,11 @@ public:
     return std::move(*this);
   }
 
+  FunctionSignatureGenerator &&set_inline(bool new_value = true) && noexcept {
+    inline_ = new_value;
+    return std::move(*this);
+  }
+
 private:
   template<class T>
   FunctionSignatureGenerator &&generate_specifiers(const T &value) noexcept {
@@ -155,6 +163,7 @@ private:
   bool overridden_ = false;
   bool final_ = false;
   bool pure_virtual_ = false;
+  bool inline_ = false;
 };
 
 struct FunctionName {
