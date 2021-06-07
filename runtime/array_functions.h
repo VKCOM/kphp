@@ -793,7 +793,9 @@ template<class T, class T1, class Proj>
 array<T> array_diff_impl(const array<T> &a1, const array<T1> &a2, const Proj &projector) {
   array<T> result(a1.size());
 
-  array<int64_t> values(array_size(0, a2.count(), false));
+  constexpr bool is_int_keys = std::is_same<std::result_of_t<Proj(T1)>, int64_t>::value;
+  array<int64_t> values(array_size(is_int_keys * a2.count(), (!is_int_keys) * a2.count(), false));
+
   for (const auto &it : a2) {
     values.set_value(projector(it.get_value()), 1);
   }
