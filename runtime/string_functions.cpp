@@ -1972,12 +1972,8 @@ static string str_replace_char(char c, const string &replace, const string &subj
     if (with_case) {
       pos = static_cast<const char *>(memchr(piece, c, piece_end - piece));
     } else {
-      for (int i = 0; i < piece_end - piece; ++i) {
-        if (std::toupper(piece[i], std::locale()) == std::toupper(c, std::locale())) {
-          pos = piece + i;
-          break;
-        }
-      }
+      const char needle[] = {c, '\0'};
+      pos = strcasestr(piece, needle);
     }
 
     if (pos == nullptr) {
@@ -2005,11 +2001,7 @@ static const char *find_substr(const char *where, const char *where_end, const s
     return static_cast<char *>(memmem(where, where_end - where, what.c_str(), what.size()));
   }
 
-  const auto *it = std::search(where, where_end, what.c_str(), what.c_str() + what.size(), [](char ch1, char ch2) {
-    return std::toupper(ch1, std::locale()) == std::toupper(ch2, std::locale());
-  });
-
-  return it == where_end ? nullptr : it;
+  return strcasestr(where, what.c_str());
 }
 
 void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count, bool with_case) {
