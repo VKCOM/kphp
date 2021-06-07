@@ -36,6 +36,7 @@ private:
   void check_lib_exported_function(FunctionPtr function);
   void check_eq3(VertexPtr lhs, VertexPtr rhs);
   void check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation op);
+  void check_instance_nullability(VertexPtr v);
   void raise_error_using_Unknown_type(VertexPtr v);
 
   static void check_magic_methods(FunctionPtr fun);

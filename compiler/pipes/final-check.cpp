@@ -221,6 +221,17 @@ void check_function_throws(FunctionPtr f) {
                         vk::join(throws_actual, ", "),
                         vk::join(throws_expected, ", ")));
 }
+
+// TODO: we probably have other vertex printing function
+std::string expression_string(VertexPtr v) {
+  if (auto var_op = v.try_as<op_var>()) {
+    return "$" + var_op->get_string();
+  }
+  if (auto instance_prop_op = v.try_as<op_instance_prop>()) {
+    return expression_string(instance_prop_op->instance()) + "->" + instance_prop_op->get_string();
+  }
+  return OpInfo::op_str(v->type());
+}
 } // namespace
 
 void FinalCheckPass::on_start() {
@@ -248,6 +259,24 @@ void FinalCheckPass::on_start() {
 
   if (!current_function->check_throws.empty()) {
     check_function_throws(current_function);
+  }
+}
+
+void FinalCheckPass::check_instance_nullability(VertexPtr v) {
+  auto check_not_nullable = [this](VertexPtr x, const char *context) {
+    const TypeData *type = tinf::get_type(x);
+    if (type->or_null_flag()) {
+      kphp_error(false, fmt_format("{} could be null in {}", expression_string(x), context));
+    }
+  };
+
+  if (auto instance_prop = v.try_as<op_instance_prop>()) {
+    check_not_nullable(instance_prop->instance(), "instance property fetch");
+  }
+  if (auto call = v.try_as<op_func_call>()) {
+    if (call->func_id->modifiers.is_instance()) {
+      check_not_nullable(call->args()[0], "instance method call");
+    }
   }
 }
 
@@ -407,6 +436,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (auto binary_vertex = vertex.try_as<meta_op_binary>()) {
     check_null_usage_in_binary_operations(binary_vertex);
   }
+
+  check_instance_nullability(vertex);
 
   //TODO: may be this should be moved to tinf_check
   return vertex;

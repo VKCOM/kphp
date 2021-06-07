@@ -44,7 +44,7 @@ bool can_store_false(PrimitiveType tp) {
 bool can_store_null(PrimitiveType tp) {
   kphp_assert(vk::none_of_equal(tp, tp_False, tp_Null));
   // any+or_null means just 'null' keyword, it's represented as Optional<bool> in cpp, so any can't store null
-  return vk::any_of_equal(tp, tp_mixed, tp_Class);
+  return tp == tp_mixed;
 }
 
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
