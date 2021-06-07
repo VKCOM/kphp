@@ -1,5 +1,7 @@
 <?php
 
+require_once 'SharedImmutableMessageScenario/http_worker.php';
+
 function do_http_worker() {
   switch($_SERVER["PHP_SELF"]) {
     case "/test_simple_cpu_job": {
@@ -51,9 +53,25 @@ function do_http_worker() {
       test_job_worker_wakeup_on_merged_events();
       return;
     }
+    case "/test_job_worker_start_multi_with_shared_data": {
+      test_job_worker_start_multi_with_shared_data();
+      return;
+    }
+    case "/test_job_worker_start_multi_without_shared_data": {
+      test_job_worker_start_multi_without_shared_data();
+      return;
+    }
+    case "/test_error_different_shared_memory_pieces": {
+      test_error_different_shared_memory_pieces();
+      return;
+    }
+    case "/test_job_worker_start_multi_with_errors": {
+      test_job_worker_start_multi_with_errors();
+      return;
+    }
   }
 
-  critical_error("unknown test");
+  critical_error("unknown test " . $_SERVER["PHP_SELF"]);
 }
 
 function send_jobs($context, float $timeout = -1.0): array {

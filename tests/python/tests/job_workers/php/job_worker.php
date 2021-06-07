@@ -1,5 +1,9 @@
 <?php
 
+use ComplexScenario\CollectStatsJobRequest;
+
+require_once 'SharedImmutableMessageScenario/job_worker.php';
+
 function do_job_worker() {
   $req = kphp_job_worker_fetch_request();
   if ($req instanceof X2Request) {
@@ -21,9 +25,11 @@ function do_job_worker() {
       critical_error("Unknown tag " + $req->tag);
     }
     return simple_x2($req);
-  } else {
+  } else if ($req instanceof CollectStatsJobRequest) {
     require_once "ComplexScenario/_job_scenario.php";
     run_job_complex_scenario($req);
+  } else {
+    run_job_shared_immutable_message_scenario($req);
   }
 }
 
