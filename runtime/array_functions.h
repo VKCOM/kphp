@@ -789,22 +789,30 @@ array<T> f$array_diff_key(const array<T> &a1, const array<T1> &a2) {
   return result;
 }
 
-template<class T, class T1>
-array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
+template<class T, class T1, class Proj>
+array<T> array_diff_impl(const array<T> &a1, const array<T1> &a2, const Proj &projector) {
   array<T> result(a1.size());
 
   array<int64_t> values(array_size(0, a2.count(), false));
   for (const auto &it : a2) {
-    values.set_value(f$strval(it.get_value()), 1);
+    values.set_value(projector(it.get_value()), 1);
   }
 
   for (const auto &it : a1) {
-    if (!values.has_key(f$strval(it.get_value()))) {
+    if (!values.has_key(projector(it.get_value()))) {
       result.set_value(it);
     }
   }
   return result;
 }
+
+template<class T, class T1>
+array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
+  return array_diff_impl(a1, a2, [](const auto &val) { return f$strval(val); });
+}
+
+template<>
+array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2);
 
 template<class T, class T1, class T2>
 array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
