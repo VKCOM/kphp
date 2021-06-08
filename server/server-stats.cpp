@@ -5,10 +5,8 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <chrono>
 #include <iomanip>
 #include <new>
-#include <random>
 
 #include "common/functional/identity.h"
 #include "common/smart_iterators/transform_iterator.h"
@@ -16,7 +14,6 @@
 
 #include "runtime/curl.h"
 
-#include "server/php-runner.h"
 #include "server/workers-control.h"
 
 #include "server/server-stats.h"

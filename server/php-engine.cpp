@@ -75,7 +75,6 @@
 #include "server/php-queries.h"
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
-#include "server/php-worker-stats.h"
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 #include "server/server-log.h"
@@ -1346,9 +1345,6 @@ static int stats_len;
 void prepare_full_stats() {
   char *s = stats;
   int s_left = 65530;
-  const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
-  s += stats_size;
-  s_left -= stats_size;
 
 #define W(args...)  ({\
   int written_tmp___ = snprintf (s, (size_t)s_left, ##args);\
@@ -1515,13 +1511,6 @@ void reopen_json_log() {
   }
 }
 
-void update_worker_stats() noexcept {
-  auto &local_worker_stats = PhpWorkerStats::get_local();
-  local_worker_stats.update_mem_info();
-  local_worker_stats.update_idle_time(epoll_total_idle_time(), get_uptime(), epoll_average_idle_time(), epoll_average_idle_quotient());
-  local_worker_stats.recalc_worker_percentiles();
-}
-
 static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
@@ -1647,9 +1636,6 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
     }
 
-    if (spoll_send_stats > 0) {
-      update_worker_stats();
-    }
     while (spoll_send_stats > 0) {
       write_full_stats_to_pipe();
       spoll_send_stats--;

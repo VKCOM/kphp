@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <random>
 
@@ -11,6 +12,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/stats/provider.h"
 
+#include "server/php-runner.h"
 #include "server/workers-control.h"
 
 class ServerStats : vk::not_copyable {

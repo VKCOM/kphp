@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stack>
+#include <sstream>
 #include <vector>
 
 #include "common/algorithms/clamp.h"
@@ -53,7 +54,6 @@
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
-#include "server/php-worker-stats.h"
 #include "server/php-master-tl-handlers.h"
 #include "server/server-stats.h"
 #include "server/workers-control.h"
@@ -229,11 +229,9 @@ struct Stats {
   std::string engine_stats;
   std::string cpu_desc, misc_desc;
   php_immediate_stats_t istats = php_immediate_stats_t();
-  mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_general_workers[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_job_workers[periods_n];
-  PhpWorkerStats worker_stats;
 
   Stats() {
     for (int i = 0; i < periods_n; i++) {
@@ -312,7 +310,9 @@ struct Stats {
     }
 
     if (full_flag) {
-      res += worker_stats.to_string(pid_s);
+      std::ostringstream oss;
+      vk::singleton<ServerStats>::get().write_stats_to(oss);
+      res += oss.str();
     }
 
     return res;
@@ -377,7 +377,6 @@ struct worker_info_t {
 worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
 unsigned long long dead_stime, dead_utime;
-PhpWorkerStats dead_worker_stats;
 
 int *http_fd;
 int http_fd_port;
@@ -424,9 +423,6 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  dead_worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
-  // ignore dead workers memory and percentiles stats
-  dead_worker_stats.reset_memory_and_percentiles_stats();
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -620,7 +616,6 @@ void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
 }
 
 void worker_set_stats(worker_info_t *w, const char *data) {
-  data += w->stats->worker_stats.read_from(data);
   w->stats->engine_stats = data;
 }
 
@@ -1132,8 +1127,6 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   int paused_workers_n = 0;
   static char buf[1000];
 
-  PhpWorkerStats worker_stats;
-
   double min_uptime = 1e9;
   double max_uptime = -1;
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
@@ -1148,10 +1141,6 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
       }
       if (max_uptime < worker_uptime) {
         max_uptime = worker_uptime;
-      }
-
-      if (full_flag) {
-        worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
       }
 
       if (worker_pid == -1 || w->pid == worker_pid) {
@@ -1196,7 +1185,9 @@ std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
   header += buf;
 
   if (full_flag) {
-    header += worker_stats.to_string();
+    std::ostringstream oss;
+    vk::singleton<ServerStats>::get().write_stats_to(oss);
+    header += oss.str();
   }
   if (!full_flag && worker_pid == -2) {
     header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
@@ -1453,7 +1444,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
-  server_stats.worker_stats.to_stats(stats);
+  vk::singleton<ServerStats>::get().write_stats_to(stats);
 
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
@@ -1704,9 +1695,6 @@ static void cron() {
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
 #endif
-  server_stats.worker_stats.copy_internal_from(dead_worker_stats);
-  server_stats.worker_stats.reset_memory_and_percentiles_stats();
-  server_stats.worker_stats.update_mem_info();
   int running_general_workers = 0;
   int running_job_workers = 0;
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
@@ -1723,7 +1711,6 @@ static void cron() {
     w->stats->update(cpu_timestamp);
     running_general_workers += w->stats->istats.is_running && (w->type == WorkerType::general_worker);
     running_job_workers += w->stats->istats.is_running && (w->type == WorkerType::job_worker);
-    server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
   }
   server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, running_general_workers});
   server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, running_job_workers});

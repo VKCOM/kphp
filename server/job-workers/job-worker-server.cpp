@@ -18,7 +18,6 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-master-restart.h"
 #include "server/php-worker.h"
-#include "server/php-worker-stats.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 
@@ -161,7 +160,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
 
   const auto &job_memory_stats = job->resource.get_memory_stats();
   vk::singleton<ServerStats>::get().add_job_stats(job_wait_time, job_memory_stats.max_real_memory_used, job_memory_stats.max_memory_used);
-  PhpWorkerStats::get_local().add_job_wait_time_stats(job_wait_time);
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
