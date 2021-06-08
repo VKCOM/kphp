@@ -437,14 +437,14 @@ void FinalCheckPass::check_indexing(VertexPtr vertex) {
   switch (array_type->ptype()) {
     case tp_tuple:
     case tp_string:
-      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_mixed);
-      allowed_types = "int";
+      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_float, tp_mixed);
+      allowed_types = "int and float";
       what_indexing = array_type->ptype() == tp_string ? "string" : "tuple";
       break;
 
     default:
-      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_mixed);
-      allowed_types = "int and string";
+      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed);
+      allowed_types = "int, string and float";
       break;
   }
 
