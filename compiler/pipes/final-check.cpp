@@ -439,7 +439,7 @@ void FinalCheckPass::check_indexing(VertexPtr vertex) {
     case tp_string:
       is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_float, tp_mixed);
       allowed_types = "int and float";
-      what_indexing = array_type->ptype() == tp_string ? "string" : "tuple";
+      what_indexing = array_type->ptype() == tp_string ? "string " : "tuple ";
       break;
 
     default:
@@ -452,7 +452,7 @@ void FinalCheckPass::check_indexing(VertexPtr vertex) {
     is_allowed = false;
   }
 
-  kphp_error(is_allowed, fmt_format("Only {} types are allowed for {} indexing, but {} type is passed", allowed_types, what_indexing, key_type->as_human_readable()));
+  kphp_error(is_allowed, fmt_format("Only {} types are allowed for {}indexing, but {} type is passed", allowed_types, what_indexing, key_type->as_human_readable()));
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
