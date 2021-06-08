@@ -332,7 +332,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     if (array_type->ptype() == tp_tuple) {
       const auto key_value = GenTree::get_actual_value(key);
       if (key_value->type() == op_int_const) {
-        const long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
+        const long index = parse_int_from_string(key_value.as<op_int_const>());
         const size_t tuple_size = array_type->get_tuple_max_index();
         kphp_error(0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
       }
