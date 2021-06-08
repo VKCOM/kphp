@@ -42,6 +42,7 @@ private:
   static void check_magic_tostring_method(FunctionPtr fun);
   static void check_magic_clone_method(FunctionPtr fun);
 
-  static void check_indexing(VertexPtr vertex);
+  static void check_indexing(VertexPtr array, VertexPtr key);
+  static void check_array_literal(VertexAdaptor<op_array> vertex);
 };
 

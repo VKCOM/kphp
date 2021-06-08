@@ -2,18 +2,16 @@
 /but bool type is passed/
 /but int\[\] type is passed/
 /but Foo type is passed/
-/but \?string type is passed/
-/but string\|false type is passed/
 <?php
 
 class Foo {}
 
-function data(): ?string {
+function data(): ?int {
     return null;
 }
 
 /**
- * @return string|false
+ * @return int|false
  */
 function data2() {
     return false;
@@ -25,8 +23,6 @@ function f() {
     echo $array[true];
     echo $array[$array];
     echo $array[new Foo];
-    echo $array[data()];
-    echo $array[data2()];
 }
 
 f();
