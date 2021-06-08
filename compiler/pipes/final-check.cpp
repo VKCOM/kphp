@@ -330,9 +330,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *array_type = tinf::get_type(arr);
     // TODO: do we need this?
     if (array_type->ptype() == tp_tuple) {
-      long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
-      size_t tuple_size = array_type->get_tuple_max_index();
-      kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      const auto key_value = GenTree::get_actual_value(key);
+      if (key_value->type() == op_int_const) {
+        const long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
+        const size_t tuple_size = array_type->get_tuple_max_index();
+        kphp_error(0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      }
     }
     const TypeData *key_type = tinf::get_type(key);
     kphp_error(key_type->ptype() != tp_any || key_type->or_false_flag(),
@@ -409,18 +412,47 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   }
 
   if (vertex->type() == op_index) {
-    const auto key = vertex.as<op_index>()->key();
-    const auto *key_type = tinf::get_type(key);
-    if (key_type != nullptr) {
-      const auto ptype = key_type->ptype();
-      const auto is_raw = !key_type->or_false_flag() && !key_type->or_null_flag();
-      const auto is_allowed = is_raw && vk::any_of_equal(ptype, tp_string, tp_int, tp_mixed);
-      kphp_error(is_allowed, fmt_format("Only int and string types are allowed for indexing, but {} type is passed", key_type->as_human_readable()));
-    }
+    check_indexing(vertex);
   }
 
   //TODO: may be this should be moved to tinf_check
   return vertex;
+}
+
+void FinalCheckPass::check_indexing(VertexPtr vertex) {
+  const auto array = vertex.as<op_index>()->array();
+  const auto key = vertex.as<op_index>()->key();
+  const auto *key_type = tinf::get_type(key);
+  const auto *array_type = tinf::get_type(array);
+  if (key_type == nullptr || array_type == nullptr) {
+    return;
+  }
+
+  const auto key_ptype = key_type->ptype();
+  const auto key_type_is_raw = !key_type->or_false_flag() && !key_type->or_null_flag();
+  bool is_allowed = false;
+  std::string allowed_types;
+  std::string what_indexing;
+
+  switch (array_type->ptype()) {
+    case tp_tuple:
+    case tp_string:
+      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_mixed);
+      allowed_types = "int";
+      what_indexing = array_type->ptype() == tp_string ? "string" : "tuple";
+      break;
+
+    default:
+      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_mixed);
+      allowed_types = "int and string";
+      break;
+  }
+
+  if (!key_type_is_raw) {
+    is_allowed = false;
+  }
+
+  kphp_error(is_allowed, fmt_format("Only {} types are allowed for {} indexing, but {} type is passed", allowed_types, what_indexing, key_type->as_human_readable()));
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
