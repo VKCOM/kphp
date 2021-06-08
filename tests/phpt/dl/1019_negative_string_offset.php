@@ -13,6 +13,5 @@ function string_as_var($s) {
 $a = "3896";
 var_dump($a[-1]);
 var_dump($a[-10]);
-var_dump($a["-1"]);
+var_dump($a[(int)"-1"]);
 string_as_var($a);
-

@@ -11,7 +11,7 @@
       $rest = bcmod($dec, 16);
       $dec = bcdiv($dec, 16);
       var_dump($rest);
-      $value = $digits[$rest].$value;
+      $value = $digits[(int)$rest].$value;
     }
     $value = $digits[intval($dec)].$value;
     return (string)$value;
