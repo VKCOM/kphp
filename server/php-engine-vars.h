@@ -62,21 +62,11 @@ extern int sigterm_on;
 extern int rpc_stopped;
 
 /** script **/
-#define IMM_STATS_DESC_LEN 128
 struct php_immediate_stats_t {
   bool is_running;
   bool is_wait_net;
   bool is_ready_for_accept;
-  double timestamp;
-  char desc[IMM_STATS_DESC_LEN];
-  double custom_timestamp;
-  char custom_desc[IMM_STATS_DESC_LEN];
-
-  int port;
-  long long actor_id;
-  double rpc_timestamp;
 };
-
 
 /***
   GLOBAL VARIABLES

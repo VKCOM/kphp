@@ -95,8 +95,8 @@ long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/
 php_immediate_stats_t *get_imm_stats();
-void custom_server_status(const char *status, int status_len);
-void server_status_rpc(int port, long long actor_id, double start_time);
+void custom_server_status();
+void server_status_rpc();
 void idle_server_status();
 void wait_net_server_status();
 void running_server_status();

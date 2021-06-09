@@ -635,7 +635,7 @@ protected:
         php_assert (resumable != nullptr);
         static_cast <const rpc_resumable *>(resumable)->set_server_status_rpc();
       } else {
-        ::set_server_status_rpc(0, 0, get_precise_now());
+        ::set_server_status_rpc();
       }
     }
 
@@ -649,7 +649,7 @@ protected:
   }
 
   void set_server_status_rpc() const {
-    ::set_server_status_rpc(port, actor_id, begin_time);
+    ::set_server_status_rpc();
   }
 
 public:

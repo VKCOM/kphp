@@ -614,8 +614,8 @@ void php_worker_free_script(php_worker *worker) {
   active_worker = nullptr;
   vkprintf (1, "FINISH php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, worker->req_id);
   idle_server_status();
-  custom_server_status("<none>", 6);
-  server_status_rpc(0, 0, precise_now);
+  custom_server_status();
+  server_status_rpc();
   if (worker->mode == once_worker) {
     static int left = run_once_count;
     if (!--left) {

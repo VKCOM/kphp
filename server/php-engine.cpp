@@ -1763,8 +1763,8 @@ void init_all() {
 
   init_php_scripts();
   idle_server_status();
-  custom_server_status("<none>", 6);
-  server_status_rpc(0, 0, dl_time());
+  custom_server_status();
+  server_status_rpc();
 
   worker_id = (int)lrand48();
 

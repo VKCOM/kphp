@@ -701,7 +701,7 @@ enum server_status_t {
   ss_custom
 };
 
-static void upd_server_status(server_status_t server_status, const char *desc, int desc_len) {
+static void upd_server_status(server_status_t server_status) {
   php_immediate_stats_t *imm = get_new_imm_stats();
   switch (server_status) {
     case ss_idle:
@@ -719,19 +719,6 @@ static void upd_server_status(server_status_t server_status, const char *desc, i
     case ss_custom:
       break;
   }
-  if (desc_len >= IMM_STATS_DESC_LEN) {
-    desc_len = IMM_STATS_DESC_LEN - 1;
-  }
-
-  if (server_status != ss_custom) {
-    imm->timestamp = dl_time();
-    memcpy(imm->desc, desc, desc_len);
-    imm->desc[desc_len] = 0;
-  } else {
-    imm->custom_timestamp = dl_time();
-    memcpy(imm->custom_desc, desc, desc_len);
-    imm->custom_desc[desc_len] = 0;
-  }
 
   upd_imm_stats();
 }
@@ -742,28 +729,24 @@ php_immediate_stats_t *get_imm_stats() {
   return istats;
 }
 
-void custom_server_status(const char *status, int status_len) {
-  upd_server_status(ss_custom, status, status_len);
+void custom_server_status() {
+  upd_server_status(ss_custom);
 }
 
-void server_status_rpc(int port, long long actor_id, double start_time) {
-  php_immediate_stats_t *imm = get_new_imm_stats();
-  imm->port = port;
-  imm->actor_id = actor_id;
-  imm->rpc_timestamp = start_time;
+void server_status_rpc() {
   upd_imm_stats();
 }
 
 void idle_server_status() {
-  upd_server_status(ss_idle, "Idle", 4);
+  upd_server_status(ss_idle);
 }
 
 void wait_net_server_status() {
-  upd_server_status(ss_wait_net, "WaitNet", 7);
+  upd_server_status(ss_wait_net);
 }
 
 void running_server_status() {
-  upd_server_status(ss_running, "Running", 7);
+  upd_server_status(ss_running);
 }
 
 void PHPScriptBase::cur_run() {
