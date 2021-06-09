@@ -75,6 +75,7 @@ TRUE, tok_true
 NULL, tok_null
 null, tok_null
 NAN, tok_nan
+INF, tok_inf
 xor, tok_log_xor_let
 and, tok_log_and_let
 or, tok_log_or_let
