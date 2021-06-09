@@ -1,5 +1,4 @@
 @kphp_should_fail
-/but bool type is passed/
 /but int\[\] type is passed/
 /but Foo type is passed/
 <?php
@@ -20,7 +19,6 @@ function data2() {
 function f() {
     $array = [1, 2, 3];
 
-    echo $array[true];
     echo $array[$array];
     echo $array[new Foo];
 }

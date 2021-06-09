@@ -6,6 +6,7 @@
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
@@ -425,6 +426,8 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   return vertex;
 }
 
+const auto allowed_types_for_index = {tp_string, tp_int, tp_float, tp_mixed, tp_future, tp_bool};
+
 void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
   const auto elements = vertex->args();
   for (const auto &element : elements) {
@@ -437,9 +440,9 @@ void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
       }
 
       const auto key_ptype = key_type->ptype();
-      const auto is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed, tp_future);
+      const auto is_allowed = vk::contains(allowed_types_for_index, key_ptype);
       kphp_error(is_allowed,
-                 fmt_format("Only string, int, float and future types are allowed for key, but {} type is passed",
+                 fmt_format("Only string, int, float, future and bool types are allowed for key, but {} type is passed",
                             key_type->as_human_readable()));
     }
   }
@@ -460,14 +463,14 @@ void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
   switch (array_type->ptype()) {
     case tp_tuple:
     case tp_string:
-      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_float, tp_mixed, tp_future);
-      allowed_types = "int, float and future";
+      is_allowed = key_ptype != tp_string && vk::contains(allowed_types_for_index, key_ptype);
+      allowed_types = "int, float, future and bool";
       what_indexing = ptype_name(array_type->ptype());
       break;
 
     default:
-      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed, tp_future);
-      allowed_types = "int, string, float and future";
+      is_allowed = vk::contains(allowed_types_for_index, key_ptype);
+      allowed_types = "int, string, float, future and bool";
       break;
   }
 

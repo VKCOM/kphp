@@ -28,6 +28,7 @@ function f() {
     echo $array[data2()];
     echo $array[1];
     echo $array["1"];
+    echo $array[true];
 }
 
 f();
