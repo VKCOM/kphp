@@ -437,9 +437,9 @@ void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
       }
 
       const auto key_ptype = key_type->ptype();
-      const auto is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed);
+      const auto is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed, tp_future);
       kphp_error(is_allowed,
-                 fmt_format("Only string, int and float types are allowed for key, but {} type is passed",
+                 fmt_format("Only string, int, float and future types are allowed for key, but {} type is passed",
                             key_type->as_human_readable()));
     }
   }
@@ -460,14 +460,14 @@ void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
   switch (array_type->ptype()) {
     case tp_tuple:
     case tp_string:
-      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_float, tp_mixed);
-      allowed_types = "int and float";
+      is_allowed = vk::any_of_equal(key_ptype, tp_int, tp_float, tp_mixed, tp_future);
+      allowed_types = "int, float and future";
       what_indexing = ptype_name(array_type->ptype());
       break;
 
     default:
-      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed);
-      allowed_types = "int, string and float";
+      is_allowed = vk::any_of_equal(key_ptype, tp_string, tp_int, tp_float, tp_mixed, tp_future);
+      allowed_types = "int, string, float and future";
       break;
   }
 
