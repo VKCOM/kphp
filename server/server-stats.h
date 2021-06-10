@@ -38,6 +38,8 @@ public:
   void write_stats_to(stats_t *stats) const noexcept;
   void write_stats_to(std::ostream &os) const noexcept;
 
+  uint64_t get_worker_activity_counter(uint16_t worker_process_id) const noexcept;
+
   struct WorkersStat {
     uint16_t running_workers{0};
     uint16_t waiting_workers{0};

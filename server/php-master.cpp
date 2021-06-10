@@ -337,6 +337,7 @@ struct worker_info_t {
   pid_t pid;
   int is_dying;
 
+  uint64_t last_activity_counter;
   double last_activity_time;
   double start_time;
   double kill_time;
@@ -447,13 +448,20 @@ void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
     for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
-        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+      auto *worker = workers[i];
+      const auto worker_activity_counter = vk::singleton<ServerStats>::get().get_worker_activity_counter(worker->unique_id);
+      if (worker_activity_counter != worker->last_activity_counter) {
+        worker->last_activity_counter = worker_activity_counter;
+        worker->last_activity_time = my_now;
+        continue;
+      }
+      if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec(worker->type) <= my_now) {
+        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
         if (workers[i]->type == WorkerType::job_worker) {
-          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
         }
         workers_hung++;
-        terminate_worker(workers[i]);
+        terminate_worker(worker);
         last_terminated = my_now;
         break;
       }
@@ -696,7 +704,7 @@ int run_worker(WorkerType worker_type) {
 
   tot_workers_started++;
 
-  const int worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
+  const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
@@ -779,6 +787,7 @@ int run_worker(WorkerType worker_type) {
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
   worker->unique_id = worker_unique_id;
+  worker->last_activity_counter = 0;
   worker->last_activity_time = my_now;
   worker->type = worker_type;
 

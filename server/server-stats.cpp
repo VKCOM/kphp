@@ -96,6 +96,7 @@ struct MiscStat : WithStatType<uint64_t> {
     max_special_connections,
     active_special_connections,
     worker_status,
+    worker_activity_counter,
     types_count
   };
 };
@@ -361,6 +362,10 @@ struct WorkerStatsBundle : EnumTable<E, std::array<std::atomic<typename E::StatT
   void set_stat(typename E::Key key, uint16_t worker_index, typename E::StatType value) noexcept {
     (*this)[key][worker_index].store(value, std::memory_order_relaxed);
   }
+
+  void inc_stat(typename E::Key key, uint16_t worker_index) noexcept {
+    (*this)[key][worker_index].fetch_add(1, std::memory_order_relaxed);
+  }
 };
 
 struct WorkerProcessStats : private vk::not_copyable {
@@ -374,6 +379,7 @@ struct WorkerProcessStats : private vk::not_copyable {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
+    misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
   }
 
   void update_worker_special_connections(uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
@@ -381,12 +387,21 @@ struct WorkerProcessStats : private vk::not_copyable {
     misc_stats.set_stat(MiscStat::Key::max_special_connections, worker_index, max_connections);
   }
 
+  void update_worker_status(uint64_t status, uint16_t worker_index) noexcept {
+    misc_stats.set_stat(MiscStat::Key::worker_status, worker_index, status);
+  }
+
+  void add_worker_stats(const EnumTable<QueriesStat> &worker_stat, uint16_t worker_index) noexcept {
+    query_stats.add_worker_stats(worker_stat, worker_index);
+  }
+
   void reset_worker_stats(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
-    update_worker_stats(worker_index);
     query_stats.set_worker_stats(EnumTable<QueriesStat>{}, worker_index);
+    misc_stats.set_stat(MiscStat::Key::worker_activity_counter, worker_index, 1);
     misc_stats.set_stat(MiscStat::Key::process_pid, worker_index, worker_pid);
     misc_stats.set_stat(MiscStat::Key::worker_status, worker_index, MiscStat::worker_idle);
     update_worker_special_connections(active_connections, max_connections, worker_index);
+    update_worker_stats(worker_index);
   }
 };
 
@@ -494,7 +509,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   const auto queries_stat = make_queries_stat(script_queries, script_time.count(), net_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
-  shared_stats_->workers.query_stats.add_worker_stats(queries_stat, worker_process_id_);
+  shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept {
@@ -515,15 +530,15 @@ void ServerStats::update_active_connections(uint64_t active_connections, uint64_
 }
 
 void ServerStats::set_idle_worker_status() noexcept {
-  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_idle);
+  shared_stats_->workers.update_worker_status(MiscStat::worker_idle, worker_process_id_);
 }
 
 void ServerStats::set_wait_net_worker_status() noexcept {
-  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_waiting_net | MiscStat::worker_running);
+  shared_stats_->workers.update_worker_status(MiscStat::worker_waiting_net | MiscStat::worker_running, worker_process_id_);
 }
 
 void ServerStats::set_running_worker_status() noexcept {
-  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_running);
+  shared_stats_->workers.update_worker_status(MiscStat::worker_running, worker_process_id_);
 }
 
 void ServerStats::aggregate_stats() noexcept {
@@ -709,4 +724,8 @@ ServerStats::WorkersStat ServerStats::collect_workers_stat(WorkerType worker_typ
   }
   result.total_workers = last - first;
   return result;
+}
+
+uint64_t ServerStats::get_worker_activity_counter(uint16_t worker_process_id) const noexcept {
+  return shared_stats_->workers.misc_stats.get_stat(MiscStat::Key::worker_activity_counter, worker_process_id);
 }
