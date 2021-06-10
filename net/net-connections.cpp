@@ -64,6 +64,8 @@ long long outbound_connections_created, inbound_connections_accepted;
 int ready_targets;
 int conn_generation;
 
+static void(*on_active_special_connections_update_callback)() = []{};
+
 const char *unix_socket_directory = "/var/run/engine";
 SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "unix-socket-directory", unix_socket_directory, "path to directory with UNIX sockets");
 
@@ -75,6 +77,11 @@ static void connections_constructor() {
   Connections = static_cast<connection*>(calloc(2 * MAX_CONNECTIONS, sizeof(Connections[0])));
   assert(Connections && "Cannot allocate memory for Connections");
   bucket_salt = lrand48();
+}
+
+void set_on_active_special_connections_update_callback(void (*callback)()) noexcept {
+  assert(callback);
+  on_active_special_connections_update_callback = callback;
 }
 
 int free_tmp_buffers(struct connection *c) {
@@ -636,7 +643,9 @@ static inline int compute_conn_events(struct connection *c) {
 
 void close_special_connection(struct connection *c) {
   if (c->basic_type != ct_listen) {
-    if (--active_special_connections < max_special_connections && Connections[c->listening].basic_type == ct_listen &&
+    --active_special_connections;
+    on_active_special_connections_update_callback();
+    if (active_special_connections < max_special_connections && Connections[c->listening].basic_type == ct_listen &&
         Connections[c->listening].generation == c->listening_generation) {
       epoll_insert(c->listening, EVT_READ | EVT_LEVEL);
     }
@@ -1142,7 +1151,9 @@ int accept_new_connections(struct connection *cc) {
                    "ERROR: forced to accept connection when special connections limit was reached (%d of %d)\n", active_special_connections,
                    max_special_connections);
         }
-        if (++active_special_connections >= max_special_connections) {
+        ++active_special_connections;
+        on_active_special_connections_update_callback();
+        if (active_special_connections >= max_special_connections) {
           return EVA_REMOVE;
         }
       }

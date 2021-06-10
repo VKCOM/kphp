@@ -684,69 +684,10 @@ void php_script_set_timeout(double t) {
 static php_immediate_stats_t imm_stats[2];
 static sig_atomic_t imm_stats_i = 0;
 
-static php_immediate_stats_t *get_new_imm_stats() {
-  return &imm_stats[imm_stats_i ^ 1];
-}
-
-static void upd_imm_stats() {
-  int x = imm_stats_i;
-  imm_stats_i = 1 ^ x;
-  memcpy(get_new_imm_stats(), get_imm_stats(), sizeof(php_immediate_stats_t));
-}
-
-enum server_status_t {
-  ss_idle,
-  ss_wait_net,
-  ss_running,
-  ss_custom
-};
-
-static void upd_server_status(server_status_t server_status) {
-  php_immediate_stats_t *imm = get_new_imm_stats();
-  switch (server_status) {
-    case ss_idle:
-      imm->is_running = false;
-      imm->is_wait_net = false;
-      break;
-    case ss_wait_net:
-      imm->is_running = true;
-      imm->is_wait_net = true;
-      break;
-    case ss_running:
-      imm->is_running = true;
-      imm->is_wait_net = false;
-      break;
-    case ss_custom:
-      break;
-  }
-
-  upd_imm_stats();
-}
-
 php_immediate_stats_t *get_imm_stats() {
   php_immediate_stats_t *istats = &imm_stats[imm_stats_i];
   istats->is_ready_for_accept = active_special_connections != max_special_connections;
   return istats;
-}
-
-void custom_server_status() {
-  upd_server_status(ss_custom);
-}
-
-void server_status_rpc() {
-  upd_imm_stats();
-}
-
-void idle_server_status() {
-  upd_server_status(ss_idle);
-}
-
-void wait_net_server_status() {
-  upd_server_status(ss_wait_net);
-}
-
-void running_server_status() {
-  upd_server_status(ss_running);
 }
 
 void PHPScriptBase::cur_run() {

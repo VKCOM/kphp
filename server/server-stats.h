@@ -22,13 +22,27 @@ public:
                          script_error_t error) noexcept;
   void add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept;
   void update_this_worker_stats() noexcept;
+  void update_active_connections(uint64_t active_connections, uint64_t max_connections) noexcept;
 
-  void after_fork(pid_t worker_pid, size_t worker_process_id, WorkerType worker_type) noexcept;
+  void set_idle_worker_status() noexcept;
+  void set_wait_net_worker_status() noexcept;
+  void set_running_worker_status() noexcept;
+
+  void after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections,
+                  uint16_t worker_process_id, WorkerType worker_type) noexcept;
 
   // these functions should be called only from the master process
   void aggregate_stats() noexcept;
   void write_stats_to(stats_t *stats) const noexcept;
   void write_stats_to(std::ostream &os) const noexcept;
+
+  struct WorkersStat {
+    uint16_t running_workers{0};
+    uint16_t waiting_workers{0};
+    uint16_t ready_for_accept_workers{0};
+    uint16_t total_workers{0};
+  };
+  WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
 
   ~ServerStats() noexcept;
 

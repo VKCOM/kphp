@@ -1039,10 +1039,6 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
-void set_server_status_rpc() {
-  server_status_rpc();
-}
-
 double get_net_time() {
   return PHPScriptBase::current_script->get_net_time();
 }

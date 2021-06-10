@@ -86,8 +86,16 @@ struct VMStat : WithStatType<uint32_t> {
 };
 
 struct MiscStat : WithStatType<uint64_t> {
+  enum {
+    worker_idle = 0,
+    worker_running = 1,
+    worker_waiting_net = 2
+  };
   enum class Key {
     process_pid,
+    max_special_connections,
+    active_special_connections,
+    worker_status,
     types_count
   };
 };
@@ -162,12 +170,6 @@ EnumTable<HeapStat> get_heap_stat() noexcept {
   EnumTable<HeapStat> result;
   result[HeapStat::Key::curl_memory_currently_usage] = vk::singleton<CurlMemoryUsage>::get().currently_allocated;
   result[HeapStat::Key::script_heap_memory_usage] = dl::get_heap_memory_used();
-  return result;
-}
-
-EnumTable<MiscStat> make_misc_stat(pid_t worker_pid) noexcept {
-  EnumTable<MiscStat> result;
-  result[MiscStat::Key::process_pid] = worker_pid;
   return result;
 }
 
@@ -340,22 +342,24 @@ public:
 
 template<class E>
 struct WorkerStatsBundle : EnumTable<E, std::array<std::atomic<typename E::StatType>, WorkersControl::max_workers_count>> {
-  template<class T1>
-  void set_worker_stats(const EnumTable<E, T1> &worker_stat, size_t worker_index) noexcept {
+  void set_worker_stats(const EnumTable<E> &worker_stat, uint16_t worker_index) noexcept {
     for (size_t i = 0; i != this->size(); ++i) {
-      (*this)[i][worker_index].store(worker_stat[i], std::memory_order_relaxed);
+      set_stat(static_cast<typename E::Key>(i), worker_index, worker_stat[i]);
     }
   }
 
-  template<class T1>
-  void add_worker_stats(const EnumTable<E, T1> &worker_stat, size_t worker_index) noexcept {
+  void add_worker_stats(const EnumTable<E> &worker_stat, uint16_t worker_index) noexcept {
     for (size_t i = 0; i != this->size(); ++i) {
       (*this)[i][worker_index].fetch_add(worker_stat[i], std::memory_order_relaxed);
     }
   }
 
-  auto get_stat(typename E::Key key, size_t worker_index) const noexcept {
+  auto get_stat(typename E::Key key, uint16_t worker_index) const noexcept {
     return (*this)[key][worker_index].load(std::memory_order_relaxed);
+  }
+
+  void set_stat(typename E::Key key, uint16_t worker_index, typename E::StatType value) noexcept {
+    (*this)[key][worker_index].store(value, std::memory_order_relaxed);
   }
 };
 
@@ -366,20 +370,23 @@ struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<MiscStat> misc_stats{};
   WorkerStatsBundle<QueriesStat> query_stats{};
 
-  void update_worker_stats(size_t worker_index) noexcept {
+  void update_worker_stats(uint16_t worker_index) noexcept {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
   }
 
-  void reset_worker_stats(pid_t worker_pid, size_t worker_index) noexcept {
-    update_worker_stats(worker_index);
-    query_stats.set_worker_stats(EnumTable<QueriesStat>{}, worker_index);
-    misc_stats.set_worker_stats(make_misc_stat(worker_pid), worker_index);
+  void update_worker_special_connections(uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
+    misc_stats.set_stat(MiscStat::Key::active_special_connections, worker_index, active_connections);
+    misc_stats.set_stat(MiscStat::Key::max_special_connections, worker_index, max_connections);
   }
 
-  void add_worker_stats(const EnumTable<QueriesStat> &worker_queries_stats, size_t worker_index) noexcept {
-    query_stats.add_worker_stats(worker_queries_stats, worker_index);
+  void reset_worker_stats(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
+    update_worker_stats(worker_index);
+    query_stats.set_worker_stats(EnumTable<QueriesStat>{}, worker_index);
+    misc_stats.set_stat(MiscStat::Key::process_pid, worker_index, worker_pid);
+    misc_stats.set_stat(MiscStat::Key::worker_status, worker_index, MiscStat::worker_idle);
+    update_worker_special_connections(active_connections, max_connections, worker_index);
   }
 };
 
@@ -445,6 +452,7 @@ struct ServerStats::SharedStats {
 
   WorkerSharedStats general_workers;
   JobWorkerSharedStats job_workers;
+
   WorkerProcessStats workers;
 };
 
@@ -468,25 +476,26 @@ ServerStats::ServerStats() noexcept:
 
 ServerStats::~ServerStats() noexcept = default;
 
-void ServerStats::after_fork(pid_t worker_pid, size_t worker_process_id, WorkerType worker_type) noexcept {
+void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections,
+                             uint16_t worker_process_id, WorkerType worker_type) noexcept {
+  assert(vk::any_of_equal(worker_type, WorkerType::general_worker, WorkerType::job_worker));
   worker_process_id_ = worker_process_id;
   worker_type_ = worker_type;
   gen_.seed(worker_pid);
-  shared_stats_->workers.reset_worker_stats(worker_pid, worker_process_id_);
+  shared_stats_->workers.reset_worker_stats(worker_pid, active_connections, max_connections, worker_process_id_);
   last_update_ = std::chrono::steady_clock::now();
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries,
                                     int64_t memory_used, int64_t real_memory_used, int64_t curl_total_allocated,
                                     script_error_t error) noexcept {
-  assert(vk::any_of_equal(worker_type_, WorkerType::general_worker, WorkerType::job_worker));
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
   const auto queries_stat = make_queries_stat(script_queries, script_time.count(), net_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
-  shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
+  shared_stats_->workers.query_stats.add_worker_stats(queries_stat, worker_process_id_);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept {
@@ -500,6 +509,22 @@ void ServerStats::update_this_worker_stats() noexcept {
     shared_stats_->workers.update_worker_stats(worker_process_id_);
     last_update_ = now_tp;
   }
+}
+
+void ServerStats::update_active_connections(uint64_t active_connections, uint64_t max_connections) noexcept {
+  shared_stats_->workers.update_worker_special_connections(active_connections, max_connections, worker_process_id_);
+}
+
+void ServerStats::set_idle_worker_status() noexcept {
+  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_idle);
+}
+
+void ServerStats::set_wait_net_worker_status() noexcept {
+  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_waiting_net | MiscStat::worker_running);
+}
+
+void ServerStats::set_running_worker_status() noexcept {
+  shared_stats_->workers.misc_stats.set_stat(MiscStat::Key::worker_status, worker_process_id_, MiscStat::worker_running);
 }
 
 void ServerStats::aggregate_stats() noexcept {
@@ -649,7 +674,10 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
     const auto net_time = ns2double(workers_query.get_stat(QueriesStat::Key::net_time, w));
     const auto script_time = ns2double(workers_query.get_stat(QueriesStat::Key::script_time, w));
     const auto worker_pid = workers_misc.get_stat(MiscStat::Key::process_pid, w);
-    os << "VM " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_kb, w) << "Kb\n"
+    os << "pid " << worker_pid << "\t" << worker_pid << "\n"
+       << "active_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::active_special_connections, w) << "\n"
+       << "max_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::max_special_connections, w) << "\n"
+       << "VM " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_kb, w) << "Kb\n"
        << "VM_max " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_peak_kb, w) << "Kb\n"
        << "RSS " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::rss_kb, w) << "Kb\n"
        << "RSS_max " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::rss_peak_kb, w) << "Kb\n"
@@ -659,4 +687,27 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
        << "script_time " << worker_pid << "\t" << script_time << "\n"
        << "net_time " << worker_pid << "\t" << net_time << "\n";
   }
+}
+
+ServerStats::WorkersStat ServerStats::collect_workers_stat(WorkerType worker_type) const noexcept {
+  assert(vk::any_of_equal(worker_type, WorkerType::general_worker, WorkerType::job_worker));
+
+  const auto &workers_control = vk::singleton<WorkersControl>::get();
+  const uint16_t general_workers = workers_control.get_count(WorkerType::general_worker);
+  const uint16_t job_workers = workers_control.get_count(WorkerType::job_worker);
+
+  const uint16_t first = worker_type == WorkerType::general_worker ? 0 : general_workers;
+  const uint16_t last = worker_type == WorkerType::general_worker ? general_workers : job_workers + general_workers;
+  WorkersStat result;
+  const auto &workers_misc = shared_stats_->workers.misc_stats;
+  for (uint16_t w = first; w != last; ++w) {
+    const auto worker_status = workers_misc.get_stat(MiscStat::Key::worker_status, w);
+    result.running_workers += (worker_status & MiscStat::worker_running) ? 1 : 0;
+    result.waiting_workers += (worker_status & MiscStat::worker_waiting_net) ? 1 : 0;
+    const auto max_connections = workers_misc.get_stat(MiscStat::Key::max_special_connections, w);
+    const auto active_connections = workers_misc.get_stat(MiscStat::Key::active_special_connections, w);
+    result.ready_for_accept_workers += (active_connections != max_connections) ? 1 : 0;
+  }
+  result.total_workers = last - first;
+  return result;
 }

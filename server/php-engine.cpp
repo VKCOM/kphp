@@ -1762,9 +1762,7 @@ void init_all() {
   init_drivers();
 
   init_php_scripts();
-  idle_server_status();
-  custom_server_status();
-  server_status_rpc();
+  vk::singleton<ServerStats>::get().set_idle_worker_status();
 
   worker_id = (int)lrand48();
 
@@ -2243,6 +2241,9 @@ int run_main(int argc, char **argv, php_mode mode) {
   set_core_dump_rlimit(1LL << 40);
 #endif
   max_special_connections = 1;
+  set_on_active_special_connections_update_callback([] {
+    vk::singleton<ServerStats>::get().update_active_connections(active_special_connections, max_special_connections);
+  });
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 
   if (mode == php_mode::cli) {
