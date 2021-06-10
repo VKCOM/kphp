@@ -1339,31 +1339,6 @@ int rpcc_send_query(connection *c) {
   return 0;
 }
 
-static char stats[65536];
-static int stats_len;
-
-void prepare_full_stats() {
-  char *s = stats;
-  int s_left = 65530;
-
-#define W(args...)  ({\
-  int written_tmp___ = snprintf (s, (size_t)s_left, ##args);\
-  if (written_tmp___ > s_left - 1) {\
-    written_tmp___ = s_left - 1;\
-  }\
-  s += written_tmp___;\
-  s_left -= written_tmp___;\
-})
-
-  int pid = (int)getpid();
-  W ("pid %d\t%d\n", pid, pid);
-  W ("active_special_connections %d\t%d\n", pid, active_special_connections);
-  W ("max_special_connections %d\t%d\n", pid, max_special_connections);
-//  W ("TODO: more stats\n");
-#undef W
-  stats_len = (int)(s - stats);
-}
-
 /***
   SERVER
  ***/
@@ -1418,76 +1393,6 @@ static void sigusr1_handler(const int sig) {
   kwrite(2, message, sizeof(message) - (size_t)1);
 
   pending_signals = pending_signals | (1ll << sig);
-}
-
-int pipe_packet_id = 0;
-
-void write_full_stats_to_pipe() {
-  if (master_pipe_write != -1) {
-    prepare_full_stats();
-
-    int qsize = stats_len + 1 + (int)sizeof(int) * 5;
-    qsize = (qsize + 3) & -4;
-    auto q = reinterpret_cast<int *>(malloc((size_t)qsize));
-    memset(q, 0, (size_t)qsize);
-
-    q[2] = RPC_PHP_FULL_STATS;
-    memcpy(q + 3, stats, (size_t)stats_len);
-
-    prepare_rpc_query_raw(pipe_packet_id++, q, qsize, crc32c_partial);
-    int err = (int)write(master_pipe_write, q, (size_t)qsize);
-    dl_passert (err == qsize, dl_pstr("error during write to pipe [%d]\n", master_pipe_write));
-    if (err != qsize) {
-      kill(getppid(), 9);
-    }
-    free(q);
-  }
-}
-
-sig_atomic_t pipe_fast_packet_id = 0;
-
-void write_immediate_stats_to_pipe() {
-  if (master_pipe_fast_write != -1) {
-    constexpr size_t query_size = (sizeof(php_immediate_stats_t) + 1 + sizeof(int) * 5 + 3) & -4;
-#if ASAN_ENABLED
-    // sometimes asan leads stack underflow
-    // TODO: use static constantly?
-    static
-#endif
-    int q[query_size] = {0};
-    int qsize = query_size;
-
-    q[2] = RPC_PHP_IMMEDIATE_STATS;
-    memcpy(q + 3, get_imm_stats(), sizeof(php_immediate_stats_t));
-
-    prepare_rpc_query_raw(pipe_fast_packet_id++, q, qsize, crc32c_partial);
-    int err = (int)write(master_pipe_fast_write, q, (size_t)qsize);
-    dl_passert (err == qsize, dl_pstr("error [%d] during write to pipe", errno));
-  }
-}
-
-//Used for interaction with master.
-int spoll_send_stats;
-
-static void sigstats_handler(int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
-#if defined(__APPLE__)
-  siginfo_t signal_info_stub;
-  signal_info_stub.si_code = SI_QUEUE;
-  signal_info_stub.si_value.sival_int =  SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS | SPOLL_SEND_IMMEDIATE_STATS;
-  info = &signal_info_stub;
-#endif
-  dl_assert (info != nullptr, "SIGPOLL with no info");
-  if (info->si_code == SI_QUEUE) {
-    int code = info->si_value.sival_int;
-    if ((code & 0xFFFF0000) == SPOLL_SEND_STATS) {
-      if (code & SPOLL_SEND_FULL_STATS) {
-        spoll_send_stats++;
-      }
-      if (code & SPOLL_SEND_IMMEDIATE_STATS) {
-        write_immediate_stats_to_pipe();
-      }
-    }
-  }
 }
 
 void cron() {
@@ -1615,12 +1520,7 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
   ksignal(SIGUSR1, sigusr1_handler);
   ksignal(SIGPOLL, SIG_IGN);
 
-  //using sigaction for SIGSTAT
-  dl_sigaction(SIGSTAT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigstats_handler);
-
   dl_allow_all_signals();
-
-  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
 
   vkprintf (1, "Server started\n");
   for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
@@ -1634,14 +1534,6 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
     if (precise_now > next_create_outbound) {
       create_all_outbound_connections();
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
-    }
-
-    while (spoll_send_stats > 0) {
-      write_full_stats_to_pipe();
-      spoll_send_stats--;
-      if (worker_type == WorkerType::job_worker) {
-        job_worker_server.last_stats.start();
-      }
     }
 
     if (pending_signals & (1ll << SIGHUP)) {
@@ -1658,6 +1550,7 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
     if (now != prev_time) {
       prev_time = now;
       cron();
+      vk::singleton<JobWorkerServer>::get().last_stats.start();
     }
 
     if (worker_type == WorkerType::general_worker) {

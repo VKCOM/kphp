@@ -49,8 +49,6 @@ int rpc_stopped = 0;
 int master_port = -1;
 int master_sfd = -1;
 int master_sfd_inited = 0;
-int master_pipe_write = -1;
-int master_pipe_fast_write = -1;
 
 /***
   GLOBAL VARIABLES

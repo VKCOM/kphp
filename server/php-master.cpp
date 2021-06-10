@@ -33,7 +33,6 @@
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
-#include "common/pipe-utils.h"
 #include "common/precise-time.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
@@ -227,9 +226,7 @@ const double periods_len[] = {0, 60, 60 * 10, 60 * 60};
 const char *periods_desc[] = {"now", "1m", "10m", "1h"};
 
 struct Stats {
-  std::string engine_stats;
   std::string cpu_desc, misc_desc;
-  php_immediate_stats_t istats = php_immediate_stats_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_general_workers[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_job_workers[periods_n];
@@ -322,14 +319,6 @@ void sigusr1_handler(const int sig) {
  */
 enum class master_state { on, off_in_graceful_restart, off_in_graceful_shutdown };
 
-// TODO: save it as pointer
-struct pipe_info_t {
-  int pipe_in_packet_num;
-  int pipe_out_packet_num;
-  connection *reader;
-  connection pending_stat_queue;
-};
-
 struct worker_info_t {
   worker_info_t *next_worker;
 
@@ -342,8 +331,6 @@ struct worker_info_t {
   double start_time;
   double kill_time;
   int kill_flag;
-
-  pipe_info_t pipes[2];
 
   pid_info_t my_info;
   int valid_my_info;
@@ -573,137 +560,12 @@ WorkerType start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_
   return run_master();
 }
 
-void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
-  assert (packet_num > p->pipe_in_packet_num);
-  p->pipe_in_packet_num = packet_num;
-  connection *c = &p->pending_stat_queue;
-  while (c->first_query != (conn_query *)c) {
-    conn_query *q = c->first_query;
-    dl_assert (q != nullptr, "...");
-    dl_assert (q->requester != nullptr, "...");
-    //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
-    if (q->requester->generation == q->req_generation) {
-      int need_packet_num = *(int *)&q->extra;
-      //vkprintf (1, "%d vs %d\n", need_packet_num, packet_num);
-
-      //use sign of difference to handle int overflow
-      int diff = packet_num - need_packet_num;
-      assert (abs(diff) < 1000000000);
-      if (diff >= 0) {
-        assert (diff == 0);
-        //TODO: use PMM_DATA (q->requester);
-        q->cq_type->close(q);
-      } else {
-        break;
-      }
-    } else {
-      q->cq_type->close(q);
-    }
-  }
-}
-
-void worker_set_stats(worker_info_t *w, const char *data) {
-  w->stats->engine_stats = data;
-}
-
-void worker_set_immediate_stats(worker_info_t *w, php_immediate_stats_t *istats) {
-  w->stats->istats = *istats;
-}
-
-
-/*** PIPE connection ***/
-struct pr_data {
-  worker_info_t *worker;
-  int worker_generation;
-  pipe_info_t *pipe_info;
-};
-#define PR_DATA(c) ((pr_data *)(TCP_RPC_DATA (c) + 1))
-
-int pr_execute(connection *c, int op, raw_message *raw) {
-  vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
-
-  if (vk::none_of_equal(op, RPC_PHP_FULL_STATS, RPC_PHP_IMMEDIATE_STATS)) {
-    return 0;
-  }
-  auto len = raw->total_bytes;
-
-  assert(len % sizeof(int) == 0);
-  assert(len >= sizeof(int));
-
-  tl_fetch_init_raw_message(raw);
-  auto op_from_tl = tl_fetch_int();
-  len -= static_cast<int>(sizeof(op_from_tl));
-  assert(op_from_tl == op);
-
-  std::vector<char> buf(len);
-  auto fetched_bytes = tl_fetch_data(buf.data(), static_cast<int>(buf.size()));
-  assert(fetched_bytes == buf.size());
-
-  worker_info_t *w = PR_DATA(c)->worker;
-  pipe_info_t *p = PR_DATA(c)->pipe_info;
-  if (w->generation == PR_DATA(c)->worker_generation) {
-    if (op == RPC_PHP_FULL_STATS) {
-      w->last_activity_time = my_now;
-      worker_set_stats(w, buf.data());
-    }
-
-    if (op == RPC_PHP_IMMEDIATE_STATS) {
-      worker_set_immediate_stats(w, reinterpret_cast<php_immediate_stats_t *>(buf.data()));
-    }
-
-    pipe_on_get_packet(p, TCP_RPC_DATA(c)->packet_num);
-  } else {
-    vkprintf(1, "connection [%p:%d] will be closed soon\n", c, c->fd);
-  }
-
-  return 0;
-}
-
-tcp_rpc_client_functions pipe_reader_methods = [] {
-  auto res = tcp_rpc_client_functions();
-  res.execute = pr_execute;
-
-  return res;
-}();
-
-void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
-  info->pipe_out_packet_num = -1;
-  info->pipe_in_packet_num = -1;
-  connection *reader = epoll_insert_pipe(pipe_for_read, pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
-  if (reader != nullptr) {
-    PR_DATA (reader)->worker = worker;
-    PR_DATA (reader)->worker_generation = worker->generation;
-    PR_DATA (reader)->pipe_info = info;
-  } else {
-    vkprintf(0, "failed to create pipe_reader [fd = %d]", pipe);
-  }
-  info->reader = reader;
-
-  connection *c = &info->pending_stat_queue;
-  c->first_query = c->last_query = (conn_query *)c;
-  c->generation = ++conn_generation;
-  c->pending_queries = 0;
-}
-
-void clear_pipe_info(pipe_info_t *info) {
-  info->reader = nullptr;
-}
-
 int run_worker(WorkerType worker_type) {
   dl_block_all_signals();
 
-  int err;
   assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
 
-  int new_pipe[2];
-  err = pipe2(new_pipe, O_CLOEXEC);
-  dl_assert(err != -1, "failed to create a pipe");
-  int new_fast_pipe[2];
-  err = pipe2(new_fast_pipe, O_CLOEXEC);
-  dl_assert(err != -1, "failed to create a pipe");
-
   tot_workers_started++;
-
   const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
@@ -727,13 +589,6 @@ int run_worker(WorkerType worker_type) {
     //verbosity = 0;
     verbosity = initial_verbosity;
     pid = getpid();
-
-    master_pipe_write = new_pipe[1];
-    master_pipe_fast_write = new_fast_pipe[1];
-    close(new_pipe[0]);
-    close(new_fast_pipe[0]);
-    clear_event(new_pipe[0]);
-    clear_event(new_fast_pipe[0]);
 
     master_sfd = -1;
 
@@ -791,12 +646,6 @@ int run_worker(WorkerType worker_type) {
   worker->last_activity_time = my_now;
   worker->type = worker_type;
 
-  init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
-  init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
-
-  close(new_pipe[1]);
-  close(new_fast_pipe[1]);
-
   changed = 1;
 
   return 0;
@@ -813,8 +662,6 @@ void remove_worker(pid_t pid) {
       }
       workers_failed++;
 
-      clear_pipe_info(&workers[i]->pipes[0]);
-      clear_pipe_info(&workers[i]->pipes[1]);
       delete_worker(workers[i]);
 
       workers[i] = workers[workers_control.get_all_alive()];
@@ -1011,77 +858,6 @@ tcp_rpc_server_functions php_rpc_master_methods = [] {
   return res;
 }();
 
-int delete_stats_query(conn_query *q);
-
-conn_query_functions stats_cq_func = [] {
-  auto res = conn_query_functions();
-  res.magic = CQUERY_FUNC_MAGIC;
-  res.title = "stats-cq-query";
-  res.wakeup = delete_stats_query;
-  res.close = delete_stats_query;
-
-  return res;
-}();
-
-int delete_stats_query(conn_query *q) {
-  vkprintf(2, "delete_stats_query(%p,%p)\n", q, q->requester);
-
-  delete_conn_query(q);
-  free(q);
-  return 0;
-}
-
-conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
-  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
-
-  q->custom_type = 0;
-  q->outbound = &pipe_info->pending_stat_queue;
-  q->requester = c;
-  q->start_time = precise_now;
-
-  *(int *)&q->extra = pipe_info->pipe_out_packet_num;
-
-  q->cq_type = &stats_cq_func;
-  q->timer.wakeup_time = precise_now + 1;
-  vkprintf(2, "create stats query [q = %p] [requester = %p]\n", q, q->requester);
-
-  insert_conn_query(q);
-
-  return q;
-}
-
-void create_stats_queries(connection *c, int op, int worker_pid) {
-#if defined(__APPLE__)
-  op |= SPOLL_SEND_IMMEDIATE_STATS | SPOLL_SEND_FULL_STATS;
-#endif
-  sigval to_send;
-  to_send.sival_int = op;
-  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-    if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
-      pipe_info_t *pipe_info = nullptr;
-      if (op & SPOLL_SEND_IMMEDIATE_STATS) {
-        pipe_info = &workers[i]->pipes[1];
-      } else if (op & SPOLL_SEND_FULL_STATS) {
-        pipe_info = &workers[i]->pipes[0];
-      }
-      dl_assert(pipe_info != nullptr, "bug in code");
-#if defined(__APPLE__)
-      kill(workers[i]->pid, SIGSTAT);
-#else
-      sigqueue(workers[i]->pid, SIGSTAT, to_send);
-#endif
-      pipe_info->pipe_out_packet_num++;
-      vkprintf(1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
-      if (c != nullptr) {
-        create_stats_query(c, pipe_info);
-      }
-    }
-  }
-  if (c != nullptr) {
-    c->status = conn_wait_net;
-  }
-}
-
 int return_one_key_key(connection *c, const char *key) {
   std::string tmp;
   tmp += "VALUE ";
@@ -1253,7 +1029,6 @@ std::string get_master_stats_html() {
 
 static long long int instance_cache_memory_swaps_ok = 0;
 static long long int instance_cache_memory_swaps_fail = 0;
-static const double FULL_STATS_PERIOD = 5.0;
 
 STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
@@ -1588,13 +1363,6 @@ static void cron() {
   stime += dead_stime;
   CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
   server_stats.update(cpu_timestamp);
-
-  create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
-  static double last_full_stats = -1;
-  if (last_full_stats + FULL_STATS_PERIOD < my_now) {
-    last_full_stats = my_now;
-    create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
-  }
 
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();

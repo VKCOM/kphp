@@ -681,15 +681,6 @@ void php_script_set_timeout(double t) {
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
-static php_immediate_stats_t imm_stats[2];
-static sig_atomic_t imm_stats_i = 0;
-
-php_immediate_stats_t *get_imm_stats() {
-  php_immediate_stats_t *istats = &imm_stats[imm_stats_i];
-  istats->is_ready_for_accept = active_special_connections != max_special_connections;
-  return istats;
-}
-
 void PHPScriptBase::cur_run() {
   current_script->run();
 }

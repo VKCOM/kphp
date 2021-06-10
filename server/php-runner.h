@@ -54,11 +54,6 @@ struct query_base {
   query_type type;
 };
 
-struct query_int {
-  query_type type; // MUST BE HERE
-  int val, res;
-};
-
 #pragma pack(pop)
 
 struct query_stats_t {
@@ -94,8 +89,6 @@ script_error_t php_script_get_error_type(void *ptr);
 long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/
-php_immediate_stats_t *get_imm_stats();
-
 class PHPScriptBase {
   double cur_timestamp, net_time, script_time;
   int queries_cnt;
