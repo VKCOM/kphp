@@ -56,7 +56,7 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
     return;
   }
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto *response_memory = memory_manager.acquire_shared_message();
+  auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
     php_warning("Can't store job response: not enough shared memory");
     return;

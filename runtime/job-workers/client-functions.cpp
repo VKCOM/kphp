@@ -78,10 +78,10 @@ private:
 
 namespace {
 
-template<typename T>
-job_workers::JobSharedMessage *make_job_request_message(const class_instance<T> &instance) {
+template<typename JobMessageT, typename T>
+JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto *memory_request = memory_manager.acquire_shared_message();
+  auto *memory_request = memory_manager.acquire_shared_message<JobMessageT>();
   if (memory_request == nullptr) {
     php_warning("Can't send job: not enough shared memory");
     return nullptr;
@@ -97,7 +97,7 @@ job_workers::JobSharedMessage *make_job_request_message(const class_instance<T> 
   return memory_request;
 }
 
-int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMessage *parent_job = nullptr) {
+int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *parent_job = nullptr) {
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
   const auto now = std::chrono::system_clock::now();
@@ -170,7 +170,7 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
   }
   timeout = normalize_job_timeout(timeout);
 
-  auto *memory_request = make_job_request_message(request);
+  auto *memory_request = make_job_request_message<job_workers::JobSharedMessage>(request);
   if (memory_request == nullptr) {
     return false;
   }
@@ -215,9 +215,9 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
 
   array<Optional<int64_t>> res{requests.size()};
 
-  job_workers::JobSharedMessage *parent_job_request = nullptr;
+  job_workers::JobSharedMemoryPiece *parent_job_request = nullptr;
   if (!common_shared_memory_piece.is_null()) {
-    parent_job_request = make_job_request_message(common_shared_memory_piece);
+    parent_job_request = make_job_request_message<job_workers::JobSharedMemoryPiece>(common_shared_memory_piece);
     /**
      * parent_job_request lifetime:
      * 1. attaches to client process on creating in `acquire_shared_message()`
@@ -237,9 +237,9 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
   for (const auto &it : requests) {
     const auto &req = it.get_value();
 
-    req.get()->set_shared_memory_piece({});                         // prepare for copying to shared memory
-    auto *child_job_request = make_job_request_message(req);        // copy to shared memory
-    req.get()->set_shared_memory_piece(common_shared_memory_piece); // roll it back to keep original instance unchanged
+    req.get()->set_shared_memory_piece({});                                                 // prepare for copying to shared memory
+    auto *child_job_request = make_job_request_message<job_workers::JobSharedMessage>(req); // copy to shared memory
+    req.get()->set_shared_memory_piece(common_shared_memory_piece);                         // roll it back to keep original instance unchanged
     if (child_job_request == nullptr) {
       res.set_value(it.get_key(), false);
       continue;

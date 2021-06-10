@@ -58,21 +58,21 @@ void worker_function() {
   AcquiredReleased _4mb;
 
   for (size_t i = 0; i != 10000; ++i) {
-    auto *message = SHMM::get().acquire_shared_message();
+    auto *message = SHMM::get().acquire_shared_message<job_workers::JobSharedMessage>();
     ASSERT_ACQUIRED(SHMM::get().get_stats().messages, messages);
     check_new_message(message);
     message->job_id = i;
     SHMM::get().release_shared_message(message);
     ASSERT_RELEASED(SHMM::get().get_stats().messages, messages);
 
-    auto *leaked_message = SHMM::get().acquire_shared_message();
+    auto *leaked_message = SHMM::get().acquire_shared_message<job_workers::JobSharedMessage>();
     ASSERT_ACQUIRED(SHMM::get().get_stats().messages, messages);
     check_new_message(leaked_message);
     leaked_message->job_id = i + 123124;
     SHMM::get().forcibly_release_all_attached_messages();
     ASSERT_RELEASED(SHMM::get().get_stats().messages, messages);
 
-    auto *message_with_extra_memory = SHMM::get().acquire_shared_message();
+    auto *message_with_extra_memory = SHMM::get().acquire_shared_message<job_workers::JobSharedMessage>();
     ASSERT_ACQUIRED(SHMM::get().get_stats().messages, messages);
     check_new_message(message_with_extra_memory);
     // 1mb x 8

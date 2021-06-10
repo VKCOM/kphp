@@ -25,21 +25,40 @@ constexpr size_t JOB_EXTRA_MEMORY_BUFFER_BUCKETS = 7;
 //    the default value for shared memory = the processes number * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER
 constexpr size_t JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER = 8 * 1024 * 1024; // 8MB for 1 process
 
-struct alignas(8) JobSharedMessageMetadata : vk::not_copyable {
-public:
-  memory_resource::unsynchronized_pool_resource resource;
-  class_instance<SendingInstanceBase> instance;
+struct JobSharedMemoryPiece;
 
+struct alignas(8) JobMetadata : vk::not_copyable {
+  memory_resource::unsynchronized_pool_resource resource;
+
+  class_instance<SendingInstanceBase> instance;
   std::atomic<uint32_t> owners_counter{1};
 
+  virtual JobSharedMemoryPiece *get_parent_job() const noexcept {
+    return nullptr;
+  }
+
+  JobMetadata() = default;
+  ~JobMetadata() = default;
+};
+
+
+struct alignas(8) JobSharedMessageMetadata : JobMetadata {
+public:
   int32_t job_id{0};
   int32_t job_result_fd_idx{-1};
   double job_start_time{-1.0};
   double job_timeout{-1.0};
-  JobSharedMessage *parent_job{nullptr};
+  JobSharedMemoryPiece *parent_job{nullptr};
 
   double job_deadline_time() const noexcept {
     return job_start_time + job_timeout;
+  }
+
+  void bind_parent_job(JobSharedMemoryPiece *parent) noexcept;
+  void unbind_parent_job() noexcept;
+
+  JobSharedMemoryPiece *get_parent_job() const noexcept override {
+    return parent_job;
   }
 
 protected:
@@ -47,32 +66,42 @@ protected:
   ~JobSharedMessageMetadata() = default;
 };
 
-struct alignas(8) JobSharedMessage : JobSharedMessageMetadata {
+template <typename Metadata>
+struct alignas(8) GenericJobMessage : Metadata {
 private:
-  static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_BYTES - sizeof(JobSharedMessageMetadata);
+  static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_BYTES - sizeof(Metadata);
 
 public:
-  JobSharedMessage() noexcept {
-    resource.init(memory_pool_buffer_, MEMORY_POOL_BUFFER_SIZE);
-  }
-
-  void bind_parent_job(JobSharedMessage *parent) noexcept {
-    assert(parent);
-    parent_job = parent;
-    ++parent_job->owners_counter;
-  }
-
-  void unbind_parent_job() noexcept {
-    assert(parent_job);
-    --parent_job->owners_counter;
-    assert(parent_job->owners_counter != 0);
-    parent_job = nullptr;
+  GenericJobMessage() noexcept {
+    this->resource.init(memory_pool_buffer_, MEMORY_POOL_BUFFER_SIZE);
   }
 
 private:
   alignas(8) uint8_t memory_pool_buffer_[MEMORY_POOL_BUFFER_SIZE];
 };
 
+struct alignas(8) JobSharedMessage : GenericJobMessage<JobSharedMessageMetadata> {
+// It's not a typedef because we need to forward declare this struct in several places
+};
+
+struct alignas(8) JobSharedMemoryPiece : GenericJobMessage<JobMetadata> {
+// It's not a typedef because we need to forward declare this struct in several places
+};
+
+static_assert(sizeof(JobSharedMemoryPiece) == JOB_SHARED_MESSAGE_BYTES, "check yourself");
 static_assert(sizeof(JobSharedMessage) == JOB_SHARED_MESSAGE_BYTES, "check yourself");
+
+inline void JobSharedMessageMetadata::bind_parent_job(JobSharedMemoryPiece *parent) noexcept {
+  assert(parent);
+  parent_job = parent;
+  ++parent_job->owners_counter;
+}
+
+inline void JobSharedMessageMetadata::unbind_parent_job() noexcept {
+  assert(parent_job);
+  --parent_job->owners_counter;
+  assert(parent_job->owners_counter != 0);
+  parent_job = nullptr;
+}
 
 } // namespace job_workers

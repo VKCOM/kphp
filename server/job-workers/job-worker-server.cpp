@@ -225,7 +225,7 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto *response_memory = memory_manager.acquire_shared_message();
+  auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
     log_server_error("Can't store job response error: not enough shared memory");
     return;
