@@ -440,7 +440,8 @@ void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
       }
 
       const auto key_ptype = key_type->ptype();
-      const auto is_allowed = vk::contains(allowed_types_for_index, key_ptype);
+      const auto key_is_false_type = key_ptype == tp_any && key_type->or_false_flag();
+      const auto is_allowed = key_is_false_type || vk::contains(allowed_types_for_index, key_ptype);
       kphp_error(is_allowed,
                  fmt_format("Only string, int, float, future and bool types are allowed for key, but {} type is passed",
                             key_type->as_human_readable()));
