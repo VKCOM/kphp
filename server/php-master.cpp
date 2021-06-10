@@ -1038,31 +1038,31 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "uptime", get_uptime());
 
   const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
-  add_gauge_stat_long(stats, "workers.general.total", general_worker_group.total_workers);
-  add_gauge_stat_long(stats, "workers.general.working", general_worker_group.running_workers);
-  add_gauge_stat_long(stats, "workers.general.working_but_waiting", general_worker_group.waiting_workers);
-  add_gauge_stat_long(stats, "workers.general.ready_for_accept", general_worker_group.ready_for_accept_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.total", general_worker_group.total_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.working", general_worker_group.running_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.working_but_waiting", general_worker_group.waiting_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.ready_for_accept", general_worker_group.ready_for_accept_workers);
 
   auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.general.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.general.running.max_1m", running_stats.running_workers_max);
+  add_gauge_stat_double(stats, "workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.general.processes.running.max_1m", running_stats.running_workers_max);
 
   const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
-  add_gauge_stat_long(stats, "workers.job.total", job_worker_group.total_workers);
-  add_gauge_stat_long(stats, "workers.job.working", job_worker_group.running_workers);
-  add_gauge_stat_long(stats, "workers.job.working_but_waiting", job_worker_group.waiting_workers);
+  add_gauge_stat_long(stats, "workers.job.processes.total", job_worker_group.total_workers);
+  add_gauge_stat_long(stats, "workers.job.processes.working", job_worker_group.running_workers);
+  add_gauge_stat_long(stats, "workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
   running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.job.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.job.running.max_1m", running_stats.running_workers_max);
+  add_gauge_stat_double(stats, "workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.job.processes.running.max_1m", running_stats.running_workers_max);
 
-  add_gauge_stat_long(stats, "workers.all.started", tot_workers_started);
-  add_gauge_stat_long(stats, "workers.all.dead", tot_workers_dead);
-  add_gauge_stat_long(stats, "workers.all.strange_dead", tot_workers_strange_dead);
-  add_gauge_stat_long(stats, "workers.all.killed", workers_killed);
-  add_gauge_stat_long(stats, "workers.all.hung", workers_hung);
-  add_gauge_stat_long(stats, "workers.all.terminated", workers_terminated);
-  add_gauge_stat_long(stats, "workers.all.failed", workers_failed);
+  add_gauge_stat_long(stats, "server.workers.started", tot_workers_started);
+  add_gauge_stat_long(stats, "server.workers.dead", tot_workers_dead);
+  add_gauge_stat_long(stats, "server.workers.strange_dead", tot_workers_strange_dead);
+  add_gauge_stat_long(stats, "server.workers.killed", workers_killed);
+  add_gauge_stat_long(stats, "server.workers.hung", workers_hung);
+  add_gauge_stat_long(stats, "server.workers.terminated", workers_terminated);
+  add_gauge_stat_long(stats, "server.workers.failed", workers_failed);
 
 
   const auto cpu_stats = server_stats.cpu[1].get_stat();

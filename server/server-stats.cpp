@@ -620,7 +620,7 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
 }
 
 void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats &job_agg) noexcept {
-  write_to(stats, prefix, ".requests.job_queue_time", job_agg.job_samples[JobSamples::Key::wait_time].percentiles, ns2double);
+  write_to(stats, prefix, ".jobs.queue_time", job_agg.job_samples[JobSamples::Key::wait_time].percentiles, ns2double);
   write_to(stats, prefix, ".memory.job_request_usage", job_agg.job_samples[JobSamples::Key::request_memory_usage].percentiles);
   write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage].percentiles);
 }
@@ -658,10 +658,10 @@ void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMSt
 } // namespace
 
 void ServerStats::write_stats_to(stats_t *stats) const noexcept {
-  write_to(stats, "general_workers", aggregated_stats_->general_workers, shared_stats_->general_workers);
+  write_to(stats, "workers.general", aggregated_stats_->general_workers, shared_stats_->general_workers);
 
-  write_to(stats, "job_workers", aggregated_stats_->job_workers, shared_stats_->job_workers);
-  write_to(stats, "job_workers", aggregated_stats_->job_workers);
+  write_to(stats, "workers.job", aggregated_stats_->job_workers, shared_stats_->job_workers);
+  write_to(stats, "workers.job", aggregated_stats_->job_workers);
 
   write_to(stats, "master", aggregated_stats_->master_process);
 
