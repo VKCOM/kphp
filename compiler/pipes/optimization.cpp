@@ -366,7 +366,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
       } else if (symbol == 's') {
         parts.push_back(FormatPart{"", FormatPart::FormatSpecType::String});
       } else if (symbol == '%') {
-        last_value += "%%";
+        last_value += "%";
       } else {
         return {};
       }
