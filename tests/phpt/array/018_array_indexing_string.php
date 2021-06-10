@@ -25,8 +25,9 @@ function f() {
     echo $str[new Foo];
     echo $str["1"];
 
-    echo $str[1];
     echo $str[true];
+    echo $str[false];
+    echo $str[1];
     echo $str[data()];
     echo $str[data2()];
 }

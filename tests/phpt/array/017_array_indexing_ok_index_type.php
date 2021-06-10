@@ -29,6 +29,7 @@ function f() {
     echo $array[1];
     echo $array["1"];
     echo $array[true];
+    echo $array[false];
 }
 
 f();
