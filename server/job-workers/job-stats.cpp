@@ -35,7 +35,6 @@ void JobStats::write_stats_to(stats_t *stats) const noexcept {
   add_gauge_stat(stats, errors_pipe_client_read, prefix, "pipe_errors.client_read");
 
   add_gauge_stat(stats, job_worker_skip_job_due_another_is_running, prefix, "jobs.skip.another_is_running");
-  add_gauge_stat(stats, job_worker_skip_job_due_overload, prefix, "jobs.skip.overload");
   add_gauge_stat(stats, job_worker_skip_job_due_steal, prefix, "jobs.skip.steal");
 
   add_gauge_stat(stats, job_queue_size, prefix, "jobs.queue_size");

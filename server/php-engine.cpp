@@ -1550,7 +1550,6 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
     if (now != prev_time) {
       prev_time = now;
       cron();
-      vk::singleton<JobWorkerServer>::get().last_stats.start();
     }
 
     if (worker_type == WorkerType::general_worker) {

@@ -120,12 +120,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     return 0;
   }
 
-  if (last_stats.is_started() && last_stats.time() > std::chrono::duration<int>{JobWorkersContext::MAX_HANGING_TIME_SEC / 2}) {
-    tvkprintf(job_workers, 1, "Too many jobs. Job worker will complete them later. Goes back to event loop now\n");
-    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_overload;
-    return 0;
-  }
-
   JobSharedMessage *job = nullptr;
   PipeJobReader::ReadStatus status = job_reader.read_job(job);
 
