@@ -26,8 +26,6 @@ public:
   friend class vk::singleton<JobWorkersContext>;
   using Pipe = std::array<int, 2>;
 
-  static constexpr int MAX_HANGING_TIME_SEC = 20; // TODO: tune it
-
   Pipe job_pipe{};
   std::vector<Pipe> result_pipes;
   bool pipes_inited{false};

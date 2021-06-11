@@ -419,16 +419,8 @@ int kill_worker(WorkerType worker_type) {
   return 0;
 }
 
-static int get_max_hanging_time_sec(WorkerType worker_type) {
-  switch (worker_type) {
-    case WorkerType::general_worker:
-      return max(script_timeout + 1, 65); // + 1 sec for terminating
-    case WorkerType::job_worker:
-      return JobWorkersContext::MAX_HANGING_TIME_SEC;
-    default:
-      assert(0);
-  }
-  return 0;
+static int get_max_hanging_time_sec() noexcept {
+  return max(script_timeout + 1, 65); // + 1 sec for terminating
 }
 
 void kill_hanging_workers() {
@@ -442,7 +434,7 @@ void kill_hanging_workers() {
         worker->last_activity_time = my_now;
         continue;
       }
-      if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec(worker->type) <= my_now) {
+      if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec() <= my_now) {
         vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
         if (workers[i]->type == WorkerType::job_worker) {
           tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
