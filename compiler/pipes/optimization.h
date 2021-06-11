@@ -7,9 +7,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/function-pass.h"
 
-struct FormatCallInfo;
-struct FormatPart;
-
 class OptimizationPass final : public FunctionPassBase {
 private:
   VertexPtr optimize_set_push_back(VertexAdaptor<op_set> set_op);
@@ -22,9 +19,6 @@ private:
 
   static VertexPtr try_convert_expr_to_call_to_string_method(VertexPtr expr);
   static VertexPtr convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv);
-
-  static VertexPtr optimize_sprintf_call(VertexAdaptor<op_func_call> &call);
-  static VertexPtr convert_format_part_to_vertex(const FormatPart &part, size_t arg_index, const FormatCallInfo &info);
 
 public:
   string get_description() override {

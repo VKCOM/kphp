@@ -16,28 +16,28 @@ function getInt(): string {
 $int = 1;
 $string = "Hello";
 
-echo sprintf("%%");
-echo sprintf("%% %% %%");
+echo vsprintf("%%", []);
+echo vsprintf("%% %% %%", []);
 
 // simple
-echo sprintf("%d", [$int]);
-echo sprintf("%d", [getInt()]);
-echo sprintf("%s", [$string]);
-echo sprintf("%s", [getString()]);
-echo sprintf("%s %d", [getString(), $int]);
-echo sprintf("%s %s", [getString(), $string]);
+echo vsprintf("%d", [$int]);
+echo vsprintf("%d", [getInt()]);
+echo vsprintf("%s", [$string]);
+echo vsprintf("%s", [getString()]);
+echo vsprintf("%s %d", [getString(), $int]);
+echo vsprintf("%s %s", [getString(), $string]);
 
 // simple with text
-echo sprintf("Hello %d", [$int]);
-echo sprintf("%d world", [getInt()]);
-echo sprintf("%s world", [$string]);
-echo sprintf("Hello %s world %d", [getString(), getInt()]);
+echo vsprintf("Hello %d", [$int]);
+echo vsprintf("%d world", [getInt()]);
+echo vsprintf("%s world", [$string]);
+echo vsprintf("Hello %s world %d", [getString(), getInt()]);
 
 // with non-const format
 $format = "%s";
-echo sprintf($format, [$int]);
-echo sprintf($format, [$int, getString()]);
+echo vsprintf($format, [$int]);
+echo vsprintf($format, [$int, getString()]);
 
 // with constant
 const FORMAT = "Hello %d%s";
-echo sprintf(FORMAT, [$int, getString()]);
+echo vsprintf(FORMAT, [$int, getString()]);
