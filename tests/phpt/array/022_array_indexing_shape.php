@@ -1,5 +1,6 @@
 @ok
 <?php
+require_once 'kphp_tester_include.php';
 
 /**
  * @return shape(id: int, name: string)

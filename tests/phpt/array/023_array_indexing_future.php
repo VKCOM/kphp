@@ -1,5 +1,6 @@
 @ok
 <?php
+require_once 'kphp_tester_include.php';
 
 class X2Request implements KphpJobWorkerRequest {
   public $arr_request = [];
