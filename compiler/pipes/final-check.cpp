@@ -440,8 +440,8 @@ void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
       }
 
       const auto key_ptype = key_type->ptype();
-      const auto key_is_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
-      const auto is_allowed = key_is_optional_type || vk::contains(allowed_types_for_index, key_ptype);
+      const auto key_has_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
+      const auto is_allowed = key_has_optional_type || vk::contains(allowed_types_for_index, key_ptype);
       kphp_error(is_allowed,
                  fmt_format("Only string, int, float, future and bool types are allowed for key, but {} type is passed",
                             key_type->as_human_readable()));
@@ -457,7 +457,7 @@ void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
   }
 
   const auto key_ptype = key_type->ptype();
-  const auto key_is_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
+  const auto key_has_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
   bool is_allowed = false;
   vk::string_view allowed_types;
   vk::string_view what_indexing;
@@ -465,13 +465,13 @@ void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
   switch (array_type->ptype()) {
     case tp_tuple:
     case tp_string:
-      is_allowed = key_is_optional_type || (key_ptype != tp_string && vk::contains(allowed_types_for_index, key_ptype));
+      is_allowed = key_has_optional_type || (key_ptype != tp_string && vk::contains(allowed_types_for_index, key_ptype));
       allowed_types = "int, float, future and bool";
       what_indexing = ptype_name(array_type->ptype());
       break;
 
     default:
-      is_allowed = key_is_optional_type || vk::contains(allowed_types_for_index, key_ptype);
+      is_allowed = key_has_optional_type || vk::contains(allowed_types_for_index, key_ptype);
       allowed_types = "int, string, float, future and bool";
       break;
   }
