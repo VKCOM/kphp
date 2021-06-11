@@ -24,9 +24,9 @@ class TestCpuJob(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": 4,
-                "kphp_server.job_workers_memory_messages_buffers_released": 4,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })
 
     def test_heavy_cpu_job(self):
@@ -47,12 +47,12 @@ class TestCpuJob(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": 6,
-                "kphp_server.job_workers_memory_messages_buffers_released": 6,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0,
-                "kphp_server.job_workers_memory_extra_buffers_1mb_buffers_acquired": 2,
-                "kphp_server.job_workers_memory_extra_buffers_1mb_buffers_released": 2,
-                "kphp_server.job_workers_memory_extra_buffers_1mb_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 6,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 6,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffers_acquired": 2,
+                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffers_released": 2,
+                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffer_acquire_fails": 0
             })
 
     def test_simple_cpu_job_and_rpc_request_between(self):
@@ -75,9 +75,9 @@ class TestCpuJob(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": 4,
-                "kphp_server.job_workers_memory_messages_buffers_released": 4,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })
 
     def test_simple_cpu_job_and_mc_usage_between(self):
@@ -99,7 +99,7 @@ class TestCpuJob(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": 4,
-                "kphp_server.job_workers_memory_messages_buffers_released": 4,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })

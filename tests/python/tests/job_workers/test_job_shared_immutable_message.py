@@ -80,15 +80,15 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
             initial_stats=stats_before,
             expected_added_stats={
                 # ensure shared data is not leaked
-                "kphp_server.job_workers_memory_messages_buffers_acquired": job_messages_cnt,
-                "kphp_server.job_workers_memory_messages_buffers_released": job_messages_cnt,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": job_messages_cnt,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": job_messages_cnt,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0,
                 # ensure we copy shared array only once when shared data is used:
-                "kphp_server.job_workers_memory_extra_buffers_16mb_buffers_acquired": array_copies_cnt,
-                "kphp_server.job_workers_memory_extra_buffers_16mb_buffer_acquire_fails": 0,
-                "kphp_server.job_workers_memory_extra_buffers_16mb_buffers_released": array_copies_cnt,
-                "kphp_server.job_workers_memory_extra_buffers_32mb_buffers_acquired": 0,
-                "kphp_server.job_workers_memory_extra_buffers_32mb_buffer_acquire_fails": 0,
-                "kphp_server.job_workers_memory_extra_buffers_64mb_buffers_acquired": 0,
-                "kphp_server.job_workers_memory_extra_buffers_64mb_buffer_acquire_fails": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_16mb_buffers_acquired": array_copies_cnt,
+                "kphp_server.workers_job_memory_messages_extra_buffers_16mb_buffer_acquire_fails": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_16mb_buffers_released": array_copies_cnt,
+                "kphp_server.workers_job_memory_messages_extra_buffers_32mb_buffers_acquired": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_32mb_buffer_acquire_fails": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_64mb_buffers_acquired": 0,
+                "kphp_server.workers_job_memory_messages_extra_buffers_64mb_buffer_acquire_fails": 0,
             })

@@ -27,7 +27,7 @@ class TestJobResumable(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": 4,
-                "kphp_server.job_workers_memory_messages_buffers_released": 4,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 4,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })

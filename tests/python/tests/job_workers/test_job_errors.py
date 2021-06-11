@@ -27,21 +27,24 @@ class TestJobErrors(KphpServerAutoTestCase):
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.job_workers_memory_messages_buffers_acquired": buffers,
-                "kphp_server.job_workers_memory_messages_buffers_released": buffers,
-                "kphp_server.job_workers_memory_messages_buffer_acquire_fails": 0
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": buffers,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": buffers,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })
 
-    def job_error_test_impl(self, error_type, error_code, buffers=4):
+    def job_error_test_impl(self, error_type, error_code, buffers=4, data=None):
+        if not data:
+            data = [[1, 2, 3, 4], [7, 9, 12]]
+
         stats_before = self.kphp_server.get_stats()
         resp = self.kphp_server.http_post(
             uri="/test_job_errors",
             json={
                 "tag": "x2_with_error",
                 "error-type": error_type,
-                "data": [[1, 2, 3, 4], [7, 9, 12]]
+                "data": data
             })
-        self._assert_result(stats_before, resp, error_code, buffers)
+        self._assert_result(stats_before, resp, error_code, buffers, len(data))
 
     def test_job_script_timeout_error(self):
         stats_before = self.kphp_server.get_stats()
@@ -86,8 +89,8 @@ class TestJobErrors(KphpServerAutoTestCase):
         ])
 
     def test_job_sigsegv(self):
-        self.job_error_test_impl("sigsegv", self.JOB_TIMEOUT_ERROR, 2)
-        self.kphp_server.assert_log(2 * [
+        self.job_error_test_impl("sigsegv", self.JOB_TIMEOUT_ERROR, 1, [[1, 2, 3, 4, 5]])
+        self.kphp_server.assert_log([
             "Error -2: Segmentation fault"
         ])
         try:
@@ -96,8 +99,8 @@ class TestJobErrors(KphpServerAutoTestCase):
             pass
 
     def test_job_client_oom(self):
-        stats_messages_before = self.kphp_server.get_stats("kphp_server.job_workers_memory_messages_")
-        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.job_workers_memory_extra_buffers_")
+        stats_messages_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_shared_messages_")
+        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
 
         resp = self.kphp_server.http_get("/test_client_too_big_request")
         self.assertEqual(resp.status_code, 200)
@@ -105,11 +108,11 @@ class TestJobErrors(KphpServerAutoTestCase):
 
         self.kphp_server.assert_log(["Warning: Can't send job: too big request"])
         self.kphp_server.assert_stats(
-            prefix="kphp_server.job_workers_memory_messages_",
+            prefix="kphp_server.workers_job_memory_messages_shared_messages_",
             initial_stats=stats_messages_before,
             expected_added_stats={"buffers_acquired": 1, "buffers_released": 1, "buffer_acquire_fails": 0})
         self.kphp_server.assert_stats(
-            prefix="kphp_server.job_workers_memory_extra_buffers_",
+            prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
             expected_added_stats={
                 "1mb_buffer_acquire_fails": 6, "1mb_buffers_acquired": 4, "1mb_buffers_released": 4,
@@ -122,13 +125,13 @@ class TestJobErrors(KphpServerAutoTestCase):
             })
 
     def test_big_response(self):
-        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.job_workers_memory_extra_buffers_")
+        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
         self.job_error_test_impl("big_response", self.JOB_NO_REPLY, 6)
         self.kphp_server.assert_log(2 * [
             "Warning: Can't store job response: too big response"
         ])
         self.kphp_server.assert_stats(
-            prefix="kphp_server.job_workers_memory_extra_buffers_",
+            prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
             expected_added_stats={
                 "1mb_buffer_acquire_fails": self.cmpGe(6), "1mb_buffers_acquired": self.cmpGe(4),
