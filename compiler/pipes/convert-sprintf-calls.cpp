@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/convert-sprintf-calls.h"
 
+#include <compiler/gentree.h>
+
 struct FormatCallInfo {
   FormatCallInfo() : args(VertexRange(Vertex::iterator{}, Vertex::iterator{})) {}
   // stores a variable that contains all the call arguments,
@@ -52,7 +54,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
     } else if (symbol == '%') {
       find_percent = true;
       if (!last_value.empty()) {
-        parts.push_back(FormatPart{last_value});
+        parts.push_back(FormatPart{std::move(last_value)});
         last_value = "";
       }
     } else {
@@ -61,7 +63,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
   }
 
   if (!last_value.empty()) {
-    parts.push_back(FormatPart{last_value});
+    parts.push_back(FormatPart{std::move(last_value)});
   }
 
   return parts;
@@ -80,39 +82,17 @@ VertexPtr ConvertSprintfCallsPass::on_exit_vertex(VertexPtr root) {
 
 VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_call> &call) {
   const auto args = call->args();
-  auto format_arg_raw = args[0];
-
-  if (format_arg_raw->type() == op_conv_string) {
-    format_arg_raw = format_arg_raw.as<op_conv_string>()->expr();
+  const auto format_arg_raw = args[0];
+  const auto *format_string = GenTree::get_constexpr_string(format_arg_raw);
+  if (format_string == nullptr) {
+    return call;
   }
 
-  VertexAdaptor<op_string> format_string;
-
-  switch (format_arg_raw->type()) {
-    case op_var: {
-      const auto format_var = format_arg_raw.as<op_var>()->var_id;
-      if (!format_var) {
-        return call;
-      }
-      const auto format_string_val = format_var->init_val.try_as<op_string>();
-      if (!format_string_val) {
-        return call;
-      }
-      format_string = format_string_val;
-      break;
-    }
-    case op_string: {
-      format_string = format_arg_raw.as<op_string>();
-      break;
-    }
-    default:
-      return call;
-  }
-
-  const auto parts = try_parse_format_string(format_string->str_val);
+  const auto parts = try_parse_format_string(*format_string);
   if (parts.empty()) {
     return call;
   }
+
   const auto count_specifiers = std::count_if(parts.begin(), parts.end(), [](const FormatPart &part) {
     return part.is_specifier();
   });
