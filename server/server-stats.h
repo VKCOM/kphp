@@ -17,6 +17,8 @@
 
 class ServerStats : vk::not_copyable {
 public:
+  void init() noexcept;
+
   void add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries,
                          int64_t memory_used, int64_t real_memory_used, int64_t curl_total_allocated,
                          script_error_t error) noexcept;
@@ -44,21 +46,20 @@ public:
   };
   WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
 
-  ~ServerStats() noexcept;
-
 private:
   friend class vk::singleton<ServerStats>;
 
-  ServerStats() noexcept;
+  ServerStats() = default;
 
   WorkerType worker_type_{WorkerType::general_worker};
   uint16_t worker_process_id_{0};
-  std::mt19937 gen_;
   std::chrono::steady_clock::time_point last_update_;
+
+  std::mt19937 *gen_{nullptr};
+
+  struct AggregatedStats;
+  AggregatedStats *aggregated_stats_{nullptr};
 
   struct SharedStats;
   SharedStats *shared_stats_{nullptr};
-
-  struct AggregatedStats;
-  std::unique_ptr<AggregatedStats> aggregated_stats_;
 };

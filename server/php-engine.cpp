@@ -2187,8 +2187,6 @@ void parse_main_args(int argc, char *argv[]) {
 
 
 void init_default() {
-  vk::singleton<ServerStats>::get();
-
   if (!vk::singleton<WorkersControl>::get().init()) {
     kprintf ("fatal: not enough workers for general purposes\n");
     exit(1);
@@ -2240,6 +2238,8 @@ int run_main(int argc, char **argv, php_mode mode) {
 #if !ASAN_ENABLED
   set_core_dump_rlimit(1LL << 40);
 #endif
+  vk::singleton<ServerStats>::get().init();
+
   max_special_connections = 1;
   set_on_active_special_connections_update_callback([] {
     vk::singleton<ServerStats>::get().update_active_connections(active_special_connections, max_special_connections);

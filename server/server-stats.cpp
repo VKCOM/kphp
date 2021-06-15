@@ -188,8 +188,8 @@ struct AggregatedSamples;
 template<class T>
 struct SharedSamples : private vk::not_copyable {
 public:
-  void init(std::mt19937 &gen) noexcept {
-    gen_ = &gen;
+  void init(std::mt19937 *gen) noexcept {
+    gen_ = gen;
   }
 
   void add_sample(T value, size_t sample_index) noexcept {
@@ -211,7 +211,7 @@ private:
 template<class E>
 struct SharedSamplesBundle : EnumTable<E, SharedSamples<typename E::StatType>>, private vk::not_copyable {
 public:
-  explicit SharedSamplesBundle(std::mt19937 &gen) noexcept {
+  explicit SharedSamplesBundle(std::mt19937 *gen) noexcept {
     for (auto &s : *this) {
       s.init(gen);
     }
@@ -228,7 +228,7 @@ public:
 };
 
 struct WorkerSharedStats : private vk::not_copyable {
-  explicit WorkerSharedStats(std::mt19937 &gen) noexcept:
+  explicit WorkerSharedStats(std::mt19937 *gen) noexcept:
     script_samples(gen) {
   }
 
@@ -258,7 +258,7 @@ struct WorkerSharedStats : private vk::not_copyable {
 };
 
 struct JobWorkerSharedStats : WorkerSharedStats {
-  explicit JobWorkerSharedStats(std::mt19937 &gen) noexcept:
+  explicit JobWorkerSharedStats(std::mt19937 *gen) noexcept:
     WorkerSharedStats(gen),
     job_samples(gen) {
   }
@@ -283,8 +283,8 @@ public:
     last_(samples_.begin()) {
   }
 
-  void init(std::mt19937 &gen) noexcept {
-    gen_ = &gen;
+  void init(std::mt19937 *gen) noexcept {
+    gen_ = gen;
   }
 
   void recalc(SharedSamples<T> &samples, size_t samples_count,
@@ -325,7 +325,7 @@ private:
 template<class E>
 struct AggregatedSamplesBundle : EnumTable<E, AggregatedSamples<typename E::StatType>>, private vk::not_copyable {
 public:
-  explicit AggregatedSamplesBundle(std::mt19937 &gen) noexcept {
+  explicit AggregatedSamplesBundle(std::mt19937 *gen) noexcept {
     for (auto &s : *this) {
       s.init(gen);
     }
@@ -410,7 +410,7 @@ struct WorkerPercentilesBundle : EnumTable<E, Percentiles<typename E::StatType>>
 };
 
 struct WorkerAggregatedStats {
-  explicit WorkerAggregatedStats(std::mt19937 &gen) noexcept:
+  explicit WorkerAggregatedStats(std::mt19937 *gen) noexcept:
     script_samples(gen) {
   }
 
@@ -429,7 +429,7 @@ struct WorkerAggregatedStats {
 };
 
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
-  explicit JobWorkerAggregatedStats(std::mt19937 &gen) noexcept:
+  explicit JobWorkerAggregatedStats(std::mt19937 *gen) noexcept:
     WorkerAggregatedStats(gen),
     job_samples(gen) {
   }
@@ -445,7 +445,7 @@ struct MasterProcessStats : private vk::not_copyable {
 } // namespace
 
 struct ServerStats::SharedStats {
-  explicit SharedStats(std::mt19937 &gen) noexcept:
+  explicit SharedStats(std::mt19937 *gen) noexcept:
     general_workers(gen),
     job_workers(gen) {
   }
@@ -458,7 +458,7 @@ struct ServerStats::SharedStats {
 
 
 struct ServerStats::AggregatedStats {
-  explicit AggregatedStats(std::mt19937 &gen) noexcept:
+  explicit AggregatedStats(std::mt19937 *gen) noexcept:
     general_workers(gen),
     job_workers(gen) {
   }
@@ -469,19 +469,18 @@ struct ServerStats::AggregatedStats {
   MasterProcessStats master_process;
 };
 
-ServerStats::ServerStats() noexcept:
-  shared_stats_(new(mmap_shared(sizeof(SharedStats))) SharedStats{gen_}),
-  aggregated_stats_(std::make_unique<AggregatedStats>(gen_)) {
+void ServerStats::init() noexcept {
+  gen_ = new std::mt19937{};
+  aggregated_stats_ = new AggregatedStats{gen_};
+  shared_stats_ = new(mmap_shared(sizeof(SharedStats))) SharedStats{gen_};
 }
-
-ServerStats::~ServerStats() noexcept = default;
 
 void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections,
                              uint16_t worker_process_id, WorkerType worker_type) noexcept {
   assert(vk::any_of_equal(worker_type, WorkerType::general_worker, WorkerType::job_worker));
   worker_process_id_ = worker_process_id;
   worker_type_ = worker_type;
-  gen_.seed(worker_pid);
+  gen_->seed(worker_pid);
   shared_stats_->workers.reset_worker_stats(worker_pid, active_connections, max_connections, worker_process_id_);
   last_update_ = std::chrono::steady_clock::now();
 }
