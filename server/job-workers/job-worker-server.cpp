@@ -143,8 +143,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   --memory_manager.get_stats().job_queue_size;
   memory_manager.attach_shared_message_to_this_proc(job);
-  if (job->parent_job) {
-    memory_manager.attach_shared_message_to_this_proc(job->parent_job);
+  if (job->common_job) {
+    memory_manager.attach_shared_message_to_this_proc(job->common_job);
   }
   running_job = job;
   reply_was_sent = false;

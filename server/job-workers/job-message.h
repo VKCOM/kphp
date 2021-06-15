@@ -33,7 +33,7 @@ struct alignas(8) JobMetadata : vk::not_copyable {
   class_instance<SendingInstanceBase> instance;
   std::atomic<uint32_t> owners_counter{1};
 
-  virtual JobSharedMemoryPiece *get_parent_job() const noexcept {
+  virtual JobSharedMemoryPiece *get_common_job() const noexcept {
     return nullptr;
   }
 
@@ -48,17 +48,17 @@ public:
   int32_t job_result_fd_idx{-1};
   double job_start_time{-1.0};
   double job_timeout{-1.0};
-  JobSharedMemoryPiece *parent_job{nullptr};
+  JobSharedMemoryPiece *common_job{nullptr};
 
   double job_deadline_time() const noexcept {
     return job_start_time + job_timeout;
   }
 
-  void bind_parent_job(JobSharedMemoryPiece *parent) noexcept;
-  void unbind_parent_job() noexcept;
+  void bind_common_job(JobSharedMemoryPiece *job_shared_memory_piece) noexcept;
+  void unbind_common_job() noexcept;
 
-  JobSharedMemoryPiece *get_parent_job() const noexcept override {
-    return parent_job;
+  JobSharedMemoryPiece *get_common_job() const noexcept override {
+    return common_job;
   }
 
 protected:
@@ -91,17 +91,17 @@ struct alignas(8) JobSharedMemoryPiece : GenericJobMessage<JobMetadata> {
 static_assert(sizeof(JobSharedMemoryPiece) == JOB_SHARED_MESSAGE_BYTES, "check yourself");
 static_assert(sizeof(JobSharedMessage) == JOB_SHARED_MESSAGE_BYTES, "check yourself");
 
-inline void JobSharedMessageMetadata::bind_parent_job(JobSharedMemoryPiece *parent) noexcept {
-  assert(parent);
-  parent_job = parent;
-  ++parent_job->owners_counter;
+inline void JobSharedMessageMetadata::bind_common_job(JobSharedMemoryPiece *job_shared_memory_piece) noexcept {
+  assert(job_shared_memory_piece);
+  common_job = job_shared_memory_piece;
+  ++common_job->owners_counter;
 }
 
-inline void JobSharedMessageMetadata::unbind_parent_job() noexcept {
-  assert(parent_job);
-  --parent_job->owners_counter;
-  assert(parent_job->owners_counter != 0);
-  parent_job = nullptr;
+inline void JobSharedMessageMetadata::unbind_common_job() noexcept {
+  assert(common_job);
+  --common_job->owners_counter;
+  assert(common_job->owners_counter != 0);
+  common_job = nullptr;
 }
 
 } // namespace job_workers

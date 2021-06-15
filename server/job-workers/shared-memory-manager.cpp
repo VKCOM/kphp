@@ -62,9 +62,9 @@ void SharedMemoryManager::release_shared_message(JobMetadata *message) noexcept 
   dl::CriticalSectionGuard critical_section;
   control_block_->workers_table[logname_id].detach(message);
   if (--message->owners_counter == 0) {
-    auto *parent_job = message->get_parent_job();
-    if (parent_job) {
-      release_shared_message(parent_job);
+    auto *common_job = message->get_common_job();
+    if (common_job) {
+      release_shared_message(common_job);
     }
     auto *extra_memory = message->resource.get_extra_memory_head();
     while (extra_memory->get_pool_payload_size()) {
