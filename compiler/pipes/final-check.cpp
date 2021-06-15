@@ -476,13 +476,6 @@ void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
       break;
   }
 
-  if (!is_allowed) {
-    printf("array: ");
-    array.debugPrint();
-    printf("key: ");
-    key.debugPrint();
-  }
-
   kphp_error(is_allowed,
              fmt_format("Only {} types are allowed for {}{}indexing, but {} type is passed",
                         allowed_types, what_indexing,
