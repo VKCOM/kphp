@@ -36,46 +36,6 @@ private:
   int job_id;
 };
 
-class kphp_job_worker_wait_resumable : public Resumable {
-public:
-  using ReturnT = class_instance<C$KphpJobWorkerResponse>;
-
-  kphp_job_worker_wait_resumable(int64_t resumable_id, double timeout)
-    : resumable_id(resumable_id)
-    , timeout(timeout) {}
-
-protected:
-  bool run() final {
-    bool ready{false};
-
-    RESUMABLE_BEGIN
-      ready = wait_without_result(resumable_id, timeout);
-      TRY_WAIT(kphp_job_worker_wait_resumable_label_0, ready, bool);
-      if (!ready) {
-        RETURN({});
-      }
-
-      Storage *input = get_forked_storage(resumable_id);
-      if (input->tag == 0) {
-        php_warning("Job result already was gotten\n");
-        RETURN({});
-      }
-      if (input->tag != Storage::tagger<ReturnT>::get_tag()) {
-        php_warning("Not a job request\n");
-        RETURN({});
-      }
-
-      const ReturnT &res = input->load<ReturnT>();
-      php_assert (CurException.is_null());
-
-      RETURN(res);
-    RESUMABLE_END
-  }
-private:
-  int64_t resumable_id;
-  double timeout;
-};
-
 namespace {
 
 template<typename JobMessageT, typename T>
@@ -266,14 +226,6 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
   }
 
   return res;
-}
-
-class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_resumable_id, double timeout) noexcept {
-  if (!f$is_kphp_job_workers_enabled()) {
-    php_warning("Can't wait job: job workers disabled");
-    return {};
-  }
-  return start_resumable<class_instance<C$KphpJobWorkerResponse>>(new kphp_job_worker_wait_resumable(job_resumable_id, timeout));
 }
 
 void free_job_client_interface_lib() noexcept {
