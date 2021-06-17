@@ -5,6 +5,7 @@
 #include "compiler/pipes/convert-sprintf-calls.h"
 
 #include <compiler/gentree.h>
+#include <utility>
 
 struct FormatCallInfo {
   FormatCallInfo() : args(VertexRange(Vertex::iterator{}, Vertex::iterator{})) {}
@@ -26,8 +27,14 @@ struct FormatPart {
     string
   };
 
+  explicit FormatPart(string value)
+    : value(std::move(value)) {}
+
+  explicit FormatPart(FormatSpecType specifier)
+    : specifier(specifier) {}
+
   std::string value;
-  FormatSpecType specifier;
+  FormatSpecType specifier{};
 
   bool is_specifier() const {
     return value.empty();
@@ -42,9 +49,9 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
   for (const auto &symbol : format) {
     if (find_percent) {
       if (symbol == 'd') {
-        parts.emplace_back(FormatPart{"", FormatPart::FormatSpecType::decimal});
+        parts.emplace_back(FormatPart::FormatSpecType::decimal);
       } else if (symbol == 's') {
-        parts.emplace_back(FormatPart{"", FormatPart::FormatSpecType::string});
+        parts.emplace_back(FormatPart::FormatSpecType::string);
       } else if (symbol == '%') {
         last_value += "%";
       } else {
@@ -54,7 +61,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
     } else if (symbol == '%') {
       find_percent = true;
       if (!last_value.empty()) {
-        parts.push_back(FormatPart{std::move(last_value)});
+        parts.emplace_back(std::move(last_value));
         last_value = "";
       }
     } else {
@@ -63,7 +70,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
   }
 
   if (!last_value.empty()) {
-    parts.push_back(FormatPart{std::move(last_value)});
+    parts.emplace_back(std::move(last_value));
   }
 
   return parts;
