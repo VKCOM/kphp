@@ -26,6 +26,7 @@ std::string debugTokenName(TokenType t) {
     {tok_float_const, "tok_float_const"},
     {tok_null, "tok_null"},
     {tok_nan, "tok_nan"},
+    {tok_inf, "tok_inf"},
     {tok_inline_html, "tok_inline_html"},
     {tok_str, "tok_str"},
     {tok_str_begin, "tok_str_begin"},

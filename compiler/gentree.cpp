@@ -441,9 +441,18 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
-    case tok_nan:
+    case tok_nan: {
+      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, "NAN");
+      next_cur();
+      break;
+    }
+    case tok_inf: {
+      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, "std::numeric_limits<double>::infinity()");
+      next_cur();
+      break;
+    }
     case tok_float_const: {
-      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, type == tok_nan ? "NAN" : static_cast<string>(cur->str_val));
+      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, static_cast<string>(cur->str_val));
       next_cur();
       break;
     }
