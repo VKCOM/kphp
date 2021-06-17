@@ -183,7 +183,7 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
      * 1. attaches to client process on creating in `acquire_shared_message()`
      * 2. attaches to job worker process on job receiving in `job_parse_execute()`
      * 3. detaches from job worker process on terminating in `release_shared_message()` recursively
-     * 4. detaches from client process at the end of this function in `release_shared_message()` recursively
+     * 4. detaches from client process at the end of this function in `release_shared_message()`
      *
      * client: 1 -> 4
      *         ↓
@@ -197,9 +197,9 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
   for (const auto &it : requests) {
     const auto &req = it.get_value();
 
-    req.get()->set_shared_memory_piece({});                                                 // prepare for copying to shared memory
+    req.get()->set_shared_memory_piece({});                                           // prepare for copying to shared memory
     auto *job_request = make_job_request_message<job_workers::JobSharedMessage>(req); // copy to shared memory
-    req.get()->set_shared_memory_piece(common_shared_memory_piece);                         // roll it back to keep original instance unchanged
+    req.get()->set_shared_memory_piece(common_shared_memory_piece);                   // roll it back to keep original instance unchanged
     if (job_request == nullptr) {
       res.set_value(it.get_key(), false);
       continue;

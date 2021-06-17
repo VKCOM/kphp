@@ -495,7 +495,9 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   compile_back_includes(W, std::move(front_includes));
 
+  W << OpenNamespace{};
   compile_job_worker_shared_memory_piece_methods(W);
+  W << CloseNamespace{};
 
   W << CloseFile();
 }
@@ -715,9 +717,9 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
   FunctionSignatureGenerator(W).set_inline() << "void " << klass->src_name
                                                      << "::set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance) " << BEGIN;
   if (field) {
-    W << "const auto &casted = instance.cast_to<" << field->get_inferred_type()->class_type()->src_name << ">();" << NL;
+    W << "auto casted = instance.cast_to<" << field->get_inferred_type()->class_type()->src_name << ">();" << NL;
     W << "php_assert(instance.is_null() || !casted.is_null());" << NL;
-    W << field->get_hash_name() << " = casted;" << NL;
+    W << field->get_hash_name() << " = std::move(casted);" << NL;
   } else {
     W << "(void)instance;" << NL;
   }
