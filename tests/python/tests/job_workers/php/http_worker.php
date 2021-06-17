@@ -1,5 +1,7 @@
 <?php
 
+require_once 'SharedImmutableMessageScenario/http_worker.php';
+
 function do_http_worker() {
   switch($_SERVER["PHP_SELF"]) {
     case "/test_simple_cpu_job": {
@@ -26,10 +28,6 @@ function do_http_worker() {
       test_jobs_in_wait_queue();
       return;
     }
-    case "/test_several_waits_for_one_job": {
-      test_several_waits_for_one_job();
-      return;
-    }
     case "/test_complex_scenario": {
       require_once "ComplexScenario/_http_scenario.php";
       run_http_complex_scenario();
@@ -51,9 +49,25 @@ function do_http_worker() {
       test_job_worker_wakeup_on_merged_events();
       return;
     }
+    case "/test_job_worker_start_multi_with_shared_data": {
+      test_job_worker_start_multi_with_shared_data();
+      return;
+    }
+    case "/test_job_worker_start_multi_without_shared_data": {
+      test_job_worker_start_multi_without_shared_data();
+      return;
+    }
+    case "/test_error_different_shared_memory_pieces": {
+      test_error_different_shared_memory_pieces();
+      return;
+    }
+    case "/test_job_worker_start_multi_with_errors": {
+      test_job_worker_start_multi_with_errors();
+      return;
+    }
   }
 
-  critical_error("unknown test");
+  critical_error("unknown test " . $_SERVER["PHP_SELF"]);
 }
 
 function send_jobs($context, float $timeout = -1.0): array {
@@ -75,10 +89,13 @@ function send_jobs($context, float $timeout = -1.0): array {
   return $ids;
 }
 
-function gather_jobs(array $ids, bool $use_wait = false): array {
+function gather_jobs($ids): array {
   $result = [];
   foreach($ids as $id) {
-    $resp = $use_wait ? wait($id) : kphp_job_worker_wait($id);
+    /**
+     * @var KphpJobWorkerResponse
+     */
+    $resp = wait($id);
     if ($resp instanceof X2Response) {
       $result[] = ["data" => $resp->arr_reply, "stats" => $resp->stats];
     } else if ($resp instanceof KphpJobWorkerResponseError) {
@@ -158,29 +175,11 @@ function test_jobs_in_wait_queue() {
       raise_error("Too long wait time in wait_queue");
       return;
     }
-    $result[$ready_id] = gather_jobs([$ready_id], true)[0];
+    $result[$ready_id] = gather_jobs([$ready_id])[0];
   }
   ksort($result);
 
   echo json_encode(["jobs-result" => array_values($result)]);
-}
-
-function test_several_waits_for_one_job() {
-  $context = json_decode(file_get_contents('php://input'));
-  $ids = send_jobs($context);
-
-  $id = $ids[0];
-  $job_sleep_time = (float)$context["job-sleep-time-sec"];
-
-  for ($i = 0; $i < 5; $i++) {
-    $res = kphp_job_worker_wait($id, $job_sleep_time / 100.0);
-    if ($res !== null) {
-      raise_error("Too short wait time $i");
-      return;
-    }
-  }
-
-  echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }
 
 function test_client_wait_false() {
@@ -188,7 +187,7 @@ function test_client_wait_false() {
   if ($id) {
     $id = kphp_job_worker_start(new X2Request);
   }
-  $result = kphp_job_worker_wait($id);
+  $result = wait($id);
   echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
 }
 

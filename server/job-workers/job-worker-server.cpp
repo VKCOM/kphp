@@ -140,8 +140,12 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     return -1;
   }
 
-  --vk::singleton<SharedMemoryManager>::get().get_stats().job_queue_size;
-  vk::singleton<job_workers::SharedMemoryManager>::get().attach_shared_message_to_this_proc(job);
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  --memory_manager.get_stats().job_queue_size;
+  memory_manager.attach_shared_message_to_this_proc(job);
+  if (job->common_job) {
+    memory_manager.attach_shared_message_to_this_proc(job->common_job);
+  }
   running_job = job;
   reply_was_sent = false;
 
@@ -221,7 +225,7 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto *response_memory = memory_manager.acquire_shared_message();
+  auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
     log_server_error("Can't store job response error: not enough shared memory");
     return;

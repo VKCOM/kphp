@@ -16,7 +16,7 @@ function collect_stats_with_job(StatsInterface $stat, int $master_port) {
   if (!$job_id) {
     critical_error("Can't send job");
   }
-  $result = kphp_job_worker_wait($job_id);
+  $result = wait($job_id);
   $result_stats = instance_cast($result, CollectStatsJobResponse::class);
   if ($result_stats === null) {
     critical_error("got empty job response");

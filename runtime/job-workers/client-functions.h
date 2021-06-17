@@ -10,9 +10,4 @@
 void free_job_client_interface_lib() noexcept;
 
 Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout = -1.0) noexcept;
-
-class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(int64_t job_resumable_id, double timeout = -1.0) noexcept;
-
-inline class_instance<C$KphpJobWorkerResponse> f$kphp_job_worker_wait(Optional<int64_t> job_resumable_id, double timeout = -1.0) noexcept {
-  return f$kphp_job_worker_wait(job_resumable_id.val(), timeout);
-}
+array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instance<C$KphpJobWorkerRequest>> &requests, double timeout = -1.0) noexcept;

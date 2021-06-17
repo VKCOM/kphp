@@ -1,4 +1,3 @@
-import signal
 from python.lib.testcase import KphpServerAutoTestCase
 
 

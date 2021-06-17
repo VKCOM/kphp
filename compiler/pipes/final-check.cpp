@@ -42,10 +42,26 @@ void check_class_immutableness(ClassPtr klass) {
 void process_job_worker_class(ClassPtr klass) {
   auto request_interface = G->get_class("KphpJobWorkerRequest");
   auto response_interface = G->get_class("KphpJobWorkerResponse");
-  if ((request_interface && request_interface->is_parent_of(klass)) ||
-      (response_interface && response_interface->is_parent_of(klass))) {
+  auto shared_memory_piece_interface = G->get_class("KphpJobWorkerSharedMemoryPiece");
+  kphp_assert(request_interface);
+  kphp_assert(response_interface);
+  kphp_assert(shared_memory_piece_interface);
+
+  bool implements_request = request_interface->is_parent_of(klass);
+  bool implements_response = response_interface->is_parent_of(klass);
+  bool implements_shared_memory_piece = shared_memory_piece_interface->is_parent_of(klass);
+
+  if (implements_request || implements_response || implements_shared_memory_piece) {
     klass->deeply_require_instance_cache_visitor();
     klass->deeply_require_virtual_builtin_functions();
+  }
+  if (implements_shared_memory_piece) {
+    kphp_error(klass->is_immutable, fmt_format("Class {} must be immutable (@kphp-immutable-class) as it implements KphpJobWorkerSharedMemoryPiece", klass->name));
+  }
+  if (implements_request) {
+    std::vector<const ClassMemberInstanceField *> shared_memory_pieces_fields = klass->get_job_shared_memory_pieces();
+    kphp_error(shared_memory_pieces_fields.size() <= 1, fmt_format("Class {} must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but {} found", klass->name, shared_memory_pieces_fields.size()));
+    klass->has_job_shared_memory_piece = !shared_memory_pieces_fields.empty();
   }
 };
 

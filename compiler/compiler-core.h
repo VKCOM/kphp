@@ -8,6 +8,9 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
+#include <map>
+#include <vector>
+
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/data_ptr.h"

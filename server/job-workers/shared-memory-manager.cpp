@@ -4,10 +4,6 @@
 
 #include <sys/mman.h>
 
-#include "common/allocators/freelist.h"
-
-#include "server/job-workers/job-stats.h"
-#include "server/job-workers/job-workers-context.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
 
@@ -16,51 +12,6 @@
 #include "server/job-workers/shared-memory-manager.h"
 
 namespace job_workers {
-
-struct WorkerProcessMeta {
-  // We can use only 4 messages at once for one worker process:
-  //    mutable request data
-  //    immutable request data
-  //    ok response
-  //    error response (only for job workers)
-  std::array<JobSharedMessage *, 4> attached_messages{};
-
-  void attach(JobSharedMessage *message) noexcept {
-    replace(nullptr, message);
-  }
-
-  void detach(JobSharedMessage *message) noexcept {
-    replace(message, nullptr);
-  }
-
-private:
-  void replace(JobSharedMessage *old_message, JobSharedMessage *new_message) noexcept {
-    for (auto &message : attached_messages) {
-      if (message == old_message) {
-        message = new_message;
-        return;
-      }
-    }
-    assert(false);
-  }
-};
-
-struct alignas(8) SharedMemoryManager::ControlBlock {
-  ControlBlock() noexcept {
-    freelist_init(&free_messages);
-    for (auto &free_mem : free_extra_memory) {
-      freelist_init(&free_mem);
-    }
-  }
-
-  JobStats stats;
-  std::array<WorkerProcessMeta, WorkersControl::max_workers_count> workers_table{};
-  freelist_t free_messages{};
-
-  //  index => (1 << index) MB:
-  //    0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
-  std::array<freelist_t, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> free_extra_memory{};
-};
 
 void SharedMemoryManager::init() noexcept {
   static_assert(sizeof(ControlBlock) % 8 == 0, "check yourself");
@@ -107,23 +58,14 @@ bool SharedMemoryManager::set_memory_limit(size_t memory_limit) noexcept {
   return true;
 }
 
-JobSharedMessage *SharedMemoryManager::acquire_shared_message() noexcept {
-  assert(control_block_);
-  dl::CriticalSectionGuard critical_section;
-  if (void *free_mem = freelist_get(&control_block_->free_messages)) {
-    auto *message = new(free_mem) JobSharedMessage{};
-    control_block_->workers_table[logname_id].attach(message);
-    ++control_block_->stats.messages.acquired;
-    return message;
-  }
-  ++control_block_->stats.messages.acquire_fails;
-  return nullptr;
-}
-
-void SharedMemoryManager::release_shared_message(JobSharedMessage *message) noexcept {
+void SharedMemoryManager::release_shared_message(JobMetadata *message) noexcept {
   dl::CriticalSectionGuard critical_section;
   control_block_->workers_table[logname_id].detach(message);
   if (--message->owners_counter == 0) {
+    auto *common_job = message->get_common_job();
+    if (common_job) {
+      release_shared_message(common_job);
+    }
     auto *extra_memory = message->resource.get_extra_memory_head();
     while (extra_memory->get_pool_payload_size()) {
       auto *releasing_extra_memory = extra_memory;
@@ -138,13 +80,13 @@ void SharedMemoryManager::release_shared_message(JobSharedMessage *message) noex
   }
 }
 
-void SharedMemoryManager::attach_shared_message_to_this_proc(JobSharedMessage *message) noexcept {
+void SharedMemoryManager::attach_shared_message_to_this_proc(JobMetadata *message) noexcept {
   assert(message->owners_counter);
   dl::CriticalSectionGuard critical_section;
   control_block_->workers_table[logname_id].attach(message);
 }
 
-void SharedMemoryManager::detach_shared_message_from_this_proc(JobSharedMessage *message) noexcept {
+void SharedMemoryManager::detach_shared_message_from_this_proc(JobMetadata *message) noexcept {
   // Don't assert counter, because memory may be already freed
   dl::CriticalSectionGuard critical_section;
   control_block_->workers_table[logname_id].detach(message);
@@ -153,7 +95,7 @@ void SharedMemoryManager::detach_shared_message_from_this_proc(JobSharedMessage 
 void SharedMemoryManager::forcibly_release_all_attached_messages() noexcept {
   if (control_block_) {
     dl::CriticalSectionGuard critical_section;
-    for (JobSharedMessage *message : control_block_->workers_table[logname_id].attached_messages) {
+    for (JobMetadata *message : control_block_->workers_table[logname_id].attached_messages) {
       if (message) {
         assert(message->owners_counter != 0);
         release_shared_message(message);

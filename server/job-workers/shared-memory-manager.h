@@ -4,10 +4,16 @@
 
 #pragma once
 
+#include "common/allocators/freelist.h"
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/memory_resource/extra-memory-pool.h"
+#include "server/job-workers/job-stats.h"
+#include "server/job-workers/job-workers-context.h"
+#include "server/php-engine-vars.h"
+#include "server/workers-control.h"
 
 namespace memory_resource {
 class unsynchronized_pool_resource;
@@ -19,15 +25,56 @@ class JobStats;
 
 struct JobSharedMessage;
 
+struct WorkerProcessMeta {
+  // We can use only 4 messages at once for one worker process:
+  //    mutable request data
+  //    immutable request data
+  //    ok response
+  //    error response (only for job workers)
+  std::array<JobMetadata *, 4> attached_messages{};
+
+  void attach(JobMetadata *message) noexcept {
+    replace(nullptr, message);
+  }
+
+  void detach(JobMetadata *message) noexcept {
+    replace(message, nullptr);
+  }
+
+private:
+  void replace(JobMetadata *old_message, JobMetadata *new_message) noexcept {
+    for (auto &message : attached_messages) {
+      if (message == old_message) {
+        message = new_message;
+        return;
+      }
+    }
+    assert(false);
+  }
+};
+
 class SharedMemoryManager : vk::not_copyable {
 public:
   void init() noexcept;
 
-  JobSharedMessage *acquire_shared_message() noexcept;
-  void release_shared_message(JobSharedMessage *message) noexcept;
+  template <typename JobMessageT>
+  JobMessageT *acquire_shared_message() noexcept {
+    assert(control_block_);
+    dl::CriticalSectionGuard critical_section;
+    if (void *free_mem = freelist_get(&control_block_->free_messages)) {
+      auto *message = new(free_mem) JobMessageT{};
+      control_block_->workers_table[logname_id].attach(message);
+      ++control_block_->stats.messages.acquired;
+      return message;
+    }
+    ++control_block_->stats.messages.acquire_fails;
+    return nullptr;
+  }
 
-  void attach_shared_message_to_this_proc(JobSharedMessage *message) noexcept;
-  void detach_shared_message_from_this_proc(JobSharedMessage *message) noexcept;
+  void release_shared_message(JobMetadata *message) noexcept;
+
+  void attach_shared_message_to_this_proc(JobMetadata *message) noexcept;
+  void detach_shared_message_from_this_proc(JobMetadata *message) noexcept;
 
   void forcibly_release_all_attached_messages() noexcept;
 
@@ -48,7 +95,22 @@ private:
 
   size_t memory_limit_{0};
 
-  struct ControlBlock;
+  struct alignas(8) ControlBlock {
+    ControlBlock() noexcept {
+      freelist_init(&free_messages);
+      for (auto &free_mem : free_extra_memory) {
+        freelist_init(&free_mem);
+      }
+    }
+
+    JobStats stats;
+    std::array<WorkerProcessMeta, WorkersControl::max_workers_count> workers_table{};
+    freelist_t free_messages{};
+
+    //  index => (1 << index) MB:
+    //    0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
+    std::array<freelist_t, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> free_extra_memory{};
+  };
   ControlBlock *control_block_{nullptr};
 };
 

@@ -413,3 +413,20 @@ void ClassData::register_defines() const {
     G->register_define(DefinePtr(data));
   });
 }
+
+std::vector<const ClassMemberInstanceField *> ClassData::get_job_shared_memory_pieces() const {
+  auto shared_memory_piece_interface = G->get_class("KphpJobWorkerSharedMemoryPiece");
+  kphp_assert(shared_memory_piece_interface);
+
+  std::vector<const ClassMemberInstanceField *> res;
+  for (ClassPtr ancestor : get_all_ancestors()) {
+    ancestor->members.for_each([&](const ClassMemberInstanceField &field) {
+      for (ClassPtr field_class : field.get_inferred_type()->class_types()) {
+        if (shared_memory_piece_interface->is_parent_of(field_class)) {
+          res.emplace_back(&field);
+        }
+      }
+    });
+  }
+  return res;
+}
