@@ -191,6 +191,8 @@ public:
 private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;
 
+  const ClassMemberInstanceMethod *find_instance_method_by_local_name(vk::string_view local_name) const;
+
   template<class MemberT>
   const MemberT *find_by_local_name(vk::string_view local_name) const {
     for (const auto &ancestor : get_all_ancestors()) {
