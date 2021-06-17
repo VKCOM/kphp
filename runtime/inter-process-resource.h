@@ -3,13 +3,14 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
 #include <algorithm>
 #include <array>
 #include <bitset>
 #include <cstring>
-#include <sys/mman.h>
 
 #include "common/parallel/lock_accessible.h"
+#include "common/wrappers/memory-utils.h"
 
 #include "runtime/inter-process-mutex.h"
 #include "runtime/php_assert.h"
@@ -93,10 +94,7 @@ public:
     for (auto &resource: switchable_resource_) {
       resource.init(args...);
     }
-    void *mem_for_control_block = mmap(nullptr, sizeof(*control_block_),
-                                       PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    php_assert(mem_for_control_block);
-    control_block_ = new(mem_for_control_block) std::decay_t<decltype(*control_block_)>{};
+    control_block_ = new(mmap_shared(sizeof(*control_block_))) std::decay_t<decltype(*control_block_)>{};
   }
 
   T *acquire_current_resource() noexcept {

@@ -22,7 +22,6 @@ public:
   std::atomic<uint32_t> errors_pipe_client_read{0};
 
   std::atomic<uint32_t> job_worker_skip_job_due_another_is_running{0};
-  std::atomic<uint32_t> job_worker_skip_job_due_overload{0};
   std::atomic<size_t> job_worker_skip_job_due_steal{0};
 
   std::atomic<size_t> jobs_sent{0};

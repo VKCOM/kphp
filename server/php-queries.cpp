@@ -1039,14 +1039,6 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
-void set_server_status(const char *status, int len) {
-  custom_server_status(status, len);
-}
-
-void set_server_status_rpc(int port, long long actor_id, double start_time) {
-  server_status_rpc(port, actor_id, start_time);
-}
-
 double get_net_time() {
   return PHPScriptBase::current_script->get_net_time();
 }

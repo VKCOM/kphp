@@ -75,8 +75,8 @@
 #include "server/php-queries.h"
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
-#include "server/php-worker-stats.h"
 #include "server/php-worker.h"
+#include "server/server-stats.h"
 #include "server/server-log.h"
 #include "server/workers-control.h"
 
@@ -1339,34 +1339,6 @@ int rpcc_send_query(connection *c) {
   return 0;
 }
 
-static char stats[65536];
-static int stats_len;
-
-void prepare_full_stats() {
-  char *s = stats;
-  int s_left = 65530;
-  const int stats_size = PhpWorkerStats::get_local().write_into(s, s_left);
-  s += stats_size;
-  s_left -= stats_size;
-
-#define W(args...)  ({\
-  int written_tmp___ = snprintf (s, (size_t)s_left, ##args);\
-  if (written_tmp___ > s_left - 1) {\
-    written_tmp___ = s_left - 1;\
-  }\
-  s += written_tmp___;\
-  s_left -= written_tmp___;\
-})
-
-  int pid = (int)getpid();
-  W ("pid %d\t%d\n", pid, pid);
-  W ("active_special_connections %d\t%d\n", pid, active_special_connections);
-  W ("max_special_connections %d\t%d\n", pid, max_special_connections);
-//  W ("TODO: more stats\n");
-#undef W
-  stats_len = (int)(s - stats);
-}
-
 /***
   SERVER
  ***/
@@ -1423,80 +1395,11 @@ static void sigusr1_handler(const int sig) {
   pending_signals = pending_signals | (1ll << sig);
 }
 
-int pipe_packet_id = 0;
-
-void write_full_stats_to_pipe() {
-  if (master_pipe_write != -1) {
-    prepare_full_stats();
-
-    int qsize = stats_len + 1 + (int)sizeof(int) * 5;
-    qsize = (qsize + 3) & -4;
-    auto q = reinterpret_cast<int *>(malloc((size_t)qsize));
-    memset(q, 0, (size_t)qsize);
-
-    q[2] = RPC_PHP_FULL_STATS;
-    memcpy(q + 3, stats, (size_t)stats_len);
-
-    prepare_rpc_query_raw(pipe_packet_id++, q, qsize, crc32c_partial);
-    int err = (int)write(master_pipe_write, q, (size_t)qsize);
-    dl_passert (err == qsize, dl_pstr("error during write to pipe [%d]\n", master_pipe_write));
-    if (err != qsize) {
-      kill(getppid(), 9);
-    }
-    free(q);
-  }
-}
-
-sig_atomic_t pipe_fast_packet_id = 0;
-
-void write_immediate_stats_to_pipe() {
-  if (master_pipe_fast_write != -1) {
-    constexpr size_t query_size = (sizeof(php_immediate_stats_t) + 1 + sizeof(int) * 5 + 3) & -4;
-#if ASAN_ENABLED
-    // sometimes asan leads stack underflow
-    // TODO: use static constantly?
-    static
-#endif
-    int q[query_size] = {0};
-    int qsize = query_size;
-
-    q[2] = RPC_PHP_IMMEDIATE_STATS;
-    memcpy(q + 3, get_imm_stats(), sizeof(php_immediate_stats_t));
-
-    prepare_rpc_query_raw(pipe_fast_packet_id++, q, qsize, crc32c_partial);
-    int err = (int)write(master_pipe_fast_write, q, (size_t)qsize);
-    dl_passert (err == qsize, dl_pstr("error [%d] during write to pipe", errno));
-  }
-}
-
-//Used for interaction with master.
-int spoll_send_stats;
-
-static void sigstats_handler(int signum __attribute__((unused)), siginfo_t *info, void *data __attribute__((unused))) {
-#if defined(__APPLE__)
-  siginfo_t signal_info_stub;
-  signal_info_stub.si_code = SI_QUEUE;
-  signal_info_stub.si_value.sival_int =  SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS | SPOLL_SEND_IMMEDIATE_STATS;
-  info = &signal_info_stub;
-#endif
-  dl_assert (info != nullptr, "SIGPOLL with no info");
-  if (info->si_code == SI_QUEUE) {
-    int code = info->si_value.sival_int;
-    if ((code & 0xFFFF0000) == SPOLL_SEND_STATS) {
-      if (code & SPOLL_SEND_FULL_STATS) {
-        spoll_send_stats++;
-      }
-      if (code & SPOLL_SEND_IMMEDIATE_STATS) {
-        write_immediate_stats_to_pipe();
-      }
-    }
-  }
-}
-
 void cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
+  vk::singleton<ServerStats>::get().update_this_worker_stats();
 }
 
 int try_get_http_fd() {
@@ -1513,14 +1416,7 @@ void reopen_json_log() {
   }
 }
 
-void update_worker_stats() noexcept {
-  auto &local_worker_stats = PhpWorkerStats::get_local();
-  local_worker_stats.update_mem_info();
-  local_worker_stats.update_idle_time(epoll_total_idle_time(), get_uptime(), epoll_average_idle_time(), epoll_average_idle_quotient());
-  local_worker_stats.recalc_worker_percentiles();
-}
-
-static void generic_event_loop(RunMode mode) {
+static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1529,50 +1425,50 @@ static void generic_event_loop(RunMode mode) {
   int prev_time = 0;
   double next_create_outbound = 0;
 
-  switch (mode) {
-    case RunMode::master: {
-      if (rpc_port > 0 && rpc_sfd < 0) {
-        rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-        if (rpc_sfd < 0) {
-          vkprintf (-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-          exit(1);
+  switch (worker_type) {
+    case WorkerType::general_worker: {
+      if (init_and_listen_rpc_port) {
+        if (rpc_port > 0 && rpc_sfd < 0) {
+          rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
+          if (rpc_sfd < 0) {
+            vkprintf(-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
+            exit(1);
+          }
+        }
+
+        if (rpc_sfd >= 0) {
+          init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
+        }
+
+        if (run_once) {
+          int pipe_fd[2];
+          pipe(pipe_fd);
+
+          int read_fd = pipe_fd[0];
+          int write_fd = pipe_fd[1];
+
+          rpc_client_methods.rpc_ready = nullptr;
+          epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+
+          int q[6];
+          int qsize = 6 * sizeof(int);
+          q[2] = TL_RPC_INVOKE_REQ;
+          for (int i = 0; i < run_once_count; i++) {
+            prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
+            assert (write(write_fd, q, (size_t)qsize) == qsize);
+          }
         }
       }
 
-      if (rpc_sfd >= 0) {
-        init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-      }
-
-      if (run_once) {
-        int pipe_fd[2];
-        pipe(pipe_fd);
-
-        int read_fd = pipe_fd[0];
-        int write_fd = pipe_fd[1];
-
-        rpc_client_methods.rpc_ready = nullptr;
-        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-        int q[6];
-        int qsize = 6 * sizeof(int);
-        q[2] = TL_RPC_INVOKE_REQ;
-        for (int i = 0; i < run_once_count; i++) {
-          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-          assert (write(write_fd, q, (size_t)qsize) == qsize);
-        }
-      }
-    }
-    // fall through
-    case RunMode::general_worker: {
       if (http_port > 0 && http_sfd < 0) {
         dl_assert (!master_flag, "failed to get http_fd\n");
         if (master_flag) {
-          vkprintf (-1, "try_get_http_fd after start_master\n");
+          vkprintf(-1, "try_get_http_fd after start_master\n");
           exit(1);
         }
         http_sfd = try_get_http_fd();
         if (http_sfd < 0) {
-          vkprintf (-1, "cannot open http server socket at port %d: %m\n", http_port);
+          vkprintf(-1, "cannot open http server socket at port %d: %m\n", http_port);
           exit(1);
         }
       }
@@ -1599,10 +1495,13 @@ static void generic_event_loop(RunMode mode) {
       }
       break;
     }
-    case RunMode::job_worker: {
+    case WorkerType::job_worker: {
+      assert(!init_and_listen_rpc_port);
       vk::singleton<JobWorkerServer>::get().init();
       break;
     }
+    default:
+      assert(0);
   }
 
   if (no_sql) {
@@ -1621,12 +1520,7 @@ static void generic_event_loop(RunMode mode) {
   ksignal(SIGUSR1, sigusr1_handler);
   ksignal(SIGPOLL, SIG_IGN);
 
-  //using sigaction for SIGSTAT
-  dl_sigaction(SIGSTAT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigstats_handler);
-
   dl_allow_all_signals();
-
-  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
 
   vkprintf (1, "Server started\n");
   for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
@@ -1640,17 +1534,6 @@ static void generic_event_loop(RunMode mode) {
     if (precise_now > next_create_outbound) {
       create_all_outbound_connections();
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
-    }
-
-    if (spoll_send_stats > 0) {
-      update_worker_stats();
-    }
-    while (spoll_send_stats > 0) {
-      write_full_stats_to_pipe();
-      spoll_send_stats--;
-      if (mode == RunMode::job_worker) {
-        job_worker_server.last_stats.start();
-      }
     }
 
     if (pending_signals & (1ll << SIGHUP)) {
@@ -1669,7 +1552,7 @@ static void generic_event_loop(RunMode mode) {
       cron();
     }
 
-    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
+    if (worker_type == WorkerType::general_worker) {
       lease_cron();
       if (sigterm_on && !rpc_stopped) {
         rpcc_stop();
@@ -1683,12 +1566,12 @@ static void generic_event_loop(RunMode mode) {
       main_thread_reactor.pre_event();
     }
 
-    if (vk::any_of_equal(mode, RunMode::general_worker, RunMode::master)) {
+    if (worker_type == WorkerType::general_worker) {
       if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
         vkprintf(1, "Quitting because of sigterm\n");
         break;
       }
-    } else if (mode == RunMode::job_worker) {
+    } else if (worker_type == WorkerType::job_worker) {
       if (sigterm_on && (precise_now > sigterm_time || !php_worker_run_flag)) {
         kprintf("Job worker is quitting because of SIGTERM\n");
         break;
@@ -1700,7 +1583,7 @@ static void generic_event_loop(RunMode mode) {
     vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
-  if (mode == RunMode::general_worker && http_sfd >= 0) {
+  if (worker_type == WorkerType::general_worker && http_sfd >= 0) {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }
@@ -1726,13 +1609,12 @@ void start_server() {
   init_netbuffers();
 
   init_epoll();
+  WorkerType worker_type = WorkerType::general_worker;
   if (master_flag) {
-    start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
-  } else {
-    run_mode = RunMode::master;
+    worker_type = start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
   }
 
-  generic_event_loop(run_mode);
+  generic_event_loop(worker_type, !master_flag);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -1772,9 +1654,7 @@ void init_all() {
   init_drivers();
 
   init_php_scripts();
-  idle_server_status();
-  custom_server_status("<none>", 6);
-  server_status_rpc(0, 0, dl_time());
+  vk::singleton<ServerStats>::get().set_idle_worker_status();
 
   worker_id = (int)lrand48();
 
@@ -2250,7 +2130,12 @@ int run_main(int argc, char **argv, php_mode mode) {
 #if !ASAN_ENABLED
   set_core_dump_rlimit(1LL << 40);
 #endif
+  vk::singleton<ServerStats>::get().init();
+
   max_special_connections = 1;
+  set_on_active_special_connections_update_callback([] {
+    vk::singleton<ServerStats>::get().update_active_connections(active_special_connections, max_special_connections);
+  });
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 
   if (mode == php_mode::cli) {
@@ -2279,13 +2164,8 @@ int run_main(int argc, char **argv, php_mode mode) {
     setvbuf(stdout, nullptr, _IONBF, 0);
   }
 
-  load_time = -dl_time();
-
   init_default();
-
   init_all();
-
-  load_time += dl_time();
 
   init_uptime();
   preallocate_msg_buffers();

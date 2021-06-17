@@ -4,6 +4,7 @@
 
 #include "runtime/confdata-global-manager.h"
 
+#include "common/wrappers/memory-utils.h"
 #include "runtime/php_assert.h"
 
 namespace {
@@ -95,10 +96,7 @@ ConfdataGlobalManager &ConfdataGlobalManager::get() noexcept {
 void ConfdataGlobalManager::init(size_t confdata_memory_limit,
                                  std::unordered_set<vk::string_view> &&predefined_wilrdcards,
                                  std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept {
-  void *confdata_memory = mmap(nullptr, confdata_memory_limit,
-                               PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-  php_assert(confdata_memory);
-  resource_.init(confdata_memory, confdata_memory_limit);
+  resource_.init(mmap_shared(confdata_memory_limit), confdata_memory_limit);
   confdata_samples_.init(resource_);
   predefined_wildcards_.set_wildcards(std::move(predefined_wilrdcards));
   key_blacklist_.set_blacklist(std::move(blacklist_pattern));

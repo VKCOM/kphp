@@ -22,7 +22,7 @@
 #include "common/secure-bzero.h"
 #include "common/server/signals.h"
 #include "common/sha1.h"
-#include "common/wrappers/madvise.h"
+#include "common/wrappers/memory-utils.h"
 
 #include "net/net-aes-keys.h"
 #include "net/net-connections.h"

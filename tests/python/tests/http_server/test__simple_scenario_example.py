@@ -23,7 +23,7 @@ class TestSimpleScenarioExample(KphpServerAutoTestCase):
 
         self.kphp_server.assert_log(["worked"], "Can't find worker process request message")
         self.kphp_server.assert_stats({
-            "kphp_server.requests_total_incoming_queries": self.cmpGe(1)
+            "kphp_server.workers_general_requests_total_incoming_queries": self.cmpGe(1)
         }, initial_stats=initial_stats)
         self.assertKphpNoTerminatedRequests()
 

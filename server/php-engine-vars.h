@@ -35,22 +35,10 @@ extern int no_sql;
 
 extern int master_flag;
 
-enum class RunMode {
-  master,
-  general_worker,
-  job_worker,
-};
-
-extern RunMode run_mode;
-
 extern int run_once;
 extern int run_once_return_code;
 
 extern int die_on_fail;
-
-/** stats **/
-extern double load_time;
-//uptime
 
 /** http **/
 extern int http_port;
@@ -65,30 +53,11 @@ extern long long rpc_client_actor;
 extern int master_port;
 extern int master_sfd;
 extern int master_sfd_inited;
-extern int master_pipe_write;
-extern int master_pipe_fast_write;
 
 /** sigterm **/
 extern double sigterm_time;
 extern int sigterm_on;
 extern int rpc_stopped;
-
-/** script **/
-#define IMM_STATS_DESC_LEN 128
-struct php_immediate_stats_t {
-  bool is_running;
-  bool is_wait_net;
-  bool is_ready_for_accept;
-  double timestamp;
-  char desc[IMM_STATS_DESC_LEN];
-  double custom_timestamp;
-  char custom_desc[IMM_STATS_DESC_LEN];
-
-  int port;
-  long long actor_id;
-  double rpc_timestamp;
-};
-
 
 /***
   GLOBAL VARIABLES
@@ -101,22 +70,13 @@ extern long long static_buffer_length_limit;
 extern int use_madvise_dontneed;
 extern long long memory_used_to_recreate_script;
 
-#define RPC_PHP_IMMEDIATE_STATS 0x3d27a21b
-#define RPC_PHP_FULL_STATS 0x1f8ae120
-
-#define SPOLL_SEND_STATS 0x32d20000
-#define SPOLL_SEND_IMMEDIATE_STATS 1
-#define SPOLL_SEND_FULL_STATS 2
-
 #define SIGTERM_MAX_TIMEOUT 10
 #define SIGTERM_WAIT_TIMEOUT 0.1
 
 #if defined(__APPLE__)
-#define SIGSTAT (SIGINFO)
 #define SIGPHPASSERT (SIGCONT)
 #define SIGSTACKOVERFLOW (SIGTSTP)
 #else
-#define SIGSTAT (SIGRTMIN)
 #define SIGPHPASSERT (SIGRTMIN + 1)
 #define SIGSTACKOVERFLOW (SIGRTMIN + 2)
 #endif
@@ -126,5 +86,4 @@ extern long long memory_used_to_recreate_script;
  ***/
 extern int kstdout;
 extern int kstderr;
-extern int kproffd;
 

@@ -603,9 +603,6 @@ static inline rpc_request *get_rpc_request(slot_id_t request_id) {
 class rpc_resumable : public Resumable {
 private:
   int request_id;
-  int port;
-  long long actor_id;
-  double begin_time;
 
 protected:
   bool run() {
@@ -633,9 +630,6 @@ protected:
         php_assert (resumable_id > 0);
         const Resumable *resumable = get_forked_resumable(resumable_id);
         php_assert (resumable != nullptr);
-        static_cast <const rpc_resumable *>(resumable)->set_server_status_rpc();
-      } else {
-        ::set_server_status_rpc(0, 0, get_precise_now());
       }
     }
 
@@ -648,19 +642,9 @@ protected:
     return true;
   }
 
-  void set_server_status_rpc() const {
-    ::set_server_status_rpc(port, actor_id, begin_time);
-  }
-
 public:
-  rpc_resumable(int request_id, int port, long long actor_id) :
-    request_id(request_id),
-    port(port),
-    actor_id(actor_id),
-    begin_time(get_precise_now()) {
-    if (rpc_first_unfinished_request_id == request_id) {
-      set_server_status_rpc();
-    }
+  explicit rpc_resumable(int request_id) :
+    request_id(request_id) {
   }
 };
 
@@ -736,7 +720,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   rpc_request *cur = get_rpc_request(result);
 
-  cur->resumable_id = register_forked_resumable(new rpc_resumable(result, conn.get()->port, conn.get()->default_actor_id));
+  cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
   cur->timer = nullptr;
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;

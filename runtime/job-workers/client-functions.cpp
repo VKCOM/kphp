@@ -110,10 +110,11 @@ bool job_workers_api_allowed() {
 
 double normalize_job_timeout(double timeout) {
   if (timeout < 0) {
-    return DEFAULT_SCRIPT_TIMEOUT;
-  } else if (timeout < 0.05 || timeout > MAX_SCRIPT_TIMEOUT) {
-    php_warning("timeout value was clamped to [%f; %d]", 0.05, MAX_SCRIPT_TIMEOUT);
-    return vk::clamp(timeout, 0.05, MAX_SCRIPT_TIMEOUT * 1.0);
+    return script_timeout;
+  }
+  if (timeout < 0.05 || timeout > script_timeout) {
+    php_warning("timeout value was clamped to [%f; %d]", 0.05, script_timeout);
+    return vk::clamp(timeout, 0.05, script_timeout * 1.0);
   }
   return timeout;
 }

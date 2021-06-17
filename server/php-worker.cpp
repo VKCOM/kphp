@@ -17,6 +17,7 @@
 #include "server/php-mc-connections.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
+#include "server/server-stats.h"
 
 php_worker *active_worker = nullptr;
 
@@ -182,7 +183,7 @@ void php_worker_init_script(php_worker *worker) {
   vkprintf (1, "START php script [req_id = %016llx]\n", worker->req_id);
   assert (active_worker == nullptr);
   active_worker = worker;
-  running_server_status();
+  vk::singleton<ServerStats>::get().set_running_worker_status();
 
   //init memory allocator for queries
   php_queries_start();
@@ -242,11 +243,11 @@ void php_worker_run(php_worker *worker) {
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
     switch (php_script_get_state(php_script)) {
       case run_state_t::ready: {
-        running_server_status();
+        vk::singleton<ServerStats>::get().set_running_worker_status();
         if (worker->waiting) {
           f = 0;
           worker->paused = true;
-          wait_net_server_status();
+          vk::singleton<ServerStats>::get().set_wait_net_worker_status();
           worker->conn->status = conn_wait_net;
           vkprintf (2, "php_script_iterate [req_id = %016llx] delayed due to net events\n", worker->req_id);
           break;
@@ -261,7 +262,7 @@ void php_worker_run(php_worker *worker) {
         if (worker->waiting) {
           f = 0;
           worker->paused = true;
-          wait_net_server_status();
+          vk::singleton<ServerStats>::get().set_wait_net_worker_status();
           worker->conn->status = conn_wait_net;
           vkprintf (2, "query [req_id = %016llx] delayed due to net events\n", worker->req_id);
           break;
@@ -276,7 +277,7 @@ void php_worker_run(php_worker *worker) {
         vkprintf (2, "paused due to query [req_id = %016llx]\n", worker->req_id);
         f = 0;
         worker->paused = true;
-        wait_net_server_status();
+        vk::singleton<ServerStats>::get().set_wait_net_worker_status();
         break;
       }
       case run_state_t::error: {
@@ -613,9 +614,7 @@ void php_worker_free_script(php_worker *worker) {
   assert (active_worker == worker);
   active_worker = nullptr;
   vkprintf (1, "FINISH php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, worker->req_id);
-  idle_server_status();
-  custom_server_status("<none>", 6);
-  server_status_rpc(0, 0, precise_now);
+  vk::singleton<ServerStats>::get().set_idle_worker_status();
   if (worker->mode == once_worker) {
     static int left = run_once_count;
     if (!--left) {

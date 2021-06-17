@@ -61,17 +61,17 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
         self.kphp_server.assert_stats(
-            prefix="kphp_server.job_workers_",
+            prefix="kphp_server.workers_job_",
             expected_added_stats={
-                "memory_messages_buffers_acquired": requests_count * 10,
-                "memory_messages_buffers_released": requests_count * 10,
-                "memory_messages_buffers_reserved": 2 * (15 + 3),
-                "job_queue_size": 0,
+                "memory_messages_shared_messages_buffers_acquired": requests_count * 10,
+                "memory_messages_shared_messages_buffers_released": requests_count * 10,
+                "memory_messages_shared_messages_buffers_reserved": 2 * (15 + 3),
+                "jobs_queue_size": 0,
                 "jobs_sent": requests_count * 5,
                 "jobs_replied": requests_count * 5,
-                "errors_pipe_server_write": 0,
-                "errors_pipe_server_read": 0,
-                "errors_pipe_client_write": 0,
-                "errors_pipe_client_read": 0,
+                "pipe_errors_server_write": 0,
+                "pipe_errors_server_read": 0,
+                "pipe_errors_client_write": 0,
+                "pipe_errors_client_read": 0,
             })
         self.assertKphpNoTerminatedRequests()

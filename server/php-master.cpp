@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fcntl.h>
+#include <iomanip>
 #include <poll.h>
 #include <semaphore.h>
 #include <string>
@@ -23,6 +24,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stack>
+#include <sstream>
 #include <vector>
 
 #include "common/algorithms/clamp.h"
@@ -31,7 +33,6 @@
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
-#include "common/pipe-utils.h"
 #include "common/precise-time.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
@@ -53,8 +54,8 @@
 #include "server/confdata-binlog-replay.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
-#include "server/php-worker-stats.h"
 #include "server/php-master-tl-handlers.h"
+#include "server/server-stats.h"
 #include "server/workers-control.h"
 
 #include "server/php-master-restart.h"
@@ -225,14 +226,10 @@ const double periods_len[] = {0, 60, 60 * 10, 60 * 60};
 const char *periods_desc[] = {"now", "1m", "10m", "1h"};
 
 struct Stats {
-  std::string engine_stats;
   std::string cpu_desc, misc_desc;
-  php_immediate_stats_t istats = php_immediate_stats_t();
-  mem_info_t mem_info = mem_info_t();
   StatImpl<CpuStatSegment, CpuStatTimestamp> cpu[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_general_workers[periods_n];
   StatImpl<MiscStatSegment, MiscStatTimestamp> misc_stat_for_job_workers[periods_n];
-  PhpWorkerStats worker_stats;
 
   Stats() {
     for (int i = 0; i < periods_n; i++) {
@@ -273,52 +270,32 @@ struct Stats {
     }
   }
 
-  std::string to_string(int pid, bool full_flag = true, bool is_main = false) {
-    std::string res;
-
-    if (full_flag) {
-      res += engine_stats;
+  void write_to(std::ostream &out, int proc_pid) {
+    out << "cpu_usage ";
+    if (proc_pid) {
+      out << proc_pid << " ";
     }
-
-    char buffer[1000];
-    std::string pid_s;
-    if (!is_main) {
-      assert (snprintf(buffer, 1000, " %d", pid) < 1000);
-      pid_s = buffer;
-    }
-
-    std::string cpu_vals;
+    out << std::fixed << std::setprecision(2) << "(" << cpu_desc << ")\t";
     for (auto &i_cpu : cpu) {
-      CpuStat s = i_cpu.get_stat();
-
-      sprintf(buffer, " %6.2lf%%", cpu_cnt * (s.cpu_usage * 100));
-      cpu_vals += buffer;
+      out << " " << cpu_cnt * (i_cpu.get_stat().cpu_usage * 100) << "%";
     }
-    res += "cpu_usage" + pid_s + "(" + cpu_desc + ")\t" + cpu_vals + "\n";
+    out << "\n";
 
-    if (is_main) {
-      std::string running_workers_max_vals;
-      std::string running_workers_avg_vals;
+    if (!proc_pid) {
+      out << std::fixed << std::setprecision(3) << "running_workers_avg(" << misc_desc << ")\t";
       for (int i = 1; i < periods_n; i++) {
-        MiscStat s = misc_stat_for_general_workers[i].get_stat();
-        sprintf(buffer, " %7.3lf", s.running_workers_avg);
-        running_workers_avg_vals += buffer;
-        sprintf(buffer, " %7d", s.running_workers_max);
-        running_workers_max_vals += buffer;
+        out << " " << misc_stat_for_general_workers[i].get_stat().running_workers_avg;
       }
-      res += "running_workers_avg" + pid_s + "(" + misc_desc + ")\t" + running_workers_avg_vals + "\n";
-      res += "running_workers_max" + pid_s + "(" + misc_desc + ")\t" + running_workers_max_vals + "\n";
+      out << "\nrunning_workers_max(" << misc_desc << ")\t";
+      for (int i = 1; i < periods_n; i++) {
+        out << " " << misc_stat_for_general_workers[i].get_stat().running_workers_max;
+      }
+      out << "\n";
     }
-
-    if (full_flag) {
-      res += worker_stats.to_string(pid_s);
-    }
-
-    return res;
   }
 };
 
-void run_master();
+WorkerType run_master();
 
 namespace {
 volatile long long local_pending_signals = 0;
@@ -342,16 +319,6 @@ void sigusr1_handler(const int sig) {
  */
 enum class master_state { on, off_in_graceful_restart, off_in_graceful_shutdown };
 
-#define MAX_WORKER_STATS_LEN 10000
-// TODO: save it as pointer
-struct pipe_info_t {
-  int pipe_read;
-  int pipe_in_packet_num;
-  int pipe_out_packet_num;
-  connection *reader;
-  connection pending_stat_queue;
-};
-
 struct worker_info_t {
   worker_info_t *next_worker;
 
@@ -359,14 +326,11 @@ struct worker_info_t {
   pid_t pid;
   int is_dying;
 
+  uint64_t last_activity_counter;
   double last_activity_time;
   double start_time;
   double kill_time;
   int kill_flag;
-
-  int stats_flag;
-
-  pipe_info_t pipes[2];
 
   pid_info_t my_info;
   int valid_my_info;
@@ -380,8 +344,7 @@ struct worker_info_t {
 worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
 unsigned long long dead_stime, dead_utime;
-PhpWorkerStats dead_worker_stats;
-double last_failed;
+
 int *http_fd;
 int http_fd_port;
 int (*try_get_http_fd)();
@@ -427,9 +390,6 @@ void delete_worker(worker_info_t *w) {
     dead_utime += w->my_info.utime;
     dead_stime += w->my_info.stime;
   }
-  dead_worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
-  // ignore dead workers memory and percentiles stats
-  dead_worker_stats.reset_memory_and_percentiles_stats();
   worker_free(w);
   w->next_worker = free_workers;
   free_workers = w;
@@ -459,29 +419,28 @@ int kill_worker(WorkerType worker_type) {
   return 0;
 }
 
-static int get_max_hanging_time_sec(WorkerType worker_type) {
-  switch (worker_type) {
-    case WorkerType::general_worker:
-      return max(script_timeout + 1, 65); // + 1 sec for terminating
-    case WorkerType::job_worker:
-      return JobWorkersContext::MAX_HANGING_TIME_SEC;
-    default:
-      assert(0);
-  }
-  return 0;
+static int get_max_hanging_time_sec() noexcept {
+  return max(script_timeout + 1, 65); // + 1 sec for terminating
 }
 
 void kill_hanging_workers() {
   static double last_terminated = -1;
   if (last_terminated + 30 < my_now) {
     for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-      if (!workers[i]->is_dying && workers[i]->last_activity_time + get_max_hanging_time_sec(workers[i]->type) <= my_now) {
-        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+      auto *worker = workers[i];
+      const auto worker_activity_counter = vk::singleton<ServerStats>::get().get_worker_activity_counter(worker->unique_id);
+      if (worker_activity_counter != worker->last_activity_counter) {
+        worker->last_activity_counter = worker_activity_counter;
+        worker->last_activity_time = my_now;
+        continue;
+      }
+      if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec() <= my_now) {
+        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
         if (workers[i]->type == WorkerType::job_worker) {
-          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", (int)workers[i]->pid);
+          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
         }
         workers_hung++;
-        terminate_worker(workers[i]);
+        terminate_worker(worker);
         last_terminated = my_now;
         break;
       }
@@ -522,7 +481,7 @@ bool all_job_workers_killed() {
 
 } // namespace
 
-void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
+WorkerType start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
   initial_verbosity = verbosity;
 
   kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
@@ -590,158 +549,20 @@ void start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_f
 
   vkprintf(1, "start master: end\n");
 
-  run_master();
-}
-
-void pipe_on_get_packet(pipe_info_t *p, int packet_num) {
-  assert (packet_num > p->pipe_in_packet_num);
-  p->pipe_in_packet_num = packet_num;
-  connection *c = &p->pending_stat_queue;
-  while (c->first_query != (conn_query *)c) {
-    conn_query *q = c->first_query;
-    dl_assert (q != nullptr, "...");
-    dl_assert (q->requester != nullptr, "...");
-    //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
-    if (q->requester->generation == q->req_generation) {
-      int need_packet_num = *(int *)&q->extra;
-      //vkprintf (1, "%d vs %d\n", need_packet_num, packet_num);
-
-      //use sign of difference to handle int overflow
-      int diff = packet_num - need_packet_num;
-      assert (abs(diff) < 1000000000);
-      if (diff >= 0) {
-        assert (diff == 0);
-        //TODO: use PMM_DATA (q->requester);
-        q->cq_type->close(q);
-      } else {
-        break;
-      }
-    } else {
-      q->cq_type->close(q);
-    }
-  }
-}
-
-void worker_set_stats(worker_info_t *w, const char *data) {
-  data += w->stats->worker_stats.read_from(data);
-  w->stats->engine_stats = data;
-}
-
-void worker_set_immediate_stats(worker_info_t *w, php_immediate_stats_t *istats) {
-  w->stats->istats = *istats;
-}
-
-
-/*** PIPE connection ***/
-struct pr_data {
-  worker_info_t *worker;
-  int worker_generation;
-  pipe_info_t *pipe_info;
-};
-#define PR_DATA(c) ((pr_data *)(TCP_RPC_DATA (c) + 1))
-
-int pr_execute(connection *c, int op, raw_message *raw) {
-  vkprintf(3, "pr_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
-
-  if (vk::none_of_equal(op, RPC_PHP_FULL_STATS, RPC_PHP_IMMEDIATE_STATS)) {
-    return 0;
-  }
-  auto len = raw->total_bytes;
-
-  assert(len % sizeof(int) == 0);
-  assert(len >= sizeof(int));
-
-  tl_fetch_init_raw_message(raw);
-  auto op_from_tl = tl_fetch_int();
-  len -= static_cast<int>(sizeof(op_from_tl));
-  assert(op_from_tl == op);
-
-  std::vector<char> buf(len);
-  auto fetched_bytes = tl_fetch_data(buf.data(), static_cast<int>(buf.size()));
-  assert(fetched_bytes == buf.size());
-
-  worker_info_t *w = PR_DATA(c)->worker;
-  pipe_info_t *p = PR_DATA(c)->pipe_info;
-  if (w->generation == PR_DATA(c)->worker_generation) {
-    if (op == RPC_PHP_FULL_STATS) {
-      w->last_activity_time = my_now;
-      worker_set_stats(w, buf.data());
-    }
-
-    if (op == RPC_PHP_IMMEDIATE_STATS) {
-      worker_set_immediate_stats(w, reinterpret_cast<php_immediate_stats_t *>(buf.data()));
-    }
-
-    pipe_on_get_packet(p, TCP_RPC_DATA(c)->packet_num);
-  } else {
-    vkprintf(1, "connection [%p:%d] will be closed soon\n", c, c->fd);
-  }
-
-  return 0;
-}
-
-tcp_rpc_client_functions pipe_reader_methods = [] {
-  auto res = tcp_rpc_client_functions();
-  res.execute = pr_execute;
-
-  return res;
-}();
-
-void init_pipe_info(pipe_info_t *info, worker_info_t *worker, int pipe) {
-  info->pipe_read = pipe;
-  info->pipe_out_packet_num = -1;
-  info->pipe_in_packet_num = -1;
-  connection *reader = epoll_insert_pipe(pipe_for_read, pipe, &ct_tcp_rpc_client, (void *)&pipe_reader_methods);
-  if (reader != nullptr) {
-    PR_DATA (reader)->worker = worker;
-    PR_DATA (reader)->worker_generation = worker->generation;
-    PR_DATA (reader)->pipe_info = info;
-  } else {
-    vkprintf(0, "failed to create pipe_reader [fd = %d]", pipe);
-  }
-  info->reader = reader;
-
-  connection *c = &info->pending_stat_queue;
-  c->first_query = c->last_query = (conn_query *)c;
-  c->generation = ++conn_generation;
-  c->pending_queries = 0;
-}
-
-void clear_pipe_info(pipe_info_t *info) {
-  info->pipe_read = -1;
-  info->reader = nullptr;
+  return run_master();
 }
 
 int run_worker(WorkerType worker_type) {
   dl_block_all_signals();
 
-  int err;
   assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
 
-  int new_pipe[2];
-  err = pipe2(new_pipe, O_CLOEXEC);
-  dl_assert(err != -1, "failed to create a pipe");
-  int new_fast_pipe[2];
-  err = pipe2(new_fast_pipe, O_CLOEXEC);
-  dl_assert(err != -1, "failed to create a pipe");
-
   tot_workers_started++;
-
-  const int worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
+  const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
   assert (new_pid != -1 && "failed to fork");
 
   if (new_pid == 0) {
-    switch (worker_type) {
-      case WorkerType::general_worker:
-        run_mode = RunMode::general_worker;
-        break;
-      case WorkerType::job_worker:
-        run_mode = RunMode::job_worker;
-        break;
-      default:
-        assert(0);
-    }
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
       vkprintf(0, "parent is dead just after start\n");
@@ -760,13 +581,6 @@ int run_worker(WorkerType worker_type) {
     //verbosity = 0;
     verbosity = initial_verbosity;
     pid = getpid();
-
-    master_pipe_write = new_pipe[1];
-    master_pipe_fast_write = new_fast_pipe[1];
-    close(new_pipe[0]);
-    close(new_fast_pipe[0]);
-    clear_event(new_pipe[0]);
-    clear_event(new_fast_pipe[0]);
 
     master_sfd = -1;
 
@@ -805,6 +619,7 @@ int run_worker(WorkerType worker_type) {
     instance_cache_release_all_resources_acquired_by_this_proc();
     ConfdataGlobalManager::get().force_release_all_resources_acquired_by_this_proc_if_init();
     vk::singleton<job_workers::SharedMemoryManager>::get().forcibly_release_all_attached_messages();
+    vk::singleton<ServerStats>::get().after_fork(pid, active_special_connections, max_special_connections, worker_unique_id, worker_type);
     return 1;
   }
 
@@ -819,14 +634,9 @@ int run_worker(WorkerType worker_type) {
   worker->generation = ++conn_generation;
   worker->start_time = my_now;
   worker->unique_id = worker_unique_id;
+  worker->last_activity_counter = 0;
   worker->last_activity_time = my_now;
   worker->type = worker_type;
-
-  init_pipe_info(&worker->pipes[0], worker, new_pipe[0]);
-  init_pipe_info(&worker->pipes[1], worker, new_fast_pipe[0]);
-
-  close(new_pipe[1]);
-  close(new_fast_pipe[1]);
 
   changed = 1;
 
@@ -840,13 +650,10 @@ void remove_worker(pid_t pid) {
     if (workers[i]->pid == pid) {
       vk::singleton<WorkersControl>::get().on_worker_removing(workers[i]->type, workers[i]->is_dying, workers[i]->unique_id);
       if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
-        last_failed = my_now;
         failed++;
       }
       workers_failed++;
 
-      clear_pipe_info(&workers[i]->pipes[0]);
-      clear_pipe_info(&workers[i]->pipes[1]);
       delete_worker(workers[i]);
 
       workers[i] = workers[workers_control.get_all_alive()];
@@ -1043,85 +850,6 @@ tcp_rpc_server_functions php_rpc_master_methods = [] {
   return res;
 }();
 
-struct pmm_data {
-  int full_flag;
-  int worker_pid;
-  int need_end;
-};
-
-#define PMM_DATA(c) ((pmm_data *) (MCS_DATA(c) + 1))
-int delete_stats_query(conn_query *q);
-
-conn_query_functions stats_cq_func = [] {
-  auto res = conn_query_functions();
-  res.magic = CQUERY_FUNC_MAGIC;
-  res.title = "stats-cq-query";
-  res.wakeup = delete_stats_query;
-  res.close = delete_stats_query;
-
-  return res;
-}();
-
-int delete_stats_query(conn_query *q) {
-  vkprintf(2, "delete_stats_query(%p,%p)\n", q, q->requester);
-
-  delete_conn_query(q);
-  free(q);
-  return 0;
-}
-
-conn_query *create_stats_query(connection *c, pipe_info_t *pipe_info) {
-  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
-
-  q->custom_type = 0;
-  q->outbound = &pipe_info->pending_stat_queue;
-  q->requester = c;
-  q->start_time = precise_now;
-
-  *(int *)&q->extra = pipe_info->pipe_out_packet_num;
-
-  q->cq_type = &stats_cq_func;
-  q->timer.wakeup_time = precise_now + 1;
-  vkprintf(2, "create stats query [q = %p] [requester = %p]\n", q, q->requester);
-
-  insert_conn_query(q);
-
-  return q;
-}
-
-void create_stats_queries(connection *c, int op, int worker_pid) {
-#if defined(__APPLE__)
-  op |= SPOLL_SEND_IMMEDIATE_STATS | SPOLL_SEND_FULL_STATS;
-#endif
-  sigval to_send;
-  to_send.sival_int = op;
-  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-    workers[i]->stats_flag = 0;
-    if (!workers[i]->is_dying && (worker_pid < 0 || workers[i]->pid == worker_pid)) {
-      pipe_info_t *pipe_info = nullptr;
-      if (op & SPOLL_SEND_IMMEDIATE_STATS) {
-        pipe_info = &workers[i]->pipes[1];
-      } else if (op & SPOLL_SEND_FULL_STATS) {
-        pipe_info = &workers[i]->pipes[0];
-      }
-      dl_assert(pipe_info != nullptr, "bug in code");
-#if defined(__APPLE__)
-      kill(workers[i]->pid, SIGSTAT);
-#else
-      sigqueue(workers[i]->pid, SIGSTAT, to_send);
-#endif
-      pipe_info->pipe_out_packet_num++;
-      vkprintf(1, "create_stats_query [worker_pid = %d], [packet_num = %d]\n", workers[i]->pid, pipe_info->pipe_out_packet_num);
-      if (c != nullptr) {
-        create_stats_query(c, pipe_info);
-      }
-    }
-  }
-  if (c != nullptr) {
-    c->status = conn_wait_net;
-  }
-}
-
 int return_one_key_key(connection *c, const char *key) {
   std::string tmp;
   tmp += "VALUE ";
@@ -1140,97 +868,45 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
   return 0;
 }
 
-std::string php_master_prepare_stats(bool full_flag, int worker_pid) {
-  std::string res, header;
-  header = server_stats.to_string(me == nullptr ? 0 : (int)me->pid, false, true);
-  int total_workers_n = 0;
-  int running_workers_n = 0;
-  int paused_workers_n = 0;
-  static char buf[1000];
+std::string php_master_prepare_stats() {
+  auto *last_worker = workers + vk::singleton<WorkersControl>::get().get_all_alive();
+  auto start = std::minmax_element(workers, last_worker, [](const worker_info_t *l, const worker_info_t *r) {
+    return l->start_time < r->start_time;
+  });
+  auto min_uptime = start.second == last_worker ? 0 : static_cast<int64_t>(my_now - (*start.second)->start_time);
+  auto max_uptime = start.first == last_worker ? 0 : static_cast<int64_t>(my_now - (*start.first)->start_time);
 
-  PhpWorkerStats worker_stats;
+  const auto &stats = vk::singleton<ServerStats>::get();
+  const auto general_workers_stat = stats.collect_workers_stat(WorkerType::general_worker);
+  const auto job_workers_stat = stats.collect_workers_stat(WorkerType::job_worker);
 
-  double min_uptime = 1e9;
-  double max_uptime = -1;
-  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-    worker_info_t *w = workers[i];
-    if (!w->is_dying) {
-      total_workers_n++;
-      running_workers_n += w->stats->istats.is_running;
-      paused_workers_n += w->stats->istats.is_wait_net;
-      double worker_uptime = my_now - w->start_time;
-      if (min_uptime > worker_uptime) {
-        min_uptime = worker_uptime;
-      }
-      if (max_uptime < worker_uptime) {
-        max_uptime = worker_uptime;
-      }
-
-      if (full_flag) {
-        worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
-      }
-
-      if (worker_pid == -1 || w->pid == worker_pid) {
-        sprintf(buf, "worker_uptime %d\t%.0lf\n", (int)w->pid, worker_uptime);
-        res += buf;
-        res += w->stats->to_string(w->pid, full_flag);
-        res += "\n";
-      }
-    }
+  std::ostringstream oss;
+  server_stats.write_to(oss, 0);
+  oss << "uptime\t" << get_uptime() << "\n";
+  if (engine_tag) {
+    // engine_tag may be ended with "["
+    oss << "kphp_version\t" << atoll(engine_tag) << "\n";
   }
+  oss << "cluster_name\t" << vk::singleton<ClusterName>::get().get_cluster_name() << "\n"
+      << "min_worker_uptime\t" << min_uptime << "\n"
+      << "max_worker_uptime\t" << max_uptime << "\n"
+      << "total_workers\t" << general_workers_stat.total_workers + job_workers_stat.total_workers << "\n"
+      << "running_workers\t" << general_workers_stat.running_workers + job_workers_stat.running_workers << "\n"
+      << "paused_workers\t" << general_workers_stat.waiting_workers + job_workers_stat.waiting_workers << "\n"
+      << "tot_workers_started\t" << tot_workers_started << "\n"
+      << "tot_workers_dead\t" << tot_workers_dead << "\n"
+      << "tot_workers_strange_dead\t" << tot_workers_strange_dead << "\n"
+      << "workers_killed\t" << workers_killed << "\n"
+      << "workers_hung\t" << workers_hung << "\n"
+      << "workers_terminated\t" << workers_terminated << "\n"
+      << "workers_failed\t" << workers_failed << "\n";
+  stats.write_stats_to(oss);
 
-  sprintf(buf, "uptime\t%d\n", get_uptime());
-  header += buf;
-  if (engine_tag != nullptr) {
-    sprintf(buf + sprintf(buf, "kphp_version\t%s", engine_tag) - 2, "\n");
-    header += buf;
-  }
-  header.append("cluster_name\t").append(vk::singleton<ClusterName>::get().get_cluster_name()).append("\n");
-  sprintf(buf, "min_worker_uptime\t%.0lf\n", min_uptime);
-  header += buf;
-  sprintf(buf, "max_worker_uptime\t%.0lf\n", max_uptime);
-  header += buf;
-  sprintf(buf, "total_workers\t%d\n", total_workers_n);
-  header += buf;
-  sprintf(buf, "running_workers\t%d\n", running_workers_n);
-  header += buf;
-  sprintf(buf, "paused_workers\t%d\n", paused_workers_n);
-  header += buf;
-  sprintf(buf, "tot_workers_started\t%ld\n", tot_workers_started);
-  header += buf;
-  sprintf(buf, "tot_workers_dead\t%ld\n", tot_workers_dead);
-  header += buf;
-  sprintf(buf, "tot_workers_strange_dead\t%ld\n", tot_workers_strange_dead);
-  header += buf;
-  sprintf(buf, "workers_killed\t%ld\n", workers_killed);
-  header += buf;
-  sprintf(buf, "workers_hung\t%ld\n", workers_hung);
-  header += buf;
-  sprintf(buf, "workers_terminated\t%ld\n", workers_terminated);
-  header += buf;
-  sprintf(buf, "workers_failed\t%ld\n", workers_failed);
-  header += buf;
-
-  if (full_flag) {
-    header += worker_stats.to_string();
-  }
-  if (!full_flag && worker_pid == -2) {
-    header += " pid \t  state time\t  port  actor time\tcustom_server_status time\n";
-    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-      worker_info_t *w = workers[i];
-      if (!w->is_dying) {
-        php_immediate_stats_t *imm = &w->stats->istats;
-        imm->desc[IMM_STATS_DESC_LEN - 1] = 0;
-        imm->custom_desc[IMM_STATS_DESC_LEN - 1] = 0;
-        sprintf(buf, "%5d\t%7s %.3lf\t%6d %6lld %.3lf\t%s %.3lf\n",
-                w->pid, imm->desc, precise_now - imm->timestamp,
-                imm->port, imm->actor_id, precise_now - imm->rpc_timestamp,
-                imm->custom_desc, precise_now - imm->custom_timestamp);
-        header += buf;
-      }
-    }
-  }
-  return header + res;
+  std::for_each(workers, last_worker, [&oss](const worker_info_t *w) {
+    oss << "worker_uptime " << w->pid << "\t" << static_cast<int64_t>(my_now - w->start_time) << "\n";
+    w->stats->write_to(oss, w->pid);
+  });
+  return oss.str();
 }
 
 
@@ -1239,17 +915,10 @@ int php_master_wakeup(connection *c) {
     c->status = conn_expect_query;
   }
 
-  pmm_data *D = PMM_DATA (c);
-  bool full_flag = D->full_flag;
-  int worker_pid = D->worker_pid;
-
   update_workers();
 
-  std::string res = php_master_prepare_stats(full_flag, worker_pid);
-  return_one_key_val(c, (char *)res.c_str(), (int)res.size());
-  if (D->need_end) {
-    write_out(&c->Out, "END\r\n", 5);
-  }
+  std::string res = php_master_prepare_stats();
+  return_one_key_val(c, res.c_str(), static_cast<int>(res.size()));
 
   mcs_pad_response(c);
   c->flags |= C_WANTWR;
@@ -1287,9 +956,7 @@ int php_master_get(connection *c, const char *old_key, int old_key_len) {
   char *key;
   int key_len;
   eat_at(old_key, old_key_len, &key, &key_len);
-  //stats
-  //full_stats
-  //workers_pids
+
   if (key_len == 12 && strncmp(key, "workers_pids", 12) == 0) {
     std::string res;
     for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
@@ -1302,38 +969,12 @@ int php_master_get(connection *c, const char *old_key, int old_key_len) {
         res += buf;
       }
     }
-    return_one_key(c, old_key, (char *)res.c_str(), (int)res.size());
+    return_one_key(c, old_key, res.c_str(), static_cast<int>(res.size()));
     return 0;
   }
   if (key_len >= 5 && strncmp(key, "stats", 5) == 0) {
-    key += 5;
-    pmm_data *D = PMM_DATA (c);
-    D->full_flag = 0;
-    if (strncmp(key, "_full", 5) == 0) {
-      key += 5;
-      D->full_flag = 1;
-      D->worker_pid = -1;
-      sscanf(key, "%d", &D->worker_pid);
-    } else if (strncmp(key, "_fast", 5) == 0) {
-      D->worker_pid = -2;
-      key += 5;
-      sscanf(key, "%d", &D->worker_pid);
-    } else {
-      D->full_flag = 1;
-      D->worker_pid = -2;
-    }
-
-    create_stats_queries(c, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
-    if (D->full_flag) {
-      create_stats_queries(c, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, D->worker_pid);
-    }
-
-    D->need_end = 1;
     return_one_key_key(c, old_key);
-    if (c->pending_queries == 0) {
-      D->need_end = 0;
-      php_master_wakeup(c);
-    }
+    php_master_wakeup(c);
     return 0;
   }
   return SKIP_ALL_BYTES;
@@ -1359,56 +1000,27 @@ int php_master_rpc_stats(const vk::optional<std::vector<std::string>> &sorted_fi
   sb_init(&stats.sb, &res[0], static_cast<int>(res.size()) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
-  res += php_master_prepare_stats(true, -1);
+  res += php_master_prepare_stats();
   tl_store_stats(res.c_str(), 0, sorted_filter_keys);
   return 0;
 }
 
-struct WorkerStats {
-  int total_workers_n{0};
-  int running_workers_n{0};
-  int paused_workers_n{0};
-  int ready_for_accept_workers_n{0};
-
-  static WorkerStats collect(WorkerType worker_type) noexcept {
-    WorkerStats result;
-    for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
-      worker_info_t *w = workers[i];
-      if (!w->is_dying && w->type == worker_type) {
-        result.total_workers_n++;
-        result.running_workers_n += w->stats->istats.is_running;
-        result.paused_workers_n += w->stats->istats.is_wait_net;
-        result.ready_for_accept_workers_n += w->stats->istats.is_ready_for_accept;
-      }
-    }
-    return result;
-  }
-};
-
 std::string get_master_stats_html() {
-  const auto worker_stats = WorkerStats::collect(WorkerType::general_worker);
-
-  std::string html;
-  char buf[100];
-  sprintf(buf, "total_workers\t%d\n", worker_stats.total_workers_n);
-  html += buf;
-  sprintf(buf, "free_workers\t%d\n", worker_stats.total_workers_n - worker_stats.running_workers_n);
-  html += buf;
-  sprintf(buf, "working_workers\t%d\n", worker_stats.running_workers_n);
-  html += buf;
-  sprintf(buf, "working_but_waiting_workers\t%d\n", worker_stats.paused_workers_n);
-  html += buf;
+  const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
+  std::ostringstream html;
+  html << "total_workers\t" << worker_stats.total_workers << "\n"
+       << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
+       << "working_workers\t" << worker_stats.running_workers << "\n"
+       << "working_but_waiting_workers\t" << worker_stats.waiting_workers << "\n"
+       << std::fixed << std::setprecision(3);
   for (int i = 1; i <= 3; ++i) {
-    sprintf(buf, "running_workers_avg_%s\t%7.3lf\n", periods_desc[i], server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg);
-    html += buf;
+    html << "running_workers_avg_" << periods_desc[i] << "\t" << server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg << "\n";
   }
-
-  return html;
+  return html.str();
 }
 
 static long long int instance_cache_memory_swaps_ok = 0;
 static long long int instance_cache_memory_swaps_fail = 0;
-static const double FULL_STATS_PERIOD = 5.0;
 
 STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   if (engine_tag) {
@@ -1417,32 +1029,32 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
 
   add_gauge_stat_long(stats, "uptime", get_uptime());
 
-  const auto general_worker_group = WorkerStats::collect(WorkerType::general_worker);
-  add_gauge_stat_long(stats, "workers.general.total", general_worker_group.total_workers_n);
-  add_gauge_stat_long(stats, "workers.general.working", general_worker_group.running_workers_n);
-  add_gauge_stat_long(stats, "workers.general.working_but_waiting", general_worker_group.paused_workers_n);
-  add_gauge_stat_long(stats, "workers.general.ready_for_accept", general_worker_group.ready_for_accept_workers_n);
+  const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
+  add_gauge_stat_long(stats, "workers.general.processes.total", general_worker_group.total_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.working", general_worker_group.running_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.working_but_waiting", general_worker_group.waiting_workers);
+  add_gauge_stat_long(stats, "workers.general.processes.ready_for_accept", general_worker_group.ready_for_accept_workers);
 
   auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.general.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.general.running.max_1m", running_stats.running_workers_max);
+  add_gauge_stat_double(stats, "workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.general.processes.running.max_1m", running_stats.running_workers_max);
 
-  const auto job_worker_group = WorkerStats::collect(WorkerType::job_worker);
-  add_gauge_stat_long(stats, "workers.job.total", job_worker_group.total_workers_n);
-  add_gauge_stat_long(stats, "workers.job.working", job_worker_group.running_workers_n);
-  add_gauge_stat_long(stats, "workers.job.working_but_waiting", job_worker_group.paused_workers_n);
+  const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
+  add_gauge_stat_long(stats, "workers.job.processes.total", job_worker_group.total_workers);
+  add_gauge_stat_long(stats, "workers.job.processes.working", job_worker_group.running_workers);
+  add_gauge_stat_long(stats, "workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
   running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.job.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.job.running.max_1m", running_stats.running_workers_max);
+  add_gauge_stat_double(stats, "workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
+  add_gauge_stat_long(stats, "workers.job.processes.running.max_1m", running_stats.running_workers_max);
 
-  add_gauge_stat_long(stats, "workers.all.started", tot_workers_started);
-  add_gauge_stat_long(stats, "workers.all.dead", tot_workers_dead);
-  add_gauge_stat_long(stats, "workers.all.strange_dead", tot_workers_strange_dead);
-  add_gauge_stat_long(stats, "workers.all.killed", workers_killed);
-  add_gauge_stat_long(stats, "workers.all.hung", workers_hung);
-  add_gauge_stat_long(stats, "workers.all.terminated", workers_terminated);
-  add_gauge_stat_long(stats, "workers.all.failed", workers_failed);
+  add_gauge_stat_long(stats, "server.workers.started", tot_workers_started);
+  add_gauge_stat_long(stats, "server.workers.dead", tot_workers_dead);
+  add_gauge_stat_long(stats, "server.workers.strange_dead", tot_workers_strange_dead);
+  add_gauge_stat_long(stats, "server.workers.killed", workers_killed);
+  add_gauge_stat_long(stats, "server.workers.hung", workers_hung);
+  add_gauge_stat_long(stats, "server.workers.terminated", workers_terminated);
+  add_gauge_stat_long(stats, "server.workers.failed", workers_failed);
 
 
   const auto cpu_stats = server_stats.cpu[1].get_stat();
@@ -1469,7 +1081,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
-  server_stats.worker_stats.to_stats(stats);
+  vk::singleton<ServerStats>::get().write_stats_to(stats);
 
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
@@ -1711,6 +1323,7 @@ static void cron() {
     send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), STATS_TAG_KPHP_SERVER);
   }
   create_all_outbound_connections();
+  vk::singleton<ServerStats>::get().aggregate_stats();
 
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;
@@ -1719,12 +1332,8 @@ static void cron() {
   const bool get_cpu_err = get_cpu_total(&cpu_total);
   dl_assert (get_cpu_err, "get_cpu_total failed");
 #endif
-  server_stats.worker_stats.copy_internal_from(dead_worker_stats);
-  server_stats.worker_stats.reset_memory_and_percentiles_stats();
-  server_stats.worker_stats.update_mem_info();
-  int running_general_workers = 0;
-  int running_job_workers = 0;
-  for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
+  const uint16_t alive_workers_count = vk::singleton<WorkersControl>::get().get_all_alive();
+  for (uint16_t i = 0; i < alive_workers_count; ++i) {
     worker_info_t *w = workers[i];
     const bool get_pid_info_err = get_pid_info(w->pid, &w->my_info);
     w->valid_my_info = 1;
@@ -1736,24 +1345,16 @@ static void cron() {
     utime += w->my_info.utime;
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
-    running_general_workers += w->stats->istats.is_running && (w->type == WorkerType::general_worker);
-    running_job_workers += w->stats->istats.is_running && (w->type == WorkerType::job_worker);
-    server_stats.worker_stats.add_worker_stats_from(w->stats->worker_stats, w->type);
   }
-  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, running_general_workers});
-  server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, running_job_workers});
+  const auto general_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
+  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, general_workers_stat.running_workers});
+  const auto job_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
+  server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, job_workers_stat.running_workers});
 
   utime += dead_utime;
   stime += dead_stime;
   CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
   server_stats.update(cpu_timestamp);
-
-  create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_IMMEDIATE_STATS, -1);
-  static double last_full_stats = -1;
-  if (last_full_stats + FULL_STATS_PERIOD < my_now) {
-    last_full_stats = my_now;
-    create_stats_queries(nullptr, SPOLL_SEND_STATS | SPOLL_SEND_FULL_STATS, -1);
-  }
 
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
@@ -1797,7 +1398,7 @@ static master_state master_change_state() {
   return prev_state;
 }
 
-void run_master() {
+WorkerType run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
   me->http_fd_port = http_fd_port;
   me->own_http_fd = http_fd != nullptr && *http_fd != -1;
@@ -1859,7 +1460,6 @@ void run_master() {
 
     me->generation = generation;
 
-
     if (to_kill != 0 || to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
       vkprintf(1, "[to_kill = %d] [to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n", to_kill, to_run, job_workers_to_kill, job_workers_to_run);
     }
@@ -1870,7 +1470,7 @@ void run_master() {
     for (int i = 0; i < job_workers_to_run; ++i) {
       if (run_worker(WorkerType::job_worker)) {
         tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
-        return;
+        return WorkerType::job_worker;
       }
     }
 
@@ -1879,7 +1479,7 @@ void run_master() {
     }
     while (to_run-- > 0 && !failed) {
       if (run_worker(WorkerType::general_worker)) {
-        return;
+        return WorkerType::general_worker;
       }
     }
     kill_hanging_workers();

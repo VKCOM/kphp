@@ -234,7 +234,7 @@ class KphpServerAutoTestCase(BaseTestCase):
         Проверяем что в статах kphp сервер нет terminated requests
         """
         self.assertEqual(
-            self.kphp_server.get_stats(prefix="kphp_server.terminated_requests_"),
+            self.kphp_server.get_stats(prefix="kphp_server.workers_general_errors_"),
             {
                 "memory_limit_exceeded": 0,
                 "timeout": 0,

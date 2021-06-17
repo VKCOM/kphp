@@ -9,13 +9,13 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
+#include "common/wrappers/memory-utils.h"
 #include "server/php-master-restart.h"
 
 //ATTENTION: the file has .cpp extension due to usage of "pthread_mutexattr_setrobust_np" which is by some strange reason unsupported for .c
@@ -77,9 +77,7 @@ shared_data_t *get_shared_data(const char *name) {
   ret = ftruncate(fid, mem_len);
   assert (ret == 0 && "failed to ftruncate shared memory");
 
-  auto data = reinterpret_cast<shared_data_t *>(mmap(0, mem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fid, 0));
-  assert (data != MAP_FAILED && "failed to mmap shared memory");
-
+  auto *data = static_cast<shared_data_t *>(mmap_shared(mem_len, fid));
   if (init_flag) {
     shared_data_init(data);
   } else {

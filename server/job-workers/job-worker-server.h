@@ -24,8 +24,6 @@ class JobWorkerServer : vk::not_copyable {
 public:
   friend class vk::singleton<JobWorkerServer>;
 
-  vk::SteadyTimer<std::chrono::milliseconds> last_stats;
-
   void init();
 
   int job_parse_execute(connection *c);

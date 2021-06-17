@@ -20,7 +20,7 @@
 #include "common/kprintf.h"
 #include "common/server/crash-dump.h"
 #include "common/server/signals.h"
-#include "common/wrappers/madvise.h"
+#include "common/wrappers/memory-utils.h"
 #include "net/net-connections.h"
 
 #include "runtime/allocator.h"
@@ -31,8 +31,8 @@
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
-#include "server/php-worker-stats.h"
 #include "server/server-log.h"
+#include "server/server-stats.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -251,9 +251,9 @@ void PHPScriptBase::finish() {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  PhpWorkerStats::get_local().add_stats(script_time, net_time, queries_cnt,
-                                        script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
-                                        dl::get_heap_memory_used(), vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt,
+                                                      script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
+                                                      vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -679,91 +679,6 @@ void php_script_set_timeout(double t) {
 
   PHPScriptBase::tl_flag = false;
   setitimer(ITIMER_REAL, &timer, nullptr);
-}
-
-static php_immediate_stats_t imm_stats[2];
-static sig_atomic_t imm_stats_i = 0;
-
-static php_immediate_stats_t *get_new_imm_stats() {
-  return &imm_stats[imm_stats_i ^ 1];
-}
-
-static void upd_imm_stats() {
-  int x = imm_stats_i;
-  imm_stats_i = 1 ^ x;
-  memcpy(get_new_imm_stats(), get_imm_stats(), sizeof(php_immediate_stats_t));
-}
-
-enum server_status_t {
-  ss_idle,
-  ss_wait_net,
-  ss_running,
-  ss_custom
-};
-
-static void upd_server_status(server_status_t server_status, const char *desc, int desc_len) {
-  php_immediate_stats_t *imm = get_new_imm_stats();
-  switch (server_status) {
-    case ss_idle:
-      imm->is_running = false;
-      imm->is_wait_net = false;
-      break;
-    case ss_wait_net:
-      imm->is_running = true;
-      imm->is_wait_net = true;
-      break;
-    case ss_running:
-      imm->is_running = true;
-      imm->is_wait_net = false;
-      break;
-    case ss_custom:
-      break;
-  }
-  if (desc_len >= IMM_STATS_DESC_LEN) {
-    desc_len = IMM_STATS_DESC_LEN - 1;
-  }
-
-  if (server_status != ss_custom) {
-    imm->timestamp = dl_time();
-    memcpy(imm->desc, desc, desc_len);
-    imm->desc[desc_len] = 0;
-  } else {
-    imm->custom_timestamp = dl_time();
-    memcpy(imm->custom_desc, desc, desc_len);
-    imm->custom_desc[desc_len] = 0;
-  }
-
-  upd_imm_stats();
-}
-
-php_immediate_stats_t *get_imm_stats() {
-  php_immediate_stats_t *istats = &imm_stats[imm_stats_i];
-  istats->is_ready_for_accept = active_special_connections != max_special_connections;
-  return istats;
-}
-
-void custom_server_status(const char *status, int status_len) {
-  upd_server_status(ss_custom, status, status_len);
-}
-
-void server_status_rpc(int port, long long actor_id, double start_time) {
-  php_immediate_stats_t *imm = get_new_imm_stats();
-  imm->port = port;
-  imm->actor_id = actor_id;
-  imm->rpc_timestamp = start_time;
-  upd_imm_stats();
-}
-
-void idle_server_status() {
-  upd_server_status(ss_idle, "Idle", 4);
-}
-
-void wait_net_server_status() {
-  upd_server_status(ss_wait_net, "WaitNet", 7);
-}
-
-void running_server_status() {
-  upd_server_status(ss_running, "Running", 7);
 }
 
 void PHPScriptBase::cur_run() {

@@ -360,8 +360,6 @@ int mc_connect_to(const char *host_name, int port);
 void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) ubsan_supp("alignment");
 int db_proxy_connect();
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
-void set_server_status(const char *status, int status_len);
-void set_server_status_rpc(int port, long long actor_id, double start_time);
 double get_net_time();
 double get_script_time();
 int get_net_queries_count();
