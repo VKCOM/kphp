@@ -41,3 +41,24 @@ echo vsprintf($format, [$int, getString()]);
 // with constant
 const FORMAT = "Hello %d%s";
 echo vsprintf(FORMAT, [$int, getString()]);
+
+// with non-constant args
+echo vsprintf("%d %d", explode(" ", "why not"));
+
+// complex example
+$html = "";
+$html .= vsprintf('<td colspan="%s"  category="%s" path="%s"
+      onclick="new(\'%s\')">
+      %s <a>%s</a>
+      <span style="color: #000000; font-size: 8pt;">%s</span>
+      <span style="color: #ffffff">%s</span>
+      </td></tr>',
+    [$string, $string, $string, $string, $string, $string, $string, true ? 'no audience' : '']);
+
+echo $html;
+
+// with not simple format
+echo vsprintf("%b", [(bool)$int]);
+echo vsprintf("%f", [(float)$int]);
+echo vsprintf("%10d", [$int]);
+echo vsprintf("%10s", [$string]);

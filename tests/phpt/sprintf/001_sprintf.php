@@ -41,3 +41,21 @@ echo sprintf($format, $int, getString());
 // with constant
 const FORMAT = "Hello %d%s";
 echo sprintf(FORMAT, $int, getString());
+
+// complex example
+$html = "";
+$html .= sprintf('<td colspan="%s"  category="%s" path="%s"
+      onclick="new(\'%s\')">
+      %s <a>%s</a>
+      <span style="color: #000000; font-size: 8pt;">%s</span>
+      <span style="color: #ffffff">%s</span>
+      </td></tr>',
+    $string, $string, $string, $string, $string, $string, $string, true ? 'no audience' : '');
+
+echo $html;
+
+// with not simple format
+echo sprintf("%b", (bool)$int);
+echo sprintf("%f", (float)$int);
+echo sprintf("%10d", $int);
+echo sprintf("%10s", $string);
