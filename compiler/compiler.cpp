@@ -59,6 +59,7 @@
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
+#include "compiler/pipes/convert-sprintf-calls.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
@@ -260,6 +261,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
     >> PassC<RemoveEmptyFunctionCalls>{}
     >> PassC<PreprocessBreakPass>{}
+    >> PassC<ConvertSprintfCallsPass>{}
     >> PassC<CalcConstTypePass>{}
     >> PassC<CollectConstVarsPass>{}
     >> PassC<ConvertListAssignmentsPass>{}
