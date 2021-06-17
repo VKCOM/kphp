@@ -1,5 +1,6 @@
 @ok
 <?php
+require_once 'kphp_tester_include.php';
 
 function f() {
     $shape = [1, 2, 3];
