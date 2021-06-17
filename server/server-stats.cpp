@@ -408,17 +408,18 @@ struct WorkerProcessStats : private vk::not_copyable {
 template<class E>
 struct WorkerPercentilesBundle : EnumTable<E, Percentiles<typename E::StatType>>, private vk::not_copyable {
   void recalc(const WorkerStatsBundle<E> &stats, uint16_t first_worker_id, uint16_t last_worker_id) noexcept {
-    if (const uint16_t len = first_worker_id - last_worker_id) {
+    if (const uint16_t len = last_worker_id - first_worker_id) {
       typename E::StatType buffer[len];
       for (size_t i = 0; i != this->size(); ++i) {
         const auto &stat = stats[i];
+        size_t buffer_index = 0;
         size_t worker_index = first_worker_id;
-        while (first_worker_id != last_worker_id) {
-          if (auto s = stat[first_worker_id++].load(std::memory_order_relaxed)) {
-            buffer[worker_index++] = s;
+        while (worker_index != last_worker_id) {
+          if (auto s = stat[worker_index++].load(std::memory_order_relaxed)) {
+            buffer[buffer_index++] = s;
           }
         }
-        (*this)[i].update_percentiles(buffer, buffer + worker_index);
+        (*this)[i].update_percentiles(buffer, buffer + buffer_index);
       }
     }
   }
