@@ -59,6 +59,7 @@ public:
   bool is_tl_class{false};
   bool has_custom_constructor{false};
   bool is_serializable{false};
+  bool has_job_shared_memory_piece{false};
 
   SrcFilePtr file_id;
   int location_line_num{-1};
@@ -184,6 +185,8 @@ public:
   }
 
   void register_defines() const;
+
+  std::vector<const ClassMemberInstanceField *> get_job_shared_memory_pieces() const;
 
 private:
   bool has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const;

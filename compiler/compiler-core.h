@@ -41,7 +41,6 @@ private:
   std::vector<std::string> kphp_runtime_opts;
   bool is_untyped_rpc_tl_used{false};
   function_palette::Palette function_palette;
-  std::map<std::string, const ClassMemberInstanceField *> job_workers_shared_memory_pieces;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -127,18 +126,6 @@ public:
 
   bool get_untyped_rpc_tl_used() const {
     return is_untyped_rpc_tl_used;
-  }
-
-  void add_job_worker_shared_memory_piece(const std::string &class_name, const ClassMemberInstanceField *shared_memory_piece_field) {
-    job_workers_shared_memory_pieces.emplace(class_name, shared_memory_piece_field);
-  }
-
-  const ClassMemberInstanceField *get_job_worker_shared_memory_piece(const std::string &class_name) {
-    auto it = job_workers_shared_memory_pieces.find(class_name);
-    if (it == job_workers_shared_memory_pieces.end()) {
-      return nullptr;
-    }
-    return it->second;
   }
 
   Stats stats;

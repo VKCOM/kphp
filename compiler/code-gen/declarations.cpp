@@ -702,7 +702,10 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
     FunctionSignatureGenerator(W).set_overridden() << "void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance)" << SemicolonAndNL{};
     return;
   }
-  const auto *field = G->get_job_worker_shared_memory_piece(klass->name);
+  const ClassMemberInstanceField *field = nullptr;
+  if (klass->has_job_shared_memory_piece) {
+    field = klass->get_job_shared_memory_pieces().front();
+  }
   W << NL;
   FunctionSignatureGenerator(W).set_const_this().set_inline()
     << "class_instance<C$KphpJobWorkerSharedMemoryPiece> " << klass->src_name << "::get_shared_memory_piece() " << BEGIN;

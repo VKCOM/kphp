@@ -59,19 +59,9 @@ void process_job_worker_class(ClassPtr klass) {
     kphp_error(klass->is_immutable, fmt_format("Class {} must be immutable (@kphp-immutable-class) as it implements KphpJobWorkerSharedMemoryPiece", klass->name));
   }
   if (implements_request) {
-    size_t shared_memory_piece_members_count = 0;
-    for (ClassPtr ancestor : klass->get_all_ancestors()) {
-      ancestor->members.for_each([&](const ClassMemberInstanceField &field) {
-        for (ClassPtr field_class : field.get_inferred_type()->class_types()) {
-          if (shared_memory_piece_interface->is_parent_of(field_class)) {
-            ++shared_memory_piece_members_count;
-            G->add_job_worker_shared_memory_piece(klass->name, &field);
-            break;
-          }
-        }
-      });
-    }
-    kphp_error(shared_memory_piece_members_count <= 1, fmt_format("Class {} must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but {} found", klass->name, shared_memory_piece_members_count));
+    std::vector<const ClassMemberInstanceField *> shared_memory_pieces_fields = klass->get_job_shared_memory_pieces();
+    kphp_error(shared_memory_pieces_fields.size() <= 1, fmt_format("Class {} must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but {} found", klass->name, shared_memory_pieces_fields.size()));
+    klass->has_job_shared_memory_piece = !shared_memory_pieces_fields.empty();
   }
 };
 
