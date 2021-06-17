@@ -1307,14 +1307,14 @@ void array<T>::assign_raw(const char *s) {
 }
 
 template<class T>
-const T *array<T>::find_value(int64_t int_key) const {
+const T *array<T>::find_value(int64_t int_key) const noexcept {
   return p->is_vector()
          ? p->find_vector_value(int_key)
          : p->find_map_value(int_key);
 }
 
 template<class T>
-const T *array<T>::find_value(const string &string_key) const {
+const T *array<T>::find_value(const string &string_key) const noexcept {
   int64_t int_val = 0;
   const bool is_key_int = string_key.try_to_int(&int_val);
   if (p->is_vector()) {
@@ -1324,12 +1324,12 @@ const T *array<T>::find_value(const string &string_key) const {
 }
 
 template<class T>
-const T *array<T>::find_value(const string &string_key, int64_t precomuted_hash) const {
+const T *array<T>::find_value(const string &string_key, int64_t precomuted_hash) const noexcept {
   return p->is_vector() ? nullptr : p->find_map_value(string_key, precomuted_hash);
 }
 
 template<class T>
-const T *array<T>::find_value(const mixed &v) const {
+const T *array<T>::find_value(const mixed &v) const noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       return find_value(string());
@@ -1350,12 +1350,12 @@ const T *array<T>::find_value(const mixed &v) const {
 }
 
 template<class T>
-const T *array<T>::find_value(double double_key) const {
+const T *array<T>::find_value(double double_key) const noexcept {
   return find_value(static_cast<int64_t>(double_key));
 }
 
 template<class T>
-const T *array<T>::find_value(const const_iterator &it) const {
+const T *array<T>::find_value(const const_iterator &it) const noexcept {
   if (it.self_->is_vector()) {
     const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
     return find_value(key);
@@ -1368,7 +1368,7 @@ const T *array<T>::find_value(const const_iterator &it) const {
 }
 
 template<class T>
-const T *array<T>::find_value(const iterator &it) const {
+const T *array<T>::find_value(const iterator &it) const noexcept {
   return find_value(const_iterator{it.self_, it.entry_});
 }
 
@@ -1454,9 +1454,15 @@ bool array<T>::has_key(const K &key) const {
 
 template<class T>
 template<class K>
-bool array<T>::isset(const K &key) const {
+bool array<T>::isset(const K &key) const noexcept {
   auto *value = find_value(key);
-  return value ? !f$is_null(*value) : false;
+  return value && !f$is_null(*value);
+}
+
+template<class T>
+bool array<T>::isset(const string &key, int64_t precomputed_hash) const noexcept {
+  auto *value = find_value(key, precomputed_hash);
+  return value && !f$is_null(*value);
 }
 
 template<class T>
@@ -1488,8 +1494,17 @@ void array<T>::unset(const string &string_key) {
     return;
   }
 
+  return unset(string_key, string_key.hash());
+}
+
+template<class T>
+void array<T>::unset(const string &string_key, int64_t precomputed_hash) {
+  if (is_vector()) {
+    return;
+  }
+
   mutate_if_map_shared();
-  return p->unset_map_value(string_key, string_key.hash());
+  return p->unset_map_value(string_key, precomputed_hash);
 }
 
 template<class T>

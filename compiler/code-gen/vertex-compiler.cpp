@@ -1326,7 +1326,11 @@ void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
       } else {
         kphp_assert (0);
       }
-      W << index->key() << ")";
+      W << index->key();
+      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+        W << ", " << precomputed_hash << "_i64";
+      }
+      W << ")";
       return;
     }
   }

@@ -308,14 +308,14 @@ public:
   // can be used only on empty arrays to receive logically const array
   void assign_raw(const char *s);
 
-  const T *find_value(int64_t int_key) const;
-  const T *find_value(int32_t key) const { return find_value(int64_t{key}); }
-  const T *find_value(const string &s) const;
-  const T *find_value(const string &s, int64_t precomuted_hash) const;
-  const T *find_value(const mixed &v) const;
-  const T *find_value(double double_key) const;
-  const T *find_value(const const_iterator &it) const;
-  const T *find_value(const iterator &it) const;
+  const T *find_value(int64_t int_key) const noexcept;
+  const T *find_value(int32_t key) const noexcept { return find_value(int64_t{key}); }
+  const T *find_value(const string &s) const noexcept;
+  const T *find_value(const string &s, int64_t precomuted_hash) const noexcept;
+  const T *find_value(const mixed &v) const noexcept;
+  const T *find_value(double double_key) const noexcept;
+  const T *find_value(const const_iterator &it) const noexcept;
+  const T *find_value(const iterator &it) const noexcept;
 
   // All non-const methods find_no_mutate() do not lead to a copy
   iterator find_no_mutate(int64_t int_key) noexcept;
@@ -351,11 +351,13 @@ public:
   bool has_key(const K &key) const;
 
   template<class K>
-  bool isset(const K &key) const;
+  bool isset(const K &key) const noexcept;
+  bool isset(const string &key, int64_t precomputed_hash) const noexcept;
 
   void unset(int64_t int_key);
   void unset(int32_t key) { unset(int64_t{key}); }
   void unset(const string &string_key);
+  void unset(const string &string_key, int64_t precomputed_hash);
   void unset(const mixed &var_key);
   void unset(double double_key);
 

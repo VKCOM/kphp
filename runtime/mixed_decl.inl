@@ -111,13 +111,15 @@ public:
 
   inline bool isset(int64_t int_key) const;
   inline bool isset(int32_t key) const { return isset(int64_t{key}); }
-  inline bool isset(const string &string_key) const;
+  template <class ...MaybeHash>
+  inline bool isset(const string &string_key, MaybeHash ...maybe_hash) const;
   inline bool isset(const mixed &v) const;
   inline bool isset(double double_key) const;
 
   inline void unset(int64_t int_key);
   inline void unset(int32_t key) { unset(int64_t{key}); }
-  inline void unset(const string &string_key);
+  template <class ...MaybeHash>
+  inline void unset(const string &string_key, MaybeHash ...maybe_hash);
   inline void unset(const mixed &v);
   inline void unset(double double_key);
 
