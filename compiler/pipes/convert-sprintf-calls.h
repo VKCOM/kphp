@@ -29,7 +29,7 @@ struct FormatPart;
 // so that the constant strings created in this pipe are moved into variables.
 class ConvertSprintfCallsPass final : public FunctionPassBase {
 public:
-  string get_description() final {
+  std::string get_description() final {
     return "Convert sprintf calls";
   }
 

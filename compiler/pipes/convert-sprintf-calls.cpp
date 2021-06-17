@@ -27,7 +27,7 @@ struct FormatPart {
     string
   };
 
-  explicit FormatPart(string value)
+  explicit FormatPart(std::string value)
     : value(std::move(value)) {}
 
   explicit FormatPart(FormatSpecType specifier)
