@@ -22,8 +22,8 @@ struct FormatCallInfo {
 
 struct FormatPart {
   enum class FormatSpecType {
-    Decimal,
-    String
+    decimal,
+    string
   };
 
   std::string value;
@@ -42,9 +42,9 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
   for (const auto &symbol : format) {
     if (find_percent) {
       if (symbol == 'd') {
-        parts.push_back(FormatPart{"", FormatPart::FormatSpecType::Decimal});
+        parts.emplace_back(FormatPart{"", FormatPart::FormatSpecType::decimal});
       } else if (symbol == 's') {
-        parts.push_back(FormatPart{"", FormatPart::FormatSpecType::String});
+        parts.emplace_back(FormatPart{"", FormatPart::FormatSpecType::string});
       } else if (symbol == '%') {
         last_value += "%";
       } else {
@@ -72,7 +72,7 @@ std::vector<FormatPart> try_parse_format_string(const std::string &format) {
 VertexPtr ConvertSprintfCallsPass::on_exit_vertex(VertexPtr root) {
   if (auto func_call = root.try_as<op_func_call>()) {
     const auto func = func_call->func_id;
-    if (vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
+    if (func->is_extern() && vk::any_of_equal(func->name, "sprintf", "vsprintf")) {
       return convert_sprintf_call(func_call);
     }
   }
@@ -80,7 +80,7 @@ VertexPtr ConvertSprintfCallsPass::on_exit_vertex(VertexPtr root) {
   return root;
 }
 
-VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_call> &call) {
+VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_call> call) {
   const auto args = call->args();
   const auto format_arg_raw = args[0];
   const auto *format_string = GenTree::get_constexpr_string(format_arg_raw);
@@ -160,10 +160,10 @@ VertexPtr ConvertSprintfCallsPass::convert_format_part_to_vertex(const FormatPar
     VertexPtr convert;
 
     switch (part.specifier) {
-      case FormatPart::FormatSpecType::Decimal:
+      case FormatPart::FormatSpecType::decimal:
         convert = VertexAdaptor<op_conv_int>::create(element);
         break;
-      case FormatPart::FormatSpecType::String:
+      case FormatPart::FormatSpecType::string:
         convert = VertexAdaptor<op_conv_string>::create(element);
         break;
       default:

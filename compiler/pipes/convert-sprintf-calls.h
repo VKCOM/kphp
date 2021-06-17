@@ -36,6 +36,6 @@ public:
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
 private:
-  static VertexPtr convert_sprintf_call(VertexAdaptor<op_func_call> &call);
+  static VertexPtr convert_sprintf_call(VertexAdaptor<op_func_call> call);
   static VertexPtr convert_format_part_to_vertex(const FormatPart &part, size_t arg_index, const FormatCallInfo &info);
 };
