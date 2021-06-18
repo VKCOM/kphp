@@ -271,9 +271,9 @@ struct Stats {
   }
 
   void write_to(std::ostream &out, int proc_pid) {
-    out << "cpu_usage ";
+    out << "cpu_usage";
     if (proc_pid) {
-      out << proc_pid << " ";
+      out << " " << proc_pid;
     }
     out << std::fixed << std::setprecision(2) << "(" << cpu_desc << ")\t";
     for (auto &i_cpu : cpu) {

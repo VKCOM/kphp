@@ -674,12 +674,21 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
   const auto &master_vm = aggregated_stats_->master_process.vm_stats;
   const auto &general_vm = aggregated_stats_->general_workers.vm_percentiles;
   const auto &job_vm = aggregated_stats_->job_workers.vm_percentiles;
+  const auto &total_queries = shared_stats_->general_workers.total_queries_stat;
 
-  os << "VM\t" << get_sum<VMStat::Key::vm_kb>(master_vm, general_vm, job_vm) << "Kb\n"
+  const auto total_net_time = ns2double(total_queries[QueriesStat::Key::net_time]);
+  const auto total_script_time = ns2double(total_queries[QueriesStat::Key::script_time]);
+
+  os << std::fixed << std::setprecision(3)
+     << "VM\t" << get_sum<VMStat::Key::vm_kb>(master_vm, general_vm, job_vm) << "Kb\n"
      << "VM_max\t" << get_max<VMStat::Key::vm_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
      << "RSS\t" << get_sum<VMStat::Key::rss_kb>(master_vm, general_vm, job_vm) << "Kb\n"
      << "RSS_max\t" << get_sum<VMStat::Key::rss_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << std::fixed << std::setprecision(3);
+     << "tot_queries\t" << total_queries[QueriesStat::Key::incoming_queries].load(std::memory_order_relaxed) << "\n"
+     << "tot_script_queries\t" << total_queries[QueriesStat::Key::outgoing_queries].load(std::memory_order_relaxed) << "\n"
+     << "worked_time\t" << total_script_time + total_net_time << "\n"
+     << "script_time\t" << total_script_time << "\n"
+     << "net_time\t" << total_net_time << "\n";
 
   const auto &workers_vm = shared_stats_->workers.vm_stats;
   const auto &workers_query = shared_stats_->workers.query_stats;
