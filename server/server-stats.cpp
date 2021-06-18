@@ -11,6 +11,7 @@
 #include "common/functional/identity.h"
 #include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/memory-utils.h"
+#include "net/net-events.h"
 
 #include "runtime/curl.h"
 
@@ -81,6 +82,15 @@ struct VMStat : WithStatType<uint32_t> {
     rss_peak_kb,
     rss_kb,
     shm_kb,
+    types_count
+  };
+};
+
+struct IdleStat : WithStatType<double> {
+  enum class Key {
+    tot_idle_time,
+    tot_idle_percent,
+    recent_idle_percent,
     types_count
   };
 };
@@ -171,6 +181,16 @@ EnumTable<HeapStat> get_heap_stat() noexcept {
   EnumTable<HeapStat> result;
   result[HeapStat::Key::curl_memory_currently_usage] = vk::singleton<CurlMemoryUsage>::get().currently_allocated;
   result[HeapStat::Key::script_heap_memory_usage] = dl::get_heap_memory_used();
+  return result;
+}
+
+EnumTable<IdleStat> get_idle_stat() noexcept {
+  EnumTable<IdleStat> result;
+  result[IdleStat::Key::tot_idle_time] = epoll_total_idle_time();
+  const int uptime = get_uptime();
+  result[IdleStat::Key::tot_idle_percent] = uptime > 0 ? result[IdleStat::Key::tot_idle_time] / uptime * 100 : 0;
+  const double average_idle_quotient = epoll_average_idle_quotient();
+  result[IdleStat::Key::recent_idle_percent] = average_idle_quotient > 0 ? epoll_average_idle_time() / average_idle_quotient * 100 : 0;
   return result;
 }
 
@@ -374,11 +394,13 @@ struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<VMStat> vm_stats{};
   WorkerStatsBundle<MiscStat> misc_stats{};
   WorkerStatsBundle<QueriesStat> query_stats{};
+  WorkerStatsBundle<IdleStat> idle_stats{};
 
   void update_worker_stats(uint16_t worker_index) noexcept {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
+    idle_stats.set_worker_stats(get_idle_stat(), worker_index);
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
   }
 
@@ -415,7 +437,8 @@ struct WorkerPercentilesBundle : EnumTable<E, Percentiles<typename E::StatType>>
         size_t buffer_index = 0;
         size_t worker_index = first_worker_id;
         while (worker_index != last_worker_id) {
-          if (auto s = stat[worker_index++].load(std::memory_order_relaxed)) {
+          const auto s = stat[worker_index++].load(std::memory_order_relaxed);
+          if (std::is_floating_point<typename E::StatType>{} || s != 0) {
             buffer[buffer_index++] = s;
           }
         }
@@ -436,12 +459,14 @@ struct WorkerAggregatedStats {
     heap_percentiles.recalc(stats.heap_stats, first_id, last_id);
     malloc_percentiles.recalc(stats.malloc_stats, first_id, last_id);
     vm_percentiles.recalc(stats.vm_stats, first_id, last_id);
+    idle_percentiles.recalc(stats.idle_stats, first_id, last_id);
   }
 
   AggregatedSamplesBundle<ScriptSamples> script_samples;
   WorkerPercentilesBundle<MallocStat> malloc_percentiles;
   WorkerPercentilesBundle<HeapStat> heap_percentiles;
   WorkerPercentilesBundle<VMStat> vm_percentiles;
+  WorkerPercentilesBundle<IdleStat> idle_percentiles;
 };
 
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
@@ -456,6 +481,7 @@ struct JobWorkerAggregatedStats : WorkerAggregatedStats {
 struct MasterProcessStats : private vk::not_copyable {
   EnumTable<VMStat> vm_stats;
   EnumTable<MallocStat> malloc_stats;
+  EnumTable<IdleStat> idle_stats;
 };
 
 } // namespace
@@ -563,6 +589,7 @@ void ServerStats::aggregate_stats() noexcept {
 
   aggregated_stats_->master_process.vm_stats = get_virtual_memory_stat();
   aggregated_stats_->master_process.malloc_stats = get_malloc_stat();
+  aggregated_stats_->master_process.idle_stats = get_idle_stat();
 }
 
 namespace {
@@ -618,6 +645,8 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".memory.rss_bytes", agg.vm_percentiles[VMStat::Key::rss_kb], kb2bytes);
   write_to(stats, prefix, ".memory.vms_bytes", agg.vm_percentiles[VMStat::Key::vm_kb], kb2bytes);
   write_to(stats, prefix, ".memory.shm_bytes", agg.vm_percentiles[VMStat::Key::shm_kb], kb2bytes);
+
+  write_to(stats, prefix, ".cpu.recent_idle", agg.idle_percentiles[IdleStat::Key::recent_idle_percent]);
 }
 
 void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats &job_agg) noexcept {
@@ -636,23 +665,25 @@ void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &mast
   add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
 }
 
-template<VMStat::Key S>
-uint64_t get_max(const EnumTable<VMStat> &master_vm, const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  return std::max(master_vm[S], std::max(general_vm[S].max, job_vm[S].max));
+template<class S>
+auto get_max(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+  return std::max(master_stats[key], std::max(general_stats[key].max, job_stats[key].max));
 }
 
-template<VMStat::Key S>
-uint64_t get_sum(const EnumTable<VMStat> &master_vm, const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  return master_vm[S] + general_vm[S].sum + job_vm[S].sum;
+template<class S>
+auto get_sum(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+  return master_stats[key] + general_stats[key].sum + job_stats[key].sum;
 }
 
 void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm,
                         const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::vm_peak_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.vms_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::rss_peak_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.rss_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::shm_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.shm_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
 
-  const uint64_t rss_no_shm = get_sum<VMStat::Key::rss_kb>(master_vm, general_vm, job_vm) - get_sum<VMStat::Key::shm_kb>(master_vm, general_vm, job_vm);
+  const uint64_t rss_no_shm = get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) - get_sum(general_vm, job_vm, master_vm, VMStat::Key::shm_kb);
   add_gauge_stat(stats, kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
 }
 
@@ -672,28 +703,38 @@ void ServerStats::write_stats_to(stats_t *stats) const noexcept {
 
 void ServerStats::write_stats_to(std::ostream &os) const noexcept {
   const auto &master_vm = aggregated_stats_->master_process.vm_stats;
+  const auto &master_idle = aggregated_stats_->master_process.idle_stats;
+
   const auto &general_vm = aggregated_stats_->general_workers.vm_percentiles;
+  const auto &general_idle = aggregated_stats_->general_workers.idle_percentiles;
+
   const auto &job_vm = aggregated_stats_->job_workers.vm_percentiles;
+  const auto &job_idle = aggregated_stats_->job_workers.idle_percentiles;
+
   const auto &total_queries = shared_stats_->general_workers.total_queries_stat;
+  const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
 
   const auto total_net_time = ns2double(total_queries[QueriesStat::Key::net_time]);
   const auto total_script_time = ns2double(total_queries[QueriesStat::Key::script_time]);
 
   os << std::fixed << std::setprecision(3)
-     << "VM\t" << get_sum<VMStat::Key::vm_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "VM_max\t" << get_max<VMStat::Key::vm_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "RSS\t" << get_sum<VMStat::Key::rss_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "RSS_max\t" << get_sum<VMStat::Key::rss_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
+     << "VM\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::vm_kb) << "Kb\n"
+     << "VM_max\t" << get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb) << "Kb\n"
+     << "RSS\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) << "Kb\n"
+     << "RSS_max\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb) << "Kb\n"
      << "tot_queries\t" << total_queries[QueriesStat::Key::incoming_queries].load(std::memory_order_relaxed) << "\n"
      << "tot_script_queries\t" << total_queries[QueriesStat::Key::outgoing_queries].load(std::memory_order_relaxed) << "\n"
      << "worked_time\t" << total_script_time + total_net_time << "\n"
      << "script_time\t" << total_script_time << "\n"
-     << "net_time\t" << total_net_time << "\n";
+     << "net_time\t" << total_net_time << "\n"
+     << "tot_idle_time\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::tot_idle_time) << "\n"
+     << "tot_idle_percent\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::tot_idle_percent) / (1 + workers_count) << "\n"
+     << "recent_idle_percent\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::recent_idle_percent) / (1 + workers_count) << "\n";
 
   const auto &workers_vm = shared_stats_->workers.vm_stats;
   const auto &workers_query = shared_stats_->workers.query_stats;
   const auto &workers_misc = shared_stats_->workers.misc_stats;
-  const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
+  const auto &workers_idle = shared_stats_->workers.idle_stats;
   for (uint16_t w = 0; w != workers_count; ++w) {
     const auto net_time = ns2double(workers_query.get_stat(QueriesStat::Key::net_time, w));
     const auto script_time = ns2double(workers_query.get_stat(QueriesStat::Key::script_time, w));
@@ -709,7 +750,10 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
        << "tot_script_queries " << worker_pid << "\t" << workers_query.get_stat(QueriesStat::Key::outgoing_queries, w) << "\n"
        << "worked_time " << worker_pid << "\t" << net_time + script_time << "\n"
        << "script_time " << worker_pid << "\t" << script_time << "\n"
-       << "net_time " << worker_pid << "\t" << net_time << "\n";
+       << "net_time " << worker_pid << "\t" << net_time << "\n"
+       << "tot_idle_time " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::tot_idle_time, w) << "\n"
+       << "tot_idle_percent " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::tot_idle_percent, w) << "\n"
+       << "recent_idle_percent " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::recent_idle_percent, w) << "\n";
   }
 }
 
