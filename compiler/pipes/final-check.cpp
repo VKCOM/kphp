@@ -424,8 +424,54 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_null_usage_in_binary_operations(binary_vertex);
   }
 
+  if (vertex->type() == op_instanceof) {
+    check_instanceof(vertex.try_as<op_instanceof>());
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
+}
+
+void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_vertex) {
+  const auto instance_var = instanceof_vertex->lhs();
+  if (!instance_var) {
+    return;
+  }
+
+  const auto instanceof_class_vertex = instanceof_vertex->rhs();
+  if (!instanceof_class_vertex) {
+    return;
+  }
+
+  const auto *class_name = GenTree::get_constexpr_string(instanceof_class_vertex);
+  if (!class_name) {
+    return;
+  }
+
+  const auto instanceof_class = G->get_class(*class_name);
+  if (!instanceof_class) {
+    return;
+  }
+
+  const auto *instanceof_var_type = tinf::get_type(instance_var);
+  if (!instanceof_var_type) {
+    return;
+  }
+  if (!instanceof_var_type->class_type()) {
+    kphp_error_act(0,
+                   fmt_format("left operand of 'instanceof' should be an instance of class, but passed '{}'", instanceof_var_type->as_human_readable()),
+                   return);
+  }
+
+  const auto var_class = instanceof_var_type->class_type();
+  const auto need_class = instanceof_class;
+
+  const auto is_same = var_class == need_class;
+  const auto is_parent = need_class->is_parent_of(var_class);
+
+  if (!is_same && !is_parent) {
+    kphp_error(0, fmt_format("left operand of 'instanceof' should be an instance of the class '{}' or extends or implements it, but left operand has type '{}'", need_class->name, var_class->name));
+  }
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
