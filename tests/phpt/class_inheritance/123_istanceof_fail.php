@@ -17,4 +17,4 @@ function f() {
     }
 }
 
-f(new Base);
+f();
