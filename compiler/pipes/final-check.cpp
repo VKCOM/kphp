@@ -451,6 +451,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
+    } else if (function_name == "array_merge_spread") {
+      check_array_merge_spread_call(call);
     }
 
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
@@ -465,6 +467,24 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
   }
 
   check_func_call_params(call);
+}
+
+void FinalCheckPass::check_array_merge_spread_call(VertexAdaptor<op_func_call> call) {
+  const auto args = call->args();
+
+  for (int i = 0; i < args.size(); ++i) {
+    const auto &arg = args[i];
+    const auto *arg_type = tinf::get_type(arg);
+    if (!arg_type) {
+      continue;
+    }
+    if (arg_type->ptype() != tp_array) {
+      const auto location = stage::get_location();
+      stage::set_location(arg->location);
+      kphp_error(0, fmt_format("Only arrays can be unpacked with spread (...$a) operator, but passed type '{}' in arg {}", arg_type->as_human_readable(), i));
+      stage::set_location(location);
+    }
+  }
 }
 
 // Inspection: static-var should be initialized at the declaration (with the exception of tp_mixed).

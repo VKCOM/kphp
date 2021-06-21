@@ -146,6 +146,10 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
       rl_calc(root.as<op_function>()->cmd(), val_none);
       break;
 
+    case op_varg:
+      rl_calc_all<val_none, val_r>(root, 1);
+      break;
+
     default:
     kphp_fail();
       break;
