@@ -7,6 +7,12 @@
 #include "compiler/compiler-core.h"
 #include "compiler/inferring/public.h"
 
+VertexAdaptor<op_array> array_vertex_from_slice(const VertexConstRange &args, size_t start, size_t end) {
+  return VertexAdaptor<op_array>::create(
+    std::vector<VertexPtr>{args.begin() + start, args.begin() + end}
+  );
+}
+
 VertexPtr ConvertSpreadOperatorPass::on_exit_vertex(VertexPtr root) {
   if (root->type() != op_array) {
     return root;
@@ -23,27 +29,29 @@ VertexPtr ConvertSpreadOperatorPass::on_exit_vertex(VertexPtr root) {
   }
 
   std::vector<VertexPtr> parts;
+  constexpr size_t UNINITIALIZED = -1;
 
-  int last_spread_index = -1;
-  int prev_spread_index = -1;
+  size_t last_spread_index = UNINITIALIZED;
+  size_t prev_spread_index = UNINITIALIZED;
+
   for (int i = 0; i < args.size(); ++i) {
     if (args[i]->type() == op_spread) {
       last_spread_index = i;
 
-      if (prev_spread_index == -1) {
-        if (last_spread_index != 0) {
+      if (prev_spread_index == UNINITIALIZED) {
+        const auto has_elements_before = (last_spread_index != 0);
+
+        if (has_elements_before) {
           parts.emplace_back(
-            VertexAdaptor<op_array>::create(
-              std::vector<VertexPtr>{args.begin(), args.begin() + last_spread_index}
-            )
+            array_vertex_from_slice(args, 0, last_spread_index)
           );
         }
       } else {
-        if (last_spread_index - prev_spread_index != 1) {
+        const auto count_elements = last_spread_index - (prev_spread_index + 1);
+
+        if (count_elements != 0) {
           parts.emplace_back(
-            VertexAdaptor<op_array>::create(
-              std::vector<VertexPtr>{args.begin() + prev_spread_index + 1, args.begin() + last_spread_index}
-            )
+            array_vertex_from_slice(args, prev_spread_index + 1, last_spread_index)
           );
         }
       }
@@ -56,9 +64,7 @@ VertexPtr ConvertSpreadOperatorPass::on_exit_vertex(VertexPtr root) {
 
   if (last_spread_index != args.size() - 1) {
     parts.emplace_back(
-      VertexAdaptor<op_array>::create(
-        std::vector<VertexPtr>{args.begin() + last_spread_index + 1, args.end()}
-      )
+      array_vertex_from_slice(args, last_spread_index + 1, args.size())
     );
   }
 
