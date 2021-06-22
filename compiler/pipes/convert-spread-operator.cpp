@@ -70,6 +70,7 @@ VertexPtr ConvertSpreadOperatorPass::on_exit_vertex(VertexPtr root) {
   auto call = VertexAdaptor<op_func_call>::create(parts);
   call->func_id = array_merge_spread;
   call->set_string(array_merge_spread->name);
+  call.set_location(root->location);
 
   return call;
 }

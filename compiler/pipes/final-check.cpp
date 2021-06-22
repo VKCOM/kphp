@@ -472,18 +472,13 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
 void FinalCheckPass::check_array_merge_spread_call(VertexAdaptor<op_func_call> call) {
   const auto args = call->args();
 
-  for (int i = 0; i < args.size(); ++i) {
-    const auto &arg = args[i];
+  for (const auto &arg : args) {
     const auto *arg_type = tinf::get_type(arg);
     if (!arg_type) {
       continue;
     }
-    if (arg_type->ptype() != tp_array) {
-      const auto location = stage::get_location();
-      stage::set_location(arg->location);
-      kphp_error(0, fmt_format("Only arrays can be unpacked with spread (...$a) operator, but passed type '{}' in arg {}", arg_type->as_human_readable(), i));
-      stage::set_location(location);
-    }
+
+    kphp_error(arg_type->ptype() == tp_array, fmt_format("Only arrays can be unpacked with spread (...$a) operator, but passed type '{}'", arg_type->as_human_readable()));
   }
 }
 
