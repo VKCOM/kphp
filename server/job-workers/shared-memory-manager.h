@@ -17,7 +17,7 @@
 
 namespace memory_resource {
 class unsynchronized_pool_resource;
-} // memory_resource
+} // namespace memory_resource
 
 namespace job_workers {
 
@@ -31,7 +31,9 @@ struct WorkerProcessMeta {
   //    immutable request data
   //    ok response
   //    error response (only for job workers)
-  std::array<JobMetadata *, 4> attached_messages{};
+  // + 2 messages: mutable request & immutable request, if job is invoked from running job
+  // so let's use 8 just in case
+  std::array<JobMetadata *, 8> attached_messages{};
 
   void attach(JobMetadata *message) noexcept {
     replace(nullptr, message);

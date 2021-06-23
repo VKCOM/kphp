@@ -1198,7 +1198,7 @@ void run_master_on() {
   }
 
   if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
-    vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker));
+    vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_total_workers_count());
   }
 
   bool need_http_fd = http_fd != nullptr && *http_fd == -1;
