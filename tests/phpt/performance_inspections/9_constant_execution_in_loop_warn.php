@@ -14,12 +14,12 @@ function test() {
 
   $y1 = [];
   for ($i = 0; $i != 1000; ++$i) {
-    $y1[] = "hello $x" . $z[floor(sin($x))];
+    $y1[] = "hello $x" . $z[(int)floor(sin($x))];
   }
 
   $y2 = [];
   foreach ($y1 as $v) {
-    $y2[] = $z[floor(sin($x))].$v;
+    $y2[] = $z[(int)floor(sin($x))].$v;
   }
 
   $y3 = [];

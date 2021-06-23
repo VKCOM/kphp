@@ -6,6 +6,7 @@
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lambda-class-data.h"
@@ -346,9 +347,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *array_type = tinf::get_type(arr);
     // TODO: do we need this?
     if (array_type->ptype() == tp_tuple) {
-      long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
-      size_t tuple_size = array_type->get_tuple_max_index();
-      kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      const auto key_value = GenTree::get_actual_value(key);
+      if (key_value->type() == op_int_const) {
+        const long index = parse_int_from_string(key_value.as<op_int_const>());
+        const size_t tuple_size = array_type->get_tuple_max_index();
+        kphp_error(0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      }
     }
     const TypeData *key_type = tinf::get_type(key);
     kphp_error(key_type->ptype() != tp_any || key_type->or_false_flag(),
@@ -424,8 +428,74 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_null_usage_in_binary_operations(binary_vertex);
   }
 
+  if (vertex->type() == op_index) {
+    const auto index_vertex = vertex.as<op_index>();
+    check_indexing(index_vertex->array(), index_vertex->key());
+  } else if (vertex->type() == op_set_value) {
+    const auto set_vertex = vertex.as<op_set_value>();
+    check_indexing(set_vertex->array(), set_vertex->key());
+  } else if (vertex->type() == op_array) {
+    check_array_literal(vertex.as<op_array>());
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
+}
+
+const auto allowed_types_for_index = {tp_string, tp_int, tp_float, tp_mixed, tp_future, tp_bool};
+
+void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) {
+  const auto elements = vertex->args();
+  for (const auto &element : elements) {
+    if (element->type() == op_double_arrow) {
+      const auto pair = element.as<op_double_arrow>();
+      const auto key = pair->key();
+      const auto *key_type = tinf::get_type(key);
+      if (key_type == nullptr) {
+        continue;
+      }
+
+      const auto key_ptype = key_type->ptype();
+      const auto key_has_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
+      const auto is_allowed = key_has_optional_type || vk::contains(allowed_types_for_index, key_ptype);
+      kphp_error(is_allowed,
+                 fmt_format("Only string, int, float, future and bool types are allowed for key, but {} type is passed",
+                            key_type->as_human_readable()));
+    }
+  }
+}
+
+void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) {
+  const auto *key_type = tinf::get_type(key);
+  const auto *array_type = tinf::get_type(array);
+  if (key_type == nullptr || array_type == nullptr) {
+    return;
+  }
+
+  const auto key_ptype = key_type->ptype();
+  const auto key_has_optional_type = (key_ptype == tp_any && key_type->or_false_flag()) || (key_ptype == tp_any && key_type->or_null_flag());
+  bool is_allowed = false;
+  vk::string_view allowed_types;
+  vk::string_view what_indexing;
+
+  switch (array_type->ptype()) {
+    case tp_tuple:
+    case tp_string:
+      is_allowed = key_has_optional_type || (key_ptype != tp_string && vk::contains(allowed_types_for_index, key_ptype));
+      allowed_types = "int, float, future and bool";
+      what_indexing = ptype_name(array_type->ptype());
+      break;
+
+    default:
+      is_allowed = key_has_optional_type || vk::contains(allowed_types_for_index, key_ptype);
+      allowed_types = "int, string, float, future and bool";
+      break;
+  }
+
+  kphp_error(is_allowed,
+             fmt_format("Only {} types are allowed for {}{}indexing, but {} type is passed",
+                        allowed_types, what_indexing,
+                        what_indexing.empty() ? "" : " ", key_type->as_human_readable()));
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {

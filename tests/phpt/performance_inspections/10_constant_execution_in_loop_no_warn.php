@@ -11,13 +11,13 @@ function test() {
 
   $y1 = [];
   for ($i = 0; $i != 10; ++$i) {
-    $y1[] = "hello $i" . $z[floor(sin($x + $i))];
+    $y1[] = "hello $i" . $z[(int)floor(sin($x + $i))];
   }
 
   $y2 = [];
   foreach ($y1 as $v) {
     if (1) {
-      $y2[] = $z[floor(sin($x))] . $v;
+      $y2[] = $z[(int)floor(sin($x))] . $v;
     }
   }
 

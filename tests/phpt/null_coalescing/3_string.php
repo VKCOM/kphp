@@ -37,16 +37,6 @@ function test_string_not_exist() {
   var_dump($str[999] ?? $str[1]);
 }
 
-function test_string_strange_keys() {
-  $str = "hello world";
-
-  var_dump($str["1"] ?? "x");
-  var_dump($str[1.2] ?? "x");
-  var_dump($str[false] ?? "f");
-  var_dump($str[true] ?? "t");
-  var_dump($str[null ?? false] ?? "n");
-}
-
 function test_string_in_var() {
   $str = 1 ? "hello world" : [1];
 
@@ -72,6 +62,5 @@ function test_string_with_function_calls() {
 
 test_string_exist();
 test_string_not_exist();
-test_string_strange_keys();
 test_string_in_var();
 test_string_with_function_calls();
