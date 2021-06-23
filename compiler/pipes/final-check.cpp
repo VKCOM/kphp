@@ -16,6 +16,91 @@
 #include "compiler/type-hint.h"
 
 namespace {
+
+void check_isset_nullability(FunctionPtr f, VertexAdaptor<op_isset> isset) {
+  auto var_expr = isset->expr().try_as<op_var>();
+  if (!var_expr) {
+    return;
+  }
+  bool is_func_arg = false;
+  for (auto p : f->param_ids) {
+    if (var_expr->var_id->id == p->id) {
+      is_func_arg = true;
+      break;
+    }
+  }
+  if (!is_func_arg) {
+    return;
+  }
+
+  const auto *var_expr_type = tinf::get_type(var_expr);
+  kphp_error(!(var_expr_type->ptype() == tp_Class && !var_expr_type->or_null_flag()),
+             fmt_format("checking ${} param for null; consider to mark that param as nullable", var_expr->get_string()));
+}
+
+void check_return_nullability(FunctionPtr f, VertexAdaptor<op_return> ret) {
+  if (!f->return_typehint) {
+    return;
+  }
+  const auto *return_typehint = f->return_typehint->try_as<TypeHintInstance>();
+  if (!return_typehint) {
+    return;
+  }
+  const auto *ret_type = tinf::get_type(ret->expr());
+  if (ret_type->or_null_flag()) {
+    kphp_error(false, fmt_format("returned nullable {} value from {}", ret_type->as_human_readable(), f->name));
+  }
+}
+
+void check_assign_nullability(VertexAdaptor<op_set> assign) {
+  auto lhs = assign->lhs().try_as<op_instance_prop>();
+  if (!lhs) {
+    return;
+  }
+  const auto *field_type = tinf::get_type(lhs);
+  if (field_type->ptype() == tp_Class && !field_type->or_null_flag()) {
+    const auto *rhs_type = tinf::get_type(assign->rhs());
+    if (rhs_type->or_null_flag()) {
+      kphp_error(false, fmt_format("assigned nullable {} value to {}::${} field",
+                                   rhs_type->as_human_readable(), lhs->var_id->class_id->name, lhs->var_id->name));
+    }
+  }
+}
+
+void check_call_nullability(VertexAdaptor<op_func_call> call) {
+  FunctionPtr f = call->func_id;
+
+  if (f->is_extern()) {
+    return;
+  }
+
+  VertexRange func_params = f->get_params();
+
+  VertexRange args = call->args();
+  if (args.size() != func_params.size()) {
+    return;
+  }
+
+  for (int i = 0; i < args.size(); i++) {
+    if (i == 0 && f->has_implicit_this_arg()) {
+      continue;
+    }
+    auto param = func_params[i].as<op_func_param>();
+    if (!param->type_hint) {
+      continue;
+    }
+    const auto *param_typehint = param->type_hint->try_as<TypeHintInstance>();
+    if (!param_typehint) {
+      continue;
+    }
+    const auto *arg_type = tinf::get_type(call->args()[i]);
+    if (arg_type->or_null_flag()) {
+      kphp_error(false, fmt_format("passed nullable {} value as ${} argument to {}",
+                                   arg_type->as_human_readable(), param->var()->get_string(), f->name));
+    }
+  }
+}
+
 void check_class_immutableness(ClassPtr klass) {
   if (!klass->is_immutable) {
     return;
@@ -167,6 +252,10 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
   auto rhs_type = tinf::get_type(binary_vertex->rhs());
 
   switch (binary_vertex->type()) {
+    case op_set:
+      check_assign_nullability(binary_vertex.as<op_set>());
+      break;
+
     case op_add:
     case op_set_add:
       if (vk::any_of_equal(tp_array, lhs_type->get_real_ptype(), rhs_type->get_real_ptype())) {
@@ -355,6 +444,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
                    fmt_format("isset({}) will be always true for {}", var->get_human_readable_name(), type_info->as_human_readable()));
+        if (type_info->can_store_null()) {
+          check_isset_nullability(current_function, xset.as<op_isset>());
+        }
       }
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
@@ -365,8 +457,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_func_call) {
     check_op_func_call(vertex.as<op_func_call>());
   }
-  if (vertex->type() == op_return && current_function->is_no_return) {
-    kphp_error(false, "Return is done from no return function");
+  if (vertex->type() == op_return) {
+    check_return_nullability(current_function, vertex.as<op_return>());
+    kphp_error(!current_function->is_no_return, "Return is done from no return function");
   }
   if (current_function->can_throw() && current_function->is_no_return) {
     kphp_error(false, "Exception is thrown from no return function");
@@ -417,6 +510,8 @@ VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
 }
 
 void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
+  check_call_nullability(call);
+
   if (call->func_id->is_extern()) {
     const auto &function_name = call->get_string();
     if (function_name == "instance_cache_fetch") {

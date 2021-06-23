@@ -9,10 +9,12 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/type-hint.h"
 #include "compiler/debug.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/utils/idmap.h"
+#include "compiler/utils/ifimap.h"
 
 namespace cfg {
 // just simple int id type
@@ -33,6 +35,14 @@ public:
   friend bool operator!=(const Node &n1, const Node &n2) { return n1.id_ != n2.id_; }
 };
 
+enum CFGWriteFlag {
+  cfg_write_none,
+
+  cfg_write_weak,
+  cfg_write,
+  cfg_write_drop_null, // like cfg_write, but also carries the not_null cast
+};
+
 enum UsageType : uint8_t {
   usage_write_t,
   usage_read_t,
@@ -40,6 +50,29 @@ enum UsageType : uint8_t {
   usage_type_hint_t,
   usage_type_check_t,
 };
+
+bool is_drop_null_expr(VertexPtr expr) {
+  if (auto call = expr.try_as<op_func_call>()) {
+    if (call->func_id->is_constructor()) {
+      return true;
+    }
+    const auto *typehint = call->func_id->return_typehint;
+    if (typehint && typehint->try_as<TypeHintInstance>()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool is_smartcastable_var(VertexAdaptor<op_var> v) {
+  auto var_id = v->var_id;
+  if (var_id->is_foreach_reference || var_id->is_reference) {
+    return false;
+  }
+  return vk::any_of_equal(var_id->type(), VarData::var_local_t, VarData::var_param_t, VarData::var_static_t) ||
+    var_id->is_class_static_var();
+}
 
 struct UsageData {
   DEBUG_STRING_METHOD { return std::to_string(id); }
@@ -100,6 +133,7 @@ class CFG {
   IdMap<std::forward_list<Node>> node_prev;
   IdMap<std::forward_list<UsagePtr>> node_usages;
   IdMap<std::forward_list<VertexPtr>> node_subvertices;
+  IdMap<vk::string_view> node_prop_name;
   void reserve_capacity_for_cfg_idmaps();
 
   // these is maps are node properties AFTER building cfg: for calculating really used, applying @var phpdocs, etc
@@ -107,12 +141,17 @@ class CFG {
   int cur_dfs_step{0};
   IdMap<int> node_dfs;
   IdMap<int> node_dfs_smartcast_mask;
+  IdMap<int> node_dfs_smartcast_tmp; // used to avoid cycles while filling node_dfs_smartcast_mask
   IdMap<UsagePtr> node_dfs_usages;
   void reserve_size_for_dfs_idmaps();
 
+  std::unordered_set<vk::string_view> var_prop_casts;
+
   IdMap<VarSplitData> var_split_data;
+  std::unordered_map<VarPtr, std::vector<UsagePtr>> static_var_usages;
 
   std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> smartcasts_conversions;
+  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> smartcasts_prop_conversions;
 
   std::vector<std::vector<Node>> continue_nodes;
   std::vector<std::vector<Node>> break_nodes;
@@ -133,18 +172,20 @@ class CFG {
   void add_edge(Node from, Node to);
   void collect_ref_vars(VertexPtr v, std::unordered_set<VarPtr> &ref);
   std::vector<VarPtr> collect_splittable_vars(FunctionPtr func);
-  void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag = false, bool weak_write_flag = false);
+  void create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, CFGWriteFlag write_kind = cfg_write_none);
   void create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_true, Node *res_false);
 
   void calc_used(Node v);
 
   void dfs_apply_smartcasts(Node v, VarPtr var, int current_mask);
+  void dfs_apply_prop_smartcasts(Node v, VarPtr var, int current_mask, vk::string_view prop_name);
 
   bool try_uni_usages(UsagePtr usage, UsagePtr another_usage);
   void dfs_uni_rw_usages(Node v, UsagePtr usage);
   void dfs_apply_type_hint(Node v, UsagePtr type_hint_usage);
   bool dfs_is_uninited_usage(Node v, UsagePtr read_usage);
   void process_var(FunctionPtr function, VarPtr v);
+  void process_var_smartcasts(VarPtr v, const std::vector<UsagePtr> &usages);
   void on_uninited_var(VertexAdaptor<op_var> v);
   void split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts);
 public:
@@ -170,11 +211,13 @@ void CFG::reserve_capacity_for_cfg_idmaps() {
   node_next.update_size(capacity);
   node_usages.update_size(capacity);
   node_subvertices.update_size(capacity);
+  node_prop_name.update_size(capacity);
 }
 
 void CFG::reserve_size_for_dfs_idmaps() {
   node_dfs.update_size(n_nodes);
   node_dfs_smartcast_mask.update_size(n_nodes);
+  node_dfs_smartcast_tmp.update_size(n_nodes);
   node_dfs_usages.update_size(n_nodes);
 }
 
@@ -182,6 +225,12 @@ UsagePtr CFG::new_usage(UsageType type, VertexAdaptor<op_var> v) {
   VarPtr var = v->var_id;
   kphp_assert (var);
   if (get_index(var) < 0) {    // non-splittable var
+    if (var->is_function_static_var() || var->is_class_static_var()) {
+      auto &usages = static_var_usages[var];
+      UsagePtr res = UsagePtr(new UsageData(type, v, usages.size()));
+      usages.emplace_back(res);
+      return res;
+    }
     return {};
   }
   VarSplitData &var_split = var_split_data[var];
@@ -328,21 +377,33 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
       create_cfg(tree_node, res_start, &res_finish);
       *res_true = new_node();
       *res_false = new_node();
+      vk::string_view prop_name = "";
       auto add_type_check_usage = [&](Node to, int type, VertexAdaptor<op_var> var) {
-        if (vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) && !var->var_id->is_foreach_reference && !var->var_id->is_reference) {
+        if (is_smartcastable_var(var)) {
           UsagePtr usage = new_usage(usage_type_check_t, var);
           usage->checked_type = static_cast<is_func_id_t>(type);
+          node_prop_name[to] = prop_name;
           add_usage(to, usage);
         }
+      };
+      auto get_var_vertex = [&prop_name](VertexPtr expr) {
+        if (auto instance_prop = expr.try_as<op_instance_prop>()) {
+          if (auto instance_var = instance_prop->instance().try_as<op_var>()) {
+            prop_name = instance_prop->get_string();
+            return instance_var;
+          }
+        }
+        return expr.try_as<op_var>();
       };
       if (auto call = tree_node.try_as<op_func_call>()) {
         is_func_id_t type = get_ifi_id(tree_node);
         if (type != ifi_error) {
-          auto var = call->args()[0].try_as<op_var>();
-          if (auto mixed_conv = call->args()[0].try_as<op_conv_mixed>()) {
+          auto arg = call->args()[0];
+          if (auto mixed_conv = arg.try_as<op_conv_mixed>()) {
             // we're going to analyze internal var, instead of fake cast to mixed
-            var = mixed_conv->expr().try_as<op_var>();
+            arg = mixed_conv->expr();
           }
+          auto var = get_var_vertex(arg);
           if (var) {
             is_func_id_t true_type{};
             if (type == ifi_is_bool) {
@@ -365,11 +426,11 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
           }
         }
       } else if (auto isset = tree_node.try_as<op_isset>()) {
-        if (auto var = isset->expr().try_as<op_var>()) {
+        if (auto var = get_var_vertex(isset->expr())) {
           add_type_check_usage(*res_true, ifi_any_type & ~ifi_is_null, var);
           add_type_check_usage(*res_false, ifi_is_null, var);
         }
-      } else if (auto var = tree_node.try_as<op_var>()) {
+      } else if (auto var = get_var_vertex(tree_node)) {
         add_type_check_usage(*res_true, ifi_any_type & ~(ifi_is_false | ifi_is_null), var);
       } else if (tree_node->type() == op_eq3) {
         if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
@@ -394,7 +455,7 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
   add_subtree(*res_start, tree_node, false);
 }
 
-void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, bool write_flag, bool weak_write_flag) {
+void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, CFGWriteFlag write_kind) {
   stage::set_location(tree_node->location);
   bool recursive_flag = false;
   switch (tree_node->type()) {
@@ -510,13 +571,27 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
 
     case op_instance_prop: {
-      create_cfg(tree_node.as<op_instance_prop>()->instance(), res_start, res_finish);
+      auto op = tree_node.as<op_instance_prop>();
+      Node res = new_node();
+      Node instance_start;
+      create_cfg(op->instance(), &instance_start, res_finish);
+      add_edge(res, instance_start);
+      *res_start = res;
+      if (auto instance_var = op->instance().try_as<op_var>()) {
+        UsagePtr usage = new_usage((write_kind >= cfg_write) ? usage_write_t : (write_kind == cfg_write_weak) ? usage_weak_write_t : usage_read_t, instance_var);
+        if (usage) {
+          usage->checked_type = write_kind == cfg_write_drop_null ? ifi_is_null : static_cast<is_func_id_t>(0);
+        }
+        vk::string_view prop_name = op->get_string();
+        node_prop_name[res] = prop_name;
+        add_usage(res, usage);
+      }
       break;
     }
     case op_index: {
       Node var_start, var_finish;
       auto index = tree_node.as<op_index>();
-      create_cfg(index->array(), &var_start, &var_finish, false, write_flag || weak_write_flag);
+      create_cfg(index->array(), &var_start, &var_finish, write_kind >= cfg_write_weak ? cfg_write_weak : cfg_write_none);
       Node start = var_start;
       Node finish = var_finish;
       if (index->has_key()) {
@@ -565,7 +640,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
         }
 
         kphp_assert (cur);
-        create_cfg(cur, &a, &b, false, new_weak_write_flag);
+        create_cfg(cur, &a, &b, new_weak_write_flag ? cfg_write_weak : cfg_write_none);
         add_edge(start, a);
         start = b;
 
@@ -620,8 +695,9 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_set: {
       auto set_op = tree_node.as<op_set>();
       Node a, b;
+      bool drop_null = is_drop_null_expr(set_op->rhs());
       create_cfg(set_op->rhs(), res_start, &a);
-      create_cfg(set_op->lhs(), &b, res_finish, true);
+      create_cfg(set_op->lhs(), &b, res_finish, drop_null ? cfg_write_drop_null : cfg_write);
       add_edge(a, b);
       break;
     }
@@ -631,7 +707,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       create_cfg(list->array(), res_start, &prev);
       for (auto param : list->list().get_reversed_range()) {
         Node a, b;
-        create_cfg(param, &a, &b, true);
+        create_cfg(param, &a, &b, cfg_write);
         add_edge(prev, a);
         prev = b;
       }
@@ -641,14 +717,17 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_list_keyval: {
       const auto kv = tree_node.as<op_list_keyval>();
       Node a, b;
-      create_cfg(kv->var(), res_start, &a, true);
+      create_cfg(kv->var(), res_start, &a, cfg_write);
       create_cfg(kv->key(), &b, res_finish);
       add_edge(a, b);
       break;
     }
     case op_var: {
       Node res = new_node();
-      UsagePtr usage = new_usage(write_flag ? usage_write_t : weak_write_flag ? usage_weak_write_t : usage_read_t, tree_node.as<op_var>());
+      UsagePtr usage = new_usage((write_kind >= cfg_write) ? usage_write_t : (write_kind == cfg_write_weak) ? usage_weak_write_t : usage_read_t, tree_node.as<op_var>());
+      if (usage) {
+        usage->checked_type = write_kind == cfg_write_drop_null ? ifi_is_null : static_cast<is_func_id_t>(0);
+      }
       add_usage(res, usage);
       *res_start = *res_finish = res;
       break;
@@ -947,7 +1026,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       for (auto c : try_op->catch_list()) {
         auto catch_op = c.as<op_catch>();
         Node exception_start, exception_finish;
-        create_cfg(catch_op->var(), &exception_start, &exception_finish, true);
+        create_cfg(catch_op->var(), &exception_start, &exception_finish, cfg_write);
 
         add_edge(catch_list_start, exception_start);
 
@@ -1028,6 +1107,10 @@ void CFG::dfs_uni_rw_usages(Node v, UsagePtr usage) {
   node_dfs_usages[v] = usage;
 
   for (UsagePtr another_usage : node_usages[v]) {
+    // $x->y usages do not create a split point for $x
+    if (!node_prop_name[another_usage->node].empty()) {
+      continue;
+    }
     if (try_uni_usages(usage, another_usage) && another_usage->type == usage_write_t) {
       return;   // stop when we reached a write usage traversing up
     }
@@ -1097,23 +1180,76 @@ bool CFG::dfs_is_uninited_usage(Node v, UsagePtr read_usage) {
 // it starts from a function root with mask ifi_any_type and traverses all the cfg tree down narrowing current_mask
 // so, a node can be traversed multiple times if it is reachable with different masks
 void CFG::dfs_apply_smartcasts(Node v, VarPtr var, int current_mask) {
-  if ((node_dfs_smartcast_mask[v] | current_mask) == node_dfs_smartcast_mask[v]) {
+  if ((node_dfs_smartcast_tmp[v] | current_mask) == node_dfs_smartcast_tmp[v]) {
     return;
   }
-  node_dfs_smartcast_mask[v] = node_dfs_smartcast_mask[v] | current_mask;
+
+  node_dfs_smartcast_tmp[v] |= current_mask;
+  if (node_prop_name[v].empty()) {
+    node_dfs_smartcast_mask[v] |= current_mask;
+  }
 
   for (UsagePtr another_usage : node_usages[v]) {
     if (another_usage->v->var_id == var) {
+      vk::string_view usage_prop_name = node_prop_name[another_usage->node];
       if (another_usage->type == usage_write_t || another_usage->type == usage_weak_write_t) {
-        current_mask = ifi_any_type;
-      } else if (another_usage->type == usage_type_check_t) {   // is_int($v), $v !== false, etc
-        current_mask &= another_usage->checked_type;
+        if (usage_prop_name.empty()) {
+          if (another_usage->checked_type == ifi_is_null) {
+            current_mask = ifi_any_type & ~ifi_is_null;
+          } else {
+            current_mask = ifi_any_type;
+          }
+        }
+      } else if (another_usage->type == usage_type_check_t) { // is_int($v), $v !== false, etc
+        if (usage_prop_name.empty()) {
+          current_mask &= another_usage->checked_type;
+        } else {
+          var_prop_casts.insert(usage_prop_name);
+        }
       }
     }
   }
 
   for (Node i : node_next[v]) {
     dfs_apply_smartcasts(i, var, current_mask);
+  }
+}
+
+void CFG::dfs_apply_prop_smartcasts(Node v, VarPtr var, int current_mask, vk::string_view prop_name) {
+  if ((node_dfs_smartcast_tmp[v] | current_mask) == node_dfs_smartcast_tmp[v]) {
+    return;
+  }
+
+  node_dfs_smartcast_tmp[v] |= current_mask;
+  if (node_prop_name[v] == prop_name) {
+    node_dfs_smartcast_mask[v] |= current_mask;
+  }
+
+  for (UsagePtr another_usage : node_usages[v]) {
+    if (another_usage->v->var_id == var) {
+      vk::string_view usage_prop_name = node_prop_name[another_usage->node];
+      if (another_usage->type == usage_write_t || another_usage->type == usage_weak_write_t) {
+        if (usage_prop_name.empty()) {
+          current_mask = ifi_any_type;
+          continue;
+        }
+        if (usage_prop_name == prop_name) {
+          if (another_usage->checked_type == ifi_is_null) {
+            current_mask = ifi_any_type & ~ifi_is_null;
+          } else {
+            current_mask = ifi_any_type;
+          }
+        }
+      } else if (another_usage->type == usage_type_check_t) { // is_int($v), $v !== false, etc
+        if (usage_prop_name == prop_name) {
+          current_mask &= another_usage->checked_type;
+        }
+      }
+    }
+  }
+
+  for (Node i : node_next[v]) {
+    dfs_apply_prop_smartcasts(i, var, current_mask, prop_name);
   }
 }
 
@@ -1176,11 +1312,9 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
   data.split_parts_list.emplace_front(std::move(parts));
 }
 
-void CFG::process_var(FunctionPtr function, VarPtr var) {
-  VarSplitData &var_split = var_split_data[var];
-
+void CFG::process_var_smartcasts(VarPtr var, const std::vector<UsagePtr> &usages) {
   bool potentially_has_smartcasts = false;
-  for (UsagePtr u : var_split.usages) {
+  for (UsagePtr u : usages) {
     if (u->type == usage_type_check_t) {
       potentially_has_smartcasts = true;
       break;
@@ -1188,13 +1322,33 @@ void CFG::process_var(FunctionPtr function, VarPtr var) {
   }
   if (potentially_has_smartcasts) {
     std::fill(node_dfs_smartcast_mask.begin(), node_dfs_smartcast_mask.end(), 0);
+    std::fill(node_dfs_smartcast_tmp.begin(), node_dfs_smartcast_tmp.end(), 0);
+    var_prop_casts.clear();
     dfs_apply_smartcasts(func_root_node, var, ifi_any_type);
-    for (UsagePtr u : var_split.usages) {
-      if (u->type == usage_read_t && node_dfs_smartcast_mask[u->node] != ifi_any_type && node_dfs[u->node]) {
+    for (auto prop_name : var_prop_casts) {
+      std::fill(node_dfs_smartcast_tmp.begin(), node_dfs_smartcast_tmp.end(), 0);
+      dfs_apply_prop_smartcasts(func_root_node, var, ifi_any_type, prop_name);
+    }
+    for (UsagePtr u : usages) {
+      if (u->type != usage_read_t || !node_dfs[u->node] || node_dfs_smartcast_mask[u->node] == ifi_any_type) {
+        continue;
+      }
+      vk::string_view prop_name = node_prop_name[u->node];
+      if (prop_name.empty()) {
         smartcasts_conversions[u->v] = static_cast<is_func_id_t>(node_dfs_smartcast_mask[u->node]);
+      } else {
+        if (node_dfs_smartcast_mask[u->node] != 0) {
+          smartcasts_prop_conversions[u->v] = static_cast<is_func_id_t>(node_dfs_smartcast_mask[u->node]);
+        }
       }
     }
   }
+}
+
+void CFG::process_var(FunctionPtr function, VarPtr var) {
+  VarSplitData &var_split = var_split_data[var];
+
+  process_var_smartcasts(var, var_split.usages);
 
   if (var->type() != VarData::var_param_t) {
     cur_dfs_step++;
@@ -1305,19 +1459,56 @@ public:
 
 class AddSmartcastsConversionsPass final : public FunctionPassBase {
   std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions;
+  std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &prop_conversions;
 public:
   string get_description() override {
     return "Add conversions after checks";
   }
-  explicit AddSmartcastsConversionsPass(std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions) :
-    conversions(conversions) {}
+  explicit AddSmartcastsConversionsPass(
+    std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions,
+    std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &prop_conversions)
+    : conversions(conversions)
+    , prop_conversions(prop_conversions) {}
 
   VertexPtr on_exit_vertex(VertexPtr v) override {
     if (v->rl_type != val_r) {
       return v;
     }
+
+    if (auto instance_prop = v.try_as<op_instance_prop>()) {
+      // since op_var will be traversed first, smartcasts can be added there before we
+      // can handle op_instance_prop;
+      // get_instance_var() will try to find the original var, skipping the inserted conv ops
+      auto var = get_instance_var(instance_prop);
+      if (!var) {
+        return v;
+      }
+      if (!is_smartcastable_var(var)) {
+        return v;
+      }
+      const auto &it = prop_conversions.find(var);
+      if (it == prop_conversions.end()) {
+        return v;
+      }
+      is_func_id_t conv = it->second;
+      // we only care about dropping null/false for instance props,
+      // no int/string/etc casts are inserted here;
+      // note that conv==0 case is not possible here
+      if (conv == ifi_is_null) {
+        return VertexAdaptor<op_null>::create().set_rl_type(val_r).set_location(v);
+      } else if (conv == ifi_is_false) {
+        return VertexAdaptor<op_false>::create().set_rl_type(val_r).set_location(v);
+      } else if ((conv & (ifi_is_false|ifi_is_null)) == 0) {
+        return VertexAdaptor<op_conv_drop_null>::create(VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r).set_location(v)).set_rl_type(val_r).set_location(v);
+      } else if ((conv & ifi_is_false) == 0) {
+        return VertexAdaptor<op_conv_drop_false>::create(v).set_rl_type(val_r).set_location(v);
+      } else if ((conv & ifi_is_null) == 0) {
+        return VertexAdaptor<op_conv_drop_null>::create(v).set_rl_type(val_r).set_location(v);
+      }
+    }
+
     if (auto var = v.try_as<op_var>()) {
-      if (!vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) || var->var_id->is_reference || var->var_id->is_foreach_reference) {
+      if (!is_smartcastable_var(var)) {
         return v;
       }
       const auto &it = conversions.find(var);
@@ -1325,19 +1516,20 @@ public:
         return v;
       }
       is_func_id_t conv = it->second;
+      bool is_static = var->var_id->is_function_static_var() || var->var_id->is_class_static_var();
       //fprintf(stderr, "Variable %s have conv_type %d\n", var->var_id->name.c_str(), conv);
 
       if (conv == 0) {
         kphp_warning(fmt_format("Unreachable code: variable type conditions creates contradiction for variable {}", var->get_string()));
-      } else if (conv == ifi_is_integer) {
+      } else if (conv == ifi_is_integer && !is_static) {
         return VertexAdaptor<op_conv_int>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conv == ifi_is_string) {
+      } else if (conv == ifi_is_string && !is_static) {
         return VertexAdaptor<op_conv_string>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conv == ifi_is_array) {
+      } else if (conv == ifi_is_array &&  !is_static) {
         return VertexAdaptor<op_conv_array>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conv == (ifi_is_bool|ifi_is_false) || conv == ifi_is_bool) {
+      } else if ((conv == (ifi_is_bool|ifi_is_false) || conv == ifi_is_bool) &&  !is_static) {
         return VertexAdaptor<op_conv_bool>::create(v).set_rl_type(val_r).set_location(v);
-      } else if (conv == ifi_is_float) {
+      } else if (conv == ifi_is_float &&  !is_static) {
         return VertexAdaptor<op_conv_float>::create(v).set_rl_type(val_r).set_location(v);
       } else if (conv == ifi_is_null) {
         return VertexAdaptor<op_null>::create().set_rl_type(val_r).set_location(v);
@@ -1358,12 +1550,31 @@ public:
     // it's a bad idea to add drop_or_false around the parameter definition
     return root->type() == op_func_param_list;
   }
+
+private:
+  static VertexAdaptor<op_var> get_instance_var(VertexAdaptor<op_instance_prop> instance_prop) {
+    auto instance = instance_prop->instance();
+    while (true) {
+      auto conv = instance.try_as<meta_op_unary>();
+      if (conv && OpInfo::type(conv->type()) == conv_op) {
+        instance = conv->expr();
+      } else {
+        break;
+      }
+    }
+    if (auto var = instance.try_as<op_var>()) {
+      return var;
+    }
+    return {};
+  }
 };
 
 void CFG::process_function(FunctionPtr function) {
   if (function->type != FunctionData::func_local) {
     return;
   }
+
+  static_var_usages.clear();
 
   auto splittable_vars = collect_splittable_vars(function);
   var_split_data.update_size(static_cast<int>(splittable_vars.size()));
@@ -1388,8 +1599,14 @@ void CFG::process_function(FunctionPtr function) {
     process_var(function, var);
   }
 
-  if (!smartcasts_conversions.empty()) {
-    AddSmartcastsConversionsPass pass{smartcasts_conversions};
+  for (const auto &kv : static_var_usages) {
+    VarPtr var = kv.first;
+    const auto &usages = kv.second;
+    process_var_smartcasts(var, usages);
+  }
+
+  if (!smartcasts_conversions.empty() || !smartcasts_prop_conversions.empty()) {
+    AddSmartcastsConversionsPass pass{smartcasts_conversions, smartcasts_prop_conversions};
     run_function_pass(function, &pass);
   }
 
