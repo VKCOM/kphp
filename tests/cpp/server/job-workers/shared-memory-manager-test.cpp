@@ -119,7 +119,7 @@ TEST(shared_memory_manager_test, test_manager) {
 
   const auto &stats = SHMM::get().get_stats();
   ASSERT_EQ(stats.memory_limit, 256 * 1024 * 1024);
-  ASSERT_GT(stats.unused_memory, 1000000); // 1mb == 1 048 576
+  ASSERT_GT(stats.unused_memory, 980000); // 1mb == 1 048 576
   ASSERT_LT(stats.unused_memory, 1048576);
 
   std::array<pid_t, 5> children{};
