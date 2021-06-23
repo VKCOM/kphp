@@ -10,12 +10,49 @@ function wait_for_script_time() {
   while($t > microtime(true)) {}
 }
 
-function run() {
+function run_default() {
   wait_for_script_time();
 
   $i1 = fork(sleep_for_net_time());
   wait($i1);
 }
 
-run();
-echo "Hello world!";
+function get_stats_by_mc() {
+  $mc = new McMemcache();
+  $mc->addServer("localhost", (int)$_GET["master-port"], true, 1, 10);
+
+  $attempts = 3;
+  do {
+    $result = $mc->get("stats_full");
+    if (is_string($result)) {
+      echo $result;
+      return;
+    }
+  } while (--$attempts >= 0);
+  critical_error("mc get timeout!");
+}
+
+function get_stats_by_rpc() {
+  $connection = new_rpc_connection("localhost", (int)$_GET["master-port"]);
+  $req = rpc_tl_query_one($connection, ['_' => "engine.stat"]);
+  $result = rpc_tl_query_result_one($req);
+  echo json_encode($result["result"]);
+}
+
+function do_http_worker() {
+  switch($_SERVER["PHP_SELF"]) {
+    case "/get_stats_by_mc": {
+      get_stats_by_mc();
+      return;
+    }
+    case "/get_stats_by_rpc": {
+      get_stats_by_rpc();
+      return;
+    }
+  }
+
+  run_default();
+  echo "Hello world!";
+}
+
+do_http_worker();
