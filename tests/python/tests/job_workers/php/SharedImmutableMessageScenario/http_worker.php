@@ -52,7 +52,7 @@ function test_job_worker_start_multi_impl(bool $use_shared_data) {
     $offset += $limit;
   }
 
-  $job_ids = kphp_job_worker_start_multi($requests);
+  $job_ids = kphp_job_worker_start_multi($requests, -1);
   foreach ($requests as $req) {
     if ($req instanceof SumJobRequestWithSharedData) {
       if ($req->shared_data !== $shared_data) {
@@ -102,7 +102,7 @@ function test_error_different_shared_memory_pieces() {
     $offset += $limit;
   }
 
-  $job_ids = kphp_job_worker_start_multi($requests);
+  $job_ids = kphp_job_worker_start_multi($requests, -1);
 
   echo json_encode(['job-ids' => $job_ids]);
 }

@@ -28,11 +28,11 @@ function test_compilation($x) {
 
   $m1 = new Req;
   $m1->$ai = new A1;
-  kphp_job_worker_start($m1);
+  kphp_job_worker_start($m1, -1);
 
   $m2 = new Req;
   $m2->$ai = new A2;
-  kphp_job_worker_start($m2);
+  kphp_job_worker_start($m2, -1);
 
   $x = kphp_job_worker_fetch_request();
   if ($x instanceof Req) {

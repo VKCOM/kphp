@@ -152,7 +152,7 @@ function raise_error(string $err) {
 function test_client_too_big_request() {
   $req = new X2Request;
   $req->arr_request = make_big_fake_array();
-  echo json_encode(["job-id" => kphp_job_worker_start($req)]);
+  echo json_encode(["job-id" => kphp_job_worker_start($req, -1)]);
 }
 
 function test_jobs_in_wait_queue() {
@@ -185,7 +185,7 @@ function test_jobs_in_wait_queue() {
 function test_client_wait_false() {
   $id = false;
   if ($id) {
-    $id = kphp_job_worker_start(new X2Request);
+    $id = kphp_job_worker_start(new X2Request, -1);
   }
   $result = wait($id);
   echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
@@ -205,7 +205,7 @@ function test_job_worker_wakeup_on_merged_events() {
     $req = new X2Request;
     $req->arr_request = [$waiting_worker_id];
     $req->tag = 'sync_job';
-    $sync_job_ids[] = kphp_job_worker_start($req);
+    $sync_job_ids[] = kphp_job_worker_start($req, -1);
     $waiting_workers[] = $waiting_worker_id;
     while (instance_cache_fetch(SyncJobCommand::class, "sync_job_started_$waiting_worker_id") === null) {}
   }
