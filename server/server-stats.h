@@ -36,7 +36,7 @@ public:
   // these functions should be called only from the master process
   void aggregate_stats() noexcept;
   void write_stats_to(stats_t *stats) const noexcept;
-  void write_stats_to(std::ostream &os) const noexcept;
+  void write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept;
 
   uint64_t get_worker_activity_counter(uint16_t worker_process_id) const noexcept;
 

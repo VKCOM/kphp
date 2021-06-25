@@ -868,7 +868,7 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
   return 0;
 }
 
-std::string php_master_prepare_stats() {
+std::string php_master_prepare_stats(bool add_worker_pids) {
   auto *last_worker = workers + vk::singleton<WorkersControl>::get().get_all_alive();
   auto start = std::minmax_element(workers, last_worker, [](const worker_info_t *l, const worker_info_t *r) {
     return l->start_time < r->start_time;
@@ -900,7 +900,7 @@ std::string php_master_prepare_stats() {
       << "workers_hung\t" << workers_hung << "\n"
       << "workers_terminated\t" << workers_terminated << "\n"
       << "workers_failed\t" << workers_failed << "\n";
-  stats.write_stats_to(oss);
+  stats.write_stats_to(oss, add_worker_pids);
 
   std::for_each(workers, last_worker, [&oss](const worker_info_t *w) {
     oss << "worker_uptime " << w->pid << "\t" << static_cast<int64_t>(my_now - w->start_time) << "\n";
@@ -917,7 +917,7 @@ int php_master_wakeup(connection *c) {
 
   update_workers();
 
-  std::string res = php_master_prepare_stats();
+  std::string res = php_master_prepare_stats(false);
   return_one_key_val(c, res.c_str(), static_cast<int>(res.size()));
 
   mcs_pad_response(c);
@@ -1000,7 +1000,7 @@ int php_master_rpc_stats(const vk::optional<std::vector<std::string>> &sorted_fi
   sb_init(&stats.sb, &res[0], static_cast<int>(res.size()) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
-  res += php_master_prepare_stats();
+  res += php_master_prepare_stats(true);
   tl_store_stats(res.c_str(), 0, sorted_filter_keys);
   return 0;
 }

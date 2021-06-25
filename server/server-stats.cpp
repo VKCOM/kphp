@@ -701,7 +701,7 @@ void ServerStats::write_stats_to(stats_t *stats) const noexcept {
                      aggregated_stats_->general_workers.vm_percentiles, aggregated_stats_->job_workers.vm_percentiles);
 }
 
-void ServerStats::write_stats_to(std::ostream &os) const noexcept {
+void ServerStats::write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept {
   const auto &master_vm = aggregated_stats_->master_process.vm_stats;
   const auto &master_idle = aggregated_stats_->master_process.idle_stats;
 
@@ -739,8 +739,10 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
     const auto net_time = ns2double(workers_query.get_stat(QueriesStat::Key::net_time, w));
     const auto script_time = ns2double(workers_query.get_stat(QueriesStat::Key::script_time, w));
     const auto worker_pid = workers_misc.get_stat(MiscStat::Key::process_pid, w);
-    os << "pid " << worker_pid << "\t" << worker_pid << "\n"
-       << "active_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::active_special_connections, w) << "\n"
+    if (add_worker_pids) {
+      os << "pid " << worker_pid << "\t" << worker_pid << "\n";
+    }
+    os << "active_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::active_special_connections, w) << "\n"
        << "max_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::max_special_connections, w) << "\n"
        << "VM " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_kb, w) << "Kb\n"
        << "VM_max " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_peak_kb, w) << "Kb\n"
