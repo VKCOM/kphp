@@ -174,7 +174,7 @@ void JobWorkerServer::init() {
 
   read_job_fd = job_workers_ctx.job_pipe[0];
 
-  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL);
+  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL | EVT_SPEC);
   assert(read_job_connection);
   memset(read_job_connection->custom_data, 0, sizeof(read_job_connection->custom_data));
 
