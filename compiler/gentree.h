@@ -103,7 +103,10 @@ public:
   VertexAdaptor<Op> get_conv();
   VertexAdaptor<op_require> get_require(bool once);
   template<Operation Op, Operation EmptyOp>
+  VertexAdaptor<Op> get_func_call(std::string name);
+  template<Operation Op, Operation EmptyOp>
   VertexAdaptor<Op> get_func_call();
+  VertexAdaptor<op_func_call> get_type_and_args_of_new_expression();
   VertexAdaptor<op_array> get_short_array();
   VertexAdaptor<op_string> get_string();
   VertexAdaptor<op_string_build> get_string_build();
@@ -143,7 +146,7 @@ public:
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args);
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args);
 
-  VertexPtr get_class(vk::string_view phpdoc_str, ClassType class_type);
+  VertexAdaptor<op_func_call> get_class(vk::string_view phpdoc_str, ClassType class_type, bool is_anonymous = false);
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
