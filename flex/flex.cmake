@@ -3,6 +3,7 @@ include_guard(GLOBAL)
 set(FLEX_DIR ${BASE_DIR}/flex)
 set(AUTO_FLEX_DIR ${AUTO_DIR}/flex)
 set(FLEX_DATA_SRC ${AUTO_FLEX_DIR}/vk-flex-data.cpp)
+set(FLEX_SOURCES ${FLEX_DATA_SRC} ${FLEX_DIR}/flex.cpp)
 
 file(MAKE_DIRECTORY ${AUTO_FLEX_DIR})
 add_custom_command(
@@ -17,8 +18,8 @@ if(COMPILER_CLANG)
     set_source_files_properties(${FLEX_DATA_SRC} PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
 endif()
 
-vk_add_library(flex_data_shared SHARED ${FLEX_DATA_SRC})
-vk_add_library(flex_data_static STATIC ${FLEX_DATA_SRC})
+vk_add_library(flex_data_shared SHARED ${FLEX_SOURCES})
+vk_add_library(flex_data_static STATIC ${FLEX_SOURCES})
 check_cxx_compiler_flag(-fno-sanitize=all NO_SANITIZE_IS_FOUND)
 if(NO_SANITIZE_IS_FOUND)
     target_compile_options(flex_data_shared PRIVATE -fno-sanitize=all)

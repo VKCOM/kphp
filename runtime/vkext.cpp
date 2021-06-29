@@ -478,22 +478,22 @@ string f$vk_flex(const string &name, const string &case_name, int64_t sex, const
 
   lang *cur_lang = langs[lang_id];
 
-  int t = -1;
+  int start_node = -1;
   if (!strcmp(type.c_str(), "names")) {
     if (cur_lang->names_start < 0) {
       return name;
     }
-    t = cur_lang->names_start;
+    start_node = cur_lang->names_start;
   } else if (!strcmp(type.c_str(), "surnames")) {
     if (cur_lang->surnames_start < 0) {
       return name;
     }
-    t = cur_lang->surnames_start;
+    start_node = cur_lang->surnames_start;
   } else {
     php_warning("Unknown type %s in function vk_flex", type.c_str());
     return name;
   }
-  php_assert (t >= 0);
+  php_assert (start_node >= 0);
 
   if (sex != 1) {
     sex = 0;
@@ -519,84 +519,52 @@ string f$vk_flex(const string &name, const string &case_name, int64_t sex, const
       pp++;
     }
     int hyphen = (name[pp] == '-');
-    int tt = t;
-    int best = -1;
+    int best_node = -1;
     int save_pp = pp;
-    int new_tt;
-    int isf = 0;
-    if (pp - p > 0) {
-      const char *fle = cur_lang->flexible_symbols;
-      while (*fle) {
-        if (*fle == name[pp - 1]) {
-          isf = 1;
+    if (pp - p > 0 && cur_lang->has_symbol(name[pp - 1])) {
+      int cur_node = start_node;
+      int next_node = -1;
+      while (true) {
+        php_assert(cur_node >= 0);
+        if (cur_lang->nodes[cur_node].tail_len >= 0) {
+          best_node = cur_node;
+        }
+        if (cur_lang->nodes[cur_node].hyphen >= 0 && hyphen) {
+          best_node = cur_lang->nodes[cur_node].hyphen;
+        }
+        unsigned char c{};
+        if (pp == p - 1) {
           break;
         }
-        fle++;
+        pp--;
+        if (pp < p) {
+          c = 0;
+        } else {
+          c = name[pp];
+        }
+        next_node = cur_lang->nodes[cur_node].get_child(c, cur_lang);
+        if (next_node == -1) {
+          break;
+        } else {
+          cur_node = next_node;
+        }
       }
     }
-    while (isf) {
-      php_assert (tt >= 0);
-      if (cur_lang->nodes[tt].tail_len >= 0) {
-        best = tt;
-      }
-      if (cur_lang->nodes[tt].hyphen >= 0 && hyphen) {
-        best = cur_lang->nodes[tt].hyphen;
-      }
-      unsigned char c;
-      if (pp == p - 1) {
-        break;
-      }
-      pp--;
-      if (pp < p) {
-        c = 0;
-      } else {
-        c = name[pp];
-      }
-      new_tt = -1;
-      int l = cur_lang->nodes[tt].children_start;
-      int r = cur_lang->nodes[tt].children_end;
-      if (r - l <= 4) {
-        for (int i = l; i < r; i++) {
-          if (cur_lang->children[2 * i] == c) {
-            new_tt = cur_lang->children[2 * i + 1];
-            break;
-          }
-        }
-      } else {
-        int x;
-        while (r - l > 1) {
-          x = (r + l) >> 1;
-          if (cur_lang->children[2 * x] <= c) {
-            l = x;
-          } else {
-            r = x;
-          }
-        }
-        if (cur_lang->children[2 * l] == c) {
-          new_tt = cur_lang->children[2 * l + 1];
-        }
-      }
-      if (new_tt == -1) {
-        break;
-      } else {
-        tt = new_tt;
-      }
-    }
-    if (best == -1) {
+    if (best_node == -1) {
       memcpy(buff + wp, name.c_str() + p, save_pp - p);
       wp += (save_pp - p);
     } else {
       int r = -1;
       if (!sex) {
-        r = cur_lang->nodes[best].male_endings;
+        r = cur_lang->nodes[best_node].male_endings;
       } else {
-        r = cur_lang->nodes[best].female_endings;
+        r = cur_lang->nodes[best_node].female_endings;
       }
       if (r < 0 || !cur_lang->endings[r * cur_lang->cases_num + ca]) {
         memcpy(buff + wp, name.c_str() + p, save_pp - p);
         wp += (save_pp - p);
       } else {
-        int ml = save_pp - p - cur_lang->nodes[best].tail_len;
+        int ml = save_pp - p - cur_lang->nodes[best_node].tail_len;
         if (ml < 0) {
           ml = 0;
         }
