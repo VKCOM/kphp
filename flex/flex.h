@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/wrappers/string_view.h"
 
 struct lang;
 
@@ -34,3 +35,6 @@ struct lang {
 
   bool has_symbol(char c) const noexcept;
 };
+
+const char *flex(vk::string_view name, vk::string_view case_name, bool is_female, vk::string_view type, int lang_id, char *dst_buf, char *err_buf);
+
