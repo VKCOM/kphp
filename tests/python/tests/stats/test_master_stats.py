@@ -13,6 +13,7 @@ class TestMasterStats(KphpServerAutoTestCase):
             key, value = stat_line.split('\t', 1)
             stats_dict[key] = value
 
+        self.assertNotIn("pid", stats_dict)
         self.assertIn("uptime", stats_dict)
         self.assertIn("kphp_version", stats_dict)
         self.assertIn("tot_queries", stats_dict)
@@ -26,6 +27,7 @@ class TestMasterStats(KphpServerAutoTestCase):
         self.assertNotEqual(mc_stats.text, "")
 
         stats_dict = json.loads(mc_stats.text)
+        self.assertIn("pid", stats_dict)
         self.assertIn("uptime", stats_dict)
         self.assertIn("version", stats_dict)
         self.assertIn("kphp_version", stats_dict)
