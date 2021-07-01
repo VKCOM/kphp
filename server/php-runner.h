@@ -92,6 +92,7 @@ long long php_script_memory_get_total_usage(void *ptr);
 class PHPScriptBase {
   double cur_timestamp, net_time, script_time;
   int queries_cnt;
+  int long_queries_cnt{0};
 
 private:
 #if ASAN7_ENABLED

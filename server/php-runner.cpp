@@ -80,6 +80,7 @@ PHPScriptBase::PHPScriptBase(size_t mem_size, size_t stack_size) :
   net_time(0),
   script_time(0),
   queries_cnt(0),
+  long_queries_cnt(0),
   state(run_state_t::empty),
   error_message(nullptr),
   error_type(script_error_t::no_error),
@@ -142,6 +143,7 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   net_time = 0;
   cur_timestamp = dl_time();
   queries_cnt = 0;
+  long_queries_cnt = 0;
 
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
@@ -211,6 +213,7 @@ void PHPScriptBase::update_net_time() {
     if (query_stats.q_id == query_stats_id) {
       dump_query_stats();
     }
+    ++long_queries_cnt;
     kprintf("LONG query: %lf\n", net_add);
   }
   net_time += net_add;
@@ -251,9 +254,8 @@ void PHPScriptBase::finish() {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt,
-                                                      script_mem_stats.max_memory_used, script_mem_stats.max_real_memory_used,
-                                                      vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
+                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -284,8 +286,8 @@ void PHPScriptBase::finish() {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
-            script_time + net_time, net_time, script_time, queries_cnt,
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
+            script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
             (int)script_mem_stats.real_memory_used, buf);
