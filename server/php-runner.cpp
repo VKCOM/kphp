@@ -31,6 +31,7 @@
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include "server/php-queries.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 
@@ -215,6 +216,10 @@ void PHPScriptBase::update_net_time() {
     }
     ++long_queries_cnt;
     kprintf("LONG query: %lf\n", net_add);
+    const net_event_t *event = get_last_net_event();
+    if (event) {
+      kprintf("Awakening net event: %s\n", event->get_description());
+    }
   }
   net_time += net_add;
 

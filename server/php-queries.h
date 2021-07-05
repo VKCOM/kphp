@@ -43,6 +43,8 @@ struct net_event_t {
       job_workers::FinishedJob *job_result;
     };
   };
+
+  const char *get_description() const noexcept;
 };
 
 enum net_query_type_t {
@@ -377,6 +379,7 @@ int rpc_connect_to(const char *host_name, int port);
 slot_id_t rpc_send_query(int host_num, char *request, int request_len, int timeout_ms);
 void wait_net_events(int timeout_ms);
 net_event_t *pop_net_event();
+const net_event_t *get_last_net_event();
 int query_x2(int x);
 
 
