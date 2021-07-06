@@ -216,8 +216,7 @@ void PHPScriptBase::update_net_time() {
     }
     ++long_queries_cnt;
     kprintf("LONG query: %lf\n", net_add);
-    const net_event_t *event = get_last_net_event();
-    if (event) {
+    if (const net_event_t *event = get_last_net_event()) {
       kprintf("Awakening net event: %s\n", event->get_description());
     }
   }
