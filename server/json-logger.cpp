@@ -169,10 +169,9 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_raw_string(vk::string_vie
   return *this;
 }
 
-void JsonLogger::init(int64_t release_version, int32_t script_timeout_seconds) noexcept {
+void JsonLogger::init(int64_t release_version) noexcept {
   release_version_ = release_version;
-  snprintf(script_timeout_message_.data(), script_timeout_message_.size(),
-           "Maximum execution time of %" PRIi32 " second%s exceeded", script_timeout_seconds, script_timeout_seconds == 1 ? "" : "s");
+  snprintf(script_timeout_message_.data(), script_timeout_message_.size(), "Maximum execution time exceeded");
 }
 
 bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {

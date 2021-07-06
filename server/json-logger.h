@@ -16,7 +16,7 @@ class JsonLogger : vk::not_copyable {
 public:
   friend class vk::singleton<JsonLogger>;
 
-  void init(int64_t release_version, int32_t script_timeout_seconds) noexcept;
+  void init(int64_t release_version) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
 
