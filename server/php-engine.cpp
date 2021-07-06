@@ -1637,7 +1637,7 @@ void init_all() {
     script_timeout = run_once ? 1e6 : DEFAULT_SCRIPT_TIMEOUT;
   }
   const auto *tag = engine_tag ?: "0";
-  vk::singleton<JsonLogger>::get().init(string::to_int(tag, static_cast<string::size_type>(strlen(tag))), script_timeout);
+  vk::singleton<JsonLogger>::get().init(string::to_int(tag, static_cast<string::size_type>(strlen(tag))));
   for (auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
     if (deprecation_warning.empty()) {
       break;
