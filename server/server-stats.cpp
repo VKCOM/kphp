@@ -56,6 +56,8 @@ struct JobSamples : WithStatType<uint64_t> {
     wait_time = 0,
     request_memory_usage,
     request_real_memory_usage,
+    response_memory_usage,
+    response_real_memory_usage,
     types_count
   };
 };
@@ -288,11 +290,13 @@ struct JobWorkerSharedStats : WorkerSharedStats {
     job_samples(gen) {
   }
 
-  void add_job_stats(uint64_t job_wait_ns, uint64_t memory_used, uint64_t real_memory_used) noexcept {
+  void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used, uint64_t response_real_memory_used) noexcept {
     EnumTable<JobSamples> sample;
     sample[JobSamples::Key::wait_time] = job_wait_ns;
-    sample[JobSamples::Key::request_memory_usage] = memory_used;
-    sample[JobSamples::Key::request_real_memory_usage] = real_memory_used;
+    sample[JobSamples::Key::request_memory_usage] = request_memory_used;
+    sample[JobSamples::Key::request_real_memory_usage] = request_real_memory_used;
+    sample[JobSamples::Key::response_memory_usage] = response_memory_used;
+    sample[JobSamples::Key::response_real_memory_usage] = response_real_memory_used;
     job_samples.add_sample(sample);
   }
 
@@ -542,9 +546,10 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 }
 
-void ServerStats::add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept {
+void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
+                                int64_t response_real_memory_used) noexcept {
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
-  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), memory_used, real_memory_used);
+  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 }
 
 void ServerStats::update_this_worker_stats() noexcept {
@@ -658,6 +663,8 @@ void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats
   write_to(stats, prefix, ".jobs.queue_time", job_agg.job_samples[JobSamples::Key::wait_time].percentiles, ns2double);
   write_to(stats, prefix, ".memory.job_request_usage", job_agg.job_samples[JobSamples::Key::request_memory_usage].percentiles);
   write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage].percentiles);
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {

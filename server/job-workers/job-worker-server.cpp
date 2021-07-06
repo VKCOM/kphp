@@ -53,6 +53,8 @@ void jobs_server_at_query_end(connection *c) {
   c->pending_queries = 0;
 
   c->flags |= C_REPARSE;
+
+  vk::singleton<JobWorkerServer>::get().flush_job_stat();
   vk::singleton<JobWorkerServer>::get().reset_running_job();
 
   assert (c->status != conn_wait_net);
@@ -142,6 +144,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   }
   running_job = job;
   reply_was_sent = false;
+  job_stat = {};
 
   auto now = std::chrono::system_clock::now();
   double now_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
@@ -152,8 +155,10 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d>, left_job_time = %f, job_wait_time = %f, job_memory_ptr = %p\n",
             job->job_result_fd_idx, job->job_id, left_job_time, job_wait_time, job);
 
+  job_stat.job_wait_time = job_wait_time;
   const auto &job_memory_stats = job->resource.get_memory_stats();
-  vk::singleton<ServerStats>::get().add_job_stats(job_wait_time, job_memory_stats.max_real_memory_used, job_memory_stats.max_memory_used);
+  job_stat.job_request_max_real_memory_used = job_memory_stats.max_real_memory_used;
+  job_stat.job_request_max_memory_used = job_memory_stats.max_memory_used;
 
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
@@ -198,6 +203,11 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
 
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
   job_response->job_id = running_job->job_id;
+
+  const auto &job_memory_stats = job_response->resource.get_memory_stats();
+  job_stat.job_response_max_real_memory_used = job_memory_stats.max_real_memory_used;
+  job_stat.job_response_max_memory_used = job_memory_stats.max_memory_used;
+
   if (!job_writer.write_job_result(job_response, write_job_result_fd)) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_write;
     return "Can't write job reply to the pipe";
@@ -229,4 +239,9 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   }
 }
 
+void JobWorkerServer::flush_job_stat() noexcept {
+  vk::singleton<ServerStats>::get().add_job_stats(job_stat.job_wait_time, job_stat.job_request_max_real_memory_used, job_stat.job_request_max_memory_used,
+                                                  job_stat.job_response_max_real_memory_used, job_stat.job_response_max_memory_used);
+  job_stat = {};
+}
 } // namespace job_workers

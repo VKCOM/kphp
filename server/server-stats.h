@@ -21,7 +21,8 @@ public:
 
   void add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
                          int64_t real_memory_used, int64_t curl_total_allocated, script_error_t error) noexcept;
-  void add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept;
+  void add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
+                     int64_t response_real_memory_used) noexcept;
   void update_this_worker_stats() noexcept;
   void update_active_connections(uint64_t active_connections, uint64_t max_connections) noexcept;
 
