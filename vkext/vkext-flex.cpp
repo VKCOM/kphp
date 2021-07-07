@@ -14,9 +14,9 @@ extern int verbosity;
 char *do_flex(const char *name, size_t name_len, const char *case_name, size_t case_name_len, bool sex, const char *type, size_t type_len, int lang_id) {
   static char ERROR_MSG_BUF[1000] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';
-  const char *res = flex(vk::string_view{name, name_len},vk::string_view{case_name, case_name_len}, sex, vk::string_view{type, type_len}, lang_id, buff, ERROR_MSG_BUF);
+  vk::string_view res = flex(vk::string_view{name, name_len},vk::string_view{case_name, case_name_len}, sex, vk::string_view{type, type_len}, lang_id, buff, ERROR_MSG_BUF);
   if (verbosity && ERROR_MSG_BUF[0] != '\0') {
     fprintf(stderr, "%s\n", ERROR_MSG_BUF);
   }
-  return estrdup(res);
+  return estrndup(res.data(), res.size());
 }
