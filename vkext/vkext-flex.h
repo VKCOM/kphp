@@ -5,5 +5,7 @@
 #ifndef __VKEXT_FLEX_H__
 #define __VKEXT_FLEX_H__
 
-char *do_flex(const char *name, int name_len, const char *case_name, int case_name_len, int sex, const char *type, int type_len, int lang_id);
+#include <cstddef>
+
+char *do_flex(const char *name, size_t name_len, const char *case_name, size_t case_name_len, bool sex, const char *type, size_t type_len, int lang_id);
 #endif
