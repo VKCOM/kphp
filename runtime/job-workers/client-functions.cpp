@@ -17,6 +17,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
+#include "server/server-stats.h"
 
 #include "runtime/job-workers/client-functions.h"
 
@@ -188,6 +189,8 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
     if (common_job_request == nullptr) {
       return {};
     }
+    const auto &job_mem_stats = common_job_request->resource.get_memory_stats();
+    vk::singleton<ServerStats>::get().add_job_common_memory_stats(job_mem_stats.max_memory_used, job_mem_stats.max_real_memory_used);
   }
 
   for (const auto &it : requests) {

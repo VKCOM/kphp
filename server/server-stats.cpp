@@ -62,6 +62,14 @@ struct JobSamples : WithStatType<uint64_t> {
   };
 };
 
+struct JobCommonMemorySamples : WithStatType<uint64_t> {
+  enum class Key {
+    common_request_memory_usage = 0,
+    common_request_real_memory_usage,
+    types_count
+  };
+};
+
 struct MallocStat : WithStatType<uint64_t> {
   enum class Key {
     non_mmaped_allocated_bytes = 0,
@@ -287,7 +295,8 @@ struct WorkerSharedStats : private vk::not_copyable {
 struct JobWorkerSharedStats : WorkerSharedStats {
   explicit JobWorkerSharedStats(std::mt19937 *gen) noexcept:
     WorkerSharedStats(gen),
-    job_samples(gen) {
+    job_samples(gen),
+    job_common_memory_samples(gen) {
   }
 
   void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used, uint64_t response_real_memory_used) noexcept {
@@ -300,7 +309,15 @@ struct JobWorkerSharedStats : WorkerSharedStats {
     job_samples.add_sample(sample);
   }
 
+  void add_job_common_memory_stats(uint64_t common_request_memory_used, uint64_t common_request_real_memory_used) noexcept {
+    EnumTable<JobCommonMemorySamples> sample;
+    sample[JobCommonMemorySamples::Key::common_request_memory_usage] = common_request_memory_used;
+    sample[JobCommonMemorySamples::Key::common_request_real_memory_usage] = common_request_real_memory_used;
+    job_common_memory_samples.add_sample(sample);
+  }
+
   SharedSamplesBundle<JobSamples> job_samples;
+  SharedSamplesBundle<JobCommonMemorySamples> job_common_memory_samples;
 };
 
 template<class T>
@@ -480,10 +497,12 @@ struct WorkerAggregatedStats {
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
   explicit JobWorkerAggregatedStats(std::mt19937 *gen) noexcept:
     WorkerAggregatedStats(gen),
-    job_samples(gen) {
+    job_samples(gen),
+    job_common_memory_samples(gen) {
   }
 
   AggregatedSamplesBundle<JobSamples> job_samples;
+  AggregatedSamplesBundle<JobCommonMemorySamples> job_common_memory_samples;
 };
 
 struct MasterProcessStats : private vk::not_copyable {
@@ -552,6 +571,10 @@ void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 }
 
+void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
+  shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
+}
+
 void ServerStats::update_this_worker_stats() noexcept {
   const auto now_tp = std::chrono::steady_clock::now();
   if (now_tp - last_update_ >= std::chrono::seconds{5}) {
@@ -592,6 +615,7 @@ void ServerStats::aggregate_stats() noexcept {
                                             shared_stats_->workers, 0, general_workers);
 
   aggregated_stats_->job_workers.job_samples.recalc(shared_stats_->job_workers.job_samples, now_tp);
+  aggregated_stats_->job_workers.job_common_memory_samples.recalc(shared_stats_->job_workers.job_common_memory_samples, now_tp);
   aggregated_stats_->job_workers.recalc(shared_stats_->job_workers.script_samples, now_tp,
                                         shared_stats_->workers, general_workers, job_workers + general_workers);
 
@@ -665,6 +689,8 @@ void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats
   write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage].percentiles);
   write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage].percentiles);
   write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_common_request_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_common_request_real_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage].percentiles);
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {
