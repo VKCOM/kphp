@@ -332,5 +332,5 @@ class Engine:
             if signal in log_line:
                 raise RuntimeError("Got unexpected signal: {}".format(log_line))
         for issue in ("Warning", "Error", "Critical error", "Assertion", "dl_assert"):
-            if issue in log_line:
+            if re.search("\\b{}\\b".format(issue), log_line):
                 raise RuntimeError("Got unexpected {}: {}".format(issue, log_line))

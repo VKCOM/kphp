@@ -32,6 +32,7 @@ struct ScriptSamples : WithStatType<uint64_t> {
     real_memory_used,
     total_allocated_by_curl,
     outgoing_queries,
+    outgoing_long_queries,
     working_time,
     net_time,
     script_time,
@@ -43,6 +44,7 @@ struct QueriesStat : WithStatType<uint64_t> {
   enum class Key {
     incoming_queries,
     outgoing_queries,
+    outgoing_long_queries,
     script_time,
     net_time,
     types_count
@@ -194,10 +196,11 @@ EnumTable<IdleStat> get_idle_stat() noexcept {
   return result;
 }
 
-EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t script_time_ns, uint64_t net_time_ns) noexcept {
+EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries, uint64_t script_time_ns, uint64_t net_time_ns) noexcept {
   EnumTable<QueriesStat> result;
   result[QueriesStat::Key::incoming_queries] = 1;
   result[QueriesStat::Key::outgoing_queries] = script_queries;
+  result[QueriesStat::Key::outgoing_long_queries] = long_script_queries;
   result[QueriesStat::Key::script_time] = script_time_ns;
   result[QueriesStat::Key::net_time] = net_time_ns;
   return result;
@@ -266,6 +269,7 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::real_memory_used] = real_memory_used;
     sample[ScriptSamples::Key::total_allocated_by_curl] = curl_total_allocated;
     sample[ScriptSamples::Key::outgoing_queries] = queries[QueriesStat::Key::outgoing_queries];
+    sample[ScriptSamples::Key::outgoing_long_queries] = queries[QueriesStat::Key::outgoing_long_queries];
     sample[ScriptSamples::Key::working_time] = queries[QueriesStat::Key::net_time] + queries[QueriesStat::Key::script_time];
     sample[ScriptSamples::Key::net_time] = queries[QueriesStat::Key::net_time];
     sample[ScriptSamples::Key::script_time] = queries[QueriesStat::Key::script_time];
@@ -527,13 +531,12 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   last_update_ = std::chrono::steady_clock::now();
 }
 
-void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries,
-                                    int64_t memory_used, int64_t real_memory_used, int64_t curl_total_allocated,
-                                    script_error_t error) noexcept {
+void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
+                                    int64_t real_memory_used, int64_t curl_total_allocated, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
-  const auto queries_stat = make_queries_stat(script_queries, script_time.count(), net_time.count());
+  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
@@ -626,8 +629,10 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
   add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
+  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
 
   write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries].percentiles);
+  write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries].percentiles);
   write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time].percentiles, ns2double);
   write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time].percentiles, ns2double);
   write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time].percentiles, ns2double);

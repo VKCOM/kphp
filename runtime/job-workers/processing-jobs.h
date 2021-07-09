@@ -16,7 +16,9 @@ namespace job_workers {
 
 struct JobSharedMessage;
 
-struct FinishedJob;
+struct FinishedJob {
+  class_instance<C$KphpJobWorkerResponse> response;
+};
 
 FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) noexcept;
 
