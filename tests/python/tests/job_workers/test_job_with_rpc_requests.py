@@ -6,7 +6,8 @@ class TestJobWithRpcRequests(KphpServerAutoTestCase):
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
             "--workers-num": 4,
-            "--job-workers-ratio": 0.5
+            "--job-workers-ratio": 0.5,
+            "--verbosity-job-workers=2": True,
         })
 
     def test_job_with_rpc_query(self):

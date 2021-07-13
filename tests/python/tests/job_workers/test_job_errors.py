@@ -15,7 +15,8 @@ class TestJobErrors(KphpServerAutoTestCase):
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
             "--workers-num": 4,
-            "--job-workers-ratio": 0.5
+            "--job-workers-ratio": 0.5,
+            "--verbosity-job-workers=2": True,
         })
 
     def _assert_result(self, stats_before, resp, error_code, buffers=4, results=2):
