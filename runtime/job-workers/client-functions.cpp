@@ -100,11 +100,6 @@ bool job_workers_api_allowed() {
     php_warning("Can't send job: job workers disabled");
     return false;
   }
-  auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
-  if (!client.is_inited()) {
-    php_warning("Can't send job: call from job worker");
-    return false;
-  }
   return true;
 }
 

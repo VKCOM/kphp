@@ -1,6 +1,7 @@
 <?php
 
 require_once 'SharedImmutableMessageScenario/http_worker.php';
+require_once 'utils.php';
 
 function do_http_worker() {
   switch($_SERVER["PHP_SELF"]) {
@@ -75,6 +76,7 @@ function send_jobs($context, float $timeout = -1.0): array {
   foreach ($context["data"] as $arr) {
     $req = new X2Request;
     $req->tag = (string)$context["tag"];
+    $req->redirect_chain_len = (int)$context["redirect-chain-len"];
     $req->master_port = (int)$context["master-port"];
     $req->arr_request = (array)$arr;
     $req->sleep_time_sec = (int)$context["job-sleep-time-sec"];
@@ -152,7 +154,7 @@ function raise_error(string $err) {
 function test_client_too_big_request() {
   $req = new X2Request;
   $req->arr_request = make_big_fake_array();
-  echo json_encode(["job-id" => kphp_job_worker_start($req)]);
+  echo json_encode(["job-id" => kphp_job_worker_start($req, -1)]);
 }
 
 function test_jobs_in_wait_queue() {
@@ -185,7 +187,7 @@ function test_jobs_in_wait_queue() {
 function test_client_wait_false() {
   $id = false;
   if ($id) {
-    $id = kphp_job_worker_start(new X2Request);
+    $id = kphp_job_worker_start(new X2Request, -1);
   }
   $result = wait($id);
   echo json_encode(["jobs-result" => $result === null ? "null" : "not null"]);
@@ -198,17 +200,7 @@ function test_job_graceful_shutdown() {
 }
 
 function test_job_worker_wakeup_on_merged_events() {
-  $waiting_workers = [];
-  $sync_job_ids = [];
-  for ($i = 0; $i < get_job_workers_number(); $i++) {
-    $waiting_worker_id = $i + 1;
-    $req = new X2Request;
-    $req->arr_request = [$waiting_worker_id];
-    $req->tag = 'sync_job';
-    $sync_job_ids[] = kphp_job_worker_start($req);
-    $waiting_workers[] = $waiting_worker_id;
-    while (instance_cache_fetch(SyncJobCommand::class, "sync_job_started_$waiting_worker_id") === null) {}
-  }
+  [$waiting_workers, $sync_job_ids] = suspend_job_workers(get_job_workers_number());
 
   fwrite(STDERR, "Sync jobs started\n");
 
@@ -217,15 +209,7 @@ function test_job_worker_wakeup_on_merged_events() {
 
   fwrite(STDERR, "Simple jobs were sent\n");
 
-  foreach ($waiting_workers as $id) {
-    instance_cache_store("finish_sync_job_$id", new SyncJobCommand('finish'));
-  }
-
-  foreach (gather_jobs($sync_job_ids) as $res) {
-    if (!isset($res['data'])) {
-      raise_error('Error in sync job response');
-    }
-  }
+  resume_job_workers($waiting_workers, $sync_job_ids);
 
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
 }

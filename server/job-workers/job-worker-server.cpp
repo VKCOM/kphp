@@ -149,8 +149,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   double job_wait_time = now_time - job->job_start_time;
   double left_job_time = job->job_deadline_time() - now_time;
 
-  tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, left_job_time = %f, job_wait_time = %f\n",
-            job->job_result_fd_idx, job->job_id, job, left_job_time, job_wait_time);
+  tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d>, left_job_time = %f, job_wait_time = %f, job_memory_ptr = %p\n",
+            job->job_result_fd_idx, job->job_id, left_job_time, job_wait_time, job);
 
   const auto &job_memory_stats = job->resource.get_memory_stats();
   vk::singleton<ServerStats>::get().add_job_stats(job_wait_time, job_memory_stats.max_real_memory_used, job_memory_stats.max_memory_used);
@@ -173,14 +173,8 @@ void JobWorkerServer::init() {
   assert(job_workers_ctx.pipes_inited);
 
   read_job_fd = job_workers_ctx.job_pipe[0];
-  close(job_workers_ctx.job_pipe[1]); // this endpoint is for HTTP worker to write job
-  clear_event(job_workers_ctx.job_pipe[1]);
-  for (auto &result_pipe : job_workers_ctx.result_pipes) {
-    close(result_pipe[0]); // this endpoint is for HTTP worker to read job result
-    clear_event(result_pipe[0]);
-  }
 
-  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL);
+  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL | EVT_SPEC);
   assert(read_job_connection);
   memset(read_job_connection->custom_data, 0, sizeof(read_job_connection->custom_data));
 

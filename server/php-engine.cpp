@@ -1490,9 +1490,6 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
         set_main_target(rpc_clients.front());
       }
 
-      if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
-        vk::singleton<JobWorkerClient>::get().init(logname_id);
-      }
       break;
     }
     case WorkerType::job_worker: {
@@ -1502,6 +1499,10 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
     }
     default:
       assert(0);
+  }
+
+  if (vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker) > 0) {
+    vk::singleton<JobWorkerClient>::get().init(logname_id);
   }
 
   if (no_sql) {

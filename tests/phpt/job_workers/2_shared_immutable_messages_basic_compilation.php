@@ -46,7 +46,7 @@ function test_compilation($x) {
   	$requests[] = new SimpleJobRequest($shared_data, $offset, $limit);
   }
 
-  kphp_job_worker_start_multi($requests);
+  kphp_job_worker_start_multi($requests, -1);
 }
 
 test_compilation(false);
