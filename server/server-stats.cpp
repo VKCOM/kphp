@@ -150,7 +150,7 @@ private:
   template<size_t P, class I, class Mapper>
   static void set_percentile(T &out, I first, std::ptrdiff_t size, const Mapper &mapper) noexcept {
     if (size) {
-      const auto index = P == 100 ? (size - 1) : (P * size / 100);
+      const auto index = P * (size - 1) / 100;
       std::nth_element(first, first + index, first + size);
       out = mapper(first[index]);
     } else {
@@ -218,6 +218,10 @@ public:
 
   void add_sample(T value, size_t sample_index) noexcept {
     if (sample_index >= samples_.size()) {
+      // the zero value doesn't override anything
+      if (value == T{}) {
+        return;
+      }
       sample_index = std::uniform_int_distribution<size_t>{0, sample_index}(*gen_);
     }
     if (sample_index < samples_.size()) {
@@ -333,8 +337,9 @@ public:
         if (index < samples_.size()) {
           samples_[index] = sample;
         }
+        // the zero value doesn't affect the sample
+        distrib.param(std::uniform_int_distribution<size_t>::param_type{0, distrib.max() + 1});
       }
-      distrib.param(std::uniform_int_distribution<size_t>::param_type{0, distrib.max() + 1});
     }
     percentiles.update_percentiles(samples_.begin(), last_, [](const Sample &s) { return s.first; });
   }
