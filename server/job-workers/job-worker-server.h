@@ -40,13 +40,11 @@ public:
 
   void reset_running_job() noexcept;
 
-  void try_store_job_response_error(const char *error_msg, int error_code);
+  void store_job_response_error(const char *error_msg, int error_code);
 
   void flush_job_stat() noexcept;
 
-  bool reply_is_expected() const noexcept {
-    return running_job && !reply_was_sent;
-  }
+  bool reply_is_expected() const noexcept;
 
 private:
   const char *send_job_reply(JobSharedMessage *response) noexcept;
