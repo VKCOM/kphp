@@ -25,6 +25,8 @@ function do_job_worker() {
         return redirect_to_job_worker($req);
       case "self_lock_job":
         return self_lock_job($req);
+      case "x2_no_reply":
+        return x2_no_reply($req);
     }
     if ($req->tag !== "") {
       critical_error("Unknown tag " + $req->tag);
@@ -125,6 +127,15 @@ function x2_with_work_after_response(X2Request $x2_req) {
   fprintf(STDERR, "start work after response\n");
   safe_sleep($x2_req->sleep_time_sec);
   fprintf(STDERR, "finish work after response\n");
+}
+
+function x2_no_reply(X2Request $x2_req) {
+  $sum = 0;
+  foreach ($x2_req->arr_request as $item) {
+    $sum += $item;
+  }
+  safe_sleep($x2_req->sleep_time_sec);
+  fprintf(STDERR, "Finish no reply job: sum = $sum\n");
 }
 
 function sync_job(X2Request $req) {
