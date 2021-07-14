@@ -424,8 +424,26 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_null_usage_in_binary_operations(binary_vertex);
   }
 
+  if (vertex->type() == op_instanceof) {
+    check_instanceof(vertex.try_as<op_instanceof>());
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
+}
+
+void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_vertex) {
+  const auto instance_var = instanceof_vertex->lhs();
+  if (!instance_var) {
+    return;
+  }
+
+  const auto *instanceof_var_type = tinf::get_type(instance_var);
+  if (!instanceof_var_type) {
+    return;
+  }
+
+  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance of class, but passed type '{}'", instanceof_var_type->as_human_readable()));
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {

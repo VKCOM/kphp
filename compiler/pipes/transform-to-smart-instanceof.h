@@ -14,7 +14,7 @@
 class TransformToSmartInstanceof final : public FunctionPassBase {
 public:
   std::string get_description() final {
-    return "Trasform To Smart Instanceof";
+    return "Transform To Smart Instanceof";
   }
 
   bool user_recursion(VertexPtr v) override;
