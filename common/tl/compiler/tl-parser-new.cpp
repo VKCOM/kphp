@@ -933,6 +933,26 @@ tree_tl_var_t *vars[10];
 tree_tl_field_t *fields[10];
 struct tl_var *last_num_var[10];
 
+std::pair<bool, std::string> convert_type_to_bare_constructor(std::string id) {
+  if (id == "#") {
+    return {false, std::move(id)};
+  }
+  size_t pos = 0;
+  for (size_t i = 0; i < id.size() - 1; i++) {
+    if (id[i] == '.') {
+      pos = i + 1;
+      break;
+    }
+  }
+  if ('a' <= id[pos] && id[pos] <= 'z') {
+    return {false, std::move(id)};
+  } else {
+    assert('A' <= id[pos] && id[pos] <= 'Z');
+    id[pos] += 'a' - 'A';
+    return {true, std::move(id)};
+  }
+}
+
 std::pair<bool, std::string> convert_bare_constructor_to_type(std::string id) {
   if (id == "#") {
     return {false, std::move(id)};
@@ -1336,8 +1356,16 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
       } else {
         tl_type *t = reinterpret_cast<tl_type *>(T->data);
         if (T->flags & 4) {
-          assert (t->constructors_num == 1);
-          tl_buf_add_string_q(t->constructors[0]->real_id ? t->constructors[0]->real_id : t->constructors[0]->id, -1, x);
+          if (t->constructors_num == 1) {
+            tl_buf_add_string_q(t->constructors[0]->real_id ? t->constructors[0]->real_id : t->constructors[0]->id, -1, x);
+          } else {
+            assert(t->constructors_num == 0);
+            assert(t->real_id == nullptr); // real_id is never be set with not null
+            auto result = convert_type_to_bare_constructor(t->id);
+            assert(result.first); // convertion was done
+            const auto &constructor = result.second;
+            tl_buf_add_string_q(constructor.c_str(), constructor.size(), x);
+          }
         } else {
           tl_buf_add_string_q(t->real_id ? t->real_id : t->id, -1, x);
         }
@@ -1726,7 +1754,10 @@ struct tl_combinator_tree *tl_parse_ident(struct tree *T, int s) {
 
   auto *t = tl_add_type(type_name.c_str(), type_name.size(), -1, 0);
   L = alloc_ctree_node();
-  if (s || is_constructor) {
+  if (is_constructor) {
+    L->flags |= 5;
+    t->flags |= 8;
+  } else if (s) {
     L->flags |= 1;
     t->flags |= 8;
   }
