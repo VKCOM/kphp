@@ -197,8 +197,8 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
     return "There is no running jobs";
   }
 
-  if (reply_was_sent) {
-    return "The reply has been already sent";
+  if (!reply_is_expected()) {
+    return reply_was_sent ? "The reply has been already sent" : "Job has no-reply flag";
   }
 
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
