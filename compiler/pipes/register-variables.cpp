@@ -107,8 +107,8 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       string class_name = name.substr(0, pos$$);
       string var_name = name.substr(pos$$ + 2);
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
+      kphp_error_return(klass, fmt_format("class {} not found", class_name));
       ClassPtr used_klass = klass;
-      kphp_assert(klass);
       while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
