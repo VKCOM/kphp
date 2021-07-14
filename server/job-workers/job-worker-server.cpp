@@ -197,8 +197,8 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
     return "There is no running jobs";
   }
 
-  if (reply_was_sent) {
-    return "The reply has been already sent";
+  if (!reply_is_expected()) {
+    return reply_was_sent ? "The reply has been already sent" : "Job has no-reply flag";
   }
 
   int write_job_result_fd = vk::singleton<JobWorkersContext>::get().result_pipes.at(running_job->job_result_fd_idx)[1];
@@ -217,11 +217,8 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   return nullptr;
 }
 
-void JobWorkerServer::try_store_job_response_error(const char *error_msg, int error_code) {
+void JobWorkerServer::store_job_response_error(const char *error_msg, int error_code) {
   php_assert(running_job);
-  if (reply_was_sent) {
-    return;
-  }
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
@@ -237,6 +234,10 @@ void JobWorkerServer::try_store_job_response_error(const char *error_msg, int er
   } else {
     memory_manager.detach_shared_message_from_this_proc(response_memory);
   }
+}
+
+bool JobWorkerServer::reply_is_expected() const noexcept {
+  return running_job && !running_job->no_reply && !reply_was_sent;
 }
 
 void JobWorkerServer::flush_job_stat() noexcept {

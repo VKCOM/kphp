@@ -66,12 +66,16 @@ function do_http_worker() {
       test_job_worker_start_multi_with_errors();
       return;
     }
+    case "/test_send_job_no_reply": {
+      test_send_job_no_reply();
+      return;
+    }
   }
 
   critical_error("unknown test " . $_SERVER["PHP_SELF"]);
 }
 
-function send_jobs($context, float $timeout = -1.0): array {
+function send_jobs($context, float $timeout = -1.0, bool $no_reply = false): array {
   $ids = [];
   foreach ($context["data"] as $arr) {
     $req = new X2Request;
@@ -81,11 +85,18 @@ function send_jobs($context, float $timeout = -1.0): array {
     $req->arr_request = (array)$arr;
     $req->sleep_time_sec = (int)$context["job-sleep-time-sec"];
     $req->error_type = (string)$context["error-type"];
-    $id = kphp_job_worker_start($req, $timeout);
-    if ($id) {
-      $ids[] = $id;
+    if ($no_reply) {
+      $ok = kphp_job_worker_start_no_reply($req, $timeout);
+      if (!$ok) {
+        critical_error("Can't send no_reply job");
+      }
     } else {
-      critical_error("Can't send job");
+      $id = kphp_job_worker_start($req, $timeout);
+      if ($id) {
+        $ids[] = $id;
+      } else {
+        critical_error("Can't send job");
+      }
     }
   }
   return $ids;
@@ -212,4 +223,10 @@ function test_job_worker_wakeup_on_merged_events() {
   resume_job_workers($waiting_workers, $sync_job_ids);
 
   echo json_encode(["jobs-result" => gather_jobs($ids)]);
+}
+
+function test_send_job_no_reply() {
+  $context = json_decode(file_get_contents('php://input'));
+  send_jobs($context, (int)$context["send-timeout"], true);
+  echo json_encode("Success");
 }
