@@ -326,7 +326,7 @@ static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, in
 
   dl::deallocate(res, static_cast<size_t>(sizeof(int) * result_size));
 
-  return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
+  return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
 static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
