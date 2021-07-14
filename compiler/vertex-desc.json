@@ -1779,6 +1779,22 @@
       }
     }
   },
+
+  {
+    "comment": "spread operator (...$a)",
+    "name": "op_spread",
+    "base_name": "meta_op_base",
+    "sons": {
+      "expr": 0
+    },
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "...$a"
+    }
+  },
+
   {
     "comment": "lhs() instanceof rhs()",
     "name": "op_instanceof",

@@ -477,6 +477,21 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_varg: {
+      // cases:
+      // [...$a]:        prev: tok_opbrk, next: tok_var_name
+      // [1, ...$a]:     prev: tok_comma, next: tok_var_name
+      // [1, ...$a, 1]:  prev: tok_comma, next: tok_var_name
+      // [1, ...f(), 1]: prev: tok_comma, next: tok_func_name
+      const auto is_spread =
+        vk::none_of_equal(std::next(cur)->type(), tok_comma, tok_clbrc) &&
+        vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_opbrk);
+      if (is_spread) {
+        next_cur();
+        res = get_expression();
+        res = VertexAdaptor<op_spread>::create(res).set_location(res);
+        break;
+      }
+
       bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar);
       CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 

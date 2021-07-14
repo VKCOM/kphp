@@ -994,6 +994,13 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
 
+    case op_spread: {
+      const auto var = tree_node.as<op_spread>();
+      Node res = new_node();
+      create_cfg(var->expr(), res_start, &res);
+      break;
+    }
+
     default: {
       kphp_error(0, fmt_format("cfg doesnt handle this type of operation: {}", static_cast<int>(tree_node->type())));
       kphp_fail();
