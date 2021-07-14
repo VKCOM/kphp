@@ -1756,7 +1756,7 @@ struct tl_combinator_tree *tl_parse_ident(struct tree *T, int s) {
   L = alloc_ctree_node();
   if (is_constructor) {
     L->flags |= 5;
-    t->flags |= 8;
+    t->flags |= 1;
   } else if (s) {
     L->flags |= 1;
     t->flags |= 8;
