@@ -626,7 +626,7 @@ PHP_FUNCTION (vk_flex) {
     fprintf(stderr, "type = %s, type_len = %ld\n", type, type_len);
     fprintf(stderr, "lang_id = %ld\n", lang_id);
   }
-  char *res = do_flex(name, name_len, case_name, case_name_len, sex, type, type_len, lang_id);
+  char *res = do_flex(name, name_len, case_name, case_name_len, sex == 1, type, type_len, lang_id);
   VK_RETURN_STRING_NOD (res);
 }
 
