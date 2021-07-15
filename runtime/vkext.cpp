@@ -461,7 +461,7 @@ string f$vk_win_to_utf8(const string &text, bool escape) {
 string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id) {
   static char ERROR_MSG_BUF[1000] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';
-  vk::string_view res = flex(vk::string_view{name.c_str(), name.size()}, vk::string_view{case_name.c_str(), case_name.size()}, static_cast<bool>(sex),
+  vk::string_view res = flex(vk::string_view{name.c_str(), name.size()}, vk::string_view{case_name.c_str(), case_name.size()}, sex == 1,
                          vk::string_view{type.c_str(), type.size()}, lang_id, buff, ERROR_MSG_BUF);
   if (ERROR_MSG_BUF[0] != '\0') {
     php_warning("%s", ERROR_MSG_BUF);
