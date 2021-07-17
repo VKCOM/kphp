@@ -50,6 +50,13 @@ inline class_instance<T> class_instance<T>::empty_alloc() {
 }
 
 template<class T>
+inline class_instance<T> class_instance<T>::allocate_cdata(size_t data_sizeof) {
+  void *raw = dl::allocate(sizeof(T) + data_sizeof);
+  new (&o) vk::intrusive_ptr<T>(new (raw) T{data_sizeof});
+  return *this;
+}
+
+template<class T>
 T *class_instance<T>::operator->() {
   if (unlikely(!o)) {
     warn_on_access_null();

@@ -74,6 +74,7 @@ public:
   template<class... Args>
   inline class_instance<T> alloc(Args &&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
+  inline class_instance<T> allocate_cdata(size_t data_sizeof);
   inline void destroy() { o.reset(); }
   int64_t get_reference_counter() const { return o->get_refcnt(); }
 
