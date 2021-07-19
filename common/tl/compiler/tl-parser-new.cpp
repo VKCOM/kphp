@@ -944,11 +944,11 @@ std::pair<bool, std::string> convert_type_to_bare_constructor(std::string id) {
       break;
     }
   }
-  if ('a' <= id[pos] && id[pos] <= 'z') {
+  if (std::islower(static_cast<unsigned char>(id[pos]))) {
     return {false, std::move(id)};
   } else {
-    assert('A' <= id[pos] && id[pos] <= 'Z');
-    id[pos] += 'a' - 'A';
+    assert(std::isupper(static_cast<unsigned char>(id[pos])));
+    id[pos] = std::tolower(static_cast<unsigned char>(id[pos]));
     return {true, std::move(id)};
   }
 }
@@ -964,11 +964,11 @@ std::pair<bool, std::string> convert_bare_constructor_to_type(std::string id) {
       break;
     }
   }
-  if ('A' <= id[pos] && id[pos] <= 'Z') {
+  if (std::isupper(static_cast<unsigned char>(id[pos]))) {
     return {false, std::move(id)};
   } else {
-    assert('a' <= id[pos] && id[pos] <= 'z');
-    id[pos] += 'A' - 'a';
+    assert(std::islower(static_cast<unsigned char>(id[pos])));
+    id[pos] = std::toupper(static_cast<unsigned char>(id[pos]));
     return {true, std::move(id)};
   }
 }
