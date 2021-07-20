@@ -78,8 +78,6 @@ function test_binary_operations_optional_int($lhs, $rhs) {
   echo "=== "; var_dump($lhs === $rhs);
   echo "!== "; var_dump($lhs !== $rhs);
 
-  echo "?: "; var_dump($lhs ?: $rhs);
-
   echo ". "; var_dump($lhs . $rhs);
 }
 
@@ -115,8 +113,6 @@ function test_binary_operations_null_false($lhs, $rhs) {
 
   echo "=== "; var_dump($lhs === $rhs);
   echo "!== "; var_dump($lhs !== $rhs);
-
-  echo "?: "; var_dump($lhs ?: $rhs);
 
   echo ". "; var_dump($lhs . $rhs);
 }

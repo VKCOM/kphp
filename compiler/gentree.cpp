@@ -642,7 +642,7 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
     return VertexAdaptor<op_ternary>::create(condition, true_expr, false_expr);
   }
 
-  auto cond_var = create_superlocal_var("shorthand_ternary_cond");
+  auto cond_var = create_superlocal_var("shorthand_ternary_cond").set_location(condition);
 
   auto cond = conv_to<tp_bool>(VertexAdaptor<op_set>::create(cond_var, condition));
 
