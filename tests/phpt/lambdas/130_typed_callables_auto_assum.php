@@ -1,10 +1,7 @@
 @kphp_should_fail
 KPHP_SHOW_ALL_TYPE_ERRORS=1
-/pass B to argument \$arg0 of L\\Avoid::__invoke/
-/assign string to A::\$a/
-/but it's declared as @var int/
-/pass A to argument \$b of anonymous\(...\)/
-/but it's declared as @param B/
+/130_typed_callables_auto_assum.php:29/
+/Declaration of L\\Avoid::__invoke must be compatible with version in class/
 <?php
 
 

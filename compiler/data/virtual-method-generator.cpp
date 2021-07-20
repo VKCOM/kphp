@@ -160,27 +160,9 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
   FunctionPtr derived_method = interface_method_in_derived->function;
   kphp_assert(derived_method);
 
-  /**
-   * Check that overridden method has count of parameters at least as in interface
-   * and has appropriate count of default parameters e.g.:
-   *
-   * interface I { public function foo($x, $y); }
-   * class A implements I { public function foo($x, $y = 10, $z = 20); }
-   *
-   * Interface I: i_argn = 2
-   * Class A    : min_argn = 1, max_argn = 3, default_argn = 2
-   * check that : i_argn <= max_argn && (default_argn >= max_argn - i_argn)
-   */
-  auto min_argn = derived_method->get_min_argn();
-  auto derived_params = derived_method->get_params();
-  auto max_argn = derived_params.size();
-  auto default_argn = max_argn - min_argn;
-
-  auto interface_params = interface_function->get_params();
-  auto i_argn = interface_params.size();
-
-  if (!(i_argn <= max_argn && (default_argn >= max_argn - i_argn))) {
-    kphp_error(false, fmt_format("Count of arguments are different in interface method: `{}` and in class: `{}`",
+  if (!derived_method->can_override_method(interface_function)) {
+    stage::set_location(derived_method->root->location);
+    kphp_error(false, fmt_format("Declaration of {} must be compatible with version in class {}",
                                  interface_function->get_human_readable_name(),
                                  context_class->name));
 

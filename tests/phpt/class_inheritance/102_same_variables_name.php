@@ -1,4 +1,5 @@
 @kphp_should_fail
+/You may not override field: `x`, in class: `D`/
 <?php
 
 class B {

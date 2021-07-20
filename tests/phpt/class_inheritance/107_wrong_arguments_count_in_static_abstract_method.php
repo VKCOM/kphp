@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Count of arguments/
+/Declaration of Base::foo must be compatible with version in class Derived/
 <?php
 
 abstract class Base {
