@@ -32,6 +32,8 @@ double microtime_monotonic();
 double microtime();
 
 mixed f$microtime(bool get_as_float = false);
+string f$microtime_string();
+double f$microtime_float();
 
 int64_t f$mktime(int64_t h = std::numeric_limits<int64_t>::min(),
                  int64_t m = std::numeric_limits<int64_t>::min(),

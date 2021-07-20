@@ -191,7 +191,12 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
     Location save_location = stage::get_location();
 
     int res = 0;
-    bool do_not_check = vk::any_of_equal(v->type(), op_ternary, op_log_or, op_log_and, op_log_or_let, op_log_and_let, op_unset);
+    // we skip op_seq_rval as it's OK to combine both reads and writes there,
+    // members are separated by a statement (;), they're not part of the same expression;
+    // we do, however, check for every of its statements to be UB-free;
+    // here is an example of a good op_seq_rval that would be reported if we would not filter it out here:
+    // ({ $x = 1; $x; }) - variable $x is both written to and read from
+    bool do_not_check = vk::any_of_equal(v->type(), op_seq_rval, op_ternary, op_log_or, op_log_and, op_log_or_let, op_log_and_let, op_unset);
 
     for (auto i : *v) {
       UBMergeData node_data;

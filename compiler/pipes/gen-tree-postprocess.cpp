@@ -8,6 +8,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/name-gen.h"
 #include "compiler/gentree.h"
 
 namespace {
@@ -87,6 +88,76 @@ VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, Verte
   auto req_once = VertexAdaptor<op_require>::create(lib_main_file_name).set_location(require_lib_call);
   req_once->once = true;
   return req_once;
+}
+
+VertexPtr process_preg_match(VertexAdaptor<op_func_call> call, FunctionPtr current_function) {
+  const auto &args = call->args();
+
+  auto create_seq_rval = [](FunctionPtr context, VertexAdaptor<op_func_call> call, VertexPtr match_var) {
+    auto tmp_tuple = GenTree::create_superlocal_var("tmp_tuple", context).set_location(call);
+    auto assign_tuple = VertexAdaptor<op_set>::create(tmp_tuple, call).set_location(call);
+    auto tuple0 = VertexAdaptor<op_index>::create(tmp_tuple.clone(), GenTree::create_int_const(0)).set_location(call);
+    auto tuple1 = VertexAdaptor<op_index>::create(tmp_tuple.clone(), GenTree::create_int_const(1)).set_location(call);
+    auto assign_matches = VertexAdaptor<op_set>::create(match_var, tuple1);
+    auto result_seq = VertexAdaptor<op_seq_rval>::create(assign_tuple, assign_matches, tuple0).set_location(call);
+    return result_seq;
+  };
+
+  // preg_match($pat, $s, $m) || preg_match_all($pat, $s, $m)
+  // ->
+  // ({
+  //   $tmp_tuple = preg_match_[all_]strings($pat, $s);
+  //   $m = $tmp_tuple[1];
+  //   $tmp_tuple[0];
+  // })
+  if (args.size() == 3) {
+    auto new_call = VertexAdaptor<op_func_call>::create(args[0], args[1]).set_location(call);
+    new_call->set_string(call->get_string() + "_strings");
+    return create_seq_rval(current_function, new_call, args[2]);
+  }
+
+  // preg_match($pat, $s, $m, 0, $offset)
+  // ->
+  // ({
+  //   $tmp_tuple = preg_match_strings($pat, $s, $offset);
+  //   $m = $tmp_tuple[1];
+  //   $tmp_tuple[0];
+  // })
+  if (args.size() == 5) {
+    auto flags = GenTree::get_actual_value(args[3]).try_as<op_int_const>();
+    if (flags && parse_int_from_string(flags) == 0) {
+      auto new_call = VertexAdaptor<op_func_call>::create(args[0], args[1], args[4]).set_location(call);
+      new_call->set_string("preg_match_strings");
+      return create_seq_rval(current_function, new_call, args[2]);
+    }
+  }
+
+  // TODO: do we want to handle these rare cases?
+  // preg_match($re, $s, $m, 0) -> preg_match_strings($re, $s, $m)
+  // preg_match_all($re, $s, $m, 0) -> preg_match_all_strings($re, $s, $m)
+
+  return call;
+}
+
+VertexPtr process_microtime(VertexAdaptor<op_func_call> call) {
+  const auto &args = call->args();
+
+  // microtime()      -> microtime_string()
+  // microtime(false) -> microtime_string()
+  if (args.empty() || args[0]->type() == op_false) {
+    auto result = VertexAdaptor<op_func_call>::create().set_location(call);
+    result->set_string("microtime_string");
+    return result;
+  }
+
+  // microtime(true) -> microtime_float()
+  if (GenTree::get_actual_value(args[0])->type() == op_true) {
+    auto result = VertexAdaptor<op_func_call>::create().set_location(call);
+    result->set_string("microtime_float");
+    return result;
+  }
+
+  return call;
 }
 
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
@@ -201,6 +272,13 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
     if (name == "require_lib") {
       return process_require_lib(call);
+    }
+
+    if (name == "preg_match" || name == "preg_match_all") {
+      return process_preg_match(call, current_function);
+    }
+    if (name == "microtime") {
+      return process_microtime(call);
     }
 
     if (name == "min" || name == "max") {
