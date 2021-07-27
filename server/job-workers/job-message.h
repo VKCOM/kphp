@@ -13,8 +13,8 @@
 namespace job_workers {
 
 // this constant is used for calculating total available messages count:
-//    messages count = the processes number * JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER
-constexpr size_t JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER = 2;
+//    messages count = the processes number * JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER
+constexpr size_t JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER = 2;
 // the size of the job shared message (without extra memory)
 constexpr size_t JOB_SHARED_MESSAGE_BYTES = 512 * 1024; // 512KB
 // the number of buckets for extra shared memory,

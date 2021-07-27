@@ -1986,22 +1986,19 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 2018: {
-      return read_option_to(long_option, 0.0, 10.0, vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout);
+      const int messages_count = atoi(optarg);
+      if (messages_count <= 0) {
+        kprintf("--%s option: couldn't parse argument\n", long_option);
+        return -1;
+      }
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count(static_cast<size_t>(messages_count))) {
+        kprintf("--%s option: too small\n", long_option);
+        return -1;
+      }
+      return 0;
     }
     case 2019: {
-      // TODO REMOVE ME!
-      OPTION_ADD_DEPRECATION_MESSAGE("--job-workers-num");
-      return parse_numeric_option(long_option, 0, int{WorkersControl::max_workers_count} / 2, [](int job_workers_num) {
-        auto &control = vk::singleton<WorkersControl>::get();
-        uint16_t total_workers = control.get_total_workers_count();
-        // expect that -f options is set in advance
-        assert(total_workers);
-        total_workers += job_workers_num;
-        assert(total_workers <= WorkersControl::max_workers_count);
-        control.set_total_workers_count(total_workers);
-        const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(total_workers);
-        control.set_ratio(WorkerType::job_worker, ratio);
-      });
+      return read_option_to(long_option, 0.0, 10.0, vk::singleton<LeaseContext>::get().rpc_stop_ready_timeout);
     }
     default:
       return -1;
@@ -2071,9 +2068,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
-  parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
-  parse_option("lease-stop-ready-timeout", required_argument, 2018, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
-  parse_option("job-workers-num", required_argument, 2019, "DEPRECATED");
+  parse_option("job-workers-shared-memory-size", required_argument, 2017, "the total size of shared memory used for job workers related communication");
+  parse_option("job-workers-shared-messages", required_argument, 2018, "the total count of the shared messages for job workers related communication");
+  parse_option("lease-stop-ready-timeout", required_argument, 2019, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
