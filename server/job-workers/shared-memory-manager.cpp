@@ -36,7 +36,7 @@ void SharedMemoryManager::init() noexcept {
   }
 
   std::array<memory_resource::extra_memory_raw_bucket, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory;
-  control_block_->stats.unused_memory = memory_resource::distribute_memory(extra_memory, processes, raw_mem,
+  control_block_->stats.unused_memory = memory_resource::distribute_memory(extra_memory, shared_messages_count_ / 2, raw_mem,
                                                                            left_memory - sizeof(JobSharedMessage) * messages_count);
   for (size_t i = 0; i != extra_memory.size(); ++i) {
     auto &free_extra_buffers = control_block_->free_extra_memory[i];
