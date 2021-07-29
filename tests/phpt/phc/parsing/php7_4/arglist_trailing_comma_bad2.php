@@ -1,4 +1,4 @@
-@kphp_should_fail php7_4
+@kphp_should_fail
 <?php
 
 function f(...$xs) {}

@@ -1,4 +1,4 @@
-@ok php7_4
+@ok
 <?php
 
 // why PHP7.4: 't0222 t0222' gives different results on some 7.2 builds

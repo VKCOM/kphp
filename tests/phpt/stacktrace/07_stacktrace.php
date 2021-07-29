@@ -1,4 +1,4 @@
-@kphp_should_fail php7_4
+@kphp_should_fail
 /assign int to A::\$name/
 /but it's declared as @var string/
 <?php

@@ -123,11 +123,9 @@ def make_distcc_env(distcc_hosts, distcc_dir):
     }
 
 
-def search_php_bin(php5_require=False, php7_4_require=False):
+def search_php_bin(php8_require=False):
     if sys.platform == "darwin":
         return shutil.which("php")
-    if php5_require:
-        return shutil.which("php5.6") or shutil.which("php5")
-    if php7_4_require:
-        return shutil.which("php7.4")
-    return shutil.which("php7.2") or shutil.which("php7.3") or shutil.which("php7.4")
+    if php8_require:
+        return shutil.which("php8.0")
+    return shutil.which("php7.4")

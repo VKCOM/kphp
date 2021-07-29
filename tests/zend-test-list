@@ -228,7 +228,6 @@ ext/pcre/tests/preg_replace2.phpt
 ext/pcre/tests/preg_replace_variation1.phpt
 ext/pcre/tests/preg_split_basic.phpt
 ext/pcre/tests/ungreedy.phpt
-ext/spl/tests/unserialize_errors.phpt
 ext/standard/tests/array/array_chunk_basic1.phpt
 ext/standard/tests/array/array_chunk_basic2.phpt
 ext/standard/tests/array/array_chunk_variation4.phpt
@@ -350,7 +349,6 @@ ext/standard/tests/file/feof_basic.phpt
 ext/standard/tests/file/fgetc_variation2.phpt
 ext/standard/tests/file/fgetcsv.phpt
 ext/standard/tests/file/fgetcsv_variation23.phpt
-ext/standard/tests/file/fgetcsv_variation32.phpt
 ext/standard/tests/file/fgets_variation2.phpt
 ext/standard/tests/file/file_exists_variation1.phpt
 ext/standard/tests/file/file_get_contents_basic001.phpt

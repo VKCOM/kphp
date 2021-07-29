@@ -7,11 +7,6 @@ $arr = [];
 list($arr[0], $arr[1]) = [1, 2];
 var_dump($arr);
 
-// интересный пример, из-за порядка получаются разные результаты по понятным причинам
-$a = [0 => 777];
-list($a[1], $a[0]) = $a;
-var_dump($a);
-
 $test = '1:2:3';
 $gift = array();
 list($gift['from_id'], $gift['gift_number'], $gift['id']) = explode(':', $test);

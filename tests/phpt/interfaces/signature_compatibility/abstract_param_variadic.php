@@ -1,4 +1,4 @@
-@ok php7_4
+@ok
 <?php
 
 // Variadic params follow the same rules.

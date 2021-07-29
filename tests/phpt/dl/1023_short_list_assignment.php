@@ -3,11 +3,6 @@
 require_once 'kphp_tester_include.php';
 
 function demo1() {
-  // интересный пример, из-за порядка получаются разные результаты по понятным причинам
-  $a = [0 => 777];
-  [$a[1], $a[0]] = $a;
-  var_dump($a);
-
   $test = '1:2:3';
   $gift = array();
   [$gift['from_id'], $gift['gift_number'], $gift['id']] = explode(':', $test);

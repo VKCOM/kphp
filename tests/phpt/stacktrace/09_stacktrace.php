@@ -1,4 +1,4 @@
-@kphp_should_fail php7_4
+@kphp_should_fail
 /insert string into A::\$ids\[\]/
 <?php
 
