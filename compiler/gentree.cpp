@@ -370,161 +370,17 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
 }
 
 void GenTree::check_and_remove_num_separators(std::string &s) {
-  enum {
-    before_dot,
-    after_dot,
-    after_e,
-    after_e_and_sign,
-    after_e_and_digit,
-    hex,
-    binary,
-  } state = before_dot;
-
-  enum {
-    none,
-    was_start_hex,
-    was_start_bin,
-    was_dot,
-    was_exp,
-    was_exp_and_sign,
-  } prev_symbol_state = none;
-
   bool was_separator = false;
 
-  auto t = s.begin();
-
-  if (s[0] == '0' && s[1] == 'x') {
-    t += 2;
-    state = hex;
-    prev_symbol_state = was_start_hex;
-  } else if (s[0] == '0' && s[1] == 'b') {
-    t += 2;
-    state = binary;
-    prev_symbol_state = was_start_bin;
-  }
-
-  while (t != s.end()) {
-    if (*t == '_') {
+  for (const char &c : s) {
+    if (c == '_') {
       if (was_separator) {
         kphp_error_return(false, "Bad numeric constant, several '_' in a row are prohibited");
       }
-
-      if (prev_symbol_state == was_exp) {
-        prev_symbol_state = none;
-        // case: 10e_5
-        kphp_error_return(false, "Bad numeric constant, '_' cannot go after 'e' or 'E'");
-      }
-
-      if (prev_symbol_state == was_exp_and_sign) {
-        prev_symbol_state = none;
-        // case: 10e-_5
-        kphp_error_return(false, "Bad numeric constant, '_' cannot go after 'e<sign>' or 'E<sign>'");
-      }
-
-      if (prev_symbol_state == was_dot) {
-        prev_symbol_state = none;
-        // case: 10e._5
-        kphp_error_return(false, "Bad numeric constant, '_' cannot go after '.'");
-      }
-
-      if (prev_symbol_state == was_start_bin) {
-        prev_symbol_state = none;
-        // case: 0b_1
-        kphp_error_return(false, "Bad numeric constant, '_' cannot go after '0b'");
-      }
-
-      if (prev_symbol_state == was_start_hex) {
-        prev_symbol_state = none;
-        // case: 0x_5
-        kphp_error_return(false, "Bad numeric constant, '_' cannot go after '0x'");
-      }
-
-      t++;
       was_separator = true;
-      continue;
+    } else {
+      was_separator = false;
     }
-    switch (state) {
-      case hex:
-      case binary: {
-        prev_symbol_state = none;
-        t++;
-        break;
-      }
-      case before_dot: {
-        switch (*t) {
-          case '0' ... '9': {
-            t++;
-            break;
-          }
-          case '.': {
-            if (was_separator) {
-              // case: 10_.5
-              kphp_error_return(false, "Bad numeric constant, '_' cannot go before '.'");
-            }
-            t++;
-            state = after_dot;
-            prev_symbol_state = was_dot;
-            break;
-          }
-          case 'e':
-          case 'E': {
-            if (was_separator) {
-              // case: 10_e5
-              kphp_error_return(false, "Bad numeric constant, '_' cannot go before 'e' or 'E'");
-            }
-            t++;
-            state = after_e;
-            prev_symbol_state = was_exp;
-            break;
-          }
-        }
-        break;
-      }
-      case after_dot: {
-        switch (*t) {
-          case '0' ... '9': {
-            t++;
-            break;
-          }
-          case 'e':
-          case 'E': {
-            t++;
-            state = after_e;
-            break;
-          }
-        }
-        break;
-      }
-      case after_e: {
-        switch (*t) {
-          case '-':
-          case '+': {
-            t++;
-            state = after_e_and_sign;
-            prev_symbol_state = was_exp_and_sign;
-            break;
-          }
-          case '0' ... '9': {
-            t++;
-            state = after_e_and_digit;
-            prev_symbol_state = none;
-            break;
-          }
-        }
-        break;
-      }
-      case after_e_and_sign: {
-        t++;
-        state = after_e_and_digit;
-        prev_symbol_state = none;
-        break;
-      }
-      case after_e_and_digit: {
-        t++;
-        break;
-      }
-    }
-    was_separator = false;
   }
 
   // if all ok
