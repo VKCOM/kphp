@@ -59,6 +59,7 @@
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
 #include "compiler/pipes/convert-list-assignments.h"
+#include "compiler/pipes/convert-spread-operator.h"
 #include "compiler/pipes/convert-sprintf-calls.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
@@ -237,6 +238,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SplitSwitchF>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
+    >> PassC<ConvertSpreadOperatorPass>{}
     >> PipeC<CheckTypeHintVariance>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
