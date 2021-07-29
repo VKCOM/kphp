@@ -369,6 +369,55 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
   return res;
 }
 
+void GenTree::check_and_remove_num_separators(std::string &s) {
+  bool was_separator = false;
+
+  for (const char &c : s) {
+    if (c == '_') {
+      if (was_separator) {
+        kphp_error_return(false, "Bad numeric constant, several '_' in a row are prohibited");
+      }
+      was_separator = true;
+    } else {
+      was_separator = false;
+    }
+  }
+
+  // if all ok
+  s.erase(std::remove_if(s.begin(), s.end(), [](char symbol) { return symbol == '_'; }), s.end());
+}
+
+VertexPtr GenTree::get_op_num_const() {
+  auto get_vertex_with_str_val = [this] (auto vertex, std::string val) {
+    auto res = decltype(vertex)::create();
+    res.set_location(auto_location());
+    res->str_val = std::move(val);
+    return res;
+  };
+
+  if (cur->type() == tok_int_const) {
+    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, static_cast<string>(cur->str_val));
+  }
+
+  if (cur->type() == tok_float_const) {
+    return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, static_cast<string>(cur->str_val));
+  }
+
+  if (cur->type() == tok_int_const_sep) {
+    std::string val = static_cast<string>(cur->str_val);
+    check_and_remove_num_separators(val);
+    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, val);
+  }
+
+  if (cur->type() == tok_float_const_sep) {
+    std::string val = static_cast<string>(cur->str_val);
+    check_and_remove_num_separators(val);
+    return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, val);
+  }
+
+  return VertexPtr{};
+}
+
 VertexPtr GenTree::get_expr_top(bool was_arrow) {
   auto op = cur;
 
@@ -436,8 +485,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
+    case tok_int_const_sep: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
     case tok_int_const: {
-      res = get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, static_cast<string>(cur->str_val));
+      res = get_op_num_const();
       next_cur();
       break;
     }
@@ -451,8 +505,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
+    case tok_float_const_sep: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
     case tok_float_const: {
-      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, static_cast<string>(cur->str_val));
+      res = get_op_num_const();
       next_cur();
       break;
     }

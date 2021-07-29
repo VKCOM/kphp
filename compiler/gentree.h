@@ -153,6 +153,9 @@ public:
 private:
   const TypeHint *get_typehint();
 
+  static void check_and_remove_num_separators(std::string &s);
+  VertexPtr get_op_num_const();
+
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
   VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint);

@@ -375,9 +375,15 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     state = binary;
   }
 
+  bool with_separator = false;
   bool is_float = false;
 
   while (*t && state != finish) {
+    if (*t == '_') {
+      t++;
+      with_separator = true;
+      continue;
+    }
     switch (state) {
       case hex: {
         switch (*t) {
@@ -512,7 +518,14 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
   }
 
   assert (t != s);
-  lexer_data->add_token((int)(t - s), is_float ? tok_float_const : tok_int_const, s, t);
+
+  auto token_type = is_float ? tok_float_const : tok_int_const;
+
+  if (with_separator) {
+    token_type = is_float ? tok_float_const_sep : tok_int_const_sep;
+  }
+
+  lexer_data->add_token(static_cast<int>(t - s), token_type, s, t);
 
   return true;
 }
