@@ -367,21 +367,12 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     binary,
   } state = before_dot;
 
-  bool was_start_hex = false;
-  bool was_start_bin = false;
-  bool was_dot = false;
-  bool was_exp = false;
-  bool was_exp_and_sign = false;
-  bool was_separator = false;
-
   if (s[0] == '0' && s[1] == 'x') {
     t += 2;
     state = hex;
-    was_start_hex = true;
   } else if (s[0] == '0' && s[1] == 'b') {
     t += 2;
     state = binary;
-    was_start_bin = true;
   }
 
   bool with_separator = false;
@@ -389,48 +380,12 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
 
   while (*t && state != finish) {
     if (*t == '_') {
-      if (was_separator) {
-        return TokenLexerError("Bad numeric constant, several '_' in a row are prohibited").parse(lexer_data);
-      }
-
-      if (was_exp) {
-        was_exp = false;
-        // case: 10e_5
-        return TokenLexerError("Bad numeric constant, '_' cannot go after 'e' or 'E'").parse(lexer_data);
-      }
-
-      if (was_exp_and_sign) {
-        was_exp_and_sign = false;
-        // case: 10e-_5
-        return TokenLexerError("Bad numeric constant, '_' cannot go after 'e<sign>' or 'E<sign>'").parse(lexer_data);
-      }
-
-      if (was_dot) {
-        was_dot = false;
-        // case: 10e._5
-        return TokenLexerError("Bad numeric constant, '_' cannot go after '.'").parse(lexer_data);
-      }
-
-      if (was_start_bin) {
-        was_start_bin = false;
-        // case: 0b_1
-        return TokenLexerError("Bad numeric constant, '_' cannot go after '0b'").parse(lexer_data);
-      }
-
-      if (was_start_hex) {
-        was_start_hex = false;
-        // case: 0x_5
-        return TokenLexerError("Bad numeric constant, '_' cannot go after '0x'").parse(lexer_data);
-      }
-
       t++;
       with_separator = true;
-      was_separator = true;
       continue;
     }
     switch (state) {
       case hex: {
-        was_start_hex = false;
         switch (*t) {
           case '0' ... '9':
           case 'A' ... 'F':
@@ -444,7 +399,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
         break;
       }
       case binary: {
-        was_start_bin = false;
         switch(*t) {
           case '0':
           case '1':
@@ -463,26 +417,16 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
             break;
           }
           case '.': {
-            if (was_separator) {
-              // case: 10_.5
-              return TokenLexerError("Bad numeric constant, '_' cannot go before '.'").parse(lexer_data);
-            }
             t++;
             is_float = true;
             state = after_dot;
-            was_dot = true;
             break;
           }
           case 'e':
           case 'E': {
-            if (was_separator) {
-              // case: 10_e5
-              return TokenLexerError("Bad numeric constant, '_' cannot go before 'e' or 'E'").parse(lexer_data);
-            }
             t++;
             is_float = true;
             state = after_e;
-            was_exp = true;
             break;
           }
           default: {
@@ -517,14 +461,11 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
           case '+': {
             t++;
             state = after_e_and_sign;
-            was_exp_and_sign = true;
-            was_exp = false;
             break;
           }
           case '0' ... '9': {
             t++;
             state = after_e_and_digit;
-            was_exp = false;
             break;
           }
           default: {
@@ -538,7 +479,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
           case '0' ... '9': {
             t++;
             state = after_e_and_digit;
-            was_exp_and_sign = false;
             break;
           }
           default: {
@@ -565,7 +505,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
         assert (0);
       }
     }
-    was_separator = false;
   }
 
   if (!is_float) {
