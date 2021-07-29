@@ -268,7 +268,7 @@ VertexAdaptor<op_array> array_vertex_from_slice(const VertexRange &args, size_t 
 VertexPtr GenTreePostprocessPass::convert_array_with_spread_operators(VertexAdaptor<op_array> array_vertex) {
   const auto args = array_vertex->args();
   const auto with_spread = std::any_of(args.begin(), args.end(), [](const auto &arg) {
-    return arg->type() == op_spread;
+    return arg->type() == op_varg;
   });
 
   if (!with_spread) {
@@ -282,7 +282,7 @@ VertexPtr GenTreePostprocessPass::convert_array_with_spread_operators(VertexAdap
   size_t prev_spread_index = UNINITIALIZED;
 
   for (int i = 0; i < args.size(); ++i) {
-    if (args[i]->type() == op_spread) {
+    if (args[i]->type() == op_varg) {
       last_spread_index = i;
 
       if (prev_spread_index == UNINITIALIZED) {
@@ -303,7 +303,7 @@ VertexPtr GenTreePostprocessPass::convert_array_with_spread_operators(VertexAdap
         }
       }
 
-      parts.emplace_back(args[i].try_as<op_spread>()->expr());
+      parts.emplace_back(args[i].try_as<op_varg>()->array());
 
       prev_spread_index = last_spread_index;
     }

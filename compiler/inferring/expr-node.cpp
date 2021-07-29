@@ -427,10 +427,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_ptype<tp_bool>();
       break;
 
-    case op_spread:
-      set_lca(drop_optional(as_rvalue(expr.try_as<op_spread>()->expr())));
-      break;
-
     default:
       recalc_ptype<tp_mixed>();
       break;
