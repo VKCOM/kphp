@@ -629,7 +629,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
-    case tok_int_const_sep:
+    case tok_int_const_sep: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
     case tok_int_const: {
       res = get_op_num_const();
       next_cur();
@@ -645,7 +649,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
-    case tok_float_const_sep:
+    case tok_float_const_sep: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
     case tok_float_const: {
       res = get_op_num_const();
       next_cur();
