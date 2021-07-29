@@ -11,6 +11,8 @@
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 
+constexpr int PHP_CSV_NO_ESCAPE = EOF;
+
 static string::size_type max_wrapper_name_size = 0;
 
 static array<const stream_functions *> wrappers;
@@ -423,19 +425,20 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
   } else if (enclosure.size() > 1) {
     php_warning("enclosure must be a single character");
   }
-  if (escape.empty()) {
-    php_warning("escape_char must be a character");
-    return false;
+  int escape_char = PHP_CSV_NO_ESCAPE;
+  if (!escape.empty()) {
+    escape_char = static_cast<int>(escape[0]);
   } else if (escape.size() > 1) {
     php_warning("escape_char must be a single character");
   }
   char delimiter_char = delimiter[0];
   char enclosure_char = enclosure[0];
-  char escape_char = escape[0];
   string_buffer csvline;
   string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char))
-                                          .append(string(1, enclosure_char))
-                                          .append(string(1, escape_char));
+                                          .append(string(1, enclosure_char));
+  if (escape_char != PHP_CSV_NO_ESCAPE) {
+    to_enclose.append(string(1, static_cast<char>(escape_char)));
+  }
   for (array<mixed>::const_iterator it = fields.begin(); it != fields.end(); ++it) {
     if (it != fields.begin()) {
       csvline.append_char(delimiter_char);
@@ -446,7 +449,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
       csvline.append_char(enclosure_char);
       for (string::size_type i = 0; i < value.size(); i++) {
         char current = value[i];
-        if (current == escape_char) {
+        if (escape_char != PHP_CSV_NO_ESCAPE && current == escape_char) {
           escaped = true;
         } else if (!escaped && current == enclosure_char) {
           csvline.append_char(enclosure_char);
@@ -515,15 +518,14 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
   } else if (enclosure.size() > 1) {
     php_warning("enclosure must be a single character");
   }
-  if (escape.empty()) {
-    php_warning("escape_char must be a character");
-    return false;
+  int escape_char = PHP_CSV_NO_ESCAPE;
+  if (!escape.empty()) {
+    escape_char = static_cast<int>(escape[0]);
   } else if (escape.size() > 1) {
     php_warning("escape_char must be a single character");
   }
   char delimiter_char = delimiter[0];
   char enclosure_char = enclosure[0];
-  char escape_char = escape[0];
   if (length < 0) {
     php_warning("Length parameter may not be negative");
     return false;
@@ -652,7 +654,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
               default:
                 if (*bptr == enclosure_char) {
                   state = 2;
-                } else if (*bptr == escape_char) {
+                } else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
                   state = 1;
                 }
                 bptr++;
