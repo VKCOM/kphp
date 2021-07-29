@@ -683,7 +683,7 @@ R f$array_reduce(const array<T> &a, const CallbackT &callback, InitialT initial)
 template<class T>
 T f$array_merge_spread(const T &a1) {
   if (!a1.is_vector()) {
-    php_error("Cannot unpack array with string keys");
+    php_warning("Cannot unpack array with string keys");
   }
   return f$array_merge(a1);
 }
@@ -691,7 +691,7 @@ T f$array_merge_spread(const T &a1) {
 template<class T>
 T f$array_merge_spread(const T &a1, const T &a2) {
   if (!a1.is_vector() || !a2.is_vector()) {
-    php_error("Cannot unpack array with string keys");
+    php_warning("Cannot unpack array with string keys");
   }
   return f$array_merge(a1, a2);
 }
@@ -703,7 +703,7 @@ T f$array_merge_spread(const T &a1, const T &a2, const T &a3, const T &a4, const
   if (!a1.is_vector() || !a2.is_vector() || !a3.is_vector() || !a4.is_vector() ||
       !a5.is_vector() || !a6.is_vector() || !a7.is_vector() || !a8.is_vector() ||
       !a9.is_vector() || !a10.is_vector() || !a11.is_vector() || !a12.is_vector()) {
-    php_error("Cannot unpack array with string keys");
+    php_warning("Cannot unpack array with string keys");
   }
   return f$array_merge(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
