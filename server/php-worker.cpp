@@ -297,7 +297,10 @@ void php_worker_run(php_worker *worker) {
             case job_worker: {
               const char *error = php_script_get_error(php_script);
               int error_code = job_workers::server_php_script_error_offset - static_cast<int>(php_script_get_error_type(php_script));
-              vk::singleton<job_workers::JobWorkerServer>::get().try_store_job_response_error(error, error_code);
+              auto &job_server = vk::singleton<job_workers::JobWorkerServer>::get();
+              if (job_server.reply_is_expected()) {
+                job_server.store_job_response_error(error, error_code);
+              }
               break;
             }
             default:;
@@ -597,7 +600,7 @@ void php_worker_set_result(php_worker *worker, script_result *res) {
     } else if (worker->mode == job_worker) {
       auto &job_server = vk::singleton<job_workers::JobWorkerServer>::get();
       if (job_server.reply_is_expected()) {
-        job_server.try_store_job_response_error("Nothing replied", job_workers::server_nothing_replied_error);
+        job_server.store_job_response_error("Nothing replied", job_workers::server_nothing_replied_error);
       }
     }
   }

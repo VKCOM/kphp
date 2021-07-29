@@ -24,17 +24,27 @@ class JobWorkerServer : vk::not_copyable {
 public:
   friend class vk::singleton<JobWorkerServer>;
 
+  struct JobRequestStat {
+    double job_wait_time{0};
+    size_t job_request_max_real_memory_used{0};
+    size_t job_request_max_memory_used{0};
+    size_t job_response_max_real_memory_used{0};
+    size_t job_response_max_memory_used{0};
+  };
+
+  JobRequestStat job_stat;
+
   void init();
 
   int job_parse_execute(connection *c);
 
   void reset_running_job() noexcept;
 
-  void try_store_job_response_error(const char *error_msg, int error_code);
+  void store_job_response_error(const char *error_msg, int error_code);
 
-  bool reply_is_expected() const noexcept {
-    return running_job && !reply_was_sent;
-  }
+  void flush_job_stat() noexcept;
+
+  bool reply_is_expected() const noexcept;
 
 private:
   const char *send_job_reply(JobSharedMessage *response) noexcept;

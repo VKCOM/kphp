@@ -17,6 +17,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
+#include "server/server-stats.h"
 
 #include "runtime/job-workers/client-functions.h"
 
@@ -57,12 +58,13 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   return memory_request;
 }
 
-int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *common_job = nullptr) {
+int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *common_job = nullptr, bool no_reply = false) {
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
   const auto now = std::chrono::system_clock::now();
   job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
   job_message->job_timeout = timeout;
+  job_message->no_reply = no_reply;
 
   int job_id = 0;
   {
@@ -85,6 +87,10 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
     }
   }
 
+  if (no_reply) {
+    return 0;
+  }
+
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});
 
   update_precise_now();
@@ -98,11 +104,6 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
 bool job_workers_api_allowed() {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't send job: job workers disabled");
-    return false;
-  }
-  auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
-  if (!client.is_inited()) {
-    php_warning("Can't send job: call from job worker");
     return false;
   }
   return true;
@@ -119,9 +120,7 @@ double normalize_job_timeout(double timeout) {
   return timeout;
 }
 
-} // namespace
-
-Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorkerRequest> &request, double timeout, bool no_reply) noexcept {
   if (!job_workers_api_allowed()) {
     return false;
   }
@@ -136,13 +135,23 @@ Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRe
     return false;
   }
 
-  int job_resumable_id = send_job_request_message(memory_request, timeout);
+  int job_resumable_id = send_job_request_message(memory_request, timeout, nullptr, no_reply);
 
   if (job_resumable_id < 0) {
     return false;
   }
-  
+
   return job_resumable_id;
+}
+
+} // namespace
+
+Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+  return kphp_job_worker_start_impl(request, timeout, false);
+}
+
+bool f$kphp_job_worker_start_no_reply(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+  return kphp_job_worker_start_impl(request, timeout, true).has_value();
 }
 
 array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instance<C$KphpJobWorkerRequest>> &requests, double timeout) noexcept {
@@ -193,6 +202,8 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
     if (common_job_request == nullptr) {
       return {};
     }
+    const auto &job_mem_stats = common_job_request->resource.get_memory_stats();
+    vk::singleton<ServerStats>::get().add_job_common_memory_stats(job_mem_stats.max_memory_used, job_mem_stats.max_real_memory_used);
   }
 
   for (const auto &it : requests) {

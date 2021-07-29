@@ -63,8 +63,6 @@ void JobWorkerClient::init(int job_result_slot) {
   assert(job_workers_ctx.pipes_inited);
 
   write_job_fd = job_workers_ctx.job_pipe[1];
-  close(job_workers_ctx.job_pipe[0]); // this endpoint is for job worker to read job
-  clear_event(job_workers_ctx.job_pipe[0]);
 
   for (int i = 0; i < job_workers_ctx.result_pipes.size(); ++i) {
     auto &result_pipe = job_workers_ctx.result_pipes[i];
@@ -72,11 +70,9 @@ void JobWorkerClient::init(int job_result_slot) {
       read_job_result_fd = result_pipe[0];
       job_result_fd_idx = job_result_slot;
     } else {
-      close(result_pipe[0]); // this endpoint is for another HTTP worker to read job result
+      close(result_pipe[0]); // this endpoint is for another client worker to read job result
       clear_event(result_pipe[0]);
     }
-    close(result_pipe[1]); // this endpoint is for job worker to write job result
-    clear_event(result_pipe[1]);
   }
 
   if (read_job_result_fd >= 0) {

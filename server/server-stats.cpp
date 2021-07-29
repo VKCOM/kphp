@@ -11,6 +11,7 @@
 #include "common/functional/identity.h"
 #include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/memory-utils.h"
+#include "net/net-events.h"
 
 #include "runtime/curl.h"
 
@@ -31,6 +32,7 @@ struct ScriptSamples : WithStatType<uint64_t> {
     real_memory_used,
     total_allocated_by_curl,
     outgoing_queries,
+    outgoing_long_queries,
     working_time,
     net_time,
     script_time,
@@ -42,6 +44,7 @@ struct QueriesStat : WithStatType<uint64_t> {
   enum class Key {
     incoming_queries,
     outgoing_queries,
+    outgoing_long_queries,
     script_time,
     net_time,
     types_count
@@ -53,6 +56,16 @@ struct JobSamples : WithStatType<uint64_t> {
     wait_time = 0,
     request_memory_usage,
     request_real_memory_usage,
+    response_memory_usage,
+    response_real_memory_usage,
+    types_count
+  };
+};
+
+struct JobCommonMemorySamples : WithStatType<uint64_t> {
+  enum class Key {
+    common_request_memory_usage = 0,
+    common_request_real_memory_usage,
     types_count
   };
 };
@@ -81,6 +94,15 @@ struct VMStat : WithStatType<uint32_t> {
     rss_peak_kb,
     rss_kb,
     shm_kb,
+    types_count
+  };
+};
+
+struct IdleStat : WithStatType<double> {
+  enum class Key {
+    tot_idle_time,
+    tot_idle_percent,
+    recent_idle_percent,
     types_count
   };
 };
@@ -138,7 +160,7 @@ private:
   template<size_t P, class I, class Mapper>
   static void set_percentile(T &out, I first, std::ptrdiff_t size, const Mapper &mapper) noexcept {
     if (size) {
-      const auto index = P == 100 ? (size - 1) : (P * size / 100);
+      const auto index = P * (size - 1) / 100;
       std::nth_element(first, first + index, first + size);
       out = mapper(first[index]);
     } else {
@@ -174,10 +196,21 @@ EnumTable<HeapStat> get_heap_stat() noexcept {
   return result;
 }
 
-EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t script_time_ns, uint64_t net_time_ns) noexcept {
+EnumTable<IdleStat> get_idle_stat() noexcept {
+  EnumTable<IdleStat> result;
+  result[IdleStat::Key::tot_idle_time] = epoll_total_idle_time();
+  const int uptime = get_uptime();
+  result[IdleStat::Key::tot_idle_percent] = uptime > 0 ? result[IdleStat::Key::tot_idle_time] / uptime * 100 : 0;
+  const double average_idle_quotient = epoll_average_idle_quotient();
+  result[IdleStat::Key::recent_idle_percent] = average_idle_quotient > 0 ? epoll_average_idle_time() / average_idle_quotient * 100 : 0;
+  return result;
+}
+
+EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries, uint64_t script_time_ns, uint64_t net_time_ns) noexcept {
   EnumTable<QueriesStat> result;
   result[QueriesStat::Key::incoming_queries] = 1;
   result[QueriesStat::Key::outgoing_queries] = script_queries;
+  result[QueriesStat::Key::outgoing_long_queries] = long_script_queries;
   result[QueriesStat::Key::script_time] = script_time_ns;
   result[QueriesStat::Key::net_time] = net_time_ns;
   return result;
@@ -195,6 +228,10 @@ public:
 
   void add_sample(T value, size_t sample_index) noexcept {
     if (sample_index >= samples_.size()) {
+      // the zero value doesn't override anything
+      if (value == T{}) {
+        return;
+      }
       sample_index = std::uniform_int_distribution<size_t>{0, sample_index}(*gen_);
     }
     if (sample_index < samples_.size()) {
@@ -246,6 +283,7 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::real_memory_used] = real_memory_used;
     sample[ScriptSamples::Key::total_allocated_by_curl] = curl_total_allocated;
     sample[ScriptSamples::Key::outgoing_queries] = queries[QueriesStat::Key::outgoing_queries];
+    sample[ScriptSamples::Key::outgoing_long_queries] = queries[QueriesStat::Key::outgoing_long_queries];
     sample[ScriptSamples::Key::working_time] = queries[QueriesStat::Key::net_time] + queries[QueriesStat::Key::script_time];
     sample[ScriptSamples::Key::net_time] = queries[QueriesStat::Key::net_time];
     sample[ScriptSamples::Key::script_time] = queries[QueriesStat::Key::script_time];
@@ -261,18 +299,29 @@ struct WorkerSharedStats : private vk::not_copyable {
 struct JobWorkerSharedStats : WorkerSharedStats {
   explicit JobWorkerSharedStats(std::mt19937 *gen) noexcept:
     WorkerSharedStats(gen),
-    job_samples(gen) {
+    job_samples(gen),
+    job_common_memory_samples(gen) {
   }
 
-  void add_job_stats(uint64_t job_wait_ns, uint64_t memory_used, uint64_t real_memory_used) noexcept {
+  void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used, uint64_t response_real_memory_used) noexcept {
     EnumTable<JobSamples> sample;
     sample[JobSamples::Key::wait_time] = job_wait_ns;
-    sample[JobSamples::Key::request_memory_usage] = memory_used;
-    sample[JobSamples::Key::request_real_memory_usage] = real_memory_used;
+    sample[JobSamples::Key::request_memory_usage] = request_memory_used;
+    sample[JobSamples::Key::request_real_memory_usage] = request_real_memory_used;
+    sample[JobSamples::Key::response_memory_usage] = response_memory_used;
+    sample[JobSamples::Key::response_real_memory_usage] = response_real_memory_used;
     job_samples.add_sample(sample);
   }
 
+  void add_job_common_memory_stats(uint64_t common_request_memory_used, uint64_t common_request_real_memory_used) noexcept {
+    EnumTable<JobCommonMemorySamples> sample;
+    sample[JobCommonMemorySamples::Key::common_request_memory_usage] = common_request_memory_used;
+    sample[JobCommonMemorySamples::Key::common_request_real_memory_usage] = common_request_real_memory_used;
+    job_common_memory_samples.add_sample(sample);
+  }
+
   SharedSamplesBundle<JobSamples> job_samples;
+  SharedSamplesBundle<JobCommonMemorySamples> job_common_memory_samples;
 };
 
 template<class T>
@@ -309,8 +358,9 @@ public:
         if (index < samples_.size()) {
           samples_[index] = sample;
         }
+        // the zero value doesn't affect the sample
+        distrib.param(std::uniform_int_distribution<size_t>::param_type{0, distrib.max() + 1});
       }
-      distrib.param(std::uniform_int_distribution<size_t>::param_type{0, distrib.max() + 1});
     }
     percentiles.update_percentiles(samples_.begin(), last_, [](const Sample &s) { return s.first; });
   }
@@ -374,11 +424,13 @@ struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<VMStat> vm_stats{};
   WorkerStatsBundle<MiscStat> misc_stats{};
   WorkerStatsBundle<QueriesStat> query_stats{};
+  WorkerStatsBundle<IdleStat> idle_stats{};
 
   void update_worker_stats(uint16_t worker_index) noexcept {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
+    idle_stats.set_worker_stats(get_idle_stat(), worker_index);
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
   }
 
@@ -415,7 +467,8 @@ struct WorkerPercentilesBundle : EnumTable<E, Percentiles<typename E::StatType>>
         size_t buffer_index = 0;
         size_t worker_index = first_worker_id;
         while (worker_index != last_worker_id) {
-          if (auto s = stat[worker_index++].load(std::memory_order_relaxed)) {
+          const auto s = stat[worker_index++].load(std::memory_order_relaxed);
+          if (std::is_floating_point<typename E::StatType>{} || s != 0) {
             buffer[buffer_index++] = s;
           }
         }
@@ -436,26 +489,31 @@ struct WorkerAggregatedStats {
     heap_percentiles.recalc(stats.heap_stats, first_id, last_id);
     malloc_percentiles.recalc(stats.malloc_stats, first_id, last_id);
     vm_percentiles.recalc(stats.vm_stats, first_id, last_id);
+    idle_percentiles.recalc(stats.idle_stats, first_id, last_id);
   }
 
   AggregatedSamplesBundle<ScriptSamples> script_samples;
   WorkerPercentilesBundle<MallocStat> malloc_percentiles;
   WorkerPercentilesBundle<HeapStat> heap_percentiles;
   WorkerPercentilesBundle<VMStat> vm_percentiles;
+  WorkerPercentilesBundle<IdleStat> idle_percentiles;
 };
 
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
   explicit JobWorkerAggregatedStats(std::mt19937 *gen) noexcept:
     WorkerAggregatedStats(gen),
-    job_samples(gen) {
+    job_samples(gen),
+    job_common_memory_samples(gen) {
   }
 
   AggregatedSamplesBundle<JobSamples> job_samples;
+  AggregatedSamplesBundle<JobCommonMemorySamples> job_common_memory_samples;
 };
 
 struct MasterProcessStats : private vk::not_copyable {
   EnumTable<VMStat> vm_stats;
   EnumTable<MallocStat> malloc_stats;
+  EnumTable<IdleStat> idle_stats;
 };
 
 } // namespace
@@ -501,21 +559,25 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   last_update_ = std::chrono::steady_clock::now();
 }
 
-void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries,
-                                    int64_t memory_used, int64_t real_memory_used, int64_t curl_total_allocated,
-                                    script_error_t error) noexcept {
+void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
+                                    int64_t real_memory_used, int64_t curl_total_allocated, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
-  const auto queries_stat = make_queries_stat(script_queries, script_time.count(), net_time.count());
+  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 }
 
-void ServerStats::add_job_stats(double job_wait_time_sec, int64_t memory_used, int64_t real_memory_used) noexcept {
+void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
+                                int64_t response_real_memory_used) noexcept {
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
-  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), memory_used, real_memory_used);
+  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
+}
+
+void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
+  shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 }
 
 void ServerStats::update_this_worker_stats() noexcept {
@@ -558,11 +620,13 @@ void ServerStats::aggregate_stats() noexcept {
                                             shared_stats_->workers, 0, general_workers);
 
   aggregated_stats_->job_workers.job_samples.recalc(shared_stats_->job_workers.job_samples, now_tp);
+  aggregated_stats_->job_workers.job_common_memory_samples.recalc(shared_stats_->job_workers.job_common_memory_samples, now_tp);
   aggregated_stats_->job_workers.recalc(shared_stats_->job_workers.script_samples, now_tp,
                                         shared_stats_->workers, general_workers, job_workers + general_workers);
 
   aggregated_stats_->master_process.vm_stats = get_virtual_memory_stat();
   aggregated_stats_->master_process.malloc_stats = get_malloc_stat();
+  aggregated_stats_->master_process.idle_stats = get_idle_stat();
 }
 
 namespace {
@@ -599,8 +663,10 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
   add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
+  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
 
   write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries].percentiles);
+  write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries].percentiles);
   write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time].percentiles, ns2double);
   write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time].percentiles, ns2double);
   write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time].percentiles, ns2double);
@@ -618,12 +684,18 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".memory.rss_bytes", agg.vm_percentiles[VMStat::Key::rss_kb], kb2bytes);
   write_to(stats, prefix, ".memory.vms_bytes", agg.vm_percentiles[VMStat::Key::vm_kb], kb2bytes);
   write_to(stats, prefix, ".memory.shm_bytes", agg.vm_percentiles[VMStat::Key::shm_kb], kb2bytes);
+
+  write_to(stats, prefix, ".cpu.recent_idle", agg.idle_percentiles[IdleStat::Key::recent_idle_percent]);
 }
 
 void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats &job_agg) noexcept {
   write_to(stats, prefix, ".jobs.queue_time", job_agg.job_samples[JobSamples::Key::wait_time].percentiles, ns2double);
   write_to(stats, prefix, ".memory.job_request_usage", job_agg.job_samples[JobSamples::Key::request_memory_usage].percentiles);
   write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_common_request_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_memory_usage].percentiles);
+  write_to(stats, prefix, ".memory.job_common_request_real_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage].percentiles);
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {
@@ -636,23 +708,25 @@ void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &mast
   add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
 }
 
-template<VMStat::Key S>
-uint64_t get_max(const EnumTable<VMStat> &master_vm, const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  return std::max(master_vm[S], std::max(general_vm[S].max, job_vm[S].max));
+template<class S>
+auto get_max(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+  return std::max(master_stats[key], std::max(general_stats[key].max, job_stats[key].max));
 }
 
-template<VMStat::Key S>
-uint64_t get_sum(const EnumTable<VMStat> &master_vm, const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  return master_vm[S] + general_vm[S].sum + job_vm[S].sum;
+template<class S>
+auto get_sum(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+  return master_stats[key] + general_stats[key].sum + job_stats[key].sum;
 }
 
 void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm,
                         const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::vm_peak_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.vms_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::rss_peak_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.rss_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max<VMStat::Key::shm_kb>(master_vm, general_vm, job_vm)), prefix, ".memory.shm_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
+  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
 
-  const uint64_t rss_no_shm = get_sum<VMStat::Key::rss_kb>(master_vm, general_vm, job_vm) - get_sum<VMStat::Key::shm_kb>(master_vm, general_vm, job_vm);
+  const uint64_t rss_no_shm = get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) - get_sum(general_vm, job_vm, master_vm, VMStat::Key::shm_kb);
   add_gauge_stat(stats, kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
 }
 
@@ -670,27 +744,48 @@ void ServerStats::write_stats_to(stats_t *stats) const noexcept {
                      aggregated_stats_->general_workers.vm_percentiles, aggregated_stats_->job_workers.vm_percentiles);
 }
 
-void ServerStats::write_stats_to(std::ostream &os) const noexcept {
+void ServerStats::write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept {
   const auto &master_vm = aggregated_stats_->master_process.vm_stats;
-  const auto &general_vm = aggregated_stats_->general_workers.vm_percentiles;
-  const auto &job_vm = aggregated_stats_->job_workers.vm_percentiles;
+  const auto &master_idle = aggregated_stats_->master_process.idle_stats;
 
-  os << "VM\t" << get_sum<VMStat::Key::vm_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "VM_max\t" << get_max<VMStat::Key::vm_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "RSS\t" << get_sum<VMStat::Key::rss_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << "RSS_max\t" << get_sum<VMStat::Key::rss_peak_kb>(master_vm, general_vm, job_vm) << "Kb\n"
-     << std::fixed << std::setprecision(3);
+  const auto &general_vm = aggregated_stats_->general_workers.vm_percentiles;
+  const auto &general_idle = aggregated_stats_->general_workers.idle_percentiles;
+
+  const auto &job_vm = aggregated_stats_->job_workers.vm_percentiles;
+  const auto &job_idle = aggregated_stats_->job_workers.idle_percentiles;
+
+  const auto &total_queries = shared_stats_->general_workers.total_queries_stat;
+  const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
+
+  const auto total_net_time = ns2double(total_queries[QueriesStat::Key::net_time]);
+  const auto total_script_time = ns2double(total_queries[QueriesStat::Key::script_time]);
+
+  os << std::fixed << std::setprecision(3)
+     << "VM\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::vm_kb) << "Kb\n"
+     << "VM_max\t" << get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb) << "Kb\n"
+     << "RSS\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) << "Kb\n"
+     << "RSS_max\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb) << "Kb\n"
+     << "tot_queries\t" << total_queries[QueriesStat::Key::incoming_queries].load(std::memory_order_relaxed) << "\n"
+     << "tot_script_queries\t" << total_queries[QueriesStat::Key::outgoing_queries].load(std::memory_order_relaxed) << "\n"
+     << "worked_time\t" << total_script_time + total_net_time << "\n"
+     << "script_time\t" << total_script_time << "\n"
+     << "net_time\t" << total_net_time << "\n"
+     << "tot_idle_time\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::tot_idle_time) << "\n"
+     << "tot_idle_percent\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::tot_idle_percent) / (1 + workers_count) << "\n"
+     << "recent_idle_percent\t" << get_sum(general_idle, job_idle, master_idle, IdleStat::Key::recent_idle_percent) / (1 + workers_count) << "\n";
 
   const auto &workers_vm = shared_stats_->workers.vm_stats;
   const auto &workers_query = shared_stats_->workers.query_stats;
   const auto &workers_misc = shared_stats_->workers.misc_stats;
-  const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
+  const auto &workers_idle = shared_stats_->workers.idle_stats;
   for (uint16_t w = 0; w != workers_count; ++w) {
     const auto net_time = ns2double(workers_query.get_stat(QueriesStat::Key::net_time, w));
     const auto script_time = ns2double(workers_query.get_stat(QueriesStat::Key::script_time, w));
     const auto worker_pid = workers_misc.get_stat(MiscStat::Key::process_pid, w);
-    os << "pid " << worker_pid << "\t" << worker_pid << "\n"
-       << "active_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::active_special_connections, w) << "\n"
+    if (add_worker_pids) {
+      os << "pid " << worker_pid << "\t" << worker_pid << "\n";
+    }
+    os << "active_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::active_special_connections, w) << "\n"
        << "max_special_connections " << worker_pid << "\t" << workers_misc.get_stat(MiscStat::Key::max_special_connections, w) << "\n"
        << "VM " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_kb, w) << "Kb\n"
        << "VM_max " << worker_pid << "\t" << workers_vm.get_stat(VMStat::Key::vm_peak_kb, w) << "Kb\n"
@@ -700,7 +795,10 @@ void ServerStats::write_stats_to(std::ostream &os) const noexcept {
        << "tot_script_queries " << worker_pid << "\t" << workers_query.get_stat(QueriesStat::Key::outgoing_queries, w) << "\n"
        << "worked_time " << worker_pid << "\t" << net_time + script_time << "\n"
        << "script_time " << worker_pid << "\t" << script_time << "\n"
-       << "net_time " << worker_pid << "\t" << net_time << "\n";
+       << "net_time " << worker_pid << "\t" << net_time << "\n"
+       << "tot_idle_time " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::tot_idle_time, w) << "\n"
+       << "tot_idle_percent " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::tot_idle_percent, w) << "\n"
+       << "recent_idle_percent " << worker_pid << "\t" << workers_idle.get_stat(IdleStat::Key::recent_idle_percent, w) << "\n";
   }
 }
 

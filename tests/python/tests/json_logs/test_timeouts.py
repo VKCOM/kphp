@@ -16,8 +16,9 @@ class TestJsonLogTimeouts(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": 1, "env": "",  "tags": {"uncaught": True},
-                "msg": "Maximum execution time of 1 second exceeded",
-            }])
+                "msg": "Maximum execution time exceeded",
+            }],
+            timeout=5)
 
     def test_timeout_with_context(self):
         resp = self.kphp_server.http_post(
@@ -30,5 +31,6 @@ class TestJsonLogTimeouts(KphpServerAutoTestCase):
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
-                "msg": "Maximum execution time of 1 second exceeded",
-            }])
+                "msg": "Maximum execution time exceeded",
+            }],
+            timeout=5)

@@ -6,6 +6,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         confdata-functions-test.cpp
         confdata-key-maker-test.cpp
         confdata-predefined-wildcards-test.cpp
+        flex-test.cpp
         inter-process-mutex-test.cpp
         inter-process-resource-test.cpp
         memory_resource/details/memory_chunk_list-test.cpp

@@ -12,10 +12,6 @@
 
 namespace job_workers {
 
-struct FinishedJob {
-  class_instance<C$KphpJobWorkerResponse> response;
-};
-
 FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) noexcept {
   auto response = job_message->instance.cast_to<C$KphpJobWorkerResponse>();
   php_assert(!response.is_null());

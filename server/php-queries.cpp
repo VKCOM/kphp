@@ -734,7 +734,7 @@ public:
     cnt = 0;
   }
 
-  bool empty() {
+  bool empty() const noexcept {
     return cnt == 0;
   }
 
@@ -754,6 +754,13 @@ public:
       end = 0;
     }
     return res;
+  }
+
+  const DataT *top() const noexcept {
+    if (empty()) {
+      return nullptr;
+    }
+    return &q[begin];
   }
 
   void undo_create(DataT *event) {
@@ -972,6 +979,10 @@ net_event_t *pop_net_event() {
   return net_events.pop();
 }
 
+const net_event_t *get_last_net_event() {
+  return net_events.top();
+}
+
 void rpc_answer(const char *res, int res_len) {
   assert (PHPScriptBase::is_running);
   php_query_rpc_answer q;
@@ -1081,4 +1092,27 @@ void php_queries_finish() {
 
   net_events.clear();
   net_queries.clear();
+}
+
+const char *net_event_t::get_description() const noexcept {
+  static char BUF[10000];
+  switch (type) {
+    case net_event_type_t::rpc_answer: {
+      sprintf(BUF, "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", result_len >= 4 ? *reinterpret_cast<unsigned int *>(result) : 0, result_len);
+      break;
+    }
+    case net_event_type_t::rpc_error: {
+      sprintf(BUF, "RPC ERROR: error code = %d, error message = %s", error_code, error_message);
+      break;
+    }
+    case net_event_type_t::job_worker_answer: {
+      if (job_result) {
+        sprintf(BUF, "JOB RESPONSE: class name = %s", job_result->response.get_class());
+      } else {
+        sprintf(BUF, "JOB ERROR");
+      }
+      break;
+    }
+  }
+  return BUF;
 }

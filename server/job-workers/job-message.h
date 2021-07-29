@@ -49,6 +49,7 @@ public:
   double job_start_time{-1.0};
   double job_timeout{-1.0};
   JobSharedMemoryPiece *common_job{nullptr};
+  bool no_reply{false};
 
   double job_deadline_time() const noexcept {
     return job_start_time + job_timeout;

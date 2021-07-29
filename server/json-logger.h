@@ -16,7 +16,7 @@ class JsonLogger : vk::not_copyable {
 public:
   friend class vk::singleton<JsonLogger>;
 
-  void init(int64_t release_version, int32_t script_timeout_seconds) noexcept;
+  void init(int64_t release_version) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
 
@@ -31,7 +31,6 @@ public:
   void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
-  void write_script_timeout_log(int type) noexcept;
 
   void reset_buffers() noexcept;
 
@@ -83,7 +82,5 @@ private:
     std::array<char, 32 * 1024> buffer_{{0}};
   };
   std::array<JsonBuffer, 8> buffers_;
-
-  std::array<char, 64> script_timeout_message_{{0}};
 };
 

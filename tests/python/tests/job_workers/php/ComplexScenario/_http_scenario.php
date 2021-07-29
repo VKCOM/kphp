@@ -12,7 +12,7 @@ use ComplexScenario\StatsRPCSimple;
 require_once "_stats_processor.php";
 
 function collect_stats_with_job(StatsInterface $stat, int $master_port) {
-  $job_id = kphp_job_worker_start(new CollectStatsJobRequest($master_port, $stat));
+  $job_id = kphp_job_worker_start(new CollectStatsJobRequest($master_port, $stat), -1);
   if (!$job_id) {
     critical_error("Can't send job");
   }

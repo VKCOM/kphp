@@ -7,7 +7,7 @@
 #include <sys/time.h>
 
 #include "common/string-processing.h"
-#include "flex/vk-flex-data.h"
+#include "flex/flex.h"
 
 #include "runtime/misc.h"
 
@@ -459,163 +459,17 @@ string f$vk_win_to_utf8(const string &text, bool escape) {
 }
 
 string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id) {
-  if (name.size() > (1 << 10)) {
-    php_warning("Name has length %d and is too long in function vk_flex", name.size());
+  static char ERROR_MSG_BUF[1000] = {'\0'};
+  ERROR_MSG_BUF[0] = '\0';
+  vk::string_view res = flex(vk::string_view{name.c_str(), name.size()}, vk::string_view{case_name.c_str(), case_name.size()}, sex == 1,
+                         vk::string_view{type.c_str(), type.size()}, lang_id, buff, ERROR_MSG_BUF);
+  if (ERROR_MSG_BUF[0] != '\0') {
+    php_warning("%s", ERROR_MSG_BUF);
+  }
+  if (res.data() == name.c_str()) {
     return name;
   }
-  if (case_name[0] == 0 || !strcmp(case_name.c_str(), "Nom")) {
-    return name;
-  }
-
-  if ((unsigned int)lang_id >= (unsigned int)LANG_NUM) {
-    php_warning("Unknown lang id %" PRIi64 " in function vk_flex", lang_id);
-    return name;
-  }
-
-  if (!langs[lang_id]) {
-    return name;
-  }
-
-  lang *cur_lang = langs[lang_id];
-
-  int t = -1;
-  if (!strcmp(type.c_str(), "names")) {
-    if (cur_lang->names_start < 0) {
-      return name;
-    }
-    t = cur_lang->names_start;
-  } else if (!strcmp(type.c_str(), "surnames")) {
-    if (cur_lang->surnames_start < 0) {
-      return name;
-    }
-    t = cur_lang->surnames_start;
-  } else {
-    php_warning("Unknown type %s in function vk_flex", type.c_str());
-    return name;
-  }
-  php_assert (t >= 0);
-
-  if (sex != 1) {
-    sex = 0;
-  }
-  int ca = -1;
-  for (int i = 0; i < CASES_NUM && i < cur_lang->cases_num; i++) {
-    if (!strcmp(cases_names[i], case_name.c_str())) {
-      ca = i;
-      break;
-    }
-  }
-  if (ca == -1) {
-    php_warning("Unknown case \"%s\" in function vk_flex", case_name.c_str());
-    return name;
-  }
-
-  int p = 0;
-  int wp = 0;
-  int name_len = name.size();
-  while (p < name_len) {
-    int pp = p;
-    while (pp < name_len && name[pp] != '-') {
-      pp++;
-    }
-    int hyphen = (name[pp] == '-');
-    int tt = t;
-    int best = -1;
-    int save_pp = pp;
-    int new_tt;
-    int isf = 0;
-    if (pp - p > 0) {
-      const char *fle = cur_lang->flexible_symbols;
-      while (*fle) {
-        if (*fle == name[pp - 1]) {
-          isf = 1;
-          break;
-        }
-        fle++;
-      }
-    }
-    while (isf) {
-      php_assert (tt >= 0);
-      if (cur_lang->nodes[tt].tail_len >= 0) {
-        best = tt;
-      }
-      if (cur_lang->nodes[tt].hyphen >= 0 && hyphen) {
-        best = cur_lang->nodes[tt].hyphen;
-      }
-      unsigned char c;
-      if (pp == p - 1) {
-        break;
-      }
-      pp--;
-      if (pp < p) {
-        c = 0;
-      } else {
-        c = name[pp];
-      }
-      new_tt = -1;
-      int l = cur_lang->nodes[tt].children_start;
-      int r = cur_lang->nodes[tt].children_end;
-      if (r - l <= 4) {
-        for (int i = l; i < r; i++) {
-          if (cur_lang->children[2 * i] == c) {
-            new_tt = cur_lang->children[2 * i + 1];
-            break;
-          }
-        }
-      } else {
-        int x;
-        while (r - l > 1) {
-          x = (r + l) >> 1;
-          if (cur_lang->children[2 * x] <= c) {
-            l = x;
-          } else {
-            r = x;
-          }
-        }
-        if (cur_lang->children[2 * l] == c) {
-          new_tt = cur_lang->children[2 * l + 1];
-        }
-      }
-      if (new_tt == -1) {
-        break;
-      } else {
-        tt = new_tt;
-      }
-    }
-    if (best == -1) {
-      memcpy(buff + wp, name.c_str() + p, save_pp - p);
-      wp += (save_pp - p);
-    } else {
-      int r = -1;
-      if (!sex) {
-        r = cur_lang->nodes[best].male_endings;
-      } else {
-        r = cur_lang->nodes[best].female_endings;
-      }
-      if (r < 0 || !cur_lang->endings[r * cur_lang->cases_num + ca]) {
-        memcpy(buff + wp, name.c_str() + p, save_pp - p);
-        wp += (save_pp - p);
-      } else {
-        int ml = save_pp - p - cur_lang->nodes[best].tail_len;
-        if (ml < 0) {
-          ml = 0;
-        }
-        memcpy(buff + wp, name.c_str() + p, ml);
-        wp += ml;
-        strcpy(buff + wp, cur_lang->endings[r * cur_lang->cases_num + ca]);
-        wp += (int)strlen(cur_lang->endings[r * cur_lang->cases_num + ca]);
-      }
-    }
-    if (hyphen) {
-      buff[wp++] = '-';
-    } else {
-      buff[wp++] = 0;
-    }
-    p = save_pp + 1;
-  }
-  buff[wp] = 0;
-
-  return string(buff);
+  return string{res.data(), static_cast<string::size_type>(res.size())};
 }
 
 string f$vk_whitespace_pack(const string &str, bool html_opt) {

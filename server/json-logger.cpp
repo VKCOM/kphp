@@ -169,10 +169,8 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_raw_string(vk::string_vie
   return *this;
 }
 
-void JsonLogger::init(int64_t release_version, int32_t script_timeout_seconds) noexcept {
+void JsonLogger::init(int64_t release_version) noexcept {
   release_version_ = release_version;
-  snprintf(script_timeout_message_.data(), script_timeout_message_.size(),
-           "Maximum execution time of %" PRIi32 " second%s exceeded", script_timeout_seconds, script_timeout_seconds == 1 ? "" : "s");
 }
 
 bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
@@ -253,10 +251,6 @@ void JsonLogger::write_stack_overflow_log(int type) noexcept {
   std::array<void *, 64> trace{};
   const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
   write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, true);
-}
-
-void JsonLogger::write_script_timeout_log(int type) noexcept {
-  write_log_with_backtrace(script_timeout_message_.data(), type);
 }
 
 void JsonLogger::reset_buffers() noexcept {

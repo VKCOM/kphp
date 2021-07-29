@@ -15,7 +15,8 @@ class TestJobErrors(KphpServerAutoTestCase):
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
             "--workers-num": 4,
-            "--job-workers-ratio": 0.5
+            "--job-workers-ratio": 0.5,
+            "--verbosity-job-workers=2": True,
         })
 
     def _assert_result(self, stats_before, resp, error_code, buffers=4, results=2):
@@ -75,8 +76,8 @@ class TestJobErrors(KphpServerAutoTestCase):
         ])
 
     def test_job_stack_overflow_error(self):
-        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR)
-        self.kphp_server.assert_log(2 * [
+        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR, data=[[1, 2, 3, 4, 5]], buffers=2)
+        self.kphp_server.assert_log([
             "Critical error during script execution: sigsegv\\(stack overflow\\)",
             "Error -1: Callstack overflow"
         ])
