@@ -26,7 +26,7 @@ struct Trie : private vk::not_copyable {
       cur = cur->next[c].get();
     }
 
-    assert(!cur->val);
+    assert(!cur->val && "The symbol in variable 's' has already been added by the rule earlier");
     cur->val = std::move(val);
   }
 

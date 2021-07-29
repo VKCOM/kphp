@@ -135,3 +135,7 @@ static inline void remove_extra_spaces(std::string &str) {
 static inline bool is_string_self_static_parent(const std::string &s) {
   return s == "self" || s == "static" || s == "parent";
 }
+
+static inline void remove_underscores(std::string &str) {
+  str.erase(std::remove_if(str.begin(), str.end(), [](char symbol) { return symbol == '_'; }), str.end());
+}

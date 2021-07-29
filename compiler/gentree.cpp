@@ -436,6 +436,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
+    case tok_int_const_sep: {
+      std::string val = static_cast<string>(cur->str_val);
+      remove_underscores(val);
+      res = get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, val);
+      next_cur();
+      break;
+    }
     case tok_int_const: {
       res = get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, static_cast<string>(cur->str_val));
       next_cur();
@@ -448,6 +455,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_inf: {
       res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, "std::numeric_limits<double>::infinity()");
+      next_cur();
+      break;
+    }
+    case tok_float_const_sep: {
+      std::string val = static_cast<string>(cur->str_val);
+      remove_underscores(val);
+      res = get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, val);
       next_cur();
       break;
     }

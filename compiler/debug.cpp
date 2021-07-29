@@ -23,7 +23,9 @@ std::string debugTokenName(TokenType t) {
   constexpr auto name_pairs = vk::to_array<std::pair<TokenType, const char *>>({
     {tok_empty, "tok_empty"},
     {tok_int_const, "tok_int_const"},
+    {tok_int_const_sep, "tok_int_const_sep"},
     {tok_float_const, "tok_float_const"},
+    {tok_float_const_sep, "tok_float_const_sep"},
     {tok_null, "tok_null"},
     {tok_nan, "tok_nan"},
     {tok_inf, "tok_inf"},
