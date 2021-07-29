@@ -536,13 +536,13 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_varg: {
-      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar);
+      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar, tok_opbrk);
       CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 
       next_cur();
       res = get_expression();
-      CE (!kphp_error(res && vk::any_of_equal(res->type(), op_var, op_array, op_func_call, op_index, op_conv_array) ,
-        fmt_format("It's not allowed using `...` in this place (op: {})", OpInfo::str(res->type()))));
+      // since the argument for the spread operator can be anything,
+      // we do not check the type of the expression here
       res = VertexAdaptor<op_varg>::create(res).set_location(res);
       break;
     }
