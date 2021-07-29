@@ -41,6 +41,7 @@ TEST(lexer_test, test_php_tokens) {
 
     {"'abc'", {"tok_str(abc)"}},
     {"12 + 4", {"tok_int_const(12)", "tok_plus(+)", "tok_int_const(4)"}},
+    {"12_100 + 4_5.56", {"tok_int_const_sep(12_100)", "tok_plus(+)", "tok_float_const_sep(4_5.56)"}},
     {"$x['a']", {"tok_var_name($x)", "tok_opbrk([)", "tok_str(a)", "tok_clbrk(])"}},
     {"$x[-40]", {"tok_var_name($x)", "tok_opbrk([)", "tok_minus(-)", "tok_int_const(40)", "tok_clbrk(])"}},
     {"$x->y->z", {"tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_arrow(->)", "tok_func_name(z)"}},
