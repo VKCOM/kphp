@@ -16,8 +16,12 @@ function print_arr($a) {
     print_r([...$a, 123]);
 }
 
+function f2(...$a) {
+    return [100, 200, 300];
+}
+
 function f() {
-    $a = [1,2,3];
+    $a = [1, 2, 3];
     var_dump([...$a]);
     var_dump(array(...$a));
     var_dump([1, ...$a]);
@@ -37,6 +41,9 @@ function f() {
 
     print_arr([...$a]);
     print_arr([...((new Foo)->f())]);
+
+    $f_params = [1];
+    var_dump([...$a, ...f2(...$f_params)]);
 }
 
 f();
