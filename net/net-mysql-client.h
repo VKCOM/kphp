@@ -24,8 +24,9 @@ struct mysql_client_functions {
   int (*sql_check_perm)(struct connection *c);	/* 1 = allow unencrypted, 2 = allow encrypted */
   int (*sql_init_crypto)(struct connection *c, char *init_buff, int init_len);  /* >0 = ok, bytes written; -1 = no crypto */
   const char* (*sql_get_database)(struct connection *c);
-  const char* (*sql_get_username)(struct connection *c);
+  const char* (*sql_get_user)(struct connection *c);
   const char* (*sql_get_password)(struct connection *c);
+  bool (*is_mysql_same_datacenter_check_disabled)();
 };
 
 
