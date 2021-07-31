@@ -20,4 +20,7 @@ public:
   }
   VertexPtr on_enter_vertex(VertexPtr root) override;
   VertexPtr on_exit_vertex(VertexPtr root) override;
+
+  // converts the spread operator (...$a) to a call to the array_merge_spread function
+  static VertexPtr convert_array_with_spread_operators(VertexAdaptor<op_array> array_vertex);
 };

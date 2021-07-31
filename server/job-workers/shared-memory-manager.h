@@ -81,6 +81,7 @@ public:
   void forcibly_release_all_attached_messages() noexcept;
 
   bool set_memory_limit(size_t memory_limit) noexcept;
+  bool set_shared_messages_count(size_t shared_messages_count) noexcept;
 
   bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
 
@@ -96,6 +97,7 @@ private:
   friend class vk::singleton<SharedMemoryManager>;
 
   size_t memory_limit_{0};
+  size_t shared_messages_count_{0};
 
   struct alignas(8) ControlBlock {
     ControlBlock() noexcept {

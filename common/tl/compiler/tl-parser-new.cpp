@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -932,18 +933,44 @@ tree_tl_var_t *vars[10];
 tree_tl_field_t *fields[10];
 struct tl_var *last_num_var[10];
 
-int tl_is_type_name(const char *id, int len) {
-  if (len == 1 && *id == '#') {
-    return 1;
+std::pair<bool, std::string> convert_type_to_bare_constructor(std::string id) {
+  if (id == "#") {
+    return {false, std::move(id)};
   }
-  int ok = id[0] >= 'A' && id[0] <= 'Z';
-  int i;
-  for (i = 0; i < len - 1; i++) {
+  size_t pos = 0;
+  for (size_t i = 0; i < id.size() - 1; i++) {
     if (id[i] == '.') {
-      ok = id[i + 1] >= 'A' && id[i + 1] <= 'Z';
+      pos = i + 1;
+      break;
     }
   }
-  return ok;
+  if (std::islower(static_cast<unsigned char>(id[pos]))) {
+    return {false, std::move(id)};
+  } else {
+    assert(std::isupper(static_cast<unsigned char>(id[pos])));
+    id[pos] = std::tolower(static_cast<unsigned char>(id[pos]));
+    return {true, std::move(id)};
+  }
+}
+
+std::pair<bool, std::string> convert_bare_constructor_to_type(std::string id) {
+  if (id == "#") {
+    return {false, std::move(id)};
+  }
+  size_t pos = 0;
+  for (size_t i = 0; i < id.size() - 1; i++) {
+    if (id[i] == '.') {
+      pos = i + 1;
+      break;
+    }
+  }
+  if (std::isupper(static_cast<unsigned char>(id[pos]))) {
+    return {false, std::move(id)};
+  } else {
+    assert(std::islower(static_cast<unsigned char>(id[pos])));
+    id[pos] = std::toupper(static_cast<unsigned char>(id[pos]));
+    return {true, std::move(id)};
+  }
 }
 
 int tl_add_field(char *id) {
@@ -1329,8 +1356,16 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
       } else {
         tl_type *t = reinterpret_cast<tl_type *>(T->data);
         if (T->flags & 4) {
-          assert (t->constructors_num == 1);
-          tl_buf_add_string_q(t->constructors[0]->real_id ? t->constructors[0]->real_id : t->constructors[0]->id, -1, x);
+          if (t->constructors_num == 1) {
+            tl_buf_add_string_q(t->constructors[0]->real_id ? t->constructors[0]->real_id : t->constructors[0]->id, -1, x);
+          } else {
+            assert(t->constructors_num == 0);
+            assert(t->real_id == nullptr); // real_id is never be set with not null
+            auto result = convert_type_to_bare_constructor(t->id);
+            assert(result.first); // convertion was done
+            const auto &constructor = result.second;
+            tl_buf_add_string_q(constructor.c_str(), constructor.size(), x);
+          }
         } else {
           tl_buf_add_string_q(t->real_id ? t->real_id : t->id, -1, x);
         }
@@ -1712,24 +1747,26 @@ struct tl_combinator_tree *tl_parse_ident(struct tree *T, int s) {
     L->type_flags = c->type->params_types;
     return L;
   }
-  int x = tl_is_type_name(T->text, T->len);
-  if (x) {
-    struct tl_type *t = tl_add_type(T->text, T->len, -1, 0);
-    L = alloc_ctree_node();
-    if (s) {
-      L->flags |= 1;
-      t->flags |= 8;
-    }
-    L->act = act_type;
-    L->data = t;
-    L->type = type_type;
-    L->type_len = t->params_num;
-    L->type_flags = t->params_types;
-    return L;
-  } else {
-    TL_ERROR ("Not a type/var ident `%.*s`\n", T->len, T->text);
-    return 0;
+
+  const auto result = convert_bare_constructor_to_type({T->text, static_cast<size_t>(T->len)});
+  const bool is_constructor = result.first;
+  const auto &type_name = result.second;
+
+  auto *t = tl_add_type(type_name.c_str(), type_name.size(), -1, 0);
+  L = alloc_ctree_node();
+  if (is_constructor) {
+    L->flags |= 5;
+    t->flags |= 1;
+  } else if (s) {
+    L->flags |= 1;
+    t->flags |= 8;
   }
+  L->act = act_type;
+  L->data = t;
+  L->type = type_type;
+  L->type_len = t->params_num;
+  L->type_flags = t->params_types;
+  return L;
 }
 
 struct tl_combinator_tree *tl_parse_any_term(struct tree *T, int s) {

@@ -44,4 +44,3 @@ private:
 
   static void check_instanceof(VertexAdaptor<op_instanceof> instanceof_vertex);
 };
-

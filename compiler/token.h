@@ -9,7 +9,9 @@
 enum TokenType {
   tok_empty,
   tok_int_const,
+  tok_int_const_sep, // 1234_5678_9123
   tok_float_const,
+  tok_float_const_sep, // 10_999.1000_9999
   tok_null,
   tok_nan,
   tok_inf,

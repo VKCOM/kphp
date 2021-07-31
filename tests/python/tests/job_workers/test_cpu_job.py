@@ -11,7 +11,7 @@ class TestCpuJob(KphpServerAutoTestCase):
         })
 
     def test_simple_cpu_job(self):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.kphp_server.get_stats(prefix="kphp_server.workers_job_memory_messages_")
         resp = self.kphp_server.http_post(
             uri="/test_simple_cpu_job",
             json={"data": [[1, 2, 3, 4], [7, 9, 12]]})
@@ -24,14 +24,15 @@ class TestCpuJob(KphpServerAutoTestCase):
             ]})
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
+            prefix="kphp_server.workers_job_memory_messages_",
             expected_added_stats={
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 4,
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 4,
-                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
+                "shared_messages_buffers_acquired": 4,
+                "shared_messages_buffers_released": 4,
+                "shared_messages_buffer_acquire_fails": 0,
             })
 
     def test_heavy_cpu_job(self):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.kphp_server.get_stats(prefix="kphp_server.workers_job_memory_messages_")
         a = [1, 2, 3, 4, 5, 6]
         resp = self.kphp_server.http_post(
             uri="/test_simple_cpu_job",
@@ -47,13 +48,14 @@ class TestCpuJob(KphpServerAutoTestCase):
             ]})
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
+            prefix="kphp_server.workers_job_memory_messages_",
             expected_added_stats={
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": 6,
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": 6,
-                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0,
-                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffers_acquired": 2,
-                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffers_released": 2,
-                "kphp_server.workers_job_memory_messages_extra_buffers_1mb_buffer_acquire_fails": 0
+                "shared_messages_buffers_acquired": 6,
+                "shared_messages_buffers_released": 6,
+                "shared_messages_buffer_acquire_fails": 0,
+                "extra_buffers_1mb_buffers_acquired": 2,
+                "extra_buffers_1mb_buffers_released": 2,
+                "extra_buffers_1mb_buffer_acquire_fails": 0
             })
 
     def test_simple_cpu_job_and_rpc_request_between(self):

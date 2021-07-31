@@ -44,7 +44,7 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *memory_request = memory_manager.acquire_shared_message<JobMessageT>();
   if (memory_request == nullptr) {
-    php_warning("Can't send job: not enough shared memory");
+    php_warning("Can't send job: not enough shared messages");
     return nullptr;
   }
 

@@ -19,12 +19,15 @@ void SharedMemoryManager::init() noexcept {
 
   const size_t processes = vk::singleton<WorkersControl>::get().get_total_workers_count();
   assert(processes);
+  if (!shared_messages_count_) {
+    shared_messages_count_ = processes * JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER;
+  }
   if (!memory_limit_) {
     memory_limit_ = processes * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER + sizeof(ControlBlock);
   }
   auto *raw_mem = static_cast<uint8_t *>(mmap_shared(memory_limit_));
   const size_t left_memory = memory_limit_ - sizeof(ControlBlock);
-  const uint32_t messages_count = std::min(JOB_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER * processes, left_memory / sizeof(JobSharedMessage));
+  const uint32_t messages_count = std::min(shared_messages_count_, left_memory / sizeof(JobSharedMessage));
   control_block_ = new(raw_mem) ControlBlock{};
   raw_mem += sizeof(ControlBlock);
   for (uint32_t i = 0; i != messages_count; ++i) {
@@ -33,7 +36,7 @@ void SharedMemoryManager::init() noexcept {
   }
 
   std::array<memory_resource::extra_memory_raw_bucket, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory;
-  control_block_->stats.unused_memory = memory_resource::distribute_memory(extra_memory, processes, raw_mem,
+  control_block_->stats.unused_memory = memory_resource::distribute_memory(extra_memory, shared_messages_count_ / 2, raw_mem,
                                                                            left_memory - sizeof(JobSharedMessage) * messages_count);
   for (size_t i = 0; i != extra_memory.size(); ++i) {
     auto &free_extra_buffers = control_block_->free_extra_memory[i];
@@ -49,10 +52,18 @@ void SharedMemoryManager::init() noexcept {
 }
 
 bool SharedMemoryManager::set_memory_limit(size_t memory_limit) noexcept {
-  if (memory_limit < 3 * sizeof(JobSharedMessage) + sizeof(ControlBlock)) {
+  if (memory_limit < JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER * sizeof(JobSharedMessage) + sizeof(ControlBlock)) {
     return false;
   }
   memory_limit_ = memory_limit;
+  return true;
+}
+
+bool SharedMemoryManager::set_shared_messages_count(size_t shared_messages_count) noexcept {
+  if (shared_messages_count < JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER) {
+    return false;
+  }
+  shared_messages_count_ = shared_messages_count;
   return true;
 }
 
