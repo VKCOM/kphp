@@ -72,6 +72,8 @@ static string_buffer oub[OB_MAX_BUFFERS];
 string_buffer *coub;
 static int http_need_gzip;
 
+static int is_utf8_enabled = false;
+
 void f$ob_clean() {
   coub->clean();
 }
@@ -2165,7 +2167,11 @@ static void init_runtime_libs() {
   ob_cur_buffer = -1;
   f$ob_start();
 
-  setlocale(LC_CTYPE, "ru_RU.CP1251");
+  if (is_utf8_enabled) {
+    setlocale(LC_CTYPE, "ru_RU.UTF-8");
+  } else {
+    setlocale(LC_CTYPE, "ru_RU.CP1251");
+  }
 
   //TODO
   header("HTTP/1.0 200 OK", 15);
@@ -2174,7 +2180,11 @@ static void init_runtime_libs() {
   string date = f$gmdate(HTTP_DATE);
   static_SB_spare.clean() << "Date: " << date;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
-  header("Content-Type: text/html; charset=windows-1251", 45);
+  if (is_utf8_enabled) {
+    header("Content-Type: text/html; charset=utf-8", 38);
+  } else {
+    header("Content-Type: text/html; charset=windows-1251", 45);
+  }
 
   php_assert (dl::in_critical_section == 0);
 }
@@ -2304,4 +2314,8 @@ void read_engine_tag(const char *file_name) {
 
 void f$raise_sigsegv() {
   raise(SIGSEGV);
+}
+
+void use_utf8() {
+  is_utf8_enabled = true;
 }
