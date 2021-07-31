@@ -165,6 +165,8 @@ void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
 
 void free_runtime_environment();
 
+void use_utf8();
+
 /*
  *
  *     IMPLEMENTATION

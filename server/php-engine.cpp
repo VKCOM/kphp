@@ -2035,6 +2035,10 @@ int main_args_handler(int i, const char *long_option) {
       disable_mysql_same_datacenter_check();
       return 0;
     }
+    case 2024: {
+      use_utf8();
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2110,6 +2114,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("mysql-password", required_argument, 2021, "MySQL password");
   parse_option("mysql-host", required_argument, 2022, "MySQL host");
   parse_option("disable-mysql-same-datacenter-check", no_argument, 2023, "Disable MySQL same datacenter check");
+  parse_option("use-utf8", no_argument, 2024, "Use UTF8");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
