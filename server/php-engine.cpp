@@ -121,6 +121,7 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
  ***/
 
 static int db_port = 3306;
+const char *db_host = "localhost";
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
   auto res = get_default_tcp_rpc_client_conn_type();
@@ -1508,7 +1509,8 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
   if (no_sql) {
     sql_target_id = -1;
   } else {
-    sql_target_id = get_target("localhost", db_port, &db_ct);
+    fprintf(stdout, "mysql host: %s; port: %d\n", db_host, db_port);
+    sql_target_id = get_target(db_host, db_port, &db_ct);
     assert (sql_target_id != -1);
   }
 
@@ -1729,6 +1731,11 @@ int read_option_to(const char *option_name, T min_value, T max_value, T &out) no
 
 } // namespace
 
+bool set_mysql_host(const char *host) {
+  db_host = host;
+  return true;
+}
+
 /** main arguments parsing **/
 int main_args_handler(int i, const char *long_option) {
   switch (i) {
@@ -1943,7 +1950,7 @@ int main_args_handler(int i, const char *long_option) {
       if (set_mysql_db_name(optarg)) {
         return 0;
       }
-      kprintf("--%s option: couldn't set name '%s'\n", long_option, optarg);
+      kprintf("--%s option: couldn't set db_name '%s'\n", long_option, optarg);
       return -1;
     }
     case 2012: {
@@ -2002,6 +2009,31 @@ int main_args_handler(int i, const char *long_option) {
         const double ratio = static_cast<double>(job_workers_num) / static_cast<double>(total_workers);
         control.set_ratio(WorkerType::job_worker, ratio);
       });
+    }
+    case 2020: {
+      if (set_mysql_user(optarg)) {
+        return 0;
+      }
+      kprintf("--%s option: couldn't set mysql user '%s'\n", long_option, optarg);
+      return -1;
+    }
+    case 2021: {
+      if (set_mysql_password(optarg)) {
+        return 0;
+      }
+      kprintf("--%s option: couldn't set mysql password '%s'\n", long_option, optarg);
+      return -1;
+    }
+    case 2022: {
+      if (set_mysql_host(optarg)) {
+        return 0;
+      }
+      kprintf("--%s option: couldn't set mysql host '%s'\n", long_option, optarg);
+      return -1;
+    }
+    case 2023: {
+      disable_mysql_same_datacenter_check();
+      return 0;
     }
     default:
       return -1;
@@ -2074,6 +2106,10 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "total size of shared memory used for job workers related communication");
   parse_option("lease-stop-ready-timeout", required_argument, 2018, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_option("job-workers-num", required_argument, 2019, "DEPRECATED");
+  parse_option("mysql-user", required_argument, 2020, "MySQL user");
+  parse_option("mysql-password", required_argument, 2021, "MySQL password");
+  parse_option("mysql-host", required_argument, 2022, "MySQL host");
+  parse_option("disable-mysql-same-datacenter-check", no_argument, 2023, "Disable MySQL same datacenter check");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

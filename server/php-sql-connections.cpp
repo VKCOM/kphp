@@ -22,6 +22,9 @@ command_t command_net_write_sql_base = {
 };
 
 static const char *mysql_db_name = "dbname_not_set";
+static const char *mysql_user = "fake";
+static const char *mysql_password = "fake";
+static bool is_mysql_same_datacenter_check_disabled = false;
 
 
 int proxy_client_execute(connection *c, int op);
@@ -33,6 +36,17 @@ int sqlp_check_ready(connection *c);
 bool set_mysql_db_name(const char *db_name) {
   mysql_db_name = db_name;
   return true;
+}
+bool set_mysql_user(const char *user) {
+  mysql_user = user;
+  return true;
+}
+bool set_mysql_password(const char *password) {
+  mysql_password = password;
+  return true;
+}
+void disable_mysql_same_datacenter_check() {
+  is_mysql_same_datacenter_check_disabled = true;
 }
 
 mysql_client_functions db_client_outbound = [] {
@@ -48,8 +62,15 @@ mysql_client_functions db_client_outbound = [] {
   res.sql_get_database = [](connection*) {
     return mysql_db_name;
   };
-  res.sql_get_password = [](connection*) { return "fake"; };
-  res.sql_get_username = [](connection*) { return "fake"; };
+  res.sql_get_user = [](connection*) {
+    return mysql_user;
+  };
+  res.sql_get_password = [](connection*) {
+    return mysql_password;
+  };
+  res.is_mysql_same_datacenter_check_disabled = []() {
+    return is_mysql_same_datacenter_check_disabled;
+  };
 
   return res;
 }();

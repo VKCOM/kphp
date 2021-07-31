@@ -244,7 +244,7 @@ static int sqlc_inner_authorise (struct connection *c) {
     return -1;
   }
 
-  int res = SQLC_FUNC(c)->sql_check_perm ? SQLC_FUNC(c)->sql_check_perm (c) : 1;
+  int res = !SQLC_FUNC(c)->is_mysql_same_datacenter_check_disabled() && SQLC_FUNC(c)->sql_check_perm ? SQLC_FUNC(c)->sql_check_perm (c) : 1;
 
   if (res < 0 || !(res &= 3)) {
     vkprintf (1, "check_perm forbids access for connection %d\n", c->fd);
@@ -271,9 +271,11 @@ static int sqlc_inner_authorise (struct connection *c) {
 
   T = (struct mysql_auth_packet_end *)p;
 
-  const char *sql_username = SQLC_FUNC(c)->sql_get_username(c);
   const char *sql_database = SQLC_FUNC(c)->sql_get_database(c);
+  const char *sql_user = SQLC_FUNC(c)->sql_get_user(c);
   const char *sql_password = SQLC_FUNC(c)->sql_get_password(c);
+
+  fprintf(stdout, "mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
 
   sha1 ((unsigned char *)sql_password, strlen (sql_password), (unsigned char *)stage1_hash);
   memcpy (password_sha1, T->scramble1, 8);
@@ -290,7 +292,7 @@ static int sqlc_inner_authorise (struct connection *c) {
 
   len = 0;
   len += write_out (&c->Out, &P, sizeof (P));
-  len += write_out (&c->Out, sql_username, strlen (sql_username) + 1);
+  len += write_out (&c->Out, sql_user, strlen (sql_user) + 1);
   len += write_out (&c->Out, &scramble_len, 1);
   len += write_out (&c->Out, user_scramble, 20);
   if (sql_database && *sql_database) {
