@@ -29,7 +29,7 @@ enum {
   server_nothing_replied_error = -2001
 };
 
-struct SendingInstanceBase : abstract_refcountable_php_interface {
+struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
   virtual const char *get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
 

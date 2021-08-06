@@ -51,4 +51,27 @@ function test_compilation($x) {
   kphp_job_worker_store_response($m4);
 }
 
+function test_multiple_inheritance($x) {
+  if (!$x) {
+    return;
+  }
+
+  interface ReqInterface {}
+  abstract class ReqBaseClass implements \KphpJobWorkerRequest {}
+  final class Request1 extends ReqBaseClass implements ReqInterface {}
+
+  interface RespInterface {}
+  abstract class RespBaseClass implements \KphpJobWorkerResponse {}
+  final class Response1 extends RespBaseClass implements RespInterface {}
+
+  kphp_job_worker_start(new Request1, -1);
+
+  $x = kphp_job_worker_fetch_request();
+  if ($x instanceof Response1) {
+    var_dump(get_class($x));
+  }
+  kphp_job_worker_store_response(new Response1);
+}
+
 test_compilation(false);
+test_multiple_inheritance(false);
