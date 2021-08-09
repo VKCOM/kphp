@@ -70,6 +70,11 @@ function do_http_worker() {
       test_send_job_no_reply();
       return;
     }
+    case "/test_reference_invariant": {
+      require_once "ReferenceInvariant/http_worker.php";
+      test_reference_invariant();
+      return;
+    }
   }
 
   critical_error("unknown test " . $_SERVER["PHP_SELF"]);

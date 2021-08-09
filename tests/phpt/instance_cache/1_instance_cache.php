@@ -198,14 +198,14 @@ function test_loop_in_tree() {
 
   $result = instance_cache_store("tree_root_loop", $root);
 #ifndef KPHP
-  var_dump(false);
+  var_dump(true);
   if (false)
 #endif
   var_dump($result);
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root_loop");
 #ifndef KPHP
-  var_dump(true);
+  var_dump(false);
   if (false)
 #endif
   var_dump(!$cached_root1);

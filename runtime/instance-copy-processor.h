@@ -19,7 +19,8 @@ class InstanceDeepBasicVisitor : vk::not_copyable {
 public:
   template<typename T>
   void operator()(const char *, T &&value) noexcept {
-    is_ok_ = child_.process(std::forward<T>(value));
+    const bool is_ok = child_.process(std::forward<T>(value));
+    is_ok_ = is_ok_ && is_ok;
   }
 
   template<typename T>
@@ -64,8 +65,7 @@ public:
   ExtraRefCnt get_memory_ref_cnt() const noexcept { return memory_ref_cnt_; }
 
 protected:
-  InstanceDeepBasicVisitor(Child &child, bool set_memory_ref_cnt, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::for_global_const) noexcept:
-    set_memory_ref_cnt_(set_memory_ref_cnt),
+  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept:
     memory_ref_cnt_(memory_ref_cnt),
     child_(child) {
   }
@@ -84,8 +84,6 @@ protected:
     return res;
   }
 
-  bool set_memory_ref_cnt_{false};
-
 private:
   template<size_t Index = 0, typename ...Args>
   std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) noexcept {
@@ -99,24 +97,72 @@ private:
   }
 
   bool is_ok_{true};
-  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::for_global_const};
+  const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::extra_ref_cnt_value(0)};
   Child &child_;
 };
 
+constexpr static uint32_t VISITED_INSTANCE_UNIQUE_INDEX_MASK{0x80000000};
+
 } // namespace impl_
+
+class InstanceUniqueIndexVisitor : impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor> {
+public:
+  friend class impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
+
+  using Basic = impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
+  using Basic::process;
+  using Basic::operator();
+
+  using Handler = bool (*)(uint32_t &);
+
+  explicit InstanceUniqueIndexVisitor(Handler f) :
+    Basic(*this),
+    f_(f) {
+  }
+
+  template<typename I>
+  bool process_instance(class_instance<I> &instance) noexcept {
+    return process(instance);
+  }
+
+private:
+  template<typename T>
+  std::enable_if_t<!is_class_instance_inside<T>{}, bool> process(T &) noexcept {
+    return true;
+  }
+
+  template<typename T>
+  std::enable_if_t<is_class_instance_inside<T>{}, bool> process(array<T> &arr) noexcept {
+    Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
+    return true;
+  }
+
+  template<typename I>
+  bool process(class_instance<I> &instance) noexcept {
+    if (!instance.is_null()) {
+      if (!f_(instance.get()->get_unique_index_ref())) {
+        return true;
+      }
+    }
+    return Basic::process(instance);
+  }
+
+  Handler f_;
+};
 
 using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource &, size_t);
 
 class InstanceDeepCopyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor> {
 public:
-  using Basic = InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
+  friend class impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
+
+  using Basic = impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor>;
   using Basic::process;
   using Basic::operator();
-  using Basic::is_ok;
   using Basic::get_memory_ref_cnt;
 
-  explicit InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept;
-  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt,
+  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
+                          ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
                           ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
   template<class T>
@@ -124,44 +170,14 @@ public:
     return process_array(arr);
   }
 
-  template<class I>
-  bool process(class_instance<I> &instance) noexcept {
-    if (++instance_depth_level_ >= instance_depth_level_limit_) {
-      instance.destroy();
-      is_depth_limit_exceeded_ = true;
-      return false;
-    }
-
-    bool result = true;
-    if (!instance.is_null()) {
-      if (likely(is_enough_memory_for(instance.estimate_memory_usage()))) {
-        instance = instance.virtual_builtin_clone();
-        if (set_memory_ref_cnt_) {
-          instance.set_reference_counter_to(get_memory_ref_cnt());
-        }
-        result = Basic::process(instance);
-      } else {
-        instance.destroy();
-        result = false;
-        memory_limit_exceeded_ = true;
-      }
-    }
-    --instance_depth_level_;
-    return result;
-  }
-
   bool process(string &str) noexcept;
-
-  bool is_depth_limit_exceeded() const noexcept {
-    return is_depth_limit_exceeded_;
-  }
 
   bool is_memory_limit_exceeded() const noexcept {
     return memory_limit_exceeded_;
   }
 
   bool is_ok() const noexcept {
-    return !is_depth_limit_exceeded() && !is_memory_limit_exceeded();
+    return Basic::is_ok() && !is_memory_limit_exceeded();
   }
 
   bool is_enough_memory_for(size_t size) noexcept {
@@ -181,7 +197,41 @@ public:
     return is_enough_memory_for(size) ? memory_pool_.allocate(size) : nullptr;
   }
 
+  template<class I>
+  bool process_instance(class_instance<I> &instance) noexcept {
+    class_instance<I> instance_copy = instance;
+    const bool result = process(instance);
+    InstanceUniqueIndexVisitor{[](uint32_t &index) { return !!std::exchange(index, 0); }}.process_instance(instance_copy);
+    return result;
+  }
+
 private:
+  template<class I>
+  bool process(class_instance<I> &instance) noexcept {
+    if (instance.is_null()) {
+      return true;
+    }
+
+    uint32_t &reduced_ptr = instance.get()->get_unique_index_ref();
+    if (reduced_ptr) {
+      instance = class_instance<I>::create_from_base_raw_ptr(expand_ptr(reduced_ptr));
+      return true;
+    }
+
+    if (unlikely(!is_enough_memory_for(instance.estimate_memory_usage()))) {
+      instance = class_instance<I>{};
+      return false;
+    }
+
+    instance = instance.virtual_builtin_clone();
+    reduced_ptr = reduce_ptr(instance.get_base_raw_ptr());
+
+    if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
+      instance.set_reference_counter_to(extra_ref_cnt);
+    }
+    return Basic::process(instance);
+  }
+
   template<class T>
   struct PrimitiveArrayProcessor {
     static bool process(InstanceDeepCopyVisitor &self, array<T> &arr) noexcept;
@@ -208,8 +258,8 @@ private:
       return true;
     }
     php_assert(arr.get_reference_counter() == 1);
-    if (set_memory_ref_cnt_) {
-      arr.set_reference_counter_to(get_memory_ref_cnt());
+    if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
+      arr.set_reference_counter_to(extra_ref_cnt);
     }
     const bool primitive_array = is_primitive<T>{} && arr.size().string_size == 0;
     return primitive_array || Basic::process_range(first, arr.end());
@@ -225,17 +275,27 @@ private:
     return PrimitiveArrayProcessor<T>::process(*this, arr);
   }
 
+  void *expand_ptr(uint32_t reduced_ptr) noexcept {
+    php_assert(reduced_ptr);
+    return static_cast<uint8_t *>(memory_pool_.memory_begin()) + reduced_ptr - 1;
+  }
+
+  uint32_t reduce_ptr(void *ptr) noexcept {
+    const std::ptrdiff_t reduced = static_cast<uint8_t *>(ptr) - static_cast<uint8_t *>(memory_pool_.memory_begin());
+    php_assert(reduced >= 0 && reduced < std::numeric_limits<uint32_t>::max());
+    return static_cast<uint32_t>(reduced + 1);
+  }
+
   bool memory_limit_exceeded_{false};
-  bool is_depth_limit_exceeded_{false};
-  uint8_t instance_depth_level_{0u};
-  const uint8_t instance_depth_level_limit_{128u};
   memory_resource::unsynchronized_pool_resource &memory_pool_;
   ResourceCallbackOOM oom_callback_{nullptr};
 };
 
 class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
 public:
-  using Basic = InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
+  friend class impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
+
+  using Basic = impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor>;
   using Basic::process;
   using Basic::operator();
   using Basic::is_ok;
@@ -243,23 +303,47 @@ public:
   explicit InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
-  bool process(array<T> &arr) noexcept{
+  bool process(array<T> &arr) noexcept {
     // if array is constant, skip it, otherwise element was cached and should be destroyed
     if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
       arr.force_destroy(get_memory_ref_cnt());
     }
-    return true;
-  }
-
-  template<typename I>
-  bool process(class_instance<I> &instance) noexcept{
-    Basic::process(instance);
-    instance.force_destroy(get_memory_ref_cnt());
+    arr = array<T>{};
     return true;
   }
 
   bool process(string &str) noexcept;
+
+  template<class I>
+  bool process_instance(class_instance<I> &instance) noexcept {
+    InstanceUniqueIndexVisitor{[](uint32_t &index) {
+      const bool visited = ++index & impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
+      index |= impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
+      return !visited;
+    }}.process_instance(instance);
+    return process(instance);
+  }
+
+private:
+  template<typename I>
+  bool process(class_instance<I> &instance) noexcept {
+    if (instance.is_null()) {
+      return true;
+    }
+
+    uint32_t &index = instance.get()->get_unique_index_ref();
+    if (index & impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK) {
+      index ^= impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
+      Basic::process(instance);
+    }
+
+    if (!--index) {
+      instance.force_destroy(get_memory_ref_cnt());
+    }
+    instance = class_instance<I>{};
+    return true;
+  }
 };
 
 class InstanceCopyistBase : public ManagedThroughDlAllocator, vk::not_copyable {
@@ -291,15 +375,14 @@ public:
 
   std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor &detach_processor) const noexcept final {
     auto detached_instance = instance_;
-    detach_processor.process(detached_instance);
+    detach_processor.process_instance(detached_instance);
 
     const auto memory_ref_cnt = detach_processor.get_memory_ref_cnt();
 
     // sizeof(size_t) - an extra memory that we need inside the make_unique_on_script_memory
     constexpr auto size_for_wrapper = sizeof(size_t) + sizeof(InstanceCopyistImpl<class_instance<I>>);
-    if (unlikely(detach_processor.is_depth_limit_exceeded() ||
-                 !detach_processor.is_enough_memory_for(size_for_wrapper))) {
-      InstanceDeepDestroyVisitor{memory_ref_cnt}.process(detached_instance);
+    if (unlikely(!detach_processor.is_ok() || !detach_processor.is_enough_memory_for(size_for_wrapper))) {
+      InstanceDeepDestroyVisitor{memory_ref_cnt}.process_instance(detached_instance);
       return {};
     }
     return make_unique_on_script_memory<InstanceCopyistImpl<class_instance<I>>>(std::move(detached_instance), memory_ref_cnt);
@@ -315,7 +398,7 @@ public:
 
   ~InstanceCopyistImpl() noexcept final {
     if (memory_ref_cnt_ && !instance_.is_null()) {
-      InstanceDeepDestroyVisitor{static_cast<ExtraRefCnt::extra_ref_cnt_value>(memory_ref_cnt_)}.process(instance_);
+      InstanceDeepDestroyVisitor{static_cast<ExtraRefCnt::extra_ref_cnt_value>(memory_ref_cnt_)}.process_instance(instance_);
     }
   }
 
@@ -327,28 +410,17 @@ private:
 template<class T>
 class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
                                                   memory_resource::unsynchronized_pool_resource &memory_pool,
-                                                  ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept {
+                                                  ExtraRefCnt memory_ref_cnt = ExtraRefCnt{ExtraRefCnt::extra_ref_cnt_value(0)},
+                                                  ResourceCallbackOOM oom_callback = nullptr) noexcept {
   dl::set_current_script_allocator(memory_pool, false);
 
   class_instance<T> copied_instance = instance;
   InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt, oom_callback};
-  copyVisitor.process(copied_instance);
-  if (unlikely(copyVisitor.is_depth_limit_exceeded() || copyVisitor.is_memory_limit_exceeded())) {
-    InstanceDeepDestroyVisitor{memory_ref_cnt}.process(copied_instance);
+  copyVisitor.process_instance(copied_instance);
+  if (unlikely(!copyVisitor.is_ok())) {
     copied_instance = class_instance<T>{};
   }
 
   dl::restore_default_script_allocator(false);
-  return copied_instance;
-}
-
-template<class T>
-class_instance<T> copy_instance_into_script_memory(const class_instance<T> &instance) noexcept {
-  class_instance<T> copied_instance = instance;
-  InstanceDeepCopyVisitor copyVisitor{dl::get_default_script_allocator()};
-  copyVisitor.process(copied_instance);
-  if (unlikely(copyVisitor.is_depth_limit_exceeded() || copyVisitor.is_memory_limit_exceeded())) {
-    copied_instance = class_instance<T>{};
-  }
   return copied_instance;
 }

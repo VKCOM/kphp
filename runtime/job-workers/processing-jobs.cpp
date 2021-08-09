@@ -15,7 +15,7 @@ namespace job_workers {
 FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) noexcept {
   auto response = job_message->instance.cast_to<C$KphpJobWorkerResponse>();
   php_assert(!response.is_null());
-  response = copy_instance_into_script_memory(response);
+  response = copy_instance_into_other_memory(response, dl::get_default_script_allocator());
   if (!response.is_null()) {
     if (void *mem = dl::allocate(sizeof(FinishedJob))) {
       return new(mem) FinishedJob{std::move(response)};

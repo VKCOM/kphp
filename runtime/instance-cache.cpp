@@ -638,9 +638,6 @@ private:
   }
 
   void fire_warning(const InstanceDeepCopyVisitor &detach_processor, const char *class_name) noexcept {
-    if (detach_processor.is_depth_limit_exceeded()) {
-      php_warning("Depth limit exceeded on cloning instance of class '%s' into cache", class_name);
-    }
     if (detach_processor.is_memory_limit_exceeded()) {
       php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
       context_->memory_swap_required = true;

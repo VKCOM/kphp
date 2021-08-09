@@ -17,36 +17,43 @@ public:
   virtual void release() noexcept = 0;
   virtual uint32_t get_refcnt() noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
+
+  virtual uint32_t &get_unique_index_ref() noexcept = 0;
 };
 
 template<class ...Bases>
 class refcountable_polymorphic_php_classes : public Bases... {
 public:
   void add_ref() noexcept final {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      ++refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      ++refcnt_;
     }
   }
 
   uint32_t get_refcnt() noexcept final {
-    return refcnt;
+    return refcnt_;
   }
 
   void release() noexcept final __attribute__((always_inline)) {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      --refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      --refcnt_;
     }
-    if (refcnt == 0) {
+    if (refcnt_ == 0) {
       delete this;
     }
   }
 
   void set_refcnt(uint32_t new_refcnt) noexcept final {
-    refcnt = new_refcnt;
+    refcnt_ = new_refcnt;
+  }
+
+  uint32_t &get_unique_index_ref() noexcept final {
+    return unique_index_;
   }
 
 private:
-  uint32_t refcnt{0};
+  uint32_t refcnt_{0};
+  uint32_t unique_index_{0};
 };
 
 template<class ...Interfaces>
@@ -61,51 +68,56 @@ public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
 
   void add_ref() noexcept final {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      ++refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      ++refcnt_;
     }
   }
 
   uint32_t get_refcnt() noexcept final {
-    return refcnt;
+    return refcnt_;
   }
 
   void release() noexcept final __attribute__((always_inline)) {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      --refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      --refcnt_;
     }
-    if (refcnt == 0) {
+    if (refcnt_ == 0) {
       delete this;
     }
   }
 
   void set_refcnt(uint32_t new_refcnt) noexcept final {
-    refcnt = new_refcnt;
+    refcnt_ = new_refcnt;
+  }
+
+  uint32_t &get_unique_index_ref() noexcept final {
+    return unique_index_;
   }
 
 private:
-  uint32_t refcnt{0};
+  uint32_t refcnt_{0};
+  uint32_t unique_index_{0};
 };
 
 template<class Derived>
 class refcountable_php_classes  : public ManagedThroughDlAllocator {
 public:
   void add_ref() noexcept {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      ++refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      ++refcnt_;
     }
   }
 
   uint32_t get_refcnt() noexcept {
-    return refcnt;
+    return refcnt_;
   }
 
   void release() noexcept __attribute__((always_inline)) {
-    if (refcnt < ExtraRefCnt::for_global_const) {
-      --refcnt;
+    if (refcnt_ < ExtraRefCnt::for_global_const) {
+      --refcnt_;
     }
 
-    if (refcnt == 0) {
+    if (refcnt_ == 0) {
       static_assert(!std::is_polymorphic<Derived>{}, "Derived may not be polymorphic");
       /**
        * because of inheritance from ManagedThroughDlAllocator, which override operators new/delete
@@ -117,11 +129,16 @@ public:
   }
 
   void set_refcnt(uint32_t new_refcnt) noexcept {
-    refcnt = new_refcnt;
+    refcnt_ = new_refcnt;
+  }
+
+  uint32_t &get_unique_index_ref() noexcept {
+    return unique_index_;
   }
 
 private:
-  uint32_t refcnt{0};
+  uint32_t refcnt_{0};
+  uint32_t unique_index_{0};
 };
 
 class refcountable_empty_php_classes {

@@ -22,7 +22,7 @@ function test_empty_class() {
 
 function test_class_with_simple_fields() {
   class MyClass1 {
-    // counter 4 // aligned to 8
+    // counter 4 + unique index 4
     public $x = 1; // 8
     public $y = 1.0; // 8
     public $z = true; // 1 // aligned to 8
@@ -54,7 +54,7 @@ function test_class_with_dynamic_array() {
       $this->x = range(0, $size);
     }
 
-    // counter 4 // aligned => 8
+    // counter 4 + unique index 4
     public $x = []; // 8
   } // total size = 16
 
