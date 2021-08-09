@@ -21,8 +21,11 @@ struct Include : private ExternInclude {
 };
 
 struct LibInclude : private ExternInclude {
-  using ExternInclude::ExternInclude;
+  LibInclude(vk::string_view absolute_path, vk::string_view relative_path) noexcept
+    : ExternInclude(relative_path)
+    , absolute_path(absolute_path) {}
   void compile(CodeGenerator &W) const;
+  vk::string_view absolute_path;
 };
 
 struct IncludesCollector {
@@ -47,7 +50,7 @@ public:
 private:
   std::unordered_set<ClassPtr> classes_;
   std::set<std::string> internal_headers_;
-  std::set<std::string> lib_headers_;
+  std::map<std::string, std::string> lib_headers_;
   std::set<ClassPtr> forward_declarations_;
 
   std::unordered_set<ClassPtr> prev_classes_forward_declared_;

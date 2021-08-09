@@ -26,8 +26,25 @@ void Include::compile(CodeGenerator &W) const {
 }
 
 void LibInclude::compile(CodeGenerator &W) const {
-  W.add_lib_include(static_cast<std::string>(file_name));
+  W.add_lib_include(static_cast<std::string>(absolute_path));
   ExternInclude::compile(W);
+}
+
+static std::string make_relative_path(const std::string &source_path, const std::string &to_include_path) noexcept {
+  std::size_t idx = 0;
+  while ((idx < source_path.size()) && (idx < to_include_path.size()) && (source_path[idx] == to_include_path[idx])) {
+    ++idx;
+  }
+
+  std::string relative_path;
+  for (std::size_t i = idx; i < source_path.size(); ++i) {
+    if (source_path[i] == '/') {
+      relative_path += "../";
+    }
+  }
+
+  relative_path += to_include_path.substr(idx);
+  return relative_path;
 }
 
 void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
@@ -36,7 +53,9 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       continue;
     }
     if (to_include->is_imported_from_static_lib()) {
-      lib_headers_.emplace(to_include->header_full_name);
+      const auto source_full_path = G->settings().dest_cpp_dir.get() + function->header_full_name;
+      auto relative_path = make_relative_path(source_full_path, to_include->header_full_name);
+      lib_headers_.emplace(to_include->header_full_name, std::move(relative_path));
     } else if (!to_include->is_extern()) {
       kphp_assert(!to_include->header_full_name.empty());
       internal_headers_.emplace(to_include->header_full_name);
@@ -108,8 +127,8 @@ void IncludesCollector::add_raw_filename_include(const std::string &file_name) {
 
 void IncludesCollector::compile(CodeGenerator &W) const {
   for (const auto &lib_header : lib_headers_) {
-    if (!prev_headers_.count(lib_header)) {
-      W << LibInclude(lib_header);
+    if (!prev_headers_.count(lib_header.first)) {
+      W << LibInclude(lib_header.first, lib_header.second);
     }
   }
 
@@ -155,7 +174,9 @@ void IncludesCollector::start_next_block() {
   classes_.clear();
 
   prev_headers_.insert(internal_headers_.begin(), internal_headers_.end());
-  prev_headers_.insert(lib_headers_.begin(), lib_headers_.end());
+  for (const auto &header : lib_headers_) {
+    prev_headers_.insert(header.first);
+  }
   internal_headers_.clear();
   lib_headers_.clear();
 }
