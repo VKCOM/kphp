@@ -1,4 +1,4 @@
-@ok php7_4
+@ok
 <?php
 require_once 'kphp_tester_include.php';
 

@@ -1,4 +1,4 @@
-@ok php7_4
+@ok
 <?php
 
 // See issue #201

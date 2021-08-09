@@ -9,6 +9,17 @@ function test_get_info_all() {
   unset($info["content_type"]);
   unset($info["redirect_url"]);
   unset($info["certinfo"]);
+  unset($info["http_version"]);
+  unset($info["protocol"]);
+  unset($info["ssl_verifyresult"]);
+  unset($info["scheme"]);
+  unset($info["appconnect_time_us"]);
+  unset($info["connect_time_us"]);
+  unset($info["namelookup_time_us"]);
+  unset($info["pretransfer_time_us"]);
+  unset($info["redirect_time_us"]);
+  unset($info["starttransfer_time_us"]);
+  unset($info["total_time_us"]);
   $info["request_header"] = "";
 #endif
   $info["filetime"] = 0;

@@ -1,4 +1,4 @@
-@ok php7_4
+@ok
 <?php
 
 function test_var_call() {

@@ -32,11 +32,8 @@ class TestFile:
     def is_kphp_should_warn(self):
         return "kphp_should_warn" in self.tags
 
-    def is_php5(self):
-        return "php5" in self.tags
-
-    def is_php7_4(self):
-        return "php7_4" in self.tags
+    def is_php8(self):
+        return "php8" in self.tags
 
     def make_kphp_once_runner(self, distcc_hosts):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
@@ -44,7 +41,7 @@ class TestFile:
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
-            php_bin=search_php_bin(php5_require=self.is_php5(), php7_4_require=self.is_php7_4()),
+            php_bin=search_php_bin(php8_require=self.is_php8()),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             distcc_hosts=distcc_hosts

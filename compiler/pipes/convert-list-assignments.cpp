@@ -15,7 +15,12 @@ VertexPtr ConvertListAssignmentsPass::process_list_assignment(VertexAdaptor<op_l
   auto same_var_on_lhs_and_rhs_sides = [list] {
     for (auto list_item : list->list()) {
       const auto kv = list_item.as<op_list_keyval>();
-      if (auto var_in_list = kv->var().try_as<op_var>()) {
+      auto expr = kv->var();
+      while (expr->type() == op_index) {
+        expr = expr.as<op_index>()->array();
+      }
+      auto var_in_list = expr.try_as<op_var>();
+      if (var_in_list) {
         if (var_in_list->str_val == list->array().as<op_var>()->str_val) {
           return true;
         }
