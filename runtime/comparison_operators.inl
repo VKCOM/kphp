@@ -98,7 +98,7 @@ inline bool eq2(int64_t lhs, const string &rhs) {
       return php7_result;
     }
 
-    php_warning("Comparison results in PHP 7 and PHP 8 are different for %ld and \"%s\" (PHP7: %s, PHP8: %s)",
+    php_warning("Comparison results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)",
                 lhs,
                 rhs.c_str(),
                 php7_result ? "true" : "false",
