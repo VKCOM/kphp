@@ -1371,3 +1371,5 @@ function zstd_compress(string $data, int $level = 3) ::: string | false;
 function zstd_uncompress(string $data) ::: string | false;
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
 function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
+
+function set_show_number_string_conversion_warning ($show ::: bool) ::: bool;

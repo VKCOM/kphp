@@ -38,6 +38,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         mbstring.cpp
         memcache.cpp
         memory_usage.cpp
+        migration_php8.cpp
         misc.cpp
         mixed.cpp
         msgpack-serialization.cpp
