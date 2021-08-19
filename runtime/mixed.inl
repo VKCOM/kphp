@@ -1750,7 +1750,6 @@ template <typename T>
 inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
   if (show_number_string_conversion_warning) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
-    printf("sss");
     if (php7_result == php8_result) {
       return php7_result;
     }
