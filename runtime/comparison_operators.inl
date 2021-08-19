@@ -79,7 +79,7 @@ inline bool eq2(const string &lhs, bool rhs) {
 
 // see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
 template <typename T>
-inline bool compare_number_string_as_php8(T lhs, const string &rhs) {
+inline bool equal_number_string_as_php8(T lhs, const string &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
 
@@ -93,12 +93,12 @@ inline bool compare_number_string_as_php8(T lhs, const string &rhs) {
 inline bool eq2(int64_t lhs, const string &rhs) {
   const auto php7_result = eq2(lhs, rhs.to_float());
   if (show_number_string_conversion_warning) {
-    const auto php8_result = compare_number_string_as_php8(lhs, rhs);
+    const auto php8_result = equal_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }
 
-    php_warning("Comparison results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)",
+    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)",
                 lhs,
                 rhs.c_str(),
                 php7_result ? "true" : "false",
@@ -114,12 +114,12 @@ inline bool eq2(const string &lhs, int64_t rhs) {
 inline bool eq2(double lhs, const string &rhs) {
   const auto php7_result = lhs == rhs.to_float();
   if (show_number_string_conversion_warning) {
-    const auto php8_result = compare_number_string_as_php8(lhs, rhs);
+    const auto php8_result = equal_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }
 
-    php_warning("Comparison results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)",
+    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)",
                 lhs,
                 rhs.c_str(),
                 php7_result ? "true" : "false",
