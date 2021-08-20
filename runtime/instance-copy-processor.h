@@ -110,7 +110,6 @@ public:
   friend class impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
 
   using Basic = impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
-  using Basic::process;
   using Basic::operator();
 
   using Handler = bool (*)(uint32_t &);
@@ -127,8 +126,8 @@ public:
 
 private:
   template<typename T>
-  std::enable_if_t<!is_class_instance_inside<T>{}, bool> process(T &) noexcept {
-    return true;
+  bool process(T &t) noexcept {
+    return is_class_instance_inside<T>{} ? Basic::process(t) : true;
   }
 
   template<typename T>
