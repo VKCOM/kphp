@@ -77,7 +77,7 @@ public:
   inline class_instance<T> alloc(Args &&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() { o.reset(); }
-  int64_t get_reference_counter() const { return o->get_refcnt(); }
+  int64_t get_reference_counter() const { return o ? o->get_refcnt() : 0; }
 
   void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
   bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;

@@ -18,4 +18,5 @@ function test_reference_invariant() {
     critical_error("got empty job response");
   }
   $result_stats->verify_data();
+  $result_stats->verify_ref_cnt();
 }

@@ -24,7 +24,7 @@ abstract class ReferenceInvariantData {
     ];
     $this->b = [
       $this->ab,
-      $this->ab->b_arr[0],
+      $this->ab->b_arr["key 42"],
       $this->ab->b[0][1],
       $this->ab->b[0][2],
       new TestClassB(11),
@@ -48,7 +48,7 @@ abstract class ReferenceInvariantData {
     $assert($this->a[3] === $this->ab->a[0], "case a 2");
     $assert($this->a[5] === $this->ab->ab['a'][1], "case a 3");
 
-    $assert($this->b[1] === $this->ab->b_arr[0], "case b 1");
+    $assert($this->b[1] === $this->ab->b_arr["key 1"], "case b 1");
     $assert($this->b[3] === $this->ab->b[0][2], "case b 2");
     $assert($this->b[5] === $this->ab->ab['b']['arr'][1], "case b 3");
 
@@ -61,5 +61,25 @@ abstract class ReferenceInvariantData {
     $b = instance_cast($this->b[0], TestClassAB::class);
     $assert($b !== null, "common case 3");
     $assert($b->huge_arr["key 94"] === "value 94", "common case 4");
+  }
+
+  function verify_ref_cnt() {
+    $assert_ref_cnt = function (int $got, int $expected, string $msg) {
+      if ($got !== $expected) {
+        critical_error("$msg failed: expected $expected, got $got");
+      }
+    };
+    $assert_ref_cnt(get_reference_counter($this->ab), 218, "ab case 1");
+
+    $assert_ref_cnt(get_reference_counter($this->a[0]), 219, "a case 1");
+    $assert_ref_cnt(get_reference_counter($this->a[1]), 2, "a case 2");
+    $assert_ref_cnt(get_reference_counter($this->a[2]), 219, "a case 3");
+    $assert_ref_cnt(get_reference_counter($this->a[5]), 105, "a case 4");
+
+    $assert_ref_cnt(get_reference_counter($this->b[0]), 219, "b case 1");
+    $assert_ref_cnt(get_reference_counter($this->b[1]), 132, "b case 2");
+    $assert_ref_cnt(get_reference_counter($this->b[2]), 132, "b case 3");
+    $assert_ref_cnt(get_reference_counter($this->b[4]), 2, "b case 4");
+    $assert_ref_cnt(get_reference_counter($this->b[5]), 219, "b case 5");
   }
 }
