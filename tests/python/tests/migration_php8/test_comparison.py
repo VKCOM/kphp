@@ -3,7 +3,7 @@ from typing import List
 
 from python.lib.testcase import KphpCompilerAutoTestCase
 
-from tests.python.lib.colors import green, red, yellow
+from python.lib.colors import green, red, yellow
 
 
 class TestPHP8NumberStringComparison(KphpCompilerAutoTestCase):
