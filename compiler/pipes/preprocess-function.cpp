@@ -567,6 +567,17 @@ private:
         return;
       }
     }
+
+    // people try to use some of these and struggle to find an alternative
+    if (unexisting_func_name == "reset") {
+      kphp_error(0, fmt_format("KPHP does not support reset(), maybe array_first_value() is what you are looking for?\n"));
+      return;
+    }
+    if (unexisting_func_name == "end") {
+      kphp_error(0, fmt_format("KPHP does not support end(), maybe array_last_value() is what you are looking for?\n"));
+      return;
+    }
+
     kphp_error(0, fmt_format("Unknown function {}()\n", unexisting_func_name));
   }
 };
