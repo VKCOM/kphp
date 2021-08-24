@@ -82,4 +82,26 @@ abstract class ReferenceInvariantData {
     $assert_ref_cnt(get_reference_counter($this->b[4]), 2, "b case 4");
     $assert_ref_cnt(get_reference_counter($this->b[5]), 219, "b case 5");
   }
+
+  function verify_job_ref_cnt() {
+    $assert_job_ref_cnt = function (int $got, string $msg) {
+      // 0x7ffffff3 is a value of extra_ref_cnt_value::for_job_worker_communication in the runtime
+      $expected = 0x7ffffff3;
+      if ($got !== $expected) {
+        critical_error("$msg failed: expected $expected, got $got");
+      }
+    };
+    $assert_job_ref_cnt(get_reference_counter($this->ab), "ab case 1");
+
+    $assert_job_ref_cnt(get_reference_counter($this->a[0]), "a case 1");
+    $assert_job_ref_cnt(get_reference_counter($this->a[1]), "a case 2");
+    $assert_job_ref_cnt(get_reference_counter($this->a[2]), "a case 3");
+    $assert_job_ref_cnt(get_reference_counter($this->a[5]), "a case 4");
+
+    $assert_job_ref_cnt(get_reference_counter($this->b[0]), "b case 1");
+    $assert_job_ref_cnt(get_reference_counter($this->b[1]), "b case 2");
+    $assert_job_ref_cnt(get_reference_counter($this->b[2]), "b case 3");
+    $assert_job_ref_cnt(get_reference_counter($this->b[4]), "b case 4");
+    $assert_job_ref_cnt(get_reference_counter($this->b[5]), "b case 5");
+  }
 }
