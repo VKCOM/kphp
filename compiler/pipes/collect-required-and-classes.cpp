@@ -6,6 +6,7 @@
 
 #include "common/wrappers/likely.h"
 
+#include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
@@ -16,20 +17,6 @@
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-
-namespace {
-std::string collect_string_concatenation(VertexPtr v) {
-  if (auto string = v.try_as<op_string>()) {
-    return string->str_val;
-  }
-  if (auto concat = v.try_as<op_concat>()) {
-    auto left = collect_string_concatenation(concat->lhs());
-    auto right = collect_string_concatenation(concat->rhs());
-    return (left.empty() || right.empty()) ? std::string() : (left + right);
-  }
-  return std::string();
-}
-} // namespace
 
 class CollectRequiredPass final : public FunctionPassBase {
 private:
@@ -66,6 +53,10 @@ private:
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
+    if (cur_class->name == "FFI") {
+      FFIRoot::register_builtin_classes(function_stream);
+    }
+
     for (const auto &dep : cur_class->get_str_dependents()) {
       if (!cur_class->is_builtin() && dep.class_name == "Throwable") {
         if (cur_class->is_interface()) {

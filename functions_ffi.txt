@@ -1,0 +1,13 @@
+<?php
+
+namespace FFI;
+
+// CData class if declared separately (via the code)
+// to avoid the gentree code complications due to a single type.
+// See FFIRoot::register_builtin_classes().
+
+class Scope {
+  public function new(string $type): CData;
+
+  public function cast(string $type, \FFI\CData $cdata): \FFI\CData;
+}

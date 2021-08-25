@@ -8,6 +8,18 @@
 #include "runtime/kphp_core.h"
 #include "runtime/shape.h"
 
+template<class T>
+struct CDataPtr;
+
+template<class T>
+struct CDataRef;
+
+template<class T>
+int64_t f$estimate_memory_usage(const CDataRef<T> &ref __attribute__ ((unused))) { return sizeof(void*); }
+
+template<class T>
+int64_t f$estimate_memory_usage(const CDataPtr<T> &ptr __attribute__ ((unused))) { return 0; }
+
 int64_t f$estimate_memory_usage(const string &value);
 
 int64_t f$estimate_memory_usage(const mixed &value);

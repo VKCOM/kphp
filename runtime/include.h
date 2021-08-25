@@ -45,6 +45,12 @@ template<class T>
 inline bool f$is_null(const Optional<T> &v);
 inline bool f$is_null(const mixed &v);
 
+template<class T>
+struct CDataPtr;
+
+template<class T>
+bool f$is_null(CDataPtr<T> ptr) { return ptr.is_php_null(); }
+
 using std::swap;
 using std::min;
 using std::max;

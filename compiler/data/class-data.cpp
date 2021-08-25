@@ -27,7 +27,8 @@ const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
 const char *ClassData::NAME_OF_INVOKE_METHOD = "__invoke";
 const char *ClassData::NAME_OF_TO_STRING = "__toString";
 
-ClassData::ClassData() :
+ClassData::ClassData(ClassType type) :
+  class_type(type),
   members(this),
   type_data(TypeData::create_for_class(ClassPtr(this))) {
 }
@@ -361,7 +362,7 @@ std::vector<ClassPtr> ClassData::get_all_ancestors() const {
 }
 
 bool ClassData::is_builtin() const {
-  return file_id && file_id->is_builtin();
+  return is_ffi_cdata() || (file_id && file_id->is_builtin());
 }
 
 bool ClassData::is_polymorphic_or_has_polymorphic_member() const {

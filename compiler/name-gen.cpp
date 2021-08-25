@@ -7,6 +7,7 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/likely.h"
 
+#include "compiler/type-hint.h"
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
@@ -14,6 +15,10 @@
 #include "compiler/gentree.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
+
+string gen_anonymous_scope_name(FunctionPtr function) {
+  return gen_unique_name("cdef", function);
+}
 
 string gen_anonymous_function_name(FunctionPtr function) {
   return gen_unique_name("anon", function);
@@ -122,6 +127,11 @@ string resolve_instance_func_name(FunctionPtr function, VertexAdaptor<op_func_ca
 
 ClassPtr resolve_class_of_arrow_access_helper(FunctionPtr function, VertexPtr v, VertexPtr lhs) {
   switch (lhs->type()) {
+    case op_ffi_c2php_conv:
+      if (const auto *as_instance = lhs.as<op_ffi_c2php_conv>()->php_type->try_as<TypeHintInstance>()) {
+        return as_instance->resolve();
+      }
+      break;
     case op_alloc:
       return lhs.as<op_alloc>()->allocated_class;
     // $var->...

@@ -54,7 +54,6 @@ void f$var_dump(const class_instance<T> &v) {
   return f$var_dump(string(v.get_class(), (string::size_type)strlen(v.get_class())));
 }
 
-
 string f$var_export(const mixed &v, bool buffered = false);
 
 template<class T>

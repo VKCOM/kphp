@@ -1,5 +1,6 @@
 *.o
 *.pyc
+*.so
 /objs
 .build
 *.out

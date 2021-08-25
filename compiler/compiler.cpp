@@ -78,8 +78,10 @@
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-exceptions.h"
+#include "compiler/pipes/preprocess-ffi-operations.h"
 #include "compiler/pipes/preprocess-function.h"
 #include "compiler/pipes/register-defines.h"
+#include "compiler/pipes/register-ffi-scopes.h"
 #include "compiler/pipes/register-kphp-configuration.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/pipes/remove-empty-function-calls.h"
@@ -237,6 +239,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<ParseF>{}
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
+    >> PipeC<RegisterFFIScopesF>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<CheckRequires>{}
     >> PipeC<CheckTypeHintVariance>{}
@@ -251,7 +254,9 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<PreprocessExceptions>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
     // from this point, @param/@return are parsed in all functions, and we can use assumptions
+    >> PassC<PreprocessFFIOperationsBegin>{}
     >> SyncC<GenerateVirtualMethods>{}
+    >> PassC<PreprocessFFIOperationsEnd>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PassC<TransformToSmartInstanceof>{}
     // functions which were generated from templates

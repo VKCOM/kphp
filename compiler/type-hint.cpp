@@ -8,6 +8,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/lambda-interface-generator.h"
 #include "compiler/name-gen.h"
 
@@ -183,6 +184,50 @@ const TypeHint *TypeHintCallable::create_untyped_callable() {
   );
 }
 
+static void calculate_ffi_type_hash(HasherOfTypeHintForOptimization &hash, const FFIType *type) {
+  hash.feed_hash(static_cast<uint64_t>(type->kind));
+  hash.feed_hash(type->flags);
+  hash.feed_hash(type->num);
+  hash.feed_string(type->str);
+  for (const FFIType *member : type->members) {
+    calculate_ffi_type_hash(hash, member);
+  }
+}
+
+const TypeHint *TypeHintFFIType::create(const std::string &scope_name, const FFIType *type, bool move) {
+  HasherOfTypeHintForOptimization hash(4941189930887759468ULL);
+
+  hash.feed_string(scope_name);
+  calculate_ffi_type_hash(hash, type);
+
+  if (const auto *existing = hash.get_existing()) {
+    if (move) {
+      // this cleanup is only necessary due to how we parse/create FFI types from the phpdoc
+      ffi_type_delete(type);
+    }
+    return existing;
+  }
+  return hash.add_because_doesnt_exist(new TypeHintFFIType{scope_name, type});
+}
+
+const TypeHint *TypeHintFFIScopeArgRef::create(int arg_num) {
+  HasherOfTypeHintForOptimization hash(9731618202711445786ULL);
+  hash.feed_hash(arg_num);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintFFIScopeArgRef{arg_num}
+  );
+}
+
+const TypeHint *TypeHintFFIScope::create(const std::string &scope_name) {
+  HasherOfTypeHintForOptimization hash(8265450633645347407ULL);
+  hash.feed_string(scope_name);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintFFIScope{scope_name}
+  );
+}
+
 const TypeHint *TypeHintFuture::create(PrimitiveType ptype, const TypeHint *inner) {
   HasherOfTypeHintForOptimization hash(5072702167144640720ULL);
   hash.feed_inner(inner);
@@ -295,6 +340,18 @@ std::string TypeHintCallable::as_human_readable() const {
   return is_untyped_callable() ? "callable" : "callable(" + vk::join(arg_types, ", ", [](const TypeHint *arg) { return arg->as_human_readable(); }) + "): " + return_type->as_human_readable();
 }
 
+std::string TypeHintFFIType::as_human_readable() const {
+  return "ffi_cdata<" + scope_name + ", " + ffi_decltype_string(type) + ">";
+}
+
+std::string TypeHintFFIScopeArgRef::as_human_readable() const {
+  return "ffi_scope<^" + std::to_string(arg_num) + ">";
+}
+
+std::string TypeHintFFIScope::as_human_readable() const {
+  return "ffi_scope<" + scope_name + ">";
+}
+
 std::string TypeHintFuture::as_human_readable() const {
   return std::string(ptype_name(ptype)) + "<" + inner->as_human_readable() + ">";
 }
@@ -359,6 +416,18 @@ void TypeHintCallable::traverse(const TraverserCallbackT &callback) const {
   if (return_type != nullptr) {
     return_type->traverse(callback);
   }
+}
+
+void TypeHintFFIType::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+}
+
+void TypeHintFFIScopeArgRef::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+}
+
+void TypeHintFFIScope::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
 }
 
 void TypeHintFuture::traverse(const TraverserCallbackT &callback) const {
@@ -434,6 +503,18 @@ const TypeHint *TypeHintCallable::replace_self_static_parent(FunctionPtr resolve
   }
   auto mapper = vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, arg_types.begin(), arg_types.end());
   return create({mapper.begin(), mapper.end()}, return_type->replace_self_static_parent(resolve_context));
+}
+
+const TypeHint *TypeHintFFIType::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+  return this;
+}
+
+const TypeHint *TypeHintFFIScopeArgRef::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+  return this;
+}
+
+const TypeHint *TypeHintFFIScope::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+  return this;
 }
 
 const TypeHint *TypeHintFuture::replace_self_static_parent(FunctionPtr resolve_context) const {

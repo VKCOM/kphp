@@ -312,6 +312,84 @@
     }
   },
   {
+    "comment": "artificial op that evaluates to a CData.c_value reference",
+    "name": "op_ffi_cdata_value_ref",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_other",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "op_ffi_cdata_value_ref"
+    }
+  },
+  {
+    "comment": "artificial op that is inserted instead of FFI::addr call",
+    "name": "op_ffi_addr",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "ffi_addr"
+    }
+  },
+  {
+    "comment": "artificial op that is inserted instead of FFI::cast call",
+    "name": "op_ffi_cast",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "ffi_cast"
+    },
+    "extra_fields": {
+      "php_type": {
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      }
+    }
+  },
+  {
+    "comment": "artificial op that is inserted instead of FFI::new call",
+    "name": "op_ffi_new",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "ffi_new"
+    },
+    "extra_fields": {
+      "php_type": {
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      }
+    }
+  },
+  {
+    "comment": "artificial op that wraps FFI::load call",
+    "sons": {
+      "func_call": {
+        "id": 0,
+        "type": "op_func_call"
+      }
+    },
+    "name": "op_ffi_load_call",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "ffi_load_call"
+    },
+    "extra_fields": {
+      "scope_name": {
+        "type": "std::string"
+      }
+    }
+  },
+  {
     "extras": [
       "string"
     ],
@@ -361,6 +439,10 @@
       "var_id": {
         "type": "VarPtr",
         "default": "{}"
+      },
+      "access_type": {
+        "type": "InstancePropAccessType",
+        "default": "InstancePropAccessType::Default"
       }
     }
   },
@@ -1348,6 +1430,43 @@
       "cnst": "cnst_const_func",
       "type": "prefix_op",
       "str": "&$..."
+    }
+  },
+  {
+    "comment": "(c_type)expr()",
+    "name": "op_ffi_php2c_conv",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "conv_op",
+      "str": "ffi_php2c"
+    },
+    "extra_fields": {
+      "c_type": {
+        "type": "const TypeHint *"
+      },
+      "simple_dst": {
+        "type": "bool",
+        "default": "true"
+      }
+    }
+  },
+  {
+    "comment": "(php_type)expr()",
+    "name": "op_ffi_c2php_conv",
+    "base_name": "meta_op_unary",
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_nonconst_func",
+      "type": "conv_op",
+      "str": "ffi_c2php"
+    },
+    "extra_fields": {
+      "php_type": {
+        "type": "const TypeHint *",
+        "default": "nullptr"
+      }
     }
   },
   {

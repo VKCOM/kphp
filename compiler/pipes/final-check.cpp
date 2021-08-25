@@ -88,6 +88,7 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
 void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
   auto type = tinf::get_type(call->args()[0]);
   kphp_error_return(type->ptype() == tp_Class, "You may not use instance_to_array with non-instance var");
+  kphp_error_return(!type->class_type()->is_ffi_cdata(), "You may not use instance_to_array with CData");
   type->class_type()->deeply_require_instance_to_array_visitor();
 }
 
@@ -237,6 +238,73 @@ void check_function_throws(FunctionPtr f) {
                         vk::join(throws_actual, ", "),
                         vk::join(throws_expected, ", ")));
 }
+
+bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_type, const TypeData *php_type) {
+  auto php_expr = conv->expr();
+
+  if (ffi_type->is_cstring()) {
+    return conv->simple_dst && php_type->ptype() == tp_string;
+  }
+
+  switch (ffi_type->kind) {
+    case FFITypeKind::Int8:
+    case FFITypeKind::Int16:
+    case FFITypeKind::Int32:
+    case FFITypeKind::Int64:
+    case FFITypeKind::Uint8:
+    case FFITypeKind::Uint16:
+    case FFITypeKind::Uint32:
+    case FFITypeKind::Uint64:
+      return php_type->ptype() == tp_int;
+
+    case FFITypeKind::Char:
+      return php_type->ptype() == tp_string;
+
+    case FFITypeKind::Bool:
+      return vk::any_of_equal(php_expr->type(), op_false, op_true) || php_type->ptype() == tp_bool;
+
+    case FFITypeKind::Float:
+    case FFITypeKind::Double:
+      return php_type->ptype() == tp_float;
+
+    case FFITypeKind::Struct:
+    case FFITypeKind::StructDef:
+    case FFITypeKind::Union:
+    case FFITypeKind::UnionDef:
+      return php_type->class_type() == conv->c_type->to_type_data()->class_type();
+
+    case FFITypeKind::Pointer:
+      if (php_expr->type() == op_null) {
+        return true;
+      }
+      if (ffi_type->members[0]->kind == FFITypeKind::Void && ffi_type->num == 1) {
+        return true;
+      }
+      if (ffi_type->num == php_type->get_indirection()) {
+        return php_type->class_type() == conv->c_type->to_type_data()->class_type();
+      }
+      return false;
+
+    default:
+      return false;
+  }
+}
+
+void check_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> conv) {
+  if (const auto *as_instance = conv->c_type->try_as<TypeHintInstance>()) {
+    if (as_instance->full_class_name == "FFI\\CData") {
+      return;
+    }
+  }
+  const auto *php_type = tinf::get_type(conv->expr());
+  const FFIType *ffi_type = FFIRoot::get_ffi_type(conv->c_type);
+  kphp_error(is_php2c_valid(conv, ffi_type, php_type),
+             fmt_format("Invalid php2c conversion{}: {} -> {}",
+                        conv->simple_dst ? "" : " in this context",
+                        php_type->as_human_readable(),
+                        ffi_decltype_string(ffi_type)));
+}
+
 } // namespace
 
 void FinalCheckPass::on_start() {
@@ -273,6 +341,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   }
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");
+  }
+  if (vertex->type() == op_ffi_php2c_conv) {
+    check_php2c_conv(vertex.as<op_ffi_php2c_conv>());
   }
   if (vertex->type() == op_eq3) {
     check_eq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs());

@@ -97,6 +97,12 @@ private:
   bool check_deduction_result() const;
 };
 
+struct FFIDeclaration : CodeGenRootCmd {
+  ClassPtr ffi_scope;
+  explicit FFIDeclaration(ClassPtr ffi_scope);
+  void compile(CodeGenerator &W) const final;
+};
+
 struct InterfaceDeclaration : CodeGenRootCmd {
   InterfacePtr interface;
   explicit InterfaceDeclaration(InterfacePtr interface);

@@ -18,6 +18,7 @@
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/ffi/ffi_parser.h"
 
 using std::vector;
 using std::string;
@@ -135,6 +136,89 @@ const TypeHint *PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_
          : TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name, '\\'));
 }
 
+const TypeHint *PhpDocTypeRuleParser::parse_ffi_cdata() {
+  if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
+    throw std::runtime_error("expected '<' or '('");
+  }
+  cur_tok++;
+  if (cur_tok->type() != tok_func_name) {
+    throw std::runtime_error("expected scope name identifier as 1st CData type param");
+  }
+  std::string scope_name = static_cast<std::string>(cur_tok->str_val);
+  cur_tok++;
+  if (cur_tok->type() != tok_comma) {
+    throw std::runtime_error("expected ','");
+  }
+  cur_tok++;
+
+  // this section is weird: we need to construct a complete C declaration string here,
+  // but our tokenizer doesn't give an easy way to do so;
+  // this is why we're reconstructing a string manually here to re-parse it with C parser
+  std::string cdef;
+  cdef.reserve(32); // long enough to store something like "struct SomeImportantType**"
+  while (true) {
+    auto tok = cur_tok->type();
+    if (vk::any_of_equal(tok, tok_gt, tok_clpar)) {
+      break;
+    }
+    if (tok == tok_func_name) {
+      cdef.append(cur_tok->str_val.begin(), cur_tok->str_val.end());
+    } else if (tok == tok_void) {
+      cdef.append("void");
+    } else if (tok == tok_int) {
+      cdef.append("int");
+    } else if (tok == tok_times) {
+      cdef.push_back('*');
+    } else {
+      throw std::runtime_error("unexpected token, expected C type, '>' or ')'");
+    }
+    cdef.push_back(' ');
+    cur_tok++;
+  }
+  cur_tok++; // consume '>' or ')'
+
+  FFITypedefs typedefs; // will remain empty
+  auto [type, err] = ffi_parse_type(cdef, typedefs);
+  if (!err.message.empty()) {
+    throw std::runtime_error(fmt_format("parse ffi_cdata<{}, {}>: {}", scope_name, cdef, err.message));
+  }
+
+  // since we don't know whether create() will actually use newly allocated FFI types,
+  // we transfer the ownership: if it will reuse previously created type hint,
+  // our FFI type will be deallocated
+  bool transfer_ownership = true;
+  return TypeHintFFIType::create(scope_name, type, transfer_ownership);
+}
+
+const TypeHint *PhpDocTypeRuleParser::parse_ffi_scope() {
+  if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
+    throw std::runtime_error("expected '<' or '('");
+  }
+  cur_tok++;
+  vk::string_view scope_name;
+  int arg_num = 0;
+  if (cur_tok->type() == tok_func_name) {
+    scope_name = cur_tok->str_val;
+  } else if (cur_tok->type() == tok_xor) {
+    cur_tok++;
+    if (cur_tok->type() != tok_int_const) {
+      throw std::runtime_error("Invalid number after ^");
+    }
+    arg_num = std::stoi(std::string(cur_tok->str_val));
+  } else {
+    throw std::runtime_error("expected scope name identifier");
+  }
+  cur_tok++;
+  if (vk::none_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
+    throw std::runtime_error("expected '>' or ')'");
+  }
+  cur_tok++;
+  if (scope_name.empty()) {
+    return TypeHintFFIScopeArgRef::create(arg_num);
+  }
+  return TypeHintFFIScope::create(std::string(scope_name));
+}
+
 const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
   TokenType cur_type = cur_tok->type();
   // some type names inside phpdoc are not keywords/tokens, but they should be interpreted as such
@@ -237,6 +321,14 @@ const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
       if (cur_tok->str_val == "future_queue") {
         cur_tok++;
         return TypeHintFuture::create(tp_future_queue, parse_nested_one_type_hint());
+      }
+      if (cur_tok->str_val == "ffi_cdata") {
+        cur_tok++;
+        return parse_ffi_cdata();
+      }
+      if (cur_tok->str_val == "ffi_scope") {
+        cur_tok++;
+        return parse_ffi_scope();
       }
       // plus some extra types that are not tokens as well, but they make sense inside the phpdoc/functions.txt
       if (cur_tok->str_val == "any") {
@@ -620,8 +712,22 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
   bool all_resolved = true;
 
   type_hint->traverse([&all_resolved](const TypeHint *child) {
-    if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+    if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
+      ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
+      kphp_error_return(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
+    }
 
+    if (const auto *as_ffi = child->try_as<TypeHintFFIType>()) {
+      if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
+        ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
+        kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+        bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
+                       (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
+        kphp_error_return(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+      }
+    }
+
+    if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
       ClassPtr klass = G->get_class(as_instance->full_class_name);
       if (!klass) {
         all_resolved = false;

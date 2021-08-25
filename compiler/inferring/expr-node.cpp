@@ -18,6 +18,9 @@ private:
   template<PrimitiveType tp>
   void recalc_ptype();
 
+  void recalc_ffi_addr(VertexAdaptor<op_ffi_addr> addr);
+  void recalc_php2c(VertexAdaptor<op_ffi_php2c_conv> conv);
+  void recalc_c2php(VertexAdaptor<op_ffi_c2php_conv> conv);
   void recalc_ternary(VertexAdaptor<op_ternary> ternary);
   void recalc_func_call(VertexAdaptor<op_func_call> call);
   void recalc_arg_ref_rule(VertexAdaptor<op_trigger_recalc_arg_ref_rule> expr);
@@ -69,6 +72,18 @@ void ExprNodeRecalc::recalc_and_drop_null(VertexAdaptor<op_conv_drop_null> expr)
   set_lca(drop_or_null(as_rvalue(inner_expr)));
 }
 
+void ExprNodeRecalc::recalc_ffi_addr(VertexAdaptor<op_ffi_addr> addr) {
+  addr->expr()->tinf_node.recalc(inferer_);
+  set_lca(ffi_rvalue_take_addr(ffi_rvalue_drop_ref(as_rvalue(addr->expr()))));
+}
+
+void ExprNodeRecalc::recalc_php2c(VertexAdaptor<op_ffi_php2c_conv> conv) {
+  set_lca(conv->c_type->to_type_data());
+}
+
+void ExprNodeRecalc::recalc_c2php(VertexAdaptor<op_ffi_c2php_conv> conv) {
+  set_lca(conv->php_type->to_type_data());
+}
 
 void ExprNodeRecalc::recalc_ternary(VertexAdaptor<op_ternary> ternary) {
   set_lca(ternary->true_expr());
@@ -262,6 +277,21 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_exception_constructor_call:
       recalc_func_call(expr.as<op_exception_constructor_call>()->constructor_call());
       break;
+    case op_ffi_load_call:
+      recalc_func_call(expr.as<op_ffi_load_call>()->func_call());
+      break;
+    case op_ffi_addr:
+      recalc_ffi_addr(expr.as<op_ffi_addr>());
+      break;
+    case op_ffi_cast:
+      set_lca(expr.as<op_ffi_cast>()->php_type->to_type_data());
+      break;
+    case op_ffi_cdata_value_ref:
+      recalc_expr(expr.as<op_ffi_cdata_value_ref>()->expr());
+      break;
+    case op_ffi_new:
+      set_lca(expr.as<op_ffi_new>()->php_type->to_type_data());
+      break;
     case op_trigger_recalc_arg_ref_rule:
       recalc_arg_ref_rule(expr.as<op_trigger_recalc_arg_ref_rule>());
       break;
@@ -305,6 +335,14 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_string_build:
     case op_string:
       recalc_ptype<tp_string>();
+      break;
+
+    case op_ffi_c2php_conv:
+      recalc_c2php(expr.as<op_ffi_c2php_conv>());
+      break;
+
+    case op_ffi_php2c_conv:
+      recalc_php2c(expr.as<op_ffi_php2c_conv>());
       break;
 
     case op_conv_int:
@@ -404,7 +442,9 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     case op_clone:
-      set_lca(expr.as<op_clone>()->expr());
+      // for FFI cdata values, clone() drops the reference in &T and returns T;
+      // for non-cdata types, drop_ref is ignored
+      set_lca(ffi_rvalue_drop_ref(as_rvalue(expr.as<op_clone>()->expr())));
       break;
 
     case op_seq_rval:

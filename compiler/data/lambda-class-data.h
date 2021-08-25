@@ -9,7 +9,7 @@
 
 class LambdaClassData final : public ClassData {
 public:
-  LambdaClassData() = default;
+  LambdaClassData(): ClassData(ClassType::klass) {}
 
   static LambdaPtr get_from(VertexPtr v);
 

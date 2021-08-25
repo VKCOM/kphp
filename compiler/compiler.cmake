@@ -44,6 +44,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         performance-inspections.cpp
         src-file.cpp
         var-data.cpp
+        ffi-data.cpp
         vars-collector.cpp
         virtual-method-generator.cpp)
 
@@ -143,9 +144,11 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         preprocess-eq3.cpp
         preprocess-exceptions.cpp
         preprocess-function.cpp
+        preprocess-ffi-operations.cpp
         register-defines.cpp
         register-kphp-configuration.cpp
         register-variables.cpp
+        register-ffi-scopes.cpp
         remove-empty-function-calls.cpp
         resolve-self-static-parent.cpp
         sort-and-inherit-classes.cpp
@@ -153,6 +156,13 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         transform-to-smart-instanceof.cpp
         type-inferer.cpp
         write-files.cpp)
+
+prepend(KPHP_COMPILER_FFI_SOURCES ffi/
+        c_parser/parsing_driver.cpp
+        c_parser/lexer_generated.cpp
+        c_parser/yy_parser_generated.cpp
+        ffi_types.cpp
+        ffi_parser.cpp)
 
 prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         ${KPHP_COMPILER_CODEGEN_SOURCES}
@@ -162,6 +172,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         ${KPHP_COMPILER_PIPES_SOURCES}
         ${KPHP_COMPILER_SCHEDULER_SOURCES}
         ${KPHP_COMPILER_THREADING_SOURCES}
+        ${KPHP_COMPILER_FFI_SOURCES}
         class-assumptions.cpp
         compiler-core.cpp
         compiler.cpp

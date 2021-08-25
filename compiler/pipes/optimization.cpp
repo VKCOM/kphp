@@ -178,6 +178,12 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   return index;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
+  if (auto c2php = root.try_as<op_ffi_c2php_conv>()) {
+    if (c2php->rl_type == val_none) {
+      return c2php->expr();
+    }
+  }
+
   while (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     VertexPtr expr = root.as<meta_op_unary>()->expr();
     const TypeData *tp = tinf::get_type(expr);

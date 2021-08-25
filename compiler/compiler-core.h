@@ -14,6 +14,7 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/common.h"
 #include "compiler/index.h"
@@ -35,6 +36,7 @@ private:
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
+  FFIRoot ffi;
   TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -57,6 +59,8 @@ public:
   std::string search_required_file(const std::string &file_name) const;
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const string &file_name, LibPtr owner_lib, bool builtin = false);
+
+  FFIRoot &get_ffi_root();
 
   void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
   SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true, bool builtin = false);

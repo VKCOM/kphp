@@ -26,7 +26,7 @@ LValue as_lvalue(VertexPtr v) {
   tinf::Node *value = nullptr;
   if (auto var = v.try_as<op_var>()) {
     value = tinf::get_tinf_node(var->var_id);
-  } else if (vk::any_of_equal(v->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
+  } else if (vk::any_of_equal(v->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l, op_ffi_cdata_value_ref)) {
     kphp_assert (depth == 0);
     return as_lvalue(v.as<meta_op_unary>()->expr());
   } else if (v->type() == op_array) {

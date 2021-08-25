@@ -92,7 +92,11 @@ void IncludesCollector::add_class_include(const ClassPtr &klass) {
 }
 
 void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
-  forward_declarations_.emplace(klass);
+  // CData classes do not require forward declarations, they're bundled
+  // with their associated FFI scope class in a single header file
+  if (!klass->is_ffi_cdata()) {
+    forward_declarations_.emplace(klass);
+  }
 }
 
 void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var) {
@@ -134,8 +138,15 @@ void IncludesCollector::compile(CodeGenerator &W) const {
 
   std::set<std::string> class_headers;
   for (const auto &klass : classes_) {
-    if (!prev_classes_.count(klass) && !klass->is_builtin()) {
-      class_headers.emplace(klass->get_subdir() + "/" + klass->header_name);
+    ClassPtr class_to_include;
+    if (klass->ffi_class_mixin) {
+      // FFI CData classes (structs really) are defined at their scope class header
+      class_to_include = G->get_class(FFIRoot::scope_class_name(klass->ffi_class_mixin->scope_name));
+    } else if (!klass->is_builtin()) {
+      class_to_include = klass;
+    }
+    if (class_to_include && !prev_classes_.count(class_to_include)) {
+      class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->header_name);
     }
   }
   for (const auto &class_header : class_headers) {

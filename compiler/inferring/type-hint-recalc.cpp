@@ -103,6 +103,52 @@ void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst __attri
   // (but it does imply a template parameter or an interface for it)
 }
 
+static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const FFIType *type) {
+  if (type->kind == FFITypeKind::Pointer) {
+    recalc_ffi_type(dst, scope_name, type->members[0]);
+    dst->set_indirection(type->num);
+    return;
+  }
+
+  if (type->kind == FFITypeKind::Array) {
+    dst->set_lca(TypeData::get_type(tp_array));
+    TypeData nested{*TypeData::get_type(tp_any)};
+    recalc_ffi_type(&nested, scope_name, type->members[0]);
+    dst->set_lca_at(MultiKey::any_key(1), &nested);
+    return;
+  }
+
+  if (vk::any_of_equal(type->kind, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union, FFITypeKind::UnionDef)) {
+    std::string class_name = FFIRoot::cdata_class_name(scope_name, type->str);
+    ClassPtr cdata_class = G->get_class(class_name);
+    if (cdata_class) {
+      dst->set_lca(cdata_class->type_data);
+    }
+    return;
+  }
+
+  if (const auto *builtin = ffi_builtin_type(type->kind)) {
+    dst->set_lca(G->get_class(builtin->php_class_name)->type_data);
+    return;
+  }
+}
+
+void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  recalc_ffi_type(dst, scope_name, type);
+}
+
+void TypeHintFFIScopeArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+  if (auto v = GenTree::get_call_arg_ref(arg_num, call)) {
+    if (const auto *arg_scope_name = GenTree::get_constexpr_string(v)) {
+      dst->set_lca(G->get_class(FFIRoot::scope_class_name(*arg_scope_name))->type_data);
+    }
+  }
+}
+
+void TypeHintFFIScope::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  dst->set_lca(G->get_class(FFIRoot::scope_class_name(scope_name))->type_data);
+}
+
 void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   kphp_assert(vk::any_of_equal(ptype, tp_future, tp_future_queue));
   dst->set_lca(ptype);
