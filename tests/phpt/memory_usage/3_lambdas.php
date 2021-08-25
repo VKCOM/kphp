@@ -14,7 +14,7 @@ function test_empty_lambda() {
 }
 
 function test_lambda_with_use() {
-  // counter 4 aligned 8
+  // counter 4 + unique index 4
   $a = 10; // 8
   $b = 0.2; // 8;
   $c = false; // 1 aligned 8

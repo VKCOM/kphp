@@ -4,20 +4,15 @@
 
 #include "runtime/instance-copy-processor.h"
 
-InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept:
-  Basic(*this, false),
-  memory_pool_(memory_pool) {
-}
-
 InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
                                                  ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept:
-  Basic(*this, true, memory_ref_cnt),
+  Basic(*this, memory_ref_cnt),
   memory_pool_(memory_pool),
   oom_callback_(oom_callback) {
 }
 
 InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:
-  Basic(*this, true, memory_ref_cnt) {
+  Basic(*this, memory_ref_cnt) {
 }
 
 bool InstanceDeepCopyVisitor::process(string &str) noexcept {
@@ -37,8 +32,8 @@ bool InstanceDeepCopyVisitor::process(string &str) noexcept {
     php_assert(str.size() < 2);
   } else {
     php_assert(str.get_reference_counter() == 1);
-    if (set_memory_ref_cnt_) {
-      str.set_reference_counter_to(get_memory_ref_cnt());
+    if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
+      str.set_reference_counter_to(extra_ref_cnt);
     }
   }
   return true;
@@ -49,6 +44,7 @@ bool InstanceDeepDestroyVisitor::process(string &str) noexcept {
   if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     str.force_destroy(get_memory_ref_cnt());
   }
+  str = string{};
   return true;
 }
 

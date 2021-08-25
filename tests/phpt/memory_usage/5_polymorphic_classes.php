@@ -3,21 +3,21 @@
 
 class A {
   // vtable 8
-  // counter 4 aligned 8
+  // counter 4 + unique index 4
   // total size = 16
   function __construct() {}
 }
 
 class B1 extends A {
   // vtable 8
-  // counter 4 aligned 8
+  // counter 4 + unique index 4
   // total size = 16
   function __construct() {}
 }
 
 class B2 extends A {
   // vtable 8
-  // counter 4 aligned 8
+  // counter 4 + unique index 4
   public $x = "hello"; // 8
   public $y = false; // 1 aligned 8
   // total size = 32
@@ -26,9 +26,9 @@ class B2 extends A {
 
 class C1 extends B1 {
   // vtable 8
-  // counter 4
-  public $x = true; // 1 // counter + $x aligned 8
-  // total size = 16
+  // counter + unique index 4
+  public $x = 123; // 8
+  // total size = 24
   function __construct() {}
 }
 
@@ -44,7 +44,7 @@ function test_polymorphic_classes() {
   var_dump(16);
   var_dump(16);
   var_dump(32);
-  var_dump(16);
+  var_dump(24);
   var_dump(32);
   return;
 #endif
@@ -60,10 +60,10 @@ function test_polymorphic_classes_in_array() {
   var_dump(16);
   var_dump(16);
   var_dump(32);
-  var_dump(16);
+  var_dump(24);
   var_dump(32);
   var_dump(0);
-  var_dump(16 + 16 + 32 + 16 + 32 + 8 + 96);
+  var_dump(16 + 16 + 32 + 24 + 32 + 8 + 96);
   return;
 #endif
   $ix = [new A(), new B1(), new B2(), new C1(), new C2(), null];

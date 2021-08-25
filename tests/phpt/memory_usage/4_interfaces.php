@@ -6,7 +6,7 @@ interface IMyClass {
 
 class MyClassEmpty implements IMyClass {
   // vtable 8
-  // counter 4 // aligned 8
+  // counter 4 + unique index 4 // aligned 8
 
   // total size = 16
   public function __construct() {}
@@ -14,15 +14,15 @@ class MyClassEmpty implements IMyClass {
 
 class MyClass1 implements IMyClass {
   // vtable 8
-  // counter 4
-  public $x = true; // 1 // cnt + $x aligned 8
+  // counter 4 + unique index 4
+  public $x = 123; // 8
 
-  // total size = 16
+  // total size = 24
 }
 
 class MyClass2 implements IMyClass {
   // vtable 8
-  // counter 4 // aligned 8
+  // counter 4 + unique index 4
   public $x = "hello"; // 8
   public $y = false; // 1 aligned 8
   public $z = 5; // 8
@@ -40,13 +40,13 @@ function test_empty_class() {
 
 function test_interfaces() {
 #ifndef KPHP
-  var_dump(16);
+  var_dump(24);
   var_dump(40);
   var_dump(16);
-  var_dump(16);
+  var_dump(24);
   var_dump(40);
   var_dump(0);
-  var_dump(16 + 16 + 40 + 8 + 80);
+  var_dump(16 + 16 + 40 + 8 + 8 + 80);
   return;
 #endif
   var_dump(estimate_memory_usage(new MyClass1()));
