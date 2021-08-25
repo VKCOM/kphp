@@ -121,7 +121,7 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
  ***/
 
 static int db_port = 3306;
-const char *db_host = "localhost";
+static const char *db_host = "localhost";
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
   auto res = get_default_tcp_rpc_client_conn_type();
