@@ -1509,7 +1509,7 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
   if (no_sql) {
     sql_target_id = -1;
   } else {
-    fprintf(stdout, "mysql host: %s; port: %d\n", db_host, db_port);
+    kprintf("mysql host: %s; port: %d\n", db_host, db_port);
     sql_target_id = get_target(db_host, db_port, &db_ct);
     assert (sql_target_id != -1);
   }
