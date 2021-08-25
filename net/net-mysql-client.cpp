@@ -275,7 +275,7 @@ static int sqlc_inner_authorise (struct connection *c) {
   const char *sql_user = SQLC_FUNC(c)->sql_get_user(c);
   const char *sql_password = SQLC_FUNC(c)->sql_get_password(c);
 
-  kprintf("mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
+  vkprintf(1, "mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
 
   sha1 ((unsigned char *)sql_password, strlen (sql_password), (unsigned char *)stage1_hash);
   memcpy (password_sha1, T->scramble1, 8);
