@@ -2022,11 +2022,8 @@ int main_args_handler(int i, const char *long_option) {
       return -1;
     }
     case 2022: {
-      if (set_mysql_host(optarg)) {
-        return 0;
-      }
-      kprintf("--%s option: couldn't set mysql host '%s'\n", long_option, optarg);
-      return -1;
+      db_host = optarg;
+      return 0;
     }
     case 2023: {
       disable_mysql_same_datacenter_check();
