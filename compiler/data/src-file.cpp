@@ -61,7 +61,7 @@ vk::string_view SrcFile::get_line(int id) {
 }
 
 bool SrcFile::is_builtin() const {
-  if (file_name == G->settings().functions_file.get()) {
+  if (is_from_functions_file) {
     return true;
   }
 

@@ -122,6 +122,10 @@
       "once": {
         "type": "bool",
         "default": "false"
+      },
+      "builtin": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },

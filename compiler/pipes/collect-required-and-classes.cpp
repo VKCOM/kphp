@@ -36,8 +36,8 @@ private:
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 
-  SrcFilePtr require_file(const string &file_name, bool error_if_not_exists) {
-    return G->require_file(file_name, current_function->file_id->owner_lib, file_stream, error_if_not_exists);
+  SrcFilePtr require_file(const string &file_name, bool error_if_not_exists, bool builtin = false) {
+    return G->require_file(file_name, current_function->file_id->owner_lib, file_stream, error_if_not_exists, builtin);
   }
 
   void require_function(const string &name) {
@@ -140,8 +140,8 @@ private:
     // we assume that if it returns an instance, it'll reference the required class in one way or another
   }
 
-  VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once) {
-    auto file = require_file(name, true);
+  VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once, bool builtin = false) {
+    auto file = require_file(name, true, builtin);
     kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
     VertexPtr call = VertexAdaptor<op_func_call>::create();
     call->set_string(file->main_func_name);
@@ -236,7 +236,7 @@ public:
       if (is_composer_autoload(name)) {
         return require_composer_autoload(root);
       }
-      return make_require_call(root, name, require->once);
+      return make_require_call(root, name, require->once, require->builtin);
     }
 
     return root;

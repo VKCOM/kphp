@@ -23,6 +23,7 @@ public:
   bool loaded{false};
   bool is_required{false};
   bool is_strict_types{false}; // whether declare(strict_types=1) is set
+  bool is_from_functions_file{false}; // functions.txt + all files required from it
 
   std::string main_func_name;
   FunctionPtr main_function;

@@ -216,6 +216,7 @@ VertexAdaptor<op_require> GenTree::get_require(bool once) {
   const bool is_opened = open_parent();
   auto require = VertexAdaptor<op_require>::create(GenTree::get_expression());
   require->once = once;
+  require->builtin = processing_file->is_from_functions_file;
   if (is_opened) {
     CE(expect(tok_clpar, "')'"));
   }
