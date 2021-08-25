@@ -72,7 +72,7 @@ static string_buffer oub[OB_MAX_BUFFERS];
 string_buffer *coub;
 static int http_need_gzip;
 
-static int is_utf8_enabled = false;
+static bool is_utf8_enabled = false;
 
 void f$ob_clean() {
   coub->clean();
