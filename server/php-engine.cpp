@@ -1731,11 +1731,6 @@ int read_option_to(const char *option_name, T min_value, T max_value, T &out) no
 
 } // namespace
 
-bool set_mysql_host(const char *host) {
-  db_host = host;
-  return true;
-}
-
 /** main arguments parsing **/
 int main_args_handler(int i, const char *long_option) {
   switch (i) {
