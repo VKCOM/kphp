@@ -19,6 +19,8 @@
 //
 // Their instances are wrapped into the class_instance<T>.
 
+class abstract_refcountable_php_interface;
+
 template<class T>
 class class_instance {
   vk::intrusive_ptr<T> o;
@@ -75,7 +77,7 @@ public:
   inline class_instance<T> alloc(Args &&... args) __attribute__((always_inline));
   inline class_instance<T> empty_alloc() __attribute__((always_inline));
   inline void destroy() { o.reset(); }
-  int64_t get_reference_counter() const { return o->get_refcnt(); }
+  int64_t get_reference_counter() const { return o ? o->get_refcnt() : 0; }
 
   void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
   bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
@@ -106,6 +108,36 @@ public:
       res.o = vk::intrusive_ptr<T>{o->virtual_builtin_clone()};
       res.o->set_refcnt(1);
     }
+    return res;
+  }
+
+  template<class S = T>
+  std::enable_if_t<!std::is_polymorphic<S>{}, void *> get_base_raw_ptr() const noexcept {
+    return get();
+  }
+
+  template<class S = T>
+  std::enable_if_t<std::is_polymorphic<S>{}, void *> get_base_raw_ptr() const noexcept {
+    // all polymorphic instances inherit abstract_refcountable_php_interface
+    // don't inline, we need an explicit conversion to abstract_refcountable_php_interface
+    abstract_refcountable_php_interface *interface = get();
+    return interface;
+  }
+
+  template<class S = T>
+  static std::enable_if_t<!std::is_polymorphic<S>{}, class_instance> create_from_base_raw_ptr(void *raw_ptr) noexcept {
+    class_instance res;
+    res.o = vk::intrusive_ptr<T>{static_cast<T *>(raw_ptr)};
+    return res;
+  }
+
+  template<class S = T>
+  static std::enable_if_t<std::is_polymorphic<S>{}, class_instance> create_from_base_raw_ptr(void *raw_ptr) noexcept {
+    class_instance res;
+    auto *interface = static_cast<abstract_refcountable_php_interface *>(raw_ptr);
+    auto *object = dynamic_cast<T *>(interface);
+    php_assert(object);
+    res.o = vk::intrusive_ptr<T>{object};
     return res;
   }
 

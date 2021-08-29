@@ -1,6 +1,7 @@
 <?php
 
 use ComplexScenario\CollectStatsJobRequest;
+use ReferenceInvariant\ReferenceInvariantRequest;
 
 require_once 'SharedImmutableMessageScenario/job_worker.php';
 require_once 'utils.php';
@@ -35,6 +36,9 @@ function do_job_worker() {
   } else if ($req instanceof CollectStatsJobRequest) {
     require_once "ComplexScenario/_job_scenario.php";
     run_job_complex_scenario($req);
+  } else if ($req instanceof ReferenceInvariantRequest) {
+    require_once "ReferenceInvariant/job_worker.php";
+    run_job_reference_invariant($req);
   } else {
     run_job_shared_immutable_message_scenario($req);
   }

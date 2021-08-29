@@ -9,6 +9,8 @@
 #include "common/type_traits/list_of_types.h"
 
 #include "runtime/declarations.h"
+#include "runtime/optional.h"
+#include "runtime/shape.h"
 
 template<typename>
 struct is_array : std::false_type {
@@ -61,6 +63,11 @@ struct is_class_instance_inside<std::tuple<U, Ts...>> :
   std::integral_constant<bool,
     is_class_instance_inside<U>::value ||
     is_class_instance_inside<std::tuple<Ts...>>::value> {
+};
+
+template<size_t ...Is, typename ...Ts>
+struct is_class_instance_inside<shape<std::index_sequence<Is...>, Ts...>> :
+  is_class_instance_inside<std::tuple<Ts...>> {
 };
 
 template<class T, class U>

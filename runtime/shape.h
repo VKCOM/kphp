@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "common/algorithms/find.h"
+
 template<size_t tag, typename T>
 class shape_node {
 public:
