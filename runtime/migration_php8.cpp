@@ -4,15 +4,15 @@
 
 #include "migration_php8.h"
 
-bool show_number_string_conversion_warning = false;
+int show_migration_php8_warning = 0;
 
-bool f$set_show_number_string_conversion_warning(bool show) {
-  show_number_string_conversion_warning = show;
+bool f$set_migration_php8_warning(int mask) {
+  show_migration_php8_warning = mask;
   return true;
 }
 
 static void reset_migration_php8_global_vars() {
-  show_number_string_conversion_warning = false;
+  show_migration_php8_warning = 0;
 }
 
 void free_migration_php8() {

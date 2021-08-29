@@ -3,7 +3,7 @@ Comparison (operator <) results in PHP 7 and PHP 8 are different for 42 and "42f
 Comparison (operator <) results in PHP 7 and PHP 8 are different for "100foo" and 42 (PHP7: false, PHP8: true)
 <?php
 
-set_show_number_string_conversion_warning(true);
+set_migration_php8_warning(0b001);
 
 echo 0 < "foo";
 echo 42 < "42foo";

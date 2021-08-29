@@ -4,8 +4,10 @@
 
 #pragma once
 
-extern bool show_number_string_conversion_warning;
+constexpr int STRING_COMPARISON_FLAG = 1 << 0;
 
-bool f$set_show_number_string_conversion_warning(bool show);
+extern int show_migration_php8_warning;
+
+bool f$set_migration_php8_warning(int mask);
 
 void free_migration_php8();

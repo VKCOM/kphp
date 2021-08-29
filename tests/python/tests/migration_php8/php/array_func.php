@@ -3,7 +3,7 @@ Comparison (operator ==) results in PHP 7 and PHP 8 are different for 20 and "20
 Comparison (operator <) results in PHP 7 and PHP 8 are different for 13 and "13foo" (PHP7: false, PHP8: true)
 <?php
 
-set_show_number_string_conversion_warning(true);
+set_migration_php8_warning(0b001);
 
 $vals = [13, "13foo", "14.67foo", "20foo"];
 var_dump(in_array(14.67, $vals));

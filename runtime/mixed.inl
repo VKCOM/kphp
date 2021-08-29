@@ -1676,33 +1676,29 @@ inline int64_t operator>>(const mixed &lhs, const mixed &rhs) {
 }
 
 template <typename Arg1, typename Arg2>
-struct conversion_php_warning_string {
-  static constexpr const char *text = "";
-};
+inline const char *conversion_php_warning_string() {
+  return "";
+}
 
 template<>
-struct conversion_php_warning_string<int64_t, const string &> {
-  static constexpr const char *text
-    = "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)";
-};
-
-template <>
-struct conversion_php_warning_string<double, const string &> {
-  static constexpr const char *text
-    = "Comparison (operator <) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)";
-};
+inline const char *conversion_php_warning_string<int64_t, string>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)";
+}
 
 template<>
-struct conversion_php_warning_string<const string &, int64_t> {
-  static constexpr const char *text
-    = "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" SCNd64 " (PHP7: %s, PHP8: %s)";
-};
+inline const char *conversion_php_warning_string<double, string>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)";
+}
 
-template <>
-struct conversion_php_warning_string<const string &, double> {
-  static constexpr const char *text
-    = "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %lf (PHP7: %s, PHP8: %s)";
-};
+template<>
+inline const char *conversion_php_warning_string<string, int64_t>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" SCNd64 " (PHP7: %s, PHP8: %s)";
+}
+
+template<>
+inline const char *conversion_php_warning_string<string, double>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %lf (PHP7: %s, PHP8: %s)";
+}
 
 template <typename T>
 inline bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
@@ -1730,13 +1726,13 @@ inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
 
 template <typename T>
 inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
-  if (show_number_string_conversion_warning) {
+  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
     const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }
 
-    php_warning(conversion_php_warning_string<decltype(lhs), decltype(rhs)>::text,
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
                 lhs,
                 rhs.c_str(),
                 php7_result ? "true" : "false",
@@ -1748,13 +1744,13 @@ inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rh
 
 template <typename T>
 inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
-  if (show_number_string_conversion_warning) {
+  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }
 
-    php_warning(conversion_php_warning_string<decltype(lhs), decltype(rhs)>::text,
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
                 lhs.c_str(),
                 rhs,
                 php7_result ? "true" : "false",
