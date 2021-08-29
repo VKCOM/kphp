@@ -106,7 +106,10 @@ class KphpRunOnce(KphpBuilder):
             binary_error_text=kphp_runtime_stderr)
 
         if not ignore_stderr:
-            self._move_to_artifacts("kphp_runtime_stderr", kphp_server_proc.returncode, content=kphp_runtime_stderr)
+            self._kphp_runtime_stderr = self._move_to_artifacts(
+                "kphp_runtime_stderr",
+                kphp_server_proc.returncode,
+                content=kphp_runtime_stderr)
 
         return kphp_server_proc.returncode == 0
 

@@ -32,6 +32,9 @@ class TestFile:
     def is_kphp_should_warn(self):
         return "kphp_should_warn" in self.tags
 
+    def is_kphp_runtime_should_warn(self):
+        return "kphp_runtime_should_warn" in self.tags
+
     def is_php8(self):
         return "php8" in self.tags
 
@@ -248,6 +251,31 @@ def run_warn_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
+def run_runtime_warn_test(test: TestFile, runner):
+    if not runner.compile_with_kphp(test.env_vars):
+        return TestResult.failed(test, runner.artifacts, "got kphp build error")
+
+    if not runner.run_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "got kphp run error")
+
+    with open(runner.kphp_runtime_stderr.file) as f:
+        stderr_log = f.read()
+        if not re.search("Warning: ", stderr_log):
+            return TestResult.failed(test, runner.artifacts, "can't find kphp runtime warnings")
+        for index, msg_regex in enumerate(test.out_regexps, start=1):
+            if not msg_regex.search(stderr_log):
+                return TestResult.failed(test, runner.artifacts, "can't find {}th runtime warning pattern".format(index))
+
+        for index, forbidden_regex in enumerate(test.forbidden_regexps, start=1):
+            if forbidden_regex.search(stderr_log):
+                return TestResult.failed(test, runner.artifacts, "{}th forbidden runtime warning pattern is found".format(index))
+
+    if runner.kphp_build_sanitizer_log_artifact:
+        return TestResult.failed(test, runner.artifacts, "got sanitizer log")
+
+    return TestResult.passed(test, runner.artifacts)
+
+
 def run_ok_test(test: TestFile, runner):
     if not runner.run_with_php():
         return TestResult.failed(test, runner.artifacts, "got php error")
@@ -272,6 +300,8 @@ def run_test(distcc_hosts, test: TestFile):
         test_result = run_fail_test(test, runner)
     elif test.is_kphp_should_warn():
         test_result = run_warn_test(test, runner)
+    elif test.is_kphp_runtime_should_warn():
+        test_result = run_runtime_warn_test(test, runner)
     elif test.is_ok():
         test_result = run_ok_test(test, runner)
     else:
