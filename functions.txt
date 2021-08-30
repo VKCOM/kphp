@@ -8,6 +8,9 @@ if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
 }
 
+require_once __DIR__ . '/functions_uberh3.txt';
+require_once __DIR__ . '/functions_spl.txt';
+
 interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
@@ -54,31 +57,6 @@ class Error implements Throwable {
 
     final private function __clone() ::: void;
 }
-
-class ArithmeticError extends Error {}
-class DivisionByZeroError extends ArithmeticError {}
-class AssertionError extends Error {}
-class CompileError extends Error {}
-class ParseError extends CompileError {}
-class TypeError extends Error {}
-class ArgumentCountError extends TypeError {}
-class ValueError extends Error {}
-class UnhandledMatchError extends Error {}
-
-class LogicException extends Exception {}
-class BadFunctionCallException extends LogicException {}
-class BadMethodCallException extends BadFunctionCallException {}
-class DomainException extends LogicException {}
-class InvalidArgumentException extends LogicException {}
-class LengthException extends LogicException {}
-class OutOfRangeException extends LogicException {}
-
-class RuntimeException extends Exception {}
-class OutOfBoundsException extends RuntimeException {}
-class OverflowException extends RuntimeException {}
-class RangeException extends RuntimeException {}
-class UnderflowException extends RuntimeException {}
-class UnexpectedValueException extends RuntimeException {}
 
 interface Memcache {
     public function get (string|string[] $key) ::: mixed;
@@ -1297,50 +1275,6 @@ function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: mi
 function profiler_set_log_suffix($suffix ::: string) ::: void;
 function profiler_set_function_label($label ::: string) ::: void;
 function profiler_is_enabled() ::: bool;
-
-// uber h3 bindings https://h3geo.org/docs
-final class UberH3 {
-  // Indexing functions: https://h3geo.org/docs/api/indexing
-  static public function geoToH3(float $latitude, float $longitude, int $resolution) ::: int;
-  static public function h3ToGeo(int $h3_index) ::: tuple(float, float);
-  static public function h3ToGeoBoundary(int $h3_index) ::: tuple(float, float)[];
-
-  // Index inspection functions: https://h3geo.org/docs/api/inspection
-  static public function h3GetResolution(int $h3_index) ::: int;
-  static public function h3GetBaseCell(int $h3_index) ::: int;
-  static public function stringToH3(string $h3_index_str) ::: int;
-  static public function h3ToString(int $h3_index) ::: string;
-  static public function h3IsValid(int $h3_index) ::: bool;
-  static public function h3IsResClassIII(int $h3_index) ::: bool;
-  static public function h3IsPentagon(int $h3_index) ::: bool;
-  static public function h3GetFaces(int $h3_index) ::: int[];
-  static public function maxFaceCount(int $h3_index) ::: int;
-
-  // Grid traversal functions: https://h3geo.org/docs/api/traversal
-  static public function kRing(int $h3_index_origin, int $k) ::: int[] | false;
-  static public function maxKringSize(int $k) ::: int;
-  static public function kRingDistances(int $h3_index_origin, int $k) ::: tuple(int, int)[] | false;
-  static public function hexRange(int $h3_index_origin, int $k) ::: int[] | false;
-  static public function hexRangeDistances(int $h3_index_origin, int $k) ::: tuple(int, int)[] | false;
-  static public function hexRanges(int[] $h3_indexes, int $k) ::: int[] | false;
-  static public function hexRing(int $h3_index_origin, int $k) ::: int[] | false;
-  static public function h3Line(int $h3_index_start, int $h3_index_end) ::: int[] | false;
-  static public function h3LineSize(int $h3_index_start, int $h3_index_end) ::: int;
-  static public function h3Distance(int $h3_index_start, int $h3_index_end) ::: int;
-
-  // Hierarchical grid functions: https://h3geo.org/docs/api/hierarchy
-  static public function h3ToParent(int $h3_index, int $parent_resolution) ::: int;
-  static public function h3ToChildren(int $h3_index, int $children_resolution) ::: int[] | false;
-  static public function maxH3ToChildrenSize(int $h3_index, int $children_resolution) ::: int;
-  static public function h3ToCenterChild(int $h3_index, int $children_resolution) ::: int;
-  static public function compact(int[] $h3_indexes) ::: int[] | false;
-  static public function uncompact(int[] $h3_indexes, int $resolution) ::: int[] | false;
-  static public function maxUncompactSize(int[] $h3_indexes, int $resolution) ::: int;
-
-  // Region functions: https://h3geo.org/docs/api/regions
-  static public function polyfill(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int[] | false;
-  static public function maxPolyfillSize(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int;
-}
 
 /** Job workers interface **/
 

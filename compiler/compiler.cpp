@@ -204,7 +204,9 @@ bool compiler_execute(CompilerSettings *settings) {
   G->register_main_file(settings->main_file.get(), src_file_stream);
 
   if (!G->settings().functions_file.get().empty()) {
-    G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream);
+    bool builtin = true;
+    bool error_if_not_exists = true;
+    G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream, error_if_not_exists, builtin);
   }
 
   static lockf_wrapper unique_file_lock;

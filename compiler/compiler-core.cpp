@@ -189,7 +189,7 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
   return full_file_name;
 }
 
-SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib) {
+SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib, bool builtin) {
   if (file_name.empty()) {
     return SrcFilePtr();
   }
@@ -223,6 +223,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       std::string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(full_file_name));
       new_file->main_func_name = replace_non_alphanum(std::move(func_name));
+      new_file->is_from_functions_file = builtin;
       vk::string_view unified_file_name{new_file->file_name};
       if (unified_file_name.starts_with(settings().base_dir.get())) {
         unified_file_name.remove_prefix(settings().base_dir.get().size());
@@ -313,8 +314,8 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
   }
 }
 
-SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */) {
-  SrcFilePtr file = register_file(file_name, owner_lib);
+SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */, bool builtin) {
+  SrcFilePtr file = register_file(file_name, owner_lib, builtin);
   kphp_error (file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
   if (file && try_require_file(file)) {
     os << file;
