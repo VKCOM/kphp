@@ -74,3 +74,5 @@ if(APPLE)
     add_definitions(-DEPOLL_SHIM_LIB_DIR="${epoll_BINARY_DIR}/src")
     set(EPOLL_SHIM_LIB epoll-shim)
 endif()
+
+find_package(XGBoost 1.5.0 REQUIRED)

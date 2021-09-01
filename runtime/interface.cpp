@@ -47,6 +47,7 @@
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "runtime/timelib_wrapper.h"
+#include "runtime/xgboost/model.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -2250,6 +2251,7 @@ void global_init_runtime_libs() {
   global_init_job_workers_lib();
   global_init_php_timelib();
   global_init_curl_lib();
+  global_init_xgboost_lib();
 }
 
 void global_init_script_allocator() {

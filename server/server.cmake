@@ -37,3 +37,6 @@ set(KPHP_SERVER_ALL_SOURCES
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})
+if(APPLE)
+    target_compile_definitions(kphp_server PRIVATE -D_XOPEN_SOURCE)
+endif()
