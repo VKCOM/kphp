@@ -154,6 +154,8 @@ public:
 
   inline bool try_to_int(int64_t *val) const;
   inline bool try_to_float(double *val) const;
+  inline bool try_to_float_as_php7(double *val) const;
+  inline bool try_to_float_as_php8(double *val) const;
 
   inline mixed to_numeric() const;
   inline bool to_bool() const;
