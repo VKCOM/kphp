@@ -532,8 +532,8 @@ struct tl_Dictionary_impl {
     f$store_int(n);
     for (auto it = v.begin(); it != v.end(); ++it) {
       KeyT().typed_store(vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_String>::value>{},
-                                          [&] { return it.get_key().as_string(); },
-                                          [&] { return it.get_key().as_int(); }));
+                                          [&] { return it.get_key().to_string(); },
+                                          [&] { return it.get_key().to_int(); }));
       store_magic_if_not_bare(inner_value_magic);
       value_state.typed_store(it.get_value());
     }
