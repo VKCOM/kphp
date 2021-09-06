@@ -660,6 +660,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_shape:
       res = get_shape();
       break;
+
+    case tok_match:
+      res = get_match();
+      break;
+
     case tok_opbrk:
       res = get_short_array();
       return_flag = false; // array is valid postfix expression operand
@@ -1313,6 +1318,84 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   CE (expect(tok_clbrc, "'}'"));
 
   return create_switch_vertex(cur_function, switch_condition, std::move(cases)).set_location(location);
+}
+
+VertexAdaptor<op_match> GenTree::create_match_vertex(FunctionPtr cur_function, VertexPtr match_condition, std::vector<VertexPtr> &&cases) {
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_match", cur_function);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
+  return VertexAdaptor<op_match>::create(match_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
+}
+
+VertexAdaptor<op_match_case> GenTree::get_match_case() {
+  auto location = auto_location();
+
+  std::vector<VertexPtr> conditions;
+
+  while (cur->type() != tok_double_arrow) {
+    const auto cur_type = cur->type();
+    if (cur_type == tok_comma) {
+      next_cur();
+      continue;
+    }
+
+    const auto condition = get_expression();
+
+    if (const auto double_arrow = condition.try_as<op_double_arrow>()) {
+      // short $expr => $return_expr
+      if (conditions.empty()) {
+        const auto return_expr = double_arrow->value();
+        const auto conditions_vertex = VertexAdaptor<op_seq_comma>::create(std::vector<VertexPtr>{double_arrow->key()});
+
+        return VertexAdaptor<op_match_case>::create(conditions_vertex, return_expr).set_location(location);
+      }
+
+      // add last condition
+      conditions.push_back(double_arrow->key());
+
+      const auto return_expr = double_arrow->value();
+      const auto conditions_vertex = VertexAdaptor<op_seq_comma>::create(conditions);
+
+      return VertexAdaptor<op_match_case>::create(conditions_vertex, return_expr).set_location(location);
+    }
+
+    conditions.push_back(condition);
+  }
+  CE (expect(tok_double_arrow, "'=>'"));
+
+  const auto return_expr = get_expression();
+  if (cur->type() == tok_comma) {
+    next_cur();
+  }
+
+  return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(conditions), return_expr).set_location(location);
+}
+
+VertexAdaptor<op_match> GenTree::get_match() {
+  auto location = auto_location();
+
+  next_cur();
+  CE (expect(tok_oppar, "'('"));
+  skip_phpdoc_tokens();
+  auto match_condition = get_expression();
+  CE (!kphp_error(match_condition, "Failed to parse 'match' expression"));
+  CE (expect(tok_clpar, "')'"));
+
+  CE (expect(tok_opbrc, "'{'"));
+
+  vector<VertexPtr> cases;
+  while (cur->type() != tok_clbrc) {
+    skip_phpdoc_tokens();
+    auto cur_type = cur->type();
+    if (cur_type == tok_comma) {
+      next_cur();
+      continue;
+    }
+
+    cases.emplace_back(get_match_case());
+  }
+  CE (expect(tok_clbrc, "'}'"));
+
+  return create_match_vertex(cur_function, match_condition, std::move(cases)).set_location(location);
 }
 
 VertexAdaptor<op_shape> GenTree::get_shape() {

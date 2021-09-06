@@ -55,7 +55,7 @@ public:
     return *this;
   }
 
-  VertexAdaptor &operator=(const VertexAdaptor<Op> &) & = default;
+//  VertexAdaptor &operator=(const VertexAdaptor<Op> &) & = default;
 
   explicit operator bool() const {
     return impl != nullptr;

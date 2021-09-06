@@ -43,6 +43,7 @@ enum TokenType {
   tok_as,
   tok_case,
   tok_switch,
+  tok_match,
   tok_class,
   tok_interface,
   tok_trait,

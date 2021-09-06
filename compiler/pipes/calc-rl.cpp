@@ -84,7 +84,12 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_list_keyval: {
       const auto kv = root.as<op_list_keyval>();
       rl_calc(kv->key(), val_r);
-      rl_calc(kv->var(), val_l);
+
+      if (auto array = kv->var().try_as<op_list>()) {
+        rl_calc_all<val_l, val_r>(array, array->size() - 1);
+      } else {
+        rl_calc(kv->var(), val_l);
+      }
       break;
     }
     default:

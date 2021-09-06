@@ -9,6 +9,7 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
+#include "compiler/name-gen.h"
 
 namespace {
 template <typename F>
@@ -40,12 +41,9 @@ VertexAdaptor<op_set> convert_set_null_coalesce(VertexAdaptor<op_set_null_coales
   return VertexAdaptor<op_set>::create(v->lhs().clone(), rhs).set_location(v);
 }
 
-VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
+vector<VertexAdaptor<op_list_keyval>> convert_list_part(VertexPtr list, VertexPtr arr) {
   bool has_explicit_keys = false;
   bool has_empty_entries = false; // To give the same error message as PHP
-
-  auto list = assign->lhs();
-  auto arr = assign->rhs();
 
   std::vector<VertexAdaptor<op_list_keyval>> mappings;
   mappings.reserve(list->size());
@@ -55,7 +53,15 @@ VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
   for (auto x : *list) {
     if (const auto arrow = x.try_as<op_double_arrow>()) {
       has_explicit_keys = true;
-      mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));
+
+      if (auto array = arrow->rhs().try_as<op_array>()) {
+        const auto rhs_mappings = convert_list_part(array, arr);
+        const auto array_vertex = VertexAdaptor<op_list>::create(mappings, arr);
+        mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), array_vertex));
+      } else {
+        mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));
+      }
+
       continue;
     }
 
@@ -77,6 +83,14 @@ VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
   } else if (has_explicit_keys && has_implicit_keys) {
     kphp_error(0, "Cannot mix keyed and unkeyed array entries in assignments");
   }
+  return mappings;
+}
+
+VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
+  auto list = assign->lhs();
+  auto arr = assign->rhs();
+
+  const auto mappings = convert_list_part(list, arr);
 
   return VertexAdaptor<op_list>::create(mappings, arr).set_location(assign);
 }
@@ -232,6 +246,43 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
+VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match> match, VertexAdaptor<op_var> local_var) {
+  auto switch_condition = match->condition();
+  auto temp_var_condition_on_switch = match->condition_on_match();
+  auto temp_var_matched_with_one_case = match->matched_with_one_case();
+  auto cases = match->cases();
+
+  std::vector<VertexPtr> switch_cases;
+  switch_cases.reserve(cases.size());
+
+  for (const auto case_vertex : cases) {
+    if (const auto match_case = case_vertex.try_as<op_match_case>()) {
+
+      const auto set_vertex = VertexAdaptor<op_set>::create(local_var, match_case->return_expr());
+      const auto break_vertex = VertexAdaptor<op_break>::create(GenTree::create_int_const(1));
+      const auto stmts = std::vector<VertexPtr>{set_vertex, break_vertex};
+      const auto seq = VertexAdaptor<op_seq>::create(stmts).set_location(match_case);
+      const auto empty_seq = VertexAdaptor<op_seq>::create().set_location(match_case);
+
+      const auto conditions = match_case->conditions()->args();
+      const auto condition_count = conditions.size();
+
+      auto current_condition = 0;
+      for (const auto condition : match_case->conditions()->args()) {
+        if (current_condition == condition_count - 1) {
+          switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, seq));
+          continue;
+        }
+
+        switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, empty_seq));
+        ++current_condition;
+      }
+    }
+  }
+
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(switch_cases));
+}
+
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (GenTree::is_superglobal(root->get_string())) {
@@ -254,6 +305,16 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
 
   if (auto array = root.try_as<op_array>()) {
     return convert_array_with_spread_operators(array);
+  }
+
+  if (auto match = root.try_as<op_match>()) {
+    auto tmp_var = VertexAdaptor<op_var>::create();
+    tmp_var->set_string(gen_unique_name("tmp_var"));
+    tmp_var->extra_type = op_ex_var_superlocal;
+
+    const auto switch_vertex = create_switch_vertex_from_match(match, tmp_var);
+    const auto result_seq = VertexAdaptor<op_seq_rval>::create(switch_vertex, tmp_var);
+    return result_seq;
   }
 
   return root;
