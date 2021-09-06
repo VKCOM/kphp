@@ -41,9 +41,12 @@ VertexAdaptor<op_set> convert_set_null_coalesce(VertexAdaptor<op_set_null_coales
   return VertexAdaptor<op_set>::create(v->lhs().clone(), rhs).set_location(v);
 }
 
-vector<VertexAdaptor<op_list_keyval>> convert_list_part(VertexPtr list, VertexPtr arr) {
+VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
   bool has_explicit_keys = false;
   bool has_empty_entries = false; // To give the same error message as PHP
+
+  auto list = assign->lhs();
+  auto arr = assign->rhs();
 
   std::vector<VertexAdaptor<op_list_keyval>> mappings;
   mappings.reserve(list->size());
@@ -53,15 +56,7 @@ vector<VertexAdaptor<op_list_keyval>> convert_list_part(VertexPtr list, VertexPt
   for (auto x : *list) {
     if (const auto arrow = x.try_as<op_double_arrow>()) {
       has_explicit_keys = true;
-
-      if (auto array = arrow->rhs().try_as<op_array>()) {
-        const auto rhs_mappings = convert_list_part(array, arr);
-        const auto array_vertex = VertexAdaptor<op_list>::create(mappings, arr);
-        mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), array_vertex));
-      } else {
-        mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));
-      }
-
+      mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(arrow->lhs(), arrow->rhs()));
       continue;
     }
 
@@ -83,14 +78,6 @@ vector<VertexAdaptor<op_list_keyval>> convert_list_part(VertexPtr list, VertexPt
   } else if (has_explicit_keys && has_implicit_keys) {
     kphp_error(0, "Cannot mix keyed and unkeyed array entries in assignments");
   }
-  return mappings;
-}
-
-VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
-  auto list = assign->lhs();
-  auto arr = assign->rhs();
-
-  const auto mappings = convert_list_part(list, arr);
 
   return VertexAdaptor<op_list>::create(mappings, arr).set_location(assign);
 }

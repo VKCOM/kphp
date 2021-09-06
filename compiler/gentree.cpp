@@ -660,11 +660,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_shape:
       res = get_shape();
       break;
-
     case tok_match:
       res = get_match();
       break;
-
     case tok_opbrk:
       res = get_short_array();
       return_flag = false; // array is valid postfix expression operand
