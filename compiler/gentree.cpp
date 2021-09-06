@@ -1362,7 +1362,7 @@ VertexPtr GenTree::get_match_case() {
 
     const auto condition = get_expression();
 
-    if (const auto double_arrow = condition.try_as<op_double_arrow>()) {
+    if (const auto &double_arrow = condition.try_as<op_double_arrow>()) {
       // if simple $expr => $return_expr
       if (conditions.empty()) {
         const auto return_expr = double_arrow->value();

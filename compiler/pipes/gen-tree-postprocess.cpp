@@ -275,15 +275,15 @@ VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match>
 
   VertexAdaptor<op_match_default> default_case;
 
-  for (const auto case_vertex : cases) {
-    if (const auto default_case_vertex = case_vertex.try_as<op_match_default>()) {
+  for (const auto &case_vertex : cases) {
+    if (const auto &default_case_vertex = case_vertex.try_as<op_match_default>()) {
       if (default_case) {
         kphp_error(0, "Match expressions may only contain one default arm");
       }
       default_case = default_case_vertex;
       continue;
     }
-    if (const auto match_case = case_vertex.try_as<op_match_case>()) {
+    if (const auto &match_case = case_vertex.try_as<op_match_case>()) {
       const auto set_vertex = VertexAdaptor<op_set>::create(local_var, match_case->return_expr());
       const auto break_vertex = VertexAdaptor<op_break>::create(GenTree::create_int_const(1));
       const auto stmts = std::vector<VertexPtr>{set_vertex, break_vertex};
@@ -302,7 +302,7 @@ VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match>
       //     case 20: { $a = 1; break; }
       //   }
       auto current_condition = 0;
-      for (const auto condition : match_case->conditions()->args()) {
+      for (const auto &condition : match_case->conditions()->args()) {
         if (current_condition == condition_count - 1) {
           switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, seq));
           continue;
