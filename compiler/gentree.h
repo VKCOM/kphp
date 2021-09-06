@@ -75,6 +75,12 @@ public:
     return int_v;
   }
 
+  static auto create_string_const(const std::string &str) {
+    auto string_vertex = VertexAdaptor<op_string>::create();
+    string_vertex->str_val = str;
+    return string_vertex;
+  }
+
   VertexAdaptor<op_func_param> get_func_param();
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
@@ -123,7 +129,8 @@ public:
   VertexAdaptor<op_do> get_do();
 
   VertexAdaptor<op_switch> get_switch();
-  VertexAdaptor<op_match_case> get_match_case();
+  VertexAdaptor<op_match_default> get_match_default();
+  VertexPtr get_match_case();
   VertexAdaptor<op_match> get_match();
 
   VertexAdaptor<op_shape> get_shape();

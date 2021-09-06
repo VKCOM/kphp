@@ -246,43 +246,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
-VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match> match, VertexAdaptor<op_var> local_var) {
-  auto switch_condition = match->condition();
-  auto temp_var_condition_on_switch = match->condition_on_match();
-  auto temp_var_matched_with_one_case = match->matched_with_one_case();
-  auto cases = match->cases();
-
-  std::vector<VertexPtr> switch_cases;
-  switch_cases.reserve(cases.size());
-
-  for (const auto case_vertex : cases) {
-    if (const auto match_case = case_vertex.try_as<op_match_case>()) {
-
-      const auto set_vertex = VertexAdaptor<op_set>::create(local_var, match_case->return_expr());
-      const auto break_vertex = VertexAdaptor<op_break>::create(GenTree::create_int_const(1));
-      const auto stmts = std::vector<VertexPtr>{set_vertex, break_vertex};
-      const auto seq = VertexAdaptor<op_seq>::create(stmts).set_location(match_case);
-      const auto empty_seq = VertexAdaptor<op_seq>::create().set_location(match_case);
-
-      const auto conditions = match_case->conditions()->args();
-      const auto condition_count = conditions.size();
-
-      auto current_condition = 0;
-      for (const auto condition : match_case->conditions()->args()) {
-        if (current_condition == condition_count - 1) {
-          switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, seq));
-          continue;
-        }
-
-        switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, empty_seq));
-        ++current_condition;
-      }
-    }
-  }
-
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(switch_cases));
-}
-
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (GenTree::is_superglobal(root->get_string())) {
@@ -308,16 +271,99 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   }
 
   if (auto match = root.try_as<op_match>()) {
-    auto tmp_var = VertexAdaptor<op_var>::create();
-    tmp_var->set_string(gen_unique_name("tmp_var"));
-    tmp_var->extra_type = op_ex_var_superlocal;
-
-    const auto switch_vertex = create_switch_vertex_from_match(match, tmp_var);
-    const auto result_seq = VertexAdaptor<op_seq_rval>::create(switch_vertex, tmp_var);
-    return result_seq;
+    return convert_match_to_switch(match);
   }
 
   return root;
+}
+
+VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match> match, VertexAdaptor<op_var> local_var) {
+  const auto switch_condition = match->condition();
+  const auto temp_var_condition_on_switch = match->condition_on_match();
+  const auto temp_var_matched_with_one_case = match->matched_with_one_case();
+  const auto cases = match->cases();
+
+  std::vector<VertexPtr> switch_cases;
+  switch_cases.reserve(cases.size());
+
+  VertexAdaptor<op_match_default> default_case;
+
+  for (const auto case_vertex : cases) {
+    if (const auto default_case_vertex = case_vertex.try_as<op_match_default>()) {
+      if (default_case) {
+        kphp_error(0, "Match expressions may only contain one default arm");
+      }
+      default_case = default_case_vertex;
+      continue;
+    }
+    if (const auto match_case = case_vertex.try_as<op_match_case>()) {
+      const auto set_vertex = VertexAdaptor<op_set>::create(local_var, match_case->return_expr());
+      const auto break_vertex = VertexAdaptor<op_break>::create(GenTree::create_int_const(1));
+      const auto stmts = std::vector<VertexPtr>{set_vertex, break_vertex};
+      const auto seq = VertexAdaptor<op_seq>::create(stmts).set_location(match_case);
+      const auto empty_seq = VertexAdaptor<op_seq>::create().set_location(match_case);
+
+      const auto conditions = match_case->conditions()->args();
+      const auto condition_count = conditions.size();
+
+      // We create a case body only for the last case for several conditions, so as not to duplicate the code.
+      // For example:
+      //   $a = match($b) { 10, 20 => 1 };
+      // Converts to something like this switch:
+      //   switch ($b) {
+      //     case 10: {} // fallthrough
+      //     case 20: { $a = 1; break; }
+      //   }
+      auto current_condition = 0;
+      for (const auto condition : match_case->conditions()->args()) {
+        if (current_condition == condition_count - 1) {
+          switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, seq));
+          continue;
+        }
+
+        switch_cases.emplace_back(VertexAdaptor<op_case>::create(condition, empty_seq));
+        ++current_condition;
+      }
+    }
+  }
+
+  if (default_case) {
+    const auto set_vertex = VertexAdaptor<op_set>::create(local_var, default_case->return_expr());
+    const auto break_vertex = VertexAdaptor<op_break>::create(GenTree::create_int_const(1));
+    const auto stmts = std::vector<VertexPtr>{set_vertex, break_vertex};
+    const auto seq = VertexAdaptor<op_seq>::create(stmts).set_location(default_case);
+
+    switch_cases.emplace_back(VertexAdaptor<op_default>::create(seq));
+  } else {
+    // If there is no default case, then create a default one,
+    // which will give warning to any unhandled value.
+    //
+    // PHP throws an UnhandledMatchError if the value is unhandled,
+    // but we only give warning.
+    const auto message = VertexAdaptor<op_string_build>::create(std::vector<VertexPtr>{
+      GenTree::create_string_const("Unhandled match value '"),
+      match->condition().clone(),
+      GenTree::create_string_const("'")
+    });
+    const auto args = std::vector<VertexPtr>{message};
+    auto call_function = VertexAdaptor<op_func_call>::create(args);
+    call_function->set_string("warning");
+
+    const auto seq = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{call_function});
+
+    switch_cases.emplace_back(VertexAdaptor<op_default>::create(seq));
+  }
+
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(switch_cases));
+}
+
+VertexPtr GenTreePostprocessPass::convert_match_to_switch(VertexAdaptor<op_match> &match) {
+  auto tmp_var = VertexAdaptor<op_var>::create();
+  tmp_var->set_string(gen_unique_name("tmp_var"));
+  tmp_var->extra_type = op_ex_var_superlocal;
+
+  const auto switch_vertex = create_switch_vertex_from_match(match, tmp_var);
+  return VertexAdaptor<op_seq_rval>::create(switch_vertex, tmp_var);
 }
 
 VertexAdaptor<op_array> array_vertex_from_slice(const VertexRange &args, size_t start, size_t end) {

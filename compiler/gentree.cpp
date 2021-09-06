@@ -1326,13 +1326,37 @@ VertexAdaptor<op_match> GenTree::create_match_vertex(FunctionPtr cur_function, V
   return VertexAdaptor<op_match>::create(match_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
 }
 
-VertexAdaptor<op_match_case> GenTree::get_match_case() {
+VertexAdaptor<op_match_default> GenTree::get_match_default() {
+  auto location = auto_location();
+  next_cur();
+  // 'default, => $return'
+  //         | comma allowed
+  if (cur->type() == tok_comma) {
+    next_cur();
+  }
+  CE (expect(tok_double_arrow, "'=>'"));
+
+  const auto return_expr = get_expression();
+  if (cur->type() == tok_comma) {
+    next_cur();
+  }
+
+  return VertexAdaptor<op_match_default>::create(return_expr).set_location(location);
+}
+
+VertexPtr GenTree::get_match_case() {
   auto location = auto_location();
 
   std::vector<VertexPtr> conditions;
 
+  if (cur->type() == tok_default) {
+    return get_match_default();
+  }
+
   while (cur->type() != tok_double_arrow) {
     const auto cur_type = cur->type();
+    // '$expr, => $return'
+    //       | comma allowed
     if (cur_type == tok_comma) {
       next_cur();
       continue;
@@ -1341,7 +1365,7 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
     const auto condition = get_expression();
 
     if (const auto double_arrow = condition.try_as<op_double_arrow>()) {
-      // short $expr => $return_expr
+      // if simple $expr => $return_expr
       if (conditions.empty()) {
         const auto return_expr = double_arrow->value();
         const auto conditions_vertex = VertexAdaptor<op_seq_comma>::create(std::vector<VertexPtr>{double_arrow->key()});
@@ -1349,6 +1373,7 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
         return VertexAdaptor<op_match_case>::create(conditions_vertex, return_expr).set_location(location);
       }
 
+      // if several conditions
       // add last condition
       conditions.push_back(double_arrow->key());
 
@@ -1362,12 +1387,10 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
   }
   CE (expect(tok_double_arrow, "'=>'"));
 
-  const auto return_expr = get_expression();
-  if (cur->type() == tok_comma) {
-    next_cur();
-  }
-
-  return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(conditions), return_expr).set_location(location);
+  // Reachable only if arm does not contain '$expr => $return_expr'.
+  // Note that arm '$expr1, $expr2 => $return_expr' contains '$expr => $return_expr'.
+  kphp_error(0, "Bad match arm");
+  return VertexPtr{};
 }
 
 VertexAdaptor<op_match> GenTree::get_match() {

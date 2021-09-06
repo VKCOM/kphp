@@ -631,6 +631,19 @@
     }
   },
   {
+    "comment": "default => $return_expr",
+    "sons": {
+      "return_expr" : {
+        "id": 0
+      }
+    },
+    "name": "op_match_default",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "default"
+    }
+  },
+  {
     "comment": "if (cond()) true_cmd(); or if (cond()) true_cmd() else false_cmd()",
     "sons": {
       "cond": 0,
