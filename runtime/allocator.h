@@ -50,6 +50,13 @@ bool is_malloc_replaced() noexcept;
 void replace_malloc_with_script_allocator() noexcept;
 void rollback_malloc_replacement() noexcept;
 
+class MemoryReplacementGuard {
+  bool force_enable_disable_;
+public:
+  explicit MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable = false);
+  ~MemoryReplacementGuard();
+};
+
 } // namespace dl
 
 // replace malloc so it starts to use a script memory

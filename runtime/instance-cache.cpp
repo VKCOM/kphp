@@ -61,15 +61,6 @@ struct CacheContext : private vk::not_copyable {
   bool has_garbage() const noexcept { return cache_garbage_ != nullptr; }
   void clear_garbage() noexcept;
 
-  auto memory_replacement_guard(bool force_enable_disable = false) noexcept {
-    dl::enter_critical_section();
-    dl::set_current_script_allocator(memory_resource, force_enable_disable);
-    return vk::finally([force_enable_disable] {
-      dl::restore_default_script_allocator(force_enable_disable);
-      dl::leave_critical_section();
-    });
-  }
-
 private:
   std::atomic<ElementHolder *> cache_garbage_{nullptr};
 };
@@ -289,7 +280,7 @@ public:
     if (context_->has_garbage()) {
       std::unique_lock<inter_process_mutex> allocator_lock{context_->allocator_mutex, std::try_to_lock};
       if (allocator_lock) {
-        auto shared_memory_guard = context_->memory_replacement_guard();
+        dl::MemoryReplacementGuard shared_memory_guard{context_->memory_resource};
         context_->clear_garbage();
       }
     }
@@ -466,7 +457,7 @@ public:
     // replace the default script allocator
     // as this call happens from the master process
     // we need to explicitly activate and deactivate it
-    auto shared_memory_guard = context.memory_replacement_guard(true);
+    dl::MemoryReplacementGuard shared_memory_guard{context.memory_resource, true};
 
     auto *data_shards = current_data.get_data_shards();
     const size_t shards_count = current_data.get_data_shards_count();
@@ -591,7 +582,7 @@ private:
                                                const InstanceCopyistBase &instance_wrapper,
                                                InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
-    auto shared_memory_guard = context_->memory_replacement_guard();
+    dl::MemoryReplacementGuard shared_memory_guard{context_->memory_resource};
 
     std::unique_lock<inter_process_mutex> allocator_lock{context_->allocator_mutex, std::try_to_lock};
     // locking strictly before the storage_mutex to avoid a deadlock
