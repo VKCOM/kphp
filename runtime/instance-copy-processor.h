@@ -9,6 +9,7 @@
 
 #include "common/mixin/not_copyable.h"
 
+#include "runtime/allocator.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
@@ -411,7 +412,7 @@ class_instance<T> copy_instance_into_other_memory(const class_instance<T> &insta
                                                   memory_resource::unsynchronized_pool_resource &memory_pool,
                                                   ExtraRefCnt memory_ref_cnt = ExtraRefCnt{ExtraRefCnt::extra_ref_cnt_value(0)},
                                                   ResourceCallbackOOM oom_callback = nullptr) noexcept {
-  dl::set_current_script_allocator(memory_pool, false);
+  dl::MemoryReplacementGuard shared_memory_guard{memory_pool};
 
   class_instance<T> copied_instance = instance;
   InstanceDeepCopyVisitor copyVisitor{memory_pool, memory_ref_cnt, oom_callback};
@@ -420,6 +421,5 @@ class_instance<T> copy_instance_into_other_memory(const class_instance<T> &insta
     copied_instance = class_instance<T>{};
   }
 
-  dl::restore_default_script_allocator(false);
   return copied_instance;
 }
