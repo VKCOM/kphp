@@ -943,6 +943,48 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << Label{root->break_label_id};
 }
 
+// difference with a regular switch is in strict comparison
+void compile_switch_match_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  string goto_name_if_default_in_the_middle;
+
+  const auto temp_var_condition_on_switch = root->condition_on_switch();
+  const auto temp_var_matched_with_a_case = root->matched_with_one_case();
+
+  W << "do " << BEGIN;
+  W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
+  W << temp_var_matched_with_a_case << " = false;" << NL;
+
+  for (const auto &one_case : root->cases()) {
+    VertexAdaptor<op_seq> cmd;
+
+    if (const auto cs = one_case.try_as<op_case>()) {
+      cmd = cs->cmd();
+      W << "if (" << temp_var_matched_with_a_case << " || equals(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << temp_var_matched_with_a_case << " = true;" << NL;
+    } else {
+      cmd = one_case.as<op_default>()->cmd();
+      W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
+      goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
+      W << goto_name_if_default_in_the_middle + ": ";
+    }
+
+    W << AsSeq{cmd};
+    W << END << NL;
+  }
+
+  if (!goto_name_if_default_in_the_middle.empty()) {
+    W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
+    W << "break;" << NL;
+    W << END << NL;
+
+    W << temp_var_matched_with_a_case << " = true;" << NL;
+    W << "goto " << goto_name_if_default_in_the_middle << ";" << NL;
+  }
+
+  W << Label{root->continue_label_id} << END;
+  W << " while(false);" << NL;
+  W << Label{root->break_label_id};
+}
 
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   kphp_assert(root->condition_on_switch()->type() == op_var && root->matched_with_one_case()->type() == op_var);
@@ -952,7 +994,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   for (auto one_case : root->cases()) {
     if (one_case->type() == op_default) {
-      kphp_error_return(!has_default, "Switch: several `default` cases found");
+      kphp_error_return(!has_default, "Switch statements may only contain one `default` clause");
       has_default = true;
       continue;
     }
@@ -960,6 +1002,11 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     auto val = GenTree::get_actual_value(one_case.as<op_case>()->expr());
     all_cases_are_ints    &= is_const_int(val);
     all_cases_are_strings &= (val->type() == op_string);
+  }
+
+  if (root->is_match) {
+    compile_switch_match_var(root, W);
+    return;
   }
 
   if (all_cases_are_strings) {

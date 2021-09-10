@@ -576,6 +576,12 @@
         "type": "op_var"
       }
     },
+    "extra_fields": {
+      "is_match": {
+        "type": "bool",
+        "default": "false"
+      }
+    },
     "name": "op_switch",
     "base_name": "meta_op_cycle",
     "props": {

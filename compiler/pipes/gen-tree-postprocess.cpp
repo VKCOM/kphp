@@ -341,7 +341,10 @@ VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match>
     switch_cases.emplace_back(VertexAdaptor<op_default>::create(seq));
   }
 
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(switch_cases));
+  auto switch_vertex = VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(switch_cases));
+  switch_vertex->is_match = true;
+
+  return switch_vertex;
 }
 
 VertexPtr GenTreePostprocessPass::convert_match_to_switch(VertexAdaptor<op_match> &match) {
