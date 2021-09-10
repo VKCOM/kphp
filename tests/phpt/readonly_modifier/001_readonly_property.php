@@ -4,10 +4,10 @@
 
 class Foo {
     public readonly string $prop_readonly = "hello";
-    public readonly string $prop_default = "hello";
+    public string $prop_default = "hello";
 
     public function __construct() {
-        $this->prop = "ssss"; // ok
+        $this->prop = "world"; // ok
     }
 }
 

@@ -81,6 +81,6 @@ public:
   }
 
 private:
-  AbstractModifiers abstract_modifier_{AbstractModifiers ::readonly_};
+  AbstractModifiers abstract_modifier_{AbstractModifiers ::not_modifier_};
   AccessModifiers access_modifier_{AccessModifiers ::not_modifier_};
 };

@@ -61,7 +61,7 @@ public:
   bool is_instance()  const { return scope_modifier_ == ScopeModifiers::instance_; }
   bool is_nonmember() const { return !is_static() && !is_instance();   }
 
-  bool is_public()    const { return access_modifier_ == AccessModifiers::public_; }
+  bool is_public()    const { return access_modifier_ == AccessModifiers::public_;    }
   bool is_private()   const { return access_modifier_ == AccessModifiers::private_;   }
   bool is_protected() const { return access_modifier_ == AccessModifiers::protected_; }
 
