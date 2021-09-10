@@ -16,6 +16,7 @@ enum class AbstractModifiers : uint8_t {
   not_modifier_,
   final_,
   abstract_,
+  readonly_,
 };
 
 enum class AccessModifiers : uint8_t {

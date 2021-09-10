@@ -1438,6 +1438,9 @@ ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
       case tok_abstract:
         modifiers.set_abstract();
         break;
+      case tok_readonly:
+        modifiers.set_readonly();
+        break;
       default:
         return modifiers;
     }
@@ -1482,9 +1485,9 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
     kphp_error(!modifiers.is_final() && !modifiers.is_abstract(), "Class fields can not be declared final/abstract");
     if (modifiers.is_static()) {
-      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
+      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier(), modifiers.abstract_modifiers()}, type_hint);
     }
-    get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
+    get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier(), modifiers.abstract_modifiers()}, type_hint);
     return {};
   }
 
@@ -2078,6 +2081,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
         return get_const_after_explicit_access_modifier(access);
       }
     // fall through
+    case tok_readonly:
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {

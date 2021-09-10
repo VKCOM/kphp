@@ -113,6 +113,10 @@ TEST(lexer_test, test_php_tokens) {
 
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
+
+    // readonly modifier
+    {"public readonly string $prop;", {"tok_public(public)", "tok_readonly(readonly)", "tok_string(string)", "tok_var_name($prop)", "tok_semicolon(;)"}},
+    {"readonly $prop = 100;", {"tok_readonly(readonly)", "tok_var_name($prop)", "tok_eq1(=)", "tok_int_const(100)", "tok_semicolon(;)"}},
   };
 
   for (const auto &test : tests) {
