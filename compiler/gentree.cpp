@@ -122,7 +122,7 @@ VertexAdaptor<op_var> GenTree::get_function_use_var_name_ref() {
   // If a closing parenthesis is encountered, it means a trailing
   // comma before that, so we don't give an error.
   if (!result && cur->type() != tok_clpar) {
-    kphp_error(result, fmt_format("function use list: expected varname, found {}", cur->str_val));
+    kphp_error(0, fmt_format("function use list: expected varname, found {}", cur->str_val));
   }
 
   return result;
