@@ -7,6 +7,55 @@
 #include "compiler/data/src-file.h"
 #include "compiler/type-hint.h"
 
+VertexRange CheckFunctionCallsPass::process_named_args(FunctionPtr func, VertexAdaptor<op_func_call> call) {
+  const auto args = call->args();
+  auto see_named = false;
+
+  const auto without_named_args = std::none_of(args.begin(), args.end(), [&see_named](const VertexPtr arg) -> bool {
+    const auto named = arg->type() == op_named_arg;
+    if (named) {
+      see_named = true;
+    }
+    // if positional arg after named
+    if (!named && see_named) {
+      kphp_error(0, "Cannot use positional argument after named argument");
+    }
+    return named;
+  });
+
+  if (without_named_args) {
+    return call->args();
+  }
+
+  const auto params = func->get_params();
+  auto params_map = std::unordered_map<std::string, size_t>(params.size());
+
+  for (int i = 0; i < params.size(); ++i) {
+    const auto &param = params[i].as<op_func_param>();
+    params_map[param->var()->str_val] = i;
+  }
+
+  auto new_call_args = std::vector<VertexPtr>(params.size());
+
+  for (const auto &arg : args) {
+    if (const auto named = arg.try_as<op_named_arg>()) {
+      const auto name = named->name()->str_val;
+      if (params_map.find(name) == params_map.end()) {
+        kphp_error(0, fmt_format("Unknown named parameter {}", name));
+        continue;
+      }
+
+      const auto param_index = params_map[name];
+      new_call_args[param_index] = named;
+    }
+  }
+
+  auto end = Vertex::iterator{&new_call_args.front()};
+  auto begin = Vertex::iterator{&new_call_args.back()};
+
+  return {begin, end + 1};
+}
+
 void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   FunctionPtr f = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
   kphp_assert(f);
@@ -27,7 +76,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   }
 
   VertexRange func_params = f->get_params();
-  VertexRange call_params = call.as<op_func_call>()->args();
+  VertexRange call_params = process_named_args(f, call.as<op_func_call>());
 
   auto actual_params_n = [f](int n) {
     // instance methods always have implicit $this param which we don't want to mention
@@ -65,6 +114,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
     }
   }
 }
+
 VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v) {
   if (v->type() == op_func_ptr || v->type() == op_func_call) {
     check_func_call(v);
