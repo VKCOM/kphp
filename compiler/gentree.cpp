@@ -1999,7 +1999,14 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   auto exception_class = cur->str_val;
   CE (expect(tok_func_name, "type that implements Throwable"));
   auto exception_var_name = get_expression();
-  CE (!kphp_error(exception_var_name, "Cannot parse catch"));
+  auto without_variable = false;
+
+  // if 'catch' without variable
+  if (!exception_var_name) {
+    exception_var_name = create_superlocal_var("catch_");
+    without_variable = true;
+  }
+
   CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
 
   CE (expect(tok_clpar, "')'"));
@@ -2008,6 +2015,7 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
 
   auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), embrace(catch_body));
   catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
+  catch_op->without_variable = without_variable;
 
   return catch_op;
 }
