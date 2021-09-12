@@ -885,7 +885,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       if (val->type() == op_int_const) {
         const string &str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
+        kphp_error(used.insert(str).second, fmt_format("Repeated case [{}] in switch/match", str));
       } else {
         kphp_assert(is_const_int(val));
         W << val;
@@ -904,7 +904,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   const auto strict_comparison = root->is_match;
-  const auto *comparison = strict_comparison ? "equals" : "eq2";
+  const auto *string_comparison_func = strict_comparison ? "equals" : "eq2";
 
   string goto_name_if_default_in_the_middle;
 
@@ -919,7 +919,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || " << comparison << "(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || " << string_comparison_func << "(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       cmd = one_case.as<op_default>()->cmd();
@@ -969,7 +969,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     // Since match uses strict comparisons, we need to additionally
     // check that the type of the expression in the condition matches
     // string or int in order to generate an optimized version.
-    const auto* condition_type = tinf::get_type(root->condition());
+    const auto *condition_type = tinf::get_type(root->condition());
     if (!condition_type) {
       compile_switch_var(root, W);
       return;

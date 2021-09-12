@@ -1,5 +1,5 @@
 @kphp_should_fail php8
-/Switch: repeated cases found \[10\]/
+/Repeated case \[10\] in switch\/match/
 <?php
 
 match(10) {
