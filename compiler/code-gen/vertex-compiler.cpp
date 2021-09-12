@@ -797,7 +797,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
   auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
-  auto default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
+  auto *default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
 
   int n = static_cast<int>(cases.size());
   std::map<unsigned int, int> hash_to_last_id;
@@ -817,7 +817,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       cases[i].next = &cases[next_i];
     }
 
-    auto next = cases[i].next;
+    auto *next = cases[i].next;
     if (next && next->goto_name.empty()) {
       next->goto_name = gen_unique_name("switch_goto");
     }
@@ -903,6 +903,9 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  const auto strict_comparison = root->is_match;
+  const auto *comparison = strict_comparison ? "equals" : "eq2";
+
   string goto_name_if_default_in_the_middle;
 
   auto temp_var_condition_on_switch = root->condition_on_switch();
@@ -916,7 +919,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || " << comparison << "(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       cmd = one_case.as<op_default>()->cmd();
@@ -943,48 +946,6 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << Label{root->break_label_id};
 }
 
-// difference with a regular switch is in strict comparison
-void compile_switch_match_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  string goto_name_if_default_in_the_middle;
-
-  const auto temp_var_condition_on_switch = root->condition_on_switch();
-  const auto temp_var_matched_with_a_case = root->matched_with_one_case();
-
-  W << "do " << BEGIN;
-  W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
-  W << temp_var_matched_with_a_case << " = false;" << NL;
-
-  for (const auto &one_case : root->cases()) {
-    VertexAdaptor<op_seq> cmd;
-
-    if (const auto cs = one_case.try_as<op_case>()) {
-      cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || equals(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
-      W << temp_var_matched_with_a_case << " = true;" << NL;
-    } else {
-      cmd = one_case.as<op_default>()->cmd();
-      W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
-      goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
-      W << goto_name_if_default_in_the_middle + ": ";
-    }
-
-    W << AsSeq{cmd};
-    W << END << NL;
-  }
-
-  if (!goto_name_if_default_in_the_middle.empty()) {
-    W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
-    W << "break;" << NL;
-    W << END << NL;
-
-    W << temp_var_matched_with_a_case << " = true;" << NL;
-    W << "goto " << goto_name_if_default_in_the_middle << ";" << NL;
-  }
-
-  W << Label{root->continue_label_id} << END;
-  W << " while(false);" << NL;
-  W << Label{root->break_label_id};
-}
 
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   kphp_assert(root->condition_on_switch()->type() == op_var && root->matched_with_one_case()->type() == op_var);
@@ -1005,7 +966,25 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   }
 
   if (root->is_match) {
-    compile_switch_match_var(root, W);
+    // Since match uses strict comparisons, we need to additionally
+    // check that the type of the expression in the condition matches
+    // string or int in order to generate an optimized version.
+    const auto* condition_type = tinf::get_type(root->condition());
+    if (!condition_type) {
+      compile_switch_var(root, W);
+      return;
+    }
+
+    const auto condition_is_string = condition_type->get_real_ptype() == tp_string;
+    const auto condition_is_int = condition_type->get_real_ptype() == tp_int;
+
+    if (all_cases_are_strings && condition_is_string) {
+      compile_switch_str(root, W);
+    } else if (all_cases_are_ints && condition_is_int) {
+      compile_switch_int(root, W);
+    } else {
+      compile_switch_var(root, W);
+    }
     return;
   }
 

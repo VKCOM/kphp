@@ -1345,11 +1345,11 @@ VertexAdaptor<op_match_default> GenTree::get_match_default() {
 VertexPtr GenTree::get_match_case() {
   auto location = auto_location();
 
-  std::vector<VertexPtr> conditions;
-
   if (cur->type() == tok_default) {
     return get_match_default();
   }
+
+  std::vector<VertexPtr> conditions;
 
   while (cur->type() != tok_double_arrow) {
     const auto cur_type = cur->type();
@@ -1361,6 +1361,9 @@ VertexPtr GenTree::get_match_case() {
     }
 
     const auto condition = get_expression();
+    if (!condition) {
+      kphp_error(0, "Could not parse expression");
+    }
 
     if (const auto &double_arrow = condition.try_as<op_double_arrow>()) {
       // if simple $expr => $return_expr
@@ -1384,11 +1387,15 @@ VertexPtr GenTree::get_match_case() {
     conditions.push_back(condition);
   }
   CE (expect(tok_double_arrow, "'=>'"));
+  // case "  => 100"
+  if (conditions.empty()) {
+    kphp_error(0, "Expected expression before token '=>'");
+  }
 
-  // Reachable only if arm does not contain '$expr => $return_expr'.
-  // Note that arm '$expr1, $expr2 => $return_expr' contains '$expr => $return_expr'.
-  kphp_error(0, "Bad match arm");
-  return VertexPtr{};
+  const auto return_expr = get_expression();
+  const auto conditions_vertex = VertexAdaptor<op_seq_comma>::create(conditions);
+
+  return VertexAdaptor<op_match_case>::create(conditions_vertex, return_expr).set_location(location);
 }
 
 VertexAdaptor<op_match> GenTree::get_match() {
