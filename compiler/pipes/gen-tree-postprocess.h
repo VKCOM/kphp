@@ -23,4 +23,5 @@ public:
 
   // converts the spread operator (...$a) to a call to the array_merge_spread function
   static VertexPtr convert_array_with_spread_operators(VertexAdaptor<op_array> array_vertex);
+  void process_property_promotion(VertexAdaptor<op_function> &fun) const;
 };

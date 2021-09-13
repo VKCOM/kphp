@@ -447,6 +447,10 @@
       "is_callable": {
         "type": "bool",
         "default": "false"
+      },
+      "access_modifier": {
+        "type": "AccessModifiers",
+        "default": "AccessModifiers::not_modifier_"
       }
     }
   },

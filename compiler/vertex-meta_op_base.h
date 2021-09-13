@@ -7,6 +7,7 @@
 #include "common/wrappers/iterator_range.h"
 
 #include "compiler/common.h"
+#include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/expr-node.h"
@@ -166,7 +167,14 @@ public:
 
   VertexPtr &back() { return ith(size() - 1); }
 
-  std::vector<VertexPtr> get_next() { return std::vector<VertexPtr>(begin(), end()); }
+  /**
+   * as_vector returns a vector which is a set of VertexPtr that
+   * should be interpreted depending on the type of the vertex.
+   *
+   * For example, for 'op_seq' this will be equivalent to a list
+   * of vertices in the sequence.
+   */
+  std::vector<VertexPtr> as_vector() { return {begin(), end()}; }
 
   bool empty() { return size() == 0; }
 

@@ -260,7 +260,7 @@ private:
     // just as ordinary positional argument:
     //   $this->fun(1, 2, 3) -> fun($this, 1, [2, 3])
 
-    const std::vector<VertexPtr> &cur_call_args = call->get_next();
+    const std::vector<VertexPtr> &cur_call_args = call->as_vector();
     auto positional_args_start = cur_call_args.begin();
 
     int min_args = func_args_n - 1; // variadic param may accept 0 args, so subtract 1
