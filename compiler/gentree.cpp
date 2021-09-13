@@ -1657,6 +1657,7 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
           var->str_val = param->var()->str_val;
 
           cur_class->members.add_instance_field(var, {}, field_modifiers, "", param->type_hint);
+          cur_function->with_property_promotion = true;
         }
       }
     }

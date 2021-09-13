@@ -106,6 +106,7 @@ public:
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
+  bool with_property_promotion = false;
 
   function_palette::ColorContainer colors{};            // colors specified with @kphp-color
   std::vector<FunctionPtr> *next_with_colors{nullptr};  // next colored functions reachable via call graph

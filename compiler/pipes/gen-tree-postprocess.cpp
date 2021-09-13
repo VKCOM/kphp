@@ -257,20 +257,17 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   }
 
   if (auto fun = root.try_as<op_function>()) {
-    process_property_promotion(fun);
+    if (fun->func_id->with_property_promotion) {
+      process_property_promotion(fun);
+    }
   }
 
   return root;
 }
 
-void GenTreePostprocessPass::process_property_promotion(VertexAdaptor<op_function> &fun) const {
-  if (!fun->func_id->is_constructor()) {
-    return;
-  }
-
+void GenTreePostprocessPass::process_property_promotion(VertexAdaptor<op_function> fun) const {
   auto promoted_params = std::vector<VertexAdaptor<op_func_param>>();
 
-  // TODO: add flag 'with_property_promotion' instead of iterating over parameters here
   const auto param_list = fun->param_list();
   for (const auto &p : param_list->params()) {
     const auto &param = p.try_as<op_func_param>();
@@ -278,10 +275,6 @@ void GenTreePostprocessPass::process_property_promotion(VertexAdaptor<op_functio
     if (param->access_modifier != AccessModifiers::not_modifier_) {
       promoted_params.push_back(param);
     }
-  }
-
-  if (promoted_params.empty()) {
-    return;
   }
 
   auto func_stmts = fun->cmd()->as_vector();
