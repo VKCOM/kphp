@@ -1,6 +1,10 @@
 @ok php8
 <?php
 
+function wrong() {
+  return "wrong";
+}
+
 function test_int($char) {
   return match ($char) {
     0 => wrong(),

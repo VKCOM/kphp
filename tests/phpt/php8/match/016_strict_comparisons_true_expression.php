@@ -1,6 +1,10 @@
 @ok php8
 <?php
 
+function wrong() {
+  return "wrong";
+}
+
 echo match (true) {
   'truthy' => wrong(),
   ['truthy'] => wrong(),
