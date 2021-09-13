@@ -300,7 +300,7 @@ void GenTreePostprocessPass::process_property_promotion(VertexAdaptor<op_functio
     func_stmts.insert(func_stmts.begin(), set_vertex);
   }
 
-  fun->cmd_ref() = VertexAdaptor<op_seq>::create(func_stmts);;
+  fun->cmd_ref() = VertexAdaptor<op_seq>::create(func_stmts);
 }
 
 VertexAdaptor<op_array> array_vertex_from_slice(const VertexRange &args, size_t start, size_t end) {
