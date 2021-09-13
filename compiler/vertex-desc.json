@@ -417,7 +417,7 @@
     }
   },
   {
-    "comment": "var(); or var() = default_value(); type hints are stored in type_hint",
+    "comment": "[access_modifier] var() [= default_value()]; type hints are stored in type_hint",
     "name": "op_func_param",
     "base_name": "meta_op_base",
     "sons": {

@@ -886,9 +886,8 @@ AccessModifiers GenTree::try_get_visibility_modifiers() {
 VertexAdaptor<op_func_param> GenTree::get_func_param() {
   auto location = auto_location();
 
-  // if is promoted property
+  // possibly promoted property
   const auto access_modifier = try_get_visibility_modifiers();
-  // if there is a modifier
   if (access_modifier != AccessModifiers::not_modifier_) {
     next_cur();
   }
@@ -904,7 +903,12 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
     is_varg = true;
   }
   if (is_varg) {
-    kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+    if (cur_function->has_variadic_param) {
+      kphp_error(0, "Function can not have ...$variadic more than once");
+    }
+    if (access_modifier != AccessModifiers::not_modifier_) {
+      kphp_error(0, "Cannot declare variadic promoted property");
+    }
     cur_function->has_variadic_param = true;
   }
 
@@ -1525,7 +1529,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 
-  for (size_t i = 1; i < params_next.size(); ++i) {
+  for (size_t i = 0; i < params_next.size(); ++i) {
     const auto &param = params_next[i];
 
     // if promoted property outside constructor
@@ -1533,7 +1537,11 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
       kphp_error(0, "Cannot declare promoted property outside a constructor");
     }
 
-    if (!param->has_default_value()) {
+    if (cur_function->local_name() == ClassData::NAME_OF_CONSTRUCT && cur_function->modifiers.is_abstract()) {
+      kphp_error(0, "Cannot declare promoted property in an abstract constructor");
+    }
+
+    if (i > 0 && !param->has_default_value()) {
       kphp_error(!params_next[i - 1]->has_default_value(), "Optional parameter is provided before required");
     }
   }
