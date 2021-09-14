@@ -327,9 +327,14 @@ VertexAdaptor<op_switch> create_switch_vertex_from_match(VertexAdaptor<op_match>
     //
     // PHP throws an UnhandledMatchError if the value is unhandled,
     // but we only give warning.
+    auto print_r = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{
+      match->condition().clone(),
+      VertexAdaptor<op_true>::create()
+    });
+    print_r->set_string("print_r");
     const auto message = VertexAdaptor<op_string_build>::create(std::vector<VertexPtr>{
       GenTree::create_string_const("Unhandled match value '"),
-      match->condition().clone(),
+      print_r,
       GenTree::create_string_const("'")
     });
     const auto args = std::vector<VertexPtr>{message};
