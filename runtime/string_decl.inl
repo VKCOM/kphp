@@ -153,7 +153,7 @@ public:
   inline void warn_on_float_conversion() const;
 
   inline bool try_to_int(int64_t *val) const;
-  inline bool try_to_float(double *val) const;
+  inline bool try_to_float(double *val, bool php8_warning = true) const;
   inline bool try_to_float_as_php7(double *val) const;
   inline bool try_to_float_as_php8(double *val) const;
 

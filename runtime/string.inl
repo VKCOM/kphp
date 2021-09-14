@@ -717,14 +717,18 @@ bool string::try_to_float_as_php7(double *val) const {
   return (end_ptr == p + size());
 }
 
-bool string::try_to_float(double *val) const {
+bool string::try_to_float(double *val, bool php8_warning) const {
   const bool is_float_php7 = try_to_float_as_php7(val);
 
-  if (show_migration_php8_warning & STRING_TO_FLOAT_FLAG) {
+  if ((show_migration_php8_warning & STRING_TO_FLOAT_FLAG) && php8_warning) {
     const bool is_float_php8 = try_to_float_as_php8(val);
 
     if (is_float_php7 != is_float_php8) {
-      php_warning("String is float result in PHP 7 and PHP 8 are different for '%s' (PHP7: %s, PHP8: %s)",
+      php_warning("Result of checking that the string is numeric in PHP 7 and PHP 8 are different for '%s' (PHP7: %s, PHP8: %s)\n"
+                  "Why does the warning appear:\n"
+                  "- string-string comparison\n"
+                  "- string-number comparison\n"
+                  "- is_numeric call",
                   p,
                   is_float_php7 ? "true" : "false",
                   is_float_php8 ? "true" : "false");
@@ -776,7 +780,7 @@ int64_t string::to_int() const {
 
 double string::to_float() const {
   double res{0};
-  try_to_float(&res); // it's ok if float number was parsed partially
+  try_to_float(&res, false); // it's ok if float number was parsed partially
   return res;
 }
 

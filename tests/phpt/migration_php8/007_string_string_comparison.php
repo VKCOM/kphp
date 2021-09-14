@@ -1,6 +1,6 @@
 @kphp_runtime_should_warn
-/String is float result in PHP 7 and PHP 8 are different for '100 ' \(PHP7: false, PHP8: true\)/
-/String is float result in PHP 7 and PHP 8 are different for '100 ' \(PHP7: false, PHP8: true\)/
+/Result of checking that the string is numeric in PHP 7 and PHP 8 are different for '100 ' \(PHP7: false, PHP8: true\)/
+/Result of checking that the string is numeric in PHP 7 and PHP 8 are different for '100 ' \(PHP7: false, PHP8: true\)/
 <?php
 
 $normal = "100";
