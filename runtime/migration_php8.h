@@ -8,6 +8,6 @@ constexpr int STRING_COMPARISON_FLAG = 1 << 0;
 
 extern int show_migration_php8_warning;
 
-bool f$set_migration_php8_warning(int mask);
+void f$set_migration_php8_warning(int mask);
 
 void free_migration_php8();

@@ -1372,4 +1372,4 @@ function zstd_uncompress(string $data) ::: string | false;
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
 function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
-function set_migration_php8_warning ($show ::: int) ::: bool;
+function set_migration_php8_warning ($show ::: int) ::: void;
