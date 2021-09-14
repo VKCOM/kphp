@@ -1682,7 +1682,7 @@ inline const char *conversion_php_warning_string() {
 
 template<>
 inline const char *conversion_php_warning_string<int64_t, string>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" SCNd64 " and \"%s\" (PHP7: %s, PHP8: %s)";
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)";
 }
 
 template<>
@@ -1692,7 +1692,7 @@ inline const char *conversion_php_warning_string<double, string>() {
 
 template<>
 inline const char *conversion_php_warning_string<string, int64_t>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" SCNd64 " (PHP7: %s, PHP8: %s)";
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" PRIi64 " (PHP7: %s, PHP8: %s)";
 }
 
 template<>

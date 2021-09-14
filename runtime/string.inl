@@ -705,19 +705,7 @@ bool string::try_to_float_as_php8(double *val) const {
   char *end_ptr = nullptr;
   *val = strtod(p, &end_ptr);
 
-  const auto is_end = end_ptr == p + size();
-  if (is_end) {
-    return true;
-  }
-
-  while (end_ptr != p + size() - 1) {
-    if (*end_ptr != ' ') {
-      return false;
-    }
-    end_ptr++;
-  }
-
-  return true;
+  return std::all_of(end_ptr, p + size(), [](char c) { return isspace(static_cast<unsigned char>(c)); });
 }
 
 bool string::try_to_float_as_php7(double *val) const {

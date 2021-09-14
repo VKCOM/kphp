@@ -6,9 +6,8 @@
 
 int show_migration_php8_warning = 0;
 
-bool f$set_migration_php8_warning(int mask) {
+void f$set_migration_php8_warning(int mask) {
   show_migration_php8_warning = mask;
-  return true;
 }
 
 static void reset_migration_php8_global_vars() {
