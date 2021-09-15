@@ -1726,7 +1726,7 @@ inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
 
 template <typename T>
 inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
-  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
@@ -1744,7 +1744,7 @@ inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rh
 
 template <typename T>
 inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
-  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;

@@ -66,7 +66,7 @@ void run_test_cases(const std::vector<TestCaseComparison<T>> &cases) {
     const auto &test = cases[i];
 
     const auto less_res = less_number_string_as_php8_impl(test.number, string(test.str));
-    const auto equal_res = equal_number_string_as_php8(test.number, string(test.str));
+    const auto equal_res = eq2_number_string_as_php8(test.number, string(test.str));
     // '$a < $b' === '$b > $a'
     const auto greater_res = less_string_number_as_php8_impl(string(test.str), test.number);
 

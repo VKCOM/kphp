@@ -4,8 +4,8 @@
 
 #pragma once
 
-constexpr int STRING_COMPARISON_FLAG = 1 << 0;
-constexpr int STRING_TO_FLOAT_FLAG = 1 << 1;
+constexpr int MIGRATION_PHP8_STRING_COMPARISON_FLAG = 1 << 0;
+constexpr int MIGRATION_PHP8_STRING_TO_FLOAT_FLAG = 1 << 1;
 
 extern int show_migration_php8_warning;
 

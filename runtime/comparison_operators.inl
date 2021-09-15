@@ -79,7 +79,7 @@ inline bool eq2(const string &lhs, bool rhs) {
 
 // see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
 template <typename T>
-inline bool equal_number_string_as_php8(T lhs, const string &rhs) {
+inline bool eq2_number_string_as_php8(T lhs, const string &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
 
@@ -92,8 +92,8 @@ inline bool equal_number_string_as_php8(T lhs, const string &rhs) {
 
 inline bool eq2(int64_t lhs, const string &rhs) {
   const auto php7_result = eq2(lhs, rhs.to_float());
-  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
-    const auto php8_result = equal_number_string_as_php8(lhs, rhs);
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+    const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }
@@ -113,8 +113,8 @@ inline bool eq2(const string &lhs, int64_t rhs) {
 
 inline bool eq2(double lhs, const string &rhs) {
   const auto php7_result = lhs == rhs.to_float();
-  if (show_migration_php8_warning & STRING_COMPARISON_FLAG) {
-    const auto php8_result = equal_number_string_as_php8(lhs, rhs);
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+    const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
     }

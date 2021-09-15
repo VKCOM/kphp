@@ -720,7 +720,7 @@ bool string::try_to_float_as_php7(double *val) const {
 bool string::try_to_float(double *val, bool php8_warning) const {
   const bool is_float_php7 = try_to_float_as_php7(val);
 
-  if ((show_migration_php8_warning & STRING_TO_FLOAT_FLAG) && php8_warning) {
+  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) && php8_warning) {
     const bool is_float_php8 = try_to_float_as_php8(val);
 
     if (is_float_php7 != is_float_php8) {
