@@ -367,10 +367,12 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     binary,
   } state = before_dot;
 
-  if (s[0] == '0' && s[1] == 'x') {
+  const auto hex_symbol = vk::any_of_equal(s[1], 'x', 'X');
+  const auto bin_symbol = vk::any_of_equal(s[1], 'b', 'B');
+  if (s[0] == '0' && hex_symbol) {
     t += 2;
     state = hex;
-  } else if (s[0] == '0' && s[1] == 'b') {
+  } else if (s[0] == '0' && bin_symbol) {
     t += 2;
     state = binary;
   }
@@ -508,7 +510,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
   }
 
   if (!is_float) {
-    if (s[0] == '0' && s[1] != 'x' && s[1] != 'b') {
+    if (s[0] == '0' && !hex_symbol && !bin_symbol) {
       for (int i = 0; i < t - s; i++) {
         if (s[i] < '0' || s[i] > '7') {
           return TokenLexerError("Bad octal number").parse(lexer_data);
