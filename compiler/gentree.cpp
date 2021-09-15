@@ -416,6 +416,21 @@ VertexPtr GenTree::get_op_num_const() {
     return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, val);
   }
 
+  if (cur->type() == tok_int_octal_const) {
+    std::string val = static_cast<string>(cur->str_val);
+    // hack, replace "o" with zero so that C++ treats the literal as valid
+    val[1] = '0';
+    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, val);
+  }
+
+  if (cur->type() == tok_int_octal_const_sep) {
+    std::string val = static_cast<string>(cur->str_val);
+    // hack, replace "o" with zero so that C++ treats the literal as valid
+    val[1] = '0';
+    check_and_remove_num_separators(val);
+    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, val);
+  }
+
   return VertexPtr{};
 }
 
@@ -492,6 +507,16 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     }
     case tok_int_const: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
+    case tok_int_octal_const: {
+      res = get_op_num_const();
+      next_cur();
+      break;
+    }
+    case tok_int_octal_const_sep: {
       res = get_op_num_const();
       next_cur();
       break;

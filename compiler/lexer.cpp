@@ -365,16 +365,21 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     finish,
     hex,
     binary,
+    octal,
   } state = before_dot;
 
   const auto hex_symbol = vk::any_of_equal(s[1], 'x', 'X');
   const auto bin_symbol = vk::any_of_equal(s[1], 'b', 'B');
+  const auto oct_symbol = vk::any_of_equal(s[1], 'o', 'O');
   if (s[0] == '0' && hex_symbol) {
     t += 2;
     state = hex;
   } else if (s[0] == '0' && bin_symbol) {
     t += 2;
     state = binary;
+  } else if (s[0] == '0' && oct_symbol) {
+    t += 2;
+    state = octal;
   }
 
   bool with_separator = false;
@@ -404,6 +409,17 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
         switch(*t) {
           case '0':
           case '1':
+            t++;
+            break;
+          default:
+            state = finish;
+            break;
+        }
+        break;
+      }
+      case octal: {
+        switch (*t) {
+          case '0' ... '7':
             t++;
             break;
           default:
@@ -510,7 +526,8 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
   }
 
   if (!is_float) {
-    if (s[0] == '0' && !hex_symbol && !bin_symbol) {
+    const auto is_implicit_octal = (s[0] == '0' && !hex_symbol && !bin_symbol && !oct_symbol);
+    if (is_implicit_octal) {
       for (int i = 0; i < t - s; i++) {
         if (s[i] < '0' || s[i] > '7') {
           return TokenLexerError("Bad octal number").parse(lexer_data);
@@ -525,6 +542,10 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
 
   if (with_separator) {
     token_type = is_float ? tok_float_const_sep : tok_int_const_sep;
+  }
+
+  if (oct_symbol) {
+    token_type = with_separator ? tok_int_octal_const_sep : tok_int_octal_const;
   }
 
   lexer_data->add_token(static_cast<int>(t - s), token_type, s, t);

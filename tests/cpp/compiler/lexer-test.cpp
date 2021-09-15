@@ -13,6 +13,8 @@ TEST(lexer_test, test_php_tokens) {
   std::vector<testCase> tests = {
     {"0x10, 0X10", {"tok_int_const(0x10)", "tok_comma(,)", "tok_int_const(0X10)"}},
     {"0b10, 0B10", {"tok_int_const(0b10)", "tok_comma(,)", "tok_int_const(0B10)"}},
+    {"0o10, 0O10", {"tok_int_octal_const(0o10)", "tok_comma(,)", "tok_int_octal_const(0O10)"}},
+    {"0o10_10",    {"tok_int_octal_const_sep(0o10_10)"}},
 
     {"exit", {"tok_func_name(exit)"}},
     {"exit()", {"tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
