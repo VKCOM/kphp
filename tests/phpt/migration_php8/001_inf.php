@@ -1,4 +1,4 @@
-@ok php8
+// disabled until php8
 <?php
 
 var_dump(INF == "INF");
