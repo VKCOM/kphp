@@ -201,6 +201,10 @@ void parse_str_set_value(mixed &arr, const string &key, const string &value) {
 }
 
 void f$parse_str(const string &str, mixed &arr) {
+  if (str.empty()) {
+    return;
+  }
+
   arr = array<mixed>();
 
   array<string> par = explode('&', str, INT_MAX);
