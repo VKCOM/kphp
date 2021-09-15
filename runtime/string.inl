@@ -914,7 +914,7 @@ bool string::is_numeric_as_php7() const {
 bool string::is_numeric() const {
   const auto php7_result = is_numeric_as_php7();
 
-  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG)) {
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) {
     const bool php8_result = is_numeric_as_php8();
 
     if (php7_result != php8_result) {
