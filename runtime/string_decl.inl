@@ -167,6 +167,8 @@ public:
   inline int64_t safe_to_int() const;
 
   inline bool is_int() const;
+  inline bool is_numeric_as_php7() const;
+  inline bool is_numeric_as_php8() const;
   inline bool is_numeric() const;
 
   inline int64_t hash() const;

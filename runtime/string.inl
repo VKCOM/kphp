@@ -727,8 +727,7 @@ bool string::try_to_float(double *val, bool php8_warning) const {
       php_warning("Result of checking that the string is numeric in PHP 7 and PHP 8 are different for '%s' (PHP7: %s, PHP8: %s)\n"
                   "Why does the warning appear:\n"
                   "- string-string comparison\n"
-                  "- string-number comparison\n"
-                  "- is_numeric call",
+                  "- string-number comparison",
                   p,
                   is_float_php7 ? "true" : "false",
                   is_float_php8 ? "true" : "false");
@@ -820,10 +819,113 @@ bool string::is_int() const {
   return php_is_int(p, size());
 }
 
+bool string::is_numeric_as_php8() const {
+  const char *s = c_str();
+  while (isspace(*s)) {
+    s++;
+  }
+
+  if (*s == '+' || *s == '-') {
+    s++;
+  }
+
+  int l = 0;
+  while (*s >= '0' && *s <= '9') {
+    l++;
+    s++;
+  }
+
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9') {
+      l++;
+      s++;
+    }
+  }
+
+  if (l == 0) {
+    return false;
+  }
+
+  if (*s == 'e' || *s == 'E') {
+    s++;
+    if (*s == '+' || *s == '-') {
+      s++;
+    }
+
+    if (*s == '\0') {
+      return false;
+    }
+
+    while (*s >= '0' && *s <= '9') {
+      s++;
+    }
+  }
+
+  return std::all_of(s, c_str() + size(), [](const char c) { return isspace(static_cast<unsigned char>(c)); });
+}
+
+bool string::is_numeric_as_php7() const {
+  const char *s = c_str();
+  while (isspace(*s)) {
+    s++;
+  }
+
+  if (*s == '+' || *s == '-') {
+    s++;
+  }
+
+  int l = 0;
+  while (*s >= '0' && *s <= '9') {
+    l++;
+    s++;
+  }
+
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9') {
+      l++;
+      s++;
+    }
+  }
+
+  if (l == 0) {
+    return false;
+  }
+
+  if (*s == 'e' || *s == 'E') {
+    s++;
+    if (*s == '+' || *s == '-') {
+      s++;
+    }
+
+    if (*s == '\0') {
+      return false;
+    }
+
+    while (*s >= '0' && *s <= '9') {
+      s++;
+    }
+  }
+
+  return *s == '\0';
+}
 
 bool string::is_numeric() const {
-  double val = 0;
-  return try_to_float(&val);
+  const auto php7_result = is_numeric_as_php7();
+
+  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG)) {
+    const bool php8_result = is_numeric_as_php8();
+
+    if (php7_result != php8_result) {
+      php_warning("is_numeric('%s') result in PHP 7 and PHP 8 are different (PHP7: %s, PHP8: %s)",
+                  p,
+                  php7_result ? "true" : "false",
+                  php8_result ? "true" : "false");
+    }
+  }
+
+  return php7_result;
 }
 
 int64_t string::hash() const {
