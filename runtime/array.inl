@@ -245,7 +245,7 @@ size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, int64_t &new_
   new_string_size = std::max(new_string_size, int64_t{0});
 
   if (new_int_size + new_string_size > MAX_HASHTABLE_SIZE) {
-    php_critical_error ("max array size exceeded");
+    php_critical_error ("max array size exceeded: int_size = %" PRIi64 ", string_size = %" PRIi64, new_int_size, new_string_size);
   }
 
   if (is_vector) {
@@ -708,7 +708,7 @@ void array<T>::mutate_to_size(int64_t int_size) {
     return;
   }
   if (unlikely(int_size > array_inner::MAX_HASHTABLE_SIZE)) {
-    php_critical_error ("max array size exceeded");
+    php_critical_error ("max array size exceeded: int_size = %" PRIi64, int_size);
   }
   const auto new_int_buff_size = static_cast<uint32_t>(int_size);
   p = static_cast<array_inner *>(dl::reallocate(p, p->sizeof_vector(new_int_buff_size), p->sizeof_vector(p->int_buf_size)));

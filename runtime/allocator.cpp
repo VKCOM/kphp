@@ -295,6 +295,16 @@ void rollback_malloc_replacement() noexcept {
   MallocHooksSwitcher::get().switch_hooks(true);
 }
 
+MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {
+  dl::enter_critical_section();
+  dl::set_current_script_allocator(memory_resource, force_enable_disable_);
+}
+
+MemoryReplacementGuard::~MemoryReplacementGuard() {
+  dl::restore_default_script_allocator(force_enable_disable_);
+  dl::leave_critical_section();
+}
+
 } // namespace dl
 
 // replace global operators new and delete for linked C++ code
