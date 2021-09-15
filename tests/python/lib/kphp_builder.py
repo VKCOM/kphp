@@ -18,6 +18,7 @@ class KphpBuilder:
         self.artifacts = {}
         self._kphp_build_stderr_artifact = None
         self._kphp_build_sanitizer_log_artifact = None
+        self._kphp_runtime_stderr = None
         self._artifacts_dir = artifacts_dir
 
         self._kphp_path = os.path.abspath(search_kphp2cpp())
@@ -35,6 +36,10 @@ class KphpBuilder:
     @property
     def kphp_build_sanitizer_log_artifact(self):
         return self._kphp_build_sanitizer_log_artifact
+
+    @property
+    def kphp_runtime_stderr(self):
+        return self._kphp_runtime_stderr
 
     @property
     def kphp_runtime_bin(self):

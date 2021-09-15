@@ -153,7 +153,9 @@ public:
   inline void warn_on_float_conversion() const;
 
   inline bool try_to_int(int64_t *val) const;
-  inline bool try_to_float(double *val) const;
+  inline bool try_to_float(double *val, bool php8_warning = true) const;
+  inline bool try_to_float_as_php7(double *val) const;
+  inline bool try_to_float_as_php8(double *val) const;
 
   inline mixed to_numeric() const;
   inline bool to_bool() const;
@@ -165,6 +167,8 @@ public:
   inline int64_t safe_to_int() const;
 
   inline bool is_int() const;
+  inline bool is_numeric_as_php7() const;
+  inline bool is_numeric_as_php8() const;
   inline bool is_numeric() const;
 
   inline int64_t hash() const;

@@ -9,6 +9,7 @@
 #include "common/algorithms/simd-int-to-string.h"
 
 #include "runtime/string_cache.h"
+#include "runtime/migration_php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
@@ -697,7 +698,17 @@ inline bool string::try_to_int(int64_t *val) const {
   return php_try_to_int(p, size(), val);
 }
 
-bool string::try_to_float(double *val) const {
+bool string::try_to_float_as_php8(double *val) const {
+  if (empty() || (size() >= 2 && p[0] == '0' && vk::any_of_equal(p[1], 'x', 'X'))) {
+    return false;
+  }
+  char *end_ptr = nullptr;
+  *val = strtod(p, &end_ptr);
+
+  return std::all_of(end_ptr, p + size(), [](char c) { return isspace(static_cast<unsigned char>(c)); });
+}
+
+bool string::try_to_float_as_php7(double *val) const {
   if (empty() || (size() >= 2 && p[0] == '0' && vk::any_of_equal(p[1], 'x', 'X'))) {
     return false;
   }
@@ -706,6 +717,25 @@ bool string::try_to_float(double *val) const {
   return (end_ptr == p + size());
 }
 
+bool string::try_to_float(double *val, bool php8_warning) const {
+  const bool is_float_php7 = try_to_float_as_php7(val);
+
+  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) && php8_warning) {
+    const bool is_float_php8 = try_to_float_as_php8(val);
+
+    if (is_float_php7 != is_float_php8) {
+      php_warning("Result of checking that the string is numeric in PHP 7 and PHP 8 are different for '%s' (PHP7: %s, PHP8: %s)\n"
+                  "Why does the warning appear:\n"
+                  "- string-string comparison\n"
+                  "- string-number comparison",
+                  p,
+                  is_float_php7 ? "true" : "false",
+                  is_float_php8 ? "true" : "false");
+    }
+  }
+
+  return is_float_php7;
+}
 
 mixed string::to_numeric() const {
   double res = to_float();
@@ -749,7 +779,7 @@ int64_t string::to_int() const {
 
 double string::to_float() const {
   double res{0};
-  try_to_float(&res); // it's ok if float number was parsed partially
+  try_to_float(&res, false); // it's ok if float number was parsed partially
   return res;
 }
 
@@ -789,8 +819,53 @@ bool string::is_int() const {
   return php_is_int(p, size());
 }
 
+bool string::is_numeric_as_php8() const {
+  const char *s = c_str();
+  while (isspace(*s)) {
+    s++;
+  }
 
-bool string::is_numeric() const {
+  if (*s == '+' || *s == '-') {
+    s++;
+  }
+
+  int l = 0;
+  while (*s >= '0' && *s <= '9') {
+    l++;
+    s++;
+  }
+
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9') {
+      l++;
+      s++;
+    }
+  }
+
+  if (l == 0) {
+    return false;
+  }
+
+  if (*s == 'e' || *s == 'E') {
+    s++;
+    if (*s == '+' || *s == '-') {
+      s++;
+    }
+
+    if (*s == '\0') {
+      return false;
+    }
+
+    while (*s >= '0' && *s <= '9') {
+      s++;
+    }
+  }
+
+  return std::all_of(s, c_str() + size(), [](const char c) { return isspace(static_cast<unsigned char>(c)); });
+}
+
+bool string::is_numeric_as_php7() const {
   const char *s = c_str();
   while (isspace(*s)) {
     s++;
@@ -834,6 +909,23 @@ bool string::is_numeric() const {
   }
 
   return *s == '\0';
+}
+
+bool string::is_numeric() const {
+  const auto php7_result = is_numeric_as_php7();
+
+  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) {
+    const bool php8_result = is_numeric_as_php8();
+
+    if (php7_result != php8_result) {
+      php_warning("is_numeric('%s') result in PHP 7 and PHP 8 are different (PHP7: %s, PHP8: %s)",
+                  p,
+                  php7_result ? "true" : "false",
+                  php8_result ? "true" : "false");
+    }
+  }
+
+  return php7_result;
 }
 
 int64_t string::hash() const {
@@ -1004,12 +1096,12 @@ int64_t compare_strings_php_order(const string &lhs, const string &rhs) {
   bool rhs_maybe_num = rhs[0] <= '9';
 
   if (lhs_maybe_num && rhs_maybe_num) {
-    int64_t lhs_int_val, rhs_int_val;
+    int64_t lhs_int_val = 0, rhs_int_val = 0;
     if (lhs.try_to_int(&lhs_int_val) && rhs.try_to_int(&rhs_int_val)) {
       return three_way_comparison(lhs_int_val, rhs_int_val);
     }
 
-    double lhs_float_val, rhs_float_val;
+    double lhs_float_val = 0, rhs_float_val = 0;
     if (lhs.try_to_float(&lhs_float_val) && rhs.try_to_float(&rhs_float_val)) {
       lhs.warn_on_float_conversion();
       rhs.warn_on_float_conversion();

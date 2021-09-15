@@ -2213,6 +2213,8 @@ static void free_runtime_libs() {
   free_instance_cache_lib();
   free_kphp_backtrace();
 
+  free_migration_php8();
+
   vk::singleton<JsonLogger>::get().reset_buffers();
   dl::enter_critical_section();//OK
   if (dl::query_num == uploaded_files_last_query_num) {

@@ -1315,3 +1315,5 @@ function zstd_compress(string $data, int $level = 3) ::: string | false;
 function zstd_uncompress(string $data) ::: string | false;
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
 function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
+
+function set_migration_php8_warning ($mask ::: int) ::: void;
