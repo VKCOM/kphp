@@ -34,7 +34,7 @@ void Model::predict(const array<array<double>> &features, ::xgboost::PredictionC
   scores.ref.reset();
 
   assert(features.size().string_size == 0);
-  ArrayAdapter adapter{features, static_cast<std::size_t>(features.size().int_size), ::xgboost::data::kAdapterUnknownSize};
+  ArrayAdapter adapter{features, static_cast<std::size_t>(features.size().int_size), booster_->GetNumFeature()};
   ::xgboost::data::SimpleDMatrix features_matrix{&adapter, std::nanf(""), 1};
   booster_->PredictDefault(features_matrix, false, scores, 0, 0);
 }
