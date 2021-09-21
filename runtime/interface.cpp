@@ -2134,23 +2134,7 @@ static void reset_global_interface_vars() {
   dl::leave_critical_section();
 }
 
-static void init_runtime_libs() {
-  // init_curl_lib() lazy called in runtime
-  init_instance_cache_lib();
-  init_confdata_functions_lib();
-
-  init_memcache_lib();
-  init_mysql_lib();
-  init_datetime_lib();
-  init_net_events_lib();
-  init_resumable_lib();
-  init_streams_lib();
-  init_rpc_lib();
-  init_openssl_lib();
-  init_math_functions();
-
-  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
-
+static void init_interface_lib() {
   shutdown_functions_count = 0;
   finished = false;
   flushed = false;
@@ -2185,8 +2169,40 @@ static void init_runtime_libs() {
   } else {
     header("Content-Type: text/html; charset=windows-1251", 45);
   }
+}
+
+static void init_runtime_libs() {
+  // init_curl_lib() lazy called in runtime
+  init_instance_cache_lib();
+  init_confdata_functions_lib();
+
+  init_memcache_lib();
+  init_mysql_lib();
+  init_datetime_lib();
+  init_net_events_lib();
+  init_resumable_lib();
+  init_streams_lib();
+  init_rpc_lib();
+  init_openssl_lib();
+  init_math_functions();
+
+  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
+
+  init_interface_lib();
 
   php_assert (dl::in_critical_section == 0);
+}
+
+static void free_interface_lib() {
+  dl::enter_critical_section();//OK
+  if (dl::query_num == uploaded_files_last_query_num) {
+    const array<bool> *const_uploaded_files = uploaded_files;
+    for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {
+      unlink(p.get_key().to_string().c_str());
+    }
+    uploaded_files_last_query_num--;
+  }
+  dl::leave_critical_section();
 }
 
 static void free_runtime_libs() {
@@ -2216,15 +2232,7 @@ static void free_runtime_libs() {
   free_migration_php8();
 
   vk::singleton<JsonLogger>::get().reset_buffers();
-  dl::enter_critical_section();//OK
-  if (dl::query_num == uploaded_files_last_query_num) {
-    const array<bool> *const_uploaded_files = uploaded_files;
-    for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {
-      unlink(p.get_key().to_string().c_str());
-    }
-    uploaded_files_last_query_num--;
-  }
-  dl::leave_critical_section();
+  free_interface_lib();
 }
 
 void global_init_runtime_libs() {
