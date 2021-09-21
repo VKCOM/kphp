@@ -73,6 +73,7 @@ string_buffer *coub;
 static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
+bool is_json_log_on_timeout_enabled = true;
 
 void f$ob_clean() {
   coub->clean();
@@ -2141,6 +2142,7 @@ static void init_interface_lib() {
 
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
+  is_json_log_on_timeout_enabled = true;
 
   static char engine_pid_buf[20];
   dl::enter_critical_section();//OK

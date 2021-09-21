@@ -180,3 +180,9 @@ template<class T>
 T f$make_clone(const T &x) {
   return x;
 }
+
+extern bool is_json_log_on_timeout_enabled;
+
+inline void f$set_json_log_on_timeout_mode(bool enabled) {
+  is_json_log_on_timeout_enabled = enabled;
+}

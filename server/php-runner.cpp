@@ -437,7 +437,7 @@ static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PHPScriptBase::tl_flag = true;
-    if (PHPScriptBase::is_running) {
+    if (PHPScriptBase::is_running && is_json_log_on_timeout_enabled) {
       vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
     }
     perform_error_if_running("timeout exit\n", script_error_t::timeout);
