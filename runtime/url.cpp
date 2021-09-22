@@ -201,7 +201,8 @@ void parse_str_set_value(mixed &arr, const string &key, const string &value) {
 }
 
 void f$parse_str(const string &str, mixed &arr) {
-  if (str.empty()) {
+  if (f$trim(str).empty()) {
+    arr = array<mixed>();
     return;
   }
 
