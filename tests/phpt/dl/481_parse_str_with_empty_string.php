@@ -18,5 +18,5 @@ parse_str(' ', $params);
 var_dump($params);
 
 $params = null;
-parse_str(' \t\n', $params);
+parse_str('\t\n', $params);
 var_dump($params);
