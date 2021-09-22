@@ -229,10 +229,6 @@ VertexAdaptor<Op> GenTree::get_func_call() {
   string name{cur->str_val};
   next_cur();
 
-  if (name == "foo") {
-    printf("sss");
-  }
-
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   vector<VertexPtr> next;

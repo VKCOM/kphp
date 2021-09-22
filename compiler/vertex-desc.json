@@ -272,7 +272,6 @@
       ]
     }
   },
-
   {
     "comment": "named argument for function call",
     "name": "op_named_arg",
@@ -292,7 +291,6 @@
       }
     }
   },
-
   {
     "comment": "any function (or method) call",
     "extras": [

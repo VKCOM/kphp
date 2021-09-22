@@ -8,8 +8,8 @@
 
 class CheckFunctionCallsPass final : public FunctionPassBase {
 private:
-  static void check_func_call(VertexPtr call);
-  static VertexRange process_named_args(FunctionPtr func, VertexAdaptor<op_func_call> call);
+  void check_func_call(VertexPtr &call);
+  VertexAdaptor<op_func_call> process_named_args(FunctionPtr func, VertexAdaptor<op_func_call> call) const;
 
 public:
   string get_description() override {

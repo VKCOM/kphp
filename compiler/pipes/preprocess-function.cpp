@@ -415,7 +415,11 @@ private:
         // conversions automatically (implicit casts), unless the file from where
         // we're calling this function is annotated with strict_types=1
         if (param->is_cast_param && implicit_cast_allowed(current_function->file_id->is_strict_types, param->type_hint)) {
-          call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
+          if (auto named_arg = call_arg.try_as<op_named_arg>()) {
+            named_arg->expr() = GenTree::conv_to_cast_param(named_arg->expr(), param->type_hint, param->var()->ref_flag);
+          } else {
+            call_arg = GenTree::conv_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
+          }
         }
 
         if (!param->is_callable) {
