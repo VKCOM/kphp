@@ -4,7 +4,7 @@ sort: 1
 
 # Compiling KPHP from sources
 
-KPHP can be compiled for Debian systems. Public builds are available for Buster and Ubuntu. For Jessie and Stretch, this can also be done with lots of backports.
+KPHP can be compiled for Debian systems. Public builds are available for Buster and Ubuntu.
 
 We have not tested if KPHP can be compiled for a non-Debian system. If you have luck, please let us know.
 

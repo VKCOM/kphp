@@ -5,11 +5,6 @@
 #ifndef COMMON_WRAPPERS_FMT_FORMAT_H
 #define COMMON_WRAPPERS_FMT_FORMAT_H
 
-#if __GNUC__ < 5
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Warray-bounds"
-#endif
-
 #include <fmt/core.h>
 
 #if __cplusplus <= 201703 || FMT_VERSION < 70000
@@ -18,10 +13,6 @@
 
 #ifndef FAST_COMPILATION_FMT
 #  include <fmt/format.h>
-#endif
-
-#if __GNUC__ < 5
-#  pragma GCC diagnostic pop
 #endif
 
 #include "common/wrappers/string_view.h"
