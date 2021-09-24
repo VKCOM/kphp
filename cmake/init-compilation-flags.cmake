@@ -1,5 +1,13 @@
 include_guard(GLOBAL)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+    check_compiler_version(clang 10.0.0)
+    set(COMPILER_CLANG True)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    check_compiler_version(gcc 8.3.0)
+    set(COMPILER_GCC True)
+endif()
+
 set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
@@ -15,12 +23,6 @@ endif()
 
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(COMPILER_CLANG True)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(COMPILER_GCC True)
-endif()
 
 option(ADDRESS_SANITIZER "Enable address sanitizer")
 if(ADDRESS_SANITIZER)
