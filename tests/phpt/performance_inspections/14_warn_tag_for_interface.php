@@ -33,6 +33,7 @@ class TestInterfaceImpl2 implements TestInterface {
 }
 
 function test() {
+  /** @var TestInterface $i */
   $i = 1 ? new TestInterfaceImpl1 : new TestInterfaceImpl2;
   $i->interface_function();
 }

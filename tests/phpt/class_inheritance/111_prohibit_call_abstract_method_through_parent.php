@@ -1,5 +1,5 @@
 @kphp_should_fail
-/call abstract methods/
+/Unknown method/
 <?php
 abstract class A {
   abstract public function foo();

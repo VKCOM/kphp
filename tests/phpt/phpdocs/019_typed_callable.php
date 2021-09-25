@@ -1,6 +1,5 @@
 @ok
 <?php
-// todo пока что phpdoc просто парсится, типизация callable не валидируется
 
 /**
  * @param callable(int, int) : int $c
@@ -12,6 +11,9 @@ function invokator1(callable $c) {
 
 invokator1(function($a, $b) { return $a + $b; });
 invokator1(function($a, $b) { return $a * $b; });
+
+$arr = [1,2,3];
+invokator1(function($a, $b) use($arr) { return $a * $b * count($arr); });
 
 
 /**

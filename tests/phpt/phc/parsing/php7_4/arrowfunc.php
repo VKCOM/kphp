@@ -138,6 +138,16 @@ function test_ternary($param) {
   var_dump($f2(600));
 }
 
+function test_typed_callable() {
+  /** @var callable(string):int */
+  $cb = fn($s) => (int)$s;
+  var_dump($cb('100500'));
+
+  $arr = [1];
+  $cb = fn($s) => strlen($s) + $arr[0];
+  var_dump($cb('asdf'));
+}
+
 test_var_call();
 test_array_map();
 test_variadic();
@@ -149,3 +159,4 @@ test_fnfn2();
 test_implicit_fnfn(40);
 test_make_id_func_of();
 test_ternary(10);
+test_typed_callable();

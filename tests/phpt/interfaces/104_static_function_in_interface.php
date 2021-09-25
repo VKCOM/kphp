@@ -1,4 +1,5 @@
 @kphp_should_fail
+/class A must be abstract: method I1::do1 is not overridden/
 <?php
 interface I1 {
   static function do1();

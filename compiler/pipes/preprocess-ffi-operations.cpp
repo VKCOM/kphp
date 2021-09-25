@@ -20,7 +20,7 @@ static void check_class_defined(const TypeHint *type_hint) {
 }
 
 static ClassPtr get_cdata_class(FunctionPtr context, VertexPtr expr) {
-  ClassPtr klass = infer_class_of_expr(context, expr).try_as_class();
+  ClassPtr klass = assume_class_of_expr(context, expr, expr).try_as_class();
   if (klass && klass->is_ffi_cdata()) {
     return klass;
   }
@@ -158,7 +158,7 @@ VertexPtr PreprocessFFIOperationsBegin::on_ffi_scope_new(VertexAdaptor<op_func_c
 VertexPtr PreprocessFFIOperationsBegin::on_exit_vertex(VertexPtr root) {
   if (auto call = root.try_as<op_func_call>()) {
     if (call->extra_type == op_ex_func_call_arrow) {
-      ClassPtr klass = resolve_class_of_arrow_access(current_function, call);
+      ClassPtr klass = resolve_class_of_arrow_access(current_function, call->args()[0], call);
       if (klass && klass->is_ffi_scope()) {
         if (call->get_string() == "new") {
           return on_ffi_scope_new(call, klass);
@@ -168,7 +168,7 @@ VertexPtr PreprocessFFIOperationsBegin::on_exit_vertex(VertexPtr root) {
         }
       }
     } else {
-      const std::string func_name = get_full_static_member_name(current_function, call->get_string());
+      const std::string func_name = call->get_string();
       if (func_name == "FFI$$new") {
         return on_ffi_static_new(call);
       }
@@ -273,7 +273,7 @@ VertexPtr PreprocessFFIOperationsEnd::on_enter_vertex(VertexPtr root) {
       return root;
     }
 
-    ClassPtr root_class = infer_class_of_expr(current_function, instance_prop->instance()).try_as_class();
+    ClassPtr root_class = assume_class_of_expr(current_function, instance_prop->instance(), instance_prop).try_as_class();
     if (!root_class) {
       return root;
     }
@@ -291,7 +291,7 @@ VertexPtr PreprocessFFIOperationsEnd::on_enter_vertex(VertexPtr root) {
 VertexPtr PreprocessFFIOperationsEnd::on_exit_vertex(VertexPtr root) {
   if (auto call = root.try_as<op_func_call>()) {
     if (call->extra_type != op_ex_func_call_arrow) {
-      const std::string func_name = get_full_static_member_name(current_function, call->get_string());
+      const std::string func_name = call->get_string();
 
       if (func_name == "count" && call->args().size() == 1) {
         if (auto c2php_conv = call->args()[0].try_as<op_ffi_c2php_conv>()) {
@@ -318,7 +318,7 @@ VertexPtr PreprocessFFIOperationsEnd::on_exit_vertex(VertexPtr root) {
       }
       return root;
     }
-    ClassPtr klass = infer_class_of_expr(current_function, call->args()[0]).try_as_class();
+    ClassPtr klass = assume_class_of_expr(current_function, call->args()[0], call).try_as_class();
     if (klass && klass->is_ffi_scope()) {
       const auto *method = klass->get_instance_method(call->get_string());
       if (!method) {
@@ -375,7 +375,7 @@ VertexPtr PreprocessFFIOperationsEnd::on_exit_vertex(VertexPtr root) {
         assign->rhs() = rhs_c2php_conv->expr();
       } else {
         auto php2c_conv = VertexAdaptor<op_ffi_php2c_conv>::create(assign->rhs()).set_location(assign->rhs());
-        const TypeHint *c_type = infer_class_of_expr(current_function, lhs).assum_hint;
+        const TypeHint *c_type = assume_class_of_expr(current_function, lhs, assign).assum_hint;
         php2c_conv->c_type = c_type;
         php2c_conv->simple_dst = lhs->type() == op_var;
         assign->rhs() = php2c_conv;

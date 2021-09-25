@@ -34,7 +34,7 @@ const Field &get_field_name(const Field &field) {
 }
 
 inline std::string get_field_name(const FunctionPtr &field) {
-  return field->get_human_readable_name();
+  return field->as_human_readable();
 }
 
 } // namespace impl_

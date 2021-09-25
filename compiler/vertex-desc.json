@@ -68,6 +68,27 @@
     }
   },
   {
+    "comment": "contains a reference to a lambda (inserted in gentree instead of a lambda)",
+    "name": "op_lambda",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "lambda"
+    },
+    "extra_fields": {
+      "func_id": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      },
+      "lambda_class": {
+        "type": "ClassPtr",
+        "default": "{}"
+      }
+    }
+  },
+  {
     "comment": "a base type for all loops (and switch, which is apparently a loop in PHP)",
     "name": "meta_op_cycle",
     "base_name": "meta_op_base",
@@ -289,6 +310,10 @@
       "func_id": {
         "type": "FunctionPtr",
         "default": "{}"
+      },
+      "instantiation_list": {
+        "type": "GenericsInstantiationMixin *",
+        "default": "nullptr"
       }
     }
   },
@@ -390,27 +415,34 @@
     }
   },
   {
+    "comment": "()-invocation, $f(...) is actually op_invoke_call($f, ...), func_id is bound after after lambdas instantiated",
+    "name": "op_invoke_call",
+    "base_name": "meta_op_varg",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_func",
+      "type": "common_op",
+      "str": "__invoke"
+    },
+    "extra_fields": {
+      "func_id": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
+    }
+  },
+  {
+    "comment": "array_map(FN, $arr) and others FN passed to built-in; FN can ref to a lambda, to __invoke method, to a function; sons are captured variables, str_val is name of function/method",
     "extras": [
       "string"
     ],
-    "sons": {
-      "bound_class": {
-        "_comment": [
-          "needed for passing to function as `this` parameter",
-          "e.g. bound_class->_invoke(args) => _invoke(bound_class, args)",
-          "in code-gen we use std::bind(_invoke, bound_class, _1, _2, ..., _n)"
-        ],
-        "id": 0,
-        "optional": true
-      }
-    },
-    "name": "op_func_ptr",
-    "base_name": "meta_op_base",
+    "name": "op_callback_of_builtin",
+    "base_name": "meta_op_varg",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_const_func",
       "type": "common_op",
-      "str": "function ptr"
+      "str": "builtin callback"
     },
     "extra_fields": {
       "func_id": {
@@ -438,6 +470,10 @@
     "extra_fields": {
       "var_id": {
         "type": "VarPtr",
+        "default": "{}"
+      },
+      "class_id": {
+        "type": "ClassPtr",
         "default": "{}"
       },
       "access_type": {
@@ -499,7 +535,7 @@
     }
   },
   {
-    "comment": "var(); or var() = default_value(); type hints are stored in type_hint",
+    "comment": "var(); or var() = default_value(); type hints and @param are stored in type_hint",
     "name": "op_func_param",
     "base_name": "meta_op_base",
     "sons": {
@@ -514,19 +550,11 @@
       }
     },
     "extra_fields": {
-      "template_type_id": {
-        "type": "int",
-        "default": -1
-      },
       "type_hint": {
         "type": "const TypeHint *",
         "default": "nullptr"
       },
       "is_cast_param": {
-        "type": "bool",
-        "default": "false"
-      },
-      "is_callable": {
         "type": "bool",
         "default": "false"
       }
@@ -568,9 +596,9 @@
   {
     "comment": "do cmd() while (cond())",
     "sons": {
-      "cond": 0,
+      "cond": 1,
       "cmd": {
-        "id": 1,
+        "id": 0,
         "type": "op_seq"
       }
     },
@@ -1865,6 +1893,12 @@
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "throw"
+    },
+    "extra_fields": {
+      "class_id": {
+        "type": "ClassPtr",
+        "default": "{}"
+      }
     }
   },
   {
@@ -1881,6 +1915,12 @@
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "clone"
+    },
+    "extra_fields": {
+      "class_id": {
+        "type": "ClassPtr",
+        "default": "{}"
+      }
     }
   },
   {

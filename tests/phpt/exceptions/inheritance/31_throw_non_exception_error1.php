@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Throw expression is not an instance or it can't be detected/
+/Throw not Throwable, but int/
 <?php
 
 throw 1;

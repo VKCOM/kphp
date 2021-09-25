@@ -1,5 +1,5 @@
 @kphp_should_fail
-/\$ab is both A and B/
+/\$ab is assumed to be both A and B/
 <?php
 
 interface IA { function foo(); }

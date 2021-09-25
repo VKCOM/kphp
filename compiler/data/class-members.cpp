@@ -152,7 +152,7 @@ void ClassMembersContainer::add_static_method(FunctionPtr function) {
 
   function->class_id = klass;
   function->context_class = klass;
-  function->is_virtual_method |= function->modifiers.is_abstract();
+  function->modifiers.set_static();
 }
 
 void ClassMembersContainer::add_instance_method(FunctionPtr function) {
@@ -161,8 +161,9 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
 
   function->class_id = klass;
   function->context_class = klass;
+  function->modifiers.set_instance();
 
-  function->get_params()[0].as<op_func_param>()->type_hint = TypeHintInstance::create(klass->name);
+  function->get_params()[0].as<op_func_param>()->type_hint = klass->type_hint;
 
   if (klass->is_interface()) {
     function->modifiers.set_abstract();
@@ -186,11 +187,6 @@ void ClassMembersContainer::add_constant(const std::string &const_name, VertexPt
   append_member(ClassMemberConstant{klass, const_name, value, access});
 }
 
-void ClassMembersContainer::safe_add_instance_method(FunctionPtr function) {
-  AutoLocker<Lockable *> locker(&(*klass));
-  add_instance_method(function);
-}
-
 bool ClassMembersContainer::has_constant(vk::string_view local_name) const {
   return member_exists(ClassMemberConstant::hash_name(local_name));
 }
@@ -207,31 +203,11 @@ bool ClassMembersContainer::has_static_method(vk::string_view local_name) const 
   return member_exists(ClassMemberStaticMethod::hash_name(replace_backslashes(klass->name) + "$$" + local_name));
 }
 
-bool ClassMembersContainer::has_any_instance_var() const {
-  return !instance_fields.empty();
-}
-
-bool ClassMembersContainer::has_any_instance_method() const {
-  return !instance_methods.empty();
-}
-
-bool ClassMembersContainer::has_any_static_var() const {
-  return !static_fields.empty();
-}
-
-bool ClassMembersContainer::has_any_static_method() const {
-  return !static_methods.empty();
-}
-
 FunctionPtr ClassMembersContainer::get_constructor() const {
-  if (auto construct_method = get_instance_method(ClassData::NAME_OF_CONSTRUCT)) {
+  if (const auto *construct_method = get_instance_method(ClassData::NAME_OF_CONSTRUCT)) {
     return construct_method->function;
   }
   return {};
-}
-
-size_t ClassMembersContainer::count_of_instance_methods() const {
-  return instance_methods.size();
 }
 
 const ClassMemberStaticMethod *ClassMembersContainer::get_static_method(vk::string_view local_name) const {

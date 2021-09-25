@@ -12,19 +12,17 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
-#include "compiler/phpdoc.h"
+#include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/data/define-data.h"
 
 const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
 const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
-const char *ClassData::NAME_OF_INVOKE_METHOD = "__invoke";
 const char *ClassData::NAME_OF_TO_STRING = "__toString";
 
 ClassData::ClassData(ClassType type) :
@@ -33,18 +31,20 @@ ClassData::ClassData(ClassType type) :
   type_data(TypeData::create_for_class(ClassPtr(this))) {
 }
 
-void ClassData::set_name_and_src_name(const string &name, vk::string_view phpdoc_str) {
-  this->name = name;
-  this->src_name = std::string("C$").append(replace_backslashes(name));
+void ClassData::set_name_and_src_name(const std::string &full_name) {
+  this->name = full_name;
+  this->src_name = std::string("C$").append(replace_backslashes(full_name));
   this->header_name = replace_characters(src_name + ".h", '$', '@');
-  this->phpdoc_str = phpdoc_str;
+  this->type_hint = TypeHintInstance::create(full_name);
 
-  size_t pos = name.find_last_of('\\');
-  std::string namespace_name = pos == std::string::npos ? "" : name.substr(0, pos);
-  std::string class_name = pos == std::string::npos ? name : name.substr(pos + 1);
+  size_t pos = full_name.find_last_of('\\');
+  std::string namespace_name = pos == std::string::npos ? "" : full_name.substr(0, pos);
+  std::string class_name = pos == std::string::npos ? full_name : full_name.substr(pos + 1);
 
   this->can_be_php_autoloaded = file_id && namespace_name == file_id->namespace_name && class_name == file_id->short_file_name;
   this->can_be_php_autoloaded |= this->is_builtin();
+
+  this->is_lambda = vk::string_view{full_name}.starts_with("Lambda$") || vk::string_view{full_name}.starts_with("ITyped$");
 }
 
 void ClassData::debugPrint() {
@@ -70,8 +70,12 @@ void ClassData::debugPrint() {
   });
 }
 
-std::string ClassData::get_namespace() const {
-  return file_id->namespace_name;
+std::string ClassData::as_human_readable() const {
+  if (is_typed_callable_interface()) {
+    const auto *m_invoke = get_instance_method("__invoke");
+    return m_invoke ? m_invoke->function->as_human_readable() : name;
+  }
+  return name;
 }
 
 FunctionPtr ClassData::gen_holder_function(const std::string &name) {
@@ -84,34 +88,6 @@ FunctionPtr ClassData::gen_holder_function(const std::string &name) {
   holder_function->class_id = ClassPtr{this};
   holder_function->context_class = ClassPtr{this};
   return holder_function;
-}
-
-FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return_value) {
-  std::string magic_func_name = replace_backslashes(name) + "$$" + magic_name;
-
-  auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
-
-  VertexAdaptor<op_seq> body;
-  if (!modifiers.is_abstract()) {
-    auto wrapped_return_value = VertexAdaptor<op_return>::create(return_value);
-    body = VertexAdaptor<op_seq>::create(wrapped_return_value);
-  } else {
-    body = VertexAdaptor<op_seq>::create();
-  }
-
-  auto virt_magic_func = VertexAdaptor<op_function>::create(param_list, body);
-  auto virt_magic_func_ptr = FunctionData::create_function(magic_func_name, virt_magic_func, FunctionData::func_local);
-  virt_magic_func_ptr->file_id = file_id;
-  virt_magic_func_ptr->update_location_in_body();
-  virt_magic_func_ptr->assumption_return_status = AssumptionStatus::initialized;
-  virt_magic_func_ptr->assumption_for_return = Assumption(ClassPtr{this});
-  virt_magic_func_ptr->is_inline = true;
-  virt_magic_func_ptr->modifiers = FunctionModifiers::instance_public();
-  virt_magic_func.set_location_recursively(Location(location_line_num));
-
-  members.add_instance_method(virt_magic_func_ptr);
-
-  return virt_magic_func_ptr;
 }
 
 /**
@@ -128,8 +104,26 @@ FunctionPtr ClassData::add_magic_method(const char *magic_name, VertexPtr return
  */
 FunctionPtr ClassData::add_virt_clone() {
   auto clone_this = VertexAdaptor<op_clone>::create(gen_vertex_this(Location{}));
-  auto virt_clone = add_magic_method(NAME_OF_VIRT_CLONE, clone_this);
-  return virt_clone;
+  clone_this->class_id = get_self();
+
+  std::string virt_clone_f_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
+
+  auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
+  auto body = !modifiers.is_abstract()
+              ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this))
+              : VertexAdaptor<op_seq>::create();
+  auto v_op_function = VertexAdaptor<op_function>::create(param_list, body);
+
+  FunctionPtr f_virt_clone = FunctionData::create_function(virt_clone_f_name, v_op_function, FunctionData::func_local);
+  f_virt_clone->file_id = file_id;
+  f_virt_clone->assumption_return_status = AssumptionStatus::initialized;
+  f_virt_clone->assumption_for_return = Assumption(ClassPtr{this});
+  f_virt_clone->is_inline = true;
+  f_virt_clone->modifiers = FunctionModifiers::instance_public();
+  f_virt_clone->root.set_location_recursively(Location(location_line_num));
+
+  members.add_instance_method(f_virt_clone);    // don't need a lock here, it's invoked from a sync pipe
+  return f_virt_clone;
 }
 
 void ClassData::add_class_constant() {
@@ -168,7 +162,7 @@ void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list,
   create_constructor(func);
   construct_function->phpdoc_str = phpdoc;
 
-  G->require_function(construct_function, os);
+  G->register_and_require_function(construct_function, os, true);
 }
 
 void ClassData::create_constructor(VertexAdaptor<op_function> func) {
@@ -183,7 +177,6 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   ctor_function->is_inline = true;
   ctor_function->modifiers = FunctionModifiers::instance_public();
   members.add_instance_method(ctor_function);
-  G->register_function(ctor_function);
 }
 
 bool ClassData::is_parent_of(ClassPtr other) const {
@@ -218,12 +211,6 @@ std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) co
     return {self};
   }
 
-  if (is_lambda() && other->is_interface() && self.as<LambdaClassData>()->can_implement_interface(other)) {
-    return {other};
-  } else if (other->is_lambda() && is_interface() && other.as<LambdaClassData>()->can_implement_interface(self)) {
-    return {self};
-  }
-
   std::queue<ClassPtr> active_ancestors;
   active_ancestors.push(self);
 
@@ -249,11 +236,9 @@ std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) co
 }
 
 static const ClassMemberInstanceMethod *find_method_in_interface(InterfacePtr interface, vk::string_view local_name) {
-  {
-    AutoLocker<Lockable*> locker(&(*interface));
-    if (const auto *member = interface->members.find_by_local_name<ClassMemberInstanceMethod>(local_name)) {
-      return member;
-    }
+  // we don't lock the class here: it's assumed, that members are not inserted concurrently
+  if (const auto *member = interface->members.find_by_local_name<ClassMemberInstanceMethod>(local_name)) {
+    return member;
   }
 
   // interfaces can extend multiple other interfaces; these interfaces are stored in 'implements' member
@@ -265,24 +250,13 @@ static const ClassMemberInstanceMethod *find_method_in_interface(InterfacePtr in
   return nullptr;
 }
 
-static const ClassMemberInstanceMethod *find_method_in_interface_list(const std::vector<InterfacePtr> &interfaces, vk::string_view local_name) {
-  for (InterfacePtr interface : interfaces) {
-    if (const auto *member = find_method_in_interface(interface, local_name)) {
-      return member;
-    }
-  }
-  return nullptr;
-}
-
 const ClassMemberInstanceMethod *ClassData::find_instance_method_by_local_name(vk::string_view local_name) const {
   const ClassMemberInstanceMethod *result{nullptr};
 
   ClassPtr current = get_self();
-  while (true) {
-    const auto *member = ({
-      AutoLocker<Lockable*> locker(&(*current));
-      current->members.find_by_local_name<ClassMemberInstanceMethod>(local_name);
-    });
+  while (current) {
+    // we don't lock the class here: it's assumed, that members are not inserted concurrently
+    const auto *member = current->members.find_by_local_name<ClassMemberInstanceMethod>(local_name);
 
     if (member) {
       if (!member->function->modifiers.is_abstract()) {
@@ -295,32 +269,18 @@ const ClassMemberInstanceMethod *ClassData::find_instance_method_by_local_name(v
 
     // if we already found some abstract implementation, don't bother with interfaces traversal
     if (!result) {
-      result = find_method_in_interface_list(current->implements, local_name);
+      for (InterfacePtr interface : current->implements) {
+        if (const auto *member = find_method_in_interface(interface, local_name)) {
+          result = member;
+          break;
+        }
+      }
     }
 
-    if (!current->parent_class) {
-      break;
-    }
     current = current->parent_class;
   }
 
   return result;
-}
-
-const ClassMemberInstanceMethod *ClassData::get_instance_method(vk::string_view local_name) const {
-  return find_instance_method_by_local_name(local_name);
-}
-
-const ClassMemberInstanceField *ClassData::get_instance_field(vk::string_view local_name) const {
-  return find_by_local_name<ClassMemberInstanceField>(local_name);
-}
-
-const ClassMemberStaticField *ClassData::get_static_field(vk::string_view local_name) const {
-  return find_by_local_name<ClassMemberStaticField>(local_name);
-}
-
-const ClassMemberConstant *ClassData::get_constant(vk::string_view local_name) const {
-  return find_by_local_name<ClassMemberConstant>(local_name);
 }
 
 FunctionPtr ClassData::get_holder_function() const {
@@ -338,11 +298,11 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
   return this_var;
 }
 
-std::vector<ClassPtr> ClassData::get_all_inheritors() const {
+std::vector<ClassPtr> ClassData::get_all_derived_classes() const {
   std::vector<ClassPtr> inheritors{get_self()};
   for (int last_derived_indx = 0; last_derived_indx != inheritors.size(); ++last_derived_indx) {
-    auto &new_derived = inheritors[last_derived_indx]->derived_classes;
-    inheritors.insert(inheritors.end(), new_derived.begin(), new_derived.end());
+    const auto &cur_derived = inheritors[last_derived_indx]->derived_classes;
+    inheritors.insert(inheritors.end(), cur_derived.begin(), cur_derived.end());
   }
   return inheritors;
 }
@@ -389,9 +349,9 @@ bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked
     });
 }
 
-bool ClassData::does_need_codegen(ClassPtr c) {
-  return c && !c->is_builtin() && !c->is_trait() &&
-         (c->really_used || c->is_tl_class);
+bool ClassData::does_need_codegen() const {
+  return !is_builtin() && !is_trait() &&
+         (really_used || is_tl_class);
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
@@ -409,10 +369,6 @@ void ClassData::mark_as_used() {
   for (const auto &interface : implements) {
     interface->mark_as_used();
   }
-}
-
-bool ClassData::has_no_derived_classes() const {
-  return (!implements.empty() || does_need_codegen(parent_class)) && derived_classes.empty();
 }
 
 template<std::atomic<bool> ClassData::*field_ptr>
@@ -460,7 +416,7 @@ void ClassData::deeply_require_virtual_builtin_functions() {
 }
 
 void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name) {
-  auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(class_name), '\\');
+  auto full_class_name = resolve_uses(cur_function, static_cast<std::string>(class_name));
   str_dependents.emplace_back(type, full_class_name);
 }
 

@@ -1,6 +1,6 @@
 @kphp_should_fail
-/left operand of 'instanceof' should be an instance of class, but passed type 'int'/
-/left operand of 'instanceof' should be an instance of class, but passed type 'int'/
+/left operand of 'instanceof' should be an instance, but passed int/
+/left operand of 'instanceof' should be an instance, but passed int/
 <?php
 
 interface IBase {}

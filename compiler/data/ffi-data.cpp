@@ -65,7 +65,7 @@ static ClassPtr register_builtin_class(const FFIBuiltinType *builtin, DataStream
   bool is_ref = static_cast<bool>(non_ref);
   auto cdata_class = ClassPtr{new ClassData{ClassType::ffi_cdata}};
   cdata_class->ffi_class_mixin = new FFIClassDataMixin{&builtin->type, "C", non_ref};
-  cdata_class->set_name_and_src_name(is_ref ? "&" + builtin->php_class_name : builtin->php_class_name, "");
+  cdata_class->set_name_and_src_name(is_ref ? "&" + builtin->php_class_name : builtin->php_class_name);
   cdata_class->src_name = is_ref ? "CDataRef<" + builtin->c_name + ">" : builtin->src_name;
 
   G->register_class(cdata_class);

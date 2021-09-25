@@ -4,8 +4,6 @@
 
 #include "compiler/pipes/sort-and-inherit-classes.h"
 
-#include <unordered_map>
-
 #include "common/algorithms/compare.h"
 #include "common/algorithms/contains.h"
 #include "common/algorithms/hashes.h"
@@ -13,55 +11,12 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/function-pass.h"
-#include "compiler/gentree.h"
-#include "compiler/phpdoc.h"
+#include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/pipes/clone-nested-lambdas.h"
 #include "compiler/utils/string-utils.h"
 
-// This pass takes functions like baseclassname$$fname$$contextclassname
-// that were cloned from the parent tree.
-//
-// This pass should go away in the future when lambdas will be handled
-// after the gentree (not during it).
-class PatchInheritedMethodPass final : public FunctionPassBase {
-  DataStream<FunctionPtr> &function_stream;
-public:
-  string get_description() override {
-    return "Patch inherited methods";
-  }
-  explicit PatchInheritedMethodPass(DataStream<FunctionPtr> &function_stream) :
-    function_stream(function_stream) {}
-
-  VertexPtr on_enter_vertex(VertexPtr root) override {
-    if (auto call = root.try_as<op_func_call>()) {
-      if (!call->args().empty()) {
-        if (auto alloc = call->args()[0].try_as<op_alloc>()) {
-          if (auto lambda_class = alloc->allocated_class.try_as<LambdaClassData>()) {
-            FunctionPtr invoke_method = lambda_class->members.get_instance_method(ClassData::NAME_OF_INVOKE_METHOD)->function;
-            vector<VertexAdaptor<op_func_param>> uses_of_lambda;
-
-            lambda_class->members.for_each([&](ClassMemberInstanceField &f) {
-              auto new_var_use = VertexAdaptor<op_var>::create().set_location(f.root);
-              new_var_use->set_string(std::string{f.local_name()});
-              auto func_param = VertexAdaptor<op_func_param>::create(new_var_use).set_location(f.root);
-
-              uses_of_lambda.insert(uses_of_lambda.begin(), func_param);
-            });
-
-            return GenTree::generate_anonymous_class(invoke_method->root, current_function, true, std::move(uses_of_lambda))
-              .require(function_stream)
-              .get_generated_lambda()
-              ->gen_constructor_call_pass_fields_as_args();
-          }
-        }
-      }
-    }
-
-    return root;
-  }
-};
 
 TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
@@ -86,10 +41,10 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
         auto parent_function = parent_member->function;
 
         kphp_error(parent_function->modifiers.is_abstract() || !parent_function->modifiers.is_final(),
-                   fmt_format("You cannot override final method: {}", method.function->get_human_readable_name()));
+                   fmt_format("You cannot override final method: {}", method.function->as_human_readable()));
 
         kphp_error(parent_function->modifiers.access_modifier() == method.function->modifiers.access_modifier(),
-                   fmt_format("Can not change access type for method: {}", method.function->get_human_readable_name()));
+                   fmt_format("Can not change access type for method: {}", method.function->as_human_readable()));
 
         method.function->is_overridden_method = true;
 
@@ -109,26 +64,6 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
   }
 }
 
-template<class ClassMemberT>
-class CheckParentDoesntHaveMemberWithSameName {
-private:
-  ClassPtr c;
-
-public:
-  explicit CheckParentDoesntHaveMemberWithSameName(ClassPtr cur_class) :
-    c(cur_class) {
-  }
-
-  void operator()(const ClassMemberT &member) const {
-    auto field_name = member.local_name();
-    auto par = c->parent_class;
-    bool parent_has_instance_or_static_field = par->get_instance_field(field_name) ||
-                                               (!std::is_same<ClassMemberT, ClassMemberStaticField>{} && par->get_static_field(field_name));
-    kphp_error(!parent_has_instance_or_static_field,
-               fmt_format("You may not override field: `{}`, in class: `{}`", field_name, c->name));
-  }
-};
-
 bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &function_stream) {
   if (from->modifiers.is_instance() && to_class->members.has_instance_method(from->local_name())) {
     return false;
@@ -136,8 +71,9 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
     return false;
   }
 
-  auto new_root = from->root.clone();
-  auto cloned_fun = FunctionData::clone_from(replace_backslashes(to_class->name) + "$$" + from->local_name(), from, new_root);
+  std::string cloned_fname = replace_backslashes(to_class->name) + "$$" + from->local_name();
+  FunctionPtr cloned_fun = FunctionData::clone_from(from, cloned_fname);
+  CloneNestedLambdasPass::run_if_lambdas_inside(cloned_fun, &function_stream);
   if (from->modifiers.is_instance()) {
     to_class->members.add_instance_method(cloned_fun);
   } else if (from->modifiers.is_static()) {
@@ -190,19 +126,9 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
   auto new_return = VertexAdaptor<op_return>::create(new_func_call);
   auto new_cmd = VertexAdaptor<op_seq>::create(new_return);
   auto new_param_list = parent_f->root->param_list().clone();
-  auto func = VertexAdaptor<op_function>::create(new_param_list, new_cmd);
-  func->copy_location_and_flags(*parent_f->root);
+  auto func = VertexAdaptor<op_function>::create(new_param_list, new_cmd).set_location(parent_f->root);
 
   return func;
-}
-
-// Clone the baseclassname$$fname function into the contextual baseclassname$$fname$$contextclassname.
-// Contextual functions are needed for the static inheritance implementation.
-FunctionPtr SortAndInheritClassesF::create_function_with_context(FunctionPtr parent_f, const std::string &ctx_function_name) {
-  auto root = parent_f->root.clone();
-  auto context_function = FunctionData::clone_from(ctx_function_name, parent_f, root);
-
-  return context_function;
 }
 
 void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method, DataStream<FunctionPtr> &function_stream) {
@@ -216,35 +142,33 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
     return;
   }
 
-  if (auto child_method = child_class->members.get_static_method(local_name)) {
-    kphp_error_return(!parent_f->modifiers.is_final(),
-                      fmt_format("Can not override method marked as 'final': {}", parent_f->get_human_readable_name()));
-    kphp_error_return(!(parent_method.function->modifiers.is_static() && parent_method.function->modifiers.is_private()),
-                      fmt_format("Can not override private method: {}", parent_f->get_human_readable_name()));
-    kphp_error_return(parent_method.function->modifiers.access_modifier() == child_method->function->modifiers.access_modifier(),
-                      fmt_format("Can not change access type for method: {}", child_method->function->get_human_readable_name()));
+  if (const auto *child_method = child_class->members.get_static_method(local_name)) {
+    kphp_error(!parent_f->modifiers.is_final(),
+               fmt_format("Can not override method marked as 'final': {}", parent_f->as_human_readable()));
+    kphp_error(!(parent_method.function->modifiers.is_static() && parent_method.function->modifiers.is_private()),
+               fmt_format("Can not override private method: {}", parent_f->as_human_readable()));
+    kphp_error(parent_method.function->modifiers.access_modifier() == child_method->function->modifiers.access_modifier(),
+               fmt_format("Can not change access type for method: {}", child_method->function->as_human_readable()));
+    kphp_error(!(!parent_f->modifiers.is_abstract() && child_method->function->modifiers.is_abstract()),
+               fmt_format("Can not make non-abstract method {} abstract in class {}", parent_f->as_human_readable(), child_class->name));
   } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
     string new_name = replace_backslashes(child_class->name) + "$$" + parent_method.local_name();
-    FunctionPtr child_function = FunctionData::clone_from(new_name, parent_f, child_root);
+    FunctionPtr child_function = FunctionData::clone_from(parent_f, new_name, child_root);
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;
 
-    // only static inheritance is supported right now
     child_class->members.add_static_method(child_function);
-
     G->register_and_require_function(child_function, function_stream);
   }
 
   // contextual function has a name like baseclassname$$fname$$contextclassname;
-  // it's a cloned tree of baseclassname$$fname (parent_f) + kludge for lambdas (which should eventually go away)
-  string ctx_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
-  FunctionPtr context_function = create_function_with_context(parent_f, ctx_function_name);
+  // it's a cloned tree of baseclassname$$fname (parent_f) + kludge for lambdas
+  std::string ctx_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
+  FunctionPtr context_function = FunctionData::clone_from(parent_f, ctx_function_name);
   context_function->context_class = child_class;
-
-  PatchInheritedMethodPass pass(function_stream);
-  run_function_pass(context_function, &pass);
+  CloneNestedLambdasPass::run_if_lambdas_inside(context_function, &function_stream);
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
 
@@ -274,8 +198,14 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
       inherit_static_method_from_parent(child_class, m, function_stream);
     });
+    parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
+      if (const auto *method = child_class->members.get_instance_method(m.local_name())) {
+        kphp_error(!(!m.function->modifiers.is_abstract() && method->function->modifiers.is_abstract()),
+                   fmt_format("Can not make non-abstract method {} abstract in class {}", m.function->as_human_readable(), child_class->name));
+      }
+    });
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
-      if (auto field = child_class->members.get_static_field(f.local_name())) {
+      if (const auto *field = child_class->members.get_static_field(f.local_name())) {
         kphp_error(!f.modifiers.is_private(),
                    fmt_format("Can't redeclare private static field {} in class {}\n", f.local_name(), child_class->name));
 
@@ -319,7 +249,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
 
       for (size_t j = i + 1; j < traits.size(); ++j) {
         if (traits[j]->members.has_instance_method(method->local_name()) || traits[j]->members.has_static_method(method->local_name())) {
-          kphp_error(false, fmt_format("in class: {}, you have methods collision: {}", ready_class->get_name(), method->get_human_readable_name()));
+          kphp_error(false, fmt_format("in class: {}, you have methods collision: {}", ready_class->as_human_readable(), method->as_human_readable()));
         }
       }
     };
@@ -339,8 +269,8 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
   if (ready_class->is_class()) {
     ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
       if (m.function->modifiers.is_abstract()) {
-        kphp_error(ready_class->modifiers.is_abstract(), fmt_format("class: {} must be declared abstract, because of abstract method: {}",
-                                                                    ready_class->get_name(), m.function->get_human_readable_name()));
+        kphp_error(ready_class->modifiers.is_abstract(),
+                   fmt_format("class {} must be declared abstract, as it has an abstract method {}", ready_class->as_human_readable(), m.local_name()));
       }
     });
   }
@@ -380,16 +310,6 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
   }
 
   klass->create_default_constructor_if_required(function_stream);
-
-  if (!klass->phpdoc_str.empty()) {
-    analyze_class_phpdoc(klass);
-  }
-}
-
-inline void SortAndInheritClassesF::analyze_class_phpdoc(ClassPtr klass) {
-  if (phpdoc_tag_exists(klass->phpdoc_str, php_doc_tag::kphp_memcache_class)) {
-    G->set_memcache_class(klass);
-  }
 }
 
 void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os) {
@@ -426,7 +346,8 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   DataStream<FunctionPtr> generated_self_methods{true};
   auto classes = G->get_classes();
-  for (auto c : classes) {
+
+  for (ClassPtr c : classes) {
     auto node = ht.at(vk::std_hash(c->name));
     if (!node->data.done) {
       auto is_not_done = [](const ClassData::StrDependence &dep) { return !ht.at(vk::std_hash(dep.class_name))->data.done; };
@@ -437,26 +358,35 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
     }
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
-      if (vk::any_of(c->get_all_inheritors(), [](ClassPtr c) { return c->is_class(); })) {
+      if (vk::any_of(c->get_all_derived_classes(), [](ClassPtr c) { return c->is_class(); })) {
         auto virt_clone = c->add_virt_clone();
         G->register_and_require_function(virt_clone, generated_self_methods, true);
       }
     }
   }
 
-  for (auto c : classes) {
+  for (ClassPtr c : classes) {
     bool is_top_of_hierarchy = !c->parent_class && c->implements.empty() && !c->derived_classes.empty();
     if (is_top_of_hierarchy) {
       mark_virtual_and_overridden_methods(c, generated_self_methods);
     }
 
+    // check that members of this class don't conflict with parent's
+    // we are in on_finish() of a sync block, all classes have been parsed and are not modified by other threads: no locks
     if (c->parent_class) {
-      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberInstanceField>{c});
-      c->members.for_each(CheckParentDoesntHaveMemberWithSameName<ClassMemberStaticField>{c});
-
-      c->members.for_each([&c](const ClassMemberStaticMethod &m) {
+      c->members.for_each([c](const ClassMemberInstanceField &f) {
+        auto field_name = f.local_name();
+        kphp_error(!c->parent_class->get_instance_field(field_name) && !c->parent_class->get_static_field(field_name),
+                   fmt_format("You may not override field ${} in class {}", field_name, c->name));
+      });
+      c->members.for_each([c](const ClassMemberStaticField &f) {
+        auto field_name = f.local_name();
+        kphp_error(!c->parent_class->get_instance_field(field_name),
+                   fmt_format("You may not override field ${} in class {}", field_name, c->name));
+      });
+      c->members.for_each([c](const ClassMemberStaticMethod &m) {
         kphp_error(!c->parent_class->get_instance_method(m.local_name()),
-                   fmt_format("Cannot make non static method `{}` static", m.function->get_human_readable_name()));
+                   fmt_format("Cannot make non-static method {}() static", m.function->as_human_readable()));
       });
     }
 

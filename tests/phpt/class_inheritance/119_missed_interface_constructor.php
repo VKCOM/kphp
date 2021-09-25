@@ -1,5 +1,5 @@
 @kphp_should_fail
-/class: A must be abstract, method: I::__construct is not overridden/
+/class A must be abstract: method I::__construct is not overridden/
 <?php
 
 interface I {

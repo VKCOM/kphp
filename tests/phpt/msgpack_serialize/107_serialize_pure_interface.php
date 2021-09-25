@@ -1,5 +1,5 @@
 @kphp_should_fail
-/You may not serialize class without @kphp-serializable tag IntA/
+/Called instance_serialize\(\) for class IntA, but it's not marked with @kphp-serializable/
 <?php
 
 require_once 'kphp_tester_include.php';

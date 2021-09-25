@@ -57,7 +57,8 @@ private:
     int num_params = type->members.size() - 1; // [0] stores return type, it's not a param
     vector<VertexAdaptor<op_func_param>> params;
     params.reserve(1 + num_params); // +1 due to $this param
-    ClassData::patch_func_add_this(params, call->location);
+    // todo
+//    ClassData::patch_func_add_this(params, call->location);
     for (int i = 1; i < type->members.size(); i++) {
       const FFIType *ffi_type = type->members[i];
       auto var = VertexAdaptor<op_var>::create().set_location(call->location);
@@ -95,13 +96,13 @@ private:
 
     auto cdata_class = ClassPtr{new ClassData{ClassType::ffi_cdata}};
     cdata_class->ffi_class_mixin = new FFIClassDataMixin{type, result.scope};
-    cdata_class->set_name_and_src_name(FFIRoot::cdata_class_name(result.scope, type->str), "");
+    cdata_class->set_name_and_src_name(FFIRoot::cdata_class_name(result.scope, type->str));
     cdata_class->src_name = "C$FFI$CData<" + ffi_mangled_decltype_string(result.scope, type) + ">";
     cdata_class->add_str_dependent(current_function, ClassType::klass, "\\FFI\\CData");
 
     auto cdata_class_ref = ClassPtr{new ClassData{ClassType::ffi_cdata}};
     cdata_class_ref->ffi_class_mixin = new FFIClassDataMixin{type, result.scope, cdata_class};
-    cdata_class_ref->set_name_and_src_name("&" + cdata_class->name, "");
+    cdata_class_ref->set_name_and_src_name("&" + cdata_class->name);
     cdata_class_ref->src_name = "CDataRef<" + ffi_mangled_decltype_string(result.scope, type) + ">";
     cdata_class_ref->add_str_dependent(current_function, ClassType::klass, "\\FFI\\CData");
 
@@ -129,7 +130,7 @@ private:
 
     auto scope_class = ClassPtr{new ClassData{ClassType::ffi_scope}};
     scope_class->ffi_scope_mixin = scope;
-    scope_class->set_name_and_src_name(FFIRoot::scope_class_name(result.scope), "");
+    scope_class->set_name_and_src_name(FFIRoot::scope_class_name(result.scope));
     scope_class->src_name = "C$FFI$Scope";
     scope_class->file_id = current_function->file_id;
     scope_class->add_str_dependent(current_function, ClassType::klass, "\\FFI\\Scope");
@@ -261,7 +262,7 @@ VertexPtr RegisterFFIScopes::on_exit_vertex(VertexPtr root) {
   auto call = root.as<op_func_call>();
 
   if (call->extra_type != op_ex_func_call_arrow) {
-    const std::string method_name = get_full_static_member_name(current_function, call->get_string());
+    const std::string method_name = call->get_string();
     if (method_name == "FFI$$load") {
       return on_ffi_load(call);
     }

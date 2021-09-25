@@ -17,7 +17,7 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, std::unique_ptr<CodeGenRoot
   using Base = SyncPipeF<FunctionPtr, WriterData>;
 
   void prepare_generate_function(FunctionPtr func);
-  std::string get_subdir(const std::string &base);
+  std::string calc_subdir_for_function(FunctionPtr func);
   size_t calc_count_of_parts(size_t cnt_global_vars);
 
 public:

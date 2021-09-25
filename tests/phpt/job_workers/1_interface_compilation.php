@@ -1,8 +1,8 @@
 @ok
 <?php
 
-function test_compilation($x) {
-  if (!$x) {
+function test_compilation($should_start) {
+  if (!$should_start) {
     return;
   }
 

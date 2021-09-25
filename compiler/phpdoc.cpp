@@ -41,6 +41,7 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-extern-func-info",     kphp_extern_func_info},
   {"@kphp-pure-function",        kphp_pure_function},
   {"@kphp-template",             kphp_template},
+  {"@kphp-param",                kphp_param},
   {"@kphp-return",               kphp_return},
   {"@kphp-memcache-class",       kphp_memcache_class},
   {"@kphp-immutable-class",      kphp_immutable_class},
@@ -131,9 +132,13 @@ const TypeHint *PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_
   cur_tok++;
   // here we have a relative class name, that can be resolved into full unless self/static/parent
   // if self/static/parent, it will be resolved at context, see phpdoc_finalize_type_hint_and_resolve()
-  return is_string_self_static_parent(phpdoc_class_name)
-         ? TypeHintInstance::create(phpdoc_class_name)
-         : TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name, '\\'));
+  if (is_string_self_static_parent(phpdoc_class_name)) {
+    return TypeHintInstance::create(phpdoc_class_name);
+  }
+  if (current_function->generics_declaration && current_function->generics_declaration->has_nameT(phpdoc_class_name)) {
+    return TypeHintGenericsT::create(phpdoc_class_name);
+  }
+  return TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name));
 }
 
 const TypeHint *PhpDocTypeRuleParser::parse_ffi_cdata() {
@@ -384,6 +389,16 @@ const TypeHint *PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
 
 const TypeHint *PhpDocTypeRuleParser::parse_type_array() {
   const TypeHint *inner = parse_simple_type();
+
+  if (cur_tok->type() == tok_double_colon) {      // T::fieldName
+    cur_tok++;
+    if (cur_tok->type() == tok_func_name) {
+      inner = TypeHintFieldRef::create(inner, std::string(cur_tok->str_val));
+      cur_tok++;
+    } else {
+      throw std::runtime_error("Invalid syntax after ::");
+    }
+  }
 
   while (cur_tok->type() == tok_opbrk && (cur_tok + 1)->type() == tok_clbrk) {
     inner = TypeHintArray::create(inner);
@@ -697,22 +712,25 @@ bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
  * Here we do final checks before saving it as immutable:
  * 1) Check that all classes inside are resolved
  * 2) Replace self/static/parent with actual context
+ * 3) Generate interfaces for typed callables
  * If it contains an error, it is printed with current location context is supposed to also be printed on the caller side.
  */
 const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context) {
-  if (!type_hint || !type_hint->has_instances_inside() || resolve_context->file_id->is_builtin()) {
+  if (!type_hint || resolve_context->file_id->is_builtin()) {
     return type_hint;
   }
+
+  bool all_resolved = true;
 
   if (type_hint->has_self_static_parent_inside()) {
     type_hint = type_hint->replace_self_static_parent(resolve_context);
     kphp_assert(!type_hint->has_self_static_parent_inside());
   }
 
-  bool all_resolved = true;
-
-  type_hint->traverse([&all_resolved](const TypeHint *child) {
-    if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
+  if (type_hint->has_instances_inside()) {
+    // todo move below
+    type_hint->traverse([&all_resolved](const TypeHint *child) {
+      if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
       ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
       kphp_error_return(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
     }
@@ -728,18 +746,58 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
     }
 
     if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
-      ClassPtr klass = G->get_class(as_instance->full_class_name);
-      if (!klass) {
-        all_resolved = false;
-        kphp_error(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
-      } else {
-        kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
-      }
+        ClassPtr klass = as_instance->resolve();
+        if (!klass) {
+          all_resolved = false;
+          kphp_error(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
+        } else {
+          kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
+        }
 
-    }
-  });
+      }
+    });
+  }
+
+  if (type_hint->has_callables_inside()) {
+    type_hint->traverse([](const TypeHint *child) {
+      if (const auto *as_callable = child->try_as<TypeHintCallable>()) {
+
+        if (as_callable->is_typed_callable()) {
+          as_callable->get_interface();
+        }
+
+      }
+    });
+  }
 
   return all_resolved ? type_hint : nullptr;
+}
+
+/*
+ * When we have a template function <T> and an instantiation T=User, replace all T's inside a type hint.
+ * We also handle @kphp-return here, that can ref to a field T::fieldName, replacing it after T is instantiated.
+ * (note, that we don't allow ClassName::fieldName anywhere but in generics; if it's written, it will fail on type inferring)
+ */
+const TypeHint *phpdoc_replace_genericsT_with_instantiation(const TypeHint *type_hint, const GenericsInstantiationMixin *generics_instantiation) {
+  if (!type_hint->has_genericsT_inside()) {
+    return type_hint;
+  }
+
+  return type_hint->replace_children_custom([generics_instantiation](const TypeHint *child) {
+
+    if (const auto *as_genericsT = child->try_as<TypeHintGenericsT>()) {
+      const TypeHint *replacement = generics_instantiation->find(as_genericsT->nameT);
+      kphp_assert(replacement);
+      return replacement;
+    }
+    if (const auto *as_field_ref = child->try_as<TypeHintFieldRef>()) {
+      const auto *field = as_field_ref->resolve_field();
+      kphp_error(field, "Could not detect a field that :: points to in phpdoc white instantiating templates");
+      return field && field->type_hint ? field->type_hint : TypeHintPrimitive::create(tp_any);
+    }
+
+    return child;
+  });
 }
 
 // when a field has neither @var not type hint, we use the default value initializer like a type guard

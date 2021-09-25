@@ -1,16 +1,21 @@
 @kphp_should_fail
 KPHP_SHOW_ALL_TYPE_ERRORS=1
-/return int from anonymous\(...\)/
+/return 10;/
+/return int from function\(\)/
 /but it's declared as @return void/
-/return float\[\] from anonymous\(...\)/
+/ico\(function\(int \$v\) { return \[1.2\]; }\);/
+/return float\[\] from function\(\$v\)/
 /but it's declared as @return int\[\]/
-/pass float to argument \$arg0 of L\\intvoid::__invoke/
+/\$callback\(3\.4\);/
+/pass float to argument \$arg1 of callable\(int\):void/
 /but it's declared as @param int/
 <?php
 
 function run() {
     /**@var $callback callable():void*/
-    $callback = function() { return 10; };
+    $callback = function() {
+        return 10;
+    };
     $callback();
 }
 

@@ -1,5 +1,5 @@
 @kphp_should_fail
-/run\(\)::\$callback is both L\\void and L\\anon\$u/
+/Count of arguments/
 <?php
 
 function run() {

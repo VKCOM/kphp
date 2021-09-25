@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Can not store non\-instance var with instance_cache_store call/
+/Called instance_cache_store\(\) with a non-instance argument/
 <?php
 
 instance_cache_store("key", [1, 2]);

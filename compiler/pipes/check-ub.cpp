@@ -172,9 +172,9 @@ public:
     return res;
   }
 
-  static UBMergeData create_from_func_ptr(VertexAdaptor<op_func_ptr> func_ptr) {
+  static UBMergeData create_from_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> callback_of_builtin) {
     UBMergeData res;
-    res.functions_.push_back(func_ptr->func_id);
+    res.functions_.push_back(callback_of_builtin->func_id);
     return res;
   }
 };
@@ -185,8 +185,8 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
   *last_ub_error = VarPtr();
   if (v->type() == op_var) {
     *data = UBMergeData::create_from_var(v.as<op_var>(), parent && parent->type() == op_index);
-  } else if (v->type() == op_func_ptr) {
-    *data = UBMergeData::create_from_func_ptr(v.as<op_func_ptr>());
+  } else if (v->type() == op_callback_of_builtin) {
+    *data = UBMergeData::create_from_callback_of_builtin(v.as<op_callback_of_builtin>());
   } else {
     Location save_location = stage::get_location();
 
@@ -212,7 +212,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {
-        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->get_human_readable_name()));
+        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
       }
     }
   }
@@ -249,7 +249,7 @@ void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
   fix_ub_dfs(v, &data);
   int err = data.check_index_refs(*foreach_vars);
   if (err > 0) {
-    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->get_human_readable_name()));
+    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
   }
 }
 

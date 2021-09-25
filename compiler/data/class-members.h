@@ -35,7 +35,6 @@
 #include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
-class TypeHint;
 class ClassMembersContainer;
 
 struct ClassMemberStaticMethod {
@@ -193,20 +192,15 @@ public:
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
   void add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access);
 
-  void safe_add_instance_method(FunctionPtr function);
-
   bool has_constant(vk::string_view local_name) const;
   bool has_field(vk::string_view local_name) const;
   bool has_instance_method(vk::string_view local_name) const;
   bool has_static_method(vk::string_view local_name) const;
 
-  bool has_any_instance_var() const;
-  bool has_any_instance_method() const;
-  bool has_any_static_var() const;
-  bool has_any_static_method() const;
-  FunctionPtr get_constructor() const;
-
-  size_t count_of_instance_methods() const;
+  bool has_any_instance_var() const { return !instance_fields.empty(); }
+  bool has_any_instance_method() const { return !instance_methods.empty(); }
+  bool has_any_static_var() const { return !static_fields.empty(); }
+  bool has_any_static_method() const { return !static_methods.empty(); }
 
   const ClassMemberStaticMethod *get_static_method(vk::string_view local_name) const;
   const ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name) const;
@@ -216,6 +210,7 @@ public:
 
   ClassMemberStaticMethod *get_static_method(vk::string_view local_name);
   ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name);
+  FunctionPtr get_constructor() const;
 };
 
 /*

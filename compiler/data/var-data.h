@@ -12,7 +12,7 @@
 #include "compiler/inferring/var-node.h"
 
 class VarData {
-  DEBUG_STRING_METHOD { return get_human_readable_name(); }
+  DEBUG_STRING_METHOD { return as_human_readable(); }
   
 public:
   enum Type {
@@ -53,7 +53,7 @@ public:
 
   inline Type &type() { return type_; }
 
-  std::string get_human_readable_name() const;
+  std::string as_human_readable() const;
 
   inline bool is_global_var() const {
     return type_ == var_global_t && !class_id;

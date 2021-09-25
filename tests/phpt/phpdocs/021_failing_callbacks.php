@@ -4,9 +4,9 @@ KPHP_SHOW_ALL_TYPE_ERRORS=1
 /but it's declared as @return string/
 /return string from cb/
 /but a callback was expected to return bool/
-/return int from lambda/
-/but a callback was expected to return bool/
-/anonymous\(...\) should return something, but it is void/
+/return int from function\(\$v\)/
+/but it's declared as @return bool/
+/function\(\$v\) should return something, but it is void/
 <?php
 
 /** @kphp-required */

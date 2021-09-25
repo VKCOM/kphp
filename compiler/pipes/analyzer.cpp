@@ -59,7 +59,7 @@ void check_var_init_value(const VarPtr &var) {
         const char *static_prefix = (var->is_function_static_var() || var->is_class_static_var()) ? "static " : "";
         stage::set_location(const_array->get_location());
         kphp_warning(fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value",
-                                vk::join(duplications, "', '"), static_prefix, var->get_human_readable_name()));
+                                vk::join(duplications, "', '"), static_prefix, var->as_human_readable()));
       }
     }
   }

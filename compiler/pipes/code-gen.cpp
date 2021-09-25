@@ -34,7 +34,7 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
 
 
 void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
-  if (FunctionData::does_need_codegen(function) || function->is_imported_from_static_lib()) {
+  if (function->does_need_codegen() || function->is_imported_from_static_lib()) {
     prepare_generate_function(function);
     G->stats.on_function_processed(function);
     tmp_stream << function;
@@ -59,7 +59,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
 
   for (ClassPtr c : all_classes) {
-    if (!ClassData::does_need_codegen(c)) {
+    if (!c->does_need_codegen()) {
       continue;
     }
 
@@ -138,7 +138,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   std::replace(file_name.begin(), file_name.end(), '$', '@');
 
   func->header_name = file_name + ".h";
-  func->subdir = get_subdir(func->file_id->short_file_name);
+  func->subdir = calc_subdir_for_function(func);
 
   if (!func->is_inline) {
     func->src_name = file_name + ".cpp";
@@ -154,8 +154,19 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   std::sort(func->local_var_ids.begin(), func->local_var_ids.end());
 }
 
-string CodeGenF::get_subdir(const string &base) {
-  int bucket = vk::std_hash(base) % 100;
+std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
+  // place __construct and __invoke of lambdas to a separate dir, like lambda classes are placed to cl_l/
+  if (func->is_lambda()) {
+    return "o_l";
+  }
+  if (func->modifiers.is_instance() && func->class_id->is_lambda_class()) {
+    return "o_l";
+  }
+  if (func->modifiers.is_instance() && func->class_id->is_typed_callable_interface()) {
+    return "o_l";
+  }
+
+  int bucket = vk::std_hash(func->file_id->short_file_name) % 100;
   return "o_" + std::to_string(bucket);
 }
 

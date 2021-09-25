@@ -56,3 +56,36 @@ function test_var_reassign_template() {
 
 test_var_reassign();
 test_var_reassign_template();
+
+
+class AFiel {
+    public $fiel = 0;
+    function fa() { echo "AFiel fa\n"; }
+}
+class BFiel {
+    public $fiel = 1;
+}
+/**
+ * @kphp-template T $obj
+ * @kphp-return T
+ */
+function same($obj) {
+    return $obj;
+}
+function demoNestedTplInfer() {
+    $a = new AFiel;
+    same($a)->fa();
+    same(same($a))->fa();
+    $a1 = same($a);
+    $a2 = same($a1);
+    $a3 = same($a2);
+    $a1->fiel = 9;
+    echo $a->fiel;
+    echo $a1->fiel;
+    echo $a2->fiel;
+    echo $a3->fiel;
+    $b = new BFiel;
+    same(same(same($b)))->fiel = 10;
+    echo same(same($b))->fiel;
+}
+demoNestedTplInfer();

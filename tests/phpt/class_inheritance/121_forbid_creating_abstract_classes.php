@@ -1,9 +1,14 @@
 @kphp_should_fail
-/Cannot instantiate abstract class B/
+/Can't instantiate B, it's an abstract class/
+/Can't instantiate I, it's an interface/
 <?php
 
 abstract class B {
     public function __construct() {}
 }
 
-$d = new B();
+interface I {}
+trait T{}
+
+new B;
+new I;

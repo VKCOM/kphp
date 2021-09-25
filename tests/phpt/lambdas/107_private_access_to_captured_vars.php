@@ -1,4 +1,5 @@
 @kphp_should_fail
+/Invalid property/
 <?php
 
 function test_access_to_captured_vars() {

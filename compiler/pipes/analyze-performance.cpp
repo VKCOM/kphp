@@ -63,11 +63,11 @@ std::string get_description_for_help_impl(VertexPtr expr) {
                       raw_str.end());
         return "'" + vk::replace_all(raw_str, "?", "<...>") + "'";
       }
-      return (full ? "variable " : "") + TermStringFormat::paint_green(expr.as<op_var>()->var_id->get_human_readable_name());
+      return (full ? "variable " : "") + TermStringFormat::paint_green(expr.as<op_var>()->var_id->as_human_readable());
     case op_instance_prop:
-      return (full ? "variable " : "") + TermStringFormat::paint_green(expr.as<op_instance_prop>()->var_id->get_human_readable_name());
+      return (full ? "variable " : "") + TermStringFormat::paint_green(expr.as<op_instance_prop>()->var_id->as_human_readable());
     case op_func_call:
-      return (full ? "function call " : "") + TermStringFormat::paint_green(expr.as<op_func_call>()->func_id->get_human_readable_name(false)) +
+      return (full ? "function call " : "") + TermStringFormat::paint_green(expr.as<op_func_call>()->func_id->as_human_readable(false)) +
              "(" + vk::join(expr.as<op_func_call>()->args(), ", ", get_description_for_help_impl<false>) + ")";
     case op_index: {
       std::string key;
@@ -596,7 +596,7 @@ void PerformanceIssuesReport::add_issues_and_require_flush(FunctionPtr function,
   }
   FunctionPerformanceIssues function_issues{
     function->file_id->relative_file_name,
-    prepare_for_json(function->get_human_readable_name(false)),
+    prepare_for_json(function->as_human_readable(false)),
     std::move(issues)
   };
   std::sort(function_issues.issues.begin(), function_issues.issues.end(),

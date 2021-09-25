@@ -22,9 +22,9 @@ public:
   void set_file(SrcFilePtr file);
   void set_function(FunctionPtr function);
   void set_line(int line);
-  SrcFilePtr get_file() const;
-  FunctionPtr get_function() const;
-  int get_line() const;
+  SrcFilePtr get_file() const { return file; }
+  FunctionPtr get_function() const { return function; }
+  int get_line() const { return line; }
 
   std::string as_human_readable() const;
 

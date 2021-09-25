@@ -131,10 +131,12 @@ typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(Fun
 
   static CachedProfiler cache(demangle(typeid(FunctionPassT).name()));
   AutoProfiler prof{*cache};
+  Location location_backup_raw = Location{*stage::get_location_ptr()};
   pass->setup(function);
   pass->on_start();
   run_function_pass(function->root, pass);
   pass->on_finish();
+  *stage::get_location_ptr() = std::move(location_backup_raw);
   return FunctionPassTraits<FunctionPassT>::get_data(*pass);
 }
 

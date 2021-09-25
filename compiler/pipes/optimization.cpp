@@ -243,14 +243,11 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
   }
 
   const auto *to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
-  if (to_string_method == nullptr) {
-    kphp_error(0, fmt_format("Converting to a string of a class {} that does not contain a __toString() method",
-                             klass->get_name()));
-    return {};
-  }
+  kphp_error_act(to_string_method,
+                 fmt_format("Converting to a string of a class {} that does not contain a __toString() method", klass->as_human_readable()),
+                 return {});
 
-  const auto args = std::vector<VertexPtr>{expr};
-  auto call_function = VertexAdaptor<op_func_call>::create(args);
+  auto call_function = VertexAdaptor<op_func_call>::create(expr);
   call_function->set_string(std::string{to_string_method->local_name()});
   call_function->func_id = to_string_method->function;
 
@@ -332,7 +329,7 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
     VarPtr var = var_vertex->var_id;
     kphp_assert (var);
     if (var->init_val) {
-      if (try_optimize_var(var)) {
+      if (__sync_bool_compare_and_swap(&var->optimize_flag, false, true)) {
         ++var_init_expression_optimization_depth_;
         run_function_pass(var->init_val, this);
         kphp_assert(var_init_expression_optimization_depth_ > 0);

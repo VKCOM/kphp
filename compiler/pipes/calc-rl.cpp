@@ -98,11 +98,13 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
   kphp_error (expected_rl_type == val_none, "Invalid lvalue/rvalue operation");
   switch (root->type()) {
     case op_if:
-    case op_do:
     case op_while:
     case op_switch:
     case op_case:
       rl_calc_all<val_none, val_r>(root, 0);
+      break;
+    case op_do:
+      rl_calc_all<val_none, val_r>(root, 1);
       break;
     case op_return:
     case op_break:

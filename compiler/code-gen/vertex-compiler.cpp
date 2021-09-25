@@ -674,7 +674,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
                                   "Consider using a temporary variable for this call.\n"
                                   "Function is resumable because of calls chain:\n"
                                   "{}",
-                                  func->get_human_readable_name(), func->get_resumable_path()));
+                                  func->as_human_readable(), func->get_resumable_path()));
       }
     }
 
@@ -1122,8 +1122,8 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   const auto &location = func->root->get_location();
   const char *is_root = func->profiler_state == FunctionData::profiler_status::enable_as_root ? "true" : "false";
   W << "struct TracingProfilerTraits " << BEGIN
-    << "static constexpr const char *file_name() noexcept { return " << RawString(location.file->relative_file_name) << "; }" << NL
-    << "static constexpr const char *function_name() noexcept { return " << RawString(func->get_human_readable_name(false)) << "; }" << NL
+    << "static constexpr const char *file_name() noexcept { return " << RawString(location.file ? location.file->relative_file_name : "unknown file") << "; }" << NL
+    << "static constexpr const char *function_name() noexcept { return " << RawString(func->as_human_readable(false)) << "; }" << NL
     << "static constexpr size_t function_line() noexcept { return " << std::max(location.line, 0) << "; }" << NL
     << "static constexpr size_t profiler_level() noexcept { return " << G->settings().profiler_level.get() << "; }" << NL
     << "static constexpr bool is_root() noexcept { return " << is_root << "; }" << NL
@@ -1643,33 +1643,35 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
     JoinValues(sorted_by_hash, sep, join_mode::one_line, val_gen) << "}";
 }
 
-void compile_func_ptr(VertexAdaptor<op_func_ptr> root, CodeGenerator &W) {
+void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, CodeGenerator &W) {
   /**
-   * KPHP code like this:
-   *   array_map(function ($x) { return $x; }, ['a', 'b']);
-   *
+   * PHP code like this:
+   *   array_map(fn($x) => $x + $extern, [1,2,3]);
    * Will be transformed to:
-   *   array_map([bound_class = anon$$__construct()] (string x) {
-   *       return anon$$__invoke(bound_class, std::move(x));
+   *   array_map([captured1 = $extern] (auto &&... args) {
+   *       return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
    *   }), const_array);
+   * Where the body calls a lambda function:
+   *    int lambda$xxx(int $extern, int $x) { return $xx + $extern; }
+   * Captured vars are not always op_var. For example, [captured1 = check_not_false($extern).val()] after smart casts.
    */
-  vk::string_view name_bound_class;
-  if (root->func_id->is_lambda()) {
-    name_bound_class = "bound_class";
-    W << "[" << name_bound_class << " = " << root->bound_class() << "]";
-  } else {
-    W << "[]";
-  }
+  W << LockComments{};
+
+  int idx = 0;
+  W << "[" << JoinValues(*root, ", ", join_mode::one_line, [&idx](CodeGenerator &W, VertexPtr cpp_captured) {
+    W << "captured" << (++idx) << " = " << cpp_captured;
+  }) << "]";
 
   FunctionSignatureGenerator(W) << "(auto &&... args) " << BEGIN;
-  {
-    W << "return " << FunctionName(root->func_id) << "(";
-    if (!name_bound_class.empty()) {
-      W << name_bound_class << ",";
-    }
-    W << "std::forward<decltype(args)>(args)...);";
+
+  W << "return " << FunctionName(root->func_id) << "(";
+  for (int idx = 1; idx <= root->size(); ++idx) {
+    W << "captured" << idx << ", ";
   }
-  W << END;
+  W << "std::forward<decltype(args)>(args)...);";
+
+  W << NL << END;
+  W << UnlockComments{};
 }
 
 void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __attribute__((unused))) {
@@ -1783,7 +1785,7 @@ void compile_conv_l(VertexAdaptor<op_conv_l> root, CodeGenerator &W) {
       (op_conv_l == op_conv_string_l && tp == tp_string)) {
     std::string fun_name = "unknown";
     if (auto cur_fun = stage::get_function()) {
-      fun_name = cur_fun->get_human_readable_name();
+      fun_name = cur_fun->as_human_readable();
     }
     W << OpInfo::str(op_conv_l) << " (" << val << ", R\"(" << fun_name << ")\")";
   } else {
@@ -1900,8 +1902,8 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_func_call:
       compile_func_call_fast(root.as<op_func_call>(), W);
       break;
-    case op_func_ptr:
-      compile_func_ptr(root.as<op_func_ptr>(), W);
+    case op_callback_of_builtin:
+      compile_callback_of_builtin(root.as<op_callback_of_builtin>(), W);
       break;
     case op_string_build:
       compile_string_build(root.as<op_string_build>(), W);

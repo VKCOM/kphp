@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass int to argument \$x of test/
+/assign int to \$x, modifying a function argument/
 <?php
 
 /**

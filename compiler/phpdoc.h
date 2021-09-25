@@ -30,6 +30,7 @@ struct php_doc_tag {
     kphp_should_not_throw,
     kphp_throws,
     kphp_template,
+    kphp_param,
     kphp_return,
     kphp_memcache_class,
     kphp_immutable_class,
@@ -67,8 +68,6 @@ public:
 private:
   static const std::map<std::string, doc_type> str2doc_type;
 };
-
-class TypeHint;
 
 struct PhpDocTagParseResult {
   const TypeHint *type_hint;
@@ -114,4 +113,5 @@ std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc,
 bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
 
 const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context);
+const TypeHint *phpdoc_replace_genericsT_with_instantiation(const TypeHint *type_hint, const GenericsInstantiationMixin *generics_instantiation);
 const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val);

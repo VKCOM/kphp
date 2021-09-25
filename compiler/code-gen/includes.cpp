@@ -110,7 +110,7 @@ void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var
 void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
   classes_.insert(klass->implements.cbegin(), klass->implements.cend());
 
-  if (ClassData::does_need_codegen(klass->parent_class)) {
+  if (klass->parent_class && klass->parent_class->does_need_codegen()) {
     classes_.emplace(klass->parent_class);
   }
 }

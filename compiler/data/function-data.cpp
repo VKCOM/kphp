@@ -26,37 +26,26 @@ FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_fun
   function->file_id = stage::get_file();
   function->type = type;
   function->tinf_node.init_as_return_value(function);
-  //function->function_in_which_lambda_was_created = function_root->get_func_id()->function_in_which_lambda_was_created;
 
   return function;
 }
 
-FunctionPtr FunctionData::clone_from(const std::string &new_name, FunctionPtr other, VertexAdaptor<op_function> new_root) {
+FunctionPtr FunctionData::clone_from(FunctionPtr other, const std::string &new_name, VertexAdaptor<op_function> root_instead_of_cloning) {
   FunctionPtr res(new FunctionData(*other));
-  res->root = new_root;
+  res->root = root_instead_of_cloning ?: other->root.clone();
+  res->root->func_id = res;
   res->is_required = false;
   res->name = new_name;
   res->update_location_in_body();
   res->name_gen_map = {};
   res->tinf_node.init_as_return_value(res);
-
-  res->assumptions_for_vars = {};
-  res->assumption_args_status = AssumptionStatus::unknown;
-  res->assumption_for_return = Assumption::undefined();
-  res->assumption_return_status = AssumptionStatus::unknown;
   res->assumption_return_processing_thread = std::thread::id{};
-
-  new_root->func_id = res;
 
   return res;
 }
 
 bool FunctionData::is_constructor() const {
   return class_id && class_id->construct_function && class_id->construct_function == get_self();
-}
-
-bool FunctionData::is_main_function() const {
-  return type == func_type_t::func_main;
 }
 
 void FunctionData::update_location_in_body() {
@@ -72,61 +61,6 @@ void FunctionData::update_location_in_body() {
   update_location(root);
 }
 
-std::string FunctionData::encode_template_arg_name(const Assumption &assumption, int id) {
-  if (assumption.has_instance()) {
-    if (ClassPtr klass = assumption.try_as_class()) {
-      return "$" + replace_backslashes(klass->name);
-    }
-    if (Assumption inner = assumption.get_inner_if_array()) {
-      return "$arr" + encode_template_arg_name(inner, id);
-    }
-  }
-  return "$" + std::to_string(id) + "not_instance";
-}
-
-FunctionPtr FunctionData::generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
-                                                                 FunctionPtr func,
-                                                                 const std::string &name_of_function_instance) {
-  kphp_assert_msg(func->is_template, "function must be template");
-  auto func_args_n = static_cast<size_t>(func->get_params().size());
-
-  auto new_func_root = func->root.clone();
-
-  auto new_function = FunctionData::clone_from(name_of_function_instance, func, new_func_root);
-  new_function->is_template = false;
-  // initialize assumptions for arguments of new_function
-  calc_assumption_for_argument(new_function, "");
-
-  for (size_t i = 0; i < func_args_n; ++i) {
-    auto param = new_function->get_params()[i].as<op_func_param>();
-    auto id_classPtr_it = template_type_id_to_ClassPtr.find(param->template_type_id);
-    if (id_classPtr_it == template_type_id_to_ClassPtr.end()) {
-      kphp_error_act(template_type_id_to_ClassPtr.empty() || param->template_type_id == -1,
-                     "Can't deduce template parameter of function (check count of arguments passed).",
-                     return {});
-      param->template_type_id = -1;
-      continue;
-    }
-    param->template_type_id = -1;
-
-    auto &assumption = id_classPtr_it->second;
-    auto assum_for_param_it = std::find_if(new_function->assumptions_for_vars.begin(), new_function->assumptions_for_vars.end(),
-                                           [&name = param->var()->str_val](auto &name_assum) { return name_assum.first == name; });
-    if (assum_for_param_it != new_function->assumptions_for_vars.end()) {
-      assum_for_param_it->second = assumption;
-    } else {
-      new_function->assumptions_for_vars.emplace_back(param->var()->str_val, assumption);
-    }
-  }
-
-  // TODO: need copy all lambdas inside template function
-  //for (auto f : func->lambdas_inside) {
-  //  f->function_in_which_lambda_was_created = new_function;
-  //}
-
-  return new_function;
-}
-
 std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(int shift) const {
   auto func_params = get_params();
   kphp_assert(func_params.size() >= shift);
@@ -140,14 +74,11 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 }
 
 void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
-  auto self_function_vertex = VertexAdaptor<op_function>::create(root->param_list().clone(), root->cmd());
-  auto self_function = clone_from(replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), get_self(), self_function_vertex);
-  // It's safe to copy assumptions here and useful only for __virt_clone_self method
-  kphp_assert(assumption_return_status != AssumptionStatus::processing);
-  self_function->assumption_for_return = assumption_for_return;
-  self_function->assumption_return_status = assumption_return_status;
-  class_id->members.safe_add_instance_method(self_function);
+  auto v_op_function = VertexAdaptor<op_function>::create(root->param_list().clone(), root->cmd());
+  auto self_function = clone_from(get_self(), replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), v_op_function);
   self_function->is_virtual_method = false;
+
+  class_id->members.add_instance_method(self_function);   // don't need a lock here, it's invoked from a sync pipe
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
   G->register_and_require_function(self_function, os, true);
@@ -161,19 +92,14 @@ std::string FunctionData::get_name_of_self_method() const {
   return get_name_of_self_method(local_name());
 }
 
-int FunctionData::get_min_argn() {
-  if (min_argn != -1) {
-    return min_argn;
+int FunctionData::get_min_argn() const {
+  int min_argn = 0;
+  for (auto p : get_params()) {
+    if (p.as<op_func_param>()->has_default_value()) {
+      break;
+    }
+    min_argn++;
   }
-
-  auto has_default = [](VertexPtr v) {
-    auto param = v.as<op_func_param>();
-    return param->has_default_value() && param->default_value();
-  };
-
-  auto params = get_params();
-  auto it_param_with_default_value = std::find_if(params.begin(), params.end(), has_default);
-  min_argn = std::distance(params.begin(), it_param_with_default_value);
 
   return min_argn;
 }
@@ -182,14 +108,14 @@ string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;
   while (f) {
-    names.push_back(f->get_human_readable_name());
+    names.push_back(f->as_human_readable());
     f = f->fork_prev;
   }
   std::reverse(names.begin(), names.end());
   names.push_back(TermStringFormat::paint(name, TermStringFormat::red));
   f = wait_prev;
   while (f) {
-    names.push_back(f->get_human_readable_name());
+    names.push_back(f->as_human_readable());
     f = f->wait_prev;
   }
   return vk::join(names, " -> ");
@@ -202,10 +128,10 @@ string FunctionData::get_throws_call_chain() const {
   vector<string> names;
   FunctionPtr f = throws_reason;
   Location last;
-  names.push_back(get_human_readable_name());
+  names.push_back(as_human_readable());
   if (f) {
     while (true) {
-      names.push_back(f->get_human_readable_name());
+      names.push_back(f->as_human_readable());
       if (f->throws_reason) {
         f = f->throws_reason;
       } else {
@@ -228,89 +154,118 @@ std::string FunctionData::get_performance_inspections_warning_chain(PerformanceI
 
   std::forward_list<std::string> chain;
   FunctionPtr fun = get_self();
-  chain.emplace_front(fun->get_human_readable_name());
+  chain.emplace_front(fun->as_human_readable());
   while (!fun->performance_inspections_for_warning.has_their_own_inspections()) {
     auto caller_it = std::find_if(fun->performance_inspections_for_warning_parents.begin(), fun->performance_inspections_for_warning_parents.end(), check_inspection);
     kphp_assert(caller_it != fun->performance_inspections_for_warning_parents.end());
     fun = *caller_it;
-    chain.emplace_front(fun->get_human_readable_name());
+    chain.emplace_front(fun->as_human_readable());
   }
 
   return vk::join(chain, " -> ");
 }
 
-std::string FunctionData::get_human_readable_name(const std::string &name, bool add_details) {
-  auto pos1 = name.find("$$");
-  auto pos2 = name.rfind("$$");
+string FunctionData::as_human_readable(bool add_details) const {
+  std::vector<VertexAdaptor<op_func_param>> params;
+  for (auto p : get_params()) {
+    if (p.as<op_func_param>()->var()->extra_type != op_ex_var_this && p->extra_type != op_ex_param_from_use) {
+      params.emplace_back(p.as<op_func_param>());
+    }
+  }
 
-  // if name is just a function "function_name", doesn't belong to any class
-  if (pos1 == std::string::npos) {
-    return name;
-  }
-  // if name is "class$$method"
-  else if (pos2 == pos1) {
-    std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
-    std::string method_name = name.substr(pos1 + 2);
-    return base_class + "::" + method_name;
-  }
-  // if name is "class$$method$$context"
-  else {
-    std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
-    std::string method_name = name.substr(pos1 + 2, pos2 - pos1 - 2);
-    std::string context_class = replace_characters(name.substr(pos2 + 2), '$', '\\');
-    return add_details ? base_class + "::" + method_name + " (static=" + context_class + ")" : context_class + "::" + method_name;
-  }
-}
-
-string FunctionData::get_human_readable_name(bool add_details) const {
+  std::string params_names_str = vk::join(params, ",", [](auto p) { return "$" + p->var()->str_val; });
   std::string result_name;
-  if (is_lambda()) {
-    result_name = get_params().empty() ? "anonymous()" : "anonymous(...)";
-  } else {
-    result_name = get_human_readable_name(name, add_details);
-  }
 
-  if (add_details && is_instantiation_of_template_function()) {
-    auto &file = instantiation_of_template_function_location.get_file()->relative_file_name;
-    auto line = std::to_string(instantiation_of_template_function_location.line);
-    result_name += " (instantiated at " + file + ":" + line + ")";
+  if (is_lambda()) {
+    result_name = "function(" + params_names_str + ")";
+  } else if (modifiers.is_instance() && class_id && class_id->is_lambda_class() && local_name() == "__invoke") {
+    result_name = "function(" + params_names_str + ")";
+  } else if (modifiers.is_instance() && class_id && class_id->is_typed_callable_interface() && local_name() == "__invoke") {
+    result_name = "callable(" + vk::join(params, ",", [](auto p) { return p->type_hint->as_human_readable(); }) + "):" + return_typehint->as_human_readable();
+  } else if (generics_instantiation && outer_function) {
+    result_name = outer_function->as_human_readable(add_details);
+    result_name.erase(result_name.find('<'));
+    result_name += "<" + vk::join(*generics_instantiation, ",", [](const auto &pair) { return pair.second->as_human_readable(); }) + ">";
+    if (add_details) {
+      SrcFilePtr file = generics_instantiation->location.get_file();
+      std::string line = std::to_string(generics_instantiation->location.line);
+      result_name += " (instantiated at " + (file ? file->relative_file_name : "unknown file") + ":" + line + ")";
+    }
+  } else {
+
+    auto pos1 = name.find("$$");
+    auto pos2 = name.rfind("$$");
+
+    // if name is just a function "function_name", doesn't belong to any class
+    if (pos1 == std::string::npos) {
+      result_name = name;
+    }
+      // if name is "class$$method"
+    else if (pos2 == pos1) {
+      std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
+      std::string method_name = name.substr(pos1 + 2);
+      result_name = base_class + "::" + method_name;
+    }
+      // if name is "class$$method$$context"
+    else {
+      std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
+      std::string method_name = name.substr(pos1 + 2, pos2 - pos1 - 2);
+      std::string context_class = replace_characters(name.substr(pos2 + 2), '$', '\\');
+      result_name = add_details ? base_class + "::" + method_name + " (static=" + context_class + ")" : context_class + "::" + method_name;
+    }
+
+    if (generics_declaration) {
+      result_name += "<" + vk::join(*generics_declaration, ",", [](const auto &itemT) { return itemT.nameT; }) + ">";
+    }
   }
 
   return result_name;
 }
 
-bool FunctionData::is_lambda_with_uses() const {
-  return is_lambda() && class_id && class_id->members.has_any_instance_var();
-}
-
 bool FunctionData::is_imported_from_static_lib() const {
-  return file_id->owner_lib && !file_id->owner_lib->is_raw_php() && !is_main_function();
+  return file_id && file_id->owner_lib && !file_id->owner_lib->is_raw_php() && !is_main_function();
 }
 
-// in fact it's range of op_func_param, but it can't be expressed with VertexRange and needs .as<op_func_param>() when using
-VertexRange FunctionData::get_params() const {
-  return root->param_list()->params();
+bool FunctionData::is_invoke_method() const {
+  return modifiers.is_instance() && (class_id->is_lambda_class() || class_id->is_typed_callable_interface()) && vk::string_view{name}.ends_with("__invoke");
 }
 
-bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
-  if (!called_func) {
-    return false;
+VertexAdaptor<op_func_param> FunctionData::find_param_by_name(vk::string_view var_name) {
+  for (auto p : get_params()) {
+    if (p.as<op_func_param>()->var()->str_val == var_name) {
+      return p.as<op_func_param>();
+    }
   }
-
-  int min_cnt_params = called_func->get_min_argn() - called_func->has_implicit_this_arg();
-  int max_cnt_params = static_cast<int>(called_func->get_params().size()) - called_func->has_implicit_this_arg();
-  if (expected_cnt_params < min_cnt_params || max_cnt_params < expected_cnt_params) {
-    kphp_error(false, fmt_format("Wrong arguments count: {} (expected {}..{})", expected_cnt_params, min_cnt_params, max_cnt_params));
-    return false;
-  }
-
-  return true;
+  return {};
 }
 
-bool FunctionData::does_need_codegen(FunctionPtr f) {
-  return f->type != FunctionData::func_class_holder &&
-         f->type != FunctionData::func_extern &&
-         (f->body_seq != body_value::empty || G->get_main_file()->main_function == f);
+VertexAdaptor<op_var> FunctionData::find_use_by_name(const std::string &var_name) {
+  for (auto var_as_use : uses_list) {
+    if (var_as_use->str_val == var_name) {
+      return var_as_use;
+    }
+  }
+  return {};
+}
+
+VarPtr FunctionData::find_var_by_name(const std::string &var_name) {
+  auto search_in_vector = [&var_name](const std::vector<VarPtr> &lookup_vars_list) -> VarPtr {
+    auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(),
+                               [&var_name](VarPtr var) { return var->name == var_name; });
+    return var_it == lookup_vars_list.end() ? VarPtr{} : *var_it;
+  };
+
+  VarPtr      found = search_in_vector(local_var_ids);
+  if (!found) found = search_in_vector(global_var_ids);
+  if (!found) found = search_in_vector(static_var_ids);
+  if (!found) found = search_in_vector(param_ids);
+  return found ?: VarPtr{};
+}
+
+bool FunctionData::does_need_codegen() const {
+  return type != FunctionData::func_class_holder &&
+         type != FunctionData::func_extern &&
+         (body_seq != body_value::empty || G->get_main_file()->main_function == get_self() || is_lambda());
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {

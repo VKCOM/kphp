@@ -11,6 +11,9 @@
 enum OperationExtra {
   op_ex_none = 0,
   op_ex_func_call_arrow,
+  op_ex_constructor_call,
+  op_ex_param_from_use,
+  op_ex_param_variadic,
   op_ex_var_const,
   op_ex_var_superglobal,
   op_ex_var_superlocal,

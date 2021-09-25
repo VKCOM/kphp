@@ -9,6 +9,18 @@ class Base {
     public static function bar() {
         $f = function() { static::foo(); };
         $f();
+
+        $f2 = function() {
+            $g2 = function() { static::foo(); };
+            $g2();
+
+            (function() {
+                (function() {
+                    (fn() => static::foo())();
+                })();
+            })();
+        };
+        $f2();
     }
 }
 

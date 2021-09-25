@@ -42,6 +42,7 @@ private:
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
   bool is_untyped_rpc_tl_used{false};
+  bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
 
   inline bool try_require_file(SrcFilePtr file);
@@ -98,6 +99,7 @@ public:
   SrcFilePtr get_main_file() { return main_file; }
   vector<VarPtr> get_global_vars();
   vector<ClassPtr> get_classes();
+  vector<InterfacePtr> get_interfaces();
   vector<DefinePtr> get_defines();
   vector<LibPtr> get_libs();
   const ComposerAutoloader &get_composer_autoloader() const;
@@ -132,13 +134,16 @@ public:
     return is_untyped_rpc_tl_used;
   }
 
+  void set_functions_txt_parsed() {
+    is_functions_txt_parsed = true;
+  }
+
+  bool get_functions_txt_parsed() const {
+    return is_functions_txt_parsed;
+  }
+
   Stats stats;
 };
 
 extern CompilerCore *G;
-
-/*** Misc functions ***/
-bool try_optimize_var(VarPtr var);
-string conv_to_func_ptr_name(VertexPtr call);
-VertexPtr conv_to_func_ptr(VertexPtr call);
 

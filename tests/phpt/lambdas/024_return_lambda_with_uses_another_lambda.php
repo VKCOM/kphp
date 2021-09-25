@@ -1,4 +1,4 @@
-@todo has_race
+@ok
 <?php
 
 function f() {

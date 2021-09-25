@@ -10,6 +10,7 @@ enum class ScopeModifiers : uint8_t {
   not_member_,
   static_,
   instance_,
+  static_lambda_,
 };
 
 enum class AbstractModifiers : uint8_t {

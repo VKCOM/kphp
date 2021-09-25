@@ -83,10 +83,10 @@ public:
 
   PrimitiveType ptype() const { return ptype_; }
   PrimitiveType get_real_ptype() const;
-  void set_ptype(PrimitiveType new_ptype);
+  void set_ptype(PrimitiveType new_ptype) { ptype_ = new_ptype; }
 
   const std::forward_list<ClassPtr> &class_types() const { return class_type_; }
-  ClassPtr class_type() const;
+  ClassPtr class_type() const { return class_type_.empty() ? ClassPtr{} : class_type_.front(); }
   void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
   void set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indirection);
   bool has_class_type_inside() const;

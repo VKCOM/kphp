@@ -127,7 +127,7 @@ std::string TypeData::as_human_readable(bool colored) const {
       break;
     }
     case tp_Class: {
-      res = class_type()->name;
+      res = class_type()->as_human_readable();
       break;
     }
     case tp_any: {
@@ -185,22 +185,12 @@ PrimitiveType TypeData::get_real_ptype() const {
   return p;
 }
 
-void TypeData::set_ptype(PrimitiveType new_ptype) {
-  ptype_ = new_ptype;
-}
-
 bool TypeData::is_ffi_ref() const {
   auto klass = class_type();
   if (klass && klass->ffi_class_mixin) {
     return klass->ffi_class_mixin->is_ref();
   }
   return false;
-}
-
-ClassPtr TypeData::class_type() const {
-  if (class_type_.empty()) return {};
-  kphp_assert(std::distance(class_type_.begin(), class_type_.end()) == 1);
-  return class_type_.front();
 }
 
 void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indirection) {

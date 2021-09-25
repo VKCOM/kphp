@@ -27,7 +27,7 @@ private:
   static void create_edges_to_recalc_arg_ref(const TypeHint *type_hint, VertexPtr dependent_vertex, VertexPtr func_call);
 
   static void on_var_phpdoc(VertexAdaptor<op_phpdoc_var> var_op);
-  static void on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback);
+  static void on_passed_callback_to_builtin(VertexAdaptor<op_func_call> call, int param_i, VertexAdaptor<op_callback_of_builtin> v_callback);
   static void on_func_call_extern_modifying_arg_type(VertexAdaptor<op_func_call> call, FunctionPtr extern_function);
   static void on_func_call(VertexAdaptor<op_func_call> call);
   static void on_return(VertexAdaptor<op_return> v, FunctionPtr function);

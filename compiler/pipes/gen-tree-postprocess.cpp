@@ -127,9 +127,6 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
       new_vertex = make_require_once_call(lib_index_file, require_lib_call);
     }
   }
-  if (lib != registered_lib) {
-    lib.clear();
-  }
   kphp_error_act (new_vertex, fmt_format("Can't find '{}' lib", lib_require_name), return require_lib_call);
   return new_vertex;
 }
@@ -174,7 +171,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   }
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
-    kphp_error(instanceof->rhs()->type() == op_func_name, "right side of `instanceof` should be class name");
+    kphp_error(instanceof->rhs()->type() == op_func_name, "right side of `instanceof` should be a class name");
     if (!vk::string_view{instanceof->rhs()->get_string()}.ends_with("::class")) {
       instanceof->rhs()->set_string(instanceof->rhs()->get_string() + "::class");
     }
@@ -236,12 +233,6 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (GenTree::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
-    }
-  }
-  if (auto fork_call = root.try_as<op_fork>()) {
-    if (fork_call->size() != 1 || fork_call->back()->type() != op_func_call) {
-      kphp_error(0, "Fork argument must be function call");
-      return root;
     }
   }
 

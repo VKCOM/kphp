@@ -272,12 +272,10 @@ void CompilerCore::register_function(FunctionPtr function) {
 }
 
 void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require /*= false*/) {
-  kphp_assert(!vk::contains(function->name, '\\'));
   operate_on_function_locking(function->name, [&](FunctionPtr &f) {
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,
-               fmt_format("Redeclaration of function {}(), the previous declaration was in [{}]",
-                          function->get_human_readable_name(), f->file_id->file_name));
+               fmt_format("Redeclaration of function {}(), the previous declaration was in {}", function->as_human_readable(), f->file_id->file_name));
     f = function;
 
     if (was_previously_required || force_require) {
@@ -298,8 +296,7 @@ ClassPtr CompilerCore::try_register_class(ClassPtr cur_class) {
 bool CompilerCore::register_class(ClassPtr cur_class) {
   auto registered_class = try_register_class(cur_class);
   kphp_error (registered_class == cur_class,
-              fmt_format("Redeclaration of class [{}], the previous declaration was in [{}]",
-                         cur_class->name, registered_class->file_id->file_name));
+              fmt_format("Redeclaration of class {}, the previous declaration was in {}", cur_class->name, registered_class->file_id->file_name));
   return registered_class == cur_class;
 }
 
@@ -335,7 +332,6 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 
 
 ClassPtr CompilerCore::get_class(vk::string_view name) {
-  kphp_assert(name[0] != '\\');
   auto result = classes_ht.find(vk::std_hash(name));
   return result ? *result : ClassPtr{};
 }
@@ -472,6 +468,12 @@ vector<ClassPtr> CompilerCore::get_classes() {
   return classes_ht.get_all();
 }
 
+vector<InterfacePtr> CompilerCore::get_interfaces() {
+  return classes_ht.get_all_if([](ClassPtr klass) {
+    return klass->is_interface();
+  });
+}
+
 vector<DefinePtr> CompilerCore::get_defines() {
   return defines_ht.get_all();
 }
@@ -555,61 +557,3 @@ void CompilerCore::init_composer_class_loader() {
 
 
 CompilerCore *G;
-
-bool try_optimize_var(VarPtr var) {
-  return __sync_bool_compare_and_swap(&var->optimize_flag, false, true);
-}
-
-/**
- * If argument is array of twos -> concatenate elements with `$$`
- * If argument is string -> replace `:` with '$'
- * replaces '\' with `$` in result
- *
- * This function doesn't resolve uses, `parent`, `self` etc
- * In php, when you pass callback as string or array you should
- * write full qualified namespace and function name, only in rare cases
- * you can specify `parent` but in another cases you can't e.g.:
- *
- * array_map(['\Namespace\Name::ClassName', 'parent::fun_name'], [1, 2, 3]); - it's ok in php
- *
- * function fun(callable $callback, $x) { $callback($x); }
- * fun(['\Namespace\Name::ClassName', 'parent::fun_name'], 1); - it's `PHP Fatal error`
- *
- * If you need `parent`, please specify manually full parent name.
- */
-string conv_to_func_ptr_name(VertexPtr call) {
-  VertexPtr name_v = GenTree::get_actual_value(call);
-  std::string res;
-
-  if (name_v->type() == op_string) {
-    res = replace_characters(name_v->get_string(), ':', '$');
-  } else if (name_v->type() == op_array && name_v->size() == 2) {
-    VertexPtr class_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[0]);
-    VertexPtr fun_name = GenTree::get_actual_value(name_v.as<op_array>()->args()[1]);
-
-    if (class_name->type() == op_string && fun_name->type() == op_string) {
-      res = class_name->get_string() + "$$" + fun_name->get_string();
-    }
-  }
-
-  if (!res.empty() && res[0] == '\\') {
-    res.erase(res.begin());
-  }
-
-  return replace_backslashes(res);
-}
-
-VertexPtr conv_to_func_ptr(VertexPtr call) {
-  if (call->type() != op_func_ptr) {
-    string name = conv_to_func_ptr_name(call);
-    if (!name.empty()) {
-      auto new_call = VertexAdaptor<op_func_ptr>::create().set_location(call);
-      new_call->str_val = name;
-      call = new_call;
-    }
-  }
-
-  return call;
-}
-
-

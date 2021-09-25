@@ -10,8 +10,8 @@
 #include "compiler/vertex.h"
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
-  if (!calls.empty() && calls.back()->is_extern() && vertex->type() == op_func_ptr) {
-    FunctionPtr callback_passed_to_extern_func = vertex.as<op_func_ptr>()->func_id;
+  if (!calls.empty() && calls.back()->is_extern() && vertex->type() == op_callback_of_builtin) {
+    FunctionPtr callback_passed_to_extern_func = vertex.as<op_callback_of_builtin>()->func_id;
     kphp_assert(callback_passed_to_extern_func);
 
     if (callback_passed_to_extern_func->is_lambda()) {
@@ -95,8 +95,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
         }
       }
     }
-  } else if (auto ptr = vertex.try_as<op_func_ptr>()) {
-    data.dep.push_back(ptr->func_id);
+  } else if (auto as_callback_of_builtin = vertex.try_as<op_callback_of_builtin>()) {
+    data.dep.push_back(as_callback_of_builtin->func_id);
   } else if (auto var_vertex = vertex.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     // here we add var for later ub check; we store only vars that can potentially lead to ub, see check-ub.cpp

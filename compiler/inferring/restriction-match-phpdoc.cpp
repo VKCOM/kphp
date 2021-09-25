@@ -39,10 +39,10 @@ std::string RestrictionMatchPhpdoc::get_description() {
 
   switch (detect_usage_context()) {
 
-    case usage_function_argument: {
+    case usage_pass_to_argument: {
       VarPtr arg = restricted_node->var_;
-      std::string arg_name = arg->get_human_readable_name();
-      std::string function_name = arg->holder_func->get_human_readable_name();
+      std::string arg_name = arg->as_human_readable();
+      std::string function_name = arg->holder_func->as_human_readable();
 
       desc += "pass " + actual_str + " to argument " + arg_name + " of " + function_name + "\n";
       desc += "but it's declared as @param " + expected_str + "\n";
@@ -50,15 +50,23 @@ std::string RestrictionMatchPhpdoc::get_description() {
     }
 
     case usage_assign_to_variable: {
-      std::string var_name = restricted_node->var_->get_human_readable_name();
+      std::string var_name = restricted_node->var_->as_human_readable();
 
       desc += "assign " + actual_str + " to " + var_name + "\n";
       desc += "but it's declared as @var " + expected_str + "\n";
       break;
     }
 
+    case usage_assign_to_argument: {
+      std::string arg_name = restricted_node->var_->as_human_readable();
+
+      desc += "assign " + actual_str + " to " + arg_name + ", modifying a function argument" + "\n";
+      desc += "but it's declared as @param " + expected_str + "\n";
+      break;
+    }
+
     case usage_assign_to_array_index: {
-      std::string var_name = restricted_node->var_->get_human_readable_name();
+      std::string var_name = restricted_node->var_->as_human_readable();
 
       desc += "insert " + actual_str + " into " + var_name + "[]\n";
       desc += "but it's declared as @var " + expected_str + "\n";
@@ -66,7 +74,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     }
 
     case usage_return_from_function: {
-      std::string function_name = restricted_node->function_->get_human_readable_name(false);
+      std::string function_name = restricted_node->function_->as_human_readable(false);
 
       desc += "return " + actual_str + " from " + function_name + "\n";
       desc += "but it's declared as @return " + expected_str + "\n";
@@ -74,7 +82,7 @@ std::string RestrictionMatchPhpdoc::get_description() {
     }
 
     case usage_return_from_callback: {
-      std::string function_name = restricted_node->function_->is_lambda() ? "lambda" : restricted_node->function_->get_human_readable_name(false);
+      std::string function_name = restricted_node->function_->as_human_readable(false);
 
       desc += "return " + actual_str + " from " + function_name + "\n";
       desc += "but a callback was expected to return " + expected_str + "\n";
@@ -98,8 +106,12 @@ RestrictionMatchPhpdoc::UsageContext RestrictionMatchPhpdoc::detect_usage_contex
   if (restricted_node->is_argument_of_function()) {
     // it may be a function call: function f(array $arg) {...} f(3)
     // or it may be modification of an argument inside the function: function f(array $v) { $v++ }
-    // (it's undetectable, so an error description is for passing as a common case, for modification it looks strange)
-    return usage_function_argument;
+    // this heuristics seems to work unless a function calls itself recursively
+    const auto *as_expr_node = dynamic_cast<tinf::ExprNode *>(actual_node);
+    if (as_expr_node && as_expr_node->get_expr()->location.function == restricted_node->var_->holder_func) {
+      return usage_assign_to_argument;
+    }
+    return usage_pass_to_argument;
   }
 
   if (restricted_node->is_return_value_from_function()) {

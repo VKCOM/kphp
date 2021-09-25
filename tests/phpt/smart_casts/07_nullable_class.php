@@ -71,3 +71,16 @@ test3(null);
 test4(new A1());
 test4(new A2());
 test4(null);
+
+class StrangeThis {
+    function isActive() { return true; }
+
+    function fun() {
+        // test that smart casts to $this work correctly
+        if (!$this || !$this->isActive()) return false;
+        return true;
+    }
+}
+
+var_dump((new StrangeThis)->fun());
+

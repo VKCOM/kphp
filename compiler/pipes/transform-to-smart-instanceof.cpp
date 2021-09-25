@@ -6,26 +6,67 @@
 
 #include "compiler/name-gen.h"
 
-bool TransformToSmartInstanceof::user_recursion(VertexPtr v) {
-  auto if_vertex = v.try_as<op_if>();
-  auto condition = get_instanceof_from_if(if_vertex);
-  auto instance_var = condition ? condition->lhs().try_as<op_var>().clone() : VertexAdaptor<op_var>{};
-  if (!instance_var) {
+
+bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
+  if (v->type() == op_if) {
+    return on_if_user_recursion(v.as<op_if>());
+  } else if (v->type() == op_catch) {
+    return on_catch_user_recursion(v.as<op_catch>());
+  } else if (v->type() == op_lambda) {
+    return on_lambda_user_recursion(v.as<op_lambda>());
+  }
+  
+  return false;
+}
+
+// handle `if ($x instanceof A)`, replace $x with a temp var inside its body
+bool TransformToSmartInstanceofPass::on_if_user_recursion(VertexAdaptor<op_if> v_if) {
+  auto condition = get_instanceof_from_if_condition(v_if);
+  if (!condition) {
     return false;
   }
+  auto instance_var = condition->lhs().as<op_var>().clone();
 
-  run_function_pass(if_vertex->cond(), this);
+  run_function_pass(v_if->cond(), this);
 
-  add_tmp_var_with_instance_cast(instance_var, condition->rhs(), if_vertex->true_cmd_ref());
-  new_names_of_var[instance_var->str_val].pop();
+  add_tmp_var_with_instance_cast(instance_var, condition->rhs(), v_if->true_cmd_ref());
+  new_names_of_var[instance_var->get_string()].pop();
+  on_enter_vertex(instance_var);
 
-  if (if_vertex->has_false_cmd()) {
-    run_function_pass(if_vertex->false_cmd_ref(), this);
+  if (v_if->has_false_cmd()) {
+    run_function_pass(v_if->false_cmd_ref(), this);
   }
+
   return true;
 }
 
-void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd) {
+// handle `catch (SomeExceptionClass $e)`, replace $e with a different name
+// this allows using multiple catch cases in a single try with the same variable name $e
+// (without this, assumptions will be mixed)
+bool TransformToSmartInstanceofPass::on_catch_user_recursion(VertexAdaptor<op_catch> v_catch) {
+  auto instance_var = v_catch->var();
+  auto v_exception = VertexAdaptor<op_var>::create();
+  v_exception->str_val = gen_unique_name("exception");
+  new_names_of_var[instance_var->str_val].push(v_exception->str_val);
+  v_catch->var_ref() = v_exception;
+  run_function_pass(v_catch->cmd_ref(), this);
+  new_names_of_var[instance_var->str_val].pop();
+
+  return true;
+}
+
+// handle `fn() => $captured_var` — maybe, $captured_var from uses_list is modified (i.e. from smart instanceof or catch)
+bool TransformToSmartInstanceofPass::on_lambda_user_recursion(VertexAdaptor<op_lambda> v_lambda) {
+  FunctionPtr f_lambda = v_lambda->func_id;
+  for (auto &var_as_use : f_lambda->uses_list) {
+    var_as_use = on_enter_vertex(var_as_use).as<op_var>();
+  }
+  run_function_pass(f_lambda->root, this);
+
+  return true;
+}
+
+void TransformToSmartInstanceofPass::add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd) {
   auto set_instance_cast_to_tmp = generate_tmp_var_with_instance_cast(instance_var, name_of_derived);
   auto &name_of_tmp_var = set_instance_cast_to_tmp->lhs().as<op_var>()->str_val;
   new_names_of_var[instance_var->str_val].push(name_of_tmp_var);
@@ -38,7 +79,7 @@ void TransformToSmartInstanceof::add_tmp_var_with_instance_cast(VertexAdaptor<op
   });
 }
 
-VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v) {
+VertexPtr TransformToSmartInstanceofPass::on_enter_vertex(VertexPtr v) {
   if (v->type() != op_var || new_names_of_var.empty()) {
     return v;
   }
@@ -51,9 +92,9 @@ VertexPtr TransformToSmartInstanceof::on_enter_vertex(VertexPtr v) {
   return v;
 }
 
-VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex) {
+VertexAdaptor<op_set> TransformToSmartInstanceofPass::generate_tmp_var_with_instance_cast(VertexPtr instance_var, VertexPtr derived_name_vertex) {
   auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var, derived_name_vertex).set_location(instance_var);
-  cast_to_derived->set_string("instance_cast");
+  cast_to_derived->str_val = "instance_cast";
 
   auto tmp_var = VertexAdaptor<op_var>::create().set_location(instance_var);
   tmp_var->set_string(gen_unique_name(instance_var->get_string()));
@@ -66,13 +107,14 @@ VertexAdaptor<op_set> TransformToSmartInstanceof::generate_tmp_var_with_instance
   return set_instance_cast_to_tmp;
 }
 
-VertexAdaptor<op_instanceof> TransformToSmartInstanceof::get_instanceof_from_if(VertexAdaptor<op_if> if_vertex) {
-  if (if_vertex) {
-    if (auto condition = if_vertex->cond().try_as<op_conv_bool>()) {
-      return condition->expr().try_as<op_instanceof>();
+VertexAdaptor<op_instanceof> TransformToSmartInstanceofPass::get_instanceof_from_if_condition(VertexAdaptor<op_if> if_vertex) {
+  if (auto condition = if_vertex->cond().try_as<op_conv_bool>()) {
+    if (auto as_instanceof = condition->expr().try_as<op_instanceof>()) {
+      if (as_instanceof->lhs()->type() == op_var) {
+        return as_instanceof;
+      }
     }
   }
 
   return {};
 }
-

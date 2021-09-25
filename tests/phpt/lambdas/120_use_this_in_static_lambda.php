@@ -1,5 +1,5 @@
 @kphp_should_fail
-/static lambda/
+/Using \$this in a static lambda/
 <?php
 
 class A {
