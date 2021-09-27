@@ -1126,9 +1126,7 @@ VertexAdaptor<op_foreach> GenTree::get_foreach() {
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
 
-  VertexAdaptor<op_foreach_param> foreach_param;
-  VertexPtr foreach_list;
-  std::tie(foreach_param, foreach_list) = get_foreach_param();
+  auto [foreach_param, foreach_list] = get_foreach_param();
 
   CE (!kphp_error(foreach_param, "Failed to parse 'foreach' params"));
   CE (expect(tok_clpar, "')'"));
