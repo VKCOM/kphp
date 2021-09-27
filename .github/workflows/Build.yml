@@ -16,12 +16,12 @@ jobs:
         include:
           - os: buster
             compiler: g++
-            cpp: 14
+            cpp: 17
             asan: off
             ubsan: off
           - os: focal
             compiler: g++
-            cpp: 14
+            cpp: 17
             asan: off
             ubsan: off
           - os: focal
@@ -86,7 +86,7 @@ jobs:
         include:
           - os: macos
             compiler: clang++
-            cpp: 14
+            cpp: 17
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
     
