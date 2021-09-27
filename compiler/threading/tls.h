@@ -4,10 +4,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <thread>
-
-#include "common/algorithms/clamp.h"
 
 #include "compiler/threading/locks.h"
 #include "compiler/threading/thread-id.h"
@@ -18,7 +17,7 @@
 const int MAX_THREADS_COUNT = 102;
 
 inline uint32_t get_default_threads_count() noexcept {
-  return vk::clamp(std::thread::hardware_concurrency(), 1U, static_cast<uint32_t>(MAX_THREADS_COUNT));
+  return std::clamp(std::thread::hardware_concurrency(), 1U, static_cast<uint32_t>(MAX_THREADS_COUNT));
 }
 
 template<class T>
