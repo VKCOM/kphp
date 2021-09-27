@@ -36,6 +36,8 @@ public:
 
   void init();
 
+  void rearm_read_job_fd();
+
   int job_parse_execute(connection *c);
 
   void reset_running_job() noexcept;
@@ -47,6 +49,8 @@ public:
   bool reply_is_expected() const noexcept;
 
 private:
+  static const int EPOLL_FLAGS;
+
   const char *send_job_reply(JobSharedMessage *response) noexcept;
 
   JobSharedMessage *running_job{nullptr};

@@ -54,8 +54,10 @@ void jobs_server_at_query_end(connection *c) {
 
   c->flags |= C_REPARSE;
 
-  vk::singleton<JobWorkerServer>::get().flush_job_stat();
-  vk::singleton<JobWorkerServer>::get().reset_running_job();
+  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
+  job_worker_server.flush_job_stat();
+  job_worker_server.reset_running_job();
+  job_worker_server.rearm_read_job_fd();
 
   assert (c->status != conn_wait_net);
 }
@@ -117,6 +119,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   }
 
   if (running_job) {
+    // Despite EPOLLONESHOT is used it anyway can happen but very rarely.
+    // It still can happen if the job, that is currently running, was started from C_REPARSE flag set in jobs_server_at_query_end rather than from epoll event
     tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_another_is_running;
     return 0;
@@ -129,10 +133,13 @@ int JobWorkerServer::job_parse_execute(connection *c) {
     assert(errno == EWOULDBLOCK);
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
+    tvkprintf(job_workers, 3, "No jobs in pipe after wakeup\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_steal;
+    rearm_read_job_fd(); // because > 1 workers can wake up on single job
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_read;
+    rearm_read_job_fd();
     return -1;
   }
 
@@ -172,6 +179,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   return 0;
 }
 
+const int JobWorkerServer::EPOLL_FLAGS = EVT_READ | EVT_LEVEL | EVT_SPEC | EPOLLONESHOT;
+
 void JobWorkerServer::init() {
   const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
 
@@ -179,13 +188,19 @@ void JobWorkerServer::init() {
 
   read_job_fd = job_workers_ctx.job_pipe[0];
 
-  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL | EVT_SPEC);
+  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EPOLL_FLAGS);
   assert(read_job_connection);
   memset(read_job_connection->custom_data, 0, sizeof(read_job_connection->custom_data));
 
   tvkprintf(job_workers, 1, "insert read job connection [fd = %d] to epoll\n", read_job_connection->fd);
 
   job_reader = PipeJobReader{read_job_fd};
+}
+
+
+void JobWorkerServer::rearm_read_job_fd() {
+  // We need to rearm fd because we use EPOLLONESHOT
+  epoll_insert(read_job_fd, EPOLL_FLAGS);
 }
 
 void JobWorkerServer::reset_running_job() noexcept {
