@@ -27,7 +27,6 @@
 #include <sstream>
 #include <vector>
 
-#include "common/algorithms/clamp.h"
 #include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/dl-utils-lite.h"
@@ -1257,7 +1256,7 @@ void run_master_on() {
       auto &warm_up_ctx = WarmUpContext::get();
       warm_up_ctx.try_start_warmup();
 
-      int set_to_kill = vk::clamp(MAX_KILL - other->dying_http_workers_n, 0, other->running_http_workers_n);
+      int set_to_kill = std::clamp(MAX_KILL - other->dying_http_workers_n, 0, other->running_http_workers_n);
       bool need_more_workers_for_warmup = warm_up_ctx.need_more_workers_for_warmup();
       bool is_instance_cache_hot_enough = warm_up_ctx.is_instance_cache_hot_enough();
       bool warmup_timeout_expired = warm_up_ctx.warmup_timeout_expired();

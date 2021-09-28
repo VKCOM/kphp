@@ -262,9 +262,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   }
 
   while (!mtime_queue.empty()) {
-    long long mtime;
-    File *file;
-    std::tie(mtime, file) = mtime_queue.top();
+    const auto [mtime, file] = mtime_queue.top();
     mtime_queue.pop();
 
     if (dep_mtime[file] != mtime) {
@@ -276,7 +274,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
       continue;
     }
 
-    for (auto including_file: file_includes_it->second) {
+    for (auto *including_file: file_includes_it->second) {
       auto &including_file_mtime = dep_mtime[including_file];
       if (including_file_mtime < mtime) {
         including_file_mtime = mtime;

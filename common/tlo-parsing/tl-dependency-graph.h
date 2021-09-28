@@ -9,6 +9,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 
 namespace vk {
 namespace tlo_parsing {
@@ -20,43 +21,29 @@ struct combinator;
 struct DependencyGraphBuilder;
 
 struct TLNode {
-  enum {
-    holds_combinator,
-    holds_type,
-  } node_type;
-
-  explicit TLNode(const combinator *c) :
-    node_type(holds_combinator) {
-    tl_object_ptr_.combinator_ptr = c;
-  }
-
-  explicit TLNode(const type *t) :
-    node_type(holds_type) {
-    tl_object_ptr_.type_ptr = t;
-  }
+  explicit TLNode(const combinator *c)
+    : tl_object_ptr_(c) {}
+  explicit TLNode(const type *t)
+    : tl_object_ptr_(t) {}
 
   bool is_type() const {
-    return node_type == holds_type;
+    return std::holds_alternative<const type *>(tl_object_ptr_);
   }
 
   bool is_combinator() const {
-    return node_type == holds_combinator;
+    return std::holds_alternative<const combinator *>(tl_object_ptr_);
   }
 
   const type *get_type() const {
-    return tl_object_ptr_.type_ptr;
+    return std::get<const type *>(tl_object_ptr_);
   }
 
   const combinator *get_combinator() const {
-    return tl_object_ptr_.combinator_ptr;
+    return std::get<const combinator *>(tl_object_ptr_);
   }
 
 private:
-  // TODO when we switch to C++17, use std::variant
-  union {
-    const combinator *combinator_ptr;
-    const type *type_ptr;
-  } tl_object_ptr_;
+  std::variant<const combinator *, const type *> tl_object_ptr_;
 };
 
 class DependencyGraph {

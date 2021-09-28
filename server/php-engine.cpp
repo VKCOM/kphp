@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "common/algorithms/clamp.h"
 #include "common/algorithms/find.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"

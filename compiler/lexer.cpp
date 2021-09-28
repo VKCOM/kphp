@@ -7,7 +7,11 @@
 #include <map>
 #include <utility>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include "auto/compiler/keywords_set.hpp"
+#pragma GCC diagnostic pop
+
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/singleton.h"
 

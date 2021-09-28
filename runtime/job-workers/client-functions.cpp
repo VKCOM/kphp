@@ -2,9 +2,8 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <algorithm>
 #include <chrono>
-
-#include "common/algorithms/clamp.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/instance-copy-processor.h"
@@ -115,7 +114,7 @@ double normalize_job_timeout(double timeout) {
   }
   if (timeout < 0.05 || timeout > script_timeout) {
     php_warning("timeout value was clamped to [%f; %d]", 0.05, script_timeout);
-    return vk::clamp(timeout, 0.05, script_timeout * 1.0);
+    return std::clamp(timeout, 0.05, script_timeout * 1.0);
   }
   return timeout;
 }

@@ -8,10 +8,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(COMPILER_GCC True)
 endif()
 
-set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
-
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_EXTENSIONS OFF)
+if (CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "c++17 expected at least!")
+endif()
 cmake_print_variables(CMAKE_CXX_STANDARD)
 
 if(APPLE)

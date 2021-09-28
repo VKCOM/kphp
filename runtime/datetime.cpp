@@ -565,10 +565,7 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
-  // TODO: use structured bindings when we have C++17
-  int64_t ts = 0;
-  bool ok = false;
-  std::tie(ts, ok) = php_timelib_strtotime(f$date_default_timezone_get(), time_str, timestamp);
+  auto [ts, ok] = php_timelib_strtotime(f$date_default_timezone_get(), time_str, timestamp);
   return ok ? Optional<int64_t>(ts) : Optional<int64_t>(false);
 }
 

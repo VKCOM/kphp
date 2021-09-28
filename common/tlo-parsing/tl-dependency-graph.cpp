@@ -49,17 +49,10 @@ int vk::tlo_parsing::DependencyGraph::register_node(const TLNode &node) {
   std::string tl_name;
   const combinator *c = nullptr;
   const type *t = nullptr;
-  switch (node.node_type) {
-    case TLNode::holds_combinator:
-      c = node.get_combinator();
-      tl_name = c->name;
-      break;
-    case TLNode::holds_type:
-      t = node.get_type();
-      tl_name = t->name;
-      break;
-    default:
-      assert(false);
+  if (node.is_combinator()) {
+     tl_name = node.get_combinator()->name;
+  } else if (node.is_type()) {
+    tl_name = node.get_type()->name;
   }
   int node_id;
   auto it = tl_name_to_id.find(tl_name);
