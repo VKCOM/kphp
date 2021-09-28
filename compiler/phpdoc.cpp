@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <utility>
+#include <charconv>
 
 #include "common/termformat/termformat.h"
 
@@ -273,7 +274,8 @@ const TypeHint *PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
-  int arg_num = std::stoi(std::string(cur_tok->str_val));
+  int arg_num = 0;
+  std::from_chars(cur_tok->str_val.begin(), cur_tok->str_val.end(), arg_num);
   cur_tok++;
 
   if (cur_tok->type() == tok_oppar && (cur_tok + 1)->type() == tok_clpar) {

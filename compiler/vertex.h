@@ -10,6 +10,8 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
+#include <charconv>
+
 namespace std {
 template<Operation Op>
 struct hash<VertexAdaptor<Op>> : private VertexAdaptor<Op>::Hash {
@@ -68,11 +70,19 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
 // op_int_const string representation can be "123", "0x123", "0002", "-123", "0b0010101"
 // but it is guaranteed to be a valid int
 inline long parse_int_from_string(VertexAdaptor<op_int_const> v) {
-  auto start = v->get_string().c_str();
-
+  const auto *start = v->get_string().c_str();
+  long result = 0;
+  int base = 10;
   if (start[0] == '0' && start[1] == 'b') {
-    return std::strtol(start + 2, nullptr, 2);
+    base = 2;
+    start += 2;
+  } else if (start[0] == '0' && start[1] == 'x') {
+    base = 16;
+    start += 2;
+  } else if (start[0] == '0') {
+    base = 8;
+    start += 1;
   }
-
-  return std::strtol(start, nullptr, 0);
+  std::from_chars(start, start + v->get_string().length(), result, base);
+  return result;
 }
