@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
@@ -7,14 +7,14 @@
 #include <array>
 #include <cassert>
 #include <memory>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
-#include "common/wrappers/optional.h"
 
 template<typename T>
 struct Trie : private vk::not_copyable {
   std::array<std::unique_ptr<Trie>, 256> next{};
-  vk::optional<T> val;
+  std::optional<T> val;
 
   void add(const string &s, T val) {
     Trie *cur = this;
@@ -30,7 +30,7 @@ struct Trie : private vk::not_copyable {
     cur->val = std::move(val);
   }
 
-  vk::optional<T> get_deepest(const char *s) {
+  std::optional<T> get_deepest(const char *s) {
     auto *best = this;
 
     for (auto cur = this; *s && cur; ++s) {

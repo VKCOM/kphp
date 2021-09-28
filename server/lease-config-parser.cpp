@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/lease-config-parser.h"
@@ -8,12 +8,11 @@
 
 #include "common/kprintf.h"
 #include "common/tl/constants/kphp.h"
-#include "common/wrappers/optional.h"
 
 #include "server/lease-context.h"
 
-vk::optional<QueueTypesLeaseWorkerMode> LeaseConfigParser::get_lease_mode_from_config(const YAML::Node &node) {
-  vk::optional<QueueTypesLeaseWorkerMode> lease_worker_mode;
+std::optional<QueueTypesLeaseWorkerMode> LeaseConfigParser::get_lease_mode_from_config(const YAML::Node &node) {
+  std::optional<QueueTypesLeaseWorkerMode> lease_worker_mode;
   if (const auto &type_names = node["type_names"]) {
     QueueTypesLeaseWorkerMode mode;
     if (type_names.size() == 0) {
@@ -44,7 +43,7 @@ std::vector<LeaseRpcClient> LeaseConfigParser::get_rpc_clients_from_config(const
       rpc_client.host = get_typed_field<std::string>(rpc_client_node, "host");
       rpc_client.port = get_typed_field<int>(rpc_client_node, "port");
       rpc_client.actor = get_typed_field<int>(rpc_client_node, "actor", true, -1);
-      if (auto err = rpc_client.check()) {
+      if (const auto *err = rpc_client.check()) {
         throw std::runtime_error(err);
       }
       rpc_clients.emplace_back(std::move(rpc_client));

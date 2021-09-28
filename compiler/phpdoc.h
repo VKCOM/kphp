@@ -1,14 +1,13 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
-
-#include "common/wrappers/optional.h"
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
@@ -105,7 +104,7 @@ std::vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc);
 PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_str, FunctionPtr current_function);
 
 PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function);
-vk::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
+std::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);
 
 std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function);
 std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type);

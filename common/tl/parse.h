@@ -1,22 +1,17 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 #include <functional>
 #include <memory>
 #include <string>
+#include <optional>
 #include <vector>
 
 #include "common/pid.h"
 #include "common/rpc-error-codes.h"
-#include "common/wrappers/optional.h"
 #include "common/tl/methods/base.h"
 
 
@@ -109,7 +104,7 @@ bool tl_is_fetch_inited();
 void tl_set_current_query_id(long long qid);
 long long tl_current_query_id();
 
-int tl_store_stats(const char *s, int raw, const vk::optional<std::vector<std::string>> &sorted_filter_keys);
+int tl_store_stats(const char *s, int raw, const std::optional<std::vector<std::string>> &sorted_filter_keys);
 void tl_fetch_init(std::unique_ptr<tl_in_methods> methods, int64_t size);
 void tl_store_init(std::unique_ptr<tl_out_methods> methods, int64_t size);
 void tl_fetch_set_error(int errnum, std::string error);

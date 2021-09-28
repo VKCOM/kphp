@@ -1,18 +1,12 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
-
-namespace tl {
-    template <class T> class optional;
-}
-namespace vk {
-    using ::tl::optional;
-}
 
 // This mode is set from YAML config on KPHP server startup
 // and sent from KPHP to tasks in kphp.readyV2
@@ -41,4 +35,4 @@ inline const char *lease_worker_mode_str(LeaseWorkerMode mode) {
   return "unreachable";
 }
 
-LeaseWorkerMode get_lease_mode(const vk::optional<QueueTypesLeaseWorkerMode> &mode);
+LeaseWorkerMode get_lease_mode(const std::optional<QueueTypesLeaseWorkerMode> &mode);

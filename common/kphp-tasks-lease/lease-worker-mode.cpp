@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
@@ -8,7 +8,6 @@
 #include "common/tl/fetch.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
-#include "common/wrappers/optional.h"
 
 QueueTypesLeaseWorkerMode QueueTypesLeaseWorkerMode::tl_fetch() {
   QueueTypesLeaseWorkerMode mode;
@@ -28,6 +27,6 @@ void QueueTypesLeaseWorkerMode::tl_store() const {
   vk::tl::store_vector(type_names);
 }
 
-LeaseWorkerMode get_lease_mode(const vk::optional<QueueTypesLeaseWorkerMode> &mode) {
+LeaseWorkerMode get_lease_mode(const std::optional<QueueTypesLeaseWorkerMode> &mode) {
     return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
 }

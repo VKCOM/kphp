@@ -20,8 +20,6 @@ KPHP linkage depends on some custom packages, that are also compiled from source
 * epoll implementation for MacOS [on Github]({{site.url_package_epoll_shim}}) (branch *osx-platform*)
 * custom timelib build [on Github]({{site.url_package_timelib}}) (branch *master*)
 
-KPHP compilation depends on some third-party libraries, which are just copied to the `third_party/` folder as is, containing all references to originals. 
-
 KPHP is compiled with CMake and packed with CPack.
 
 

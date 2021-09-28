@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "common/tl/query-header.h"
@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 #include "common/binlog/kdb-binlog-common.h"
 
@@ -19,7 +20,6 @@
 #include "common/tl/methods/compression.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
-#include "common/wrappers/optional.h"
 
 static int tl_fetch_query_flags(tl_query_header_t *header) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
@@ -186,19 +186,19 @@ static int tl_fetch_query_answer_flags(tl_query_answer_header_t *header) {
     static const int max_len = 64;
     static char buf[max_len];
 
-    auto fetch_stat = [](const char *expected_name, int idx) -> tl::optional<double> {
+    auto fetch_stat = [](const char *expected_name, int idx) -> std::optional<double> {
       tl_fetch_string0(buf, max_len);
       if (tl_fetch_error() || strcmp(buf, expected_name)) {
         tl_fetch_set_error_format(TL_ERROR_HEADER, "Stat #%d should be '%s', not '%s'", idx, expected_name, buf);
-        return tl::nullopt;
+        return std::nullopt;
       }
       double res;
       tl_fetch_string0(buf, max_len);
       if (tl_fetch_error() || sscanf(buf, "%lf", &res) != 1) {
         tl_fetch_set_error_format(TL_ERROR_HEADER, "Stat #%d value is expected to be double, not '%s'", idx, buf);
-        return tl::nullopt;
+        return std::nullopt;
       }
-      return tl::make_optional(res);
+      return std::make_optional(res);
     };
 
     auto proxy_got_query_ts = fetch_stat("proxy_got_query_ts", 1);

@@ -1,11 +1,12 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -62,7 +63,7 @@ struct storer<std::pair<T1, T2>, false> {
 };
 
 template<typename T, typename Storer = storer<T>>
-void store_optional(const vk::optional<T> &value, Storer &&store_func = {}) {
+void store_optional(const std::optional<T> &value, Storer &&store_func = {}) {
   if (value.has_value()) {
     tl_store_int(TL_MAYBE_TRUE);
     store_func(*value);
@@ -72,8 +73,8 @@ void store_optional(const vk::optional<T> &value, Storer &&store_func = {}) {
 }
 
 template<typename T>
-struct storer<vk::optional<T>, false> {
-  void operator()(const vk::optional<T> &s) const {
+struct storer<std::optional<T>, false> {
+  void operator()(const std::optional<T> &s) const {
     store_optional(s);
   }
 };
