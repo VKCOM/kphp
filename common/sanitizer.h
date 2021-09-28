@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include <stdbool.h>
-
-// The above is a work around GCC 4.9 implementation bug: the header below uses `bool` but doesn't include <stdbool.h> in C mode.
 #include <sanitizer/asan_interface.h>
 
 #if defined(__SANITIZE_ADDRESS__)

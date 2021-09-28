@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14..3.18)
 project(kphp
         VERSION 1.0.1
+        LANGUAGES CXX
         DESCRIPTION "Compiler for PHP (aka KPHP)"
         HOMEPAGE_URL https://github.com/VKCOM/kphp)
 

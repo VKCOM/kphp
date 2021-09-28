@@ -12,16 +12,6 @@ from python.lib.colors import red, green, yellow, cyan
 from python.lib.file_utils import make_distcc_env, read_distcc_hosts
 
 
-def get_distributive_name():
-    with open("/etc/issue") as f:
-        version_line = f.readline()
-    if version_line.startswith("Debian GNU/Linux 10 "):
-        return "buster"
-    if version_line.startswith("Debian GNU/Linux 8 "):
-        return "jessie"
-    return "unknown"
-
-
 class TestStatus(Enum):
     FAILED = red("failed")
     PASSED = green("passed")
@@ -276,7 +266,6 @@ if __name__ == "__main__":
     distcc_cmake_option = ""
     distcc_hosts_file = ""
     if args.use_distcc:
-        distributive_name = get_distributive_name()
         distcc_hosts_file = "/etc/distcc/hosts"
         distcc_options = "--distcc-host-list {}".format(distcc_hosts_file)
         os.environ.update(make_distcc_env(read_distcc_hosts(distcc_hosts_file), os.path.join(runner_dir, "tmp_distcc")))

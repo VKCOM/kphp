@@ -48,3 +48,10 @@ function(allow_deprecated_declarations_for_apple)
         allow_deprecated_declarations(${ARGN})
     endif()
 endfunction()
+
+function(check_compiler_version compiler_name compiler_version)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${compiler_version})
+        message(FATAL_ERROR "${compiler_name} version ${compiler_version} required at least, "
+                "you run at ${CMAKE_CXX_COMPILER_VERSION}!")
+    endif()
+endfunction(check_compiler_version)

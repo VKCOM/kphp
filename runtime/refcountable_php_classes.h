@@ -60,22 +60,12 @@ template<class ...Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
-  // remove this after removing jessie support
-  refcountable_polymorphic_php_classes_virt(const refcountable_polymorphic_php_classes_virt &) __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt(refcountable_polymorphic_php_classes_virt &&) noexcept __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt &operator=(const refcountable_polymorphic_php_classes_virt &) __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt &operator=(refcountable_polymorphic_php_classes_virt &&) noexcept __attribute__((always_inline)) = default;
 };
 
 template<>
 class refcountable_polymorphic_php_classes_virt<> : public virtual abstract_refcountable_php_interface {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
-  // remove this after removing jessie support
-  refcountable_polymorphic_php_classes_virt(const refcountable_polymorphic_php_classes_virt &) __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt(refcountable_polymorphic_php_classes_virt &&) noexcept __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt &operator=(const refcountable_polymorphic_php_classes_virt &) __attribute__((always_inline)) = default;
-  refcountable_polymorphic_php_classes_virt &operator=(refcountable_polymorphic_php_classes_virt &&) noexcept __attribute__((always_inline)) = default;
 
   void add_ref() noexcept final {
     if (refcnt_ < ExtraRefCnt::for_global_const) {
