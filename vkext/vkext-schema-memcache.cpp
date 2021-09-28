@@ -374,7 +374,7 @@ int is_php_array(struct tl_type *t) {
 
 int is_php_builtin(struct tl_type *t) {
   if (t->name == TL_INT || t->name == TL_DOUBLE || t->name == TL_FLOAT || t->name == TL_LONG || t->name == TL_STRING ||
-      !strcmp(t->id, "Bool") || !strcmp(t->id, "Maybe")) {
+      !strcmp(t->id, "Bool") || !strcmp(t->id, "Maybe") || !strcmp(t->id, "#")) {
     return 1;
   } else {
     return 0;
@@ -435,7 +435,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
         dst += make_tl_class_name(dst, "", cur_type->constructors[0]->id, "", '\0');
       } else if (cur_type->name == TL_DOUBLE) {
         dst += make_tl_class_name(dst, "", "float", "", '\0');
-      } else if (cur_type->name == TL_LONG) {
+      } else if (cur_type->name == TL_LONG || !strcmp(cur_type->id, "#")) {
         dst += make_tl_class_name(dst, "", "int", "", '\0');
       } else if (!strcmp(cur_type->id, "Bool")) {
         dst += make_tl_class_name(dst, "", "bool", "", '\0');
