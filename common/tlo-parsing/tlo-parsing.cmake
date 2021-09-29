@@ -11,7 +11,7 @@ prepend(TLO_PARSING_OBJECTS ${COMMON_DIR}/tlo-parsing/
 
 vk_add_library(tlo_parsing_src OBJECT ${TLO_PARSING_OBJECTS})
 
-set_target_properties(tlo_parsing_src PROPERTIES POSITION_INDEPENDENT_CODE 1)
+set_target_properties(tlo_parsing_src PROPERTIES POSITION_INDEPENDENT_CODE 1 CXX_STANDARD 17)
 
 prepend(TLO_PARSING_PUBLIC_HEADERS ${COMMON_DIR}/tlo-parsing/
         tl-objects.h
