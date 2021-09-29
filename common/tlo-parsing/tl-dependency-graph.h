@@ -9,7 +9,6 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <variant>
 
 namespace vk {
 namespace tlo_parsing {
@@ -21,29 +20,44 @@ struct combinator;
 struct DependencyGraphBuilder;
 
 struct TLNode {
-  explicit TLNode(const combinator *c)
-    : tl_object_ptr_(c) {}
-  explicit TLNode(const type *t)
-    : tl_object_ptr_(t) {}
+  enum {
+    holds_combinator,
+    holds_type,
+  } node_type;
+
+  explicit TLNode(const combinator *c) :
+    node_type(holds_combinator) {
+    tl_object_ptr_.combinator_ptr = c;
+  }
+
+  explicit TLNode(const type *t) :
+    node_type(holds_type) {
+    tl_object_ptr_.type_ptr = t;
+  }
 
   bool is_type() const {
-    return std::holds_alternative<const type *>(tl_object_ptr_);
+    return node_type == holds_type;
   }
 
   bool is_combinator() const {
-    return std::holds_alternative<const combinator *>(tl_object_ptr_);
+    return node_type == holds_combinator;
   }
 
   const type *get_type() const {
-    return std::get<const type *>(tl_object_ptr_);
+    return tl_object_ptr_.type_ptr;
   }
 
   const combinator *get_combinator() const {
-    return std::get<const combinator *>(tl_object_ptr_);
+    return tl_object_ptr_.combinator_ptr;
   }
 
 private:
-  std::variant<const combinator *, const type *> tl_object_ptr_;
+  // TODO: use std::variant here only when engine repo will compiled under c++17 standard,
+  // because this header file used there
+  union {
+    const combinator *combinator_ptr;
+    const type *type_ptr;
+  } tl_object_ptr_;
 };
 
 class DependencyGraph {
