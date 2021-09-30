@@ -49,8 +49,6 @@ public:
   bool reply_is_expected() const noexcept;
 
 private:
-  static const int EPOLL_FLAGS;
-
   const char *send_job_reply(JobSharedMessage *response) noexcept;
 
   JobSharedMessage *running_job{nullptr};

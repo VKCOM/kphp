@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 
+#include "common/containers/final_action.h"
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
 
@@ -24,6 +25,8 @@
 namespace job_workers {
 
 namespace {
+
+constexpr int EPOLL_FLAGS = EVT_READ | EVT_LEVEL | EVT_SPEC | EPOLLONESHOT;
 
 struct JobCustomData {
   php_worker *worker;
@@ -129,19 +132,23 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   JobSharedMessage *job = nullptr;
   PipeJobReader::ReadStatus status = job_reader.read_job(job);
 
+  auto job_fd_rearmer = vk::finally([this]() {
+    rearm_read_job_fd(); // because > 1 workers can wake up on single job
+  });
+
   if (status == PipeJobReader::READ_BLOCK) {
     assert(errno == EWOULDBLOCK);
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
     tvkprintf(job_workers, 3, "No jobs in pipe after wakeup\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_steal;
-    rearm_read_job_fd(); // because > 1 workers can wake up on single job
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_read;
-    rearm_read_job_fd();
     return -1;
   }
+
+  job_fd_rearmer.disable();
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   --memory_manager.get_stats().job_queue_size;
@@ -179,7 +186,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   return 0;
 }
 
-const int JobWorkerServer::EPOLL_FLAGS = EVT_READ | EVT_LEVEL | EVT_SPEC | EPOLLONESHOT;
 
 void JobWorkerServer::init() {
   const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
