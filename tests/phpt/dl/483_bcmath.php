@@ -108,7 +108,7 @@
   var_dump (bcdiv("-645345345.88", "0.1", 6));
 
   $a = array ("0.0", "-1.111111", "1.12312312", "-1.111111", "1.12312312", "1.111111", "-1.12312312", "1000101010101", "9999999999999", "0000.1111111", "-123123213213.1", "-1");
-  $b = array (0, 1, 2, 3, 4, 5, 10, 20, 100);
+  $b = array (2, 3, 4, 5, 10, 20, 100);
   foreach ($a as $u)
     foreach ($a as $v) 
       foreach ($b as $scale) {
@@ -121,3 +121,43 @@
         var_dump ("$u <=> $v = ".bccomp ($u, $v, $scale));
       }
 
+function test_bcmath_negative_zero() {
+/*
+  bcmath behaviour was fixed since 7.4.23 and 8.0.10 php versions.
+  In new php versions and in kphp bcmath never returns numbers like -0, -0.0 (but returns 0, 0.0).
+  See https://bugs.php.net/bug.php?id=78238 for more details.
+*/
+  #ifndef KPHP
+  if ((version_compare(PHP_VERSION, "7.4.23") >= 0) &&
+       (version_compare(PHP_VERSION, "8.0.0") < 0) ||
+       (version_compare(PHP_VERSION, "8.0.10") >= 0)) {
+  #endif
+    var_dump(bcadd("0", "-0.1"));    // 0
+    var_dump(bcadd("0", "-0.1", 1)); // -0.1
+    var_dump(bcadd("0", "-0.1", 2)); // -0.10
+
+    var_dump(bcmul("0.9", "-0.1"));    // 0
+    var_dump(bcmul("0.9", "-0.1", 1)); // 0.0
+    var_dump(bcmul("0.9", "-0.1", 2)); // -0.09
+
+    var_dump(bcmul("0.90", "-0.1"));    // 0
+    var_dump(bcmul("0.90", "-0.1", 1)); // 0.0
+    var_dump(bcmul("0.90", "-0.1", 2)); // -0.09
+  #ifndef KPHP
+  } else {
+    var_dump("0");
+    var_dump("-0.1");
+    var_dump("-0.10");
+
+    var_dump("0");
+    var_dump("0.0");
+    var_dump("-0.09");
+
+    var_dump("0");
+    var_dump("0.0");
+    var_dump("-0.09");
+  }
+  #endif
+}
+
+test_bcmath_negative_zero();

@@ -103,6 +103,10 @@ static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int
 
   php_assert (lint > 0 && lscale >= 0 && scale >= 0);
 
+  if (lscale > scale) {
+    lscale = scale;
+  }
+
   if (sign < 0 && lhs[lint] == '0') {
     sign = 1;
     for (int i = 0; i < lscale; i++) {
@@ -111,10 +115,6 @@ static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int
         break;
       }
     }
-  }
-
-  if (lscale > scale) {
-    lscale = scale;
   }
 
 /*
