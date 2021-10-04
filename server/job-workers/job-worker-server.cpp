@@ -9,15 +9,13 @@
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
 
-#include "net/net-events.h"
 #include "net/net-connections.h"
+#include "net/net-events.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
-#include "server/php-master-restart.h"
 #include "server/php-worker.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
@@ -62,11 +60,11 @@ void jobs_server_at_query_end(connection *c) {
   job_worker_server.reset_running_job();
   job_worker_server.rearm_read_job_fd();
 
-  assert (c->status != conn_wait_net);
+  assert(c->status != conn_wait_net);
 }
 
 int jobs_server_php_wakeup(connection *c) {
-  assert (c->status == conn_expect_query || c->status == conn_wait_net);
+  assert(c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
@@ -75,13 +73,12 @@ int jobs_server_php_wakeup(connection *c) {
   if (timeout == 0) {
     jobs_server_at_query_end(c);
   } else {
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (timeout > 0);
+    assert(c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert(timeout > 0);
     set_connection_timeout(c, timeout);
   }
   return 0;
 }
-
 
 conn_type_t php_jobs_server = [] {
   auto res = conn_type_t();
@@ -102,7 +99,7 @@ conn_type_t php_jobs_server = [] {
   res.init_outbound = server_failed;
   res.connected = server_failed;
   res.free_buffers = server_failed;
-  res.close = server_noop;    // can be on master termination, when fd is closed before SIGKILL is received
+  res.close = server_noop; // can be on master termination, when fd is closed before SIGKILL is received
 
   // The following handlers will be set to default ones:
   //    flush
@@ -186,7 +183,6 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   return 0;
 }
 
-
 void JobWorkerServer::init() {
   const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
 
@@ -202,7 +198,6 @@ void JobWorkerServer::init() {
 
   job_reader = PipeJobReader{read_job_fd};
 }
-
 
 void JobWorkerServer::rearm_read_job_fd() {
   // We need to rearm fd because we use EPOLLONESHOT
