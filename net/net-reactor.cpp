@@ -245,6 +245,9 @@ static int epoll_conv_flags(int flags) {
   if (!(flags & EVT_LEVEL)) {
     r |= EPOLLET;
   }
+  if (flags & EPOLLONESHOT) {
+    r |= EPOLLONESHOT;
+  }
   return r;
 }
 
@@ -323,7 +326,7 @@ int net_reactor_insert(net_reactor_ctx_t *ctx, int fd, int flags) {
     return 0;
   }
 
-  flags &= EVT_NEW | EVT_NOHUP | EVT_LEVEL | EVT_RWX;
+  flags &= EVT_NEW | EVT_NOHUP | EVT_LEVEL | EVT_RWX | EPOLLONESHOT;
   ev->ready = 0; // !!! this bugfix led to some AIO-related bugs, now fixed with the aid of C_REPARSE flag
   if ((ev->state & (EVT_LEVEL | EVT_RWX | EVT_IN_EPOLL)) == flags + EVT_IN_EPOLL) {
     return 0;

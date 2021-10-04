@@ -5,18 +5,17 @@
 #include <cassert>
 #include <chrono>
 
+#include "common/containers/final_action.h"
 #include "common/kprintf.h"
 #include "common/pipe-utils.h"
 
-#include "net/net-events.h"
 #include "net/net-connections.h"
+#include "net/net-events.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
-#include "server/php-master-restart.h"
 #include "server/php-worker.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
@@ -24,6 +23,8 @@
 namespace job_workers {
 
 namespace {
+
+constexpr int EPOLL_FLAGS = EVT_READ | EVT_LEVEL | EVT_SPEC | EPOLLONESHOT;
 
 struct JobCustomData {
   php_worker *worker;
@@ -54,14 +55,16 @@ void jobs_server_at_query_end(connection *c) {
 
   c->flags |= C_REPARSE;
 
-  vk::singleton<JobWorkerServer>::get().flush_job_stat();
-  vk::singleton<JobWorkerServer>::get().reset_running_job();
+  auto &job_worker_server = vk::singleton<JobWorkerServer>::get();
+  job_worker_server.flush_job_stat();
+  job_worker_server.reset_running_job();
+  job_worker_server.rearm_read_job_fd();
 
-  assert (c->status != conn_wait_net);
+  assert(c->status != conn_wait_net);
 }
 
 int jobs_server_php_wakeup(connection *c) {
-  assert (c->status == conn_expect_query || c->status == conn_wait_net);
+  assert(c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
@@ -70,13 +73,12 @@ int jobs_server_php_wakeup(connection *c) {
   if (timeout == 0) {
     jobs_server_at_query_end(c);
   } else {
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (timeout > 0);
+    assert(c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert(timeout > 0);
     set_connection_timeout(c, timeout);
   }
   return 0;
 }
-
 
 conn_type_t php_jobs_server = [] {
   auto res = conn_type_t();
@@ -97,7 +99,7 @@ conn_type_t php_jobs_server = [] {
   res.init_outbound = server_failed;
   res.connected = server_failed;
   res.free_buffers = server_failed;
-  res.close = server_noop;    // can be on master termination, when fd is closed before SIGKILL is received
+  res.close = server_noop; // can be on master termination, when fd is closed before SIGKILL is received
 
   // The following handlers will be set to default ones:
   //    flush
@@ -108,7 +110,7 @@ conn_type_t php_jobs_server = [] {
 
 } // namespace
 
-int JobWorkerServer::job_parse_execute(connection *c) {
+int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   assert(c == read_job_connection);
 
   if (sigterm_on) {
@@ -117,6 +119,8 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   }
 
   if (running_job) {
+    // Despite EPOLLONESHOT is used it anyway can happen but very rarely.
+    // It still can happen if the job, that is currently running, was started from C_REPARSE flag set in jobs_server_at_query_end rather than from epoll event
     tvkprintf(job_workers, 3, "Get new job while another job is running. Goes back to event loop now\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_another_is_running;
     return 0;
@@ -125,16 +129,23 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   JobSharedMessage *job = nullptr;
   PipeJobReader::ReadStatus status = job_reader.read_job(job);
 
+  auto job_fd_rearmer = vk::finally([this]() {
+    rearm_read_job_fd(); // because > 1 workers can wake up on single job
+  });
+
   if (status == PipeJobReader::READ_BLOCK) {
     assert(errno == EWOULDBLOCK);
     // another job worker has already taken the job (all job workers are readers for this fd)
     // or there are no more jobs in pipe
+    tvkprintf(job_workers, 3, "No jobs in pipe after wakeup\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_steal;
     return 0;
   } else if (status == PipeJobReader::READ_FAIL) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_read;
     return -1;
   }
+
+  job_fd_rearmer.disable();
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   --memory_manager.get_stats().job_queue_size;
@@ -172,20 +183,25 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   return 0;
 }
 
-void JobWorkerServer::init() {
+void JobWorkerServer::init() noexcept {
   const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
 
   assert(job_workers_ctx.pipes_inited);
 
   read_job_fd = job_workers_ctx.job_pipe[0];
 
-  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EVT_LEVEL | EVT_SPEC);
+  read_job_connection = epoll_insert_pipe(pipe_for_read, read_job_fd, &php_jobs_server, nullptr, EPOLL_FLAGS);
   assert(read_job_connection);
   memset(read_job_connection->custom_data, 0, sizeof(read_job_connection->custom_data));
 
   tvkprintf(job_workers, 1, "insert read job connection [fd = %d] to epoll\n", read_job_connection->fd);
 
   job_reader = PipeJobReader{read_job_fd};
+}
+
+void JobWorkerServer::rearm_read_job_fd() noexcept {
+  // We need to rearm fd because we use EPOLLONESHOT
+  epoll_insert(read_job_fd, EPOLL_FLAGS);
 }
 
 void JobWorkerServer::reset_running_job() noexcept {
@@ -217,7 +233,7 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   return nullptr;
 }
 
-void JobWorkerServer::store_job_response_error(const char *error_msg, int error_code) {
+void JobWorkerServer::store_job_response_error(const char *error_msg, int error_code) noexcept {
   php_assert(running_job);
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
