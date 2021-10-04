@@ -34,15 +34,15 @@ public:
 
   JobRequestStat job_stat;
 
-  void init();
+  void init() noexcept;
 
-  void rearm_read_job_fd();
+  void rearm_read_job_fd() noexcept;
 
-  int job_parse_execute(connection *c);
+  int job_parse_execute(connection *c) noexcept;
 
   void reset_running_job() noexcept;
 
-  void store_job_response_error(const char *error_msg, int error_code);
+  void store_job_response_error(const char *error_msg, int error_code) noexcept;
 
   void flush_job_stat() noexcept;
 

@@ -110,7 +110,7 @@ conn_type_t php_jobs_server = [] {
 
 } // namespace
 
-int JobWorkerServer::job_parse_execute(connection *c) {
+int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   assert(c == read_job_connection);
 
   if (sigterm_on) {
@@ -183,7 +183,7 @@ int JobWorkerServer::job_parse_execute(connection *c) {
   return 0;
 }
 
-void JobWorkerServer::init() {
+void JobWorkerServer::init() noexcept {
   const auto &job_workers_ctx = vk::singleton<JobWorkersContext>::get();
 
   assert(job_workers_ctx.pipes_inited);
@@ -199,7 +199,7 @@ void JobWorkerServer::init() {
   job_reader = PipeJobReader{read_job_fd};
 }
 
-void JobWorkerServer::rearm_read_job_fd() {
+void JobWorkerServer::rearm_read_job_fd() noexcept {
   // We need to rearm fd because we use EPOLLONESHOT
   epoll_insert(read_job_fd, EPOLL_FLAGS);
 }
@@ -233,7 +233,7 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   return nullptr;
 }
 
-void JobWorkerServer::store_job_response_error(const char *error_msg, int error_code) {
+void JobWorkerServer::store_job_response_error(const char *error_msg, int error_code) noexcept {
   php_assert(running_job);
 
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
