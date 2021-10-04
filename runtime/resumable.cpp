@@ -1017,6 +1017,19 @@ bool f$wait_queue_empty(int64_t queue_id) {
   return q->left_functions == 0 && q->first_finished_function == -2;
 }
 
+int64_t f$wait_queue_size(int64_t queue_id) {
+  if (!is_wait_queue_id(queue_id)) {
+    if (queue_id != -1) {
+      php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_size", queue_id);
+    }
+    return 0;
+  }
+
+  wait_queue *q = get_wait_queue(queue_id);
+  wait_queue_skip_gotten(q);
+  return q->left_functions;
+}
+
 static void wait_queue_next(int64_t queue_id, double timeout) {
   php_assert(timeout > get_precise_now()); // TODO remove asserts
   php_assert(in_main_thread()); // TODO remove asserts

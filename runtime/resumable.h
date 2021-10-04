@@ -106,6 +106,7 @@ int64_t f$wait_queue_create();
 int64_t f$wait_queue_create(const mixed &resumable_ids);
 int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids);
 bool f$wait_queue_empty(int64_t queue_id);
+int64_t f$wait_queue_size(int64_t queue_id);
 Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0);
 Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
 

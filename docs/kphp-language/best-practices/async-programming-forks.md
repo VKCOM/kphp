@@ -344,6 +344,10 @@ Adds a fork to an existing queue; if *T2!=T*, leads to re-inferring *T=lca(T,T2)
 
 Returns if this queue is empty (no forks to wait).
 
+<aside>wait_queue_size( future_queue&lt;any&gt; ): int</aside>
+
+Returns queue size.
+
 <aside>wait_queue_next( future_queue&lt;T&gt; ): future&lt;T&gt;|false (resumable)</aside>
 
 Stops the current fork until any result of the queue is ready and lets other forks to run.

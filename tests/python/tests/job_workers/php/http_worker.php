@@ -178,6 +178,10 @@ function test_jobs_in_wait_queue() {
   $ids = send_jobs($context);
 
   $wait_queue = wait_queue_create($ids);
+  if (wait_queue_size($wait_queue) !== 2) {
+    raise_error("Wrong queue size");
+    return;
+  }
 
   $id = wait_queue_next($wait_queue, 0.2);
   if ($id !== false) {
@@ -195,6 +199,12 @@ function test_jobs_in_wait_queue() {
     }
     $result[$ready_id] = gather_jobs([$ready_id])[0];
   }
+
+  if (wait_queue_size($wait_queue) !== 0) {
+    raise_error("Wrong queue size");
+    return;
+  }
+
   ksort($result);
 
   echo json_encode(["jobs-result" => array_values($result)]);
