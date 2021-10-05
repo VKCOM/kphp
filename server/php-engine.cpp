@@ -93,6 +93,7 @@ double rpc_ping_interval = RPC_DEFAULT_PING_INTERVAL;
 
 #define RPC_CONNECT_TIMEOUT 3
 
+#define MAX_POST_SIZE (2 * 1024 * 1024) // 2 MB
 
 /***
   RPC-client
@@ -469,8 +470,6 @@ void http_return(connection *c, const char *str, int len) {
   write_basic_http_header(c, 500, 0, len, no_cache_headers, "text/plain; charset=UTF-8");
   write_out(&c->Out, str, len);
 }
-
-#define MAX_POST_SIZE (1 << 18)
 
 int hts_stopped = 0;
 
