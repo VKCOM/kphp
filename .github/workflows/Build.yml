@@ -98,6 +98,7 @@ jobs:
         brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack-cxx zstd googletest php@7.4
         brew link --overwrite php@7.4
         pip3 install jsonschema
+        ln -s /usr/local/opt/openssl@1.1 /usr/local/opt/openssl
         
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
