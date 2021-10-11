@@ -225,6 +225,29 @@ inline void write_buff_char_4(char c1, char c2, char c3, char c4) {
   *wptr++ = c4;
 }
 
+inline void write_buff_char_5(char c1, char c2, char c3, char c4, char c5) {
+  if (unlikely (wptr >= buff + BUFF_LEN - 4)) {
+    flush_buff();
+  }
+  *wptr++ = c1;
+  *wptr++ = c2;
+  *wptr++ = c3;
+  *wptr++ = c4;
+  *wptr++ = c5;
+}
+
+inline void write_buff_char_6(char c1, char c2, char c3, char c4, char c5, char c6) {
+  if (unlikely (wptr >= buff + BUFF_LEN - 5)) {
+    flush_buff();
+  }
+  *wptr++ = c1;
+  *wptr++ = c2;
+  *wptr++ = c3;
+  *wptr++ = c4;
+  *wptr++ = c5;
+  *wptr++ = c6;
+}
+
 inline void write_buff_int(int x) {
   if (unlikely (wptr + 25 > buff + BUFF_LEN)) {
     flush_buff();
@@ -324,20 +347,38 @@ void write_char_utf8(int c) {
     write_buff_char((char)c);
     return;
   }
-  if (c < 0x800) {
-    write_buff_char_2((char)(0xc0 + (c >> 6)), (char)(0x80 + (c & 63)));
+  // 2 bytes(11): 110x xxxx 10xx xxxx
+  if (c <= 0x800) {
+    write_buff_char_2((char)(0xC0 + (c >> 6)), (char)(0x80 + (c & 63)));
     return;
   }
+
+  // 3 bytes(16): 1110 xxxx 10xx xxxx 10xx xxxx
   if (c < 0x10000) {
-    write_buff_char_3((char)(0xe0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    write_buff_char_3((char)(0xE0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
-  // todo I don't know, why this condition starts from 0x1f000
-  // maybe, it's a good idea to add all unicode blocks https://unicode-table.com/en/blocks/ or just start from 0x10000
-  if (c >= 0x1f000 && c <= 0x1ffff) {
-    write_buff_char_4((char)(0xf0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+
+  // 4 bytes(21): 1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x200000) {
+    write_buff_char_4((char)(0xF0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
+
+  // 5 bytes(26): 1111 10xx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x4000000) {
+    write_buff_char_5((char)(0xF8 + (c >> 24)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)),
+                      (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 6 bytes(31): 1111 110x 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x80000000) {
+    write_buff_char_6((char)(0xFC + (c >> 30)), (char)(0x80 + ((c >> 24) & 63)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)),
+                      (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
   write_buff_char_2('$', '#');
   write_buff_int(c);
   write_buff_char(';');
@@ -367,11 +408,10 @@ void write_char_utf8_no_escape(int c) {
 
 
 static int win_to_utf8(const char *s, int len, bool escape) {
-  int i;
   int state = 0;
   int save_pos = -1;
   int cur_num = 0;
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     if (state == 0 && s[i] == '&') {
       save_pos = cur_buff_len;
       cur_num = 0;
@@ -390,7 +430,7 @@ static int win_to_utf8(const char *s, int len, bool escape) {
     if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff) {
       cur_num = 32;
     }
-    if (state == 3 && (!escape || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x20000))) {
+    if (state == 3 && (!escape || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000))) {
       write_buff_set_pos(save_pos);
       php_assert (save_pos == cur_buff_len);
       (escape ? write_char_utf8 : write_char_utf8_no_escape)(cur_num);

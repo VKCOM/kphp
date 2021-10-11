@@ -299,6 +299,29 @@ void write_buff_char_4(char c1, char c2, char c3, char c4) {
   *(wptr++) = c4;
 }
 
+inline void write_buff_char_5(char c1, char c2, char c3, char c4, char c5) {
+  if (unlikely (wptr >= buff + BUFF_LEN - 4)) {
+    flush_buff();
+  }
+  *wptr++ = c1;
+  *wptr++ = c2;
+  *wptr++ = c3;
+  *wptr++ = c4;
+  *wptr++ = c5;
+}
+
+inline void write_buff_char_6(char c1, char c2, char c3, char c4, char c5, char c6) {
+  if (unlikely (wptr >= buff + BUFF_LEN - 5)) {
+    flush_buff();
+  }
+  *wptr++ = c1;
+  *wptr++ = c2;
+  *wptr++ = c3;
+  *wptr++ = c4;
+  *wptr++ = c5;
+  *wptr++ = c6;
+}
+
 void write_buff_long(long x) {
   if (unlikely (wptr + 25 > buff + BUFF_LEN)) {
     flush_buff();
@@ -425,46 +448,55 @@ void write_utf8_char(int c) {
 }
 
 void write_char_utf8(int c) {
-  //int c = win_to_utf8_convert [_c];
   if (!c) {
-    //write_buff_char_2 ('&', '#');
-    //write_buff_long (c);
-    //write_buff_char (';');
     return;
   }
-  /*if (c < 32 || c == 34 || c == 39 || c == 60 || c == 62 || c == 8232 || c == 8233) {
-    write_buff_char_2 ('&', '#');
-    write_buff_long (c);
-    write_buff_char (';');
-    return;
-  }*/
   if (c < 128) {
     write_buff_char(c);
     return;
   }
-  if (c < 0x800) {
-    write_buff_char_2(0xc0 + (c >> 6), 0x80 + (c & 63));
+  // 2 bytes(11): 110x xxxx 10xx xxxx
+  if (c <= 0x800) {
+    write_buff_char_2((char)(0xC0 + (c >> 6)), (char)(0x80 + (c & 63)));
     return;
   }
+
+  // 3 bytes(16): 1110 xxxx 10xx xxxx 10xx xxxx
   if (c < 0x10000) {
-    write_buff_char_3(0xe0 + (c >> 12), 0x80 + ((c >> 6) & 63), 0x80 + (c & 63));
+    write_buff_char_3((char)(0xE0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
-  if (c >= 0x1f000 && c <= 0x1ffff) {
-    write_buff_char_4(0xf0 + (c >> 18), 0x80 + ((c >> 12) & 63), 0x80 + ((c >> 6) & 63), 0x80 + (c & 63));
+
+  // 4 bytes(21): 1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x200000) {
+    write_buff_char_4((char)(0xF0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
+
+  // 5 bytes(26): 1111 10xx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x4000000) {
+    write_buff_char_5((char)(0xF8 + (c >> 24)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)),
+                      (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 6 bytes(31): 1111 110x 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x80000000) {
+    write_buff_char_6((char)(0xFC + (c >> 30)), (char)(0x80 + ((c >> 24) & 63)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)),
+                      (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
   write_buff_char_2('$', '#');
   write_buff_long(c);
   write_buff_char(';');
 }
 
 int win_to_utf8(const char *s, int len) {
-  int i;
   int state = 0;
   int save_pos = -1;
   int cur_num = 0;
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     if (state == 0 && s[i] == '&') {
       save_pos = write_buff_get_pos();
       cur_num = 0;
@@ -483,7 +515,7 @@ int win_to_utf8(const char *s, int len) {
     if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff) {
       cur_num = 32;
     }
-    if (state == 3 && (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x20000)) {
+    if (state == 3 && (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000)) {
       write_buff_set_pos(save_pos);
       assert (save_pos == write_buff_get_pos());
       write_char_utf8(cur_num);
