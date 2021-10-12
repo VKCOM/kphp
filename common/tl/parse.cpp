@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "common/tl/parse.h"
@@ -42,7 +42,7 @@ struct tl_state {
 
   int64_t out_pos = 0;
   int64_t out_remaining = 0;
-  vk::optional<std::string> error;
+  std::optional<std::string> error;
   int errnum;
 
   int attempt_num = 0;
@@ -65,7 +65,7 @@ void tl_fetch_set_error_format(int errnum, const char *format, ...) {
   }
 }
 
-int tl_store_stats(const char *s, int raw, const vk::optional<std::vector<std::string>> &sorted_filter_keys) {
+int tl_store_stats(const char *s, int raw, const std::optional<std::vector<std::string>> &sorted_filter_keys) {
   std::vector<std::pair<vk::string_view, vk::string_view>> stats;
   int key_start = 0;
   int value_start = -1;
@@ -116,7 +116,7 @@ void tl_fetch_init(std::unique_ptr<tl_in_methods> methods, int64_t size) {
 
   tlio->in_methods = std::move(methods);
   tlio->attempt_num = 0;
-  tlio->error = vk::nullopt;
+  tlio->error = std::nullopt;
   tlio->errnum = 0;
 }
 
@@ -503,7 +503,7 @@ int64_t tl_fetch_unread() {
 }
 
 void tl_fetch_reset_error() {
-  tlio->error = vk::nullopt;
+  tlio->error = std::nullopt;
   tlio->errnum = 0;
 }
 

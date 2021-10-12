@@ -1,8 +1,10 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
@@ -11,7 +13,7 @@
 
 class LeaseContext : vk::not_copyable {
 public:
-  vk::optional<QueueTypesLeaseWorkerMode> cur_lease_mode;
+  std::optional<QueueTypesLeaseWorkerMode> cur_lease_mode;
   double rpc_stop_ready_timeout{0};
 
   friend class vk::singleton<LeaseContext>;

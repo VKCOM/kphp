@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/php-lease.h"
@@ -13,7 +13,6 @@
 #include "common/tl/methods/string.h"
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
-#include "common/wrappers/optional.h"
 
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"

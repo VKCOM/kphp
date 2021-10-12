@@ -1,10 +1,11 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+#include <optional>
 
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
 
@@ -31,7 +32,7 @@ class LeaseConfigParser {
 public:
   static int parse_lease_options_config(const char *lease_config) noexcept;
 private:
-  static vk::optional<QueueTypesLeaseWorkerMode> get_lease_mode_from_config(const YAML::Node &node);
+  static std::optional<QueueTypesLeaseWorkerMode> get_lease_mode_from_config(const YAML::Node &node);
   static std::vector<LeaseRpcClient> get_rpc_clients_from_config(const YAML::Node &node);
 
   template <typename T>

@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/php-master.h"
@@ -12,8 +12,11 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <iomanip>
+#include <optional>
 #include <poll.h>
 #include <semaphore.h>
+#include <sstream>
+#include <stack>
 #include <string>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
@@ -23,8 +26,6 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <stack>
-#include <sstream>
 #include <vector>
 
 #include "common/algorithms/find.h"
@@ -991,7 +992,7 @@ int php_master_version(connection *c) {
   return 0;
 }
 
-int php_master_rpc_stats(const vk::optional<std::vector<std::string>> &sorted_filter_keys) {
+int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_filter_keys) {
   std::string res(64 * 1024, 0);
   stats_t stats;
   stats.type = STATS_TYPE_TL;

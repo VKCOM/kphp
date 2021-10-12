@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/phpdoc.h"
@@ -572,7 +572,7 @@ std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, 
  * With a full phpdoc string / ** ... * /,
  * find the first @tag and return everything on its right side as a string.
  */
-vk::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
+std::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
   for (const auto &tag : parse_php_doc(phpdoc)) {
     if (tag.type == tag_type) {
       return tag.value;
