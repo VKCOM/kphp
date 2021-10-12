@@ -292,6 +292,10 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  #ifdef LIBXGBOOST_VK_INCLUDE_DEFS
+    ss << " " << LIBXGBOOST_VK_INCLUDE_DEFS;
+  #endif
+
   std::string cxx_default_flags = ss.str();
 
   incremental_linker.value_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
@@ -312,6 +316,10 @@ void CompilerSettings::init() {
   // LDD may not find a library in /usr/local/lib if we don't add it here
   // TODO: can we avoid this hardcoded library path?
   ld_flags.value_ += " -L /usr/local/lib";
+#endif
+
+#ifdef LIBXGBOOST_VK_LINK_DEFS
+  ld_flags.value_ += " " LIBXGBOOST_VK_LINK_DEFS;
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "crypto", "m"};
