@@ -437,7 +437,6 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
   bool was_raw_bool = false;
   bool was_false = false;
   bool was_null = false;
-  bool was_void = false;
 
   auto on_each_item = [&](const TypeHint *item) {
     items.emplace_back(item);
@@ -445,16 +444,11 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
       was_raw_bool |= as_primitive->ptype == tp_bool && (cur_tok - 1)->type() == tok_bool;
       was_false |= as_primitive->ptype == tp_False;
       was_null |= as_primitive->ptype == tp_Null;
-      was_void |= as_primitive->ptype == tp_void;
     }
   };
 
   on_each_item(result);
   while (cur_tok->type() == tok_or) {
-    if (was_void) {
-      throw std::runtime_error("Void can only be used as a standalone type");
-    }
-
     cur_tok++;
     on_each_item(parse_type_array());
 
@@ -463,16 +457,6 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
     }
   }
 
-//  if (was_null) {
-//    std::vector<const TypeHint *> items_without_null;
-//    for (const TypeHint *item : items) {
-//      const auto *as_primitive = item->try_as<TypeHintPrimitive>();
-//      if (!as_primitive || vk::none_of_equal(as_primitive->ptype, tp_Null, tp_False)) {
-//        items_without_null.push_back(item);
-//      }
-//    }
-//    return TypeHintOptional::create(TypeHintPipe::create(std::move(items_without_null)), was_null, was_false);
-//  }
 
   // try to simplify: T|false and similar to an optional<T>, not as a vector
   bool can_be_simplified_as_optional = 1 == (items.size() - was_false - was_null);
