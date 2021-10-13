@@ -113,6 +113,13 @@ TEST(lexer_test, test_php_tokens) {
 
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
+
+    // attributes
+    {"#[Attribute]", {"tok_attribute_start(#[)", "tok_func_name(Attribute)", "tok_clbrk(])"}},
+    {"#[\nAttribute\n]", {"tok_attribute_start(#[)", "tok_func_name(Attribute)", "tok_clbrk(])"}},
+    {"#[Attribute()]", {"tok_attribute_start(#[)", "tok_func_name(Attribute)", "tok_oppar(()", "tok_clpar())", "tok_clbrk(])"}},
+    {"#[Attribute('name')]", {"tok_attribute_start(#[)", "tok_func_name(Attribute)", "tok_oppar(()", "tok_str(name)", "tok_clpar())", "tok_clbrk(])"}},
+    {"#[Attribute(), Attribute2()]", {"tok_attribute_start(#[)", "tok_func_name(Attribute)", "tok_oppar(()", "tok_clpar())", "tok_comma(,)", "tok_func_name(Attribute2)", "tok_oppar(()", "tok_clpar())", "tok_clbrk(])"}},
   };
 
   for (const auto &test : tests) {

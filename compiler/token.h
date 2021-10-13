@@ -185,6 +185,8 @@ enum TokenType {
   tok_clone,
   tok_instanceof,
 
+  tok_attribute_start,
+
   tok_end
 };
 

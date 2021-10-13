@@ -184,6 +184,7 @@ std::string debugTokenName(TokenType t) {
     {tok_phpdoc, "tok_phpdoc"},
     {tok_clone, "tok_clone"},
     {tok_instanceof, "tok_instanceof"},
+    {tok_attribute_start, "tok_attribute_start"},
     {tok_end, "tok_end"},
   });
 

@@ -902,6 +902,12 @@ bool TokenLexerComment::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code(),
     *st = s;
 
+  if (s[0] == '#' && s[1] == '[') {
+    lexer_data->add_token(0, tok_attribute_start, s, s+2);
+    lexer_data->pass(2);
+    return vk::singleton<TokenLexerPHP>::get().parse(lexer_data);
+  }
+
   assert (s[0] == '/' || s[0] == '#');
   if (s[0] == '#' || s[1] == '/') {
     while (s[0] && s[0] != '\n') {

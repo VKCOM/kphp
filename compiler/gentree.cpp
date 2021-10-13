@@ -875,6 +875,10 @@ VertexPtr GenTree::get_def_value() {
 VertexAdaptor<op_func_param> GenTree::get_func_param() {
   auto location = auto_location();
 
+  if (test_expect(tok_attribute_start)) {
+    get_attribute_group();
+  }
+
   const TypeHint *type_hint = get_typehint();
   bool is_varg = false;
 
@@ -2139,6 +2143,8 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return get_foreach();
     case tok_switch:
       return get_switch();
+    case tok_attribute_start:
+      return get_attribute_group();
     case tok_phpdoc: {      // enter /** ... */
       // is it a function/class/field phpdoc?
       auto next = (cur+1)->type();
@@ -2231,6 +2237,52 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
   }
   kphp_fail();
+}
+
+VertexAdaptor<op_empty> GenTree::get_attribute_group() {
+  get_attribute();
+  while (test_expect(tok_attribute_start)) {
+    get_attribute();
+  }
+  return VertexAdaptor<op_empty>::create();
+}
+
+VertexAdaptor<op_empty> GenTree::get_attribute() {
+  next_cur();
+  auto calls = std::vector<VertexAdaptor<op_func_call>>();
+  const auto ok = gen_list<op_none>(&calls, &GenTree::get_attribute_call, tok_comma);
+  CE(!kphp_error(ok, "Failed to parse attribute call"));
+  CE(expect(tok_clbrk, "']'"));
+
+  return VertexAdaptor<op_empty>::create();
+}
+
+VertexAdaptor<op_func_call> GenTree::get_attribute_call() {
+  const auto location = auto_location();
+  if (cur->type() == tok_clbrk) {
+    return {};
+  }
+
+  const auto name = std::string(cur->str_val);
+  next_cur();
+
+  VertexAdaptor<op_func_call> call;
+
+  if (test_expect(tok_oppar)) {
+    CE (expect(tok_oppar, "'('"));
+    skip_phpdoc_tokens();
+    vector<VertexPtr> next;
+    bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
+    CE (!kphp_error(ok_next, "get argument list failed"));
+    CE (expect(tok_clpar, "')'"));
+
+    call = VertexAdaptor<op_func_call>::create_vararg(next).set_location(location);
+  }
+
+  call = VertexAdaptor<op_func_call>::create_vararg().set_location(location);
+
+  call->set_string(name);
+  return call;
 }
 
 VertexPtr GenTree::get_const_after_explicit_access_modifier(AccessModifiers access) {
