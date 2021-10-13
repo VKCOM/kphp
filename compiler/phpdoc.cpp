@@ -457,7 +457,6 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
     }
   }
 
-
   // try to simplify: T|false and similar to an optional<T>, not as a vector
   bool can_be_simplified_as_optional = 1 == (items.size() - was_false - was_null);
   if (can_be_simplified_as_optional) {
