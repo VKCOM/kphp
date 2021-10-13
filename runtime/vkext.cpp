@@ -348,7 +348,7 @@ void write_char_utf8(int c) {
     return;
   }
   // 2 bytes(11): 110x xxxx 10xx xxxx
-  if (c <= 0x800) {
+  if (c < 0x800) {
     write_buff_char_2((char)(0xC0 + (c >> 6)), (char)(0x80 + (c & 63)));
     return;
   }
