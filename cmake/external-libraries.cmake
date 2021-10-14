@@ -74,3 +74,26 @@ if(APPLE)
     add_definitions(-DEPOLL_SHIM_LIB_DIR="${epoll_BINARY_DIR}/src")
     set(EPOLL_SHIM_LIB epoll-shim)
 endif()
+
+find_package(xgboost 1.5.0)
+if(NOT xgboost_FOUND)
+    handle_missing_library("xgboost")
+    FetchContent_Declare(xgboost GIT_REPOSITORY https://github.com/VKCOM/xgboost GIT_TAG adoptation-for-vk)
+    message(STATUS "---------------------")
+    FetchContent_MakeAvailable(xgboost)
+
+    # suppress tons of compiler warnings inside xgboost project
+    target_compile_options(objxgboost PRIVATE -Wno-extra -Wno-all -Wno-float-conversion)
+    target_compile_options(runxgboost PRIVATE -Wno-extra -Wno-all)
+    target_compile_options(dmlc PRIVATE -Wno-extra)
+
+    # include as system libs to suppress compiler warnings in xgboost's headers
+    include_directories(SYSTEM ${xgboost_SOURCE_DIR}/include)
+    include_directories(SYSTEM ${xgboost_SOURCE_DIR}/dmlc-core/include)
+
+    # pass include and link directories to compiler
+    add_definitions(-DLIBXGBOOST_VK_INCLUDE_DEFS="-isystem ${xgboost_SOURCE_DIR}/include -isystem ${xgboost_SOURCE_DIR}/dmlc-core/include")
+    add_definitions(-DLIBXGBOOST_VK_LINK_DEFS="-L${xgboost_SOURCE_DIR}/lib -L${xgboost_BINARY_DIR}/dmlc-core")
+
+    add_library(xgboost::xgboost ALIAS xgboost)
+endif()

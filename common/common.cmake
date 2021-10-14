@@ -46,3 +46,6 @@ if(COMPILER_CLANG)
 endif()
 
 vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})
+if(APPLE)
+    target_compile_definitions(common_src PRIVATE -D_XOPEN_SOURCE)
+endif()

@@ -1319,3 +1319,5 @@ function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 function set_migration_php8_warning ($mask ::: int) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
+
+function xgboost_predict_experimental(float[][] $features) ::: float[];
