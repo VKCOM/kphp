@@ -2068,7 +2068,6 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_protected:
     case tok_public:
     case tok_private:
-    // fall through
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
