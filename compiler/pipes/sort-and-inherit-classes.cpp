@@ -282,6 +282,11 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
     });
     parent_class->members.for_each([&](const ClassMemberConstant &c) {
       if (auto child_const = child_class->get_constant(c.local_name())) {
+        if (c.is_final && child_const->klass == child_class) {
+          const auto child_name = child_class->name + "::" + child_const->local_name();
+          const auto parent_name = parent_class->name + "::" + c.local_name();
+          kphp_error(0, fmt_format("{} cannot override final constant {}", child_name, parent_name));
+        }
         kphp_error(child_const->access == c.access,
                    fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
       }
@@ -299,6 +304,18 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
              fmt_format("Error implements {} and {}", child_class->name, interface_class->name));
 
   child_class->implements.emplace_back(interface_class);
+
+  interface_class->members.for_each([&](const ClassMemberConstant &c) {
+    if (auto child_const = child_class->get_constant(c.local_name())) {
+      if (c.is_final && child_const->klass == child_class) {
+        const auto child_name = child_class->name + "::" + child_const->local_name();
+        const auto parent_name = interface_class->name + "::" + c.local_name();
+        kphp_error(0, fmt_format("{} cannot override final constant {}", child_name, parent_name));
+      }
+      kphp_error(child_const->access == c.access,
+                 fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
+    }
+  });
 
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);

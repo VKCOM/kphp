@@ -110,9 +110,11 @@ const TypeData *ClassMemberInstanceField::get_inferred_type() const {
   return tinf::get_type(var);
 }
 
-inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value, AccessModifiers access) :
+inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value, AccessModifiers access, bool is_final) :
+  klass(klass),
   value(value),
-  access(access) {
+  access(access),
+  is_final(is_final) {
   define_name = "c#" + replace_backslashes(klass->name) + "$$" + const_name;
 }
 
@@ -182,8 +184,8 @@ void ClassMembersContainer::add_instance_field(VertexAdaptor<op_var> root, Verte
   append_member(ClassMemberInstanceField{klass, root, def_val, modifiers, phpdoc_str, type_hint});
 }
 
-void ClassMembersContainer::add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access) {
-  append_member(ClassMemberConstant{klass, const_name, value, access});
+void ClassMembersContainer::add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access, bool is_final) {
+  append_member(ClassMemberConstant{klass, const_name, value, access, is_final});
 }
 
 void ClassMembersContainer::safe_add_instance_method(FunctionPtr function) {

@@ -103,10 +103,12 @@ struct ClassMemberInstanceField {
 
 struct ClassMemberConstant {
   std::string define_name;
+  ClassPtr klass;
   VertexPtr value;
   AccessModifiers access;
+  bool is_final;
 
-  ClassMemberConstant(ClassPtr klass, const std::string &const_name, VertexPtr value, AccessModifiers access);
+  ClassMemberConstant(ClassPtr klass, const std::string &const_name, VertexPtr value, AccessModifiers access, bool is_final);
 
   vk::string_view global_name() const &;
   vk::string_view global_name() const && = delete;
@@ -191,7 +193,7 @@ public:
   void add_instance_method(FunctionPtr function);
   void add_static_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
   void add_instance_field(VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, vk::string_view phpdoc_str, const TypeHint *type_hint);
-  void add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access);
+  void add_constant(const std::string &const_name, VertexPtr value, AccessModifiers access, bool is_final);
 
   void safe_add_instance_method(FunctionPtr function);
 
