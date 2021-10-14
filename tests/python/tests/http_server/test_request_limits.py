@@ -74,9 +74,17 @@ class TestRequestLimits(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 431)
 
     def test_post_limit(self):
-        resp = self.kphp_server.http_post(data="x" * 4000)
+        req_size = 4000
+        resp = self.kphp_server.http_post("/test_big_post_data", data="x" * req_size)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["len"], req_size)
 
-        # no limits?
-        resp = self.kphp_server.http_post(data="x" * 80000000)
+        req_size = (2 * 1024 * 1024 - 1)
+        resp = self.kphp_server.http_post("/test_big_post_data", data="x" * req_size)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["len"], (2 * 1024 * 1024 - 1))
+
+        resp = self.kphp_server.http_post("/test_big_post_data", data="x" * (2 * 1024 * 1024 + 1))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["len"], 0)
+

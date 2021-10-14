@@ -37,6 +37,15 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
   }
   file_put_contents("out.dat", $res === false ? "false" : $res);
   echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_big_post_data") {
+    $keys = array_keys($_POST);
+    if ($keys) {
+        $value = array_shift($keys);
+        $res = strlen($value);
+    } else {
+        $res = 0;
+    }
+    echo json_encode(['len' => $res]);
 } else {
   echo "Hello world!";
 }
