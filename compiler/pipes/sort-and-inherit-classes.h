@@ -34,6 +34,8 @@ private:
 
   decltype(ht)::HTNode *get_not_ready_dependency(ClassPtr klass);
 
+  static void check_const_inheritance(ClassPtr child_class, ClassPtr parent_class, const ClassMemberConstant *parent_const, const ClassMemberConstant *child_const);
+
 public:
   void execute(ClassPtr klass, MultipleDataStreams<FunctionPtr, ClassPtr> &os);
   static void check_on_finish(DataStream<FunctionPtr> &os);
