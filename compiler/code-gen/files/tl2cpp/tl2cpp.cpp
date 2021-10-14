@@ -71,6 +71,7 @@ static void collect_target_objects() {
 
 void write_rpc_server_functions(CodeGenerator &W) {
   W << OpenFile("rpc_server_fetch_request.cpp", "tl", false);
+  W << ExternInclude(G->settings().runtime_headers.get());
   std::vector<vk::tlo_parsing::combinator *> kphp_functions;
   IncludesCollector deps;
   deps.add_raw_filename_include("tl/common.h"); // to make it successfully compile even if there are no @kphp functions
@@ -132,6 +133,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
 
   if (G->get_untyped_rpc_tl_used()) {
     W << OpenFile("tl_runtime_bindings.cpp", "tl", false);
+    W << ExternInclude(G->settings().runtime_headers.get());
     for (const auto &module_name : modules_with_functions) {
       W << Include("tl/" + module_name + ".h");
     }
