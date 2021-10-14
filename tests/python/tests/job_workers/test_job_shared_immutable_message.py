@@ -92,3 +92,32 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
                 "kphp_server.workers_job_memory_messages_extra_buffers_64mb_buffers_acquired": 0,
                 "kphp_server.workers_job_memory_messages_extra_buffers_64mb_buffer_acquire_fails": 0,
             })
+
+    def _test_shared_memory_piece_copying_impl(self, label):
+        for i in range(50):
+            resp = self.kphp_server.http_post(uri="/test_shared_memory_piece_in_response", json={
+                "label": label,
+            })
+            self.assertEqual(resp.status_code, 200)
+            for ans in resp.json()['jobs-result']:
+                self.assertEqual(ans, 42)
+
+    def test_copy_instance_from_shared_memory_piece_to_response(self):
+        self._test_shared_memory_piece_copying_impl("job_response:instance")
+
+    def test_copy_array_from_shared_memory_piece_to_job_response(self):
+        self._test_shared_memory_piece_copying_impl("job_response:array")
+
+    def test_copy_string_from_shared_memory_piece_to_job_response(self):
+        self._test_shared_memory_piece_copying_impl("job_response:string")
+
+    def test_copy_mixed_from_shared_memory_piece_to_job_response(self):
+        self._test_shared_memory_piece_copying_impl("job_response:mixed")
+
+    def test_copy_instance_from_shared_memory_piece_to_instance_cache(self):
+        self._test_shared_memory_piece_copying_impl("instance_cache:instance")
+
+    def test_copy_instance_from_shared_memory_piece_to_job_request(self):
+        self._test_shared_memory_piece_copying_impl("job_request:instance")
+
+

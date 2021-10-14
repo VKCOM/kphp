@@ -75,6 +75,11 @@ function do_http_worker() {
       test_reference_invariant();
       return;
     }
+    case "/test_shared_memory_piece_in_response": {
+      require_once "SharedMemoryPieceCopying/http_worker.php";
+      test_shared_memory_piece_copying();
+      return;
+    }
   }
 
   critical_error("unknown test " . $_SERVER["PHP_SELF"]);
