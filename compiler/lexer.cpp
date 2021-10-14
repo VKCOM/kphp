@@ -341,7 +341,9 @@ bool TokenLexerName::parse(LexerData *lexer_data) const {
     t++; // consume '}'
   }
 
-  if (type == tok_func_name) {
+  // If the previous token is namespace, then we don't need to convert the
+  // value to keyword, since in PHP 8 their use as namespace name is allowed.
+  if (type == tok_func_name && !lexer_data->are_last_tokens(tok_namespace)) {
     const KeywordType *tp = KeywordsSet::get_type(name.begin(), name.size());
     if (tp != nullptr) {
       lexer_data->add_token((int)(t - st), tp->type, s, t);

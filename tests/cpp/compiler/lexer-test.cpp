@@ -113,6 +113,15 @@ TEST(lexer_test, test_php_tokens) {
 
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
+
+    // namespaces
+    {"namespace Foo\\Boo", {"tok_namespace(namespace)", "tok_func_name(Foo\\Boo)"}},
+    {"namespace \\Foo\\Boo", {"tok_namespace(namespace)", "tok_func_name(\\Foo\\Boo)"}},
+    {"namespace \\Foo", {"tok_namespace(namespace)", "tok_func_name(\\Foo)"}},
+    {"namespace iter\\fn", {"tok_namespace(namespace)", "tok_func_name(iter\\fn)"}},
+    {"namespace fn", {"tok_namespace(namespace)", "tok_func_name(fn)"}},
+    {"namespace try", {"tok_namespace(namespace)", "tok_func_name(try)"}},
+    {"namespace self", {"tok_namespace(namespace)", "tok_func_name(self)"}},
   };
 
   for (const auto &test : tests) {
