@@ -2067,22 +2067,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_protected:
     case tok_public:
-    case tok_private: {
-//      const auto next = std::next(cur, 1);
-//      const auto after_next = std::next(next, 1);
-//
-//      if (next->type() == tok_const || after_next->type() == tok_const) {
-//        next_cur();
-//
-//        auto access = AccessModifiers::public_;
-//        if (type == tok_protected) {
-//          access = AccessModifiers::protected_;
-//        } else if (type == tok_private) {
-//          access = AccessModifiers::private_;
-//        }
-//        return get_class_const(access);
-//      }
-    }
+    case tok_private:
     // fall through
     case tok_final:
     case tok_abstract:
