@@ -233,11 +233,6 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_noreturn: {
-        f_->is_no_return = true;
-        break;
-      }
-
       case php_doc_tag::kphp_lib_export: {
         f_->kphp_lib_export = true;
         break;

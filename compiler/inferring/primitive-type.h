@@ -17,6 +17,7 @@ enum PrimitiveType {
   tp_array,
   tp_mixed,
   tp_void,
+  tp_never,
   tp_tuple,
   tp_shape,
   tp_future,

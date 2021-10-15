@@ -8,11 +8,14 @@
 #include "compiler/inferring/public.h"
 
 VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
-  auto is_void_fun = [](FunctionPtr f) {
+  const auto is_void_fun = [](FunctionPtr f) {
     return tinf::get_type(f, -1)->ptype() == tp_void;
   };
-  auto is_void_expr = [](VertexPtr root) {
+  const auto is_void_expr = [](VertexPtr root) {
     return tinf::get_type(root)->ptype() == tp_void;
+  };
+  const auto is_never_expr = [](VertexPtr root) {
+    return tinf::get_type(root)->ptype() == tp_never;
   };
 
   if (root->rl_type == val_r && is_void_expr(root)) {
@@ -21,6 +24,13 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
       kphp_error(0, fmt_format("Using result of void function {}", fun->get_human_readable_name()));
     } else {
       kphp_error(0, "Using result of void expression");
+    }
+  }
+
+  if (root->rl_type == val_r && is_never_expr(root)) {
+    if (const auto call = root.try_as<op_func_call>()) {
+      const auto fun = call->func_id;
+      kphp_error(0, fmt_format("Using result of never function {}", fun->get_human_readable_name()));
     }
   }
 

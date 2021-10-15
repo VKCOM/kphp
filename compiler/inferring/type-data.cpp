@@ -506,6 +506,10 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
       res += "Unknown";
       break;
     }
+    case tp_never: {
+      res += "void";
+      break;
+    }
     default : {
       res += ptype_name(tp);
       break;
@@ -676,6 +680,8 @@ int type_strlen(const TypeData *type) {
       return STRLEN_CLASS;
     case tp_void:
       return STRLEN_VOID;
+    case tp_never:
+      return STRLEN_VOID;
     case tp_future:
       return STRLEN_FUTURE;
     case tp_future_queue:
@@ -773,6 +779,9 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
       case tp_float:
       case tp_bool:
       case tp_void:
+        if (tp == tp_never) {
+          return true;
+        }
         if (tp == expected->ptype()) {
           return true;
         }

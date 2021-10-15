@@ -66,6 +66,7 @@ string, tok_string
 object, tok_object
 callable, tok_callable
 void, tok_void
+never, tok_never
 mixed, tok_mixed
 bool, tok_bool
 false, tok_false

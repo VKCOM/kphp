@@ -154,12 +154,9 @@ define('E_ALL', 32767);
 function error_get_last() ::: mixed;
 function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
-/** @kphp-no-return */
-function critical_error($message ::: string) ::: void;
-/** @kphp-no-return */
-function exit($code = 0) ::: void;
-/** @kphp-no-return */
-function die($code = 0) ::: void;
+function critical_error($message ::: string) ::: never;
+function exit($code = 0) ::: never;
+function die($code = 0) ::: never;
 function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
