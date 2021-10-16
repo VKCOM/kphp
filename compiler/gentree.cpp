@@ -2000,6 +2000,9 @@ const TypeHint *GenTree::get_typehint() {
 }
 
 void GenTree::on_void_never_type_error(const TypeHint *type_hint, std::string place) {
+  if (type_hint == nullptr) {
+    return;
+  }
   if (const auto type = type_hint->try_as<TypeHintPrimitive>()) {
     kphp_error(type->ptype != tp_void, fmt_format("void cannot be used as a {} type", place));
     kphp_error(type->ptype != tp_never, fmt_format("never cannot be used as a {} type", place));
