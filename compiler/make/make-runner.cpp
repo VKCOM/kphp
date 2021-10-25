@@ -62,9 +62,11 @@ void MakeRunner::wait_target(Target *target) {
 }
 
 void MakeRunner::register_target(Target *target, vector<Target *> &&deps) {
-  for (auto const dep : deps) {
+  for (auto *dep : deps) {
     dep->rdeps.push_back(target);
-    target->pending_deps++;
+    if (!dep->is_ready) {
+      target->pending_deps++;
+    }
   }
   target->deps = std::move(deps);
 
