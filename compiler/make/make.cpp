@@ -134,12 +134,12 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   }
 }
 
-static std::forward_list<File> collect_imported_libs() {
+static std::forward_list<File *> collect_imported_libs() {
   const string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
   stage::die_if_global_errors();
 
-  std::forward_list<File> imported_libs;
-  imported_libs.emplace_front(G->settings().link_file.get());
+  std::forward_list<File *> imported_libs;
+  imported_libs.emplace_front(new File{G->settings().link_file.get()});
   for (const auto &lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       std::string lib_runtime_sha256 = CompilerSettings::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
@@ -148,14 +148,14 @@ static std::forward_list<File> collect_imported_libs() {
                      fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
                                 G->settings().runtime_sha256_file.get(), lib->runtime_lib_sha256_file()),
                      continue);
-      imported_libs.emplace_front(lib->static_archive_path());
+      imported_libs.emplace_front(new File{lib->static_archive_path()});
     }
   }
 
-  for (File &file: imported_libs) {
-    kphp_error_act(file.read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file.path), continue);
+  for (File *file: imported_libs) {
+    kphp_error_act(file->read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file->path), continue);
     if (G->settings().verbosity.get() >= 1) {
-      fmt_fprintf(stderr, "Use static lib [{}]\n", file.path);
+      fmt_fprintf(stderr, "Use static lib [{}]\n", file->path);
     }
   }
 
@@ -333,28 +333,23 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   return objs;
 }
 
-static bool kphp_make(File &bin, Index &obj_dir, const Index &cpp_dir, std::forward_list<File> imported_libs,
-                      const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
-                      FILE *stats_file) {
-  MakeSetup make{stats_file, settings};
+static void kphp_make_target(File &bin, Index &obj_dir, const Index &cpp_dir,
+                      const std::forward_list<Index> &imported_headers, MakeSetup &make) {
   std::vector<File *> lib_objs;
-  for (File &link_file: imported_libs) {
-    make.create_cpp_target(&link_file);
-    lib_objs.emplace_back(&link_file);
+  auto imported_libs = collect_imported_libs();
+  for (File *link_file: imported_libs) {
+    make.create_cpp_target(link_file);
+    lib_objs.emplace_back(link_file);
   }
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   std::copy(lib_objs.begin(), lib_objs.end(), std::back_inserter(objs));
   make.create_objs2bin_target(objs, &bin);
-  return make.make_target(&bin, settings.jobs_count.get());
 }
 
-static bool kphp_make_static_lib(File &static_lib, Index &obj_dir, const Index &cpp_dir,
-                                 const std::forward_list<Index> &imported_headers, const CompilerSettings &settings,
-                                 FILE *stats_file) {
-  MakeSetup make{stats_file, settings};
+static void kphp_make_static_lib_target(File &static_lib, Index &obj_dir, const Index &cpp_dir,
+                                 const std::forward_list<Index> &imported_headers, MakeSetup &make) {
   std::vector<File *> objs = create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
   make.create_objs2static_lib_target(objs, &static_lib);
-  return make.make_target(&static_lib, static_cast<int32_t>(settings.jobs_count.get()));
 }
 
 static std::forward_list<Index> collect_imported_headers() {
@@ -368,6 +363,27 @@ static std::forward_list<Index> collect_imported_headers() {
   return imported_headers;
 }
 
+static void run_pre_make(const CompilerSettings &settings, FILE *make_stats_file, MakeSetup &make, Index &obj_index, File &bin_file) {
+  AutoProfiler profiler{get_profiler("Prepare Targets For Build")};
+
+  G->del_extra_files();
+  obj_index.sync_with_dir(settings.dest_objs_dir.get());
+
+  if (settings.force_make.get()) {
+    obj_index.del_extra_files();
+    bin_file.unlink();
+  }
+
+  const bool pch_allowed = !settings.no_pch.get();
+  if (pch_allowed) {
+    kphp_error(kphp_make_precompiled_headers(&obj_index, settings, make_stats_file), "Make precompiled header failed");
+  }
+
+  auto lib_header_dirs = collect_imported_headers();
+  settings.is_static_lib_mode() ? kphp_make_static_lib_target(bin_file, obj_index, G->get_index(), lib_header_dirs, make)
+                                : kphp_make_target(bin_file, obj_index, G->get_index(), lib_header_dirs, make);
+}
+
 void run_make() {
   const auto &settings = G->settings();
   FILE *make_stats_file = nullptr;
@@ -376,34 +392,18 @@ void run_make() {
     kphp_error(make_stats_file, fmt_format("Can't open stats-file {}", settings.stats_file.get()));
     stage::die_if_global_errors();
   }
-
-  AutoProfiler profiler{get_profiler("Make Binary")};
   stage::set_name("Make");
-  G->del_extra_files();
 
   Index obj_index;
-  obj_index.sync_with_dir(settings.dest_objs_dir.get());
 
   File bin_file(settings.binary_path.get());
-  kphp_assert (bin_file.read_stat() >= 0);
+  kphp_assert(bin_file.read_stat() >= 0);
 
-  if (settings.force_make.get()) {
-    obj_index.del_extra_files();
-    bin_file.unlink();
-  }
+  MakeSetup make{make_stats_file, settings};
+  run_pre_make(settings, make_stats_file, make, obj_index, bin_file);
 
-  bool ok = true;
-  const bool pch_allowed = !settings.no_pch.get();
-  if (pch_allowed) {
-    kphp_error (kphp_make_precompiled_headers(&obj_index, settings, make_stats_file), "Make precompiled header failed");
-  }
-  if (ok) {
-    auto lib_header_dirs = collect_imported_headers();
-    ok = settings.is_static_lib_mode()
-         ? kphp_make_static_lib(bin_file, obj_index, G->get_index(), lib_header_dirs, settings, make_stats_file)
-         : kphp_make(bin_file, obj_index, G->get_index(), collect_imported_libs(), lib_header_dirs, settings, make_stats_file);
-    kphp_error (ok, "Make failed");
-  }
+  bool ok = make.make_target(&bin_file, settings.jobs_count.get());
+  kphp_error (ok, "Make failed");
 
   if (make_stats_file) {
     fclose(make_stats_file);
