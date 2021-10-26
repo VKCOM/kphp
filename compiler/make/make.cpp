@@ -94,12 +94,12 @@ public:
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
-  bool make_target(File *bin, int jobs_count = 32) {
-    return make.make_targets(to_targets(bin), jobs_count);
+  bool make_target(File *bin, const std::string &build_message, int jobs_count) {
+    return make.make_targets(to_targets(bin), build_message, jobs_count);
   }
 
-  bool make_targets(const std::vector<File *> &bins, int jobs_count = 32) {
-    return make.make_targets(to_targets(bins), jobs_count);
+  bool make_targets(const std::vector<File *> &bins, const std::string &build_message, int jobs_count) {
+    return make.make_targets(to_targets(bins), build_message, jobs_count);
   }
 };
 
@@ -222,7 +222,7 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
   if (runtime_header_pch_files.empty()) {
     return true;
   }
-  if (!make.make_targets(runtime_header_pch_files, runtime_header_pch_files.size())) {
+  if (!make.make_targets(runtime_header_pch_files, "Compiling pch", runtime_header_pch_files.size())) {
     return false;
   }
 
@@ -407,7 +407,7 @@ void run_make() {
     const std::string build_stage{"Compiling"};
     AutoProfiler profiler{get_profiler(build_stage)};
 
-    bool ok = make.make_targets(objs, settings.jobs_count.get());
+    bool ok = make.make_targets(objs, build_stage, settings.jobs_count.get());
     kphp_error(ok, build_stage + " stage failure");
     make.create_objs2bin_target(objs, &bin_file);
   }
@@ -415,7 +415,7 @@ void run_make() {
   const std::string build_stage{settings.is_static_lib_mode() ? "Compiling" : "Linking"};
   AutoProfiler profiler{get_profiler(build_stage)};
 
-  bool ok = make.make_target(&bin_file, settings.jobs_count.get());
+  bool ok = make.make_target(&bin_file, build_stage, settings.jobs_count.get());
   kphp_error(ok, build_stage + " stage failure");
 
   if (make_stats_file) {

@@ -177,7 +177,7 @@ void MakeRunner::sigint_handler(int sig __attribute__((unused))) {
   signal_flag = 1;
 }
 
-bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
+bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::string &build_message, std::size_t jobs_count) {
   if (jobs_count < 1) {
     fmt_print("Invalid jobs_count [{}]\n", jobs_count);
     return false;
@@ -195,10 +195,9 @@ bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
 
   int total_jobs = targets_left;
   int old_perc = -1;
-  enum {
-    wait_jobs_st,
-    start_jobs_st
-  } state = start_jobs_st;
+  enum { wait_jobs_st, start_jobs_st } state = start_jobs_st;
+
+  fmt_fprintf(stderr, "{} stage started...\n", build_message);
   while (true) {
     int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
     if (old_perc != perc) {
@@ -217,7 +216,7 @@ bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
 
     switch (state) {
       case start_jobs_st: {
-        if (fail_flag || pending_jobs.empty() || (int)jobs.size() >= jobs_count) {
+        if (fail_flag || pending_jobs.empty() || jobs.size() >= jobs_count) {
           state = wait_jobs_st;
           break;
         }
