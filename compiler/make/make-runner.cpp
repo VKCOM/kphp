@@ -193,14 +193,15 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
     require_target(target);
   }
 
-  int total_jobs = targets_left;
+  const int total_jobs = targets_left;
   int old_perc = -1;
   enum { wait_jobs_st, start_jobs_st } state = start_jobs_st;
 
   fmt_fprintf(stderr, "{} stage started...\n", build_message);
   while (true) {
     int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
-    if (old_perc != perc) {
+    // don't show progress when there is only one job to do
+    if (old_perc != perc && total_jobs > 1) {
       fmt_fprintf(stderr, "{:3}% [total jobs {}] [left jobs {}] [running jobs {}] [waiting jobs {}]\n",
                   perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
       old_perc = perc;
