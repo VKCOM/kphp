@@ -222,7 +222,7 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
   if (runtime_header_pch_files.empty()) {
     return true;
   }
-  if (!make.make_targets(runtime_header_pch_files, "Compiling pch", runtime_header_pch_files.size())) {
+  if (!make.make_targets(runtime_header_pch_files, "Compiling pch", settings.jobs_count.get())) {
     return false;
   }
 
