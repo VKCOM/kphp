@@ -283,9 +283,9 @@ void CompilerSettings::init() {
     ss << " -Wno-invalid-source-encoding";
   }
   #if __cplusplus <= 201703L
-    ss << " -std=gnu++17";
+    ss << " -std=c++17";
   #elif __cplusplus <= 202002L
-    ss << " -std=gnu++20";
+    ss << " -std=c++20";
   #else
     #error unsupported __cplusplus value
   #endif
