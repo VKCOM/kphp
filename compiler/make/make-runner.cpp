@@ -62,9 +62,11 @@ void MakeRunner::wait_target(Target *target) {
 }
 
 void MakeRunner::register_target(Target *target, vector<Target *> &&deps) {
-  for (auto const dep : deps) {
+  for (auto *dep : deps) {
     dep->rdeps.push_back(target);
-    target->pending_deps++;
+    if (!dep->is_ready) {
+      target->pending_deps++;
+    }
   }
   target->deps = std::move(deps);
 
@@ -175,7 +177,7 @@ void MakeRunner::sigint_handler(int sig __attribute__((unused))) {
   signal_flag = 1;
 }
 
-bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
+bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::string &build_message, std::size_t jobs_count) {
   if (jobs_count < 1) {
     fmt_print("Invalid jobs_count [{}]\n", jobs_count);
     return false;
@@ -191,15 +193,15 @@ bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
     require_target(target);
   }
 
-  int total_jobs = targets_left;
+  const int total_jobs = targets_left;
   int old_perc = -1;
-  enum {
-    wait_jobs_st,
-    start_jobs_st
-  } state = start_jobs_st;
+  enum { wait_jobs_st, start_jobs_st } state = start_jobs_st;
+
+  fmt_fprintf(stderr, "{} stage started...\n", build_message);
   while (true) {
     int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
-    if (old_perc != perc) {
+    // don't show progress when there is only one job to do
+    if (old_perc != perc && total_jobs > 1) {
       fmt_fprintf(stderr, "{:3}% [total jobs {}] [left jobs {}] [running jobs {}] [waiting jobs {}]\n",
                   perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
       old_perc = perc;
@@ -215,7 +217,7 @@ bool MakeRunner::make_targets(std::vector<Target *> targets, int jobs_count) {
 
     switch (state) {
       case start_jobs_st: {
-        if (fail_flag || pending_jobs.empty() || (int)jobs.size() >= jobs_count) {
+        if (fail_flag || pending_jobs.empty() || jobs.size() >= jobs_count) {
           state = wait_jobs_st;
           break;
         }
