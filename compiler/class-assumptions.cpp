@@ -106,12 +106,32 @@ Assumption Assumption::undefined() {
   return {};
 }
 
+static ClassPtr extract_instance_from_ffi_type(const std::string &scope_name, const FFIType *type) {
+  if (const auto *builtin = ffi_builtin_type(type->kind)) {
+    return G->get_class(builtin->php_class_name);
+  }
+  if (vk::any_of_equal(type->kind, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union)) {
+    return G->get_class(FFIRoot::cdata_class_name(scope_name, type->str));
+  }
+  if (type->kind == FFITypeKind::Pointer) {
+    return extract_instance_from_ffi_type(scope_name, type->members[0]);
+  }
+  return {};
+}
+
 ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   if (a == nullptr) {
     return ClassPtr{};
   }
   if (const auto *as_optional = a->try_as<TypeHintOptional>()) {
     a = as_optional->inner;
+  }
+
+  if (const auto *as_ffi = a->try_as<TypeHintFFIType>()) {
+    return extract_instance_from_ffi_type(as_ffi->scope_name, as_ffi->type);
+  }
+  if (const auto *as_ffi_scope = a->try_as<TypeHintFFIScope>()) {
+    return G->get_class(FFIRoot::scope_class_name(as_ffi_scope->scope_name));
   }
 
   if (const auto *as_pipe = a->try_as<TypeHintPipe>()) {
@@ -617,6 +637,18 @@ Assumption calc_assumption_for_return(FunctionPtr f, VertexAdaptor<op_func_call>
           }
         }
       }
+      if (const auto *as_ffi = return_typehint->try_as<TypeHintFFIType>()) {
+        return Assumption(as_ffi);
+      }
+      if (const auto *as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
+        if (auto arg = GenTree::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
+          if (const auto *scope_name = GenTree::get_constexpr_string(arg)) {
+            if (auto module_class = G->get_class(FFIRoot::scope_class_name(*scope_name))) {
+              return Assumption(module_class);
+            }
+          }
+        }
+      }
     }
     return Assumption::not_instance();
   }
@@ -829,6 +861,18 @@ Assumption infer_class_of_expr(FunctionPtr f, VertexPtr root, size_t depth /*= 0
       return infer_from_call(f, root.as<op_func_call>(), depth + 1);
     case op_exception_constructor_call:
       return infer_from_call(f, root.as<op_exception_constructor_call>()->constructor_call(), depth + 1);
+    case op_ffi_load_call:
+      return infer_from_call(f, root.as<op_ffi_load_call>()->func_call(), depth + 1);
+    case op_ffi_addr:
+      return infer_class_of_expr(f, root.as<op_ffi_addr>()->expr(), depth + 1);
+    case op_ffi_cast:
+      return Assumption(root.as<op_ffi_cast>()->php_type);
+    case op_ffi_new:
+      return Assumption(root.as<op_ffi_new>()->php_type);
+    case op_ffi_c2php_conv:
+      return Assumption(root.as<op_ffi_c2php_conv>()->php_type);
+    case op_ffi_cdata_value_ref:
+      return infer_class_of_expr(f, root.as<op_ffi_cdata_value_ref>()->expr(), depth + 1);
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key()) {

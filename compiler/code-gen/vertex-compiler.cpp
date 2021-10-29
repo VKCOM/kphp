@@ -15,9 +15,11 @@
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/type-hint.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
@@ -168,9 +170,40 @@ void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << Operand{root->expr(), root->type(), true} << OpInfo::str(root->type());
 }
 
+void compile_ffi_c2php_conv(VertexAdaptor<op_ffi_c2php_conv> root, CodeGenerator &W) {
+  const char *func = tinf::get_type(root)->is_ffi_ref() ? "ffi_c2php_ref" : "ffi_c2php";
+  W << func << "(" << root->expr() << ")";
+}
+
+void compile_ffi_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> root, CodeGenerator &W) {
+  // just to make the generated code a bit more compact
+  if (root->expr()->type() == op_null) {
+    W << "nullptr";
+    return;
+  }
+
+  const FFIType *conv_type = FFIRoot::get_ffi_type(root->c_type);
+  const FFIType *type = conv_type->kind == FFITypeKind::Var ? conv_type->members[0] : conv_type;
+  std::string tag;
+  if (type->is_void_ptr()) {
+    tag = "void*";
+  } else if (type->is_cstring()) {
+    tag = "const char*";
+  } else if (vk::any_of_equal(type->kind, FFITypeKind::Pointer, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union, FFITypeKind::UnionDef)) {
+    tag = "C$FFI$CData<" + ffi_mangled_decltype_string(root->c_type) + ">";
+  } else {
+    tag = ffi_mangled_decltype_string(root->c_type);
+  }
+  W << "ffi_php2c(" << root->expr() << ", ffi_tag<" << tag << ">{})";
+}
+
 void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   if (root->type() == op_conv_regexp) {
     W << root->expr();
+  } else if (root->type() == op_ffi_php2c_conv) {
+    compile_ffi_php2c_conv(root.as<op_ffi_php2c_conv>(), W);
+  } else if (root->type() == op_ffi_c2php_conv) {
+    compile_ffi_c2php_conv(root.as<op_ffi_c2php_conv>(), W);
   } else {
     W << OpInfo::str(root->type()) << " (" << root->expr() << ")";
   }
@@ -543,13 +576,61 @@ void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   }
 }
 
-
 void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
   W << "for (" <<
     JoinValues(*root->pre_cond(), ", ") << "; " <<
     JoinValues(*root->cond(), ", ") << "; " <<
     JoinValues(*root->post_cond(), ", ") << ") " <<
     CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
+}
+
+void compile_ffi_func_call(VertexAdaptor<op_func_call> call, CodeGenerator &W) {
+  const auto &local_name = std::string(get_local_name_from_global_$$(call->func_id->name));
+  auto *scope = call->func_id->class_id->ffi_scope_mixin;
+  const FFISymbol *sym = scope->find_function(local_name);
+
+  W << "FFI_CALL(";
+
+  if (scope->is_shared_lib()) {
+    W << "reinterpret_cast<" << ffi_mangled_decltype_string(scope->scope_name, sym->type) << ">(ffi_env_instance.symbols[" << sym->env_index << "].ptr)";
+  } else {
+    W << local_name;
+  }
+
+  W << "(";
+  const auto &args = call->args();
+  bool need_comma = false;
+  // since FFI methods are instance methods, ignore the first $this argument
+  for (int i = 1; i < args.size(); i++) {
+    if (call->func_id->has_variadic_param && i == args.size() - 1) {
+      auto variadic_arg = GenTree::get_actual_value(args[i]).try_as<op_array>();
+      kphp_assert(variadic_arg);
+      if (need_comma && !variadic_arg->args().empty()) {
+        W << ", ";
+      }
+      for (int j = 0; j < variadic_arg->args().size(); j++) {
+        auto arg = variadic_arg->args()[j];
+        if (auto php2c_conv = arg.try_as<op_ffi_php2c_conv>()) {
+          W << "ffi_vararg_php2c(" << php2c_conv->expr() << ")";
+        } else {
+          W << arg;
+        }
+        if (j != variadic_arg->args().size()-1) {
+          W << ", ";
+        }
+      }
+      break;
+    }
+
+    if (need_comma) {
+      W << ", ";
+    }
+    W << args[i];
+    need_comma = true;
+  }
+  W << ")";
+
+  W << ")"; // closing FFI_CALL macro argument list
 }
 
 enum class func_call_mode {
@@ -564,6 +645,18 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     W << root->args()[0];
     return;
   }
+
+  if (root->func_id->modifiers.is_instance()) {
+    // sometimes instance method calls don't have inferrable class-like type
+    // in their args[0]
+    // TODO: figure out why; if the root of the issue is fixed, remove `if (klass)` check below
+    auto klass = tinf::get_type(root->args()[0])->class_type();
+    if (klass && klass->is_ffi_scope()) {
+      compile_ffi_func_call(root, W);
+      return;
+    }
+  }
+
   FunctionPtr func;
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
@@ -629,6 +722,53 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
   W.get_context().catch_labels.pop_back();
 
   W << ", " << ThrowAction{} << MacroEnd{};
+}
+
+void compile_ffi_cast(VertexAdaptor<op_ffi_cast> root, CodeGenerator &W) {
+  const auto *type = tinf::get_type(root->expr());
+  const char *func = "ffi_cast";
+  if (type->get_indirection() == 0 && ffi_builtin_type(type->class_type()->ffi_class_mixin->ffi_type->kind)) {
+     func = "ffi_cast_scalar";
+  }
+  W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">(" << root->expr() << ")";
+}
+
+void compile_ffi_addr(VertexAdaptor<op_ffi_addr> root, CodeGenerator &W) {
+  W << "ffi_addr(" << root->expr() << ")";
+}
+
+void compile_ffi_new(VertexAdaptor<op_ffi_new> root, CodeGenerator &W) {
+  const auto *ffi_type = FFIRoot::get_ffi_type(root->php_type);
+  const char *func = ffi_type->kind == FFITypeKind::Pointer ? "ffi_new_cdata_ptr" : "ffi_new_cdata";
+  W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">()";
+}
+
+void compile_ffi_cdata_value_ref(VertexAdaptor<op_ffi_cdata_value_ref> root, CodeGenerator &W) {
+  const auto *type = tinf::get_type(root->expr());
+  if (type->is_ffi_ref()) {
+    W << "*(" << root->expr() << ".c_value)";
+  } else {
+    W << root->expr() << "->c_value";
+  }
+}
+
+void compile_ffi_load_call(VertexAdaptor<op_ffi_load_call> root, CodeGenerator &W) {
+  auto *scope = G->get_ffi_root().find_scope(root->scope_name);
+
+  if (!scope->is_shared_lib()) {
+    compile_func_call(root->func_call(), W);
+    return;
+  }
+
+  int num_dynamic_symbols = scope->variables.size() + scope->functions.size();
+  if (num_dynamic_symbols == 0) {
+    compile_func_call(root->func_call(), W);
+    return;
+  }
+
+  W << "ffi_load_scope_symbols(";
+  compile_func_call(root->func_call(), W);
+  W << ", " << scope->shared_lib_id << ", " << scope->get_env_offset() << ", " << num_dynamic_symbols << ")";
 }
 
 void compile_exception_constructor_call(VertexAdaptor<op_exception_constructor_call> root, CodeGenerator &W) {
@@ -1279,7 +1419,41 @@ void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W) {
 }
 
 void compile_instance_prop(VertexAdaptor<op_instance_prop> root, CodeGenerator &W) {
-  W << root->instance() << "->$" << root->get_string();
+  switch (root->access_type) {
+    case InstancePropAccessType::Default:
+      W << root->instance() << "->$" << root->get_string();
+      break;
+
+    case InstancePropAccessType::CData: {
+      const auto *type = tinf::get_type(root->instance());
+      if (type->is_ffi_ref() || type->get_indirection() != 0) {
+        // CDataPtr or CDataRef
+        W << root->instance() << ".c_value->" << root->get_string();
+      } else {
+        W << root->instance() << "->c_value." << root->get_string();
+      }
+      break;
+    }
+
+    case InstancePropAccessType::CDataDirect:
+      W << root->instance() << "." << root->get_string();
+      break;
+
+    case InstancePropAccessType::CDataDirectPtr:
+      W << root->instance() << "->" << root->get_string();
+      break;
+
+    case InstancePropAccessType::ExternVar: {
+      auto *scope_class = tinf::get_type(root->instance())->class_type()->ffi_scope_mixin;
+      if (scope_class->is_shared_lib()) {
+        const auto *sym = scope_class->find_variable(root->get_string());
+        W << "*reinterpret_cast<" << ffi_mangled_decltype_string(scope_class->scope_name, sym->type) << "*>(ffi_env_instance.symbols[" << sym->env_index << "].ptr)";
+      } else {
+        W << root->get_string();
+      }
+      break;
+    }
+  }
 }
 
 void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
@@ -1708,6 +1882,21 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_exception_constructor_call:
       compile_exception_constructor_call(root.as<op_exception_constructor_call>(), W);
       break;
+    case op_ffi_cdata_value_ref:
+      compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);
+      break;
+    case op_ffi_new:
+      compile_ffi_new(root.as<op_ffi_new>(), W);
+      break;
+    case op_ffi_addr:
+      compile_ffi_addr(root.as<op_ffi_addr>(), W);
+      break;
+    case op_ffi_cast:
+      compile_ffi_cast(root.as<op_ffi_cast>(), W);
+      break;
+    case op_ffi_load_call:
+      compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+      break;
     case op_func_call:
       compile_func_call_fast(root.as<op_func_call>(), W);
       break;
@@ -1773,6 +1962,10 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       if (auto klass = tp->class_type()) {
         if (klass->is_class()) {
           W << root.as<op_clone>()->expr() << ".clone()";
+          break;
+        }
+        if (klass->is_ffi_cdata()) {
+          W << "ffi_clone(" << root.as<op_clone>()->expr() << ")";
           break;
         }
       }

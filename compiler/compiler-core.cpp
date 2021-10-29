@@ -11,6 +11,7 @@
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
@@ -187,6 +188,10 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
   }
 
   return full_file_name;
+}
+
+FFIRoot &CompilerCore::get_ffi_root() {
+  return ffi;
 }
 
 SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib, bool builtin) {

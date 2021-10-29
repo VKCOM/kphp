@@ -17,11 +17,17 @@
 #include "compiler/threading/locks.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "compiler/ffi/ffi_types.h"
+
+struct FFIClassDataMixin;
+struct FFIScopeDataMixin;
 
 enum class ClassType {
   klass,
   interface,
-  trait
+  trait,
+  ffi_scope,
+  ffi_cdata,
 };
 
 class ClassData : public Lockable {
@@ -75,13 +81,16 @@ public:
 
   const TypeData *const type_data;
 
+  FFIClassDataMixin *ffi_class_mixin = nullptr; // non-null for ffi_cdata classes
+  FFIScopeDataMixin *ffi_scope_mixin = nullptr; // non-null for ffi_scope classes
+
   static const char *NAME_OF_VIRT_CLONE;
   static const char *NAME_OF_CLONE;
   static const char *NAME_OF_CONSTRUCT;
   static const char *NAME_OF_INVOKE_METHOD;
   static const char *NAME_OF_TO_STRING;
 
-  ClassData();
+  ClassData(ClassType type);
 
   static VertexAdaptor<op_var> gen_vertex_this(Location location);
   FunctionPtr gen_holder_function(const std::string &name);
@@ -115,6 +124,8 @@ public:
   bool is_class() const { return class_type == ClassType::klass; }
   bool is_interface() const { return class_type == ClassType::interface; }
   bool is_trait() const { return class_type == ClassType::trait; }
+  bool is_ffi_scope() const { return class_type == ClassType::ffi_scope; }
+  bool is_ffi_cdata() const { return class_type == ClassType::ffi_cdata; }
   virtual bool is_lambda() const { return false; }
 
   bool is_parent_of(ClassPtr other) const;

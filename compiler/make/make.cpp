@@ -13,6 +13,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/lib-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/hardlink-or-copy.h"
@@ -87,7 +88,8 @@ public:
   }
 
   Target *create_objs2bin_target(vector<File *> objs, File *bin) {
-    return create_target(new Objs2BinTarget(), to_targets(std::move(objs)), bin);
+    bool need_libdl = !G->get_ffi_root().get_shared_libs().empty();
+    return create_target(new Objs2BinTarget(need_libdl), to_targets(std::move(objs)), bin);
   }
 
   Target *create_objs2static_lib_target(vector<File *> objs, File *lib) {

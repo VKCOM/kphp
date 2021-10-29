@@ -1707,11 +1707,11 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
              "Class name is the same as one of 'use' at the top of the file");
 
-  StackPushPop<ClassPtr> c_alive(class_stack, cur_class, ClassPtr(new ClassData()));
+  ClassPtr class_ptr = ClassPtr(new ClassData{class_type});
+  StackPushPop<ClassPtr> c_alive(class_stack, cur_class, class_ptr);
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   cur_class->modifiers = modifiers;
-  cur_class->class_type = class_type;
   if (cur_class->is_interface()) {
     cur_class->modifiers.set_abstract();
   }

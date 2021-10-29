@@ -6,6 +6,10 @@
 
 class Objs2BinTarget : public Target {
 public:
+  explicit Objs2BinTarget(bool need_libdl = false) noexcept :
+    need_libdl_{need_libdl} {
+  }
+
   string get_cmd() final {
 #if defined(__APPLE__)
     vk::string_view open_dep{" -Wl,-all_load "};
@@ -16,6 +20,12 @@ public:
 #endif
     std::stringstream ss;
     ss << settings->cxx.get() << " -o " << target() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
+    if (need_libdl_) {
+      ss << " -ldl";
+    }
     return ss.str();
   }
+
+private:
+  bool need_libdl_{false};
 };

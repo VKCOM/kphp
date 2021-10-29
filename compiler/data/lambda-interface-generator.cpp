@@ -56,8 +56,7 @@ std::string LambdaInterfaceGenerator::generate_name() const noexcept {
 }
 
 InterfacePtr LambdaInterfaceGenerator::generate_interface_class(std::string name) const noexcept {
-  InterfacePtr interface{new ClassData{}};
-  interface->class_type = ClassType::interface;
+  InterfacePtr interface{new ClassData{ClassType::interface}};
   interface->modifiers.set_abstract();
   interface->set_name_and_src_name(name, "");
   interface->file_id = stage::get_file();

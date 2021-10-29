@@ -12,8 +12,10 @@
 #include "common/termformat/termformat.h"
 
 #include "common/php-functions.h"
+#include "compiler/compiler-core.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
@@ -65,6 +67,7 @@ TypeData::TypeData(PrimitiveType ptype) :
 TypeData::TypeData(const TypeData &from) :
   ptype_(from.ptype_),
   flags_(from.flags_),
+  indirection_(from.indirection_),
   class_type_(from.class_type_),
   subkeys(from.subkeys) {
   for (auto &subkey : subkeys) {
@@ -153,6 +156,10 @@ std::string TypeData::as_human_readable(bool colored) const {
     }
   }
 
+  if (indirection_ != 0) {
+    res += string(indirection_, '*');
+  }
+
   return colored ? TermStringFormat::paint_green(res) : res;
 }
 
@@ -182,10 +189,61 @@ void TypeData::set_ptype(PrimitiveType new_ptype) {
   ptype_ = new_ptype;
 }
 
+bool TypeData::is_ffi_ref() const {
+  auto klass = class_type();
+  if (klass && klass->ffi_class_mixin) {
+    return klass->ffi_class_mixin->is_ref();
+  }
+  return false;
+}
+
 ClassPtr TypeData::class_type() const {
   if (class_type_.empty()) return {};
   kphp_assert(std::distance(class_type_.begin(), class_type_.end()) == 1);
   return class_type_.front();
+}
+
+void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indirection) {
+  if (std::distance(new_ptr_type->class_type_.begin(), new_ptr_type->class_type_.end()) != 1) {
+    set_ptype(tp_Error);
+    return;
+  }
+
+  if (ptype() == tp_any) {
+    set_ptype(tp_Class);
+  }
+
+  if (class_type_.empty()) {
+    class_type_ = new_ptr_type->class_type_;
+    indirection_ = new_indirection;
+    return;
+  }
+
+  if (class_type() == G->get_class("FFI\\CData")) {
+    // a special case: CData is our opaque type for "any" C type;
+    // used in FFI functions.txt file to describe an arbitrary C type
+    return;
+  }
+
+  auto ptr_class = class_type()->ffi_class_mixin;
+
+  if (ptr_class->ffi_type->kind == FFITypeKind::Void && indirection_ == 1) {
+    // any pointer is compatible with `void*`,
+    // the type remains `void*`
+    return;
+  }
+
+  auto new_ptr_class = new_ptr_type->class_type()->ffi_class_mixin;
+  if (ptr_class != new_ptr_class) {
+    set_ptype(tp_Error);
+    return;
+  }
+
+  // situations like `T*` vs `T**`
+  if (indirection_ != new_indirection) {
+    set_ptype(tp_Error);
+    return;
+  }
 }
 
 void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type) {
@@ -352,7 +410,7 @@ const TypeData *TypeData::get_deepest_type_of_array() const {
   return this;
 }
 
-void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null) {
+void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
   if (rhs == nullptr) {
     return;
   }
@@ -386,6 +444,21 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   new_flags |= lhs->flags_;
 
   lhs->set_flags(new_flags);
+
+  if (ffi_flags.drop_ref && rhs->is_ffi_ref()) {
+    auto *new_rhs = rhs->clone();
+    new_rhs->class_type_ = {rhs->class_type()->ffi_class_mixin->non_ref};
+    rhs = new_rhs;
+  }
+  int rhs_indirection = rhs->get_indirection();
+  if (ffi_flags.take_addr) {
+    rhs_indirection++;
+  }
+
+  if (rhs->ptype() == tp_Class && (lhs->indirection_ != 0 || rhs_indirection != 0)) {
+    lhs->set_ffi_pointer_type(rhs, rhs_indirection);
+    return;
+  }
 
   // void + false/null does not convert to tp_Error here anymore, as that errors are hard to understand without context
   // (it remains void with flags, and a comprehensive error is printed in final check)
@@ -435,7 +508,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 }
 
-void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null) {
+void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
   TypeData *cur = this;
   
   for (const Key &key : multi_key) {
@@ -456,7 +529,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
     }
   }
 
-  cur->set_lca(rhs, save_or_false, save_or_null);
+  cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
   if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
     this->set_ptype(tp_Error);
   }
@@ -485,8 +558,21 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
 
   switch (tp) {
     case tp_Class: {
+      auto klass = type->class_type();
+      if (auto *as_ffi = klass->ffi_class_mixin) {
+        if (as_ffi->is_ref()) {
+          res += klass->src_name;
+        } else if (type->get_indirection() != 0) {
+          auto ptr = std::string(type->get_indirection() - 1, '*');
+          res += "CDataPtr<" + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ptr + ">";
+        } else {
+          // TODO: can we avoid manual ptr addition here?
+          res += "class_instance<C$FFI$CData<" + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ">>";
+        }
+        break;
+      }
       res += "class_instance<";
-      res += type->class_type()->src_name;
+      res += klass->src_name;
       res += ">";
       break;
     }
@@ -789,7 +875,9 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
         break;
       case tp_Class:
         if (given->class_types() == expected->class_types()) {
-          return true;
+          if (given->get_indirection() == expected->get_indirection()) {
+            return true;
+          }
         }
         break;
       default:

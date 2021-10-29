@@ -429,6 +429,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
 
     // simple just-value operators
+    case op_ffi_new:
     case op_int_const:
     case op_float_const:
     case op_true:
@@ -482,6 +483,11 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
 
     // simple unary operators
+    case op_ffi_c2php_conv:
+    case op_ffi_php2c_conv:
+    case op_ffi_addr:
+    case op_ffi_cast:
+    case op_ffi_cdata_value_ref:
     case op_conv_int:
     case op_conv_int_l:
     case op_conv_float:
@@ -597,6 +603,9 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       add_edge(file_end, line_start);
       break;
     }
+    case op_ffi_load_call:
+      create_cfg(tree_node.as<op_ffi_load_call>()->func_call(), res_start, res_finish);
+      break;
     case op_fork: {
       create_cfg(tree_node.as<op_fork>()->func_call(), res_start, res_finish);
       break;

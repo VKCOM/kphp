@@ -103,7 +103,7 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
     key = &MultiKey::any_key(0);
   }
 
-  new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null);
+  new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null, rvalue.ffi_flags);
 
   if (unlikely(new_type_->error_flag())) {
     on_new_type_became_tpError(type, rvalue);

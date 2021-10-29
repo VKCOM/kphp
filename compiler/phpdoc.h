@@ -89,6 +89,8 @@ private:
   FunctionPtr current_function;
   std::vector<Token>::const_iterator cur_tok;
 
+  const TypeHint *parse_ffi_scope();
+  const TypeHint *parse_ffi_cdata();
   const TypeHint *parse_classname(const std::string &phpdoc_class_name);
   const TypeHint *parse_simple_type();
   const TypeHint *parse_arg_ref();

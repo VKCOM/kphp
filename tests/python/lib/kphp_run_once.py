@@ -54,9 +54,10 @@ class KphpRunOnce(KphpBuilder):
 
         return extensions
 
-    def run_with_php(self):
+    def run_with_php(self, extra_options=[]):
         self._clear_working_dir(self._php_tmp_dir)
         options = self._get_extensions()
+        options.extend(extra_options)
         options.extend([
             ("display_errors", 0),
             ("log_errors", 1),

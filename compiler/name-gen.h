@@ -8,6 +8,7 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
+string gen_anonymous_scope_name(FunctionPtr parent_function);
 string gen_anonymous_function_name(FunctionPtr parent_function);
 bool is_anonymous_function_name(vk::string_view name);
 string gen_unique_name(const string& prefix, FunctionPtr function = FunctionPtr{});

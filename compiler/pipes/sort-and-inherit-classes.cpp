@@ -255,8 +255,14 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
 
-  kphp_error_return(parent_class->is_class() && child_class->is_class(),
-                    fmt_format("Error extends {} and {}", child_class->name, parent_class->name));
+  if (parent_class->is_ffi_cdata() || parent_class->name == "FFI\\Scope") {
+    kphp_error_return(child_class->is_builtin() || child_class->is_ffi_scope(),
+                      "FFI classes should not be extended");
+  } else {
+    kphp_error_return(parent_class->is_class() && child_class->is_class(),
+                      fmt_format("Error extends {} and {}", child_class->name, parent_class->name));
+
+  }
 
   kphp_error_return(!parent_class->modifiers.is_final(),
                     fmt_format("You cannot extends final class: {}", child_class->name));
@@ -362,6 +368,11 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
         break;
       case ClassType::interface:
         inherit_class_from_interface(klass, dep_class);
+        break;
+      case ClassType::ffi_cdata:
+      case ClassType::ffi_scope:
+        kphp_assert(vk::any_of_equal(dep_class->name, "FFI\\CData", "FFI\\Scope"));
+        klass->parent_class = dep_class;
         break;
       case ClassType::trait:
         break;

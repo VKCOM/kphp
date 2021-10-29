@@ -71,6 +71,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
 
 void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
   switch (root->type()) {
+    case op_ffi_cdata_value_ref:
     case op_conv_array_l:
     case op_conv_int_l:
     case op_conv_string_l:

@@ -10,6 +10,7 @@ if (0) {
 
 require_once __DIR__ . '/functions_uberh3.txt';
 require_once __DIR__ . '/functions_spl.txt';
+require_once __DIR__ . '/functions_ffi.txt';
 
 interface Throwable {
     public function getMessage () ::: string;
@@ -1321,3 +1322,34 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
 function xgboost_predict_experimental(float[][] $features) ::: float[];
+
+final class FFI {
+  /** @return \FFI\Scope */
+  public static function cdef(string $code, ?string $lib = null);
+
+  /** @return \FFI\Scope */
+  public static function load(string $filename);
+
+  /** @return ffi_scope<^1> */
+  public static function scope(string $name);
+
+  public static function addr(\FFI\CData $cdata): \FFI\CData;
+
+  public static function typeof(\FFI\CData $cdata): \FFI\CType;
+  public static function type(string $type): \FFI\CType;
+  public static function arrayType(\FFI\CData $type, array $dimensions): \FFI\CType;
+
+  public static function new(string $type): \FFI\CData;
+
+  public static function cast(string $type, \FFI\CData $cdata): \FFI\CData;
+
+  public static function sizeof(\FFI\CData $cdata): int;
+
+  public static function memcpy(\FFI\CData $dst, \FFI\CData $src, int $size): void;
+
+  public static function memset(\FFI\CData $dst, int $value, int $size): void;
+
+  public static function isNull(\FFI\CData $cdata): bool;
+
+  private function __construct();
+}

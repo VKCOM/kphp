@@ -230,6 +230,19 @@ public:
   }
 };
 
+// moved from the collect-required-and-classes.cpp to make it more reusable
+static inline std::string collect_string_concatenation(VertexPtr v) {
+  if (auto string = v.try_as<op_string>()) {
+    return string->str_val;
+  }
+  if (auto concat = v.try_as<op_concat>()) {
+    auto left = collect_string_concatenation(concat->lhs());
+    auto right = collect_string_concatenation(concat->rhs());
+    return (left.empty() || right.empty()) ? std::string() : (left + right);
+  }
+  return std::string();
+}
+
 struct MakeConst final
   : ConstManipulations<VertexPtr> {
 public:

@@ -44,6 +44,8 @@ void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenR
 void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
+  G->get_ffi_root().bind_symbols();
+
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
@@ -67,6 +69,9 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
         break;
       case ClassType::interface:
         code_gen_start_root_task(os, std::make_unique<InterfaceDeclaration>(c));
+        break;
+      case ClassType::ffi_scope:
+        code_gen_start_root_task(os, std::make_unique<FFIDeclaration>(c));
         break;
 
       default:

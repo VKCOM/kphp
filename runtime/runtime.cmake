@@ -68,6 +68,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         url.cpp
         vkext.cpp
         vkext_stats.cpp
+        ffi.cpp
         zlib.cpp
         zstd.cpp
         xgboost/array-adapter.cpp

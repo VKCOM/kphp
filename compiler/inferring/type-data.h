@@ -33,10 +33,22 @@ public:
   using SubkeyItem = std::pair<Key, TypeData *>;
   using lookup_iterator = std::forward_list<SubkeyItem>::const_iterator;
 
+  // TODO: move all flags (drop_false, drop_null) here and rename this struct?
+  // passing several booleans as set_lca args is clumsy
+  struct FFIRvalueFlags {
+    bool drop_ref: 1;
+    bool take_addr: 1;
+
+    FFIRvalueFlags()
+      : drop_ref{false}
+      , take_addr{false} {}
+  };
+
 private:
 
   PrimitiveType ptype_ : 8;     // current type (int/array/etc); tp_any for uninited, tp_Error if error
   uint8_t flags_{0};            // a binary mask of flag_id_t
+  uint8_t indirection_{0};      // ptr levels for FFI pointers
 
   // current class for tp_Class (but during inferring it could contain many classes due to multiple implements)
   std::forward_list<ClassPtr> class_type_;
@@ -76,6 +88,7 @@ public:
   const std::forward_list<ClassPtr> &class_types() const { return class_type_; }
   ClassPtr class_type() const;
   void set_class_type(const std::forward_list<ClassPtr> &new_class_type);
+  void set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indirection);
   bool has_class_type_inside() const;
   void mark_classes_used() const;
   void get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const;
@@ -84,6 +97,8 @@ public:
 
   uint8_t flags() const { return flags_; }
   void set_flags(uint8_t new_flags);
+
+  bool is_ffi_ref() const;
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }
@@ -104,6 +119,13 @@ public:
   void set_shape_has_varg_flag() { set_flag<shape_has_varg_flag_e>(); }
   bool shape_has_varg_flag() const { return get_flag<shape_has_varg_flag_e>(); }
 
+  int get_indirection() const noexcept { return indirection_; }
+
+  void set_indirection(int indirection) {
+    kphp_error(indirection > 0 && indirection <= 0xff, "too many indirection level");
+    indirection_ = indirection;
+  }
+
   bool structured() const;
   void make_structured();
   TypeData *clone() const;
@@ -121,8 +143,8 @@ public:
   }
 
   const TypeData *const_read_at(const MultiKey &multi_key) const;
-  void set_lca(const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);
-  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true, bool save_or_null = true);
+  void set_lca(const TypeData *rhs, bool save_or_false = true, bool save_or_null = true, FFIRvalueFlags ffi_flags = {});
+  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true, bool save_or_null = true, FFIRvalueFlags ffi_flags = {});
   void set_lca(PrimitiveType ptype);
   void fix_inf_array();
 

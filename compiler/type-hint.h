@@ -211,6 +211,70 @@ public:
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
 };
 
+// an arbitrary FFI type
+// C type hints can come either from the C header file (FFI::cdef, FFI::load)
+// or from ffi_cdata<...> type hint
+//
+// some examples of the types that can be expressed:
+// ffi_cdata<scope, struct T>  = CData<struct T>
+// ffi_cdata<scope, struct T*> = CData<struct T*>
+// ffi_cdata<scope, int64_t>   = CData<int64_t>
+class TypeHintFFIType : public TypeHint {
+  TypeHintFFIType(std::string scope_name, const FFIType *type)
+    : TypeHint(flag_contains_instances_inside)
+    , scope_name{std::move(scope_name)}
+    , type{type} {}
+
+public:
+  std::string scope_name;
+  const FFIType *type;
+
+  static const TypeHint *create(const std::string &scope_name, const FFIType *type, bool move = false);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+};
+
+/**
+ * ffi_scope<^arg_num>
+ */
+class TypeHintFFIScopeArgRef : public TypeHint {
+  explicit TypeHintFFIScopeArgRef(int arg_num)
+    : TypeHint(flag_contains_argref_inside)
+    , arg_num{arg_num} {}
+
+public:
+  int arg_num;
+
+  static const TypeHint *create(int arg_num);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+};
+
+/**
+ * ffi_scope<scope_name>
+ */
+class TypeHintFFIScope : public TypeHint {
+  explicit TypeHintFFIScope(std::string scope_name)
+    : TypeHint(flag_contains_instances_inside)
+    , scope_name{std::move(scope_name)} {}
+
+public:
+  std::string scope_name;
+
+  static const TypeHint *create(const std::string &scope_name);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+};
+
 /**
  * future<T>, future_queue<T>
  * They occur not only in functions.txt, but in phpdoc also of course

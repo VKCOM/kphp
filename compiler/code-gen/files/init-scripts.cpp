@@ -10,7 +10,6 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 
@@ -77,6 +76,26 @@ void StaticInit::compile(CodeGenerator &W) const {
     }
   }
   W << "const_vars_init();" << NL;
+
+  const auto &ffi = G->get_ffi_root();
+  const auto &ffi_shared_libs = ffi.get_shared_libs();
+  if (!ffi_shared_libs.empty()) {
+    W << "ffi_env_instance = FFIEnv{" << ffi_shared_libs.size() << ", " <<  ffi.get_dynamic_symbols_num() << "};" << NL;
+    W << "ffi_env_instance.funcs.dlopen = dlopen;" << NL;
+    W << "ffi_env_instance.funcs.dlsym = dlsym;" << NL;
+    for (const auto &lib : ffi_shared_libs) {
+      W << "ffi_env_instance.libs[" << lib.id << "].path = " << RawString{lib.path} << ";" << NL;
+    }
+    const auto &ffi_scopes = ffi.get_scopes();
+    for (const auto &ffi_scope : ffi_scopes) {
+      for (const auto &sym : ffi_scope->variables) {
+        W << "ffi_env_instance.symbols[" << sym.env_index << "].name = \"" << sym.name() << "\";" << NL;
+      }
+      for (const auto &sym : ffi_scope->functions) {
+        W << "ffi_env_instance.symbols[" << sym.env_index << "].name = \"" << sym.name() << "\";" << NL;
+      }
+    }
+  }
 
   W << END << NL;
   W << CloseNamespace();
@@ -166,6 +185,11 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << Include(main_file_id->main_function->header_full_name);
 
+  if (!G->get_ffi_root().get_shared_libs().empty()) {
+    W << ExternInclude("runtime/ffi.h"); // FFI env singleton
+    W << ExternInclude("dlfcn.h"); // dlopen, dlsym
+  }
+
   if (!G->settings().is_static_lib_mode()) {
     W << NL;
     FunctionSignatureGenerator(W) << "void global_init_php_scripts()" << SemicolonAndNL();
@@ -209,6 +233,7 @@ void CppMainFile::compile(CodeGenerator &W) const {
   kphp_assert(G->settings().is_server_mode() || G->settings().is_cli_mode());
   W << OpenFile("main.cpp");
   W << ExternInclude("server/php-engine.h") << NL;
+
   W << "int main(int argc, char *argv[]) " << BEGIN
     << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
     << END;

@@ -50,7 +50,7 @@ public:
     if (auto clone_root = root.try_as<op_clone>()) {
       auto klass = infer_class_of_expr(stage::get_function(), clone_root).try_as_class();
       kphp_error_act(klass, "`clone` keyword could be used only with instances", return clone_root);
-      kphp_error_act(!klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", klass->name), return clone_root);
+      kphp_error_act(klass->is_ffi_cdata() || !klass->is_builtin(), fmt_format("`{}` class is forbidden for clonning", klass->name), return clone_root);
       bool clone_is_inside_virt_clone = vk::any_of_equal(current_function->local_name(),
                                                          ClassData::NAME_OF_VIRT_CLONE,
                                                          FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE));

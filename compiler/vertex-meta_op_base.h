@@ -17,6 +17,14 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
 class TypeHint;
 
+enum class InstancePropAccessType: uint8_t {
+  Default,        // normal instance prop access
+  CData,          // accessing a FFI field through php2c level
+  CDataDirect,    // accessing a FFI field directly (using '.')
+  CDataDirectPtr, // accessing a pointer FFI field directly (using '->')
+  ExternVar,      // accessing extern C variable through FFI scope object
+};
+
 template<>
 class vertex_inner<meta_op_base> {
 public:

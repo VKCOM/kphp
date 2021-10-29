@@ -26,8 +26,22 @@ struct RValue {
   const MultiKey *key{nullptr};
   bool drop_or_false{false};
   bool drop_or_null{false};
+  TypeData::FFIRvalueFlags ffi_flags;
 };
 
+// take &T cdata type and return it as T;
+// for non-cdata types it has no effect
+inline RValue ffi_rvalue_drop_ref(RValue rvalue) {
+  rvalue.ffi_flags.drop_ref = true;
+  return rvalue;
+}
+
+// take T cdata type and return it as *T;
+// for non-cdata types it has no effect
+inline RValue ffi_rvalue_take_addr(RValue rvalue) {
+  rvalue.ffi_flags.take_addr = true;
+  return rvalue;
+}
 
 inline RValue drop_optional(RValue rvalue) {
   rvalue.drop_or_false = true;

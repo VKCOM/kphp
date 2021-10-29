@@ -15,6 +15,8 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/ffi-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
@@ -165,6 +167,8 @@ void FunctionParams::compile(CodeGenerator &W) const {
     ii++;
   }
 }
+
+FFIDeclaration::FFIDeclaration(ClassPtr ffi_scope): ffi_scope{ffi_scope} {}
 
 InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
   interface(interface) {
@@ -331,6 +335,59 @@ std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl
     }
   }
   return {};
+}
+
+void FFIDeclaration::compile(CodeGenerator &W) const {
+  W << OpenFile(ffi_scope->header_name, ffi_scope->get_subdir());
+
+  W << "#pragma once" << NL;
+
+  W << ExternInclude("runtime/ffi.h");
+
+  auto *scope = ffi_scope->ffi_scope_mixin;
+
+  W << "extern \"C\" {" << NL;
+
+  // struct definitions are emitted for both shared (dynamic) and static libraries
+  for (const auto &type : scope->types) {
+    W << (type->kind == FFITypeKind::StructDef ? "struct" : "union");
+    W << " " << FFIRoot::c_name_mangle(scope->scope_name, type->str);
+    // empty members list mean "forward declaration", don't emit {} for them
+    if (!type->members.empty()) {
+      W << " " << BEGIN;
+      for (const FFIType *field : type->members) {
+        W << ffi_mangled_type_string(scope->scope_name, field) << ";" << NL;
+      }
+      W << END;
+    }
+    W << ";" << NL;
+  }
+
+  // for shared libraries we don't emit function declarations as they're accessed
+  // via FFIEnv object that contains dynamically loaded symbols inside
+  if (!scope->is_shared_lib()) {
+    for (const auto &sym : scope->variables) {
+      W << "extern " << ffi_type_string(sym.type) << ";" << NL;
+    }
+    for (const auto &sym : scope->functions) {
+      // note: static lib function symbols are unmangled
+      W << ffi_decltype_string(sym.type->members[0]) << " " << sym.type->str << "(";
+      for (int i = 1; i < sym.type->members.size(); i++) {
+        W << ffi_type_string(sym.type->members[i]);
+        if (i < sym.type->members.size() - 1) {
+          W << ", ";
+        }
+      }
+      if (sym.type->is_variadic()) {
+        W << ", ...";
+      }
+      W << ");" << NL;
+    }
+  }
+
+  W << "}" << NL;
+
+  W << CloseFile();
 }
 
 void InterfaceDeclaration::compile(CodeGenerator &W) const {
