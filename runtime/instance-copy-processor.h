@@ -5,11 +5,13 @@
 #pragma once
 
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/allocator.h"
+#include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
@@ -102,22 +104,20 @@ private:
   Child &child_;
 };
 
-constexpr static uint32_t VISITED_INSTANCE_UNIQUE_INDEX_MASK{0x80000000};
+constexpr static uint32_t VISITED_INSTANCE_MASK{0x80000000};
 
 } // namespace impl_
 
-class InstanceUniqueIndexVisitor : impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor> {
+class InstanceReferencesCountingVisitor : impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor> {
 public:
-  friend class impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
+  friend class impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
 
-  using Basic = impl_::InstanceDeepBasicVisitor<InstanceUniqueIndexVisitor>;
+  using Basic = impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
   using Basic::operator();
 
-  using Handler = bool (*)(uint32_t &);
-
-  explicit InstanceUniqueIndexVisitor(Handler f) :
+  explicit InstanceReferencesCountingVisitor(std::unordered_map<void *, uint32_t> &instances_refcnt_table) :
     Basic(*this),
-    f_(f) {
+    instances_refcnt_table(instances_refcnt_table) {
   }
 
   template<typename I>
@@ -126,6 +126,8 @@ public:
   }
 
 private:
+  std::unordered_map<void *, uint32_t> &instances_refcnt_table;
+
   template<typename T>
   bool process(T &t) noexcept {
     return is_class_instance_inside<T>{} ? Basic::process(t) : true;
@@ -140,14 +142,15 @@ private:
   template<typename I>
   bool process(class_instance<I> &instance) noexcept {
     if (!instance.is_null()) {
-      if (!f_(instance.get()->get_unique_index_ref())) {
+      uint32_t &refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
+      const bool visited = ++refcnt_info & impl_::VISITED_INSTANCE_MASK;
+      refcnt_info |= impl_::VISITED_INSTANCE_MASK;
+      if (visited) {
         return true;
       }
     }
     return Basic::process(instance);
   }
-
-  Handler f_;
 };
 
 using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource &, size_t);
@@ -201,7 +204,7 @@ public:
   bool process_instance(class_instance<I> &instance) noexcept {
     class_instance<I> instance_copy = instance;
     const bool result = process(instance);
-    InstanceUniqueIndexVisitor{[](uint32_t &index) { return !!std::exchange(index, 0); }}.process_instance(instance_copy);
+    copied_instances_table.clear();
     return result;
   }
 
@@ -212,9 +215,10 @@ private:
       return true;
     }
 
-    uint32_t &reduced_ptr = instance.get()->get_unique_index_ref();
-    if (reduced_ptr) {
-      instance = class_instance<I>::create_from_base_raw_ptr(expand_ptr(reduced_ptr));
+    auto &copied_instance_ptr = copied_instances_table[instance.get()->get_instance_data_raw_ptr()];
+
+    if (copied_instance_ptr) {
+      instance = class_instance<I>::create_from_base_raw_ptr(copied_instance_ptr);
       return true;
     }
 
@@ -224,7 +228,7 @@ private:
     }
 
     instance = instance.virtual_builtin_clone();
-    reduced_ptr = reduce_ptr(instance.get_base_raw_ptr());
+    copied_instance_ptr = instance.get_base_raw_ptr();
 
     if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
       instance.set_reference_counter_to(extra_ref_cnt);
@@ -275,20 +279,12 @@ private:
     return PrimitiveArrayProcessor<T>::process(*this, arr);
   }
 
-  void *expand_ptr(uint32_t reduced_ptr) noexcept {
-    php_assert(reduced_ptr);
-    return static_cast<uint8_t *>(memory_pool_.memory_begin()) + reduced_ptr - 1;
-  }
-
-  uint32_t reduce_ptr(void *ptr) noexcept {
-    const std::ptrdiff_t reduced = static_cast<uint8_t *>(ptr) - static_cast<uint8_t *>(memory_pool_.memory_begin());
-    php_assert(reduced >= 0 && reduced < std::numeric_limits<uint32_t>::max());
-    return static_cast<uint32_t>(reduced + 1);
-  }
-
   bool memory_limit_exceeded_{false};
   memory_resource::unsynchronized_pool_resource &memory_pool_;
   ResourceCallbackOOM oom_callback_{nullptr};
+
+  dl::CriticalSectionGuard guard; // as we use STL container
+  std::unordered_map<void *, void *> copied_instances_table;
 };
 
 class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
@@ -317,28 +313,29 @@ public:
 
   template<class I>
   bool process_instance(class_instance<I> &instance) noexcept {
-    InstanceUniqueIndexVisitor{[](uint32_t &index) {
-      const bool visited = ++index & impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
-      index |= impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
-      return !visited;
-    }}.process_instance(instance);
-    return process(instance);
+    InstanceReferencesCountingVisitor{instances_refcnt_table}.process_instance(instance);
+    auto res = process(instance);
+    instances_refcnt_table.clear();
+    return res;
   }
 
 private:
+  dl::CriticalSectionGuard guard; // as we use STL container
+  std::unordered_map<void *, uint32_t> instances_refcnt_table;
+
   template<typename I>
   bool process(class_instance<I> &instance) noexcept {
     if (instance.is_null()) {
       return true;
     }
 
-    uint32_t &index = instance.get()->get_unique_index_ref();
-    if (index & impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK) {
-      index ^= impl_::VISITED_INSTANCE_UNIQUE_INDEX_MASK;
+    uint32_t &refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
+    if (refcnt_info & impl_::VISITED_INSTANCE_MASK) {
+      refcnt_info ^= impl_::VISITED_INSTANCE_MASK;
       Basic::process(instance);
     }
 
-    if (!--index) {
+    if (!--refcnt_info) {
       instance.force_destroy(get_memory_ref_cnt());
     }
     instance = class_instance<I>{};

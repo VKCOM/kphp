@@ -12,7 +12,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
-class InstanceUniqueIndexVisitor;
+class InstanceReferencesCountingVisitor;
 
 class InstanceDeepCopyVisitor;
 
@@ -35,7 +35,7 @@ struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
   virtual const char *get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
 
-  virtual void accept(InstanceUniqueIndexVisitor &) noexcept = 0;
+  virtual void accept(InstanceReferencesCountingVisitor &) noexcept = 0;
   virtual void accept(InstanceDeepCopyVisitor &) noexcept = 0;
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept = 0;
 
@@ -88,7 +88,7 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
     visitor("error_code", error_code);
   }
 
-  void accept(InstanceUniqueIndexVisitor &visitor) noexcept {
+  void accept(InstanceReferencesCountingVisitor &visitor) noexcept {
     return generic_accept(visitor);
   }
 
