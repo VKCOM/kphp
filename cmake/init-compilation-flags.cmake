@@ -70,7 +70,7 @@ endif()
 include_directories(${GENERATED_DIR})
 add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer)
 if(HOST STREQUAL "x86_64")
-    add_compile_options(-mpclmul -march=nehalem -fno-common)
+    add_compile_options(-march=sandybridge -fno-common)
     add_link_options(-fno-common)
 endif()
 
