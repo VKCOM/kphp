@@ -69,7 +69,7 @@ foreach(PHP_VERSION IN ITEMS "" "7.2" "7.4")
             target_link_options(${VKEXT_TARGET} PRIVATE -undefined dynamic_lookup)
         endif()
         target_compile_definitions(${VKEXT_TARGET} PRIVATE -DVKEXT -DPHP_ATOM_INC)
-        target_compile_options(${VKEXT_TARGET} PRIVATE -mfpmath=sse -Wno-unused-parameter -Wno-float-conversion -Wno-ignored-qualifiers)
+        target_compile_options(${VKEXT_TARGET} PRIVATE -Wno-unused-parameter -Wno-float-conversion -Wno-ignored-qualifiers)
         target_include_directories(${VKEXT_TARGET} PRIVATE ${PHP_SOURCE} ${PHP_SOURCE}/main ${PHP_SOURCE}/Zend ${PHP_SOURCE}/TSRM ${BASE_DIR})
         target_link_libraries(${VKEXT_TARGET} PRIVATE vk::flex_data_shared)
         set_target_properties(${VKEXT_TARGET} PROPERTIES

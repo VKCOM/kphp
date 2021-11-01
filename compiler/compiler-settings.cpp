@@ -273,6 +273,7 @@ void CompilerSettings::init() {
      << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
+  ss << " -march=sandybridge";
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
