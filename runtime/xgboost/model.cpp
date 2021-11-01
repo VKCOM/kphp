@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "runtime/critical_section.h"
 #include "runtime/xgboost/model.h"
 #include "runtime/xgboost/array-adapter.h"
 
@@ -29,6 +30,8 @@ void Model::predict(const array<array<double>> &features, ::xgboost::PredictionC
   if (!booster_) {
     throw std::runtime_error{"there is no xgboost model loaded"};
   }
+  dl::CriticalSectionGuard critical_section;
+
   scores.predictions.HostVector().clear();
   scores.version = 0;
   scores.ref.reset();
