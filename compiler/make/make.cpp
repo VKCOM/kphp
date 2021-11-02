@@ -402,6 +402,7 @@ void run_make() {
 
   MakeSetup make{make_stats_file, settings};
   auto objs = run_pre_make(settings, make_stats_file, make, obj_index, bin_file);
+  stage::die_if_global_errors();
 
   if (settings.is_static_lib_mode()) {
     make.create_objs2static_lib_target(objs, &bin_file);
@@ -413,6 +414,7 @@ void run_make() {
     kphp_error(ok, build_stage + " stage failure");
     make.create_objs2bin_target(objs, &bin_file);
   }
+  stage::die_if_global_errors();
 
   const std::string build_stage{settings.is_static_lib_mode() ? "Compiling" : "Linking"};
   AutoProfiler profiler{get_profiler(build_stage)};
