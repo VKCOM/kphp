@@ -169,6 +169,16 @@ class_instance<C$FFI$Scope> f$FFI$$load(const string &filename);
 class_instance<C$FFI$Scope> f$FFI$$scope(const string &scope_name);
 
 template<class T>
+string f$FFI$$string(const T &v) {
+  return string(reinterpret_cast<const char*>(ffi_c_value_ptr(v)));
+}
+
+template<class T>
+string f$FFI$$string(const T &v, int64_t size) {
+  return string(reinterpret_cast<const char*>(ffi_c_value_ptr(v)), size);
+}
+
+template<class T>
 int64_t f$FFI$$sizeof(CDataPtr<T> cdata __attribute__ ((unused))) {
   return sizeof(CDataPtr<T>);
 }

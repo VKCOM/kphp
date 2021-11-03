@@ -239,6 +239,24 @@ void check_function_throws(FunctionPtr f) {
                         vk::join(throws_expected, ", ")));
 }
 
+void check_ffi_call(VertexAdaptor<op_func_call> call) {
+  // right now this function contains only 1 check, but
+  // I moved FFI-related checks to a separate function anyway
+
+  if (call->get_string() == "FFI$$string" && call->args().size() == 1) {
+    // it's not a part of a function signature constraints,
+    // but PHP will give a run-time error for 1-argument form
+    // of the function if it's not a `char*` or `const char*`;
+    // we'll try to give that error at the compile-time
+    const auto *type = tinf::get_type(call->args()[0]);
+    const auto *ffi_type = FFIRoot::get_ffi_type(type->class_type());
+    kphp_error(type->get_indirection() == 1 && ffi_type->kind == FFITypeKind::Char,
+               fmt_format("$ptr argument is {}, expected a C string compatible type",
+                          type->as_human_readable()));
+    return;
+  }
+}
+
 bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_type, const TypeData *php_type) {
   auto php_expr = conv->expr();
 
@@ -540,6 +558,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
+    } else if (vk::string_view{function_name}.starts_with("FFI$$")) {
+      check_ffi_call(call);
     }
 
     // TODO: express the array<Comparable> requirement in functions.txt and remove these adhoc checks?
