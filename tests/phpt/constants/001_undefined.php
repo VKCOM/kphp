@@ -4,7 +4,7 @@
 /Undefined constant 'UNDEFINED_CONSTANT'/
 <?php
 
-const SOME_NAME = "foo";
+const SOME_CONSTANT = "foo";
 
 class Foo {
     const NAME = "foo";
@@ -15,7 +15,7 @@ function foo() {
     echo Foo::UNDEFINED;
     echo UndefinedClass::UNDEFINED;
 
-    echo SOME_NAME;
+    echo SOME_CONSTANT;
     echo UNDEFINED_CONSTANT;
 }
 
