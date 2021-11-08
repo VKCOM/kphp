@@ -1351,5 +1351,7 @@ final class FFI {
 
   public static function isNull(\FFI\CData $cdata): bool;
 
+  public static function string(FFI\CData $ptr, ?int $size = null): string;
+
   private function __construct();
 }

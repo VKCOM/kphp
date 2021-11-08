@@ -245,6 +245,9 @@ class TestFFI(KphpCompilerAutoTestCase):
     def test_util_isnull(self):
         self.ffi_build_and_compare_with_php('php/util/isnull.php')
 
+    def test_util_string(self):
+        self.ffi_build_and_compare_with_php('php/util/string.php')
+
     # multi-file tests
 
     def test_multifile(self):
