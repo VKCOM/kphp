@@ -29,6 +29,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_regexp:        return "regexp";
     case tp_Class:         return "Class";
     case tp_void:          return "void";
+    case tp_never:         return "never";
     case tp_Error:         return "Error";
     case ptype_size:       kphp_fail();
   }

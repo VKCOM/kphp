@@ -140,7 +140,7 @@ struct EmptyReturn {
     } else {
       W << "return ";
     }
-    if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
+    if (context.inside_null_coalesce_fallback || (tp->ptype() != tp_void && tp->ptype() != tp_never)) {
       W << "{}";
     }
     if (context.resumable_flag) {

@@ -152,6 +152,7 @@ public:
 
 private:
   const TypeHint *get_typehint();
+  static void on_void_never_type_error(const TypeHint *type_hint, std::string place);
 
   static void check_and_remove_num_separators(std::string &s);
   VertexPtr get_op_num_const();

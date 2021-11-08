@@ -35,7 +35,6 @@ struct php_doc_tag {
     kphp_immutable_class,
     kphp_tl_class,
     kphp_const,
-    kphp_noreturn,
     kphp_warn_unused_result,
     kphp_warn_performance,
     kphp_analyze_performance,

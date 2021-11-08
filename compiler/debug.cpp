@@ -162,6 +162,7 @@ std::string debugTokenName(TokenType t) {
     {tok_callable, "tok_callable"},
     {tok_bool, "tok_bool"},
     {tok_void, "tok_void"},
+    {tok_never, "tok_never"},
     {tok_mixed, "tok_mixed"},
     {tok_conv_int, "tok_conv_int"},
     {tok_conv_float, "tok_conv_float"},

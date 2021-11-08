@@ -30,10 +30,6 @@ Marks this function as 'inline' for gcc, and codegen implementation places it in
 
 Forces kphp to start compiling this function even if it is not used explicitly. Typically, is required for callbacks passed as strings, as they are resolved much later.
 
-<aside>@kphp-no-return</aside>
-
-Indicates, that this function never returns (always calls *exit()*). While building a control flow graph, KPHP treats all code after such functions' invocations as inaccessible, does not warn on missing break, etc.
-
 <aside>@kphp-pure-function</aside>
 
 Tells KPHP that this function is pure: the result is always the same on constant arguments. Therefore, a function can be called in constant arrays for example.

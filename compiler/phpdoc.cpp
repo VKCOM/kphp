@@ -46,7 +46,6 @@ const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
   {"@kphp-immutable-class",      kphp_immutable_class},
   {"@kphp-tl-class",             kphp_tl_class},
   {"@kphp-const",                kphp_const},
-  {"@kphp-no-return",            kphp_noreturn},
   {"@kphp-warn-unused-result",   kphp_warn_unused_result},
   {"@kphp-warn-performance",     kphp_warn_performance},
   {"@kphp-analyze-performance",  kphp_analyze_performance},
@@ -275,6 +274,9 @@ const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
     case tok_void:
       cur_tok++;
       return TypeHintPrimitive::create(tp_void);
+    case tok_never:
+      cur_tok++;
+      return TypeHintPrimitive::create(tp_never);
     case tok_tuple:
       cur_tok++;
       return TypeHintTuple::create(parse_nested_type_hints());

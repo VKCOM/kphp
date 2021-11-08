@@ -876,6 +876,8 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
   auto location = auto_location();
 
   const TypeHint *type_hint = get_typehint();
+  on_void_never_type_error(type_hint, "parameter");
+
   bool is_varg = false;
 
   // if the argument is vararg and has a type hint — e.g. int ...$a — then cur points to $a, as ... were consumed by the type lexer
@@ -1475,6 +1477,7 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   }
 
   const TypeHint *type_hint = get_typehint();
+  on_void_never_type_error(type_hint, "class property");
 
   if (test_expect(tok_var_name)) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
@@ -1574,6 +1577,11 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     next_cur();
     cur_function->return_typehint = get_typehint();
     kphp_error(cur_function->return_typehint, "Expected return typehint after :");
+
+    // if explicit never typehint
+    if (const auto type = cur_function->return_typehint->try_as<TypeHintPrimitive>()) {
+      cur_function->is_no_return = type->ptype == tp_never;
+    }
   }
 
   if (is_arrow) {
@@ -1988,6 +1996,16 @@ const TypeHint *GenTree::get_typehint() {
   } catch (std::runtime_error &) {
     kphp_error(0, "Cannot parse type hint");
     return {};
+  }
+}
+
+void GenTree::on_void_never_type_error(const TypeHint *type_hint, std::string place) {
+  if (type_hint == nullptr) {
+    return;
+  }
+  if (const auto type = type_hint->try_as<TypeHintPrimitive>()) {
+    kphp_error(type->ptype != tp_void, fmt_format("void cannot be used as a {} type", place));
+    kphp_error(type->ptype != tp_never, fmt_format("never cannot be used as a {} type", place));
   }
 }
 

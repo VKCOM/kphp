@@ -471,10 +471,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_op_func_call(vertex.as<op_func_call>());
   }
   if (vertex->type() == op_return && current_function->is_no_return) {
-    kphp_error(false, "Return is done from no return function");
-  }
-  if (current_function->can_throw() && current_function->is_no_return) {
-    kphp_error(false, "Exception is thrown from no return function");
+    kphp_error(false, "A never-returning function must not return");
   }
   if (vertex->type() == op_instance_prop) {
     const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());

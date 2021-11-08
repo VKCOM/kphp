@@ -549,7 +549,7 @@ void CollectMainEdgesPass::on_finish() {
   }
   if (!have_returns) {
     // hack to work well with functions which always throws
-    create_type_assign(as_lvalue(current_function, -1), TypeData::get_type(tp_void));
+    create_type_assign(as_lvalue(current_function, -1), TypeData::get_type(tp_never));
   }
   call_on_var(current_function->local_var_ids);
   call_on_var(current_function->global_var_ids);

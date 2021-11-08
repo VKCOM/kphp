@@ -153,6 +153,7 @@ enum TokenType {
   tok_callable,
   tok_bool,
   tok_void,
+  tok_never,
   tok_mixed,
 
   tok_conv_int,
