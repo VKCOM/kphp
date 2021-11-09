@@ -70,7 +70,11 @@ install(FILES ${OBJS_DIR}/php_lib_version.sha256
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 
-install(FILES ${BASE_DIR}/functions.txt ${BASE_DIR}/functions_spl.txt ${BASE_DIR}/functions_uberh3.txt ${BASE_DIR}/functions_ffi.txt ${COMMON_DIR}/php-functions.h
+install(DIRECTORY ${BASE_DIR}/builtin-functions
+        COMPONENT KPHP
+        DESTINATION ${INSTALL_KPHP_SOURCE}/)
+
+install(FILES ${COMMON_DIR}/php-functions.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/)
 
