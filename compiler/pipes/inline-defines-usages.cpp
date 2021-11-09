@@ -30,22 +30,28 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // const value defines are replaced by their value;
   // non-const defines are replaced by d$ variables
   if (root->type() == op_func_name) {
-    DefinePtr d = G->get_define(resolve_define_name(root->get_string()));
-    if (d) {
-      if (d->type() == DefineData::def_var) {
-        auto var = VertexAdaptor<op_var>::create().set_location(root);
-        var->extra_type = op_ex_var_superglobal;
-        var->str_val = "d$" + d->name;
-        root = var;
-      } else {
-        if (d->class_id) {
-          auto access_class = d->class_id;
-          check_access(class_id, lambda_class_id, FieldModifiers{d->access}, access_class, "const", d->name);
-        }
-        root = d->val.clone().set_location_recursively(root);
-      } 
+    const auto name = resolve_define_name(root->get_string());
+    const auto def = G->get_define(name);
+    if (!def) {
+      const auto readable_name = vk::replace_all(vk::replace_all(name, "$$", "::"), "$", "\\");
+      kphp_error(0, fmt_format("Undefined constant '{}'", readable_name));
+      return root;
+    }
+
+    if (def->type() == DefineData::def_var) {
+      auto var = VertexAdaptor<op_var>::create().set_location(root);
+      var->extra_type = op_ex_var_superglobal;
+      var->str_val = "def$" + def->name;
+      root = var;
+    } else {
+      if (def->class_id) {
+        auto access_class = def->class_id;
+        check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->name);
+      }
+      root = def->val.clone().set_location_recursively(root);
     }
   }
+
   return root;
 }
 

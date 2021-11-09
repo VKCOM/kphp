@@ -1,6 +1,11 @@
 <?php
 
+// placeholder constants
+define('TODO', -1);
+define('TODO_OVERLOAD', -1);
+
 define('PHP_INT_MAX', 9223372036854775807);
+define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 
@@ -196,7 +201,7 @@ function array_last_value ($a ::: array) ::: ^1[*];
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
 
 function implode ($s ::: string, $v ::: array) ::: string;
-function explode ($delimiter ::: string, $str ::: string, $limit ::: int = INT_MAX) ::: string[];
+function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
 
 function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
 
@@ -319,17 +324,17 @@ define('DATE_RSS', "D, d M Y H:i:s O");
 define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
-function date ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
+function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 function date_default_timezone_set ($s ::: string) ::: bool;
 function date_default_timezone_get() ::: string;
-function getdate ($timestamp ::: int = INT_MIN) ::: mixed[];
-function gmdate ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
-function gmmktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
-function localtime ($timestamp ::: int = INT_MIN, $is_associative ::: bool = false) ::: mixed[];
+function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
+function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
+function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 function microtime ($get_as_float ::: bool = false) ::: mixed;//TODO
-function mktime ($h ::: int = INT_MIN, $m ::: int = INT_MIN, $s ::: int = INT_MIN, $month ::: int = INT_MIN, $day ::: int = INT_MIN, $year ::: int = INT_MIN) ::: int;
-function strftime ($format ::: string, $timestamp ::: int = INT_MIN) ::: string;
-function strtotime ($time ::: string, $timestamp ::: int = INT_MIN) ::: int | false;
+function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
+function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
 function time() ::: int;
 function hrtime (bool $as_number = false): mixed; // array|int
 
@@ -396,10 +401,10 @@ function natsort (&$a ::: array) ::: void;
 function lcg_value() ::: float;
 function uniqid ($prefix ::: string = '', $more_entropy ::: int = false) ::: string;
 
-function srand ($seed ::: int = INT_MIN) ::: void;
+function srand ($seed ::: int = PHP_INT_MIN) ::: void;
 function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 function getrandmax() ::: int;
-function mt_srand ($seed ::: int = INT_MIN) ::: void;
+function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
 function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 function mt_getrandmax() ::: int;
 
@@ -645,10 +650,10 @@ function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 function strrev ($str ::: string) ::: string;
 function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
-function substr ($str ::: string, $start ::: int, $length ::: int = INT_MAX) ::: string | false;
-function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = INT_MAX) ::: int;
-function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = INT_MAX) ::: string;
-function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
+function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
+function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = PHP_INT_MAX) ::: int;
+function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string;
+function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = PHP_INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
 
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
@@ -675,7 +680,7 @@ function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 
 function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
 function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
 function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = INT_MAX, $encoding ::: string = "1251") ::: string;
+function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "1251") ::: string;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
@@ -683,13 +688,13 @@ define('PHP_ROUND_HALF_EVEN', 123423145);
 define('PHP_ROUND_HALF_ODD', 123423146);
 
 function bcscale ($scale ::: int) ::: void;
-function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
+function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 function bcmod ($lhs ::: string, $rhs ::: string) ::: string;
 function bcpow ($lhs ::: string, $rhs ::: string) ::: string;
-function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
-function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
-function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: string;
-function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = INT_MIN) ::: int;
+function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
 
 function mysqli_errno(\mysqli $dn) ::: int;
 function mysqli_error(\mysqli $dn) ::: string;
