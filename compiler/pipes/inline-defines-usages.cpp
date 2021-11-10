@@ -41,7 +41,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
     if (def->type() == DefineData::def_var) {
       auto var = VertexAdaptor<op_var>::create().set_location(root);
       var->extra_type = op_ex_var_superglobal;
-      var->str_val = "def$" + def->name;
+      var->str_val = "d$" + def->name;
       root = var;
     } else {
       if (def->class_id) {
