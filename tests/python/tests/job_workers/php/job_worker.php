@@ -39,6 +39,9 @@ function do_job_worker() {
   } else if ($req instanceof ReferenceInvariantRequest) {
     require_once "ReferenceInvariant/job_worker.php";
     run_job_reference_invariant($req);
+  } else if ($req instanceof \SharedMemoryPieceCopying\JobRequest) {
+    require_once "SharedMemoryPieceCopying/job_worker.php";
+    run_shared_memory_piece_copying_job($req);
   } else {
     run_job_shared_immutable_message_scenario($req);
   }
