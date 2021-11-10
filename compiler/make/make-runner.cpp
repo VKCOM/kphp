@@ -98,7 +98,12 @@ static int run_cmd(const string &cmd) {
   }
   argv.back() = nullptr;
 
+  #ifdef __APPLE__
+  int pid = fork();
+  #else
   int pid = vfork();
+  #endif
+
   if (pid < 0) {
     perror("vfork failed: ");
     return pid;
