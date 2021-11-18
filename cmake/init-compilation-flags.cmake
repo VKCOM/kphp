@@ -78,11 +78,8 @@ add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 
 if(NOT APPLE)
-    check_cxx_compiler_flag(-gz=zlib DEBUG_COMPRESSION_IS_FOUND)
-    if (DEBUG_COMPRESSION_IS_FOUND)
-        add_compile_options(-gz=zlib)
-        add_link_options(-Wl,--compress-debug-sections=zlib)
-    endif()
+    add_compile_options(-gz=zlib)
+    add_link_options(-Wl,--compress-debug-sections=zlib)
 endif()
 
 add_link_options(-rdynamic -L/usr/local/lib -ggdb)
