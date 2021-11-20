@@ -1778,6 +1778,9 @@
       },
       "exception_class": {
         "type": "ClassPtr"
+      },
+      "without_variable": {
+        "type": "bool"
       }
     },
     "props": {

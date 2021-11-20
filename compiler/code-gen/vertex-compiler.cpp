@@ -296,7 +296,15 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
         if (!is_first_catch) {
           W << "else " << BEGIN << NL;
         }
-        move_exception(caught_class, catch_op->var());
+
+        // if 'catch' is used without a variable, then
+        // the current exception can simply be destroyed
+        if (catch_op->without_variable) {
+          W << "CurException.destroy();" << NL;
+        } else {
+          move_exception(caught_class, catch_op->var());
+        }
+
         W << catch_op->cmd() << NL;
         if (!is_first_catch) {
           W << END << NL;
@@ -310,7 +318,15 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
         }
         std::string e = gen_unique_name("e");
         W << BEGIN;
-        move_exception(caught_class, catch_op->var());
+
+        // if 'catch' is used without a variable, then
+        // the current exception can simply be destroyed
+        if (catch_op->without_variable) {
+          W << "CurException.destroy();" << NL;
+        } else {
+          move_exception(caught_class, catch_op->var());
+        }
+
         W << catch_op->cmd() << NL << END << NL;
       }
 
