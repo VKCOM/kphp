@@ -224,10 +224,8 @@ VertexAdaptor<op_require> GenTree::get_require(bool once) {
 }
 
 template<Operation Op, Operation EmptyOp>
-VertexAdaptor<Op> GenTree::get_func_call() {
+VertexAdaptor<Op> GenTree::get_func_call(std::string name) {
   auto location = auto_location();
-  string name{cur->str_val};
-  next_cur();
 
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
@@ -242,6 +240,28 @@ VertexAdaptor<Op> GenTree::get_func_call() {
     call->set_string(name);
   }
   return call;
+}
+
+template<Operation Op, Operation EmptyOp>
+VertexAdaptor<Op> GenTree::get_func_call() {
+  string name{cur->str_val};
+  next_cur();
+  return get_func_call<Op, EmptyOp>(name);
+}
+
+VertexAdaptor<op_func_call> GenTree::get_type_and_args_of_new_expression() {
+  if (test_expect(tok_class)) {
+    // here we met anon class definition and probably constructor's arguments
+    return get_class({}, ClassType::klass, true);
+  }
+
+  CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
+  auto func_call = get_func_call<op_func_call, op_none>();
+  // hack to be more compatible with php
+  if (func_call->str_val == "Memcache") {
+    func_call->set_string("McMemcache");
+  }
+  return func_call;
 }
 
 VertexAdaptor<op_array> GenTree::get_short_array() {
@@ -586,13 +606,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
 
     case tok_new: {
       next_cur();
-      CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      auto func_call = get_func_call<op_func_call, op_none>();
-      // Hack to be more compatible with php
-      if (func_call->str_val == "Memcache") {
-        func_call->set_string("McMemcache");
-      }
-
+      auto func_call = get_type_and_args_of_new_expression();
       res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next()).set_location(func_call);
       CE(res);
       break;
@@ -1675,7 +1689,7 @@ void GenTree::parse_extends_implements() {
   }
 }
 
-VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
+VertexAdaptor<op_func_call> GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type, bool is_anonymous) {
   ClassModifiers modifiers;
   if (test_expect(tok_abstract)) {
     modifiers.set_abstract();
@@ -1691,20 +1705,26 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait));
   next_cur();
 
-  CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
-
-  auto name_str = cur->str_val;
-  next_cur();
+  VertexAdaptor<op_func_call> res;
+  std::string class_name;
+  if (is_anonymous) {
+    class_name = gen_unique_name("anon_class", cur_function);
+    res = get_func_call<op_func_call, op_none>(class_name);
+  } else {
+    CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
+    class_name = std::string{cur->str_val.data(), cur->str_val.size()};
+    next_cur();
+  }
 
   std::string full_class_name;
   if (processing_file->namespace_name.empty() && phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class)) {
     kphp_assert(processing_file->is_builtin());
-    full_class_name = G->settings().tl_namespace_prefix.get() + name_str;
+    full_class_name = G->settings().tl_namespace_prefix.get() + class_name;
   } else {
-    full_class_name = processing_file->namespace_name.empty() ? std::string{name_str} : processing_file->namespace_name + "\\" + name_str;
+    full_class_name = processing_file->namespace_name.empty() ? class_name : processing_file->namespace_name + "\\" + class_name;
   }
 
-  kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
+  kphp_error(processing_file->namespace_uses.find(class_name) == processing_file->namespace_uses.end(),
              "Class name is the same as one of 'use' at the top of the file");
 
   ClassPtr class_ptr = ClassPtr(new ClassData{class_type});
@@ -1718,7 +1738,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   parse_extends_implements();
 
   auto name_vertex = VertexAdaptor<op_func_name>::create().set_location(auto_location());
-  name_vertex->str_val = static_cast<std::string>(name_str);
+  name_vertex->str_val = class_name;
 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // with full namespaces and slashes
@@ -1744,7 +1764,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
     G->register_and_require_function(cur_function, parsed_os, true);  // push the class down the pipeline
   }
 
-  return {};
+  return res;
 }
 
 
@@ -2081,7 +2101,8 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc_str);
       } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract)) {
-        return get_class(phpdoc_str, ClassType::klass);
+        get_class(phpdoc_str, ClassType::klass);
+        return {};
       }
       next_cur();
       kphp_error(0, "Unexpected access modifier outside of class body");
@@ -2211,13 +2232,15 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
       return empty;
     }
     case tok_class:
-      return get_class(phpdoc_str, ClassType::klass);
+      get_class(phpdoc_str, ClassType::klass);
+      return {};
     case tok_interface:
-      return get_class(phpdoc_str, ClassType::interface);
+      get_class(phpdoc_str, ClassType::interface);
+      return {};
     case tok_trait: {
-      auto res = get_class(phpdoc_str, ClassType::trait);
+      get_class(phpdoc_str, ClassType::trait);
       kphp_error(processing_file->namespace_uses.empty(), "Usage of operator `use`(Aliasing/Importing) with traits is temporarily prohibited");
-      return res;
+      return {};
     }
     default: {
       auto res = get_expression();

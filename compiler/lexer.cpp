@@ -215,7 +215,8 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
-  if (are_last_tokens(tok_new, tok_func_name, except_token_tag<tok_oppar>{})) {
+  if (are_last_tokens(tok_new, tok_func_name, except_token_tag<tok_oppar>{}) ||
+      are_last_tokens(tok_new, tok_class, except_token_tag<tok_oppar>{})) {
     Token t = tokens.back();
     tokens.pop_back();
     tokens.emplace_back(tok_oppar);
