@@ -256,7 +256,51 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
     return convert_array_with_spread_operators(array);
   }
 
+  if (auto fun = root.try_as<op_function>()) {
+    if (fun->func_id->with_property_promotion) {
+      process_property_promotion(fun);
+    }
+  }
+
   return root;
+}
+
+void GenTreePostprocessPass::process_property_promotion(VertexAdaptor<op_function> fun) const {
+  auto promoted_params = std::vector<VertexAdaptor<op_func_param>>();
+
+  const auto param_list = fun->param_list();
+  for (const auto &p : param_list->params()) {
+    const auto &param = p.try_as<op_func_param>();
+
+    if (param->access_modifier != AccessModifiers::not_modifier_) {
+      promoted_params.push_back(param);
+    }
+  }
+
+  auto func_stmts = fun->cmd()->as_vector();
+
+  // create an expression like "$this-><name> = <name>" for each promoted property
+  // all such expressions are placed at the very beginning of the expression list
+  // inside the constructor to avoid collisions with existing expressions
+  for (const auto &param : promoted_params) {
+    const auto &param_name = param->var()->str_val;
+    const auto *field = current_function->class_id->get_instance_field(param_name);
+    if (!field) {
+      continue;
+    }
+
+    const auto prop_var = field->var;
+    const auto this_vertex = ClassData::gen_vertex_this(fun->location);
+
+    auto prop_fetch = VertexAdaptor<op_instance_prop>::create(this_vertex).set_location(fun->location);
+    prop_fetch->set_string(param_name);
+    prop_fetch->var_id = prop_var;
+
+    const auto set_vertex = VertexAdaptor<op_set>::create(prop_fetch, param->var().clone());
+    func_stmts.insert(func_stmts.begin(), set_vertex);
+  }
+
+  fun->cmd_ref() = VertexAdaptor<op_seq>::create(func_stmts);
 }
 
 VertexAdaptor<op_array> array_vertex_from_slice(const VertexRange &args, size_t start, size_t end) {

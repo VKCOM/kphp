@@ -128,6 +128,7 @@ public:
   VertexAdaptor<op_func_call> get_anonymous_function(TokenType tok = tok_function, bool is_static = false);
   VertexAdaptor<op_function> get_function(TokenType tok, vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
 
+  AccessModifiers try_get_visibility_modifiers();
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(vk::string_view phpdoc_str);
 

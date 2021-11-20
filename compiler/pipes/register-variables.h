@@ -10,7 +10,7 @@
 #include "compiler/function-pass.h"
 
 /**
- * 1. Function parametres (with default values)
+ * 1. Function parameters (with default values)
  * 2. Global variables
  * 3. Static local variables (with default values)
  * 4. Local variables

@@ -499,7 +499,7 @@
     }
   },
   {
-    "comment": "var(); or var() = default_value(); type hints are stored in type_hint",
+    "comment": "[access_modifier] var() [= default_value()]; type hints are stored in type_hint",
     "name": "op_func_param",
     "base_name": "meta_op_base",
     "sons": {
@@ -529,6 +529,10 @@
       "is_callable": {
         "type": "bool",
         "default": "false"
+      },
+      "access_modifier": {
+        "type": "AccessModifiers",
+        "default": "AccessModifiers::not_modifier_"
       }
     }
   },

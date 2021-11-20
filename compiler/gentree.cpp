@@ -593,7 +593,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
         func_call->set_string("McMemcache");
       }
 
-      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next()).set_location(func_call);
+      res = gen_constructor_call_with_args(func_call->str_val, func_call->as_vector()).set_location(func_call);
       CE(res);
       break;
     }
@@ -872,8 +872,25 @@ VertexPtr GenTree::get_def_value() {
   return val;
 }
 
+AccessModifiers GenTree::try_get_visibility_modifiers() {
+  if (test_expect(tok_public)) {
+    return AccessModifiers::public_;
+  } else if (test_expect(tok_private)) {
+    return AccessModifiers::private_;
+  } else if (test_expect(tok_protected)) {
+    return AccessModifiers::protected_;
+  }
+  return AccessModifiers::not_modifier_;
+}
+
 VertexAdaptor<op_func_param> GenTree::get_func_param() {
   auto location = auto_location();
+
+  // possibly promoted property
+  const auto access_modifier = try_get_visibility_modifiers();
+  if (access_modifier != AccessModifiers::not_modifier_) {
+    next_cur();
+  }
 
   const TypeHint *type_hint = get_typehint();
   bool is_varg = false;
@@ -886,7 +903,12 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
     is_varg = true;
   }
   if (is_varg) {
-    kphp_error(!cur_function->has_variadic_param, "Function can not have ...$variadic more than once");
+    if (cur_function->has_variadic_param) {
+      kphp_error(0, "Function can not have ...$variadic more than once");
+    }
+    if (access_modifier != AccessModifiers::not_modifier_) {
+      kphp_error(0, "Cannot declare variadic promoted property");
+    }
     cur_function->has_variadic_param = true;
   }
 
@@ -920,6 +942,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
     v->type_hint = type_hint;
   }
   v->is_cast_param = is_cast_param;
+  v->access_modifier = access_modifier;
 
   return v;
 }
@@ -1052,7 +1075,7 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
     return_node = VertexAdaptor<op_return>::create();
   }
 
-  vector<VertexPtr> next = cmd->get_next();
+  vector<VertexPtr> next = cmd->as_vector();
   next.push_back(return_node);
   func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
 }
@@ -1504,8 +1527,19 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 
-  for (size_t i = 1; i < params_next.size(); ++i) {
-    if (!params_next[i]->has_default_value()) {
+  for (size_t i = 0; i < params_next.size(); ++i) {
+    const auto &param = params_next[i];
+
+    // if promoted property outside constructor
+    if (cur_function->local_name() != ClassData::NAME_OF_CONSTRUCT && param->access_modifier != AccessModifiers::not_modifier_) {
+      kphp_error(0, "Cannot declare promoted property outside a constructor");
+    }
+
+    if (cur_function->local_name() == ClassData::NAME_OF_CONSTRUCT && cur_function->modifiers.is_abstract()) {
+      kphp_error(0, "Cannot declare promoted property in an abstract constructor");
+    }
+
+    if (i > 0 && !param->has_default_value()) {
       kphp_error(!params_next[i - 1]->has_default_value(), "Optional parameter is provided before required");
     }
   }
@@ -1608,6 +1642,22 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     } else if (modifiers.is_static()) {
       kphp_assert(cur_class);
       cur_class->members.add_static_method(cur_function);
+    }
+
+    // add all the promoted properties in constructor to the class
+    if (cur_function->is_constructor()) {
+      for (const auto &p : cur_function->get_params()) {
+        const auto &param = p.as<op_func_param>();
+
+        if (param->access_modifier != AccessModifiers::not_modifier_) {
+          const auto field_modifiers = FieldModifiers{param->access_modifier};
+          auto var = VertexAdaptor<op_var>::create().set_location(auto_location());
+          var->str_val = param->var()->str_val;
+
+          cur_class->members.add_instance_field(var, {}, field_modifiers, "", param->type_hint);
+          cur_function->with_property_promotion = true;
+        }
+      }
     }
 
     // the function is ready, register it;

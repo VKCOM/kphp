@@ -63,7 +63,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
           this_vertex = VertexAdaptor<op_instance_prop>::create(this_vertex).set_location(v);
           this_vertex->set_string(LambdaClassData::get_parent_this_name());
         }
-        v = VertexAdaptor<op_func_call>::create(this_vertex, v->get_next()).set_location(v);
+        v = VertexAdaptor<op_func_call>::create(this_vertex, v->as_vector()).set_location(v);
         v->extra_type = op_ex_func_call_arrow;
         v->set_string(std::string{method->local_name()});
         v.as<op_func_call>()->func_id = method;
