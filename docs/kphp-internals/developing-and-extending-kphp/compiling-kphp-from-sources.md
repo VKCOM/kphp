@@ -31,7 +31,7 @@ Add external repositories
 ```bash
 apt-get update
 # utils for adding repositories
-apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
+apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release
 # for newest cmake package
 echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 # for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
@@ -40,13 +40,18 @@ echo "deb https://repo.vkpartner.ru/kphp-buster/ buster main" >> /etc/apt/source
 # for php7.4-dev package
 wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add -
 echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list 
+# for libmysqlclient-dev
+TEMP_DEB="$(mktemp)"
+wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.20-1_all.deb'
+DEBIAN_FRONTEND=noninteractive dpkg -i "$TEMP_DEB"
+rm -f "$TEMP_DEB"
 ```
 Install packages
 ```bash
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
+            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev
 ```
 
 
@@ -65,14 +70,14 @@ Install packages
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev
+            libzstd-dev libyaml-cpp-dev libmsgpack-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev
 ```
 
 
 ##### MacOS with Intel chipset
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
-brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack-cxx zstd googletest php@7.4
+brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
 brew link --overwrite php@7.4
 pip3 install jsonschema
 ```

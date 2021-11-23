@@ -95,7 +95,7 @@ jobs:
     
     - name: Setup Environment
       run: |
-        brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack-cxx zstd googletest php@7.4
+        brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
         brew link --overwrite php@7.4
         pip3 install jsonschema
         rm -rf /usr/local/opt/openssl
