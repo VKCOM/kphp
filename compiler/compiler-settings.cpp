@@ -326,7 +326,7 @@ void CompilerSettings::init() {
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
 #endif
 
-  std::vector<vk::string_view> external_libs{"pthread", "crypto", "m"};
+  std::vector<vk::string_view> external_libs{"pthread", "crypto", "m", "mysqlclient"};
 #if defined(__APPLE__)
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l");
   auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";
