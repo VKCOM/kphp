@@ -39,8 +39,12 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
     return root;
   }
 
+  // file and line are passed to "new Exception" construction
+  // but we are using relative file name (relative to base dir) for two purposes:
+  // 1) file names on compilation servers have often /some/strange/absolute paths, strip them off
+  // 2) the result of codegeneration doesn't depend on username / project location
   auto file_arg = VertexAdaptor<op_string>::create().set_location(root->location);
-  file_arg->set_string(root->location.get_file()->file_name);
+  file_arg->set_string(root->location.get_file()->relative_file_name);
   auto line_arg = GenTree::create_int_const(root->location.get_line());
   return VertexAdaptor<op_exception_constructor_call>::create(call, file_arg, line_arg).set_location(root->location);
 }

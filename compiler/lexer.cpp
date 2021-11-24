@@ -228,11 +228,12 @@ void LexerData::hack_last_tokens() {
     tokens.back().type_ = tok_func_name;
   }
 
+  // "err" is a specific vkcom function, something like "new Exception"; it's ugly and should be removed somewhen
   if (are_last_tokens(except_token_tag<tok_function>{}, tok_func_name, tok_oppar, any_token_tag{})) {
     if (tokens[tokens.size() - 3].str_val == "err") {
       Token t = tokens.back();
       tokens.pop_back();
-      tokens.emplace_back(tok_file_c);
+      tokens.emplace_back(tok_file_relative_c);
       tokens.emplace_back(tok_comma);
       tokens.emplace_back(tok_line_c);
       if (t.type() != tok_clpar) {

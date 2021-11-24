@@ -445,6 +445,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
+    case tok_file_relative_c: {
+      res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, processing_file->relative_file_name);
+      next_cur();
+      break;
+    }
     case tok_class_c: {
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, cur_class ? cur_class->name : "");
       next_cur();
