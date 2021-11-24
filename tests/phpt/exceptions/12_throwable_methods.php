@@ -8,7 +8,7 @@ function test() {
     var_dump([
       $e->getMessage(),
       $e->getCode(),
-      $e->getFile(),
+      basename($e->getFile()),
       $e->getLine(),
       count($e->getTrace()) !== 0,
       strlen($e->getTraceAsString()) !== 0,
@@ -22,7 +22,7 @@ function test() {
     var_dump([
       $e2->getMessage(),
       $e2->getCode(),
-      $e2->getFile(),
+      basename($e2->getFile()),
       $e2->getLine(),
       count($e2->getTrace()) !== 0,
       strlen($e2->getTraceAsString()) !== 0,

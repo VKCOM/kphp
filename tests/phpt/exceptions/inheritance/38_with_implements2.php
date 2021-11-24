@@ -13,11 +13,13 @@ interface PrettyStringInterface {
 
 class MyException extends Exception implements StringInterface, PrettyStringInterface {
   public function toString(): string {
-    return "$this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "$relative:$this->line: $this->message";
   }
 
   public function toPrettyString(): string {
-    return "so pretty: $this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "so pretty: $relative:$this->line: $this->message";
   }
 }
 

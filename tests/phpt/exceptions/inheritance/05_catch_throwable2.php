@@ -7,13 +7,15 @@ interface CustomException {
 
 class BaseException extends Exception implements CustomException {
   public function toString(): string {
-    return "BaseException $this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "BaseException $relative:$this->line: $this->message";
   }
 }
 
 class DerivedException extends Exception {
   public function toString(): string {
-    return "DerivedException $this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "DerivedException $relative:$this->line: $this->message";
   }
 }
 

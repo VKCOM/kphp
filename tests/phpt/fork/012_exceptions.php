@@ -26,7 +26,7 @@ function my_pow ($x, $p = 5) {
 function processException (Exception $e) {
   echo 'message: ',  $e->getMessage(), "\n";
   echo "code = ", $e->getCode(), "\n";
-  echo "file = ", $e->getFile(), "\n";
+  echo "file = ", basename($e->getFile()), "\n";
   echo "line = ", $e->getLine(), "\n";
 }
 

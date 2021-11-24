@@ -8,7 +8,7 @@ class MyException2 extends \Exception {}
 class MyException1derived extends MyException1 {}
 
 function exception_string(Exception $e, string $tag): string {
-  return $e->getFile() . ':' . $e->getLine() . ':' . $tag;
+  return basename($e->getFile()) . ':' . $e->getLine() . ':' . $tag;
 }
 
 function test1() {

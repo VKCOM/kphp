@@ -9,7 +9,7 @@
 
 class MyException extends Exception {
   public function getLocation(): string {
-    return $this->file . ':' . $this->line;
+    return basename($this->file) . ':' . $this->line;
   }
 
   public function setLine(int $line): void {
