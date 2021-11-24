@@ -55,7 +55,7 @@ private:
   int lock_comments_cnt;
 
   void feed_hash(unsigned long long val) {
-    hash_of_cpp = hash_of_cpp * 56235515617499ULL + val;
+    hash_of_cpp = hash_of_cpp * 56235415617457ULL + val;
   }
 
   void feed_hash_of_comments(SrcFilePtr file, int line_num);

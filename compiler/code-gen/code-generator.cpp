@@ -67,7 +67,7 @@ void CodeGenerator::close_file_clear_writer() {
 
 void CodeGenerator::feed_hash_of_comments(SrcFilePtr file, int line_num) {
   vk::string_view line_contents = file->get_line(line_num);
-  hash_of_comments = hash_of_comments * 56235515617499ULL + string_hash(line_contents.data(), line_contents.size());
+  hash_of_comments = hash_of_comments * 56235415617457ULL + string_hash(line_contents.data(), line_contents.size());
 }
 
 void CodeGenerator::add_include(const std::string &s) {
