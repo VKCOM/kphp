@@ -271,7 +271,7 @@ string FunctionData::get_human_readable_name(bool add_details) const {
   }
 
   if (add_details && is_instantiation_of_template_function()) {
-    auto &file = instantiation_of_template_function_location.get_file()->unified_file_name;
+    auto &file = instantiation_of_template_function_location.get_file()->relative_file_name;
     auto line = std::to_string(instantiation_of_template_function_location.line);
     result_name += " (instantiated at " + file + ":" + line + ")";
   }

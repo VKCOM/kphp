@@ -13,13 +13,13 @@
 #include "compiler/debug.h"
 
 class SrcFile {
-  DEBUG_STRING_METHOD { return unified_file_name; }
+  DEBUG_STRING_METHOD { return relative_file_name; }
   
 public:
   int id{0};
   std::string text, file_name, short_file_name;
-  std::string unified_file_name;
-  std::string unified_dir_name;
+  std::string relative_file_name;
+  std::string relative_dir_name;
   bool loaded{false};
   bool is_required{false};
   bool is_strict_types{false}; // whether declare(strict_types=1) is set

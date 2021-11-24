@@ -64,7 +64,7 @@ void WriterData::dump(std::string &dest_str, const std::vector<Line>::iterator &
 
   if (file) {
     dest_str += "//source = [";
-    dest_str += file->unified_file_name;
+    dest_str += file->relative_file_name;
     dest_str += "]\n";
   }
 

@@ -120,6 +120,6 @@ inline void ResolveSelfStaticParentPass::check_access_to_class_from_this_file(Cl
   if (ref_class && !ref_class->can_be_php_autoloaded) {
     kphp_error(ref_class->file_id == current_function->file_id,
                fmt_format("Class {} can be accessed only from file {}, as it is not autoloadable",
-                          ref_class->name, ref_class->file_id->unified_file_name));
+                          ref_class->name, ref_class->file_id->relative_file_name));
   }
 }
