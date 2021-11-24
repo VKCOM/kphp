@@ -11,6 +11,7 @@
 
 #include "server/php-engine-vars.h"
 #include "server/php-query-data.h"
+#include "server/php-queries-types.h"
 #include "server/php-script.h"
 
 enum class run_state_t {
@@ -40,21 +41,7 @@ enum class script_error_t : uint8_t {
   errors_count
 };
 
-enum query_type {
-  q_memcached,
-  q_rpc,
-  q_int
-};
-
 #define SEGV_STACK_SIZE (MINSIGSTKSZ + 65536)
-
-#pragma pack(push, 4)
-
-struct query_base {
-  query_type type;
-};
-
-#pragma pack(pop)
 
 struct query_stats_t {
   long long q_id;
@@ -75,7 +62,7 @@ void php_script_free(void *ptr);
 void php_script_clear(void *ptr);
 void php_script_init(void *ptr, script_t *f_run, php_query_data *data_to_set);
 run_state_t php_script_iterate(void *ptr);
-query_base *php_script_get_query(void *ptr);
+php_query_base_t *php_script_get_query(void *ptr);
 script_result *php_script_get_res(void *ptr);
 void php_script_query_readed(void *ptr);
 void php_script_query_answered(void *ptr);
@@ -111,7 +98,7 @@ public:
   run_state_t state;
   const char *error_message;
   script_error_t error_type;
-  void *query;
+  php_query_base_t *query;
   char *run_stack, *protected_end, *run_stack_end, *run_mem;
   size_t mem_size, stack_size;
   ucontext_t run_context;
@@ -135,7 +122,7 @@ public:
 
   //in php script
   void pause();
-  void ask_query(void *q);
+  void ask_query(php_query_base_t *q);
   void set_script_result(script_result *res_to_set);
 
   void resume();

@@ -46,14 +46,13 @@ php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, i
 
   //DO NOT use query after script is terminated!!!
   php_query_http_load_post_t q;
-  q.base.type = PHPQ_HTTP_LOAD_POST;
   q.buf = buf;
   q.min_len = min_len;
   q.max_len = max_len;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_http_load_post_answer_t *)q.base.ans;
+  return (php_query_http_load_post_answer_t *)q.ans;
 }
 
 int http_load_long_query(char *buf, int min_len, int max_len) {
@@ -305,51 +304,48 @@ php_query_x2_answer_t *php_query_x2(int x) {
 
   //DO NOT use query after script is terminated!!!
   php_query_x2_t q;
-  q.base.type = PHPQ_X2;
   q.val = x;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_x2_answer_t *)q.base.ans;
+  return (php_query_x2_answer_t *)q.ans;
 }
 
 /** create connection query **/
-php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_t protocol) {
+php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_type protocol) {
   assert (PHPScriptBase::is_running);
 
   //DO NOT use query after script is terminated!!!
   php_query_connect_t q;
-  q.base.type = PHPQ_CONNECT;
   q.host = host;
   q.port = port;
   q.protocol = protocol;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_connect_answer_t *)q.base.ans;
+  return (php_query_connect_answer_t *)q.ans;
 }
 
 int mc_connect_to(const char *host, int port) {
-  php_query_connect_answer_t *ans = php_query_connect(host, port, p_memcached);
+  php_query_connect_answer_t *ans = php_query_connect(host, port, protocol_type::memcached);
   return ans->connection_id;
 }
 
 int db_proxy_connect() {
-  php_query_connect_answer_t *ans = php_query_connect("unknown", -1, p_sql);
+  php_query_connect_answer_t *ans = php_query_connect("unknown", -1, protocol_type::mysqli);
   return ans->connection_id;
 }
 
 int rpc_connect_to(const char *host, int port) {
-  php_query_connect_answer_t *ans = php_query_connect(host, port, p_rpc);
+  php_query_connect_answer_t *ans = php_query_connect(host, port, protocol_type::rpc);
   return ans->connection_id;
 }
 
 /** net query **/
 php_net_query_packet_answer_t *php_net_query_packet(
   int connection_id, const char *data, int data_len,
-  double timeout, protocol_t protocol, int extra_type) {
+  double timeout, protocol_type protocol, int extra_type) {
   php_net_query_packet_t q;
-  q.base.type = PHPQ_NETQ | NETQ_PACKET;
 
   q.connection_id = connection_id;
   q.data = data;
@@ -358,9 +354,9 @@ php_net_query_packet_answer_t *php_net_query_packet(
   q.protocol = protocol;
   q.extra_type = extra_type;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_net_query_packet_answer_t *)q.base.ans;
+  return (php_net_query_packet_answer_t *)q.ans;
 }
 
 void read_str(data_reader_t *reader, void *dest) {
@@ -914,7 +910,7 @@ void free_net_query(net_query_t *query) {
 /*** main functions ***/
 void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) {
   PhpQueriesStats::get_mc_queries_stat().register_query(request_len);
-  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_memcached, query_type | (PNETF_IMMEDIATE * (callback == nullptr)));
+  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, protocol_type::memcached, query_type | (PNETF_IMMEDIATE * (callback == nullptr)));
   if (res->state == nq_error) {
     if (callback != nullptr) {
       fprintf(stderr, "mc_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
@@ -931,7 +927,7 @@ void mc_run_query(int host_num, const char *request, int request_len, int timeou
 
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len)) {
   PhpQueriesStats::get_sql_queries_stat().register_query(request_len);
-  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, p_sql, 0);
+  php_net_query_packet_answer_t *res = php_net_query_packet(host_num, request, request_len, timeout_ms * 0.001, protocol_type::mysqli, 0);
   if (res->state == nq_error) {
     fprintf(stderr, "db_run_query error: %s [%s]\n", res->desc ? res->desc : "", res->res);
     save_last_net_error(res->res);
@@ -969,10 +965,9 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
 void wait_net_events(int timeout_ms) {
   assert (PHPScriptBase::is_running);
   php_query_wait_t q;
-  q.base.type = PHPQ_WAIT;
   q.timeout_ms = timeout_ms;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 }
 
 net_event_t *pop_net_event() {
@@ -986,16 +981,14 @@ const net_event_t *get_last_net_event() {
 void rpc_answer(const char *res, int res_len) {
   assert (PHPScriptBase::is_running);
   php_query_rpc_answer q;
-  q.base.type = PHPQ_RPC_ANSWER;
   q.data = res;
   q.data_len = res_len;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 }
 
-php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *data, int data_len, int timeout_ms, protocol_t protocol) {
+php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *data, int data_len, int timeout_ms, protocol_type protocol) {
   php_net_query_packet_t q;
-  q.base.type = PHPQ_NETQ | NETQ_PACKET;
 
   q.connection_id = connection_id;
   q.data = data;
@@ -1003,9 +996,9 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
   q.timeout = timeout_ms * 0.001;
   q.protocol = protocol;
 
-  PHPScriptBase::current_script->ask_query((void *)&q);
+  PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_net_query_packet_answer_t *)q.base.ans;
+  return (php_net_query_packet_answer_t *)q.ans;
 }
 
 void script_error() {

@@ -65,8 +65,6 @@ void php_worker_try_start(php_worker *worker);
 void php_worker_init_script(php_worker *worker);
 void php_worker_run(php_worker *worker);
 void php_worker_wait(php_worker *worker, int timeout_ms);
-void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *ans);
-void php_worker_http_load_post(php_worker *worker, php_query_http_load_post_t *query);
 void php_worker_answer_query(php_worker *worker, void *ans);
 void php_worker_wakeup(php_worker *worker);
 void php_worker_run_query(php_worker *worker);

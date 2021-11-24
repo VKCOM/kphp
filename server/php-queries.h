@@ -9,6 +9,7 @@
 
 #include "common/sanitizer.h"
 #include "server/slot-ids-factory.h"
+#include "server/php-queries-types.h"
 
 extern SlotIdsFactory parallel_job_ids_factory;
 
@@ -90,24 +91,7 @@ struct chain_t {
   int len;
 };
 
-/***
-  QUERIES
- ***/
-
-#define PHPQ_X2 0x12340000
-#define PHPQ_RPC_ANSWER 0x43210000
-#define PHPQ_CONNECT 0x2f2d0000
-#define PHPQ_NETQ 0x3d780000
-#define PHPQ_WAIT 0x728a0000
-#define PHPQ_HTTP_LOAD_POST 0x5ac20000
-#define NETQ_PACKET 1234
-
 #define PNETF_IMMEDIATE 16
-
-struct php_query_base_t {
-  int type;
-  void *ans;
-};
 
 /** test x^2 query **/
 struct php_query_x2_answer_t {
@@ -115,55 +99,24 @@ struct php_query_x2_answer_t {
   int x2;
 };
 
-struct php_query_x2_t {
-  php_query_base_t base;
-
-  int val;
-};
-
 php_query_x2_answer_t *php_query_x2(int x);
 
 /** rpc answer query **/
-struct php_query_rpc_answer {
-  php_query_base_t base;
 
-  const char *data;
-  int data_len;
-};
 
 /** create connection query **/
 struct php_query_connect_answer_t {
   int connection_id;
 };
 
-enum protocol_t {
-  p_memcached,
-  p_sql,
-  p_rpc,
-};
-
-struct php_query_connect_t {
-  php_query_base_t base;
-
-  const char *host;
-  int port;
-  protocol_t protocol;
-};
-
-php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_t protocol);
+php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_type protocol);
 
 /** load long http post query **/
 struct php_query_http_load_post_answer_t {
   int loaded_bytes;
 };
 
-struct php_query_http_load_post_t {
-  php_query_base_t base;
 
-  char *buf;
-  int min_len;
-  int max_len;
-};
 
 
 /** net query **/
@@ -189,24 +142,10 @@ struct php_net_query_packet_answer_t {
   long long result_id;
 };
 
-struct php_net_query_packet_t {
-  php_query_base_t base;
 
-  int connection_id;
-  const char *data;
-  int data_len;
-  long long data_id;
-
-  double timeout;
-  protocol_t protocol;
-  int extra_type;
-};
 
 /** wait query **/
-struct php_net_query_wait_t {
-  php_query_base_t base;
-  int timeout_ms;
-};
+
 
 
 //php_net_query_packet_answer_t *php_net_query_packet (int connection_id, const char *data, int data_len, int timeout_ms);
@@ -335,10 +274,7 @@ struct net_send_ansgen_t {
 // Simple structure with union is used. 
 // Mostly because it makes Events easily reusable.
 
-struct php_query_wait_t {
-  php_query_base_t base;
-  int timeout_ms;
-};
+
 
 
 net_query_t *pop_net_query();
