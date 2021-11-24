@@ -15,6 +15,7 @@
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
 
+#include "server/external-net-drivers/net-drivers-adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries-stats.h"
@@ -708,15 +709,18 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 /** new rpc interface **/
 static SlotIdsFactory rpc_ids_factory;
 SlotIdsFactory parallel_job_ids_factory;
+SlotIdsFactory external_db_requests_factory;
 
 static void init_slots() {
   rpc_ids_factory.init();
   parallel_job_ids_factory.init();
+  external_db_requests_factory.init();
 }
 
 static void clear_slots() {
   rpc_ids_factory.clear();
   parallel_job_ids_factory.clear();
+  external_db_requests_factory.clear();
 }
 
 template<class DataT, int N>
@@ -1099,6 +1103,9 @@ const char *net_event_t::get_description() const noexcept {
       } else {
         sprintf(BUF, "JOB ERROR");
       }
+    },
+    [](Response *) {
+      sprintf(BUF, "EXTERNAL DB ANSWER");
     },
   }, data);
   return BUF;

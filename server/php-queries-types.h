@@ -41,6 +41,16 @@ struct php_query_connect_t : php_query_base_t {
   void run(php_worker *worker) noexcept final;
 };
 
+class Connector;
+
+struct external_driver_connect : php_query_base_t {
+  Connector *connector;
+
+  explicit external_driver_connect(Connector *connector) : connector(connector) {};
+
+  void run(php_worker *worker) noexcept final;
+};
+
 struct php_query_http_load_post_t : php_query_base_t {
   char *buf{nullptr};
   int min_len{0};

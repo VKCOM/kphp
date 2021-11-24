@@ -5,12 +5,13 @@
 #include <poll.h>
 
 #include "common/kprintf.h"
-#include "server/php-queries-types.h"
-#include "server/php-worker.h"
-#include "server/php-runner.h"
+#include "server/external-net-drivers/net-drivers-adaptor.h"
 #include "server/php-engine.h"
 #include "server/php-mc-connections.h"
+#include "server/php-queries-types.h"
+#include "server/php-runner.h"
 #include "server/php-sql-connections.h"
+#include "server/php-worker.h"
 
 void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
   query_stats.desc = "PHPQX2";
@@ -63,6 +64,22 @@ void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
     default:
       assert ("unknown protocol" && 0);
   }
+
+  ans = &res;
+
+  php_script_query_answered(php_script);
+}
+
+void external_driver_connect::run(php_worker *worker __attribute__((unused))) noexcept {
+  query_stats.desc = "CONNECT_EXTERNAL_DRIVER";
+
+  php_script_query_readed(php_script);
+
+  static php_query_connect_answer_t res;
+
+  assert(connector);
+  int id = vk::singleton<NetDriversAdaptor>::get().register_connector(connector);
+  res.connection_id = id;
 
   ans = &res;
 

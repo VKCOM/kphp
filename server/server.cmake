@@ -25,7 +25,12 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         workers-control.cpp
         statshouse/statshouse-client.cpp
         statshouse/add-metrics-batch.cpp
-        workers-control.cpp)
+        external-net-drivers/net-drivers-adaptor.cpp
+        external-net-drivers/connector.cpp
+        external-net-drivers/mysql/mysql-request.cpp
+        external-net-drivers/mysql/mysql-connector.cpp
+        external-net-drivers/mysql/mysql-response.cpp
+        )
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp

@@ -1433,3 +1433,29 @@ bool f$rpc_wait(int64_t request_id) {
 bool f$rpc_wait_concurrently(int64_t request_id) {
   return f$wait_concurrently(request_id);
 }
+
+template <typename ReturnT>
+class fetch_response : public Resumable {
+public:
+  fetch_response(int64_t resumable_id, double timeout) :
+    resumable_id(resumable_id),
+    timeout(timeout),
+    ready(false) {
+  }
+
+private:
+  int64_t resumable_id;
+  double timeout = -1.0;
+  ReturnT ans;
+
+  bool ready;
+
+  bool run() noexcept final {
+    RESUMABLE_BEGIN
+      ans = f$wait< ReturnT >(resumable_id);
+      TRY_WAIT(resumable_label$uec5d7b577a180cb5_0, ans, ReturnT);
+      CHECK_EXCEPTION(RETURN ({}));
+      RETURN (ans);
+    RESUMABLE_END
+  }
+};
