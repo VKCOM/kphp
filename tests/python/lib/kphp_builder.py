@@ -156,6 +156,8 @@ class KphpBuilder:
                 "^Starting php to cpp transpiling\\.\\.\\.$",
                 "^Starting make\\.\\.\\.$",
                 "^objs cnt = \\d+$",
+                "^Compiling stage started\\.\\.\\.$",
+                "^Linking stage started\\.\\.\\.$",
                 "^\\s*\\d+\\% \\[total jobs \\d+\\] \\[left jobs \\d+\\] \\[running jobs \\d+\\] \\[waiting jobs \\d+\\]$"
             ],
             binary_error_text=kphp_build_stderr)
