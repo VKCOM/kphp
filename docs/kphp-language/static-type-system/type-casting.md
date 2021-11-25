@@ -165,6 +165,17 @@ if ($a->int_or_false !== false) {
 ```
 Why? Because there can be another reference to *$a*, which can potentially change values bypassing control flow.
 
+Similarly, smart casts don't work when variables are passed by reference.
+```php
+function changeVar(int &$ref) {}
+
+/** @var ?int $a */
+if ($a !== null) {
+  // won't compile! can't pass '?int' to 'int'
+  changeVar($a);
+}
+``` 
+
 Also, smart casts don't work on re-assigning:
 ```php
 function demo(?int $id) {
