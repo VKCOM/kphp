@@ -815,15 +815,6 @@ size_t array<T>::estimate_memory_usage() const {
 }
 
 template<class T>
-template<class Arg, class... Args>
-void array<T>::push_back_values(Arg &&arg, Args &&... args) {
-  static_assert(std::is_convertible<std::decay_t<Arg>, T>::value, "Arg type must be convertible to T");
-
-  p->emplace_back_vector_value(std::forward<Arg>(arg));
-  push_back_values(std::forward<Args>(args)...);
-}
-
-template<class T>
 typename array<T>::const_iterator array<T>::cbegin() const {
   return const_iterator::make_begin(*this);
 }
@@ -1013,8 +1004,10 @@ array<T>::array(array<T1> &&other) noexcept {
 template<class T>
 template<class... Args>
 inline array<T> array<T>::create(Args &&... args) {
+  static_assert((std::is_convertible<std::decay_t<Args>, T>::value && ...), "Args type must be convertible to T");
+
   array<T> res{array_size{sizeof...(args), 0, true}};
-  res.push_back_values(std::forward<Args>(args)...);
+  (res.p->emplace_back_vector_value(std::forward<Args>(args)), ...);
   return res;
 }
 
