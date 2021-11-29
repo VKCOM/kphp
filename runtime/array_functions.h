@@ -723,6 +723,13 @@ T f$array_merge(const T &a1, const T &a2) {
   return result;
 }
 
+template<class ReturnT, class ...Args>
+ReturnT f$array_merge_recursive(const Args &...args) {
+  array<mixed> result{(args.size() + ...)};
+  (result.merge_with_recursive(args), ...);
+  return result;
+}
+
 template<class T, class T1>
 void f$array_merge_into(T &a, const T1 &another_array) {
   a.merge_with(another_array);

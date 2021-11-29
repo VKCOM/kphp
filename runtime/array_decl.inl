@@ -40,10 +40,9 @@ template<class T, class TT, class T1>
 void sort(TT *begin_init, TT *end_init, const T1 &compare);
 }
 
-enum class overwrite_element {
-  YES,
-  NO
-};
+enum class overwrite_element { YES, NO };
+
+enum class merge_recursive { YES, NO };
 
 using list_entry_pointer_type = uint32_t;
 
@@ -167,7 +166,7 @@ private:
     inline T &set_map_value(overwrite_element policy, int64_t int_key, const T &v);
 
     template<class STRING, class ...Args>
-    inline T &emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept;
+    inline std::pair<T &, bool> emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept;
     inline T &set_map_value(overwrite_element policy, int64_t int_key, const string &string_key, const T &v);
 
     inline void unset_vector_value();
@@ -367,7 +366,10 @@ public:
   inline array_size size() const __attribute__ ((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  void merge_with(const array<T1> &other);
+  void merge_with(const array<T1> &other) noexcept;
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  void merge_with_recursive(const array<T1> &other) noexcept;
+  void merge_with_recursive(const mixed &other) noexcept;
 
   const array operator+(const array &other) const;
   array &operator+=(const array &other);
@@ -428,7 +430,12 @@ private:
   template<class ...Key>
   iterator find_iterator_in_map_no_mutate(const Key &... key) noexcept;
 
-  template<class T1>
+  template<merge_recursive recursive>
+  std::enable_if_t<recursive == merge_recursive::YES> start_merge_recursive(T &value, bool was_inserted, const T &other_value) noexcept;
+  template<merge_recursive recursive>
+  std::enable_if_t<recursive == merge_recursive::NO> start_merge_recursive(T & /*value*/, bool /*was_inserted*/, const T & /*other_value*/) noexcept {}
+
+  template<merge_recursive recursive = merge_recursive::NO, class T1>
   void push_back_iterator(const array_iterator<T1> &it) noexcept;
 
   array_inner *p;
