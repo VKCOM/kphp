@@ -184,11 +184,3 @@ private:
   inner_type *self_{nullptr};
   list_hash_type *entry_{nullptr};
 };
-
-namespace std {
-template<typename T>
-struct iterator_traits<array_iterator<T>> {
-  using difference_type = ptrdiff_t;
-  using iterator_category = bidirectional_iterator_tag;
-};
-} // namespace std

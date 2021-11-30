@@ -70,10 +70,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         vkext_stats.cpp
         ffi.cpp
         zlib.cpp
-        zstd.cpp
-        xgboost/array-adapter.cpp
-        xgboost/model.cpp
-        xgboost/predict.cpp)
+        zstd.cpp)
 
 set_source_files_properties(
         ${BASE_DIR}/server/php-runner.cpp
@@ -93,10 +90,6 @@ allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
-if(APPLE)
-    target_compile_definitions(kphp_runtime PRIVATE -D_XOPEN_SOURCE)
-endif()
-target_link_libraries(kphp_runtime xgboost::xgboost)
 
 add_dependencies(kphp_runtime kphp-timelib)
 
