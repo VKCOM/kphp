@@ -57,7 +57,6 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "runtime/xgboost/model.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/job-workers/job-worker-client.h"
@@ -2028,7 +2027,6 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 2025: {
-      vk::singleton<vk::xgboost::ModelPath>::get().path = optarg;
       return 0;
     }
     default:
@@ -2207,7 +2205,6 @@ int run_main(int argc, char **argv, php_mode mode) {
 
   start_server();
 
-  shutdown_xgboost_lib();
   vkprintf (1, "return 0;\n");
   if (run_once) {
     return run_once_return_code;

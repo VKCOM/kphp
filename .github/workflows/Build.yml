@@ -101,7 +101,7 @@ jobs:
         ln -s /usr/local/opt/openssl@1.1 /usr/local/opt/openssl
         
     - name: Run cmake
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DBUILD_SHARED_LIBS=OFF -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
         
     - name: Build all
       run: make -C ${{runner.workspace}}/build -j$(nproc) all

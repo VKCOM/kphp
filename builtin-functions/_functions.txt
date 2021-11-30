@@ -1327,8 +1327,6 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
-function xgboost_predict_experimental(float[][] $features) ::: float[];
-
 final class FFI {
   /** @return \FFI\Scope */
   public static function cdef(string $code, ?string $lib = null);

@@ -17,6 +17,8 @@ cmake_print_variables(CMAKE_CXX_STANDARD)
 
 if(APPLE)
     include_directories(/usr/local/include)
+    add_definitions(-D_XOPEN_SOURCE)
+
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
 endif()
 
