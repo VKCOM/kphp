@@ -57,6 +57,12 @@ public:
   ~MemoryReplacementGuard();
 };
 
+class MallocReplacementGuard {
+public:
+  MallocReplacementGuard();
+  ~MallocReplacementGuard();
+};
+
 } // namespace dl
 
 // replace malloc so it starts to use a script memory

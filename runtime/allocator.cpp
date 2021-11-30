@@ -305,6 +305,16 @@ MemoryReplacementGuard::~MemoryReplacementGuard() {
   dl::leave_critical_section();
 }
 
+MallocReplacementGuard::MallocReplacementGuard() {
+  dl::enter_critical_section();
+  dl::replace_malloc_with_script_allocator();
+}
+
+MallocReplacementGuard::~MallocReplacementGuard() {
+  dl::rollback_malloc_replacement();
+  dl::leave_critical_section();
+}
+
 } // namespace dl
 
 // replace global operators new and delete for linked C++ code
