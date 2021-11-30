@@ -12,7 +12,6 @@
 #include <execinfo.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <ucontext.h>
 #include <unistd.h>
 
 #include "common/fast-backtrace.h"
@@ -53,7 +52,7 @@ void PHPScriptBase::error(const char *error_message, script_error_t error_type) 
   __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
   __sanitizer_start_switch_fiber(nullptr, exit_context.uc_stack.ss_sp, exit_context.uc_stack.ss_size);
 #endif
-  setcontext(&exit_context);
+  setcontext_portable(&exit_context);
 }
 
 void PHPScriptBase::check_tl() {
@@ -127,11 +126,11 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
 
   assert (state == run_state_t::before_init);
 
-  getcontext(&run_context);
+  getcontext_portable(&run_context);
   run_context.uc_stack.ss_sp = run_stack;
   run_context.uc_stack.ss_size = stack_size;
   run_context.uc_link = nullptr;
-  makecontext(&run_context, &cur_run, 0);
+  makecontext_portable(&run_context, &cur_run, 0);
 
   run_main = script;
   data = data_to_set;
@@ -152,7 +151,7 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   PHPScriptBase::ml_flag = false;
 }
 
-int PHPScriptBase::swapcontext_helper(ucontext_t *oucp, const ucontext_t *ucp) {
+int PHPScriptBase::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
   stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
 #if ASAN7_ENABLED
   if (fiber_is_started) {
@@ -162,7 +161,7 @@ int PHPScriptBase::swapcontext_helper(ucontext_t *oucp, const ucontext_t *ucp) {
   __sanitizer_start_switch_fiber(nullptr, ucp->uc_stack.ss_sp, ucp->uc_stack.ss_size);
 #endif
 
-  return swapcontext(oucp, ucp);
+  return swapcontext_portable(oucp, ucp);
 }
 void PHPScriptBase::pause() {
   //fprintf (stderr, "pause: \n");
@@ -395,7 +394,7 @@ int PHPScriptBase::get_net_queries_count() const {
 
 
 PHPScriptBase *volatile PHPScriptBase::current_script;
-ucontext_t PHPScriptBase::exit_context;
+ucontext_t_portable PHPScriptBase::exit_context;
 volatile bool PHPScriptBase::is_running = false;
 volatile bool PHPScriptBase::tl_flag = false;
 volatile bool PHPScriptBase::ml_flag = false;

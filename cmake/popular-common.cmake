@@ -17,8 +17,8 @@ prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         options.cpp
         kernel-version.cpp
         secure-bzero.cpp
-        crc32_${HOST}.cpp
-        crc32c_${HOST}.cpp
+        crc32_${CMAKE_SYSTEM_PROCESSOR}.cpp
+        crc32c_${CMAKE_SYSTEM_PROCESSOR}.cpp
         parallel/counter.cpp
         parallel/maximum.cpp
         parallel/thread-id.cpp

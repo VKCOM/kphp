@@ -6,7 +6,6 @@ set(OBJS_DIR ${BASE_DIR}/objs)
 set(BIN_DIR ${OBJS_DIR}/bin)
 set(GENERATED_DIR "${OBJS_DIR}/generated")
 set(AUTO_DIR "${GENERATED_DIR}/auto")
-set(HOST "x86_64")
 
 if(APPLE)
     set(CURL_LIB curl)

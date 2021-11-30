@@ -17,6 +17,13 @@ const kdb_cpuid_t *kdb_cpuid() {
   int a;
   asm volatile("cpuid\n\t" : "=a"(a), "=b"(cached.x86_64.ebx), "=c"(cached.x86_64.ecx), "=d"(cached.x86_64.edx) : "0"(1));
   cached.type = KDB_CPUID_X86_64;
+#elif defined(__arm64__)  // Apple M1
+  if (cached.type) {
+    assert(cached.type == KDB_CPUID_ARM64);
+    return &cached;
+  }
+
+  cached.type = KDB_CPUID_ARM64;
 #elif defined(__aarch64__)
   if (cached.type) {
     assert(cached.type == KDB_CPUID_AARCH64);

@@ -14,6 +14,7 @@
 #include "common/crypto/aes256-aarch64.h"
 #include "common/crypto/aes256-generic.h"
 #include "common/crypto/aes256-x86_64.h"
+#include "common/crypto/aes256-arm64.h"
 #include "common/secure-bzero.h"
 
 static bool use_hw_acceleration = true;
@@ -30,7 +31,7 @@ void vk_aes_set_encrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
   assert(bits == AES256_KEY_BITS);
 
   if (use_hw_acceleration) {
-#ifdef __x86_64__
+#if defined(__x86_64__)
     if (crypto_x86_64_has_aesni_extension() && bits == AES256_KEY_BITS) {
       crypto_x86_64_aesni256_set_encrypt_key(ctx, key);
       ctx->cbc_crypt = crypto_x86_64_aesni256_cbc_encrypt;
@@ -38,9 +39,12 @@ void vk_aes_set_encrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
       ctx->ctr_crypt = crypto_x86_64_aesni256_ctr_encrypt;
       return;
     }
-#endif // __x86_64__
-
-#ifdef __aarch64__
+#elif defined(__arm64__)
+    if (crypto_arm64_has_aes_extension()) {
+      assert(0 && "unexpected");
+    }
+    // generic functions will be used on M1, see below
+#elif defined(__aarch64__)
     if (crypto_aarch64_has_aes_extension()) {
       crypto_aarch64_aes256_set_encrypt_key(ctx, key);
       ctx->cbc_crypt = crypto_aarch64_aes256_cbc_encrypt;
@@ -48,7 +52,7 @@ void vk_aes_set_encrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
       ctx->ctr_crypt = crypto_aarch64_aes256_ctr_encrypt;
       return;
     }
-#endif // __aarch64__
+#endif 
   }
 
   crypto_generic_aes256_set_encrypt_key(ctx, key);
@@ -63,23 +67,26 @@ void vk_aes_set_decrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
   ctx->ctr_crypt = NULL; /* NOTICE: vk_aes_set_encrypt_key should be used for CTR decryption */
 
   if (use_hw_acceleration) {
-#ifdef __x86_64__
+#if defined(__x86_64__)
     if (crypto_x86_64_has_aesni_extension()) {
       crypto_x86_64_aesni256_set_decrypt_key(ctx, key);
       ctx->cbc_crypt = crypto_x86_64_aesni256_cbc_decrypt;
       ctx->ige_crypt = crypto_x86_64_aesni256_ige_decrypt;
       return;
     }
-#endif // __x86_64__
-
-#ifdef __aarch64__
+#elif defined(__arm64__)
+    if (crypto_arm64_has_aes_extension()) {
+      assert(0 && "unexpected");
+    }
+    // generic functions will be used on M1, see below
+#elif defined(__aarch64__)
     if (crypto_aarch64_has_aes_extension()) {
       crypto_aarch64_aes256_set_decrypt_key(ctx, key);
       ctx->cbc_crypt = crypto_aarch64_aes256_cbc_decrypt;
       ctx->ige_crypt = crypto_aarch64_aes256_ige_decrypt;
       return;
     }
-#endif // __aarch64__
+#endif 
   }
 
   crypto_generic_aes256_set_decrypt_key(ctx, key);

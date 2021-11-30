@@ -18,7 +18,13 @@ cmake_print_variables(CMAKE_CXX_STANDARD)
 if(APPLE)
     include_directories(/usr/local/include)
     add_definitions(-D_XOPEN_SOURCE)
-
+    # these dirs are for M1 macs
+    if(IS_DIRECTORY /opt/homebrew)
+        include_directories(/opt/homebrew/include)
+        link_directories(/opt/homebrew/lib)
+    endif()
+    # if your mac doesn't have openssl here, you could just make a symbolic link like
+    # sudo ln -s /opt/homebrew/Cellar/openssl@1.1/1.1.1l /usr/local/opt/openssl
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
 endif()
 
@@ -71,7 +77,7 @@ endif()
 
 include_directories(${GENERATED_DIR})
 add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer)
-if(HOST STREQUAL "x86_64")
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     add_compile_options(-march=sandybridge -fno-common)
     add_link_options(-fno-common)
 endif()
