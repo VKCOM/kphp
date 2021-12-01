@@ -725,7 +725,7 @@ T f$array_merge(const T &a1, const T &a2) {
 
 template<class ReturnT, class ...Args>
 ReturnT f$array_merge_recursive(const Args &...args) {
-  array<mixed> result{(args.size() + ...)};
+  array<mixed> result{(args.size() + ... + array_size{})};
   (result.merge_with_recursive(args), ...);
   return result;
 }
