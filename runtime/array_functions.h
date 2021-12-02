@@ -15,6 +15,10 @@
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 
+constexpr int64_t SORT_REGULAR = 0;
+constexpr int64_t SORT_NUMERIC = 1;
+constexpr int64_t SORT_STRING = 2;
+
 template<class T>
 string f$implode(const string &s, const array<T> &a);
 
@@ -160,7 +164,7 @@ template<class T>
 array<T> f$array_values(const array<T> &a);
 
 template<class T>
-array<T> f$array_unique(const array<T> &a);
+array<T> f$array_unique(const array<T> &a, int64_t flags = SORT_STRING);
 
 template<class T>
 array<int64_t> f$array_count_values(const array<T> &a);
@@ -223,10 +227,6 @@ array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
 
 template<class T>
 void f$shuffle(array<T> &a);
-
-constexpr int64_t SORT_REGULAR = 0;
-constexpr int64_t SORT_NUMERIC = 1;
-constexpr int64_t SORT_STRING = 2;
 
 template<class T>
 void f$sort(array<T> &a, int64_t flag = SORT_REGULAR);
@@ -1024,13 +1024,27 @@ array<T> f$array_values(const array<T> &a) {
 }
 
 template<class T>
-array<T> f$array_unique(const array<T> &a) {
+array<T> f$array_unique(const array<T> &a, int64_t flags) {
   array<int64_t> values(array_size(a.count(), a.count(), false));
   array<T> result(a.size());
 
+  auto lookup = [flags, &values](const auto &value) -> int64_t & {
+    switch (flags) {
+      case SORT_REGULAR:
+        return values[value];
+      case SORT_NUMERIC:
+        return values[f$intval(value)];
+      case SORT_STRING:
+        return values[f$strval(value)];
+      default:
+        php_warning("Unsupported flags in function array_unique");
+        return values[f$strval(value)];
+    }
+  };
+
   for (const auto &it : a) {
     const T &value = it.get_value();
-    int64_t &cnt = values[f$strval(value)];
+    int64_t &cnt = lookup(value);
     if (!cnt) {
       cnt = 1;
       result.set_value(it);

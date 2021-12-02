@@ -191,6 +191,10 @@ function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
 function get_engine_workers_number() ::: int;
 
+define('SORT_REGULAR', 0);
+define('SORT_NUMERIC', 1);
+define('SORT_STRING', 2);
+
 function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 function create_vector ($n ::: int, $x ::: any) ::: ^2[];
@@ -243,7 +247,7 @@ function array_keys ($a ::: array) ::: mixed[];
 function array_keys_as_strings ($a ::: array) ::: string[];
 function array_keys_as_ints ($a ::: array) ::: int[];
 function array_values ($a ::: array) ::: ^1;
-function array_unique ($a ::: array) ::: ^1;
+function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
 function array_count_values ($a ::: array) ::: int[];
 function array_flip ($a ::: array) ::: mixed[];
 function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
@@ -382,10 +386,6 @@ function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string 
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
-
-define('SORT_REGULAR', 0);
-define('SORT_NUMERIC', 1);
-define('SORT_STRING', 2);
 
 function shuffle (&$a ::: array) ::: void;
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
