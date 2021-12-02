@@ -301,7 +301,9 @@ ext/standard/tests/array/array_splice_variation3.phpt
 ext/standard/tests/array/array_sum_variation3.phpt
 ext/standard/tests/array/array_sum_variation4.phpt
 ext/standard/tests/array/array_unique_basic.phpt
+ext/standard/tests/array/array_unique_variation2.phpt
 ext/standard/tests/array/array_unique_variation5.phpt
+ext/standard/tests/array/array_unique_variation8.phpt
 ext/standard/tests/array/array_unique_variation9.phpt
 ext/standard/tests/array/array_unshift.phpt
 ext/standard/tests/array/array_values_basic.phpt
