@@ -98,7 +98,7 @@ public:
   void run();
 
   template<Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
-  bool gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim);
+  bool gen_list(std::vector<ResultType> *res, FuncT expr_getter, TokenType delim);
   template<Operation Op>
   VertexAdaptor<Op> get_conv();
   VertexAdaptor<op_require> get_require(bool once);

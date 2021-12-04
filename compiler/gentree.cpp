@@ -118,7 +118,13 @@ VertexPtr GenTree::get_foreach_value() {
 // this method for use list parsing to report errors as they occur.
 VertexAdaptor<op_var> GenTree::get_function_use_var_name_ref() {
   auto result = get_var_name_ref();
-  kphp_error(result, fmt_format("function use list: expected varname, found {}", cur->str_val));
+
+  // If a closing parenthesis is encountered, it means a trailing
+  // comma before that, so we don't give an error.
+  if (!result && cur->type() != tok_clpar) {
+    kphp_error(0, fmt_format("function use list: expected varname, found {}", cur->str_val));
+  }
+
   return result;
 }
 
@@ -154,25 +160,55 @@ inline void GenTree::skip_phpdoc_tokens() {
   // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_var
 }
 
+/**
+ * gen_list parses a list of expressions separated by delimiter {@param delim}.
+ * To get each list element, the passed function {@param expr_getter} is used
+ * (actually a pointer to the function).
+ *
+ * All parsed vertices are put into the passed {@param res} vector.
+ *
+ * If there is no expression after the delimiter, then the following cases are
+ * possible:
+ *   - If the function is called with the template parameter 'op_none'
+ *     (gen_list<op_none>(...)), then a parsing error will not be thrown,
+ *     in fact it means **allowing the trailing comma**.
+ *
+ *   - If the function is called with the template parameter 'op_err',
+ *     (gen_list<op_err>(...)) then a parsing error will be thrown,
+ *     in fact, this means that the **trailing comma is prohibited**.
+ *
+ *   - If the function is called with a template parameter other than
+ *     'op_none' and 'op_err', then a substitute vertex with the type
+ *     that was passed to the template will be created in place of the
+ *     expression that could not be parsed.
+ *
+ *     For example:
+ *       Call 'gen_list<op_lvalue_null>(...)' will give the following list
+ *       of vertices for "[$a,,$a]":
+ *         [op_var, op_lvalue_null, op_var]
+ *
+ * @return **false** if an error occurs during parsing.
+ */
 template<Operation EmptyOp, class FuncT, class ResultType>
-bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
-  //Do not clear res. Result must be appended to it.
+bool GenTree::gen_list(std::vector<ResultType> *res, FuncT expr_getter, TokenType delim) {
+  // do not clear res, result must be appended to it
   bool prev_delim = false;
   bool next_delim = true;
 
   while (next_delim) {
-    ResultType v = (this->*f)();
+    ResultType item_vertex = (this->*expr_getter)();
     next_delim = cur->type() == delim;
 
-    if (!v) {
+    if (!item_vertex) {
       if (EmptyOp != op_err && (prev_delim || next_delim)) {
         if (EmptyOp == op_none) {
           break;
         }
 
-        v = vk::constexpr_if(std::integral_constant<bool, EmptyOp == op_none || EmptyOp == op_err>{},
-                             [&v] { return v; },
-                             [] { return VertexAdaptor<EmptyOp>::create(); });
+        // create a placeholder node if the passed type is not 'op_err'
+        item_vertex = vk::constexpr_if(std::integral_constant<bool, EmptyOp == op_none || EmptyOp == op_err>{},
+                                       [&item_vertex] { return item_vertex; },
+                                       [] { return VertexAdaptor<EmptyOp>::create(); });
       } else if (prev_delim) {
         // TODO: do not emit this error for funcs like var_name_ref() as
         // they return falsy vertex in case of the parse failure.
@@ -186,7 +222,7 @@ bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
       }
     }
 
-    res->push_back(v);
+    res->push_back(item_vertex);
     prev_delim = true;
 
     if (next_delim) {
@@ -1374,7 +1410,7 @@ bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *use
     }
 
     std::vector<VertexAdaptor<op_var>> uses_as_vars;
-    bool ok_params_next = gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
+    bool ok_params_next = gen_list<op_none>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
 
     for (auto &v : uses_as_vars) {
       kphp_error(!v->ref_flag, "references to variables in `use` block are forbidden in lambdas");
@@ -1500,7 +1536,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
     ClassData::patch_func_add_this(params_next, Location(line_num));
   }
 
-  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
+  bool ok_params_next = gen_list<op_none>(&params_next, &GenTree::get_func_param, tok_comma);
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 
