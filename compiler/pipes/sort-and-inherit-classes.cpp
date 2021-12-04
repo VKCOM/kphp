@@ -232,7 +232,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
 
 void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {
   kphp_error(interface_class->is_interface(),
-             fmt_format("Error implements {} and {}", child_class->name, interface_class->name));
+             fmt_format("{} `implements` a non-interface {}", child_class->name, interface_class->name));
 
   child_class->implements.emplace_back(interface_class);
 

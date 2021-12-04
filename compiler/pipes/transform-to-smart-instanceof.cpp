@@ -19,17 +19,22 @@ bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
   return false;
 }
 
-// handle `if ($x instanceof A)`, replace $x with a temp var inside its body
+// 1) handle `if ($x instanceof A)`, replace $x with a temp var inside its body
+// 2) handle `if (!($x instanceof A)) return`, replace $x with a temp var till the end of function
 bool TransformToSmartInstanceofPass::on_if_user_recursion(VertexAdaptor<op_if> v_if) {
-  auto condition = get_instanceof_from_if_condition(v_if);
-  if (!condition) {
+  auto v_instanceof = get_instanceof_from_if_condition(v_if->cond());
+  if (!v_instanceof) {
+    if (auto v_not_instanceof = get_instanceof_from_if_not_condition(v_if->cond())) {
+      auto instance_var = v_not_instanceof->lhs().as<op_var>().clone();
+      return try_replace_if_not_instanceof_return(v_if, instance_var, v_not_instanceof->rhs());
+    }
     return false;
   }
-  auto instance_var = condition->lhs().as<op_var>().clone();
+  auto instance_var = v_instanceof->lhs().as<op_var>().clone();
 
   run_function_pass(v_if->cond(), this);
 
-  add_tmp_var_with_instance_cast(instance_var, condition->rhs(), v_if->true_cmd_ref());
+  add_tmp_var_with_instance_cast(instance_var, v_instanceof->rhs(), v_if->true_cmd_ref());
   new_names_of_var[instance_var->get_string()].pop();
   on_enter_vertex(instance_var);
 
@@ -64,6 +69,30 @@ bool TransformToSmartInstanceofPass::on_lambda_user_recursion(VertexAdaptor<op_l
   run_function_pass(f_lambda->root, this);
 
   return true;
+}
+
+// having `if (!($x instanceof A)) return;`, replace $x with $tmp_A till the end of function
+// we support this only if this `if` is the top-level statement of function, as we don't have cfg at this point
+bool TransformToSmartInstanceofPass::try_replace_if_not_instanceof_return(VertexAdaptor<op_if> v_if_not, VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived) {
+  bool is_if_not_instanceof_return = !v_if_not->has_false_cmd() && v_if_not->true_cmd()->size() == 1 && v_if_not->true_cmd()->front()->type() == op_return;
+  if (!is_if_not_instanceof_return) {
+    return false;
+  }
+
+  for (auto &child: *current_function->root->cmd()) {
+    if (child == v_if_not) {
+      run_function_pass(v_if_not->cond(), this);
+      run_function_pass(v_if_not->true_cmd_ref(), this);
+      // add `else` statement with $tmp_A = instance_cast($x, A::class)
+      VertexPtr v_else_assign = VertexAdaptor<op_seq>::create();
+      add_tmp_var_with_instance_cast(instance_var, name_of_derived, v_else_assign);
+      auto v_if_else = VertexAdaptor<op_if>::create(v_if_not->cond(), v_if_not->true_cmd(), v_else_assign.as<op_seq>());
+      child = v_if_else;
+      return true;
+      // $x will be replaced till the end of function body automatically, as we don't clear new_names_of_var
+    }
+  }
+  return false;
 }
 
 void TransformToSmartInstanceofPass::add_tmp_var_with_instance_cast(VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived, VertexPtr &cmd) {
@@ -107,12 +136,24 @@ VertexAdaptor<op_set> TransformToSmartInstanceofPass::generate_tmp_var_with_inst
   return set_instance_cast_to_tmp;
 }
 
-VertexAdaptor<op_instanceof> TransformToSmartInstanceofPass::get_instanceof_from_if_condition(VertexAdaptor<op_if> if_vertex) {
-  if (auto condition = if_vertex->cond().try_as<op_conv_bool>()) {
+// try to find `if ($x instanceof A)`, which ast is op_conv_bool > op_instanceof
+VertexAdaptor<op_instanceof> TransformToSmartInstanceofPass::get_instanceof_from_if_condition(VertexPtr if_cond) {
+  if (auto condition = if_cond.try_as<op_conv_bool>()) {
     if (auto as_instanceof = condition->expr().try_as<op_instanceof>()) {
       if (as_instanceof->lhs()->type() == op_var) {
         return as_instanceof;
       }
+    }
+  }
+
+  return {};
+}
+
+// try to find `if (!($x instanceof A))`, which ast is op_conv_bool > op_log_not > op_conv_bool > op_instanceof
+VertexAdaptor<op_instanceof> TransformToSmartInstanceofPass::get_instanceof_from_if_not_condition(VertexPtr if_cond) {
+  if (auto cond_wrap = if_cond.try_as<op_conv_bool>()) {
+    if (auto as_not = cond_wrap->expr().try_as<op_log_not>()) {
+      return get_instanceof_from_if_condition(as_not->expr());
     }
   }
 
