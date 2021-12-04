@@ -7,7 +7,9 @@ namespace FFI;
 // See FFIRoot::register_builtin_classes().
 
 class Scope {
-  public function new(string $type): CData;
+  /** @return \FFI\CData but actually, a concrete \FFI\CData_int64 or other, depends on $type */
+  public function new(string $type);
 
-  public function cast(string $type, \FFI\CData $cdata): \FFI\CData;
+  /** @return \FFI\CData but actually, something like ^1, but may be ffi &ref */
+  public function cast(string $type, \FFI\CData $cdata);
 }

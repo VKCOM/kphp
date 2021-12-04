@@ -135,6 +135,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         inline-defines-usages.cpp
         inline-simple-functions.cpp
         instantiate-generics-and-lambdas.cpp
+        instantiate-ffi-operations.cpp
         load-files.cpp
         optimization.cpp
         parse.cpp
@@ -143,7 +144,6 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         preprocess-eq3.cpp
         preprocess-exceptions.cpp
         propagate-throw-flag.cpp
-        preprocess-ffi-operations.cpp
         register-defines.cpp
         register-kphp-configuration.cpp
         register-variables.cpp

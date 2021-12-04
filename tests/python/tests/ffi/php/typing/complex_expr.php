@@ -38,4 +38,26 @@ function test() {
   var_dump([foo_identity($foo)->i, bar_identity($bar)->foo_ptr->i]);
 }
 
+function testNestedAssign() {
+    $cdef = FFI::cdef('struct Foo { int x; };');
+    $foo2 = $foo = $cdef->new('struct Foo');
+    $foo2->x = 10;
+    var_dump($foo2->x);
+}
+
+function testExprNew() {
+  $cdef = FFI::cdef('struct Foo { int i; };');
+  var_dump($cdef->new('struct Foo')->i);
+  $cdef->new('struct Foo')->i = 10;
+}
+
+function testExprAddr() {
+  $cdef = FFI::cdef('struct Foo { int i; };');
+  var_dump(FFI::addr($cdef->new('struct Foo'))->i);
+  FFI::addr($cdef->new('struct Foo'))->i = 20;
+}
+
 test();
+testNestedAssign();
+testExprNew();
+testExprAddr();

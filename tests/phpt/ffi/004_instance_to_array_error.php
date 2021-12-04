@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/You may not use instance_to_array with CData/
+/Called instance_to_array\(\) with CData/
 <?php
 
 $cdef = FFI::cdef('

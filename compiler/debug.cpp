@@ -10,6 +10,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/type-hint.h"
 #include "compiler/vertex.h"
 #include "common/wrappers/to_array.h"
 
@@ -246,6 +247,10 @@ static std::string debugVertexMore(VertexPtr v) {
       return std::to_string(v->size());
     case op_phpdoc_var:
       return "@var for " + v.as<op_phpdoc_var>()->var()->str_val;
+    case op_ffi_php2c_conv:
+      return "to " + v.as<op_ffi_php2c_conv>()->c_type->as_human_readable();
+    case op_ffi_c2php_conv:
+      return "to " + v.as<op_ffi_c2php_conv>()->php_type->as_human_readable();
     default:
       return "";
   }

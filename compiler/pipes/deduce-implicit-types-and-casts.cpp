@@ -697,7 +697,7 @@ void DeduceImplicitTypesAndCastsPass::on_clone(VertexAdaptor<op_clone> v_clone) 
   kphp_error_return(v_clone->class_id, "`clone` keyword can be used only with instances");
   kphp_error(!v_clone->class_id->is_lambda_class(), "It's forbidden to `clone` lambdas");
   kphp_error(!v_clone->class_id->is_typed_callable_interface(), "It's forbidden to `clone` lambdas");
-  kphp_error(!v_clone->class_id->is_builtin(), "It's forbidden to `clone` built-in classes");
+  kphp_error(!v_clone->class_id->is_builtin() || v_clone->class_id->is_ffi_cdata(), "It's forbidden to `clone` built-in classes");
 }
 
 // handle `throw $ex`, calc assumptions to be used later
@@ -713,6 +713,11 @@ void DeduceImplicitTypesAndCastsPass::on_instance_prop(VertexAdaptor<op_instance
     return;
   }
   v_prop->class_id = klass;
+
+  if (klass->is_ffi_cdata() && v_prop->str_val == "cdata") {
+    // a magic low-level property for ffi, it has no backing field; will be replaced by op_ffi_cdata_value_ref later
+    return;
+  }
 
   const auto *field = v_prop->class_id->get_instance_field(v_prop->str_val);
   kphp_error_return(field, fmt_format("Field ${} not found in class {}", v_prop->str_val, klass->as_human_readable()));

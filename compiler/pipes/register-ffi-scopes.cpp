@@ -57,8 +57,7 @@ private:
     int num_params = type->members.size() - 1; // [0] stores return type, it's not a param
     vector<VertexAdaptor<op_func_param>> params;
     params.reserve(1 + num_params); // +1 due to $this param
-    // todo
-//    ClassData::patch_func_add_this(params, call->location);
+    params.emplace_back(ClassData::gen_param_this(call->location));
     for (int i = 1; i < type->members.size(); i++) {
       const FFIType *ffi_type = type->members[i];
       auto var = VertexAdaptor<op_var>::create().set_location(call->location);
@@ -123,6 +122,17 @@ private:
     register_class(cdata_class_ref);
   }
 
+  void add_enum_constant(const std::string &const_name, int const_value, ClassPtr scope_class) {
+    auto fake_op_var = VertexAdaptor<op_var>::create();
+    fake_op_var->str_val = const_name;
+    auto fake_def_val = GenTree::create_int_const(const_value);
+
+    // in PHP/KPHP, we access enum constants via an arrow: $cdef->CONST
+    // so, make it be an instance field, not a static const; it'll pass all checks of fields existence
+    // later on, when ffi operations are processed, they will be inlined: see InstantiateFFIOperationsPass
+    scope_class->members.add_instance_field(fake_op_var, fake_def_val, FieldModifiers{}.set_public(), "", nullptr);
+  }
+
   VertexPtr make_ffi_load_call(VertexAdaptor<op_func_call> call, FFIScopeDataMixin *scope, const FFIParseResult &result) {
     kphp_error_act(register_scope(scope, result),
                    fmt_format("duplicate definition of `{}` scope", result.scope),
@@ -145,6 +155,9 @@ private:
       } else if (vk::any_of_equal(type->kind, FFITypeKind::StructDef, FFITypeKind::UnionDef)) {
         add_struct_or_union(call, type, result);
       }
+    }
+    for (const auto &enum_item : result.enum_constants) {
+      add_enum_constant(enum_item.first, enum_item.second, scope_class);
     }
 
     register_class(scope_class);
@@ -255,18 +268,18 @@ public:
 };
 
 VertexPtr RegisterFFIScopes::on_exit_vertex(VertexPtr root) {
-  if (root->type() != op_func_call) {
+  if (root->type() != op_func_call || root->extra_type == op_ex_func_call_arrow) {
     return root;
   }
 
+  // at this step of pipeline, we don't have :: calls resolved, so do a brute search for FFI calls declaring scopes
+  // we don't support "use FFI as a" and calling a::cdef
   auto call = root.as<op_func_call>();
-
-  if (call->extra_type != op_ex_func_call_arrow) {
-    const std::string method_name = call->get_string();
-    if (method_name == "FFI$$load") {
+  if (call->str_val.size() < 11 && call->str_val[4] == ':') {
+    if (call->str_val == "FFI::load" || call->str_val == "\\FFI::load") {
       return on_ffi_load(call);
     }
-    if (method_name == "FFI$$cdef") {
+    if (call->str_val == "FFI::cdef" || call->str_val == "\\FFI::cdef") {
       return on_ffi_cdef(call);
     }
   }

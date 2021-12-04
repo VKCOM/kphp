@@ -114,12 +114,6 @@ static std::string __attribute__((noinline)) _err_instance_access(VertexPtr v, c
  */
 ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, VertexPtr v) {
   switch (lhs->type()) {
-      // todo move below
-    case op_ffi_c2php_conv:
-      if (const auto *as_instance = lhs.as<op_ffi_c2php_conv>()->php_type->try_as<TypeHintInstance>()) {
-        return as_instance->resolve();
-      }
-      break;
     // $var->...
     case op_var: {
       auto klass = assume_class_of_expr(function, lhs, v).try_as_class();

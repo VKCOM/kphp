@@ -27,6 +27,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
+#include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/function-pass.h"
@@ -114,7 +115,7 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
   return {};
 }
 
-static ClassPtr extract_instance_from_ffi_type(const std::string &scope_name, const FFIType *type) {
+static ClassPtr extract_instance_from_ffi_scope(const std::string &scope_name, const FFIType *type) {
   if (const auto *builtin = ffi_builtin_type(type->kind)) {
     return G->get_class(builtin->php_class_name);
   }
@@ -122,7 +123,7 @@ static ClassPtr extract_instance_from_ffi_type(const std::string &scope_name, co
     return G->get_class(FFIRoot::cdata_class_name(scope_name, type->str));
   }
   if (type->kind == FFITypeKind::Pointer) {
-    return extract_instance_from_ffi_type(scope_name, type->members[0]);
+    return extract_instance_from_ffi_scope(scope_name, type->members[0]);
   }
   return {};
 }
@@ -135,14 +136,6 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   // for T|false or T|null, narrow down to T
   if (const auto *as_optional = a->try_as<TypeHintOptional>()) {
     a = as_optional->inner;
-  }
-
-  // todo move below
-  if (const auto *as_ffi = a->try_as<TypeHintFFIType>()) {
-    return extract_instance_from_ffi_type(as_ffi->scope_name, as_ffi->type);
-  }
-  if (const auto *as_ffi_scope = a->try_as<TypeHintFFIScope>()) {
-    return G->get_class(FFIRoot::scope_class_name(as_ffi_scope->scope_name));
   }
 
   // the simpliest (and most common) case: just A
@@ -203,6 +196,15 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
       return extract_instance_from_type_hint(field->type_hint);
     }
   }
+  // ffi_cdata<scope, struct T> — return T inside scope, it's a registered class
+  if (const auto *as_ffi = a->try_as<TypeHintFFIType>()) {
+    return extract_instance_from_ffi_scope(as_ffi->scope_name, as_ffi->type);
+  }
+  // ffi_scope<name> — return the corresponding registered class of this scope
+  if (const auto *as_ffi_scope = a->try_as<TypeHintFFIScope>()) {
+    return G->get_class(FFIRoot::scope_class_name(as_ffi_scope->scope_name));
+  }
+
 
   return ClassPtr{};
 }
@@ -516,19 +518,6 @@ static Assumption calc_assumption_for_return(FunctionPtr f) {
   if (f->is_template() || (f->return_typehint && !f->return_typehint->is_typedata_constexpr())) {
     return {};
   }
-  // todo added
-//  if (const auto *as_ffi = return_typehint->try_as<TypeHintFFIType>()) {
-//    return Assumption(as_ffi);
-//  }
-//  if (const auto *as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
-//    if (auto arg = GenTree::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
-//      if (const auto *scope_name = GenTree::get_constexpr_string(arg)) {
-//        if (auto module_class = G->get_class(FFIRoot::scope_class_name(*scope_name))) {
-//          return Assumption(module_class);
-//        }
-//      }
-//    }
-//  }
 
   if (f->is_constructor()) {
     return Assumption(f->class_id);
@@ -611,6 +600,18 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
         }
       }
     }
+    if (const auto *as_ffi = return_typehint->try_as<TypeHintFFIType>()) {
+      return Assumption(as_ffi);
+    }
+    if (const auto *as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
+      if (auto arg = GenTree::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
+        if (const auto *scope_name = GenTree::get_constexpr_string(arg)) {
+          if (auto module_class = G->get_class(FFIRoot::scope_class_name(*scope_name))) {
+            return Assumption(module_class);
+          }
+        }
+      }
+    }
 
     return {};
   }
@@ -624,6 +625,25 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
       return Assumption(phpdoc_replace_genericsT_with_instantiation(f_called->return_typehint, call->instantiation_list));
     }
     return {};
+  }
+
+  // some ffi functions, like $cdef->new('int') and FFI::cast(), also depend on a call, like template functions
+  // but their @return can't be expressed in syntax of _functions.txt: instead, inferring is hardcoded
+  if (f_called->is_extern()) {
+    if (f_called->name == "FFI$$new") {
+      return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_static_new(call));
+    }
+    if (f_called->name == "FFI$$cast") {
+      return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_static_cast(f, call));
+    }
+    if (f_called->name == "FFI$Scope$$new" && !call->args().empty()) {
+      ClassPtr scope_class = assume_class_of_expr(f, call->args()[0], call).try_as_class();
+      return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_scope_new(call, scope_class));
+    }
+    if (f_called->name == "FFI$Scope$$cast" && !call->args().empty()) {
+      ClassPtr scope_class = assume_class_of_expr(f, call->args()[0], call).try_as_class();
+      return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_scope_cast(f, call, scope_class));
+    }
   }
 
   // when an assumption doesn't depend on a call, the return assumption can be once calculated and cached

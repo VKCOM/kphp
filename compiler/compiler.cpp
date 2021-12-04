@@ -69,6 +69,7 @@
 #include "compiler/pipes/generate-virtual-methods.h"
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/pipes/instantiate-generics-and-lambdas.h"
+#include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/load-files.h"
@@ -78,7 +79,6 @@
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-exceptions.h"
-#include "compiler/pipes/preprocess-ffi-operations.h"
 #include "compiler/pipes/propagate-throw-flag.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-ffi-scopes.h"
@@ -252,11 +252,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<TransformToSmartInstanceofPass>{}
     >> PassC<DeduceImplicitTypesAndCastsPass>{}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
-    >> PassC<PreprocessFFIOperationsBegin>{}
     >> SyncC<GenerateVirtualMethodsF>{}
     >> PassC<ConvertInvokeToFuncCallPass>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
-    >> PassC<PreprocessFFIOperationsEnd>{}
+    >> PassC<InstantiateFFIOperationsPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}

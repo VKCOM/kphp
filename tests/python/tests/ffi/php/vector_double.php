@@ -17,6 +17,6 @@ function test_vector2_double() {
 #ifndef KPHP
 if (false)
 #endif
-  FFI::load(__DIR__ . '/../c/vector.h');
+  \FFI::load(__DIR__ . '/../c/vector.h');
 
 test_vector2_double();

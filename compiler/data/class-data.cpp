@@ -75,6 +75,9 @@ std::string ClassData::as_human_readable() const {
     const auto *m_invoke = get_instance_method("__invoke");
     return m_invoke ? m_invoke->function->as_human_readable() : name;
   }
+  if (is_ffi_scope()) {
+    return "ffi_scope<" + name.substr(6) + ">";
+  }
   return name;
 }
 

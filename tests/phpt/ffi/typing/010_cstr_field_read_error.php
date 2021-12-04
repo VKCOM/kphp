@@ -5,7 +5,7 @@ KPHP_ENABLE_FFI=1
 <?php
 
 function test() {
-  $cdef = FFI::cdef('
+  $cdef = \FFI::cdef('
     struct Foo {
       const char *s;
     };

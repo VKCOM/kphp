@@ -1328,24 +1328,26 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
 final class FFI {
-  /** @return \FFI\Scope */
+  /** @return \FFI\Scope but actually, ffi_scope<(depends on code)> */
   public static function cdef(string $code, ?string $lib = null);
 
-  /** @return \FFI\Scope */
+  /** @return \FFI\Scope but actually, ffi_scope<(depends on file contents)> */
   public static function load(string $filename);
 
   /** @return ffi_scope<^1> */
   public static function scope(string $name);
 
-  public static function addr(\FFI\CData $cdata): \FFI\CData;
+  public static function addr(\FFI\CData $cdata): ^1;
 
   public static function typeof(\FFI\CData $cdata): \FFI\CType;
   public static function type(string $type): \FFI\CType;
   public static function arrayType(\FFI\CData $type, array $dimensions): \FFI\CType;
 
-  public static function new(string $type): \FFI\CData;
+  /** @return \FFI\CData but actually, a concrete \FFI\CData_int64 or other, depends on $type */
+  public static function new(string $type);
 
-  public static function cast(string $type, \FFI\CData $cdata): \FFI\CData;
+  /** @return \FFI\CData but actually, something like ^1, but may be ffi &ref */
+  public static function cast(string $type, \FFI\CData $cdata);
 
   public static function sizeof(\FFI\CData $cdata): int;
 
