@@ -7,7 +7,82 @@
 #include "compiler/data/src-file.h"
 #include "compiler/type-hint.h"
 
-void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
+VertexAdaptor<op_func_call> CheckFunctionCallsPass::process_named_args(FunctionPtr func, VertexAdaptor<op_func_call> call) const {
+  const auto args = call->args();
+  auto see_named = false;
+  auto without_named_args = true;
+
+  for (const auto &arg : args) {
+    const auto named = arg->type() == op_named_arg;
+    if (named) {
+      see_named = true;
+      without_named_args = false;
+    }
+    // if positional arg after named
+    if (!named && see_named) {
+      kphp_error(0, "Cannot use positional argument after named argument");
+      return call;
+    }
+  }
+
+  if (without_named_args) {
+    return call;
+  }
+
+  const auto params = func->get_params();
+  auto params_map = std::unordered_map<std::string, size_t>(params.size());
+
+  for (int i = 0; i < params.size(); ++i) {
+    const auto &param = params[i].as<op_func_param>();
+    params_map[param->var()->str_val] = i;
+  }
+
+  auto new_call_args = std::vector<VertexPtr>(params.size());
+
+  for (int i = 0; i < args.size(); ++i) {
+    const auto &arg = args[i];
+
+    if (const auto named = arg.try_as<op_named_arg>()) {
+      const auto name = named->name()->str_val;
+      if (params_map.find(name) == params_map.end()) {
+        kphp_error(0, fmt_format("Unknown named parameter {}", name));
+        return call;
+      }
+
+      const auto param_index = params_map[name];
+
+      if (new_call_args[param_index]) {
+        kphp_error(0, fmt_format("Named parameter ${} overwrites previous argument", name));
+        continue;
+      }
+
+      new_call_args[param_index] = named->expr();
+    } else {
+      new_call_args[i] = arg;
+    }
+  }
+
+  for (int i = 0; i < params.size(); ++i) {
+    const auto &param = params[i].as<op_func_param>();
+
+    if (!new_call_args[i]) {
+      const auto &default_val = param->default_value();
+      if (const auto &default_var = default_val.try_as<op_var>()) {
+        current_function->explicit_header_const_var_ids.insert(default_var->var_id);
+      }
+
+      new_call_args[i] = param->default_value().clone();
+    }
+  }
+
+  auto new_call = VertexAdaptor<op_func_call>::create(new_call_args);
+  new_call->func_id = call->func_id;
+  new_call->str_val = call->str_val;
+
+  return new_call;
+}
+
+void CheckFunctionCallsPass::check_func_call(VertexPtr &call) {
   FunctionPtr f = call->type() == op_func_ptr ? call.as<op_func_ptr>()->func_id : call.as<op_func_call>()->func_id;
   kphp_assert(f);
   kphp_error_return(f->root, fmt_format("Function [{}] undeclared", f->get_human_readable_name()));
@@ -25,6 +100,8 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
   if (call->type() == op_func_ptr) {
     return;
   }
+
+  call = process_named_args(f, call.as<op_func_call>());
 
   VertexRange func_params = f->get_params();
   VertexRange call_params = call.as<op_func_call>()->args();
@@ -65,6 +142,7 @@ void CheckFunctionCallsPass::check_func_call(VertexPtr call) {
     }
   }
 }
+
 VertexPtr CheckFunctionCallsPass::on_enter_vertex(VertexPtr v) {
   if (v->type() == op_func_ptr || v->type() == op_func_call) {
     check_func_call(v);

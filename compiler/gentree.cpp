@@ -775,6 +775,16 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
     return left;
   }
 
+  // in function named argument call:
+  //   foo(name: <expr>)
+  //           | color here
+  if (left->type() == op_func_name && cur->type() == tok_colon) {
+    // skip colon
+    next_cur();
+    const auto arg_expr = get_expression();
+    return VertexAdaptor<op_named_arg>::create(arg_expr, left.as<op_func_name>());
+  }
+
   while (cur != end) {
     const TokenType origin_token = cur->type();
     const TokenType token = transform_compare_operation_token(origin_token);
@@ -1500,7 +1510,8 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
     ClassData::patch_func_add_this(params_next, Location(line_num));
   }
 
-  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
+
+  bool ok_params_next = gen_list<op_none>(&params_next, &GenTree::get_func_param, tok_comma);
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 

@@ -355,7 +355,7 @@ void FinalCheckPass::on_start() {
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_func_name) {
-    kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
+//    kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
   if (vertex->type() == op_addr) {
     kphp_error (0, "Getting references is unsupported");

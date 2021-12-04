@@ -273,6 +273,25 @@
     }
   },
   {
+    "comment": "named argument for function call",
+    "name": "op_named_arg",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_const",
+      "cnst": "cnst_const_func",
+      "type": "common_op"
+    },
+    "sons": {
+      "expr": {
+        "id": 0
+      },
+      "name": {
+        "id": 1,
+        "type": "op_func_name"
+      }
+    }
+  },
+  {
     "comment": "any function (or method) call",
     "extras": [
       "string"
