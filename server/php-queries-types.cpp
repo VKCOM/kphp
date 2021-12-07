@@ -12,7 +12,7 @@
 #include "server/php-mc-connections.h"
 #include "server/php-sql-connections.h"
 
-void php_query_x2_t::run(php_worker *worker __attribute__((unused))) noexcept {
+void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
   query_stats.desc = "PHPQX2";
 
   php_script_query_readed(php_script);
@@ -43,7 +43,7 @@ void php_query_rpc_answer::run(php_worker *worker) noexcept {
   php_script_query_answered(php_script);
 }
 
-void php_query_connect_t::run(php_worker *worker __attribute__((unused))) noexcept {
+void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
   query_stats.desc = "CONNECT";
 
   php_script_query_readed(php_script);
@@ -79,8 +79,6 @@ void php_query_wait_t::run(php_worker *worker) noexcept {
 
 
 int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, int max_len) {
-  assert (worker != nullptr);
-
   connection *c = worker->conn;
   double precise_now = get_utime_monotonic();
 

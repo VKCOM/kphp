@@ -69,6 +69,8 @@ void php_worker_free(php_worker *worker) {
 }
 
 double php_worker_main(php_worker *worker) {
+  assert(worker);
+
   if (worker->finish_time < precise_now + 0.01) {
     php_worker_terminate(worker, 0, script_error_t::timeout, "timeout");
   }

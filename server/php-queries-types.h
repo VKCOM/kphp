@@ -4,10 +4,16 @@
 
 #pragma once
 
+enum class protocol_type {
+  memcached,
+  mysqli,
+  rpc,
+};
+
 struct php_worker;
 
 struct php_query_base_t {
-  void *ans;
+  void *ans{nullptr};
 
   virtual void run(php_worker *worker) noexcept = 0;
 
@@ -15,55 +21,49 @@ struct php_query_base_t {
 };
 
 struct php_query_x2_t : php_query_base_t {
-  int val;
+  int val{0};
 
   void run(php_worker *worker) noexcept final;
 };
 
 struct php_query_rpc_answer : php_query_base_t {
-  const char *data;
-  int data_len;
+  const char *data{nullptr};
+  int data_len{0};
 
   void run(php_worker *worker) noexcept final;
 };
 
-enum class protocol_type {
-  memcached,
-  mysqli,
-  rpc,
-};
-
 struct php_query_connect_t : php_query_base_t {
-  const char *host;
-  int port;
-  protocol_type protocol;
+  const char *host{nullptr};
+  int port{0};
+  protocol_type protocol{};
 
   void run(php_worker *worker) noexcept final;
 };
 
 struct php_query_http_load_post_t : php_query_base_t {
-  char *buf;
-  int min_len;
-  int max_len;
+  char *buf{nullptr};
+  int min_len{0};
+  int max_len{0};
 
   void run(php_worker *worker) noexcept final;
 };
 
 struct php_net_query_packet_t : php_query_base_t {
-  int connection_id;
-  const char *data;
-  int data_len;
-  long long data_id;
+  int connection_id{0};
+  const char *data{nullptr};
+  int data_len{0};
+  long long data_id{0};
 
-  double timeout;
-  protocol_type protocol;
-  int extra_type;
+  double timeout{0.0};
+  protocol_type protocol{};
+  int extra_type{0};
 
   void run(php_worker *worker) noexcept final;
 };
 
 struct php_query_wait_t : php_query_base_t {
-  int timeout_ms;
+  int timeout_ms{0};
 
   void run(php_worker *worker) noexcept final;
 };

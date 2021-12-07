@@ -52,7 +52,7 @@ php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, i
 
   PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_http_load_post_answer_t *)q.ans;
+  return static_cast<php_query_http_load_post_answer_t *>(q.ans);
 }
 
 int http_load_long_query(char *buf, int min_len, int max_len) {
@@ -308,7 +308,7 @@ php_query_x2_answer_t *php_query_x2(int x) {
 
   PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_x2_answer_t *)q.ans;
+  return static_cast<php_query_x2_answer_t *>(q.ans);
 }
 
 /** create connection query **/
@@ -323,7 +323,7 @@ php_query_connect_answer_t *php_query_connect(const char *host, int port, protoc
 
   PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_query_connect_answer_t *)q.ans;
+  return static_cast<php_query_connect_answer_t *>(q.ans);
 }
 
 int mc_connect_to(const char *host, int port) {
@@ -356,7 +356,7 @@ php_net_query_packet_answer_t *php_net_query_packet(
 
   PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_net_query_packet_answer_t *)q.ans;
+  return static_cast<php_net_query_packet_answer_t *>(q.ans);
 }
 
 void read_str(data_reader_t *reader, void *dest) {
@@ -998,7 +998,7 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
 
   PHPScriptBase::current_script->ask_query(&q);
 
-  return (php_net_query_packet_answer_t *)q.ans;
+  return static_cast<php_net_query_packet_answer_t *>(q.ans);
 }
 
 void script_error() {
