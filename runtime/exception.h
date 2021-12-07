@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
+#include "runtime/instance-copy-processor.h"
+#include "runtime/instance-to-array-processor.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 
 array<array<string>> f$debug_backtrace();
 
@@ -21,11 +23,36 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(get_class())));
   }
 
-  virtual void accept(InstanceMemoryEstimateVisitor &visitor) {
-    visitor("", $message);
-    visitor("", $file);
-    visitor("", raw_trace);
-    visitor("", trace);
+  template<class Visitor, bool process_raw_trace = true>
+  void generic_accept(Visitor &&visitor) noexcept {
+    visitor("message", $message);
+    visitor("code", $code);
+    visitor("file", $file);
+    visitor("line", $line);
+    visitor("__trace", trace);
+    if constexpr (process_raw_trace) {
+      visitor("__raw_trace", raw_trace);
+    }
+  }
+
+  virtual void accept(InstanceMemoryEstimateVisitor &visitor) noexcept {
+    generic_accept(visitor);
+  }
+
+  virtual void accept(InstanceDeepCopyVisitor &visitor) noexcept {
+    generic_accept(visitor);
+  }
+
+  virtual void accept(InstanceDeepDestroyVisitor &visitor) noexcept {
+    generic_accept(visitor);
+  }
+
+  virtual void accept(InstanceReferencesCountingVisitor &visitor) noexcept {
+    generic_accept(visitor);
+  }
+
+  virtual void accept(InstanceToArrayVisitor &visitor) noexcept {
+    generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (instance_to_array returns array<mixed>)
   }
 
   C$Throwable() __attribute__((always_inline)) = default;
@@ -41,11 +68,29 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 
 struct C$Exception : public C$Throwable {
   virtual ~C$Exception() = default;
+
+  C$Exception* virtual_builtin_clone() const noexcept {
+    return new C$Exception{*this};
+  }
+
+  size_t virtual_builtin_sizeof() const noexcept {
+    return sizeof(*this);
+  }
+
   const char *get_class() const noexcept override { return "Exception"; }
 };
 
 struct C$Error : public C$Throwable {
   virtual ~C$Error() = default;
+
+  C$Error* virtual_builtin_clone() const noexcept {
+    return new C$Error{*this};
+  }
+
+  size_t virtual_builtin_sizeof() const noexcept {
+    return sizeof(*this);
+  }
+
   const char *get_class() const noexcept override { return "Error"; }
 };
 
