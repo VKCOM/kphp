@@ -7,13 +7,15 @@ interface CustomError {
 
 class BaseError extends Error implements CustomError {
   public function toString(): string {
-    return "BaseError $this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "BaseError $relative:$this->line: $this->message";
   }
 }
 
 class DerivedError extends Error {
   public function toString(): string {
-    return "DerivedError $this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "DerivedError $relative:$this->line: $this->message";
   }
 }
 

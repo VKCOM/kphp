@@ -595,7 +595,7 @@ void PerformanceIssuesReport::add_issues_and_require_flush(FunctionPtr function,
     return;
   }
   FunctionPerformanceIssues function_issues{
-    function->file_id->unified_file_name,
+    function->file_id->relative_file_name,
     prepare_for_json(function->get_human_readable_name(false)),
     std::move(issues)
   };

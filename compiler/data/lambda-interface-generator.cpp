@@ -36,7 +36,7 @@ InterfacePtr LambdaInterfaceGenerator::generate() noexcept {
   } else {
     // for stable generation of comments
     invoke_fun_v->func_id->file_id = SrcFilePtr(new SrcFile());
-    invoke_fun_v->func_id->file_id->unified_file_name = interface->name;
+    invoke_fun_v->func_id->file_id->relative_file_name = interface->name;
     G->register_function(invoke_fun_v->func_id);
   }
   return registered_interface;

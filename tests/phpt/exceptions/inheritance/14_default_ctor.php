@@ -14,7 +14,7 @@ f($e2);
 
 function f(Exception $e) {
   var_dump($e->getLine());
-  var_dump($e->getFile());
+  var_dump(basename($e->getFile()));
   var_dump($e->getMessage());
   var_dump($e->getCode());
 }

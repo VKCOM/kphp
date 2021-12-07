@@ -140,6 +140,7 @@ enum TokenType {
 
   tok_class_c,
   tok_file_c,
+  tok_file_relative_c,
   tok_func_c,
   tok_dir_c,
   tok_line_c,

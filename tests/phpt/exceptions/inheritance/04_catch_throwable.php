@@ -6,7 +6,7 @@ class MyException extends Exception {}
 try {
   throw new Exception();
 } catch (Throwable $e) {
-  var_dump(__LINE__, $e->getFile(), get_class($e));
+  var_dump(__LINE__, basename($e->getFile()), get_class($e));
 }
 
 class Foo {

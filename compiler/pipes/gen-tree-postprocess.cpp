@@ -113,7 +113,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   if (txt_file_index <= php_file_index) {
     const std::string &txt_file = functions_txt_full.empty() ? functions_txt : functions_txt_full;
     if (SrcFilePtr header_file = G->register_file(txt_file, registered_lib)) {
-      lib->update_lib_main_file(header_file->file_name, header_file->unified_dir_name);
+      lib->update_lib_main_file(header_file->file_name, header_file->relative_dir_name);
       auto req_header_txt = make_require_once_call(header_file, require_lib_call);
       auto lib_run_global_call = VertexAdaptor<op_func_call>::create();
       lib_run_global_call->set_string(lib->run_global_function_name());
@@ -123,7 +123,7 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
   if (!new_vertex) {
     const std::string &php_file = index_php_full.empty() ? index_php : index_php_full;
     if (SrcFilePtr lib_index_file = G->register_file(php_file, registered_lib)) {
-      lib->update_lib_main_file(lib_index_file->file_name, lib_index_file->unified_dir_name);
+      lib->update_lib_main_file(lib_index_file->file_name, lib_index_file->relative_dir_name);
       new_vertex = make_require_once_call(lib_index_file, require_lib_call);
     }
   }

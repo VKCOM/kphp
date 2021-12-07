@@ -29,7 +29,7 @@ struct InitVar {
       kphp_assert(location.function && location.file);
       W << VarName(var) << ".init (" << var->init_val << ", "
         << RawString(location.function->name) << ", "
-        << RawString(location.file->unified_file_name + ':' + std::to_string(location.line))
+        << RawString(location.file->relative_file_name + ':' + std::to_string(location.line))
         << ");" << NL;
     } else {
       W << VarName(var) << " = " << var->init_val << ";" << NL;

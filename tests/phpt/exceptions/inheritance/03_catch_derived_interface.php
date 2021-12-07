@@ -13,7 +13,8 @@ interface CustomExceptionInterface extends BaseCustomExceptionInterface {
 
 class BaseException extends Exception implements CustomExceptionInterface {
   public function describe(): string {
-    return "$this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "$relative:$this->line: $this->message";
   }
 
   public function isCustomException(): bool { return true; }

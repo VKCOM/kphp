@@ -105,7 +105,7 @@ Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line
 std::string Location::as_human_readable() const {
   std::string out;
 
-  out += file ? file->unified_file_name : "unknown file";
+  out += file ? file->relative_file_name : "unknown file";
   out += ":";
   out += std::to_string(line);
 
@@ -113,7 +113,7 @@ std::string Location::as_human_readable() const {
   if (function && function->type == FunctionData::func_local) {
     std::string function_name = function->get_human_readable_name();
     std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";
-    if (file && file->unified_file_name == psr4_file_name) {
+    if (file && file->relative_file_name == psr4_file_name) {
       function_name = function_name.substr(function_name.rfind('\\', psr4_file_name.size()) + 1);
     }
     out += "  in " + function_name;

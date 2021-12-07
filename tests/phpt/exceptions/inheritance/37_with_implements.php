@@ -9,7 +9,8 @@ interface StringInterface {
 
 class MyException extends Exception implements StringInterface {
   public function toString(): string {
-    return "$this->file:$this->line: $this->message";
+    $relative = basename($this->file);
+    return "$relative:$this->line: $this->message";
   }
 }
 

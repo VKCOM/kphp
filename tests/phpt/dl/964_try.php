@@ -11,7 +11,7 @@ function getException($desc) {
 function processException (Exception $e) {
   echo 'message: ',  $e->getMessage(), "\n";
   echo "code = ", $e->getCode(), "\n";
-  echo "file = ", $e->getFile(), "\n";
+  echo "file = ", basename($e->getFile()), "\n";
   echo "line = ", $e->getLine(), "\n"; 
 //  var_dump (count ($e->getTrace()));
   var_dump (@count ($e->getTraceAsString()));
@@ -40,7 +40,7 @@ try {
 } catch (Exception $e) {
     echo 'Выброшено исключение: ',  $e->getMessage(), "\n";
     echo "code = ", $e->getCode(), "\n";
-    echo "file = ", $e->getFile(), "\n";
+    echo "file = ", basename($e->getFile()), "\n";
     echo "line = ", $e->getLine(), "\n";
 //    var_dump (count ($e->getTrace()));
     var_dump (@count ($e->getTraceAsString()));

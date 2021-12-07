@@ -131,7 +131,7 @@ echo $a ? $a->x : " ", "\n";
 
 $e = new Exception();
 if(0) $e = null;
-echo $e ? $e->getFile() : "", "\n";
+echo $e ? basename($e->getFile()) : "", "\n";
 if(1) $e = null;
-echo $e ? $e->getFile() : "", "\n";
+echo $e ? basename($e->getFile()) : "", "\n";
 

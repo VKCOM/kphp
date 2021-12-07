@@ -445,6 +445,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       next_cur();
       break;
     }
+    case tok_file_relative_c: {
+      res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, processing_file->relative_file_name);
+      next_cur();
+      break;
+    }
     case tok_class_c: {
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, cur_class ? cur_class->name : "");
       next_cur();
@@ -1876,12 +1881,12 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
   next_cur();
   kphp_error (test_expect(tok_func_name), "Namespace name expected");
   processing_file->namespace_name = static_cast<string>(cur->str_val);
-  std::string real_unified_dir = processing_file->unified_dir_name;
+  std::string real_relative_dir = processing_file->relative_dir_name;
   if (processing_file->owner_lib) {
-    vk::string_view current_file_unified_dir = real_unified_dir;
+    vk::string_view current_file_relative_dir = real_relative_dir;
     vk::string_view lib_unified_dir = processing_file->owner_lib->unified_lib_dir();
-    kphp_assert_msg(current_file_unified_dir.starts_with(lib_unified_dir), "lib processing file should be in lib dir");
-    real_unified_dir.erase(0, lib_unified_dir.size() + 1);
+    kphp_assert_msg(current_file_relative_dir.starts_with(lib_unified_dir), "lib processing file should be in lib dir");
+    real_relative_dir.erase(0, lib_unified_dir.size() + 1);
   }
   // to properly handle the vendor/ folder, assert from below is commented-out
   //string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
