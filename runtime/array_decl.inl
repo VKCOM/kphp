@@ -428,11 +428,6 @@ private:
   template<class ...Key>
   iterator find_iterator_in_map_no_mutate(const Key &... key) noexcept;
 
-  void push_back_values() {}
-
-  template<class Arg, class...Args>
-  void push_back_values(Arg &&arg, Args &&... args);
-
   template<class T1>
   void push_back_iterator(const array_iterator<T1> &it) noexcept;
 
