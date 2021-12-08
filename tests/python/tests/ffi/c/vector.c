@@ -7,7 +7,7 @@
 
 double default_value = 0;
 
-const char *vectorlib_version = "0.4.2";
+#define VECTORLIB_VERSION "0.4.2"
 
 void vector2_abs(struct Vector2 *vec) {
   vec->x = fabs(vec->x);
