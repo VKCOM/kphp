@@ -41,6 +41,7 @@ Checks: |-
   -objc-*,
   -readability-else-after-return,
   -readability-implicit-bool-conversion,
+  -readability-convert-member-functions-to-static,
   -*-magic-numbers,
   -modernize-use-nodiscard,
   -modernize-concat-nested-namespaces,

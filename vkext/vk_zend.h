@@ -135,6 +135,13 @@ extern "C" {
     (_pzs) = (zend_hash_get_current_key_ex((_ht), &(_pzs), &(_h), &_pos) == HASH_KEY_IS_STRING)?    \
              (_pzs) : NULL;
 
+#ifdef __arm64__
+#undef TSRMLS_CC
+#define TSRMLS_CC
+#undef TSRMLS_DC
+#define TSRMLS_DC
+#endif
+
 static zend_always_inline VK_ZVAL_API_P vk_zend_hash_find(HashTable *ht, const char *key, size_t len) {
   zend_string *key_str = zend_string_init(key, len, 0);
   VK_ZVAL_API_P result = zend_hash_find(ht, key_str);
@@ -181,25 +188,50 @@ static zend_always_inline void vk_get_class_name(const zval *object, char *dst) 
 }
 
 static zend_always_inline zval *vk_zend_read_public_property(zval *object, const char *prop_name) {
+#ifdef __arm64__
+  // this api seems to be changed since PHP 8.1; investigate later, now let only Apple M1 to compile
+  return zend_read_property(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), 0, NULL);
+#else
   return zend_read_property(NULL, object, prop_name, strlen(prop_name), 0 TSRMLS_CC, NULL);
+#endif
 }
 
 static zend_always_inline void vk_zend_update_public_property_dup(zval *object, const char *prop_name, zval *value) {
+#ifdef __arm64__
+  // this api seems to be changed since PHP 8.1; investigate later, now let only Apple M1 to compile
+  zend_update_property(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), value);
+#else
   zend_update_property(NULL, object, prop_name, strlen(prop_name), value);
+#endif
 }
 
 static zend_always_inline void vk_zend_update_public_property_nod(zval *object, const char *prop_name, zval *value) {
+#ifdef __arm64__
+  // this api seems to be changed since PHP 8.1; investigate later, now let only Apple M1 to compile
+  zend_update_property(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), value);
+#else
   zend_update_property(NULL, object, prop_name, strlen(prop_name), value);
+#endif
   zval_ptr_dtor(VK_ZVALP_TO_API_ZVALP(value));
   efree(value);
 }
 
 static zend_always_inline void vk_zend_update_public_property_string(zval *object, const char *prop_name, const char *value) {
+#ifdef __arm64__
+  // this api seems to be changed since PHP 8.1; investigate later, now let only Apple M1 to compile
+  zend_update_property_stringl(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), value, strlen(value));
+#else
   zend_update_property_stringl(NULL, object, prop_name, strlen(prop_name), value, strlen(value));
+#endif
 }
 
 static zend_always_inline void vk_zend_update_public_property_long(zval *object, const char *prop_name, zend_long value) {
+#ifdef __arm64__
+  // this api seems to be changed since PHP 8.1; investigate later, now let only Apple M1 to compile
+  zend_update_property_long(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), value);
+#else
   zend_update_property_long(NULL, object, prop_name, strlen(prop_name), value);
+#endif
 }
 
 #define ZAPI_TO_PP(az)          (&(az))

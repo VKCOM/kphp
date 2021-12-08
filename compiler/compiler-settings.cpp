@@ -147,6 +147,12 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
               " -lepoll-shim"
               " -L/usr/local/opt/openssl/lib"
               " -L" EPOLL_SHIM_LIB_DIR;
+
+  if (std::filesystem::is_directory("/opt/homebrew")) { // for M1
+    cxx_flags += " -I/opt/homebrew/include";
+    ld_flags += " -L/opt/homebrew/lib";
+  }
+
 #else
   static_cast<void>(cxx_flags);
   static_cast<void>(ld_flags);
@@ -273,7 +279,9 @@ void CompilerSettings::init() {
      << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
+#ifdef __x86_64__
   ss << " -march=sandybridge";
+#endif
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
@@ -310,6 +318,12 @@ void CompilerSettings::init() {
   // LDD may not find a library in /usr/local/lib if we don't add it here
   // TODO: can we avoid this hardcoded library path?
   ld_flags.value_ += " -L /usr/local/lib";
+#endif
+
+#ifdef __arm64__
+  // for development under M1, manual installation of libucontext is needed
+  // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
+  ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "crypto", "m"};

@@ -10,7 +10,6 @@
 #include <execinfo.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <sys/ucontext.h>
 #include <unistd.h>
 #include <unordered_set>
 
@@ -176,7 +175,7 @@ static void generic_debug_handler(int sig, siginfo_t *info, void *ucontext) {
     snprintf(buf, sizeof(buf), "errno = %m\n");
     kwrite(STDERR_FILENO, buf, strlen(buf));
   }
-  crash_dump_write(static_cast<ucontext_t *>(ucontext));
+  crash_dump_write(ucontext);
   print_backtrace();
   kill_main();
   _exit(EXIT_FAILURE);

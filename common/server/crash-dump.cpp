@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "common/kprintf.h"
+#include "server/ucontext-portable.h"
 
 struct crash_dump_buffer {
   char scratchpad[1024];
@@ -59,8 +60,14 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 
 #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
 
-static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, ucontext_t *uc) {
-#if defined(__APPLE__)
+static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, void *ucontext) {
+#if defined(__arm64__)    // Apple M1
+  (void)ucontext;
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("APPLE_M1_SUPPORTED="), 0, buffer);
+
+#elif defined(__APPLE__)
+  const auto *uc = static_cast<ucontext_t *>(ucontext);
+  
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext->__ss.__rsp, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext->__ss.__rbp, buffer);
@@ -81,7 +88,10 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, uco
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext->__ss.__r13, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
+
 #elif defined(__x86_64__)
+  const auto *uc = static_cast<ucontext_t *>(ucontext);
+
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext.gregs[REG_RSP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RBP=0x"), uc->uc_mcontext.gregs[REG_RBP], buffer);
@@ -104,6 +114,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, uco
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext.gregs[REG_R13], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext.gregs[REG_R14], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
+  
 #elif defined(__aarch64__)
   crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext.sp, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("PC=0x"), uc->uc_mcontext.pc, buffer);
@@ -149,13 +160,13 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, uco
 #endif
 }
 
-void crash_dump_write(ucontext_t *uc) {
+void crash_dump_write(void *ucontext) {
   static const char header[] = "\n------- Register Values -------\n";
   kwrite(STDERR_FILENO, header, sizeof(header) - 1);
 
   static crash_dump_buffer_t buffer;
   buffer.position = 0;
-  crash_dump_prepare_registers(&buffer, uc);
+  crash_dump_prepare_registers(&buffer, ucontext);
 
   assert(buffer.position < sizeof(buffer.scratchpad));
   buffer.scratchpad[buffer.position++] = '\n';

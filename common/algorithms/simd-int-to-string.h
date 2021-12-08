@@ -4,6 +4,15 @@
 
 #pragma once
 
+// Apple M1 doesn't have SIMD perfectly equal to x86,
+// we can't include <emmintrin.h>, use _mm_srli_si128 and lots of others.
+// We have two options:
+// 1) copy emmintrin.h from https://github.com/DLTcollab/sse2neon/blob/master/sse2neon.h to the current repo
+//    and use it instead of a system one
+// 2) don't use simd at all: make this file just compile and work, but without simd actually
+// The second option is chosen for now, as M1 is just a target for development.
+#ifdef __x86_64__
+
 // по мотивам
 // https://github.com/miloyip/itoa-benchmark/blob/master/src/sse2.cpp
 
@@ -259,3 +268,31 @@ inline char *simd_int64_to_string(int64_t value, char *out_buffer) {
   }
   return simd_uint64_to_string(u, out_buffer);
 }
+
+#else
+// as written above, the same functions for M1 are just implemented without simd
+// todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
+#include <cstdint>
+#include <cstdio>
+
+inline char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
+  int n = sprintf(out_buffer, "%u", value);
+  return out_buffer + n;
+}
+
+inline char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
+  int n = sprintf(out_buffer, "%d", value);
+  return out_buffer + n;
+}
+
+inline char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
+  int n = sprintf(out_buffer, "%llu", value);
+  return out_buffer + n;
+}
+
+inline char *simd_int64_to_string(int64_t value, char *out_buffer) {
+  int n = sprintf(out_buffer, "%lld", value);
+  return out_buffer + n;
+}
+
+#endif

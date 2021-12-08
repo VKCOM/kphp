@@ -57,6 +57,9 @@ void on_compilation_error(const char *description __attribute__((unused)), const
     fmt_fprintf(file, "Compilation failed.\n"
                       "It is probably happened due to incorrect or unsupported PHP input.\n"
                       "But it is still bug in compiler.\n");
+#ifdef __arm64__
+    __builtin_debugtrap();  // for easier debugging kphp_assert / kphp_fail
+#endif
     abort();
   }
   if (assert_level == CE_ASSERT_LEVEL) {

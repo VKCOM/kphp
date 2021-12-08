@@ -69,7 +69,7 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ```
 
 
-##### MacOS
+##### MacOS with Intel chipset
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
 brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
@@ -83,6 +83,34 @@ git clone https://github.com/VKCOM/epoll-shim.git
 cd epoll-shim
 git checkout osx-platform
 echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
+```
+
+
+##### MacOS with Apple M1 chipset
+
+```note
+Probably, there is an easier way to do this, but I couldn't find it, at least for late 2021.
+```
+
+Follow the steps above. Later on, you'll have to patch the [libucontext](https://github.com/kaniini/libucontext) library locally.
+```bash
+git clone https://github.com/kaniini/libucontext
+cd libucontext
+nano Makefile
+```
+Find assignment to `LIBUCONTEXT_LINKER_FLAGS` and replace it with:
+```text
+LIBUCONTEXT_LINKER_FLAGS = -dynamiclib -install_name ${LIBUCONTEXT_SONAME} -current_version ${LIBUCONTEXT_SOVERSION} -compatibility_version ${LIBUCONTEXT_SOVERSION}
+```
+Now we are ready to make libucontext:
+```
+make FREESTANDING=yes ARCH=aarch64
+```
+Finally, copy resulting files to the default brew search folder `/opt/homebrew`:
+```
+cp libucontext.a /opt/homebrew/lib
+cp libucontext.dylib /opt/homebrew/lib
+cp -r include/* /opt/homebrew/include/
 ```
 
 

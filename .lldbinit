@@ -41,3 +41,4 @@ type synth add -l "lldb_addons.data_ptr_children" Id<cfg::UsageData> # UsagePtr
 type summary add --python-function "lldb_addons.vertex_printer" -x "^VertexAdaptor<.+>$"
 type synth add -l "lldb_addons.vertex_children" -x "^VertexAdaptor<.+>$"
 
+settings set target.process.thread.step-avoid-regexp VertexAdaptor<.+>::as<.+>|VertexAdaptor<.+>::try_as<.+>|VertexAdaptor<.+>::operator->|Id<.+>::operator->

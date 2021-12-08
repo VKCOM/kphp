@@ -19,6 +19,7 @@
 #include "common/crypto/aes256-aarch64.h"
 #include "common/crypto/aes256-generic.h"
 #include "common/crypto/aes256-x86_64.h"
+#include "common/crypto/aes256-arm64.h"
 
 template<size_t plaintext_bytes, size_t iv_bytes, size_t key_bytes>
 class AESCtx : public ::testing::Test {
@@ -257,7 +258,7 @@ TEST(AES256_ctr, test_vector) {
   }
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__)
 
 TEST(crypto_x86_64_aesni256_set_encrypt_key, basic) {
   if (crypto_x86_64_has_aesni_extension()) {
@@ -305,9 +306,11 @@ TEST(crypto_x86_64_aesni256_set_decrypt_key, basic) {
   }
 }
 
-#endif // __x86_64__
+#elif defined(__arm64__)
 
-#ifdef __aarch64__
+// no tests for M1, as aes uses generic tables
+
+#elif defined(__aarch64__)
 
 TEST(crypto_aarch64_aes256_set_encrypt_key, basic) {
   if (crypto_aarch64_has_aes_extension()) {
@@ -356,4 +359,4 @@ TEST(crypto_aarch64_aes256_set_decrypt_key, basic) {
   }
 }
 
-#endif // __aarch64__
+#endif

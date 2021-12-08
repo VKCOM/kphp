@@ -5,7 +5,7 @@
 #ifndef __CPUID_H__
 #define __CPUID_H__
 
-enum kdb_cpuid_type { KDB_CPUID_UNKNOWN = 0, KDB_CPUID_X86_64 = 0x280147b8, KDB_CPUID_AARCH64 = 0xfd327130 };
+enum kdb_cpuid_type { KDB_CPUID_UNKNOWN = 0, KDB_CPUID_X86_64 = 0x280147b8, KDB_CPUID_AARCH64 = 0xfd327130, KDB_CPUID_ARM64 = 0x5d43a917 };
 typedef enum kdb_cpuid_type kdb_cpuid_type_t;
 
 typedef struct {

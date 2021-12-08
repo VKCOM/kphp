@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <ucontext.h>
-
 #include "common/dl-utils-lite.h"
 #include "common/sanitizer.h"
 
@@ -13,6 +11,7 @@
 #include "server/php-query-data.h"
 #include "server/php-queries-types.h"
 #include "server/php-script.h"
+#include "server/ucontext-portable.h"
 
 enum class run_state_t {
   finished,
@@ -85,12 +84,12 @@ private:
 #if ASAN7_ENABLED
   bool fiber_is_started = false;
 #endif
-  int swapcontext_helper(ucontext_t *oucp, const ucontext_t *ucp);
+  int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
 public:
 
   static PHPScriptBase *volatile current_script;
-  static ucontext_t exit_context;
+  static ucontext_t_portable exit_context;
   volatile static bool is_running;
   volatile static bool tl_flag;
   volatile static bool ml_flag;
@@ -101,7 +100,7 @@ public:
   php_query_base_t *query;
   char *run_stack, *protected_end, *run_stack_end, *run_mem;
   size_t mem_size, stack_size;
-  ucontext_t run_context;
+  ucontext_t_portable run_context;
 
   script_t *run_main;
   php_query_data *data;

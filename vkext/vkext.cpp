@@ -666,13 +666,13 @@ PHP_FUNCTION (vk_json_encode) {
   zval *parameter;
 
   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &parameter) == FAILURE) {
-    RETURN_FALSE
+    RETURN_FALSE;
   }
 
   init_buff(0);
   if (!vk_json_encode(parameter TSRMLS_CC)) {
     free_buff();
-    RETURN_FALSE
+    RETURN_FALSE;
   }
 
   write_buff_char(0);

@@ -14,7 +14,7 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         server/main-binlog.cpp
         crypto/aes256.cpp
         crypto/aes256-generic.cpp
-        crypto/aes256-${HOST}.cpp
+        crypto/aes256-${CMAKE_SYSTEM_PROCESSOR}.cpp
 
         fast-backtrace.cpp
         string-processing.cpp
