@@ -35,6 +35,9 @@ class TestFile:
     def is_kphp_runtime_should_warn(self):
         return "kphp_runtime_should_warn" in self.tags
 
+    def is_kphp_runtime_should_not_warn(self):
+        return "kphp_runtime_should_not_warn" in self.tags
+
     def is_php8(self):
         return "php8" in self.tags
 
@@ -250,6 +253,20 @@ def run_warn_test(test: TestFile, runner):
     runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
 
+def run_runtime_not_warn_test(test: TestFile, runner):
+    if not runner.compile_with_kphp(test.env_vars):
+        return TestResult.failed(test, runner.artifacts, "got kphp build error")
+
+    if not runner.run_with_kphp():
+        return TestResult.failed(test, runner.artifacts, "got kphp run error")
+
+    if runner.kphp_runtime_stderr is not None:
+        return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
+
+    if runner.kphp_build_sanitizer_log_artifact:
+        return TestResult.failed(test, runner.artifacts, "got sanitizer log")
+
+    return TestResult.passed(test, runner.artifacts)
 
 def run_runtime_warn_test(test: TestFile, runner):
     if not runner.compile_with_kphp(test.env_vars):
@@ -302,6 +319,8 @@ def run_test(distcc_hosts, test: TestFile):
         test_result = run_warn_test(test, runner)
     elif test.is_kphp_runtime_should_warn():
         test_result = run_runtime_warn_test(test, runner)
+    elif test.is_kphp_runtime_should_not_warn():
+        test_result = run_runtime_not_warn_test(test, runner)
     elif test.is_ok():
         test_result = run_ok_test(test, runner)
     else:
