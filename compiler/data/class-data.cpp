@@ -133,7 +133,7 @@ FunctionPtr ClassData::add_virt_clone() {
 }
 
 void ClassData::add_class_constant() {
-  members.add_constant("class", GenTree::generate_constant_field_class_value(get_self()), AccessModifiers::public_);
+  members.add_constant("class", GenTree::generate_constant_field_class_value(get_self()), AccessModifiers::public_, false);
 }
 
 void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {

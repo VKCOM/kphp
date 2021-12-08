@@ -170,8 +170,8 @@ private:
     lambda_generators.clear();
   }
 
-  VertexPtr get_const_after_explicit_access_modifier(AccessModifiers access);
-  VertexPtr get_const(AccessModifiers access);
+  VertexPtr get_class_const(ClassMemberModifiers modifiers);
+  VertexPtr get_const(AccessModifiers access, bool is_final = false);
 
 public:
   int line_num{0};

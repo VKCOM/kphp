@@ -286,10 +286,9 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
         );
       }
     });
-    parent_class->members.for_each([&](const ClassMemberConstant &c) {
-      if (auto child_const = child_class->get_constant(c.local_name())) {
-        kphp_error(child_const->access == c.access,
-                   fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
+    parent_class->members.for_each([&](ClassMemberConstant &parent_const) {
+      if (auto child_const = child_class->get_constant(parent_const.local_name())) {
+        check_const_inheritance(child_class, parent_class, &parent_const, child_const);
       }
     });
   }
@@ -306,8 +305,25 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
 
   child_class->implements.emplace_back(interface_class);
 
+  interface_class->members.for_each([&](const ClassMemberConstant &parent_const) {
+    if (auto child_const = child_class->get_constant(parent_const.local_name())) {
+      check_const_inheritance(child_class, interface_class, &parent_const, child_const);
+    }
+  });
+
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
+}
+
+void SortAndInheritClassesF::check_const_inheritance(ClassPtr child_class, ClassPtr parent_class, const  ClassMemberConstant *parent_const, const ClassMemberConstant *child_const) {
+  if (parent_const->is_final && child_const->klass == child_class) {
+    const auto child_name = child_class->name + "::" + child_const->local_name();
+    const auto parent_name = parent_class->name + "::" + parent_const->local_name();
+    kphp_error(0, fmt_format("{} cannot override final constant {}", child_name, parent_name));
+  }
+
+  kphp_error(child_const->access == parent_const->access,
+             fmt_format("Can't change access type for constant {} in class {}", parent_const->local_name(), child_class->name));
 }
 
 void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream) {

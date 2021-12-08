@@ -1,5 +1,5 @@
 @kphp_should_fail
-/const access modifier in interface must be public/
+/Access type for interface constant must be public/
 <?php
 interface IProtected {
   protected const PROT = 10;
