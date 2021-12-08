@@ -77,7 +77,7 @@ class data_ptr_children(object):
 # format: "{type} {str_val} ↓{n_children}"
 # we don't use _debug_string() there — we want op_name as a enum value
 def vertex_printer(valobj, internal_dict, options):
-    v = valobj.GetChildMemberWithName("impl").Dereference()
+    v = valobj.GetChildMemberWithName("impl_").Dereference()
     if not v.GetAddress().IsValid():
         return "NULL"
     op_name = v.GetChildMemberWithName("type_").GetValue()
@@ -94,7 +94,7 @@ def vertex_printer(valobj, internal_dict, options):
 # so, a VertexPtr object will have (1+n) nodes in debugger: impl and ith-s
 class vertex_children(object):
     def __init__(self, valobj, dict):
-        self.impl = valobj.GetChildMemberWithName("impl")
+        self.impl = valobj.GetChildMemberWithName("impl_")
         # we need the VertexPtr type to cast ith(i) calls to it
         type = self.impl.GetTarget().FindFirstType("VertexPtr")
         self.type_VertexPtr = type if type.IsValid() else None
@@ -119,7 +119,7 @@ class vertex_children(object):
         return None
 
     def get_child_index(self, name):
-        if name == "impl":
+        if name == "impl_":
             return 0
         if name.startswith("ith"):
             return int(name[3:]) + 1
