@@ -38,6 +38,23 @@ static const char *month_names_short[] = {"Jan", "Feb", "Mar", "Apr", "May", "Ju
 static const char *month_names_full[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November",
                                          "December"};
 
+static time_t gmmktime(struct tm *tm) {
+  char *tz = getenv("TZ");
+  setenv("TZ", "", 1);
+  tzset();
+
+  time_t result = mktime(tm);
+
+  if (tz) {
+    setenv("TZ", tz, 1);
+  } else {
+    unsetenv("TZ");
+  }
+  tzset();
+
+  return result;
+}
+
 static inline int32_t is_leap(int32_t year) {
   return ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0));
 }
@@ -436,7 +453,7 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   }
 
   t.tm_isdst = -1;
-  return mktime(&t);
+  return gmmktime(&t) - 3 * 3600;
 }
 
 array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
