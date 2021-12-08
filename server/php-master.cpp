@@ -56,6 +56,8 @@
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
 #include "server/server-stats.h"
+#include "server/statshouse/add-metrics-batch.h"
+#include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 
 #include "server/php-master-restart.h"
@@ -1317,10 +1319,38 @@ void check_and_instance_cache_try_swap_memory() {
   }
 }
 
+std::vector<StatsHouseMetric> make_statshouse_metrics() {
+  std::vector<StatsHouseMetric> metrics;
+  metrics.reserve(30);
+  long cur_time = time(nullptr);
+  if (engine_tag) {
+    add_statshouse_value_metric(metrics, "kphp_version", atoll(engine_tag), cur_time);
+  }
+  add_statshouse_value_metric(metrics, "kphp_uptime", get_uptime(), cur_time);
+
+  const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
+  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_total", general_worker_group.total_workers, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_working", general_worker_group.running_workers, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_working_but_waiting", general_worker_group.waiting_workers, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_ready_for_accept", general_worker_group.ready_for_accept_workers, cur_time);
+
+  const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
+  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_total", job_worker_group.total_workers, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_working", job_worker_group.running_workers, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_working_but_waiting", job_worker_group.waiting_workers, cur_time);
+
+  const auto cpu_stats = server_stats.cpu[1].get_stat();
+  add_statshouse_value_metric(metrics, "kphp_cpu_stime", cpu_stats.cpu_s_usage, cur_time);
+  add_statshouse_value_metric(metrics, "kphp_cpu_utime", cpu_stats.cpu_u_usage, cur_time);
+
+  return metrics;
+}
+
 static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), STATS_TAG_KPHP_SERVER);
+    vk::singleton<StatsHouseClient>::get().send_metrics(make_statshouse_metrics());
   }
   create_all_outbound_connections();
   vk::singleton<ServerStats>::get().aggregate_stats();
