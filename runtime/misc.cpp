@@ -97,7 +97,7 @@ void f$sleep(int64_t seconds) {
 
 void f$usleep(int64_t micro_seconds) {
   int64_t sleep_time = micro_seconds;
-  if (sleep_time <= 0) {
+  if (sleep_time < 0) {
     php_warning("Wrong parameter micro_seconds (%" PRIi64 ") specified in function usleep", sleep_time);
     return;
   }
