@@ -702,13 +702,12 @@ bool string::try_to_float_as_php8(double *val) const {
   if (empty() || (size() >= 2 && p[0] == '0' && vk::any_of_equal(p[1], 'x', 'X'))) {
     return false;
   }
+  errno = 0;
   char *end_ptr = nullptr;
   *val = strtod(p, &end_ptr);
 
-  // If end_ptr == p then this means that strtod could not perform
-  // the conversion (otherwise end_ptr would have shifted relative
-  // to p), which means it is not a valid number.
-  return end_ptr != p && std::all_of(end_ptr, p + size(), [](char c) { return isspace(static_cast<unsigned char>(c)); });
+  // see 'man strtod'
+  return errno == 0 && std::all_of(end_ptr, p + size(), [](char c) { return isspace(static_cast<unsigned char>(c)); });
 }
 
 bool string::try_to_float_as_php7(double *val) const {
