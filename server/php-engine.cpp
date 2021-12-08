@@ -508,7 +508,7 @@ int do_hts_func_wakeup(connection *c, int flag) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  auto worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<php_worker *>(D->extra);
   double timeout = php_worker_main(worker);
   if (timeout == 0) {
     hts_at_query_end(c, flag);
@@ -625,7 +625,7 @@ int hts_func_wakeup(connection *c) {
 int hts_func_close(connection *c, int who __attribute__((unused))) {
   hts_data *D = HTS_DATA(c);
 
-  auto worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
     php_worker_terminate(worker, 1, script_error_t::http_connection_close, "http connection close");
     double timeout = php_worker_main(worker);
@@ -811,7 +811,7 @@ int rpcx_func_wakeup(connection *c) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  auto worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<php_worker *>(D->extra);
   double timeout = php_worker_main(worker);
   if (timeout == 0) {
     rpcx_at_query_end(c);
@@ -826,7 +826,7 @@ int rpcx_func_wakeup(connection *c) {
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto D = TCP_RPC_DATA(c);
 
-  auto worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
     php_worker_terminate(worker, 1, script_error_t::rpc_connection_close, "rpc connection close");
     double timeout = php_worker_main(worker);

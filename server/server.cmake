@@ -13,6 +13,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-master-tl-handlers.cpp
         php-mc-connections.cpp
         php-queries.cpp
+        php-queries-types.cpp
         php-query-data.cpp
         php-runner.cpp
         php-script.cpp
@@ -21,7 +22,8 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         server-log.cpp
         server-stats.cpp
         slot-ids-factory.cpp
-        workers-control.cpp)
+        workers-control.cpp
+        )
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp

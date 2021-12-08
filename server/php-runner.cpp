@@ -311,7 +311,7 @@ void PHPScriptBase::clear() {
   }
 }
 
-void PHPScriptBase::ask_query(void *q) {
+void PHPScriptBase::ask_query(php_query_base_t *q) {
   assert (state == run_state_t::running);
   query = q;
   state = run_state_t::query;
@@ -622,8 +622,8 @@ run_state_t php_script_iterate(void *ptr) {
   return ((PHPScriptBase *)ptr)->iterate();
 }
 
-query_base *php_script_get_query(void *ptr) {
-  return (query_base *)((PHPScriptBase *)ptr)->query;
+php_query_base_t *php_script_get_query(void *ptr) {
+  return ((PHPScriptBase *)ptr)->query;
 }
 
 script_result *php_script_get_res(void *ptr) {

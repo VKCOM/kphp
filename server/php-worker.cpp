@@ -69,6 +69,8 @@ void php_worker_free(php_worker *worker) {
 }
 
 double php_worker_main(php_worker *worker) {
+  assert(worker);
+
   if (worker->finish_time < precise_now + 0.01) {
     php_worker_terminate(worker, 0, script_error_t::timeout, "timeout");
   }
@@ -354,122 +356,9 @@ void php_worker_wait(php_worker *worker, int timeout_ms) {
   }
 }
 
-void php_worker_run_rpc_answer_query(php_worker *worker, php_query_rpc_answer *ans) {
-  if (worker->mode == rpc_worker) {
-    connection *c = worker->conn;
-    int *q = (int *)ans->data;
-    int qsize = ans->data_len;
-
-    vkprintf (2, "going to send %d bytes as an answer [req_id = %016llx]\n", qsize, worker->req_id);
-    send_rpc_query(c, q[2] == 0 ? TL_RPC_REQ_RESULT : TL_RPC_REQ_ERROR, worker->req_id, q, qsize);
-  }
-  php_script_query_readed(php_script);
-  php_script_query_answered(php_script);
-}
-
-int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, int max_len) {
-  assert (worker != nullptr);
-
-  connection *c = worker->conn;
-  double precise_now = get_utime_monotonic();
-
-//  fprintf (stderr, "Trying to load data of len [%d;%d] at %.6lf\n", min_len, max_len, precise_now - worker->start_time);
-
-  if (worker->finish_time < precise_now + 0.01) {
-    return -1;
-  }
-
-  if (c == nullptr || c->error) {
-    return -1;
-  }
-
-  assert (!c->crypto);
-  assert (c->basic_type != ct_pipe);
-  assert (min_len <= max_len);
-
-  int read = 0;
-  int have_bytes = get_total_ready_bytes(&c->In);
-  if (have_bytes > 0) {
-    if (have_bytes > max_len) {
-      have_bytes = max_len;
-    }
-    assert (read_in(&c->In, buf, have_bytes) == have_bytes);
-    read += have_bytes;
-  }
-
-  pollfd poll_fds;
-  poll_fds.fd = c->fd;
-  poll_fds.events = POLLIN | POLLPRI;
-
-  while (read < min_len) {
-    precise_now = get_utime_monotonic();
-
-    double left_time = worker->finish_time - precise_now;
-    assert (left_time < 2000000.0);
-
-    if (left_time < 0.01) {
-      return -1;
-    }
-
-    int r = poll(&poll_fds, 1, (int)(left_time * 1000 + 1));
-    int err = errno;
-    if (r > 0) {
-      assert (r == 1);
-
-      r = static_cast<int>(recv(c->fd, buf + read, max_len - read, 0));
-      err = errno;
-/*
-      if (r < 0) {
-        fprintf (stderr, "Error recv: %m\n");
-      } else {
-        fprintf (stderr, "Received %d bytes at %.6lf\n", r, precise_now - worker->start_time);
-      }
-*/
-      if (r > 0) {
-        read += r;
-      } else {
-        if (r == 0) {
-          return -1;
-        }
-
-        if (err != EAGAIN && err != EWOULDBLOCK && err != EINTR) {
-          return -1;
-        }
-      }
-    } else {
-      if (r == 0) {
-        return -1;
-      }
-
-//      fprintf (stderr, "Error poll: %m\n");
-      if (err != EINTR) {
-        return -1;
-      }
-    }
-  }
-
-//  fprintf (stderr, "%d bytes loaded\n", read);
-  return read;
-}
-
-void php_worker_http_load_post(php_worker *worker, php_query_http_load_post_t *query) {
-  php_script_query_readed(php_script);
-
-  static php_query_http_load_post_answer_t res;
-  res.loaded_bytes = php_worker_http_load_post_impl(worker, query->buf, query->min_len, query->max_len);
-  query->base.ans = &res;
-
-  php_script_query_answered(php_script);
-
-  if (res.loaded_bytes < 0) {
-    // TODO we need to close connection. Do we need to pass 1 as second parameter?
-    php_worker_terminate(worker, 1, script_error_t::post_data_loading_error, "error during loading big post data");
-  }
-}
-
 void php_worker_answer_query(php_worker *worker, void *ans) {
   assert (worker != nullptr && ans != nullptr);
-  auto q_base = (php_query_base_t *)php_script_get_query(php_script);
+  auto *q_base = php_script_get_query(php_script);
   q_base->ans = ans;
   php_script_query_answered(php_script);
 }
@@ -482,103 +371,14 @@ void php_worker_wakeup(php_worker *worker) {
   }
 }
 
-void php_worker_run_query_x2(php_worker *worker __attribute__((unused)), php_query_x2_t *query) {
-  php_script_query_readed(php_script);
-
-//  worker->conn->status = conn_wait_net;
-//  worker->conn->pending_queries = 1;
-
-  static php_query_x2_answer_t res;
-  res.x2 = query->val * query->val;
-
-  query->base.ans = &res;
-
-  php_script_query_answered(php_script);
-}
-
-void php_worker_run_query_connect(php_worker *worker __attribute__((unused)), php_query_connect_t *query) {
-  php_script_query_readed(php_script);
-
-  static php_query_connect_answer_t res;
-
-  switch (query->protocol) {
-    case p_memcached:
-      res.connection_id = get_target(query->host, query->port, &memcache_ct);
-      break;
-    case p_sql:
-      res.connection_id = sql_target_id;
-      break;
-    case p_rpc:
-      res.connection_id = get_target(query->host, query->port, &rpc_ct);
-      break;
-    default:
-      assert ("unknown protocol" && 0);
-  }
-
-  query->base.ans = &res;
-
-  php_script_query_answered(php_script);
-}
-
-void php_worker_run_net_query_packet(php_worker *worker, php_net_query_packet_t *query) {
-  switch (query->protocol) {
-    case p_memcached:
-      php_worker_run_mc_query_packet(worker, query);
-      break;
-    case p_sql:
-      php_worker_run_sql_query_packet(worker, query);
-      break;
-    default:
-      assert (0);
-  }
-}
-
-void php_worker_run_net_query(php_worker *worker, php_query_base_t *q_base) {
-  switch (q_base->type & 0xFFFF) {
-    case NETQ_PACKET:
-      php_worker_run_net_query_packet(worker, (php_net_query_packet_t *)q_base);
-      break;
-    default:
-      assert ("unknown net_query type" && 0);
-  }
-}
-
 void php_worker_run_query(php_worker *worker) {
-  auto q_base = (php_query_base_t *)php_script_get_query(php_script);
+  auto *q_base = php_script_get_query(php_script);
 
   qmem_free_ptrs();
 
   query_stats.q_id = query_stats_id;
-  switch ((unsigned int)q_base->type & 0xFFFF0000) {
-    case PHPQ_X2:
-      query_stats.desc = "PHPQX2";
-      php_worker_run_query_x2(worker, (php_query_x2_t *)q_base);
-      break;
-    case PHPQ_RPC_ANSWER:
-      query_stats.desc = "RPC_ANSWER";
-      php_worker_run_rpc_answer_query(worker, (php_query_rpc_answer *)q_base);
-      break;
-    case PHPQ_CONNECT:
-      query_stats.desc = "CONNECT";
-      php_worker_run_query_connect(worker, (php_query_connect_t *)q_base);
-      break;
-    case PHPQ_NETQ:
-      query_stats.desc = "NET";
-      php_worker_run_net_query(worker, q_base);
-      break;
-    case PHPQ_WAIT:
-      query_stats.desc = "WAIT_NET";
-      php_script_query_readed(php_script);
-      php_script_query_answered(php_script);
-      php_worker_wait(worker, ((php_query_wait_t *)q_base)->timeout_ms);
-      break;
-    case PHPQ_HTTP_LOAD_POST:
-      query_stats.desc = "HTTP_LOAD_POST";
-      php_worker_http_load_post(worker, (php_query_http_load_post_t *)q_base);
-      break;
-    default:
-      assert ("unknown php_query type" && 0);
-  }
+
+  q_base->run(worker);
 }
 
 void php_worker_set_result(php_worker *worker, script_result *res) {
