@@ -60,6 +60,7 @@ void tl_fetch_set_error_format(int errnum, const char *format, ...) {
     va_list l;
     va_start (l, format);
     vsnprintf(s, sizeof(s) - 1, format, l);
+    va_end(l);
     vkprintf(2, "Error %s\n", s);
     tl_fetch_set_error(errnum, s);
   }

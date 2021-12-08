@@ -77,6 +77,7 @@
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 #include "server/server-log.h"
+#include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
@@ -2029,6 +2030,18 @@ int main_args_handler(int i, const char *long_option) {
     case 2025: {
       return 0;
     }
+    case 2026: {
+      char *colon = strrchr(optarg, ':');
+      if (colon == nullptr) {
+        kprintf("--%s option: can't find ':'\n", long_option);
+        return -1;
+      }
+
+      auto &statshouse_client = vk::singleton<StatsHouseClient>::get();
+      statshouse_client.set_host(std::string(optarg, colon - optarg));
+      statshouse_client.set_port(atoi(colon + 1));
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2106,6 +2119,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("disable-mysql-same-datacenter-check", no_argument, 2023, "Disable MySQL same datacenter check");
   parse_option("use-utf8", no_argument, 2024, "Use UTF8");
   parse_option("xgboost-model-path-experimental", required_argument, 2025, "intended for tests, don't use it for now!");
+  parse_option("statshouse-client", required_argument, 2026, "host and port for statshouse client (host:port or just :port to use localhost)");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
