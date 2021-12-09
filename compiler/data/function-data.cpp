@@ -178,6 +178,41 @@ int FunctionData::get_min_argn() {
   return min_argn;
 }
 
+bool FunctionData::can_override_method(FunctionPtr interface_method) {
+  if (!interface_method || local_name() != interface_method->local_name()) {
+    return false;
+  }
+
+  auto interface_params = interface_method->get_params();
+  auto interface_max_argn = interface_params.size() - interface_method->has_implicit_this_arg();
+
+  if (!can_take_cnt_params(interface_max_argn, true)) {
+    return false;
+  }
+
+  auto cur_params = get_params();
+  int32_t pos_after_this = interface_method->has_implicit_this_arg();
+  for (int32_t i = pos_after_this; i < interface_params.size(); ++i) {
+    const auto cur_param = cur_params[i].try_as<op_func_param>();
+    const auto interface_param = interface_params[i].try_as<op_func_param>();
+    if (!cur_param->type_as_part_of_signature) {
+      continue;
+    }
+
+    const auto *cur_signature{cur_param->type_as_part_of_signature};
+    const auto *interface_signature{interface_param->type_as_part_of_signature};
+    // equal TypeHint-s have equal addresses
+    if (cur_signature != interface_signature) {
+      if (const auto *optional_signature = cur_signature->try_as<TypeHintOptional>()) {
+        return optional_signature->inner == interface_signature;
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
 string FunctionData::get_resumable_path() const {
   vector<string> names;
   FunctionPtr f = fork_prev;
@@ -292,15 +327,11 @@ VertexRange FunctionData::get_params() const {
   return root->param_list()->params();
 }
 
-bool FunctionData::check_cnt_params(int expected_cnt_params, FunctionPtr called_func) {
-  if (!called_func) {
-    return false;
-  }
-
-  int min_cnt_params = called_func->get_min_argn() - called_func->has_implicit_this_arg();
-  int max_cnt_params = static_cast<int>(called_func->get_params().size()) - called_func->has_implicit_this_arg();
+bool FunctionData::can_take_cnt_params(int expected_cnt_params, bool is_silent/* = false*/) {
+  int min_cnt_params = get_min_argn() - has_implicit_this_arg();
+  int max_cnt_params = static_cast<int>(get_params().size()) - has_implicit_this_arg();
   if (expected_cnt_params < min_cnt_params || max_cnt_params < expected_cnt_params) {
-    kphp_error(false, fmt_format("Wrong arguments count: {} (expected {}..{})", expected_cnt_params, min_cnt_params, max_cnt_params));
+    kphp_error(is_silent, fmt_format("Wrong arguments count: {} (expected {}..{})", expected_cnt_params, min_cnt_params, max_cnt_params));
     return false;
   }
 
