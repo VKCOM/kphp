@@ -131,10 +131,6 @@ Optional<string> zstd_uncompress_impl(const string &data, const string &dict = s
 } // namespace
 
 Optional<string> f$zstd_compress(const string &data, int64_t level) noexcept {
-  if (!level) {
-    return data;
-  }
-
   const int min_level = ZSTD_minCLevel();
   const int max_level = ZSTD_maxCLevel();
   if (min_level > level || level > max_level) {
