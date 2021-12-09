@@ -72,7 +72,7 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ##### MacOS with Intel chipset
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
-brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack zstd googletest php@7.4
+brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp msgpack-cxx zstd googletest php@7.4
 brew link --overwrite php@7.4
 pip3 install jsonschema
 ```
