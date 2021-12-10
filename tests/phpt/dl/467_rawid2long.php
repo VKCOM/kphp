@@ -8,7 +8,7 @@
     while ($dec > 15) {
       var_dump($dec);
       var_dump($value);
-      $rest = bcmod($dec, 16);
+      $rest = (int)bcmod($dec, 16);
       $dec = bcdiv($dec, 16);
       var_dump($rest);
       $value = $digits[$rest].$value;
