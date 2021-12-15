@@ -1552,10 +1552,8 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
     }
 
     epoll_work(57);
-    fprintf(stderr, "@@@@@@@ after epoll_work\n");
 
     if (precise_now > next_create_outbound) {
-      fprintf(stderr, "@@@@@@@ create_all_outbound_connections\n");
       create_all_outbound_connections();
       vk::singleton<NetDriversAdaptor>::get().create_outbound_connections();
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();

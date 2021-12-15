@@ -4,11 +4,9 @@
 
 #pragma once
 
+#include "common/kprintf.h"
 #include "runtime/allocator.h"
 
-class Request : public ManagedThroughDlAllocator {
-public:
-  int request_id{};
+DECLARE_VERBOSITY(mysql);
 
-  virtual bool send_async() noexcept = 0;
-};
+#define LIB_MYSQL_CALL(call) (dl::MallocReplacementGuard{}, call)

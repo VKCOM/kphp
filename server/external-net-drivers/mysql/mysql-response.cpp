@@ -7,11 +7,15 @@
 #include "runtime/pdo/mysql/mysql_pdo.h"
 #include "runtime/php_assert.h"
 
-bool MysqlResponse::fetch() noexcept {
-  LIB_MYSQL_CALL(mysql_read_query_result(connector->ctx));
+bool MysqlResponse::fetch_async() noexcept {
+  if (!got_columns_info) {
+    LIB_MYSQL_CALL(mysql_read_query_result(connector->ctx));
+    tvkprintf(mysql, 1, "MySQL fetch response: get columns info, request_id = %d\n", bound_request_id);
+    got_columns_info = true;
+  }
   net_async_status status = LIB_MYSQL_CALL(mysql_store_result_nonblocking(connector->ctx, &res)); // buffered queries
-  php_assert(status == NET_ASYNC_COMPLETE);
-  return true;
+  tvkprintf(mysql, 1, "MySQL fetch response: get result set, request_id = %d, status = %d\n", bound_request_id, status);
+  return status == NET_ASYNC_COMPLETE;
 }
 
 MysqlResponse::MysqlResponse(MysqlConnector *connector)

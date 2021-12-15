@@ -23,5 +23,7 @@ private:
   MysqlConnector *connector;
   MYSQL_RES *mysql_res{nullptr};
   string statement;
+
+  class ExecuteResumable;
 };
 } // namespace pdo::mysql

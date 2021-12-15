@@ -27,7 +27,7 @@ public:
   void close() noexcept final;
   int get_fd() const noexcept final;
 
-  void push_async_request(int request_id, Request *req) noexcept final;
+  void push_async_request(Request *req) noexcept final;
 
 private:
   string host{};
@@ -36,8 +36,8 @@ private:
   string db_name{};
   int port{};
 
-  Request *pending_request{nullptr};
-  int cur_request_id{0};
+  Request *pending_request{};
+  Response *pending_response{};
 
   bool connect_async_impl() noexcept final;
   void handle_read() noexcept override;

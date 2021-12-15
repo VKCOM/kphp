@@ -11,6 +11,7 @@
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/rpc.h"
 #include "server/external-net-drivers/net-drivers-adaptor.h"
+#include "server/external-net-drivers/response.h"
 #include "server/php-queries.h"
 
 int timeout_convert_to_ms(double timeout) {
@@ -52,7 +53,8 @@ static bool process_net_event(net_event_t *e) {
          process_job_answer(e->slot_id, data.job_result);
      },
      [&](Response *response) {
-         vk::singleton<NetDriversAdaptor>::get().process_external_db_response_event(e->slot_id, response);
+         php_assert(e->slot_id == response->bound_request_id);
+         vk::singleton<NetDriversAdaptor>::get().process_external_db_response_event(response);
      },
     }, e->data);
 

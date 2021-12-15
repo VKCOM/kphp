@@ -13,6 +13,7 @@ class PDO {
         ?array $options = null
     ): PDO;
 
+    /** @kphp-extern-func-info resumable */
     public function query(string $query, ?int $fetchMode = null): ?PDOStatement;
     public function prepare(string $query, array $options = []): ?PDOStatement;
 

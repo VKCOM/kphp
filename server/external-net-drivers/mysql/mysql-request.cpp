@@ -15,6 +15,7 @@ MysqlRequest::MysqlRequest(MysqlConnector *connector, const string &request)
 
 bool MysqlRequest::send_async() noexcept {
   assert(connector->connected());
+  tvkprintf(mysql, 1, "MySQL send request: request_id = %d\n", request_id);
   LIB_MYSQL_CALL(mysql_send_query(connector->ctx, request.c_str(), request.size()));
   return true;
 }

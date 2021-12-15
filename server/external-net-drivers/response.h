@@ -8,5 +8,7 @@
 
 class Response : public ManagedThroughDlAllocator {
 public:
-  virtual bool fetch() noexcept = 0;
+  int bound_request_id{};
+
+  virtual bool fetch_async() noexcept = 0;
 };

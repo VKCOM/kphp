@@ -5,9 +5,9 @@
 #pragma once
 
 #include <mysql/mysql.h>
-#include "runtime/allocator.h"
 
-#define LIB_MYSQL_CALL(call) (dl::MallocReplacementGuard{}, call)
+#include "runtime/allocator.h"
+#include "server/external-net-drivers/mysql/mysql.h"
 
 namespace pdo::mysql {
 inline void init_lib() {

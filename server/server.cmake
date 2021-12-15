@@ -27,6 +27,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         statshouse/add-metrics-batch.cpp
         external-net-drivers/net-drivers-adaptor.cpp
         external-net-drivers/connector.cpp
+        external-net-drivers/mysql/mysql.cpp
         external-net-drivers/mysql/mysql-request.cpp
         external-net-drivers/mysql/mysql-connector.cpp
         external-net-drivers/mysql/mysql-response.cpp

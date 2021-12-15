@@ -8,12 +8,6 @@ class PDOStatement {
      */
     public string $queryString;
 
-    // Есть 2 варианта как добавлять вот такие resumable.
-    // 1. Это оборачивать все запросы в forked resumable (как сейчас делается в job и rpc).
-    //    И потом делать resumable класс который будет просто вызывать wait() и прерываться по нему.
-    // 2. Научиться ждать не только resumable, а любые запросы. Для этого нужно будет написать аналог wait,
-    //    который будет повторять семантику wait (запускать внутри scheduler resumable'ов), только в отличие от него полить нужный запрос, а не resumable.
-    //    Но непонятно как обобщить этот любой запрос (шаблонная функция? еще один айдишник?)
     // TODO: что делать асинхронным через епол? коннект + запрос + ответ или только ответ?
     // - send_query и fetch_result должны быть асинхронными через epoll. Коннект создается лениво, либо в event_loop, либо перед инициированием посылки запроса.
     // На момент посылки запроса он уже есть.
@@ -30,7 +24,6 @@ class PDOStatement {
     //     2. Если остались еще запросы (строки) от сервера, которые не пришли, то
     //         создаем новый forked mysql_next_batch resumable, сохраняем его id в контекст конекта (старый кладем в net_event, он завершится при process_net_events).
     // При вызове fetch мы смотрим: если строка которую мы хотим получить еще не готова, то прерываемся по ожиданию mysql_next_batch. Если готова, просто берем ее
-    /** @kphp-extern-func-info resumable */
     public function fetch(int $mode = PDO::FETCH_DEFAULT, int $cursorOrientation = PDO::FETCH_ORI_NEXT, int $cursorOffset = 0): mixed;
 
     /** @kphp-extern-func-info resumable */

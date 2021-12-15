@@ -5,11 +5,12 @@
 #include <mysql/mysql.h>
 
 
+#include "runtime/array_functions.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/pdo/pdo_statement.h"
 #include "runtime/pdo/mysql/mysql_pdo.h"
 #include "runtime/pdo/mysql/mysql_pdo_driver.h"
-#include "runtime/array_functions.h"
+#include "runtime/resumable.h"
 
 namespace pdo {
 void init_lib() {
@@ -43,12 +44,32 @@ class_instance<C$PDOStatement> f$PDO$$prepare(const class_instance<C$PDO> &v$thi
   return v$this.get()->driver->prepare(v$this, query, options);
 }
 
+class PdoQueryResumable final : public Resumable {
+private:
+  const class_instance<C$PDO> &v$this;
+  const string &query;
+
+  class_instance<C$PDOStatement> statement;
+  bool ok{};
+public:
+  using ReturnT = class_instance<C$PDOStatement>;
+
+  explicit PdoQueryResumable(const class_instance<C$PDO> &v$this, const string &query) noexcept : v$this(v$this), query(query)  {}
+
+  bool run() noexcept final {
+    RESUMABLE_BEGIN
+      statement = f$PDO$$prepare(v$this, query);
+      ok = f$PDOStatement$$execute(statement);
+      TRY_WAIT(PdoQueryResumable_label, ok, bool);
+      if (!ok) {
+        return {};
+      }
+      RETURN(statement);
+    RESUMABLE_END
+  }
+};
+
 class_instance<C$PDOStatement> f$PDO$$query(const class_instance<C$PDO> &v$this, const string &query, Optional<int64_t> fetchMode) {
   (void)fetchMode;
-  class_instance<C$PDOStatement> statement = f$PDO$$prepare(v$this, query);
-  bool ok = f$PDOStatement$$execute(statement);
-  if (!ok) {
-    return {};
-  }
-  return statement;
+  return start_resumable<class_instance<C$PDOStatement>>(new PdoQueryResumable{v$this, query});
 }

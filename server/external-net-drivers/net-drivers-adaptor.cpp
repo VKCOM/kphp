@@ -14,10 +14,10 @@
 
 namespace {
 
-class request_resumable final : public Resumable {
+class RequestResumable final : public Resumable {
   using ReturnT = Response *;
 public:
-  explicit request_resumable(int request_id)
+  explicit RequestResumable(int request_id)
     : request_id(request_id) {}
 
 protected:
@@ -33,11 +33,13 @@ private:
 } // namespace
 
 template<>
-int Storage::tagger<Response *>::get_tag()  noexcept {
+int Storage::tagger<Response *>::get_tag() noexcept {
   return 1266376770;
 }
 
 int NetDriversAdaptor::register_connector(Connector *connector) {
+  connector->connect_async(); // try to connect here beforehand, why not
+
   int id = static_cast<int>(connectors.count());
   connectors.push_back(connector);
   return id;
@@ -70,9 +72,9 @@ void NetDriversAdaptor::reset() {
 }
 
 int NetDriversAdaptor::epoll_gateway(int fd, void *data, event_t *ev) {
-  (void) fd;
   auto *connector = reinterpret_cast<Connector *>(data);
   assert(connector);
+  assert(connector->get_fd() == fd);
 
   if (ev->ready & EVT_SPEC) {
     fprintf(stderr, "@@@@@@@ EVT_SPEC\n"); // TODO: handle_spec ?
@@ -88,11 +90,13 @@ int NetDriversAdaptor::epoll_gateway(int fd, void *data, event_t *ev) {
 
 int NetDriversAdaptor::send_request(Connector *connector, Request *request) {
   slot_id_t request_id = external_db_requests_factory.create_slot();
+  request->request_id = request_id;
+
   net_query_t *query = create_net_query(net_query_type_t::external_db_request);
   query->slot_id = request_id;
   query->connector = connector;
   query->external_db_request = request;
-  int resumable_id = register_forked_resumable(new request_resumable{request_id}); // TODO: resumable class?
+  int resumable_id = register_forked_resumable(new RequestResumable{request_id});
 
   start_request_processing(request_id, RequestInfo{resumable_id});
 
@@ -103,17 +107,17 @@ int NetDriversAdaptor::send_request(Connector *connector, Request *request) {
   return resumable_id;
 }
 
-void NetDriversAdaptor::process_external_db_request_net_query(int request_id, Connector *connector, Request *request) {
+void NetDriversAdaptor::process_external_db_request_net_query(Connector *connector, Request *request) {
   while (!connector->connect_async()) {}
-  connector->push_async_request(request_id, request);
+  connector->push_async_request(request);
 }
 
-int NetDriversAdaptor::create_external_db_response_net_event(int request_id, Response *response) {
-  if (!external_db_requests_factory.is_valid_slot(request_id)) {
+int NetDriversAdaptor::create_external_db_response_net_event(Response *response) {
+  if (!external_db_requests_factory.is_valid_slot(response->bound_request_id)) {
     return 0;
   }
   net_event_t *event = nullptr;
-  int status = alloc_net_event(request_id, net_event_type_t::external_db_answer, &event);
+  int status = alloc_net_event(response->bound_request_id, net_event_type_t::external_db_answer, &event);
   if (status <= 0) {
     return status;
   }
@@ -121,8 +125,8 @@ int NetDriversAdaptor::create_external_db_response_net_event(int request_id, Res
   return 1;
 }
 
-void NetDriversAdaptor::process_external_db_response_event(int request_id, Response *response) {
-  int resumable_id = finish_request_processing(request_id, response);
+void NetDriversAdaptor::process_external_db_response_event(Response *response) {
+  int resumable_id = finish_request_processing(response->bound_request_id, response);
   if (resumable_id == 0) {
     return;
   }

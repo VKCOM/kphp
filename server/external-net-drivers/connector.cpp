@@ -27,7 +27,7 @@ bool Connector::connect_async() noexcept {
   is_connected = connect_async_impl();
   if (is_connected) {
     int fd = get_fd();
-    epoll_insert(fd, EVT_WRITE | EVT_READ | EVT_SPEC);
+    epoll_insert(fd, EVT_SPEC | EVT_LEVEL);
     epoll_sethandler(fd, 0, NetDriversAdaptor::epoll_gateway, this);
   }
   return is_connected;

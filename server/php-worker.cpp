@@ -239,7 +239,8 @@ void php_worker_run_net_queue(php_worker *worker __attribute__((unused))) {
          free_rpc_send_query(data);
        },
        [&](const net_queries_data::external_db_send &data) {
-         vk::singleton<NetDriversAdaptor>::get().process_external_db_request_net_query(query->slot_id, data.connector, data.external_db_request);
+         php_assert(query->slot_id == data.external_db_request->request_id);
+         vk::singleton<NetDriversAdaptor>::get().process_external_db_request_net_query(data.connector, data.external_db_request);
        },
      }, query->data);
   }

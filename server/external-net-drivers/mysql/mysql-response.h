@@ -17,5 +17,7 @@ public:
 
   explicit MysqlResponse(MysqlConnector *connector);
 
-  bool fetch() noexcept final;
+  bool fetch_async() noexcept final;
+private:
+  bool got_columns_info{false};
 };

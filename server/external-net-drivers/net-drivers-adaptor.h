@@ -38,10 +38,10 @@ public:
   void reset();
 
   int send_request(Connector *connector, Request *request);
-  void process_external_db_request_net_query(int request_id, Connector *connector, Request *request);
+  void process_external_db_request_net_query(Connector *connector, Request *request);
 
-  int create_external_db_response_net_event(int request_id, Response *response);
-  void process_external_db_response_event(int request_id, Response *response);
+  int create_external_db_response_net_event(Response *response);
+  void process_external_db_response_event(Response *response);
 
   void start_request_processing(int request_id, const RequestInfo &request_info);
   int finish_request_processing(int request_id, Response *response);

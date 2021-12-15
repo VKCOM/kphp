@@ -11,26 +11,41 @@
 #include "server/external-net-drivers/mysql/mysql-response.h"
 #include "server/external-net-drivers/net-drivers-adaptor.h"
 
-pdo::mysql::MysqlPdoEmulatedStatement::MysqlPdoEmulatedStatement(MysqlConnector *connector, const string &statement)
+namespace pdo::mysql {
+
+class MysqlPdoEmulatedStatement::ExecuteResumable final : public Resumable {
+private:
+  MysqlPdoEmulatedStatement *ctx{};
+  Response *response{};
+  int resumable_id{};
+public:
+  using ReturnT = bool;
+  explicit ExecuteResumable(MysqlPdoEmulatedStatement *ctx) noexcept : ctx(ctx)  {}
+  bool run() noexcept final {
+    RESUMABLE_BEGIN
+      resumable_id = vk::singleton<NetDriversAdaptor>::get().send_request(ctx->connector, new MysqlRequest{ctx->connector, ctx->statement});
+      response = f$wait<Response *, false>(resumable_id);
+      TRY_WAIT(MysqlPdoEmulatedStatement_ExecuteResumable_label, response, Response *);
+      if (auto *casted = dynamic_cast<MysqlResponse *>(response)) {
+        ctx->mysql_res = casted->res;
+      } else {
+        php_critical_error("Got response of incorrect type from resumable in MySQL PDO::execute");
+      }
+      RETURN(true);
+    RESUMABLE_END
+  }
+};
+
+MysqlPdoEmulatedStatement::MysqlPdoEmulatedStatement(MysqlConnector *connector, const string &statement)
   : connector(connector)
   , statement(statement) {}
 
-bool pdo::mysql::MysqlPdoEmulatedStatement::execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept {
+bool MysqlPdoEmulatedStatement::execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept {
   (void)v$this, (void)params; // TODO: use params
-
-  int resumable_id = vk::singleton<NetDriversAdaptor>::get().send_request(connector, new MysqlRequest{connector, statement});
-
-  auto *response = f$wait<Response *, false>(resumable_id);
-  if (auto *casted = dynamic_cast<MysqlResponse *>(response)) {
-    mysql_res = casted->res;
-  } else {
-    php_critical_error("Got response of incorrect type from resumable in MySQL PDO::execute");
-  }
-  array<int> x;
-  return true;
+  return start_resumable<bool>(new ExecuteResumable(this));
 }
 
-mixed pdo::mysql::MysqlPdoEmulatedStatement::fetch(const class_instance<C$PDOStatement> &v$this, int mode, int cursorOrientation, int cursorOffset) noexcept {
+mixed MysqlPdoEmulatedStatement::fetch(const class_instance<C$PDOStatement> &v$this, int mode, int cursorOrientation, int cursorOffset) noexcept {
   (void) v$this, (void) mode, (void) cursorOrientation, (void) cursorOffset;
   MYSQL_ROW row = LIB_MYSQL_CALL(mysql_fetch_row(mysql_res));
   if (row == nullptr) {
@@ -46,3 +61,5 @@ mixed pdo::mysql::MysqlPdoEmulatedStatement::fetch(const class_instance<C$PDOSta
   }
   return res;
 }
+
+} // namespace pdo::mysql
