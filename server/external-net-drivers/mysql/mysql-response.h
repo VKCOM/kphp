@@ -12,10 +12,9 @@ class MysqlConnector;
 
 class MysqlResponse : public Response {
 public:
-  MysqlConnector *connector{nullptr};
   MYSQL_RES *res{nullptr};
 
-  explicit MysqlResponse(MysqlConnector *connector);
+  using Response::Response;
 
   bool fetch_async() noexcept final;
 private:

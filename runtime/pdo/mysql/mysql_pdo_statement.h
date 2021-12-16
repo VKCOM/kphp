@@ -14,15 +14,16 @@ class MysqlConnector;
 namespace pdo::mysql {
 class MysqlPdoEmulatedStatement : public pdo::AbstractPdoStatement {
 public:
-  MysqlPdoEmulatedStatement(MysqlConnector *connector, const string &statement);
+  MysqlPdoEmulatedStatement(const string &statement, int connector_id);
 
   bool execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept final;
   mixed fetch(const class_instance<C$PDOStatement> &v$this, int mode = 42, int cursorOrientation = 42, int cursorOffset = 0) noexcept final;
 
 private:
-  MysqlConnector *connector;
-  MYSQL_RES *mysql_res{nullptr};
   string statement;
+  int connector_id{};
+
+  MYSQL_RES *mysql_res{nullptr};
 
   class ExecuteResumable;
 };

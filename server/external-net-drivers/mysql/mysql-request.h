@@ -12,10 +12,9 @@ class MysqlConnector;
 
 class MysqlRequest : public Request {
 public:
-  MysqlRequest(MysqlConnector *connector, const string &request);
+  MysqlRequest(int connector_id, const string &request);
 
   bool send_async() noexcept final;
 private:
-  MysqlConnector *connector;
   string request;
 };

@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <variant>
 
 #include "common/sanitizer.h"
@@ -45,7 +46,7 @@ class Connector;
 
 struct net_event_t {
   slot_id_t slot_id;
-  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, Response *> data;
+  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, std::unique_ptr<Response>> data;
 
   const char *get_description() const noexcept;
 };
@@ -60,8 +61,8 @@ struct rpc_send {
 };
 
 struct external_db_send {
-  Connector *connector;
-  Request *external_db_request;
+  int connector_id;
+  std::unique_ptr<Request> external_db_request;
 };
 
 } // namespace net_queries_data
@@ -282,7 +283,7 @@ struct net_send_ansgen_t {
 
 
 
-int alloc_net_event(slot_id_t slot_id, net_event_type_t type, net_event_t **res);
+int alloc_net_event(slot_id_t slot_id, net_event_t **res);
 void unalloc_net_event(net_event_t *event);
 
 net_query_t *pop_net_query();
@@ -294,7 +295,7 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);
 int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result);
 
 int net_events_empty();
-net_query_t *create_net_query(net_query_type_t type);
+net_query_t *create_net_query();
 
 void php_queries_start();
 void php_queries_finish();

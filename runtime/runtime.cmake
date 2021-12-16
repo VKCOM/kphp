@@ -16,6 +16,7 @@ prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
 prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
         pdo.cpp
         pdo_statement.cpp
+        abstract_pdo_driver.cpp
         mysql/mysql_pdo_driver.cpp
         mysql/mysql_pdo_statement.cpp)
 

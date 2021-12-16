@@ -8,7 +8,11 @@
 
 class Request : public ManagedThroughDlAllocator {
 public:
+  int connector_id{};
   int request_id{};
 
+  explicit Request(int connector_id) : connector_id(connector_id) {}
+
   virtual bool send_async() noexcept = 0;
+  virtual ~Request() noexcept = default;
 };

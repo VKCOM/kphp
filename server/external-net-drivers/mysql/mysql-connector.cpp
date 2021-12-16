@@ -11,10 +11,6 @@
 #include "server/external-net-drivers/net-drivers-adaptor.h"
 #include "server/php-engine.h"
 
-void MysqlConnector::close() noexcept {
-  mysql_close(ctx);
-}
-
 int MysqlConnector::get_fd() const noexcept {
   if (!is_connected) {
     return -1;
@@ -33,9 +29,9 @@ bool MysqlConnector::connect_async_impl() noexcept {
   return is_connected = (status == NET_ASYNC_COMPLETE);
 }
 
-void MysqlConnector::push_async_request(Request *req) noexcept {
+void MysqlConnector::push_async_request(std::unique_ptr<Request> &&req) noexcept {
   assert(pending_request == nullptr && pending_response == nullptr && "Pipelining is not allowed");
-  pending_request = req;
+  pending_request = std::move(req);
 
   tvkprintf(mysql, 1, "MySQL initiate async request send: request_id = %d\n", req->request_id);
   update_state_ready_to_write();
@@ -50,7 +46,7 @@ void MysqlConnector::handle_write() noexcept {
     return;
   }
 
-  pending_response = new MysqlResponse{this};
+  pending_response = std::make_unique<MysqlResponse>(connector_id);
   pending_response->bound_request_id = pending_request->request_id;
   pending_request = nullptr;
 
@@ -65,9 +61,14 @@ void MysqlConnector::handle_read() noexcept {
     return;
   }
 
-  int event_status = vk::singleton<NetDriversAdaptor>::get().create_external_db_response_net_event(pending_response);
+  int event_status = vk::singleton<NetDriversAdaptor>::get().create_external_db_response_net_event(std::move(pending_response));
   on_net_event(event_status); // wakeup php worker to make it process new net event and continue corresponding resumable
 
   pending_response = nullptr;
   update_state_idle();
+}
+
+MysqlConnector::~MysqlConnector() noexcept {
+  epoll_remove(get_fd());
+  LIB_MYSQL_CALL(mysql_close(ctx));
 }

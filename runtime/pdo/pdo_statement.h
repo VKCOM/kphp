@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
@@ -14,7 +16,7 @@
 
 
 struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface> {
-  pdo::AbstractPdoStatement *statement{nullptr};
+  std::unique_ptr<pdo::AbstractPdoStatement> statement;
 
   virtual ~C$PDOStatement() = default;
 

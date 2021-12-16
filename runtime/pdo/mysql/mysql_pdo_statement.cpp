@@ -15,7 +15,7 @@ namespace pdo::mysql {
 
 class MysqlPdoEmulatedStatement::ExecuteResumable final : public Resumable {
 private:
-  MysqlPdoEmulatedStatement *ctx{};
+  MysqlPdoEmulatedStatement *ctx{}; // TODO: raii?
   Response *response{};
   int resumable_id{};
 public:
@@ -23,7 +23,7 @@ public:
   explicit ExecuteResumable(MysqlPdoEmulatedStatement *ctx) noexcept : ctx(ctx)  {}
   bool run() noexcept final {
     RESUMABLE_BEGIN
-      resumable_id = vk::singleton<NetDriversAdaptor>::get().send_request(ctx->connector, new MysqlRequest{ctx->connector, ctx->statement});
+      resumable_id = vk::singleton<NetDriversAdaptor>::get().send_request(ctx->connector_id, std::make_unique<MysqlRequest>(ctx->connector_id, ctx->statement));
       response = f$wait<Response *, false>(resumable_id);
       TRY_WAIT(MysqlPdoEmulatedStatement_ExecuteResumable_label, response, Response *);
       if (auto *casted = dynamic_cast<MysqlResponse *>(response)) {
@@ -36,9 +36,9 @@ public:
   }
 };
 
-MysqlPdoEmulatedStatement::MysqlPdoEmulatedStatement(MysqlConnector *connector, const string &statement)
-  : connector(connector)
-  , statement(statement) {}
+MysqlPdoEmulatedStatement::MysqlPdoEmulatedStatement(const string &statement, int connector_id)
+  : statement(statement)
+  , connector_id(connector_id) {}
 
 bool MysqlPdoEmulatedStatement::execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept {
   (void)v$this, (void)params; // TODO: use params

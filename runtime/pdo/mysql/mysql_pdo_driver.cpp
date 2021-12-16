@@ -1,6 +1,8 @@
 // Compiler for PHP (aka KPHP)
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#include <memory>
 #include <mysql/mysql.h>
 
 #include "runtime/array_functions.h"
@@ -43,9 +45,9 @@ void MysqlPdoDriver::connect(const class_instance<C$PDO> &pdo_instance, const st
 
   MYSQL *ctx = LIB_MYSQL_CALL(mysql_init(nullptr));
 
-  Connector *connector = new MysqlConnector{ctx, host, username.val(), password.val(), db_name, port};
-  php_query_connect_answer_t *ans = vk::singleton<NetDriversAdaptor>::get().php_query_connect(connector);
-  connection_id = ans->connection_id;
+  std::unique_ptr<Connector> connector = std::make_unique<MysqlConnector>(ctx, host, username.val(), password.val(), db_name, port);
+  php_query_connect_answer_t *ans = vk::singleton<NetDriversAdaptor>::get().php_query_connect(std::move(connector));
+  connector_id = ans->connection_id;
 }
 
 class_instance<C$PDOStatement> MysqlPdoDriver::prepare(const class_instance<C$PDO> &v$this, const string &query, const array<mixed> &options) noexcept {
@@ -53,11 +55,7 @@ class_instance<C$PDOStatement> MysqlPdoDriver::prepare(const class_instance<C$PD
   class_instance<C$PDOStatement> res;
   res.alloc();
 
-  int connection_id = v$this.get()->driver->connection_id;
-  MysqlConnector *connector = vk::singleton<NetDriversAdaptor>::get().get_connector<MysqlConnector>(connection_id);
-
-  auto *statement = new MysqlPdoEmulatedStatement{connector, query};
-  res.get()->statement = statement;
+  res.get()->statement = std::make_unique<MysqlPdoEmulatedStatement>(query, v$this.get()->driver->connector_id);
 
   return res;
 }

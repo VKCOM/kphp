@@ -430,7 +430,7 @@ void perform_error_if_running(const char *msg, script_error_t error_type) {
     assert ("unreachable point" && 0);
   }
 }
-}
+} // namespace
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");

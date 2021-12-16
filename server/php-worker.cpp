@@ -21,6 +21,7 @@
 #include "server/server-stats.h"
 #include "server/external-net-drivers/connector.h"
 #include "server/external-net-drivers/request.h"
+#include "server/external-net-drivers/net-drivers-adaptor.h"
 
 php_worker *active_worker = nullptr;
 
@@ -240,7 +241,7 @@ void php_worker_run_net_queue(php_worker *worker __attribute__((unused))) {
        },
        [&](const net_queries_data::external_db_send &data) {
          php_assert(query->slot_id == data.external_db_request->request_id);
-         vk::singleton<NetDriversAdaptor>::get().process_external_db_request_net_query(data.connector, data.external_db_request);
+         vk::singleton<NetDriversAdaptor>::get().process_external_db_request_net_query(data.connector_id, data.external_db_request);
        },
      }, query->data);
   }

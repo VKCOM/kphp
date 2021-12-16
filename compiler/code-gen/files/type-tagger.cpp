@@ -39,6 +39,7 @@ void TypeTagger::compile(CodeGenerator &W) const {
     "class_instance<C$KphpJobWorkerResponse>",
     "class_instance<C$VK$TL$RpcResponse>",
     "array< class_instance<C$VK$TL$RpcResponse> >",
+    "class_instance<C$PDOStatement>",
   };
 
   IncludesCollector collector;

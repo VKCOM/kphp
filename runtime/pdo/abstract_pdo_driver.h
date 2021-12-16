@@ -14,11 +14,10 @@ namespace pdo {
 
 class AbstractPdoDriver : public ::ManagedThroughDlAllocator {
 public:
-  int connection_id;
-  bool emulate_prepares = true; // PDO::ATTR_EMULATE_PREPARES is on by default
+  int connector_id;
 
   AbstractPdoDriver() = default;
-  virtual ~AbstractPdoDriver() = default; // TODO: remove connector by connection_id
+  virtual ~AbstractPdoDriver() noexcept;
 
   virtual void connect(const class_instance<C$PDO> &pdo_instance, const string &connection_string,
                        const Optional<string> &username, const Optional<string> &password, const Optional<array<mixed>> &options) noexcept = 0;

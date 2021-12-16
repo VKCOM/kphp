@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
@@ -19,9 +21,9 @@ namespace pdo {
 
 
 struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface> {
-  pdo::AbstractPdoDriver *driver{nullptr}; // TODO: script memory leak, clean in destructor?
+  std::unique_ptr<pdo::AbstractPdoDriver> driver;
 
-  virtual ~C$PDO() = default;
+  ~C$PDO() override = default;
 
   virtual const char *get_class() const noexcept {
     return "PDO";

@@ -58,6 +58,7 @@
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/external-net-drivers/connector.h"
 #include "server/external-net-drivers/net-drivers-adaptor.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
