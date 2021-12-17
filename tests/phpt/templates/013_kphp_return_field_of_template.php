@@ -39,14 +39,6 @@ function get_arr_data($holder) {
     return [$holder->data];
 }
 
-/**
- * @kphp-template T[] $holder
- * @kphp-return T::data
- */
-function get_data_of_ts_elements($holder) {
-    return $holder[0]->data;
-}
-
 function test_simple() {
     $a = get_data(new AHolder());
     $b = get_data(new BHolder());
@@ -67,15 +59,6 @@ function test_getting_arrays() {
 }
 
 
-function test_getting_element_of_array() {
-    $a = get_data_of_ts_elements([new AHolder()]);
-    $b = get_data_of_ts_elements([new BHolder()]);
-
-    var_dump($a->i);
-    var_dump($b->i);
-}
-
 test_simple();
 test_getting_arrays();
-test_getting_element_of_array();
 

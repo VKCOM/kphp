@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Unknown function ->foo\(\)/
+/Invalid call \.\.\.->foo\(\): UnknownClass\$\$create\(\) does not return an instance or it can't be detected/
 <?php
 
 function test() {

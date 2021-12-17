@@ -29,7 +29,7 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
   auto called_function = call.as<op_func_call>()->func_id;
   auto callback_param = called_function->get_params()[arg_num - 1].as<op_func_param>();
   VertexRange call_args = call.as<op_func_call>()->args();
-  FunctionPtr provided_callback = call_args[arg_num - 1].as<op_func_ptr>()->func_id;
+  FunctionPtr provided_callback = call_args[arg_num - 1].as<op_callback_of_builtin>()->func_id;
 
   // here we deal with an uncommon, but hard situation: array_map("array_filter", $arr)
   // we have call (array_map) with this ^1() type hint, and provided_callback (array_filter) has ^1 in return type
@@ -98,9 +98,14 @@ void TypeHintArray::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
   dst->set_lca_at(MultiKey::any_key(1), &nested);
 }
 
-void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
-  // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
-  // (but it does imply a template parameter or an interface for it)
+void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+  if (is_typed_callable() && (!call || !call.as<op_func_call>()->func_id->is_extern())) {
+    dst->set_lca(get_interface()->type_data);
+  } else if (is_untyped_callable() && f_bound_to) {
+    dst->set_lca(get_lambda_class()->type_data);
+  } else {
+    // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
+  }
 }
 
 static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const FFIType *type) {
@@ -161,6 +166,11 @@ void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
   dst->set_lca(resolve()->type_data);
 }
 
+void TypeHintFieldRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  kphp_error(0, "Syntax ClassName::field is available only in a combination with generics");
+  dst->set_lca(tp_any);
+}
+
 void TypeHintOptional::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   inner->recalc_type_data_in_context_of_call(dst, call);
   if (or_null) {
@@ -202,5 +212,10 @@ void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
     MultiKey key({Key::int_key(int_index)});
     dst->set_lca_at(key, &nested);
   }
+}
+
+void TypeHintGenericsT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  dst->set_lca(tp_Error);
+  kphp_assert(0 && "genericsT not instantiated before type inferring");
 }
 

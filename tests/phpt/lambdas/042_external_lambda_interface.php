@@ -395,8 +395,8 @@ class AA {
     $x = function() use($u, $z) {
         $this->foo($u);
         $this->foo2($z);
-        $this->foo6($z);
-        $this->foo5($z);
+        $this->foo6();
+        $this->foo5();
     };
 
     $x = function() use($u, $z) {
@@ -431,8 +431,8 @@ class AA {
     $x = function() use($u, $z) {
         $this->foo($u);
         $this->foo2($z);
-        $this->foo6($z);
-        $this->foo5($z);
+        $this->foo6();
+        $this->foo5();
     };
 
     $x = function() use($u, $z) {
@@ -854,8 +854,8 @@ class A {
     $x = function() use($u, $z) {
         $this->foo($u);
         $this->foo2($z);
-        $this->foo6($z);
-        $this->foo5($z);
+        $this->foo6();
+        $this->foo5();
     };
 
     $x = function() use($u, $z) {
@@ -890,8 +890,8 @@ class A {
     $x = function() use($u, $z) {
         $this->foo($u);
         $this->foo2($z);
-        $this->foo6($z);
-        $this->foo5($z);
+        $this->foo6();
+        $this->foo5();
     };
 
     $x = function() use($u, $z) {

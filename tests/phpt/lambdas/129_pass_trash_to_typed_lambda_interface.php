@@ -1,6 +1,9 @@
 @kphp_should_fail
-/Can't infer lambda from expression passed as argument: call_me/
-/You must passed lambda as argument: call_me/
+KPHP_SHOW_ALL_TYPE_ERRORS=1
+/pass Lambda\$/
+/to argument \$call_me of foo/
+/pass int to argument \$call_me of foo/
+/but it's declared as @param callable\(int\):bool/
 <?php
 
 /**

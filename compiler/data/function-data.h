@@ -16,6 +16,7 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-modifiers.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
@@ -25,26 +26,24 @@
 #include "compiler/vertex-meta_op_base.h"
 
 class FunctionData {
-  DEBUG_STRING_METHOD { return get_human_readable_name(); }
+  DEBUG_STRING_METHOD { return as_human_readable(); }
   
   // code outside of the data/ should use FunctionData::create_function()
   FunctionData() = default;
   FunctionData& operator=(const FunctionData &other) = default;
   FunctionData(const FunctionData &other) = default;
 
-private:
-  int min_argn = -1;
-
 public:
   int id = -1;
 
-  string name;        // full function name; when it belongs to a class it looks like VK$Namespace$funcname
+  std::string name;        // full function name; when it belongs to a class, it looks like VK$Namespace$$funcname
   VertexAdaptor<op_function> root;
   bool is_required = false;
 
   enum func_type_t {
     func_main,
     func_local,
+    func_lambda,
     func_switch,
     func_extern,
     func_class_holder
@@ -58,20 +57,23 @@ public:
   std::set<ClassPtr> class_dep;
   std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
-  FunctionPtr function_in_which_lambda_was_created;
+
+  // for lambdas: a function that contains this lambda ($this is captured from outer_function, it can also be a lambda on nesting)
+  // for template instantiations: refs to an original (a template) function
+  // for __invoke method of a lambda: refs to a lambda function that's called from this __invoke
+  FunctionPtr outer_function;
+
+  // use($var1, &$var2) for lambdas, implicit vars for arrow lambdas; auto-captured $this is also here, the first one
+  std::forward_list<VertexAdaptor<op_var>> uses_list;
 
   // @kphp-throws checks that a function throws only specified exceptions;
   // empty vector means "nothing to check", it's not "throws nothing",
   // to check that a function does not throw, should_not_throw flag is used
   std::forward_list<std::string> check_throws;
 
-  // TODO: find usages when we'll allow lambdas inside template functions.
-  //std::vector<FunctionPtr> lambdas_inside;
-
   std::vector<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
   Assumption assumption_for_return;
 
-  vk::copyable_atomic<AssumptionStatus> assumption_args_status{AssumptionStatus::unknown};
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
   vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
 
@@ -93,7 +95,6 @@ public:
   bool should_be_sync = false;
   bool should_not_throw = false;
   bool kphp_lib_export = false;
-  bool is_template = false;
   bool is_auto_inherited = false;
   bool is_inline = false;
   bool cpp_template_call = false;
@@ -103,6 +104,7 @@ public:
   bool is_virtual_method = false;
   bool is_overridden_method = false;
   bool is_no_return = false;
+  bool has_lambdas_inside = false;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
@@ -124,12 +126,17 @@ public:
   PerformanceInspections performance_inspections_for_warning;
   std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
 
+  // non-null for template functions, e.g. f<T> (somewhen they will be called "generics functions")
+  // describes @kphp-template, @kphp-param and @kphp-return
+  GenericsDeclarationMixin *generics_declaration{nullptr};
+  // non-null for instantiations of template functions, e.g. f<User>
+  // describes a mapping between generics (T) and actual instantiation types (User)
+  GenericsInstantiationMixin *generics_instantiation{nullptr};
+
   ClassPtr class_id;
   ClassPtr context_class;
   FunctionModifiers modifiers = FunctionModifiers::nonmember();
   vk::string_view phpdoc_str;
-
-  Location instantiation_of_template_function_location;
 
   enum class body_value {
     empty,
@@ -138,13 +145,12 @@ public:
   } body_seq = body_value::unknown;
 
   static FunctionPtr create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type);
-  static FunctionPtr clone_from(const std::string &new_name, FunctionPtr other, VertexAdaptor<op_function> new_root);
+  static FunctionPtr clone_from(FunctionPtr other, const std::string &new_name, VertexAdaptor<op_function> root_instead_of_cloning = {});
 
   string get_resumable_path() const;
   string get_throws_call_chain() const;
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
-  static string get_human_readable_name(const std::string &name, bool add_details = true);
-  string get_human_readable_name(bool add_details = true) const;
+  std::string as_human_readable(bool add_details = true) const;
 
   bool can_throw() const noexcept  {
     return !exceptions_thrown.empty();
@@ -158,45 +164,58 @@ public:
     return type == func_extern;
   }
 
+  bool is_main_function() const {
+    return type == func_type_t::func_main;
+  }
+
+  bool is_lambda() const {
+    return type == func_lambda;
+  }
+
+  // somewhen, will be renamed to is_generics(), when real generics functions are implemented; for now, we call them "template functions"
+  bool is_template() const {
+    return generics_declaration != nullptr;
+  }
+
+  bool is_instantiation_of_template_function() const {
+    return generics_instantiation != nullptr;
+  }
+
   bool is_constructor() const;
-  bool is_main_function() const;
+  bool is_invoke_method() const;
+  bool is_imported_from_static_lib() const;
+
+  const FunctionData *get_this_or_topmost_if_lambda() const {
+    return type == FunctionData::func_lambda ? outer_function->get_this_or_topmost_if_lambda() : this;
+  }
 
   void update_location_in_body();
-  static std::string encode_template_arg_name(const Assumption &assumption, int id);
-  static FunctionPtr generate_instance_of_template_function(const std::map<int, Assumption> &template_type_id_to_ClassPtr,
-                                                            FunctionPtr func,
-                                                            const std::string &name_of_function_instance);
   std::vector<VertexAdaptor<op_var>> get_params_as_vector_of_vars(int shift = 0) const;
   void move_virtual_to_self_method(DataStream<FunctionPtr> &os);
   static std::string get_name_of_self_method(vk::string_view name);
   std::string get_name_of_self_method() const;
 
-  int get_min_argn();
+  // a range of op_func_param, but it can't be expressed with VertexRange and needs .as<op_func_param>() when using
+  VertexRange get_params() const { return root->param_list()->params(); }
 
-  bool is_lambda() const {
-    return static_cast<bool>(function_in_which_lambda_was_created);
+  Assumption get_assumption_for_var(const std::string &var_name) {
+    for (const auto &name_and_a : assumptions_for_vars) {
+      if (name_and_a.first == var_name) {
+        return name_and_a.second;
+      }
+    }
+    return {};
   }
 
-  bool is_lambda_with_uses() const;
-
-  bool is_imported_from_static_lib() const;
-
-  const FunctionData *get_this_or_topmost_if_lambda() const {
-    return is_lambda() ? function_in_which_lambda_was_created->get_this_or_topmost_if_lambda() : this;
-  }
-
-  bool is_instantiation_of_template_function() const {
-    return instantiation_of_template_function_location.line != -1;
-  }
-
-  VertexRange get_params() const;
-
-  static bool check_cnt_params(int expected_cnt_params, FunctionPtr called_func);
+  VertexAdaptor<op_func_param> find_param_by_name(vk::string_view var_name);
+  VertexAdaptor<op_var> find_use_by_name(const std::string &var_name);
+  VarPtr find_var_by_name(const std::string &var_name);
+  int get_min_argn() const;
 
   vk::string_view local_name() const & { return get_local_name_from_global_$$(name); }
   vk::string_view local_name() const && = delete;
 
-  static bool does_need_codegen(FunctionPtr f);
+  bool does_need_codegen() const;
 
 private:
   FunctionPtr get_self() const {

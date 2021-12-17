@@ -70,20 +70,17 @@ FunctionData::body_value calc_seq_body_type(VertexAdaptor<op_seq> seq) {
 }
 
 FunctionData::body_value calc_function_body_type(FunctionPtr f) {
-  if (f->body_seq != FunctionData::body_value::unknown) {
-    return f->body_seq;
-  }
+  kphp_assert (f->body_seq == FunctionData::body_value::unknown);
 
   if (f->is_extern() ||
       f->type == FunctionData::func_switch ||
       f->type == FunctionData::func_class_holder ||
       f->root->type() != op_function ||
       !f->get_params().empty()) {
-    f->body_seq = FunctionData::body_value::non_empty;
-  } else {
-    f->body_seq = calc_seq_body_type(f->root->cmd());
+    return FunctionData::body_value::non_empty;
   }
-  return f->body_seq;
+
+  return calc_seq_body_type(f->root->cmd());
 }
 
 } // namespace
@@ -91,6 +88,6 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
 
 void CalcEmptyFunctions::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
   stage::set_function(f);
-  calc_function_body_type(f);
+  f->body_seq = calc_function_body_type(f);
   os << f;
 }

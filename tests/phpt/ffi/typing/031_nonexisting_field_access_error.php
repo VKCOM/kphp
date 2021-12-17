@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/Invalid property access ...->badname: does not exist in class/
+/Field \$badname not found in class/
 <?php
 
 $cdef = FFI::cdef('struct Foo { bool field; };');

@@ -31,13 +31,20 @@ private:
     G->require_function(name, function_stream);
   }
 
-  void require_class(const string &class_name) {
+  void require_class(const std::string &class_name) {
+    // avoid a race condition, when we try to search for RpcFunction.php and other built-in classes that are visible from index.php
+    // (if such files exist, extra src_xxx$called variables will be created: unstable codegeneration)
+    while (!G->get_functions_txt_parsed()) {
+      usleep(100000);
+    }
+
     if (G->get_class(class_name)) {
       return; // no need to require extra files
     }
+    std::string file_name = replace_characters(class_name, '\\', '/');
 
     if (G->settings().is_composer_enabled()) {
-      const auto &psr4_filename = G->get_composer_autoloader().psr4_lookup(class_name);
+      const auto &psr4_filename = G->get_composer_autoloader().psr4_lookup(file_name);
       if (!psr4_filename.empty()) {
         require_file(psr4_filename, false);
         return; // required from the composer autoload PSR-4 path
@@ -49,7 +56,7 @@ private:
     // in case that PHP-file doesn't exist we don't give any error
     // as they'll be reported as missing classes errors later;
     // for builtin and non-autoloadable classes there will be no errors
-    require_file(class_name + ".php", false);
+    require_file(file_name + ".php", false);
   }
 
   inline void require_all_deps_of_class(ClassPtr cur_class) {
@@ -66,7 +73,7 @@ private:
         }
       }
 
-      require_class(replace_characters(dep.class_name, '\\', '/'));
+      require_class(dep.class_name);
     }
     // class constant values may contain other class constants that may need require_class()
     cur_class->members.for_each([&](ClassMemberConstant &c) {
@@ -110,25 +117,24 @@ private:
       type_hint->traverse([this](const TypeHint *child) {
         if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
           if (!as_instance->has_self_static_parent_inside()) {
-            require_class(replace_characters(as_instance->full_class_name, '\\', '/'));
+            require_class(as_instance->full_class_name);
           }
         }
       });
     }
   }
 
-  // Collect classes to require from the function prototype.
-  // WARNING! We inspect only the type hints (called type declarations below).
-  //          phpdoc with @param is ignored.
-  //          TODO: fix this when we'll parse the phpdoc once.
+  // Collect classes only from type hints in PHP code, as phpdocs @param/@return haven't been parsed up to this execution point.
+  // TODO: shall we fix this?
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
     for (const auto &p: f->get_params()) {
       if (p.as<op_func_param>()->type_hint) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_hint);
       }
     }
-    // f->return_typehint is ignored;
-    // we assume that if it returns an instance, it'll reference the required class in one way or another
+    if (f->return_typehint) {
+      require_all_classes_in_phpdoc_type(f->return_typehint);
+    }
   }
 
   VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once, bool builtin = false) {
@@ -195,29 +201,36 @@ public:
     if (auto try_op = root.try_as<op_try>()) {
       for (auto v : try_op->catch_list()) {
         auto catch_op = v.as<op_catch>();
-        require_class(replace_characters(catch_op->type_declaration, '\\', '/'));
+        require_class(catch_op->type_declaration);
       }
       return root;
     }
 
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
-      auto full_static_name = get_full_static_member_name(current_function, root->get_string(), true);
-      if (!full_static_name.empty()) {
-        require_function(full_static_name);
+      size_t pos = root->get_string().find("::");
+      if (pos != std::string::npos) {
+        const std::string &prefix_name = root->get_string().substr(0, pos);
+        const std::string &local_name = root->get_string().substr(pos + 2);
+        const std::string &class_name = resolve_uses(current_function, prefix_name);
+        require_class(class_name);
+        require_function(resolve_static_method_append_context(current_function, prefix_name, class_name, local_name));
+      } else {
+        require_function(root->get_string());
       }
     }
 
-    if (root->type() == op_func_call || root->type() == op_var || root->type() == op_func_name) {
-      size_t pos$$ = root->get_string().find("::");
-      if (pos$$ != string::npos) {
-        const string &class_name = root->get_string().substr(0, pos$$);
-        require_class(resolve_uses(current_function, class_name, '/'));
+    if (root->type() == op_var || root->type() == op_func_name) {
+      size_t pos = root->get_string().find("::");
+      if (pos != std::string::npos) {
+        const std::string &prefix_name = root->get_string().substr(0, pos);
+        const std::string &class_name = resolve_uses(current_function, prefix_name);
+        require_class(class_name);
       }
     }
 
     if (auto alloc = root.try_as<op_alloc>()) {
       if (!alloc->allocated_class) {
-        require_class(resolve_uses(current_function, alloc->allocated_class_name, '/'));
+        require_class(resolve_uses(current_function, alloc->allocated_class_name));
       }
     }
 

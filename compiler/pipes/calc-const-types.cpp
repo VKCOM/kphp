@@ -15,16 +15,16 @@ void CalcConstTypePass::on_start() {
 }
 
 void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
-  klass->members.for_each([&](ClassMemberStaticField &f) {
+  klass->members.for_each([this](ClassMemberStaticField &f) {
     if (f.var->init_val) {
       run_function_pass(f.var->init_val, this);
-      kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {}::${} is not constant", klass->name, f.local_name()));
+      kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {} is not constant", f.var->as_human_readable()));
     }
   });
-  klass->members.for_each([&](ClassMemberInstanceField &f) {
+  klass->members.for_each([this](ClassMemberInstanceField &f) {
     if (f.var->init_val) {
       run_function_pass(f.var->init_val, this);
-      kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {}::${} is not constant", klass->name, f.local_name()));
+      kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {} is not constant", f.var->as_human_readable()));
     }
   });
 }

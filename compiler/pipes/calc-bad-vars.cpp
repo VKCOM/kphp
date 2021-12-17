@@ -358,7 +358,7 @@ public:
 
     std::vector<FunctionPtr> call_chain_to_show(first_item_to_show, last_item_to_show + 1);
     std::string callstack_str = vk::join(call_chain_to_show, " -> ", [&](FunctionPtr f) {
-      return f->get_human_readable_name() + TermStringFormat::paint(f->colors.to_string(palette, rule.mask), TermStringFormat::cyan);
+      return f->as_human_readable() + TermStringFormat::paint(f->colors.to_string(palette, rule.mask), TermStringFormat::cyan);
     });
 
     stage::set_location((*first_item_to_show)->root->location);

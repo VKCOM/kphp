@@ -14,11 +14,9 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/lambda-class-data.h"
-#include "compiler/data/lambda-generator.h"
-#include "compiler/data/lambda-implicit-uses.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
@@ -43,10 +41,6 @@ GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> 
   stage::set_line(line_num);
 }
 
-Location GenTree::auto_location() const {
-  return Location{this->line_num};
-}
-
 VertexAdaptor<op_string> GenTree::generate_constant_field_class_value(ClassPtr klass) {
   auto value_of_const_field_class = VertexAdaptor<op_string>::create();
   value_of_const_field_class->set_string(klass->name);
@@ -61,10 +55,6 @@ void GenTree::next_cur() {
       stage::set_line(line_num);
     }
   }
-}
-
-bool GenTree::test_expect(TokenType tp) {
-  return cur->type() == tp;
 }
 
 #define expect_msg(msg) ({ \
@@ -95,7 +85,7 @@ VertexAdaptor<op_var> GenTree::get_var_name() {
     return {};
   }
   auto var = VertexAdaptor<op_var>::create();
-  var->str_val = static_cast<string>(cur->str_val);
+  var->str_val = static_cast<std::string>(cur->str_val);
 
   next_cur();
   return var.set_location(location);
@@ -111,14 +101,10 @@ VertexPtr GenTree::get_foreach_value() {
   return get_var_name_ref();
 }
 
-// The only reason this method exists is that gen_list wants a method,
-// so we can't pass a lambda instead of it.
-//
-// Since get_var_name_ref() doesn't emit an error now, we use
-// this method for use list parsing to report errors as they occur.
 VertexAdaptor<op_var> GenTree::get_function_use_var_name_ref() {
   auto result = get_var_name_ref();
   kphp_error(result, fmt_format("function use list: expected varname, found {}", cur->str_val));
+  kphp_error(!result->ref_flag, "references to variables in `use` block are forbidden in lambdas");
   return result;
 }
 
@@ -351,17 +337,12 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       next_cur();
       skip_phpdoc_tokens();
       vector<VertexPtr> next;
+      next.emplace_back(res);
       bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
       CE (!kphp_error(ok_next, "get argument list failed"));
       CE (expect(tok_clpar, "')'"));
 
-      auto call = VertexAdaptor<op_func_call>::create(next).set_location(location);
-
-      call->set_string(ClassData::NAME_OF_INVOKE_METHOD);
-
-      res = process_arrow(res, call);
-      CE(res);
-      res.set_location(location);
+      res = VertexAdaptor<op_invoke_call>::create(next).set_location(location);
       need = true;
     }
 
@@ -462,7 +443,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_method_c: {
       std::string fun_name;
-      if (is_anonymous_function_name(cur_function->name)) {
+      if (cur_function->is_lambda()) {
         fun_name = "{closure}";
       } else if (!cur_function->is_main_function()) {
         if (cur_class) {
@@ -482,7 +463,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_func_c: {
       std::string fun_name;
-      if (is_anonymous_function_name(cur_function->name)) {
+      if (cur_function->is_lambda()) {
         fun_name = "{closure}";
       } else if (!cur_function->is_main_function()) {
         fun_name = cur_function->name.substr(cur_function->name.rfind('$') + 1);
@@ -598,7 +579,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
         func_call->set_string("McMemcache");
       }
 
-      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next()).set_location(func_call);
+      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
       CE(res);
       break;
     }
@@ -620,7 +601,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       // this logic is compatible with what we'll get after the
       // function namespaces will be implemented
       auto func_call = get_func_call<op_func_call, op_none>();
-      if (func_call->str_val[0] == '\\' && !vk::contains(func_call->str_val, "::")) {
+      if (func_call && func_call->str_val[0] == '\\' && !vk::contains(func_call->str_val, "::")) {
         func_call->str_val.erase(0, 1);
       }
 
@@ -630,15 +611,11 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_static:
       next_cur();
-      if (cur->type() == tok_fn) {
-        res = get_anonymous_function(tok_fn, true);
-      } else {
-        res = get_anonymous_function(tok_function, true);
-      }
+      res = get_lambda_function("", FunctionModifiers::static_lambda());
       break;
     case tok_function:
     case tok_fn:
-      res = get_anonymous_function(type);
+      res = get_lambda_function("", FunctionModifiers::nonmember());
       break;
     case tok_isset: {
       auto temp = get_multi_call<op_isset, op_none>(&GenTree::get_expression, true);
@@ -688,7 +665,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
       break;
     case tok_clone: {
       next_cur();
-      res = VertexAdaptor<op_clone>::create(get_expr_top(false));
+      res = VertexAdaptor<op_clone>::create(get_expr_top(false)).set_location(auto_location());
       break;
     }
     default:
@@ -916,6 +893,9 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
   } else {
     v = VertexAdaptor<op_func_param>::create(name).set_location(location);
   }
+  if (is_varg) {
+    v->extra_type = op_ex_param_variadic;
+  }
 
   if (type_hint) {
     // if "T $a = null" (default argument null), then type of $a is ?T (strange, but PHP works this way)
@@ -975,49 +955,6 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   return {param, list};
 }
 
-VertexPtr GenTree::conv_to_cast_param(VertexPtr x, const TypeHint *type_hint, bool ref_flag) {
-  PrimitiveType tp = tp_any;
-  if (type_hint->try_as<TypeHintArray>()) {
-    tp = tp_array;
-  } else if (const auto *as_primitive = type_hint->try_as<TypeHintPrimitive>()) {
-    tp = as_primitive->ptype;
-  }
-
-  if (ref_flag) {
-    switch (tp) {
-      case tp_array:
-        return conv_to_lval<tp_array>(x);
-      case tp_int:
-        return conv_to_lval<tp_int>(x);
-      case tp_string:
-        return conv_to_lval<tp_string>(x);
-      case tp_mixed:
-        return x;
-      default:
-        kphp_error (0, "convert_to supports only mixed, array, string or int with ref_flag");
-        return x;
-    }
-  }
-  switch (tp) {
-    case tp_int:
-      return conv_to<tp_int>(x);
-    case tp_bool:
-      return conv_to<tp_bool>(x);
-    case tp_string:
-      return conv_to<tp_string>(x);
-    case tp_float:
-      return conv_to<tp_float>(x);
-    case tp_array:
-      return conv_to<tp_array>(x);
-    case tp_regexp:
-      return conv_to<tp_regexp>(x);
-    case tp_mixed:
-      return conv_to<tp_mixed>(x);
-    default:
-      return x;
-  }
-}
-
 VertexPtr GenTree::get_actual_value(VertexPtr v) {
   if (auto var = v.try_as<op_var>()) {
     if (var->extra_type == op_ex_var_const && var->var_id) {
@@ -1038,10 +975,20 @@ const std::string *GenTree::get_constexpr_string(VertexPtr v) {
   return nullptr;
 }
 
-VertexPtr GenTree::get_call_arg_ref(int arg_num, VertexPtr expr) {
+VertexPtr GenTree::get_call_arg_ref(int arg_num, VertexPtr v_func_call) {
   if (arg_num > 0) {
-    auto call_args = expr.as<op_func_call>()->args();
+    auto call_args = v_func_call.as<op_func_call>()->args();
     return arg_num <= call_args.size() ? call_args[arg_num - 1] : VertexPtr{};
+  }
+  return {};
+}
+
+VertexPtr GenTree::get_call_arg_for_param(VertexAdaptor<op_func_call> call, VertexAdaptor<op_func_param> param, int param_i) {
+  if (param_i < call->args().size()) {
+    return call->args()[param_i];
+  }
+  if (param->has_default_value()) {
+    return param->default_value();
   }
   return {};
 }
@@ -1093,6 +1040,10 @@ VertexAdaptor<op_return> GenTree::get_return() {
   next_cur();
   skip_phpdoc_tokens();
   VertexPtr return_val = get_expression();
+  if (!return_val && cur_function->is_main_function()) {
+    return_val = VertexAdaptor<op_null>::create();
+  }
+
   VertexAdaptor<op_return> ret;
   if (!return_val) {
     ret = VertexAdaptor<op_return>::create();
@@ -1142,7 +1093,7 @@ VertexAdaptor<op_foreach> GenTree::get_foreach() {
   // If foreach value is list expression, we rewrite the body
   // to include the list assignment as a first statement.
   if (foreach_list) {
-    auto list_assign = VertexAdaptor<op_set>::create(foreach_list, foreach_param->x()).set_location(foreach_location);
+    auto list_assign = VertexAdaptor<op_set>::create(foreach_list, foreach_param->x().clone()).set_location(foreach_location);
     body = VertexAdaptor<op_seq>::create(list_assign, body).set_location(foreach_location);
   }
 
@@ -1246,7 +1197,7 @@ VertexAdaptor<op_do> GenTree::get_do() {
   CE (expect(tok_clpar, "')'"));
   CE (expect(tok_semicolon, "';'"));
 
-  return VertexAdaptor<op_do>::create(condition, embrace(body)).set_location(location);
+  return VertexAdaptor<op_do>::create(embrace(body), condition).set_location(location);
 }
 
 VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix) {
@@ -1369,53 +1320,39 @@ VertexPtr GenTree::get_phpdoc_inside_function() {
   return result ?: VertexPtr(VertexAdaptor<op_empty>::create());
 }
 
-bool GenTree::parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
-  if (test_expect(tok_use)) {
-    kphp_error_act(uses_of_lambda, "Unexpected `use` token", return false);
-
-    next_cur();
-    if (!expect(tok_oppar, "`(`")) {
-      return false;
-    }
-
-    std::vector<VertexAdaptor<op_var>> uses_as_vars;
-    bool ok_params_next = gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
-
-    for (auto &v : uses_as_vars) {
-      kphp_error(!v->ref_flag, "references to variables in `use` block are forbidden in lambdas");
-      uses_of_lambda->emplace_back(VertexAdaptor<op_func_param>::create(v));
-    }
-
-    return ok_params_next && expect(tok_clpar, "`)`");
+bool GenTree::parse_cur_function_uses() {
+  if (!expect(tok_use, "`use`") || !expect(tok_oppar, "`(`")) {
+    return false;
   }
 
-  return true;
-}
+  std::vector<VertexAdaptor<op_var>> uses_as_vars;
+  gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
 
-bool GenTree::check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params) {
-  std::set<std::string> uniq_uses;
-  std::transform(uses.begin(), uses.end(),
-                 std::inserter(uniq_uses, uniq_uses.begin()),
-                 [](VertexAdaptor<op_func_param> v) { return v->var()->get_string(); });
-
-  return std::none_of(params.begin(), params.end(),
-                      [&](VertexPtr p) { return uniq_uses.find(p.as<op_func_param>()->var()->get_string()) != uniq_uses.end(); });
-}
-
-VertexAdaptor<op_func_call> GenTree::get_anonymous_function(TokenType tok, bool is_static/* = false*/) {
-  std::vector<VertexAdaptor<op_func_param>> uses_of_lambda;
-  auto anon_function = get_function(tok, vk::string_view{}, FunctionModifiers::nonmember(), &uses_of_lambda);
-
-  if (anon_function) {
-    // it's a constructor call
-    kphp_assert(!functions_stack.empty());
-    lambda_generators.push_back(generate_anonymous_class(anon_function, cur_function, is_static, std::move(uses_of_lambda), anon_function->func_id));
-    return lambda_generators.back()
-                            .get_generated_lambda()
-                            ->gen_constructor_call_pass_fields_as_args();
+  for (auto &v : uses_as_vars) {
+    cur_function->uses_list.emplace_front(v);   // the order — use($v1, $v2) or use($v2, $v1) — doesn't matter
   }
 
-  return {};
+  return expect(tok_clpar, "`)`");
+}
+
+bool GenTree::test_if_uses_and_arguments_intersect(const std::forward_list<VertexAdaptor<op_var>> &uses_list, const VertexRange &params) {
+  return std::any_of(uses_list.begin(), uses_list.end(), [params](auto var_as_use) {
+    return std::any_of(params.begin(), params.end(), [var_as_use](auto p) {
+      return p.template as<op_func_param>()->var()->str_val == var_as_use->str_val;
+    });
+  });
+}
+
+VertexAdaptor<op_lambda> GenTree::get_lambda_function(vk::string_view phpdoc_str, FunctionModifiers modifiers) {
+  auto v_op_function_lambda = get_function(true, phpdoc_str, modifiers);
+  CE (v_op_function_lambda);
+
+  cur_function->has_lambdas_inside = true;
+
+  auto v_lambda = VertexAdaptor<op_lambda>::create().set_location(v_op_function_lambda);
+  v_lambda->func_id = v_op_function_lambda->func_id;
+  kphp_assert(v_lambda->func_id->is_lambda());
+  return v_lambda;
 }
 
 // parsing 'static public', 'final protected' and other function/class members modifiers
@@ -1476,7 +1413,8 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   }
 
   if (test_expect(tok_function)) {
-    return get_function(tok_function, phpdoc_str, modifiers);
+    get_function(false, phpdoc_str, modifiers);
+    return {};
   }
 
   const TypeHint *type_hint = get_typehint();
@@ -1501,8 +1439,8 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
 
   CE(expect(tok_oppar, "'('"));
 
-  if (cur_function->modifiers.is_instance()) {
-    ClassData::patch_func_add_this(params_next, Location(line_num));
+  if (cur_function->modifiers.is_instance()) {    // add implicit $this
+    params_next.emplace_back(ClassData::gen_param_this(auto_location()));
   }
 
   bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
@@ -1518,18 +1456,12 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
-VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda) {
-  bool is_arrow = (tok == tok_fn);
-  if (is_arrow) {
-    expect(tok_fn, "'fn'");
-  } else {
-    expect(tok_function, "'function'");
-  }
+VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, vk::string_view phpdoc_str, FunctionModifiers modifiers) {
+  bool is_arrow = test_expect(tok_fn);
+  CE(expect2(tok_fn, tok_function, "function"));
   auto func_location = auto_location();
 
   std::string func_name;
-  bool is_lambda = uses_of_lambda != nullptr;
-  auto cnt_errors_before = stage::get_stage_info_ptr()->cnt_errors;
 
   // a function name is a token that immediately follow a 'function' token (full$$name inside a class)
   if (is_lambda) {
@@ -1537,42 +1469,42 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   } else {
     func_name = get_identifier();
     CE(!func_name.empty());
-    func_name = static_cast<string>(std::prev(cur)->str_val);
-    if (cur_class && func_name.size() > 2 && func_name[0] == '_' && func_name[1] == '_') {
-      kphp_error(is_magic_method_name_allowed(func_name), "This magic method is unsupported");
-    }
-    if (cur_class) { // fname inside a class is full$class$name$$fname
-      func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
-    }
   }
 
-  if (cur_class) {
+  // a class/interface method
+  if (cur_class && !is_lambda) {
+    bool is_magic_method = func_name.size() > 2 && func_name[0] == '_' && func_name[1] == '_';
+    kphp_error(!is_magic_method || is_magic_method_name_allowed(func_name), "This magic method is unsupported");
     kphp_error(!(modifiers.is_abstract() && cur_class->is_interface()), fmt_format("abstract methods may not be declared in interfaces: {}", cur_class->name));
+
+    // a function name inside a class is full$class$name$$fname
+    func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
 
     if (cur_class->is_interface()) {
       modifiers.set_abstract();
-    } else if (cur_class->modifiers.is_final()) {
+    }
+    if (cur_class->modifiers.is_final()) {
       modifiers.set_final();
     }
   }
 
   auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{}).set_location(func_location);
+  FunctionData::func_type_t func_type = is_lambda ? FunctionData::func_lambda : processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
 
-  // create a cur_function with a func_local type; if we won't find a body, we'll mark it as func_extern later
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, FunctionData::func_local));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, func_type));
   cur_function->phpdoc_str = phpdoc_str;
   cur_function->modifiers = modifiers;
 
-  // function params follow the function name, followed by the 'use' list for closures
-  CE(cur_function->root->param_list_ref() = parse_cur_function_param_list());
-  if (!is_arrow) {
-    CE(parse_function_uses(uses_of_lambda));
-    kphp_error(!uses_of_lambda || check_uses_and_args_are_not_intersecting(*uses_of_lambda, cur_function->get_params()),
-               "arguments and captured variables(in `use` clause) must have different names");
-  }
   if (is_lambda) {
-    cur_function->modifiers.set_instance();
-    cur_function->modifiers.set_public();
+    cur_function->outer_function = functions_stack[functions_stack.size() - 2];
+  }
+
+  CE(cur_function->root->param_list_ref() = parse_cur_function_param_list());
+
+  if (is_lambda && !is_arrow && test_expect(tok_use)) {
+    CE(parse_cur_function_uses());
+    kphp_error(!test_if_uses_and_arguments_intersect(cur_function->uses_list, cur_function->get_params()),
+               "arguments and captured variables (in `use` clause) must have different names");
   }
 
   if (test_expect(tok_colon) || test_expect(tok_triple_colon)) {    // function.txt allows ::: besides :
@@ -1581,15 +1513,21 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
     kphp_error(cur_function->return_typehint, "Expected return typehint after :");
   }
 
+  if (cur_function->modifiers.is_instance()) {
+    cur_class->members.add_instance_method(cur_function);
+  } else if (cur_function->modifiers.is_static()) {
+    cur_class->members.add_static_method(cur_function);
+  }
+
   if (is_arrow) {
     CE (expect(tok_double_arrow, "'=>'"));
     auto body_expr = get_expression();
     CE (!kphp_error(body_expr, "Bad expression in arrow function body"));
-    LambdaImplicitUses{cur_function->root->param_list(), uses_of_lambda}.find(body_expr);
     auto return_stmt = VertexAdaptor<op_return>::create(body_expr);
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(return_stmt);
+    auto_capture_vars_from_body_in_arrow_lambda(cur_function);
   } else if (test_expect(tok_opbrc)) { // then we have '{ cmd }' or ';' — function is marked as func_extern in the latter case
-    CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->get_human_readable_name())));
+    CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->as_human_readable())));
     is_top_of_the_function_ = true;
     cur_function->root->cmd_ref() = get_statement().as<op_seq>();
     CE(!kphp_error(cur_function->root->cmd(), "Failed to parse function body"));
@@ -1601,38 +1539,23 @@ VertexAdaptor<op_function> GenTree::get_function(TokenType tok, vk::string_view 
   } else {
     CE(!kphp_error(cur_function->modifiers.is_abstract() || processing_file->is_builtin(), "function must have non-empty body"));
     CE (expect(tok_semicolon, "';'"));
-    cur_function->type = processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
-  if (!is_lambda) {
-    if (cur_function->modifiers.is_instance()) {
-      kphp_assert(cur_class);
-
-      cur_class->members.add_instance_method(cur_function);
-    } else if (modifiers.is_static()) {
-      kphp_assert(cur_class);
-      cur_class->members.add_static_method(cur_function);
-    }
-
-    // the function is ready, register it;
-    // the constructor is registered later, after the entire class is parsed
-    if (!cur_function->is_constructor()) {
-      const bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
-                                      phpdoc_str.find("@kphp-lib-export") != std::string::npos;
-      const bool auto_require = cur_function->is_extern()
-                                || cur_function->modifiers.is_abstract()
-                                || cur_function->modifiers.is_instance()
-                                || kphp_required_flag;
-      G->register_and_require_function(cur_function, parsed_os, auto_require);
-    }
-
-    require_lambdas();
-  } else if (stage::get_stage_info_ptr()->cnt_errors == cnt_errors_before) {
-    return cur_function->root;
+  // the function is ready, register it;
+  // the constructor is registered later, after the entire class is parsed
+  if (!cur_function->is_constructor()) {
+    bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
+                              phpdoc_str.find("@kphp-lib-export") != std::string::npos;
+    bool auto_require = cur_function->is_extern()
+                        || cur_function->modifiers.is_abstract()
+                        || cur_function->modifiers.is_instance()
+                        || cur_function->is_lambda()
+                        || kphp_required_flag;
+    G->register_and_require_function(cur_function, parsed_os, auto_require);
   }
 
-  return {};
+  return cur_function->root;
 }
 
 bool GenTree::check_seq_end() {
@@ -1726,7 +1649,8 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   name_vertex->str_val = static_cast<std::string>(name_str);
 
   cur_class->file_id = processing_file;
-  cur_class->set_name_and_src_name(full_class_name, phpdoc_str);    // with full namespaces and slashes
+  cur_class->set_name_and_src_name(full_class_name);    // with full namespaces and slashes
+  cur_class->phpdoc_str = phpdoc_str;
   cur_class->is_immutable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_immutable_class);
   cur_class->location_line_num = line_num;
 
@@ -1753,83 +1677,60 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
 }
 
 
-LambdaGenerator GenTree::generate_anonymous_class(VertexAdaptor<op_function> function,
-                                                  FunctionPtr parent_function,
-                                                  bool is_static,
-                                                  std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda,
-                                                  FunctionPtr already_created_function /*= FunctionPtr{}*/) {
-  auto anon_location = function->location;
-
-  return LambdaGenerator{parent_function, anon_location, is_static}
-    .add_uses(uses_of_lambda)
-    .add_invoke_method(function, already_created_function)
-    .add_constructor_from_uses()
-    .generate(parent_function);
-}
-
-VertexAdaptor<op_func_call> GenTree::generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name) {
-  auto params = function->get_params_as_vector_of_vars(1);
-  auto call_method = VertexAdaptor<op_func_call>::create(instance_var, params);
-
-  if (function->has_variadic_param) {
-    kphp_assert(!call_method->args().empty());
-    auto &last_param_passed_to_method = *std::prev(call_method->args().end());
-    last_param_passed_to_method = VertexAdaptor<op_varg>::create(params.back()).set_location(params.back());
-  }
-
-  call_method->set_string(std::string{function_name});
-  call_method->extra_type = op_ex_func_call_arrow;
-
-  return call_method;
-}
-
-VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args) {
-  auto alloc = VertexAdaptor<op_alloc>::create();
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args, const Location &location) {
+  auto alloc = VertexAdaptor<op_alloc>::create().set_location(location);
   alloc->allocated_class_name = allocated_class_name;
-  auto constructor_call = VertexAdaptor<op_func_call>::create(alloc, std::move(args));
+  auto constructor_call = VertexAdaptor<op_func_call>::create(alloc, std::move(args)).set_location(location);
   constructor_call->str_val = ClassData::NAME_OF_CONSTRUCT;
-  constructor_call->extra_type = op_ex_func_call_arrow;
+  constructor_call->extra_type = op_ex_constructor_call;
 
   return constructor_call;
 }
 
-VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args) {
-  auto res_func_call = gen_constructor_call_with_args(allocated_class->name, std::move(args));
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args, const Location &location) {
+  auto res_func_call = gen_constructor_call_with_args(allocated_class->name, std::move(args), location);
   res_func_call->args()[0].as<op_alloc>()->allocated_class = allocated_class;
   res_func_call->func_id = allocated_class->construct_function;
 
   return res_func_call;
 }
 
+VertexAdaptor<op_var> GenTree::auto_capture_this_in_lambda(FunctionPtr f_lambda) {
+  auto v_captured_this = VertexAdaptor<op_var>::create();
+  v_captured_this->str_val = "this";
+  v_captured_this->extra_type = op_ex_var_this;
+
+  kphp_assert(f_lambda->is_lambda());
+  // bubble up $this through all nested lambdas upwards
+  while (f_lambda->is_lambda()) {
+    G->operate_on_function_locking(f_lambda->name, [v_captured_this](FunctionPtr &f_lambda) {
+      if (f_lambda->uses_list.empty() || f_lambda->uses_list.front()->extra_type != op_ex_var_this) {
+        f_lambda->uses_list.emplace_front(v_captured_this);
+      }
+    });
+    f_lambda = f_lambda->outer_function;
+  }
+
+  return v_captured_this;
+}
+
 VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
   if (rhs->type() == op_func_name) {
     auto inst_prop = VertexAdaptor<op_instance_prop>::create(lhs);
-    inst_prop->set_string(rhs->get_string());
-
+    inst_prop->str_val = rhs->get_string();
     return inst_prop;
-  } else if (auto call = rhs.try_as<op_func_call>()) {
-    auto new_root = VertexAdaptor<op_func_call>::create(lhs, call->args());
-    new_root->extra_type = op_ex_func_call_arrow;
-    new_root->str_val = call->get_string();
-    new_root->func_id = call->func_id;
 
+  } else if (rhs->type() == op_func_call) {
+    auto new_root = VertexAdaptor<op_func_call>::create(lhs, rhs.as<op_func_call>()->args());
+    new_root->extra_type = op_ex_func_call_arrow;
+    new_root->str_val = rhs->get_string();
     return new_root;
+    
   } else {
     kphp_error (false, "Operator '->' expects property or function call as its right operand");
     return {};
   }
 }
-
-VertexAdaptor<op_func_call> GenTree::generate_critical_error(std::string msg) {
-  auto msg_v = VertexAdaptor<op_string>::create();
-  msg_v->str_val = std::move(msg);
-
-  auto critical_error_v = VertexAdaptor<op_func_call>::create(msg_v);
-  critical_error_v->str_val = "critical_error";
-
-  return critical_error_v;
-}
-
 
 void GenTree::get_traits_uses() {
   next_cur();
@@ -2010,7 +1911,7 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   CE (!kphp_error(catch_body, "Cannot parse catch block"));
 
   auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), embrace(catch_body));
-  catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class), '\\');
+  catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class));
 
   return catch_op;
 }
@@ -2156,9 +2057,11 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_function:
       if (cur_class) {      // no access modifier implies 'public'
-        return get_class_member(phpdoc_str);
+        get_class_member(phpdoc_str);
+      } else {
+        get_function(false, phpdoc_str, FunctionModifiers::nonmember());
       }
-      return get_function(tok_function, phpdoc_str, FunctionModifiers::nonmember());
+      return {};
 
     case tok_try: {
       auto location = auto_location();
@@ -2334,11 +2237,14 @@ void GenTree::run() {
   auto set_run_flag = VertexAdaptor<op_set>::create(processing_file->get_main_func_run_var(), VertexAdaptor<op_true>::create());
   seq_next.push_back(set_run_flag);
   get_seq(seq_next);
-  seq_next.push_back(VertexAdaptor<op_return>::create());
+  seq_next.push_back(VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create()));
   cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(seq_next).set_location(location);
 
   G->register_and_require_function(cur_function, parsed_os, true);  // global function — therefore required
-  require_lambdas();
+
+  if (processing_file->file_name == G->settings().functions_file.get()) {
+    G->set_functions_txt_parsed();
+  }
 
   if (cur != end) {
     fmt_fprintf(stderr, "line {}: something wrong\n", line_num);

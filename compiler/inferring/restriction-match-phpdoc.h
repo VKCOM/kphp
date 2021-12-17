@@ -15,8 +15,9 @@ class RestrictionMatchPhpdoc : public tinf::RestrictionBase {
 
   // this enum is used for better error descriptions
   enum UsageContext {
-    usage_function_argument,
+    usage_pass_to_argument,
     usage_assign_to_variable,
+    usage_assign_to_argument,
     usage_assign_to_array_index,
     usage_return_from_function,
     usage_return_from_callback,

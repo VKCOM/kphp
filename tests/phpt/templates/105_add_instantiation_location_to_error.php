@@ -1,4 +1,5 @@
 @kphp_should_fail
+/in foo<any>/
 /instantiated at/
 <?php
 

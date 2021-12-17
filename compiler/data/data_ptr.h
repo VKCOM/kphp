@@ -60,23 +60,6 @@ public:
     return ptr != nullptr;
   }
 
-  void clear() {
-    delete ptr; //TODO: be very-very careful with it
-    ptr = nullptr;
-  }
-
-  template<class AnotherIdData>
-  Id<AnotherIdData> try_as() const {
-    return Id<AnotherIdData>{dynamic_cast<AnotherIdData *>(ptr)};
-  }
-
-  template<class AnotherIdData>
-  Id<AnotherIdData> as() const {
-    auto res = try_as<AnotherIdData>();
-    kphp_assert(res);
-    return res;
-  }
-
   IdData *operator->() const {
     kphp_assert(ptr != nullptr);
     return ptr;
@@ -89,9 +72,6 @@ public:
   bool operator!=(const Id<IdData> &other) const {
     return !(*this == other);
   }
-
-  template<class AnotherIdData>
-  friend class Id;
 };
 
 template<class T>
@@ -117,17 +97,17 @@ void set_index(Id<T> &d, int index) {
 
 class VarData;
 class ClassData;
-class LambdaClassData;
 class DefineData;
 class FunctionData;
 class LibData;
 class SrcFile;
+class TypeHint;
+struct GenericsInstantiationMixin;
 
 using VarPtr = Id<VarData>;
 using ClassPtr = Id<ClassData>;
 using InterfacePtr = Id<ClassData>;
 using TraitPtr = Id<ClassData>;
-using LambdaPtr = Id<LambdaClassData>;
 using DefinePtr = Id<DefineData>;
 using FunctionPtr = Id<FunctionData>;
 using LibPtr = Id<LibData>;

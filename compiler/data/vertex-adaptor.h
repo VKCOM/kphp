@@ -78,9 +78,6 @@ public:
 
   template<Operation to>
   VertexAdaptor<to> as() const noexcept {
-    if (!impl_) {
-      return {};
-    };
     auto res = try_as<to>();
     kphp_assert_msg(res, fmt_format("Can't cast VertexAdaptor<{}>(real type {}) to VertexAdaptor<{}>", OpInfo::op_str(Op),
                                     impl_ ? OpInfo::op_str(impl_->type()) : "nullptr", OpInfo::op_str(to)));

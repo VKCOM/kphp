@@ -8,7 +8,6 @@
 #include "common/algorithms/string-algorithms.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/lambda-class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
@@ -43,9 +42,9 @@ void process_job_worker_class(ClassPtr klass) {
   auto request_interface = G->get_class("KphpJobWorkerRequest");
   auto response_interface = G->get_class("KphpJobWorkerResponse");
   auto shared_memory_piece_interface = G->get_class("KphpJobWorkerSharedMemoryPiece");
-  kphp_assert(request_interface);
-  kphp_assert(response_interface);
-  kphp_assert(shared_memory_piece_interface);
+  if (!shared_memory_piece_interface) {   // when functions.txt deleted while development
+    return;
+  }
 
   bool implements_request = request_interface->is_parent_of(klass);
   bool implements_response = response_interface->is_parent_of(klass);
@@ -75,8 +74,7 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   auto type = tinf::get_type(call->args()[1]);
-  kphp_error_return(type->ptype() == tp_Class,
-                    "Can not store non-instance var with instance_cache_store call");
+  kphp_error_return(type->ptype() == tp_Class, "Called instance_cache_store() with a non-instance argument");
   auto klass = type->class_type();
   klass->deeply_require_instance_cache_visitor();
   kphp_error(!klass->is_polymorphic_or_has_polymorphic_member(),
@@ -87,9 +85,21 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
 
 void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
   auto type = tinf::get_type(call->args()[0]);
-  kphp_error_return(type->ptype() == tp_Class, "You may not use instance_to_array with non-instance var");
-  kphp_error_return(!type->class_type()->is_ffi_cdata(), "You may not use instance_to_array with CData");
+  kphp_error_return(type->ptype() == tp_Class, "Called instance_to_array() with a non-instance argument");
+  kphp_error_return(!type->class_type()->is_ffi_cdata(), "Called instance_to_array() with CData");
   type->class_type()->deeply_require_instance_to_array_visitor();
+}
+
+void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {
+  auto type = tinf::get_type(call->args()[0]);
+  kphp_error_return(type->ptype() == tp_Class, "Called instance_serialize() with a non-instance argument");
+  kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_serialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
+}
+
+void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
+  auto type = tinf::get_type(call);
+  kphp_assert(type->ptype() == tp_Class);
+  kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
@@ -141,26 +151,14 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     auto param = func_params[i].as<op_func_param>();
     bool is_callback_passed_to_extern = f->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>();
     if (!is_callback_passed_to_extern) {
-      kphp_error(call_params[i]->type() != op_func_ptr, "Unexpected function pointer");
+      kphp_error(call_params[i]->type() != op_callback_of_builtin, "Unexpected function pointer");
       continue;
     }
     const auto *type_hint_callable = param->type_hint->try_as<TypeHintCallable>();
 
-    auto lambda_class = LambdaClassData::get_from(call_params[i]);
-    kphp_error_act(lambda_class || call_params[i]->type() == op_func_ptr, "Callable object expected", continue);
+    FunctionPtr f_passed_to_builtin = call_params[i].as<op_callback_of_builtin>()->func_id;
 
-    FunctionPtr func_ptr_of_callable =
-      call_params[i]->type() == op_func_ptr ?
-      call_params[i].as<op_func_ptr>()->func_id :
-      call_params[i].as<op_func_call>()->func_id;
-
-    kphp_error_act(func_ptr_of_callable->root, fmt_format("Unknown callback function [{}]", func_ptr_of_callable->get_human_readable_name()), continue);
-    VertexRange cur_params = func_ptr_of_callable->get_params();
-
-    for (auto arg : cur_params) {
-      kphp_error_return(!arg.as<op_func_param>()->var()->ref_flag, "You can't pass callbacks with &references to built-in functions");
-    }
-    if (func_ptr_of_callable->local_name() == "instance_to_array") {
+    if (f_passed_to_builtin->local_name() == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
         auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
@@ -170,11 +168,6 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
           out_class->deeply_require_instance_to_array_visitor();
         }
       }
-    }
-
-    auto expected_arguments_count = type_hint_callable->arg_types.size();
-    if (!FunctionData::check_cnt_params(expected_arguments_count, func_ptr_of_callable)) {
-      continue;
     }
   }
 }
@@ -337,7 +330,7 @@ void FinalCheckPass::on_start() {
 
   if (current_function->should_not_throw && current_function->can_throw()) {
     kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}",
-                             current_function->get_human_readable_name(), current_function->get_throws_call_chain()));
+                             current_function->as_human_readable(), current_function->get_throws_call_chain()));
   }
 
   for (auto &static_var : current_function->static_var_ids) {
@@ -450,8 +443,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
       if (vertex->type() == op_unset) {
         kphp_error(!var->is_reference, "Unset of reference variables is not supported");
         if (var->is_in_global_scope()) {
-          FunctionPtr f = stage::get_function();
-          if (!f->is_main_function() && f->type != FunctionData::func_switch) {
+          if (current_function->type != FunctionData::func_main && current_function->type != FunctionData::func_switch) {
             kphp_error(0, "Unset of global variables in functions is not supported");
           }
         }
@@ -459,7 +451,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         kphp_error(!var->is_constant(), "Can't use isset on const variable");
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
-                   fmt_format("isset({}) will be always true for {}", var->get_human_readable_name(), type_info->as_human_readable()));
+                   fmt_format("isset({}) will be always true for {}", var->as_human_readable(), type_info->as_human_readable()));
       }
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
@@ -495,7 +487,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   }
 
   if (G->settings().warnings_level.get() >= 2 && vertex->type() == op_func_call) {
-    FunctionPtr function_where_require = stage::get_function();
+    FunctionPtr function_where_require = current_function;
 
     if (function_where_require && function_where_require->type == FunctionData::func_local) {
       FunctionPtr function_which_required = vertex.as<op_func_call>()->func_id;
@@ -532,7 +524,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance of class, but passed type '{}'", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
@@ -548,6 +540,10 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_cache_store_call(call);
     } else if (function_name == "instance_to_array") {
       check_instance_to_array_call(call);
+    } else if (function_name == "instance_serialize") {
+      check_instance_serialize_call(call);
+    } else if (function_name == "instance_deserialize") {
+      check_instance_deserialize_call(call);
     } else if (function_name == "estimate_memory_usage") {
       check_estimate_memory_usage_call(call);
     } else if (function_name == "get_global_vars_memory_stats") {
@@ -726,7 +722,7 @@ void FinalCheckPass::check_magic_methods(FunctionPtr fun) {
 
 void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
   const auto count_args = fun->param_ids.size();
-  kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->get_human_readable_name()));
+  kphp_error(count_args == 1, fmt_format("Magic method {} cannot take arguments", fun->as_human_readable()));
 
   const auto *ret_type = tinf::get_type(fun, -1);
   if (!ret_type) {
@@ -734,10 +730,10 @@ void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
   }
 
   kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0,
-             fmt_format("Magic method {} must have string return type", fun->get_human_readable_name()));
+             fmt_format("Magic method {} must have string return type", fun->as_human_readable()));
 }
 
 void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
-  kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", fun->get_human_readable_name()));
-  kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", fun->get_human_readable_name()));
+  kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", fun->as_human_readable()));
+  kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", fun->as_human_readable()));
 }

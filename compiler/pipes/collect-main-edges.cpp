@@ -155,8 +155,8 @@ void CollectMainEdgesPass::create_edges_to_recalc_arg_ref(const TypeHint *type_h
     if (call_arg) {
       tinf::Edge *e = new tinf::Edge;
       e->from = tinf::get_tinf_node(dependent_vertex);
-      e->to = call_arg->type() == op_func_ptr
-              ? tinf::get_tinf_node(call_arg.as<op_func_ptr>()->func_id, -1)
+      e->to = call_arg->type() == op_callback_of_builtin
+              ? tinf::get_tinf_node(call_arg.as<op_callback_of_builtin>()->func_id, -1)
               : tinf::get_tinf_node(call_arg);
       e->from_at = nullptr;
       tinf::get_inferer()->add_edge(e);
@@ -174,7 +174,7 @@ void CollectMainEdgesPass::on_var_phpdoc(VertexAdaptor<op_phpdoc_var> var_op) {
   // it may appear duplicated @var for the same variable (strange, but such occasions meet in real code)
   if (var_id->tinf_node.type_restriction) {
     kphp_error(are_equal_types(var_id->tinf_node.type_restriction, var_op->type_hint->to_type_data()),
-               fmt_format("Different @var for {} exist", var_id->get_human_readable_name()));
+               fmt_format("Different @var for {} exist", var_id->as_human_readable()));
   } else {
     create_type_assign_with_restriction(as_lvalue(var_id), var_op->type_hint);
   }
@@ -223,8 +223,9 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
 // handle calls to built-in functions with callbacks:
 // array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
 // (not to php functions with callable arguments! built-in only)
-void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_call> call, int param_i, FunctionPtr provided_callback) {
-  const FunctionPtr call_function = call->func_id;  // array_filter, etc
+void CollectMainEdgesPass::on_passed_callback_to_builtin(VertexAdaptor<op_func_call> call, int param_i, VertexAdaptor<op_callback_of_builtin> v_callback) {
+  FunctionPtr call_function = call->func_id;            // array_filter, etc
+  FunctionPtr provided_callback = v_callback->func_id;  // typically, a lambda or __invoke method
   auto callback_param = call_function->get_params()[param_i].as<op_func_param>();
   const auto *type_hint_callable = callback_param->type_hint->try_as<TypeHintCallable>();
 
@@ -256,9 +257,13 @@ void CollectMainEdgesPass::on_func_call_param_callback(VertexAdaptor<op_func_cal
   // here we do the following: having PHP code 'array_map(function($v) { ... }, $arr)'
   // with callback_param declared as 'callable(^2[*] $x):any',
   // create set-edges to infer $v as ^2[*] of $arr on this exact call
-  for (int i = 0; i < type_hint_callable->arg_types.size(); ++i) {
+  param_i = 0;
+  for (VertexPtr cpp_captured : *v_callback) {
+    create_set(as_lvalue(provided_callback, param_i), as_rvalue(cpp_captured));
+    param_i++;
+  }
+  for (int i = 0; i < type_hint_callable->arg_types.size(); ++i, ++param_i) {
     const auto *callback_param_decl = type_hint_callable->arg_types[i]; // ^2[*] above
-    int param_i = provided_callback->is_lambda() ? i + 1 : i;
     if (callback_param_decl->has_argref_inside()) {
       create_type_assign_with_arg_ref_rule(as_lvalue(provided_callback, param_i), callback_param_decl, call);
     } else {
@@ -287,8 +292,8 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
 
     // call an extern function having a callback type description, like 'callable(^1[*]) : bool'
     if (function->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
-      kphp_assert(arg->type() == op_func_ptr);
-      on_func_call_param_callback(call, i, arg.as<op_func_ptr>()->func_id);
+      kphp_assert(arg->type() == op_callback_of_builtin);
+      on_passed_callback_to_builtin(call, i, arg.as<op_callback_of_builtin>());
     }
 
     // having a f($x) and a call f($arg), it's a bit tricky what's going on here:

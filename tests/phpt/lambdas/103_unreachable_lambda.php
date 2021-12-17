@@ -1,4 +1,5 @@
 @kphp_should_fail
+/Variable \$x has Unknown type/
 <?php
 
 /**

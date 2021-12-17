@@ -10,7 +10,6 @@
 #include "compiler/data/class-member-modifiers.h"
 #include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-modifiers.h"
-#include "compiler/data/lambda-generator.h"
 #include "compiler/operation.h"
 #include "compiler/token.h"
 #include "compiler/vertex.h"
@@ -37,7 +36,8 @@ class GenTree {
   };
 
 public:
-  Location auto_location() const;
+  Location auto_location() const { return Location{this->line_num}; }
+  
   VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
@@ -50,7 +50,7 @@ public:
 
   static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
 
-  bool test_expect(TokenType tp);
+  bool test_expect(TokenType tp) { return cur->type() == tp; }
 
   void next_cur();
   int open_parent();
@@ -58,12 +58,13 @@ public:
 
   static VertexAdaptor<op_seq> embrace(VertexPtr v);
 
-  static VertexPtr conv_to_cast_param(VertexPtr x, const TypeHint *type_hint, bool ref_flag = 0);
   template<PrimitiveType ToT>
   static VertexPtr conv_to(VertexPtr x);
+
   static VertexPtr get_actual_value(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
-  static VertexPtr get_call_arg_ref(int arg_num, VertexPtr expr);
+  static VertexPtr get_call_arg_ref(int arg_num, VertexPtr v_func_call);
+  static VertexPtr get_call_arg_for_param(VertexAdaptor<op_func_call> call, VertexAdaptor<op_func_param> param, int param_i);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
@@ -123,32 +124,24 @@ public:
   VertexAdaptor<op_switch> get_switch();
   VertexAdaptor<op_shape> get_shape();
   VertexPtr get_phpdoc_inside_function();
-  bool parse_function_uses(std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda);
-  static bool check_uses_and_args_are_not_intersecting(const std::vector<VertexAdaptor<op_func_param>> &uses, const VertexRange &params);
-  VertexAdaptor<op_func_call> get_anonymous_function(TokenType tok = tok_function, bool is_static = false);
-  VertexAdaptor<op_function> get_function(TokenType tok, vk::string_view phpdoc_str, FunctionModifiers modifiers, std::vector<VertexAdaptor<op_func_param>> *uses_of_lambda = nullptr);
+  bool parse_cur_function_uses();
+  static bool test_if_uses_and_arguments_intersect(const std::forward_list<VertexAdaptor<op_var>> &uses_list, const VertexRange &params);
+  VertexAdaptor<op_lambda> get_lambda_function(vk::string_view phpdoc_str, FunctionModifiers modifiers);
+  VertexAdaptor<op_function> get_function(bool is_lambda, vk::string_view phpdoc_str, FunctionModifiers modifiers);
 
   ClassMemberModifiers parse_class_member_modifier_mask();
   VertexPtr get_class_member(vk::string_view phpdoc_str);
 
   std::string get_identifier();
 
-  static LambdaGenerator generate_anonymous_class(VertexAdaptor<op_function> function,
-                                                  FunctionPtr parent_function,
-                                                  bool is_static,
-                                                  std::vector<VertexAdaptor<op_func_param>> &&uses_of_lambda,
-                                                  FunctionPtr already_created_function = FunctionPtr{});
-
-  static VertexAdaptor<op_func_call> generate_call_on_instance_var(VertexPtr instance_var, FunctionPtr function, vk::string_view function_name);
-  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(std::string allocated_class_name, std::vector<VertexPtr> args);
-  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args);
+  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args, const Location &location);
+  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args, const Location &locaction);
+  static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
   VertexPtr get_class(vk::string_view phpdoc_str, ClassType class_type);
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
-
-  static VertexAdaptor<op_func_call> generate_critical_error(std::string msg);
 
 private:
   const TypeHint *get_typehint();
@@ -163,20 +156,11 @@ private:
   VertexPtr get_foreach_value();
   std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> get_foreach_param();
 
-  void require_lambdas() {
-    for (auto &generator : lambda_generators) {
-      generator.require(parsed_os);
-    }
-    lambda_generators.clear();
-  }
-
   VertexPtr get_const_after_explicit_access_modifier(AccessModifiers access);
   VertexPtr get_const(AccessModifiers access);
 
-public:
-  int line_num{0};
 
-private:
+  int line_num{0};
   const vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_{false};
@@ -186,7 +170,6 @@ private:
   vector<FunctionPtr> functions_stack;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
-  std::vector<LambdaGenerator> lambda_generators;
 };
 
 template<PrimitiveType ToT>

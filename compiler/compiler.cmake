@@ -36,17 +36,13 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         class-members.cpp
         define-data.cpp
         function-data.cpp
-        lambda-class-data.cpp
-        lambda-generator.cpp
-        lambda-interface-generator.cpp
-        lambda-implicit-uses.cpp
         lib-data.cpp
+        generics-mixins.cpp
         performance-inspections.cpp
         src-file.cpp
         var-data.cpp
         ffi-data.cpp
-        vars-collector.cpp
-        virtual-method-generator.cpp)
+        vars-collector.cpp)
 
 prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         expr-node.cpp
@@ -111,7 +107,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         check-access-modifiers.cpp
         check-classes.cpp
         check-conversions.cpp
-        check-function-calls.cpp
+        check-func-calls-and-vararg.cpp
         check-modifications-of-const-vars.cpp
         check-nested-foreach.cpp
         check-type-hint-variance.cpp
@@ -123,8 +119,10 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         collect-forkable-types.cpp
         collect-main-edges.cpp
         collect-required-and-classes.cpp
+        convert-invoke-to-func-call.cpp
         convert-list-assignments.cpp
         convert-sprintf-calls.cpp
+        deduce-implicit-types-and-casts.cpp
         erase-defines-declarations.cpp
         extract-async.cpp
         extract-resumable-calls.cpp
@@ -136,6 +134,8 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         generate-virtual-methods.cpp
         inline-defines-usages.cpp
         inline-simple-functions.cpp
+        instantiate-generics-and-lambdas.cpp
+        instantiate-ffi-operations.cpp
         load-files.cpp
         optimization.cpp
         parse.cpp
@@ -143,8 +143,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         preprocess-break.cpp
         preprocess-eq3.cpp
         preprocess-exceptions.cpp
-        preprocess-function.cpp
-        preprocess-ffi-operations.cpp
+        propagate-throw-flag.cpp
         register-defines.cpp
         register-kphp-configuration.cpp
         register-variables.cpp
@@ -183,6 +182,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         function-colors.cpp
         gentree.cpp
         index.cpp
+        lambda-utils.cpp
         lexer.cpp
         name-gen.cpp
         operation.cpp

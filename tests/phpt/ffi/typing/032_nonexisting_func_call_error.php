@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/Unknown function ->g\(\) of scope\$example/
+/Method g\(\) not found in class ffi_scope<example>/
 <?php
 
 $cdef = FFI::cdef('

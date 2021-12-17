@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Redeclaration of class \[Classes\\NonAutoloadable\], the previous declaration was in/
+/Redeclaration of class Classes\\NonAutoloadable, the previous declaration was in/
 <?php
 require_once 'kphp_tester_include.php';
 

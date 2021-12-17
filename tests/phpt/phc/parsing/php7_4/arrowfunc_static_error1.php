@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Invalid property access ...->x: does not exist in class `static lambda`/
+/Using \$this in a static lambda/
 <?php
 
 class Example {

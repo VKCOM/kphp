@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include "compiler/data/class-member-modifiers.h"
-#include "compiler/stage.h"
 
 class FunctionModifiers {
 private:
@@ -16,6 +13,7 @@ private:
 public:
   FunctionModifiers(const FunctionModifiers &) = default;
   FunctionModifiers& operator=(const FunctionModifiers &) = default;
+  ~FunctionModifiers() = default;
 
   void set_static() {
     kphp_assert(!is_instance());
@@ -55,6 +53,8 @@ public:
   bool is_static()    const { return scope_modifier_ == ScopeModifiers::static_;   }
   bool is_instance()  const { return scope_modifier_ == ScopeModifiers::instance_; }
   bool is_nonmember() const { return !is_static() && !is_instance();   }
+  
+  bool is_static_lambda() const { return scope_modifier_ == ScopeModifiers::static_lambda_; }
 
   bool is_public()    const { return access_modifier_ == AccessModifiers::public_;    }
   bool is_private()   const { return access_modifier_ == AccessModifiers::private_;   }
@@ -95,6 +95,13 @@ public:
     FunctionModifiers res;
     res.set_instance();
     res.set_private();
+
+    return res;
+  }
+
+  static FunctionModifiers static_lambda() {
+    FunctionModifiers res;
+    res.scope_modifier_ = ScopeModifiers::static_lambda_;
 
     return res;
   }

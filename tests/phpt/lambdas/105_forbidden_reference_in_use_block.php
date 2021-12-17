@@ -1,4 +1,5 @@
 @kphp_should_fail
+/references to variables in `use` block are forbidden in lambdas/
 <?php
 
 $y = 10;

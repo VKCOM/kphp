@@ -1,5 +1,5 @@
 @kphp_should_fail
-/`Exception` class is forbidden for clonning/
+/It's forbidden to `clone` built-in classes/
 <?php
 
 // PHP exceptions are uncloneable.

@@ -145,15 +145,6 @@ public:
 
   virtual ~vertex_inner() {}
 
-  void copy_location_and_flags(const vertex_inner<meta_op_base> &from) {
-    location = from.location;
-    val_ref_flag = from.val_ref_flag;
-    const_type = from.const_type;
-    ref_flag = from.ref_flag;
-    throw_flag = from.throw_flag;
-    used_flag = from.used_flag;
-  }
-
   void raw_init(int real_n) {
     kphp_assert(n == -1);
     n = real_n;
@@ -172,11 +163,13 @@ public:
 
   int size() const { return n; }
 
+  VertexPtr &front() { return ith(0); }
+
   VertexPtr &back() { return ith(size() - 1); }
 
   std::vector<VertexPtr> get_next() { return std::vector<VertexPtr>(begin(), end()); }
 
-  bool empty() { return size() == 0; }
+  bool empty() const { return size() == 0; }
 
   iterator begin() { return iterator(arr() + 1); }
 

@@ -12,4 +12,4 @@ class Example {
 }
 
 $obj = new Example();
-$obj->test_self_bad();
+$obj->test_self_bad(10);

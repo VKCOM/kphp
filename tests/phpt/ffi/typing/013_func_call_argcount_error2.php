@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/Not enough arguments in function call/
+/Too few arguments to function call, expected 2, have 1/
 <?php
 
 $cdef = FFI::cdef('

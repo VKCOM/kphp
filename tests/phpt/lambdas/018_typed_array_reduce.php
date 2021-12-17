@@ -15,7 +15,7 @@ function test_primitive_types() {
 }
 
 function test_classes() {
-    $f = function (int $carry, $item) {
+    $f = function (int $carry, Classes\IntHolder $item) {
         return $carry + $item->a;
     };
 
@@ -24,7 +24,7 @@ function test_classes() {
 }
 
 function test_reduce_with_diff_return_and_carry() {
-    $f = function ($carry, $item) {
+    $f = function (?Classes\IntHolder $carry, Classes\IntHolder $item) {
         if (!$carry) {
             return $item;
         }

@@ -52,6 +52,7 @@ function test_OrFalse() {
   //var_dump($x);
 
   /** @var int $b */
+  /** @var int|false $a */
   $a = false;
   if (1) {
     $a = 1;
@@ -129,11 +130,11 @@ function test_OrFalse() {
   }
   $arr;
 
-  $arr = (array (0=>1, false) + array (2=>1.5));
+  $arr = (array (0=>1, false) + array (2=>1));
   if ($arr[2] != 1.5) {
     echo "WA6\n";
   }
-  $arr = array ("hello", false) + array ("a", 1);
+  $arr = array ("hello" => 1, false) + array ("a" => false, 1);
 
   /** @var (int|false)[] $arr */
   $arr = array ($a, 1=>$a, 1);
@@ -183,3 +184,14 @@ function asrt($f) {
   }
 }
 
+test_setModify();
+
+function test_setModify() {
+    $a1 = 10;
+    $b1 = ($a1 -= 1.3);
+    var_dump($a1, $b1);
+
+    $a2 = 10;
+    $b2 = ($a2 .= 'asdf');
+    var_dump($a2, $b2);
+}

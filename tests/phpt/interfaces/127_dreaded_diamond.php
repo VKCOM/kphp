@@ -1,5 +1,5 @@
 @kphp_should_fail
-/duplicated class: IGrandPa in hierarchy from class: Derived/
+/Duplicated class Derived in hierarchy from class IGrandPa/
 <?php
 
 interface IGrandPa { 

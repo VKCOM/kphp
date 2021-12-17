@@ -1,9 +1,10 @@
 @kphp_should_fail
-/Do not use @var for arguments, use @param or type hint/
+/Different @var for \$id exist/
+/assign int to \$id, modifying a function argument/
 <?php
 
 // doesn't work, because such phpdoc prevents splitting, as param $id is used for reading after it
-function demo(int $id) {
+function demo(string $id) {
   /** @var int $id */
   $id = (int)$id;
   echo $id, "\n";

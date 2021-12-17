@@ -4,7 +4,6 @@
 
 #include "compiler/compiler.h"
 
-#include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
 #include <ftw.h>
@@ -15,14 +14,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <unordered_map>
 
 #include "common/algorithms/hashes.h"
 #include "common/dl-utils-lite.h"
 #include "common/crc32.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
-#include "common/precise-time.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/cpp-dest-dir-initializer.h"
@@ -44,7 +41,7 @@
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-conversions.h"
-#include "compiler/pipes/check-function-calls.h"
+#include "compiler/pipes/check-func-calls-and-vararg.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/check-requires.h"
@@ -58,6 +55,7 @@
 #include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/pipes/collect-required-and-classes.h"
+#include "compiler/pipes/convert-invoke-to-func-call.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/convert-sprintf-calls.h"
 #include "compiler/pipes/erase-defines-declarations.h"
@@ -69,6 +67,9 @@
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
+#include "compiler/pipes/deduce-implicit-types-and-casts.h"
+#include "compiler/pipes/instantiate-generics-and-lambdas.h"
+#include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/load-files.h"
@@ -78,8 +79,7 @@
 #include "compiler/pipes/preprocess-break.h"
 #include "compiler/pipes/preprocess-eq3.h"
 #include "compiler/pipes/preprocess-exceptions.h"
-#include "compiler/pipes/preprocess-ffi-operations.h"
-#include "compiler/pipes/preprocess-function.h"
+#include "compiler/pipes/propagate-throw-flag.h"
 #include "compiler/pipes/register-defines.h"
 #include "compiler/pipes/register-ffi-scopes.h"
 #include "compiler/pipes/register-kphp-configuration.h"
@@ -96,7 +96,6 @@
 #include "compiler/scheduler/pipe_with_progress.h"
 #include "compiler/scheduler/scheduler.h"
 #include "compiler/stage.h"
-#include "compiler/utils/string-utils.h"
 
 class lockf_wrapper {
   std::string locked_filename_;
@@ -204,12 +203,7 @@ bool compiler_execute(CompilerSettings *settings) {
   DataStream<SrcFilePtr> src_file_stream;
 
   G->register_main_file(settings->main_file.get(), src_file_stream);
-
-  if (!G->settings().functions_file.get().empty()) {
-    bool builtin = true;
-    bool error_if_not_exists = true;
-    G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream, error_if_not_exists, builtin);
-  }
+  G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream, true, true);
 
   static lockf_wrapper unique_file_lock;
   if (!unique_file_lock.lock()) {
@@ -254,26 +248,26 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<PreprocessExceptions>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
     // from this point, @param/@return are parsed in all functions, and we can use assumptions
-    >> PassC<PreprocessFFIOperationsBegin>{}
-    >> SyncC<GenerateVirtualMethods>{}
-    >> PassC<PreprocessFFIOperationsEnd>{}
+    // template functions and lambdas are stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
+    >> PassC<TransformToSmartInstanceofPass>{}
+    >> PassC<DeduceImplicitTypesAndCastsPass>{}
+    >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
+    >> SyncC<GenerateVirtualMethodsF>{}
+    >> PassC<ConvertInvokeToFuncCallPass>{}
+    >> PassC<CheckFuncCallsAndVarargPass>{}
+    >> PassC<InstantiateFFIOperationsPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
-    >> PassC<TransformToSmartInstanceof>{}
-    // functions which were generated from templates
-    // need to be preprocessed therefore we tie second output and input of Pipe
-    >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<1>{}
-    >> PipeC<PreprocessFunctionF>{} >> use_nth_output_tag<0>{}
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}
     >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
-    >> PassC<RemoveEmptyFunctionCalls>{}
+    >> PassC<RemoveEmptyFunctionCallsPass>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<ConvertSprintfCallsPass>{}
     >> PassC<CalcConstTypePass>{}
     >> PassC<CollectConstVarsPass>{}
     >> PassC<ConvertListAssignmentsPass>{}
     >> PassC<RegisterVariablesPass>{}
-    >> PassC<CheckFunctionCallsPass>{}
+    >> PassC<PropagateThrowFlagPass>{}
     >> PassC<CheckModificationsOfConstVars>{}
     >> PipeC<CalcRLF>{}
     >> PipeC<CFGBeginF>{}
@@ -319,6 +313,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<1>{}
     >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
     >> PassC<GenTreePostprocessPass>{};
+
+  SchedulerConstructor{scheduler}
+    >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<1>{}
+    >> PassC<TransformToSmartInstanceofPass>{};
 
   if (G->settings().show_progress.get()) {
     PipesProgress::get().enable();

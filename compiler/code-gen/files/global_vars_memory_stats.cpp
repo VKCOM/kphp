@@ -65,7 +65,7 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
     if (global_var->is_function_static_var()) {
       var_name = global_var->holder_func->name + "::";
     }
-    var_name.append(global_var->get_human_readable_name());
+    var_name.append(global_var->as_human_readable());
     var_names.emplace_back(std::move(var_name));
   }
 

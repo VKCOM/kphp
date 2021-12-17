@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Can't deduce class type, possible options are: C\$IB, C\$IA/
+/Can't deduce class type, possible options are: IB, IA/
 <?php
 
 interface IA { function foo(); }

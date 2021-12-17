@@ -24,7 +24,7 @@ function test1() {
 }
 
 function test2() {
-  $cdef = FFI::cdef('struct Vector2f { float x, y; };');
+  $cdef = \FFI::cdef('struct Vector2f { float x, y; };');
 
   $vec = $cdef->new('struct Vector2f');
 

@@ -6,8 +6,11 @@
 
 #include <string>
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/type-hint.h"
 #include "compiler/vertex.h"
 #include "common/wrappers/to_array.h"
 
@@ -205,7 +208,11 @@ std::string debugTokenName(TokenType t) {
 
 static std::string debugOperationName(Operation o) {
   if (OPERATION_NAMES.empty()) {
-    fillOperationNames();
+    G->operate_on_function_locking(G->get_main_file()->main_func_name, [](FunctionPtr f __attribute__((unused))) {
+      if (OPERATION_NAMES.empty()) {
+        fillOperationNames();
+      }
+    });
   }
 
   return OPERATION_NAMES[o];
@@ -218,11 +225,15 @@ static std::string debugVertexMore(VertexPtr v) {
       return "new " + v.as<op_alloc>()->allocated_class_name;
     case op_func_call:
       return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") +
-             (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->get_human_readable_name(false) : v->get_string()) + "()";
+             (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->as_human_readable(false) : v->get_string()) + "()";
     case op_func_name:
       return v->get_string();
     case op_function:
-      return v.as<op_function>()->func_id->name + "()";
+      return v.as<op_function>()->func_id->as_human_readable();
+    case op_lambda:
+      return v.as<op_lambda>()->func_id->as_human_readable();
+    case op_callback_of_builtin:
+      return v->get_string();
     case op_var:
       return "$" + v->get_string();
     case op_instance_prop:
@@ -232,9 +243,14 @@ static std::string debugVertexMore(VertexPtr v) {
     case op_int_const:
       return v->get_string();
     case op_seq:
+    case op_array:
       return std::to_string(v->size());
     case op_phpdoc_var:
       return "@var for " + v.as<op_phpdoc_var>()->var()->str_val;
+    case op_ffi_php2c_conv:
+      return "to " + v.as<op_ffi_php2c_conv>()->c_type->as_human_readable();
+    case op_ffi_c2php_conv:
+      return "to " + v.as<op_ffi_c2php_conv>()->php_type->as_human_readable();
     default:
       return "";
   }
@@ -246,7 +262,7 @@ static void debugVertexTree(VertexPtr root, int level, std::string &append) {
   }
   append += debugOperationName(root->type());
   append += " ";
-  append += debugVertexMore(root);
+  append += replace_characters(debugVertexMore(root), '\n', ' ');
   append += "\n";
 
   for (auto i : *root) {

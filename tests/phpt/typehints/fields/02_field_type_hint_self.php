@@ -3,12 +3,13 @@
 
 trait T {
     public self $s;
+    public static ?self $static_s;
 }
 
 abstract class A1 {
     use T;
 
-    function f() {}
+    function f() { echo "A1 f\n"; }
 }
 
 class A extends A1 {
@@ -17,6 +18,8 @@ class A extends A1 {
 $a = new A;
 $a->s = new A;
 $a->s->f();
+A1::$static_s = new A;
+A1::$static_s->f();
 
 
 class Test {

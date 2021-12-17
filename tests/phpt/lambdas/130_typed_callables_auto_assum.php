@@ -1,9 +1,11 @@
 @kphp_should_fail
 KPHP_SHOW_ALL_TYPE_ERRORS=1
-/pass B to argument \$arg0 of L\\Avoid::__invoke/
+/\$cb\(new B\);/
+/pass B to argument \$arg1 of callable\(A\):void/
+/but it's declared as @param A/
 /assign string to A::\$a/
 /but it's declared as @var int/
-/pass A to argument \$b of anonymous\(...\)/
+/pass A to argument \$b of function\(\$b\)/
 /but it's declared as @param B/
 <?php
 

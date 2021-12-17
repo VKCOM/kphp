@@ -30,12 +30,10 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
     return root;
   }
   auto alloc = call->args()[0].try_as<op_alloc>();
-  if (!alloc) {
+  if (!alloc || !alloc->allocated_class) {
     return root;
   }
-  ClassPtr klass = G->get_class(alloc->allocated_class_name);
-  kphp_assert(klass);
-  if (!throwable_class->is_parent_of(klass)) {
+  if (!throwable_class->is_parent_of(alloc->allocated_class)) {
     return root;
   }
 

@@ -101,12 +101,12 @@ void tinf::VarNode::recalc(tinf::TypeInferer *inferer) {
 
 std::string tinf::VarNode::get_description() {
   if (is_variable()) {
-    std::string in_function_name = var_->is_global_var() ? " in global scope" : var_->holder_func ? " in " + var_->holder_func->get_human_readable_name() : "";
-    return fmt_format("VarNode ({}{}) : {}", var_->get_human_readable_name(), in_function_name, tinf::get_type(var_)->as_human_readable());
+    std::string in_function_name = var_->is_global_var() ? " in global scope" : var_->holder_func ? " in " + var_->holder_func->as_human_readable() : "";
+    return fmt_format("VarNode ({}{}) : {}", var_->as_human_readable(), in_function_name, tinf::get_type(var_)->as_human_readable());
   } else if (is_return_value_from_function()) {
-    return fmt_format("VarNode (return of {}) : {}", function_->get_human_readable_name(), tinf::get_type(function_, -1)->as_human_readable());
+    return fmt_format("VarNode (return of {}) : {}", function_->as_human_readable(), tinf::get_type(function_, -1)->as_human_readable());
   } else if (is_argument_of_function()) {
-    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->get_human_readable_name(), var_->holder_func->get_human_readable_name(), tinf::get_type(var_)->as_human_readable());
+    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->as_human_readable(), var_->holder_func->as_human_readable(), tinf::get_type(var_)->as_human_readable());
   } else {
     return "VarNode (strange)";
   }
@@ -114,7 +114,7 @@ std::string tinf::VarNode::get_description() {
 
 const Location &tinf::VarNode::get_location() const {
   if (is_variable()) {
-    return var_->init_val ? var_->init_val->location : var_->holder_func->root->location;
+    return var_->init_val ? var_->init_val->location : var_->holder_func ? var_->holder_func->root->location : stage::get_location();
   } else if (is_argument_of_function()) {
     return var_->holder_func->root->location;
   } else {

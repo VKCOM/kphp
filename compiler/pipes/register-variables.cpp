@@ -68,7 +68,8 @@ bool RegisterVariablesPass::is_global_var(VertexPtr v) {
 }
 
 void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
-  kphp_error(current_function->type == FunctionData::func_local, "keyword 'static' used in global function");
+  kphp_error(current_function->type == FunctionData::func_local || current_function->type == FunctionData::func_lambda,
+             "keyword 'static' used in global function");
 
   string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_static_t, true);
@@ -184,15 +185,6 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root) {
     return VertexAdaptor<op_empty>::create();
   } else if (root->type() == op_var) {
     visit_var(root.as<op_var>());
-  } else if (auto prop = root.try_as<op_instance_prop>()) {
-    // if it's null, then the unknown field access already errored in the resolve_class_of_arrow_access()
-    if (auto klass = resolve_class_of_arrow_access(current_function, root)) {
-      if (auto m = klass->get_instance_field(root->get_string())) {
-        prop->var_id = m->var;
-      } else {
-        kphp_error(0, fmt_format("Invalid property access ...->{}: does not exist in class `{}`", root->get_string(), klass->get_name()));
-      }
-    }
   }
 
   return root;
@@ -221,29 +213,12 @@ void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_li
 }
 
 void RegisterVariablesPass::visit_phpdoc_var(VertexAdaptor<op_phpdoc_var> phpdoc_var) {
-  const std::string &var_name = phpdoc_var->var()->get_string();
+  const std::string &var_name = phpdoc_var->var()->str_val;
 
-  auto try_bind_to_one_of = [&var_name, &phpdoc_var](const std::vector<VarPtr> &lookup_vars_list) -> bool {
-    auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(),
-                               [&var_name](VarPtr var) { return var->name == var_name; });
-    if (var_it == lookup_vars_list.end()) {
-      return false;
-    }
+  VarPtr var_in_f = current_function->find_var_by_name(var_name);
+  kphp_error(var_in_f, fmt_format("Unknown var ${} in phpdoc", var_name));
 
-    phpdoc_var->var()->var_id = *var_it;
-    return true;
-  };
-
-  if (try_bind_to_one_of(current_function->local_var_ids) ||
-      try_bind_to_one_of(current_function->global_var_ids) ||
-      try_bind_to_one_of(current_function->static_var_ids)) {
-    return;
-  }
-  if (try_bind_to_one_of(current_function->param_ids)) {
-    kphp_error(0, "Do not use @var for arguments, use @param or type hint");
-    return;
-  }
-  kphp_error(0, fmt_format("Unknown var ${} in phpdoc", var_name));
+  phpdoc_var->var()->var_id = var_in_f;
 }
 
 bool RegisterVariablesPass::user_recursion(VertexPtr v) {

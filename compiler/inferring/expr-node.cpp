@@ -437,6 +437,21 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       recalc_arithm(expr.as<meta_op_binary>());
       break;
 
+    case op_set_add:
+    case op_set_sub:
+    case op_set_mul:
+    case op_set_div:
+    case op_set_mod:
+    case op_set_pow:
+    case op_set_and:
+    case op_set_or:
+    case op_set_xor:
+    case op_set_dot:
+    case op_set_shr:
+    case op_set_shl:
+      set_lca(expr.as<meta_op_binary>()->lhs());
+      break;
+
     case op_pow:
       recalc_power(expr.as<op_pow>());
       break;
@@ -468,7 +483,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
       break;
 
     default:
-      recalc_ptype<tp_mixed>();
       break;
   }
 }
@@ -496,11 +510,11 @@ void tinf::ExprNode::recalc(tinf::TypeInferer *inferer) {
 std::string tinf::ExprNode::convert_expr_to_human_readable(VertexPtr expr) {
   switch (expr->type()) {
     case op_var:
-      return expr.as<op_var>()->var_id->get_human_readable_name();
+      return expr.as<op_var>()->var_id->as_human_readable();
 
     case op_func_call: {
       auto func = expr.as<op_func_call>()->func_id;
-      return func->is_constructor() ? "new " + func->class_id->name : func->get_human_readable_name();
+      return func->is_constructor() ? "new " + func->class_id->as_human_readable() : func->as_human_readable();
     }
 
     case op_instance_prop:

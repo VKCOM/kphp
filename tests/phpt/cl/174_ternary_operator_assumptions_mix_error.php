@@ -1,5 +1,5 @@
 @kphp_should_fail
-/result of operation is both B and A/
+/\$v is not an instance or it can't be detected/
 <?php
 
 class A {

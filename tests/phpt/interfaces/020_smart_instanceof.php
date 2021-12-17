@@ -61,3 +61,86 @@ call_method($x);
 $x = new C();
 call_method($x);
 
+
+
+interface I2 { function f(); }
+
+class A2 implements I2 {
+    public $field = 0;
+    function f() { echo "A f {$this->field}\n"; }
+    function __construct(int $f = 0) { $this->field = $f; }
+}
+
+class B2 implements I2 {
+    function f() { echo "B f\n"; }
+}
+
+function getField(?I2 $i): int {
+    if ($i)
+        $i->f();
+    if (!($i instanceof A2))
+        return -1;
+    return $i->field;
+}
+
+function test_not_instanceof_1() {
+    echo getField(new A2), "\n";
+    echo getField(new A2(-5)), "\n";
+    echo getField(null), "\n";
+}
+
+function test_not_instanceof_2() {
+    /** @var ?I2 $a */
+    $a = new A2;
+    if (!($a instanceof A2))
+        return;
+    if ($a instanceof A2)
+        $a->f();
+}
+
+interface IResult {}
+class CSuccess implements IResult { public $code = 123; }
+class CError implements IResult { public $err = 'err'; }
+
+function test_not_instanceof_3(): int {
+    /** @var IResult $result */
+
+    if (0) $result = new CSuccess;
+    else $result = new CError;
+    if (!($result instanceof CSuccess)) {
+        if ($result instanceof CError)
+            echo $result->err, "\n";
+    }
+
+    if (1) $result = new CSuccess;
+    else $result = new CError;
+    if (!($result instanceof CError))
+        echo -100, "\n";
+    if ($result instanceof CSuccess)
+        echo $result->code, "\n";
+
+    /** @var IResult $r2 */
+    $r2 = new CSuccess;
+    if (0) $r2 = new CError;
+
+    if (!($r2 instanceof CSuccess))
+        return -100;
+    if (!($r2 instanceof CSuccess))
+        return -200;
+    if (!($result instanceof CError))
+        return $r2->code;
+    return -500;
+}
+
+function test_not_instanceof_4(): string {
+    /** @var I2 $i */
+    $i = new A2;
+    if (!($i instanceof B2))
+        return get_class($i);
+    return get_class($i);
+}
+
+test_not_instanceof_1();
+test_not_instanceof_2();
+var_dump(test_not_instanceof_3());
+var_dump(test_not_instanceof_4());

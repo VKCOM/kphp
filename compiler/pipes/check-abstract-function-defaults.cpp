@@ -28,7 +28,7 @@ void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, Data
   };
 
   auto interface_params = interface_function->get_params();
-  for (auto derived_class : interface_function->class_id->get_all_inheritors()) {
+  for (auto derived_class : interface_function->class_id->get_all_derived_classes()) {
     auto *derived_method = derived_class->members.get_instance_method(interface_function->local_name());
     if (!derived_method || derived_method->function == interface_function) {
       continue;
@@ -42,7 +42,7 @@ void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, Data
                  fmt_format("default value of interface parameter:`{}` may not differ from value of derived parameter: `{}`, in function: {}",
                             TermStringFormat::paint(VertexPtrFormatter::to_string(interface_default), TermStringFormat::green),
                             TermStringFormat::paint(VertexPtrFormatter::to_string(derived_default), TermStringFormat::green),
-                            TermStringFormat::paint(derived_method->function->get_human_readable_name(), TermStringFormat::red)));
+                            TermStringFormat::paint(derived_method->function->as_human_readable(), TermStringFormat::red)));
     }
   }
 }

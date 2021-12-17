@@ -28,26 +28,15 @@ bool CalcActualCallsEdgesPass::handle_exception(std::vector<VertexAdaptor<op_try
 }
 
 VertexPtr CalcActualCallsEdgesPass::on_enter_vertex(VertexPtr v) {
-  if (auto ptr = v.try_as<op_func_ptr>()) {
-    if (ptr->func_id->is_lambda()) {
-      ClassPtr lambda_class = ptr->func_id->class_id;
-      lambda_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-        if (!m.function->is_template) {
-          edges.emplace_back(m.function, try_stack_, inside_fork);
-        }
-      });
-    } else {
-      edges.emplace_back(ptr->func_id, try_stack_, inside_fork);
-    }
+  if (auto as_builtin_callback = v.try_as<op_callback_of_builtin>()) {
+    edges.emplace_back(as_builtin_callback->func_id, try_stack_, inside_fork);
   } else if (auto call = v.try_as<op_func_call>()) {
     edges.emplace_back(call->func_id, try_stack_, inside_fork);
   }
 
   if (v->type() == op_throw) {
-    ClassPtr thrown_class = infer_class_of_expr(stage::get_function(), v.as<op_throw>()->exception()).try_as_class();
-    // TODO: an error message that is more actionable, like in name-gen.cpp (i.e. suggest to add @return, etc.)
-    kphp_error_act(thrown_class, "Throw expression is not an instance or it can't be detected", return v);
-    if (!handle_exception(try_stack_, thrown_class)) {
+    ClassPtr thrown_class = v.as<op_throw>()->class_id;
+    if (thrown_class && !handle_exception(try_stack_, thrown_class)) {
       current_function->exceptions_thrown.insert(thrown_class);
       current_function->throws_location = v->location;
     }

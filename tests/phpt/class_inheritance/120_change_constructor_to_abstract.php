@@ -1,9 +1,11 @@
 @kphp_should_fail
-/Cannot make non abstract method B::__construct abstract in class A/
+/Can not make non-abstract method A::__construct abstract in class B/
+/Can not make non-abstract method A::stf abstract in class D/
 <?php
 
 class A {
     public function __construct() {}
+    public static function stf() {}
 }
 
 abstract class B extends A {
@@ -12,6 +14,8 @@ abstract class B extends A {
 
 class D extends B {
     public function __construct() {}
+    public abstract static function stf();
 }
 
 $d = new D();
+B::stf();

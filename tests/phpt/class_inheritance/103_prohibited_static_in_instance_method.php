@@ -1,4 +1,5 @@
 @kphp_should_fail
+/Using 'static' is prohibited from instance methods when a class has derived classes/
 <?php
 
 class A {
@@ -8,6 +9,7 @@ class A {
 
     public function bar() {
         static::foo();
+        echo static::class;
     }
 }
 

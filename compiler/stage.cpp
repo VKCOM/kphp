@@ -11,6 +11,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/name-gen.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
@@ -88,17 +89,6 @@ void Location::set_line(int new_line) {
   line = new_line;
 }
 
-SrcFilePtr Location::get_file() const {
-  return file;
-}
-
-FunctionPtr Location::get_function() const {
-  return function;
-}
-
-int Location::get_line() const {
-  return line;
-}
 Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line) :
   file(file),
   function(function),
@@ -113,13 +103,17 @@ std::string Location::as_human_readable() const {
   out += std::to_string(line);
 
   // if it's a method of an PSR-4 class /path/to/A.php, output only A::methodName, not fully-qualified path\to\A::methodName
-  if (function && function->type == FunctionData::func_local) {
-    std::string function_name = function->get_human_readable_name();
+  // if we are inside a lambda, print out the outermost named function
+  auto f_outer = function ? function->get_this_or_topmost_if_lambda() : nullptr;
+  if (f_outer && f_outer->type == FunctionData::func_local) {
+    std::string function_name = f_outer->as_human_readable();
     std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";
     if (file && file->relative_file_name == psr4_file_name) {
       function_name = function_name.substr(function_name.rfind('\\', psr4_file_name.size()) + 1);
     }
-    out += "  in " + function_name;
+    out += function->is_lambda() ? "  in a lambda inside " + function_name : "  in " + function_name;
+  } else if (f_outer && f_outer->type == FunctionData::func_main) {
+    out += function->is_lambda() ? "  in a lambda in global scope" : "  in global scope";
   }
   return out;
 }
@@ -155,6 +149,7 @@ void stage::print_current_location_on_error(FILE *f) {
   // line contents
   if (line > 0) {
     std::string comment = static_cast<std::string>(vk::trim(get_file()->get_line(line)));
+    comment = vk::replace_all(comment, "\n", "\\n");
     fmt_fprintf(f, "    {}\n", use_colors ? TermStringFormat::paint(comment, TermStringFormat::yellow) : comment);
   }
 }

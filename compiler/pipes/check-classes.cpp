@@ -24,7 +24,7 @@ VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
     const auto &class_types = type_data->class_types();
     kphp_error(std::distance(class_types.begin(), class_types.end()) == 1,
                fmt_format("Can't deduce class type, possible options are: {}",
-                          vk::join(class_types, ", ", [](ClassPtr c) { return c->src_name; }))
+                          vk::join(class_types, ", ", [](ClassPtr c) { return c->as_human_readable(); }))
     );
   }
 
@@ -40,13 +40,13 @@ void CheckClassesPass::on_finish() {
 inline void CheckClassesPass::analyze_class(ClassPtr klass) {
   check_static_fields_inited(klass);
   check_serialized_fields(klass);
-  if (ClassData::does_need_codegen(klass)) {
+  if (klass->does_need_codegen()) {
     check_instance_fields_inited(klass);
   }
   if (klass->can_be_php_autoloaded && !klass->is_builtin()) {
     kphp_error(klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
                fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
-                          klass->name));
+                          klass->as_human_readable()));
   }
   if (klass->is_serializable) {
     kphp_error(!klass->parent_class || !klass->parent_class->members.has_any_instance_var(),
@@ -66,17 +66,17 @@ inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
     }
 
     kphp_error(f.var->init_val || allow_no_default_value,
-               fmt_format("static {}::${} is not inited at declaration (inferred {})",
-                          klass->name, f.local_name(), f.get_inferred_type()->as_human_readable()));
+               fmt_format("static {} is not inited at declaration (inferred {})",
+                          f.var->as_human_readable(), f.get_inferred_type()->as_human_readable()));
   });
 }
 
 inline void CheckClassesPass::check_instance_fields_inited(ClassPtr klass) {
   // TODO KPHP-221: the old code is kept for now (check for Unknown)
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+  klass->members.for_each([](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_any,
-               fmt_format("var {}::${} is declared but never written; please, provide a default value", klass->name, f.local_name()));
+               fmt_format("var {} is declared but never written; please, provide a default value", f.var->as_human_readable()));
   });
 }
 

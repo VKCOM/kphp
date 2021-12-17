@@ -43,8 +43,6 @@ struct FFIScopeDataMixin {
 
   Location location;
 
-  std::string static_lib;
-
   // -1 means that all symbols originate from a static library;
   // note that we can store the shared lib id only once as opposed to
   // a per-symbol alternative because we limit scopes to 1 source definition

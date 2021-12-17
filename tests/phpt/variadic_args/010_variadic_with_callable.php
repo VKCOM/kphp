@@ -3,9 +3,6 @@
 
 /**
  * @kphp-required
- */
-/**
- * @kphp-required
  * @param int[] $args
  * @return int
  */
@@ -21,4 +18,6 @@ function with_callable(callable $f, ...$args) {
 $res = with_callable('call_me', ...[1, 2, 3]);
 var_dump($res);
 
+$res = with_callable(fn($args) => call_me($args), ...[1, 2, 3, 4]);
+var_dump($res);
 

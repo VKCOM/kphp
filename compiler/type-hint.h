@@ -26,6 +26,7 @@ class TypeData;
  * TypeHint can be converted to TypeData if it is _constexpr_:
  * * if it contains ^1 inside, it's not constexpr, as it requires a context of a call
  * * if it contains self inside, it's not constexpr, as it requires a resolve context
+ * * if it contains T inside (of a @kphp-template function), it's not constexpr, as it requires a generic instantiation
  * * otherwise, it's constexpr
  * Note, that self/static/parent are valid type hints (instances), but only while parsing (inheritance, traits, etc)
  * When bound to a function, they must be replaced with actual context, see phpdoc_finalize_type_hint_and_resolve()
@@ -50,6 +51,8 @@ protected:
     flag_contains_argref_inside = 1 << 2,
     flag_contains_tp_any_inside = 1 << 3,
     flag_contains_callables_inside = 1 << 4,
+    flag_contains_genericsT_inside = 1 << 5,
+    flag_potentially_casts_rhs = 1 << 10,
   };
 
   explicit TypeHint(int self_flags_without_children) : flags(self_flags_without_children) {}
@@ -67,15 +70,20 @@ public:
   bool has_argref_inside() const { return flags & flag_contains_argref_inside; }
   bool has_tp_any_inside() const { return flags & flag_contains_tp_any_inside; }
   bool has_callables_inside() const { return flags & flag_contains_callables_inside; }
+  bool has_genericsT_inside() const { return flags & flag_contains_genericsT_inside; }
+  bool has_flag_maybe_casts_rhs() const { return flags & flag_potentially_casts_rhs; }
 
-  bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside(); }
+  bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericsT_inside(); }
   const TypeData *to_type_data() const;
+  const TypeHint *unwrap_optional() const;
 
   using TraverserCallbackT = std::function<void(const TypeHint *child)>;
+  using ReplacerCallbackT = std::function<const TypeHint *(const TypeHint *child)>;
 
   virtual std::string as_human_readable() const = 0;
   virtual void traverse(const TraverserCallbackT &callback) const = 0;
   virtual const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const = 0;
+  virtual const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const = 0;
   virtual void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const = 0;
 };
 
@@ -96,7 +104,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -116,7 +125,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -136,7 +146,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -156,7 +167,33 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
+ * T::fieldName — a reference to a type of a class field.
+ * We allow this to be used only with genericsT, see phpdoc_replace_genericsT_with_instantiation(); SomeClass::f will fail.
+ */
+class TypeHintFieldRef : public TypeHint {
+  explicit TypeHintFieldRef(const TypeHint *inner, std::string field_name)
+    : TypeHint(0)
+    , inner(inner)
+    , field_name(std::move(field_name)) {}
+
+public:
+  const TypeHint *inner;
+  std::string field_name;
+
+  static const TypeHint *create(const TypeHint *inner, const std::string &field_name);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+
+  const ClassMemberInstanceField *resolve_field() const;
 };
 
 /**
@@ -178,7 +215,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -186,29 +224,38 @@ public:
  * Remember, that untyped callables used as function arguments actually turn this function into a template one
  */
 class TypeHintCallable : public TypeHint {
+  explicit TypeHintCallable()
+    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs | flag_contains_tp_any_inside) {}
+  explicit TypeHintCallable(FunctionPtr f_bound_to)
+    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs)
+    , f_bound_to(std::move(f_bound_to)) {}
   explicit TypeHintCallable(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type)
-    : TypeHint(flag_contains_tp_any_inside | flag_contains_callables_inside)
+    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs)
     , arg_types(arg_types)
     , return_type(return_type) {}
 
-  mutable InterfacePtr interface{nullptr};   // will be created on demand, see get_interface()
+  mutable InterfacePtr interface{nullptr};    // for typed callables; will be created on demand, see get_interface()
 
 public:
-  std::vector<const TypeHint *> arg_types;
-  const TypeHint *return_type;
+  std::vector<const TypeHint *> arg_types;    // for typed callables
+  const TypeHint *return_type{nullptr};       // for typed callables
+  FunctionPtr f_bound_to{nullptr};            // for untyped callables: not just 'callable', but bound to a function
 
   static const TypeHint *create(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type);
   static const TypeHint *create_untyped_callable();
+  static const TypeHint *create_ptr_to_function(FunctionPtr f_bound_to);
 
   bool is_untyped_callable() const { return return_type == nullptr; }
   bool is_typed_callable() const { return return_type != nullptr; }
 
-  InterfacePtr get_interface() const;
+  InterfacePtr get_interface() const;         // for typed callables
+  ClassPtr get_lambda_class() const;          // for untyped callables: a class that wraps a bound lambda
 
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 // an arbitrary FFI type
@@ -234,6 +281,7 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
 };
 
@@ -253,6 +301,7 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
 };
 
@@ -272,6 +321,7 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
 };
 
@@ -294,7 +344,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -308,6 +359,9 @@ class TypeHintInstance : public TypeHint {
     : TypeHint(flag_contains_instances_inside | (is_self_static_parent ? flag_contains_self_static_parent_inside : 0))
     , full_class_name(std::move(full_class_name)) {}
 
+  mutable ClassPtr klass;
+  ClassPtr resolve_and_set_klass() const;
+
 public:
   std::string full_class_name;
 
@@ -316,9 +370,10 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
-  ClassPtr resolve() const;
+  ClassPtr resolve() const { return klass ?: resolve_and_set_klass(); }
 };
 
 /**
@@ -342,7 +397,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -363,7 +419,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -383,7 +440,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };
 
 /**
@@ -405,7 +463,8 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
   const TypeHint *find_at(const std::string &key) const;
 };
@@ -427,5 +486,27 @@ public:
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
   const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
-  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
+ * T inside types of generics declarations, for example @ kphp-template T1 T2
+ * Then `T1` and `T2` in a context of that declaration (@ kphp-param and @ kphp-return for instance) are of this class.
+ */
+class TypeHintGenericsT : public TypeHint {
+  explicit TypeHintGenericsT(std::string nameT)
+    : TypeHint(flag_contains_genericsT_inside)
+    , nameT(std::move(nameT)) {}
+
+public:
+  std::string nameT;
+
+  static const TypeHint *create(const std::string &nameT);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 };

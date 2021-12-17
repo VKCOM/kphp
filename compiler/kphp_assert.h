@@ -20,21 +20,6 @@
 #define compiler_assert_noret(x, y, level) compiler_assert_(x, y, level, __builtin_unreachable())
 
 #define kphp_warning(y)  compiler_assert (0, y, WRN_ASSERT_LEVEL)
-#define kphp_typed_warning(x, y) do {                                      \
-  FunctionPtr kphp_warning_fun__ = stage::get_function();                  \
-  if (kphp_warning_fun__) {                                                \
-    auto &disabled__ = kphp_warning_fun__->disabled_warnings;              \
-    string s = x;                                                          \
-    if (disabled__.find(s) == disabled__.end()) {                          \
-      string message = y;                                                  \
-      message += "\n   (Can be disabled by adding '" + s +                 \
-                 "' to @kphp-disable-warnings attribute of function)";     \
-      compiler_assert (0, message.c_str(), WRN_ASSERT_LEVEL);              \
-    }                                                                      \
-  }                                                                        \
-} while (0)
-
-
 #define kphp_error(x, y) compiler_assert (x, y, CE_ASSERT_LEVEL)
 #define kphp_error_act(x, y, act) if (kphp_error (x, y)) act;
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)

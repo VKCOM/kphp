@@ -82,7 +82,7 @@ def vertex_printer(valobj, internal_dict, options):
         return "NULL"
     op_name = v.GetChildMemberWithName("type_").GetValue()
     n_children = v.GetChildMemberWithName("n").GetValueAsUnsigned()
-    if op_name in ["op_var", "op_func_name", "op_instance_prop", "op_int_const", "op_float_const", "op_func_call"]:
+    if op_name in ["op_var", "op_func_name", "op_callback_of_builtin", "op_instance_prop", "op_int_const", "op_float_const", "op_func_call"]:
         str_val = " " + str(v.EvaluateExpression('get_string()').GetSummary())
     else:
         str_val = ""

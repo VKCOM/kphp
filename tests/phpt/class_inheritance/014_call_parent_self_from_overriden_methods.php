@@ -9,7 +9,6 @@ class BB {
     }
 
     public function bar() {
-        static::foo();
         self::foo();
         $this->foo();
     }

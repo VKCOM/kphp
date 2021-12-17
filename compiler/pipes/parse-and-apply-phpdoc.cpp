@@ -25,7 +25,6 @@ class ParseAndApplyPhpDocForFunction {
   bool infer_cast_{false};
   FunctionPtr phpdoc_from_fun_;
   VertexRange func_params_;
-  std::size_t id_of_kphp_template_{0};
 
 public:
   explicit ParseAndApplyPhpDocForFunction(FunctionPtr f) : f_(f), func_params_(f->get_params()) {
@@ -67,12 +66,12 @@ public:
     // 2) if self/static/parent, resolve them
     if (f_->return_typehint) {
       f_->return_typehint = phpdoc_finalize_type_hint_and_resolve(f_->return_typehint, f_);
-      kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->get_human_readable_name()));
+      kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->as_human_readable()));
     }
     for (auto param : f_->get_params()) {
       if (param.as<op_func_param>()->type_hint) {
         param.as<op_func_param>()->type_hint = phpdoc_finalize_type_hint_and_resolve(param.as<op_func_param>()->type_hint, f_);
-        kphp_error(param.as<op_func_param>()->type_hint, fmt_format("Failed to parse @param of {}", f_->get_human_readable_name()));
+        kphp_error(param.as<op_func_param>()->type_hint, fmt_format("Failed to parse @param of {}", f_->as_human_readable()));
       }
     }
 
@@ -82,7 +81,7 @@ public:
       G->settings().require_functions_typing.get() &&
       // if 1, typing is mandatory, except these conditions
       f_->type == FunctionData::func_local &&
-      !f_->is_lambda() &&                         // lambda functions don't require strict typing (it's inconvenient)
+      !f_->is_lambda() &&                         // lambdas may have implicitly deduced types, they are going to be checked later
       !f_->disabled_warnings.count("return");     // "@kphp-disable-warnings return" in function phpdoc
 
     if (needs_to_be_fully_typed) {
@@ -125,27 +124,12 @@ private:
     return f_;
   }
 
-  VertexAdaptor<op_func_param> find_param_by_name(vk::string_view name) {
-    for (auto v : func_params_) {
-      if (auto param = v.try_as<op_func_param>()) {
-        if (param->var()->get_string() == name) {
-          return param;
-        }
-      }
-    }
-    return {};
-  }
-
   void convert_to_template_function_if_callable_arg() {
     for (auto p : func_params_) {
       auto cur_func_param = p.as<op_func_param>();
       if (const auto *callable = cur_func_param->type_hint ? cur_func_param->type_hint->try_as<TypeHintCallable>() : nullptr) {
-        if (callable->is_typed_callable()) {    // we will generate common interface for typed callables later
-          cur_func_param->is_callable = true;
-        } else {                                // untyped callables is like a @kphp-template parameter
-          cur_func_param->template_type_id = id_of_kphp_template_++;
-          cur_func_param->is_callable = true;
-          f_->is_template = true;
+        if (!callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
+          GenericsDeclarationMixin::make_function_generics_on_callable_arg(f_, cur_func_param);
         }
       }
     }
@@ -244,30 +228,15 @@ private:
       }
 
       case php_doc_tag::kphp_template: {
-        f_->is_template = true;
-        bool is_first_time = true;
-        for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
-          if (var_name[0] != '$') {
-            if (is_first_time) {
-              is_first_time = false;
-              continue;
-            }
-            break;
-          }
-          is_first_time = false;
-
-          auto param = find_param_by_name(var_name.substr(1));
-          kphp_error_return(param, fmt_format("@kphp-template tag var name mismatch. found {}.", var_name));
-          param->template_type_id = id_of_kphp_template_;
+        if (!f_->generics_declaration) {
+          GenericsDeclarationMixin::apply_from_phpdoc(f_, phpdoc_from_fun_->phpdoc_str);
         }
-        id_of_kphp_template_++;
-
         break;
       }
 
       case php_doc_tag::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
-          auto param = find_param_by_name(var_name.substr(1));
+          auto param = f_->find_param_by_name(var_name.substr(1));
           kphp_error_return(param, fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
           param->var()->is_const = true;
         }
@@ -334,8 +303,8 @@ private:
     if (f_->return_typehint && phpdoc_from_fun_ != f_) {
       return;
     }
-    // @param for a template parameter can contain anything, skip (note: only @return in phpdoc! as a type hint, it remains)
-    if (f_->is_template) {
+    // @kphp-return takes precedence over a regular @return (@return can contain anything regardless whether it's before or after @kphp-return)
+    if (f_->return_typehint && f_->return_typehint->has_genericsT_inside()) {
       return;
     }
     f_->return_typehint = doc_parsed.type_hint;
@@ -347,15 +316,15 @@ private:
       return;
     }
 
-    auto param = find_param_by_name(doc_parsed.var_name);
+    auto param = f_->find_param_by_name(doc_parsed.var_name);
     kphp_error_return(param, fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
 
     // if @param exists, it overrides an argument type hint in code (unless a @param is from a parent phpdoc)
     if (param->type_hint && phpdoc_from_fun_ != f_) {
       return;
     }
-    // @param for a template parameter can contain anything, skip (but callable + @param typed callable is ok)
-    if (param->template_type_id != -1) {
+    // @kphp-param takes precedence over a regular @param (@param can contain anything regardless whether it's before or after @kphp-param)
+    if (param->type_hint && param->type_hint->has_genericsT_inside()) {
       return;
     }
     param->type_hint = doc_parsed.type_hint;
@@ -374,7 +343,7 @@ private:
     // missing type hint and phpdoc for one of the parameters
     for (auto v : func_params_) {
       if (auto param = v.try_as<op_func_param>()) {
-        kphp_error(param->type_hint || param->var()->extra_type == op_ex_var_this || param->template_type_id != -1,
+        kphp_error(param->type_hint || param->var()->extra_type == op_ex_var_this,
                    fmt_format("Specify @param or type hint for ${}", param->var()->get_string()));
       }
     }
@@ -384,7 +353,7 @@ private:
     // at this point, all phpdocs and type hints have been parsed
     // if we have no @return and no return hint, assume @return void
     if (!f_->return_typehint) {
-      bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return && !f_->is_template;
+      bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return && !f_->is_template();
 
       if (assume_return_void) {
         f_->return_typehint = TypeHintPrimitive::create(tp_void);
@@ -407,14 +376,14 @@ public:
       f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
-        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
+        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
     });
     klass->members.for_each([&](ClassMemberStaticField &f) {
       f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
-        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->get_human_readable_name()));
+        kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
     });
 
@@ -435,7 +404,7 @@ private:
     // moreover, it overrides php_type_hint: /** @var int[] */ public array $a; — int[] is used instead of array
     if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
       auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
-      if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->get_human_readable_name()))) {
+      if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->as_human_readable()))) {
         return parsed.type_hint;
       }
     }
@@ -453,12 +422,14 @@ private:
     }
     if (var->init_val) {
       const TypeHint *type_hint = phpdoc_convert_default_value_to_type_hint(var->init_val);
-      kphp_error(type_hint, fmt_format("Specify @var to {}", var->get_human_readable_name()));
+      kphp_error(type_hint, fmt_format("Specify @var to {}", var->as_human_readable()));
       return type_hint;
     }
+    if (klass->is_lambda_class()) {   // they are auto-generated, not coming from PHP code
+      return nullptr;
+    }
 
-    kphp_error(klass->is_lambda(),
-               fmt_format("Specify @var or type hint or default value to {}", var->get_human_readable_name()));
+    kphp_error(0, fmt_format("Specify @var or type hint or default value to {}", var->as_human_readable()));
     return nullptr;
   }
 
@@ -471,6 +442,10 @@ private:
 
       case php_doc_tag::kphp_tl_class:
         klass->is_tl_class = true;
+        break;
+
+      case php_doc_tag::kphp_memcache_class:
+        G->set_memcache_class(klass);
         break;
 
       case php_doc_tag::kphp_warn_performance:
@@ -525,5 +500,15 @@ void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr>
 
 void ParseAndApplyPhpdocF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
+
+  // now, when all phpdocs have been parsed,
+  // register all existing typed callable interfaces and pass them through pipeline
+  for (InterfacePtr interface : G->get_interfaces()) {
+    if (interface->is_typed_callable_interface()) {
+      G->register_and_require_function(interface->gen_holder_function(interface->name), tmp_stream, true);
+      G->require_function(interface->get_instance_method("__invoke")->function, tmp_stream);
+    }
+  }
+
   Base::on_finish(os);
 }

@@ -184,7 +184,8 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
       return;
     }
 
-    std::string comment = static_cast<std::string>(vk::trim(loc.file->get_line(loc.line)));
+    std::string comment = static_cast<std::string>(loc.file->get_line(loc.line));
+    comment = vk::trim(vk::replace_all(comment, "\n", "\\n"));
     desc += "\n  ";
     desc += loc.as_human_readable();
     desc += "\n    ";
@@ -199,14 +200,14 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
         FunctionPtr function = var_node->var_->holder_func;
         auto param = function->get_params()[var_node->param_i].as<op_func_param>();
         append_current_php_line_if_changed(var_node);
-        desc += "argument " + var_node->var_->get_human_readable_name();
+        desc += "argument " + var_node->var_->as_human_readable();
         desc += param->type_hint && !param->type_hint->has_tp_any_inside() ? " declared as " : " inferred as ";
         desc += tinf::get_type(function, var_node->param_i)->as_human_readable();
         desc += "\n";
       } else if (var_node->is_return_value_from_function()) {
         FunctionPtr function = var_node->function_;
         append_current_php_line_if_changed(var_node);
-        desc += function->get_human_readable_name();
+        desc += function->as_human_readable();
         desc += function->return_typehint && !function->return_typehint->has_tp_any_inside() ? " declared that returns " : " inferred that returns ";
         desc += tinf::get_type(function, -1)->as_human_readable();
         desc += "\n";

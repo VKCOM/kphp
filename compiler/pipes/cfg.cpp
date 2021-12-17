@@ -244,9 +244,7 @@ std::vector<VarPtr> CFG::collect_splittable_vars(FunctionPtr func) {
 
   for (VarPtr var : func->param_ids) {
     auto param = params[var->param_i].as<op_func_param>();
-    VertexPtr init = param->var();
-    kphp_assert (init->type() == op_var);
-    if (!init->ref_flag) {
+    if (!param->var()->ref_flag && var->name != "this") {
       splittable_vars.emplace_back(var);
     }
   }
@@ -329,7 +327,8 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
       *res_true = new_node();
       *res_false = new_node();
       auto add_type_check_usage = [&](Node to, int type, VertexAdaptor<op_var> var) {
-        if (vk::any_of_equal(var->var_id->type(), VarData::var_local_t, VarData::var_param_t) && !var->var_id->is_foreach_reference && !var->var_id->is_reference) {
+        bool can_var_be_smartcasted = get_index(var->var_id) >= 0;
+        if (can_var_be_smartcasted) {
           UsagePtr usage = new_usage(usage_type_check_t, var);
           usage->checked_type = static_cast<is_func_id_t>(type);
           add_usage(to, usage);
@@ -410,7 +409,8 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_seq_comma:
     case op_seq_rval:
     case op_seq:
-    case op_string_build: {
+    case op_string_build:
+    case op_callback_of_builtin: {
       Node a, b, end;
       if (tree_node->empty()) {
         *res_start = *res_finish = new_node();
@@ -608,16 +608,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     case op_fork: {
       create_cfg(tree_node.as<op_fork>()->func_call(), res_start, res_finish);
-      break;
-    }
-    case op_func_ptr: {
-      int n = std::distance(tree_node.as<op_func_ptr>()->begin(), tree_node.as<op_func_ptr>()->end());
-      kphp_assert(n == 0 || n == 1);    // empty if a string callback, op_func_call if a lambda
-      if (n == 1) {
-        create_cfg(*tree_node.as<op_func_ptr>()->begin(), res_start, res_finish);
-      } else {
-        *res_start = *res_finish = new_node();
-      }
       break;
     }
     case op_return: {
@@ -1067,7 +1057,7 @@ void CFG::dfs_apply_type_hint(Node v, UsagePtr type_hint_usage) {
   node_dfs[v] = cur_dfs_step;
 
   for (UsagePtr another_usage : node_usages[v]) {
-    if (another_usage->type == usage_type_hint_t && type_hint_usage != another_usage) {
+    if (another_usage->type == usage_type_hint_t && type_hint_usage != another_usage && another_usage->v->var_id == type_hint_usage->v->var_id) {
       return;   // stop when we reached another type hint traversing down
     }
     try_uni_usages(type_hint_usage, another_usage);
@@ -1147,17 +1137,17 @@ void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexA
   }
   kphp_assert(parts.size() > 1);
 
-  Assumption a = assumption_get_for_var(function, var->name);
+  // don't split arguments that have assumptions: function (A $a) { $a = new B; } is unsplittable: it's assumed as A
+  // (but we had to collect such arguments in collect_splittable_vars() to make smartcasts and nullability work)
+  if (var->type() == VarData::var_param_t && function->get_assumption_for_var(var->name)) {
+    return;
+  }
 
   for (size_t i = 0; i < parts.size(); i++) {
     // name$v1, name$v2 and so on, but name (0th copy) is kept as is
     const std::string &new_name = i ? var->name + "$v" + std::to_string(i) : var->name;
     VarPtr new_var = G->create_var(new_name, var->type());
     new_var->holder_func = var->holder_func;
-
-    if (i && a.has_instance()) {
-      assumption_add_for_var(function, new_name, a);
-    }
 
     for (auto v : parts[i]) {
       v->var_id = new_var;
@@ -1375,10 +1365,6 @@ public:
 };
 
 void CFG::process_function(FunctionPtr function) {
-  if (function->type != FunctionData::func_local) {
-    return;
-  }
-
   auto splittable_vars = collect_splittable_vars(function);
   var_split_data.update_size(static_cast<int>(splittable_vars.size()));
   int var_id = 0;
@@ -1416,7 +1402,9 @@ void CFGBeginF::execute(FunctionPtr function, DataStream<FunctionAndCFG> &os) {
   stage::set_function(function);
 
   cfg::CFG cfg;
-  cfg.process_function(function);
+  if (function->type == FunctionData::func_local || function->type == FunctionData::func_lambda) {
+    cfg.process_function(function);
+  }
 
   if (stage::has_error()) {
     return;
