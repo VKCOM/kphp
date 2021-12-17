@@ -30,7 +30,7 @@ protected:
 
   virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) { return on_non_const(v); }
 
-  virtual bool on_array_value(VertexAdaptor<op_array> array __attribute__((unused)), size_t ind __attribute__((unused))) { return false; }
+  virtual bool on_array_value([[maybe_unused]] VertexAdaptor<op_array> array, [[maybe_unused]] size_t ind) { return false; }
 
   virtual T on_array_finish(VertexAdaptor<op_array> v) { return on_non_const(v); }
 
@@ -40,7 +40,7 @@ protected:
 
   virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) { return on_non_const(v); }
 
-  virtual T on_non_const(VertexPtr) { return T(); }
+  virtual T on_non_const([[maybe_unused]] VertexPtr vertex) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
     VertexRange arr = v->args();
@@ -52,7 +52,14 @@ protected:
     return on_array_finish(v);
   }
 
-protected:
+  virtual bool on_index_key([[maybe_unused]] VertexPtr key) { return false; }
+
+  virtual T on_index(VertexAdaptor<op_index> index) {
+    if (index->has_key() && !on_index_key(index->key())) {
+      return on_non_const(index->key());
+    }
+    return visit(index->array());
+  }
 
   T visit(VertexPtr v) {
     switch (v->type()) {
@@ -99,6 +106,9 @@ protected:
       case op_array:
         return on_array(v.as<op_array>());
 
+      case op_index:
+        return on_index(v.as<op_index>());
+
       case op_var:
         return on_var(v.as<op_var>());
 
@@ -115,7 +125,6 @@ protected:
         return on_non_const(v);
     }
   }
-
 };
 
 struct CheckConst
@@ -163,8 +172,12 @@ protected:
     return false;
   }
 
-  bool on_array_finish(VertexAdaptor<op_array>) override {
+  bool on_array_finish([[maybe_unused]] VertexAdaptor<op_array> array) override {
     return true;
+  }
+
+  bool on_index_key(VertexPtr key) override {
+    return visit(key);
   }
 };
 
@@ -307,6 +320,14 @@ protected:
 
     return {};
   }
+
+  VertexPtr on_index(VertexAdaptor<op_index> index) final {
+    if (index->has_key()) {
+      index->key() = make_const(index->key());
+    }
+    index->array() = make_const(index->array());
+    return index;
+  }
 };
 
 struct ArrayHash final
@@ -386,6 +407,11 @@ protected:
     kphp_assert_msg(false, msg.c_str());
   }
 
+  bool on_index_key(VertexPtr key) final {
+    visit(key);
+    return true;
+  }
+
 private:
   uint64_t cur_hash = 0;
   static const uint64_t HASH_MULT = 56235515617499ULL;
@@ -459,6 +485,10 @@ protected:
     string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
     return "ERROR: " + msg;
+  }
+
+  std::string on_index(VertexAdaptor<op_index> index) final {
+    return visit(index->array()) + '[' + (index->has_key() ? visit(index->key()) : std::string{}) + ']';
   }
 };
 
