@@ -34,6 +34,7 @@
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
 #include "common/precise-time.h"
+#include "common/server/tl-stats-t.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "common/server/stats.h"
@@ -996,8 +997,7 @@ int php_master_version(connection *c) {
 
 int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_filter_keys) {
   std::string res(64 * 1024, 0);
-  stats_t stats;
-  stats.type = STATS_TYPE_TL;
+  tl_stats_t stats;
   stats.statsd_prefix = nullptr;
   sb_init(&stats.sb, &res[0], static_cast<int>(res.size()) - 2);
   prepare_common_stats(&stats);
