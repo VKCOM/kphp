@@ -7,6 +7,7 @@
 
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
+#include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
 #include "runtime/rpc.h"
 #include "runtime/job-workers/job-interface.h"
@@ -200,9 +201,9 @@ void php_worker_init_script(php_worker *worker) {
   worker->state = phpq_run;
 }
 
-void php_worker_run_rpc_send_query(net_query_t *query) {
-  int connection_id = query->host_num;
-  slot_id_t slot_id = query->slot_id;
+void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::rpc_send &query) {
+  int connection_id = query.host_num;
+  slot_id_t slot_id = request_id;
   if (connection_id < 0 || connection_id >= MAX_TARGETS) {
     on_net_event(create_rpc_error_event(slot_id, TL_ERROR_INVALID_CONNECTION_ID, "Invalid connection_id (1)", nullptr));
     return;
@@ -211,7 +212,7 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
   connection *conn = get_target_connection(target, 0);
 
   if (conn != nullptr) {
-    send_rpc_query(conn, TL_RPC_INVOKE_REQ, slot_id, (int *)query->request, query->request_size);
+    send_rpc_query(conn, TL_RPC_INVOKE_REQ, slot_id, reinterpret_cast<int *>(query.request), query.request_size);
     conn->last_query_sent_time = precise_now;
   } else {
     int new_conn_cnt = create_new_connections(target);
@@ -220,8 +221,8 @@ void php_worker_run_rpc_send_query(net_query_t *query) {
       return;
     }
 
-    command_t *command = create_command_net_writer(query->request, query->request_size, &command_net_write_rpc_base, slot_id);
-    double timeout = fix_timeout(query->timeout_ms * 0.001) + precise_now;
+    command_t *command = create_command_net_writer(query.request, query.request_size, &command_net_write_rpc_base, slot_id);
+    double timeout = fix_timeout(query.timeout_ms * 0.001) + precise_now;
     create_delayed_send_query(target, command, timeout);
   }
 }
@@ -230,8 +231,12 @@ void php_worker_run_net_queue(php_worker *worker __attribute__((unused))) {
   net_query_t *query;
   while ((query = pop_net_query()) != nullptr) {
     //no other types of query are currently supported
-    php_worker_run_rpc_send_query(query);
-    free_net_query(query);
+    std::visit(overloaded {
+       [&](const net_queries_data::rpc_send &data) {
+         php_worker_run_rpc_send_query(query->slot_id, data);
+         free_rpc_send_query(data);
+       },
+     }, query->data);
   }
 }
 

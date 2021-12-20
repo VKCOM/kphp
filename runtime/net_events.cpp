@@ -5,6 +5,7 @@
 #include "runtime/net_events.h"
 
 #include "common/precise-time.h"
+#include "common/wrappers/overloaded.h"
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/job-interface.h"
@@ -39,19 +40,17 @@ static bool process_net_event(net_event_t *e) {
     return false;
   }
 
-  switch (e->type) {
-    case net_event_type_t::rpc_answer:
-      process_rpc_answer(e->slot_id, e->result, e->result_len);
-      break;
-    case net_event_type_t::rpc_error:
-      process_rpc_error(e->slot_id, e->error_code, e->error_message);
-      break;
-    case net_event_type_t::job_worker_answer:
-      process_job_answer(e->slot_id, e->job_result);
-      break;
-    default:
-      php_critical_error ("unsupported net event %d", static_cast<int>(e->type));
-  }
+  std::visit(overloaded {
+     [&](const net_events_data::rpc_answer &data) {
+         process_rpc_answer(e->slot_id, data.result, data.result_len);
+     },
+     [&](const net_events_data::rpc_error &data) {
+         process_rpc_error(e->slot_id, data.error_code, data.error_message);
+     },
+     [&](const net_events_data::job_worker_answer &data) {
+         process_job_answer(e->slot_id, data.job_result);
+     },
+    }, e->data);
 
   return true;
 }

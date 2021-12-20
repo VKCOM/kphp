@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <variant>
 
 #include "common/sanitizer.h"
 #include "server/slot-ids-factory.h"
@@ -18,51 +19,46 @@ struct FinishedJob;
 struct JobSharedMessage;
 } // namespace job_workers
 
-enum class net_event_type_t {
-  rpc_answer,
-  rpc_error,
-  job_worker_answer,
+namespace net_events_data {
+
+struct rpc_answer {
+  int result_len{};
+  //allocated via dl_malloc
+  char *result{};
 };
 
+struct rpc_error {
+  int error_code{};
+  const char *error_message{};
+};
+
+struct job_worker_answer {
+  job_workers::FinishedJob *job_result{};
+};
+
+} // namespace net_events_data
+
 struct net_event_t {
-  net_event_type_t type;
-  union {
-    slot_id_t slot_id;
-    slot_id_t rpc_id;
-  };
-  union {
-    struct { //rpc_answer
-      int result_len;
-      //allocated via dl_malloc
-      char *result;
-    };
-    struct { //rpc_error
-      int error_code;
-      const char *error_message;
-    };
-    struct { // job_worker_answer
-      job_workers::FinishedJob *job_result;
-    };
-  };
+  slot_id_t slot_id;
+  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer> data;
 
   const char *get_description() const noexcept;
 };
 
-enum net_query_type_t {
-  nq_rpc_send
+namespace net_queries_data {
+
+struct rpc_send {
+  int host_num{};
+  char *request{};
+  int request_size{};
+  int timeout_ms{};
 };
 
+} // namespace net_queries_data
+
 struct net_query_t {
-  net_query_type_t type;
   slot_id_t slot_id;
-  union {
-    struct { //nq_rpc_send
-      int host_num;
-      char *request;
-      int request_size;
-      int timeout_ms;
-    };
-  };
+  std::variant<net_queries_data::rpc_send> data;
 };
 
 #pragma pack(push, 4)
@@ -278,7 +274,7 @@ struct net_send_ansgen_t {
 
 
 net_query_t *pop_net_query();
-void free_net_query(net_query_t *query);
+void free_rpc_send_query(const net_queries_data::rpc_send &query);
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res);
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res);

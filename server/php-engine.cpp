@@ -1042,7 +1042,13 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       net_event_t *event = nullptr;
       event_status = create_rpc_answer_event(static_cast<slot_id_t>(id), result_len, &event);
       if (event_status > 0) {
-        auto fetched_bytes = tl_fetch_data(event->result, result_len);
+        char *result_buf = nullptr;
+        if (auto *ptr = std::get_if<net_events_data::rpc_answer>(&event->data)) {
+          result_buf = ptr->result;
+        } else {
+          assert(false);
+        }
+        auto fetched_bytes = tl_fetch_data(result_buf, result_len);
         assert (fetched_bytes == result_len);
       }
 

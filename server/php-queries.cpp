@@ -4,12 +4,14 @@
 
 #include "server/php-queries.h"
 
+#include <array>
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
 #include "common/precise-time.h"
+#include "common/wrappers/overloaded.h"
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
@@ -811,13 +813,12 @@ void *dl_allocate_safe(size_t size) {
   return (void *)(dest_int + 3);
 }
 
-int alloc_net_event(slot_id_t slot_id, net_event_type_t type, net_event_t **res) {
+int alloc_net_event(slot_id_t slot_id, net_event_t **res) {
   net_event_t *event = net_events.create();
   if (event == nullptr) {
     return -2;
   }
   event->slot_id = slot_id;
-  event->type = type;
   *res = event;
   return 1;
 }
@@ -831,12 +832,11 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
   if (!rpc_ids_factory.is_valid_slot(slot_id)) {
     return 0;
   }
-  int status = alloc_net_event(slot_id, net_event_type_t::rpc_error, &event);
+  int status = alloc_net_event(slot_id, &event);
   if (status <= 0) {
     return status;
   }
-  event->error_code = error_code;
-  event->error_message = error_message; //in static memory
+  event->data = net_events_data::rpc_error{error_code, error_message}; //error_message in static memory
   if (res != nullptr) {
     *res = event;
   }
@@ -849,21 +849,23 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   if (!rpc_ids_factory.is_valid_slot(slot_id)) {
     return 0;
   }
-  int status = alloc_net_event(slot_id, net_event_type_t::rpc_answer, &event);
+  int status = alloc_net_event(slot_id, &event);
   if (status <= 0) {
     return status;
   }
+  net_events_data::rpc_answer data;
   if (len != 0) {
     void *buf = dl_allocate_safe(len);
     if (buf == nullptr) {
       unalloc_net_event(event);
       return -1;
     }
-    event->result = static_cast <char *> (buf);
+    data.result = static_cast <char *> (buf);
   } else {
-    event->result = nullptr;
+    data.result = nullptr;
   }
-  event->result_len = len;
+  data.result_len = len;
+  event->data = data;
   assert (res != nullptr);
   *res = event;
   return 1;
@@ -874,11 +876,11 @@ int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
     return 0;
   }
   net_event_t *event = nullptr;
-  const int status = alloc_net_event(job_result->job_id, net_event_type_t::job_worker_answer, &event);
+  const int status = alloc_net_event(job_result->job_id, &event);
   if (status <= 0) {
     return status;
   }
-  event->job_result = job_workers::copy_finished_job_to_script_memory(job_result);
+  event->data = net_events_data::job_worker_answer{ job_workers::copy_finished_job_to_script_memory(job_result) };
   return 1;
 }
 
@@ -886,12 +888,11 @@ int net_events_empty() {
   return net_events.empty();
 }
 
-net_query_t *create_net_query(net_query_type_t type) {
+net_query_t *create_net_query() {
   net_query_t *query = net_queries.create();
   if (query == nullptr) {
     return nullptr;
   }
-  query->type = type;
   return query;
 }
 
@@ -903,8 +904,8 @@ net_query_t *pop_net_query() {
   return net_queries.pop();
 }
 
-void free_net_query(net_query_t *query) {
-  dl::deallocate(query->request, query->request_size);
+void free_rpc_send_query(const net_queries_data::rpc_send &query) {
+  dl::deallocate(query.request, query.request_size);
 }
 
 /*** main functions ***/
@@ -944,7 +945,7 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
 }
 
 slot_id_t rpc_send_query(int host_num, char *request, int request_size, int timeout_ms) {
-  net_query_t *query = create_net_query(nq_rpc_send);
+  net_query_t *query = create_net_query();
   if (query == nullptr) {
     return -1; // memory limit
   }
@@ -955,10 +956,7 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
   }
 
   PhpQueriesStats::get_rpc_queries_stat().register_query(request_size);
-  query->host_num = host_num;
-  query->request = request;
-  query->request_size = request_size;
-  query->timeout_ms = timeout_ms;
+  query->data = net_queries_data::rpc_send{ host_num, request, request_size, timeout_ms };
   return query->slot_id;
 }
 
@@ -1088,24 +1086,21 @@ void php_queries_finish() {
 }
 
 const char *net_event_t::get_description() const noexcept {
-  static char BUF[10000];
-  switch (type) {
-    case net_event_type_t::rpc_answer: {
-      sprintf(BUF, "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", result_len >= 4 ? *reinterpret_cast<unsigned int *>(result) : 0, result_len);
-      break;
-    }
-    case net_event_type_t::rpc_error: {
-      sprintf(BUF, "RPC ERROR: error code = %d, error message = %s", error_code, error_message);
-      break;
-    }
-    case net_event_type_t::job_worker_answer: {
-      if (job_result) {
-        sprintf(BUF, "JOB RESPONSE: class name = %s", job_result->response.get_class());
+  static std::array<char, 10000> BUF;
+  std::visit(overloaded{
+    [](const net_events_data::rpc_answer &event) {
+      sprintf(BUF.data(), "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
+    },
+    [](const net_events_data::rpc_error &event) {
+      sprintf(BUF.data(), "RPC ERROR: error code = %d, error message = %s", event.error_code, event.error_message);
+    },
+    [](const net_events_data::job_worker_answer &event) {
+      if (event.job_result) {
+        sprintf(BUF.data(), "JOB RESPONSE: class name = %s", event.job_result->response.get_class());
       } else {
-        sprintf(BUF, "JOB ERROR");
+        sprintf(BUF.data(), "JOB ERROR");
       }
-      break;
-    }
-  }
-  return BUF;
+    },
+  }, data);
+  return BUF.data();
 }
