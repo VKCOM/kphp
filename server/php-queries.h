@@ -22,18 +22,18 @@ struct JobSharedMessage;
 namespace net_events_data {
 
 struct rpc_answer {
-  int result_len;
+  int result_len{};
   //allocated via dl_malloc
-  char *result;
+  char *result{};
 };
 
 struct rpc_error {
-  int error_code;
-  const char *error_message;
+  int error_code{};
+  const char *error_message{};
 };
 
 struct job_worker_answer {
-  job_workers::FinishedJob *job_result;
+  job_workers::FinishedJob *job_result{};
 };
 
 } // namespace net_events_data
@@ -48,10 +48,10 @@ struct net_event_t {
 namespace net_queries_data {
 
 struct rpc_send {
-  int host_num;
-  char *request;
-  int request_size;
-  int timeout_ms;
+  int host_num{};
+  char *request{};
+  int request_size{};
+  int timeout_ms{};
 };
 
 } // namespace net_queries_data

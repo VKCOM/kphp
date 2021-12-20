@@ -4,6 +4,7 @@
 
 #include "server/php-queries.h"
 
+#include <array>
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
@@ -1085,21 +1086,21 @@ void php_queries_finish() {
 }
 
 const char *net_event_t::get_description() const noexcept {
-  static char BUF[10000];
+  static std::array<char, 10000> BUF;
   std::visit(overloaded{
-    [](const net_events_data::rpc_answer &e) {
-      sprintf(BUF, "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", e.result_len >= 4 ? *reinterpret_cast<unsigned int *>(e.result) : 0, e.result_len);
+    [](const net_events_data::rpc_answer &event) {
+      sprintf(BUF.data(), "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
-    [](const net_events_data::rpc_error &e) {
-      sprintf(BUF, "RPC ERROR: error code = %d, error message = %s", e.error_code, e.error_message);
+    [](const net_events_data::rpc_error &event) {
+      sprintf(BUF.data(), "RPC ERROR: error code = %d, error message = %s", event.error_code, event.error_message);
     },
-    [](const net_events_data::job_worker_answer &e) {
-      if (e.job_result) {
-        sprintf(BUF, "JOB RESPONSE: class name = %s", e.job_result->response.get_class());
+    [](const net_events_data::job_worker_answer &event) {
+      if (event.job_result) {
+        sprintf(BUF.data(), "JOB RESPONSE: class name = %s", event.job_result->response.get_class());
       } else {
-        sprintf(BUF, "JOB ERROR");
+        sprintf(BUF.data(), "JOB ERROR");
       }
     },
   }, data);
-  return BUF;
+  return BUF.data();
 }
