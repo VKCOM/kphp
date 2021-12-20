@@ -1,7 +1,5 @@
 Zend/tests/021.phpt
 Zend/tests/abstract-static.phpt
-Zend/tests/abstract_inheritance_001.phpt
-Zend/tests/abstract_inheritance_002.phpt
 Zend/tests/add_001.phpt
 Zend/tests/add_005.phpt
 Zend/tests/add_006.phpt
@@ -83,7 +81,6 @@ Zend/tests/bug71914.phpt
 Zend/tests/bug72395.phpt
 Zend/tests/bug72508.phpt
 Zend/tests/bug72543.phpt
-Zend/tests/bug74810.phpt
 Zend/tests/bug76754.phpt
 Zend/tests/bug78271.phpt
 Zend/tests/class_properties_dynamic.phpt
@@ -92,7 +89,6 @@ Zend/tests/closure_006.phpt
 # Zend/tests/closure_007.phpt
 Zend/tests/closure_008.phpt
 Zend/tests/closure_021.phpt
-Zend/tests/closure_037.phpt
 Zend/tests/concat_002.phpt
 Zend/tests/constants/dir-constant-includes.phpt
 Zend/tests/constants/dir-constant-nested_includes.phpt
@@ -209,7 +205,6 @@ ext/pcre/tests/bug71537.phpt
 ext/pcre/tests/bug72463_2.phpt
 ext/pcre/tests/bug72688.phpt
 ext/pcre/tests/bug76512.phpt
-ext/pcre/tests/bug78338.phpt
 ext/pcre/tests/dollar_endonly.phpt
 ext/pcre/tests/invalid_utf8.phpt
 ext/pcre/tests/match_flags.phpt
@@ -802,11 +797,6 @@ tests/lang/foreachLoop.003.phpt
 tests/lang/foreachLoop.005.phpt
 tests/lang/foreachLoop.017.phpt
 tests/lang/foreach_with_object_001.phpt
-tests/lang/func_get_arg.002.phpt
-tests/lang/func_get_args.001.phpt
-tests/lang/func_get_args.002.phpt
-tests/lang/func_num_args.001.phpt
-tests/lang/func_num_args.002.phpt
 tests/lang/include_variation1.phpt
 tests/lang/include_variation2.phpt
 tests/lang/operators/bitwiseShiftLeft_variationStr2.phpt
