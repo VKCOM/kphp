@@ -42,7 +42,23 @@ python3 -m pytest --tb=native -n5 tests/python/tests
 To debug, use `-s` option and don't use `-n`
 
 
-## 3. Testing compiler and runtime: compare KPHP and PHP
+## 3. Running Zend tests (partially)
+
+A list of KPHP-compatible Zend tests (from PHP sources) is maintained [manually](../../../tests/zend-test-list). 
+To run them, clone `php-src` somewhere at first:
+```bash
+git clone https://github.com/php/php-src.git
+cd php-src
+git checkout 6326717dccf9e85dc41b3778692b790e2501fb2a
+```
+
+The following command will do all other stuff:
+```bash
+./kphp/tests/kphp_tester.py -j32 -d ./php-src --from-list ./kphp/tests/zend-test-list
+```
+
+
+## 4. Testing compiler and runtime: compare KPHP and PHP
 
 ```note
 This is the most important testing part, and typically you'll write such tests when adding new KPHP features.
