@@ -36,6 +36,36 @@ OPTION_PARSER(OPT_GENERIC, "statsd-port", required_argument, "engine will connec
 
 FLAG_OPTION_PARSER(OPT_GENERIC, "disable-statsd", disable_statsd, "disable sending stats to default statsd ports");
 
+namespace {
+class statsd_stats_t : public stats_t {
+public:
+  void add_general_stat(const char *, const char *, va_list) noexcept final {
+    // ignore it
+  }
+
+  void add_stat(char type, const char *key, const char *value_format, va_list ap) noexcept final {
+    sb_printf(&sb, "%s.%s:", statsd_prefix, normalize_key(key));
+    vsb_printf(&sb, value_format, ap);
+    sb_printf(&sb, "|%c\n", type);
+  }
+private:
+  static char *normalize_key(const char *key) {
+    static char result_start[1 << 10];
+    char *result = result_start;
+    sprintf(result, "%s", key);
+    while (*result) {
+      char c = *result;
+      int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+      if (!ok) {
+        *result = '_';
+      }
+      result++;
+    }
+    return result_start;
+  }
+};
+} // namespace
+
 static int statsd_parse_execute(struct connection *c) {
   netbuffer_t *in = &c->In;
   int len;
@@ -117,7 +147,7 @@ void send_data_to_statsd_with_prefix(const char *stats_prefix, unsigned int tag_
       connected_to_targets[i] = 1;
     }
 
-    char *result = engine_default_prepare_stats_with_tag_mask(STATS_TYPE_STATSD, NULL, stats_prefix, tag_mask);
+    char *result = engine_default_prepare_stats_with_tag_mask(statsd_stats_t{}, NULL, stats_prefix, tag_mask);
     write_out(&c->Out, result, (int)strlen(result));
     flush_later(c);
     vkprintf(4, "statsd flush!\n");

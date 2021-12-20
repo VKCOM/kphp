@@ -18,39 +18,10 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 
-char *statsd_normalize_key(const char *key) {
-  static char result_start[1 << 10];
-  char *result = result_start;
-  sprintf(result, "%s", key);
-  while (*result) {
-    char c = *result;
-    int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-    if (!ok) {
-      *result = '_';
-    }
-    result++;
-  }
-  return result_start;
-}
-
 static void add_stat(const char type, stats_t *stats, const char *key, const char *value_format, ...) {
-  stats_buffer_t *sb = &stats->sb;
   va_list ap;
   va_start(ap, value_format);
-  switch (stats->type) {
-    case STATS_TYPE_TL:
-      sb_printf(sb, "%s\t", key);
-      vsb_printf(sb, value_format, ap);
-      sb_printf(sb, "\n");
-      break;
-    case STATS_TYPE_STATSD:
-      sb_printf(sb, "%s.%s:", stats->statsd_prefix, statsd_normalize_key(key));
-      vsb_printf(sb, value_format, ap);
-      sb_printf(sb, "|%c\n", type);
-      break;
-    default:
-      assert(0);
-  }
+  stats->add_stat(type, key, value_format, ap);
   va_end (ap);
 }
 
@@ -75,21 +46,9 @@ void add_histogram_stat_double(stats_t *stats, const char *key, double value) {
 }
 
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) {
-  stats_buffer_t *sb = &stats->sb;
   va_list ap;
   va_start(ap, value_format);
-  switch (stats->type) {
-    case STATS_TYPE_TL:
-      sb_printf(sb, "%s\t", key);
-      vsb_printf(sb, value_format, ap);
-      sb_printf(sb, "\n");
-      break;
-    case STATS_TYPE_STATSD:
-      // ignore it
-      break;
-    default:
-      assert(0);
-  }
+  stats->add_general_stat(key, value_format, ap);
   va_end (ap);
 }
 

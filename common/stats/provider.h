@@ -13,16 +13,16 @@
 #define AM_GET_MEMORY_USAGE_SELF 1
 #define AM_GET_MEMORY_USAGE_OVERALL 2
 
-typedef enum {
-  STATS_TYPE_TL,
-  STATS_TYPE_STATSD
-} stats_type;
+class stats_t {
+public:
+  stats_buffer_t sb{};
+  const char *statsd_prefix{};
 
-typedef struct {
-  stats_type type;
-  stats_buffer_t sb;
-  const char *statsd_prefix;
-} stats_t;
+  virtual void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept = 0;
+  virtual void add_stat(char type, const char *key, const char *value_format, va_list ap) noexcept = 0;
+
+  virtual ~stats_t() = default;
+};
 
 char *statsd_normalize_key(const char *key);
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__ ((format (printf, 3, 4)));
