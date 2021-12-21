@@ -5,6 +5,8 @@
 #include "compiler/pipes/remove-empty-function-calls.h"
 
 #include "compiler/vertex.h"
+#include "compiler/data/src-file.h"
+#include "compiler/compiler-core.h"
 
 static bool is_empty_func_call(VertexPtr v) {
   return v->type() == op_func_call && v.as<op_func_call>()->func_id->body_seq == FunctionData::body_value::empty;
@@ -36,6 +38,19 @@ VertexPtr RemoveEmptyFunctionCallsPass::on_exit_vertex(VertexPtr v) {
     auto cond = if_v->cond();
     if (cond->type() == op_log_not && cond.as<op_log_not>()->expr()->type() == op_var && !if_v->has_false_cmd()) {
       if (if_v->true_cmd()->type() == op_seq && if_v->true_cmd()->size() == 0) {
+        return VertexAdaptor<op_empty>::create();
+      }
+    }
+  }
+  if (v->type() == op_set) {
+    // get rid of $called - global variables for empty source files;
+    // namely, detect 'v$src_fooxxx$called = true' assign in such files and remove it,
+    // this allows to avoid further call of register_var() with such global variable
+    if (!G->settings().is_static_lib_mode() && current_function->is_main_function() && current_function->body_seq == FunctionData::body_value::empty) {
+      auto set = v.as<op_set>();
+      auto lhs = set->lhs();
+      auto rhs = set->rhs();
+      if (rhs->type() == op_true && lhs->type() == op_var && lhs->get_string() == current_function->file_id->get_main_func_run_var_name()) {
         return VertexAdaptor<op_empty>::create();
       }
     }
