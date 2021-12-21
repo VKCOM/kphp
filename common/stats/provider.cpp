@@ -18,31 +18,36 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 
-static void add_stat(const char type, stats_t *stats, const char *key, const char *value_format, ...) {
-  va_list ap;
-  va_start(ap, value_format);
-  stats->add_stat(type, key, value_format, ap);
-  va_end (ap);
+char *stats_t::normalize_key(const char *key, const char *format, const char *prefix) noexcept {
+  static char result_start[1 << 10];
+  char *result = result_start;
+  int prefix_length = sprintf(result, "%s", prefix);
+  sprintf(result + prefix_length, format, key);
+  while (*result) {
+    char c = *result;
+    int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+    if (!ok) {
+      *result = '_';
+    }
+    result++;
+  }
+  return result_start;
 }
 
-#define add_histogram_stat_impl(stats, key, value_format, ...) add_stat('h', stats, key, value_format, ##__VA_ARGS__)
-
-#define add_gauge_stat_impl(stats, key, value_format, ...) add_stat('g', stats, key, value_format, ##__VA_ARGS__)
-
 void add_histogram_stat_long(stats_t *stats, const char *key, long long value) {
-  add_histogram_stat_impl(stats, key, "%lld", value);
+  stats->add_stat('h', key, "%lld", value);
 }
 
 void add_gauge_stat_long(stats_t *stats, const char *key, long long value) {
-  add_gauge_stat_impl(stats, key, "%lld", value);
+  stats->add_stat('g', key, "%lld", value);
 }
 
 void add_gauge_stat_double(stats_t *stats, const char *key, double value) {
-  add_gauge_stat_impl(stats, key, "%.3f", value);
+  stats->add_stat('g', key, "%.3f", value);
 }
 
 void add_histogram_stat_double(stats_t *stats, const char *key, double value) {
-  add_histogram_stat_impl(stats, key, "%.3f", value);
+  stats->add_stat('h', key, "%.3f", value);
 }
 
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) {

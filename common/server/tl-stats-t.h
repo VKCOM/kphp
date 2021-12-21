@@ -14,9 +14,19 @@ public:
     sb_printf(&sb, "\n");
   }
 
-  void add_stat(char type[[maybe_unused]], const char *key, const char *value_format, va_list ap) noexcept final {
+  void add_stat(char type [[maybe_unused]], const char *key, const char *value_format, double value) noexcept final {
     sb_printf(&sb, "%s\t", key);
-    vsb_printf(&sb, value_format, ap);
+    sb_printf(&sb, value_format, value);
     sb_printf(&sb, "\n");
+  }
+
+  void add_stat(char type [[maybe_unused]], const char *key, const char *value_format, long long value) noexcept final {
+    sb_printf(&sb, "%s\t", key);
+    sb_printf(&sb, value_format, value);
+    sb_printf(&sb, "\n");
+  }
+
+  virtual bool need_aggr_stats() noexcept final {
+    return true;
   }
 };

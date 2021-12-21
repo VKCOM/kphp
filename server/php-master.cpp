@@ -998,7 +998,7 @@ int php_master_version(connection *c) {
 int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_filter_keys) {
   std::string res(64 * 1024, 0);
   tl_stats_t stats;
-  stats.statsd_prefix = nullptr;
+  stats.stats_prefix = nullptr;
   sb_init(&stats.sb, &res[0], static_cast<int>(res.size()) - 2);
   prepare_common_stats(&stats);
   res.resize(stats.sb.pos);
@@ -1037,18 +1037,20 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "workers.general.processes.working_but_waiting", general_worker_group.waiting_workers);
   add_gauge_stat_long(stats, "workers.general.processes.ready_for_accept", general_worker_group.ready_for_accept_workers);
 
-  auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.general.processes.running.max_1m", running_stats.running_workers_max);
-
   const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
   add_gauge_stat_long(stats, "workers.job.processes.total", job_worker_group.total_workers);
   add_gauge_stat_long(stats, "workers.job.processes.working", job_worker_group.running_workers);
   add_gauge_stat_long(stats, "workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
-  running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
-  add_gauge_stat_double(stats, "workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
-  add_gauge_stat_long(stats, "workers.job.processes.running.max_1m", running_stats.running_workers_max);
+  if (stats->need_aggr_stats()) {
+    auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
+    add_gauge_stat_double(stats, "workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
+    add_gauge_stat_long(stats, "workers.general.processes.running.max_1m", running_stats.running_workers_max);
+
+    running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
+    add_gauge_stat_double(stats, "workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
+    add_gauge_stat_long(stats, "workers.job.processes.running.max_1m", running_stats.running_workers_max);
+  }
 
   add_gauge_stat_long(stats, "server.workers.started", tot_workers_started);
   add_gauge_stat_long(stats, "server.workers.dead", tot_workers_dead);
@@ -1083,7 +1085,9 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
-  vk::singleton<ServerStats>::get().write_stats_to(stats);
+  if (stats->need_aggr_stats()) {
+    vk::singleton<ServerStats>::get().write_stats_to(stats);
+  }
 
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   add_gauge_stat_long(stats, "graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());
@@ -1319,38 +1323,11 @@ void check_and_instance_cache_try_swap_memory() {
   }
 }
 
-std::vector<StatsHouseMetric> make_statshouse_metrics() {
-  std::vector<StatsHouseMetric> metrics;
-  metrics.reserve(30);
-  long cur_time = time(nullptr);
-  if (engine_tag) {
-    add_statshouse_value_metric(metrics, "kphp_version", atoll(engine_tag), cur_time);
-  }
-  add_statshouse_value_metric(metrics, "kphp_uptime", get_uptime(), cur_time);
-
-  const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
-  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_total", general_worker_group.total_workers, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_working", general_worker_group.running_workers, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_working_but_waiting", general_worker_group.waiting_workers, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_workers_general_processes_ready_for_accept", general_worker_group.ready_for_accept_workers, cur_time);
-
-  const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
-  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_total", job_worker_group.total_workers, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_working", job_worker_group.running_workers, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_workers_job_processes_working_but_waiting", job_worker_group.waiting_workers, cur_time);
-
-  const auto cpu_stats = server_stats.cpu[1].get_stat();
-  add_statshouse_value_metric(metrics, "kphp_cpu_stime", cpu_stats.cpu_s_usage, cur_time);
-  add_statshouse_value_metric(metrics, "kphp_cpu_utime", cpu_stats.cpu_u_usage, cur_time);
-
-  return metrics;
-}
-
 static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), STATS_TAG_KPHP_SERVER);
-    vk::singleton<StatsHouseClient>::get().send_metrics(make_statshouse_metrics());
+    vk::singleton<StatsHouseClient>::get().send_metrics();
   }
   create_all_outbound_connections();
   vk::singleton<ServerStats>::get().aggregate_stats();

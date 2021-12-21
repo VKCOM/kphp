@@ -12,8 +12,12 @@
 
 void StatsHouseMetric::tl_store() const {
   tl_store_int(fields_mask);
-  tl_store_string(name.data(), name.size());
-  tl_store_int(0); // tags size
+  vk::tl::store_string(name);
+  tl_store_int(tags.size());
+  for (const auto &tag : tags) {
+    vk::tl::store_string(tag.first);
+    vk::tl::store_string(tag.second);
+  }
   if (fields_mask & vk::tl::statshouse::metric_fields_mask::counter) {
     tl_store_double(counter);
   }
@@ -34,10 +38,10 @@ void StatsHouseMetric::tl_store() const {
 void StatsHouseAddMetricsBatch::tl_store() const {
   tl_store_int(TL_STATSHOUSE_ADD_METRICS_BATCH);
   tl_store_int(fields_mask);
-  vk::tl::store_vector(metrics);
+  tl_store_int(metrics_size);
 }
 
-void add_statshouse_value_metric(std::vector<StatsHouseMetric> &metrics, std::string name, double value, long time) {
-  constexpr int fields_mask = vk::tl::statshouse::metric_fields_mask::t | vk::tl::statshouse::metric_fields_mask::value;
-  metrics.push_back({.fields_mask = fields_mask, .name = std::move(name), .t = time, .value = {value}});
+StatsHouseMetric make_statshouse_value_metric(std::string name, double value, const std::vector<std::pair<std::string, std::string>> &tags) {
+  constexpr int fields_mask = vk::tl::statshouse::metric_fields_mask::value;
+  return {.fields_mask = fields_mask, .name = std::move(name), .tags = tags, .value = {value}};
 }
