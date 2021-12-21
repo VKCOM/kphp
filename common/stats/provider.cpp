@@ -18,10 +18,11 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 
-char* stats_t::normalize_key(const char *key, const char *format, const char *prefix) noexcept {
+char *stats_t::normalize_key(const char *key, const char *format, const char *prefix) noexcept {
   static char result_start[1 << 10];
   char *result = result_start;
-  sprintf(result, format, prefix, key);
+  int prefix_length = sprintf(result, "%s", prefix);
+  sprintf(result + prefix_length, format, key);
   while (*result) {
     char c = *result;
     int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');

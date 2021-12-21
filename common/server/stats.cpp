@@ -13,7 +13,7 @@ int (*tl_stat_function)(const std::optional<std::vector<std::string>> &sorted_fi
 
 static char buf[STATS_BUFFER_LEN];
 
-char* get_engine_default_prepare_stats_buffer() {
+char *get_engine_default_prepare_stats_buffer() {
   return buf;
 }
 
@@ -26,8 +26,8 @@ std::pair<char *, int> engine_default_prepare_stats_with_tag_mask(stats_t &&stat
   return {buf, stats.sb.pos};
 }
 
-char *engine_default_prepare_stats(stats_t &&stats, const char *statsd_prefix) {
-  return engine_default_prepare_stats_with_tag_mask(std::move(stats), statsd_prefix, STATS_TAG_MASK_FULL).first;
+char *engine_default_prepare_stats(stats_t &&stats, const char *stats_prefix) {
+  return engine_default_prepare_stats_with_tag_mask(std::move(stats), stats_prefix, STATS_TAG_MASK_FULL).first;
 }
 
 void engine_default_tl_stat_function(const std::optional<std::vector<std::string>> &sorted_filter_keys) {

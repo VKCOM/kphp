@@ -26,7 +26,7 @@ public:
     sb_printf(&sb, "\n");
   }
 
-  virtual bool needAggrStats() noexcept final {
+  virtual bool need_aggr_stats() noexcept final {
     return true;
   }
 };

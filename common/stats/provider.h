@@ -23,7 +23,7 @@ public:
   virtual void add_stat(char type, const char *key, const char *value_format, double value) noexcept = 0;
   virtual void add_stat(char type, const char *key, const char *value_format, long long value) noexcept = 0;
 
-  virtual bool needAggrStats() noexcept = 0;
+  virtual bool need_aggr_stats() noexcept = 0;
 
   virtual ~stats_t() = default;
 

@@ -1042,7 +1042,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat_long(stats, "workers.job.processes.working", job_worker_group.running_workers);
   add_gauge_stat_long(stats, "workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
-  if (stats->needAggrStats()) {
+  if (stats->need_aggr_stats()) {
     auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
     add_gauge_stat_double(stats, "workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
     add_gauge_stat_long(stats, "workers.general.processes.running.max_1m", running_stats.running_workers_max);
@@ -1085,7 +1085,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, STATS_TAG_KPHP_SERVER) {
   add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
-  if (stats->needAggrStats()) {
+  if (stats->need_aggr_stats()) {
     vk::singleton<ServerStats>::get().write_stats_to(stats);
   }
 

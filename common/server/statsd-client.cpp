@@ -55,7 +55,7 @@ public:
     sb_printf(&sb, "|%c\n", type);
   }
 
-  virtual bool needAggrStats() noexcept final {
+  virtual bool need_aggr_stats() noexcept final {
     return true;
   }
 };

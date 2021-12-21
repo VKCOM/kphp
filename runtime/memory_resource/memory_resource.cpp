@@ -10,7 +10,7 @@ void MemoryStats::write_stats_to(stats_t *stats, const char *prefix) const noexc
   add_gauge_stat(stats, memory_limit, prefix, ".memory.limit");
   add_gauge_stat(stats, memory_used, prefix, ".memory.used");
   add_gauge_stat(stats, real_memory_used, prefix, ".memory.real_used");
-  if (stats->needAggrStats()) {
+  if (stats->need_aggr_stats()) {
     add_gauge_stat(stats, max_memory_used, prefix, ".memory.used_max");
     add_gauge_stat(stats, max_real_memory_used, prefix, ".memory.real_used_max");
   }
