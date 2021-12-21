@@ -43,25 +43,20 @@ public:
     // ignore it
   }
 
-  void add_stat(char type, const char *key, const char *value_format, va_list ap) noexcept final {
-    sb_printf(&sb, "%s.%s:", statsd_prefix, normalize_key(key));
-    vsb_printf(&sb, value_format, ap);
+  void add_stat(char type, const char *key, const char *value_format, double value) noexcept final {
+    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
+    sb_printf(&sb, value_format, value);
     sb_printf(&sb, "|%c\n", type);
   }
-private:
-  static char *normalize_key(const char *key) {
-    static char result_start[1 << 10];
-    char *result = result_start;
-    sprintf(result, "%s", key);
-    while (*result) {
-      char c = *result;
-      int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-      if (!ok) {
-        *result = '_';
-      }
-      result++;
-    }
-    return result_start;
+
+  void add_stat(char type, const char *key, const char *value_format, long long value) noexcept final {
+    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
+    sb_printf(&sb, value_format, value);
+    sb_printf(&sb, "|%c\n", type);
+  }
+
+  virtual bool needAggrStats() noexcept final {
+    return true;
   }
 };
 } // namespace
@@ -147,11 +142,10 @@ void send_data_to_statsd_with_prefix(const char *stats_prefix, unsigned int tag_
       connected_to_targets[i] = 1;
     }
 
-    char *result = engine_default_prepare_stats_with_tag_mask(statsd_stats_t{}, NULL, stats_prefix, tag_mask);
-    write_out(&c->Out, result, (int)strlen(result));
+    auto [result, len] = engine_default_prepare_stats_with_tag_mask(statsd_stats_t{}, stats_prefix, tag_mask);
+    write_out(&c->Out, result, len);
     flush_later(c);
     vkprintf(4, "statsd flush!\n");
     break;
   }
 }
-

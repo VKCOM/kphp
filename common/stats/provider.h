@@ -5,6 +5,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstdio>
 #include <cstring>
 #include <type_traits>
 
@@ -16,16 +17,21 @@
 class stats_t {
 public:
   stats_buffer_t sb{};
-  const char *statsd_prefix{};
+  const char *stats_prefix{};
 
   virtual void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept = 0;
-  virtual void add_stat(char type, const char *key, const char *value_format, va_list ap) noexcept = 0;
+  virtual void add_stat(char type, const char *key, const char *value_format, double value) noexcept = 0;
+  virtual void add_stat(char type, const char *key, const char *value_format, long long value) noexcept = 0;
+
+  virtual bool needAggrStats() noexcept = 0;
 
   virtual ~stats_t() = default;
+
+protected:
+  char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };
 
-char *statsd_normalize_key(const char *key);
-void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__ ((format (printf, 3, 4)));
+void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__((format(printf, 3, 4)));
 
 void add_histogram_stat_long(stats_t *stats, const char *key, long long value);
 void add_histogram_stat_double(stats_t *stats, const char *key, double value);
@@ -55,13 +61,12 @@ void add_gauge_stat(stats_t *stats, const std::atomic<T> &value, const char *key
   add_gauge_stat(stats, value.load(std::memory_order_relaxed), key1, key2, key3);
 }
 
-char *stat_temp_format(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+char *stat_temp_format(const char *format, ...) __attribute__((format(printf, 1, 2)));
 int am_get_memory_usage(pid_t pid, long long *a, int m);
-
 
 typedef struct {
   const char *name;
-  int priority; // smaller values mean early in stats
+  int priority;     // smaller values mean early in stats
   unsigned int tag; // allows to specify tag for filtering stats
   void (*prepare)(stats_t *stats);
 } stats_provider_t;
