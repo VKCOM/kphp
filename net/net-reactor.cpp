@@ -545,7 +545,7 @@ int net_reactor_runqueue(net_reactor_ctx_t *ctx) {
       ev->timestamp = ctx->timestamp;
       net_reactor_put_event_into_heap(ctx, ev);
     } else if (res > 0) {
-      net_reactor_insert(ctx, fd, res & 0xf);
+      net_reactor_insert(ctx, fd, res & (EVT_LEVEL | EVT_RWX));
     } else if (res == EVA_CONTINUE) {
       ev->ready = 0;
     }
