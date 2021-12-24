@@ -17,12 +17,18 @@ TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vect
   forkable_types(std::move(forkable_types)),
   waitable_types(std::move(waitable_types)) {}
 
+IncludesCollector TypeTagger::collect_includes() const noexcept {
+  IncludesCollector includes;
+  for (auto type : forkable_types) {
+    includes.add_all_class_types(*type);
+  }
+  for (auto type : waitable_types) {
+    includes.add_all_class_types(*type);
+  }
+  return includes;
+}
 
-void TypeTagger::compile(CodeGenerator &W) const {
-  W << OpenFile("_tagger.cpp");
-
-  W << ExternInclude(G->settings().runtime_headers.get());
-
+std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   // Be care, do not remove spaces from these types
   // TODO fix it?
   std::set<std::string> sorted_types = {
@@ -41,35 +47,47 @@ void TypeTagger::compile(CodeGenerator &W) const {
     "array< class_instance<C$VK$TL$RpcResponse> >"
   };
 
-  IncludesCollector collector;
-
   for (auto type : forkable_types) {
     sorted_types.insert(type_out(type, gen_out_style::tagger));
-    collector.add_all_class_types(*type);
-  }
-  for (auto type : waitable_types) {
-    collector.add_all_class_types(*type);
   }
 
   std::map<int, std::string> hashes;
-
-  W << collector << NL;
 
   for (const std::string &type : sorted_types) {
     int hash = vk::std_hash(type);
     kphp_assert(hash);
     kphp_assert(hashes.insert({hash, type}).second);
+  }
+
+  return hashes;
+}
+
+void TypeTagger::compile_tagger(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
+  W << OpenFile("_tagger.cpp");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  W << includes << NL;
+
+  for (const auto &[hash, type] : hash_of_types) {
     W << "template<>" << NL;
     FunctionSignatureGenerator(W) << "int Storage::tagger<" << type << ">::get_tag() " << BEGIN;
     W << "return " << hash << ";" << NL;
     W << END << NL << NL;
   }
 
+  W << CloseFile();
+}
+
+void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
+  W << OpenFile("_loader.cpp");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  W << includes << NL;
+
   W << "template<typename T>" << NL;
   FunctionSignatureGenerator(W) << "typename Storage::loader<T>::loader_fun Storage::loader<T>::get_function(int tag)" << BEGIN;
   W << "switch(tag)" << BEGIN;
-  for (const auto &hash_type : hashes) {
-    W << "case " << hash_type.first << ":" << " return Storage::load_implementation_helper<" << hash_type.second << ", T>::load;" << NL;
+  for (const auto &[hash, type] : hash_of_types) {
+    W << "case " << hash << ":"
+      << " return Storage::load_implementation_helper<" << type << ", T>::load;" << NL;
   }
   W << END << NL;
   W << "php_assert(0);" << NL;
@@ -88,4 +106,12 @@ void TypeTagger::compile(CodeGenerator &W) const {
   }
 
   W << CloseFile();
+}
+
+void TypeTagger::compile(CodeGenerator &W) const {
+  const auto includes = collect_includes();
+  const auto hash_of_types = collect_hash_of_types();
+
+  compile_tagger(W, includes, hash_of_types);
+  compile_loader(W, includes, hash_of_types);
 }
