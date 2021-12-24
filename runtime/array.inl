@@ -522,7 +522,7 @@ T *array<T>::array_inner::find_vector_value(int64_t int_key) noexcept {
 
 template<class T>
 template<class STRING, class ...Args>
-T &array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept {
+std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept {
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
 
   string_hash_entry *string_entries = get_string_entries();
@@ -533,6 +533,7 @@ T &array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy,
     }
   }
 
+  bool inserted = false;
   if (string_entries[bucket].next == EMPTY_POINTER) {
     string_entries[bucket].int_key = int_key;
     new(&string_entries[bucket].string_key) string{std::forward<STRING>(string_key)};
@@ -546,16 +547,18 @@ T &array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy,
     new(&string_entries[bucket].value) T(std::forward<Args>(args)...);
 
     string_size++;
+    inserted = true;
   } else if (policy == overwrite_element::YES) {
     string_entries[bucket].value = T(std::forward<Args>(args)...);
+    inserted = true;
   }
 
-  return string_entries[bucket].value;
+  return {string_entries[bucket].value, inserted};
 }
 
 template<class T>
 T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_key, const string &string_key, const T &v) {
-  return emplace_string_key_map_value(policy, int_key, string_key, v);
+  return emplace_string_key_map_value(policy, int_key, string_key, v).first;
 }
 
 template<class T>
@@ -1094,7 +1097,7 @@ T &array<T>::operator[](const string &string_key) {
   }
 
   mutate_to_map_if_vector_or_map_need_string();
-  return p->emplace_string_key_map_value(overwrite_element::NO, string_key.hash(), string_key);
+  return p->emplace_string_key_map_value(overwrite_element::NO, string_key.hash(), string_key).first;
 }
 
 template<class T>
@@ -1132,7 +1135,7 @@ T &array<T>::operator[](const const_iterator &it) noexcept {
   auto *entry = reinterpret_cast<const string_hash_entry *>(it.entry_);
   if (it.self_->is_string_hash_entry(entry)) {
     mutate_to_map_if_vector_or_map_need_string();
-    return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key);
+    return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key).first;
   }
   return operator[](entry->int_key);
 }
@@ -1543,10 +1546,23 @@ array_size array<T>::size() const {
 
 template<class T>
 template<class T1, class>
-void array<T>::merge_with(const array<T1> &other) {
+void array<T>::merge_with(const array<T1> &other) noexcept {
   for (auto it : other) {
     push_back_iterator(it);
   }
+}
+
+template<class T>
+template<class T1, class>
+void array<T>::merge_with_recursive(const array<T1> &other) noexcept {
+  for (auto it : other) {
+    push_back_iterator<merge_recursive::YES>(it);
+  }
+}
+
+template<class T>
+void array<T>::merge_with_recursive(const mixed &other) noexcept {
+  merge_with_recursive(other.is_array() ? other.as_array() : array<T>::create(other));
 }
 
 template<class T>
@@ -1717,7 +1733,19 @@ void array<T>::push_back(const T &v) noexcept {
 }
 
 template<class T>
-template<class T1>
+template<merge_recursive recursive>
+std::enable_if_t<recursive == merge_recursive::YES> array<T>::start_merge_recursive(T &value, bool was_inserted, const T &other_value) noexcept {
+  static_assert(std::is_same_v<T, mixed>);
+  if (!was_inserted) {
+    if (!value.is_array()) {
+      value = array<T>::create(value);
+    }
+    value.as_array().merge_with_recursive(other_value);
+  }
+}
+
+template<class T>
+template<merge_recursive recursive, class T1>
 void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
   if (it.self_->is_vector()) {
     emplace_back(*reinterpret_cast<const T1 *>(it.entry_));
@@ -1725,7 +1753,16 @@ void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
     auto *entry = reinterpret_cast<typename array_iterator<T1>::string_hash_type *>(it.entry_);
     if (it.self_->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
-      p->set_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
+
+      // don't overwrite existing element if we are in merge_recursive::YES mode,
+      // this case will be handled further
+      auto [value_ref, inserted] = p->emplace_string_key_map_value(
+        recursive == merge_recursive::YES ? overwrite_element::NO : overwrite_element::YES,
+        entry->int_key, entry->string_key, entry->value);
+
+      static_assert(std::is_same_v<decltype(value_ref), T &>, "value_ref should be reference type");
+
+      start_merge_recursive<recursive>(value_ref, inserted, entry->value);
     } else {
       if (is_vector()) {
         mutate_if_vector_needed_int();
