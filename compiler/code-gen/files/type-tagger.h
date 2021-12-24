@@ -4,18 +4,18 @@
 
 #pragma once
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
-#include "compiler/code-gen/code-generator.h"
-#include "compiler/inferring/type-data.h"
 
+class CodeGenerator;
+class TypeData;
 struct IncludesCollector;
 
 struct TypeTagger : CodeGenRootCmd {
-  TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types);
+  TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types) noexcept;
   void compile(CodeGenerator &W) const final;
 
 private:
@@ -24,6 +24,6 @@ private:
   void compile_tagger(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept;
   void compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept;
 
-  std::vector<const TypeData *> forkable_types;
-  std::vector<const TypeData *> waitable_types;
+  const std::vector<const TypeData *> forkable_types_;
+  const std::vector<const TypeData *> waitable_types_;
 };
