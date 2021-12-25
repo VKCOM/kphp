@@ -96,29 +96,40 @@ void TypeTagger::compile_loader_header(CodeGenerator &W, const IncludesCollector
   W << CloseFile{};
 }
 
-void TypeTagger::compile_loader_instantiations(CodeGenerator &W, const IncludesCollector &includes) const noexcept {
-  W << OpenFile{"_loader_instantiations.cpp"};
-  W << ExternInclude{G->settings().runtime_headers.get()};
+template <typename It>
+static void compile_loader_instantiations_batch(CodeGenerator &W, const IncludesCollector &includes, It begin, It end, std::size_t batch) noexcept {
+  W << OpenFile{fmt_format("_loader_instantiations{}.cpp", batch)};
   W << includes << NL;
 
-  IncludesCollector loader_header;
-  loader_header.add_raw_filename_include(loader_file_);
-  W << loader_header << NL;
-
-  std::set<std::string> waitable_types_str;
-  for (const auto *type : waitable_types_) {
-    waitable_types_str.emplace(type_out(type, gen_out_style::tagger));
-  }
-  for (const auto &type : waitable_types_str) {
-    W << "template Storage::loader<" << type << ">::loader_fun Storage::loader<" << type << ">::get_function(int);" << NL;
+  for (auto it = begin; it != end; ++it) {
+    W << "template Storage::loader<" << *it << ">::loader_fun Storage::loader<" << *it << ">::get_function(int);" << NL;
   }
 
   W << CloseFile{};
 }
 
+void TypeTagger::compile_loader_instantiations(CodeGenerator &W) const noexcept {
+  IncludesCollector loader_includes;
+  loader_includes.add_raw_filename_include(loader_file_);
+
+  std::set<std::string> waitable_types_str;
+  for (const auto *type : waitable_types_) {
+    waitable_types_str.emplace(type_out(type, gen_out_style::tagger));
+  }
+
+  std::size_t batch = 0;
+  for (auto it = waitable_types_str.begin(); it != waitable_types_str.end();) {
+    const auto left_size = static_cast<std::size_t>(std::distance(it, waitable_types_str.end()));
+    const auto shift = std::min(left_size, loader_split_granularity_);
+    const auto end = std::next(it, shift);
+    compile_loader_instantiations_batch(W, loader_includes, it, end, batch++);
+    it = end;
+  }
+}
+
 void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
   compile_loader_header(W, includes, hash_of_types);
-  compile_loader_instantiations(W, includes);
+  compile_loader_instantiations(W);
 }
 
 void TypeTagger::compile(CodeGenerator &W) const {
