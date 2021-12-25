@@ -97,12 +97,8 @@ void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &inclu
   for (const auto *type : waitable_types_) {
     waitable_types_str.emplace(type_out(type, gen_out_style::tagger));
   }
-  if (!waitable_types_str.empty()) {
-    W << "auto unused_loaders_list __attribute__((unused)) = " << BEGIN;
-    for (const auto &type : waitable_types_str) {
-      W << "(void*)(Storage::loader<" << type << ">::get_function)," << NL;
-    }
-    W << END << ";" << NL;
+  for (const auto &type : waitable_types_str) {
+    W << "template Storage::loader<" << type << ">::loader_fun Storage::loader<" << type << ">::get_function(int);" << NL;
   }
 
   W << CloseFile{};
