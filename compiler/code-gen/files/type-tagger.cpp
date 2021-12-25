@@ -77,8 +77,8 @@ void TypeTagger::compile_tagger(CodeGenerator &W, const IncludesCollector &inclu
   W << CloseFile{};
 }
 
-void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
-  W << OpenFile{"_loader.cpp"};
+void TypeTagger::compile_loader_header(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
+  W << OpenFile{loader_file_};
   W << ExternInclude{G->settings().runtime_headers.get()};
   W << includes << NL;
 
@@ -93,6 +93,18 @@ void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &inclu
   W << "php_assert(0);" << NL;
   W << END << NL;
 
+  W << CloseFile{};
+}
+
+void TypeTagger::compile_loader_instantiations(CodeGenerator &W, const IncludesCollector &includes) const noexcept {
+  W << OpenFile{"_loader_instantiations.cpp"};
+  W << ExternInclude{G->settings().runtime_headers.get()};
+  W << includes << NL;
+
+  IncludesCollector loader_header;
+  loader_header.add_raw_filename_include(loader_file_);
+  W << loader_header << NL;
+
   std::set<std::string> waitable_types_str;
   for (const auto *type : waitable_types_) {
     waitable_types_str.emplace(type_out(type, gen_out_style::tagger));
@@ -102,6 +114,11 @@ void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &inclu
   }
 
   W << CloseFile{};
+}
+
+void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
+  compile_loader_header(W, includes, hash_of_types);
+  compile_loader_instantiations(W, includes);
 }
 
 void TypeTagger::compile(CodeGenerator &W) const {

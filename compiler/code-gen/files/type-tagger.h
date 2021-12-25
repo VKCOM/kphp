@@ -22,8 +22,11 @@ private:
   IncludesCollector collect_includes() const noexcept;
   std::map<int, std::string> collect_hash_of_types() const noexcept;
   void compile_tagger(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept;
+  void compile_loader_header(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept;
+  void compile_loader_instantiations(CodeGenerator &W, const IncludesCollector &includes) const noexcept;
   void compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept;
 
+  const std::string loader_file_{"_loader.h"};
   const std::vector<const TypeData *> forkable_types_;
   const std::vector<const TypeData *> waitable_types_;
 };
