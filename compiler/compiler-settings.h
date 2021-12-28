@@ -87,15 +87,10 @@ private:
 
 class CxxFlags {
 public:
-  void init(const std::string &runtime_sha256, const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept;
+  void init(const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir) noexcept;
 
   KphpImplicitOption flags;
   KphpImplicitOption flags_sha256;
-  KphpImplicitOption pch_dir;
-
-  friend inline bool operator==(const CxxFlags &lhs, const CxxFlags &rhs) noexcept {
-    return std::tie(lhs.flags.get(), lhs.flags_sha256.get(), lhs.pch_dir.get()) == std::tie(rhs.flags.get(), rhs.flags_sha256.get(), rhs.pch_dir.get());
-  }
 };
 
 class CompilerSettings : vk::not_copyable {
@@ -161,12 +156,15 @@ public:
   KphpOption<bool> enable_full_performance_analyze;
   KphpOption<bool> print_resumable_graph;
 
-  KphpOption<bool> no_pch;
   KphpOption<bool> no_index_file;
   KphpOption<bool> show_progress;
 
   CxxFlags cxx_flags_default;
   CxxFlags cxx_flags_with_debug;
+
+  KphpOption<bool> no_pch;
+  KphpImplicitOption pch_dir;
+
   KphpImplicitOption ld_flags;
   KphpImplicitOption incremental_linker;
   KphpImplicitOption incremental_linker_flags;

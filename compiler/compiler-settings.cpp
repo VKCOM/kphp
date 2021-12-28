@@ -179,15 +179,11 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
 
 } // namespace
 
-void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
-                    std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept {
+void CxxFlags::init(const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir) noexcept {
   remove_extra_spaces(cxx_flags_line);
   flags.value_ = std::move(cxx_flags_line);
   flags_sha256.value_ = calc_cxx_flags_sha256(cxx, flags.get());
   flags.value_.append(" -iquote").append(dest_cpp_dir);
-  if (enable_pch) {
-    pch_dir.value_.append("/tmp/kphp_gch/").append(runtime_sha256).append("/").append(flags_sha256.get()).append("/");
-  }
 }
 
 void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexcept {
@@ -362,9 +358,13 @@ void CompilerSettings::init() {
   performance_analyze_report_path.value_ = dest_dir.get() + "performance_issues.json";
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
 
-  cxx_flags_default.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
+  cxx_flags_default.init(cxx.get(), cxx_default_flags, dest_cpp_dir.get());
   cxx_default_flags.append(" ").append(extra_cxx_debug_level.get());
-  cxx_flags_with_debug.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
+  cxx_flags_with_debug.init(cxx.get(), cxx_default_flags, dest_cpp_dir.get());
+
+  if (!no_pch.get()) {
+    pch_dir.value_.append("/tmp/kphp_gch/").append(runtime_sha256.value_).append("/").append(cxx_flags_with_debug.flags_sha256.get()).append("/");
+  }
 
   tl_namespace_prefix.value_ = "VK\\TL\\";
   tl_classname_prefix.value_ = "C$VK$TL$";

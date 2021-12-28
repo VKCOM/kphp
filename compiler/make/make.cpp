@@ -175,18 +175,14 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_headers_h, const CompilerSettings &settings, bool with_debug) {
-  const auto &flags = with_debug ? settings.cxx_flags_with_debug : settings.cxx_flags_default;
-  if (with_debug && flags == settings.cxx_flags_default) {
-    return nullptr;
-  }
-  const std::string pch_filename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
-  std::string pch_path = flags.pch_dir.get() + pch_filename;
+static File *prepare_precompiled_header_with_debug(Index *obj_dir, MakeSetup &make, File &runtime_headers_h, const CompilerSettings &settings) {
+  const auto pch_filename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
+  std::string pch_path = settings.pch_dir.get() + pch_filename;
   if (access(pch_path.c_str(), F_OK) != -1) {
     return nullptr;
   }
-  auto *runtime_header_h_pch = obj_dir->insert_file(settings.dest_objs_dir.get() + pch_filename + "." + flags.flags_sha256.get());
-  runtime_header_h_pch->compile_with_debug_info_flag = with_debug;
+  auto *runtime_header_h_pch = obj_dir->insert_file(settings.dest_objs_dir.get() + pch_filename + "." + settings.cxx_flags_with_debug.flags_sha256.get());
+  runtime_header_h_pch->compile_with_debug_info_flag = true;
   make.create_pch_target(&runtime_headers_h, runtime_header_h_pch);
   return runtime_header_h_pch;
 }
@@ -213,26 +209,14 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
   make.create_cpp_target(&runtime_headers_h);
   runtime_headers_h.target->force_changed(sha256_version_file.mtime);
 
-  std::vector<File *> runtime_header_pch_files;
-  std::vector<std::string> pch_dirs;
-  for (auto with_debug : {false, true}) {
-    if (File *runtime_header_gch_file = prepare_precompiled_header(obj_dir, make, runtime_headers_h, settings, with_debug)) {
-      pch_dirs.emplace_back(with_debug ? settings.cxx_flags_with_debug.pch_dir.get() : settings.cxx_flags_default.pch_dir.get());
-      runtime_header_pch_files.emplace_back(runtime_header_gch_file);
-    }
-  }
-  if (runtime_header_pch_files.empty()) {
+  File *runtime_header_pch = prepare_precompiled_header_with_debug(obj_dir, make, runtime_headers_h, settings);
+  if (!runtime_header_pch) {
     return true;
   }
-  if (!make.make_targets(runtime_header_pch_files, "Compiling pch", settings.jobs_count.get())) {
+  if (!make.make_target(runtime_header_pch, "Compiling pch", settings.jobs_count.get())) {
     return false;
   }
-
-  bool is_ok = true;
-  for (size_t i = 0; i != runtime_header_pch_files.size(); ++i) {
-    is_ok = finalize_precompiled_header(runtime_headers_h, *runtime_header_pch_files[i], pch_dirs[i]) && is_ok;
-  }
-  return is_ok;
+  return finalize_precompiled_header(runtime_headers_h, *runtime_header_pch, settings.pch_dir.get());
 }
 
 static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
@@ -375,9 +359,9 @@ static std::vector<File *> run_pre_make(const CompilerSettings &settings, FILE *
     bin_file.unlink();
   }
 
-  const bool pch_allowed = !settings.no_pch.get();
-  if (pch_allowed) {
-    kphp_error(kphp_make_precompiled_headers(&obj_index, settings, make_stats_file), "Make precompiled header failed");
+  if (!settings.no_pch.get()) {
+    bool success = kphp_make_precompiled_headers(&obj_index, settings, make_stats_file);
+    kphp_error(success, "Make precompiled header failed");
   }
 
   auto lib_header_dirs = collect_imported_headers();

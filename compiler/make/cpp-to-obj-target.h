@@ -17,28 +17,27 @@ public:
   }
 
   string get_cmd() final {
-    std::stringstream ss;
+    std::stringstream cmd;
     const auto cpp_list = dep_list();
     const char *cpp_type = make_pch_ ? "-x c++-header " : "";
-    ss << settings->cxx.get() <<
-       " -c -o " << target() <<
-       " " << cpp_type << cpp_list;
-    const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
+    cmd << settings->cxx.get() << " -c -o " << target() << " " << cpp_type << cpp_list;
+
     if (!make_pch_ && !settings->no_pch.get()) {
-      ss << " -iquote " << cxx_flags.pch_dir.get();
+      cmd << " -iquote " << settings->pch_dir.get();
       if (vk::contains(settings->cxx.get(), "clang")) {
-        ss << " -include " << cxx_flags.pch_dir.get() << settings->runtime_headers.get();
+        cmd << " -include " << settings->pch_dir.get() << settings->runtime_headers.get();
       }
-
     }
-    ss << " " << cxx_flags.flags.get();
 
-    return ss.str();
+    const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
+    cmd << " " << cxx_flags.flags.get();
+
+    return cmd.str();
   }
 
   void compute_priority() final {
     priority = 0;
-    for (auto dep : deps) {
+    for (auto *dep : deps) {
       if (File *dep_file = dep->get_file()) {
         priority += dep_file->file_size;
       }
