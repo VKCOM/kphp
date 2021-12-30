@@ -301,8 +301,8 @@ void CompilerSettings::init() {
 
   std::string cxx_default_flags = ss.str();
 
-  incremental_linker.value_ = dynamic_incremental_linkage.get() ? cxx.get() : "ld";
-  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r";
+  incremental_linker.value_ = cxx.get();
+  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib";
 
   remove_extra_spaces(extra_ld_flags.value_);
 
