@@ -8,7 +8,7 @@ install(TARGETS tl-compiler tl2php
 
 install(DIRECTORY ${COMMON_DIR}/tl-files
         COMPONENT TL_TOOLS
-        DESTINATION ${VK_INSTALL_DIR}/doc
+        DESTINATION ${VK_INSTALL_DIR}/examples
         FILES_MATCHING PATTERN "*.tl")
 
 set(CPACK_DEBIAN_TL_TOOLS_PACKAGE_NAME "vk-tl-tools")
