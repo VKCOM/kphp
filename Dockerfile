@@ -11,6 +11,6 @@ RUN apt-get update && \
 
 RUN mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
     tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo -w 4 \
-    /usr/share/vkontakte/tl-files/common.tl /usr/share/vkontakte/tl-files/tl.tl
+    /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
 
 RUN useradd -ms /bin/bash kitten

@@ -63,7 +63,7 @@ sudo apt update
 sudo apt install kphp vk-tl-tools
 
 sudo mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/
-sudo tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/tl-files/common.tl /usr/share/vkontakte/tl-files/tl.tl
+sudo tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
 ```
 
 Having done all these steps, you'll have the `kphp` command and related ones to use later on.
