@@ -150,6 +150,7 @@ public:
   KphpOption<std::string> php_code_version;
 
   KphpOption<std::string> cxx;
+  KphpOption<std::string> cxx_toolchain_dir;
   KphpOption<std::string> extra_cxx_flags;
   KphpOption<std::string> extra_ld_flags;
   KphpOption<std::string> extra_cxx_debug_level;
@@ -168,7 +169,6 @@ public:
   CxxFlags cxx_flags_default;
   CxxFlags cxx_flags_with_debug;
   KphpImplicitOption ld_flags;
-  KphpImplicitOption incremental_linker;
   KphpImplicitOption incremental_linker_flags;
 
   KphpImplicitOption base_dir;
@@ -178,6 +178,7 @@ public:
   KphpImplicitOption static_lib_name;
   KphpImplicitOption generated_runtime_path;
   KphpImplicitOption performance_analyze_report_path;
+  KphpImplicitOption cxx_toolchain_option;
 
   KphpImplicitOption runtime_headers;
   KphpImplicitOption runtime_sha256;
