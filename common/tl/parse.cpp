@@ -26,9 +26,9 @@ static long long rpc_sent_answers;
 static long long rpc_sent_errors;
 
 STATS_PROVIDER(tl, 2000) {
-  add_histogram_stat_long(stats, "rpc_sent_queries", rpc_sent_queries);
-  add_histogram_stat_long(stats, "rpc_sent_answers", rpc_sent_answers);
-  add_histogram_stat_long(stats, "rpc_sent_errors", rpc_sent_errors);
+  stats->add_histogram_stat("rpc_sent_queries", rpc_sent_queries);
+  stats->add_histogram_stat("rpc_sent_answers", rpc_sent_answers);
+  stats->add_histogram_stat("rpc_sent_errors", rpc_sent_errors);
 }
 
 

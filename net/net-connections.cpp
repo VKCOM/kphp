@@ -118,7 +118,7 @@ STATS_PROVIDER(net, 1000) {
 
   add_general_stat(stats, "tot_idle_time", "%.3f", epoll_total_idle_time());
   add_general_stat(stats, "average_idle_percent", "%.3f", uptime > 0 ? epoll_total_idle_time() / uptime * 100 : 0);
-  add_histogram_stat_double(stats, "recent_idle_percent", get_recent_idle_percent());
+  stats->add_histogram_stat("recent_idle_percent", get_recent_idle_percent());
 
   add_general_stat(stats, "network_connections", "%d", active_connections);
   add_general_stat(stats, "encrypted_connections", "%d", allocated_aes_crypto);
@@ -141,7 +141,7 @@ STATS_PROVIDER(net, 1000) {
   add_general_stat(stats, "allocated_network_buffers", "%d", NB_alloc);
   add_general_stat(stats, "max_network_buffers", "%d", NB_max);
   add_general_stat(stats, "network_buffer_size", "%d", NB_size);
-  add_histogram_stat_long(stats, "queries_total", netw_queries);
+  stats->add_histogram_stat("queries_total", netw_queries);
   add_general_stat(stats, "qps", "%.3f", safe_div(netw_queries, uptime));
   add_general_stat(stats, "update_queries_total", "%lld", netw_update_queries);
   add_general_stat(stats, "update_qps", "%.3f", safe_div(netw_update_queries, uptime));

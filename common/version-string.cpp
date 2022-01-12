@@ -48,7 +48,7 @@ const char* get_version_string() {
 
 STATS_PROVIDER(version_string, 10000) {
   add_general_stat(stats, "version", "%s", FullVersionStr);
-  add_histogram_stat_long(stats, "build_timestamp", BUILD_TIMESTAMP);
+  stats->add_histogram_stat("build_timestamp", (long long)BUILD_TIMESTAMP);
 }
 
 OPTION_PARSER(OPT_GENERIC, "version", no_argument, "prints version and exits") {

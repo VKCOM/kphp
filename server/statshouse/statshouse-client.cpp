@@ -27,23 +27,24 @@ public:
     // ignore it
   }
 
-  void add_stat(char type [[maybe_unused]], const char *key, const char *value_format [[maybe_unused]], double value) noexcept final {
+  bool need_aggr_stats() noexcept final {
+    return false;
+  }
+
+  int get_counter() const {
+    return counter;
+  }
+
+protected:
+  void add_stat(char type [[maybe_unused]], const char *key, double value) noexcept final {
     auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, tags);
     auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
     sb.pos += len;
     ++counter;
   }
 
-  void add_stat(char type, const char *key, const char *value_format, long long value) noexcept final {
-    add_stat(type, key, value_format, static_cast<double>(value));
-  }
-
-  virtual bool need_aggr_stats() noexcept final {
-    return false;
-  }
-
-  int get_counter() const {
-    return counter;
+  void add_stat(char type, const char *key, long long value) noexcept final {
+    add_stat(type, key, static_cast<double>(value));
   }
 
 private:
@@ -58,7 +59,7 @@ std::pair<char *, int> prepare_statshouse_stats(statshouse_stats_t &&stats) {
   sb_init(&stats.sb, buf, STATS_BUFFER_LEN);
   constexpr int offset = 3 * sizeof(int32_t); // for magic, fields_mask and vector size
   stats.sb.pos = offset;
-  prepare_common_stats_with_tag_mask(&stats, STATS_TAG_KPHP_SERVER);
+  prepare_common_stats_with_tag_mask(&stats, stats_tag_kphp_server);
 
   auto metrics_batch = StatsHouseAddMetricsBatch{.fields_mask = vk::tl::statshouse::add_metrics_batch_fields_mask::ALL, .metrics_size = stats.get_counter()};
   vk::tl::store_to_buffer(stats.sb.buff, offset, metrics_batch);

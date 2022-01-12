@@ -11,33 +11,51 @@
 
 #include "common/stats/buffer.h"
 
-#define AM_GET_MEMORY_USAGE_SELF 1
-#define AM_GET_MEMORY_USAGE_OVERALL 2
+constexpr int am_get_memory_usage_self = 1;
+constexpr int am_get_memory_usage_overall = 2;
+
+constexpr unsigned int stats_tag_default = 1 << 0;
+constexpr unsigned int stats_tag_kphp_server = 1 << 31;
+constexpr unsigned int stats_tag_mask_full = 0xFFFFFFFF;
 
 class stats_t {
 public:
   stats_buffer_t sb{};
   const char *stats_prefix{};
 
-  virtual void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept = 0;
-  virtual void add_stat(char type, const char *key, const char *value_format, double value) noexcept = 0;
-  virtual void add_stat(char type, const char *key, const char *value_format, long long value) noexcept = 0;
+  template<typename T>
+  void add_histogram_stat(const char *key, T value) {
+    static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
+    if (std::is_floating_point<T>::value) {
+      add_stat('h', key, static_cast<double>(value));
+    } else {
+      add_stat('h', key, static_cast<long long>(value));
+    }
+  }
 
+  template<typename T>
+  void add_gauge_stat(const char *key, T value) {
+    static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
+    if (std::is_floating_point<T>::value) {
+      add_stat('g', key, static_cast<double>(value));
+    } else {
+      add_stat('g', key, static_cast<long long>(value));
+    }
+  }
+
+  virtual void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept = 0;
   virtual bool need_aggr_stats() noexcept = 0;
 
   virtual ~stats_t() = default;
 
 protected:
+  virtual void add_stat(char type, const char *key, double value) noexcept = 0;
+  virtual void add_stat(char type, const char *key, long long value) noexcept = 0;
+
   char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };
 
 void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__((format(printf, 3, 4)));
-
-void add_histogram_stat_long(stats_t *stats, const char *key, long long value);
-void add_histogram_stat_double(stats_t *stats, const char *key, double value);
-
-void add_gauge_stat_long(stats_t *stats, const char *key, long long value);
-void add_gauge_stat_double(stats_t *stats, const char *key, double value);
 
 template<class T>
 void add_gauge_stat(stats_t *stats, T value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
@@ -49,11 +67,7 @@ void add_gauge_stat(stats_t *stats, T value, const char *key1, const char *key2 
   std::memcpy(stat_key, key1, key1_len);
   std::memcpy(stat_key + key1_len, key2, key2_len);
   std::memcpy(stat_key + key1_len + key2_len, key3, key3_len + 1);
-  if (std::is_integral<T>{}) {
-    add_gauge_stat_long(stats, stat_key, static_cast<long long>(value));
-  } else {
-    add_gauge_stat_double(stats, stat_key, static_cast<double>(value));
-  }
+  stats->add_gauge_stat(stat_key, value);
 }
 
 template<class T>
@@ -64,27 +78,18 @@ void add_gauge_stat(stats_t *stats, const std::atomic<T> &value, const char *key
 char *stat_temp_format(const char *format, ...) __attribute__((format(printf, 1, 2)));
 int am_get_memory_usage(pid_t pid, long long *a, int m);
 
-typedef struct {
+struct stats_provider_t {
   const char *name;
   int priority;     // smaller values mean early in stats
   unsigned int tag; // allows to specify tag for filtering stats
   void (*prepare)(stats_t *stats);
-} stats_provider_t;
-
-#define STATS_TAG_DEFAULT 1 << 0
-#define STATS_TAG_KPHP_SERVER 1 << 31
-
-#define STATS_TAG_MASK_FULL 0xFFFFFFFF
+};
 
 void register_stats_provider(stats_provider_t provider);
 void prepare_common_stats_with_tag_mask(stats_t *stats, unsigned int tag_mask);
 void prepare_common_stats(stats_t *stats);
 
 static inline double safe_div(double x, double y) { return y > 0 ? x / y : 0; }
-
-void sb_print_queries(stats_t *stats, const char *desc, long long q);
-int get_at_prefix_length(const char *key, int key_len);
-int64_t get_vmrss();
 
 #define STATS_PROVIDER_TAGGED(nm, prio, tag_val)                          \
 static void prepare_ ## nm ## _stats(stats_t *stats);                     \
@@ -99,5 +104,5 @@ static void register_ ## nm ## _stats() {                                 \
 }                                                                         \
 static void prepare_ ## nm ## _stats(stats_t *stats)
 
-#define STATS_PROVIDER(nm, prio) STATS_PROVIDER_TAGGED(nm, prio, STATS_TAG_DEFAULT)
+#define STATS_PROVIDER(nm, prio) STATS_PROVIDER_TAGGED(nm, prio, stats_tag_default)
 

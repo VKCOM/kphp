@@ -14,19 +14,20 @@ public:
     sb_printf(&sb, "\n");
   }
 
-  void add_stat(char type [[maybe_unused]], const char *key, const char *value_format, double value) noexcept final {
-    sb_printf(&sb, "%s\t", key);
-    sb_printf(&sb, value_format, value);
-    sb_printf(&sb, "\n");
-  }
-
-  void add_stat(char type [[maybe_unused]], const char *key, const char *value_format, long long value) noexcept final {
-    sb_printf(&sb, "%s\t", key);
-    sb_printf(&sb, value_format, value);
-    sb_printf(&sb, "\n");
-  }
-
-  virtual bool need_aggr_stats() noexcept final {
+  bool need_aggr_stats() noexcept final {
     return true;
+  }
+
+protected:
+  void add_stat(char type [[maybe_unused]], const char *key, double value) noexcept final {
+    sb_printf(&sb, "%s\t", key);
+    sb_printf(&sb, "%.3f", value);
+    sb_printf(&sb, "\n");
+  }
+
+  void add_stat(char type [[maybe_unused]], const char *key, long long value) noexcept final {
+    sb_printf(&sb, "%s\t", key);
+    sb_printf(&sb, "%lld", value);
+    sb_printf(&sb, "\n");
   }
 };
