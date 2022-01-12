@@ -13,9 +13,20 @@ prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         processing-jobs.cpp
         server-functions.cpp)
 
+prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
+        pdo.cpp
+        pdo_statement.cpp
+        abstract_pdo_driver.cpp)
+
+prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
+        mysql_pdo_driver.cpp
+        mysql_pdo_emulated_statement.cpp)
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
+        ${KPHP_RUNTIME_PDO_SOURCES}
+        ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
@@ -100,7 +111,7 @@ target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
 prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL mysqlclient ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
      RELATIVE ${BASE_DIR}

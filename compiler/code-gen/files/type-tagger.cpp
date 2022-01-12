@@ -44,7 +44,8 @@ std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
     "array< array< mixed > >",
     "class_instance<C$KphpJobWorkerResponse>",
     "class_instance<C$VK$TL$RpcResponse>",
-    "array< class_instance<C$VK$TL$RpcResponse> >"
+    "array< class_instance<C$VK$TL$RpcResponse> >",
+    "class_instance<C$PDOStatement>",
   };
 
   for (const auto *type : forkable_types_) {

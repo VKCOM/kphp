@@ -38,10 +38,18 @@ prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
         adaptor.cpp
         connector.cpp)
 
+prepend(KPHP_DATABASE_DRIVERS_MYSQL_SOURCES ${BASE_DIR}/server/database-drivers/mysql/
+        mysql.cpp
+        mysql-request.cpp
+        mysql-connector.cpp
+        mysql-response.cpp
+        mysql-resources.cpp)
+
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}
     ${KPHP_JOB_WORKERS_SOURCES}
-    ${KPHP_DATABASE_DRIVERS_SOURCES})
+    ${KPHP_DATABASE_DRIVERS_SOURCES}
+    ${KPHP_DATABASE_DRIVERS_MYSQL_SOURCES})
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})

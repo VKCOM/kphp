@@ -36,6 +36,7 @@
 #include "runtime/net_events.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/openssl.h"
+#include "runtime/pdo/pdo.h"
 #include "runtime/profiler.h"
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
@@ -54,6 +55,7 @@
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
 #include "server/workers-control.h"
+#include "server/database-drivers/mysql/mysql.h"
 
 static enum {
   QUERY_TYPE_NONE,
@@ -2235,6 +2237,7 @@ static void free_runtime_libs() {
   free_migration_php8();
 
   vk::singleton<JsonLogger>::get().reset_buffers();
+  database_drivers::free_mysql_lib();
   vk::singleton<database_drivers::Adaptor>::get().reset();
   free_interface_lib();
 }
