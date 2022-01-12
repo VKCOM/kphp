@@ -24,8 +24,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         slot-ids-factory.cpp
         workers-control.cpp
         statshouse/statshouse-client.cpp
-        statshouse/add-metrics-batch.cpp
-        workers-control.cpp)
+        statshouse/add-metrics-batch.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp
@@ -35,9 +34,14 @@ prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         pipe-io.cpp
         shared-memory-manager.cpp)
 
+prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
+        adaptor.cpp
+        connector.cpp)
+
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}
-    ${KPHP_JOB_WORKERS_SOURCES})
+    ${KPHP_JOB_WORKERS_SOURCES}
+    ${KPHP_DATABASE_DRIVERS_SOURCES})
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})

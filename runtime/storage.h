@@ -85,7 +85,7 @@ public:
 
   /**
    * enabled_if is used to disable type deduction for save function
-   * It should be called with exacty same type as load,
+   * It should be called with exactly same type as load,
    * and it would be too easy to make a bug, if it's deduced automatically
    */
   template<class T1>

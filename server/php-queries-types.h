@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 enum class protocol_type {
   memcached,
   mysqli,
@@ -37,6 +39,18 @@ struct php_query_connect_t : php_query_base_t {
   const char *host{nullptr};
   int port{0};
   protocol_type protocol{};
+
+  void run(php_worker *worker) noexcept final;
+};
+
+namespace database_drivers {
+class Connector;
+} // namespace database_drivers
+
+struct external_driver_connect : php_query_base_t {
+  std::unique_ptr<database_drivers::Connector> connector;
+
+  explicit external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector);
 
   void run(php_worker *worker) noexcept final;
 };

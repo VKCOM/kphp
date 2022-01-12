@@ -47,6 +47,7 @@
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "runtime/timelib_wrapper.h"
+#include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -2234,6 +2235,7 @@ static void free_runtime_libs() {
   free_migration_php8();
 
   vk::singleton<JsonLogger>::get().reset_buffers();
+  vk::singleton<database_drivers::Adaptor>::get().reset();
   free_interface_lib();
 }
 
