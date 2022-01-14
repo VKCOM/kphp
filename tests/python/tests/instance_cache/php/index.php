@@ -126,13 +126,13 @@ class TestClassABC {
 
 function test_store() {
   $data = json_decode(file_get_contents('php://input'));
-  echo json_encode(["result" => instance_cache_store($data["key"], new TestClassABC, 5)]);
+  echo json_encode(["result" => instance_cache_store((string)$data["key"], new TestClassABC, 5)]);
 }
 
 function test_fetch_and_verify() {
   $data = json_decode(file_get_contents('php://input'));
   /** @var TestClassABC $instance */
-  $instance = instance_cache_fetch(TestClassABC::class, $data["key"]);
+  $instance = instance_cache_fetch(TestClassABC::class, (string)$data["key"]);
   echo json_encode([
     "a" => $instance->a[0] === $instance->a[2]->a[0],
     "b" => $instance->b[0] === $instance->b[1]->a[1]->b[0][0],
@@ -142,7 +142,7 @@ function test_fetch_and_verify() {
 
 function test_delete() {
   $data = json_decode(file_get_contents('php://input'));
-  instance_cache_delete($data["key"]);
+  instance_cache_delete((string)$data["key"]);
 }
 
 main();
