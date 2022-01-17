@@ -4,9 +4,7 @@
 
 #include "runtime/datetime.h"
 
-#include <clocale>
 #include <ctime>
-#include <sys/time.h>
 #include <chrono>
 
 #include "runtime/critical_section.h"
@@ -453,7 +451,11 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   }
 
   t.tm_isdst = -1;
-  return gmmktime(&t) - 3 * 3600;
+
+  tm lt;
+  time_t timestamp_lt = time(nullptr);
+  localtime_r(&timestamp_lt, &lt);
+  return gmmktime(&t) - lt.tm_gmtoff;
 }
 
 array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
