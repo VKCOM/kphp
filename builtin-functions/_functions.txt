@@ -1270,10 +1270,10 @@ function instance_to_array($instance ::: any, $with_class_names ::: bool = false
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cache_fetch($type ::: string, $key ::: string, $even_if_expired ::: bool = false) ::: instance<^1>;
-function instance_cache_store($key ::: string, $value ::: any, $ttl ::: int = 0) ::: bool;
-function instance_cache_update_ttl($key ::: string, $ttl ::: int = 0) ::: bool;
-function instance_cache_delete($key ::: string) ::: bool;
+function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
+function instance_cache_store(string $key, any $value, int $ttl = 0) ::: bool;
+function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
+function instance_cache_delete(string $key) ::: bool;
 
 function instance_serialize($instance ::: any) ::: string | null;
 /** @kphp-extern-func-info cpp_template_call */
