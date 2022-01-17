@@ -33,13 +33,6 @@ char *stats_t::normalize_key(const char *key, const char *format, const char *pr
   return result_start;
 }
 
-void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) {
-  va_list ap;
-  va_start(ap, value_format);
-  stats->add_general_stat(key, value_format, ap);
-  va_end (ap);
-}
-
 char *stat_temp_format(const char *format, ...) {
   static char buffer[1 << 15];
   va_list ap;
@@ -183,9 +176,9 @@ STATS_PROVIDER(memory, 500) {
   }
 
   if (!get_memory_stats(&mem_stat, am_get_memory_usage_overall)) {
-    add_general_stat(stats, "memfree_bytes", "%lld", mem_stat.mem_free);
+    stats->add_general_stat("memfree_bytes", "%lld", mem_stat.mem_free);
     stats->add_histogram_stat("swap_used_bytes", mem_stat.swap_used);
-    add_general_stat(stats, "swap_total_bytes", "%lld", mem_stat.swap_total);
+    stats->add_general_stat("swap_total_bytes", "%lld", mem_stat.swap_total);
   }
 }
 
@@ -252,14 +245,14 @@ STATS_PROVIDER(general, 0) {
   }
   int uptime = get_uptime();
 
-  add_general_stat(stats, "command_line", "%s", cmdline_buffer);
-  add_general_stat(stats, "pid", "%d", my_pid);
+  stats->add_general_stat("command_line", "%s", cmdline_buffer);
+  stats->add_general_stat("pid", "%d", my_pid);
 
-  add_general_stat(stats, "start_time", "%d", now - uptime);
-  add_general_stat(stats, "current_time", "%d", now);
+  stats->add_general_stat("start_time", "%d", now - uptime);
+  stats->add_general_stat("current_time", "%d", now);
   stats->add_histogram_stat("uptime", uptime);
 
-  add_general_stat(stats, "hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
+  stats->add_general_stat("hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
 }
 
 static void resource_usage_statistics(stats_t *stats, const char *prefix,
@@ -272,11 +265,11 @@ static void resource_usage_statistics(stats_t *stats, const char *prefix,
   cpu_time = usage->ru_stime.tv_sec + (usage->ru_stime.tv_usec / 1E6);
   stats->add_histogram_stat(stat_temp_format("%ssystem_cpu_time", prefix), cpu_time);
 
-  add_general_stat(stats, stat_temp_format("%ssoft_page_faults", prefix), "%ld", usage->ru_minflt);
-  add_general_stat(stats, stat_temp_format("%shard_page_faults", prefix), "%ld", usage->ru_majflt);
+  stats->add_general_stat(stat_temp_format("%ssoft_page_faults", prefix), "%ld", usage->ru_minflt);
+  stats->add_general_stat(stat_temp_format("%shard_page_faults", prefix), "%ld", usage->ru_majflt);
 
-  add_general_stat(stats, stat_temp_format("%sblock_input_operations", prefix), "%ld", usage->ru_inblock);
-  add_general_stat(stats, stat_temp_format("%sblock_output_operations", prefix), "%ld", usage->ru_oublock);
+  stats->add_general_stat(stat_temp_format("%sblock_input_operations", prefix), "%ld", usage->ru_inblock);
+  stats->add_general_stat(stat_temp_format("%sblock_output_operations", prefix), "%ld", usage->ru_oublock);
 
   stats->add_histogram_stat(stat_temp_format("%svoluntary_context_switches", prefix), usage->ru_nvcsw);
   stats->add_histogram_stat(stat_temp_format("%sivoluntary_context_switches", prefix), usage->ru_nivcsw);

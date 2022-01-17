@@ -23,7 +23,7 @@ public:
   explicit statshouse_stats_t(const std::vector<std::pair<std::string, std::string>> &tags)
     : tags(tags) {}
 
-  void add_general_stat(const char *, const char *, va_list) noexcept final {
+  void add_general_stat(const char *, const char *, ...) noexcept final {
     // ignore it
   }
 

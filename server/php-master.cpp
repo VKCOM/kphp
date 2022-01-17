@@ -1069,19 +1069,19 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 
   const auto &instance_cache_element_stats = instance_cache_get_stats();
-  add_gauge_stat(stats, instance_cache_element_stats.elements_stored, "instance_cache.elements.stored");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_stored_with_delay, "instance_cache.elements.stored_with_delay");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_storing_skipped_due_recent_update, "instance_cache.elements.storing_skipped_due_recent_update");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_storing_delayed_due_mutex, "instance_cache.elements.storing_delayed_due_mutex");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_fetched, "instance_cache.elements.fetched");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_missed, "instance_cache.elements.missed");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_missed_earlier, "instance_cache.elements.missed_earlier");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_expired, "instance_cache.elements.expired");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_created, "instance_cache.elements.created");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_destroyed, "instance_cache.elements.destroyed");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_cached, "instance_cache.elements.cached");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_and_ignored, "instance_cache.elements.logically_expired_and_ignored");
-  add_gauge_stat(stats, instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_stored, "instance_cache.elements.stored");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_stored_with_delay, "instance_cache.elements.stored_with_delay");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_storing_skipped_due_recent_update, "instance_cache.elements.storing_skipped_due_recent_update");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_storing_delayed_due_mutex, "instance_cache.elements.storing_delayed_due_mutex");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_fetched, "instance_cache.elements.fetched");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_missed, "instance_cache.elements.missed");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_missed_earlier, "instance_cache.elements.missed_earlier");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_expired, "instance_cache.elements.expired");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_created, "instance_cache.elements.created");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_destroyed, "instance_cache.elements.destroyed");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_cached, "instance_cache.elements.cached");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_logically_expired_and_ignored, "instance_cache.elements.logically_expired_and_ignored");
+  stats->add_gauge_stat(instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
   if (stats->need_aggr_stats()) {

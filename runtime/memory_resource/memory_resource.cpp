@@ -7,16 +7,16 @@
 namespace memory_resource {
 
 void MemoryStats::write_stats_to(stats_t *stats, const char *prefix) const noexcept {
-  add_gauge_stat(stats, memory_limit, prefix, ".memory.limit");
-  add_gauge_stat(stats, memory_used, prefix, ".memory.used");
-  add_gauge_stat(stats, real_memory_used, prefix, ".memory.real_used");
+  stats->add_gauge_stat(memory_limit, prefix, ".memory.limit");
+  stats->add_gauge_stat(memory_used, prefix, ".memory.used");
+  stats->add_gauge_stat(real_memory_used, prefix, ".memory.real_used");
   if (stats->need_aggr_stats()) {
-    add_gauge_stat(stats, max_memory_used, prefix, ".memory.used_max");
-    add_gauge_stat(stats, max_real_memory_used, prefix, ".memory.real_used_max");
+    stats->add_gauge_stat(max_memory_used, prefix, ".memory.used_max");
+    stats->add_gauge_stat(max_real_memory_used, prefix, ".memory.real_used_max");
   }
-  add_gauge_stat(stats, defragmentation_calls, prefix, ".memory.defragmentation_calls");
-  add_gauge_stat(stats, huge_memory_pieces, prefix, ".memory.huge_memory_pieces");
-  add_gauge_stat(stats, small_memory_pieces, prefix, ".memory.small_memory_pieces");
+  stats->add_gauge_stat(defragmentation_calls, prefix, ".memory.defragmentation_calls");
+  stats->add_gauge_stat(huge_memory_pieces, prefix, ".memory.huge_memory_pieces");
+  stats->add_gauge_stat(small_memory_pieces, prefix, ".memory.small_memory_pieces");
 }
 
 } // namespace memory_resource

@@ -39,7 +39,7 @@ FLAG_OPTION_PARSER(OPT_GENERIC, "disable-statsd", disable_statsd, "disable sendi
 namespace {
 class statsd_stats_t : public stats_t {
 public:
-  void add_general_stat(const char *, const char *, va_list) noexcept final {
+  void add_general_stat(const char *, const char *, ...) noexcept final {
     // ignore it
   }
 

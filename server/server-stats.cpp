@@ -436,13 +436,15 @@ public:
     if (const uint16_t len = last_worker_id - first_worker_id) {
       for (size_t i = 0; i != this->size(); ++i) {
         const auto &stat = stats[i];
+        size_t buffer_index = 0;
         size_t worker_index = first_worker_id;
         while (worker_index != last_worker_id) {
-          const auto sample = stat[worker_index].load(std::memory_order_relaxed);
-          (*this)[i].samples[worker_index] = sample;
-          ++worker_index;
+          const auto sample = stat[worker_index++].load(std::memory_order_relaxed);
+          if (std::is_floating_point<typename E::StatType>{} || sample != 0) {
+            (*this)[i].samples[buffer_index++] = sample;
+          }
         }
-        (*this)[i].recalc(worker_index);
+        (*this)[i].recalc(buffer_index);
       }
     }
   }
@@ -671,37 +673,37 @@ uint64_t kb2bytes(uint64_t kb) noexcept {
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
-  add_gauge_stat(stats, mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-  add_gauge_stat(stats, mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-  add_gauge_stat(stats, mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-  add_gauge_stat(stats, mapper(samples.percentiles.max), prefix, suffix, ".max");
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
-  add_gauge_stat(stats, mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-  add_gauge_stat(stats, mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-  add_gauge_stat(stats, mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-  add_gauge_stat(stats, mapper(samples.percentiles.max), prefix, suffix, ".max");
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &agg, const WorkerSharedStats &shared) noexcept {
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::memory_limit)], prefix, ".errors.memory_limit_exceeded");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::timeout)], prefix, ".errors.timeout");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::exception)], prefix, ".errors.exception");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::stack_overflow)], prefix, ".errors.stack_overflow");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::php_assert)], prefix, ".errors.php_assert");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::http_connection_close)], prefix, ".errors.http_connection_close");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::rpc_connection_close)], prefix, ".errors.rpc_connection_close");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::net_event_error)], prefix, ".errors.net_event_error");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::post_data_loading_error)], prefix, ".errors.post_data_loading_error");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::unclassified_error)], prefix, ".errors.unclassified");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::memory_limit)], prefix, ".errors.memory_limit_exceeded");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::timeout)], prefix, ".errors.timeout");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::exception)], prefix, ".errors.exception");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::stack_overflow)], prefix, ".errors.stack_overflow");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::php_assert)], prefix, ".errors.php_assert");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::http_connection_close)], prefix, ".errors.http_connection_close");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::rpc_connection_close)], prefix, ".errors.rpc_connection_close");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::net_event_error)], prefix, ".errors.net_event_error");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::post_data_loading_error)], prefix, ".errors.post_data_loading_error");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::unclassified_error)], prefix, ".errors.unclassified");
 
-  add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
-  add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
 
   write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries]);
   write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries]);
@@ -737,13 +739,13 @@ void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::non_mmaped_allocated_bytes], prefix, ".memory.malloc_non_mapped_allocated_bytes");
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::non_mmaped_free_bytes], prefix, ".memory.malloc_non_mapped_free_bytes");
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::mmaped_bytes], prefix, ".memory.malloc_mapped_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::non_mmaped_allocated_bytes], prefix, ".memory.malloc_non_mapped_allocated_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::non_mmaped_free_bytes], prefix, ".memory.malloc_non_mapped_free_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::mmaped_bytes], prefix, ".memory.malloc_mapped_bytes");
 
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::rss_kb]), prefix, ".memory.rss_bytes");
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::vm_kb]), prefix, ".memory.vms_bytes");
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::rss_kb]), prefix, ".memory.rss_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::vm_kb]), prefix, ".memory.vms_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
 }
 
 template<class S>
@@ -760,12 +762,12 @@ auto get_sum(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBun
 
 void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm,
                         const WorkerSamplesBundle<VMStat> &general_vm, const WorkerSamplesBundle<VMStat> &job_vm) noexcept {
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
 
   const uint64_t rss_no_shm = get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) - get_sum(general_vm, job_vm, master_vm, VMStat::Key::shm_kb);
-  add_gauge_stat(stats, kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
+  stats->add_gauge_stat(kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
 }
 
 } // namespace

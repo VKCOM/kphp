@@ -116,37 +116,37 @@ double get_recent_idle_percent() {
 STATS_PROVIDER(net, 1000) {
   int uptime = get_uptime();
 
-  add_general_stat(stats, "tot_idle_time", "%.3f", epoll_total_idle_time());
-  add_general_stat(stats, "average_idle_percent", "%.3f", uptime > 0 ? epoll_total_idle_time() / uptime * 100 : 0);
+  stats->add_general_stat("tot_idle_time", "%.3f", epoll_total_idle_time());
+  stats->add_general_stat("average_idle_percent", "%.3f", uptime > 0 ? epoll_total_idle_time() / uptime * 100 : 0);
   stats->add_histogram_stat("recent_idle_percent", get_recent_idle_percent());
 
-  add_general_stat(stats, "network_connections", "%d", active_connections);
-  add_general_stat(stats, "encrypted_connections", "%d", allocated_aes_crypto);
-  add_general_stat(stats, "max_network_connections", "%d", maxconn);
-  add_general_stat(stats, "inbound_connections_accepted", "%lld", inbound_connections_accepted);
-  add_general_stat(stats, "outbound_connections_created", "%lld", outbound_connections_created);
-  add_general_stat(stats, "outbound_connections", "%d", outbound_connections);
-  add_general_stat(stats, "active_outbound_connections", "%d", active_outbound_connections);
-  add_general_stat(stats, "ready_outbound_connections", "%d", ready_outbound_connections);
-  add_general_stat(stats, "ready_targets", "%d", ready_targets);
-  add_general_stat(stats, "allocated_targets", "%d", allocated_targets);
-  add_general_stat(stats, "declared_targets", "%d", active_targets);
-  add_general_stat(stats, "inactive_targets", "%d", inactive_targets);
-  add_general_stat(stats, "active_special_connections", "%d", active_special_connections);
-  add_general_stat(stats, "max_special_connections", "%d", max_special_connections);
-  add_general_stat(stats, "active_network_events", "%d", epoll_event_heap_size());
-  add_general_stat(stats, "active_timers", "%d", epoll_timer_heap_size());
-  add_general_stat(stats, "used_network_buffers", "%d", NB_used);
-  add_general_stat(stats, "free_network_buffers", "%d", NB_free);
-  add_general_stat(stats, "allocated_network_buffers", "%d", NB_alloc);
-  add_general_stat(stats, "max_network_buffers", "%d", NB_max);
-  add_general_stat(stats, "network_buffer_size", "%d", NB_size);
+  stats->add_general_stat("network_connections", "%d", active_connections);
+  stats->add_general_stat("encrypted_connections", "%d", allocated_aes_crypto);
+  stats->add_general_stat("max_network_connections", "%d", maxconn);
+  stats->add_general_stat("inbound_connections_accepted", "%lld", inbound_connections_accepted);
+  stats->add_general_stat("outbound_connections_created", "%lld", outbound_connections_created);
+  stats->add_general_stat("outbound_connections", "%d", outbound_connections);
+  stats->add_general_stat("active_outbound_connections", "%d", active_outbound_connections);
+  stats->add_general_stat("ready_outbound_connections", "%d", ready_outbound_connections);
+  stats->add_general_stat("ready_targets", "%d", ready_targets);
+  stats->add_general_stat("allocated_targets", "%d", allocated_targets);
+  stats->add_general_stat("declared_targets", "%d", active_targets);
+  stats->add_general_stat("inactive_targets", "%d", inactive_targets);
+  stats->add_general_stat("active_special_connections", "%d", active_special_connections);
+  stats->add_general_stat("max_special_connections", "%d", max_special_connections);
+  stats->add_general_stat("active_network_events", "%d", epoll_event_heap_size());
+  stats->add_general_stat("active_timers", "%d", epoll_timer_heap_size());
+  stats->add_general_stat("used_network_buffers", "%d", NB_used);
+  stats->add_general_stat("free_network_buffers", "%d", NB_free);
+  stats->add_general_stat("allocated_network_buffers", "%d", NB_alloc);
+  stats->add_general_stat("max_network_buffers", "%d", NB_max);
+  stats->add_general_stat("network_buffer_size", "%d", NB_size);
   stats->add_histogram_stat("queries_total", netw_queries);
-  add_general_stat(stats, "qps", "%.3f", safe_div(netw_queries, uptime));
-  add_general_stat(stats, "update_queries_total", "%lld", netw_update_queries);
-  add_general_stat(stats, "update_qps", "%.3f", safe_div(netw_update_queries, uptime));
+  stats->add_general_stat("qps", "%.3f", safe_div(netw_queries, uptime));
+  stats->add_general_stat("update_queries_total", "%lld", netw_update_queries);
+  stats->add_general_stat("update_qps", "%.3f", safe_div(netw_update_queries, uptime));
 
-  add_general_stat(stats, "PID", "%s", pid_to_print(&PID));
+  stats->add_general_stat("PID", "%s", pid_to_print(&PID));
 }
 
 int prepare_iovec(struct iovec *iov, int *iovcnt, int maxcnt, netbuffer_t *H, int max_bytes) {

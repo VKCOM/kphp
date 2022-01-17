@@ -8,10 +8,13 @@
 
 class tl_stats_t : public stats_t {
 public:
-  void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept final {
+  void add_general_stat(const char *key, const char *value_format, ...) noexcept final {
+    va_list ap;
+    va_start(ap, value_format);
     sb_printf(&sb, "%s\t", key);
     vsb_printf(&sb, value_format, ap);
     sb_printf(&sb, "\n");
+    va_end(ap);
   }
 
   bool need_aggr_stats() noexcept final {

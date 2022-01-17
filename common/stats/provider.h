@@ -26,7 +26,7 @@ public:
   template<typename T>
   void add_histogram_stat(const char *key, T value) {
     static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
-    if (std::is_floating_point<T>::value) {
+    if constexpr (std::is_floating_point_v<T>) {
       add_stat('h', key, static_cast<double>(value));
     } else {
       add_stat('h', key, static_cast<long long>(value));
@@ -36,14 +36,32 @@ public:
   template<typename T>
   void add_gauge_stat(const char *key, T value) {
     static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
-    if (std::is_floating_point<T>::value) {
+    if constexpr (std::is_floating_point_v<T>) {
       add_stat('g', key, static_cast<double>(value));
     } else {
       add_stat('g', key, static_cast<long long>(value));
     }
   }
 
-  virtual void add_general_stat(const char *key, const char *value_format, va_list ap) noexcept = 0;
+  template<typename T>
+  void add_gauge_stat(T value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
+    static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
+    const size_t key1_len = std::strlen(key1);
+    const size_t key2_len = std::strlen(key2);
+    const size_t key3_len = std::strlen(key3);
+    char stat_key[key1_len + key2_len + key3_len + 1];
+    std::memcpy(stat_key, key1, key1_len);
+    std::memcpy(stat_key + key1_len, key2, key2_len);
+    std::memcpy(stat_key + key1_len + key2_len, key3, key3_len + 1);
+    add_gauge_stat(stat_key, value);
+  }
+
+  template<typename T>
+  void add_gauge_stat(const std::atomic<T> &value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
+    add_gauge_stat(value.load(std::memory_order_relaxed), key1, key2, key3);
+  }
+
+  virtual void add_general_stat(const char *key, const char *value_format, ...) noexcept __attribute__((format(printf, 3, 4))) = 0;
   virtual bool need_aggr_stats() noexcept = 0;
 
   virtual ~stats_t() = default;
@@ -54,26 +72,6 @@ protected:
 
   char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };
-
-void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) __attribute__((format(printf, 3, 4)));
-
-template<class T>
-void add_gauge_stat(stats_t *stats, T value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
-  static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
-  const size_t key1_len = std::strlen(key1);
-  const size_t key2_len = std::strlen(key2);
-  const size_t key3_len = std::strlen(key3);
-  char stat_key[key1_len + key2_len + key3_len + 1];
-  std::memcpy(stat_key, key1, key1_len);
-  std::memcpy(stat_key + key1_len, key2, key2_len);
-  std::memcpy(stat_key + key1_len + key2_len, key3, key3_len + 1);
-  stats->add_gauge_stat(stat_key, value);
-}
-
-template<class T>
-void add_gauge_stat(stats_t *stats, const std::atomic<T> &value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
-  add_gauge_stat(stats, value.load(std::memory_order_relaxed), key1, key2, key3);
-}
 
 char *stat_temp_format(const char *format, ...) __attribute__((format(printf, 1, 2)));
 int am_get_memory_usage(pid_t pid, long long *a, int m);

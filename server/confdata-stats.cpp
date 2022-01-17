@@ -13,10 +13,10 @@ double to_seconds(std::chrono::nanoseconds t) noexcept {
 }
 
 void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::EventCounters::Event &event) noexcept {
-  add_gauge_stat(stats, event.total, name, ".total");
-  add_gauge_stat(stats, event.blacklisted, name, ".blacklisted");
-  add_gauge_stat(stats, event.ignored, name, ".ignored");
-  add_gauge_stat(stats, event.ttl_updated, name, ".ttl_updated");
+  stats->add_gauge_stat(event.total, name, ".total");
+  stats->add_gauge_stat(event.blacklisted, name, ".blacklisted");
+  stats->add_gauge_stat(event.ignored, name, ".ignored");
+  stats->add_gauge_stat(event.ttl_updated, name, ".ttl_updated");
 }
 
 } // namespace
