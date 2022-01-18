@@ -20,6 +20,14 @@ class TestConstants {
     self::array_2[self::integer_2] => self::array_3
   ];
   static public $const_elements3 = [self::array_3[0] => "hello"."world"];
+
+  const const_elements4 = self::array_1[0];
+  const const_elements5 = self::array_2[0] + self::array_2[3];
+  const const_elements6 = [
+    self::array_1[self::integer_1] => self::string_1,
+    self::array_2[self::integer_2] => self::array_3
+  ];
+  const const_elements7 = [self::array_3[0] => "hello"."world"];
 }
 
 function test_concat() {
@@ -39,6 +47,11 @@ function test_class_constants() {
   var_dump(TestConstants::$const_elements1);
   var_dump(TestConstants::$const_elements2);
   var_dump(TestConstants::$const_elements3);
+
+  var_dump(TestConstants::const_elements4);
+  var_dump(TestConstants::const_elements5);
+  var_dump(TestConstants::const_elements6);
+  var_dump(TestConstants::const_elements7);
 }
 
 function test_array_with_class_constants() {
