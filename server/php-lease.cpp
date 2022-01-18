@@ -184,7 +184,7 @@ static void rpc_send_ready(connection *c) {
   static int q[QUERY_INT_BUF_LEN];
   int qn = 0;
   qn += 2;
-  bool use_ready_v2 = (is_staging != 0);
+  bool use_ready_v2 = is_staging != 0 || vk::singleton<LeaseContext>::get().cur_lease_mode.has_value();
   int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
 
   q[qn++] = -1; // will be replaced by op
