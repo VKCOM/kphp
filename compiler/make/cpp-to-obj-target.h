@@ -12,19 +12,16 @@
 
 class Cpp2ObjTarget : public Target {
 public:
-  explicit Cpp2ObjTarget(bool make_pch = false) noexcept :
-    make_pch_(make_pch) {
-  }
-
   string get_cmd() final {
     std::stringstream ss;
     const auto cpp_list = dep_list();
-    const char *cpp_type = make_pch_ ? "-x c++-header " : "";
     ss << settings->cxx.get() <<
        " -c -o " << target() <<
-       " " << cpp_type << cpp_list;
+       " " << cpp_list;
     const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
-    if (!make_pch_ && !settings->no_pch.get()) {
+    // make #include "runtime-headers.h" capture generated pch file
+    // it's done via -iquote to a folder inside /tmp/kphp_gch where runtime-headers.h with pch file are placed
+    if (!settings->no_pch.get()) {
       ss << " -iquote " << cxx_flags.pch_dir.get();
       if (vk::contains(settings->cxx.get(), "clang")) {
         ss << " -include " << cxx_flags.pch_dir.get() << settings->runtime_headers.get();
@@ -44,7 +41,4 @@ public:
       }
     }
   }
-
-private:
-  bool make_pch_{false};
 };

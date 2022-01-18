@@ -7,6 +7,7 @@
 #include <forward_list>
 #include <queue>
 #include <unordered_map>
+#include <dirent.h>
 
 #include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/pathname.h"
@@ -16,6 +17,7 @@
 #include "compiler/data/ffi-data.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
+#include "compiler/make/h-to-pch-target.h"
 #include "compiler/make/hardlink-or-copy.h"
 #include "compiler/make/make-runner.h"
 #include "compiler/make/objs-to-bin-target.h"
@@ -79,8 +81,8 @@ public:
     return create_target(new Cpp2ObjTarget(), to_targets(cpp), obj);
   }
 
-  Target *create_pch_target(File *header_h, File *pch) {
-    return create_target(new Cpp2ObjTarget(true), to_targets(header_h), pch);
+  Target *create_h2pch_target(File *header_h, File *pch) {
+    return create_target(new H2PchTarget(), to_targets(header_h), pch);
   }
 
   Target *create_objs2obj_target(vector<File *> objs, File *obj) {
@@ -175,31 +177,53 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
+// prepare dir kphp_out/objs/pch_{flags} and make a target runtime-headers.h.gch inside it
+// in production, there will be two pch_ folders: with debug symbols and without them
+// later on, we'll copy this folder inside /tmp/kphp_pch — that's why if it exists, don't do anything
 File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_headers_h, const CompilerSettings &settings, bool with_debug) {
   const auto &flags = with_debug ? settings.cxx_flags_with_debug : settings.cxx_flags_default;
   if (with_debug && flags == settings.cxx_flags_default) {
     return nullptr;
   }
-  const std::string pch_filename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
-  std::string pch_path = flags.pch_dir.get() + pch_filename;
-  if (access(pch_path.c_str(), F_OK) != -1) {
+  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) {  // if a folder in /tmp exists, this pch was already made
     return nullptr;
   }
-  auto *runtime_header_h_pch = obj_dir->insert_file(settings.dest_objs_dir.get() + pch_filename + "." + flags.flags_sha256.get());
+
+  std::string objs_pch_dir = settings.dest_objs_dir.get() + "pch_" + flags.flags_sha256.get() + "/";
+  std::string pch_basename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
+  auto *runtime_header_h_pch = obj_dir->insert_file(objs_pch_dir + pch_basename);
   runtime_header_h_pch->compile_with_debug_info_flag = with_debug;
-  make.create_pch_target(&runtime_headers_h, runtime_header_h_pch);
+  make.create_h2pch_target(&runtime_headers_h, runtime_header_h_pch);
   return runtime_header_h_pch;
 }
 
-bool finalize_precompiled_header(File &runtime_headers_h, File &runtime_header_pch_file, const std::string &pch_dir) {
+// copy dir kphp_out/objs/pch_{flags} inside /tmp/kphp_pch and unlink original
+// finally, a folder inside tmp will contain runtime-headers.h and pch folder contents
+// note, that a .gch file way even not exist, it's okay: just copy full folder
+// (for instance, nocc emits a .nocc-pch file instead of requested .gch)
+// todo it's better to use H2PchTarget::after_run_success() for this
+// todo why do we need /tmp/kphp_pch at all? why not to just leave pch inside kphp_out/objs?
+bool finalize_precompiled_header(File &runtime_headers_h, File &runtime_headers_h_pch, const std::string &dst_pch_dir) {
   const mode_t old_mask = umask(0);
-  const bool dir_created = mkdir_recursive(pch_dir.c_str(), 0777);
+  const bool dir_created = mkdir_recursive(dst_pch_dir.c_str(), 0777);
   umask(old_mask);
-  kphp_error_act(dir_created, fmt_format("Can't create tmp dir '{}': {}", pch_dir, strerror(errno)), return false);
+  kphp_error_act(dir_created, fmt_format("Can't create tmp dir '{}': {}", dst_pch_dir, strerror(errno)), return false);
 
-  hard_link_or_copy(runtime_headers_h.path, pch_dir + kbasename(runtime_headers_h.path.c_str()), false);
-  hard_link_or_copy(runtime_header_pch_file.path, pch_dir + runtime_header_pch_file.name_without_ext, false);
-  runtime_header_pch_file.unlink();
+  hard_link_or_copy(runtime_headers_h.path, dst_pch_dir + kbasename(runtime_headers_h.path.c_str()), false);
+  std::string objs_pch_dir = runtime_headers_h_pch.path.substr(0, runtime_headers_h_pch.path.rfind('/') + 1);
+  DIR *objs_pch_dirptr = opendir(objs_pch_dir.c_str());
+  while (const auto *entry = readdir(objs_pch_dirptr)) {
+    if (entry->d_name[0] == '.') {
+      continue;
+    }
+    std::string from_file_name = objs_pch_dir + entry->d_name;
+    std::string to_file_name = dst_pch_dir + entry->d_name;
+    hard_link_or_copy(from_file_name, to_file_name, false);
+    unlink(from_file_name.c_str());
+  }
+  closedir(objs_pch_dirptr);
+  runtime_headers_h_pch.unlink();
+  rmdir(objs_pch_dir.c_str());
   return true;
 }
 

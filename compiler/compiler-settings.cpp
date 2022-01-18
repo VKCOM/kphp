@@ -186,7 +186,7 @@ void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
   flags_sha256.value_ = calc_cxx_flags_sha256(cxx, flags.get());
   flags.value_.append(" -iquote").append(dest_cpp_dir);
   if (enable_pch) {
-    pch_dir.value_.append("/tmp/kphp_gch/").append(runtime_sha256).append("/").append(flags_sha256.get()).append("/");
+    pch_dir.value_.append("/tmp/kphp_pch/").append(runtime_sha256).append("/").append(flags_sha256.get()).append("/");
   }
 }
 

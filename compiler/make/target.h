@@ -27,7 +27,7 @@ private:
   File *file = nullptr;
 
 protected:
-  bool upd_mtime(long long new_mtime) __attribute__ ((warn_unused_result));
+  bool upd_mtime(long long new_mtime);
   void set_mtime(long long new_mtime);
 
   std::vector<Target *> deps;
@@ -43,8 +43,8 @@ public:
   std::string get_name();
 
   void on_require();
-  bool after_run_success() __attribute__ ((warn_unused_result));
-  void after_run_fail();
+  virtual bool after_run_success();
+  virtual void after_run_fail();
 
   void force_changed(long long new_mtime);
   bool require();
