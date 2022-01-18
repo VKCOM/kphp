@@ -13,7 +13,6 @@
 
 #define MSG_STD_BUFFER 2048
 #define MSG_SMALL_BUFFER 512
-#define MSG_TINY_BUFFER 48
 
 DECLARE_VERBOSITY(net_msg);
 
@@ -28,20 +27,12 @@ static inline uint32_t msg_buffer_size(const msg_buffer_t *msg_buffer) {
   return (uint32_t)msg_buffer->cache_tls->extra;
 }
 
-
-double msg_buffers_usage();
-
 void msg_buffers_register_thread();
 void preallocate_msg_buffers();
 
 msg_buffer_t *alloc_msg_buffer(int size_hint);
 
 void free_msg_buffer(msg_buffer_t *buffer);
-
-void decrease_msg_buffers_size(int factor);
-long long max_allocated_buffer_bytes();
-int is_under_network_pressure();
-bool is_allocated_buffers_overflow();
 
 static inline void msg_buffer_inc_ref(msg_buffer_t *buffer) {
   ++buffer->refcnt;

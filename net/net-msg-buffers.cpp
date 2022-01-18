@@ -4,19 +4,12 @@
 
 #include "net/net-msg-buffers.h"
 
-#include <climits>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#include "common/kprintf.h"
 #include "common/options.h"
 #include "common/parallel/counter.h"
 #include "common/parallel/limit-counter.h"
 #include "common/parallel/maximum.h"
-#include "common/server/engine-settings.h"
 #include "common/stats/provider.h"
 #include "common/allocators/lockfree-slab.h"
 #include "net-msg.h"
@@ -42,28 +35,12 @@ OPTION_PARSER(OPT_NETWORK, "msg-buffers-size", required_argument, "memory for ud
 }
 
 STATS_PROVIDER(msg_buffers, 1000) {
-  add_histogram_stat_long(stats, "allocated_buffer_bytes", PARALLEL_LIMIT_COUNTER_READ(allocated_buffer_bytes));
-  add_histogram_stat_long(stats, "buffer_chunk_allocations", PARALLEL_COUNTER_READ(buffer_slab_alloc_ops));
-  add_histogram_stat_long(stats, "max_allocated_buffer_bytes", allocated_buffer_bytes_limit);
-  add_histogram_stat_long(stats, "max_total_used_buffers_size", PARALLEL_MAXIMUM_READ(max_total_used_buffers_size));
-  add_histogram_stat_long(stats, "total_used_buffers", PARALLEL_COUNTER_READ(total_used_buffers));
-  add_histogram_stat_long(stats, "total_used_buffers_size", PARALLEL_COUNTER_READ(total_used_buffers_size));
-}
-
-void decrease_msg_buffers_size(int factor) {
-  allocated_buffer_bytes_limit = (allocated_buffer_bytes_limit + factor - 1) / factor;
-}
-
-long long max_allocated_buffer_bytes() {
-  return allocated_buffer_bytes_limit;
-}
-
-int is_under_network_pressure() {
-  return PARALLEL_LIMIT_COUNTER_READ_APPROX(allocated_buffer_bytes) * 4LL > allocated_buffer_bytes_limit * 3LL;
-}
-
-bool is_allocated_buffers_overflow() {
-  return PARALLEL_LIMIT_COUNTER_READ_APPROX(allocated_buffer_bytes) * 3LL > allocated_buffer_bytes_limit * 2LL;
+  stats->add_histogram_stat("allocated_buffer_bytes", PARALLEL_LIMIT_COUNTER_READ(allocated_buffer_bytes));
+  stats->add_histogram_stat("buffer_chunk_allocations", PARALLEL_COUNTER_READ(buffer_slab_alloc_ops));
+  stats->add_histogram_stat("max_allocated_buffer_bytes", allocated_buffer_bytes_limit);
+  stats->add_histogram_stat("max_total_used_buffers_size", PARALLEL_MAXIMUM_READ(max_total_used_buffers_size));
+  stats->add_histogram_stat("total_used_buffers", PARALLEL_COUNTER_READ(total_used_buffers));
+  stats->add_histogram_stat("total_used_buffers_size", PARALLEL_COUNTER_READ(total_used_buffers_size));
 }
 
 #define BUFFER_SIZE_NUM 5
@@ -155,10 +132,4 @@ void free_msg_buffer(msg_buffer_t *buffer) {
   lockfree_slab_cache_free(cache_tls, buffer);
   const unsigned delta = blocks_before - lockfree_slab_cache_count_used_blocks(cache_tls);
   PARALLEL_COUNTER_SUB(buffer_slab_alloc_ops, delta);
-}
-
-double msg_buffers_usage() {
-  return allocated_buffer_bytes_limit > 0
-         ? 1.0 * PARALLEL_LIMIT_COUNTER_READ_APPROX(allocated_buffer_bytes) / allocated_buffer_bytes_limit
-         : 0;
 }

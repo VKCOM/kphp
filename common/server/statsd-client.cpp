@@ -39,24 +39,25 @@ FLAG_OPTION_PARSER(OPT_GENERIC, "disable-statsd", disable_statsd, "disable sendi
 namespace {
 class statsd_stats_t : public stats_t {
 public:
-  void add_general_stat(const char *, const char *, va_list) noexcept final {
+  void add_general_stat(const char *, const char *, ...) noexcept final {
     // ignore it
   }
 
-  void add_stat(char type, const char *key, const char *value_format, double value) noexcept final {
-    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
-    sb_printf(&sb, value_format, value);
-    sb_printf(&sb, "|%c\n", type);
-  }
-
-  void add_stat(char type, const char *key, const char *value_format, long long value) noexcept final {
-    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
-    sb_printf(&sb, value_format, value);
-    sb_printf(&sb, "|%c\n", type);
-  }
-
-  virtual bool need_aggr_stats() noexcept final {
+  bool need_aggr_stats() noexcept final {
     return true;
+  }
+
+protected:
+  void add_stat(char type, const char *key, double value) noexcept final {
+    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
+    sb_printf(&sb, "%.3f", value);
+    sb_printf(&sb, "|%c\n", type);
+  }
+
+  void add_stat(char type, const char *key, long long value) noexcept final {
+    sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
+    sb_printf(&sb, "%lld", value);
+    sb_printf(&sb, "|%c\n", type);
   }
 };
 } // namespace

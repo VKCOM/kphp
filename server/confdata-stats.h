@@ -67,7 +67,7 @@ struct ConfdataStats : private vk::not_copyable {
   void on_update(const confdata_sample_storage &new_confdata,
                  size_t previous_garbage_size,
                  const ConfdataPredefinedWildcards &predefined_wildcards) noexcept;
-  void write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) noexcept;
+  void write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) const noexcept;
 
 private:
   ConfdataStats() = default;

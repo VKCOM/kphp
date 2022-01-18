@@ -239,11 +239,11 @@ void send_message_to_assertion_chat(const char *message, ...) {
 
 STATS_PROVIDER(logs, 2000) {
   int i;
-  add_general_stat(stats, "verbosity", "%d", verbosity);
+  stats->add_general_stat("verbosity", "%d", verbosity);
   for (i = 0; i < verbosity_types_num; i++) {
-    add_general_stat(stats, stat_temp_format("verbosity %s", verbosity_types[i].name), "%d", *verbosity_types[i].value);
+    stats->add_general_stat(stat_temp_format("verbosity %s", verbosity_types[i].name), "%d", *verbosity_types[i].value);
   }
-  add_histogram_stat_long(stats, "total logged errors", log_not_too_much_total);
+  stats->add_histogram_stat("total logged errors", log_not_too_much_total);
 }
 
 #define VERBOSITY_OPTION_SHIFT 4000

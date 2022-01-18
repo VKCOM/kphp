@@ -5,7 +5,6 @@
 #include "common/stats/provider.h"
 
 #include <cassert>
-#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -25,36 +24,13 @@ char *stats_t::normalize_key(const char *key, const char *format, const char *pr
   sprintf(result + prefix_length, format, key);
   while (*result) {
     char c = *result;
-    int ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+    bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
     if (!ok) {
       *result = '_';
     }
     result++;
   }
   return result_start;
-}
-
-void add_histogram_stat_long(stats_t *stats, const char *key, long long value) {
-  stats->add_stat('h', key, "%lld", value);
-}
-
-void add_gauge_stat_long(stats_t *stats, const char *key, long long value) {
-  stats->add_stat('g', key, "%lld", value);
-}
-
-void add_gauge_stat_double(stats_t *stats, const char *key, double value) {
-  stats->add_stat('g', key, "%.3f", value);
-}
-
-void add_histogram_stat_double(stats_t *stats, const char *key, double value) {
-  stats->add_stat('h', key, "%.3f", value);
-}
-
-void add_general_stat(stats_t *stats, const char *key, const char *value_format, ...) {
-  va_list ap;
-  va_start(ap, value_format);
-  stats->add_general_stat(key, value_format, ap);
-  va_end (ap);
 }
 
 char *stat_temp_format(const char *format, ...) {
@@ -66,7 +42,7 @@ char *stat_temp_format(const char *format, ...) {
   return buffer;
 }
 
-typedef struct {
+struct memory_stat_t {
   long long vm_size;
   long long vm_rss;
   long long vm_data;
@@ -75,7 +51,7 @@ typedef struct {
   long long swap_total;
   long long swap_free;
   long long swap_used;
-} memory_stat_t;
+};
 
 
 static int read_whole_file(const char *filename, void *output, int olen) {
@@ -93,7 +69,7 @@ static int read_whole_file(const char *filename, void *output, int olen) {
       vkprintf(1, "%s: read from %s failed. %m\n", __func__, filename);
     }
     break;
-  } while (1);
+  } while (true);
   while (close(fd) < 0 && errno == EINTR) {
   }
   if (n < 0) {
@@ -142,42 +118,42 @@ int am_get_memory_usage(pid_t pid, long long *a, int m) {
   return parse_statm(buf, a, m);
 }
 
-static int get_memory_stats(memory_stat_t *S, int flags) {
+static int get_memory_stats(memory_stat_t *mem_stat, int flags) {
   if (!flags) {
     return -1;
   }
   long long a[6];
-  memset(S, 0, sizeof(*S));
+  memset(mem_stat, 0, sizeof(*mem_stat));
 
-  if (flags & AM_GET_MEMORY_USAGE_SELF) {
+  if (flags & am_get_memory_usage_self) {
     if (am_get_memory_usage(getpid(), a, 6) < 0) {
       return -1;
     }
-    S->vm_size = a[0];
-    S->vm_rss = a[1];
-    S->vm_share = a[2];
-    S->vm_data = a[5];
+    mem_stat->vm_size = a[0];
+    mem_stat->vm_rss = a[1];
+    mem_stat->vm_share = a[2];
+    mem_stat->vm_data = a[5];
   }
 
-  if (flags & AM_GET_MEMORY_USAGE_OVERALL) {
+  if (flags & am_get_memory_usage_overall) {
     char buf[16384], *p;
     if (read_whole_file("/proc/meminfo", buf, sizeof(buf)) < 0) {
       return -1;
     }
     vkprintf(4, "/proc/meminfo: %s\n", buf);
     char key[32], suffix[32];
-    long long value;
+    long long value = 0;
     int r = 0;
     for (p = strtok(buf, "\n"); p != NULL; p = strtok(NULL, "\n")) {
       if (sscanf(p, "%31s%lld%31s", key, &value, suffix) == 3 && !strcmp(suffix, "kB")) {
         if (!strcmp(key, "MemFree:")) {
-          S->mem_free = value << 10;
+          mem_stat->mem_free = value << 10;
           r |= 1;
         } else if (!strcmp(key, "SwapTotal:")) {
-          S->swap_total = value << 10;
+          mem_stat->swap_total = value << 10;
           r |= 2;
         } else if (!strcmp(key, "SwapFree:")) {
-          S->swap_free = value << 10;
+          mem_stat->swap_free = value << 10;
           r |= 4;
         }
       }
@@ -185,32 +161,24 @@ static int get_memory_stats(memory_stat_t *S, int flags) {
     if (r != 7) {
       return -1;
     }
-    S->swap_used = S->swap_total - S->swap_free;
+    mem_stat->swap_used = mem_stat->swap_total - mem_stat->swap_free;
   }
   return 0;
 }
 
-int64_t get_vmrss() {
-  memory_stat_t S;
-  if (!get_memory_stats(&S, AM_GET_MEMORY_USAGE_SELF)) {
-    return S.vm_rss;
-  }
-  return -1;
-}
-
 STATS_PROVIDER(memory, 500) {
-  memory_stat_t S;
-  if (!get_memory_stats(&S, AM_GET_MEMORY_USAGE_SELF)) {
-    add_histogram_stat_long(stats, "vmsize_bytes", S.vm_size);
-    add_histogram_stat_long(stats, "vmrss_bytes", S.vm_rss);
-    add_histogram_stat_long(stats, "vmshared_bytes", S.vm_share);
-    add_histogram_stat_long(stats, "vmdata_bytes", S.vm_data);
+  memory_stat_t mem_stat{};
+  if (!get_memory_stats(&mem_stat, am_get_memory_usage_self)) {
+    stats->add_histogram_stat("vmsize_bytes", mem_stat.vm_size);
+    stats->add_histogram_stat("vmrss_bytes", mem_stat.vm_rss);
+    stats->add_histogram_stat("vmshared_bytes", mem_stat.vm_share);
+    stats->add_histogram_stat("vmdata_bytes", mem_stat.vm_data);
   }
 
-  if (!get_memory_stats(&S, AM_GET_MEMORY_USAGE_OVERALL)) {
-    add_general_stat(stats, "memfree_bytes", "%lld", S.mem_free);
-    add_histogram_stat_long(stats, "swap_used_bytes", S.swap_used);
-    add_general_stat(stats, "swap_total_bytes", "%lld", S.swap_total);
+  if (!get_memory_stats(&mem_stat, am_get_memory_usage_overall)) {
+    stats->add_general_stat("memfree_bytes", "%lld", mem_stat.mem_free);
+    stats->add_histogram_stat("swap_used_bytes", mem_stat.swap_used);
+    stats->add_general_stat("swap_total_bytes", "%lld", mem_stat.swap_total);
   }
 }
 
@@ -244,7 +212,7 @@ void prepare_common_stats_with_tag_mask(stats_t *stats, unsigned int tag_mask) {
 }
 
 void prepare_common_stats(stats_t *stats) {
-  prepare_common_stats_with_tag_mask(stats, STATS_TAG_MASK_FULL);
+  prepare_common_stats_with_tag_mask(stats, stats_tag_mask_full);
 }
 
 static void get_cmdline(int my_pid, char *cmdline_buffer, int len) {
@@ -277,14 +245,14 @@ STATS_PROVIDER(general, 0) {
   }
   int uptime = get_uptime();
 
-  add_general_stat(stats, "command_line", "%s", cmdline_buffer);
-  add_general_stat(stats, "pid", "%d", my_pid);
+  stats->add_general_stat("command_line", "%s", cmdline_buffer);
+  stats->add_general_stat("pid", "%d", my_pid);
 
-  add_general_stat(stats, "start_time", "%d", now - uptime);
-  add_general_stat(stats, "current_time", "%d", now);
-  add_histogram_stat_long(stats, "uptime", uptime);
+  stats->add_general_stat("start_time", "%d", now - uptime);
+  stats->add_general_stat("current_time", "%d", now);
+  stats->add_histogram_stat("uptime", uptime);
 
-  add_general_stat(stats, "hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
+  stats->add_general_stat("hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
 }
 
 static void resource_usage_statistics(stats_t *stats, const char *prefix,
@@ -292,19 +260,19 @@ static void resource_usage_statistics(stats_t *stats, const char *prefix,
   double cpu_time;
 
   cpu_time = usage->ru_utime.tv_sec + (usage->ru_utime.tv_usec / 1E6);
-  add_histogram_stat_double(stats, stat_temp_format("%suser_cpu_time", prefix), cpu_time);
+  stats->add_histogram_stat(stat_temp_format("%suser_cpu_time", prefix), cpu_time);
 
   cpu_time = usage->ru_stime.tv_sec + (usage->ru_stime.tv_usec / 1E6);
-  add_histogram_stat_double(stats, stat_temp_format("%ssystem_cpu_time", prefix), cpu_time);
+  stats->add_histogram_stat(stat_temp_format("%ssystem_cpu_time", prefix), cpu_time);
 
-  add_general_stat(stats, stat_temp_format("%ssoft_page_faults", prefix), "%ld", usage->ru_minflt);
-  add_general_stat(stats, stat_temp_format("%shard_page_faults", prefix), "%ld", usage->ru_majflt);
+  stats->add_general_stat(stat_temp_format("%ssoft_page_faults", prefix), "%ld", usage->ru_minflt);
+  stats->add_general_stat(stat_temp_format("%shard_page_faults", prefix), "%ld", usage->ru_majflt);
 
-  add_general_stat(stats, stat_temp_format("%sblock_input_operations", prefix), "%ld", usage->ru_inblock);
-  add_general_stat(stats, stat_temp_format("%sblock_output_operations", prefix), "%ld", usage->ru_oublock);
+  stats->add_general_stat(stat_temp_format("%sblock_input_operations", prefix), "%ld", usage->ru_inblock);
+  stats->add_general_stat(stat_temp_format("%sblock_output_operations", prefix), "%ld", usage->ru_oublock);
 
-  add_histogram_stat_long(stats, stat_temp_format("%svoluntary_context_switches", prefix), usage->ru_nvcsw);
-  add_histogram_stat_long(stats, stat_temp_format("%sivoluntary_context_switches", prefix), usage->ru_nivcsw);
+  stats->add_histogram_stat(stat_temp_format("%svoluntary_context_switches", prefix), usage->ru_nvcsw);
+  stats->add_histogram_stat(stat_temp_format("%sivoluntary_context_switches", prefix), usage->ru_nivcsw);
 }
 
 STATS_PROVIDER(resource_usage, 1000) {
@@ -318,33 +286,4 @@ STATS_PROVIDER(resource_usage, 1000) {
     resource_usage_statistics(stats, "thread_", &usage);
   }
 #endif
-}
-
-void sb_print_queries(stats_t *stats, const char *const desc, long long q) {
-  add_general_stat(stats, desc, "%lld", q);
-  add_general_stat(stats, stat_temp_format("qps %s", desc), "%.3lf", safe_div(q, get_uptime()));
-}
-
-int get_at_prefix_length(const char *key, int key_len) {
-  if (key_len > 0 && key[0] == '#') {
-    return 1;
-  }
-  int i = 0;
-  if (key_len > 0 && key[0] == '!') {
-    i++;
-  }
-  if (i < key_len && key[i] == '-') {
-    i++;
-  }
-  int j = i;
-  while (j < key_len && isdigit(key[j])) {
-    j++;
-  }
-  if (i == j) {
-    return 0;
-  }
-  if (j < key_len && key[j] == '@') {
-    return j + 1;
-  }
-  return 0;
 }

@@ -48,7 +48,7 @@ static inline void parse_kernel_version() {
 STATS_PROVIDER(kernel, 1000) {
   struct utsname *uname_val = cached_uname();
   if (uname_val != NULL) {
-    add_general_stat(stats, "kernel_version", "%s", uname_val->release);
+    stats->add_general_stat("kernel_version", "%s", uname_val->release);
   }
 }
 

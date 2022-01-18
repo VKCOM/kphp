@@ -27,7 +27,7 @@ std::pair<char *, int> engine_default_prepare_stats_with_tag_mask(stats_t &&stat
 }
 
 char *engine_default_prepare_stats(stats_t &&stats, const char *stats_prefix) {
-  return engine_default_prepare_stats_with_tag_mask(std::move(stats), stats_prefix, STATS_TAG_MASK_FULL).first;
+  return engine_default_prepare_stats_with_tag_mask(std::move(stats), stats_prefix, stats_tag_mask_full).first;
 }
 
 void engine_default_tl_stat_function(const std::optional<std::vector<std::string>> &sorted_filter_keys) {

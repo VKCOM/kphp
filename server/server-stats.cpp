@@ -418,6 +418,38 @@ struct WorkerStatsBundle : EnumTable<E, std::array<std::atomic<typename E::StatT
   }
 };
 
+template<typename T>
+struct WorkerSamples : vk::not_copyable {
+public:
+  void recalc(size_t worker_index) {
+    percentiles.update_percentiles(samples.begin(), samples.begin() + worker_index);
+  }
+
+  Percentiles<T> percentiles;
+  std::array<T, WorkersControl::max_workers_count> samples{};
+};
+
+template<typename E>
+struct WorkerSamplesBundle : EnumTable<E, WorkerSamples<typename E::StatType>>, private vk::not_copyable {
+public:
+  void recalc(const WorkerStatsBundle<E> &stats, uint16_t first_worker_id, uint16_t last_worker_id) noexcept {
+    if (const uint16_t len = last_worker_id - first_worker_id) {
+      for (size_t i = 0; i != this->size(); ++i) {
+        const auto &stat = stats[i];
+        size_t buffer_index = 0;
+        size_t worker_index = first_worker_id;
+        while (worker_index != last_worker_id) {
+          const auto sample = stat[worker_index++].load(std::memory_order_relaxed);
+          if (std::is_floating_point<typename E::StatType>{} || sample != 0) {
+            (*this)[i].samples[buffer_index++] = sample;
+          }
+        }
+        (*this)[i].recalc(buffer_index);
+      }
+    }
+  }
+};
+
 struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<MallocStat> malloc_stats{};
   WorkerStatsBundle<HeapStat> heap_stats{};
@@ -486,17 +518,17 @@ struct WorkerAggregatedStats {
   void recalc(SharedSamplesBundle<ScriptSamples> &script_shared_samples, std::chrono::steady_clock::time_point now_tp,
               const WorkerProcessStats &stats, uint16_t first_id, uint16_t last_id) noexcept {
     script_samples.recalc(script_shared_samples, now_tp);
-    heap_percentiles.recalc(stats.heap_stats, first_id, last_id);
-    malloc_percentiles.recalc(stats.malloc_stats, first_id, last_id);
-    vm_percentiles.recalc(stats.vm_stats, first_id, last_id);
-    idle_percentiles.recalc(stats.idle_stats, first_id, last_id);
+    heap_samples.recalc(stats.heap_stats, first_id, last_id);
+    malloc_samples.recalc(stats.malloc_stats, first_id, last_id);
+    vm_samples.recalc(stats.vm_stats, first_id, last_id);
+    idle_samples.recalc(stats.idle_stats, first_id, last_id);
   }
 
   AggregatedSamplesBundle<ScriptSamples> script_samples;
-  WorkerPercentilesBundle<MallocStat> malloc_percentiles;
-  WorkerPercentilesBundle<HeapStat> heap_percentiles;
-  WorkerPercentilesBundle<VMStat> vm_percentiles;
-  WorkerPercentilesBundle<IdleStat> idle_percentiles;
+  WorkerSamplesBundle<MallocStat> malloc_samples;
+  WorkerSamplesBundle<HeapStat> heap_samples;
+  WorkerSamplesBundle<VMStat> vm_samples;
+  WorkerSamplesBundle<IdleStat> idle_samples;
 };
 
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
@@ -639,95 +671,103 @@ uint64_t kb2bytes(uint64_t kb) noexcept {
   return kb * 1024;
 }
 
-template<class T, class Mapper = vk::identity>
-void write_to(stats_t *stats, const char *prefix, const char *suffix, const Percentiles<T> &percentiles, const Mapper &mapper = {}) {
-  add_gauge_stat(stats, mapper(percentiles.p50), prefix, suffix, ".p50");
-  add_gauge_stat(stats, mapper(percentiles.p95), prefix, suffix, ".p95");
-  add_gauge_stat(stats, mapper(percentiles.p99), prefix, suffix, ".p99");
-  add_gauge_stat(stats, mapper(percentiles.max), prefix, suffix, ".max");
+template<typename T, typename Mapper = vk::identity>
+void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
+}
+
+template<typename T, typename Mapper = vk::identity>
+void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &agg, const WorkerSharedStats &shared) noexcept {
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::memory_limit)], prefix, ".errors.memory_limit_exceeded");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::timeout)], prefix, ".errors.timeout");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::exception)], prefix, ".errors.exception");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::stack_overflow)], prefix, ".errors.stack_overflow");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::php_assert)], prefix, ".errors.php_assert");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::http_connection_close)], prefix, ".errors.http_connection_close");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::rpc_connection_close)], prefix, ".errors.rpc_connection_close");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::net_event_error)], prefix, ".errors.net_event_error");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::post_data_loading_error)], prefix, ".errors.post_data_loading_error");
-  add_gauge_stat(stats, shared.errors[static_cast<size_t>(script_error_t::unclassified_error)], prefix, ".errors.unclassified");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::memory_limit)], prefix, ".errors.memory_limit_exceeded");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::timeout)], prefix, ".errors.timeout");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::exception)], prefix, ".errors.exception");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::stack_overflow)], prefix, ".errors.stack_overflow");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::php_assert)], prefix, ".errors.php_assert");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::http_connection_close)], prefix, ".errors.http_connection_close");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::rpc_connection_close)], prefix, ".errors.rpc_connection_close");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::net_event_error)], prefix, ".errors.net_event_error");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::post_data_loading_error)], prefix, ".errors.post_data_loading_error");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::unclassified_error)], prefix, ".errors.unclassified");
 
-  add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
-  add_gauge_stat(stats, ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
-  add_gauge_stat(stats, shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
 
-  write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries].percentiles);
-  write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries].percentiles);
-  write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time].percentiles, ns2double);
-  write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time].percentiles, ns2double);
-  write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time].percentiles, ns2double);
-  write_to(stats, prefix, ".memory.script_usage", agg.script_samples[ScriptSamples::Key::memory_used].percentiles);
-  write_to(stats, prefix, ".memory.script_real_usage", agg.script_samples[ScriptSamples::Key::real_memory_used].percentiles);
-  write_to(stats, prefix, ".memory.script_total_allocated_by_curl", agg.script_samples[ScriptSamples::Key::total_allocated_by_curl].percentiles);
+  write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries]);
+  write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries]);
+  write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time], ns2double);
+  write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time], ns2double);
+  write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time], ns2double);
+  write_to(stats, prefix, ".memory.script_usage", agg.script_samples[ScriptSamples::Key::memory_used]);
+  write_to(stats, prefix, ".memory.script_real_usage", agg.script_samples[ScriptSamples::Key::real_memory_used]);
+  write_to(stats, prefix, ".memory.script_total_allocated_by_curl", agg.script_samples[ScriptSamples::Key::total_allocated_by_curl]);
 
-  write_to(stats, prefix, ".memory.currently_script_heap_usage_bytes", agg.heap_percentiles[HeapStat::Key::script_heap_memory_usage]);
-  write_to(stats, prefix, ".memory.currently_allocated_by_curl_bytes", agg.heap_percentiles[HeapStat::Key::curl_memory_currently_usage]);
+  write_to(stats, prefix, ".memory.currently_script_heap_usage_bytes", agg.heap_samples[HeapStat::Key::script_heap_memory_usage]);
+  write_to(stats, prefix, ".memory.currently_allocated_by_curl_bytes", agg.heap_samples[HeapStat::Key::curl_memory_currently_usage]);
 
-  write_to(stats, prefix, ".memory.malloc_non_mapped_allocated_bytes", agg.malloc_percentiles[MallocStat::Key::non_mmaped_allocated_bytes]);
-  write_to(stats, prefix, ".memory.malloc_non_mapped_free_bytes", agg.malloc_percentiles[MallocStat::Key::non_mmaped_free_bytes]);
-  write_to(stats, prefix, ".memory.malloc_mapped_bytes", agg.malloc_percentiles[MallocStat::Key::mmaped_bytes]);
+  write_to(stats, prefix, ".memory.malloc_non_mapped_allocated_bytes", agg.malloc_samples[MallocStat::Key::non_mmaped_allocated_bytes]);
+  write_to(stats, prefix, ".memory.malloc_non_mapped_free_bytes", agg.malloc_samples[MallocStat::Key::non_mmaped_free_bytes]);
+  write_to(stats, prefix, ".memory.malloc_mapped_bytes", agg.malloc_samples[MallocStat::Key::mmaped_bytes]);
 
-  write_to(stats, prefix, ".memory.rss_bytes", agg.vm_percentiles[VMStat::Key::rss_kb], kb2bytes);
-  write_to(stats, prefix, ".memory.vms_bytes", agg.vm_percentiles[VMStat::Key::vm_kb], kb2bytes);
-  write_to(stats, prefix, ".memory.shm_bytes", agg.vm_percentiles[VMStat::Key::shm_kb], kb2bytes);
+  write_to(stats, prefix, ".memory.rss_bytes", agg.vm_samples[VMStat::Key::rss_kb], kb2bytes);
+  write_to(stats, prefix, ".memory.vms_bytes", agg.vm_samples[VMStat::Key::vm_kb], kb2bytes);
+  write_to(stats, prefix, ".memory.shm_bytes", agg.vm_samples[VMStat::Key::shm_kb], kb2bytes);
 
-  write_to(stats, prefix, ".cpu.recent_idle", agg.idle_percentiles[IdleStat::Key::recent_idle_percent]);
+  write_to(stats, prefix, ".cpu.recent_idle", agg.idle_samples[IdleStat::Key::recent_idle_percent]);
 }
 
 void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats &job_agg) noexcept {
-  write_to(stats, prefix, ".jobs.queue_time", job_agg.job_samples[JobSamples::Key::wait_time].percentiles, ns2double);
-  write_to(stats, prefix, ".memory.job_request_usage", job_agg.job_samples[JobSamples::Key::request_memory_usage].percentiles);
-  write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage].percentiles);
-  write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage].percentiles);
-  write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage].percentiles);
-  write_to(stats, prefix, ".memory.job_common_request_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_memory_usage].percentiles);
-  write_to(stats, prefix, ".memory.job_common_request_real_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage].percentiles);
+  write_to(stats, prefix, ".jobs.queue_time", job_agg.job_samples[JobSamples::Key::wait_time], ns2double);
+  write_to(stats, prefix, ".memory.job_request_usage", job_agg.job_samples[JobSamples::Key::request_memory_usage]);
+  write_to(stats, prefix, ".memory.job_request_real_usage", job_agg.job_samples[JobSamples::Key::request_real_memory_usage]);
+  write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage]);
+  write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage]);
+  write_to(stats, prefix, ".memory.job_common_request_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_memory_usage]);
+  write_to(stats, prefix, ".memory.job_common_request_real_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage]);
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::non_mmaped_allocated_bytes], prefix, ".memory.malloc_non_mapped_allocated_bytes");
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::non_mmaped_free_bytes], prefix, ".memory.malloc_non_mapped_free_bytes");
-  add_gauge_stat(stats, master_process.malloc_stats[MallocStat::Key::mmaped_bytes], prefix, ".memory.malloc_mapped_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::non_mmaped_allocated_bytes], prefix, ".memory.malloc_non_mapped_allocated_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::non_mmaped_free_bytes], prefix, ".memory.malloc_non_mapped_free_bytes");
+  stats->add_gauge_stat(master_process.malloc_stats[MallocStat::Key::mmaped_bytes], prefix, ".memory.malloc_mapped_bytes");
 
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::rss_kb]), prefix, ".memory.rss_bytes");
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::vm_kb]), prefix, ".memory.vms_bytes");
-  add_gauge_stat(stats, kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::rss_kb]), prefix, ".memory.rss_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::vm_kb]), prefix, ".memory.vms_bytes");
+  stats->add_gauge_stat(kb2bytes(master_process.vm_stats[VMStat::Key::shm_kb]), prefix, ".memory.shm_bytes");
 }
 
 template<class S>
-auto get_max(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+auto get_max(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats,
              const EnumTable<S> &master_stats, typename S::Key key) noexcept {
-  return std::max(master_stats[key], std::max(general_stats[key].max, job_stats[key].max));
+  return std::max(master_stats[key], std::max(general_stats[key].percentiles.max, job_stats[key].percentiles.max));
 }
 
 template<class S>
-auto get_sum(const WorkerPercentilesBundle<S> &general_stats, const WorkerPercentilesBundle<S> &job_stats,
+auto get_sum(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats,
              const EnumTable<S> &master_stats, typename S::Key key) noexcept {
-  return master_stats[key] + general_stats[key].sum + job_stats[key].sum;
+  return master_stats[key] + general_stats[key].percentiles.sum + job_stats[key].percentiles.sum;
 }
 
 void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm,
-                        const WorkerPercentilesBundle<VMStat> &general_vm, const WorkerPercentilesBundle<VMStat> &job_vm) noexcept {
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
-  add_gauge_stat(stats, kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
+                        const WorkerSamplesBundle<VMStat> &general_vm, const WorkerSamplesBundle<VMStat> &job_vm) noexcept {
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
+  stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
 
   const uint64_t rss_no_shm = get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) - get_sum(general_vm, job_vm, master_vm, VMStat::Key::shm_kb);
-  add_gauge_stat(stats, kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
+  stats->add_gauge_stat(kb2bytes(rss_no_shm), prefix, ".memory.rss_no_shm_total_bytes");
 }
 
 } // namespace
@@ -741,18 +781,18 @@ void ServerStats::write_stats_to(stats_t *stats) const noexcept {
   write_to(stats, "master", aggregated_stats_->master_process);
 
   write_server_vm_to(stats, "server", aggregated_stats_->master_process.vm_stats,
-                     aggregated_stats_->general_workers.vm_percentiles, aggregated_stats_->job_workers.vm_percentiles);
+                     aggregated_stats_->general_workers.vm_samples, aggregated_stats_->job_workers.vm_samples);
 }
 
 void ServerStats::write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept {
   const auto &master_vm = aggregated_stats_->master_process.vm_stats;
   const auto &master_idle = aggregated_stats_->master_process.idle_stats;
 
-  const auto &general_vm = aggregated_stats_->general_workers.vm_percentiles;
-  const auto &general_idle = aggregated_stats_->general_workers.idle_percentiles;
+  const auto &general_vm = aggregated_stats_->general_workers.vm_samples;
+  const auto &general_idle = aggregated_stats_->general_workers.idle_samples;
 
-  const auto &job_vm = aggregated_stats_->job_workers.vm_percentiles;
-  const auto &job_idle = aggregated_stats_->job_workers.idle_percentiles;
+  const auto &job_vm = aggregated_stats_->job_workers.vm_samples;
+  const auto &job_idle = aggregated_stats_->job_workers.idle_samples;
 
   const auto &total_queries = shared_stats_->general_workers.total_queries_stat;
   const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
