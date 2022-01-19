@@ -40,7 +40,6 @@ function test_string_not_exist() {
 function test_string_strange_keys() {
   $str = "hello world";
 
-  var_dump($str[1.2] ?? "x");
   var_dump($str[false] ?? "f");
   var_dump($str[true] ?? "t");
   var_dump($str[null ?? false] ?? "n");
