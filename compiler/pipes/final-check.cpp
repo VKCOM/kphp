@@ -2,10 +2,13 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <string_view>
+
 #include "compiler/pipes/final-check.h"
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
+#include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
@@ -428,9 +431,12 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *array_type = tinf::get_type(arr);
     // TODO: do we need this?
     if (array_type->ptype() == tp_tuple) {
-      long index = parse_int_from_string(GenTree::get_actual_value(key).as<op_int_const>());
-      size_t tuple_size = array_type->get_tuple_max_index();
-      kphp_error (0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      const auto key_value = GenTree::get_actual_value(key);
+      if (key_value->type() == op_int_const) {
+        const long index = parse_int_from_string(key_value.as<op_int_const>());
+        const size_t tuple_size = array_type->get_tuple_max_index();
+        kphp_error(0 <= index && index < tuple_size, fmt_format("Can't get element {} of tuple of length {}", index, tuple_size));
+      }
     }
     const TypeData *key_type = tinf::get_type(key);
     kphp_error(key_type->ptype() != tp_any || key_type->or_false_flag(),
@@ -509,6 +515,14 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_instanceof(vertex.try_as<op_instanceof>());
   }
 
+  if (auto v_index = vertex.try_as<op_index>()) {
+    check_indexing(v_index->array(), v_index->key());
+  } else if (auto v_set = vertex.try_as<op_set_value>()) {
+    check_indexing(v_set->array(), v_set->key());
+  } else if (auto v_array = vertex.try_as<op_array>()) {
+    check_array_literal(v_array);
+  }
+
   //TODO: may be this should be moved to tinf_check
   return vertex;
 }
@@ -525,6 +539,46 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
   }
 
   kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
+}
+
+static void check_indexing_violation(std::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, std::string_view what_indexing,
+                                     const TypeData &key_type) noexcept {
+  kphp_error(vk::contains(allowed_types, key_type.ptype()),
+             fmt_format("Only {} types are allowed for {}{}indexing, but {} type is passed", allowed_types_string, what_indexing,
+                        what_indexing.empty() ? "" : " ", key_type.as_human_readable()));
+}
+
+static void check_indexing_type(PrimitiveType indexed_type, const TypeData &key_type) noexcept {
+  if (key_type.get_real_ptype() == tp_bool) {
+    return;
+  }
+
+  if (indexed_type == tp_tuple || indexed_type == tp_string) {
+    static const std::vector allowed_types{tp_int, tp_mixed, tp_future};
+    check_indexing_violation("int and future", allowed_types, ptype_name(indexed_type), key_type);
+  } else {
+    static const std::vector allowed_types{tp_int, tp_float, tp_string, tp_mixed, tp_future};
+    check_indexing_violation("int, float, string and future", allowed_types, {}, key_type);
+  }
+}
+
+void FinalCheckPass::check_array_literal(VertexAdaptor<op_array> vertex) noexcept {
+  for (const auto &element : vertex->args()) {
+    if (element->type() == op_double_arrow) {
+      auto arrow = element.as<op_double_arrow>();
+      if (const auto *key_type = tinf::get_type(arrow->key())) {
+        check_indexing_type(tp_array, *key_type);
+      }
+    }
+  }
+}
+
+void FinalCheckPass::check_indexing(VertexPtr array, VertexPtr key) noexcept {
+  const auto *key_type = tinf::get_type(key);
+  const auto *array_type = tinf::get_type(array);
+  if (key_type || array_type) {
+    check_indexing_type(array_type->ptype(), *key_type);
+  }
 }
 
 VertexPtr FinalCheckPass::on_exit_vertex(VertexPtr vertex) {
