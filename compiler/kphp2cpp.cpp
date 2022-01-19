@@ -261,6 +261,8 @@ int main(int argc, char *argv[]) {
              "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
   parser.add("C++ compiler for building the output binary", settings->cxx,
              "cxx", "KPHP_CXX", get_default_cxx());
+  parser.add("Directory for c++ compiler toolchain. Will be passed to compiler through -B option", settings->cxx_toolchain_dir,
+             "cxx-toolchain-dir", "KPHP_CXX_TOOLCHAIN_DIR");
   parser.add("Extra C++ compiler flags for building the output binary", settings->extra_cxx_flags,
              "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", get_default_extra_cxxflags());
   parser.add("Extra linker flags for building the output binary", settings->extra_ld_flags,
@@ -297,7 +299,6 @@ int main(int argc, char *argv[]) {
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
-  parser.add_implicit_option("Incremental linker", settings->incremental_linker);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
   parser.add_implicit_option("Base directory", settings->base_dir);
   parser.add_implicit_option("CPP destination directory", settings->dest_cpp_dir);
@@ -314,6 +315,7 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("TL classname prefix", settings->tl_classname_prefix);
   parser.add_implicit_option("Generated runtime path", settings->generated_runtime_path);
   parser.add_implicit_option("Performance report path", settings->performance_analyze_report_path);
+  parser.add_implicit_option("C++ compiler toolchain option", settings->cxx_toolchain_option);
 
   try {
     parser.process_args(argc, argv);

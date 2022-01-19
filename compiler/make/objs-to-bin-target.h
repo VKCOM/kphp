@@ -12,14 +12,15 @@ public:
 
   string get_cmd() final {
 #if defined(__APPLE__)
-    vk::string_view open_dep{" -Wl,-all_load "};
-    vk::string_view close_dep;
+    std::string_view open_dep{" -Wl,-all_load "};
+    std::string_view close_dep;
 #else
-    vk::string_view open_dep{" -Wl,--whole-archive -Wl,--start-group "};
-    vk::string_view close_dep{" -Wl,--end-group -Wl,--no-whole-archive "};
+    std::string_view open_dep{" -Wl,--whole-archive -Wl,--start-group "};
+    std::string_view close_dep{" -Wl,--end-group -Wl,--no-whole-archive "};
 #endif
     std::stringstream ss;
-    ss << settings->cxx.get() << " -o " << target() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
+    ss << settings->cxx.get() << " " << settings->cxx_toolchain_option.get()
+       << " -o " << target() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
     if (need_libdl_) {
       ss << " -ldl";
     }
