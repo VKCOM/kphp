@@ -56,7 +56,7 @@ private:
     InstanceToArrayVisitor tuple_processor{with_class_names_};
     tuple_processor.result_.reserve(sizeof...(Args), 0, true);
 
-    process_tuple(value, tuple_processor);
+    process_tuple(value, tuple_processor, std::index_sequence_for<Args...>{});
     add_value(field_name, std::move(tuple_processor).flush_result());
   }
 
@@ -69,14 +69,9 @@ private:
     add_value(field_name, std::move(shape_processor).flush_result());
   }
 
-  template<size_t Index = 0, class ...Args>
-  std::enable_if_t<Index != sizeof...(Args)> process_tuple(const std::tuple<Args...> &value, InstanceToArrayVisitor &tuple_visitor) {
-    tuple_visitor.process_impl("", std::get<Index>(value));
-    process_tuple<Index + 1>(value, tuple_visitor);
-  }
-
-  template<size_t Index = 0, class ...Args>
-  std::enable_if_t<Index == sizeof...(Args)> process_tuple(const std::tuple<Args...> &, InstanceToArrayVisitor &/*tuple_processor*/) {
+  template<class... Args, std::size_t... Indexes>
+  void process_tuple(const std::tuple<Args...> &tuple, InstanceToArrayVisitor &visitor, std::index_sequence<Indexes...> /*indexes*/) {
+    (visitor.process_impl("", std::get<Indexes>(tuple)), ...);
   }
 
   template<size_t ...Is, typename ...T>
