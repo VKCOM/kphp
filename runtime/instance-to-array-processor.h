@@ -14,7 +14,7 @@ public:
   explicit InstanceToArrayVisitor(bool with_class_names)
     : with_class_names_(with_class_names) {}
 
-  array<mixed> flush_result() {
+  array<mixed> flush_result() && noexcept {
     return std::move(result_);
   }
 
@@ -53,20 +53,20 @@ private:
 
   template<class ...Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
-    InstanceToArrayVisitor tuple_processor(with_class_names_);
+    InstanceToArrayVisitor tuple_processor{with_class_names_};
     tuple_processor.result_.reserve(sizeof...(Args), 0, true);
 
     process_tuple(value, tuple_processor);
-    add_value(field_name, tuple_processor.flush_result());
+    add_value(field_name, std::move(tuple_processor).flush_result());
   }
 
   template<size_t ...Is, typename ...T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
-    InstanceToArrayVisitor shape_processor(with_class_names_);
+    InstanceToArrayVisitor shape_processor{with_class_names_};
     shape_processor.result_.reserve(sizeof...(Is), 0, true);
 
     process_shape(value, shape_processor);
-    add_value(field_name, shape_processor.flush_result());
+    add_value(field_name, std::move(shape_processor).flush_result());
   }
 
   template<size_t Index = 0, class ...Args>
@@ -108,7 +108,7 @@ array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_nam
   if constexpr (!std::is_empty_v<T>) {
     InstanceToArrayVisitor visitor{with_class_names};
     c.get()->accept(visitor);
-    result = visitor.flush_result();
+    result = std::move(visitor).flush_result();
   }
 
   if (with_class_names) {
