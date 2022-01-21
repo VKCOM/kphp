@@ -262,6 +262,13 @@ void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const As
     return;
   }
 
+  // in case assumptions_for_vars for f accessed from different threads, use a single int-mutex guard
+  int expected = 0;
+  while (!f->assumption_vars_mu.compare_exchange_strong(expected, 1)) {
+    std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+    expected = 0;
+  }
+
   for (auto &name_and_a : f->assumptions_for_vars) {
     if (name_and_a.first == var_name) {
       if (Assumption merged = assumption_merge(name_and_a.second, assumption)) {
@@ -270,11 +277,13 @@ void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const As
         stage::set_location(v_location->location);
         print_error_assumptions_arent_merged_for_var(var_name, name_and_a.second, assumption);
       }
+      f->assumption_vars_mu = 0;
       return;
     }
   }
 
   f->assumptions_for_vars.emplace_back(var_name, assumption);
+  f->assumption_vars_mu = 0;
 //  printf("%s() $%s %s\n", f->name.c_str(), var_name.c_str(), assumption.as_human_readable().c_str());
 }
 

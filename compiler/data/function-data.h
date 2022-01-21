@@ -74,6 +74,7 @@ public:
   std::vector<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
   Assumption assumption_for_return;
 
+  vk::copyable_atomic<int> assumption_vars_mu{0};
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
   vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
 
