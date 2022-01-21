@@ -78,7 +78,7 @@ public:
   VertexAdaptor<op_func_param> get_func_param();
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
-  VertexPtr get_expr_top(bool was_arrow);
+  VertexPtr get_expr_top(bool was_arrow, vk::string_view phpdoc_str = vk::string_view{});
   VertexPtr get_postfix_expression(VertexPtr res, bool parenthesized);
   VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
