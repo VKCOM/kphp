@@ -86,11 +86,25 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
              fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
 }
 
+void instance_to_array_on_class(ClassPtr klass) {
+  kphp_error(!klass->is_ffi_cdata(), "Called instance_to_array() with CData");
+  klass->deeply_require_instance_to_array_visitor();
+}
+
 void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
-  auto type = tinf::get_type(call->args()[0]);
-  kphp_error_return(type->ptype() == tp_Class, "Called instance_to_array() with a non-instance argument");
-  kphp_error_return(!type->class_type()->is_ffi_cdata(), "Called instance_to_array() with CData");
-  type->class_type()->deeply_require_instance_to_array_visitor();
+  const auto *type = tinf::get_type(call->args()[0]);
+  const auto ptype = type->ptype();
+  if (ptype == tp_Class) {
+    instance_to_array_on_class(type->class_type());
+  } else if (vk::any_of_equal(ptype, tp_tuple, tp_shape)) {
+    std::unordered_set<ClassPtr> classes;
+    type->get_all_class_types_inside(classes);
+    for (const auto &klass : classes) {
+      instance_to_array_on_class(klass);
+    }
+  } else {
+    kphp_error_return(false, "Argument of instance_to_array() should be instance, tuple or shape");
+  }
 }
 
 void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {

@@ -9,6 +9,12 @@
 template<class T>
 array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_names = false);
 
+template<class... Args>
+array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names = false);
+
+template<size_t... Indexes, typename... T>
+array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false);
+
 class InstanceToArrayVisitor {
 public:
   explicit InstanceToArrayVisitor(bool with_class_names)
@@ -21,6 +27,17 @@ public:
   template<typename T>
   void operator()(const char *field_name, const T &value) {
     process_impl(field_name, value);
+  }
+
+  template<class... Args, std::size_t... Indexes>
+  static void process_tuple(const std::tuple<Args...> &tuple, InstanceToArrayVisitor &visitor, std::index_sequence<Indexes...> /*indexes*/) {
+    (visitor.process_impl("", std::get<Indexes>(tuple)), ...);
+  }
+
+  template<size_t... Is, typename... T>
+  static void process_shape(const shape<std::index_sequence<Is...>, T...> &shape, InstanceToArrayVisitor &visitor) {
+    // shape doesn't have key names at runtime, that's why result will be a vector-array (whereas associative in PHP)
+    (visitor.process_impl("", shape.template get<Is>()), ...);
   }
 
 private:
@@ -69,17 +86,6 @@ private:
     add_value(field_name, std::move(shape_processor).flush_result());
   }
 
-  template<class... Args, std::size_t... Indexes>
-  void process_tuple(const std::tuple<Args...> &tuple, InstanceToArrayVisitor &visitor, std::index_sequence<Indexes...> /*indexes*/) {
-    (visitor.process_impl("", std::get<Indexes>(tuple)), ...);
-  }
-
-  template<size_t... Is, typename... T>
-  void process_shape(const shape<std::index_sequence<Is...>, T...> &shape, InstanceToArrayVisitor &visitor) {
-    // shape doesn't have key names at runtime, that's why result will be a vector-array (whereas associative in PHP)
-    (visitor.process_impl("", shape.template get<Is>()), ...);
-  }
-
   template<class T>
   void add_value(const char *field_name, T &&value) {
     if (field_name[0] != '\0') {
@@ -110,4 +116,18 @@ array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_nam
     result.set_value(string("__class_name"), string(c.get_class()));
   }
   return result;
+}
+
+template<class... Args>
+array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names) {
+  InstanceToArrayVisitor visitor{with_class_names};
+  InstanceToArrayVisitor::process_tuple(tuple, visitor, std::index_sequence_for<Args...>{});
+  return std::move(visitor).flush_result();
+}
+
+template<size_t... Indexes, typename... T>
+array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names) {
+  InstanceToArrayVisitor visitor{with_class_names};
+  InstanceToArrayVisitor::process_shape(shape, visitor);
+  return std::move(visitor).flush_result();
 }
