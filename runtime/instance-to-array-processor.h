@@ -6,15 +6,6 @@
 
 #include "runtime/kphp_core.h"
 
-template<class T>
-array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_names = false);
-
-template<class... Args>
-array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names = false);
-
-template<size_t... Indexes, typename... T>
-array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false);
-
 class InstanceToArrayVisitor {
 public:
   explicit InstanceToArrayVisitor(bool with_class_names)
@@ -100,7 +91,7 @@ private:
 };
 
 template<class T>
-array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_names) {
+array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_names = false) {
   array<mixed> result;
   if (c.is_null()) {
     return result;
@@ -119,14 +110,14 @@ array<mixed> f$instance_to_array(const class_instance<T> &c, bool with_class_nam
 }
 
 template<class... Args>
-array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names) {
+array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names = false) {
   InstanceToArrayVisitor visitor{with_class_names};
   InstanceToArrayVisitor::process_tuple(tuple, visitor, std::index_sequence_for<Args...>{});
   return std::move(visitor).flush_result();
 }
 
 template<size_t... Indexes, typename... T>
-array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names) {
+array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false) {
   InstanceToArrayVisitor visitor{with_class_names};
   InstanceToArrayVisitor::process_shape(shape, visitor);
   return std::move(visitor).flush_result();
