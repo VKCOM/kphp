@@ -7,7 +7,7 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/instance-to-array-processor.h"
+#include "runtime/to-array-processor.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
