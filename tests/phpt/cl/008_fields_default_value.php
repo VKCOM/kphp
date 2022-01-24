@@ -20,7 +20,7 @@ function test_empty_string_default_value() {
     }
   }
 
-  var_dump(instance_to_array(new EmptyStringDefault));
+  var_dump(to_array_debug(new EmptyStringDefault));
 }
 
 function test_optional_string_default_value() {
@@ -46,7 +46,7 @@ function test_optional_string_default_value() {
   #ifndef KPHP
   $o->str_or_null4 = null;
   #endif
-  var_dump(instance_to_array($o));
+  var_dump(to_array_debug($o));
 }
 
 function test_empty_array_default_value() {
@@ -73,7 +73,7 @@ function test_empty_array_default_value() {
     }
   }
 
-  var_dump(instance_to_array(new EmptyArrayDefault));
+  var_dump(to_array_debug(new EmptyArrayDefault));
 }
 
 function test_optional_array_default_value() {
@@ -97,7 +97,7 @@ function test_optional_array_default_value() {
     public $arr_arr_A_or_null4;
   }
 
-  var_dump(instance_to_array(new OptionalArrayDefault));
+  var_dump(to_array_debug(new OptionalArrayDefault));
 }
 
 

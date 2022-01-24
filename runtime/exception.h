@@ -51,8 +51,8 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     generic_accept(visitor);
   }
 
-  virtual void accept(InstanceToArrayVisitor &visitor) noexcept {
-    generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (instance_to_array returns array<mixed>)
+  virtual void accept(ToArrayVisitor &visitor) noexcept {
+    generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
 
   C$Throwable() __attribute__((always_inline)) = default;

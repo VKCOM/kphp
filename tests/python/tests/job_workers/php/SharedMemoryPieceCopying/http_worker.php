@@ -65,7 +65,7 @@ function test_shared_memory_piece_copying() {
     if ($resp instanceof JobResponse) {
       $result['jobs-result'][] = $resp->ans;
     } else {
-      $result['jobs-result'][] = instance_to_array($resp);
+      $result['jobs-result'][] = to_array_debug($resp);
     }
   }
 

@@ -288,7 +288,7 @@ How to solve this problem?
 * Create a wrapper class with 3 typed fields: *mixed $mode*, *string\|false $hash*, *User $user*
 * Use *tuples*
 * Use *shapes*
-* Use *instance_to_array()*, recommended only for debug and logging purposes
+* Use *to_array_debug()*, recommended only for debug and logging purposes
 
 [An article about the type system](../static-type-system/kphp-type-system.md) explains all these words.
 

@@ -402,8 +402,8 @@ void ClassData::set_atomic_field_deeply() {
   }
 }
 
-void ClassData::deeply_require_instance_to_array_visitor() {
-  set_atomic_field_deeply<&ClassData::need_instance_to_array_visitor>();
+void ClassData::deeply_require_to_array_debug_visitor() {
+  set_atomic_field_deeply<&ClassData::need_to_array_debug_visitor>();
 }
 
 void ClassData::deeply_require_instance_cache_visitor() {

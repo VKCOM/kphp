@@ -51,11 +51,11 @@ class WithInner
  * @param object $a
  * @param object $b
  */
-function check_instance_to_array_with_class_names($a, $b)
+function check_to_array_debug_with_class_names($a, $b)
 {
   echo "======= checking " . get_class($a) . " and " . get_class($b) . " ======= \n";
-  $arr_a = instance_to_array($a);
-  $arr_b = instance_to_array($b);
+  $arr_a = to_array_debug($a);
+  $arr_b = to_array_debug($b);
 
   if (kphp === 1) {
     var_dump($arr_a === $arr_b);
@@ -63,8 +63,8 @@ function check_instance_to_array_with_class_names($a, $b)
     echo "bool(true)\n";
   }
 
-  $arr_a = instance_to_array($a, true);
-  $arr_b = instance_to_array($b, true);
+  $arr_a = to_array_debug($a, true);
+  $arr_b = to_array_debug($b, true);
   var_dump($arr_a);
   var_dump($arr_b);
 
@@ -75,6 +75,6 @@ function check_instance_to_array_with_class_names($a, $b)
   }
 }
 
-check_instance_to_array_with_class_names(new Empty1, new Empty2);
-check_instance_to_array_with_class_names(new A1, new A2);
-check_instance_to_array_with_class_names(new WithInner(new A1), new WithInner(new A2));
+check_to_array_debug_with_class_names(new Empty1, new Empty2);
+check_to_array_debug_with_class_names(new A1, new A2);
+check_to_array_debug_with_class_names(new WithInner(new A1), new WithInner(new A2));

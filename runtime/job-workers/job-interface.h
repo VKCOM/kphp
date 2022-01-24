@@ -18,7 +18,7 @@ class InstanceDeepCopyVisitor;
 
 class InstanceDeepDestroyVisitor;
 
-class InstanceToArrayVisitor;
+class ToArrayVisitor;
 
 class InstanceMemoryEstimateVisitor;
 
@@ -39,7 +39,7 @@ struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
   virtual void accept(InstanceDeepCopyVisitor &) noexcept = 0;
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept = 0;
 
-  virtual void accept(InstanceToArrayVisitor &) noexcept {}
+  virtual void accept(ToArrayVisitor &) noexcept {}
 
   virtual void accept(InstanceMemoryEstimateVisitor &) noexcept {}
 
@@ -100,7 +100,7 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
     return generic_accept(visitor);
   }
 
-  void accept(InstanceToArrayVisitor &visitor) noexcept {
+  void accept(ToArrayVisitor &visitor) noexcept {
     return generic_accept(visitor);
   }
 

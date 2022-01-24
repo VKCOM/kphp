@@ -49,7 +49,7 @@ PHP **classes** are codegenerated as C++ structures, and *class_instance\<T\>* i
 
 Types that are KPHP-custom are polyfilled with PHP and behave the same if used correctly in PHP. For instance, tuples are expressed as *std::tuple*, and shapes are "tagged tuples", consider *shape.h* for implementation.
 
-Instances can be converted to an array with *instance_to_array()*, can be serialized, etc. To support this, the compilation stage detects such classes and codegenerates *visitors* to C++ structures.  
+Instances, tuples and shapes can be converted to an array with *to_array_debug()*, can be serialized, etc. To support this, the compilation stage detects such classes and codegenerates *visitors* to C++ structures.  
 
 **string** and **array** variables use a reference counter, but unlike **classes**, they are *copy on write*.
 

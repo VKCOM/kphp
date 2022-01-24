@@ -28,7 +28,7 @@ Unlike *instance_serialize()*, for now, there is no similar method for JSON and 
 As a workaround, you can use a temporary array:
 ```php
 $user = new User;
-$json = json_decode(instance_to_array($user));
+$json = json_decode(to_array_debug($user));
 ```
 
 It will convert an instance to `mixed[]` deeply first, which is slow, but the only way for now.

@@ -7,12 +7,12 @@ class A { public $x = 10; }
 
 class B { public $y = 20; }
 
-$strs_a = array_map("instance_to_array", [new A(), new A()]);
-$strs_b = array_map("instance_to_array", [new B()]);
+$strs_a = array_map("to_array_debug", [new A(), new A()]);
+$strs_b = array_map("to_array_debug", [new B()]);
 var_dump($strs_a);
 var_dump($strs_b);
 
-var_dump(array_map("is_numeric", array_map("instance_to_array", [new A()])));
+var_dump(array_map("is_numeric", array_map("to_array_debug", [new A()])));
 
 var_dump(array_reduce(["123", "245", "111", "0"], "bcadd", "0"));
 

@@ -76,7 +76,7 @@ function test_job_worker_start_multi_impl(bool $use_shared_data) {
 
   $result = ['jobs-result' => []];
   foreach ($responses as $resp) {
-    $result['jobs-result'][] = instance_to_array($resp);
+    $result['jobs-result'][] = to_array_debug($resp);
   }
 
   echo json_encode($result);

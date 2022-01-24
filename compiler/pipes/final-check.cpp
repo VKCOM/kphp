@@ -86,24 +86,24 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
              fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
 }
 
-void instance_to_array_on_class(ClassPtr klass) {
-  kphp_error(!klass->is_ffi_cdata(), "Called instance_to_array() with CData");
-  klass->deeply_require_instance_to_array_visitor();
+void to_array_debug_on_class(ClassPtr klass) {
+  kphp_error(!klass->is_ffi_cdata(), "Called to_array_debug() with CData");
+  klass->deeply_require_to_array_debug_visitor();
 }
 
-void check_instance_to_array_call(VertexAdaptor<op_func_call> call) {
+void check_to_array_debug_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   const auto ptype = type->ptype();
   if (ptype == tp_Class) {
-    instance_to_array_on_class(type->class_type());
+    to_array_debug_on_class(type->class_type());
   } else if (vk::any_of_equal(ptype, tp_tuple, tp_shape)) {
     std::unordered_set<ClassPtr> classes;
     type->get_all_class_types_inside(classes);
     for (const auto &klass : classes) {
-      instance_to_array_on_class(klass);
+      to_array_debug_on_class(klass);
     }
   } else {
-    kphp_error_return(false, "Argument of instance_to_array() should be instance, tuple or shape");
+    kphp_error_return(false, "Argument of to_array_debug() should be instance, tuple or shape");
   }
 }
 
@@ -175,14 +175,14 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
 
     FunctionPtr f_passed_to_builtin = call_params[i].as<op_callback_of_builtin>()->func_id;
 
-    if (f_passed_to_builtin->local_name() == "instance_to_array") {
+    if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
         auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
           auto value_type = tinf::get_type(arg)->lookup_at_any_key();
           auto out_class = value_type->class_type();
-          kphp_error_return(out_class, "type of argument for instance_to_array has to be array of Classes");
-          out_class->deeply_require_instance_to_array_visitor();
+          kphp_error_return(out_class, "type of argument for to_array_debug has to be array of Classes");
+          out_class->deeply_require_to_array_debug_visitor();
         }
       }
     }
@@ -606,8 +606,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_cache_fetch_call(call);
     } else if (function_name == "instance_cache_store") {
       check_instance_cache_store_call(call);
-    } else if (function_name == "instance_to_array") {
-      check_instance_to_array_call(call);
+    } else if (function_name == "to_array_debug" || function_name == "instance_to_array") {
+      check_to_array_debug_call(call);
     } else if (function_name == "instance_serialize") {
       check_instance_serialize_call(call);
     } else if (function_name == "instance_deserialize") {
