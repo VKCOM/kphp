@@ -10,7 +10,7 @@
 
 struct tl_func_base;
 
-class InstanceToArrayVisitor;
+class ToArrayVisitor;
 class InstanceMemoryEstimateVisitor;
 
 // The locations of the typed TL related builtin classes that are described in functions.txt
@@ -22,7 +22,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
 
-  virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(ToArrayVisitor &) {}
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual ~C$VK$TL$RpcFunction() = default;
@@ -35,7 +35,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class()))); }
 
-  virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(ToArrayVisitor &) {}
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
@@ -46,7 +46,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
 struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
-  virtual void accept(InstanceToArrayVisitor &) {}
+  virtual void accept(ToArrayVisitor &) {}
   virtual void accept(InstanceMemoryEstimateVisitor &) {}
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }

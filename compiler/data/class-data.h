@@ -66,7 +66,7 @@ public:
   int location_line_num{-1};
   std::string src_name, header_name;
 
-  std::atomic<bool> need_instance_to_array_visitor{false};
+  std::atomic<bool> need_to_array_debug_visitor{false};
   std::atomic<bool> need_instance_cache_visitors{false};
   std::atomic<bool> need_instance_memory_estimate_visitor{false};
   std::atomic<bool> need_virtual_builtin_functions{false};
@@ -177,7 +177,7 @@ public:
   bool does_need_codegen() const;
   void mark_as_used();
 
-  void deeply_require_instance_to_array_visitor();
+  void deeply_require_to_array_debug_visitor();
   void deeply_require_instance_cache_visitor();
   void deeply_require_instance_memory_estimate_visitor();
   void deeply_require_virtual_builtin_functions();

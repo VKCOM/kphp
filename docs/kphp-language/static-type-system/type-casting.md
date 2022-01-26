@@ -85,7 +85,7 @@ $d->d;    // ok if not null
 
 Instances are not compatible with *mixed*, but...
 
-You can deeply convert an object to `mixed[]` with `instance_to_array()`.  
+You can deeply convert an object or tuple or shape to `mixed[]` with `to_array_debug()`.  
 It is useful for logging/debugging, as instances are not allowed to be passed to *var_dump()*, etc:
 ```php
 class Message {
@@ -95,21 +95,21 @@ class Message {
   public $author;   // this field will be also converted (deep conversion is performed)
 }
  
-$message_as_array = instance_to_array($message);   // mixed[]
+$message_as_array = to_array_debug($message);   // mixed[]
 var_dump($message_as_array);
 ```
 
 As a consequence, you can output an instance to JSON (KPHP has no native JSON serialization for instances yet):
 ```php
-json_encode(instance_to_array($instance));
+json_encode(to_array_debug($instance));
 ```
 
 ```note
-Why `instance_to_array($obj)`, but not native PHP `(array)$obj`? Because PHP's *(array)$obj* is not suitable:
+Why `to_array_debug($obj)`, but not native PHP `(array)$obj`? Because PHP's *(array)$obj* is not suitable:
 * remains nested instances — not converted to arrays, not compatible with *mixed[]*
 * private and protected fields names are mangled with unprintable symbols
 
-That's why *instance_to_array()* — natively in KPHP and polyfilled in PHP — to guarantee identical behavior.
+That's why *to_array_debug()* — natively in KPHP and polyfilled in PHP — to guarantee identical behavior.
 ```
 
 

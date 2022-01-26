@@ -55,7 +55,7 @@ function test_classes_filter_by_key() {
 
     foreach ($filtered as $key => $value) {
       var_dump($key);
-      var_dump(instance_to_array($value));
+      var_dump(to_array_debug($value));
     }
 }
 

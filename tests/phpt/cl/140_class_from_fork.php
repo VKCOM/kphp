@@ -25,4 +25,4 @@ $ii = fork(demo());
 $t = wait($ii);
 echo "done\n";
 
-var_dump(instance_to_array($t));
+var_dump(to_array_debug($t));

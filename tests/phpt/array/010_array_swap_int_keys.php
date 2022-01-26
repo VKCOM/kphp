@@ -101,12 +101,12 @@ function test_instance_swap() {
   $a[0]->arr[] = 100500;
   array_swap_int_keys($a, 0, 1);
   foreach ($a as $o) {
-    var_dump(instance_to_array($o));
+    var_dump(to_array_debug($o));
   }
   foreach ($a2 as $o) {
-    var_dump(instance_to_array($o));
+    var_dump(to_array_debug($o));
   }
-  var_dump(instance_to_array($o0));
+  var_dump(to_array_debug($o0));
 }
 
 // vectors

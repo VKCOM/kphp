@@ -140,7 +140,7 @@ function test_class_instances() {
 
     $optional_classinstance = [true ? ['id' => new A(0)] : false];
     $cls = (array) array_column($optional_classinstance, 'id');
-    var_dump(array_map('instance_to_array', $cls));
+    var_dump(array_map('to_array_debug', $cls));
 }
 
 function test_var_as_array() {

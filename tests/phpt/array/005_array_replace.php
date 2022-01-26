@@ -61,7 +61,7 @@ function instances_array_replace_test()
   class C implements my_interface{ public $c = 3; };
   $arr = array_replace(array(new A, new B, new C), array(new C, new A, new B));
   foreach ($arr as $item) {
-    var_dump(instance_to_array($item));
+    var_dump(to_array_debug($item));
   }
 }
 

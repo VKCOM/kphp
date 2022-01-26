@@ -112,10 +112,10 @@ function test_store_fetch() {
   var_dump(instance_cache_store("key_y1", new Y(1, "test_store_fetch")));
 
   $x = instance_cache_fetch(X::class, "key_x1");
-  var_dump(instance_to_array($x));
+  var_dump(to_array_debug($x));
 
   $y = instance_cache_fetch(Y::class, "key_y1");
-  var_dump(instance_to_array($y));
+  var_dump(to_array_debug($y));
 }
 
 function test_mismatch_classes() {
@@ -156,10 +156,10 @@ function test_delete() {
   var_dump(instance_cache_delete("key_y3_unknown"));
 
   $x = instance_cache_fetch(X::class, "key_x3");
-  var_dump(instance_to_array($x));
+  var_dump(to_array_debug($x));
 
   $y = instance_cache_fetch(Y::class, "key_y3");
-  var_dump(instance_to_array($y));
+  var_dump(to_array_debug($y));
 
   var_dump(instance_cache_delete("key_x3"));
   var_dump(instance_cache_delete("key_y3"));
@@ -190,7 +190,7 @@ function test_tree() {
   var_dump(instance_cache_store("tree_root", $root));
 
   $cached_root1 = instance_cache_fetch(TreeX::class, "tree_root");
-  var_dump(instance_to_array($cached_root1));
+  var_dump(to_array_debug($cached_root1));
 }
 
 function test_loop_in_tree() {
@@ -222,7 +222,7 @@ function test_same_instance_in_array() {
   var_dump(instance_cache_store("vector", $vector));
 
   $cached_vector = instance_cache_fetch(VectorY::class, "vector");
-  var_dump(instance_to_array($cached_vector));
+  var_dump(to_array_debug($cached_vector));
 }
 
 function test_memory_limit_exceed() {
@@ -241,7 +241,7 @@ function test_with_shape() {
   instance_cache_store('has_shape', $a);
 
   $a2 = instance_cache_fetch(HasShape::class, 'has_shape');
-  $dump = instance_to_array($a2);
+  $dump = to_array_debug($a2);
 #ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
   $dump['sh'] = [19, 'y', null];
 #endif
@@ -253,7 +253,7 @@ function test_with_shape() {
   $a = new HasShape(19, true);
   instance_cache_store('has_shape_more', $a);
   $a3 = instance_cache_fetch(HasShape::class, 'has_shape_more');
-  $dump = instance_to_array($a3);
+  $dump = to_array_debug($a3);
 #ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
   $dump['sh'] = [2, 'y', [1,2,3]];
 #endif

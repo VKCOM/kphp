@@ -217,7 +217,7 @@ title: What's new?
 
 ## 2019-06-06
 
-* `instance_to_array()`
+* `to_array_debug()`
 * smart `instanceof`
 * `__FUNCTION__` and others
 * script allocator refactoring

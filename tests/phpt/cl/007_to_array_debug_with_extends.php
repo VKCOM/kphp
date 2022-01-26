@@ -34,7 +34,7 @@ function simple_case() {
   $foo = new Foo();
   $foo = new Baz();
 
-  var_dump(instance_to_array($foo));
+  var_dump(to_array_debug($foo));
 }
 
 function complex_case() {
@@ -44,7 +44,7 @@ function complex_case() {
   $g->at[] = tuple(new Foo, new Y);
   $g->at[] = tuple(new Bar, new X);
 
-  var_dump(instance_to_array($g));
+  var_dump(to_array_debug($g));
 }
 
 simple_case();

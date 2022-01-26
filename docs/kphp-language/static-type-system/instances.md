@@ -167,7 +167,7 @@ Main limitations are:
 * **reflection** is not supported 
 * **serialize(), var_dump(), json_encode() and others** can't be used with instances, as they accept *mixed* 
 
-Tip: you can partly bypass the last limitation with `instance_to_array()` and [serialization](../howto-by-kphp/serialization-msgpack.md).
+Tip: you can partly bypass the last limitation with `to_array_debug()` and [serialization](../howto-by-kphp/serialization-msgpack.md).
 
 
 ## Extends, implements — they work, just keep types in mind

@@ -32,5 +32,5 @@ class B {
 
 
 $b = new B();
-var_dump(instance_to_array($b));
+var_dump(to_array_debug($b));
 

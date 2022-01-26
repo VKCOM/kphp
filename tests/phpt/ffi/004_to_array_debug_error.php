@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/Called instance_to_array\(\) with CData/
+/Called to_array_debug\(\) with CData/
 <?php
 
 $cdef = FFI::cdef('
@@ -13,4 +13,4 @@ $cdef = FFI::cdef('
 
 $foo = $cdef->new('struct Foo');
 
-var_dump(instance_to_array($foo));
+var_dump(to_array_debug($foo));

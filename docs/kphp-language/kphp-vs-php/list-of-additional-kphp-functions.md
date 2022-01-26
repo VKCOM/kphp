@@ -21,7 +21,7 @@ Skip this page at first reading. Look through it later, when you start using KPH
 These are keywords (language constructs), described [in the type system article](../static-type-system/kphp-type-system.md).
 
 <aside>instance_cast(object $instance, string $class_name): \$class_name</aside>
-<aside>instance_to_array(object $instance): mixed[]</aside>
+<aside>to_array_debug(object $instance): mixed[]</aside>
 
 Functions for casting instances, described [here](../static-type-system/type-casting.md).
 

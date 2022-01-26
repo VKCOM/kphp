@@ -39,7 +39,7 @@ spl_autoload_register(function ($class) {
 
 function warning($m) {}
 
-function instance_to_array($a) {
+function to_array_debug($a) {
   return (array)$a;
 }
 #endif
@@ -146,7 +146,7 @@ struct CreateInstanceAndDump {
     auto instance_var_name = self.repr.php_class_name + "_instance";
     os << std::endl
        << "  $" << instance_var_name << " = new " << ClassNameWithNamespace{self.repr} << ";" << std::endl
-       << "  var_dump(instance_to_array($" << instance_var_name << "));" << std::endl;
+       << "  var_dump(to_array_debug($" << instance_var_name << "));" << std::endl;
 
     if (self.repr.parent && self.repr.parent->php_class_name == "RpcFunction") {
       os << "  var_dump($" << instance_var_name << "->getTLFunctionName());" << std::endl
