@@ -378,9 +378,11 @@ if __name__ == "__main__":
         name="functional-tests",
         description="run kphp functional tests in {} mode".format("gcc"),
         cmd="KPHP_TESTS_DISTCC_FILE={distcc_hosts_file} "
-            "python3 -m pytest --tb=native -n{{jobs}} {functional_tests_dir}".format(
+            "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{{jobs}} {functional_tests_dir}".format(
             functional_tests_dir=functional_tests_dir,
-            distcc_hosts_file=distcc_hosts_file
+            distcc_hosts_file=distcc_hosts_file,
+            base_tempdir=os.path.expanduser('~/_tmp')   # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
+                                                        # 108 is Linux limit for some reason, see https://blog.8-p.info/en/2020/06/11/unix-domain-socket-length/
         ),
         skip=args.steps and "functional-tests" not in args.steps
     )
