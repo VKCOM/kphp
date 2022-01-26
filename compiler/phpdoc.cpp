@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "common/termformat/termformat.h"
+#include "common/php-functions.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
@@ -491,7 +492,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_shape_type() {
   // elements are [ op_double_arrow ( op_func_name "x", TypeHint "int" ), ... ]
   // may end with tok_varg: shape(x:int, ...)
   while (true) {
-    std::string elem_name = static_cast<std::string>(cur_tok->str_val);
+    const auto elem_name = static_cast<std::string>(cur_tok->str_val);
     cur_tok++;
 
     bool is_nullable = false;
@@ -507,9 +508,13 @@ const TypeHint *PhpDocTypeRuleParser::parse_shape_type() {
     const TypeHint *elem_type_hint = parse_type_expression();
     if (is_nullable) {
       elem_type_hint = TypeHintOptional::create(elem_type_hint, true, false);
+      const std::int64_t hash = string_hash(elem_name.data(), elem_name.size());
+      // nullable shape's key that is never used in code will not be present in shapes key storage,
+      // so we will get an error while trying to print it via to_array_debug(), thus it added here
+      TypeHintShape::register_known_key(hash, elem_name);
     }
 
-    shape_items.emplace_back(std::make_pair(elem_name, elem_type_hint));
+    shape_items.emplace_back(elem_name, elem_type_hint);
 
     if (vk::any_of_equal(cur_tok->type(), tok_gt, tok_clpar)) {
       cur_tok++;

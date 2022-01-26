@@ -81,6 +81,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/tl2cpp/tl-type.cpp
         files/tl2cpp/tl2cpp-utils.cpp
         files/tl2cpp/tl2cpp.cpp
+        files/shape-keys.cpp
         files/type-tagger.cpp
         files/vars-cpp.cpp
         files/vars-reset.cpp

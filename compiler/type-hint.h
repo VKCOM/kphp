@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "compiler/compiler-core.h"
@@ -454,11 +456,16 @@ class TypeHintShape : public TypeHint {
     , items(items)
     , is_vararg(is_vararg) {}
 
+  static std::map<std::int64_t, std::string> shape_keys_storage_;
+
 public:
   std::vector<std::pair<std::string, const TypeHint *>> items;
-  bool is_vararg;
+  bool is_vararg{false};
 
   static const TypeHint *create(std::vector<std::pair<std::string, const TypeHint *>> &&items, bool is_vararg);
+
+  static void register_known_key(std::int64_t key_hash, std::string_view key) noexcept;
+  static const std::map<std::int64_t, std::string> &get_all_registered_keys() noexcept;
 
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;

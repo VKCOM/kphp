@@ -1285,7 +1285,9 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
     auto key_v = double_arrow->lhs();
     CE (!kphp_error(vk::any_of_equal(key_v->type(), op_int_const, op_string, op_func_name), "keys of shape() must be constant"));
     const std::string &key_str = key_v->get_string();
-    CE (!kphp_error(keys_hashes.insert(string_hash(key_str.c_str(), key_str.size())).second, "keys of shape() are not unique"));
+    const std::int64_t hash = string_hash(key_str.data(), key_str.size());
+    CE (!kphp_error(keys_hashes.insert(hash).second, "keys of shape() are not unique"));
+    TypeHintShape::register_known_key(hash, key_str);
   }
 
   // shape->args() is a sequence of op_double_arrow
