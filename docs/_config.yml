@@ -11,6 +11,7 @@ url_github_kphp_snippets: https://github.com/VKCOM/kphp-snippets
 url_github_kphp_tools: https://github.com/VKCOM/kphp-tools
 url_github_issues: https://github.com/VKCOM/kphp/issues
 url_functions_txt: https://github.com/VKCOM/kphp/blob/master/builtin-functions/_functions.txt
+url_PDO: https://github.com/VKCOM/kphp/blob/master/builtin-functions/PDO/PDO.php
 url_dockerfile: https://github.com/VKCOM/kphp/blob/master/Dockerfile
 url_license_file: https://github.com/VKCOM/kphp/blob/master/LICENSE
 url_vertex_desc_json: https://github.com/VKCOM/kphp/blob/master/compiler/vertex-desc.json
