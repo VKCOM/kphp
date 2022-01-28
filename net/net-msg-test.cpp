@@ -590,7 +590,6 @@ TEST(net_msg, rwm_prepare_iovec) {
     constexpr std::size_t payload_parts = 10;
     std::vector<std::uint8_t> payload;
 
-    std::size_t total_payload = 0;
     raw_message_t rwm;
     rwm_init(&rwm, 0);
     for (std::size_t i = 0; i < payload_parts; ++i) {
@@ -599,7 +598,6 @@ TEST(net_msg, rwm_prepare_iovec) {
       std::iota(payload_part.begin(), payload_part.end(), 0);
       payload.insert(payload.end(), payload_part.begin(), payload_part.end());
       rwm_push_data(&rwm, payload_part.data(), payload_part.size());
-      total_payload += payload_part_size;
     }
 
     stream_comparator_t stream_comparator(payload.data(), payload.data() + payload.size());

@@ -106,14 +106,12 @@ private:
     }
     std::vector<int> params_order;
     auto as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
-    int idx = 0;
     for (const auto &child : as_type_expr->children) {
       if (auto as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
         params_order.push_back(as_nat_var->var_num);
       } else if (auto as_type_var = child->as<vk::tlo_parsing::type_var>()) {
         params_order.push_back(as_type_var->var_num);
       }
-      idx += 1;
     }
     if (var_nums != params_order) {
       raise_exception("Got implicit args order mismatching");
