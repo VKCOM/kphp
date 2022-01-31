@@ -155,6 +155,7 @@ class KphpBuilder:
             ignore_patterns=[
                 "^Starting php to cpp transpiling\\.\\.\\.$",
                 "^Starting make\\.\\.\\.$",
+                "^Compiling pch stage started\\.\\.\\.$",
                 "^objs cnt = \\d+$",
                 "^Compiling stage started\\.\\.\\.$",
                 "^Linking stage started\\.\\.\\.$",
