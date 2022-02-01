@@ -175,6 +175,10 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
 
     FunctionPtr f_passed_to_builtin = call_params[i].as<op_callback_of_builtin>()->func_id;
 
+    kphp_error(!f_passed_to_builtin->is_resumable, fmt_format("Callbacks passed to builtin functions must not be resumable.\n"
+                                                              "But '{}' became resumable because of the calls chain:\n"
+                                                              "{}", f_passed_to_builtin->as_human_readable(), f_passed_to_builtin->get_resumable_path()));
+
     if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
         auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
