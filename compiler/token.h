@@ -176,6 +176,7 @@ enum TokenType {
 
   tok_try,
   tok_catch,
+  tok_finally,
 
   tok_public,
   tok_private,
