@@ -281,7 +281,7 @@ if __name__ == "__main__":
             "{distcc_cmake_option}"
             "-DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
             "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test && "
-            "{env_vars} make -C {kphp_repo_root}/build vkext7.2 vkext7.4 && "
+            "{env_vars} make -C {kphp_repo_root}/build vkext7.4 && "
             "cd {kphp_repo_root}/build && cpack".format(
                 kphp_repo_root=kphp_repo_root,
                 distcc_cmake_option=distcc_cmake_option,
