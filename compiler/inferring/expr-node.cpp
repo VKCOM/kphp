@@ -326,6 +326,7 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_lt:
     case op_le:
     case op_isset:
+    case op_is_empty:
       recalc_ptype<tp_bool>();
       break;
 

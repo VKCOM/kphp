@@ -353,6 +353,10 @@ public:
   bool isset(const K &key) const noexcept;
   bool isset(const string &key, int64_t precomputed_hash) const noexcept;
 
+  template<class K>
+  bool is_empty(const K &key) const noexcept;
+  bool is_empty(const string &key, int64_t precomputed_hash) const noexcept;
+
   void unset(int64_t int_key);
   void unset(int32_t key) { unset(int64_t{key}); }
   void unset(const string &string_key);

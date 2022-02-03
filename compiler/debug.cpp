@@ -86,6 +86,7 @@ std::string debugTokenName(TokenType t) {
     {tok_abstract, "tok_abstract"},
     {tok_goto, "tok_goto"},
     {tok_isset, "tok_isset"},
+    {tok_is_empty, "tok_is_empty"},
     {tok_declare, "tok_declare"},
     {tok_eq1, "tok_eq1"},
     {tok_eq2, "tok_eq2"},

@@ -51,6 +51,19 @@ struct CDataPtr;
 template<class T>
 bool f$is_null(CDataPtr<T> ptr) { return ptr.is_php_null(); }
 
+template<class T, class = enable_for_bool_int_double<T>>
+inline bool f$empty(const T &v);
+inline bool f$empty(const string &v);
+inline bool f$empty(const mixed &v);
+template<class T>
+inline bool f$empty(const array<T> &);
+template<class T>
+inline bool f$empty(const class_instance<T> &);
+template<class T>
+inline bool f$empty(const Optional<T> &);
+template<class ...Args>
+inline bool f$empty(const std::tuple<Args...> &);
+
 using std::swap;
 using std::min;
 using std::max;

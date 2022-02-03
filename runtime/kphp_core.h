@@ -284,17 +284,6 @@ inline const array<mixed> &arrayval_ref(const mixed &val, const char *function);
 template<class T>
 inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function);
 
-template<class T, class = enable_for_bool_int_double<T>>
-inline bool f$empty(const T &v);
-inline bool f$empty(const string &v);
-inline bool f$empty(const mixed &v);
-template<class T>
-inline bool f$empty(const array<T> &);
-template<class T>
-inline bool f$empty(const class_instance<T> &);
-template<class T>
-inline bool f$empty(const Optional<T> &);
-
 
 template<class T>
 bool f$is_numeric(const T &);
@@ -992,6 +981,11 @@ bool f$empty(const mixed &v) {
 template<class T>
 bool f$empty(const Optional<T> &a) {
   return a.has_value() ? f$empty(a.val()) : true;
+}
+
+template<class ...Args>
+bool f$empty(const std::tuple<Args...> &a) {
+  return f$count(a) == 0;
 }
 
 int64_t f$count(const mixed &v) {
