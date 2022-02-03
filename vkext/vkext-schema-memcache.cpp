@@ -1180,13 +1180,13 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Not enough parameters for rpc_tl_query");
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_EMPTY_ARRAY();
   }
   if (zend_get_parameters_array_ex (argc > 4 ? 4 : argc, z) == FAILURE) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query");
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_EMPTY_ARRAY();
   }
 
   int fd = parse_zend_fd(VK_ZVAL_ARRAY_TO_API_P(z[0]));
@@ -1194,7 +1194,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Invalid connection type");
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_EMPTY_ARRAY();
   }
 
   struct rpc_connection *c = rpc_connection_get(fd);
@@ -1203,7 +1203,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Invalid connection in rpc_tl_query");
     END_TIMER (parse);
-    RETURN_FALSE;
+    RETURN_EMPTY_ARRAY();
   }
 
   double timeout = argc > 2 ? parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[2])) : c->default_query_timeout;
@@ -1214,8 +1214,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
   if (VK_Z_API_TYPE (VK_ZVAL_ARRAY_TO_API_P(z[1])) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query");
-    RETURN_FALSE;
-    return;
+    RETURN_EMPTY_ARRAY();
   }
   END_TIMER (parse);
 
@@ -1225,7 +1224,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Can't send query");
     zval_dtor (return_value);
-    RETURN_FALSE;
+    RETURN_EMPTY_ARRAY();
   }
 }
 
