@@ -232,6 +232,10 @@ string f$substr_replace(const string &str, const string &replacement, int64_t st
 
 Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), bool case_insensitivity = false);
 
+bool f$str_starts_with(const string &haystack, const string &needle);
+
+bool f$str_ends_with(const string &haystack, const string &needle);
+
 string f$trim(const string &s, const string &what = WHAT);
 
 string f$ucfirst(const string &str);
