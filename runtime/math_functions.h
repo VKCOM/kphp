@@ -75,6 +75,8 @@ inline double f$acos(double v);
 
 inline double f$atan(double v);
 
+inline double f$atanh(double v);
+
 inline double f$atan2(double y, double x);
 
 string f$base_convert(const string &number, int64_t frombase, int64_t tobase);
@@ -91,15 +93,23 @@ inline double f$deg2rad(double v);
 
 inline double f$exp(double v);
 
+inline double f$expm1(double v);
+
 inline double f$floor(double v);
 
 inline double f$fmod(double x, double y);
+
+inline double f$hypot(double x, double y);
 
 inline bool f$is_finite(double v);
 
 inline bool f$is_infinite(double v);
 
 inline bool f$is_nan(double v);
+
+inline double f$log10(double v);
+
+inline double f$log1p(double v);
 
 inline double f$log(double v);
 
@@ -114,6 +124,8 @@ inline double f$sin(double v);
 inline double f$sinh(double v);
 
 inline double f$sqrt(double v);
+
+inline double f$tanh(double v);
 
 inline double f$tan(double v);
 
@@ -198,6 +210,10 @@ double f$atan2(double y, double x) {
   return atan2(y, x);
 }
 
+double f$atanh(double v) {
+  return atanh(v);
+}
+
 double f$ceil(double v) {
   return ceil(v);
 }
@@ -222,6 +238,10 @@ double f$exp(double v) {
   return exp(v);
 }
 
+double f$expm1(double v) {
+  return expm1(v);
+}
+
 double f$floor(double v) {
   return floor(v);
 }
@@ -231,6 +251,10 @@ double f$fmod(double x, double y) {
     return 0.0;
   }
   return fmod(x, y);
+}
+
+double f$hypot(double x, double y) {
+  return hypot(x, y);
 }
 
 bool f$is_finite(double v) {
@@ -244,6 +268,20 @@ bool f$is_infinite(double v) {
 
 bool f$is_nan(double v) {
   return (std::fpclassify(v) == FP_NAN);
+}
+
+double f$log10(double v) {
+  if (v <= 0.0) {
+    return 0.0;
+  }
+  return log10(v);
+}
+
+double f$log1p(double v) {
+  if (v <= 0.0) {
+    return 0.0;
+  }
+  return log1p(v);
 }
 
 double f$log(double v) {
@@ -281,6 +319,10 @@ double f$sqrt(double v) {
 
 double f$tan(double v) {
   return tan(v);
+}
+
+double f$tanh(double v) {
+  return tanh(v);
 }
 
 double f$asin(double v) {
