@@ -1270,7 +1270,7 @@ function make_clone ($x ::: any) ::: ^1;
 function instance_cast($instance ::: any, $to_type ::: string) ::: instance<^2>;
 
 function instance_to_array($instance ::: any, $with_class_names ::: bool = false) ::: mixed[];
-function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+function to_array_debug(any $instance, bool $with_class_names = false, bool $public_members_only = false) ::: mixed[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */

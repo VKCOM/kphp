@@ -556,7 +556,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 }
 
 template<class ReturnValueT>
-void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
+void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, std::string_view method_signature, const ReturnValueT &return_value) {
   const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) || vk::any_of(klass->implements, [](InterfacePtr i) { return i->does_need_codegen(); });
   const bool has_derived = !klass->derived_classes.empty();
   const bool is_overridden = has_parent && has_derived;
@@ -595,8 +595,10 @@ void ClassDeclaration::compile_get_hash(CodeGenerator &W, ClassPtr klass) {
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "int get_hash()", klass->get_hash());
 }
 
-void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type) {
-  compile_class_method(FunctionSignatureGenerator(W), klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
+void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, std::string_view visitor_type, bool compile_pub_members) {
+  auto signature = fmt_format("void accept({} &visitor{})", visitor_type, compile_pub_members ? ", bool public_members_only" : "");
+  auto return_value = fmt_format("generic_accept(visitor, {})", compile_pub_members ? "public_members_only" : "false");
+  compile_class_method(FunctionSignatureGenerator(W), klass, signature, return_value);
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
@@ -608,18 +610,21 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 
   W << NL;
   FunctionSignatureGenerator(W) << "template<class Visitor>" << NL
-                                << "void generic_accept(Visitor &&visitor) " << BEGIN;
+                                << "void generic_accept(Visitor &&visitor, [[maybe_unused]] bool public_members_only) " << BEGIN;
   for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
-    cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
+    cur_klass->members.for_each([&W](const ClassMemberInstanceField &field) {
+      if (!field.modifiers.is_public()) {
+        W << "if (!public_members_only) ";
+      }
       // will generate visitor("field_name", $field_name);
-      W << "visitor(\"" << f.local_name() << "\", $" << f.local_name() << ");" << NL;
+      W << "visitor(\"" << field.local_name() << "\", $" << field.local_name() << ");" << NL;
     });
   }
   W << END << NL;
 
   if (klass->need_to_array_debug_visitor) {
     W << NL;
-    compile_accept_visitor(W, klass, "ToArrayVisitor");
+    compile_accept_visitor(W, klass, "ToArrayVisitor", true);
   }
 
   if (klass->need_instance_memory_estimate_visitor) {

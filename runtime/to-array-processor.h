@@ -35,8 +35,9 @@ private:
 
 class ToArrayVisitor {
 public:
-  explicit ToArrayVisitor(bool with_class_names)
-    : with_class_names_(with_class_names) {}
+  explicit ToArrayVisitor(bool with_class_names, bool public_members_only) noexcept
+    : with_class_names_(with_class_names)
+    , public_members_only_(public_members_only) {}
 
   array<mixed> flush_result() && noexcept {
     return std::move(result_);
@@ -83,12 +84,12 @@ private:
 
   template<class I>
   void process_impl(const char *field_name, const class_instance<I> &instance) {
-    add_value(field_name, instance.is_null() ? mixed{} : f$to_array_debug(instance, with_class_names_));
+    add_value(field_name, instance.is_null() ? mixed{} : f$to_array_debug(instance, with_class_names_, public_members_only_));
   }
 
   template<class ...Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
-    ToArrayVisitor tuple_processor{with_class_names_};
+    ToArrayVisitor tuple_processor{with_class_names_, public_members_only_};
     tuple_processor.result_.reserve(sizeof...(Args), 0, true);
 
     process_tuple(value, tuple_processor, std::index_sequence_for<Args...>{});
@@ -97,7 +98,7 @@ private:
 
   template<size_t ...Is, typename ...T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
-    ToArrayVisitor shape_processor{with_class_names_};
+    ToArrayVisitor shape_processor{with_class_names_, public_members_only_};
     shape_processor.result_.reserve(sizeof...(Is), 0, true);
 
     process_shape(value, shape_processor);
@@ -115,18 +116,19 @@ private:
 
   array<mixed> result_;
   bool with_class_names_{false};
+  bool public_members_only_{false};
 };
 
 template<class T>
-array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_names = false) {
+array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_names = false, bool public_members_only = false) {
   array<mixed> result;
   if (klass.is_null()) {
     return result;
   }
 
   if constexpr (!std::is_empty_v<T>) {
-    ToArrayVisitor visitor{with_class_names};
-    klass.get()->accept(visitor);
+    ToArrayVisitor visitor{with_class_names, public_members_only};
+    klass.get()->accept(visitor, public_members_only);
     result = std::move(visitor).flush_result();
   }
 
@@ -137,15 +139,15 @@ array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_na
 }
 
 template<class... Args>
-array<mixed> f$to_array_debug(const std::tuple<Args...> &tuple, bool with_class_names = false) {
-  ToArrayVisitor visitor{with_class_names};
+array<mixed> f$to_array_debug(const std::tuple<Args...> &tuple, bool with_class_names = false, bool public_members_only = false) {
+  ToArrayVisitor visitor{with_class_names, public_members_only};
   ToArrayVisitor::process_tuple(tuple, visitor, std::index_sequence_for<Args...>{});
   return std::move(visitor).flush_result();
 }
 
 template<size_t... Indexes, typename... T>
-array<mixed> f$to_array_debug(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false) {
-  ToArrayVisitor visitor{with_class_names};
+array<mixed> f$to_array_debug(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false, bool public_members_only = false) {
+  ToArrayVisitor visitor{with_class_names, public_members_only};
   ToArrayVisitor::process_shape(shape, visitor);
   return std::move(visitor).flush_result();
 }

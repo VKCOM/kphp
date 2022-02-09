@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "common/tlo-parsing/tl-objects.h"
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
@@ -127,9 +129,9 @@ private:
   static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);
 
   template<class ReturnValueT>
-  static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
+  static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, std::string_view method_signature, const ReturnValueT &return_value);
 
-  static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type);
+  static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, std::string_view visitor_type, bool compile_pub_members = false);
   IncludesCollector compile_front_includes(CodeGenerator &W) const;
   void compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const;
   void compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only = false) const;
