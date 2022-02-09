@@ -29,18 +29,18 @@ class KphpRunOnce(KphpBuilder):
 
     def _get_extensions(self):
         if sys.platform == "darwin":
-            return []
-
-        extensions = [
-            ("extension", "json.so"),
-            ("extension", "bcmath.so"),
-            ("extension", "iconv.so"),
-            ("extension", "mbstring.so"),
-            ("extension", "curl.so"),
-            ("extension", "tokenizer.so"),
-            ("extension", "h3.so"),
-            ("extension", "zstd.so"),
-        ]
+            extensions = []
+        else:
+            extensions = [
+                ("extension", "json.so"),
+                ("extension", "bcmath.so"),
+                ("extension", "iconv.so"),
+                ("extension", "mbstring.so"),
+                ("extension", "curl.so"),
+                ("extension", "tokenizer.so"),
+                ("extension", "h3.so"),
+                ("extension", "zstd.so"),
+            ]
 
         if self._vkext_dir:
             vkext_so = None
@@ -48,6 +48,8 @@ class KphpRunOnce(KphpBuilder):
                 vkext_so = os.path.join(self._vkext_dir, "modules7.2", "vkext.so")
             elif self._php_bin.endswith("php7.4"):
                 vkext_so = os.path.join(self._vkext_dir, "modules7.4", "vkext.so")
+            elif sys.platform == "darwin":
+                vkext_so = os.path.join(self._vkext_dir, "modules", "vkext.dylib")
 
             if not vkext_so or not os.path.exists(vkext_so):
                 vkext_so = "vkext.so"
