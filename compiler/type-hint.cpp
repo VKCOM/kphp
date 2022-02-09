@@ -4,6 +4,8 @@
 
 #include "compiler/type-hint.h"
 
+#include <mutex>
+
 #include "common/php-functions.h"
 
 #include "compiler/data/class-data.h"
@@ -122,6 +124,18 @@ const TypeHint *TypeHintShape::find_at(const string &key) const {
   return nullptr;
 }
 
+std::map<std::int64_t, std::string> TypeHintShape::shape_keys_storage_;
+
+void TypeHintShape::register_known_key(std::int64_t key_hash, std::string_view key) noexcept {
+  static std::mutex mutex;
+
+  std::lock_guard lock{mutex};
+  shape_keys_storage_.emplace(key_hash, key);
+}
+
+const std::map<std::int64_t, std::string> &TypeHintShape::get_all_registered_keys() noexcept {
+  return shape_keys_storage_;
+}
 
 // --------------------------------------------
 //    create()

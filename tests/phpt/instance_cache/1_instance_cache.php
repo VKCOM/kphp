@@ -242,8 +242,8 @@ function test_with_shape() {
 
   $a2 = instance_cache_fetch(HasShape::class, 'has_shape');
   $dump = to_array_debug($a2);
-#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
-  $dump['sh'] = [19, 'y', null];
+#ifndef KPHP // in KPHP order of keys will differs from php
+  $dump['sh'] = ['x' => 19, 'y' => 'y', 'z' => null];
 #endif
   var_dump($dump);
   var_dump($a2->sh['x']);
@@ -254,8 +254,8 @@ function test_with_shape() {
   instance_cache_store('has_shape_more', $a);
   $a3 = instance_cache_fetch(HasShape::class, 'has_shape_more');
   $dump = to_array_debug($a3);
-#ifndef KPHP   // in KPHP shapes produce non-assoiative array at runtime
-  $dump['sh'] = [2, 'y', [1,2,3]];
+#ifndef KPHP // in KPHP order of keys will differs from php
+  $dump['sh'] = ['x' => 2, 'y' => 'y', 'z' => [1,2,3]];
 #endif
   var_dump($dump);
   var_dump($a3->sh['x']);

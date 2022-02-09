@@ -6,6 +6,7 @@
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/files/shape-keys.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
@@ -208,6 +209,9 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalResetFunction(main_file_id->main_function) << NL;
 
   FunctionSignatureGenerator(W) << "void init_php_scripts() " << BEGIN;
+
+  W << ShapeKeys::get_function_declaration() << ";" << NL;
+  W << ShapeKeys::get_function_name() << "();" << NL << NL;
 
   W << FunctionName(main_file_id->main_function) << "$global_reset();" << NL;
 

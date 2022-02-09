@@ -15,6 +15,7 @@
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/lib-header.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
+#include "compiler/code-gen/files/shape-keys.h"
 #include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/files/vars-cpp.h"
 #include "compiler/code-gen/files/vars-reset.h"
@@ -27,6 +28,7 @@
 #include "compiler/function-pass.h"
 #include "compiler/inferring/public.h"
 #include "compiler/pipes/collect-forkable-types.h"
+#include "compiler/type-hint.h"
 
 size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / G->settings().globals_split_count.get();
@@ -124,6 +126,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   // TODO: should be done in lib mode also, but in some other way
   if (!G->settings().is_static_lib_mode()) {
     code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
+    code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
   }
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());

@@ -4,7 +4,34 @@
 
 #pragma once
 
+#include <string_view>
+
+#include "common/mixin/not_copyable.h"
+#include "common/smart_ptrs/singleton.h"
 #include "runtime/kphp_core.h"
+
+class ShapeKeyDemangle : vk::not_copyable {
+public:
+  friend class vk::singleton<ShapeKeyDemangle>;
+
+  void init(std::unordered_map<std::int64_t, std::string_view> &&shape_keys_storage) noexcept {
+    inited_ = true;
+    shape_keys_storage_ = std::move(shape_keys_storage);
+  }
+
+  std::string_view get_key_by(std::int64_t tag) const noexcept {
+    php_assert(inited_);
+    auto key_it = shape_keys_storage_.find(tag);
+    php_assert(key_it != shape_keys_storage_.end());
+    return key_it->second;
+  }
+
+private:
+  ShapeKeyDemangle() = default;
+
+  bool inited_{false};
+  std::unordered_map<std::int64_t, std::string_view> shape_keys_storage_;
+};
 
 class ToArrayVisitor {
 public:
@@ -27,8 +54,8 @@ public:
 
   template<size_t... Is, typename... T>
   static void process_shape(const shape<std::index_sequence<Is...>, T...> &shape, ToArrayVisitor &visitor) {
-    // shape doesn't have key names at runtime, that's why result will be a vector-array (whereas associative in PHP)
-    (visitor.process_impl("", shape.template get<Is>()), ...);
+    auto &demangler = vk::singleton<ShapeKeyDemangle>::get();
+    (visitor.process_impl(demangler.get_key_by(Is).data(), shape.template get<Is>()), ...);
   }
 
 private:

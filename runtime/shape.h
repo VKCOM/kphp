@@ -94,13 +94,13 @@ public:
   template<size_t ...Is2, typename ...T2, typename = enable_if_sequence_is_subset<Is2...>>
   explicit shape(shape<std::index_sequence<Is2...>, T2...> &&other) noexcept :
     shape_node<Is, T>()... {
-    std::initializer_list<int>{(set(std::forward<shape_node<Is2, T2>>(other)), 0)...};
+    (set(std::forward<shape_node<Is2, T2>>(other)), ...);
   }
 
   template<size_t ...Is2, typename ...T2, typename = enable_if_sequence_is_subset<Is2...>>
   shape(const shape<std::index_sequence<Is2...>, T2...> &other) noexcept :
     shape_node<Is, T>()... {
-    std::initializer_list<int>{(set(static_cast<const shape_node<Is2, T2> &>(other)), 0)...};
+    (set(static_cast<const shape_node<Is2, T2> &>(other)), ...);
   }
 
   template<size_t ...Is2, typename ...T2, typename = enable_if_sequence_is_subset<Is2...>>
