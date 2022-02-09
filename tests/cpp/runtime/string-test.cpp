@@ -39,6 +39,23 @@ TEST(string_test, test_starts_with) {
   ASSERT_FALSE(str.starts_with(string{"hello world!"}));
 }
 
+TEST(string_test, test_ends_with) {
+  string empty_str{""};
+  ASSERT_TRUE(empty_str.ends_with(string{""}));
+  ASSERT_FALSE(empty_str.ends_with(string{"hello world"}));
+
+  string str{"hello world"};
+  ASSERT_TRUE(str.ends_with(string{""}));
+  ASSERT_TRUE(str.ends_with(string{"d"}));
+  ASSERT_TRUE(str.ends_with(string{"world"}));
+  ASSERT_TRUE(str.ends_with(string{"hello world"}));
+
+  ASSERT_FALSE(str.ends_with(string{"x"}));
+  ASSERT_FALSE(str.ends_with(string{"hello"}));
+  ASSERT_FALSE(str.ends_with(string{"world!"}));
+  ASSERT_FALSE(str.starts_with(string{"hello world!"}));
+}
+
 TEST(string_test, test_make_const_string_on_memory) {
   char mem[1024];
 

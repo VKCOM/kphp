@@ -661,6 +661,9 @@ function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int
 function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string;
 function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = PHP_INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
 
+function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
+function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
+
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;

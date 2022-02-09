@@ -95,6 +95,7 @@ public:
 
   inline bool empty() const;
   inline bool starts_with(const string &other) const noexcept;
+  inline bool ends_with(const string &other) const noexcept;
 
   inline const char &operator[](size_type pos) const;
   inline char &operator[](size_type pos);

@@ -2319,6 +2319,14 @@ Optional<int64_t> f$substr_compare(const string &main_str, const string &str, in
   }
 }
 
+bool f$str_starts_with(const string &haystack, const string &needle) {
+  return haystack.starts_with(needle);
+}
+
+bool f$str_ends_with(const string &haystack, const string &needle) {
+  return haystack.ends_with(needle);
+}
+
 string f$trim(const string &s, const string &what) {
   const char *mask = get_mask(what);
 

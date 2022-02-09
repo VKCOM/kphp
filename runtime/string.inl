@@ -336,8 +336,12 @@ bool string::empty() const {
   return size() == 0;
 }
 
-bool string::starts_with(const string &other) const noexcept{
+bool string::starts_with(const string &other) const noexcept {
   return other.size() > size() ? false : !memcmp(c_str(), other.c_str(), other.size());
+}
+
+bool string::ends_with(const string &other) const noexcept {
+  return other.size() > size() ? false : !memcmp(c_str() + (size() - other.size()), other.c_str(), other.size());
 }
 
 const char &string::operator[](size_type pos) const {
