@@ -63,6 +63,7 @@
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
+#include "server/server-log.h"
 
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
@@ -1283,19 +1284,13 @@ void run_master_on() {
   }
 }
 
-int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
-  //empty
+int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   vkprintf(2, "signal_epoll_handler\n");
   signalfd_siginfo fdsi{};
-  //fprintf (stderr, "A\n");
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
-  //fprintf (stderr, "B\n");
   if (s == -1) {
-    if (false && errno == EAGAIN) {
-      vkprintf(1, "strange... no signal found\n");
-      return 0;
-    }
-    dl_passert (0, "read signalfd_siginfo");
+    log_server_error("Master process can't read signal from signalfd: fd = %d, signal_fd = %d, error = %s", fd, signal_fd, strerror(errno));
+    return 0;
   }
   dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
   vkprintf(2, "signal %u received\n", fdsi.ssi_signo);
