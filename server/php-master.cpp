@@ -1330,8 +1330,10 @@ static void cron() {
   unsigned long long utime = 0;
   unsigned long long stime = 0;
 #if !defined(__APPLE__)
-  const bool get_cpu_err = get_cpu_total(&cpu_total);
-  dl_assert (get_cpu_err, "get_cpu_total failed");
+  const bool get_cpu_ok = get_cpu_total(&cpu_total);
+  if (!get_cpu_ok) {
+    log_server_error("get_cpu_total failed");
+  }
 #endif
   const uint16_t alive_workers_count = vk::singleton<WorkersControl>::get().get_all_alive();
   for (uint16_t i = 0; i < alive_workers_count; ++i) {
