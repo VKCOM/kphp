@@ -33,4 +33,8 @@ protected:
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "\n");
   }
+
+  void add_stats(const char *key [[maybe_unused]], std::vector<double> &&values [[maybe_unused]]) noexcept final {
+    assert(false && "unimplemented");
+  }
 };

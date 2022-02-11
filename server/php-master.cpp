@@ -1089,9 +1089,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat(instance_cache_element_stats.elements_logically_expired_but_fetched, "instance_cache.elements.logically_expired_but_fetched");
 
   write_confdata_stats_to(stats);
-  if (stats->need_aggr_stats()) {
-    vk::singleton<ServerStats>::get().write_stats_to(stats);
-  }
+  vk::singleton<ServerStats>::get().write_stats_to(stats);
 
   stats->add_gauge_stat("graceful_restart.warmup.final_new_instance_cache_size", WarmUpContext::get().get_final_new_instance_cache_size());
   stats->add_gauge_stat("graceful_restart.warmup.final_old_instance_cache_size", WarmUpContext::get().get_final_old_instance_cache_size());

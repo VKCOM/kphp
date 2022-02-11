@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <type_traits>
+#include <vector>
 
 #include "common/stats/buffer.h"
 
@@ -56,6 +57,16 @@ public:
     add_gauge_stat(stat_key, value);
   }
 
+  void add_multiple_gauge_stats(std::vector<double> &&values, const char *key1, const char *key2 = "") noexcept {
+    const size_t key1_len = std::strlen(key1);
+    const size_t key2_len = std::strlen(key2);
+    char stat_key[key1_len + key2_len + 1];
+    std::memcpy(stat_key, key1, key1_len);
+    std::memcpy(stat_key + key1_len, key2, key2_len);
+
+    add_stats(stat_key, std::move(values));
+  }
+
   template<typename T>
   void add_gauge_stat(const std::atomic<T> &value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
     add_gauge_stat(value.load(std::memory_order_relaxed), key1, key2, key3);
@@ -69,6 +80,8 @@ public:
 protected:
   virtual void add_stat(char type, const char *key, double value) noexcept = 0;
   virtual void add_stat(char type, const char *key, long long value) noexcept = 0;
+
+  virtual void add_stats(const char *key, std::vector<double> &&values) noexcept = 0;
 
   char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };

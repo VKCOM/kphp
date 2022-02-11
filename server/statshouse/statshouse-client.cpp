@@ -47,6 +47,13 @@ protected:
     add_stat(type, key, static_cast<double>(value));
   }
 
+  void add_stats(const char *key, std::vector<double> &&values) noexcept final {
+    auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), tags);
+    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
+    sb.pos += len;
+    ++counter;
+  }
+
 private:
   int counter{0};
   const std::vector<std::pair<std::string, std::string>> &tags;
