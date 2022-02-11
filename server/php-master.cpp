@@ -564,6 +564,10 @@ int run_worker(WorkerType worker_type) {
   tot_workers_started++;
   const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
+  if (new_pid == -1) {
+    log_server_critical("fork error on launching %s worker: %s", (worker_type == WorkerType::general_worker ? "general" : "job"), strerror(errno));
+    assert(false);
+  }
   assert (new_pid != -1 && "failed to fork");
 
   if (new_pid == 0) {
