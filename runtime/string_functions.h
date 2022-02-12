@@ -236,6 +236,8 @@ bool f$str_starts_with(const string &haystack, const string &needle);
 
 bool f$str_ends_with(const string &haystack, const string &needle);
 
+bool f$str_contains(const string &haystack, const string &needle);
+
 string f$trim(const string &s, const string &what = WHAT);
 
 string f$ucfirst(const string &str);

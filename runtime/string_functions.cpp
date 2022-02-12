@@ -2327,6 +2327,10 @@ bool f$str_ends_with(const string &haystack, const string &needle) {
   return haystack.ends_with(needle);
 }
 
+bool f$str_contains(const string &haystack, const string &needle) {
+  return haystack.contains(needle);
+}
+
 string f$trim(const string &s, const string &what) {
   const char *mask = get_mask(what);
 
