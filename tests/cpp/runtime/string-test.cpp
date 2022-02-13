@@ -103,7 +103,10 @@ TEST(string_test, test_copy_and_make_not_shared) {
 
 TEST(string_test, test_hex_to_int) {
   for (size_t c = 0; c != 256; ++c) {
-    if (vk::none_of_equal(c, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F')) {
+    if (vk::none_of_equal(c,
+                          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                          'a', 'b', 'c', 'd', 'e', 'f',
+                          'A', 'B', 'C', 'D', 'E', 'F')) {
       ASSERT_EQ(hex_to_int(static_cast<char>(c)), 16);
     }
   }
