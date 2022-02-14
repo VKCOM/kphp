@@ -4,6 +4,8 @@
 
 #include "compiler/inferring/expr-node.h"
 
+#include "common/php-functions.h"
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
@@ -189,6 +191,9 @@ void ExprNodeRecalc::recalc_shape(VertexAdaptor<op_shape> shape) {
     vector<Key> i_key_index{Key::string_key(str_index)};
     MultiKey key(i_key_index);
     set_lca_at(&key, double_arrow->value());
+
+    const std::int64_t hash = string_hash(str_index.data(), str_index.size());
+    TypeHintShape::register_known_key(hash, str_index);
   }
 }
 
