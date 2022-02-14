@@ -60,6 +60,7 @@ std::string debugTokenName(TokenType t) {
     {tok_as, "tok_as"},
     {tok_case, "tok_case"},
     {tok_switch, "tok_switch"},
+    {tok_match, "tok_match"},
     {tok_class, "tok_class"},
     {tok_interface, "tok_interface"},
     {tok_trait, "tok_trait"},

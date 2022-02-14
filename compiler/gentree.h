@@ -41,6 +41,7 @@ public:
   VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
+  static VertexAdaptor<op_match> create_match_vertex(FunctionPtr cur_function, VertexPtr match_condition, std::vector<VertexPtr> &&cases);
 
   static bool is_superglobal(const string &s);
   static bool is_magic_method_name_allowed(const std::string &name);
@@ -73,6 +74,12 @@ public:
     auto int_v = VertexAdaptor<op_int_const>::create();
     int_v->str_val = std::to_string(number);
     return int_v;
+  }
+
+  static auto create_string_const(const std::string &str) {
+    auto string_vertex = VertexAdaptor<op_string>::create();
+    string_vertex->str_val = str;
+    return string_vertex;
   }
 
   VertexAdaptor<op_func_param> get_func_param();
@@ -121,7 +128,12 @@ public:
   VertexAdaptor<op_if> get_if();
   VertexAdaptor<op_for> get_for();
   VertexAdaptor<op_do> get_do();
+
   VertexAdaptor<op_switch> get_switch();
+  VertexAdaptor<op_match_default> get_match_default();
+  VertexPtr get_match_case();
+  VertexAdaptor<op_match> get_match();
+
   VertexAdaptor<op_shape> get_shape();
   VertexPtr get_phpdoc_inside_function();
   bool parse_cur_function_uses();

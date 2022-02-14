@@ -113,6 +113,10 @@ TEST(lexer_test, test_php_tokens) {
 
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
+
+    // match expression
+    {"match($a) { 10 => 100, default => 1 };", {"tok_match(match)", "tok_oppar(()", "tok_var_name($a)", "tok_clpar())", "tok_opbrc({)", "tok_int_const(10)", "tok_double_arrow(=>)", "tok_int_const(100)", "tok_comma(,)", "tok_default(default)", "tok_double_arrow(=>)", "tok_int_const(1)", "tok_clbrc(})", "tok_semicolon(;)"}},
+    {"match($a) { 10, 11, 12, => 100,};", {"tok_match(match)", "tok_oppar(()", "tok_var_name($a)", "tok_clpar())", "tok_opbrc({)", "tok_int_const(10)", "tok_comma(,)", "tok_int_const(11)", "tok_comma(,)", "tok_int_const(12)", "tok_comma(,)", "tok_double_arrow(=>)", "tok_int_const(100)", "tok_comma(,)", "tok_clbrc(})", "tok_semicolon(;)"}}
   };
 
   for (const auto &test : tests) {

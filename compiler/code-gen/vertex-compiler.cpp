@@ -937,7 +937,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
   auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
-  auto default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
+  auto *default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
 
   int n = static_cast<int>(cases.size());
   std::map<unsigned int, int> hash_to_last_id;
@@ -957,7 +957,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       cases[i].next = &cases[next_i];
     }
 
-    auto next = cases[i].next;
+    auto *next = cases[i].next;
     if (next && next->goto_name.empty()) {
       next->goto_name = gen_unique_name("switch_goto");
     }
@@ -1025,7 +1025,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       if (val->type() == op_int_const) {
         const string &str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
+        kphp_error(used.insert(str).second, fmt_format("Repeated case [{}] in switch/match", str));
       } else {
         kphp_assert(is_const_int(val));
         W << val;
@@ -1043,6 +1043,9 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  const auto strict_comparison = root->is_match;
+  const auto *string_comparison_func = strict_comparison ? "equals" : "eq2";
+
   string goto_name_if_default_in_the_middle;
 
   auto temp_var_condition_on_switch = root->condition_on_switch();
@@ -1056,7 +1059,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || " << string_comparison_func << "(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       cmd = one_case.as<op_default>()->cmd();
@@ -1092,7 +1095,7 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   for (auto one_case : root->cases()) {
     if (one_case->type() == op_default) {
-      kphp_error_return(!has_default, "Switch: several `default` cases found");
+      kphp_error_return(!has_default, "Switch statements may only contain one `default` clause");
       has_default = true;
       continue;
     }
@@ -1100,6 +1103,29 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     auto val = GenTree::get_actual_value(one_case.as<op_case>()->expr());
     all_cases_are_ints    &= is_const_int(val);
     all_cases_are_strings &= (val->type() == op_string);
+  }
+
+  if (root->is_match) {
+    // Since match uses strict comparisons, we need to additionally
+    // check that the type of the expression in the condition matches
+    // string or int in order to generate an optimized version.
+    const auto *condition_type = tinf::get_type(root->condition());
+    if (!condition_type) {
+      compile_switch_var(root, W);
+      return;
+    }
+
+    const auto condition_is_string = condition_type->get_real_ptype() == tp_string;
+    const auto condition_is_int = condition_type->get_real_ptype() == tp_int;
+
+    if (all_cases_are_strings && condition_is_string) {
+      compile_switch_str(root, W);
+    } else if (all_cases_are_ints && condition_is_int) {
+      compile_switch_int(root, W);
+    } else {
+      compile_switch_var(root, W);
+    }
+    return;
   }
 
   if (all_cases_are_strings) {

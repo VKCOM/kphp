@@ -686,6 +686,12 @@
         "type": "op_var"
       }
     },
+    "extra_fields": {
+      "is_match": {
+        "type": "bool",
+        "default": "false"
+      }
+    },
     "name": "op_switch",
     "base_name": "meta_op_cycle",
     "props": {
@@ -696,6 +702,61 @@
         3,
         0
       ]
+    }
+  },
+  {
+    "comment": "match (condition()) { cases()... }",
+    "sons": {
+      "condition": 0,
+      "condition_on_match" : {
+        "id": 1,
+        "type": "op_var"
+      },
+      "matched_with_one_case" : {
+        "id": 2,
+        "type": "op_var"
+      }
+    },
+    "name": "op_match",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "match"
+    },
+    "ranges": {
+      "cases": [
+        3,
+        0
+      ]
+    }
+  },
+  {
+    "comment": "$expr1, $expr2, ... => $return_expr",
+    "sons": {
+      "conditions" : {
+        "id": 0,
+        "type": "op_seq_comma"
+      },
+      "return_expr" : {
+        "id": 1
+      }
+    },
+    "name": "op_match_case",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "case"
+    }
+  },
+  {
+    "comment": "default => $return_expr",
+    "sons": {
+      "return_expr" : {
+        "id": 0
+      }
+    },
+    "name": "op_match_default",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "default"
     }
   },
   {
