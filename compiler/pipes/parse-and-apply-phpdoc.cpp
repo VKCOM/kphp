@@ -91,11 +91,18 @@ public:
   }
 
 private:
+  bool is_phpdoc_meaningful(vk::string_view phpdoc_str) {
+    if (phpdoc_str.empty()) {
+      return false;
+    }
+    return vk::contains(phpdoc_str, "@param") || vk::contains(phpdoc_str, "@return");
+  }
+
   FunctionPtr get_phpdoc_from_fun_considering_inheritance() {
     bool is_phpdoc_inherited = false;
     if (f_->is_overridden_method || (f_->modifiers.is_static() && f_->class_id->parent_class)) {
       // inherit phpDoc only if it's not overridden in derived class
-      if (f_->phpdoc_str.empty() || (!vk::contains(f_->phpdoc_str, "@param") && !vk::contains(f_->phpdoc_str, "@return"))) {
+      if (!is_phpdoc_meaningful(f_->phpdoc_str)) {
         is_phpdoc_inherited = true;
       }
     } else if (f_->is_constructor() && f_->is_auto_inherited) {
@@ -113,11 +120,15 @@ private:
       }
 
       if (f_->modifiers.is_instance()) {
-        if (auto method = ancestor->members.get_instance_method(f_->local_name())) {
+        if (const auto *method = ancestor->members.get_instance_method(f_->local_name())) {
+          if (is_phpdoc_meaningful(method->function->phpdoc_str)) {
+            return method->function;
+          }
+        }
+      } else if (const auto *method = ancestor->members.get_static_method(f_->local_name())) {
+        if (is_phpdoc_meaningful(method->function->phpdoc_str)) {
           return method->function;
         }
-      } else if (auto method = ancestor->members.get_static_method(f_->local_name())) {
-        return method->function;
       }
     }
 
@@ -299,15 +310,16 @@ private:
       return;
     }
 
-    // if @return exists, it overrides a return type hint in code (unless a @return is from a parent phpdoc)
-    if (f_->return_typehint && phpdoc_from_fun_ != f_) {
-      return;
+    if (f_->return_typehint) {
+      // @kphp-return takes precedence over a regular @return (@return can contain anything regardless whether it's before or after @kphp-return)
+      if (f_->return_typehint->has_genericsT_inside()) {
+        return;
+      }
+      // if both @return and type hint exist, check their compatibility
+      f_->return_typehint = merge_php_hint_and_phpdoc(f_->return_typehint, doc_parsed.type_hint, false);
+    } else {
+      f_->return_typehint = doc_parsed.type_hint;
     }
-    // @kphp-return takes precedence over a regular @return (@return can contain anything regardless whether it's before or after @kphp-return)
-    if (f_->return_typehint && f_->return_typehint->has_genericsT_inside()) {
-      return;
-    }
-    f_->return_typehint = doc_parsed.type_hint;
   }
 
   void parse_param_doc_tag(const php_doc_tag &tag) {
@@ -317,24 +329,126 @@ private:
     }
 
     auto param = f_->find_param_by_name(doc_parsed.var_name);
-    kphp_error_return(param, fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
+    if (!param) {
+      kphp_error_return(f_ != phpdoc_from_fun_, fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
+      return;
+    }
 
-    // if @param exists, it overrides an argument type hint in code (unless a @param is from a parent phpdoc)
-    if (param->type_hint && phpdoc_from_fun_ != f_) {
-      return;
+    if (param->type_hint) {
+      // @kphp-param takes precedence over a regular @param (@param can contain anything regardless whether it's before or after @kphp-param)
+      if (param->type_hint->has_genericsT_inside()) {
+        return;
+      }
+      // if both @param and type hint exist, check their compatibility
+      param->type_hint = merge_php_hint_and_phpdoc(param->type_hint, doc_parsed.type_hint, true);
+    } else {
+      param->type_hint = doc_parsed.type_hint;
     }
-    // @kphp-param takes precedence over a regular @param (@param can contain anything regardless whether it's before or after @kphp-param)
-    if (param->type_hint && param->type_hint->has_genericsT_inside()) {
-      return;
-    }
-    param->type_hint = doc_parsed.type_hint;
 
     if (infer_cast_) {
-      auto expr_type_v = doc_parsed.type_hint->try_as<TypeHintPrimitive>();
-      kphp_error(expr_type_v, "Too hard rule for cast");
+      const auto *as_primitive = doc_parsed.type_hint->try_as<TypeHintPrimitive>();
+      kphp_error(as_primitive, "Too hard rule for cast");
       kphp_error(!param->is_cast_param, fmt_format("Duplicate type cast for argument '{}'", doc_parsed.var_name));
       param->is_cast_param = true;
     }
+  }
+
+  // when both type hint and phpdoc for a param/return exist,
+  // check their compatibility and choose one of them
+  const TypeHint *merge_php_hint_and_phpdoc(const TypeHint *php_hint, const TypeHint *phpdoc_hint, bool is_param __attribute__ ((unused))) {
+    if (php_hint == phpdoc_hint) {
+      return php_hint;
+    }
+    if (!php_hint->is_typedata_constexpr() || !phpdoc_hint->is_typedata_constexpr()) {
+      return phpdoc_from_fun_ == f_ ? phpdoc_hint : php_hint;
+    }
+
+    // handle when @param/@return is from parent function, but child function has the type hint itself
+    if (phpdoc_from_fun_ != f_) {
+      // static inheritance allows different params/returns for a function with the same name
+      // so, if a parent f() has @return int[], and a child declares f():array, leave 'array'
+      if (f_->modifiers.is_static()) {
+        return php_hint;
+      }
+      // non-static inheritance (or implementing an interface method) sometimes should auto-inherit parent phpdoc
+      // for example, a parent f() has @param callable(int), and a child declares f(callable $cb) — use typed callable
+      return should_inherited_phpdoc_override_self_type_hint(php_hint, phpdoc_hint) ? phpdoc_hint : php_hint;
+    }
+    // todo this is commented out, as currently vkcom has tons of mismatches
+    // some tests in phpt/phpdocs/ are also marked with '@todo'
+//    if (!does_php_hint_match_phpdoc(php_hint, phpdoc_hint)) {
+//      print_error_php_hint_and_phpdoc_mismatch(php_hint, phpdoc_hint, is_param);
+//    }
+
+    return phpdoc_hint;
+  }
+
+  // for parent f($a) with @param $a and child f(hint $a),
+  // check whether we need to prefer parent @return over self type hint
+  bool should_inherited_phpdoc_override_self_type_hint(const TypeHint *php_hint, const TypeHint *phpdoc_hint) {
+    // consider:
+    // parent: @param callable(int):void f(callable $cb)
+    // child:  f(callable $cb)
+    // we need to use a typed callable, since 'callable' in child is just a type hint for compatibility
+    // but that's not always true, for example a child hint 'int' would just narrow parent 'int|string'
+    if (php_hint->try_as<TypeHintCallable>() && phpdoc_hint->try_as<TypeHintCallable>()) {
+      return true;
+    }
+    if (php_hint->try_as<TypeHintArray>() && phpdoc_hint->try_as<TypeHintArray>()) {
+      return true;
+    }
+    if (php_hint->try_as<TypeHintOptional>() || phpdoc_hint->try_as<TypeHintOptional>()) {
+      return should_inherited_phpdoc_override_self_type_hint(php_hint->unwrap_optional(), phpdoc_hint->unwrap_optional());
+    }
+    return false;
+  }
+
+  // for f():array with @return int[] (same function, no inheritance),
+  // check that type hint and phpdoc type match
+  // note, that we can't use to_type_data(), as classes have not yet been resolved
+  bool does_php_hint_match_phpdoc(const TypeHint *php_hint, const TypeHint *phpdoc_hint) {
+    if (php_hint->try_as<TypeHintPrimitive>()) {
+      return php_hint == phpdoc_hint;
+    }
+    if (php_hint->try_as<TypeHintInstance>()) {
+      return php_hint == phpdoc_hint;
+    }
+    if (php_hint->try_as<TypeHintArray>()) {
+      if (phpdoc_hint->try_as<TypeHintArray>()) {
+        return true;
+      }
+      if (const auto *doc_pipe = phpdoc_hint->try_as<TypeHintPipe>()) {
+        return std::all_of(doc_pipe->items.begin(), doc_pipe->items.end(), [](const TypeHint *item_hint) -> bool { return item_hint->try_as<TypeHintArray>(); });
+      }
+      return false;
+    }
+    if (php_hint->try_as<TypeHintCallable>()) {
+      return phpdoc_hint->try_as<TypeHintCallable>();
+    }
+    if (const auto *php_optional = php_hint->try_as<TypeHintOptional>()) {
+      if (const auto *doc_optional = phpdoc_hint->try_as<TypeHintOptional>()) {
+        return !doc_optional->or_false && does_php_hint_match_phpdoc(php_optional->inner, doc_optional->inner);
+      }
+      if (const auto *doc_pipe = phpdoc_hint->try_as<TypeHintPipe>()) {
+        return std::all_of(doc_pipe->items.begin(), doc_pipe->items.end(), [this, php_optional](const TypeHint *item_hint) -> bool {
+          if (const auto *as_primitive = item_hint->try_as<TypeHintPrimitive>()) {
+            return as_primitive->ptype == tp_Null;
+          }
+          return does_php_hint_match_phpdoc(php_optional->inner, item_hint);
+        });
+      }
+      return false;
+    }
+    return true;
+  }
+
+  void print_error_php_hint_and_phpdoc_mismatch(const TypeHint *php_hint, const TypeHint *phpdoc_hint, bool is_param) __attribute__((noinline)) {
+    stage::set_location(f_->root->location);
+    std::string php_hint_str = php_hint == TypeHintArray::create_array_of_any() ? "array" : php_hint->as_human_readable();
+    std::string doc_hint_str = phpdoc_hint->as_human_readable();
+    kphp_error(0, fmt_format("php type hint {} mismatches with {} {}{}",
+                             TermStringFormat::paint_green(php_hint_str), is_param ? "@param" : "@return", TermStringFormat::paint_green(doc_hint_str),
+                             phpdoc_from_fun_ == f_ ? "" : " inherited from " + phpdoc_from_fun_->as_human_readable()));
   }
 
   void check_all_arguments_have_param_or_type_hint() {

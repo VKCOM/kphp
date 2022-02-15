@@ -124,6 +124,25 @@ bool php_type_hints_compatible(VarianceKind mode, const TypeHint *base, const Ty
     return false;
   }
 
+  if (const auto *base_callable = base->try_as<TypeHintCallable>()) {
+    if (const auto *derived_callable = derived->try_as<TypeHintCallable>()) {
+      if (base_callable->is_untyped_callable() && derived_callable->is_untyped_callable()) {
+        return true;
+      }
+      // for typed callables inheritance, we allow when parent/child are totally equal
+      // we don't allow co[ntra]variance in typed callables' params/return
+      if (base_callable->is_typed_callable() && derived_callable->is_typed_callable() && base_callable->arg_types.size() == derived_callable->arg_types.size()) {
+        for (int i = 0; i < base_callable->arg_types.size(); ++i) {
+          if (base_callable->arg_types[i] != derived_callable->arg_types[i]) {
+            return false;
+          }
+        }
+        return base_callable->return_type == derived_callable->return_type;
+      }
+    }
+    return false;
+  }
+
   // this is not compliant to the PHP behavior as we would allow
   // a mixture of incompatible unions here, but this can be improved in the future;
   //
