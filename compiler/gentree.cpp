@@ -400,7 +400,7 @@ VertexPtr GenTree::get_op_num_const() {
   return VertexPtr{};
 }
 
-VertexPtr GenTree::get_expr_top(bool was_arrow, vk::string_view phpdoc_str) {
+VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
   auto op = cur;
 
   VertexPtr res, first_node;
@@ -611,16 +611,16 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, vk::string_view phpdoc_str) {
     }
     case tok_static:
       next_cur();
-      res = get_lambda_function(phpdoc_str, FunctionModifiers::static_lambda());
+      res = get_lambda_function(phpdoc, FunctionModifiers::static_lambda());
       break;
     case tok_function:
     case tok_fn:
-      res = get_lambda_function(phpdoc_str, FunctionModifiers::nonmember());
+      res = get_lambda_function(phpdoc, FunctionModifiers::nonmember());
       break;
     case tok_phpdoc: {      // /** ... */ before expression (not before a statement)
       vk::string_view phpdoc_str = cur->str_val;
       next_cur();
-      return get_expr_top(was_arrow, phpdoc_str);
+      return get_expr_top(was_arrow, new PhpDocComment(phpdoc_str));
     }
     case tok_isset: {
       auto temp = get_multi_call<op_isset, op_none>(&GenTree::get_expression, true);
@@ -1306,20 +1306,26 @@ VertexPtr GenTree::get_phpdoc_inside_function() {
   vk::string_view phpdoc_str = cur->str_val;
 
   // there can be several @var directives (for example, a block of @var comments above the list() assignment)
-  for (auto &tag_var : phpdoc_find_tag_multi(phpdoc_str, php_doc_tag::var, cur_function)) {
-    // /** @var int */ $v ... - assume that @var refers to $v
-    if (tag_var.var_name.empty() && (cur+1)->type() == tok_var_name) {
-      tag_var.var_name = static_cast<std::string>((cur+1)->str_val);
+  for (const PhpDocTag &tag: PhpDocComment(phpdoc_str).tags) {
+    if (tag.type == PhpDocType::var) {
+      // we can't parse @var at this point: we don't have enough information
+      // (for instance, T could be class T or generics T depending on @kphp-template considering inheritance, and so on)
+      // instead, we just save necessary info to op_phpdoc_var for later, see ParseAndApplyPhpDocForFunction
+
+      auto inner_var = VertexAdaptor<op_var>::create().set_location(auto_location());
+      auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(inner_var);
+      phpdoc_var->tag_value = tag.value_as_string();
+      // inner_var->str_val and phpdoc_var->type_hint will be assigned after parsing
+
+      // tag could look like /* @var type $v comment */ or just /* @var type comment */ $v = ...
+      // as we don't parse it now, save the next token to handle the second case later
+      if ((cur + 1)->type() == tok_var_name) {
+        phpdoc_var->next_var_name = static_cast<std::string>((cur + 1)->str_val);
+      }
+
+      result = result ? VertexPtr(VertexAdaptor<op_seq>::create(result, phpdoc_var)) : VertexPtr(phpdoc_var);
+      cur_function->has_var_tags_inside = true;
     }
-    kphp_error_act(!tag_var.var_name.empty(), "@var with empty var name", continue);
-
-    auto inner_var = VertexAdaptor<op_var>::create().set_location(auto_location());
-    inner_var->str_val = tag_var.var_name;
-
-    auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(inner_var);
-    phpdoc_var->type_hint = tag_var.type_hint;
-
-    result = result ? VertexPtr(VertexAdaptor<op_seq>::create(result, phpdoc_var)) : VertexPtr(phpdoc_var);
   }
 
   next_cur();   // only here, not at the beginning: in case of phpdoc errors to point to phpdoc
@@ -1349,8 +1355,8 @@ bool GenTree::test_if_uses_and_arguments_intersect(const std::forward_list<Verte
   });
 }
 
-VertexAdaptor<op_lambda> GenTree::get_lambda_function(vk::string_view phpdoc_str, FunctionModifiers modifiers) {
-  auto v_op_function_lambda = get_function(true, phpdoc_str, modifiers);
+VertexAdaptor<op_lambda> GenTree::get_lambda_function(const PhpDocComment *phpdoc, FunctionModifiers modifiers) {
+  auto v_op_function_lambda = get_function(true, phpdoc, modifiers);
   CE (v_op_function_lambda);
 
   cur_function->has_lambdas_inside = true;
@@ -1408,7 +1414,7 @@ std::string GenTree::get_identifier() {
   return static_cast<std::string>(std::prev(cur)->str_val);
 }
 
-VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
+VertexPtr GenTree::get_class_member(const PhpDocComment *phpdoc) {
   auto modifiers = parse_class_member_modifier_mask();
   if (!modifiers.is_static()) {
     modifiers.set_instance();
@@ -1419,7 +1425,7 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   }
 
   if (test_expect(tok_function)) {
-    get_function(false, phpdoc_str, modifiers);
+    get_function(false, phpdoc, modifiers);
     return {};
   }
 
@@ -1429,9 +1435,9 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
     kphp_error(!cur_class->is_interface(), "Interfaces may not include member variables");
     kphp_error(!modifiers.is_final() && !modifiers.is_abstract(), "Class fields can not be declared final/abstract");
     if (modifiers.is_static()) {
-      return get_static_field_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
+      return get_static_field_list(phpdoc, FieldModifiers{modifiers.access_modifier()}, type_hint);
     }
-    get_instance_var_list(phpdoc_str, FieldModifiers{modifiers.access_modifier()}, type_hint);
+    get_instance_var_list(phpdoc, FieldModifiers{modifiers.access_modifier()}, type_hint);
     return {};
   }
 
@@ -1462,7 +1468,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
-VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, vk::string_view phpdoc_str, FunctionModifiers modifiers) {
+VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocComment *phpdoc, FunctionModifiers modifiers) {
   bool is_arrow = test_expect(tok_fn);
   CE(expect2(tok_fn, tok_function, "function"));
   auto func_location = auto_location();
@@ -1498,7 +1504,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, vk::string_view
   FunctionData::func_type_t func_type = is_lambda ? FunctionData::func_lambda : processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, func_type));
-  cur_function->phpdoc_str = phpdoc_str;
+  cur_function->phpdoc = phpdoc;
   cur_function->modifiers = modifiers;
 
   if (is_lambda) {
@@ -1551,8 +1557,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, vk::string_view
   // the function is ready, register it;
   // the constructor is registered later, after the entire class is parsed
   if (!cur_function->is_constructor()) {
-    bool kphp_required_flag = phpdoc_str.find("@kphp-required") != std::string::npos ||
-                              phpdoc_str.find("@kphp-lib-export") != std::string::npos;
+    bool kphp_required_flag = phpdoc && phpdoc->has_tag(PhpDocType::kphp_required, PhpDocType::kphp_lib_export);
     bool auto_require = cur_function->is_extern()
                         || cur_function->modifiers.is_abstract()
                         || cur_function->modifiers.is_instance()
@@ -1609,7 +1614,7 @@ void GenTree::parse_extends_implements() {
   }
 }
 
-VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
+VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) {
   ClassModifiers modifiers;
   if (test_expect(tok_abstract)) {
     modifiers.set_abstract();
@@ -1631,7 +1636,7 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
   next_cur();
 
   std::string full_class_name;
-  if (processing_file->namespace_name.empty() && phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_tl_class)) {
+  if (processing_file->namespace_name.empty() && phpdoc && phpdoc->has_tag(PhpDocType::kphp_tl_class)) {
     kphp_assert(processing_file->is_builtin());
     full_class_name = G->settings().tl_namespace_prefix.get() + name_str;
   } else {
@@ -1656,8 +1661,8 @@ VertexPtr GenTree::get_class(vk::string_view phpdoc_str, ClassType class_type) {
 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name);    // with full namespaces and slashes
-  cur_class->phpdoc_str = phpdoc_str;
-  cur_class->is_immutable = phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_immutable_class);
+  cur_class->phpdoc = phpdoc;
+  cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
   cur_class->location_line_num = line_num;
 
   bool registered = G->register_class(cur_class);
@@ -1860,23 +1865,23 @@ void GenTree::parse_declare_at_top_of_file() {
   expect(tok_semicolon, ";");
 }
 
-VertexAdaptor<op_empty> GenTree::get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint) {
+VertexAdaptor<op_empty> GenTree::get_static_field_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint) {
   cur--;      // it was a $field_name; we do it before the get_multi_call() as it does next_cur() by itself
   VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
   CE (check_statement_end());
 
-  for (auto seq : v->args()) {
+  for (auto seq: v->args()) {
     // node is a op_var $a (if there is no default value) or op_set(op_var $a, init_val)
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
       case op_var: {
-        cur_class->members.add_static_field(node.as<op_var>(), VertexPtr{}, modifiers, phpdoc_str, type_hint);
+        cur_class->members.add_static_field(node.as<op_var>(), VertexPtr{}, modifiers, phpdoc, type_hint);
         break;
       }
       case op_set: {
         auto set_expr = node.as<op_set>();
         kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", break);
-        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), modifiers, phpdoc_str, type_hint);
+        cur_class->members.add_static_field(set_expr->lhs().as<op_var>(), set_expr->rhs(), modifiers, phpdoc, type_hint);
         break;
       }
       default:
@@ -1895,7 +1900,7 @@ const TypeHint *GenTree::get_typehint() {
   }
 
   try {
-    PhpDocTypeRuleParser parser(cur_function);
+    PhpDocTypeHintParser parser(cur_function);
     return parser.parse_from_tokens(cur);
   } catch (std::runtime_error &) {
     kphp_error(0, "Cannot parse type hint");
@@ -1922,7 +1927,7 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   return catch_op;
 }
 
-VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
+VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
   TokenType type = cur->type();
 
   is_top_of_the_function_ &= vk::any_of_equal(type, tok_global, tok_opbrc);
@@ -1991,16 +1996,16 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
-        return get_class_member(phpdoc_str);
+        return get_class_member(phpdoc);
       } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract)) {
-        return get_class(phpdoc_str, ClassType::klass);
+        return get_class(phpdoc, ClassType::klass);
       }
       next_cur();
       kphp_error(0, "Unexpected access modifier outside of class body");
       return {};
     case tok_static: {
       if (cur_function->type == FunctionData::func_class_holder) {
-        return get_class_member(phpdoc_str);
+        return get_class_member(phpdoc);
       }
       if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // a function-scoped static variable
         auto res = get_multi_call<op_static, op_err>(&GenTree::get_expression);
@@ -2056,7 +2061,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
           || (next == tok_static && cur_function->type == FunctionData::func_class_holder)) {
         vk::string_view phpdoc_str = cur->str_val;
         next_cur();
-        return get_statement(phpdoc_str);
+        return get_statement(new PhpDocComment(phpdoc_str));
       }
       // phpdoc above a lambda before assignment: /** ... */ $f = function() { ... };
       // we do not support complex expressions on the left-hand side (like $f[0] = fn)
@@ -2067,8 +2072,8 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
           next_cur();
           auto lhs = get_expr_top(false);
           next_cur();
-          auto rhs = get_expr_top(false, phpdoc_str);
-          return rhs ? (VertexPtr)VertexAdaptor<op_set>::create(lhs, rhs) : rhs;
+          auto rhs = get_expr_top(false, new PhpDocComment(phpdoc_str));
+          return rhs ? VertexPtr(VertexAdaptor<op_set>::create(lhs, rhs)) : rhs;
         }
       }
       // otherwise it's a phpdoc-statement: it may contain @var which will be used for assumptions and tinf
@@ -2076,9 +2081,9 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_function:
       if (cur_class) {      // no access modifier implies 'public'
-        get_class_member(phpdoc_str);
+        get_class_member(phpdoc);
       } else {
-        get_function(false, phpdoc_str, FunctionModifiers::nonmember());
+        get_function(false, phpdoc, FunctionModifiers::nonmember());
       }
       return {};
 
@@ -2132,17 +2137,17 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_var: {
       next_cur();
-      get_instance_var_list(phpdoc_str, FieldModifiers{}.set_public(), get_typehint());
+      get_instance_var_list(phpdoc, FieldModifiers{}.set_public(), get_typehint());
       CE (check_statement_end());
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
     case tok_class:
-      return get_class(phpdoc_str, ClassType::klass);
+      return get_class(phpdoc, ClassType::klass);
     case tok_interface:
-      return get_class(phpdoc_str, ClassType::interface);
+      return get_class(phpdoc, ClassType::interface);
     case tok_trait: {
-      auto res = get_class(phpdoc_str, ClassType::trait);
+      auto res = get_class(phpdoc, ClassType::trait);
       kphp_error(processing_file->namespace_uses.empty(), "Usage of operator `use`(Aliasing/Importing) with traits is temporarily prohibited");
       return res;
     }
@@ -2193,7 +2198,7 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
   return VertexAdaptor<op_define>::create(name, v).set_location(location);
 }
 
-void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint) {
+void GenTree::get_instance_var_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint) {
   kphp_error(cur_class, "var declaration is outside of class");
 
   vk::string_view var_name = cur->str_val;
@@ -2210,11 +2215,11 @@ void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers m
   auto var = VertexAdaptor<op_var>::create().set_location(auto_location());
   var->str_val = static_cast<std::string>(var_name);
 
-  cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc_str, type_hint);
+  cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc, type_hint);
 
   if (test_expect(tok_comma)) {
     next_cur();
-    get_instance_var_list(phpdoc_str, modifiers, type_hint);
+    get_instance_var_list(phpdoc, modifiers, type_hint);
   }
 }
 

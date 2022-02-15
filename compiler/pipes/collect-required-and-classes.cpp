@@ -83,29 +83,29 @@ private:
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }
-      if (!f.phpdoc_str.empty()) {
-        require_all_classes_in_field_phpdoc(f.phpdoc_str);
+      if (f.phpdoc) {
+        require_all_classes_in_field_phpdoc(f.phpdoc);
       }
     });
     cur_class->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }
-      if (!f.phpdoc_str.empty()) {
-        require_all_classes_in_field_phpdoc(f.phpdoc_str);
+      if (f.phpdoc) {
+        require_all_classes_in_field_phpdoc(f.phpdoc);
       }
     });
   }
 
   // When looking at /** @var Photo */ under the instance field, assume that we
   // need to load the Photo class even if there is no explicit constructor call
-  inline void require_all_classes_in_field_phpdoc(vk::string_view phpdoc_str) {
-    if (auto type_and_var_name = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-      // we don't use phpdoc_parse_type_and_var_name() here since classes
-      // are not available at this point and we need to fetch these unknown classes
-      std::vector<Token> tokens = phpdoc_to_tokens(*type_and_var_name);
-      std::vector<Token>::const_iterator cur_tok = tokens.begin();
-      PhpDocTypeRuleParser parser(current_function);
+  inline void require_all_classes_in_field_phpdoc(const PhpDocComment *phpdoc) {
+    if (const PhpDocTag *type_and_var_name = phpdoc->find_tag(PhpDocType::var)) {
+      // we can't use parse_type_and_var_name() here
+      // since classes are not available at this point: we need to fetch these unknown classes
+      std::vector<Token> tokens = phpdoc_to_tokens(type_and_var_name->value);
+      auto cur_tok = tokens.cbegin();
+      PhpDocTypeHintParser parser(current_function);
       const TypeHint *type_hint = parser.parse_from_tokens_silent(cur_tok);
       require_all_classes_in_phpdoc_type(type_hint);
     }

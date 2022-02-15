@@ -85,17 +85,18 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
   fill_reserved_serialization_tags(used_serialization_tags_for_fields, klass);
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {
-    auto kphp_serialized_field_str = phpdoc_find_tag_as_string(f.phpdoc_str, php_doc_tag::kphp_serialized_field);
-    if (!kphp_serialized_field_str) {
+    auto kphp_serialized_field_tag = f.phpdoc ? f.phpdoc->find_tag(PhpDocType::kphp_serialized_field) : nullptr;
+    if (!kphp_serialized_field_tag) {
       kphp_error(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", f.local_name()));
       return;
     }
 
     kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
-    if (vk::string_view(*kphp_serialized_field_str).starts_with("none")) {
+    if (kphp_serialized_field_tag->value.starts_with("none")) {
       return;
     }
 
+    std::string value = kphp_serialized_field_tag->value_as_string();
     const auto *field_type = f.root->var_id->tinf_node.get_type();
     std::unordered_set<ClassPtr> classes_inside;
     field_type->get_all_class_types_inside(classes_inside);
@@ -106,8 +107,8 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
 
     try {
       size_t processed_pos{0};
-      auto kphp_serialized_field = std::stoi(*kphp_serialized_field_str, &processed_pos);
-      if (processed_pos != kphp_serialized_field_str->size() && vk::none_of_equal((*kphp_serialized_field_str)[processed_pos], ' ', '/', '#', '\n')) {
+      auto kphp_serialized_field = std::stoi(value, &processed_pos);
+      if (processed_pos != value.size() && vk::none_of_equal(value[processed_pos], ' ', '/', '#', '\n')) {
         throw std::invalid_argument("");
       }
       if (kphp_serialized_field < 0 || max_serialization_tag_value <= kphp_serialized_field) {
@@ -117,23 +118,28 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
         kphp_error_return(false, fmt_format("kphp-serialized-field: {} is already in use", kphp_serialized_field));
       }
       f.serialization_tag = kphp_serialized_field;
-      f.serialize_as_float32 = phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_float32);
+      f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
     } catch (std::logic_error &) {
-      kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", *kphp_serialized_field_str));
+      kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", value));
     }
   });
 
   klass->members.for_each([&](ClassMemberStaticField &f) {
-    kphp_error_return(!phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_field) &&
-                      !phpdoc_tag_exists(f.phpdoc_str, php_doc_tag::kphp_serialized_float32),
-                      fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
+    if (f.phpdoc) {
+      kphp_error_return(!f.phpdoc->has_tag(PhpDocType::kphp_serialized_field) &&
+                        !f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32),
+                        fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
+    }
   });
 }
 
 void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
-  if (auto reserved_ids = phpdoc_find_tag_as_string(klass->phpdoc_str, php_doc_tag::kphp_reserved_fields)) {
-    vk::string_view ids(*reserved_ids);
+  if (!klass->phpdoc) {
+    return;
+  }
+  if (const PhpDocTag *reserved_ids = klass->phpdoc->find_tag(PhpDocType::kphp_reserved_fields)) {
+    vk::string_view ids = reserved_ids->value;
     kphp_error_return(ids.size() >= 2 && ids[0] == '[' && ids[ids.size() - 1] == ']', "reserved tags must be wrapped by []");
     ids = ids.substr(1, ids.size() - 2);
 

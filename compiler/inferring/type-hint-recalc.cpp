@@ -78,10 +78,11 @@ void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData *dst, 
         dst->set_lca(klass->type_data);
         return;
       }
+      kphp_error(0, fmt_format("Can't find class {}", *class_name));
     }
   }
 
-  kphp_error(0, fmt_format("Bad parameter #{}: can't find this class", arg_num));
+  kphp_error(0, fmt_format("Can't find class: argument #{} is not a const string", arg_num));
   dst->set_lca(TypeData::get_type(tp_Error));
 }
 

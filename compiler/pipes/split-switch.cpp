@@ -114,7 +114,10 @@ public:
       auto func = VertexAdaptor<op_function>::create(func_params, seq);
       func = prepare_switch_func(func, case_state_name, 1).as<op_function>();
       GenTree::func_force_return(func, VertexAdaptor<op_null>::create());
-      new_functions.push_back(FunctionData::create_function(func_name, func, FunctionData::func_switch));
+
+      FunctionPtr switch_f = FunctionData::create_function(func_name, func, FunctionData::func_switch);
+      new_functions.push_back(switch_f);
+      switch_f->has_var_tags_inside = current_function->has_var_tags_inside;
 
       auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);
       func_call->str_val = func_name;

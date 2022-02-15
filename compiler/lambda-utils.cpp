@@ -280,7 +280,7 @@ ClassPtr generate_lambda_class_wrapping_lambda_function(FunctionPtr f_lambda) {
   for (auto var_as_use : f_lambda->uses_list) {
     auto var_as_field = VertexAdaptor<op_var>::create().set_location(f_lambda->root);
     var_as_field->str_val = var_as_use->str_val;
-    c_lambda->members.add_instance_field(var_as_field, {}, FieldModifiers{}.set_public(), vk::string_view{}, nullptr);
+    c_lambda->members.add_instance_field(var_as_field, {}, FieldModifiers{}.set_public(), nullptr, nullptr);
 
     kphp_error(!f_lambda->modifiers.is_static_lambda() || var_as_use->extra_type != op_ex_var_this,
                "Using $this in a static lambda");

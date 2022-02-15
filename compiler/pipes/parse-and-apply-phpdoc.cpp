@@ -32,22 +32,22 @@ public:
     phpdoc_from_fun_ = get_phpdoc_from_fun_considering_inheritance();
     stage::set_location(phpdoc_from_fun_->root->get_location());
 
-    const auto &phpdoc_tags = parse_php_doc(phpdoc_from_fun_->phpdoc_str);
+    const PhpDocComment *phpdoc = phpdoc_from_fun_->phpdoc;
 
     // first, search for @kphp-... tags
     // @param/@return will be scanned later, as @kphp- annotations can affect their behavior
-    if (vk::contains(phpdoc_from_fun_->phpdoc_str, "@kphp")) {
-      for (const auto &tag : phpdoc_tags) {
-        stage::set_line(tag.line_num);
+    if (phpdoc) {
+      for (const PhpDocTag &tag : phpdoc->tags) {
         parse_kphp_doc_tag(tag);
       }
     }
 
     // at first, parse @param tags: do it before @return
-    for (const auto &tag : phpdoc_tags) {
-      if (tag.type == php_doc_tag::param) {
-        stage::set_line(tag.line_num);
-        parse_param_doc_tag(tag);
+    if (phpdoc) {
+      for (const PhpDocTag &tag : phpdoc->tags) {
+        if (tag.type == PhpDocType::param) {
+          parse_param_doc_tag(tag);
+        }
       }
     }
 
@@ -55,11 +55,18 @@ public:
     convert_to_template_function_if_callable_arg();
 
     // now, parse @return tags
-    for (const auto &tag : phpdoc_tags) {
-      if (tag.type == php_doc_tag::returns) {
-        stage::set_line(tag.line_num);
-        parse_return_doc_tag(tag);
+    if (phpdoc) {
+      for (const auto &tag : phpdoc->tags) {
+        if (tag.type == PhpDocType::returns) {
+          parse_return_doc_tag(tag);
+        }
       }
+    }
+
+    // now, parse all @var phpdocs inside, resolving classes and self/static/parent
+    // it couldn't be done before: generics T is distinguishable from class T only after @kphp-template parsing
+    if (f_->has_var_tags_inside) {
+      parse_inner_var_doc_tags(f_->root);
     }
 
     // 1) check that all classes exists and are not traits in @param/@return
@@ -88,21 +95,26 @@ public:
       check_all_arguments_have_param_or_type_hint();
       check_function_has_return_or_type_hint();
     }
+
+    // only having applied @kphp-template and others, we can analyze phpdocs of inner lambdas
+    if (f_->has_lambdas_inside) {
+      run_nested_lambdas(f_->root);
+    }
   }
 
 private:
-  bool is_phpdoc_meaningful(vk::string_view phpdoc_str) {
-    if (phpdoc_str.empty()) {
+  bool is_phpdoc_meaningful(const PhpDocComment *phpdoc) {
+    if (!phpdoc) {
       return false;
     }
-    return vk::contains(phpdoc_str, "@param") || vk::contains(phpdoc_str, "@return");
+    return phpdoc->has_tag(PhpDocType::param, PhpDocType::returns);
   }
 
   FunctionPtr get_phpdoc_from_fun_considering_inheritance() {
     bool is_phpdoc_inherited = false;
     if (f_->is_overridden_method || (f_->modifiers.is_static() && f_->class_id->parent_class)) {
       // inherit phpDoc only if it's not overridden in derived class
-      if (!is_phpdoc_meaningful(f_->phpdoc_str)) {
+      if (!is_phpdoc_meaningful(f_->phpdoc)) {
         is_phpdoc_inherited = true;
       }
     } else if (f_->is_constructor() && f_->is_auto_inherited) {
@@ -121,12 +133,12 @@ private:
 
       if (f_->modifiers.is_instance()) {
         if (const auto *method = ancestor->members.get_instance_method(f_->local_name())) {
-          if (is_phpdoc_meaningful(method->function->phpdoc_str)) {
+          if (is_phpdoc_meaningful(method->function->phpdoc)) {
             return method->function;
           }
         }
       } else if (const auto *method = ancestor->members.get_static_method(f_->local_name())) {
-        if (is_phpdoc_meaningful(method->function->phpdoc_str)) {
+        if (is_phpdoc_meaningful(method->function->phpdoc)) {
           return method->function;
         }
       }
@@ -146,18 +158,18 @@ private:
     }
   }
 
-  void parse_kphp_doc_tag(const php_doc_tag &tag) {
+  void parse_kphp_doc_tag(const PhpDocTag &tag) {
     switch (tag.type) {
-      case php_doc_tag::kphp_inline: {
+      case PhpDocType::kphp_inline: {
         f_->is_inline = true;
         break;
       }
 
-      case php_doc_tag::kphp_profile: {
+      case PhpDocType::kphp_profile: {
         f_->profiler_state = FunctionData::profiler_status::enable_as_root;
         break;
       }
-      case php_doc_tag::kphp_profile_allow_inline: {
+      case PhpDocType::kphp_profile_allow_inline: {
         if (f_->profiler_state == FunctionData::profiler_status::disable) {
           f_->profiler_state = FunctionData::profiler_status::enable_as_inline_child;
         } else {
@@ -166,30 +178,30 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_sync: {
+      case PhpDocType::kphp_sync: {
         f_->should_be_sync = true;
         break;
       }
 
-      case php_doc_tag::kphp_should_not_throw: {
+      case PhpDocType::kphp_should_not_throw: {
         f_->should_not_throw = true;
         break;
       }
 
-      case php_doc_tag::kphp_infer: {
+      case PhpDocType::kphp_infer: {
         if (tag.value.find("cast") != std::string::npos) {
           infer_cast_ = true;
         }
         break;
       }
 
-      case php_doc_tag::kphp_warn_unused_result: {
+      case PhpDocType::kphp_warn_unused_result: {
         f_->warn_unused_result = true;
         break;
       }
 
-      case php_doc_tag::kphp_disable_warnings: {
-        std::istringstream is(tag.value);
+      case PhpDocType::kphp_disable_warnings: {
+        std::istringstream is(tag.value_as_string());
         std::string token;
         while (is >> token) {
           if (!f_->disabled_warnings.insert(token).second) {
@@ -199,9 +211,9 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_extern_func_info: {
+      case PhpDocType::kphp_extern_func_info: {
         kphp_error(f_->is_extern(), "@kphp-extern-func-info used for regular function");
-        std::istringstream is(tag.value);
+        std::istringstream is(tag.value_as_string());
         std::string token;
         while (is >> token) {
           if (token == "can_throw") {
@@ -222,30 +234,30 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_pure_function: {
+      case PhpDocType::kphp_pure_function: {
         kphp_error(f_->is_extern(), "@kphp-pure-function is supported only for built-in functions");
         f_->is_pure = true;
         break;
       }
 
-      case php_doc_tag::kphp_noreturn: {
+      case PhpDocType::kphp_noreturn: {
         f_->is_no_return = true;
         break;
       }
 
-      case php_doc_tag::kphp_lib_export: {
+      case PhpDocType::kphp_lib_export: {
         f_->kphp_lib_export = true;
         break;
       }
 
-      case php_doc_tag::kphp_template: {
+      case PhpDocType::kphp_template: {
         if (!f_->generics_declaration) {
-          GenericsDeclarationMixin::apply_from_phpdoc(f_, phpdoc_from_fun_->phpdoc_str);
+          GenericsDeclarationMixin::apply_from_phpdoc(f_, phpdoc_from_fun_->phpdoc);
         }
         break;
       }
 
-      case php_doc_tag::kphp_const: {
+      case PhpDocType::kphp_const: {
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
           auto param = f_->find_param_by_name(var_name.substr(1));
           kphp_error_return(param, fmt_format("@kphp-const tag var name mismatch. found {}.", var_name));
@@ -255,12 +267,12 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_flatten: {
+      case PhpDocType::kphp_flatten: {
         f_->is_flatten = true;
         break;
       }
 
-      case php_doc_tag::kphp_warn_performance: {
+      case PhpDocType::kphp_warn_performance: {
         try {
           f_->performance_inspections_for_warning.set_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
@@ -269,7 +281,7 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_analyze_performance: {
+      case PhpDocType::kphp_analyze_performance: {
         try {
           f_->performance_inspections_for_analysis.set_from_php_doc(tag.value);
         } catch (const std::exception &ex) {
@@ -278,8 +290,8 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_throws: {
-        std::istringstream is(tag.value);
+      case PhpDocType::kphp_throws: {
+        std::istringstream is(tag.value_as_string());
         std::string klass;
         while (is >> klass) {
           f_->check_throws.emplace_front(klass); // the reversed order doesn't matter
@@ -287,8 +299,8 @@ private:
         break;
       }
 
-      case php_doc_tag::kphp_color: {
-        std::istringstream is(tag.value);
+      case PhpDocType::kphp_color: {
+        std::istringstream is(tag.value_as_string());
         std::string color_name;
         is >> color_name;
 
@@ -304,9 +316,9 @@ private:
     }
   }
 
-  void parse_return_doc_tag(const php_doc_tag &tag) {
-    PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, phpdoc_from_fun_);
-    if (!doc_parsed) {    // an error has already been printed
+  void parse_return_doc_tag(const PhpDocTag &tag) {
+    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_);
+    if (!tag_parsed) {    // an error has already been printed
       return;
     }
 
@@ -316,21 +328,21 @@ private:
         return;
       }
       // if both @return and type hint exist, check their compatibility
-      f_->return_typehint = merge_php_hint_and_phpdoc(f_->return_typehint, doc_parsed.type_hint, false);
+      f_->return_typehint = merge_php_hint_and_phpdoc(f_->return_typehint, tag_parsed.type_hint, false);
     } else {
-      f_->return_typehint = doc_parsed.type_hint;
+      f_->return_typehint = tag_parsed.type_hint;
     }
   }
 
-  void parse_param_doc_tag(const php_doc_tag &tag) {
-    PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, phpdoc_from_fun_);
-    if (!doc_parsed) {    // an error has already been printed
+  void parse_param_doc_tag(const PhpDocTag &tag) {
+    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_);
+    if (!tag_parsed) {    // an error has already been printed
       return;
     }
 
-    auto param = f_->find_param_by_name(doc_parsed.var_name);
+    auto param = f_->find_param_by_name(tag_parsed.var_name);
     if (!param) {
-      kphp_error_return(f_ != phpdoc_from_fun_, fmt_format("@param for unexisting argument ${}", doc_parsed.var_name));
+      kphp_error_return(f_ != phpdoc_from_fun_, fmt_format("@param for unexisting argument ${}", tag_parsed.var_name));
       return;
     }
 
@@ -340,15 +352,15 @@ private:
         return;
       }
       // if both @param and type hint exist, check their compatibility
-      param->type_hint = merge_php_hint_and_phpdoc(param->type_hint, doc_parsed.type_hint, true);
+      param->type_hint = merge_php_hint_and_phpdoc(param->type_hint, tag_parsed.type_hint, true);
     } else {
-      param->type_hint = doc_parsed.type_hint;
+      param->type_hint = tag_parsed.type_hint;
     }
 
     if (infer_cast_) {
-      const auto *as_primitive = doc_parsed.type_hint->try_as<TypeHintPrimitive>();
+      const auto *as_primitive = tag_parsed.type_hint->try_as<TypeHintPrimitive>();
       kphp_error(as_primitive, "Too hard rule for cast");
-      kphp_error(!param->is_cast_param, fmt_format("Duplicate type cast for argument '{}'", doc_parsed.var_name));
+      kphp_error(!param->is_cast_param, fmt_format("Duplicate type cast for argument '{}'", tag_parsed.var_name));
       param->is_cast_param = true;
     }
   }
@@ -451,6 +463,26 @@ private:
                              phpdoc_from_fun_ == f_ ? "" : " inherited from " + phpdoc_from_fun_->as_human_readable()));
   }
 
+  void parse_inner_var_doc_tags(VertexPtr root) {
+    if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
+      stage::set_location(root->location);
+      PhpDocTag var_tag(PhpDocType::var, as_phpdoc_var->tag_value);
+      auto tag_parsed = var_tag.value_as_type_and_var_name(f_);
+      kphp_error_return(tag_parsed, fmt_format("Failed to parse @var inside {}", f_->as_human_readable()));
+
+      as_phpdoc_var->type_hint = tag_parsed.type_hint;
+      as_phpdoc_var->var()->str_val = tag_parsed.var_name.empty() ? as_phpdoc_var->next_var_name : tag_parsed.var_name;
+      kphp_error(!as_phpdoc_var->var()->str_val.empty(), "@var with empty var name");
+
+      as_phpdoc_var->type_hint = phpdoc_finalize_type_hint_and_resolve(as_phpdoc_var->type_hint, f_);
+      kphp_error(as_phpdoc_var->type_hint, fmt_format("Failed to parse @var inside {}", f_->as_human_readable()));
+    }
+
+    for (auto child : *root) {
+      parse_inner_var_doc_tags(child);
+    }
+  }
+
   void check_all_arguments_have_param_or_type_hint() {
     // at this point, all phpdocs and type hints have been parsed
     // show error if any param doesn't have type declared type
@@ -474,6 +506,16 @@ private:
       }
     }
   }
+
+  void run_nested_lambdas(VertexPtr root) {
+    if (auto as_op_lambda = root.try_as<op_lambda>()) {
+      ParseAndApplyPhpDocForFunction{as_op_lambda->func_id};
+    }
+
+    for (auto child : *root) {
+      run_nested_lambdas(child);
+    }
+  }
 };
 
 // Inspects @var above all fields and converts them to type hints
@@ -487,25 +529,27 @@ public:
     // if there is @var / type hint near class field — save it; otherwise, convert the field default value to a type hint
     // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
     klass->members.for_each([&](ClassMemberInstanceField &f) {
-      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
+      stage::set_location(f.root->location);
+      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
     });
     klass->members.for_each([&](ClassMemberStaticField &f) {
-      f.type_hint = calculate_field_type_hint(f.phpdoc_str, f.type_hint, f.var, klass);
+      stage::set_location(f.root->location);
+      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var, klass);
       if (f.type_hint) {
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
     });
 
-    const auto &phpdoc_tags = parse_php_doc(klass->phpdoc_str);
-
     // now apply @kphp-serializable and so on
-    for (const auto &tag : phpdoc_tags) {
-      parse_kphp_doc_tag(tag);
+    if (klass->phpdoc) {
+      for (const PhpDocTag &tag : klass->phpdoc->tags) {
+        parse_kphp_doc_tag(tag);
+      }
     }
 
   }
@@ -513,13 +557,15 @@ public:
 private:
   // calculate type_hint for a field using all rules
   // returns TypeHint or nullptr
-  static const TypeHint *calculate_field_type_hint(vk::string_view phpdoc_str, const TypeHint *php_type_hint, VarPtr var, ClassPtr klass) {
+  static const TypeHint *calculate_field_type_hint(const PhpDocComment *phpdoc, const TypeHint *php_type_hint, VarPtr var, ClassPtr klass) {
     // if there is a /** @var int|false */ comment above the class field declaration
     // moreover, it overrides php_type_hint: /** @var int[] */ public array $a; — int[] is used instead of array
-    if (auto tag_phpdoc = phpdoc_find_tag_as_string(phpdoc_str, php_doc_tag::var)) {
-      auto parsed = phpdoc_parse_type_and_var_name(*tag_phpdoc, stage::get_function());
-      if (!kphp_error(parsed, fmt_format("Failed to parse phpdoc of {}", var->as_human_readable()))) {
-        return parsed.type_hint;
+    if (phpdoc) {
+      if (const PhpDocTag *tag_phpdoc = phpdoc->find_tag(PhpDocType::var)) {
+        auto tag_parsed = tag_phpdoc->value_as_type_and_var_name(stage::get_function());
+        if (!kphp_error(tag_parsed, fmt_format("Failed to parse phpdoc of {}", var->as_human_readable()))) {
+          return tag_parsed.type_hint;
+        }
       }
     }
 
@@ -547,22 +593,22 @@ private:
     return nullptr;
   }
 
-  void parse_kphp_doc_tag(const php_doc_tag &tag) {
+  void parse_kphp_doc_tag(const PhpDocTag &tag) {
     switch (tag.type) {
-      case php_doc_tag::kphp_serializable:
+      case PhpDocType::kphp_serializable:
         klass->is_serializable = true;
         kphp_error(klass->is_class(), "@kphp-serialize is allowed only for classes");
         break;
 
-      case php_doc_tag::kphp_tl_class:
+      case PhpDocType::kphp_tl_class:
         klass->is_tl_class = true;
         break;
 
-      case php_doc_tag::kphp_memcache_class:
+      case PhpDocType::kphp_memcache_class:
         G->set_memcache_class(klass);
         break;
 
-      case php_doc_tag::kphp_warn_performance:
+      case PhpDocType::kphp_warn_performance:
         try {
           klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
             f.function->performance_inspections_for_warning.set_from_php_doc(tag.value);
@@ -575,7 +621,7 @@ private:
         }
         break;
 
-      case php_doc_tag::kphp_analyze_performance:
+      case PhpDocType::kphp_analyze_performance:
         try {
           klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
             f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value);
@@ -601,7 +647,7 @@ void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr>
 
   if (function->type == FunctionData::func_class_holder) {
     ParseAndApplyPhpDocForClass{function->class_id};
-  } else {
+  } else if (function->type != FunctionData::func_lambda) {
     ParseAndApplyPhpDocForFunction{function};
   }
 

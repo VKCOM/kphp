@@ -92,6 +92,8 @@ public:
   const TypeHint *return_typehint{nullptr};
   tinf::VarNode tinf_node;              // tinf node for return
 
+  const PhpDocComment *phpdoc{nullptr};
+  
   bool has_variadic_param = false;
   bool should_be_sync = false;
   bool should_not_throw = false;
@@ -106,6 +108,7 @@ public:
   bool is_overridden_method = false;
   bool is_no_return = false;
   bool has_lambdas_inside = false;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
+  bool has_var_tags_inside = false;     // used for optimization (not to traverse body when applying phpdoc if no @var inside)
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
@@ -137,7 +140,6 @@ public:
   ClassPtr class_id;
   ClassPtr context_class;
   FunctionModifiers modifiers = FunctionModifiers::nonmember();
-  vk::string_view phpdoc_str;
 
   enum class body_value {
     empty,

@@ -1959,7 +1959,7 @@
     }
   },
   {
-    "comment": "artificial op that holds phpdoc @var info",
+    "comment": "artificial op that holds phpdoc @var info inside a function (not above a field)",
     "sons": {
       "var": {
         "id": 0,
@@ -1975,6 +1975,12 @@
       "str": "@var"
     },
     "extra_fields": {
+      "next_var_name": {
+        "type": "std::string"
+      },
+      "tag_value": {
+        "type": "std::string"
+      },
       "type_hint": {
         "type": "const TypeHint *",
         "default": "nullptr"

@@ -51,10 +51,10 @@
 
 
 // an old syntax has only @kphp-template with $argument inside (or many such tags)
-static void create_from_phpdoc_old_syntax(FunctionPtr f, GenericsDeclarationMixin *out, const std::vector<php_doc_tag> &phpdoc_tags) {
-  for (const php_doc_tag &tag : phpdoc_tags) {
+static void create_from_phpdoc_old_syntax(FunctionPtr f, GenericsDeclarationMixin *out, const PhpDocComment *phpdoc) {
+  for (const PhpDocTag &tag : phpdoc->tags) {
     switch (tag.type) {
-      case php_doc_tag::kphp_template: {
+      case PhpDocType::kphp_template: {
         std::string nameT;    // can be before $arg
         const TypeHint *extends_hint = nullptr;
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
@@ -78,14 +78,14 @@ static void create_from_phpdoc_old_syntax(FunctionPtr f, GenericsDeclarationMixi
         break;
       }
 
-      case php_doc_tag::kphp_param:
+      case PhpDocType::kphp_param:
         kphp_error(0, "@kphp-param is not acceptable with old-style @kphp-template syntax");
         break;
 
-      case php_doc_tag::kphp_return: {
+      case PhpDocType::kphp_return: {
         kphp_error_return(!out->empty(), "@kphp-template must precede @kphp-return");
-        if (PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f)) {
-          f->return_typehint = doc_parsed.type_hint;    // typically, T or T::field
+        if (auto tag_parsed = tag.value_as_type_and_var_name(f)) {
+          f->return_typehint = tag_parsed.type_hint;    // typically, T or T::field
         }
         break;
       }
@@ -99,29 +99,29 @@ static void create_from_phpdoc_old_syntax(FunctionPtr f, GenericsDeclarationMixi
 }
 
 // a new syntax is @kphp-template T1 T2 with many @kphp-param tags
-static void create_from_phpdoc_new_syntax(FunctionPtr f, GenericsDeclarationMixin *out, const std::vector<php_doc_tag> &phpdoc_tags) {
-  for (const php_doc_tag &tag : phpdoc_tags) {
+static void create_from_phpdoc_new_syntax(FunctionPtr f, GenericsDeclarationMixin *out, const PhpDocComment *phpdoc) {
+  for (const PhpDocTag &tag : phpdoc->tags) {
     switch (tag.type) {
-      case php_doc_tag::kphp_template:
+      case PhpDocType::kphp_template:
         for (auto s : split_skipping_delimeters(tag.value, " ")) {
           out->add_itemT(static_cast<std::string>(s), nullptr);
         }
         break;
 
-      case php_doc_tag::kphp_param: {
+      case PhpDocType::kphp_param: {
         kphp_error_return(!out->empty(), "@kphp-template must precede @kphp-param");
-        if (PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f)) {
-          auto param = f->find_param_by_name(doc_parsed.var_name);
-          kphp_error_return(param, fmt_format("@kphp-param for unexisting argument ${}", doc_parsed.var_name));
-          param->type_hint = doc_parsed.type_hint;
+        if (auto tag_parsed = tag.value_as_type_and_var_name(f)) {
+          auto param = f->find_param_by_name(tag_parsed.var_name);
+          kphp_error_return(param, fmt_format("@kphp-param for unexisting argument ${}", tag_parsed.var_name));
+          param->type_hint = tag_parsed.type_hint;
         }
         break;
       }
 
-      case php_doc_tag::kphp_return:
+      case PhpDocType::kphp_return:
         kphp_error_return(!out->empty(), "@kphp-template must precede @kphp-return");
-        if (PhpDocTagParseResult doc_parsed = phpdoc_parse_type_and_var_name(tag.value, f)) {
-          f->return_typehint = doc_parsed.type_hint;    // typically, T or T::field
+        if (auto tag_parsed = tag.value_as_type_and_var_name(f)) {
+          f->return_typehint = tag_parsed.type_hint;    // typically, T or T::field
         }
         break;
 
@@ -182,19 +182,18 @@ std::string GenericsInstantiationMixin::generate_instantiated_func_name(Function
 }
 
 
-void GenericsDeclarationMixin::apply_from_phpdoc(FunctionPtr f, vk::string_view phpdoc_str) {
+void GenericsDeclarationMixin::apply_from_phpdoc(FunctionPtr f, const PhpDocComment *phpdoc) {
   if (!f->generics_declaration) {
     f->generics_declaration = new GenericsDeclarationMixin();
   }
+  stage::set_location(f->root->location);
 
-  const std::vector<php_doc_tag> &phpdoc_tags = parse_php_doc(phpdoc_str);
-
-  bool is_new_syntax = std::any_of(phpdoc_tags.begin(), phpdoc_tags.end(),
-                                   [](const php_doc_tag &tag) { return tag.type == php_doc_tag::kphp_param; });
+  bool is_new_syntax = std::any_of(phpdoc->tags.begin(), phpdoc->tags.end(),
+                                   [](const PhpDocTag &tag) { return tag.type == PhpDocType::kphp_param; });
   if (is_new_syntax) {
-    create_from_phpdoc_new_syntax(f, f->generics_declaration, phpdoc_tags);
+    create_from_phpdoc_new_syntax(f, f->generics_declaration, phpdoc);
   } else {
-    create_from_phpdoc_old_syntax(f, f->generics_declaration, phpdoc_tags);
+    create_from_phpdoc_old_syntax(f, f->generics_declaration, phpdoc);
   }
 }
 

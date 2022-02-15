@@ -143,7 +143,7 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os)
   parent_call->set_string("parent::__construct");
   has_custom_constructor = true;
 
-  create_constructor(list, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc_str, os);
+  create_constructor(list, VertexAdaptor<op_seq>::create(parent_call), parent_constructor->phpdoc, os);
   construct_function->is_auto_inherited = true;
 }
 
@@ -159,11 +159,11 @@ void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &
   }
 }
 
-void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os) {
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment *phpdoc, DataStream<FunctionPtr> &os) {
   auto func = VertexAdaptor<op_function>::create(param_list, body);
   func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
-  construct_function->phpdoc_str = phpdoc;
+  construct_function->phpdoc = phpdoc;
 
   G->register_and_require_function(construct_function, os, true);
 }

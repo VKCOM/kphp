@@ -103,11 +103,6 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
 
     as_alloc->allocated_class = ref_class;        // if not exists, checked later, on func_call bind
 
-  } else if (auto as_phpdoc_var = v.try_as<op_phpdoc_var>()) {
-    // replace 'self' and others if exist in @var, check classes existence
-    as_phpdoc_var->type_hint = phpdoc_finalize_type_hint_and_resolve(as_phpdoc_var->type_hint, current_function);
-    kphp_error(as_phpdoc_var->type_hint, fmt_format("Failed to parse @var inside {}", current_function->as_human_readable()));
-
   } else if (auto as_instanceof = v.try_as<op_instanceof>()) {
     // ... instanceof XXX, the right was replaced by XXX::class
     const std::string &instanceof_class = GenTree::get_actual_value(as_instanceof->rhs())->get_string();

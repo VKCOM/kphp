@@ -34,7 +34,7 @@ struct GenericsDeclarationMixin {
   void add_itemT(const std::string &nameT, const TypeHint *extends_hint);
   const TypeHint *find(const std::string &nameT) const;
 
-  static void apply_from_phpdoc(FunctionPtr f, vk::string_view phpdoc_str);
+  static void apply_from_phpdoc(FunctionPtr f, const PhpDocComment *phpdoc);
   static void make_function_generics_on_callable_arg(FunctionPtr f, VertexPtr func_param);
 };
 

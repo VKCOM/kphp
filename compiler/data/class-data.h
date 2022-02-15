@@ -50,9 +50,9 @@ public:
   ClassPtr parent_class;                       // extends
   std::vector<InterfacePtr> implements;
   std::vector<ClassPtr> derived_classes;
-
   FunctionPtr construct_function;
-  vk::string_view phpdoc_str;
+
+  const PhpDocComment *phpdoc{nullptr};
 
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
@@ -95,7 +95,7 @@ public:
 
   void create_constructor_with_parent_call(DataStream<FunctionPtr> &os);
   void create_default_constructor_if_required(DataStream<FunctionPtr> &os);
-  void create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, vk::string_view phpdoc, DataStream<FunctionPtr> &os);
+  void create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment *phpdoc, DataStream<FunctionPtr> &os);
   void create_constructor(VertexAdaptor<op_function> func);
 
   static auto gen_param_this(Location location) {
