@@ -169,8 +169,8 @@ private:
     inline std::pair<T &, bool> emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept;
     inline T &set_map_value(overwrite_element policy, int64_t int_key, const string &string_key, const T &v);
 
-    inline void unset_vector_value();
-    inline void unset_map_value(int64_t int_key);
+    inline T unset_vector_value();
+    inline T unset_map_value(int64_t int_key);
 
     // to avoid the const_cast, declare these functions as static with a template self parameter (this)
     template<class S>
@@ -185,7 +185,7 @@ private:
 
     inline const T &get_vector_value(int64_t int_key) const;//unsafe
     inline T &get_vector_value(int64_t int_key);//unsafe
-    inline void unset_map_value(const string &string_key, int64_t precomuted_hash);
+    inline T unset_map_value(const string &string_key, int64_t precomuted_hash);
 
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
 
@@ -353,12 +353,12 @@ public:
   bool isset(const K &key) const noexcept;
   bool isset(const string &key, int64_t precomputed_hash) const noexcept;
 
-  void unset(int64_t int_key);
-  void unset(int32_t key) { unset(int64_t{key}); }
-  void unset(const string &string_key);
-  void unset(const string &string_key, int64_t precomputed_hash);
-  void unset(const mixed &var_key);
-  void unset(double double_key);
+  T unset(int64_t int_key);
+  T unset(int32_t key) { return unset(int64_t{key}); }
+  T unset(double double_key) { return unset(static_cast<int64_t>(double_key)); }
+  T unset(const string &string_key);
+  T unset(const string &string_key, int64_t precomputed_hash);
+  T unset(const mixed &var_key);
 
   inline bool empty() const __attribute__ ((always_inline));
   inline int64_t count() const __attribute__ ((always_inline));

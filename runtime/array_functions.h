@@ -1227,6 +1227,21 @@ T f$array_pop(array<T> &a) {
 }
 
 template<class T>
+T f$array_unset(array<T> &arr, int64_t key) {
+  return arr.unset(key);
+}
+
+template<class T>
+T f$array_unset(array<T> &arr, const string &key) {
+  return arr.unset(key);
+}
+
+template<class T>
+T f$array_unset(array<T> &arr, const mixed &key) {
+  return arr.unset(key);
+}
+
+template<class T>
 void f$array_reserve(array<T> &a, int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
   a.reserve(int_size, string_size, make_vector_if_possible);
 }

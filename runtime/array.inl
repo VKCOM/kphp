@@ -418,14 +418,14 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 }
 
 template<class T>
-void array<T>::array_inner::unset_vector_value() {
-  ((T *)int_entries)[max_key].~T();
-  max_key--;
-  int_size--;
+T array<T>::array_inner::unset_vector_value() {
+  --int_size;
+  T res = std::move(reinterpret_cast<T *>(int_entries)[max_key--]);
+  return res;
 }
 
 template<class T>
-void array<T>::array_inner::unset_map_value(int64_t int_key) {
+T array<T>::array_inner::unset_map_value(int64_t int_key) {
   uint32_t bucket = choose_bucket_int(int_key);
   while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
     if (unlikely (++bucket == int_buf_size)) {
@@ -442,7 +442,7 @@ void array<T>::array_inner::unset_map_value(int64_t int_key) {
     int_entries[bucket].next = EMPTY_POINTER;
     int_entries[bucket].prev = EMPTY_POINTER;
 
-    int_entries[bucket].value.~T();
+    T res = std::move(int_entries[bucket].value);
 
     int_size--;
 
@@ -472,7 +472,9 @@ void array<T>::array_inner::unset_map_value(int64_t int_key) {
     }
 #undef FIXU
 #undef FIXD
+    return res;
   }
+  return {};
 }
 
 template<class T>
@@ -562,7 +564,7 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 }
 
 template<class T>
-void array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomuted_hash) {
+T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomuted_hash) {
   string_hash_entry *string_entries = get_string_entries();
   uint32_t bucket = choose_bucket_string(precomuted_hash);
   while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != precomuted_hash || string_entries[bucket].string_key != string_key)) {
@@ -581,7 +583,7 @@ void array<T>::array_inner::unset_map_value(const string &string_key, int64_t pr
     string_entries[bucket].next = EMPTY_POINTER;
     string_entries[bucket].prev = EMPTY_POINTER;
 
-    string_entries[bucket].value.~T();
+    T res = std::move(string_entries[bucket].value);
 
     string_size--;
 
@@ -611,7 +613,9 @@ void array<T>::array_inner::unset_map_value(const string &string_key, int64_t pr
     }
 #undef FIXU
 #undef FIXD
+    return res;
   }
+  return {};
 }
 
 template<class T>
@@ -1462,10 +1466,10 @@ bool array<T>::isset(const string &key, int64_t precomputed_hash) const noexcept
 }
 
 template<class T>
-void array<T>::unset(int64_t int_key) {
+T array<T>::unset(int64_t int_key) {
   if (is_vector()) {
     if (int_key < 0 || int_key >= p->int_size) {
-      return;
+      return {};
     }
     if (int_key == p->max_key) {
       mutate_if_vector_shared();
@@ -1480,23 +1484,23 @@ void array<T>::unset(int64_t int_key) {
 }
 
 template<class T>
-void array<T>::unset(const string &string_key) {
+T array<T>::unset(const string &string_key) {
   int64_t int_val = 0;
   if (string_key.try_to_int(&int_val)) {
     return unset(int_val);
   }
 
   if (is_vector()) {
-    return;
+    return {};
   }
 
   return unset(string_key, string_key.hash());
 }
 
 template<class T>
-void array<T>::unset(const string &string_key, int64_t precomputed_hash) {
+T array<T>::unset(const string &string_key, int64_t precomputed_hash) {
   if (is_vector()) {
-    return;
+    return {};
   }
 
   mutate_if_map_shared();
@@ -1504,7 +1508,7 @@ void array<T>::unset(const string &string_key, int64_t precomputed_hash) {
 }
 
 template<class T>
-void array<T>::unset(const mixed &v) {
+T array<T>::unset(const mixed &v) {
   switch (v.get_type()) {
     case mixed::type::NUL:
       return unset(string());
@@ -1522,11 +1526,6 @@ void array<T>::unset(const mixed &v) {
     default:
       __builtin_unreachable();
   }
-}
-
-template<class T>
-void array<T>::unset(double double_key) {
-  unset(static_cast<int64_t>(double_key));
 }
 
 template<class T>
@@ -1980,33 +1979,20 @@ void array<T>::swap(array<T> &other) {
 template<class T>
 T array<T>::pop() {
   if (empty()) {
-//    php_warning ("Cannot use function array_pop on empty array");
-    return T{};
+    return {};
   }
 
   if (is_vector()) {
     mutate_if_vector_shared();
-
-    T *it = (T *)p->int_entries;
-    T result = it[p->max_key];
-
-    p->unset_vector_value();
-
-    return result;
-  } else {
-    mutate_if_map_shared();
-
-    string_hash_entry *it = p->prev(p->end());
-    T result = it->value;
-
-    if (p->is_string_hash_entry(it)) {
-      p->unset_map_value(it->string_key, it->int_key);
-    } else {
-      p->unset_map_value(it->int_key);
-    }
-
-    return result;
+    return p->unset_vector_value();
   }
+
+  mutate_if_map_shared();
+  string_hash_entry *it = p->prev(p->end());
+
+  return p->is_string_hash_entry(it) ?
+    p->unset_map_value(it->string_key, it->int_key) :
+    p->unset_map_value(it->int_key);
 }
 
 template<class T>
