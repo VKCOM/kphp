@@ -265,15 +265,15 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
       ready_class->members.add_static_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str, f.type_hint);
     });
   }
+}
 
-  if (ready_class->is_class()) {
-    ready_class->members.for_each([&](ClassMemberInstanceMethod &m) {
-      if (m.function->modifiers.is_abstract()) {
-        kphp_error(ready_class->modifiers.is_abstract(),
-                   fmt_format("class {} must be declared abstract, as it has an abstract method {}", ready_class->as_human_readable(), m.local_name()));
-      }
-    });
-  }
+void SortAndInheritClassesF::check_abstract_methods_for_non_abstract_class(ClassPtr klass) {
+  klass->members.for_each([&](ClassMemberInstanceMethod &m) {
+    if (m.function->modifiers.is_abstract()) {
+      kphp_error(klass->modifiers.is_abstract(),
+                 fmt_format("class {} must be declared abstract, as it has an abstract method {}", klass->as_human_readable(), m.local_name()));
+    }
+  });
 }
 
 // Every class is passed here exactly once - when that class and all of its dependents are ready.
@@ -287,7 +287,14 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
       traits.emplace_back(G->get_class(dep.class_name));
     }
   }
-  clone_members_from_traits(std::move(traits), klass, function_stream);
+
+  if (!traits.empty()) {
+    clone_members_from_traits(std::move(traits), klass, function_stream);
+  }
+
+  if (klass->is_class()) {
+    check_abstract_methods_for_non_abstract_class(klass);
+  }
 
   for (const auto &dep : klass->get_str_dependents()) {
     ClassPtr dep_class = G->get_class(dep.class_name);

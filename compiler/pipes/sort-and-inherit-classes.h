@@ -29,6 +29,7 @@ private:
 
   void inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class);
   static void clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream);
+  static void check_abstract_methods_for_non_abstract_class(ClassPtr klass);
 
   decltype(ht)::HTNode *get_not_ready_dependency(ClassPtr klass);
 
