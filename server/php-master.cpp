@@ -63,6 +63,7 @@
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
+#include "server/server-log.h"
 
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
@@ -563,6 +564,10 @@ int run_worker(WorkerType worker_type) {
   tot_workers_started++;
   const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
+  if (new_pid == -1) {
+    log_server_critical("fork error on launching %s worker: %s", (worker_type == WorkerType::general_worker ? "general" : "job"), strerror(errno));
+    assert(false);
+  }
   assert (new_pid != -1 && "failed to fork");
 
   if (new_pid == 0) {
@@ -1283,19 +1288,13 @@ void run_master_on() {
   }
 }
 
-int signal_epoll_handler(int fd __attribute__((unused)), void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
-  //empty
+int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
   vkprintf(2, "signal_epoll_handler\n");
   signalfd_siginfo fdsi{};
-  //fprintf (stderr, "A\n");
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
-  //fprintf (stderr, "B\n");
   if (s == -1) {
-    if (false && errno == EAGAIN) {
-      vkprintf(1, "strange... no signal found\n");
-      return 0;
-    }
-    dl_passert (0, "read signalfd_siginfo");
+    log_server_error("Master process can't read signal from signalfd: fd = %d, signal_fd = %d, error = %s", fd, signal_fd, strerror(errno));
+    return 0;
   }
   dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
   vkprintf(2, "signal %u received\n", fdsi.ssi_signo);
@@ -1335,8 +1334,10 @@ static void cron() {
   unsigned long long utime = 0;
   unsigned long long stime = 0;
 #if !defined(__APPLE__)
-  const bool get_cpu_err = get_cpu_total(&cpu_total);
-  dl_assert (get_cpu_err, "get_cpu_total failed");
+  const bool get_cpu_ok = get_cpu_total(&cpu_total);
+  if (!get_cpu_ok) {
+    log_server_error("get_cpu_total failed");
+  }
 #endif
   const uint16_t alive_workers_count = vk::singleton<WorkersControl>::get().get_all_alive();
   for (uint16_t i = 0; i < alive_workers_count; ++i) {

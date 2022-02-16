@@ -7,6 +7,7 @@
 #include <array>
 #include <cassert>
 #include <cinttypes>
+#include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <limits>
@@ -95,11 +96,10 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line, c
 void dl_assert__(const char *expr __attribute__((unused)), const char *file_name, const char *func_name,
                  int line, const char *desc, int use_perror) {
   snprintf(assert_message.data(), assert_message.size(),
-           "dl_assert failed [%s:%d: %s]: %s", kbasename(file_name), line, func_name, desc);
+           "dl_assert failed [%s:%d: %s]: %s%s%s", kbasename(file_name), line, func_name, desc,
+           use_perror ? "; errno message = " : "",
+           use_perror ? strerror(errno) : "");
   fprintf(stderr, "%s\n", assert_message.data());
-  if (use_perror) {
-    perror("perror description");
-  }
   abort();
 }
 
