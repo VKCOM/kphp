@@ -388,6 +388,21 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
         kphp_error(!c->parent_class->get_instance_method(m.local_name()),
                    fmt_format("Cannot make non-static method {}() static", m.function->as_human_readable()));
       });
+
+      c->members.for_each([&c](const ClassMemberInstanceField &m) {
+        const auto *parent_field = c->parent_class->get_instance_field(m.local_name());
+        if (parent_field) {
+          const auto is_readonly = m.modifiers.is_readonly();
+          const auto parent_is_readonly = parent_field->modifiers.is_readonly();
+
+          if (is_readonly != parent_is_readonly) {
+            const char *current = is_readonly ? "readonly" : "writeable";
+            const char *parent = parent_is_readonly ? "readonly" : "writeable";
+
+            kphp_error(0, fmt_format("Cannot redeclare {} {}::{} as {} {}::{}", parent, c->parent_class->get_name(), parent_field->local_name(), current, c->get_name(), m.local_name()));
+          }
+        }
+      });
     }
 
     // For stable code generation of polymorphic classes body

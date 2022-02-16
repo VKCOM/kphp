@@ -26,17 +26,17 @@ public:
   }
 
   void set_public() {
-    kphp_error(!is_private() && !is_protected(), "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
+    kphp_error(!is_private() && !is_protected(), "Multiply access modifiers (e.g. public and private at the same time) are not allowed");
     access_modifier_ = AccessModifiers::public_;
   }
 
   void set_private() {
-    kphp_error(!is_public() && !is_protected(), "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
+    kphp_error(!is_public() && !is_protected(), "Multiply access modifiers (e.g. public and private at the same time) are not allowed");
     access_modifier_ = AccessModifiers::private_;
   }
 
   void set_protected() {
-    kphp_error(!is_private() && !is_public(), "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
+    kphp_error(!is_private() && !is_public(), "Multiply access modifiers (e.g. public and private at the same time) are not allowed");
     access_modifier_ = AccessModifiers::protected_;
   }
 
@@ -50,6 +50,11 @@ public:
     abstract_modifier_ = AbstractModifiers::abstract_;
   }
 
+  void set_readonly() {
+    kphp_error(!is_readonly(), "Several readonly modifiers are not allowed");
+    abstract_modifier_ = AbstractModifiers::readonly_;
+  }
+
   bool is_static()    const { return scope_modifier_ == ScopeModifiers::static_;   }
   bool is_instance()  const { return scope_modifier_ == ScopeModifiers::instance_; }
   bool is_nonmember() const { return !is_static() && !is_instance();   }
@@ -60,8 +65,9 @@ public:
   bool is_private()   const { return access_modifier_ == AccessModifiers::private_;   }
   bool is_protected() const { return access_modifier_ == AccessModifiers::protected_; }
 
-  bool is_final()    const { return abstract_modifier_ == AbstractModifiers::final_; }
-  bool is_abstract() const { return abstract_modifier_ == AbstractModifiers::abstract_;    }
+  bool is_final()    const { return abstract_modifier_ == AbstractModifiers::final_;    }
+  bool is_abstract() const { return abstract_modifier_ == AbstractModifiers::abstract_; }
+  bool is_readonly() const { return abstract_modifier_ == AbstractModifiers::readonly_; }
 
   std::string to_string() const {
     std::string res;
@@ -71,6 +77,7 @@ public:
     if (is_public())    res += " public";
     if (is_private())   res += " private";
     if (is_protected()) res += " protected";
+    if (is_readonly())  res += " readonly";
 
     if (is_static())    res += " static";
     if (is_instance())  res += " instance";
@@ -81,6 +88,10 @@ public:
 
   AccessModifiers access_modifier() const {
     return access_modifier_;
+  }
+
+  AbstractModifiers abstract_modifiers() const {
+    return abstract_modifier_;
   }
 
   static FunctionModifiers instance_public() {

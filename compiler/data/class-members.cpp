@@ -103,7 +103,9 @@ ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor
   root->var_id = var;
   var->init_val = def_val;
   var->class_id = klass;
-  var->marked_as_const = klass->is_immutable || phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_const);
+  var->marked_as_const = klass->is_immutable ||
+                         modifiers.is_readonly() ||
+                         phpdoc_tag_exists(phpdoc_str, php_doc_tag::kphp_const);
 }
 
 const TypeData *ClassMemberInstanceField::get_inferred_type() const {

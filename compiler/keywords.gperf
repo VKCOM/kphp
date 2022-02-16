@@ -39,6 +39,7 @@ global, tok_global
 static, tok_static
 final, tok_final
 abstract, tok_abstract
+readonly, tok_readonly
 goto, tok_goto
 return, tok_return
 list, tok_list
