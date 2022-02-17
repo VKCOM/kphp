@@ -57,7 +57,7 @@ struct PhpDocTag {
     const TypeHint *type_hint{nullptr};
     vk::string_view var_name;     // stored without leading "$"; could be empty if omitted in phpdoc
 
-    operator bool() const { return static_cast<bool>(type_hint); }
+    operator bool() const noexcept { return static_cast<bool>(type_hint); }
   };
 
 
@@ -66,9 +66,9 @@ struct PhpDocTag {
 
   PhpDocTag(PhpDocType type, vk::string_view value) : type(type), value(value) {}
 
-  std::string get_tag_name() const;
+  std::string get_tag_name() const noexcept;
 
-  std::string value_as_string() const { return std::string(value); }
+  std::string value_as_string() const noexcept { return std::string(value); }
   TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function) const;
 };
 
@@ -81,7 +81,7 @@ public:
 
   explicit PhpDocComment(vk::string_view phpdoc_str);
 
-  bool has_tag(PhpDocType type) const {
+  bool has_tag(PhpDocType type) const noexcept {
     for (const PhpDocTag &tag: tags) {
       if (tag.type == type) {
         return true;
@@ -90,7 +90,7 @@ public:
     return false;
   }
 
-  bool has_tag(PhpDocType type, PhpDocType or_type2) const {
+  bool has_tag(PhpDocType type, PhpDocType or_type2) const noexcept {
     for (const PhpDocTag &tag: tags) {
       if (tag.type == type || tag.type == or_type2) {
         return true;
@@ -99,7 +99,7 @@ public:
     return false;
   }
 
-  const PhpDocTag *find_tag(PhpDocType type) const {
+  const PhpDocTag *find_tag(PhpDocType type) const noexcept {
     for (const PhpDocTag &tag: tags) {
       if (tag.type == type) {
         return &tag;

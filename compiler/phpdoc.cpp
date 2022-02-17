@@ -39,7 +39,7 @@ class AllDocTags {
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
-  static PhpDocType name2type(const char *start, const char *end) __attribute__((always_inline)) {
+  [[gnu::always_inline]] static PhpDocType name2type(const char *start, const char *end) {
     unsigned int hash = 5381;
     for (const char *c = start; c != end; ++c) {
       hash = (hash << 5) + hash + *c;
@@ -159,7 +159,7 @@ PhpDocComment::PhpDocComment(vk::string_view phpdoc_str) {
   }
 }
 
-std::string PhpDocTag::get_tag_name() const {
+std::string PhpDocTag::get_tag_name() const noexcept {
   return AllDocTags::type2name(type);
 }
 

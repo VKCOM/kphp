@@ -71,18 +71,6 @@ size_t hash_sequence(const Ts &... val) {
   return res;
 }
 
-// http://www.cse.yorku.ca/~oz/hash.html
-inline uint64_t string_hash_5381(const std::string &_input) {
-  uint64_t hash = 5381;
-
-  for (auto ch : _input) {
-    int c = (unsigned char)ch;
-    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-  }
-
-  return hash;
-}
-
 } // namespace vk
 
 namespace std {
