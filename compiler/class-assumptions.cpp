@@ -274,7 +274,7 @@ void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const As
     }
   }
 
-  f->assumptions_for_vars.emplace_back(var_name, assumption);
+  f->assumptions_for_vars.emplace_front(var_name, assumption);
 //  printf("%s() $%s %s\n", f->name.c_str(), var_name.c_str(), assumption.as_human_readable().c_str());
 }
 
@@ -441,6 +441,31 @@ public:
   }
 };
 
+// this is a hack preventing race condition and should be removed somewhen
+// (though it does not prevent it fully, but it happens noticeable more rarely)
+// see comment in MR for detailed description
+void run_CalcAssumptionForVarPass_safe(FunctionPtr function, CalcAssumptionForVarPass *pass) {
+  Location location_backup_raw = Location{*stage::get_location_ptr()};
+  pass->setup(function);
+  pass->on_start();
+
+  std::function<void(VertexPtr)> recurse = [&recurse, pass](VertexPtr vertex) {
+    stage::set_location(vertex->get_location());
+
+    pass->on_enter_vertex(vertex);
+    if (!pass->user_recursion(vertex)) {
+      for (VertexPtr i : *vertex) {
+        recurse(i);
+      }
+    }
+    pass->on_exit_vertex(vertex);
+  };
+
+  recurse(function->root);
+  pass->on_finish();
+  *stage::get_location_ptr() = std::move(location_backup_raw);
+}
+
 /*
  * For the '$a = getSome(), $a->... , or getSome()->...' we need to deduce the result type of getSome().
  * That information can be obtained from the @return tag or trivial returns analysis inside that function.
@@ -504,7 +529,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_
   }
 
   CalcAssumptionForVarPass pass(var_name, stop_at);
-  run_function_pass(f, &pass);
+  run_CalcAssumptionForVarPass_safe(f, &pass);
 
   return f->get_assumption_for_var(var_name);
 }

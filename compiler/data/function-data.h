@@ -71,7 +71,7 @@ public:
   // to check that a function does not throw, should_not_throw flag is used
   std::forward_list<std::string> check_throws;
 
-  std::vector<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
+  std::forward_list<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
   Assumption assumption_for_return;
 
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
