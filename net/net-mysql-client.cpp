@@ -233,7 +233,7 @@ static int sqlc_inner_authorise (struct connection *c) {
   size_t expected_length = sizeof (struct mysql_auth_packet_end);
   if (((struct mysql_auth_packet_end*)p)->proto_len){
     if (strncmp(((struct mysql_auth_packet_end*)p)->proto, "mysql_native_password", 21)){
-      kprintf("unknown auth_proto %s\n", ((struct mysql_auth_packet_end*)p)->proto);
+      vkprintf(1, "unknown auth_proto %s\n", ((struct mysql_auth_packet_end*)p)->proto);
       return -1;
     }
     expected_length += 22;

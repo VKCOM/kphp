@@ -54,11 +54,12 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/database-drivers/connector.h"
+#include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
@@ -75,8 +76,8 @@
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
-#include "server/server-stats.h"
 #include "server/server-log.h"
+#include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 
@@ -1422,7 +1423,7 @@ void reopen_json_log() {
   }
 }
 
-static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
+void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1541,6 +1542,7 @@ static void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_
 
     if (precise_now > next_create_outbound) {
       create_all_outbound_connections();
+      vk::singleton<database_drivers::Adaptor>::get().create_outbound_connections();
       next_create_outbound = precise_now + 0.03 + 0.02 * drand48();
     }
 

@@ -19,6 +19,8 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
 #include "server/server-stats.h"
+#include "server/database-drivers/request.h"
+#include "server/database-drivers/adaptor.h"
 
 php_worker *active_worker = nullptr;
 
@@ -235,6 +237,10 @@ void php_worker_run_net_queue(php_worker *worker __attribute__((unused))) {
        [&](const net_queries_data::rpc_send &data) {
          php_worker_run_rpc_send_query(query->slot_id, data);
          free_rpc_send_query(data);
+       },
+       [&](database_drivers::Request *data) {
+         php_assert(query->slot_id == data->request_id);
+         vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
        },
      }, query->data);
   }

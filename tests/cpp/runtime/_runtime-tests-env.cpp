@@ -1,10 +1,12 @@
 #include <array>
 #include <gtest/gtest.h>
 #include <cassert>
+#include <sys/mman.h>
 
 #include "runtime/storage.h"
 #include "runtime/interface.h"
 #include "runtime/job-workers/job-interface.h"
+#include "runtime/pdo/pdo_statement.h"
 #include "runtime/tl/rpc_response.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
@@ -26,14 +28,14 @@ public:
 
   void SetUp() final {
     testing::Environment::SetUp();
+    script_memory = static_cast<char *>(mmap(nullptr, script_memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
     reset_global_vars();
 
     global_init_runtime_libs();
     global_init_script_allocator();
 
-    init_runtime_environment(nullptr, memory_.data(), memory_.size());
-
+    init_runtime_environment(nullptr, script_memory, script_memory_size);
     php_disable_warnings = true;
     php_warning_level = 0;
   }
@@ -47,7 +49,8 @@ public:
   }
 
 private:
-  std::array<uint8_t, 16*1024*1024> memory_;
+  static constexpr size_t script_memory_size = 16 * 1024 * 1024;
+  char *script_memory{};
 };
 
 const testing::Environment* runtime_tests_env = testing::AddGlobalTestEnvironment(new RuntimeTestsEnvironment);
@@ -65,6 +68,7 @@ template<> int Storage::tagger<array<array<mixed>>>::get_tag() noexcept { return
 template<> int Storage::tagger<class_instance<C$KphpJobWorkerResponse>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<class_instance<C$VK$TL$RpcResponse>>::get_tag() noexcept { return 0; }
 template<> int Storage::tagger<array<class_instance<C$VK$TL$RpcResponse>>>::get_tag() noexcept { return 0; }
+template<> int Storage::tagger<class_instance<C$PDOStatement>>::get_tag() noexcept { return 0; }
 template<> Storage::loader<mixed>::loader_fun Storage::loader<mixed>::get_function(int) noexcept { return nullptr; }
 
 void init_php_scripts() noexcept {

@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 
 #include "common/precise-time.h"
 #include "common/wrappers/overloaded.h"
@@ -16,6 +17,7 @@
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
 
+#include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries-stats.h"
@@ -709,23 +711,34 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 /** new rpc interface **/
 static SlotIdsFactory rpc_ids_factory;
 SlotIdsFactory parallel_job_ids_factory;
+SlotIdsFactory external_db_requests_factory;
 
 static void init_slots() {
   rpc_ids_factory.init();
   parallel_job_ids_factory.init();
+  external_db_requests_factory.init();
 }
 
 static void clear_slots() {
   rpc_ids_factory.clear();
   parallel_job_ids_factory.clear();
+  external_db_requests_factory.clear();
 }
 
 template<class DataT, int N>
 class StaticQueue {
+  static_assert(std::is_trivially_destructible_v<DataT>, "N destructors will be called on server shutdown, and server will most probably hang");
 private:
   DataT q[N];
-  int begin, end, cnt;
+  int begin{};
+  int end{};
+  int cnt{};
 public:
+  StaticQueue() :
+    begin(0),
+    end(0),
+    cnt(0) {}
+
   void clear() {
     begin = 0;
     end = 0;
@@ -735,11 +748,6 @@ public:
   bool empty() const noexcept {
     return cnt == 0;
   }
-
-  StaticQueue() :
-    begin(0),
-    end(0),
-    cnt(0) {}
 
   DataT *create() {
     if (cnt == N) {
@@ -785,7 +793,7 @@ public:
   }
 };
 
-static StaticQueue<net_event_t, 2000000> net_events; // TODO: increase queue size ???
+static StaticQueue<net_event_t, 2000000> net_events;
 static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
@@ -1100,6 +1108,9 @@ const char *net_event_t::get_description() const noexcept {
       } else {
         sprintf(BUF.data(), "JOB ERROR");
       }
+    },
+    [](const database_drivers::Response *) {
+      sprintf(BUF.data(), "EXTERNAL DB ANSWER");
     },
   }, data);
   return BUF.data();

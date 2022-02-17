@@ -13,9 +13,20 @@ prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         processing-jobs.cpp
         server-functions.cpp)
 
+prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
+        pdo.cpp
+        pdo_statement.cpp
+        abstract_pdo_driver.cpp)
+
+prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
+        mysql_pdo_driver.cpp
+        mysql_pdo_emulated_statement.cpp)
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
+        ${KPHP_RUNTIME_PDO_SOURCES}
+        ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
@@ -93,14 +104,14 @@ target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include
 
 add_dependencies(kphp_runtime kphp-timelib)
 
-prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3)
+prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
 set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
 prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static OpenSSL::SSL mysqlclient ${CURL_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
      RELATIVE ${BASE_DIR}
