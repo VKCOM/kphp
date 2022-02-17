@@ -400,7 +400,7 @@ VertexPtr GenTree::get_op_num_const() {
   return VertexPtr{};
 }
 
-VertexPtr GenTree::get_expr_top(bool was_arrow) {
+VertexPtr GenTree::get_expr_top(bool was_arrow, vk::string_view phpdoc_str) {
   auto op = cur;
 
   VertexPtr res, first_node;
@@ -611,12 +611,17 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     }
     case tok_static:
       next_cur();
-      res = get_lambda_function("", FunctionModifiers::static_lambda());
+      res = get_lambda_function(phpdoc_str, FunctionModifiers::static_lambda());
       break;
     case tok_function:
     case tok_fn:
-      res = get_lambda_function("", FunctionModifiers::nonmember());
+      res = get_lambda_function(phpdoc_str, FunctionModifiers::nonmember());
       break;
+    case tok_phpdoc: {      // /** ... */ before expression (not before a statement)
+      vk::string_view phpdoc_str = cur->str_val;
+      next_cur();
+      return get_expr_top(was_arrow, phpdoc_str);
+    }
     case tok_isset: {
       auto temp = get_multi_call<op_isset, op_none>(&GenTree::get_expression, true);
       CE (!kphp_error(temp->size(), "isset function requires at least one argument"));
@@ -2045,13 +2050,26 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     case tok_switch:
       return get_switch();
     case tok_phpdoc: {      // enter /** ... */
-      // is it a function/class/field phpdoc?
+      // phpdoc above a function/class/field
       auto next = (cur+1)->type();
       if (vk::any_of_equal(next, tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var, tok_const)
           || (next == tok_static && cur_function->type == FunctionData::func_class_holder)) {
         vk::string_view phpdoc_str = cur->str_val;
         next_cur();
         return get_statement(phpdoc_str);
+      }
+      // phpdoc above a lambda before assignment: /** ... */ $f = function() { ... };
+      // we do not support complex expressions on the left-hand side (like $f[0] = fn)
+      // todo reconsider this when I'll rewrite phpdoc parsing
+      if (cur+5 < tokens.end() && next == tok_var_name && (cur+2)->type() == tok_eq1 && vk::any_of_equal((cur+3)->type(), tok_function, tok_fn, tok_static)) {
+        vk::string_view phpdoc_str = cur->str_val;
+        if (phpdoc_str.find("@var") == std::string::npos) { // if it's not @var for $f, but @param for lambda
+          next_cur();
+          auto lhs = get_expr_top(false);
+          next_cur();
+          auto rhs = get_expr_top(false, phpdoc_str);
+          return rhs ? (VertexPtr)VertexAdaptor<op_set>::create(lhs, rhs) : rhs;
+        }
       }
       // otherwise it's a phpdoc-statement: it may contain @var which will be used for assumptions and tinf
       return get_phpdoc_inside_function();
