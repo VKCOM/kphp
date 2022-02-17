@@ -607,8 +607,12 @@ inline bool lt(const array<T1> &lhs, const array<T2> &rhs) {
     if (!rhs.has_key(key)) {
       return false;
     }
-    if (lt(lhs_it.get_value(), rhs.get_value(key))) {
+    auto lhs_val = lhs_it.get_value();
+    auto rhs_val = rhs.get_value(key);
+    if (lt(lhs_val, rhs_val)) {
       return true;
+    } else if (lt(rhs_val, lhs_val)) {
+      return false;
     }
   }
 
