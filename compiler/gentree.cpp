@@ -1529,8 +1529,8 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, vk::string_view
     CE (expect(tok_double_arrow, "'=>'"));
     auto body_expr = get_expression();
     CE (!kphp_error(body_expr, "Bad expression in arrow function body"));
-    auto return_stmt = VertexAdaptor<op_return>::create(body_expr);
-    cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(return_stmt);
+    auto return_stmt = VertexAdaptor<op_return>::create(body_expr).set_location(func_location);
+    cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(return_stmt).set_location(func_location);
     auto_capture_vars_from_body_in_arrow_lambda(cur_function);
   } else if (test_expect(tok_opbrc)) { // then we have '{ cmd }' or ';' — function is marked as func_extern in the latter case
     CE(!kphp_error(!cur_function->modifiers.is_abstract(), fmt_format("abstract methods must have empty body: {}", cur_function->as_human_readable())));

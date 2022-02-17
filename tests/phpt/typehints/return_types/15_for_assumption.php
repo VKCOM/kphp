@@ -21,7 +21,7 @@ $a1 = f1(new A);
 echo $a1->a + 1, "\n";
 
 /**
- * @return A
+ * @return ?A
  */
 function f2() : ?A {
   if(true) return new A(7);
