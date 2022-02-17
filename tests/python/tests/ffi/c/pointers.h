@@ -6,6 +6,10 @@ typedef struct SomeData { void *_opaque; } SomeData;
 // Declaring with void argument on purpose.
 SomeData *nullptr_data(void);
 
+// Declaring with 2 unnamed arguments on purpose.
+// See issue #424
+void uint64_memset(uint64_t*, uint8_t);
+
 uint64_t intptr_addr_value(int *ptr);
 uint64_t voidptr_addr_value(void *ptr);
 

@@ -37,4 +37,16 @@ function test() {
     var_dump($lib->voidptr_addr_value($ptr1) === $lib->voidptr_addr_value($ptr2));
 }
 
+function test2() {
+    $lib = FFI::scope('pointers');
+    $u64 = $lib->new('uint64_t');
+    $lib->uint64_memset(FFI::addr($u64), 1);
+    var_dump($u64->cdata == 0x101010101010101);
+    var_dump($u64->cdata);
+    $lib->uint64_memset(FFI::addr($u64), 2);
+    var_dump($u64->cdata == 0x202020202020202);
+    var_dump($u64->cdata);
+}
+
 test();
+test2();

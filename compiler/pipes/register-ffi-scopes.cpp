@@ -64,6 +64,11 @@ private:
       auto param = VertexAdaptor<op_func_param>::create(var).set_location(call->location);
       kphp_assert(ffi_type->kind == FFITypeKind::Var);
       var->str_val = ffi_type->str;
+      if (var->str_val.empty()) {
+        // we need to generate some name for unnamed parameter to avoid
+        // broken type assumptions (see issue #424)
+        var->str_val = "_unnamed_arg" + std::to_string(i);
+      }
       param->type_hint = G->get_ffi_root().create_type_hint(ffi_type->members[0], result.scope);
       kphp_error_return(param->type_hint, fmt_format("unsupported C param type: {}", ffi_decltype_string(ffi_type)));
       params.emplace_back(param);
