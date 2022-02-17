@@ -45,7 +45,8 @@ Checks: |-
   -*-magic-numbers,
   -modernize-use-nodiscard,
   -modernize-concat-nested-namespaces,
-  -readability-named-parameter
+  -readability-named-parameter,
+  -readability-identifier-length
 
 CheckOptions:
   - key:             bugprone-suspicious-string-compare.WarnOnImplicitComparison
