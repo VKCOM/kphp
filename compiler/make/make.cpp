@@ -329,7 +329,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
 
   std::map<vk::string_view, vector<File *>> subdirs;
   std::vector<File *> tmp_objs;
-  for (auto obj_file : objs) {
+  for (auto *obj_file : objs) {
     auto name = obj_file->subdir;
     if (!name.empty()) {
       name.remove_suffix(1);

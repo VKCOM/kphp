@@ -48,7 +48,7 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   stats_.small_memory_pieces = 0;
   stats_.huge_memory_pieces = 0;
   for (auto *free_mem = mem_list.flush(); free_mem;) {
-    const auto next_mem = mem_list.get_next(free_mem);
+    auto *next_mem = mem_list.get_next(free_mem);
     put_memory_back(free_mem, free_mem->size());
     free_mem = next_mem;
   }

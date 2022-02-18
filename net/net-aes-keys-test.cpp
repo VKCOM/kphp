@@ -21,7 +21,7 @@ TEST(net_aes_keys, basic) {
   EXPECT_EQ(find_aes_key_by_id(key->id), key);
   EXPECT_EQ(find_aes_key_by_filename(key->filename), key);
 
-  auto first_not_zero = std::find_if_not(std::next(key_body), std::next(key_body, AES_KEY_MAX_LEN), [](uint8_t byte) { return byte != 0; });
+  auto *first_not_zero = std::find_if_not(std::next(key_body), std::next(key_body, AES_KEY_MAX_LEN), [](uint8_t byte) { return byte != 0; });
   EXPECT_EQ(first_not_zero, std::next(key_body, AES_KEY_MAX_LEN));
 
   free_aes_key(key);

@@ -162,7 +162,7 @@ constexpr auto get_reserve_function_names() noexcept {
 }
 
 VertexPtr get_first_arg_from_array_reserve_call(VertexAdaptor<op_func_call> func_call) noexcept {
-  for (auto reserve_function : get_reserve_function_names()) {
+  for (const auto *reserve_function : get_reserve_function_names()) {
     if (auto first_arg = get_first_arg_from_builtin_call(func_call, reserve_function)) {
       return first_arg;
     }

@@ -41,7 +41,7 @@ ConfdataFirstKeyType ConfdataPredefinedWildcards::detect_first_key_type(vk::stri
 ConfdataFirstKeyType ConfdataPredefinedWildcards::get_wildcard_type(vk::string_view wildcard) noexcept {
   size_t dots = 0;
   if (!wildcard.empty() && *wildcard.rbegin() == '.') {
-    for (auto c = wildcard.begin(); c != wildcard.end() && dots <= 2; ++c) {
+    for (const auto *c = wildcard.begin(); c != wildcard.end() && dots <= 2; ++c) {
       dots += (*c == '.');
     }
   }

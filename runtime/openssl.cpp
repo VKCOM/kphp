@@ -104,7 +104,7 @@ const auto &get_supported_hash_algorithms() noexcept {
 
 const HashTraits &find_hash_algorithm(const char *algo) noexcept {
   const auto &supported_algorithms = get_supported_hash_algorithms();
-  const auto it = std::find_if(supported_algorithms.begin(), supported_algorithms.end(),
+  const auto *const it = std::find_if(supported_algorithms.begin(), supported_algorithms.end(),
                                [algo](const HashTraits &traits) { return !strcmp(algo, traits.name); });
   if (it == supported_algorithms.end()) {
     php_critical_error ("algo %s not supported in function hash", algo);
@@ -1280,8 +1280,8 @@ private:
     char *issuer_copy = nullptr;
     {
       dl::CriticalSectionGuard critical_section;
-      auto issuer_name = X509_get_subject_name(x509_);
-      auto issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
+      auto *issuer_name = X509_get_subject_name(x509_);
+      auto *issuer = X509_NAME_oneline(issuer_name, nullptr, 0);
       issuer_copy = dl::script_allocator_strdup(issuer);
       OPENSSL_free(issuer);
     }
@@ -1314,13 +1314,13 @@ private:
 
   int64_t get_time_not_before() const {
     dl::CriticalSectionGuard critical_section;
-    auto asn_time_not_before = X509_getm_notBefore(x509_);
+    auto *asn_time_not_before = X509_getm_notBefore(x509_);
     return convert_asn1_time(asn_time_not_before);
   }
 
   int64_t get_time_not_after() const {
     dl::CriticalSectionGuard critical_section;
-    auto asn_time_not_after = X509_getm_notAfter(x509_);
+    auto *asn_time_not_after = X509_getm_notAfter(x509_);
     return convert_asn1_time(asn_time_not_after);
   }
 
@@ -1360,7 +1360,7 @@ private:
       int nid = OBJ_obj2nid(key);
       const char *key_str = shortnames ? OBJ_nid2sn(nid) : OBJ_nid2ln(nid);
 
-      auto value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
+      const auto *value_str = reinterpret_cast<const char *>(ASN1_STRING_get0_data(value));
       int value_len = ASN1_STRING_length(value);
 
       critical_section.leave_critical_section();

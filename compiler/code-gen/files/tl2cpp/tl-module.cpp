@@ -106,7 +106,7 @@ void Module::update_dependencies(const std::unique_ptr<vk::tlo_parsing::type> &t
 }
 
 void Module::collect_deps_from_type_tree(vk::tlo_parsing::expr_base *expr) {
-  if (auto as_type_expr = expr->as<vk::tlo_parsing::type_expr>()) {
+  if (auto *as_type_expr = expr->as<vk::tlo_parsing::type_expr>()) {
     std::string expr_module = get_module_name(tl->types[as_type_expr->type_id]->name);
     if (name != expr_module) {
       h_includes.add_raw_filename_include("tl/" + expr_module + ".h");
@@ -114,7 +114,7 @@ void Module::collect_deps_from_type_tree(vk::tlo_parsing::expr_base *expr) {
     for (const auto &child : as_type_expr->children) {
       collect_deps_from_type_tree(child.get());
     }
-  } else if (auto as_type_array = expr->as<vk::tlo_parsing::type_array>()) {
+  } else if (auto *as_type_array = expr->as<vk::tlo_parsing::type_array>()) {
     for (const auto &arg : as_type_array->args) {
       collect_deps_from_type_tree(arg->type_expr.get());
     }

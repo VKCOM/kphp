@@ -238,7 +238,7 @@ type::type(tlo_parser *reader) {
 }
 
 bool arg::is_type() const {
-  if (auto casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
+  if (auto *casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
     if (casted->type_id == TL_TYPE_ID) {
       return true;
     }
@@ -247,7 +247,7 @@ bool arg::is_type() const {
 }
 
 bool arg::is_sharp() const {
-  if (auto casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
+  if (auto *casted = type_expr->as<vk::tlo_parsing::type_expr>()) {
     if (casted->type_id == TL_SHARP_ID) {
       return true;
     }
@@ -490,7 +490,7 @@ bool arg::is_forwarded_function() const {
 }
 
 bool arg::is_named_fields_mask_bit() const {
-  if (auto expr = type_expr->as<vk::tlo_parsing::type_expr>()) {
+  if (auto *expr = type_expr->as<vk::tlo_parsing::type_expr>()) {
     return is_fields_mask_optional() && expr->type_id == TL_TRUE_ID && expr->is_bare();
   }
   return false;

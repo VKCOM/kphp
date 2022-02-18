@@ -20,7 +20,7 @@
 TEST(lockfree_slab, basic) {
   const std::size_t sizes[] = { 8, 12, 16, 31, 100 };
 
-  for (auto size = std::begin(sizes); size != std::end(sizes); ++size) {
+  for (const auto *size = std::begin(sizes); size != std::end(sizes); ++size) {
     const std::size_t pointers_size = 1000;
 
     std::vector<void*> pointers;
@@ -36,7 +36,7 @@ TEST(lockfree_slab, basic) {
     }
 
     std::shuffle(pointers.begin(), pointers.end(), std::mt19937{});
-    for(auto pointer : pointers) {
+    for(auto *pointer : pointers) {
       lockfree_slab_cache_free(&cache_tls, pointer);
     }
 
@@ -58,10 +58,10 @@ TEST(lockfree_slab, alloc0) {
     pointers.push_back(lockfree_slab_cache_alloc0(&cache_tls));
   }
 
-  for(auto pointer : pointers) {
-    const auto begin = static_cast<const char*>(pointer);
-    const auto end = std::next(begin, object_size);
-    const auto found = std::find_if(begin, end,[](const char value) { return value != 0; });
+  for(auto *pointer : pointers) {
+    const auto *begin = static_cast<const char*>(pointer);
+    const auto *end = std::next(begin, object_size);
+    const auto *found = std::find_if(begin, end,[](const char value) { return value != 0; });
 
     EXPECT_EQ(found, end);
   }
@@ -85,7 +85,7 @@ TEST(lockfree_slab, stress) {
         return nullptr;
       }
 
-      auto elem = queue_.front();
+      auto *elem = queue_.front();
       queue_.pop();
 
       return elem;
@@ -146,7 +146,7 @@ TEST(lockfree_slab, stress) {
 
         std::this_thread::sleep_for(std::chrono::milliseconds(out_buffers_num));
 
-        for (auto in_buffer : in_buffers) {
+        for (auto *in_buffer : in_buffers) {
           lockfree_slab_cache_free(&cache_tls, in_buffer);
         }
       }

@@ -51,7 +51,7 @@ kfs_file_handle_t open_snapshot(kfs_replica_handle_t r, int snapshot_index) {
     return 0;
   }
 
-  auto f = static_cast<kfs_file *>(malloc(sizeof(struct kfs_file)));
+  auto *f = static_cast<kfs_file *>(malloc(sizeof(struct kfs_file)));
   assert (f);
   memset(f, 0, sizeof(*f));
   f->info = fi;

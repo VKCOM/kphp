@@ -215,7 +215,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
     return;
   }
 
-  auto ptr_class = class_type()->ffi_class_mixin;
+  auto *ptr_class = class_type()->ffi_class_mixin;
 
   if (ptr_class->ffi_type->kind == FFITypeKind::Void && indirection_ == 1) {
     // any pointer is compatible with `void*`,
@@ -223,7 +223,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
     return;
   }
 
-  auto new_ptr_class = new_ptr_type->class_type()->ffi_class_mixin;
+  auto *new_ptr_class = new_ptr_type->class_type()->ffi_class_mixin;
   if (ptr_class != new_ptr_class) {
     set_ptype(tp_Error);
     return;
@@ -502,7 +502,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   TypeData *cur = this;
   
   for (const Key &key : multi_key) {
-    auto prev = cur;
+    auto *prev = cur;
     cur = cur->write_at(key);
     // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
@@ -892,7 +892,7 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
     return false;
   }
   if (from->get_real_ptype() == tp_array) {
-    auto from_array_value_type = from->lookup_at_any_key();
+    const auto *from_array_value_type = from->lookup_at_any_key();
     if (from_array_value_type->get_real_ptype() == tp_any) {
       return false;
     }

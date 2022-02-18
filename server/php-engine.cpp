@@ -259,7 +259,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
     on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to send query, timeout expired", nullptr));
   } else {
-    auto d = (connection *)data;
+    auto *d = (connection *)data;
     //assert (d->status == conn_ready);
     send_rpc_query(d, TL_RPC_INVOKE_REQ, slot_id, (int *)command->data, command->len);
     d->last_query_sent_time = precise_now;
@@ -285,7 +285,7 @@ command_t command_net_write_rpc_base = {
 
 
 command_t *create_command_net_writer(const char *data, int data_len, command_t *base, long long extra) {
-  auto command = reinterpret_cast<command_net_write_t *>(malloc(sizeof(command_net_write_t)));
+  auto *command = reinterpret_cast<command_net_write_t *>(malloc(sizeof(command_net_write_t)));
   command->base.run = base->run;
   command->base.free = base->free;
 
@@ -580,7 +580,7 @@ int hts_func_execute(connection *c, int op) {
   qUri = ReqHdr + D->uri_offset;
   qUriLen = D->uri_size;
 
-  auto get_qm_ptr = reinterpret_cast<char *>(memchr(qUri, '?', (size_t)qUriLen));
+  auto *get_qm_ptr = reinterpret_cast<char *>(memchr(qUri, '?', (size_t)qUriLen));
   if (get_qm_ptr) {
     qGet = get_qm_ptr + 1;
     qGetLen = (int)(qUri + qUriLen - qGet);
@@ -792,7 +792,7 @@ void rpcc_stop() {
 }
 
 void rpcx_at_query_end(connection *c) {
-  auto D = TCP_RPC_DATA(c);
+  auto *D = TCP_RPC_DATA(c);
 
   clear_connection_timeout(c);
   c->generation = ++conn_generation;
@@ -808,7 +808,7 @@ void rpcx_at_query_end(connection *c) {
 }
 
 int rpcx_func_wakeup(connection *c) {
-  auto D = TCP_RPC_DATA(c);
+  auto *D = TCP_RPC_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
@@ -826,7 +826,7 @@ int rpcx_func_wakeup(connection *c) {
 }
 
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
-  auto D = TCP_RPC_DATA(c);
+  auto *D = TCP_RPC_DATA(c);
 
   auto *worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
@@ -1005,7 +1005,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
         return 0;
       }
       assert(fetched_bytes == len);
-      auto D = TCP_RPC_DATA(c);
+      auto *D = TCP_RPC_DATA(c);
       rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
                                                        D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
@@ -1089,7 +1089,7 @@ void pnet_query_answer(conn_query *q) {
 }
 
 void pnet_query_delete(conn_query *q) {
-  auto ansgen = (net_ansgen_t *)q->extra;
+  auto *ansgen = (net_ansgen_t *)q->extra;
 
   ansgen->func->free(ansgen);
   q->extra = nullptr;
@@ -1099,7 +1099,7 @@ void pnet_query_delete(conn_query *q) {
 }
 
 int pnet_query_timeout(conn_query *q) {
-  auto net_ansgen = (net_ansgen_t *)q->extra;
+  auto *net_ansgen = (net_ansgen_t *)q->extra;
   net_ansgen->func->timeout(net_ansgen);
 
   pnet_query_answer(q);
@@ -1110,7 +1110,7 @@ int pnet_query_timeout(conn_query *q) {
 }
 
 int pnet_query_term(conn_query *q) {
-  auto net_ansgen = (net_ansgen_t *)q->extra;
+  auto *net_ansgen = (net_ansgen_t *)q->extra;
   net_ansgen->func->error(net_ansgen, "Connection closed by server");
 
   pnet_query_answer(q);
@@ -1120,7 +1120,7 @@ int pnet_query_term(conn_query *q) {
 }
 
 int pnet_query_check(conn_query *q) {
-  auto net_ansgen = (net_ansgen_t *)q->extra;
+  auto *net_ansgen = (net_ansgen_t *)q->extra;
 
   ansgen_state_t state = net_ansgen->state;
   switch (state) {
@@ -1138,7 +1138,7 @@ int pnet_query_check(conn_query *q) {
 }
 
 int delayed_send_term(conn_query *q) {
-  auto command = (command_t *)q->extra;
+  auto *command = (command_t *)q->extra;
 
   if (command != nullptr) {
     command->run(command, nullptr);
@@ -1189,7 +1189,7 @@ conn_query_functions delayed_send_cq_func = [] {
 
 
 void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
+  auto *q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = nullptr;
@@ -1206,7 +1206,7 @@ void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansg
 
 void create_delayed_send_query(conn_target_t *t, command_t *command,
                                double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
+  auto *q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->start_time = precise_now;
@@ -1222,7 +1222,7 @@ void create_delayed_send_query(conn_target_t *t, command_t *command,
 }
 
 conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansgen_t *gen, double finish_time) {
-  auto q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
+  auto *q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
   q->outbound = conn;
@@ -1336,7 +1336,7 @@ int rpcc_send_query(connection *c) {
 //    dl_assert (q->requester != nullptr, "...");
 //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
 
-    auto command = (command_t *)q->extra;
+    auto *command = (command_t *)q->extra;
     command->run(command, c);
     command->free(command);
     q->extra = nullptr;

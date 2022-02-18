@@ -210,7 +210,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
     return;
   }
 
-  auto json_out_it = buffers_.begin();
+  auto *json_out_it = buffers_.begin();
   for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
   }
   assert(json_out_it != buffers_.end());

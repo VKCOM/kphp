@@ -16,7 +16,7 @@ static TSHashTable<std::string *> string_key_names_ht;
 static int n_string_keys_ht = 0;
 
 Key Key::string_key(const std::string &key) {
-  auto node = string_keys_ht.at(vk::std_hash(key));
+  auto *node = string_keys_ht.at(vk::std_hash(key));
   if (node->data != nullptr) {
     return *node->data;
   }
@@ -29,7 +29,7 @@ Key Key::string_key(const std::string &key) {
   int old_n = __sync_fetch_and_add(&n_string_keys_ht, 1);
   node->data = new Key(old_n * 2 + 2);
 
-  auto name_node = string_key_names_ht.at(node->data->id);
+  auto *name_node = string_key_names_ht.at(node->data->id);
   name_node->data = new std::string(key);
 
   return *node->data;

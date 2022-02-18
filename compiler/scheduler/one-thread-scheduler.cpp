@@ -35,7 +35,7 @@ void OneThreadScheduler::execute() {
   bool run_flag = true;
   while (run_flag) {
     run_flag = false;
-    for (auto node : nodes) {
+    for (auto *node : nodes) {
       Task *task;
       while ((task = node->get_task()) != nullptr) {
         run_flag = true;
@@ -49,7 +49,7 @@ void OneThreadScheduler::execute() {
       run_flag = true;
     }
   }
-  for (auto node : nodes) {
+  for (auto *node : nodes) {
     delete node;
   }
 }

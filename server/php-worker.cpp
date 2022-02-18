@@ -26,7 +26,7 @@ php_worker *active_worker = nullptr;
 
 php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
                               long long req_id, double timeout) {
-  auto worker = reinterpret_cast<php_worker *>(malloc(sizeof(php_worker)));
+  auto *worker = reinterpret_cast<php_worker *>(malloc(sizeof(php_worker)));
 
   worker->data = php_query_data_create(http_data, rpc_data, job_data);
   worker->conn = c;
@@ -142,7 +142,7 @@ void php_worker_try_start(php_worker *worker) {
   if (php_worker_run_flag) { // put connection into pending_http_query
     vkprintf (2, "php script [req_id = %016llx] is waiting\n", worker->req_id);
 
-    auto pending_q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
+    auto *pending_q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
     pending_q->custom_type = 0;
     pending_q->outbound = (connection *)&pending_http_queue;

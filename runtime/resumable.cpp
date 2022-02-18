@@ -235,7 +235,7 @@ int64_t f$get_running_fork_id() {
 }
 
 Optional<array<mixed>> f$get_fork_stat(int64_t fork_id) {
-  auto info = get_forked_resumable_info(fork_id);
+  auto *info = get_forked_resumable_info(fork_id);
   if (!info) {
     return false;
   }

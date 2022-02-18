@@ -161,7 +161,7 @@ static void generic_debug_handler(int sig, siginfo_t *info, void *ucontext) {
   if (sig == SIGABRT) {
     dump_stats();
   }
-  auto name = signal_shortname(sig);
+  const auto *name = signal_shortname(sig);
   write_to_stderr(name, true);
   if (info->si_code == SI_USER) {
     write_to_stderr(" received from process ");

@@ -15,7 +15,7 @@
 void MakeRunner::run_target(Target *target) {
   bool ready = target->mtime != 0;
   if (ready) {
-    for (auto const dep : target->deps) {
+    for (const auto *dep : target->deps) {
       if (dep->mtime > target->mtime) {
         ready = false;
         break;
@@ -37,7 +37,7 @@ void MakeRunner::ready_target(Target *target) {
 
   targets_left--;
   target->is_ready = true;
-  for (auto const rdep : target->rdeps) {
+  for (auto *rdep : target->rdeps) {
     one_dep_ready_target(rdep);
   }
 }
@@ -83,7 +83,7 @@ void MakeRunner::require_target(Target *target) {
     run_target(target);
   } else {
     wait_target(target);
-    for (auto const dep : target->deps) {
+    for (auto *dep : target->deps) {
       require_target(dep);
     }
   }
@@ -284,7 +284,7 @@ MakeRunner::MakeRunner(FILE *stats_file) noexcept:
 
 MakeRunner::~MakeRunner() {
   //TODO: delete targets
-  for (auto target : all_targets) {
+  for (auto *target : all_targets) {
     delete target;
   }
 }

@@ -96,7 +96,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
   // Exclamation mark "!" handling
   if (arg->is_forwarded_function()) {
     kphp_assert(combinator->is_function());
-    auto as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
+    auto *as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
     kphp_assert(as_type_var);
     if (!typed_mode) {
       W << "auto _cur_arg = "
@@ -223,7 +223,7 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
     W << "return " << tl2cpp::get_full_value(combinator->result.get(), "") << ".fetch();" << NL;
     return;
   }
-  if (auto type_var = combinator->result->as<vk::tlo_parsing::type_var>()) {
+  if (auto *type_var = combinator->result->as<vk::tlo_parsing::type_var>()) {
     // multiexclamation optimization
     W << "return " << tl2cpp::cur_combinator->get_var_num_arg(type_var->var_num)->name << ".fetcher->typed_fetch();" << NL;
     return;

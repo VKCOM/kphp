@@ -79,7 +79,7 @@ static int read_whole_file(const char *filename, void *output, int olen) {
     vkprintf(1, "%s: output buffer is too small (%d bytes).\n", __func__, olen);
     return -1;
   }
-  auto p = static_cast<unsigned char *>(output);
+  auto *p = static_cast<unsigned char *>(output);
   p[n] = 0;
   return n;
 }

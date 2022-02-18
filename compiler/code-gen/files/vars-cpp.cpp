@@ -148,7 +148,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
     for (const auto &var: other_const_vars) {
       if (var->dependency_level == dep_level) {
         W << InitVar(var);
-        auto type_data = var->tinf_node.get_type();
+        const auto *type_data = var->tinf_node.get_type();
         PrimitiveType ptype = type_data->ptype();
         if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
           W << VarName(var);

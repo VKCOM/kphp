@@ -52,7 +52,7 @@ int Adaptor::register_connector(std::unique_ptr<Connector> &&connector) noexcept
 }
 
 void Adaptor::create_outbound_connections() noexcept {
-  for (auto &item : connectors) {
+  for (const auto &item : connectors) {
     const auto &connector = item.second;
     if (!connector->connected()) {
       connector->connect_async_and_epoll_insert();

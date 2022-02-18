@@ -237,7 +237,7 @@ TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, vec
 //  test {t:Type} [x:t] = Test;
 // All such cases (vector, tuple) are implemented manually in tl_builtins.h
 void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tlo_parsing::type_expr_base *type_tree, std::vector<InnerParamTypeAccess> &recursion_stack) {
-  if (auto type_var = dynamic_cast<vk::tlo_parsing::type_var *>(type_tree)) {
+  if (auto *type_var = dynamic_cast<vk::tlo_parsing::type_var *>(type_tree)) {
     std::string type_var_name = cur_tl_constructor->get_var_num_arg(type_var->var_num)->name;
     if (!deduced_params.count(type_var_name)) {
       ClassPtr tl_constructor_php_class = tl2cpp::get_php_class_of_tl_constructor_specialization(cur_tl_constructor, specialization_suffix);
@@ -252,10 +252,10 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tlo_parsing::type_
     }
     return;
   }
-  if (auto type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(type_tree)) {
+  if (auto *type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(type_tree)) {
     int i = 0;
     for (const auto &child : type_expr->children) {
-      if (auto casted_child = dynamic_cast<vk::tlo_parsing::type_expr_base *>(child.get())) {
+      if (auto *casted_child = dynamic_cast<vk::tlo_parsing::type_expr_base *>(child.get())) {
         vk::tlo_parsing::type *parent_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(type_expr->type_id);
         kphp_assert(parent_tl_type);
 
@@ -269,7 +269,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tlo_parsing::type_
             // Can't deduce in cases like 'Maybe t', where {t: Type}: don't know if 't' is wrapped to optional or not
             continue;
           }
-          auto child_type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(casted_child);
+          auto *child_type_expr = dynamic_cast<vk::tlo_parsing::type_expr *>(casted_child);
           kphp_assert(child_type_expr);
           vk::tlo_parsing::type *child_tl_type = G->get_tl_classes().get_scheme()->get_type_by_magic(child_type_expr->type_id);
           kphp_assert(child_tl_type);

@@ -30,7 +30,7 @@ void TypeStore::compile(CodeGenerator &W) const {
     return;
   }
 
-  auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
+  auto *default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
   // for polymorphic types:
   // typed TL: ifs with dynamic_cast, similar to the interface methods
   if (typed_mode) {
@@ -86,7 +86,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
 
   // non-polymorphic types are fetched in a trivial way - their fetch is delegated to the constructor
   if (!type->is_polymorphic()) {
-    auto &constructor = type->constructors.front();
+    const auto &constructor = type->constructors.front();
     if (typed_mode) {
       W << "CHECK_EXCEPTION(return);" << NL;
       W << get_php_runtime_type(constructor.get(), true) << " result;" << NL;
@@ -107,7 +107,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
     W << "array<mixed> result;" << NL;
   }
   W << "CHECK_EXCEPTION(return" << (typed_mode ? "" : " result") << ");" << NL;
-  auto default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
+  auto *default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
   bool has_name = type->constructors_num > 1 && !(type->flags & FLAG_NOCONS);
   if (default_constructor != nullptr) {
     W << "int pos = tl_parse_save_pos();" << NL;
@@ -167,7 +167,7 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     W << TlTemplatePhpTypeHelpers(t);
   }
   std::string struct_name = cpp_tl_struct_name("t_", t->name);
-  auto constructor = t->constructors[0].get();
+  auto *constructor = t->constructors[0].get();
   std::string template_decl = get_template_declaration(constructor);
   if (!template_decl.empty()) {
     W << template_decl << NL;
@@ -210,7 +210,7 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
 void TlTypeDefinition::compile(CodeGenerator &W) const {
   const bool needs_typed_fetch_store = TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t);
 
-  auto constructor = t->constructors[0].get();
+  auto *constructor = t->constructors[0].get();
   std::string struct_name = cpp_tl_struct_name("t_", t->name);
   std::string template_decl = get_template_declaration(constructor);
   std::string template_def = get_template_definition(constructor);

@@ -60,7 +60,7 @@ void FunctionToPhp::apply(const tlo_parsing::type_var &tl_type_var) {
       }
     }
   }
-  auto arg_ptr = tl_combinator_.get_var_num_arg(tl_type_var.var_num);
+  auto *arg_ptr = tl_combinator_.get_var_num_arg(tl_type_var.var_num);
   assert(arg_ptr);
   arg_ptr->type_expr->visit(*this);
 }

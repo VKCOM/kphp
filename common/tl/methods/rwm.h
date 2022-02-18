@@ -87,7 +87,7 @@ struct tl_out_methods_raw_msg_base : Base {
     assert (rwm_push_data(get_rwm(), buf, len) == len);
   }
   void copy_through(tl_in_methods *in, int len, int advance) noexcept final {
-    if (auto rwm_in = dynamic_cast<tl_in_methods_raw_msg*>(in)) {
+    if (auto *rwm_in = dynamic_cast<tl_in_methods_raw_msg*>(in)) {
       if (!advance) {
         raw_message_t r;
         rwm_clone(&r, &rwm_in->in);

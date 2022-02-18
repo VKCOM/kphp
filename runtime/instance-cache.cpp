@@ -148,10 +148,10 @@ void CacheContext::move_to_garbage(ElementHolder *element) noexcept {
 }
 
 void CacheContext::clear_garbage() noexcept {
-  auto element = cache_garbage_.exchange(nullptr);
+  auto *element = cache_garbage_.exchange(nullptr);
 
   while (element) {
-    auto next = element->next_in_garbage_list.load();
+    auto *next = element->next_in_garbage_list.load();
     element->destroy();
     element = next;
   }
