@@ -8,11 +8,12 @@
 
 #include "common/algorithms/contains.h"
 
+#include "compiler/compiler-settings.h"
 #include "compiler/make/target.h"
 
 class Cpp2ObjTarget : public Target {
 public:
-  string get_cmd() final {
+  std::string get_cmd() final {
     std::stringstream ss;
     const auto cpp_list = dep_list();
     ss << settings->cxx.get() <<

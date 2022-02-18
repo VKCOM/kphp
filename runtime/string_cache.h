@@ -3,7 +3,13 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <cstddef>
 #include <array>
+
+#include "common/php-functions.h"
+
+#include "runtime/kphp_core.h"
 
 class string_cache {
 private:

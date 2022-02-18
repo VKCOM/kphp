@@ -7,7 +7,9 @@
 #include "compiler/scheduler/pipe.h"
 
 #include <iomanip>
+#include <iostream>
 #include <cmath>
+#include <mutex>
 
 template<typename PipeT>
 struct PipeProgressName {

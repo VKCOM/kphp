@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "runtime/include.h"
+#include "runtime/kphp_core.h"
 
 namespace impl_ {
 

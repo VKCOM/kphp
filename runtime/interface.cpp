@@ -628,7 +628,7 @@ Optional<array<string>> f$gethostbynamel(const string &name) {
   dl::leave_critical_section();
 
   array<string> result;
-  for (int i = 0; hp->h_addr_list[i] != 0; i++) {
+  for (int i = 0; hp->h_addr_list[i] != nullptr; i++) {
     dl::enter_critical_section();//OK
     const char *ip = inet_ntoa(*(struct in_addr *)hp->h_addr_list[i]);
     dl::leave_critical_section();
@@ -1250,7 +1250,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts) {
     }
     iter.get_value() = opt.substr(0, opt.size() - count);
     real_longopts[longopts_count].name = strdup(iter.get_value().c_str());
-    real_longopts[longopts_count].flag = 0;
+    real_longopts[longopts_count].flag = nullptr;
     real_longopts[longopts_count].val = 300 + longopts_count;
     real_longopts[longopts_count].has_arg = (count == 0 ? no_argument : (count == 1 ? required_argument : optional_argument));
     longopts_count++;

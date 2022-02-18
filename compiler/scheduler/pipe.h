@@ -8,6 +8,7 @@
 
 #include "compiler/scheduler/node.h"
 #include "compiler/scheduler/task.h"
+#include "compiler/threading/profiler.h"
 
 template<class T, class Enable = void>
 struct NeedProfiler : std::true_type {};
@@ -20,8 +21,6 @@ struct NeedOnFinishProfiler : std::true_type {};
 
 template<class T>
 struct NeedOnFinishProfiler<T, typename std::enable_if<!T::need_on_finish_profiler::value>::type> : std::false_type {};
-
-
 
 template<class PipeType>
 class PipeTask : public Task {

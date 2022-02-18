@@ -8,6 +8,7 @@
 #include <cassert>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "common/mixin/not_copyable.h"
 
@@ -16,7 +17,7 @@ struct Trie : private vk::not_copyable {
   std::array<std::unique_ptr<Trie>, 256> next{};
   std::optional<T> val;
 
-  void add(const string &s, T val) {
+  void add(const std::string &s, T val) {
     Trie *cur = this;
 
     for (char c : s) {

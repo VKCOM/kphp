@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <sstream>
+
+#include "compiler/compiler-settings.h"
+#include "compiler/make/target.h"
+
 class Objs2ObjTarget : public Target {
 public:
-  string get_cmd() final {
+  std::string get_cmd() final {
     std::stringstream ss;
     ss << settings->cxx.get() <<
        " " << settings->cxx_toolchain_option.get() <<
