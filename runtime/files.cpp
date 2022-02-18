@@ -110,7 +110,7 @@ string f$basename(const string &name, const string &suffix) {
   if ((int)suffix.size() <= l && !strcmp(result_c_str + l - suffix.size(), suffix.c_str())) {
     l -= suffix.size();
   }
-  return string(result_c_str, static_cast<string::size_type>(l));
+  return {result_c_str, static_cast<string::size_type>(l)};
 }
 
 bool f$chmod(const string &s, int64_t mode) {
@@ -345,7 +345,7 @@ string f$php_uname(const string &name) {
   dl::enter_critical_section();//OK
   if (uname(&res)) {
     dl::leave_critical_section();
-    return string();
+    return {};
   }
   dl::leave_critical_section();
 

@@ -47,7 +47,7 @@ using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
 inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
     CurrentProcessingQuery::get().raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
-    return mixed();
+    return {};
   }
   const mixed &num_v = arr.get_value(num_key);
   if (!num_v.is_null()) {
@@ -58,7 +58,7 @@ inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key
     return str_v;
   }
   CurrentProcessingQuery::get().raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
-  return mixed();
+  return {};
 }
 
 inline void store_magic_if_not_bare(unsigned int inner_magic) {
@@ -306,7 +306,7 @@ struct t_True {
   void store(const mixed &__attribute__((unused))) {}
 
   array<mixed> fetch() {
-    return array<mixed>();
+    return {};
   }
 
   void typed_store(const PhpType &__attribute__((unused))) {}
@@ -347,7 +347,7 @@ struct t_Vector {
     int n = rpc_fetch_int();
     if (n < 0) {
       CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
-      return array<mixed>();
+      return {};
     }
     array<mixed> result(array_size(std::min(n, 10000), 0, true));
     for (int i = 0; i < n; ++i) {

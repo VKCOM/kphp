@@ -382,7 +382,7 @@ std::string CompilerSettings::read_runtime_sha256_file(const std::string &filena
   runtime_sha256_file.read(runtime_sha256, SHA256_LEN);
   kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
              fmt_format("Can't read runtime sha256 from file '{}'", filename));
-  return std::string(runtime_sha256, runtime_sha256 + SHA256_LEN);
+  return {runtime_sha256, runtime_sha256 + SHA256_LEN};
 }
 
 CompilerSettings::color_settings CompilerSettings::get_color_settings() const {

@@ -71,7 +71,7 @@ static inline int conv_hex_digit(int c) {
 inline vk::string_view string_view_dup(vk::string_view s) {
   char *buf = new char[s.size()];
   memcpy(buf, s.begin(), s.size());
-  return vk::string_view(buf, buf + s.size());
+  return {buf, buf + s.size()};
 }
 
 inline std::vector<std::string> split(const std::string &s, char delimiter = ' ') {

@@ -1223,39 +1223,39 @@ const char *get_type_c_str(const class_instance<T> &) {
 template<class T>
 string f$get_type(const T &v) {
   const char *res = get_type_c_str(v);
-  return string(res, strlen(res));
+  return {res, static_cast<string::size_type>(strlen(res))};
 }
 
 
 string f$get_class(bool) {
   php_warning("Called get_class() on boolean");
-  return string();
+  return {};
 }
 
 string f$get_class(int64_t) {
   php_warning("Called get_class() on integer");
-  return string();
+  return {};
 }
 
 string f$get_class(double) {
   php_warning("Called get_class() on double");
-  return string();
+  return {};
 }
 
 string f$get_class(const string &) {
   php_warning("Called get_class() on string");
-  return string();
+  return {};
 }
 
 string f$get_class(const mixed &v) {
   php_warning("Called get_class() on %s", v.get_type_c_str());
-  return string();
+  return {};
 }
 
 template<class T>
 string f$get_class(const array<T> &) {
   php_warning("Called get_class() on array");
-  return string();
+  return {};
 }
 
 template<class T>
@@ -1309,7 +1309,7 @@ bool f$function_exists(const T &) {
 
 
 mixed f$error_get_last() {
-  return mixed();
+  return {};
 }
 
 int64_t f$error_reporting(int64_t level) {

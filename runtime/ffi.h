@@ -175,7 +175,7 @@ string f$FFI$$string(const T &v) {
 
 template<class T>
 string f$FFI$$string(const T &v, int64_t size) {
-  return string(reinterpret_cast<const char*>(ffi_c_value_ptr(v)), size);
+  return {reinterpret_cast<const char*>(ffi_c_value_ptr(v)), static_cast<string::size_type>(size)};
 }
 
 template<class T>
@@ -279,7 +279,7 @@ inline int64_t ffi_c2php(int64_t v) { return v; }
 inline double ffi_c2php(float v) { return v; }
 inline double ffi_c2php(double v) { return v; }
 inline string ffi_c2php(const char *v) { return string(v); }
-inline string ffi_c2php(char v) { return string(1, v); }
+inline string ffi_c2php(char v) { return {1, v}; }
 
 template<class T>
 CDataPtr<T> ffi_c2php(T* v) {

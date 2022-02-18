@@ -144,9 +144,9 @@ const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len) {
 string zlib_decode(const string&s, int encoding) {
   int len = zlib_decode_raw({s.c_str(), s.size()}, encoding);
   if (len == -1u) {
-    return string();
+    return {};
   }
-  return string(php_buf, len);
+  return {php_buf, static_cast<string::size_type>(len)};
 }
 
 string f$gzdecode(const string &s) {

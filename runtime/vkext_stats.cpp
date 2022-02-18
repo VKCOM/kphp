@@ -252,7 +252,7 @@ string hll_pack(const string &s, int len) {
     }
     assert (p < HLL_BUF_SIZE);
   }
-  return string((char*) buf, p);
+  return {(char*) buf, static_cast<string::size_type>(p)};
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

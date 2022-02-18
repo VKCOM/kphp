@@ -325,7 +325,7 @@ string f$mb_substr(const string &str, int64_t start, const mixed &length_var, co
   if (encoding_num == 1251) {
     Optional<string> res = f$substr(str, start, length);
     if (!res.has_value()) {
-      return string();
+      return {};
     }
     return res.val();
   }
@@ -341,7 +341,7 @@ string f$mb_substr(const string &str, int64_t start, const mixed &length_var, co
     length = len - start + length;
   }
   if (length <= 0 || start < 0) {
-    return string();
+    return {};
   }
   if (len - start < length) {
     length = len - start;
@@ -350,5 +350,5 @@ string f$mb_substr(const string &str, int64_t start, const mixed &length_var, co
   int64_t UTF8_start = mb_UTF8_advance(str.c_str(), start);
   int64_t UTF8_length = mb_UTF8_advance(str.c_str() + UTF8_start, length);
 
-  return string(str.c_str() + UTF8_start, static_cast<string::size_type>(UTF8_length));
+  return {str.c_str() + UTF8_start, static_cast<string::size_type>(UTF8_length)};
 }

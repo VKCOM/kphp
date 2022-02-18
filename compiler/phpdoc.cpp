@@ -81,7 +81,7 @@ vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
         continue;
       }
       kphp_error(0, "failed to parse php_doc");
-      return vector<php_doc_tag>();
+      return {};
     }
     if (c == '\n') {
       lines.push_back("");

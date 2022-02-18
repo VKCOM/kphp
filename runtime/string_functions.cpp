@@ -136,7 +136,7 @@ string f$chop(const string &s, const string &what) {
 }
 
 string f$chr(int64_t v) {
-  return string(1, static_cast<char>(v));
+  return {1, static_cast<char>(v)};
 }
 
 static const unsigned char win_to_koi[] = {
@@ -236,7 +236,7 @@ string f$hex2bin(const string &str) {
   int len = str.size();
   if (len & 1) {
     php_warning("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
-    return string();
+    return {};
   }
 
   string result(len / 2, false);
@@ -245,7 +245,7 @@ string f$hex2bin(const string &str) {
     int num_low = hex_to_int(str[i + 1]);
     if (num_high == 16 || num_low == 16) {
       php_warning("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
-      return string();
+      return {};
     }
     result[i / 2] = (char)((num_high << 4) + num_low);
   }
@@ -624,7 +624,7 @@ string f$ltrim(const string &s, const string &what) {
   while (l < len && mask[(unsigned char)s[l]]) {
     l++;
   }
-  return string(s.c_str() + l, len - l);
+  return {s.c_str() + l, static_cast<string::size_type>(len - l)};
 }
 
 string f$mysql_escape_string(const string &str) {
@@ -674,7 +674,7 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
 
   if (decimals < 0 || decimals > 100) {
     php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
-    return string();
+    return {};
   }
   bool negative = false;
   if (number < 0) {
@@ -736,10 +736,10 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
 
   if (result_begin <= php_buf) {
     php_critical_error ("maximum length of result (%d) exceeded", PHP_BUF_LEN);
-    return string();
+    return {};
   }
 
-  return string(result_begin, static_cast<string::size_type>(php_buf + PHP_BUF_LEN - result_begin));
+  return {result_begin, static_cast<string::size_type>(php_buf + PHP_BUF_LEN - result_begin)};
 }
 
 int64_t f$ord(const string &s) {
@@ -765,7 +765,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
 
       if (cnt <= 0) {
         php_warning("Wrong count specifier in pattern \"%s\"", pattern.c_str());
-        return string();
+        return {};
       }
     } else if (pattern[i] == '*') {
       cnt = 0;
@@ -775,11 +775,11 @@ string f$pack(const string &pattern, const array<mixed> &a) {
     if (arg_num >= a.count()) {
       if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
         php_warning("Not enough parameters to call function pack");
-        return string();
+        return {};
       }
       if (i + 1 != (int)pattern.size()) {
         php_warning("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
-        return string();
+        return {};
       }
       break;
     }
@@ -789,7 +789,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
 
     if (arg.is_array()) {
       php_warning("Argument %d of function pack is array", arg_num);
-      return string();
+      return {};
     }
 
     char filler = 0;
@@ -825,7 +825,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
           cnt -= 2;
           if (num_high == 16 || num_low == 16) {
             php_warning("Wrong argument \"%s\" supplied for format '%c' in function pack", arg_str.c_str(), format);
-            return string();
+            return {};
           }
           if (format == 'H') {
             static_SB << (char)((num_high << 4) + num_low);
@@ -911,21 +911,21 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             }
             default:
               php_warning("Format code \"%c\" not supported", format);
-              return string();
+              return {};
           }
 
           if (cnt > 1) {
             arg_num = cur_arg++;
             if (arg_num >= a.count()) {
               php_warning("Not enough parameters to call function pack");
-              return string();
+              return {};
             }
 
             arg = a.get_value(arg_num);
 
             if (arg.is_array()) {
               php_warning("Argument %d of function pack is array", arg_num);
-              return string();
+              return {};
             }
           }
         } while (--cnt > 0);
@@ -966,7 +966,7 @@ string f$rtrim(const string &s, const string &what) {
     len--;
   }
 
-  return string(s.c_str(), len);
+  return {s.c_str(), static_cast<string::size_type>(len)};
 }
 
 Optional<string> f$setlocale(int64_t category, const string &locale) {
@@ -1056,19 +1056,19 @@ string f$sprintf(const string &format, const array<mixed> &a) {
 
       if (arg_num >= a.count()) {
         php_warning("Not enough parameters to call function sprintf with format \"%s\"", format.c_str());
-        return string();
+        return {};
       }
 
       if (arg_num == -1) {
         php_warning("Wrong parameter number 0 specified in function sprintf with format \"%s\"", format.c_str());
-        return string();
+        return {};
       }
 
       const mixed &arg = a.get_value(arg_num);
 
       if (arg.is_array()) {
         php_warning("Argument %d of function sprintf is array", arg_num);
-        return string();
+        return {};
       }
 
       switch (format[i]) {
@@ -1178,7 +1178,7 @@ string f$sprintf(const string &format, const array<mixed> &a) {
         }
         default:
           php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
-          return string();
+          return {};
       }
     }
 
@@ -1187,7 +1187,7 @@ string f$sprintf(const string &format, const array<mixed> &a) {
 
   if (error_too_big) {
     php_warning("Too big result in function sprintf");
-    return string();
+    return {};
   }
 
   return result;
@@ -1930,7 +1930,7 @@ string f$str_pad(const string &input, int64_t len, const string &pad_str, int64_
 string f$str_repeat(const string &s, int64_t multiplier) {
   const string::size_type len = s.size();
   if (multiplier <= 0 || len == 0) {
-    return string();
+    return {};
   }
 
   auto mult = static_cast<string::size_type>(multiplier);
@@ -1939,7 +1939,7 @@ string f$str_repeat(const string &s, int64_t multiplier) {
   }
 
   if (len == 1) {
-    return string(mult, s[0]);
+    return {mult, s[0]};
   }
 
   string result(mult * len, false);
@@ -1993,7 +1993,7 @@ static string str_replace_char(char c, const string &replace, const string &subj
     piece = pos + 1;
   }
   php_assert (0); // unreachable
-  return string();
+  return {};
 }
 
 static const char *find_substr(const char *where, const char *where_end, const string &what, bool with_case) {
@@ -2080,7 +2080,7 @@ string str_replace(const string &search, const string &replace, const string &su
     piece = pos + search.size();
   }
   php_assert (0); // unreachable
-  return string();
+  return {};
 }
 
 // common for f$str_replace(string) and f$str_ireplace(string)
@@ -2340,14 +2340,14 @@ string f$trim(const string &s, const string &what) {
   }
 
   if (len == 0) {
-    return string();
+    return {};
   }
 
   int l = 0;
   while (mask[(unsigned char)s[l]]) {
     l++;
   }
-  return string(s.c_str() + l, len - l);
+  return {s.c_str() + l, static_cast<string::size_type>(len - l)};
 }
 
 string f$ucfirst(const string &str) {

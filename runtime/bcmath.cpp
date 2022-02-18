@@ -158,7 +158,7 @@ static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int
   }
 
   if (lscale == scale || !add_trailing_zeroes) {
-    return string(lhs + lint, lfrac + lscale - lint);
+    return {lhs + lint, static_cast<string::size_type>(lfrac + lscale - lint)};
   } else {
     string result(lhs + lint, lfrac + lscale - lint);
     if (lscale == 0) {
@@ -569,7 +569,7 @@ string f$bcmod(const string &lhs, const string &rhs) {
     buffer[--cur_pos] = '-';
   }
 
-  return string(buffer + cur_pos, 20 - cur_pos);
+  return {buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
 }
 
 string f$bcpow(const string &lhs, const string &rhs) {

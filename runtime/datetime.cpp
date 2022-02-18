@@ -495,7 +495,7 @@ static string microtime_string() {
   php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
   char buf[45];
   int len = sprintf(buf, "0.%09d %d", (int)T.tv_nsec, (int)T.tv_sec);
-  return string(buf, len);
+  return {buf, static_cast<string::size_type>(len)};
 }
 
 double microtime() {
@@ -555,7 +555,7 @@ string f$strftime(const string &format, int64_t timestamp) {
   localtime_r(&timestamp_t, &t);
 
   if (!strftime(php_buf, PHP_BUF_LEN, format.c_str(), &t)) {
-    return string();
+    return {};
   }
 
   return string(php_buf);
