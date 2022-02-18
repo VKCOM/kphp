@@ -5,7 +5,9 @@
 #pragma once
 
 #include <sys/cdefs.h>
+#include <type_traits>
 #include <utility>
+
 #include "common/containers/final_action.h"
 #include "common/tl/fetch.h"
 #include "common/tl/store.h"
@@ -28,7 +30,7 @@ int save_to_buffer(char *buffer, int buffer_size, const Storer &store_func) {
   return size;
 }
 
-template<typename T, typename Storer = vk::tl::storer<T>>
+template<typename T, typename Storer = vk::tl::storer<std::decay_t<T>>>
 int store_to_buffer(char *buffer, int buffer_size, T &&value, const Storer &store_func = {}) {
   return save_to_buffer(buffer, buffer_size, [&] { store_func(std::forward<T>(value)); });
 }
