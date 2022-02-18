@@ -933,7 +933,7 @@ struct CaseInfo {
 
 void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto cases_vertices = root->cases();
-  vector<CaseInfo> cases(cases_vertices.size());
+  std::vector<CaseInfo> cases(cases_vertices.size());
   std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
   auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
@@ -1281,7 +1281,7 @@ static bool can_save_ref(VertexPtr v) {
 }
 
 void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
-  vector<StrlenInfo> info(root->size());
+  std::vector<StrlenInfo> info(root->size());
   bool ok = true;
   bool was_dynamic = false;
   bool was_object = false;
@@ -1335,7 +1335,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   int n_next_var_idx = 0;
   if (complex_flag) {
     W << "(" << BEGIN;
-    vector<string> to_add;
+    std::vector<string> to_add;
     for (auto &str_info : info) {
       if (str_info.str_flag) {
         continue;

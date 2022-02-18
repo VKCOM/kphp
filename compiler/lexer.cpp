@@ -1176,7 +1176,7 @@ void lexer_init() {
   vk::singleton<TokenLexerPHPDoc>::get().init();
 }
 
-vector<Token> php_text_to_tokens(vk::string_view text) {
+std::vector<Token> php_text_to_tokens(vk::string_view text) {
   static TokenLexerGlobal lexer;
 
   LexerData lexer_data{text};
@@ -1193,7 +1193,7 @@ vector<Token> php_text_to_tokens(vk::string_view text) {
   return tokens;
 }
 
-vector<Token> phpdoc_to_tokens(vk::string_view text) {
+std::vector<Token> phpdoc_to_tokens(vk::string_view text) {
   LexerData lexer_data{text};
   lexer_data.set_dont_hack_last_tokens(); // like in op_conv_int, future(int) doesn't need (int)
   while (*lexer_data.get_code()) {

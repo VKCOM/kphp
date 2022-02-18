@@ -97,11 +97,11 @@ public:
   VarPtr create_local_var(FunctionPtr function, const string &name, VarData::Type type);
 
   SrcFilePtr get_main_file() { return main_file; }
-  vector<VarPtr> get_global_vars();
-  vector<ClassPtr> get_classes();
-  vector<InterfacePtr> get_interfaces();
-  vector<DefinePtr> get_defines();
-  vector<LibPtr> get_libs();
+  std::vector<VarPtr> get_global_vars();
+  std::vector<ClassPtr> get_classes();
+  std::vector<InterfacePtr> get_interfaces();
+  std::vector<DefinePtr> get_defines();
+  std::vector<LibPtr> get_libs();
   const ComposerAutoloader &get_composer_autoloader() const;
 
   void load_index();

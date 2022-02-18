@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "common/tlo-parsing/tl-objects.h"
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
@@ -82,7 +84,7 @@ private:
     std::vector<InnerParamTypeAccess> path_to_inner_param;
 
     DeducingInfo() = default;
-    DeducingInfo(std::string deduced_type, vector<TlDependentTypesUsings::InnerParamTypeAccess> path);
+    DeducingInfo(std::string deduced_type, std::vector<TlDependentTypesUsings::InnerParamTypeAccess> path);
   };
 
   vk::tlo_parsing::type *tl_type;

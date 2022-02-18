@@ -61,7 +61,7 @@ void MakeRunner::wait_target(Target *target) {
   targets_waiting++;
 }
 
-void MakeRunner::register_target(Target *target, vector<Target *> &&deps) {
+void MakeRunner::register_target(Target *target, std::vector<Target *> &&deps) {
   for (auto *dep : deps) {
     dep->rdeps.push_back(target);
     if (!dep->is_ready) {
@@ -91,8 +91,8 @@ void MakeRunner::require_target(Target *target) {
 
 static int run_cmd(const string &cmd) {
   // fmt_print("{}\n", cmd);
-  vector<string> args = split(cmd);
-  vector<char *> argv(args.size() + 1);
+  std::vector<string> args = split(cmd);
+  std::vector<char *> argv(args.size() + 1);
   for (int i = 0; i < (int)args.size(); i++) {
     argv[i] = (char *)args[i].c_str();
   }

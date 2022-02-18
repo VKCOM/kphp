@@ -4,13 +4,15 @@
 
 #pragma once
 
+#include <vector>
+
 #include "common/mixin/not_copyable.h"
 
 #include "compiler/common.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/utils/trie.h"
 
-inline vector<string> expand_template(const string &s);
+inline std::vector<string> expand_template(const string &s);
 
 template<typename T>
 struct Helper : private vk::not_copyable {
@@ -48,8 +50,8 @@ struct Helper : private vk::not_copyable {
   }
 };
 
-inline vector<string> expand_template_(vk::string_view str_template) {
-  vector<string> all_possible_templates{""};
+inline std::vector<string> expand_template_(vk::string_view str_template) {
+  std::vector<string> all_possible_templates{""};
 
   size_t si = 0;
   size_t sn = str_template.size();
@@ -95,10 +97,10 @@ inline vector<string> expand_template_(vk::string_view str_template) {
   return all_possible_templates;
 }
 
-inline vector<string> expand_template(const string &s) {
+inline std::vector<string> expand_template(const string &s) {
   auto template_alternatives = split_skipping_delimeters(s, "|");
 
-  vector<string> res;
+  std::vector<string> res;
   for (auto rule_template : template_alternatives) {
     auto tmp = expand_template_(rule_template);
     std::move(tmp.begin(), tmp.end(), std::back_inserter(res));

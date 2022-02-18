@@ -196,7 +196,7 @@ void VarsCpp::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-VarsCppPart::VarsCppPart(vector<VarPtr> &&vars_of_part, size_t part_id)
+VarsCppPart::VarsCppPart(std::vector<VarPtr> &&vars_of_part, size_t part_id)
   : vars_of_part_(std::move(vars_of_part))
   , part_id(part_id) {}
 

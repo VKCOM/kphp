@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/string_view.h"
 
@@ -49,7 +51,7 @@ private:
   const char *code{nullptr};
   const char *code_end{nullptr};
   int code_len{0};
-  vector<Token> tokens;
+  std::vector<Token> tokens;
   bool in_gen_str{false};
   const char *str_begin{nullptr};
   const char *str_cur{nullptr};
@@ -196,5 +198,5 @@ struct TokenLexerGlobal final : TokenLexer {
 };
 
 void lexer_init();
-vector<Token> php_text_to_tokens(vk::string_view text);
-vector<Token> phpdoc_to_tokens(vk::string_view text);
+std::vector<Token> php_text_to_tokens(vk::string_view text);
+std::vector<Token> phpdoc_to_tokens(vk::string_view text);

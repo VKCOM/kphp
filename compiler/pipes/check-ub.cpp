@@ -82,15 +82,15 @@ bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
 
 class UBMergeData {
 private:
-  vector<VarPtr> writes_;
-  vector<VarPtr> reads_;
-  vector<VarPtr> index_refs_;
-  vector<FunctionPtr> functions_;
+  std::vector<VarPtr> writes_;
+  std::vector<VarPtr> reads_;
+  std::vector<VarPtr> index_refs_;
+  std::vector<FunctionPtr> functions_;
 
   template<class A, class B, class F>
   static void check(
-    const vector<A> &first,
-    const vector<B> &second,
+    const std::vector<A> &first,
+    const std::vector<B> &second,
     F f,
     int error_mask, int *res_error) {
 
@@ -124,7 +124,7 @@ private:
 
   static int check(const UBMergeData &data, FunctionPtr function) {
     int err = 0;
-    vector<FunctionPtr> tmp(1, function);
+    std::vector<FunctionPtr> tmp(1, function);
     check(tmp, data.index_refs_, is_var_written, UB_SIGSEGV, &err);
     return err;
   }
@@ -145,7 +145,7 @@ public:
     return err;
   }
 
-  int check_index_refs(const vector<VarPtr> &vars) {
+  int check_index_refs(const std::vector<VarPtr> &vars) {
     int err = 0;
     check(functions_, vars, is_var_written, UB_SIGSEGV, &err);
     check(reads_, vars, is_same_var, UB_SIGSEGV, &err);
@@ -218,7 +218,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
   }
 }
 
-void fix_ub(VertexPtr v, vector<VarPtr> *foreach_vars) {
+void fix_ub(VertexPtr v, std::vector<VarPtr> *foreach_vars) {
   if (v->type() == op_global || v->type() == op_static) {
     return;
   }
@@ -258,7 +258,7 @@ void CheckUBF::execute(FunctionPtr function, DataStream<FunctionPtr> &os) {
   stage::set_function(function);
 
   if (!function->is_extern()) {
-    vector<VarPtr> foreach_vars;
+    std::vector<VarPtr> foreach_vars;
     fix_ub(function->root->cmd(), &foreach_vars);
   }
 

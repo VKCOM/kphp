@@ -12,7 +12,7 @@
 class SplitSwitchPass final : public FunctionPassBase {
 private:
   int depth{0};
-  vector<FunctionPtr> new_functions;
+  std::vector<FunctionPtr> new_functions;
 
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
                                       const string &state_name, int cycle_depth) {
@@ -160,7 +160,7 @@ public:
     return root;
   }
 
-  const vector<FunctionPtr> &get_new_functions() {
+  const std::vector<FunctionPtr> &get_new_functions() {
     return new_functions;
   }
 };

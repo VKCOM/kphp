@@ -105,7 +105,7 @@ int FunctionData::get_min_argn() const {
 }
 
 string FunctionData::get_resumable_path() const {
-  vector<string> names;
+  std::vector<string> names;
   FunctionPtr f = fork_prev;
   while (f) {
     names.push_back(f->as_human_readable());
@@ -125,7 +125,7 @@ string FunctionData::get_throws_call_chain() const {
   if (!can_throw()) {
     return "";
   }
-  vector<string> names;
+  std::vector<string> names;
   FunctionPtr f = throws_reason;
   Location last;
   names.push_back(as_human_readable());

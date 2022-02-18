@@ -26,7 +26,7 @@
 
 #define CE(x) if (!(x)) {return {};}
 
-GenTree::GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
+GenTree::GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
   tokens(std::move(tokens)),
   parsed_os(os),
   cur(this->tokens.begin()),
@@ -217,7 +217,7 @@ VertexAdaptor<Op> GenTree::get_func_call() {
 
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
-  vector<VertexPtr> next;
+  std::vector<VertexPtr> next;
   bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_next, "get argument list failed"));
   CE (expect(tok_clpar, "')'"));
@@ -234,7 +234,7 @@ VertexAdaptor<op_array> GenTree::get_short_array() {
   auto location = auto_location();
   next_cur();
 
-  vector<VertexPtr> arr_elements;
+  std::vector<VertexPtr> arr_elements;
   bool ok_next = gen_list<op_lvalue_null>(&arr_elements, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_next, "get short array failed"));
   CE (expect(tok_clbrk, "']'"));
@@ -254,7 +254,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
   auto sb_location = auto_location();
   next_cur();
 
-  vector<VertexPtr> strings;
+  std::vector<VertexPtr> strings;
   bool after_simple_expression = false;
   while (cur != end && cur->type() != tok_str_end) {
     CE (vk::any_of_equal(cur->type(), tok_str, tok_expr_begin)); // make sure we handle all possible tokens
@@ -336,7 +336,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       auto location = auto_location();
       next_cur();
       skip_phpdoc_tokens();
-      vector<VertexPtr> next;
+      std::vector<VertexPtr> next;
       next.emplace_back(res);
       bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
       CE (!kphp_error(ok_next, "get argument list failed"));
@@ -1009,7 +1009,7 @@ void GenTree::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) 
     return_node = VertexAdaptor<op_return>::create();
   }
 
-  vector<VertexPtr> next = cmd->get_next();
+  std::vector<VertexPtr> next = cmd->get_next();
   next.push_back(return_node);
   func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
 }
@@ -1151,7 +1151,7 @@ VertexAdaptor<op_for> GenTree::get_for() {
   skip_phpdoc_tokens();
 
   auto pre_cond_location = auto_location();
-  vector<VertexPtr> init_statements;
+  std::vector<VertexPtr> init_statements;
   bool ok_first_next = gen_list<op_err>(&init_statements, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_first_next, "Failed to parse 'for' precondition"));
   auto initialization = VertexAdaptor<op_seq>::create(init_statements).set_location(pre_cond_location);
@@ -1159,7 +1159,7 @@ VertexAdaptor<op_for> GenTree::get_for() {
   CE (expect(tok_semicolon, "';'"));
 
   auto cond_location = auto_location();
-  vector<VertexPtr> condition_expressions;
+  std::vector<VertexPtr> condition_expressions;
   bool ok_second_next = gen_list<op_err>(&condition_expressions, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_second_next, "Failed to parse 'for' action"));
   if (condition_expressions.empty()) {
@@ -1172,7 +1172,7 @@ VertexAdaptor<op_for> GenTree::get_for() {
   CE (expect(tok_semicolon, "';'"));
 
   auto iteration_location = auto_location();
-  vector<VertexPtr> iteration_expressions;
+  std::vector<VertexPtr> iteration_expressions;
   bool ok_third_next = gen_list<op_err>(&iteration_expressions, &GenTree::get_expression, tok_comma);
   CE (!kphp_error(ok_third_next, "Failed to parse 'for' postcondition"));
   auto iteration = VertexAdaptor<op_seq>::create(iteration_expressions).set_location(iteration_location);
@@ -1234,7 +1234,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
 
   CE (expect(tok_opbrc, "'{'"));
 
-  vector<VertexPtr> cases;
+  std::vector<VertexPtr> cases;
   while (cur->type() != tok_clbrc) {
     skip_phpdoc_tokens();
     auto cur_type = cur->type();
@@ -1254,7 +1254,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
     }
 
     auto seq_location = auto_location();
-    vector<VertexPtr> body_statements;
+    std::vector<VertexPtr> body_statements;
     while (cur != end && vk::none_of_equal(cur->type(), tok_clbrc, tok_case, tok_default)) {
       if (auto cmd = get_statement()) {
         body_statements.push_back(cmd);
@@ -1441,7 +1441,7 @@ VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
 }
 
 VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
-  vector<VertexAdaptor<op_func_param>> params_next;
+  std::vector<VertexAdaptor<op_func_param>> params_next;
 
   CE(expect(tok_oppar, "'('"));
 
@@ -1731,7 +1731,7 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
     new_root->extra_type = op_ex_func_call_arrow;
     new_root->str_val = rhs->get_string();
     return new_root;
-    
+
   } else {
     kphp_error (false, "Operator '->' expects property or function call as its right operand");
     return {};
@@ -2229,7 +2229,7 @@ void GenTree::get_seq(std::vector<VertexPtr> &seq_next) {
 VertexAdaptor<op_seq> GenTree::get_seq() {
   auto location = auto_location();
 
-  vector<VertexPtr> seq_next;
+  std::vector<VertexPtr> seq_next;
   get_seq(seq_next);
 
   return VertexAdaptor<op_seq>::create(seq_next).set_location(location);

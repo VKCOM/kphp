@@ -214,7 +214,7 @@ TlDependentTypesUsings::TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, c
   }
 }
 
-TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, vector<TlDependentTypesUsings::InnerParamTypeAccess> path) :
+TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, std::vector<TlDependentTypesUsings::InnerParamTypeAccess> path) :
   deduced_type(std::move(deduced_type)),
   path_to_inner_param(std::move(path)) {}
 

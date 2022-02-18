@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -37,7 +39,7 @@ class GenTree {
 
 public:
   Location auto_location() const { return Location{this->line_num}; }
-  
+
   VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
@@ -46,7 +48,7 @@ public:
   static bool is_magic_method_name_allowed(const std::string &name);
 
 
-  GenTree(vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
+  GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
   static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
 
@@ -161,13 +163,13 @@ private:
 
 
   int line_num{0};
-  const vector<Token> tokens;
+  const std::vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_{false};
   decltype(tokens)::const_iterator cur, end;
-  vector<ClassPtr> class_stack;
+  std::vector<ClassPtr> class_stack;
   ClassPtr cur_class;               // = class_stack.back()
-  vector<FunctionPtr> functions_stack;
+  std::vector<FunctionPtr> functions_stack;
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };

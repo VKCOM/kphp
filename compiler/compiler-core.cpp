@@ -166,7 +166,7 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
   }
 
   if (full_file_name.empty()) {
-    vector<string> cur_include_dirs;
+    std::vector<string> cur_include_dirs;
     SrcFilePtr from_file = stage::get_file();
     if (from_file) {
       string from_file_name = from_file->file_name;
@@ -456,7 +456,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
   return var;
 }
 
-vector<VarPtr> CompilerCore::get_global_vars() {
+std::vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   return global_vars_ht.get_all_if([](VarPtr v) {
@@ -464,21 +464,21 @@ vector<VarPtr> CompilerCore::get_global_vars() {
   });
 }
 
-vector<ClassPtr> CompilerCore::get_classes() {
+std::vector<ClassPtr> CompilerCore::get_classes() {
   return classes_ht.get_all();
 }
 
-vector<InterfacePtr> CompilerCore::get_interfaces() {
+std::vector<InterfacePtr> CompilerCore::get_interfaces() {
   return classes_ht.get_all_if([](ClassPtr klass) {
     return klass->is_interface();
   });
 }
 
-vector<DefinePtr> CompilerCore::get_defines() {
+std::vector<DefinePtr> CompilerCore::get_defines() {
   return defines_ht.get_all();
 }
 
-vector<LibPtr> CompilerCore::get_libs() {
+std::vector<LibPtr> CompilerCore::get_libs() {
   return libs_ht.get_all();
 }
 
