@@ -8,11 +8,13 @@
 
 #include "common/algorithms/contains.h"
 
+#include "compiler/compiler-settings.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/make/target.h"
 
 class H2PchTarget : public Target {
 public:
-  string get_cmd() final {
+  std::string get_cmd() final {
     kphp_assert(deps.size() == 1);
 
     std::stringstream ss;

@@ -4,10 +4,14 @@
 
 #pragma once
 
+#include <cstdint>
+#include <utility>
+
 #include "common/type_traits/is_constructible.h"
 #include "common/type_traits/list_of_types.h"
 
 #include "runtime/php_assert.h"
+#include "runtime/declarations.h"
 
 template<class T>
 class Optional;

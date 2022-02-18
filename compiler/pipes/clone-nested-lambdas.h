@@ -2,6 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/function-pass.h"
 #include "compiler/name-gen.h"

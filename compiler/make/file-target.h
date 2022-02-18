@@ -8,7 +8,7 @@
 
 class FileTarget : public Target {
 public:
-  string get_cmd() final {
+  std::string get_cmd() final {
     assert (0);
     return "";
   }

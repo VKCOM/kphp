@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/data/class-member-modifiers.h"
+#include "compiler/kphp_assert.h"
 
 class FunctionModifiers {
 private:

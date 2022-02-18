@@ -7,6 +7,7 @@
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/kphp_core.h"
 
+struct job_query_data;
 void init_job_server_interface_lib(job_query_data job_data) noexcept;
 void free_job_server_interface_lib() noexcept;
 

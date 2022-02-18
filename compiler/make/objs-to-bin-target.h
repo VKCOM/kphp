@@ -4,13 +4,18 @@
 
 #pragma once
 
+#include <sstream>
+
+#include "compiler/compiler-settings.h"
+#include "compiler/make/target.h"
+
 class Objs2BinTarget : public Target {
 public:
   explicit Objs2BinTarget(bool need_libdl = false) noexcept :
     need_libdl_{need_libdl} {
   }
 
-  string get_cmd() final {
+  std::string get_cmd() final {
 #if defined(__APPLE__)
     std::string_view open_dep{" -Wl,-all_load "};
     std::string_view close_dep;

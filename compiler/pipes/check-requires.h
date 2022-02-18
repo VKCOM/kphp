@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "compiler/data/class-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/pipes/sync.h"

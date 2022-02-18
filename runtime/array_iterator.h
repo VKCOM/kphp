@@ -7,6 +7,8 @@
 #include "common/type_traits/list_of_types.h"
 #include "common/sanitizer.h"
 
+#include "runtime/declarations.h"
+
 template<class T>
 class array_iterator {
 private:
