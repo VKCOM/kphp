@@ -18,7 +18,7 @@
 #include "compiler/stage.h"
 #include "compiler/utils/string-utils.h"
 
-bool is_dir(const string &path) {
+bool is_dir(const std::string &path) {
   struct stat s;
   int err = stat(path.c_str(), &s);
   kphp_assert_msg(err == 0, fmt_format("Failed to stat [{}]", path));
@@ -42,11 +42,11 @@ void File::calc_name_ext_and_others(const std::string &basedir) {
   kphp_assert(vk::string_view{path}.starts_with(basedir));
   name = vk::string_view{path}.substr(basedir.size());
   auto dot_i = name.rfind('.');
-  if (dot_i == string::npos) {
+  if (dot_i == std::string::npos) {
     dot_i = name.size();
   }
   auto slash_i = name.rfind('/', dot_i - 1);
-  if (slash_i != string::npos) {
+  if (slash_i != std::string::npos) {
     subdir = name.substr(0, slash_i + 1);
   } else {
     subdir = vk::string_view{};
@@ -95,7 +95,7 @@ void File::unlink() {
   on_disk = false;
 }
 
-void Index::set_dir(const string &new_dir) {
+void Index::set_dir(const std::string &new_dir) {
   bool res_mkdir = mkdir_recursive(new_dir.c_str(), 0777);
   kphp_assert_msg(res_mkdir, fmt_format("Failed to mkdir [{}] ({})", new_dir, strerror(errno)));
 
@@ -111,7 +111,7 @@ void Index::set_dir(const string &new_dir) {
   index_file = dir + "index_file";
 }
 
-const string &Index::get_dir() const {
+const std::string &Index::get_dir() const {
   return dir;
 }
 
@@ -143,7 +143,7 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
   return 0;
 }
 
-void Index::sync_with_dir(const string &dir) {
+void Index::sync_with_dir(const std::string &dir) {
   kphp_assert(files_prev_launch.empty() && files_only_cur_launch.empty() && this->dir.empty());
   set_dir(dir);
   current_index = this;
@@ -180,7 +180,7 @@ void Index::create_subdir(vk::string_view subdir) {
   if (subdir.empty() || !subdirs.insert(subdir).second) {
     return;
   }
-  string full_path = get_dir() + subdir;
+  std::string full_path = get_dir() + subdir;
   int ret = mkdir(full_path.c_str(), 0777);
   kphp_assert_msg(ret != -1 || errno == EEXIST, full_path);
   if (errno == EEXIST && !is_dir(full_path)) {

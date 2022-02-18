@@ -139,7 +139,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
 }
 
 static std::forward_list<File *> collect_imported_libs() {
-  const string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
+  const std::string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
   stage::die_if_global_errors();
 
   std::forward_list<File *> imported_libs;

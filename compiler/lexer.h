@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/string_view.h"
 
-#include "compiler/common.h"
 #include "compiler/helper.h"
 #include "compiler/token.h"
 #include "compiler/utils/string-utils.h"
@@ -67,9 +67,9 @@ struct TokenLexer : private vk::not_copyable {
 bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h);
 
 struct TokenLexerError final : TokenLexer {
-  string error_str;
+  std::string error_str;
 
-  explicit TokenLexerError(string error_str = "unknown_error") :
+  explicit TokenLexerError(std::string error_str = "unknown_error") :
     error_str(std::move(error_str)) {
   }
 
@@ -125,7 +125,7 @@ struct TokenLexerStringExpr final : TokenLexer {
 struct TokenLexerHeredocString final : TokenLexer {
   std::unique_ptr<Helper<TokenLexer>> h;
 
-  void add_esc(const string &s, char c);
+  void add_esc(const std::string &s, char c);
   void init();
   bool parse(LexerData *lexer_data) const final;
 };
@@ -133,7 +133,7 @@ struct TokenLexerHeredocString final : TokenLexer {
 struct TokenLexerString final : TokenLexer {
   std::unique_ptr<Helper<TokenLexer>> h;
 
-  void add_esc(const string &s, char c);
+  void add_esc(const std::string &s, char c);
   void init();
   bool parse(LexerData *lexer_data) const final;
 };
@@ -167,7 +167,7 @@ struct TokenLexerToken final : TokenLexer {
 };
 
 struct TokenLexerCommon final : TokenLexerWithHelper {
-  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp);
+  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const std::string &str, TokenType tp);
 
   void init() final;
 };
@@ -186,7 +186,7 @@ struct TokenLexerPHP final : TokenLexerWithHelper {
 };
 
 struct TokenLexerPHPDoc final : TokenLexerWithHelper {
-  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp);
+  inline void add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const std::string &str, TokenType tp);
 
   void init() final;
 };

@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
-#include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/class-member-modifiers.h"
@@ -44,7 +44,7 @@ public:
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
-  static bool is_superglobal(const string &s);
+  static bool is_superglobal(const std::string &s);
   static bool is_magic_method_name_allowed(const std::string &name);
 
 

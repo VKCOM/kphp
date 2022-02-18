@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "common/tlo-parsing/tl-objects.h"
@@ -74,7 +75,7 @@ private:
 
     InnerParamTypeAccess() = default;
 
-    InnerParamTypeAccess(bool drop_class_instance, const string &inner_type_name) :
+    InnerParamTypeAccess(bool drop_class_instance, const std::string &inner_type_name) :
         drop_class_instance(drop_class_instance),
         inner_type_name(inner_type_name) {}
   };

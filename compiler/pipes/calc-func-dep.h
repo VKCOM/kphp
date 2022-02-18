@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "common/mixin/movable_only.h"
@@ -30,7 +31,7 @@ private:
   std::vector<FunctionPtr> calls;
 public:
 
-  string get_description() override {
+  std::string get_description() override {
     return "Calc function dependencies";
   }
 

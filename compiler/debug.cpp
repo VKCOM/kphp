@@ -224,7 +224,7 @@ static std::string debugVertexMore(VertexPtr v) {
     case op_alloc:
       return "new " + v.as<op_alloc>()->allocated_class_name;
     case op_func_call:
-      return string(v->extra_type == op_ex_func_call_arrow ? "->" : "") +
+      return std::string(v->extra_type == op_ex_func_call_arrow ? "->" : "") +
              (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->as_human_readable(false) : v->get_string()) + "()";
     case op_func_name:
       return v->get_string();

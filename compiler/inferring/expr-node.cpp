@@ -526,7 +526,7 @@ std::string tinf::ExprNode::convert_expr_to_human_readable(VertexPtr expr) {
       return convert_expr_to_human_readable(expr.as<op_instance_prop>()->instance()) + "->" + expr->get_string();
 
     case op_index: {
-      string suff;
+      std::string suff;
       auto outer_expr = expr;
       while (outer_expr->type() == op_index) {
         suff += "[.]";

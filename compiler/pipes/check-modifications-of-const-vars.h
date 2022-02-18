@@ -8,7 +8,7 @@
 
 class CheckModificationsOfConstVars final : public FunctionPassBase {
 public:
-  string get_description() final {
+  std::string get_description() final {
     return "Check modifications of const fields";
   }
 

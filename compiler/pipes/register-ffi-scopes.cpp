@@ -260,7 +260,7 @@ private:
 public:
   explicit RegisterFFIScopes(DataStream<FunctionPtr> &os): os{os} {};
 
-  string get_description() override {
+  std::string get_description() override {
     return "Register FFI scopes";
   }
 

@@ -31,7 +31,7 @@ bool SrcFile::load() {
 
   kphp_assert_msg(buf.st_size < 100000000, fmt_format("file [{}] is too big [{}]\n", file_name, buf.st_size));
   int file_size = (int)buf.st_size;
-  text = string(file_size, ' ');
+  text = std::string(file_size, ' ');
   err = (int)read(fid, &text[0], file_size);
   kphp_assert_msg(err >= 0, fmt_format("Can't read file [{}]: {}", file_name, strerror(errno)));
 

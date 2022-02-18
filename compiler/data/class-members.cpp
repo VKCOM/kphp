@@ -35,7 +35,7 @@ std::string ClassMemberStaticMethod::get_hash_name() const {
   return hash_name(global_name());
 }
 
-const string &ClassMemberInstanceMethod::global_name() const {
+const std::string &ClassMemberInstanceMethod::global_name() const {
   return function->name;
 }
 
@@ -110,7 +110,7 @@ const TypeData *ClassMemberInstanceField::get_inferred_type() const {
   return tinf::get_type(var);
 }
 
-inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const string &const_name, VertexPtr value, AccessModifiers access) :
+inline ClassMemberConstant::ClassMemberConstant(ClassPtr klass, const std::string &const_name, VertexPtr value, AccessModifiers access) :
   value(value),
   access(access) {
   define_name = "c#" + replace_backslashes(klass->name) + "$$" + const_name;

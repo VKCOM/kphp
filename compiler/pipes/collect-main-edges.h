@@ -49,7 +49,7 @@ public:
 
   using ExecuteType = FunctionAndCFG;
 
-  string get_description() override {
+  std::string get_description() override {
     return "Collect main tinf edges";
   }
 

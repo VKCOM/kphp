@@ -17,7 +17,7 @@
 // 'while (list(...) = f())' and 'if (... && list(...) = f())'
 class ConvertListAssignmentsPass final : public FunctionPassBase {
 public:
-  string get_description() final {
+  std::string get_description() final {
     return "Process assignments to list";
   }
 

@@ -6,6 +6,7 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <thread>
 
 #include "auto/compiler/vertex/vertex-op_function.h"
@@ -77,15 +78,15 @@ public:
   vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
   vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
 
-  string src_name, header_name;
-  string subdir;
-  string header_full_name;
+  std::string src_name, header_name;
+  std::string subdir;
+  std::string header_full_name;
 
   SrcFilePtr file_id;
   FunctionPtr fork_prev, wait_prev;
   FunctionPtr throws_reason;
   Location throws_location;
-  std::set<string> disabled_warnings;
+  std::set<std::string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
   const TypeHint *return_typehint{nullptr};
@@ -147,8 +148,8 @@ public:
   static FunctionPtr create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type);
   static FunctionPtr clone_from(FunctionPtr other, const std::string &new_name, VertexAdaptor<op_function> root_instead_of_cloning = {});
 
-  string get_resumable_path() const;
-  string get_throws_call_chain() const;
+  std::string get_resumable_path() const;
+  std::string get_throws_call_chain() const;
   std::string get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection = false) const noexcept;
   std::string as_human_readable(bool add_details = true) const;
 

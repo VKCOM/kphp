@@ -157,7 +157,7 @@ std::string TypeData::as_human_readable(bool colored) const {
   }
 
   if (indirection_ != 0) {
-    res += string(indirection_, '*');
+    res += std::string(indirection_, '*');
   }
 
   return colored ? TermStringFormat::paint_green(res) : res;

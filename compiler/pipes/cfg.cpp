@@ -1274,7 +1274,7 @@ void CFG::calc_used(Node v) {
 
 class DropUnusedPass final : public FunctionPassBase {
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Drop unused vertices";
   }
 
@@ -1310,7 +1310,7 @@ public:
 class AddSmartcastsConversionsPass final : public FunctionPassBase {
   std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions;
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Add conversions after checks";
   }
   explicit AddSmartcastsConversionsPass(std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions) :

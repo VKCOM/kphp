@@ -3,6 +3,9 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <string>
+
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
 namespace tl2cpp {
@@ -43,7 +46,7 @@ struct TypeStore {
   std::string template_str;
   bool typed_mode;
 
-  TypeStore(const vk::tlo_parsing::type *type, string template_str, bool typed_mode = false) :
+  TypeStore(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
     type(type),
     template_str(std::move(template_str)),
     typed_mode(typed_mode) {}
@@ -108,7 +111,7 @@ struct TypeFetch {
   std::string template_str;
   bool typed_mode;
 
-  inline TypeFetch(const vk::tlo_parsing::type *type, string template_str, bool typed_mode = false) :
+  inline TypeFetch(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
     type(type),
     template_str(std::move(template_str)),
     typed_mode(typed_mode) {}

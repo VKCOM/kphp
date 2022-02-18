@@ -5,6 +5,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
@@ -18,15 +19,15 @@
  */
 class RegisterVariablesPass final : public FunctionPassBase {
 private:
-  std::map<string, VarPtr> registred_vars;
+  std::map<std::string, VarPtr> registred_vars;
   std::forward_list<VertexAdaptor<op_phpdoc_var>> phpdoc_vars;
   bool global_function_flag{false};
   int in_param_list{0};
 
-  VarPtr create_global_var(const string &name);
-  VarPtr create_local_var(const string &name, VarData::Type type, bool create_flag);
-  VarPtr get_global_var(const string &name);
-  VarPtr get_local_var(const string &name, VarData::Type type = VarData::var_local_t);
+  VarPtr create_global_var(const std::string &name);
+  VarPtr create_local_var(const std::string &name, VarData::Type type, bool create_flag);
+  VarPtr get_global_var(const std::string &name);
+  VarPtr get_local_var(const std::string &name, VarData::Type type = VarData::var_local_t);
   void register_global_var(VertexAdaptor<op_var> var_vertex);
   bool is_const(VertexPtr v);
   bool is_global_var(VertexPtr v);
@@ -43,7 +44,7 @@ private:
 
 public:
 
-  string get_description() override {
+  std::string get_description() override {
     return "Register variables";
   }
 

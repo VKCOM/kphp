@@ -10,7 +10,7 @@
 
 class CollectForkableTypesPass final : public FunctionPassBase {
 public:
-  string get_description() final {
+  std::string get_description() final {
     return "Collect forkable types";
   }
 

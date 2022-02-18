@@ -14,7 +14,7 @@ private:
   int get_label_id(VertexAdaptor<meta_op_cycle> cycle, Operation op);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Preprocess breaks";
   }
 

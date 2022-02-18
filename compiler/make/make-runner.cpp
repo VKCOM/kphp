@@ -89,9 +89,9 @@ void MakeRunner::require_target(Target *target) {
   }
 }
 
-static int run_cmd(const string &cmd) {
+static int run_cmd(const std::string &cmd) {
   // fmt_print("{}\n", cmd);
-  std::vector<string> args = split(cmd);
+  std::vector<std::string> args = split(cmd);
   std::vector<char *> argv(args.size() + 1);
   for (int i = 0; i < (int)args.size(); i++) {
     argv[i] = (char *)args[i].c_str();
@@ -121,7 +121,7 @@ static int run_cmd(const string &cmd) {
 
 bool MakeRunner::start_job(Target *target) {
   target->start_time = dl_time();
-  string cmd = target->get_cmd();
+  std::string cmd = target->get_cmd();
 
   int pid = run_cmd(cmd);
   if (pid < 0) {

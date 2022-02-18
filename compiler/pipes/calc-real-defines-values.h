@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/const-manipulations.h"
 #include "compiler/pipes/sync.h"
 #include "compiler/vertex.h"
@@ -11,8 +13,8 @@
 class CalcRealDefinesValuesF final : public SyncPipeF<FunctionPtr> {
 private:
   using Base = SyncPipeF<FunctionPtr>;
-  std::set<string*> in_progress;
-  std::vector<string*> stack;
+  std::set<std::string *> in_progress;
+  std::vector<std::string *> stack;
 
   CheckConstWithDefines check_const;
   CheckConstAccess check_const_access;

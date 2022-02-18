@@ -4,9 +4,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "common/wrappers/iterator_range.h"
 
-#include "compiler/common.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/expr-node.h"

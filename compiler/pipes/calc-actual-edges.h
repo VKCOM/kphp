@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/function-pass.h"
 #include "compiler/threading/data-stream.h"
 
@@ -52,7 +54,7 @@ private:
 public:
   static bool handle_exception(std::vector<VertexAdaptor<op_try>> &try_stack, ClassPtr thrown_class);
 
-  string get_description() override {
+  std::string get_description() override {
     return "Collect actual calls edges";
   }
 

@@ -14,7 +14,7 @@ private:
   
 public:
 
-  string get_description() override {
+  std::string get_description() override {
     return "Final check";
   }
 

@@ -55,7 +55,7 @@ void RawString::compile(CodeGenerator &W) const {
         break;
       default:
         if ((unsigned char)str[i] < 32) {
-          string tmp = "\\0";
+          std::string tmp = "\\0";
           tmp += (char)('0' + (str[i] / 8));
           tmp += (char)('0' + (str[i] % 8));
           W << tmp;

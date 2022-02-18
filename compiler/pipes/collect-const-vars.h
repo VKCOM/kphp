@@ -18,7 +18,7 @@ private:
   VertexPtr create_const_variable(VertexPtr root, Location loc);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Collect constants";
   }
 

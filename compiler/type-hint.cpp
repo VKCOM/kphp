@@ -115,7 +115,7 @@ ClassPtr TypeHintCallable::get_lambda_class() const {
   return f_bound_to && f_bound_to->is_lambda() && f_bound_to->class_id && f_bound_to->class_id->is_lambda_class() ? f_bound_to->class_id : ClassPtr{};
 }
 
-const TypeHint *TypeHintShape::find_at(const string &key) const {
+const TypeHint *TypeHintShape::find_at(const std::string &key) const {
   for (const auto &p : items) {
     if (p.first == key) {
       return p.second;

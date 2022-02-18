@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
 
@@ -25,7 +27,7 @@ public:
 
   Module() = default;
 
-  explicit Module(string name) :
+  explicit Module(std::string name) :
     name(std::move(name)) {}
 
   void compile(CodeGenerator &W) const {

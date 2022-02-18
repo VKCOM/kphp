@@ -212,7 +212,7 @@ VertexAdaptor<op_require> GenTree::get_require(bool once) {
 template<Operation Op, Operation EmptyOp>
 VertexAdaptor<Op> GenTree::get_func_call() {
   auto location = auto_location();
-  string name{cur->str_val};
+  std::string name{cur->str_val};
   next_cur();
 
   CE (expect(tok_oppar, "'('"));
@@ -245,7 +245,7 @@ VertexAdaptor<op_array> GenTree::get_short_array() {
 
 VertexAdaptor<op_string> GenTree::get_string() {
   auto str = VertexAdaptor<op_string>::create().set_location(auto_location());
-  str->str_val = static_cast<string>(cur->str_val);
+  str->str_val = static_cast<std::string>(cur->str_val);
   next_cur();
   return str;
 }
@@ -378,21 +378,21 @@ VertexPtr GenTree::get_op_num_const() {
   };
 
   if (cur->type() == tok_int_const) {
-    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, static_cast<string>(cur->str_val));
+    return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, static_cast<std::string>(cur->str_val));
   }
 
   if (cur->type() == tok_float_const) {
-    return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, static_cast<string>(cur->str_val));
+    return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, static_cast<std::string>(cur->str_val));
   }
 
   if (cur->type() == tok_int_const_sep) {
-    std::string val = static_cast<string>(cur->str_val);
+    std::string val = static_cast<std::string>(cur->str_val);
     check_and_remove_num_separators(val);
     return get_vertex_with_str_val(VertexAdaptor<op_int_const>{}, val);
   }
 
   if (cur->type() == tok_float_const_sep) {
-    std::string val = static_cast<string>(cur->str_val);
+    std::string val = static_cast<std::string>(cur->str_val);
     check_and_remove_num_separators(val);
     return get_vertex_with_str_val(VertexAdaptor<op_float_const>{}, val);
   }
@@ -587,9 +587,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, vk::string_view phpdoc_str) {
       cur++;
       if (!test_expect(tok_oppar)) {
         if (!was_arrow && vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
-          res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<string>(op->str_val));
+          res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<std::string>(op->str_val));
         } else {
-          res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<string>(op->str_val));
+          res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<std::string>(op->str_val));
         }
         return_flag = was_arrow;
         break;
@@ -1405,7 +1405,7 @@ std::string GenTree::get_identifier() {
   kphp_error(ok, expect_msg("identifier"));
 
   next_cur();
-  return static_cast<string>(std::prev(cur)->str_val);
+  return static_cast<std::string>(std::prev(cur)->str_val);
 }
 
 VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
@@ -1787,7 +1787,7 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
 
   next_cur();
   kphp_error (test_expect(tok_func_name), "Namespace name expected");
-  processing_file->namespace_name = static_cast<string>(cur->str_val);
+  processing_file->namespace_name = static_cast<std::string>(cur->str_val);
   std::string real_relative_dir = processing_file->relative_dir_name;
   if (processing_file->owner_lib) {
     vk::string_view current_file_relative_dir = real_relative_dir;
@@ -2101,7 +2101,7 @@ VertexPtr GenTree::get_statement(vk::string_view phpdoc_str) {
     }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create().set_location(auto_location());
-      html_code->str_val = static_cast<string>(cur->str_val);
+      html_code->str_val = static_cast<std::string>(cur->str_val);
 
       auto echo_cmd = VertexAdaptor<op_func_call>::create(html_code).set_location(auto_location());
       echo_cmd->str_val = "print";
@@ -2208,7 +2208,7 @@ void GenTree::get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers m
   }
 
   auto var = VertexAdaptor<op_var>::create().set_location(auto_location());
-  var->str_val = static_cast<string>(var_name);
+  var->str_val = static_cast<std::string>(var_name);
 
   cur_class->members.add_instance_field(var, def_val, modifiers, phpdoc_str, type_hint);
 
@@ -2271,8 +2271,8 @@ void GenTree::run() {
   }
 }
 
-bool GenTree::is_superglobal(const string &s) {
-  static std::set<string> names = {
+bool GenTree::is_superglobal(const std::string &s) {
+  static std::set<std::string> names = {
     "_SERVER",
     "_GET",
     "_POST",
@@ -2284,7 +2284,7 @@ bool GenTree::is_superglobal(const string &s) {
   return vk::contains(names, s);
 }
 
-bool GenTree::is_magic_method_name_allowed(const string &name) {
+bool GenTree::is_magic_method_name_allowed(const std::string &name) {
   static std::set<std::string> names = {
     ClassData::NAME_OF_CONSTRUCT,
     ClassData::NAME_OF_CLONE,

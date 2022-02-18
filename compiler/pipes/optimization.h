@@ -21,7 +21,7 @@ private:
   static VertexPtr convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Optimization";
   }
 

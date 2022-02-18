@@ -170,7 +170,7 @@ void LexerData::hack_last_tokens() {
    */
   if (are_last_tokens(tok_static, tok_double_colon, any_token_tag{}) || are_last_tokens(tok_func_name, tok_double_colon, any_token_tag{})) {
     if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
-      string val = static_cast<std::string>(tokens[tokens.size() - 3].str_val);
+      auto val = static_cast<std::string>(tokens[tokens.size() - 3].str_val);
       val += "::";
       val += static_cast<std::string>(tokens[tokens.size() - 1].str_val);
       Token back = tokens.back();
@@ -324,7 +324,7 @@ bool TokenLexerName::parse(LexerData *lexer_data) const {
         }
       }
       if (bad) {
-        return TokenLexerError("Bad function name " + string(s, t)).parse(lexer_data);
+        return TokenLexerError("Bad function name " + std::string(s, t)).parse(lexer_data);
       }
     }
   }
@@ -337,7 +337,7 @@ bool TokenLexerName::parse(LexerData *lexer_data) const {
 
   if (closing_curly) {
     if (t[0] != '}') {
-      return TokenLexerError("Expected '}' after " + string(s, t)).parse(lexer_data);
+      return TokenLexerError("Expected '}' after " + std::string(s, t)).parse(lexer_data);
     }
     t++; // consume '}'
   }
@@ -537,7 +537,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
 
 
 bool TokenLexerSimpleString::parse(LexerData *lexer_data) const {
-  string str;
+  std::string str;
 
   const char *s = lexer_data->get_code();
   const char *t = s + 1;
@@ -737,11 +737,11 @@ bool TokenLexerStringExpr::parse(LexerData *lexer_data) const {
 }
 
 
-void TokenLexerString::add_esc(const string &s, char c) {
+void TokenLexerString::add_esc(const std::string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
 }
 
-void TokenLexerHeredocString::add_esc(const string &s, char c) {
+void TokenLexerHeredocString::add_esc(const std::string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
 }
 
@@ -815,7 +815,7 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
   int is_heredoc = s[0] == '<';
   assert (is_heredoc);
 
-  string tag;
+  std::string tag;
   const char *st = s;
   assert (s[1] == '<' && s[2] == '<');
 
@@ -965,7 +965,7 @@ bool TokenLexerToken::parse(LexerData *lexer_data) const {
   return true;
 }
 
-void TokenLexerCommon::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
+void TokenLexerCommon::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const std::string &str, TokenType tp) {
   h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
 }
 
@@ -1063,7 +1063,7 @@ void TokenLexerPHP::init() {
   h->add_simple_rule("", &vk::singleton<TokenLexerCommon>::get());
 }
 
-void TokenLexerPHPDoc::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const string &str, TokenType tp) {
+void TokenLexerPHPDoc::add_rule(const std::unique_ptr<Helper<TokenLexer>> &h, const std::string &str, TokenType tp) {
   h->add_simple_rule(str, new TokenLexerToken(tp, (int)str.size()));
 }
 
