@@ -133,7 +133,7 @@ FunctionPtr CompilerCore::get_function(const string &name) {
   TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
-    return FunctionPtr();
+    return {};
   }
 
   FunctionPtr f = node->data;
@@ -196,7 +196,7 @@ FFIRoot &CompilerCore::get_ffi_root() {
 
 SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib, bool builtin) {
   if (file_name.empty()) {
-    return SrcFilePtr();
+    return {};
   }
 
   string full_file_name = search_required_file(file_name);

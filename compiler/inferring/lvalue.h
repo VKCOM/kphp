@@ -35,11 +35,11 @@ struct LValue {
 LValue as_lvalue(VertexPtr v);
 
 inline LValue as_lvalue(FunctionPtr function, int id) {
-  return LValue(tinf::get_tinf_node(function, id), &MultiKey::any_key(0));
+  return {tinf::get_tinf_node(function, id), &MultiKey::any_key(0)};
 }
 
 inline LValue as_lvalue(VarPtr var) {
-  return LValue(tinf::get_tinf_node(var), &MultiKey::any_key(0));
+  return {tinf::get_tinf_node(var), &MultiKey::any_key(0)};
 }
 
 inline const LValue &as_lvalue(const LValue &lvalue) {

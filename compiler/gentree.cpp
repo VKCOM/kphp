@@ -703,7 +703,7 @@ VertexPtr GenTree::get_unary_op(int op_priority_cur, Operation unary_op_tp, bool
 
   VertexPtr left = get_binary_op(op_priority_cur, till_ternary);
   if (!left) {
-    return VertexPtr();
+    return {};
   }
 
   if (unary_op_tp == op_log_not) {

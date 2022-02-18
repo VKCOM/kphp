@@ -161,7 +161,7 @@ string f$base64_encode(const string &s) {
   result_len = base64_encode(reinterpret_cast <const unsigned char *> (s.c_str()), (int)s.size(), res.buffer(), result_len + 1);
 
   if (result_len != 0) {
-    return string();
+    return {};
   }
 
   return res;

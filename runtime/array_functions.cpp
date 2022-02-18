@@ -42,7 +42,7 @@ array<string> f$explode(const string &delimiter, const string &str, int64_t limi
   }
   if (d_len == 0) {
     php_warning("Empty delimiter in function explode");
-    return array<string>();
+    return {};
   }
 
   array<string> res(array_size(limit < 10 ? limit : 1, 0, true));
@@ -79,7 +79,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
   if (from < to) {
     if (step <= 0) {
       php_warning("Wrong parameters from = %" PRIi64 ", to = %" PRIi64 ", step = %" PRIi64 " in function range", from, to, step);
-      return array<mixed>();
+      return {};
     }
     array<mixed> res(array_size((to - from + step) / step, 0, true));
     for (int64_t i = from; i <= to; i += step) {
@@ -89,7 +89,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
   } else {
     if (step == 0) {
       php_warning("Wrong parameters from = %" PRIi64 ", to = %" PRIi64 ", step = %" PRIi64 " in function range", from, to, step);
-      return array<mixed>();
+      return {};
     }
     if (step < 0) {
       step = -step;
@@ -105,7 +105,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
 array<mixed> range_string(const string &from_s, const string &to_s, int64_t step) {
   if (from_s.empty() || to_s.empty() || from_s.size() > 1 || to_s.size() > 1) {
     php_warning("Wrong parameters \"%s\" and \"%s\" for function range", from_s.c_str(), to_s.c_str());
-    return array<mixed>();
+    return {};
   }
   if (step != 1) {
     php_critical_error ("unsupported step = %" PRIi64 " in function range", step);

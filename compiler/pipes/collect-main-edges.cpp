@@ -43,7 +43,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
   }
 
   kphp_fail();
-  return RValue();
+  return {};
 }
 
 // an isset check will analyze expressions that may differ from PHP after getting elements from typed arrays

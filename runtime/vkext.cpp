@@ -151,7 +151,7 @@ inline string finish_buff(int64_t max_len) {
     return res;
   }
 
-  return string(buff, static_cast<string::size_type>(len));
+  return {buff, static_cast<string::size_type>(len)};
 }
 
 inline void write_buff(const char *s, int l) {
@@ -488,7 +488,7 @@ string f$vk_utf8_to_win(const string &text, int64_t max_len, bool exit_on_error)
     if (!max_len || text.size() <= static_cast<string::size_type>(max_len)) {
       return text;
     }
-    return string(text.c_str(), static_cast<string::size_type>(max_len));
+    return {text.c_str(), static_cast<string::size_type>(max_len)};
   }
 }
 
@@ -558,88 +558,88 @@ string f$vk_sp_simplify(const string &s) {
   sp_init();
   char *t = sp_simplify(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_full_simplify(const string &s) {
   sp_init();
   char *t = sp_full_simplify(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_deunicode(const string &s) {
   sp_init();
   char *t = sp_deunicode(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_to_upper(const string &s) {
   sp_init();
   char *t = sp_to_upper(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_to_lower(const string &s) {
   sp_init();
   char *t = sp_to_lower(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_to_sort(const string &s) {
   sp_init();
   char *t = sp_sort(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_remove_repeats(const string &s) {
   sp_init();
   char *t = sp_remove_repeats(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_to_cyrillic(const string &s) {
   sp_init();
   char *t = sp_to_cyrillic(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }
 
 string f$vk_sp_words_only(const string &s) {
   sp_init();
   char *t = sp_words_only(s.c_str());
   if (!t) {
-    return string();
+    return {};
   }
 
-  return string(t, (string::size_type)strlen(t));
+  return {t, (string::size_type)strlen(t)};
 }

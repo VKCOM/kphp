@@ -253,7 +253,7 @@ static inline std::string collect_string_concatenation(VertexPtr v) {
     auto right = collect_string_concatenation(concat->rhs());
     return (left.empty() || right.empty()) ? std::string() : (left + right);
   }
-  return std::string();
+  return {};
 }
 
 struct MakeConst final

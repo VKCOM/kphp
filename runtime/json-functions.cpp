@@ -536,5 +536,5 @@ mixed f$json_decode(const string &v, bool assoc) noexcept {
     }
   }
 
-  return mixed();
+  return {};
 }

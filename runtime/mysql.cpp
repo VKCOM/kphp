@@ -54,14 +54,14 @@ static unsigned long long mysql_read_long_long(const unsigned char *&result, int
 
 static string mysql_read_string(const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
   if (result_len < 0) {
-    return string();
+    return {};
   }
 
   long long value_len = mysql_read_long_long(result, result_len, is_null);
   if (is_null || result_len < value_len || !need_value) {
     result_len -= (int)value_len;
     result += value_len;
-    return string();
+    return {};
   }
   string value((const char *)result, (int)value_len);
   result_len -= (int)value_len;

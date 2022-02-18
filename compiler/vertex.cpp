@@ -13,5 +13,5 @@ VertexPtr clone_vertex(VertexPtr from) {
     default:
     kphp_fail();
   }
-  return VertexPtr();
+  return {};
 }

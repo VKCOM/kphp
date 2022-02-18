@@ -75,7 +75,7 @@ static inline int array_len() {
 
 std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W) {
   if (const_raw_array_vars.empty()) {
-    return std::vector<int>();
+    return {};
   }
 
   std::vector<int> shifts;

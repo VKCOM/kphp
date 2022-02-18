@@ -205,8 +205,8 @@ int64_t f$fetch_lookup_int() {
 string f$fetch_lookup_data(int64_t x4_bytes_length) {
   TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length)));
   rpc_data_len += static_cast<int32_t>(x4_bytes_length);
-  return string(reinterpret_cast<const char *>(rpc_data),
-                static_cast<string::size_type>(x4_bytes_length * 4));
+  return {reinterpret_cast<const char *>(rpc_data),
+                static_cast<string::size_type>(x4_bytes_length * 4)};
 }
 
 int64_t f$fetch_long() {
@@ -264,7 +264,7 @@ static inline const char *f$fetch_string_raw(int *string_len) {
 string f$fetch_string() {
   int result_len = 0;
   const char *str = TRY_CALL(const char*, string, f$fetch_string_raw(&result_len));
-  return string(str, result_len);
+  return {str, static_cast<string::size_type>(result_len)};
 }
 
 int64_t f$fetch_string_as_int() {
@@ -302,7 +302,7 @@ mixed f$fetch_memcache_value() {
     default: {
       php_warning("Wrong memcache.Value constructor = %x", res);
       THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Wrong memcache.Value constructor"), -1));
-      return mixed();
+      return {};
     }
   }
 }

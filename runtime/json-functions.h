@@ -124,7 +124,7 @@ string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
     static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
     THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
-    return string();
+    return {};
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   return static_SB.str();

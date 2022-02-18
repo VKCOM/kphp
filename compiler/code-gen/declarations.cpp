@@ -26,11 +26,11 @@
 #include "compiler/vertex.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
-  return VarDeclaration(var, true, false);
+  return {var, true, false};
 }
 
 VarDeclaration VarPlainDeclaration(VarPtr var) {
-  return VarDeclaration(var, false, false);
+  return {var, false, false};
 }
 
 VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :

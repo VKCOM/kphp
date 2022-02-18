@@ -673,7 +673,7 @@ string f$print_r(const mixed &v, bool buffered) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
   }
-  return string();
+  return {};
 }
 
 void f$var_dump(const mixed &v) {
@@ -698,7 +698,7 @@ string f$var_export(const mixed &v, bool buffered) {
     dprintf(kstdout, "%s", f$ob_get_contents().c_str());
     f$ob_clean();
   }
-  return string();
+  return {};
 }
 
 string f$cp1251(const string &utf8_string) {

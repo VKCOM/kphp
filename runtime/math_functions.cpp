@@ -56,7 +56,7 @@ string f$decbin(int64_t number) noexcept {
     v >>= 1;
   } while (v > 0);
 
-  return string(s + i, static_cast<string::size_type>(65 - i));
+  return {s + i, static_cast<string::size_type>(65 - i)};
 }
 
 string f$dechex(int64_t number) noexcept {
@@ -70,7 +70,7 @@ string f$dechex(int64_t number) noexcept {
     v >>= 4;
   } while (v > 0);
 
-  return string(s + i, 16 - i);
+  return {s + i, static_cast<string::size_type>(16 - i)};
 }
 
 int64_t f$hexdec(const string &number) noexcept {

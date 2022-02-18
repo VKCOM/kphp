@@ -167,7 +167,7 @@ public:
 
   VertexPtr &back() { return ith(size() - 1); }
 
-  std::vector<VertexPtr> get_next() { return std::vector<VertexPtr>(begin(), end()); }
+  std::vector<VertexPtr> get_next() { return {begin(), end()}; }
 
   bool empty() const { return size() == 0; }
 
