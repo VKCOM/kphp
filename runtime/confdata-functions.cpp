@@ -105,7 +105,7 @@ mixed f$confdata_get_value(const string &key) noexcept {
     }
     // it must be an array (we loaded it this way)
     php_assert(it->second.is_array());
-    if (auto *value = it->second.as_array().find_value(key_maker.get_second_key())) {
+    if (const auto *value = it->second.as_array().find_value(key_maker.get_second_key())) {
       return *value;
     }
   }

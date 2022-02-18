@@ -66,7 +66,7 @@ private:
     if (tl_type->name == "Maybe") {
       assert(tl_type_expr.children.size() == 1);
       const auto &child = tl_type_expr.children.back();
-      if (auto child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
+      if (auto *child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
         auto *child_type = scheme_.get_type_by_magic(child_as_type_expr->type_id);
         assert(child_type);
         if (child_type->name == "True") {
@@ -105,11 +105,11 @@ private:
       }
     }
     std::vector<int> params_order;
-    auto as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
+    auto *as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
     for (const auto &child : as_type_expr->children) {
-      if (auto as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
+      if (auto *as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
         params_order.push_back(as_nat_var->var_num);
-      } else if (auto as_type_var = child->as<vk::tlo_parsing::type_var>()) {
+      } else if (auto *as_type_var = child->as<vk::tlo_parsing::type_var>()) {
         params_order.push_back(as_type_var->var_num);
       }
     }
@@ -162,7 +162,7 @@ private:
 
 void tl_scheme_final_check(const tl_scheme &scheme) {
   TlSchemaChecker schema_checker{scheme};
-  for (auto &tl_function : scheme.functions) {
+  for (const auto &tl_function : scheme.functions) {
     schema_checker.check_combinator(*tl_function.second);
   }
 }

@@ -36,7 +36,7 @@ public:
 
   void compute_priority() final {
     priority = 0;
-    for (auto dep : deps) {
+    for (auto *dep : deps) {
       if (File *dep_file = dep->get_file()) {
         priority += dep_file->file_size;
       }

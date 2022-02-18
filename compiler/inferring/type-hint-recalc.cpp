@@ -45,7 +45,7 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
     }
 
     std::vector<VertexPtr> fake_call_params;    // e.g., only one here for fake array_filter call: ^2[*]
-    for (auto callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
+    for (const auto *callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
       prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
         recursion.emplace_back(provided_callback->name);
       });
@@ -73,7 +73,7 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
 
 void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   if (auto v = GenTree::get_call_arg_ref(arg_num, call)) {
-    if (auto *class_name = GenTree::get_constexpr_string(v)) {
+    if (const auto *class_name = GenTree::get_constexpr_string(v)) {
       if (auto klass = G->get_class(*class_name)) {
         dst->set_lca(klass->type_data);
         return;

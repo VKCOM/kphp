@@ -216,7 +216,7 @@ bool compiler_execute(CompilerSettings *settings) {
     scheduler = new OneThreadScheduler();
     vk::singleton<CppDestDirInitializer>::get().initialize_sync();
   } else {
-    auto s = new Scheduler();
+    auto *s = new Scheduler();
     s->set_threads_count(scheduler_threads);
     scheduler = s;
     vk::singleton<CppDestDirInitializer>::get().initialize_async(scheduler_threads + 1);

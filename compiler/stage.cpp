@@ -104,7 +104,7 @@ std::string Location::as_human_readable() const {
 
   // if it's a method of an PSR-4 class /path/to/A.php, output only A::methodName, not fully-qualified path\to\A::methodName
   // if we are inside a lambda, print out the outermost named function
-  auto f_outer = function ? function->get_this_or_topmost_if_lambda() : nullptr;
+  const auto *f_outer = function ? function->get_this_or_topmost_if_lambda() : nullptr;
   if (f_outer && f_outer->type == FunctionData::func_local) {
     std::string function_name = f_outer->as_human_readable();
     std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";

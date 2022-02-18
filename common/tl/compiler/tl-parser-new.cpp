@@ -2227,8 +2227,8 @@ void change_var_ptrs(struct tl_combinator_tree *O, struct tl_combinator_tree *D,
 }
 
 tl_combinator_tree *change_first_var(struct tl_combinator_tree *O, struct tl_combinator_tree **X, struct tl_combinator_tree *Y) {
-  auto minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
-  auto minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
+  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
+  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
   if (!O) {
     return minus_one;
   };
@@ -2354,8 +2354,8 @@ struct tl_combinator_tree *reduce_type(struct tl_combinator_tree *A, struct tl_t
 }
 
 struct tl_combinator_tree *change_value_var(struct tl_combinator_tree *O, tree_var_value_t **X) {
-  auto minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
-  auto minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
+  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
+  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
   if (!O) {
     return minus_two;
   };

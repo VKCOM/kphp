@@ -332,7 +332,7 @@ SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib,
 
 
 ClassPtr CompilerCore::get_class(vk::string_view name) {
-  auto result = classes_ht.find(vk::std_hash(name));
+  const auto *result = classes_ht.find(vk::std_hash(name));
   return result ? *result : ClassPtr{};
 }
 

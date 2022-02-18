@@ -187,7 +187,7 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
     VertexRange args = call->args();
     LValue val = as_lvalue(args[0]);
 
-    auto key = new MultiKey(*val.key);
+    auto *key = new MultiKey(*val.key);
     key->push_back(Key::any_key());
     val.key = key;
 

@@ -98,7 +98,7 @@ void free_script_allocator() noexcept {
 void *allocate(size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
-  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
+  if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate(size);
   }
   if (unlikely(!script_allocator_enabled)) {
@@ -112,7 +112,7 @@ void *allocate(size_t size) noexcept {
 void *allocate0(size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
-  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
+  if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->allocate0(size);
   }
   if (unlikely(!script_allocator_enabled)) {
@@ -126,7 +126,7 @@ void *allocate0(size_t size) noexcept {
 void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   php_assert(new_size > old_size);
   auto &dealer = get_memory_dealer();
-  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
+  if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->reallocate(mem, new_size, old_size);
   }
   if (unlikely(!script_allocator_enabled)) {
@@ -140,7 +140,7 @@ void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
 void deallocate(void *mem, size_t size) noexcept {
   php_assert(size);
   auto &dealer = get_memory_dealer();
-  if (auto heap_replacer = dealer.heap_script_resource_replacer()) {
+  if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
     return heap_replacer->deallocate(mem, size);
   }
 
@@ -309,7 +309,7 @@ MemoryReplacementGuard::~MemoryReplacementGuard() {
 
 // replace global operators new and delete for linked C++ code
 void *operator new(size_t size) {
-  auto res = std::malloc(size);
+  auto *res = std::malloc(size);
   if (!res) {
     php_critical_error("nullptr from malloc");
   }

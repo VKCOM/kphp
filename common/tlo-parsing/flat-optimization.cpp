@@ -50,7 +50,7 @@ private:
     cloned->type_id = tl_type_expr.type_id;
     cloned->children.reserve(tl_type_expr.children.size());
 
-    for (auto &child : tl_type_expr.children) {
+    for (const auto &child : tl_type_expr.children) {
       child->visit(*this);
       if (new_type_child_) {
         assert(!new_nat_child_);
@@ -121,7 +121,7 @@ private:
 
   void prepare_new_child(int donor_var_num) {
     const size_t template_arg_number = donor_.constructor->get_type_parameter_input_index(donor_var_num);
-    auto *replacing_type_expr = old_expr_.as<type_expr>();
+    const auto *replacing_type_expr = old_expr_.as<type_expr>();
     assert(replacing_type_expr);
     assert(template_arg_number < replacing_type_expr->children.size());
 
@@ -261,7 +261,7 @@ private:
     }
 
     to_inline_.constructor = tl_type.constructors.front().get();
-    for (auto &ctr_arg : to_inline_.constructor->args) {
+    for (const auto &ctr_arg : to_inline_.constructor->args) {
       if (!(ctr_arg->is_optional())) {
         if (to_inline_.argument) {
           to_inline_.clear();

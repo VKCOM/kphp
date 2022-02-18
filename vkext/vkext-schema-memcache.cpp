@@ -2984,7 +2984,7 @@ void *tlsub_create_array(void **IP, void **Data, zval **arr, struct tl_tree **va
  *****/
 void *tlsub_create_type(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
-  auto x = reinterpret_cast<tl_tree_type *>(zzemalloc(sizeof(tl_tree_type)));
+  auto *x = reinterpret_cast<tl_tree_type *>(zzemalloc(sizeof(tl_tree_type)));
   dynamic_tree_nodes++;
   total_tree_nodes_existed++;
   x->self.ref_cnt = 1;

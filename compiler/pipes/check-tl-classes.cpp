@@ -33,7 +33,7 @@ void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresen
   }
 
   for (const auto &field : repr.class_fields) {
-    auto member = class_id->members.find_by_local_name<ClassMemberInstanceField>(field.field_name);
+    const auto *member = class_id->members.find_by_local_name<ClassMemberInstanceField>(field.field_name);
     kphp_error_return(member, fmt_format("Can't find field '{}' in tl-class '{}'", field.field_name, class_id->name));
   }
 }

@@ -115,8 +115,8 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
       continue;
     }
     string pretty_name{static_cast<string::size_type>(func_name.size()), true};
-    for (auto it = func_name.begin(); it != func_name.end();) {
-      auto next = std::next(it);
+    for (const auto *it = func_name.begin(); it != func_name.end();) {
+      const auto *next = std::next(it);
       if (*it == '$') {
         if (next != func_name.end() && *next == '$') {
           pretty_name.append_unsafe("::", 2);

@@ -483,7 +483,7 @@ process_id_t get_lease_pid() {
 
 process_id_t get_rpc_main_target_pid() {
   if (rpc_proxy_target != -1) {
-    if (auto c = get_target_connection(&Targets[rpc_proxy_target], 0)) {
+    if (auto *c = get_target_connection(&Targets[rpc_proxy_target], 0)) {
       return TCP_RPC_DATA(c)->remote_pid;
     }
   }

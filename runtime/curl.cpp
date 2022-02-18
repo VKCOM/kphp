@@ -966,7 +966,7 @@ template<class CTX>
 void clear_contexts(array<CTX *> &contexts) {
   std::for_each(contexts.cbegin(), contexts.cend(),
                 [](const typename array<CTX *>::const_iterator &it) {
-                  if (auto easy_context = it.get_value()) {
+                  if (auto *easy_context = it.get_value()) {
                     easy_context->release();
                   }
                 });

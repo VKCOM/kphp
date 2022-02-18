@@ -24,7 +24,7 @@ public:
   }
 
   static int compare(void *extra, const void *data, int len) {
-    auto stream_comparator = static_cast<stream_comparator_t *>(extra);
+    auto *stream_comparator = static_cast<stream_comparator_t *>(extra);
     stream_comparator->compare(data, len);
     return 0;
   }
@@ -383,10 +383,10 @@ TEST(net_msg, fork_message_chain) {
     EXPECT_EQ(x.first->refcnt, 2);
 
     fork_message_chain(&x);
-    for(auto mp = x.first; mp != x.last; mp = mp->next) {
+    for(auto *mp = x.first; mp != x.last; mp = mp->next) {
       EXPECT_EQ(mp->refcnt, 1);
     }
-    for(auto mp = y.first; mp != y.last; mp = mp->next) {
+    for(auto *mp = y.first; mp != y.last; mp = mp->next) {
       EXPECT_EQ(mp->refcnt, 1);
     }
     EXPECT_EQ(x.total_bytes, payload.size() * 3);
@@ -625,8 +625,8 @@ TEST(net_msg, rwm_union_large) {
     rwms[i].first_offset = 92;
     rwms[i].last_offset = 68;
 
-    auto buffer = alloc_msg_buffer(buffer_size);
-    auto mp = new_msg_part(buffer);
+    auto *buffer = alloc_msg_buffer(buffer_size);
+    auto *mp = new_msg_part(buffer);
     mp->offset = 0;
     mp->len = buffer_size;
     rwms[i].first = mp;

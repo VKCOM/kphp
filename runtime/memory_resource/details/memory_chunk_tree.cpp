@@ -33,7 +33,7 @@ public:
     if (!parent || !parent->parent) {
       return nullptr;
     }
-    auto grandpa = parent->parent;
+    auto *grandpa = parent->parent;
     return parent->is_left() ? grandpa->right : grandpa->left;
   }
 

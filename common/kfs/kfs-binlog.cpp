@@ -92,7 +92,7 @@ kfs_file_handle_t open_binlog(const kfs_replica_t *R, long long log_pos) {
       //kprintf ("FI->file_size:%lld, FI->flags: %d, FI->kfs_headers:%d, file:%s, file_pos: %lld, log_pos: %lld\n", FI->file_size, FI->flags, FI->kfs_headers, FI->filename, file_pos, log_pos);
       assert (lseek(fd, file_pos, SEEK_SET) == file_pos);
 
-      auto F = static_cast<kfs_file *>(calloc(1, sizeof(struct kfs_file)));
+      auto *F = static_cast<kfs_file *>(calloc(1, sizeof(struct kfs_file)));
       assert (F);
       F->info = FI;
       F->fd = fd;

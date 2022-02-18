@@ -62,7 +62,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     calls.push_back(other_function);
     if (other_function->is_extern()) {
       if (other_function->cpp_template_call) {
-        auto tp = tinf::get_type(call);
+        const auto *tp = tinf::get_type(call);
         if (auto klass = tp->class_type()) {
           current_function->class_dep.insert(klass);
         }

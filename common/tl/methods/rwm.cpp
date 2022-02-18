@@ -12,7 +12,7 @@
 #include "common/tl/parse.h"
 
 static inline int rwm_do_xor_compress(void *extra __attribute__((unused)), void *data_, int len) {
-  auto data = static_cast<uint8_t *>(data_);
+  auto *data = static_cast<uint8_t *>(data_);
   for (int i = 0; i < len; i++) {
     data[i] ^= 0xbe;
   }
@@ -27,7 +27,7 @@ struct zstd_compression_extra_t {
 };
 
 static inline int tl_raw_msg_zstd_compress(void *_extra, const void *data, int len) {
-  auto extra = static_cast<zstd_compression_extra_t *>(_extra);
+  auto *extra = static_cast<zstd_compression_extra_t *>(_extra);
   ZSTD_outBuffer output = {.dst = extra->buffer, .size = extra->buf_len, .pos = 0};
   ZSTD_inBuffer input = {.src = data, .size = (size_t)len, .pos = 0};
   while (input.pos < input.size) {
@@ -82,7 +82,7 @@ struct zstd_decompression_extra_t {
 };
 
 static inline int tl_raw_msg_zstd_decompress(void *_extra, const void *data, int len) {
-  auto extra = static_cast<zstd_decompression_extra_t *>(_extra);
+  auto *extra = static_cast<zstd_decompression_extra_t *>(_extra);
   ZSTD_outBuffer output = {.dst = extra->buffer, .size = extra->buf_len, .pos = 0};
   ZSTD_inBuffer input = {.src = data, .size = (size_t)len, .pos = 0};
   while (input.pos < input.size) {

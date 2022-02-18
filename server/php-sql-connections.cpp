@@ -88,10 +88,10 @@ conn_target_t db_ct = [] {
 
 void command_net_write_run_sql(command_t *base_command, void *data) {
   //fprintf (stderr, "command_net_write [ptr=%p]\n", base_command);
-  auto command = (command_net_write_t *)base_command;
+  auto *command = (command_net_write_t *)base_command;
 
   assert (command->data != nullptr);
-  auto d = (connection *)data;
+  auto *d = (connection *)data;
   assert (d->status == conn_ready);
 
   /*
@@ -132,7 +132,7 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
 
   sql_ansgen_t *ansgen = sql_ansgen_packet_create();
 
-  auto net_ansgen = (net_ansgen_t *)ansgen;
+  auto *net_ansgen = (net_ansgen_t *)ansgen;
   if (connection_id != sql_target_id) {
     net_error(net_ansgen, (php_query_base_t *)query, "Invalid connection_id (sql connection expected)");
     return;
@@ -180,14 +180,14 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
 }
 
 int sql_query_packet(conn_query *q, data_reader_t *reader) {
-  auto ansgen = (sql_ansgen_t *)q->extra;
+  auto *ansgen = (sql_ansgen_t *)q->extra;
   ansgen->func->packet(ansgen, reader);
 
   return pnet_query_check(q);
 }
 
 int sql_query_done(conn_query *q) {
-  auto ansgen = (sql_ansgen_t *)q->extra;
+  auto *ansgen = (sql_ansgen_t *)q->extra;
   ansgen->func->done(ansgen);
 
   return pnet_query_check(q);
@@ -204,13 +204,13 @@ int sqlp_becomes_ready(connection *c) {
       q->requester->queries_ok++;
       //waiting_queries--;
 
-      auto net_ansgen = (net_ansgen_t *)q->extra;
+      auto *net_ansgen = (net_ansgen_t *)q->extra;
       create_pnet_query(q->requester, c, net_ansgen, q->timer.wakeup_time);
 
       delete_conn_query(q);
       free(q);
 
-      auto ansgen = (sql_ansgen_t *)net_ansgen;
+      auto *ansgen = (sql_ansgen_t *)net_ansgen;
       ansgen->func->ready(ansgen, c);
       break;
     } else {
@@ -254,7 +254,7 @@ int sqlp_authorized(connection *c) {
   int len = 0;
   char ptype = 2;
 
-  auto sql_database = SQLC_FUNC(c)->sql_get_database(c);
+  const auto *sql_database = SQLC_FUNC(c)->sql_get_database(c);
   if (!sql_database || !*sql_database) {
     SQLC_DATA(c)->auth_state = sql_auth_ok;
     c->status = conn_ready;

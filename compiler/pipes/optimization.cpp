@@ -71,7 +71,7 @@ void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const Typ
 }
 
 void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required_type, std::set<VarPtr> *new_var_out = nullptr) noexcept {
-  auto existed_type = tinf::get_type(type_acceptor);
+  const auto *existed_type = tinf::get_type(type_acceptor);
   if (existed_type->get_real_ptype() != tp_array ||
       !is_implicit_array_conversion(existed_type, required_type)) {
     return;

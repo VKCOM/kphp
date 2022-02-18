@@ -43,12 +43,12 @@ inline std::string to_upper(std::string s) {
 }
 
 inline vk::string_view ltrim(vk::string_view s) {
-  auto first_not_space = std::find_if(s.begin(), s.end(), [](uint8_t ch) { return !std::isspace(ch); });
+  const auto *first_not_space = std::find_if(s.begin(), s.end(), [](uint8_t ch) { return !std::isspace(ch); });
   return {first_not_space, s.end()};
 }
 
 inline vk::string_view rtrim(vk::string_view s) {
-  auto last_not_space = std::find_if(s.rbegin(), s.rend(), [](uint8_t ch) { return !std::isspace(ch); }).base();
+  const auto *last_not_space = std::find_if(s.rbegin(), s.rend(), [](uint8_t ch) { return !std::isspace(ch); }).base();
   return {s.begin(), last_not_space};
 }
 

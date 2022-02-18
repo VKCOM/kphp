@@ -434,14 +434,14 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
-  auto &root_type_str = OpInfo::str(root->type());
+  const auto &root_type_str = OpInfo::str(root->type());
   kphp_error_return (root_type_str[0] != '@', fmt_format("Unexpected {}\n", vk::string_view{root_type_str}.substr(1)));
 
   auto lhs = root->lhs();
   auto rhs = root->rhs();
 
-  auto lhs_tp = tinf::get_type(lhs);
-  auto rhs_tp = tinf::get_type(rhs);
+  const auto *lhs_tp = tinf::get_type(lhs);
+  const auto *rhs_tp = tinf::get_type(rhs);
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
     W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
@@ -937,7 +937,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
   auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
-  auto default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
+  auto *default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
 
   int n = static_cast<int>(cases.size());
   std::map<unsigned int, int> hash_to_last_id;
@@ -957,7 +957,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       cases[i].next = &cases[next_i];
     }
 
-    auto next = cases[i].next;
+    auto *next = cases[i].next;
     if (next && next->goto_name.empty()) {
       next->goto_name = gen_unique_name("switch_goto");
     }
@@ -1960,7 +1960,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       compile_noerr(root.as<op_noerr>(), W);
       break;
     case op_clone: {
-      auto tp = tinf::get_type(root);
+      const auto *tp = tinf::get_type(root);
       if (auto klass = tp->class_type()) {
         if (klass->is_class()) {
           W << root.as<op_clone>()->expr() << ".clone()";
@@ -1977,7 +1977,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_alloc: {
       const TypeData *tp = tinf::get_type(root);
       kphp_assert(tp->ptype() == tp_Class);
-      auto alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
+      const auto *alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
       W << TypeName(tp) << alloc_function;
       break;
     }

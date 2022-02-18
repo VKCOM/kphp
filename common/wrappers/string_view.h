@@ -155,7 +155,7 @@ public:
     if (empty()) {
       return std::string::npos;
     }
-    auto *ans = static_cast<const char *>(memmem(data() + pos, size() - pos, needle.data(), needle.size()));
+    const auto *ans = static_cast<const char *>(memmem(data() + pos, size() - pos, needle.data(), needle.size()));
     if (ans) {
       return ans - data();
     } else {
@@ -168,7 +168,7 @@ public:
     if (empty()) {
       return std::string::npos;
     }
-    auto *ans = static_cast<const char *>(memchr(data() + pos, c, size() - pos));
+    const auto *ans = static_cast<const char *>(memchr(data() + pos, c, size() - pos));
     if (ans) {
       return ans - data();
     } else {
@@ -185,8 +185,8 @@ public:
     }
 
     if (needle.size() <= size()) {
-      auto end_it = begin() + (std::min(size() - needle.size(), pos) + needle.size());
-      auto found_it = std::find_end(begin(), end_it, needle.begin(), needle.end());
+      const auto *end_it = begin() + (std::min(size() - needle.size(), pos) + needle.size());
+      const auto *found_it = std::find_end(begin(), end_it, needle.begin(), needle.end());
 
       if (found_it != end_it) {
         return std::distance(begin(), found_it);

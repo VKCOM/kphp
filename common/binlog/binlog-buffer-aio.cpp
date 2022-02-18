@@ -129,7 +129,7 @@ static int bbw_local_replica_try_read (bb_writer_t *W, int len) {
   const long long offset = B->log_last_wpos - P->log_slice_start_pos;
   if (P->Binlog->info->flags & KFS_FILE_ZIPPED) {
     r = 0x1000000;
-    auto a = static_cast<char*>(malloc (r));
+    auto *a = static_cast<char*>(malloc (r));
     assert (a);
     if (kfs_bz_decode (P->Binlog, offset, a, &r, NULL) < 0) {
       print_backtrace();

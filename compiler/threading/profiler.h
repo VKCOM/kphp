@@ -110,7 +110,7 @@ public:
   }
 
   ProfilerRaw *operator->() {
-    auto raw = *raws_;
+    auto *raw = *raws_;
     if (raw == nullptr) {
       raw = &get_profiler(name_);
       *raws_ = raw;

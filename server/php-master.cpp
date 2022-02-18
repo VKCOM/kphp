@@ -242,7 +242,7 @@ struct Stats {
       misc_stat_for_job_workers[i].set_period(periods_len[i]);
     }
 
-    for (auto period : periods_desc) {
+    for (const auto *period : periods_desc) {
       if (!cpu_desc.empty()) {
         cpu_desc += ",";
       }

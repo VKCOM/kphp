@@ -29,7 +29,7 @@ void RestrictionIsset::find_dangerous_isset_warning(vector<tinf::Node *> *bt, ti
   desc += " can't be null in KPHP, while it can be in PHP\n Chain of assignments:\n";
 
   bt->emplace_back(node);
-  for (auto const n : *bt) {
+  for (auto *const n : *bt) {
     desc += "  ";
     desc += n->get_description();
     desc += "\n";

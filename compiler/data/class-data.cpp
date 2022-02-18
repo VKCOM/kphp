@@ -425,7 +425,7 @@ void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::
 
 void ClassData::register_defines() const {
   members.for_each([this](const ClassMemberConstant &c) {
-    auto data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
+    auto *data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
     data->file_id = file_id;
     data->access = c.access;
     data->class_id = get_self();

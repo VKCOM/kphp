@@ -76,7 +76,7 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
 }
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
-  auto type = tinf::get_type(call->args()[1]);
+  const auto *type = tinf::get_type(call->args()[1]);
   kphp_error_return(type->ptype() == tp_Class, "Called instance_cache_store() with a non-instance argument");
   auto klass = type->class_type();
   klass->deeply_require_instance_cache_visitor();
@@ -108,19 +108,19 @@ void check_to_array_debug_call(VertexAdaptor<op_func_call> call) {
 }
 
 void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {
-  auto type = tinf::get_type(call->args()[0]);
+  const auto *type = tinf::get_type(call->args()[0]);
   kphp_error_return(type->ptype() == tp_Class, "Called instance_serialize() with a non-instance argument");
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_serialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
 void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
-  auto type = tinf::get_type(call);
+  const auto *type = tinf::get_type(call);
   kphp_assert(type->ptype() == tp_Class);
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
-  auto type = tinf::get_type(call->args()[0]);
+  const auto *type = tinf::get_type(call->args()[0]);
   std::unordered_set<ClassPtr> classes_inside;
   type->get_all_class_types_inside(classes_inside);
   for (auto klass: classes_inside) {
@@ -181,9 +181,9 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
 
     if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
-        auto arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
+        const auto *arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
         if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
-          auto value_type = tinf::get_type(arg)->lookup_at_any_key();
+          const auto *value_type = tinf::get_type(arg)->lookup_at_any_key();
           auto out_class = value_type->class_type();
           kphp_error_return(out_class, "type of argument for to_array_debug has to be array of Classes");
           out_class->deeply_require_to_array_debug_visitor();
@@ -194,8 +194,8 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
 }
 
 void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_vertex) {
-  auto lhs_type = tinf::get_type(binary_vertex->lhs());
-  auto rhs_type = tinf::get_type(binary_vertex->rhs());
+  const auto *lhs_type = tinf::get_type(binary_vertex->lhs());
+  const auto *rhs_type = tinf::get_type(binary_vertex->rhs());
 
   switch (binary_vertex->type()) {
     case op_add:
@@ -635,7 +635,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
     if (is_value_sort_function) {
       // Forbid arrays with elements that would be rejected by check_comparisons().
       const TypeData *array_type = tinf::get_type(call->args()[0]);
-      auto *elem_type = array_type->lookup_at_any_key();
+      const auto *elem_type = array_type->lookup_at_any_key();
       kphp_error(vk::none_of_equal(elem_type->ptype(), tp_Class, tp_tuple, tp_shape),
                  fmt_format("{} is not comparable and cannot be sorted", elem_type->as_human_readable()));
     }
@@ -669,8 +669,8 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
 }
 
 void FinalCheckPass::check_eq3(VertexPtr lhs, VertexPtr rhs) {
-  auto lhs_type = tinf::get_type(lhs);
-  auto rhs_type = tinf::get_type(rhs);
+  const auto *lhs_type = tinf::get_type(lhs);
+  const auto *rhs_type = tinf::get_type(rhs);
 
   if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
       (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
@@ -687,8 +687,8 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
     std::swap(lhs, rhs);
   }
 
-  auto lhs_t = tinf::get_type(lhs);
-  auto rhs_t = tinf::get_type(rhs);
+  const auto *lhs_t = tinf::get_type(lhs);
+  const auto *rhs_t = tinf::get_type(rhs);
 
   if (lhs_t->ptype() == tp_Class) {
     if (op == op_eq2) {

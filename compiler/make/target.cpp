@@ -48,7 +48,7 @@ std::string Target::target() {
 
 std::string Target::dep_list() {
   std::string ss;
-  for (auto const dep : deps) {
+  for (auto *dep : deps) {
     ss += dep->get_name();
     ss += " ";
   }

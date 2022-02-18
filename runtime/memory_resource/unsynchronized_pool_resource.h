@@ -45,7 +45,7 @@ public:
   }
 
   void *allocate0(size_t size) noexcept {
-    auto mem = allocate(size);
+    auto *mem = allocate(size);
     if (likely(mem != nullptr)) {
       memset(mem, 0x00, size);
     }

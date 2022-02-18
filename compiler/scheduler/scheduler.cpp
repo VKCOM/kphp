@@ -23,7 +23,7 @@ public:
 
 
 void *scheduler_thread_execute(void *arg) {
-  auto tls = (ThreadContext *)arg;
+  auto *tls = (ThreadContext *)arg;
   tls->scheduler->thread_execute(tls);
   return nullptr;
 }
@@ -84,7 +84,7 @@ void Scheduler::execute() {
     pthread_join(threads[i].pthread_id, nullptr);
   }
 
-  for (auto node : nodes) {
+  for (auto *node : nodes) {
     delete node;
   }
 }

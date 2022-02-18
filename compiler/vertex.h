@@ -68,7 +68,7 @@ VertexPtr create_vertex(Operation op, Args&& ...args) {
 // op_int_const string representation can be "123", "0x123", "0002", "-123", "0b0010101"
 // but it is guaranteed to be a valid int
 inline long parse_int_from_string(VertexAdaptor<op_int_const> v) {
-  auto start = v->get_string().c_str();
+  const auto *start = v->get_string().c_str();
 
   if (start[0] == '0' && start[1] == 'b') {
     return std::strtol(start + 2, nullptr, 2);

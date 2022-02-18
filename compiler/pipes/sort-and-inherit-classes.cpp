@@ -37,7 +37,7 @@ void mark_virtual_and_overridden_methods(ClassPtr cur_class, DataStream<Function
       if (ancestor == cur_class) {
         continue;
       }
-      if (auto parent_member = ancestor->members.get_instance_method(method.local_name())) {
+      if (auto *parent_member = ancestor->members.get_instance_method(method.local_name())) {
         auto parent_function = parent_member->function;
 
         kphp_error(parent_function->modifiers.is_abstract() || !parent_function->modifiers.is_final(),
@@ -91,7 +91,7 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
 // Otherwise it returns a pointer to a dependent class/interface that needs to be processed.
 auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
   for (const auto &dep : klass->get_str_dependents()) {
-    auto node = ht.at(vk::std_hash(dep.class_name));
+    auto *node = ht.at(vk::std_hash(dep.class_name));
     kphp_assert(node);
     if (!node->data.done) {
       return node;
@@ -217,7 +217,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
       }
     });
     parent_class->members.for_each([&](const ClassMemberConstant &c) {
-      if (auto child_const = child_class->get_constant(c.local_name())) {
+      if (const auto *child_const = child_class->get_constant(c.local_name())) {
         kphp_error(child_const->access == c.access,
                    fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
       }
@@ -316,7 +316,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   auto &function_stream = *os.template project_to_nth_data_stream<0>();
   auto &restart_class_stream = *os.template project_to_nth_data_stream<1>();
 
-  if (auto dependency = get_not_ready_dependency(klass)) {
+  if (auto *dependency = get_not_ready_dependency(klass)) {
     AutoLocker<Lockable*> locker(dependency);
     // check whether done is changed at this point
     if (dependency->data.done) {
@@ -329,7 +329,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
 
   on_class_ready(klass, function_stream);
 
-  auto node = ht.at(vk::std_hash(klass->name));
+  auto *node = ht.at(vk::std_hash(klass->name));
   kphp_assert(!node->data.done);
 
   AutoLocker<Lockable *> locker(node);
@@ -348,7 +348,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
   auto classes = G->get_classes();
 
   for (ClassPtr c : classes) {
-    auto node = ht.at(vk::std_hash(c->name));
+    auto *node = ht.at(vk::std_hash(c->name));
     if (!node->data.done) {
       auto is_not_done = [](const ClassData::StrDependence &dep) { return !ht.at(vk::std_hash(dep.class_name))->data.done; };
       auto str_dep_to_string = [](const ClassData::StrDependence &dep) { return dep.class_name; };

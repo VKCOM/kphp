@@ -30,7 +30,7 @@ data_reader_t *create_data_reader(connection *c, int data_len) {
 }
 
 int mc_query_value(conn_query *q, data_reader_t *reader) {
-  auto ansgen = (mc_ansgen_t *)q->extra;
+  auto *ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->value(ansgen, reader);
 
   int err = pnet_query_check(q);
@@ -38,35 +38,35 @@ int mc_query_value(conn_query *q, data_reader_t *reader) {
 }
 
 int mc_query_other(conn_query *q, data_reader_t *reader) {
-  auto ansgen = (mc_ansgen_t *)q->extra;
+  auto *ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->other(ansgen, reader);
 
   return pnet_query_check(q);
 }
 
 int mc_query_version(conn_query *q, data_reader_t *reader) {
-  auto ansgen = (mc_ansgen_t *)q->extra;
+  auto *ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->version(ansgen, reader);
 
   return pnet_query_check(q);
 }
 
 int mc_query_end(conn_query *q) {
-  auto ansgen = (mc_ansgen_t *)q->extra;
+  auto *ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->end(ansgen);
 
   return pnet_query_check(q);
 }
 
 int mc_query_xstored(conn_query *q, int is_stored) {
-  auto ansgen = (mc_ansgen_t *)q->extra;
+  auto *ansgen = (mc_ansgen_t *)q->extra;
   ansgen->func->xstored(ansgen, is_stored);
 
   return pnet_query_check(q);
 }
 
 int mc_query_error(conn_query *q) {
-  auto ansgen = (net_ansgen_t *)q->extra;
+  auto *ansgen = (net_ansgen_t *)q->extra;
   ansgen->func->error(ansgen, "some protocol error");
 
   return pnet_query_check(q);
@@ -256,7 +256,7 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
   mc_ansgen_t *ansgen = mc_ansgen_packet_create();
   ansgen->func->set_query_type(ansgen, query->extra_type);
 
-  auto net_ansgen = (net_ansgen_t *)ansgen;
+  auto *net_ansgen = (net_ansgen_t *)ansgen;
   int connection_id = query->connection_id;
 
   if (connection_id < 0 || connection_id >= MAX_TARGETS) {

@@ -121,7 +121,7 @@ private:
     }
 
     bool has_other = false;
-    for (auto &tl_arg : processing_combinator_->args) {
+    for (const auto &tl_arg : processing_combinator_->args) {
       if (!(tl_arg->is_optional()) && processing_arg_ != tl_arg.get()) {
         has_other = true;
       }

@@ -179,7 +179,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
   }
 
   if (auto call = root.try_as<op_func_call>()) {
-    auto &name = call->get_string();
+    const auto &name = call->get_string();
 
     auto builtin = get_builtin_function(name);
     if (builtin.op != op_err && call->size() == builtin.args) {
