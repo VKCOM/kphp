@@ -34,7 +34,7 @@ static int get_hll_size(const string &hll) {
 
 Optional<string> f$vk_stats_hll_merge(const array<mixed> &a) {
   string result;
-  char *result_buff = 0;
+  char *result_buff = nullptr;
   int result_len = -1;
   for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
     if (!it.get_value().is_string()) {

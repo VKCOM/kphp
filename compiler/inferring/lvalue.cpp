@@ -40,6 +40,6 @@ LValue as_lvalue(VertexPtr v) {
     kphp_fail();
   }
 
-  kphp_assert (value != 0);
+  kphp_assert (value != nullptr);
   return LValue(value, &MultiKey::any_key(depth));
 }

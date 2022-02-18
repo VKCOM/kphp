@@ -100,7 +100,7 @@ ProfilerRaw &get_profiler(const std::string &name) {
 
 std::string demangle(const char *name) {
   int status;
-  char *demangled = abi::__cxa_demangle(name, 0, 0, &status);
+  char *demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   std::string result = demangled;
   free(demangled);
   return result;
