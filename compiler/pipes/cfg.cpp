@@ -427,6 +427,11 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = end;
       break;
     }
+    case op_class_c: {
+      Node res = new_node();
+      *res_start = *res_finish = res;
+      break;
+    }
 
     // simple just-value operators
     case op_ffi_new:

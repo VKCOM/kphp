@@ -32,6 +32,7 @@
 #include "compiler/pipes/calc-const-types.h"
 #include "compiler/pipes/calc-empty-functions.h"
 #include "compiler/pipes/calc-locations.h"
+#include "compiler/pipes/calc-magic-const.h"
 #include "compiler/pipes/calc-real-defines-values.h"
 #include "compiler/pipes/calc-rl.h"
 #include "compiler/pipes/calc-val-ref.h"
@@ -159,7 +160,7 @@ using PipeStream = PipeWithProgress<
   PipeFunctionT,
   DataStream<ExecuteFunctionInput<PipeFunctionT>>,
   ExecuteFunctionOutput<PipeFunctionT>
->;
+  >;
 
 using SyncNode = sync_node_tag<PipeWithProgress>;
 
@@ -256,6 +257,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<ConvertInvokeToFuncCallPass>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
     >> PassC<InstantiateFFIOperationsPass>{}
+    >> PassC<CalcMagicConstPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}

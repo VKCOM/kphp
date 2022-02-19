@@ -80,6 +80,7 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_noerr:
       rl_calc(root.as<op_noerr>()->expr(), expected_rl_type);
       break;
+    case op_class_c:
     case op_phpdoc_var:
       break;
     case op_list_keyval: {

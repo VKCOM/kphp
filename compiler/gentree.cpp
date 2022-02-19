@@ -432,7 +432,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, vk::string_view phpdoc_str) {
       break;
     }
     case tok_class_c: {
-      res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, cur_class ? cur_class->name : "");
+      res = VertexAdaptor<op_class_c>::create().set_location(auto_location());
       next_cur();
       break;
     }
@@ -1731,7 +1731,7 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
     new_root->extra_type = op_ex_func_call_arrow;
     new_root->str_val = rhs->get_string();
     return new_root;
-    
+
   } else {
     kphp_error (false, "Operator '->' expects property or function call as its right operand");
     return {};

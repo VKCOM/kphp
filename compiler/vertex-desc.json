@@ -837,6 +837,13 @@
     "base_name": "meta_op_base"
   },
   {
+    "name": "op_class_c",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_other"
+    }
+  },
+  {
     "comment": "global statement that binds global vars to the current scope",
     "name": "op_global",
     "base_name": "meta_op_varg",

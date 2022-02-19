@@ -99,6 +99,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         calc-empty-functions.cpp
         calc-func-dep.cpp
         calc-locations.cpp
+        calc-magic-const.cpp
         calc-real-defines-values.cpp
         calc-rl.cpp
         calc-val-ref.cpp
