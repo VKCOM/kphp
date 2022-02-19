@@ -160,7 +160,7 @@ using PipeStream = PipeWithProgress<
   PipeFunctionT,
   DataStream<ExecuteFunctionInput<PipeFunctionT>>,
   ExecuteFunctionOutput<PipeFunctionT>
-  >;
+>;
 
 using SyncNode = sync_node_tag<PipeWithProgress>;
 
