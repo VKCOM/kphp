@@ -15,19 +15,19 @@
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
 
-string gen_anonymous_scope_name(FunctionPtr function) {
+std::string gen_anonymous_scope_name(FunctionPtr function) {
   return gen_unique_name("cdef", function);
 }
 
-string gen_anonymous_function_name(FunctionPtr function) {
+std::string gen_anonymous_function_name(FunctionPtr function) {
   return gen_unique_name("lambda", function);
 }
 
-string gen_const_string_name(const string &str) {
+std::string gen_const_string_name(const std::string &str) {
   return fmt_format("const_string$us{:x}", vk::std_hash(str));
 }
 
-string gen_const_regexp_name(const string &str) {
+std::string gen_const_regexp_name(const std::string &str) {
   return fmt_format("const_regexp$us{:x}", vk::std_hash(str));
 }
 
@@ -39,7 +39,7 @@ std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
 }
 
-string gen_unique_name(const string& prefix, FunctionPtr function) {
+std::string gen_unique_name(const std::string& prefix, FunctionPtr function) {
   if (!function) {
     function = stage::get_function();
   }
@@ -228,10 +228,10 @@ std::string resolve_static_method_append_context(FunctionPtr f, const std::strin
 
 std::string resolve_define_name(std::string name) {
   size_t pos$$ = name.find("$$");
-  if (pos$$ != string::npos) {
-    string class_name = name.substr(0, pos$$);
-    string define_name = name.substr(pos$$ + 2);
-    const string &real_class_name = replace_characters(class_name, '$', '\\');
+  if (pos$$ != std::string::npos) {
+    std::string class_name = name.substr(0, pos$$);
+    std::string define_name = name.substr(pos$$ + 2);
+    const std::string &real_class_name = replace_characters(class_name, '$', '\\');
     if (auto klass = G->get_class(real_class_name)) {
       ClassPtr last_ancestor;
       for (const auto &ancestor : klass->get_all_ancestors()) {

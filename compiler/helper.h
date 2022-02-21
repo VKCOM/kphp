@@ -4,13 +4,15 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "common/mixin/not_copyable.h"
 
-#include "compiler/common.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/utils/trie.h"
 
-inline vector<string> expand_template(const string &s);
+inline std::vector<std::string> expand_template(const std::string &s);
 
 template<typename T>
 struct Helper : private vk::not_copyable {
@@ -22,7 +24,7 @@ struct Helper : private vk::not_copyable {
     assert(on_fail != nullptr);
   }
 
-  void add_rule(const string &rule_template, T *val_, bool need_expand = true) {
+  void add_rule(const std::string &rule_template, T *val_, bool need_expand = true) {
     if (need_expand) {
       for (auto &rule : expand_template(rule_template)) {
         trie.add(rule, val_);
@@ -32,7 +34,7 @@ struct Helper : private vk::not_copyable {
     }
   }
 
-  void add_simple_rule(const string &rule_template, T *val) {
+  void add_simple_rule(const std::string &rule_template, T *val) {
     add_rule(rule_template, val, false);
   }
 
@@ -48,14 +50,14 @@ struct Helper : private vk::not_copyable {
   }
 };
 
-inline vector<string> expand_template_(vk::string_view str_template) {
-  vector<string> all_possible_templates{""};
+inline std::vector<std::string> expand_template_(vk::string_view str_template) {
+  std::vector<std::string> all_possible_templates{""};
 
   size_t si = 0;
   size_t sn = str_template.size();
 
   while (si < sn) {
-    string to_append;
+    std::string to_append;
     if (str_template[si] == '[') {
       si++;
 
@@ -95,10 +97,10 @@ inline vector<string> expand_template_(vk::string_view str_template) {
   return all_possible_templates;
 }
 
-inline vector<string> expand_template(const string &s) {
+inline std::vector<std::string> expand_template(const std::string &s) {
   auto template_alternatives = split_skipping_delimeters(s, "|");
 
-  vector<string> res;
+  std::vector<std::string> res;
   for (auto rule_template : template_alternatives) {
     auto tmp = expand_template_(rule_template);
     std::move(tmp.begin(), tmp.end(), std::back_inserter(res));

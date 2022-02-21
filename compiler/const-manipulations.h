@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "common/php-functions.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
@@ -342,13 +344,13 @@ struct ArrayHash final
     cur_hash = cur_hash * HASH_MULT + val;
   }
 
-  void feed_hash_string(const string &s) {
+  void feed_hash_string(const std::string &s) {
     feed_hash(string_hash(s.c_str(), s.size()));
   }
 
 protected:
   void on_trivial(VertexPtr v) final {
-    string s = OpInfo::str(v->type());
+    std::string s = OpInfo::str(v->type());
 
     if (v->has_get_string()) {
       s += v->get_string();
@@ -363,7 +365,7 @@ protected:
   }
 
   void on_unary(VertexAdaptor<meta_op_unary> v) final {
-    string type_str = OpInfo::str(v->type());
+    std::string type_str = OpInfo::str(v->type());
     feed_hash_string(type_str);
 
     return visit(v->expr());
@@ -403,7 +405,7 @@ protected:
   }
 
   void on_non_const(VertexPtr v) final {
-    string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
+    std::string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
   }
 
@@ -428,7 +430,7 @@ struct VertexPtrFormatter final
 
 protected:
   std::string on_trivial(VertexPtr v) final {
-    string s;
+    std::string s;
 
     if (v->has_get_string()) {
       s += v->get_string() + ':';
@@ -482,7 +484,7 @@ protected:
       return v->get_string() + OpInfo::str(v->type());
     }
 
-    string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
+    std::string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
     return "ERROR: " + msg;
   }

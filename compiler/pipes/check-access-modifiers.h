@@ -13,7 +13,7 @@ private:
   ClassPtr class_id;
   ClassPtr lambda_class_id;
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Check access modifiers";
   }
 

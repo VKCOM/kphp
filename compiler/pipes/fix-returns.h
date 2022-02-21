@@ -8,7 +8,7 @@
 
 class FixReturnsPass final : public FunctionPassBase {
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Fix returns";
   }
 

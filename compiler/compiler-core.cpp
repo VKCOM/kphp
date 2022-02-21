@@ -125,11 +125,11 @@ const CompilerSettings &CompilerCore::settings() const {
   return *settings_;
 }
 
-const string &CompilerCore::get_global_namespace() const {
+const std::string &CompilerCore::get_global_namespace() const {
   return settings().static_lib_name.get();
 }
 
-FunctionPtr CompilerCore::get_function(const string &name) {
+FunctionPtr CompilerCore::get_function(const std::string &name) {
   TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
@@ -160,19 +160,19 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
 // search_required_file resolves the file_name like it would be expanded when user as require() argument;
 // it uses search_file_in_include_dirs as well as the current file relative search
 std::string CompilerCore::search_required_file(const std::string &file_name) const {
-  string full_file_name = search_file_in_include_dirs(file_name);
+  std::string full_file_name = search_file_in_include_dirs(file_name);
   if (file_name[0] == '/') {
     return get_full_path(file_name);
   }
 
   if (full_file_name.empty()) {
-    vector<string> cur_include_dirs;
+    std::vector<std::string> cur_include_dirs;
     SrcFilePtr from_file = stage::get_file();
     if (from_file) {
-      string from_file_name = from_file->file_name;
+      std::string from_file_name = from_file->file_name;
       size_t en = from_file_name.find_last_of('/');
-      assert (en != string::npos);
-      string cur_dir = from_file_name.substr(0, en + 1);
+      assert (en != std::string::npos);
+      std::string cur_dir = from_file_name.substr(0, en + 1);
       cur_include_dirs.push_back(cur_dir);
       if (from_file->owner_lib) {
         cur_include_dirs.push_back(from_file->owner_lib->lib_dir());
@@ -194,12 +194,12 @@ FFIRoot &CompilerCore::get_ffi_root() {
   return ffi;
 }
 
-SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib, bool builtin) {
+SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owner_lib, bool builtin) {
   if (file_name.empty()) {
     return {};
   }
 
-  string full_file_name = search_required_file(file_name);
+  std::string full_file_name = search_required_file(file_name);
 
   if (full_file_name.empty()) {
     return {};
@@ -213,8 +213,8 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
     last_pos_of_dot = full_file_name.length();
   }
 
-  string short_file_name = full_file_name.substr(last_pos_of_slash, last_pos_of_dot - last_pos_of_slash);
-  string extension = full_file_name.substr(std::min(full_file_name.length(), last_pos_of_dot + 1));
+  std::string short_file_name = full_file_name.substr(last_pos_of_slash, last_pos_of_dot - last_pos_of_slash);
+  std::string extension = full_file_name.substr(std::min(full_file_name.length(), last_pos_of_dot + 1));
   if (extension != "php") {
     short_file_name += "_";
     short_file_name += extension;
@@ -237,7 +237,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
       }
       new_file->relative_file_name = static_cast<std::string>(relative_file_name);
       size_t last_slash = new_file->relative_file_name.rfind('/');
-      new_file->relative_dir_name = last_slash == string::npos ? "" : new_file->relative_file_name.substr(0, last_slash);
+      new_file->relative_dir_name = last_slash == std::string::npos ? "" : new_file->relative_file_name.substr(0, last_slash);
 
       std::string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(relative_file_name));
       new_file->main_func_name = replace_non_alphanum(std::move(func_name));
@@ -248,7 +248,7 @@ SrcFilePtr CompilerCore::register_file(const string &file_name, LibPtr owner_lib
   return file;
 }
 
-void CompilerCore::require_function(const string &name, DataStream<FunctionPtr> &os) {
+void CompilerCore::require_function(const std::string &name, DataStream<FunctionPtr> &os) {
   operate_on_function_locking(name, [&](FunctionPtr &f) {
     if (!f) {
       f = UNPARSED_BUT_REQUIRED_FUNC_PTR;
@@ -309,7 +309,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
   return node->data;
 }
 
-void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFilePtr> &os) {
+void CompilerCore::register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os) {
   kphp_assert(!main_file);
 
   SrcFilePtr res = register_file(file_name, LibPtr{});
@@ -321,7 +321,7 @@ void CompilerCore::register_main_file(const string &file_name, DataStream<SrcFil
   }
 }
 
-SrcFilePtr CompilerCore::require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */, bool builtin) {
+SrcFilePtr CompilerCore::require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */, bool builtin) {
   SrcFilePtr file = register_file(file_name, owner_lib, builtin);
   kphp_error (file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
   if (file && try_require_file(file)) {
@@ -364,11 +364,11 @@ bool CompilerCore::register_define(DefinePtr def_id) {
   return true;
 }
 
-DefinePtr CompilerCore::get_define(const string &name) {
+DefinePtr CompilerCore::get_define(const std::string &name) {
   return defines_ht.at(vk::std_hash(name))->data;
 }
 
-VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
+VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
   VarPtr var = VarPtr(new VarData(type));
   var->name = name;
   var->tinf_node.init_as_variable(var);
@@ -376,7 +376,7 @@ VarPtr CompilerCore::create_var(const string &name, VarData::Type type) {
   return var;
 }
 
-VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
+VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type,
                                     VertexPtr init_val, bool *is_new_inserted) {
   TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(vk::std_hash(name));
   VarPtr new_var;
@@ -410,18 +410,18 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
           kphp_assert(var->init_val->get_string() == init_val->get_string());
           break;
         case op_conv_regexp: {
-          string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          string msg = "hash collision: " + new_regexp + "; " + hashed_regexp;
+          std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+          std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+          std::string msg = "hash collision: " + new_regexp + "; " + hashed_regexp;
 
           kphp_assert_msg(hashed_regexp == new_regexp, msg.c_str());
           break;
         }
         case op_array: {
-          string new_array_repr = VertexPtrFormatter::to_string(init_val);
-          string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
+          std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
+          std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
 
-          string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
+          std::string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
 
           kphp_assert_msg(new_array_repr == hashed_array_repr, msg.c_str());
           break;
@@ -434,7 +434,7 @@ VarPtr CompilerCore::get_global_var(const string &name, VarData::Type type,
   return var;
 }
 
-VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, VarData::Type type) {
+VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &name, VarData::Type type) {
   VarPtr var = create_var(name, type);
   var->holder_func = function;
   switch (type) {
@@ -456,7 +456,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const string &name, 
   return var;
 }
 
-vector<VarPtr> CompilerCore::get_global_vars() {
+std::vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   return global_vars_ht.get_all_if([](VarPtr v) {
@@ -464,21 +464,21 @@ vector<VarPtr> CompilerCore::get_global_vars() {
   });
 }
 
-vector<ClassPtr> CompilerCore::get_classes() {
+std::vector<ClassPtr> CompilerCore::get_classes() {
   return classes_ht.get_all();
 }
 
-vector<InterfacePtr> CompilerCore::get_interfaces() {
+std::vector<InterfacePtr> CompilerCore::get_interfaces() {
   return classes_ht.get_all_if([](ClassPtr klass) {
     return klass->is_interface();
   });
 }
 
-vector<DefinePtr> CompilerCore::get_defines() {
+std::vector<DefinePtr> CompilerCore::get_defines() {
   return defines_ht.get_all();
 }
 
-vector<LibPtr> CompilerCore::get_libs() {
+std::vector<LibPtr> CompilerCore::get_libs() {
   return libs_ht.get_all();
 }
 

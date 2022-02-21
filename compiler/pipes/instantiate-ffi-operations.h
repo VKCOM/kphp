@@ -23,7 +23,7 @@ private:
   VertexPtr on_scope_instance_prop(ClassPtr scope_class, VertexAdaptor<op_instance_prop> root);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Instrument the code that uses FFI operations";
   }
 

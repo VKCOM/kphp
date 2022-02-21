@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <string>
+
 #include "compiler/function-pass.h"
 
 class CalcLocationsPass final : public FunctionPassBase {
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Calc locations";
   }
 

@@ -137,7 +137,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 }
 
 void CodeGenF::prepare_generate_function(FunctionPtr func) {
-  string file_name = func->name;
+  std::string file_name = func->name;
   std::replace(file_name.begin(), file_name.end(), '$', '@');
 
   func->header_name = file_name + ".h";

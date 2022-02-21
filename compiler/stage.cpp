@@ -7,7 +7,6 @@
 #include "common/termformat/termformat.h"
 #include "common/wrappers/pathname.h"
 
-#include "compiler/common.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
@@ -188,7 +187,7 @@ void stage::die_if_global_errors() {
   }
 }
 
-const string &stage::get_name() {
+const std::string &stage::get_name() {
   return get_stage_info_ptr()->name;
 }
 
@@ -231,8 +230,8 @@ int stage::get_line() {
   return get_location().get_line();
 }
 
-const string &stage::get_function_name() {
-  static string no_function = "unknown";
+const std::string &stage::get_function_name() {
+  static std::string no_function = "unknown";
   FunctionPtr function = get_function();
   if (!function) {
     return no_function;

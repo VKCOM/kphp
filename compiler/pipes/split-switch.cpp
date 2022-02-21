@@ -12,10 +12,10 @@
 class SplitSwitchPass final : public FunctionPassBase {
 private:
   int depth{0};
-  vector<FunctionPtr> new_functions;
+  std::vector<FunctionPtr> new_functions;
 
   static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
-                                      const string &state_name, int cycle_depth) {
+                                      const std::string &state_name, int cycle_depth) {
     int depth = -1;
     VertexPtr label = goto_op->level();
     if (label->type() == op_int_const) {
@@ -39,7 +39,7 @@ private:
 
   static VertexPtr prepare_switch_func(
     VertexPtr root,
-    const string &state_name,
+    const std::string &state_name,
     int cycle_depth) {
     if (root->type() == op_return) {
       auto one = GenTree::create_int_const(1);
@@ -63,7 +63,7 @@ private:
   }
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Split switch";
   }
 
@@ -89,11 +89,11 @@ public:
         kphp_fail();
       }
 
-      string func_name = stage::get_function_name() + "$" + gen_unique_name("switch_func");
+      std::string func_name = stage::get_function_name() + "$" + gen_unique_name("switch_func");
 
       auto case_state = VertexAdaptor<op_var>::create();
       case_state->ref_flag = true;
-      string case_state_name = gen_unique_name("switch_case_state");
+      std::string case_state_name = gen_unique_name("switch_case_state");
       case_state->str_val = case_state_name;
 
       auto case_state_3 = VertexAdaptor<op_var>::create();
@@ -119,7 +119,7 @@ public:
       auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);
       func_call->str_val = func_name;
 
-      string case_res_name = gen_unique_name("switch_case_res");
+      std::string case_res_name = gen_unique_name("switch_case_res");
       auto case_res = VertexAdaptor<op_var>::create();
       case_res->str_val = case_res_name;
       case_res->extra_type = op_ex_var_superlocal;
@@ -160,7 +160,7 @@ public:
     return root;
   }
 
-  const vector<FunctionPtr> &get_new_functions() {
+  const std::vector<FunctionPtr> &get_new_functions() {
     return new_functions;
   }
 };

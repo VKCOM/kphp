@@ -10,7 +10,7 @@
 class CloneStrangeConstParams final : public FunctionPassBase {
 public:
   using ExecuteType = FunctionAndCFG;
-  string get_description() override {
+  std::string get_description() override {
     return "Clone strange const params";
   }
   VertexPtr on_enter_vertex(VertexPtr root) override;

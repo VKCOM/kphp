@@ -4,17 +4,18 @@
 
 #pragma once
 
-#include "compiler/common.h"
+#include <string>
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
 
-string gen_anonymous_scope_name(FunctionPtr parent_function);
-string gen_anonymous_function_name(FunctionPtr parent_function);
-string gen_unique_name(const string& prefix, FunctionPtr function = FunctionPtr{});
-string gen_const_string_name(const string &str);
-string gen_const_regexp_name(const string &str);
+std::string gen_anonymous_scope_name(FunctionPtr parent_function);
+std::string gen_anonymous_function_name(FunctionPtr parent_function);
+std::string gen_unique_name(const std::string& prefix, FunctionPtr function = FunctionPtr{});
+std::string gen_const_string_name(const std::string &str);
+std::string gen_const_regexp_name(const std::string &str);
 bool is_array_suitable_for_hashing(VertexPtr vertex);
-string gen_const_array_name(const VertexAdaptor<op_array> &array);
+std::string gen_const_array_name(const VertexAdaptor<op_array> &array);
 
 std::string resolve_uses(FunctionPtr resolve_context, const std::string &class_name);
 ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, VertexPtr v);

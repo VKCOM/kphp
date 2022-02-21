@@ -177,7 +177,7 @@ void ExprNodeRecalc::recalc_tuple(VertexAdaptor<op_tuple> tuple) {
   recalc_ptype<tp_tuple>();
   int index = 0;
   for (auto i: tuple->args()) {
-    vector<Key> i_key_index{Key::int_key(index++)};
+    std::vector<Key> i_key_index{Key::int_key(index++)};
     MultiKey key(i_key_index);
     set_lca_at(&key, i);
   }
@@ -188,7 +188,7 @@ void ExprNodeRecalc::recalc_shape(VertexAdaptor<op_shape> shape) {
   for (auto i: shape->args()) {
     auto double_arrow = i.as<op_double_arrow>();
     const std::string &str_index = GenTree::get_actual_value(double_arrow->key())->get_string();
-    vector<Key> i_key_index{Key::string_key(str_index)};
+    std::vector<Key> i_key_index{Key::string_key(str_index)};
     MultiKey key(i_key_index);
     set_lca_at(&key, double_arrow->value());
 
@@ -526,7 +526,7 @@ std::string tinf::ExprNode::convert_expr_to_human_readable(VertexPtr expr) {
       return convert_expr_to_human_readable(expr.as<op_instance_prop>()->instance()) + "->" + expr->get_string();
 
     case op_index: {
-      string suff;
+      std::string suff;
       auto outer_expr = expr;
       while (outer_expr->type() == op_index) {
         suff += "[.]";

@@ -1127,7 +1127,7 @@ void CFG::on_uninited_var(VertexAdaptor<op_var> v) {
   v->var_id->set_uninited_flag(true);
 }
 
-void CFG::split_var(FunctionPtr function, VarPtr var, vector<std::vector<VertexAdaptor<op_var>>> &parts) {
+void CFG::split_var(FunctionPtr function, VarPtr var, std::vector<std::vector<VertexAdaptor<op_var>>> &parts) {
   kphp_assert(var->type() == VarData::var_local_t || var->type() == VarData::var_param_t);
   if (parts.empty()) {
     if (var->type() == VarData::var_local_t) {
@@ -1274,7 +1274,7 @@ void CFG::calc_used(Node v) {
 
 class DropUnusedPass final : public FunctionPassBase {
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Drop unused vertices";
   }
 
@@ -1310,7 +1310,7 @@ public:
 class AddSmartcastsConversionsPass final : public FunctionPassBase {
   std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions;
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Add conversions after checks";
   }
   explicit AddSmartcastsConversionsPass(std::unordered_map<VertexAdaptor<op_var>, is_func_id_t> &conversions) :

@@ -17,7 +17,7 @@ class CloneNestedLambdasPass final : public FunctionPassBase {
   DataStream<FunctionPtr> *function_stream;
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Clone nested lambdas";
   }
 

@@ -9,6 +9,7 @@
 //Consists mostly of functions that require synchronization
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "common/algorithms/hashes.h"
@@ -16,7 +17,6 @@
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/compiler-settings.h"
-#include "compiler/common.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
@@ -48,29 +48,29 @@ private:
   inline bool try_require_file(SrcFilePtr file);
 
 public:
-  string cpp_dir;
+  std::string cpp_dir;
 
   CompilerCore();
   void start();
   void finish();
   void register_settings(CompilerSettings *settings);
   const CompilerSettings &settings() const;
-  const string &get_global_namespace() const;
+  const std::string &get_global_namespace() const;
 
   std::string search_required_file(const std::string &file_name) const;
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
-  SrcFilePtr register_file(const string &file_name, LibPtr owner_lib, bool builtin = false);
+  SrcFilePtr register_file(const std::string &file_name, LibPtr owner_lib, bool builtin = false);
 
   FFIRoot &get_ffi_root();
 
-  void register_main_file(const string &file_name, DataStream<SrcFilePtr> &os);
-  SrcFilePtr require_file(const string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true, bool builtin = false);
+  void register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os);
+  SrcFilePtr require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true, bool builtin = false);
 
-  void require_function(const string &name, DataStream<FunctionPtr> &os);
+  void require_function(const std::string &name, DataStream<FunctionPtr> &os);
   void require_function(FunctionPtr function, DataStream<FunctionPtr> &os);
 
   template <class CallbackT>
-  void operate_on_function_locking(const string &name, CallbackT callback) {
+  void operate_on_function_locking(const std::string &name, CallbackT callback) {
     static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
 
     TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
@@ -84,24 +84,24 @@ public:
   bool register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
 
-  FunctionPtr get_function(const string &name);
+  FunctionPtr get_function(const std::string &name);
   ClassPtr get_class(vk::string_view name);
   ClassPtr get_memcache_class();
   void set_memcache_class(ClassPtr klass);
 
   bool register_define(DefinePtr def_id);
-  DefinePtr get_define(const string &name);
+  DefinePtr get_define(const std::string &name);
 
-  VarPtr create_var(const string &name, VarData::Type type);
-  VarPtr get_global_var(const string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
-  VarPtr create_local_var(FunctionPtr function, const string &name, VarData::Type type);
+  VarPtr create_var(const std::string &name, VarData::Type type);
+  VarPtr get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
+  VarPtr create_local_var(FunctionPtr function, const std::string &name, VarData::Type type);
 
   SrcFilePtr get_main_file() { return main_file; }
-  vector<VarPtr> get_global_vars();
-  vector<ClassPtr> get_classes();
-  vector<InterfacePtr> get_interfaces();
-  vector<DefinePtr> get_defines();
-  vector<LibPtr> get_libs();
+  std::vector<VarPtr> get_global_vars();
+  std::vector<ClassPtr> get_classes();
+  std::vector<InterfacePtr> get_interfaces();
+  std::vector<DefinePtr> get_defines();
+  std::vector<LibPtr> get_libs();
   const ComposerAutoloader &get_composer_autoloader() const;
 
   void load_index();

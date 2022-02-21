@@ -18,7 +18,7 @@ private:
   static VertexPtr replace_resumable_expr_with_temp_var(VertexPtr *resumable_expr, VertexPtr expr_user) noexcept;
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Extract easy resumable calls";
   }
 

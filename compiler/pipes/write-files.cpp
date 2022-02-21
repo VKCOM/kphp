@@ -33,7 +33,7 @@ void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   }
 
   if (need_fix) {
-    string code_str;
+    std::string code_str;
     data->dump(code_str);
 //    printf("overwrite file %s need_fix=%d need_del=%d need_save_time=%d\n", file->path.c_str(), need_fix, need_del, need_save_time);
 

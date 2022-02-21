@@ -18,7 +18,7 @@
 template<class VertexT>
 class MergeReachalbeCallback {
 public:
-  virtual void for_component(const vector<VertexT> &component, const vector<VertexT> &edges) = 0;
+  virtual void for_component(const std::vector<VertexT> &component, const std::vector<VertexT> &edges) = 0;
 
   virtual ~MergeReachalbeCallback() {}
 };
@@ -26,9 +26,9 @@ public:
 template<class VertexT>
 class MergeReachalbe {
 private:
-  using GraphT = IdMap<vector<VertexT>>;
+  using GraphT = IdMap<std::vector<VertexT>>;
 
-  void dfs(const VertexT &vertex, const GraphT &graph, IdMap<int> *was, vector<VertexT> *topsorted) {
+  void dfs(const VertexT &vertex, const GraphT &graph, IdMap<int> *was, std::vector<VertexT> *topsorted) {
     if ((*was)[vertex]) {
       return;
     }
@@ -40,7 +40,7 @@ private:
   }
 
   void dfs_component(VertexT vertex, const GraphT &graph, int color, IdMap<int> *was,
-                     vector<int> *was_color, vector<VertexT> *component, vector<VertexT> *edges) {
+                     std::vector<int> *was_color, std::vector<VertexT> *component, std::vector<VertexT> *edges) {
     int other_color = (*was)[vertex];
     if (other_color == color) {
       return;
@@ -60,26 +60,26 @@ private:
   }
 
 public:
-  void run(const GraphT &graph, const GraphT &rev_graph, const vector<VertexT> &vertices,
+  void run(const GraphT &graph, const GraphT &rev_graph, const std::vector<VertexT> &vertices,
            MergeReachalbeCallback<VertexT> *callback) {
     int vertex_n = (int)vertices.size();
     IdMap<int> was(vertex_n);
-    vector<VertexT> topsorted;
+    std::vector<VertexT> topsorted;
     topsorted.reserve(vertex_n);
     for (const auto &vertex : vertices) {
       dfs(vertex, rev_graph, &was, &topsorted);
     }
 
     std::fill(was.begin(), was.end(), 0);
-    vector<int> was_color(vertex_n + 1, 0);
+    std::vector<int> was_color(vertex_n + 1, 0);
     int current_color = 0;
     for (auto vertex_it = topsorted.rbegin(); vertex_it != topsorted.rend(); ++vertex_it) {
       auto &vertex = *vertex_it;
       if (was[vertex]) {
         continue;
       }
-      vector<VertexT> component;
-      vector<VertexT> edges;
+      std::vector<VertexT> component;
+      std::vector<VertexT> edges;
       dfs_component(vertex, graph, ++current_color, &was,
                     &was_color, &component, &edges);
 
@@ -90,12 +90,12 @@ public:
 
 struct FuncCallGraph {
   int n;
-  vector<FunctionPtr> functions;
-  IdMap<vector<FunctionPtr>> graph;
-  IdMap<vector<FunctionPtr>> rev_graph;
+  std::vector<FunctionPtr> functions;
+  IdMap<std::vector<FunctionPtr>> graph;
+  IdMap<std::vector<FunctionPtr>> rev_graph;
   std::vector<std::pair<FunctionPtr, std::vector<FunctionPtr>>> temporarily_removed;
 
-  FuncCallGraph(vector<FunctionPtr> other_functions, vector<DepData> &dep_datas) :
+  FuncCallGraph(std::vector<FunctionPtr> other_functions, std::vector<DepData> &dep_datas) :
     n((int)other_functions.size()),
     functions(std::move(other_functions)),
     graph(n),
@@ -372,9 +372,9 @@ public:
 
 class CalcBadVars {
   class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
-    IdMap<vector<VarPtr>> modified_global_vars;
+    IdMap<std::vector<VarPtr>> modified_global_vars;
   public:
-    explicit MergeBadVarsCallback(IdMap<vector<VarPtr>> &&modified_global_vars) :
+    explicit MergeBadVarsCallback(IdMap<std::vector<VarPtr>> &&modified_global_vars) :
       modified_global_vars(std::move(modified_global_vars)) {}
 
     // here we calculate "bad vars" for a function — they will be used in check-ub.cpp
@@ -382,7 +382,7 @@ class CalcBadVars {
     // this method just unions all edges' bad_vars to the current function
     // this works in a single thread and uses some heuristic for speedup, but generally it means
     // "for f in component { for e in edge { f.bad_vars += e.bad_vars } }"
-    void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
+    void for_component(const std::vector<FunctionPtr> &component, const std::vector<FunctionPtr> &edges) override {
       // optimization 1: lots of functions don't modify globals at all
       // then we leave f->bad_vars nullptr
       bool empty = vk::all_of(component, [&](FunctionPtr f) { return modified_global_vars[f].empty(); })
@@ -443,7 +443,7 @@ class CalcBadVars {
     // here we calculate next_with_colors for every function
     // we'll use it for perform dfs only for colored nodes of a call graph
     // (this precalculation is needed, because dfs for a whole call graph is too heavy on a large code base)
-    void for_component(const vector<FunctionPtr> &component, const vector<FunctionPtr> &edges) override {
+    void for_component(const std::vector<FunctionPtr> &component, const std::vector<FunctionPtr> &edges) override {
       // (this can be optimized if many functions are marked with colors, for now left simple to me more understandable)
       std::unordered_set<FunctionPtr> next_colored_uniq;
 
@@ -514,7 +514,7 @@ class CalcBadVars {
     call_graph.restore_all_removed();
   }
 
-  static void mark(const IdMap<vector<FunctionPtr>> &graph, IdMap<char> &was, FunctionPtr start, IdMap<FunctionPtr> &parents) {
+  static void mark(const IdMap<std::vector<FunctionPtr>> &graph, IdMap<char> &was, FunctionPtr start, IdMap<FunctionPtr> &parents) {
     was[start] = 1;
     std::queue<FunctionPtr> q;
     q.push(start);
@@ -532,13 +532,13 @@ class CalcBadVars {
   }
 
 
-  static void calc_resumable(const FuncCallGraph &call_graph, const vector<DepData> &dep_data) {
+  static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
         fork->is_resumable = true;
       }
     }
-    IdMap<char> from_resumable(call_graph.n); // char to prevent vector<bool> inside
+    IdMap<char> from_resumable(call_graph.n); // char to prevent std::vector<bool> inside
     IdMap<char> into_resumable(call_graph.n);
     IdMap<FunctionPtr> from_parents(call_graph.n);
     IdMap<FunctionPtr> to_parents(call_graph.n);
@@ -604,13 +604,13 @@ class CalcBadVars {
 
   class MergeRefVarsCallback : public MergeReachalbeCallback<VarPtr> {
   private:
-    const IdMap<vector<VarPtr>> &to_merge_;
+    const IdMap<std::vector<VarPtr>> &to_merge_;
   public:
-    explicit MergeRefVarsCallback(const IdMap<vector<VarPtr>> &to_merge) :
+    explicit MergeRefVarsCallback(const IdMap<std::vector<VarPtr>> &to_merge) :
       to_merge_(to_merge) {
     }
 
-    void for_component(const vector<VarPtr> &component, const vector<VarPtr> &edges) {
+    void for_component(const std::vector<VarPtr> &component, const std::vector<VarPtr> &edges) {
       auto *res = new std::unordered_set<VarPtr>();
       for (const auto &var : component) {
         res->insert(to_merge_[var].begin(), to_merge_[var].end());
@@ -631,7 +631,7 @@ class CalcBadVars {
   };
 
   void generate_ref_vars(const std::vector<DepData> &dep_datas) {
-    vector<VarPtr> vars;
+    std::vector<VarPtr> vars;
     for (const auto &data : dep_datas) {
       vars.insert(vars.end(), data.ref_param_vars.begin(), data.ref_param_vars.end());
     }
@@ -640,7 +640,7 @@ class CalcBadVars {
       set_index(vars[i], i);
     }
 
-    IdMap<vector<VarPtr>> rev_graph(vars_n), graph(vars_n), ref_vars(vars_n);
+    IdMap<std::vector<VarPtr>> rev_graph(vars_n), graph(vars_n), ref_vars(vars_n);
     for (const auto &data : dep_datas) {
       for (const auto &edge : data.global_ref_edges) {
         ref_vars[edge.second].push_back(edge.first);

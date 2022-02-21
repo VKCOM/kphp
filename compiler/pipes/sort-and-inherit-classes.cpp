@@ -154,7 +154,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   } else {
     auto child_root = generate_function_with_parent_call(child_class, parent_method);
 
-    string new_name = replace_backslashes(child_class->name) + "$$" + parent_method.local_name();
+    std::string new_name = replace_backslashes(child_class->name) + "$$" + parent_method.local_name();
     FunctionPtr child_function = FunctionData::clone_from(parent_f, new_name, child_root);
     child_function->is_auto_inherited = true;
     child_function->is_inline = true;

@@ -408,7 +408,7 @@ public:
 // (with the exception for lambdas, i.e. $f = fn()=>fn()=>new A and f()()->method(), when we need an assumption and no @return)
 class CalcAssumptionForReturnPass final : public FunctionPassBase {
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Calc assumptions for return";
   }
 

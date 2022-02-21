@@ -23,11 +23,11 @@ private:
   DataStream<SrcFilePtr> &file_stream;
   DataStream<FunctionPtr> &function_stream;
 
-  SrcFilePtr require_file(const string &file_name, bool error_if_not_exists, bool builtin = false) {
+  SrcFilePtr require_file(const std::string &file_name, bool error_if_not_exists, bool builtin = false) {
     return G->require_file(file_name, current_function->file_id->owner_lib, file_stream, error_if_not_exists, builtin);
   }
 
-  void require_function(const string &name) {
+  void require_function(const std::string &name) {
     G->require_function(name, function_stream);
   }
 
@@ -183,7 +183,7 @@ public:
     function_stream(function_stream) {
   }
 
-  string get_description() override {
+  std::string get_description() override {
     return "Collect required";
   }
 
@@ -235,7 +235,7 @@ public:
     }
 
     if (auto require = root.try_as<op_require>()) {
-      string name = collect_string_concatenation(require->expr());
+      std::string name = collect_string_concatenation(require->expr());
       kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
       if (is_composer_autoload(name)) {
         return require_composer_autoload(root);

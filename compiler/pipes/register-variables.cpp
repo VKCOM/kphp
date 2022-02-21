@@ -11,7 +11,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 
-VarPtr RegisterVariablesPass::create_global_var(const string &name) {
+VarPtr RegisterVariablesPass::create_global_var(const std::string &name) {
   VarPtr var = G->get_global_var(name, VarData::var_global_t, VertexPtr());
   auto it = registred_vars.insert(make_pair(name, var));
   if (it.second == false) {
@@ -24,7 +24,7 @@ VarPtr RegisterVariablesPass::create_global_var(const string &name) {
   return var;
 }
 
-VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type type, bool create_flag) {
+VarPtr RegisterVariablesPass::create_local_var(const std::string &name, VarData::Type type, bool create_flag) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
     kphp_error (!create_flag, fmt_format("Redeclaration of local variable: {}", name));
@@ -36,7 +36,7 @@ VarPtr RegisterVariablesPass::create_local_var(const string &name, VarData::Type
   return var;
 }
 
-VarPtr RegisterVariablesPass::get_global_var(const string &name) {
+VarPtr RegisterVariablesPass::get_global_var(const std::string &name) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
     return it->second;
@@ -44,12 +44,12 @@ VarPtr RegisterVariablesPass::get_global_var(const string &name) {
   return create_global_var(name);
 }
 
-VarPtr RegisterVariablesPass::get_local_var(const string &name, VarData::Type type) {
+VarPtr RegisterVariablesPass::get_local_var(const std::string &name, VarData::Type type) {
   return create_local_var(name, type, false);
 }
 
 void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex) {
-  string name = var_vertex->str_val;
+  std::string name = var_vertex->str_val;
   var_vertex->var_id = create_global_var(name);
 
   FunctionPtr function_where_global_keyword_occurred = var_vertex->location.get_function();
@@ -71,7 +71,7 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
   kphp_error(current_function->type == FunctionData::func_local || current_function->type == FunctionData::func_lambda,
              "keyword 'static' used in global function");
 
-  string name = var_vertex->str_val;
+  std::string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_static_t, true);
   kphp_assert(var->is_function_static_var());
 
@@ -84,7 +84,7 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
 }
 
 void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex, VertexPtr default_value) {
-  string name = var_vertex->str_val;
+  std::string name = var_vertex->str_val;
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;
   var->marked_as_const = var_vertex->is_const;
@@ -98,15 +98,15 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex,
 
 void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   VarPtr var;
-  string name = var_vertex->str_val;
+  std::string name = var_vertex->str_val;
   size_t pos$$ = name.find("$$");
-  if (pos$$ != string::npos ||
+  if (pos$$ != std::string::npos ||
       (vk::none_of_equal(var_vertex->extra_type, op_ex_var_superlocal, op_ex_var_superlocal_inplace) &&
        global_function_flag) ||
       var_vertex->extra_type == op_ex_var_superglobal) {
-    if (pos$$ != string::npos) {
-      string class_name = name.substr(0, pos$$);
-      string var_name = name.substr(pos$$ + 2);
+    if (pos$$ != std::string::npos) {
+      std::string class_name = name.substr(0, pos$$);
+      std::string var_name = name.substr(pos$$ + 2);
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
       kphp_error_return(klass, fmt_format("class {} not found", class_name));
       ClassPtr used_klass = klass;

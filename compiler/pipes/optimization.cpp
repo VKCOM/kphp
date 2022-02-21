@@ -128,7 +128,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
   result->rl_type = set_op->rl_type;
   return result;
 }
-void OptimizationPass::collect_concat(VertexPtr root, vector<VertexPtr> *collected) {
+void OptimizationPass::collect_concat(VertexPtr root, std::vector<VertexPtr> *collected) {
   if (root->type() == op_string_build || root->type() == op_concat) {
     for (auto i : *root) {
       collect_concat(i, collected);
@@ -141,7 +141,7 @@ void OptimizationPass::collect_concat(VertexPtr root, vector<VertexPtr> *collect
   }
 }
 VertexPtr OptimizationPass::optimize_string_building(VertexPtr root) {
-  vector<VertexPtr> collected;
+  std::vector<VertexPtr> collected;
   collect_concat(root, &collected);
   auto new_root = VertexAdaptor<op_string_build>::create(collected);
   new_root->location = root->get_location();

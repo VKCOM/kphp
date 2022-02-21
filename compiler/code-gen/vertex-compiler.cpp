@@ -249,7 +249,7 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
 
   CGContext &context = W.get_context();
 
-  string catch_label = gen_unique_name("catch_label");
+  std::string catch_label = gen_unique_name("catch_label");
   W << "/""*** TRY ***""/" << NL;
   context.catch_labels.push_back(catch_label);
   context.catch_label_used.push_back(0);
@@ -813,7 +813,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
     key = params->key();
   }
 
-  string xs_copy_str;
+  std::string xs_copy_str;
   xs_copy_str = gen_unique_name("tmp_expr");
   const TypeData *xs_type = tinf::get_type(xs);
 
@@ -821,7 +821,7 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
   //save array to 'xs_copy_str'
   W << TypeName(xs_type) << " &" << xs_copy_str << " = " << xs << ";" << NL;
 
-  string it = gen_unique_name("it");
+  std::string it = gen_unique_name("it");
   W << "for (auto " << it << " = begin (" << xs_copy_str << "); " <<
     it << " != end (" << xs_copy_str << "); " <<
     "++" << it << ")" <<
@@ -906,7 +906,7 @@ void compile_foreach(VertexAdaptor<op_foreach> root, CodeGenerator &W) {
 struct CaseInfo {
   size_t hash{0};
   bool is_default{false};
-  string goto_name;
+  std::string goto_name;
   CaseInfo *next{nullptr};
   VertexPtr v;
   VertexPtr expr;
@@ -923,7 +923,7 @@ struct CaseInfo {
 
       VertexPtr val = GenTree::get_actual_value(expr);
       kphp_assert (val->type() == op_string);
-      const string &s = val.as<op_string>()->str_val;
+      const std::string &s = val.as<op_string>()->str_val;
       hash = string_hash(s.c_str(), s.size());
     } else {
       cmd = v.as<op_default>()->cmd();
@@ -933,7 +933,7 @@ struct CaseInfo {
 
 void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto cases_vertices = root->cases();
-  vector<CaseInfo> cases(cases_vertices.size());
+  std::vector<CaseInfo> cases(cases_vertices.size());
   std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
 
   auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
@@ -1014,7 +1014,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
   W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL;
-  std::set<string> used;
+  std::set<std::string> used;
   for (auto one_case : root->cases()) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
@@ -1023,7 +1023,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       VertexPtr val = GenTree::get_actual_value(cs->expr());
       W << "case ";
       if (val->type() == op_int_const) {
-        const string &str = val.as<op_int_const>()->str_val;
+        const std::string &str = val.as<op_int_const>()->str_val;
         W << str;
         kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
       } else {
@@ -1043,7 +1043,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 
 void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  string goto_name_if_default_in_the_middle;
+  std::string goto_name_if_default_in_the_middle;
 
   auto temp_var_condition_on_switch = root->condition_on_switch();
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
@@ -1262,7 +1262,7 @@ struct StrlenInfo {
   int len{0};
   bool str_flag{false};
   bool var_flag{false};
-  string str;
+  std::string str;
 };
 
 static bool can_save_ref(VertexPtr v) {
@@ -1281,7 +1281,7 @@ static bool can_save_ref(VertexPtr v) {
 }
 
 void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
-  vector<StrlenInfo> info(root->size());
+  std::vector<StrlenInfo> info(root->size());
   bool ok = true;
   bool was_dynamic = false;
   bool was_object = false;
@@ -1335,13 +1335,13 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   int n_next_var_idx = 0;
   if (complex_flag) {
     W << "(" << BEGIN;
-    vector<string> to_add;
+    std::vector<std::string> to_add;
     for (auto &str_info : info) {
       if (str_info.str_flag) {
         continue;
       }
       if (str_info.len == STRLEN_DYNAMIC || str_info.len == STRLEN_OBJECT) {
-        string var_name = "tmp_var" + std::to_string(n_next_var_idx++);
+        std::string var_name = "tmp_var" + std::to_string(n_next_var_idx++);
 
         if (str_info.len == STRLEN_DYNAMIC) {
           bool can_save_ref_flag = can_save_ref(str_info.v);
@@ -1563,7 +1563,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
         int_cnt++;
       } else {
         if (tp == tp_string && key->type() == op_string) {
-          const string &key_str = key.as<op_string>()->str_val;
+          const std::string &key_str = key.as<op_string>()->str_val;
           if (php_is_int(key_str.c_str(), key_str.size())) {
             int_cnt++;
           } else {
@@ -1584,7 +1584,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
 
   W << "(" << BEGIN;
 
-  string arr_name = "tmp_array";
+  std::string arr_name = "tmp_array";
   W << TypeName(type) << " " << arr_name << " = ";
 
   //TODO: check
@@ -1820,7 +1820,7 @@ void compile_cycle_op(VertexPtr root, CodeGenerator &W) {
 
 void compile_common_op(VertexPtr root, CodeGenerator &W) {
   Operation tp = root->type();
-  string str;
+  std::string str;
   switch (tp) {
     case op_seq:
       W << BEGIN << AsSeq{root.as<op_seq>()} << END;

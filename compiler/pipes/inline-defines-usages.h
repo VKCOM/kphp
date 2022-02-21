@@ -14,7 +14,7 @@ public:
 
   void on_start() override;
 
-  string get_description() override {
+  std::string get_description() override {
     return "Inline defines pass";
   }
 

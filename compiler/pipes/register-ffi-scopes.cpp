@@ -55,7 +55,7 @@ private:
 
   void add_function(VertexAdaptor<op_func_call> call, ClassPtr scope_class, const FFIType *type, const FFIParseResult &result) {
     int num_params = type->members.size() - 1; // [0] stores return type, it's not a param
-    vector<VertexAdaptor<op_func_param>> params;
+    std::vector<VertexAdaptor<op_func_param>> params;
     params.reserve(1 + num_params); // +1 due to $this param
     params.emplace_back(ClassData::gen_param_this(call->location));
     for (int i = 1; i < type->members.size(); i++) {
@@ -260,7 +260,7 @@ private:
 public:
   explicit RegisterFFIScopes(DataStream<FunctionPtr> &os): os{os} {};
 
-  string get_description() override {
+  std::string get_description() override {
     return "Register FFI scopes";
   }
 

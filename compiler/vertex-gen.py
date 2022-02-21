@@ -64,8 +64,8 @@ public:""".format(comment_line=comment_line, name=name, base_name=base_name, fin
 
 def get_string_extra():
     return """
-  virtual const string &get_string() const override { return str_val; }
-  virtual void set_string(string s) override { str_val = std::move(s); }
+  virtual const std::string &get_string() const override { return str_val; }
+  virtual void set_string(std::string s) override { str_val = std::move(s); }
   virtual bool has_get_string() const override { return true; }
 """
 

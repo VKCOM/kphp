@@ -23,7 +23,7 @@ std::string RestrictionIsset::get_description() {
 }
 
 
-void RestrictionIsset::find_dangerous_isset_warning(vector<tinf::Node *> *bt, tinf::Node *node, const string &msg __attribute__((unused))) {
+void RestrictionIsset::find_dangerous_isset_warning(std::vector<tinf::Node *> *bt, tinf::Node *node, const std::string &msg __attribute__((unused))) {
   desc = "isset, !==, ===, is_array or similar function result may differ from PHP\n";
   desc += " Probably, this happened because " + node->get_description();
   desc += " can't be null in KPHP, while it can be in PHP\n Chain of assignments:\n";
@@ -78,7 +78,7 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
 }
 
 bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *node,
-                                                vector<tinf::Node *> *bt) {
+                                                std::vector<tinf::Node *> *bt) {
   if ((node->isset_was & isset_flags) == isset_flags) {
     return false;
   }
@@ -157,6 +157,6 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
 }
 
 bool RestrictionIsset::is_restriction_broken() {
-  vector<tinf::Node *> bt;
+  std::vector<tinf::Node *> bt;
   return find_dangerous_isset_dfs(a_->isset_flags, a_, &bt);
 }

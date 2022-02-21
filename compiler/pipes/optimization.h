@@ -10,7 +10,7 @@
 class OptimizationPass final : public FunctionPassBase {
 private:
   VertexPtr optimize_set_push_back(VertexAdaptor<op_set> set_op);
-  void collect_concat(VertexPtr root, vector<VertexPtr> *collected);
+  void collect_concat(VertexPtr root, std::vector<VertexPtr> *collected);
   VertexPtr optimize_string_building(VertexPtr root);
   VertexPtr optimize_postfix_inc(VertexPtr root);
   VertexPtr optimize_postfix_dec(VertexPtr root);
@@ -21,7 +21,7 @@ private:
   static VertexPtr convert_strval_to_magic_tostring_method_call(VertexAdaptor<op_conv_string> conv);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Optimization";
   }
 

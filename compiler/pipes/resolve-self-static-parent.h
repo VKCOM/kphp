@@ -12,7 +12,7 @@ private:
   VertexPtr replace_func_call_with_colons_with_this_call(FunctionPtr called_method, ClassPtr ref_class, VertexAdaptor<op_func_call> call_colons);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Resolve self/static/parent";
   }
 

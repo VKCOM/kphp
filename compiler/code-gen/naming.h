@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "common/type_traits/list_of_types.h"
 
 #include "compiler/code-gen/common.h"
@@ -43,9 +45,9 @@ struct TypeName {
   }
 
   void compile(CodeGenerator &W) const {
-    string s = type_out(type, style);
+    std::string s = type_out(type, style);
     if (W.get_context().inside_macro) {
-      while (s.find(',') != string::npos) {
+      while (s.find(',') != std::string::npos) {
         s = s.replace(s.find(','), 1, " COMMA ");   // tuples have it
       }
     }

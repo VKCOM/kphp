@@ -39,7 +39,7 @@ is_func_id_t get_ifi_id(VertexPtr v) {
     }
   }
   if (auto call = v.try_as<op_func_call>()) {
-    const string &name = call->func_id->name;
+    const std::string &name = call->func_id->name;
     if (name.size() > 2 && name[0] == 'i' && name[1] == 's') {
       if (name == "is_bool") {
         return ifi_is_bool;

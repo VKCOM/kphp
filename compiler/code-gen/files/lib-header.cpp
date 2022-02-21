@@ -23,7 +23,7 @@ void StaticLibraryRunGlobalHeaderH::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-LibHeaderTxt::LibHeaderTxt(vector<FunctionPtr> &&exported_functions) :
+LibHeaderTxt::LibHeaderTxt(std::vector<FunctionPtr> &&exported_functions) :
   exported_functions(std::move(exported_functions)) {
 }
 

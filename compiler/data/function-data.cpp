@@ -104,8 +104,8 @@ int FunctionData::get_min_argn() const {
   return min_argn;
 }
 
-string FunctionData::get_resumable_path() const {
-  vector<string> names;
+std::string FunctionData::get_resumable_path() const {
+  std::vector<std::string> names;
   FunctionPtr f = fork_prev;
   while (f) {
     names.push_back(f->as_human_readable());
@@ -121,11 +121,11 @@ string FunctionData::get_resumable_path() const {
   return vk::join(names, " -> ");
 }
 
-string FunctionData::get_throws_call_chain() const {
+std::string FunctionData::get_throws_call_chain() const {
   if (!can_throw()) {
     return "";
   }
-  vector<string> names;
+  std::vector<std::string> names;
   FunctionPtr f = throws_reason;
   Location last;
   names.push_back(as_human_readable());
@@ -165,7 +165,7 @@ std::string FunctionData::get_performance_inspections_warning_chain(PerformanceI
   return vk::join(chain, " -> ");
 }
 
-string FunctionData::as_human_readable(bool add_details) const {
+std::string FunctionData::as_human_readable(bool add_details) const {
   std::vector<VertexAdaptor<op_func_param>> params;
   for (auto p : get_params()) {
     if (p.as<op_func_param>()->var()->extra_type != op_ex_var_this && p->extra_type != op_ex_param_from_use) {

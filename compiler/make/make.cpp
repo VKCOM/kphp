@@ -48,19 +48,19 @@ private:
     return create_cpp_target(file);
   }
 
-  vector<Target *> to_targets(File *file) {
+  std::vector<Target *> to_targets(File *file) {
     return {to_target(file)};
   }
 
-  vector<Target *> to_targets(vector<File *> files) {
-    vector<Target *> res(files.size());
+  std::vector<Target *> to_targets(std::vector<File *> files) {
+    std::vector<Target *> res(files.size());
     for (int i = 0; i < (int)files.size(); i++) {
       res[i] = to_target(files[i]);
     }
     return res;
   }
 
-  Target *create_target(Target *target, vector<Target *> &&deps, File *file) {
+  Target *create_target(Target *target, std::vector<Target *> &&deps, File *file) {
     target_set_file(target, file);
     target_set_env(target);
     make.register_target(target, std::move(deps));
@@ -74,7 +74,7 @@ public:
   }
 
   Target *create_cpp_target(File *cpp) {
-    return create_target(new FileTarget(), vector<Target *>(), cpp);
+    return create_target(new FileTarget(), std::vector<Target *>(), cpp);
   }
 
   Target *create_cpp2obj_target(File *cpp, File *obj) {
@@ -85,16 +85,16 @@ public:
     return create_target(new H2PchTarget(), to_targets(header_h), pch);
   }
 
-  Target *create_objs2obj_target(vector<File *> objs, File *obj) {
+  Target *create_objs2obj_target(std::vector<File *> objs, File *obj) {
     return create_target(new Objs2ObjTarget(), to_targets(std::move(objs)), obj);
   }
 
-  Target *create_objs2bin_target(vector<File *> objs, File *bin) {
+  Target *create_objs2bin_target(std::vector<File *> objs, File *bin) {
     bool need_libdl = !G->get_ffi_root().get_shared_libs().empty();
     return create_target(new Objs2BinTarget(need_libdl), to_targets(std::move(objs)), bin);
   }
 
-  Target *create_objs2static_lib_target(vector<File *> objs, File *lib) {
+  Target *create_objs2static_lib_target(std::vector<File *> objs, File *lib) {
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
   }
 
@@ -139,7 +139,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
 }
 
 static std::forward_list<File *> collect_imported_libs() {
-  const string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
+  const std::string &binary_runtime_sha256 = G->settings().runtime_sha256.get();
   stage::die_if_global_errors();
 
   std::forward_list<File *> imported_libs;
@@ -327,7 +327,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   }
   fmt_fprintf(stderr, "objs cnt = {}\n", objs.size());
 
-  std::map<vk::string_view, vector<File *>> subdirs;
+  std::map<vk::string_view, std::vector<File *>> subdirs;
   std::vector<File *> tmp_objs;
   for (auto *obj_file : objs) {
     auto name = obj_file->subdir;

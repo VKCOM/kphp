@@ -15,7 +15,7 @@ class GenTreePostprocessPass final : public FunctionPassBase {
   builtin_fun get_builtin_function(const std::string &name);
 
 public:
-  string get_description() override {
+  std::string get_description() override {
     return "Gen tree postprocess";
   }
   VertexPtr on_enter_vertex(VertexPtr root) override;
