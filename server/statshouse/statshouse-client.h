@@ -14,6 +14,7 @@ public:
   void set_port(int value);
   void set_host(std::string value);
   void send_metrics();
+  void send_metrics(char* result, int len);
 
 private:
   StatsHouseClient();

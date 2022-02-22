@@ -18,6 +18,8 @@
 #include "server/workers-control.h"
 
 #include "server/server-stats.h"
+#include "server/statshouse/statshouse-client.h"
+#include "server/statshouse/worker-stats-buffer.h"
 
 namespace {
 
@@ -600,16 +602,37 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
+
+  using namespace statshouse;
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::general_memory_used, memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::general_real_memory_used, real_memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::general_total_allocated_by_curl, curl_total_allocated);
+
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::script_time, worker_type_, script_time.count());
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::net_time, worker_type_, net_time.count());
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::outgoing_queries, worker_type_, script_queries);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::outgoing_long_queries, worker_type_, long_script_queries);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
                                 int64_t response_real_memory_used) noexcept {
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
+
+  using namespace statshouse;
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_wait_time, job_wait_time.count());
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_request_memory_usage, request_memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_request_real_memory_usage, request_real_memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_response_memory_usage, response_memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_response_real_memory_usage, response_real_memory_used);
 }
 
 void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
   shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
+
+  using namespace statshouse;
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_common_request_memory_usage, common_request_memory_used);
+  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_common_request_real_memory_usage, common_request_real_memory_used);
 }
 
 void ServerStats::update_this_worker_stats() noexcept {

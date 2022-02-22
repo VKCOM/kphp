@@ -409,5 +409,5 @@ const char *kdb_gethostname() {
     tried = 1;
   }
 
-  return !failed ? hostname : NULL;
+  return !failed ? hostname : nullptr;
 }
