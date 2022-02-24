@@ -62,7 +62,7 @@ public:
     const size_t key2_len = std::strlen(key2);
     char stat_key[key1_len + key2_len + 1];
     std::memcpy(stat_key, key1, key1_len);
-    std::memcpy(stat_key + key1_len, key2, key2_len);
+    std::memcpy(stat_key + key1_len, key2, key2_len + 1);
 
     add_multiple_stats(stat_key, std::move(values));
   }
