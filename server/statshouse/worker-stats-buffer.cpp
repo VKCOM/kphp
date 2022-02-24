@@ -10,7 +10,7 @@
 
 namespace statshouse {
 
-constexpr size_t buffer_size = 50000;
+constexpr size_t buffer_size = 1 << 20;
 static char buffer[buffer_size];
 
 bool StatsBuffer::is_need_to_flush() {
