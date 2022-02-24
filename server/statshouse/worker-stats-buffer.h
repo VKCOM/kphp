@@ -15,25 +15,20 @@
 
 namespace statshouse {
 
-/**
- * TODO
- */
 enum class GenericQueryStatKey {
   outgoing_queries,
   outgoing_long_queries,
   script_time,
   net_time,
+
+  memory_used,
+  real_memory_used,
+  total_allocated_by_curl,
+
   types_count
 };
 
-/**
- * TODO
- */
 enum class QueryStatKey {
-  general_memory_used,
-  general_real_memory_used,
-  general_total_allocated_by_curl,
-
   job_wait_time,
   job_request_memory_usage,
   job_request_real_memory_usage,
@@ -63,17 +58,18 @@ public:
   WorkerStatsBuffer();
   void add_query_stat(GenericQueryStatKey key, WorkerType worker_type, double value);
   void add_query_stat(QueryStatKey key, double value);
-  void flush();
   void flush_if_needed();
+  void enable();
   using tag = std::pair<std::string, std::string>;
 private:
-//  StatsHouseMetric make_generic_metric(const char* name, GenericQueryStatKey stat_key, size_t worker_type, const std::vector<std::pair<std::string, std::string>> &tags);
+  void flush();
   void make_generic_metric(std::vector<StatsHouseMetric> &metrics, const char *name, GenericQueryStatKey stat_key, size_t worker_type, const std::vector<tag> &tags);
   void make_metric(std::vector<StatsHouseMetric> &metrics, const char* name, QueryStatKey stat_key, const std::vector<tag> &tags);
 
   std::array<std::array<StatsBuffer, static_cast<size_t>(GenericQueryStatKey::types_count)>, static_cast<size_t>(WorkerType::types_count)> generic_query_stats;
   std::array<StatsBuffer, static_cast<size_t>(QueryStatKey::types_count)> query_stats;
   std::chrono::steady_clock::time_point last_send_time;
+  bool enabled = false;
 };
 
 } // namespace statshouse

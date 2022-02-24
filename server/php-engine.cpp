@@ -2051,6 +2051,7 @@ int main_args_handler(int i, const char *long_option) {
       auto &statshouse_client = vk::singleton<StatsHouseClient>::get();
       statshouse_client.set_host(std::string(optarg, colon - optarg));
       statshouse_client.set_port(atoi(colon + 1));
+      vk::singleton<statshouse::WorkerStatsBuffer>::get().enable();
       return 0;
     }
     default:

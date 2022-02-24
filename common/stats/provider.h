@@ -64,7 +64,7 @@ public:
     std::memcpy(stat_key, key1, key1_len);
     std::memcpy(stat_key + key1_len, key2, key2_len);
 
-    add_stats(stat_key, std::move(values));
+    add_multiple_stats(stat_key, std::move(values));
   }
 
   template<typename T>
@@ -81,7 +81,7 @@ protected:
   virtual void add_stat(char type, const char *key, double value) noexcept = 0;
   virtual void add_stat(char type, const char *key, long long value) noexcept = 0;
 
-  virtual void add_stats(const char *key, std::vector<double> &&values) noexcept = 0;
+  virtual void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept = 0;
 
   char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };
