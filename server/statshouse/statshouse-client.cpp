@@ -47,6 +47,13 @@ protected:
     add_stat(type, key, static_cast<double>(value));
   }
 
+  void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept final {
+    auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), tags);
+    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size - sb.pos, metric);
+    sb.pos += len;
+    ++counter;
+  }
+
 private:
   int counter{0};
   const std::vector<std::pair<std::string, std::string>> &tags;
@@ -103,12 +110,15 @@ bool StatsHouseClient::init_connection() {
   return true;
 }
 
-void StatsHouseClient::send_metrics() {
+void StatsHouseClient::master_send_metrics() {
+  auto [result, len] = prepare_statshouse_stats(statshouse_stats_t{tags});
+  send_metrics(result, len);
+}
+
+void StatsHouseClient::send_metrics(char *result, int len) {
   if (port == 0 || (sock_fd <= 0 && !init_connection())) {
     return;
   }
-
-  auto [result, len] = prepare_statshouse_stats(statshouse_stats_t{tags});
 
   ssize_t slen = send(sock_fd, result, len, 0);
   if (slen < 0) {
@@ -117,12 +127,10 @@ void StatsHouseClient::send_metrics() {
 }
 
 StatsHouseClient::StatsHouseClient() {
-  char hostname[128];
-  int res = gethostname(hostname, 128);
-  if (res == -1) {
-    log_server_error("Can't gethostname for statshouse metrics: %s", strerror(errno));
-  } else {
+  if (const char *hostname = kdb_gethostname()) {
     tags = {{"host", std::string(hostname)}};
+  } else {
+    log_server_error("Can't gethostname for statshouse metrics: %s", strerror(errno));
   }
 }
 

@@ -10,7 +10,7 @@
 struct StatsHouseMetric {
   int fields_mask{0};
   std::string name;
-  const std::vector<std::pair<std::string, std::string>> &tags;
+  std::vector<std::pair<std::string, std::string>> tags;
   double counter{0.0};           // fields_mask bit #0
   long long t{};                 // fields_mask bit #5
   std::vector<double> value;     // fields_mask bit #1
@@ -27,4 +27,6 @@ struct StatsHouseAddMetricsBatch {
   void tl_store() const;
 };
 
-StatsHouseMetric make_statshouse_value_metric(std::string name, double value, const std::vector<std::pair<std::string, std::string>> &tags);
+StatsHouseMetric make_statshouse_value_metric(std::string &&name, double value, const std::vector<std::pair<std::string, std::string>> &tags);
+
+StatsHouseMetric make_statshouse_value_metrics(std::string &&name, std::vector<double> &&value, const std::vector<std::pair<std::string, std::string>> &tags);

@@ -80,6 +80,7 @@
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
+#include "server/statshouse/worker-stats-buffer.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -1407,6 +1408,7 @@ void cron() {
     turn_sigterm_on();
   }
   vk::singleton<ServerStats>::get().update_this_worker_stats();
+  vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
 
 int try_get_http_fd() {
@@ -1665,6 +1667,7 @@ void init_all() {
 
   init_php_scripts();
   vk::singleton<ServerStats>::get().set_idle_worker_status();
+  vk::singleton<StatsHouseClient>::get();
 
   worker_id = (int)lrand48();
 
@@ -2048,6 +2051,7 @@ int main_args_handler(int i, const char *long_option) {
       auto &statshouse_client = vk::singleton<StatsHouseClient>::get();
       statshouse_client.set_host(std::string(optarg, colon - optarg));
       statshouse_client.set_port(atoi(colon + 1));
+      vk::singleton<statshouse::WorkerStatsBuffer>::get().enable();
       return 0;
     }
     default:
