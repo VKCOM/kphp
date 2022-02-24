@@ -16,17 +16,18 @@ public:
   /**
    * Must be called from master process only
    */
-  void send_master_metrics();
+  void master_send_metrics();
   void send_metrics(char* result, int len);
-  bool init_connection();
-
 private:
+  int port = 0;
+  int sock_fd = 0;
+  std::string host;
+  std::vector<std::pair<std::string, std::string>> tags;
+
   StatsHouseClient();
   ~StatsHouseClient();
-  friend class vk::singleton<StatsHouseClient>;
 
-  int port = 0;
-  std::string host;
-  int sock_fd = 0;
-  std::vector<std::pair<std::string, std::string>> tags;
+  bool init_connection();
+
+  friend class vk::singleton<StatsHouseClient>;
 };

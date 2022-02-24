@@ -1323,7 +1323,7 @@ static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), stats_tag_kphp_server);
-    vk::singleton<StatsHouseClient>::get().send_master_metrics();
+    vk::singleton<StatsHouseClient>::get().master_send_metrics();
   }
   create_all_outbound_connections();
   vk::singleton<ServerStats>::get().aggregate_stats();

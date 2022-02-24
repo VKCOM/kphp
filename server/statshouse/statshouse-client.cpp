@@ -110,7 +110,7 @@ bool StatsHouseClient::init_connection() {
   return true;
 }
 
-void StatsHouseClient::send_master_metrics() {
+void StatsHouseClient::master_send_metrics() {
   auto [result, len] = prepare_statshouse_stats(statshouse_stats_t{tags});
   send_metrics(result, len);
 }

@@ -31,8 +31,8 @@ std::vector<double> StatsBuffer::get_data_and_reset_buffer() {
   return result;
 }
 
-WorkerStatsBuffer::WorkerStatsBuffer() {
-  last_send_time = std::chrono::steady_clock::now();
+WorkerStatsBuffer::WorkerStatsBuffer() : last_send_time(std::chrono::steady_clock::now()) {
+
 }
 
 void WorkerStatsBuffer::add_query_stat(GenericQueryStatKey key, WorkerType worker_type, double value) {
