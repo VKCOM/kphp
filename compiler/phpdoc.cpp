@@ -21,17 +21,22 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/ffi/ffi_parser.h"
 
+
+static constexpr unsigned int calcHashOfTagName(const char *start, const char *end) {
+  unsigned int hash = 5381;
+  for (const char *c = start; c != end; ++c) {
+    hash = (hash << 5) + hash + *c;
+  }
+  return hash;
+}
+
 struct KnownPhpDocTag {
   unsigned int hash;
   PhpDocType type;
   const char *tag_name;
 
   constexpr KnownPhpDocTag(const char *tag_name, PhpDocType type)
-    : hash(5381), type(type), tag_name(tag_name) {
-    for (const char *c = tag_name; *c; ++c) {
-      hash = (hash << 5) + hash + *c;
-    }
-  }
+    : hash(calcHashOfTagName(tag_name, tag_name + __builtin_strlen(tag_name))), type(type), tag_name(tag_name) {}
 };
 
 class AllDocTags {
@@ -40,10 +45,7 @@ class AllDocTags {
 
 public:
   [[gnu::always_inline]] static PhpDocType name2type(const char *start, const char *end) {
-    unsigned int hash = 5381;
-    for (const char *c = start; c != end; ++c) {
-      hash = (hash << 5) + hash + *c;
-    }
+    unsigned int hash = calcHashOfTagName(start, end);
 
     for (const KnownPhpDocTag &tag: ALL_TAGS) {
       if (tag.hash == hash) {
