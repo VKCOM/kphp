@@ -1667,7 +1667,7 @@ void init_all() {
 
   init_php_scripts();
   vk::singleton<ServerStats>::get().set_idle_worker_status();
-  vk::singleton<StatsHouseClient>::get();
+  vk::singleton<StatsHouseClient>::get().init_connection();
 
   worker_id = (int)lrand48();
 

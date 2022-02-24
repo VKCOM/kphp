@@ -13,15 +13,17 @@ class StatsHouseClient : vk::not_copyable {
 public:
   void set_port(int value);
   void set_host(std::string value);
-  void send_metrics();
+  /**
+   * Must be called from master process only
+   */
+  void send_master_metrics();
   void send_metrics(char* result, int len);
+  bool init_connection();
 
 private:
   StatsHouseClient();
   ~StatsHouseClient();
   friend class vk::singleton<StatsHouseClient>;
-
-  bool init_connection();
 
   int port = 0;
   std::string host;
