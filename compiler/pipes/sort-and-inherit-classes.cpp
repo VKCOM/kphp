@@ -258,11 +258,11 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
 
     traits[i]->members.for_each([&](const ClassMemberInstanceField &f) {
-      ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str, f.type_hint);
+      ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc, f.type_hint);
     });
 
     traits[i]->members.for_each([&](const ClassMemberStaticField &f) {
-      ready_class->members.add_static_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc_str, f.type_hint);
+      ready_class->members.add_static_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc, f.type_hint);
     });
   }
 

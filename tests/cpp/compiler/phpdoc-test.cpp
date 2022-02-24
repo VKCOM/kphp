@@ -3,13 +3,12 @@
 #include "compiler/phpdoc.h"
 
 TEST(phpdoc_test, parse_php_doc) {
-  auto parsing_result = parse_php_doc(
+  PhpDocComment doc(
     "**\n"
     " * @kphp-infer\n"
     " *\n");
-  ASSERT_EQ(parsing_result.size(), 1);
-  ASSERT_EQ(parsing_result.front().type, php_doc_tag::kphp_infer);
-  ASSERT_EQ(parsing_result.front().name, "@kphp-infer");
-  ASSERT_TRUE(parsing_result.front().value.empty());
-  ASSERT_EQ(parsing_result.front().line_num, -1);
+  ASSERT_TRUE(doc.tags.begin() != doc.tags.end());
+  ASSERT_EQ(doc.tags.front().type, PhpDocType::kphp_infer);
+  ASSERT_EQ(doc.tags.front().get_tag_name(), "@kphp-infer");
+  ASSERT_TRUE(doc.tags.front().value_as_string().empty());
 }

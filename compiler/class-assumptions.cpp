@@ -517,7 +517,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_
 
   if (f->type == FunctionData::func_main || f->type == FunctionData::func_switch) {
     if (var_name == "MC" || var_name == "PMC") {
-      assumption_add_for_var(f, var_name, Assumption(G->get_memcache_class()), f->root);
+      return Assumption(G->get_memcache_class());
     }
   }
 

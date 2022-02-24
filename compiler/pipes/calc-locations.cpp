@@ -8,9 +8,17 @@
 
 void CalcLocationsPass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {
-    current_function->class_id->members.for_each([](ClassMemberConstant &constant) {
-      stage::set_line(constant.value->location.line);
-      constant.value.set_location(stage::get_location());
+    current_function->class_id->members.for_each([](ClassMemberInstanceField &f) {
+      stage::set_line(f.root->location.line);
+      f.root->location = stage::get_location();
+    });
+    current_function->class_id->members.for_each([](ClassMemberStaticField &f) {
+      stage::set_line(f.root->location.line);
+      f.root->location = stage::get_location();
+    });
+    current_function->class_id->members.for_each([](ClassMemberConstant &c) {
+      stage::set_line(c.value->location.line);
+      c.value.set_location(stage::get_location());
     });
   }
 }

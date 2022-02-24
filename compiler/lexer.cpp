@@ -33,14 +33,6 @@ LexerData::LexerData(vk::string_view new_code) :
   tokens.reserve(static_cast<size_t >(code_len * 0.3));
 }
 
-const char *LexerData::get_code() const {
-  return code;
-}
-
-vk::string_view LexerData::get_code_view() const {
-  return {code, code_end};
-}
-
 void LexerData::pass(int shift) {
   line_num += std::count_if(code, code + shift, [](char c) { return c == '\n'; });
   pass_raw(shift);
@@ -1196,7 +1188,7 @@ std::vector<Token> php_text_to_tokens(vk::string_view text) {
 std::vector<Token> phpdoc_to_tokens(vk::string_view text) {
   LexerData lexer_data{text};
   lexer_data.set_dont_hack_last_tokens(); // like in op_conv_int, future(int) doesn't need (int)
-  while (*lexer_data.get_code()) {
+  while (!lexer_data.get_code_view().empty()) {
     if (!vk::singleton<TokenLexerPHPDoc>::get().parse(&lexer_data)) {
       break;
     }

@@ -17,8 +17,8 @@
 struct LexerData : private vk::not_copyable {
   explicit LexerData(vk::string_view new_code);
   void new_line();
-  const char *get_code() const;
-  vk::string_view get_code_view() const;
+  const char *get_code() const { return code; }
+  vk::string_view get_code_view() const { return vk::string_view{code, code_end}; };
   void pass(int shift);
   void pass_raw(int shift);
   template <typename ...Args>

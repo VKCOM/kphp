@@ -50,7 +50,7 @@ private:
     kphp_error_return(type_hint, fmt_format("unsupported C variable type: {}", ffi_decltype_string(type->members[0])));
     auto var = VertexAdaptor<op_var>::create().set_location(call);
     var->str_val = type->str;
-    scope_class->members.add_instance_field(var, {}, FieldModifiers{}.set_public(), vk::string_view{}, type_hint);
+    scope_class->members.add_instance_field(var, {}, FieldModifiers{}.set_public(), nullptr, type_hint);
   }
 
   void add_function(VertexAdaptor<op_func_call> call, ClassPtr scope_class, const FFIType *type, const FFIParseResult &result) {
@@ -108,14 +108,13 @@ private:
     for (const FFIType *field : type->members) {
       auto var = VertexAdaptor<op_var>::create().set_location(call);
       var->set_string(field->str);
-      vk::string_view phpdoc{};
       VertexPtr default_value;
       const TypeHint *type_hint = G->get_ffi_root().create_type_hint(field->members[0], result.scope);
       kphp_error_return(type_hint, fmt_format("unsupported C {} field type: {}",
                                               is_struct ? "struct" : "union",
                                               ffi_decltype_string(field->members[0])));
-      cdata_class->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), phpdoc, type_hint);
-      cdata_class_ref->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), phpdoc, type_hint);
+      cdata_class->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), nullptr, type_hint);
+      cdata_class_ref->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), nullptr, type_hint);
     }
 
     register_class(cdata_class);
@@ -130,7 +129,7 @@ private:
     // in PHP/KPHP, we access enum constants via an arrow: $cdef->CONST
     // so, make it be an instance field, not a static const; it'll pass all checks of fields existence
     // later on, when ffi operations are processed, they will be inlined: see InstantiateFFIOperationsPass
-    scope_class->members.add_instance_field(fake_op_var, fake_def_val, FieldModifiers{}.set_public(), "", nullptr);
+    scope_class->members.add_instance_field(fake_op_var, fake_def_val, FieldModifiers{}.set_public(), nullptr, nullptr);
   }
 
   VertexPtr make_ffi_load_call(VertexAdaptor<op_func_call> call, FFIScopeDataMixin *scope, const FFIParseResult &result) {

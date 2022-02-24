@@ -21,115 +21,197 @@
 #include "compiler/utils/string-utils.h"
 #include "compiler/ffi/ffi_parser.h"
 
-using std::vector;
-using std::string;
 
-const std::map<string, php_doc_tag::doc_type> php_doc_tag::str2doc_type = {
-  {"@param",                     param},
-  {"@kphp-inline",               kphp_inline},
-  {"@kphp-flatten",              kphp_flatten},
-  {"@kphp-infer",                kphp_infer},
-  {"@kphp-required",             kphp_required},
-  {"@kphp-lib-export",           kphp_lib_export},
-  {"@kphp-sync",                 kphp_sync},
-  {"@kphp-should-not-throw",     kphp_should_not_throw},
-  {"@kphp-throws",               kphp_throws},
-  {"@type",                      var},
-  {"@var",                       var},
-  {"@return",                    returns},
-  {"@returns",                   returns},
-  {"@kphp-disable-warnings",     kphp_disable_warnings},
-  {"@kphp-extern-func-info",     kphp_extern_func_info},
-  {"@kphp-pure-function",        kphp_pure_function},
-  {"@kphp-template",             kphp_template},
-  {"@kphp-param",                kphp_param},
-  {"@kphp-return",               kphp_return},
-  {"@kphp-memcache-class",       kphp_memcache_class},
-  {"@kphp-immutable-class",      kphp_immutable_class},
-  {"@kphp-tl-class",             kphp_tl_class},
-  {"@kphp-const",                kphp_const},
-  {"@kphp-no-return",            kphp_noreturn},
-  {"@kphp-warn-unused-result",   kphp_warn_unused_result},
-  {"@kphp-warn-performance",     kphp_warn_performance},
-  {"@kphp-analyze-performance",  kphp_analyze_performance},
-  {"@kphp-serializable",         kphp_serializable},
-  {"@kphp-reserved-fields",      kphp_reserved_fields},
-  {"@kphp-serialized-field",     kphp_serialized_field},
-  {"@kphp-serialized-float32",   kphp_serialized_float32},
-  {"@kphp-profile",              kphp_profile},
-  {"@kphp-profile-allow-inline", kphp_profile_allow_inline},
-  {"@kphp-strict-types-enable",  kphp_strict_types_enable},
-  {"@kphp-color",                kphp_color},
-};
-
-vector<php_doc_tag> parse_php_doc(vk::string_view phpdoc) {
-  if (phpdoc.empty()) {
-    return {};
+static constexpr unsigned int calcHashOfTagName(const char *start, const char *end) {
+  unsigned int hash = 5381;
+  for (const char *c = start; c != end; ++c) {
+    hash = (hash << 5) + hash + *c;
   }
-
-  int line_num_of_function_declaration = stage::get_line();
-
-  vector<string> lines(1);
-  bool have_star = false;
-  for (char c : phpdoc) {
-    if (!have_star) {
-      if (c == ' ' || c == '\t') {
-        continue;
-      }
-      if (c == '*') {
-        have_star = true;
-        continue;
-      }
-      kphp_error(0, "failed to parse php_doc");
-      return {};
-    }
-    if (c == '\n') {
-      lines.push_back("");
-      have_star = false;
-      continue;
-    }
-    if (lines.back().empty() && (c == ' ' || c == '\t')) {
-      continue;
-    }
-    lines.back() += c;
-  }
-  vector<php_doc_tag> result;
-  for (int i = 0; i < lines.size(); i++) {
-    if (lines[i][0] == '@') {
-      result.emplace_back(php_doc_tag());
-      size_t pos = lines[i].find(' ');
-
-      auto name = lines[i].substr(0, pos);
-      auto type = php_doc_tag::get_doc_type(name);
-      if (vk::string_view{name}.starts_with("@kphp") && type == php_doc_tag::unknown) {
-        kphp_error(0, fmt_format("unrecognized kphp tag: {}", name));
-      }
-
-      result.back().name = std::move(name);
-      result.back().type = type;
-
-      if (pos != string::npos) {
-        int ltrim_pos = pos + 1;
-        while (lines[i][ltrim_pos] == ' ') {
-          ltrim_pos++;
-        }
-        result.back().value = lines[i].substr(ltrim_pos);
-      }
-    }
-
-    if (line_num_of_function_declaration > 0 && !result.empty()) {
-      int new_line_num = line_num_of_function_declaration - (static_cast<int>(lines.size()) - i);
-      bool is_singleline = lines.size() < 2;  // if /** ... */ as a single line, otherwise assume */ to be on a separate line
-      result.back().line_num = std::min(new_line_num, line_num_of_function_declaration - (is_singleline ? 1 : 2));
-    }
-  }
-//  for (int i = 0; i < result.size(); i++) {
-//    fprintf(stderr, "|%s| : |%s|\n", result[i].name.c_str(), result[i].value.c_str());
-//  }
-  return result;
+  return hash;
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_class_name) {
+struct KnownPhpDocTag {
+  unsigned int hash;
+  PhpDocType type;
+  const char *tag_name;
+
+  constexpr KnownPhpDocTag(const char *tag_name, PhpDocType type)
+    : hash(calcHashOfTagName(tag_name, tag_name + __builtin_strlen(tag_name))), type(type), tag_name(tag_name) {}
+};
+
+class AllDocTags {
+  static constexpr int N_TAGS = 35;
+  static const KnownPhpDocTag ALL_TAGS[N_TAGS];
+
+public:
+  [[gnu::always_inline]] static PhpDocType name2type(const char *start, const char *end) {
+    unsigned int hash = calcHashOfTagName(start, end);
+
+    for (const KnownPhpDocTag &tag: ALL_TAGS) {
+      if (tag.hash == hash) {
+        return tag.type;
+      }
+    }
+    return PhpDocType::unknown;
+  }
+
+  static const char *type2name(PhpDocType type) {
+    for (const KnownPhpDocTag &tag: ALL_TAGS) {
+      if (tag.type == type) {
+        return tag.tag_name;
+      }
+    }
+    return "@tag";
+  }
+};
+
+const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
+  KnownPhpDocTag("@param", PhpDocType::param),
+  KnownPhpDocTag("@var", PhpDocType::var),
+  KnownPhpDocTag("@return", PhpDocType::returns),
+  KnownPhpDocTag("@type", PhpDocType::var),
+  KnownPhpDocTag("@returns", PhpDocType::returns),
+  KnownPhpDocTag("@kphp-inline", PhpDocType::kphp_inline),
+  KnownPhpDocTag("@kphp-flatten", PhpDocType::kphp_flatten),
+  KnownPhpDocTag("@kphp-infer", PhpDocType::kphp_infer),
+  KnownPhpDocTag("@kphp-required", PhpDocType::kphp_required),
+  KnownPhpDocTag("@kphp-lib-export", PhpDocType::kphp_lib_export),
+  KnownPhpDocTag("@kphp-sync", PhpDocType::kphp_sync),
+  KnownPhpDocTag("@kphp-should-not-throw", PhpDocType::kphp_should_not_throw),
+  KnownPhpDocTag("@kphp-throws", PhpDocType::kphp_throws),
+  KnownPhpDocTag("@kphp-disable-warnings", PhpDocType::kphp_disable_warnings),
+  KnownPhpDocTag("@kphp-extern-func-info", PhpDocType::kphp_extern_func_info),
+  KnownPhpDocTag("@kphp-pure-function", PhpDocType::kphp_pure_function),
+  KnownPhpDocTag("@kphp-template", PhpDocType::kphp_template),
+  KnownPhpDocTag("@kphp-param", PhpDocType::kphp_param),
+  KnownPhpDocTag("@kphp-return", PhpDocType::kphp_return),
+  KnownPhpDocTag("@kphp-memcache-class", PhpDocType::kphp_memcache_class),
+  KnownPhpDocTag("@kphp-immutable-class", PhpDocType::kphp_immutable_class),
+  KnownPhpDocTag("@kphp-tl-class", PhpDocType::kphp_tl_class),
+  KnownPhpDocTag("@kphp-const", PhpDocType::kphp_const),
+  KnownPhpDocTag("@kphp-no-return", PhpDocType::kphp_noreturn),
+  KnownPhpDocTag("@kphp-warn-unused-result", PhpDocType::kphp_warn_unused_result),
+  KnownPhpDocTag("@kphp-warn-performance", PhpDocType::kphp_warn_performance),
+  KnownPhpDocTag("@kphp-analyze-performance", PhpDocType::kphp_analyze_performance),
+  KnownPhpDocTag("@kphp-serializable", PhpDocType::kphp_serializable),
+  KnownPhpDocTag("@kphp-reserved-fields", PhpDocType::kphp_reserved_fields),
+  KnownPhpDocTag("@kphp-serialized-field", PhpDocType::kphp_serialized_field),
+  KnownPhpDocTag("@kphp-serialized-float32", PhpDocType::kphp_serialized_float32),
+  KnownPhpDocTag("@kphp-profile", PhpDocType::kphp_profile),
+  KnownPhpDocTag("@kphp-profile-allow-inline", PhpDocType::kphp_profile_allow_inline),
+  KnownPhpDocTag("@kphp-strict-types-enable", PhpDocType::kphp_strict_types_enable),
+  KnownPhpDocTag("@kphp-color", PhpDocType::kphp_color),
+};
+
+
+PhpDocComment::PhpDocComment(vk::string_view phpdoc_str) {
+  const char *c = phpdoc_str.data();
+  const char *end = phpdoc_str.end();
+  auto iter_next = tags.before_begin();
+
+  while (c != end) {
+    // we are at line start, waiting for '*' after spaces
+    if (*c == ' ' || *c == '\t' || *c == '\n') {
+      ++c;
+      continue;
+    }
+    // if not '*', skip this line
+    if (*c != '*') {
+      while (c != end && *c != '\n') {
+        ++c;
+      }
+      continue;
+    }
+    // wait for '@' after spaces
+    ++c;
+    while (c != end && *c == ' ') {
+      ++c;
+    }
+    // if not @ after *, skip this line
+    if (*c != '@') {
+      while (c != end && *c != '\n') {
+        ++c;
+      }
+      continue;
+    }
+
+    // c points to '@', read tag name until space
+    const char *start = c;
+    while (c != end && *c != ' ' && *c != '\n' && *c != '\t') {
+      ++c;
+    }
+
+    // convert @tag-name to enum; linear search is better, since most common cases are placed at the top
+    PhpDocType type = AllDocTags::name2type(start, c);
+    if (type == PhpDocType::unknown && vk::string_view{start, 5}.starts_with("@kphp")) {
+      kphp_error(0, fmt_format("unrecognized @kphp tag: '{}'", std::string(start, c)));
+    }
+
+    // after @tag-name, there are spaces and a tag value until end of line
+    while (c != end && *c == ' ') {
+      ++c;
+    }
+    start = c;
+    while (c != end && *c != '\n') {
+      ++c;
+    }
+
+    // append tag to the end of forward list
+    iter_next = tags.emplace_after(iter_next, type, vk::string_view(start, c));
+  }
+}
+
+std::string PhpDocTag::get_tag_name() const noexcept {
+  return AllDocTags::type2name(type);
+}
+
+/*
+ * With a phpdoc string after a @param/@return/@var like "int|false $a maybe comment"
+ * or "$var tuple(int, string) maybe comment" or "A[] maybe comment"
+ * parse a type (turn it into the TypeHint tree representation) and a variable name (if present).
+ */
+PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr current_function) const {
+  std::vector<Token> tokens = phpdoc_to_tokens(value);
+  auto tok_iter = tokens.cbegin();
+  vk::string_view var_name;
+
+  // $var_name phpdoc|type maybe comment
+  if (tokens.front().type() == tok_var_name) {
+    var_name = tokens.front().str_val;
+    tok_iter++;
+    if (tokens.size() <= 2) {     // only tok_end is left
+      return {nullptr, var_name};
+    }
+  }
+
+  PhpDocTypeHintParser parser(current_function);
+  const TypeHint *type_hint{nullptr};
+  try {
+    type_hint = parser.parse_from_tokens(tok_iter);
+  } catch (std::runtime_error &ex) {
+    kphp_error(0, fmt_format("{}: {}\n{}",
+                             TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse " + get_tag_name(), TermStringFormat::bold)),
+                             TermStringFormat::add_text_attribute(value_as_string(), TermStringFormat::underline),
+                             ex.what()));
+  }
+
+  if (!type_hint) {
+    return {nullptr, var_name};
+  }
+
+  if (var_name.empty()) {
+    kphp_assert(tok_iter != tokens.end());
+    // phpdoc|type $var_name maybe comment
+    if (tok_iter->type() == tok_var_name) {   // tok_iter — right after the parsing is finished
+      var_name = tok_iter->str_val;
+    }
+  }
+
+  return {type_hint, var_name};
+}
+
+
+const TypeHint *PhpDocTypeHintParser::parse_classname(const std::string &phpdoc_class_name) {
   cur_tok++;
   // here we have a relative class name, that can be resolved into full unless self/static/parent
   // if self/static/parent, it will be resolved at context, see phpdoc_finalize_type_hint_and_resolve()
@@ -142,7 +224,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_classname(const std::string &phpdoc_
   return TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name));
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_ffi_cdata() {
+const TypeHint *PhpDocTypeHintParser::parse_ffi_cdata() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '<' or '('");
   }
@@ -196,7 +278,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_ffi_cdata() {
   return TypeHintFFIType::create(scope_name, type, transfer_ownership);
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_ffi_scope() {
+const TypeHint *PhpDocTypeHintParser::parse_ffi_scope() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '<' or '('");
   }
@@ -225,7 +307,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_ffi_scope() {
   return TypeHintFFIScope::create(std::string(scope_name));
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
+const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
   TokenType cur_type = cur_tok->type();
   // some type names inside phpdoc are not keywords/tokens, but they should be interpreted as such
   if (cur_type == tok_func_name) {
@@ -367,7 +449,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_simple_type() {
   }
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
+const TypeHint *PhpDocTypeHintParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
@@ -388,7 +470,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
   return res;
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_type_array() {
+const TypeHint *PhpDocTypeHintParser::parse_type_array() {
   const TypeHint *inner = parse_simple_type();
 
   if (cur_tok->type() == tok_double_colon) {      // T::fieldName
@@ -409,7 +491,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_array() {
   return inner;
 }
 
-std::vector<const TypeHint *> PhpDocTypeRuleParser::parse_nested_type_hints() {
+std::vector<const TypeHint *> PhpDocTypeHintParser::parse_nested_type_hints() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
@@ -430,7 +512,7 @@ std::vector<const TypeHint *> PhpDocTypeRuleParser::parse_nested_type_hints() {
   return sub_types;
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_nested_one_type_hint() {
+const TypeHint *PhpDocTypeHintParser::parse_nested_one_type_hint() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
@@ -445,7 +527,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_nested_one_type_hint() {
   return sub_type;
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int, int):?string, callable(int $x), callable():void
+const TypeHint *PhpDocTypeHintParser::parse_typed_callable() {  // callable(int, int):?string, callable(int $x), callable():void
   if (cur_tok->type() != tok_oppar) {
     throw std::runtime_error("expected '('");
   }
@@ -480,7 +562,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_typed_callable() {  // callable(int,
   return TypeHintCallable::create(std::move(arg_types), return_type);
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_shape_type() {
+const TypeHint *PhpDocTypeHintParser::parse_shape_type() {
   if (vk::none_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {
     throw std::runtime_error("expected '('");
   }
@@ -539,7 +621,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_shape_type() {
   return TypeHintShape::create(std::move(shape_items), has_varg);
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
+const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   const TypeHint *result = parse_type_array();
   if (cur_tok->type() != tok_or) {
     return result;
@@ -583,7 +665,7 @@ const TypeHint *PhpDocTypeRuleParser::parse_type_expression() {
   return TypeHintPipe::create(std::move(items));
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
+const TypeHint *PhpDocTypeHintParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
   const TypeHint *v = parse_type_expression();      // could throw an exception
 
@@ -597,119 +679,12 @@ const TypeHint *PhpDocTypeRuleParser::parse_from_tokens(std::vector<Token>::cons
   return v;                                   // not null if an exception was not thrown
 }
 
-const TypeHint *PhpDocTypeRuleParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
+const TypeHint *PhpDocTypeHintParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
   try {
     return parse_from_tokens(tok_iter);
   } catch (std::runtime_error &) {
     return {};
   }
-}
-
-/*
- * With a phpdoc string after a @param/@return/@var like "int|false $a maybe comment"
- * or "$var tuple(int, string) maybe comment" or "A[] maybe comment"
- * parse a type (turn it into the TypeHint tree representation) and a variable name (if present).
- */
-PhpDocTagParseResult phpdoc_parse_type_and_var_name(vk::string_view phpdoc_tag_str, FunctionPtr current_function) {
-  std::vector<Token> tokens = phpdoc_to_tokens(phpdoc_tag_str);
-  std::vector<Token>::const_iterator tok_iter = tokens.begin();
-  std::string var_name;
-
-  // $var_name phpdoc|type maybe comment
-  if (tokens.front().type() == tok_var_name) {
-    var_name = std::string(tokens.front().str_val);
-    tok_iter++;
-    if (tokens.size() <= 2) {     // only tok_end is left
-      return {nullptr, std::move(var_name)};
-    }
-  }
-
-  PhpDocTypeRuleParser parser(current_function);
-  const TypeHint *type_hint{nullptr};
-  try {
-    type_hint = parser.parse_from_tokens(tok_iter);
-  } catch (std::runtime_error &ex) {
-    stage::set_location(current_function->root->location);
-    kphp_error(0, fmt_format("{}: {}\n{}",
-                             TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse phpdoc tag", TermStringFormat::bold)),
-                             TermStringFormat::add_text_attribute(std::string(phpdoc_tag_str), TermStringFormat::underline),
-                             ex.what()));
-  }
-
-  if (!type_hint) {
-    return {nullptr, std::move(var_name)};
-  }
-
-  if (var_name.empty()) {
-    kphp_assert(tok_iter != tokens.end());
-    // phpdoc|type $var_name maybe comment
-    if (tok_iter->type() == tok_var_name) {   // tok_iter — right after the parsing is finished
-      var_name = std::string(tok_iter->str_val);
-    }
-  }
-
-  return {type_hint, std::move(var_name)};
-}
-
-/*
- * With a full phpdoc string / ** ... * / with various tags inside,
- * find the first @tag and parse everything on its right side.
- * Returns result which has a bool() operator (reports whether this tag was found or not).
- */
-PhpDocTagParseResult phpdoc_find_tag(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
-  if (auto found_tag = phpdoc_find_tag_as_string(phpdoc, tag_type)) {
-    return phpdoc_parse_type_and_var_name(*found_tag, current_function);
-  }
-  return {nullptr, std::string()};
-}
-
-/*
- * With a full phpdoc string / ** ... * /,
- * find all @tag and parse everything on their right side.
- * Useful for @param tags.
- */
-std::vector<PhpDocTagParseResult> phpdoc_find_tag_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type, FunctionPtr current_function) {
-  std::vector<PhpDocTagParseResult> result;
-  for (const auto &tag : parse_php_doc(phpdoc)) {
-    if (tag.type == tag_type) {
-      if (auto parsed = phpdoc_parse_type_and_var_name(tag.value, current_function)) {
-        result.emplace_back(std::move(parsed));
-      }
-    }
-  }
-  return result;
-}
-
-/*
- * With a full phpdoc string / ** ... * /,
- * find the first @tag and return everything on its right side as a string.
- */
-std::optional<std::string> phpdoc_find_tag_as_string(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
-  for (const auto &tag : parse_php_doc(phpdoc)) {
-    if (tag.type == tag_type) {
-      return tag.value;
-    }
-  }
-  return {};
-}
-
-/*
- * With a full phpdoc string / ** ... * /,
- * find all @tag and return everything on their right side as a string.
- * Useful for @kphp-template tags.
- */
-std::vector<std::string> phpdoc_find_tag_as_string_multi(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
-  std::vector<std::string> result;
-  for (const auto &tag : parse_php_doc(phpdoc)) {
-    if (tag.type == tag_type) {
-      result.emplace_back(tag.value);
-    }
-  }
-  return result;
-}
-
-bool phpdoc_tag_exists(vk::string_view phpdoc, php_doc_tag::doc_type tag_type) {
-  return static_cast<bool>(phpdoc_find_tag_as_string(phpdoc, tag_type));
 }
 
 /*

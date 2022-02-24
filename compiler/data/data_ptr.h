@@ -102,6 +102,7 @@ class FunctionData;
 class LibData;
 class SrcFile;
 class TypeHint;
+class PhpDocComment;
 struct GenericsInstantiationMixin;
 
 using VarPtr = Id<VarData>;

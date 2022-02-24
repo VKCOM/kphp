@@ -80,15 +80,15 @@ public:
   VertexAdaptor<op_func_param> get_func_param();
   VertexAdaptor<op_var> get_var_name();
   VertexAdaptor<op_var> get_var_name_ref();
-  VertexPtr get_expr_top(bool was_arrow, vk::string_view phpdoc_str = vk::string_view{});
+  VertexPtr get_expr_top(bool was_arrow, const PhpDocComment *phpdoc = nullptr);
   VertexPtr get_postfix_expression(VertexPtr res, bool parenthesized);
   VertexPtr get_unary_op(int op_priority_cur, Operation unary_op_tp, bool till_ternary);
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
-  VertexPtr get_statement(vk::string_view phpdoc_str = vk::string_view{});
+  VertexPtr get_statement(const PhpDocComment *phpdoc = nullptr);
   VertexAdaptor<op_catch> get_catch();
-  void get_instance_var_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint);
+  void get_instance_var_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint);
   void get_traits_uses();
   void get_use();
   void get_seq(std::vector<VertexPtr> &seq_next);
@@ -128,11 +128,11 @@ public:
   VertexPtr get_phpdoc_inside_function();
   bool parse_cur_function_uses();
   static bool test_if_uses_and_arguments_intersect(const std::forward_list<VertexAdaptor<op_var>> &uses_list, const VertexRange &params);
-  VertexAdaptor<op_lambda> get_lambda_function(vk::string_view phpdoc_str, FunctionModifiers modifiers);
-  VertexAdaptor<op_function> get_function(bool is_lambda, vk::string_view phpdoc_str, FunctionModifiers modifiers);
+  VertexAdaptor<op_lambda> get_lambda_function(const PhpDocComment *phpdoc, FunctionModifiers modifiers);
+  VertexAdaptor<op_function> get_function(bool is_lambda, const PhpDocComment *phpdoc, FunctionModifiers modifiers);
 
   ClassMemberModifiers parse_class_member_modifier_mask();
-  VertexPtr get_class_member(vk::string_view phpdoc_str);
+  VertexPtr get_class_member(const PhpDocComment *phpdoc);
 
   std::string get_identifier();
 
@@ -140,7 +140,7 @@ public:
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args, const Location &locaction);
   static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
-  VertexPtr get_class(vk::string_view phpdoc_str, ClassType class_type);
+  VertexPtr get_class(const PhpDocComment *phpdoc, ClassType class_type);
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
@@ -153,7 +153,7 @@ private:
 
   VertexAdaptor<op_func_param_list> parse_cur_function_param_list();
 
-  VertexAdaptor<op_empty> get_static_field_list(vk::string_view phpdoc_str, FieldModifiers modifiers, const TypeHint *type_hint);
+  VertexAdaptor<op_empty> get_static_field_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint);
   VertexAdaptor<op_var> get_function_use_var_name_ref();
   VertexPtr get_foreach_value();
   std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> get_foreach_param();
