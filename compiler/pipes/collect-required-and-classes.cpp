@@ -86,6 +86,9 @@ private:
       if (f.phpdoc) {
         require_all_classes_in_field_phpdoc(f.phpdoc);
       }
+      if (f.type_hint != nullptr) {
+        require_all_classes_in_phpdoc_type(f.type_hint);
+      }
     });
     cur_class->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
@@ -94,21 +97,30 @@ private:
       if (f.phpdoc) {
         require_all_classes_in_field_phpdoc(f.phpdoc);
       }
+      if (f.type_hint != nullptr) {
+        require_all_classes_in_phpdoc_type(f.type_hint);
+      }
     });
   }
 
   // When looking at /** @var Photo */ under the instance field, assume that we
   // need to load the Photo class even if there is no explicit constructor call
   inline void require_all_classes_in_field_phpdoc(const PhpDocComment *phpdoc) {
-    if (const PhpDocTag *type_and_var_name = phpdoc->find_tag(PhpDocType::var)) {
-      // we can't use parse_type_and_var_name() here
-      // since classes are not available at this point: we need to fetch these unknown classes
-      std::vector<Token> tokens = phpdoc_to_tokens(type_and_var_name->value);
-      auto cur_tok = tokens.cbegin();
-      PhpDocTypeHintParser parser(current_function);
-      const TypeHint *type_hint = parser.parse_from_tokens_silent(cur_tok);
-      require_all_classes_in_phpdoc_type(type_hint);
+    if (const PhpDocTag *var_tag = phpdoc->find_tag(PhpDocType::var)) {
+      require_all_classes_in_var_phpdoc(var_tag->value);
     }
+  }
+
+  // Having @var (in a field or standalone), autoload classes inside it.
+  // We can't distinguish class T and genericsT, just try to load all we found, that's okay
+  inline void require_all_classes_in_var_phpdoc(vk::string_view var_tag_value) {
+    // we can't use parse_type_and_var_name() here
+    // since classes are not available at this point: we need to fetch these unknown classes
+    std::vector<Token> tokens = phpdoc_to_tokens(var_tag_value);
+    auto cur_tok = tokens.cbegin();
+    PhpDocTypeHintParser parser(current_function);
+    const TypeHint *type_hint = parser.parse_from_tokens_silent(cur_tok);
+    require_all_classes_in_phpdoc_type(type_hint);
   }
 
   // Searching for classes inside @var/@param phpdoc as well as inside type hints
@@ -241,6 +253,10 @@ public:
         return require_composer_autoload(root);
       }
       return make_require_call(root, name, require->once, require->builtin);
+    }
+
+    if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
+      require_all_classes_in_var_phpdoc(as_phpdoc_var->tag_value);
     }
 
     return root;
