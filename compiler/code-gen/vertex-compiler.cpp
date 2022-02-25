@@ -1052,17 +1052,24 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
   W << temp_var_matched_with_a_case << " = false;" << NL;
 
-  for (const auto &one_case : root->cases()) {
+  const auto cases = root->cases();
+  const bool default_case_is_the_last = cases.back()->type() == op_default;
+  for (const auto &one_case : cases) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << "))" << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << ")) " << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
+      if (!default_case_is_the_last) {
+        W << "if (" << temp_var_matched_with_a_case << ") ";
+      }
       cmd = one_case.as<op_default>()->cmd();
-      W << "if (" << temp_var_matched_with_a_case << ") " << BEGIN;
-      goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
-      W << goto_name_if_default_in_the_middle + ": ";
+      W << BEGIN;
+      if (!default_case_is_the_last) {
+        goto_name_if_default_in_the_middle = gen_unique_name("switch_goto");
+        W << goto_name_if_default_in_the_middle + ": ";
+      }
     }
 
     W << AsSeq{cmd};
