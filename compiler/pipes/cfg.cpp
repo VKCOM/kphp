@@ -368,6 +368,10 @@ void CFG::create_condition_cfg(VertexPtr tree_node, Node *res_start, Node *res_t
           add_type_check_usage(*res_true, ifi_any_type & ~ifi_is_null, var);
           add_type_check_usage(*res_false, ifi_is_null, var);
         }
+      } else if (auto empty = tree_node.try_as<op_is_empty>()) {
+        if (auto var = isset->expr().try_as<op_var>()) {
+          add_type_check_usage(*res_false, ifi_any_type & ~(ifi_is_false | ifi_is_null), var);
+        }
       } else if (tree_node->type() == op_set) {
         // support for cases like: if ($x = $some_value) {...}
         if (auto var = tree_node.try_as<meta_op_binary>()->lhs().try_as<op_var>()) {
@@ -503,6 +507,7 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_conv_drop_null:
     case op_conv_drop_false:
     case op_isset:
+    case op_is_empty:
     case op_unset:
     case op_postfix_inc:
     case op_postfix_dec:

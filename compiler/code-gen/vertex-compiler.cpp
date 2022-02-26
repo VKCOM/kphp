@@ -1515,6 +1515,20 @@ void compile_xset(VertexAdaptor<meta_op_xset> root, CodeGenerator &W) {
   }
 }
 
+void compile_is_empty(VertexAdaptor<op_is_empty> root, CodeGenerator &W) {
+  auto arg = root->expr();
+  if (auto index = arg.try_as<op_index>()) {
+    kphp_assert(index->has_key());
+    W << "(" << index->array() << ").is_empty (" << index->key();;
+    if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+      W << ", " << precomputed_hash << "_i64";
+    }
+    W << ")";
+    return;
+  }
+  W << "(f$empty(" << arg << "))";
+}
+
 void compile_list(VertexAdaptor<op_list> root, CodeGenerator &W) {
   VertexPtr arr = root->array();
   VertexRange list = root->list();
@@ -1916,6 +1930,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_isset:
       compile_xset(root.as<meta_op_xset>(), W);
+      break;
+    case op_is_empty:
+      compile_is_empty(root.as<op_is_empty>(), W);
       break;
     case op_list:
       compile_list(root.as<op_list>(), W);

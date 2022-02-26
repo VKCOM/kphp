@@ -1462,6 +1462,19 @@ bool array<T>::isset(const string &key, int64_t precomputed_hash) const noexcept
 }
 
 template<class T>
+template<class K>
+bool array<T>::is_empty(const K &key) const noexcept {
+  auto *value = find_value(key);
+  return value == nullptr || f$empty(*value);
+}
+
+template<class T>
+bool array<T>::is_empty(const string &key, int64_t precomputed_hash) const noexcept {
+  auto *value = find_value(key, precomputed_hash);
+  return value == nullptr || f$empty(*value);
+}
+
+template<class T>
 void array<T>::unset(int64_t int_key) {
   if (is_vector()) {
     if (int_key < 0 || int_key >= p->int_size) {

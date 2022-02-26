@@ -1,5 +1,7 @@
 @ok
 <?php
+    require_once 'kphp_tester_include.php';
+
 	$stringNonEmpty = "foo";
 	$stringEmpty = "";
 	$stringZero = "0";
@@ -15,6 +17,9 @@
 	$arrayNonEmpty = array(1); 
 	unset ($arrayEmpty);
 	$arrayEmpty = array();
+
+    $tupleNonEmpty = tuple(false, false);
+    $tuplesArray = [tuple(false, false)];
 
   unset ($notSet);
 	var_dump(empty($notSet));
@@ -33,4 +38,8 @@
 
 	var_dump(empty($arrayNonEmpty));
 	var_dump(empty($arrayEmpty));
+
+	var_dump(empty($tupleNonEmpty));
+	var_dump(empty($tuplesArray[0]));
+	var_dump(empty($tuplesArray[1]));
 ?>

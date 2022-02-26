@@ -632,6 +632,10 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       res.set_location(temp->location);
       break;
     }
+    case tok_is_empty:
+      res = get_func_call<op_is_empty, op_err>();
+      CE (!kphp_error(res.as<op_is_empty>()->size() == 1, "empty() must have exactly one argument"));
+      break;
     case tok_declare:
       // see GenTree::parse_declare_at_top_of_file
       kphp_error(0, "strict_types declaration must be the very first statement in the script");
