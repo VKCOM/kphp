@@ -111,6 +111,10 @@ void WorkerStatsBuffer::flush() {
   make_metric(metrics, "kphp_memory_job_common_request_usage", QueryStatKey::job_common_request_memory_usage, tags);
   make_metric(metrics, "kphp_memory_job_common_request_real_usage", QueryStatKey::job_common_request_real_memory_usage, tags);
 
+  if (metrics.empty()) {
+    return;
+  }
+
   int offset = vk::tl::store_to_buffer(buffer, buffer_size, TL_STATSHOUSE_ADD_METRICS_BATCH);
   offset = offset + vk::tl::store_to_buffer(buffer + offset, buffer_size - offset, static_cast<int>(vk::tl::statshouse::add_metrics_batch_fields_mask::ALL));
   int len = vk::tl::store_to_buffer(buffer + offset, buffer_size - offset, metrics);
