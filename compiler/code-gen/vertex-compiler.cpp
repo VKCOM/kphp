@@ -1053,7 +1053,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << temp_var_matched_with_a_case << " = false;" << NL;
 
   const auto cases = root->cases();
-  const bool default_case_is_the_last = cases.back()->type() == op_default;
+  const bool default_case_is_the_last = !cases.empty() && cases.back()->type() == op_default;
   for (const auto &one_case : cases) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
