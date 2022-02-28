@@ -47,6 +47,18 @@ protected:
     add_stat(type, key, static_cast<double>(value));
   }
 
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, double value) noexcept final {
+    std::vector<std::pair<std::string, std::string>> metric_tags = {{"type", std::string(type_tag)}, {"host", std::string(kdb_gethostname())}};
+    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, {});
+    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
+    sb.pos += len;
+    ++counter;
+  }
+
+  void add_stat_with_tag_type(char type, const char *key, const char *type_tag, long long value) noexcept final {
+    add_stat_with_tag_type(type, key, type_tag, static_cast<double>(value));
+  }
+
   void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept final {
     auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), tags);
     auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size - sb.pos, metric);

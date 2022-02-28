@@ -34,6 +34,18 @@ protected:
     sb_printf(&sb, "\n");
   }
 
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, double value) noexcept override {
+    sb_printf(&sb, "%s.%s\t", key, type_tag);
+    sb_printf(&sb, "%.3f", value);
+    sb_printf(&sb, "\n");
+  }
+
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, long long int value) noexcept override {
+    sb_printf(&sb, "%s.%s\t", key, type_tag);
+    sb_printf(&sb, "%lld", value);
+    sb_printf(&sb, "\n");
+  }
+
   void add_multiple_stats(const char *key [[maybe_unused]], std::vector<double> &&values [[maybe_unused]]) noexcept final {
     assert(false && "unimplemented");
   }

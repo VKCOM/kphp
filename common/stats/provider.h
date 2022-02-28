@@ -45,6 +45,16 @@ public:
   }
 
   template<typename T>
+  void add_gauge_stat_with_type_tag(const char *key, [[maybe_unused]] const char *tag, T value) {
+    static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
+    if constexpr (std::is_floating_point_v<T>) {
+      add_stat_with_tag_type('g', key, tag, static_cast<double>(value));
+    } else {
+      add_stat_with_tag_type('g', key, tag, static_cast<long long>(value));
+    }
+  }
+
+  template<typename T>
   void add_gauge_stat(T value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
     static_assert(std::is_integral<T>{} || std::is_floating_point<T>{}, "integral or floating point expected");
     const size_t key1_len = std::strlen(key1);
@@ -80,6 +90,9 @@ public:
 protected:
   virtual void add_stat(char type, const char *key, double value) noexcept = 0;
   virtual void add_stat(char type, const char *key, long long value) noexcept = 0;
+
+  virtual void add_stat_with_tag_type(char type, const char *key, const char *type_tag, double value) noexcept = 0;
+  virtual void add_stat_with_tag_type(char type, const char *key, const char *type_tag, long long value) noexcept = 0;
 
   virtual void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept = 0;
 

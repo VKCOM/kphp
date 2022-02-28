@@ -13,10 +13,10 @@ double to_seconds(std::chrono::nanoseconds t) noexcept {
 }
 
 void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::EventCounters::Event &event) noexcept {
-  stats->add_gauge_stat(event.total, name, ".total");
-  stats->add_gauge_stat(event.blacklisted, name, ".blacklisted");
-  stats->add_gauge_stat(event.ignored, name, ".ignored");
-  stats->add_gauge_stat(event.ttl_updated, name, ".ttl_updated");
+  stats->add_gauge_stat_with_type_tag(name, "total", event.total);
+  stats->add_gauge_stat_with_type_tag(name, "blacklisted", event.blacklisted);
+  stats->add_gauge_stat_with_type_tag(name, "ignored", event.ignored);
+  stats->add_gauge_stat_with_type_tag(name, "ttl_updated", event.ttl_updated);
 }
 
 } // namespace
@@ -83,16 +83,18 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   stats->add_gauge_stat("confdata.updates.ignored", ignored_updates);
   stats->add_gauge_stat("confdata.updates.total", total_updates);
 
-  stats->add_gauge_stat("confdata.elements.total", total_elements);
-  stats->add_gauge_stat("confdata.elements.simple_key", simple_key_elements);
-  stats->add_gauge_stat("confdata.elements.one_dot_wildcard", one_dot_wildcard_elements);
-  stats->add_gauge_stat("confdata.elements.two_dots_wildcard", two_dots_wildcard_elements);
-  stats->add_gauge_stat("confdata.elements.predefined_wildcard", predefined_wildcard_elements);
-  stats->add_gauge_stat("confdata.elements.with_delay", elements_with_delay);
+  if (stats->need_aggr_stats()) {
+    stats->add_gauge_stat("confdata.elements.total", total_elements);
+  }
+  stats->add_gauge_stat_with_type_tag("confdata.elements", "simple_key", simple_key_elements);
+  stats->add_gauge_stat_with_type_tag("confdata.elements", "one_dot_wildcard", one_dot_wildcard_elements);
+  stats->add_gauge_stat_with_type_tag("confdata.elements", "two_dots_wildcard", two_dots_wildcard_elements);
+  stats->add_gauge_stat_with_type_tag("confdata.elements", "predefined_wildcard", predefined_wildcard_elements);
+  stats->add_gauge_stat_with_type_tag("confdata.elements", "with_delay", elements_with_delay);
 
-  stats->add_gauge_stat("confdata.wildcards.one_dot", one_dot_wildcards);
-  stats->add_gauge_stat("confdata.wildcards.two_dots", two_dots_wildcards);
-  stats->add_gauge_stat("confdata.wildcards.predefined", predefined_wildcards);
+  stats->add_gauge_stat_with_type_tag("confdata.wildcards", "one_dot", one_dot_wildcards);
+  stats->add_gauge_stat_with_type_tag("confdata.wildcards", "two_dots", two_dots_wildcards);
+  stats->add_gauge_stat_with_type_tag("confdata.wildcards", "predefined", predefined_wildcards);
 
   size_t last_100_garbage_max = 0;
   double last_100_garbage_avg = 0;
@@ -106,8 +108,10 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   }
 
   stats->add_gauge_stat("confdata.vars_in_garbage_last", last_garbage_size);
-  stats->add_gauge_stat("confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
-  stats->add_gauge_stat("confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
+  if (stats->need_aggr_stats()) {
+    stats->add_gauge_stat("confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
+    stats->add_gauge_stat("confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
+  }
 
   write_event_stats(stats, "confdata.binlog_events.snapshot_entry", event_counters.snapshot_entry);
 
@@ -122,9 +126,9 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   write_event_stats(stats, "confdata.binlog_events.set_forever", event_counters.set_forever_events);
   write_event_stats(stats, "confdata.binlog_events.replace_forever", event_counters.replace_forever_events);
 
-  stats->add_gauge_stat("confdata.binlog_events.get", event_counters.get_events);
-  stats->add_gauge_stat("confdata.binlog_events.incr", event_counters.incr_events);
-  stats->add_gauge_stat("confdata.binlog_events.incr_tiny", event_counters.incr_tiny_events);
-  stats->add_gauge_stat("confdata.binlog_events.append", event_counters.append_events);
-  stats->add_gauge_stat("confdata.binlog_events.unsupported_total", event_counters.unsupported_total_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "get", event_counters.get_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "incr", event_counters.incr_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "incr_tiny", event_counters.incr_tiny_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "append", event_counters.append_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "unsupported_total", event_counters.unsupported_total_events);
 }
