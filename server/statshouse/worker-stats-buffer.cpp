@@ -112,6 +112,7 @@ void WorkerStatsBuffer::flush() {
   make_metric(metrics, "kphp_memory_job_common_request_real_usage", QueryStatKey::job_common_request_real_memory_usage, tags);
 
   if (metrics.empty()) {
+    last_send_time = std::chrono::steady_clock::now();
     return;
   }
 

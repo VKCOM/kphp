@@ -83,7 +83,7 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   stats->add_gauge_stat("confdata.updates.ignored", ignored_updates);
   stats->add_gauge_stat("confdata.updates.total", total_updates);
 
-  if (stats->need_aggr_stats()) {
+  if (stats->need_aggregated_stats()) {
     stats->add_gauge_stat("confdata.elements.total", total_elements);
   }
   stats->add_gauge_stat_with_type_tag("confdata.elements", "simple_key", simple_key_elements);
@@ -108,10 +108,8 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   }
 
   stats->add_gauge_stat("confdata.vars_in_garbage_last", last_garbage_size);
-  if (stats->need_aggr_stats()) {
-    stats->add_gauge_stat("confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
-    stats->add_gauge_stat("confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
-  }
+  stats->add_gauge_stat("confdata.vars_in_garbage_last_100_max", last_100_garbage_max);
+  stats->add_gauge_stat("confdata.vars_in_garbage_last_100_avg", last_100_garbage_avg);
 
   write_event_stats(stats, "confdata.binlog_events.snapshot_entry", event_counters.snapshot_entry);
 

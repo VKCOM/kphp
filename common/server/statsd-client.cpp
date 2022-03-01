@@ -43,7 +43,7 @@ public:
     // ignore it
   }
 
-  bool need_aggr_stats() noexcept final {
+  bool need_aggregated_stats() noexcept final {
     return true;
   }
 
@@ -61,13 +61,13 @@ protected:
   }
 
   void add_stat_with_tag_type(char type [[maybe_unused]], const char *key [[maybe_unused]], const char *type_tag [[maybe_unused]], double value [[maybe_unused]]) noexcept final {
-    sb_printf(&sb, "%s.%s.%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
+    sb_printf(&sb, "%s.%s_%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
     sb_printf(&sb, "%.3f", value);
     sb_printf(&sb, "|%c\n", type);
   }
 
   void add_stat_with_tag_type(char type [[maybe_unused]], const char *key [[maybe_unused]], const char *type_tag [[maybe_unused]], long long value [[maybe_unused]]) noexcept final {
-    sb_printf(&sb, "%s.%s.%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
+    sb_printf(&sb, "%s.%s_%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "|%c\n", type);
   };

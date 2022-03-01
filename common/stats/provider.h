@@ -83,7 +83,7 @@ public:
   }
 
   virtual void add_general_stat(const char *key, const char *value_format, ...) noexcept __attribute__((format(printf, 3, 4))) = 0;
-  virtual bool need_aggr_stats() noexcept = 0;
+  virtual bool need_aggregated_stats() noexcept = 0;
 
   virtual ~stats_t() = default;
 

@@ -17,7 +17,7 @@ public:
     va_end(ap);
   }
 
-  bool need_aggr_stats() noexcept final {
+  bool need_aggregated_stats() noexcept final {
     return true;
   }
 
