@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
@@ -52,6 +53,7 @@ private:
 
   bool use_dev_;
   std::map<std::string, std::vector<std::string>, std::less<>> autoload_psr4_;
+  std::unordered_set<std::string> deps_;
 
   std::string autoload_filename_;
   std::vector<std::string> files_to_require_;

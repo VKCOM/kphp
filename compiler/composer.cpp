@@ -6,6 +6,7 @@
 
 #include <yaml-cpp/yaml.h> // using YAML parser to handle JSON files
 
+#include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
@@ -97,19 +98,41 @@ void ComposerAutoloader::load_file(const std::string &pkg_root) {
 void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_file) {
   // composer.json structure (that we care about):
   // {
+  //   // name -- used to identify this composer package
+  //   // deps_[name] tells whether we need to include autoload files
+  //   "name": "pkgvendor/pkgname",
+  //   // require -- fills deps_ if it's a root file
+  //   "require": {
+  //     "php": ">=7.4", // ignored
+  //     "vkcom/kphp-polyfills": "^1.0",
+  //     <...>
+  //   },
+  //   // require-dev -- fills deps_ if it's a root file and use_dev_ is true
+  //   "require-dev": {
+  //     "phpunit/phpunit": "9.5.16",
+  //     <...>
+  //   },
   //   "autoload": {
   //     "psr-4": {
   //       "prefix1": "dir",
   //       "prefix2": ["dir/", ...],
   //       "": "fallback-dir/",
   //       <...>
-  //     }
+  //     },
+  //     "files": [
+  //       "file.php",
+  //       <...>
+  //     ],
   //   }
   //   "autoload-dev": {
   //     "psr-4": {
   //       "prefix": "dir",
   //       <...>
-  //     }
+  //     },
+  //     "files": [
+  //       "file.php",
+  //       <...>
+  //     ],
   //   }
   // }
 
@@ -128,7 +151,7 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
     autoload_psr4_[prefix].emplace_back(pkg_root + "/" + dir);
   };
 
-  auto add_autoload_section = [&](YAML::Node autoload) {
+  auto add_autoload_section = [&](YAML::Node autoload, bool require_files) {
     // https://getcomposer.org/doc/04-schema.md#psr-4
     const auto psr4_src = autoload["psr-4"];
     for (const auto &kv : psr4_src) {
@@ -146,21 +169,38 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
       }
     }
 
-    // files that are required by the composer-generated autoload.php
-    // https://getcomposer.org/doc/04-schema.md#files
-    for (const auto &autoload_filename : autoload["files"]) {
-      files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
+    if (require_files) {
+      // files that are required by the composer-generated autoload.php
+      // https://getcomposer.org/doc/04-schema.md#files
+      for (const auto &autoload_filename : autoload["files"]) {
+        files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
+      }
     }
   };
 
   try {
     YAML::Node root = YAML::LoadFile(filename);
+    auto name = root["name"];
+    bool require_autoload_files = is_root_file || (name && vk::contains(deps_, name.as<std::string>()));
     if (auto autoload = root["autoload"]) {
-      add_autoload_section(autoload);
+      add_autoload_section(autoload, require_autoload_files);
+    }
+    if (is_root_file) {
+      if (auto require = root["require"]) {
+        for (const auto &kv : require) {
+          deps_.insert(kv.first.as<std::string>());
+        }
+      }
+      auto require_dev = root["require-dev"];
+      if (require_dev && use_dev_) {
+        for (const auto &kv : require_dev) {
+          deps_.insert(kv.first.as<std::string>());
+        }
+      }
     }
     if (is_root_file && use_dev_) {
       if (auto autoload_dev = root["autoload-dev"]) {
-        add_autoload_section(autoload_dev);
+        add_autoload_section(autoload_dev, require_autoload_files);
       }
     }
   } catch (const std::exception &e) {

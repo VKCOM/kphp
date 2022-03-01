@@ -289,8 +289,8 @@ int main(int argc, char *argv[]) {
              "show-progress", "KPHP_SHOW_PROGRESS");
   parser.add("A folder that contains composer.json file", settings->composer_root,
              "composer-root", "KPHP_COMPOSER_ROOT");
-  parser.add("Simulate the composer -no-dev flag behavior when handling composer files", settings->composer_no_dev,
-             "composer-no-dev", "KPHP_COMPOSER_NO_DEV");
+  parser.add("Include autoload-dev section for the root composer file", settings->composer_autoload_dev,
+             "composer-autoload-dev", "KPHP_COMPOSER_AUTOLOAD_DEV");
   parser.add("Enable KPHP experimental FFI support", settings->ffi_enabled,
              "enable-ffi", "KPHP_ENABLE_FFI");
   parser.add("Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
