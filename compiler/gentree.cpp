@@ -6,8 +6,6 @@
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
-#include "common/algorithms/contains.h"
-#include "common/type_traits/constexpr_if.h"
 
 #include "common/php-functions.h"
 #include "compiler/compiler-core.h"
@@ -156,9 +154,9 @@ bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
           break;
         }
 
-        v = vk::constexpr_if(std::integral_constant<bool, EmptyOp == op_none || EmptyOp == op_err>{},
-                             [&v] { return v; },
-                             [] { return VertexAdaptor<EmptyOp>::create(); });
+        if constexpr (EmptyOp != op_none && EmptyOp != op_err) {
+          v = VertexAdaptor<EmptyOp>::create();
+        }
       } else if (prev_delim) {
         // TODO: do not emit this error for funcs like var_name_ref() as
         // they return falsy vertex in case of the parse failure.

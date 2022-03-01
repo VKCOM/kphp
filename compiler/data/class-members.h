@@ -26,7 +26,6 @@
 #include <string>
 #include <utility>
 
-#include "common/type_traits/constexpr_if.h"
 #include "common/type_traits/function_traits.h"
 
 #include "compiler/data/data_ptr.h"
