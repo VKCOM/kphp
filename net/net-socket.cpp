@@ -25,7 +25,13 @@
 
 #define DEFAULT_BACKLOG 8192
 int backlog = DEFAULT_BACKLOG;
-struct in_addr settings_addr;
+in_addr settings_addr;
+
+OPTION_PARSER(OPT_NETWORK, "server-bind-to-ipv4", required_argument, "Bind server sockets of all supported protocol types to the specified IPv4 address") {
+  char *ip_str = optarg;
+  bool success = inet_pton(AF_INET, ip_str, &settings_addr.s_addr);
+  return success ? 0 : -1;
+}
 
 OPTION_PARSER_SHORT(OPT_NETWORK, "backlog", 'b', required_argument, "sets backlog") {
   set_backlog(optarg);

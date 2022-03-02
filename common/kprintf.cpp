@@ -305,14 +305,8 @@ int set_verbosity_by_type(const char *name, int value) {
 }
 
 const char *ip_to_print(unsigned ip) {
-  static char abuf[1000], *ptr = abuf;
-  char *res;
-  if (ptr > abuf + 900) {
-    ptr = abuf;
-  }
-  res = ptr;
-  ptr += sprintf (ptr, "%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff, (ip >> 8) & 0xff, ip & 0xff) + 1;
-  return res;
+  static char buf[1000];
+  return inet_ntop(AF_INET, &ip, buf, sizeof(buf));
 }
 
 static int conv_ipv6_internal (const unsigned short ipv6[8], char *s) {
