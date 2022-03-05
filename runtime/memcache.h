@@ -28,7 +28,7 @@ bool mc_is_immediate_query(const string &key);
 constexpr int64_t MEMCACHE_SERIALIZED = 1;
 constexpr int64_t MEMCACHE_COMPRESSED = 2;
 
-class C$Memcache : public abstract_refcountable_php_interface {
+struct C$Memcache : public abstract_refcountable_php_interface {
 public:
   virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
   virtual const char *get_class() const = 0;
