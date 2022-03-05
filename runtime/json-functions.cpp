@@ -38,7 +38,7 @@ bool json_append_char(unsigned int c) noexcept {
 }
 
 
-bool do_json_encode_string_php(const char *s, int len, int64_t options) noexcept {
+bool do_json_encode_string_php(const impl_::JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
     static_SB.reserve(2 * len + 2);
@@ -47,8 +47,8 @@ bool do_json_encode_string_php(const char *s, int len, int64_t options) noexcept
   }
   static_SB.append_char('"');
 
-  auto fire_error = [begin_pos](int pos) {
-    php_warning("Not a valid utf-8 character at pos %d in function json_encode", pos);
+  auto fire_error = [json_path, begin_pos](int pos) {
+    php_warning("%s: Not a valid utf-8 character at pos %d in function json_encode", json_path.to_string().c_str(), pos);
     static_SB.set_pos(begin_pos);
     static_SB.append("null", 4);
     return false;
@@ -215,12 +215,41 @@ bool do_json_encode_string_vkext(const char *s, int len) noexcept {
 
 namespace impl_ {
 
+string JsonPath::to_string() const {
+  // this function is called only when error is occurred, so it's not
+  // very performance-sensitive
+
+  if (depth == 0) {
+    return string{"/", 1};
+  }
+  unsigned num_parts = std::clamp(depth, 0U, static_cast<unsigned>(arr.size()));
+  string result;
+  result.reserve_at_least((num_parts+1) * 8);
+  result.push_back('/');
+  for (unsigned i = 0; i < num_parts; i++) {
+    const char *key = arr[i];
+    if (key == nullptr) {
+      // int key indexing
+      result.append("[.]");
+    } else {
+      // string key indexing
+      result.append("['");
+      result.append(arr[i]);
+      result.append("']");
+    }
+  }
+  if (depth >= arr.size()) {
+    result.append("...");
+  }
+  return result;
+}
+
 JsonEncoder::JsonEncoder(int64_t options, bool simple_encode) noexcept:
   options_(options),
   simple_encode_(simple_encode) {
 }
 
-bool JsonEncoder::encode(bool b) const noexcept {
+bool JsonEncoder::encode(bool b) noexcept {
   if (b) {
     static_SB.append("true", 4);
   } else {
@@ -234,14 +263,14 @@ bool JsonEncoder::encode_null() const noexcept {
   return true;
 }
 
-bool JsonEncoder::encode(int64_t i) const noexcept {
+bool JsonEncoder::encode(int64_t i) noexcept {
   static_SB << i;
   return true;
 }
 
-bool JsonEncoder::encode(double d) const noexcept {
+bool JsonEncoder::encode(double d) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
-    php_warning("strange double %lf in function json_encode", d);
+    php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
       static_SB.append("0", 1);
     } else {
@@ -253,11 +282,11 @@ bool JsonEncoder::encode(double d) const noexcept {
   return true;
 }
 
-bool JsonEncoder::encode(const string &s) const noexcept {
-  return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size()) : do_json_encode_string_php(s.c_str(), s.size(), options_);
+bool JsonEncoder::encode(const string &s) noexcept {
+  return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size()) : do_json_encode_string_php(json_path_, s.c_str(), s.size(), options_);
 }
 
-bool JsonEncoder::encode(const mixed &v) const noexcept {
+bool JsonEncoder::encode(const mixed &v) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       return encode_null();
