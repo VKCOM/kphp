@@ -185,8 +185,10 @@ void compile_ffi_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> root, CodeGenerator
   const FFIType *conv_type = FFIRoot::get_ffi_type(root->c_type);
   const FFIType *type = conv_type->kind == FFITypeKind::Var ? conv_type->members[0] : conv_type;
   std::string tag;
+  // some tags have unboxed specializations, other types are specialized with CData templates;
+  // see ffi_tag<> specializations in ffi.h for more info
   if (type->is_void_ptr()) {
-    tag = "void*";
+    tag = type->members[0]->is_const() ? "const void*" : "void*";
   } else if (type->is_cstring()) {
     tag = "const char*";
   } else if (vk::any_of_equal(type->kind, FFITypeKind::Pointer, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union, FFITypeKind::UnionDef)) {

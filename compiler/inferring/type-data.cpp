@@ -156,6 +156,9 @@ std::string TypeData::as_human_readable(bool colored) const {
     }
   }
 
+  if (ffi_const_flag()) {
+    res = "const " + res;
+  }
   if (indirection_ != 0) {
     res += std::string(indirection_, '*');
   }
@@ -216,6 +219,11 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
   }
 
   auto *ptr_class = class_type()->ffi_class_mixin;
+
+  if (!ptr_class) {
+    set_ptype(tp_Error);
+    return;
+  }
 
   if (ptr_class->ffi_type->kind == FFITypeKind::Void && indirection_ == 1) {
     // any pointer is compatible with `void*`,
@@ -553,10 +561,14 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
         if (as_ffi->is_ref()) {
           res += klass->src_name;
         } else if (type->get_indirection() != 0) {
+          // indirection level (num of '*') and constness is qualifier-like property
+          // of a type, so FFI Type associated with a given class doesn't contain that info;
+          // therefore, it's not enough to just use ffi_mangled_decltype_string here -
+          // we need to add extra information using the TypeData state
           auto ptr = std::string(type->get_indirection() - 1, '*');
-          res += "CDataPtr<" + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ptr + ">";
+          std::string maybe_const = type->ffi_const_flag() ? "const " : "";
+          res += "CDataPtr<" + maybe_const + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ptr + ">";
         } else {
-          // TODO: can we avoid manual ptr addition here?
           res += "class_instance<C$FFI$CData<" + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ">>";
         }
         break;
@@ -865,6 +877,9 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
         break;
       case tp_Class:
         if (given->class_types() == expected->class_types()) {
+          if (given->ffi_const_flag() && !expected->ffi_const_flag()) {
+            return false;
+          }
           if (given->get_indirection() == expected->get_indirection()) {
             return true;
           }

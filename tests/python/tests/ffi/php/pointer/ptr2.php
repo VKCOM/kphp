@@ -37,4 +37,13 @@ function test() {
     var_dump($lib->voidptr_addr_value($ptr1) === $lib->voidptr_addr_value($ptr2));
 }
 
+function test_ptr2_out_param() {
+  $lib = FFI::scope('pointers');
+
+  $out_ptr = FFI::new('const char*');
+  $lib->cstr_out_param(FFI::addr($out_ptr));
+  var_dump(FFI::string($out_ptr));
+}
+
 test();
+test_ptr2_out_param();

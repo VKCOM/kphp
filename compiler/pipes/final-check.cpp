@@ -275,7 +275,11 @@ bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_ty
   auto php_expr = conv->expr();
 
   if (ffi_type->is_cstring()) {
-    return conv->simple_dst && php_type->ptype() == tp_string;
+    // can auto-cast the PHP string to `const char*` in the simple context
+    // otherwise it will be checked as a normal pointer below
+    if (conv->simple_dst && php_type->ptype() == tp_string) {
+      return true;
+    }
   }
 
   switch (ffi_type->kind) {
@@ -308,6 +312,9 @@ bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_ty
     case FFITypeKind::Pointer:
       if (php_expr->type() == op_null) {
         return true;
+      }
+      if (!ffi_type->members[0]->is_const() && php_type->ffi_const_flag()) {
+        return false;
       }
       if (ffi_type->members[0]->kind == FFITypeKind::Void && ffi_type->num == 1) {
         return true;

@@ -53,7 +53,7 @@ All FFI-related types should be annotated with special annotations:
 * `ffi_cdata<scope_name, type_expr>` for [\FFI\CData](https://www.php.net/manual/ru/class.ffi-cdata.php)
 * `ffi_scope<scope_name>` for [\FFI](https://www.php.net/manual/ru/class.ffi.php) class instances
 
-For `ffi_scope<>`, you can use a pointer-type expression, builtin type name, struct name and
+For `ffi_cdata<>`, you can use a pointer-type expression, builtin type name, struct name and
 any other supported C type expression. For instance, `ffi_cdata<foo, union Event**>` is a valid
 `ffi_cdata` declaration.
 
@@ -82,6 +82,21 @@ $cdef = FFI::cdef('
 ');
 
 f($cdef);
+```
+
+If you need to describe a builtin C type that is not bound to any particular FFI scope,
+use default FFI scope name "C":
+
+```php
+/**
+ * Since void* is a global type, we can use "C" scope name to avoid any dependency
+ * on a custom FFI scope.
+ *
+ * @param ffi_cdata<C, void*> $ptr
+ */
+function as_uint8_ptr($ptr) {
+  FFI::cast('uint8_t*', $ptr);
+}
 ```
 
 KPHP will give compile-time error if types are not compatible

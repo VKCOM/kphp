@@ -1,6 +1,6 @@
 @kphp_should_fail
 KPHP_ENABLE_FFI=1
-/pass FFI\\CData_char\* to argument/
+/pass const FFI\\CData_char\* to argument/
 /declared as @param string/
 <?php
 

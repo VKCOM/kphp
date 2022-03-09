@@ -27,6 +27,7 @@ private:
     or_null_flag_e        = 0b00000010,
     or_false_flag_e       = 0b00000100,
     shape_has_varg_flag_e = 0b00001000,
+    ffi_const_flag_e      = 0b00010000,
   };
 
 public:
@@ -99,6 +100,9 @@ public:
   void set_flags(uint8_t new_flags);
 
   bool is_ffi_ref() const;
+
+  bool ffi_const_flag() const { return get_flag<ffi_const_flag_e>(); }
+  void set_ffi_const_flag() { set_flag<ffi_const_flag_e>(); }
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }

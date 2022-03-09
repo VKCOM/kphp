@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "pointers.h"
 
@@ -36,4 +37,23 @@ void bytes_array_set(uint8_t *arr, int offset, uint8_t val) {
 
 void* ptr_to_void(void *ptr) {
   return ptr;
+}
+
+const void* ptr_to_const_void(const void *ptr) {
+  return ptr;
+}
+
+int void_strlen(const void *s) {
+  return strlen(s);
+}
+
+void cstr_out_param(const char **out) {
+  *out = "example result";
+}
+
+int strlen_safe(const char *s) {
+  if (s == NULL) {
+    return 0;
+  }
+  return strlen(s);
 }
