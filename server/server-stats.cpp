@@ -696,7 +696,7 @@ uint64_t kb2bytes(uint64_t kb) noexcept {
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggr_stats()) {
+  if (stats->need_aggregated_stats()) {
     stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
     stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
     stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
@@ -706,7 +706,7 @@ void write_to(stats_t *stats, const char *prefix, const char *suffix, const Aggr
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggr_stats()) {
+  if (stats->need_aggregated_stats()) {
     stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
     stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
     stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");

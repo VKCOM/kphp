@@ -17,7 +17,7 @@ public:
     va_end(ap);
   }
 
-  bool need_aggr_stats() noexcept final {
+  bool need_aggregated_stats() noexcept final {
     return true;
   }
 
@@ -30,6 +30,18 @@ protected:
 
   void add_stat(char type [[maybe_unused]], const char *key, long long value) noexcept final {
     sb_printf(&sb, "%s\t", key);
+    sb_printf(&sb, "%lld", value);
+    sb_printf(&sb, "\n");
+  }
+
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, double value) noexcept override {
+    sb_printf(&sb, "%s.%s\t", key, type_tag);
+    sb_printf(&sb, "%.3f", value);
+    sb_printf(&sb, "\n");
+  }
+
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, long long int value) noexcept override {
+    sb_printf(&sb, "%s.%s\t", key, type_tag);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "\n");
   }
