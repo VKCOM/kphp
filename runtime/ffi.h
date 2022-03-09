@@ -51,6 +51,12 @@ struct CDataPtr {
     return c_value == reinterpret_cast<T*>(1);
   }
 
+  // allow `T*` ptr to `void*` ptr conversion
+  operator CDataPtr<void> () { return CDataPtr<void>(c_value); }
+
+  // allow `T*` ptr to `const T*` ptr conversion
+  operator CDataPtr<const T> () { return CDataPtr<const T>(c_value); }
+
   // construction FFI pointer from KPHP null value
   CDataPtr(Optional<bool> v) {
     if (!v.is_null()) {
@@ -316,6 +322,7 @@ template<> struct ffi_tag<float>{};
 template<> struct ffi_tag<double>{};
 template<> struct ffi_tag<char>{};
 template<> struct ffi_tag<const char*>{};
+template<> struct ffi_tag<const void*>{};
 template<> struct ffi_tag<void*>{};
 template<class T> struct ffi_tag<C$FFI$CData<T>>{};
 
@@ -331,12 +338,16 @@ inline int64_t ffi_php2c(int64_t v, ffi_tag<int64_t>) { return v; }
 inline float ffi_php2c(double v, ffi_tag<float>) { return static_cast<float>(v); }
 inline double ffi_php2c(double v, ffi_tag<double>) { return v; }
 inline const char* ffi_php2c(const string &v, ffi_tag<const char*>) { return v.c_str(); }
+inline const void* ffi_php2c(const string &v, ffi_tag<const void*>) { return v.c_str(); }
 
 template<class T>
 auto ffi_php2c(class_instance<C$FFI$CData<T>> v, ffi_tag<C$FFI$CData<T>>) { return v->c_value; }
 
 template<class T>
 void *ffi_php2c(CDataPtr<T> v, ffi_tag<void*>) { return v.c_value; }
+
+template<class T>
+const void *ffi_php2c(CDataPtr<const T> v, ffi_tag<const void*>) { return v.c_value; }
 
 template<class T>
 T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<T*>>) { return v.c_value; }

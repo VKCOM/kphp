@@ -309,6 +309,9 @@ bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_ty
       if (php_expr->type() == op_null) {
         return true;
       }
+      if (!ffi_type->members[0]->is_const() && php_type->ffi_const_flag()) {
+        return false;
+      }
       if (ffi_type->members[0]->kind == FFITypeKind::Void && ffi_type->num == 1) {
         return true;
       }
