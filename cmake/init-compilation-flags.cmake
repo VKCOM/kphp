@@ -94,6 +94,9 @@ add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     add_compile_options(-march=sandybridge -fno-common)
     add_link_options(-fno-common)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    add_compile_options(-march=armv8.2-a+crypto+fp16+rcpc+dotprod+ssbs -fno-common -fsigned-char)
+    add_link_options(-fno-common)
 endif()
 
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare

@@ -130,6 +130,9 @@ void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
     static_cast<void>(cxx_flags);
     ld_flags += " -lcurl";
+#elif defined(__aarch64__)
+    static_cast<void>(cxx_flags);
+    ld_flags += " -lcurl";
 #else
     // TODO make it as an option?
     const std::string curl_dir = "/opt/curl7600";
@@ -287,6 +290,8 @@ void CompilerSettings::init() {
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
+#elif __aarch64__
+  ss << " -march=armv8.2-a+crypto+fp16+rcpc+dotprod+ssbs";
 #endif
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
@@ -326,10 +331,14 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-#ifdef __arm64__
+#if defined(__arm64__) || defined(__aarch64__)
+#if defined(__APPLE__)
   // for development under M1, manual installation of libucontext is needed
   // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
+#else
+  ld_flags.value_ += " -lucontext";
+#endif
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};

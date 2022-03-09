@@ -14,7 +14,7 @@
 #define makecontext_portable makecontext
 #define swapcontext_portable swapcontext
 
-#elif defined(__arm64__)
+#elif defined(__arm64__) || defined(__aarch64__)
 // for M1, we can't use native makecontext() and others: they compile, but hang up when called
 // instead, we require the ucontext library: https://github.com/kaniini/libucontext
 // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html

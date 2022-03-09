@@ -78,7 +78,7 @@ void crypto_aarch64_aes256_set_encrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t k
 void crypto_aarch64_aes256_set_decrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]) {
   crypto_aarch64_aes256_set_encrypt_key(vk_ctx, key);
 
-  unsigned char *a = align16(&vk_ctx->u.ctx.a);
+  unsigned char *a = static_cast<unsigned char *>(align16(&vk_ctx->u.ctx.a));
   for (int i = 1; i <= 13; i++) {
     asm volatile("mov x9, %[key] ;"
                  "ld1 {v0.16b}, [x9] ;"
@@ -505,6 +505,10 @@ static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t *vk_ctx, 
 }
 
 void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[16], uint64_t offset) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
   unsigned char iv_copy[16], u[16];
   memcpy(iv_copy, iv, 16);
   unsigned long long *p = (unsigned long long *)(iv_copy + 8);
@@ -536,4 +540,7 @@ void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
       *out++ = (*in++) ^ u[i++];
     } while (i < l);
   }
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 }

@@ -53,7 +53,7 @@ int fast_backtrace (void **buffer, int size) {
 #error "Unsupported arch"
 #endif
 
-#if defined(__APPLE__)
+#if defined(__aarch64__) || defined(__APPLE__)
 int fast_backtrace_without_recursions(void **, int) noexcept {
   return 0;
 }

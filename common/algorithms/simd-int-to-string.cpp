@@ -276,6 +276,7 @@ char *simd_int64_to_string(int64_t value, char *out_buffer) {
 #include <cstdio>
 #include <cstring>
 #include <array>
+#include <cinttypes>
 
 template <size_t S, typename T>
 inline int simd_value_to_string(char *out_buffer, const char* format, T value) noexcept {
@@ -294,11 +295,11 @@ char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
 }
 
 char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
-  return out_buffer + simd_value_to_string<21>(out_buffer, "%llu", value);
+  return out_buffer + simd_value_to_string<21>(out_buffer, "%" PRIu64, value);
 }
 
 char *simd_int64_to_string(int64_t value, char *out_buffer) {
-  return out_buffer + simd_value_to_string<21>(out_buffer, "%lld", value);
+  return out_buffer + simd_value_to_string<21>(out_buffer, "%" PRId64, value);
 }
 
 #endif

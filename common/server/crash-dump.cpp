@@ -62,7 +62,6 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 
 static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, void *ucontext) {
 #if defined(__arm64__)    // Apple M1
-  (void)ucontext;
   crash_dump_write_reg(LITERAL_WITH_LENGTH("APPLE_M1_SUPPORTED="), 0, buffer);
 
 #elif defined(__APPLE__)
@@ -116,6 +115,8 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
   
 #elif defined(__aarch64__)
+  const auto *uc = static_cast<ucontext_t_portable *>(ucontext);
+
   crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext.sp, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("PC=0x"), uc->uc_mcontext.pc, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("PSTATE=0x"), uc->uc_mcontext.pstate, buffer);
