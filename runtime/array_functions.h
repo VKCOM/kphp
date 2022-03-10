@@ -7,7 +7,6 @@
 #include <climits>
 #include <numeric>
 
-#include "common/type_traits/constexpr_if.h"
 #include "common/type_traits/function_traits.h"
 #include "common/vector-product.h"
 
@@ -1449,14 +1448,15 @@ void f$natsort(array<T> &a) {
 
 template<class T, class ReturnT>
 ReturnT f$array_sum(const array<T> &a) {
-  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+  static_assert(!std::is_same_v<T, int>, "int is forbidden");
 
   ReturnT result = 0;
   for (const auto &it : a) {
-    result += vk::constexpr_if(
-      std::is_same<T, int64_t>{},
-      [&it] { return it.get_value(); },
-      [&it] { return f$floatval(it.get_value()); });
+    if constexpr (std::is_same_v<T, int64_t>) {
+      result += it.get_value();
+    } else {
+      result += f$floatval(it.get_value());
+    }
   }
   return result;
 }

@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "common/tl/constants/common.h"
-#include "common/type_traits/constexpr_if.h"
 
 #include "runtime/include.h"
 #include "runtime/interface.h"
@@ -531,9 +530,11 @@ struct tl_Dictionary_impl {
     int64_t n = v.count();
     f$store_int(n);
     for (auto it = v.begin(); it != v.end(); ++it) {
-      KeyT().typed_store(vk::constexpr_if(std::integral_constant<bool, std::is_same<KeyT, t_String>::value>{},
-                                          [&] { return it.get_key().to_string(); },
-                                          [&] { return it.get_key().to_int(); }));
+      if constexpr (std::is_same_v<KeyT, t_String>) {
+        KeyT{}.typed_store(it.get_key().to_string());
+      } else {
+        KeyT{}.typed_store(it.get_key().to_int());
+      }
       store_magic_if_not_bare(inner_value_magic);
       value_state.typed_store(it.get_value());
     }
