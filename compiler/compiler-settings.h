@@ -122,7 +122,7 @@ public:
   KphpOption<std::string> static_lib_out_dir;
 
   KphpOption<std::string> composer_root;
-  KphpOption<bool> composer_no_dev;
+  KphpOption<bool> composer_autoload_dev;
 
   KphpOption<bool> ffi_enabled;
 

@@ -531,10 +531,7 @@ void CompilerCore::init_composer_class_loader() {
     return;
   }
 
-  // we use negated "no-dev" since it's spelled like this in composer CLI;
-  // remove the negation here and imply that it's "use-dev"
-  bool use_dev = !settings().composer_no_dev.get();
-  composer_class_loader.set_use_dev(use_dev);
+  composer_class_loader.set_use_dev(settings().composer_autoload_dev.get());
 
   composer_class_loader.load_root_file(settings().composer_root.get());
 

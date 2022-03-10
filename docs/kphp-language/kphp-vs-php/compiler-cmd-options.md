@@ -146,9 +146,9 @@ Show codegeneration progress, each step, line by line, default **0**.
 A folder that contains *composer.json* file and *vendor/* folder, default **empty**.  
 If empty, KPHP won't search for Composer modules at all, so specify this option to enable psr-4 [autoload](../../kphp-language/kphp-vs-php/reachability-compilation.md#class-autoloading-and-composer-modules).
 
-<aside>--composer-no-dev / KPHP_COMPOSER_NO_DEV = 0 | 1</aside>
+<aside>--composer-autoload-dev / KPHP_COMPOSER_AUTOLOAD_DEV = 0 | 1</aside>
 
-Simulate the *-no-dev* flag behavior when handling Composer files, default **0**.
+Include autoload-dev section for the root Composer file, default **0**.
 
 <aside>--require-functions-typing / KPHP_REQUIRE_FUNCTIONS_TYPING = 0 | 1</aside>
 
