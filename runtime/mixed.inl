@@ -1421,7 +1421,7 @@ void mixed::unset(int64_t int_key) {
     return;
   }
 
-  return as_array().unset(int_key);
+  as_array().unset(int_key);
 }
 
 template <class ...MaybeHash>
@@ -1433,7 +1433,7 @@ void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
     return;
   }
 
-  return as_array().unset(string_key, maybe_hash...);
+  as_array().unset(string_key, maybe_hash...);
 }
 
 void mixed::unset(const mixed &v) {
@@ -1446,25 +1446,30 @@ void mixed::unset(const mixed &v) {
 
   switch (v.get_type()) {
     case type::NUL:
-      return as_array().unset(string());
+      as_array().unset(string());
+      break;
     case type::BOOLEAN:
-      return as_array().unset(static_cast<int64_t>(v.as_bool()));
+      as_array().unset(static_cast<int64_t>(v.as_bool()));
+      break;
     case type::INTEGER:
-      return as_array().unset(v.as_int());
+      as_array().unset(v.as_int());
+      break;
     case type::FLOAT:
-      return as_array().unset(static_cast<int64_t>(v.as_double()));
+      as_array().unset(static_cast<int64_t>(v.as_double()));
+      break;
     case type::STRING:
-      return as_array().unset(v.as_string());
+      as_array().unset(v.as_string());
+      break;
     case type::ARRAY:
       php_warning("Illegal offset type array");
-      return;
+      break;
     default:
       __builtin_unreachable();
   }
 }
 
 void mixed::unset(double double_key) {
-  return unset(static_cast<int64_t>(double_key));
+  unset(static_cast<int64_t>(double_key));
 }
 
 array<mixed>::const_iterator mixed::begin() const {
