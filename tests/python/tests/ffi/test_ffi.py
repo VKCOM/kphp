@@ -185,6 +185,9 @@ class TestFFI(KphpCompilerAutoTestCase):
     def test_pointer_null_as_ptr(self):
         self.ffi_build_and_compare_with_php('php/pointer/null_as_ptr.php', shared_libs=['pointers'])
 
+    def test_pointer_null_cdata(self):
+        self.ffi_build_and_compare_with_php('php/pointer/null_cdata.php', shared_libs=['pointers'])
+
     def test_pointer_primitive_ptr_arg(self):
         self.ffi_build_and_compare_with_php('php/pointer/primitive_ptr_arg.php', shared_libs=['pointers'])
 

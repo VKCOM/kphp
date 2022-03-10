@@ -1,9 +1,14 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "pointers.h"
 
 SomeData *nullptr_data(void) {
   return (SomeData*)0;
+}
+
+void uint64_memset(uint64_t* ptr, uint8_t v) {
+  memset(ptr, v, 8);
 }
 
 uint64_t intptr_addr_value(int *ptr) {
