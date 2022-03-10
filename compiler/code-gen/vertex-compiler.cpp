@@ -237,8 +237,8 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
       return;
     }
     std::string e = gen_unique_name("e");
-    W << "auto " << e << " = std::move(CurException);" << NL <<
-         dst << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL;
+    W << BEGIN << "auto " << e << " = std::move(CurException);" << NL <<
+         dst << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL << END << NL;
     // we don't allow catching arbitrary classes, but we don't check
     // interfaces at compile time; to be on the safe side, check that
     // exception dynamic_cast succeeded
