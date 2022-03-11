@@ -309,7 +309,7 @@ void CompilerSettings::init() {
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib", "mysqlclient", "numa"};
+  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib", "mysqlclient"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -333,6 +333,7 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
   external_libs.emplace_back("iconv");
 #else
+  external_static_libs.emplace_back("numa");
   external_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
   external_libs.emplace_back("rt");
