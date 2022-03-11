@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
@@ -67,6 +68,7 @@
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/lease-context.h"
+#include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-lease.h"
 #include "server/php-master-warmup.h"
@@ -2054,6 +2056,65 @@ int main_args_handler(int i, const char *long_option) {
       vk::singleton<statshouse::WorkerStatsBuffer>::get().enable();
       return 0;
     }
+    case 2027: {
+#if defined(__APPLE__)
+      kprintf("--%s option: NUMA is not available on macOS\n", long_option);
+      return -1;
+#else
+      if (numa_available() != 0) {
+        kprintf("--%s option: NUMA is not available on the host\n", long_option);
+        return -1;
+      }
+      int numa_node_id = -1;
+      try {
+        numa_node_id = std::stoi(optarg);
+      } catch (const std::exception &e) {
+        kprintf("--%s option: parse error: %s\n", long_option, e.what());
+        return -1;
+      }
+
+      char *colon = strchr(optarg, ':');
+      if (colon == nullptr) {
+        kprintf("--%s option: can't find ':'\n", long_option);
+        return -1;
+      }
+      vk::string_view cpus(colon + 1);
+      cpus = vk::trim(cpus);
+      std::string cpus_trimmed(cpus.data(), cpus.size());
+      bitmask *cpu_mask = numa_parse_cpustring(cpus_trimmed.c_str());
+      if (cpu_mask == nullptr) {
+        kprintf("--%s option: can't parse cpu string '%s'\n", long_option, cpus_trimmed.c_str());
+        return -1;
+      }
+      if (numa_bitmask_equal(cpu_mask, numa_no_nodes_ptr)) {
+        kprintf("--%s option: cpu set is empty\n", long_option);
+        return -1;
+      }
+
+      bool ok = vk::singleton<NumaConfiguration>::get().add_numa_node(numa_node_id, cpu_mask);
+      return ok ? 0 : -1;
+#endif
+    }
+    case 2028: {
+#if defined(__APPLE__)
+      kprintf("--%s option: NUMA is not available on macOS\n", long_option);
+      return -1;
+#else
+      if (numa_available() != 0) {
+        kprintf("--%s option: NUMA is not available on the host\n", long_option);
+        return -1;
+      }
+      if (strcmp(optarg, "local") == 0) {
+        vk::singleton<NumaConfiguration>::get().set_memory_policy(NumaConfiguration::MemoryPolicy::local);
+      } else if (strcmp(optarg, "bind") == 0) {
+        vk::singleton<NumaConfiguration>::get().set_memory_policy(NumaConfiguration::MemoryPolicy::bind);
+      } else {
+        kprintf("--%s option: unexpected numa memory policy %s\n", long_option, optarg);
+        return -1;
+      }
+      return 0;
+#endif
+    }
     default:
       return -1;
   }
@@ -2132,6 +2193,16 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("use-utf8", no_argument, 2024, "Use UTF8");
   parse_option("xgboost-model-path-experimental", required_argument, 2025, "intended for tests, don't use it for now!");
   parse_option("statshouse-client", required_argument, 2026, "host and port for statshouse client (host:port or just :port to use localhost)");
+  parse_option("numa-node-to-bind", required_argument, 2027, "NUMA node description for binding workers to its cpu cores / memory "
+                                                             "in format '<numa_node_id>: <cpus>'.\n"
+                                                             "Where <numa_node_id> is a number, "
+                                                             "and <cpus> is a comma-separated list of node numbers or node ranges "
+                                                             "(see man for numa_parse_cpustring() for detailed format description)\n"
+                                                             "For example: '0: 0-27, 55-72'");
+  parse_option("numa-memory-policy", required_argument, 2028, "NUMA memory policy for workers. Takes effect only if `numa-node-to-bind` option is used. "
+                                                              "Supported polices:\n"
+                                                              "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
+                                                              "'bind' - bind to the specified node, in case out of memory raise a fatal error");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
