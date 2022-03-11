@@ -11,7 +11,10 @@
 #include "common/dl-utils-lite.h"
 
 
-bool NumaConfiguration::add_numa_node(int numa_node_id, const bitmask *cpu_mask) {
+bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe_unused]] const bitmask *cpu_mask) {
+#if defined(__APPLE__)
+  return false;
+#else
   assert(numa_available() == 0);
 
   int total_cpus = numa_num_configured_cpus();
@@ -30,9 +33,11 @@ bool NumaConfiguration::add_numa_node(int numa_node_id, const bitmask *cpu_mask)
   std::sort(allowed_cpus.begin(), allowed_cpus.end());
   allowed_cpus.erase(std::unique( allowed_cpus.begin(), allowed_cpus.end() ), allowed_cpus.end());
   return true;
+#endif
 }
 
-void NumaConfiguration::distribute_worker(int worker_index) const {
+void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) const {
+#if !defined(__APPLE__)
   assert(numa_available() == 0);
 
   int cpu = allowed_cpus[worker_index % allowed_cpus.size()];
@@ -56,6 +61,7 @@ void NumaConfiguration::distribute_worker(int worker_index) const {
       numa_set_localalloc(); // this is set by default, but let's set it here just in case
       break;
   }
+#endif
 }
 
 void NumaConfiguration::set_memory_policy(NumaConfiguration::MemoryPolicy policy) {

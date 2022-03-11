@@ -2057,15 +2057,19 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 2027: {
+#if defined(__APPLE__)
+      kprintf("--%s option: NUMA is not available on macOS\n", long_option);
+      return -1;
+#else
       if (numa_available() != 0) {
-        kprintf("--%s option: NUMA is not available on the host", long_option);
+        kprintf("--%s option: NUMA is not available on the host\n", long_option);
         return -1;
       }
       int numa_node_id = -1;
       try {
         numa_node_id = std::stoi(optarg);
       } catch (const std::exception &e) {
-        kprintf("--%s option: parse error: %s", long_option, e.what());
+        kprintf("--%s option: parse error: %s\n", long_option, e.what());
         return -1;
       }
 
@@ -2089,10 +2093,15 @@ int main_args_handler(int i, const char *long_option) {
 
       bool ok = vk::singleton<NumaConfiguration>::get().add_numa_node(numa_node_id, cpu_mask);
       return ok ? 0 : -1;
+#endif
     }
     case 2028: {
+#if defined(__APPLE__)
+      kprintf("--%s option: NUMA is not available on macOS\n", long_option);
+      return -1;
+#else
       if (numa_available() != 0) {
-        kprintf("--%s option: NUMA is not available on the host", long_option);
+        kprintf("--%s option: NUMA is not available on the host\n", long_option);
         return -1;
       }
       if (strcmp(optarg, "local") == 0) {
@@ -2104,6 +2113,7 @@ int main_args_handler(int i, const char *long_option) {
         return -1;
       }
       return 0;
+#endif
     }
     default:
       return -1;
