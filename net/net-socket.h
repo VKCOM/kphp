@@ -14,7 +14,7 @@
 
 #define PRIVILEGED_TCP_PORTS 1024
 
-extern struct in_addr settings_addr;
+extern in_addr settings_addr;
 extern int backlog;
 
 #define SM_DGRAM      0x00000001
