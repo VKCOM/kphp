@@ -46,20 +46,17 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
 #endif
 }
 
-void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) const {
+void NumaConfiguration::distribute_process([[maybe_unused]] int numa_node_id, [[maybe_unused]] const cpu_set_t &cpu_mask) const {
 #if !defined(__APPLE__)
   assert(numa_available() == 0);
 
-  int numa_node_to_bind = numa_nodes[worker_index % numa_nodes.size()];
-  const auto *cpu_mask_to_bind = &numa_node_masks[numa_node_to_bind];
-
-  int res = sched_setaffinity(0, sizeof(cpu_set_t), cpu_mask_to_bind);
+  int res = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
   dl_passert(res != -1, "Can't bind worker to cpu");
 
   switch (memory_policy) {
     case MemoryPolicy::bind: {
       auto *node_mask = numa_allocate_nodemask();
-      numa_bitmask_setbit(node_mask, numa_node_to_bind);
+      numa_bitmask_setbit(node_mask, numa_node_id);
       numa_set_membind(node_mask);
       numa_free_nodemask(node_mask);
       break;
@@ -71,10 +68,33 @@ void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) con
 #endif
 }
 
+void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) const {
+  int numa_node_to_bind = numa_nodes[worker_index % numa_nodes.size()];
+  const auto &cpu_mask_to_bind = numa_node_masks.at(numa_node_to_bind);
+
+  distribute_process(numa_node_to_bind, cpu_mask_to_bind);
+}
+
+void NumaConfiguration::distribute_master_if_needed() const {
+  if (numa_node_to_bind_master == -1) {
+    return;
+  }
+
+  dl_assert(std::count(numa_nodes.begin(), numa_nodes.end(), numa_node_to_bind_master) >= 0, "Can't find numa node to bind master, "
+                                                                                             "pass it via --numa-node-to-bind\n");
+
+  const auto &cpu_mask_to_bind = numa_node_masks.at(numa_node_to_bind_master);
+  distribute_process(numa_node_to_bind_master, cpu_mask_to_bind);
+}
+
 void NumaConfiguration::set_memory_policy(NumaConfiguration::MemoryPolicy policy) {
   memory_policy = policy;
 }
 
 bool NumaConfiguration::enabled() const {
   return inited;
+}
+
+void NumaConfiguration::set_numa_node_to_bind_master(int numa_node_id) {
+  numa_node_to_bind_master = numa_node_id;
 }
