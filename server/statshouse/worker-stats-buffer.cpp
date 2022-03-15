@@ -61,17 +61,17 @@ void WorkerStatsBuffer::add_query_stat(QueryStatKey key, double value) {
 }
 
 void WorkerStatsBuffer::make_generic_metric(std::vector<StatsHouseMetric> &metrics, const char *name, GenericQueryStatKey stat_key, size_t worker_type,
-                                            const std::vector<tag> &tags) {
+                                            long long timestamp, const std::vector<tag> &tags) {
   auto &stats_buffer = generic_query_stats[worker_type][static_cast<size_t>(stat_key)];
   if (!stats_buffer.empty()) {
-    metrics.push_back(make_statshouse_value_metrics(name, stats_buffer.get_data_and_reset_buffer(), tags));
+    metrics.push_back(make_statshouse_value_metrics(name, stats_buffer.get_data_and_reset_buffer(), timestamp, tags));
   }
 }
 
-void WorkerStatsBuffer::make_metric(std::vector<StatsHouseMetric> &metrics, const char *name, QueryStatKey stat_key, const std::vector<tag> &tags) {
+void WorkerStatsBuffer::make_metric(std::vector<StatsHouseMetric> &metrics, const char *name, QueryStatKey stat_key, long long timestamp, const std::vector<tag> &tags) {
   auto &stats_buffer = query_stats[static_cast<size_t>(stat_key)];
   if (!stats_buffer.empty()) {
-    metrics.push_back(make_statshouse_value_metrics(name, stats_buffer.get_data_and_reset_buffer(), tags));
+    metrics.push_back(make_statshouse_value_metrics(name, stats_buffer.get_data_and_reset_buffer(), timestamp, tags));
   }
 }
 
@@ -80,6 +80,8 @@ void WorkerStatsBuffer::flush() {
   std::vector<StatsHouseMetric> metrics;
   const char *hostname = kdb_gethostname();
 
+  long long timestamp = time(nullptr);
+
   for (size_t i = 0; i < static_cast<size_t>(WorkerType::types_count); ++i) {
     std::vector<tag> tags;
     tags.emplace_back("worker_type", i == static_cast<size_t>(WorkerType::general_worker) ? "general" : "job");
@@ -87,14 +89,14 @@ void WorkerStatsBuffer::flush() {
       tags.emplace_back("host", hostname);
     }
 
-    make_generic_metric(metrics, "kphp_requests_outgoing_queries", GenericQueryStatKey::outgoing_queries, i, tags);
-    make_generic_metric(metrics, "kphp_requests_outgoing_long_queries", GenericQueryStatKey::outgoing_long_queries, i, tags);
-    make_generic_metric(metrics, "kphp_requests_script_time", GenericQueryStatKey::script_time, i, tags);
-    make_generic_metric(metrics, "kphp_requests_net_time", GenericQueryStatKey::net_time, i, tags);
+    make_generic_metric(metrics, "kphp_requests_outgoing_queries", GenericQueryStatKey::outgoing_queries, i, timestamp, tags);
+    make_generic_metric(metrics, "kphp_requests_outgoing_long_queries", GenericQueryStatKey::outgoing_long_queries, i, timestamp, tags);
+    make_generic_metric(metrics, "kphp_requests_script_time", GenericQueryStatKey::script_time, i, timestamp, tags);
+    make_generic_metric(metrics, "kphp_requests_net_time", GenericQueryStatKey::net_time, i, timestamp, tags);
 
-    make_generic_metric(metrics, "kphp_memory_script_usage", GenericQueryStatKey::memory_used, i, tags);
-    make_generic_metric(metrics, "kphp_memory_script_real_usage", GenericQueryStatKey::real_memory_used, i, tags);
-    make_generic_metric(metrics, "kphp_memory_script_total_allocated_by_curl", GenericQueryStatKey::total_allocated_by_curl, i, tags);
+    make_generic_metric(metrics, "kphp_memory_script_usage", GenericQueryStatKey::memory_used, i, timestamp, tags);
+    make_generic_metric(metrics, "kphp_memory_script_real_usage", GenericQueryStatKey::real_memory_used, i, timestamp, tags);
+    make_generic_metric(metrics, "kphp_memory_script_total_allocated_by_curl", GenericQueryStatKey::total_allocated_by_curl, i, timestamp, tags);
   }
 
   std::vector<tag> tags;
@@ -102,14 +104,14 @@ void WorkerStatsBuffer::flush() {
     tags.emplace_back("host", hostname);
   }
 
-  make_metric(metrics, "kphp_jobs_queue_time", QueryStatKey::job_wait_time, tags);
-  make_metric(metrics, "kphp_memory_job_request_usage", QueryStatKey::job_request_memory_usage, tags);
-  make_metric(metrics, "kphp_memory_job_request_real_usage", QueryStatKey::job_request_real_memory_usage, tags);
-  make_metric(metrics, "kphp_memory_job_response_usage", QueryStatKey::job_response_memory_usage, tags);
-  make_metric(metrics, "kphp_memory_job_response_real_usage", QueryStatKey::job_response_real_memory_usage, tags);
+  make_metric(metrics, "kphp_jobs_queue_time", QueryStatKey::job_wait_time, timestamp, tags);
+  make_metric(metrics, "kphp_memory_job_request_usage", QueryStatKey::job_request_memory_usage, timestamp, tags);
+  make_metric(metrics, "kphp_memory_job_request_real_usage", QueryStatKey::job_request_real_memory_usage, timestamp, tags);
+  make_metric(metrics, "kphp_memory_job_response_usage", QueryStatKey::job_response_memory_usage, timestamp, tags);
+  make_metric(metrics, "kphp_memory_job_response_real_usage", QueryStatKey::job_response_real_memory_usage, timestamp, tags);
 
-  make_metric(metrics, "kphp_memory_job_common_request_usage", QueryStatKey::job_common_request_memory_usage, tags);
-  make_metric(metrics, "kphp_memory_job_common_request_real_usage", QueryStatKey::job_common_request_real_memory_usage, tags);
+  make_metric(metrics, "kphp_memory_job_common_request_usage", QueryStatKey::job_common_request_memory_usage, timestamp, tags);
+  make_metric(metrics, "kphp_memory_job_common_request_real_usage", QueryStatKey::job_common_request_real_memory_usage, timestamp, tags);
 
   if (metrics.empty()) {
     last_send_time = std::chrono::steady_clock::now();

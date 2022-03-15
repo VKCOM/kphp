@@ -27,6 +27,6 @@ struct StatsHouseAddMetricsBatch {
   void tl_store() const;
 };
 
-StatsHouseMetric make_statshouse_value_metric(std::string &&name, double value, const std::vector<std::pair<std::string, std::string>> &tags);
+StatsHouseMetric make_statshouse_value_metric(std::string &&name, double value, long long timestamp, const std::vector<std::pair<std::string, std::string>> &tags);
 
-StatsHouseMetric make_statshouse_value_metrics(std::string &&name, std::vector<double> &&value, const std::vector<std::pair<std::string, std::string>> &tags);
+StatsHouseMetric make_statshouse_value_metrics(std::string &&name, std::vector<double> &&value, long long timestamp, const std::vector<std::pair<std::string, std::string>> &tags);

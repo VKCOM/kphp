@@ -18,10 +18,15 @@
 
 namespace {
 
+constexpr int STATSHOUSE_HEADER_OFFSET = 3 * sizeof(int32_t); // for magic, fields_mask and vector size
+constexpr int STATSHOUSE_UDP_BUFFER_THRESHOLD = static_cast<int>(65507 * 0.8); // 80% of max UDP packet size
+
 class statshouse_stats_t : public stats_t {
 public:
   explicit statshouse_stats_t(const std::vector<std::pair<std::string, std::string>> &tags)
-    : tags(tags) {}
+    : tags(tags) {
+    timestamp = time(nullptr);
+  }
 
   void add_general_stat(const char *, const char *, ...) noexcept final {
     // ignore it
@@ -31,16 +36,29 @@ public:
     return false;
   }
 
-  int get_counter() const {
-    return counter;
+  void flush() {
+    auto metrics_batch = StatsHouseAddMetricsBatch{.fields_mask = vk::tl::statshouse::add_metrics_batch_fields_mask::ALL, .metrics_size = counter};
+    vk::tl::store_to_buffer(sb.buff, STATSHOUSE_HEADER_OFFSET, metrics_batch);
+    vk::singleton<StatsHouseClient>::get().send_metrics(sb.buff, sb.pos);
+
+    sb.pos = STATSHOUSE_HEADER_OFFSET;
+    counter = 0;
+  }
+
+  void flush_if_needed() {
+    if (sb.pos < STATSHOUSE_UDP_BUFFER_THRESHOLD) {
+      return;
+    }
+    flush();
   }
 
 protected:
   void add_stat(char type [[maybe_unused]], const char *key, double value) noexcept final {
-    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, tags);
+    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, timestamp, tags);
     auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
     sb.pos += len;
     ++counter;
+    flush_if_needed();
   }
 
   void add_stat(char type, const char *key, long long value) noexcept final {
@@ -49,10 +67,11 @@ protected:
 
   void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, double value) noexcept final {
     std::vector<std::pair<std::string, std::string>> metric_tags = {{"type", std::string(type_tag)}, {"host", std::string(kdb_gethostname())}};
-    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, metric_tags);
+    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, timestamp, metric_tags);
     auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
     sb.pos += len;
     ++counter;
+    flush_if_needed();
   }
 
   void add_stat_with_tag_type(char type, const char *key, const char *type_tag, long long value) noexcept final {
@@ -60,30 +79,19 @@ protected:
   }
 
   void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept final {
-    auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), tags);
+    auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), timestamp, tags);
     auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size - sb.pos, metric);
     sb.pos += len;
     ++counter;
+    flush_if_needed();
   }
 
 private:
   int counter{0};
+  long long timestamp;
   const std::vector<std::pair<std::string, std::string>> &tags;
 };
 
-std::pair<char *, int> prepare_statshouse_stats(statshouse_stats_t &&stats) {
-  stats.stats_prefix = "kphp";
-  char *buf = get_engine_default_prepare_stats_buffer();
-
-  sb_init(&stats.sb, buf, STATS_BUFFER_LEN);
-  constexpr int offset = 3 * sizeof(int32_t); // for magic, fields_mask and vector size
-  stats.sb.pos = offset;
-  prepare_common_stats_with_tag_mask(&stats, stats_tag_kphp_server);
-
-  auto metrics_batch = StatsHouseAddMetricsBatch{.fields_mask = vk::tl::statshouse::add_metrics_batch_fields_mask::ALL, .metrics_size = stats.get_counter()};
-  vk::tl::store_to_buffer(stats.sb.buff, offset, metrics_batch);
-  return {buf, stats.sb.pos};
-}
 } // namespace
 
 void StatsHouseClient::set_port(int value) {
@@ -123,8 +131,14 @@ bool StatsHouseClient::init_connection() {
 }
 
 void StatsHouseClient::master_send_metrics() {
-  auto [result, len] = prepare_statshouse_stats(statshouse_stats_t{tags});
-  send_metrics(result, len);
+  statshouse_stats_t stats{tags};
+  stats.stats_prefix = "kphp";
+  char *buf = get_engine_default_prepare_stats_buffer();
+
+  sb_init(&stats.sb, buf, STATS_BUFFER_LEN);
+  stats.sb.pos = STATSHOUSE_HEADER_OFFSET;
+  prepare_common_stats_with_tag_mask(&stats, stats_tag_kphp_server);
+  stats.flush();
 }
 
 void StatsHouseClient::send_metrics(char *result, int len) {
