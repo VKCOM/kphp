@@ -1639,6 +1639,11 @@ char **get_runtime_options(int *count) noexcept;
 
 
 void init_all() {
+  auto &numa = vk::singleton<NumaConfiguration>::get();
+  if (numa.enabled()) {
+    numa.distribute_master_if_needed();
+  }
+
   srand48((long)cycleclock_now());
 
   //init pending_http_queue
@@ -1725,14 +1730,14 @@ int parse_numeric_option(const char *option_name, T min_value, T max_value, cons
   try {
     result = std::is_floating_point<T>{} ? static_cast<T>(std::stod(optarg)) : static_cast<T>(std::stoi(optarg));
   } catch (const std::exception &e) {
-    kprintf("--%s option: parse error: %s", option_name, e.what());
+    kprintf("--%s option: parse error: %s\n", option_name, e.what());
     return -1;
   }
   if (min_value <= result && result <= max_value) {
     setter(result);
     return 0;
   }
-  kprintf("--%s option: the argument value should be in [%s; %s]", option_name, std::to_string(min_value).c_str(), std::to_string(max_value).c_str());
+  kprintf("--%s option: the argument value should be in [%s; %s]\n", option_name, std::to_string(min_value).c_str(), std::to_string(max_value).c_str());
   return -1;
 }
 
@@ -2115,6 +2120,29 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
 #endif
     }
+    case 2029: {
+#if defined(__APPLE__)
+      kprintf("--%s option: NUMA is not available on macOS\n", long_option);
+      return -1;
+#else
+      if (numa_available() != 0) {
+        kprintf("--%s option: NUMA is not available on the host\n", long_option);
+        return -1;
+      }
+      auto &numa = vk::singleton<NumaConfiguration>::get();
+      if (!numa.enabled()) {
+        kprintf("--%s option: NUMA configuration is disabled, pass --numa-node-to-bind first\n", long_option);
+        return -1;
+      }
+      int res = parse_numeric_option(optarg, 0, numa_max_node(), [&](int numa_node) {
+        numa.set_numa_node_to_bind_master(numa_node);
+      });
+      if (res < 0) {
+        return -1;
+      }
+      return 0;
+#endif
+    }
     default:
       return -1;
   }
@@ -2203,6 +2231,8 @@ void parse_main_args(int argc, char *argv[]) {
                                                               "Supported polices:\n"
                                                               "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
                                                               "'bind' - bind to the specified node, in case out of memory raise a fatal error");
+  parse_option("numa-bind-master", required_argument, 2029, "NUMA node to bind master process to. Takes effect only if `numa-node-to-bind` option is used.");
+
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
