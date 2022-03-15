@@ -1725,14 +1725,14 @@ int parse_numeric_option(const char *option_name, T min_value, T max_value, cons
   try {
     result = std::is_floating_point<T>{} ? static_cast<T>(std::stod(optarg)) : static_cast<T>(std::stoi(optarg));
   } catch (const std::exception &e) {
-    kprintf("--%s option: parse error: %s", option_name, e.what());
+    kprintf("--%s option: parse error: %s\n", option_name, e.what());
     return -1;
   }
   if (min_value <= result && result <= max_value) {
     setter(result);
     return 0;
   }
-  kprintf("--%s option: the argument value should be in [%s; %s]", option_name, std::to_string(min_value).c_str(), std::to_string(max_value).c_str());
+  kprintf("--%s option: the argument value should be in [%s; %s]\n", option_name, std::to_string(min_value).c_str(), std::to_string(max_value).c_str());
   return -1;
 }
 

@@ -2,12 +2,12 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "server/numa-configuration.h"
+
 #include <algorithm>
 #include <cassert>
-#include <sched.h>
 
 #include "common/kprintf.h"
-#include "server/numa-configuration.h"
 #include "common/dl-utils-lite.h"
 
 
@@ -34,7 +34,7 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
         kprintf("CPU #%d belongs to %d NUMA node, but %d is given\n", cpu, actual_numa_node, numa_node_id);
         return false;
       }
-      CPU_SET(cpu, &numa_node_masks[numa_node_id]);
+      CPU_SET(cpu, &numa_node_masks[numa_node_id]); // prepare cpu bitmask
     }
   }
 
@@ -46,20 +46,17 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
 #endif
 }
 
-void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) const {
+void NumaConfiguration::distribute_process([[maybe_unused]] int numa_node_id, [[maybe_unused]] const cpu_set_t &cpu_mask) const {
 #if !defined(__APPLE__)
   assert(numa_available() == 0);
 
-  int numa_node_to_bind = numa_nodes[worker_index % numa_nodes.size()];
-  const auto *cpu_mask_to_bind = &numa_node_masks[numa_node_to_bind];
-
-  int res = sched_setaffinity(0, sizeof(cpu_set_t), cpu_mask_to_bind);
+  int res = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
   dl_passert(res != -1, "Can't bind worker to cpu");
 
   switch (memory_policy) {
     case MemoryPolicy::bind: {
       auto *node_mask = numa_allocate_nodemask();
-      numa_bitmask_setbit(node_mask, numa_node_to_bind);
+      numa_bitmask_setbit(node_mask, numa_node_id);
       numa_set_membind(node_mask);
       numa_free_nodemask(node_mask);
       break;
@@ -71,10 +68,21 @@ void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) con
 #endif
 }
 
+void NumaConfiguration::distribute_worker(int worker_index) const {
+  int numa_node_to_bind = get_worker_numa_node(worker_index);
+  const auto &cpu_mask_to_bind = numa_node_masks.at(numa_node_to_bind);
+
+  distribute_process(numa_node_to_bind, cpu_mask_to_bind);
+}
+
 void NumaConfiguration::set_memory_policy(NumaConfiguration::MemoryPolicy policy) {
   memory_policy = policy;
 }
 
 bool NumaConfiguration::enabled() const {
   return inited;
+}
+
+int NumaConfiguration::get_worker_numa_node(int worker_index) const {
+  return numa_nodes[worker_index % numa_nodes.size()];
 }
