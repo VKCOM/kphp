@@ -61,10 +61,12 @@ public:
   void flush_if_needed();
   void enable();
   using tag = std::pair<std::string, std::string>;
+
 private:
   void flush();
-  void make_generic_metric(std::vector<StatsHouseMetric> &metrics, const char *name, GenericQueryStatKey stat_key, size_t worker_type, const std::vector<tag> &tags);
-  void make_metric(std::vector<StatsHouseMetric> &metrics, const char* name, QueryStatKey stat_key, const std::vector<tag> &tags);
+  void make_generic_metric(std::vector<StatsHouseMetric> &metrics, const char *name, GenericQueryStatKey stat_key, size_t worker_type,
+                           const std::vector<tag> &tags);
+  void make_metric(std::vector<StatsHouseMetric> &metrics, const char *name, QueryStatKey stat_key, const std::vector<tag> &tags);
 
   std::array<std::array<StatsBuffer, static_cast<size_t>(GenericQueryStatKey::types_count)>, static_cast<size_t>(WorkerType::types_count)> generic_query_stats;
   std::array<StatsBuffer, static_cast<size_t>(QueryStatKey::types_count)> query_stats;
