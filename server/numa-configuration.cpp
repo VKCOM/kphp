@@ -17,8 +17,16 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
 #else
   assert(numa_available() == 0);
 
-  int total_cpus = numa_num_configured_cpus();
-  allowed_cpus.reserve(total_cpus);
+  if (!inited) {
+    total_cpus = numa_num_configured_cpus();
+    total_numa_nodes = numa_num_configured_nodes();
+    numa_node_masks.resize(total_numa_nodes);
+    for (auto &mask : numa_node_masks) {
+      CPU_ZERO(&mask);
+    }
+    inited = true;
+  }
+
   for (int cpu = 0; cpu < total_cpus; ++cpu) {
     if (numa_bitmask_isbitset(cpu_mask, cpu)) {
       int actual_numa_node = numa_node_of_cpu(cpu);
@@ -26,12 +34,14 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
         kprintf("CPU #%d belongs to %d NUMA node, but %d is given\n", cpu, actual_numa_node, numa_node_id);
         return false;
       }
-      allowed_cpus.emplace_back(cpu);
+      CPU_SET(cpu, &numa_node_masks[numa_node_id]);
     }
   }
+
+  numa_nodes.emplace_back(numa_node_id);
   // remove duplicates:
-  std::sort(allowed_cpus.begin(), allowed_cpus.end());
-  allowed_cpus.erase(std::unique( allowed_cpus.begin(), allowed_cpus.end() ), allowed_cpus.end());
+  std::sort(numa_nodes.begin(), numa_nodes.end());
+  numa_nodes.erase(std::unique( numa_nodes.begin(), numa_nodes.end() ), numa_nodes.end());
   return true;
 #endif
 }
@@ -40,19 +50,16 @@ void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) con
 #if !defined(__APPLE__)
   assert(numa_available() == 0);
 
-  int cpu = allowed_cpus[worker_index % allowed_cpus.size()];
+  int numa_node_to_bind = numa_nodes[worker_index % numa_nodes.size()];
+  const auto *cpu_mask_to_bind = &numa_node_masks[numa_node_to_bind];
 
-  cpu_set_t cpu_mask;
-  CPU_ZERO(&cpu_mask);
-  CPU_SET(cpu, &cpu_mask);
-  int res = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
+  int res = sched_setaffinity(0, sizeof(cpu_set_t), cpu_mask_to_bind);
   dl_passert(res != -1, "Can't bind worker to cpu");
 
   switch (memory_policy) {
     case MemoryPolicy::bind: {
-      int numa_node = numa_node_of_cpu(cpu);
       auto *node_mask = numa_allocate_nodemask();
-      numa_bitmask_setbit(node_mask, numa_node);
+      numa_bitmask_setbit(node_mask, numa_node_to_bind);
       numa_set_membind(node_mask);
       numa_free_nodemask(node_mask);
       break;
@@ -69,5 +76,5 @@ void NumaConfiguration::set_memory_policy(NumaConfiguration::MemoryPolicy policy
 }
 
 bool NumaConfiguration::enabled() const {
-  return !allowed_cpus.empty();
+  return inited;
 }
