@@ -134,7 +134,7 @@ size_t store_vector(bool store_size, Range &&range, Storer &&store_func = {}) {
       detail::good_for_raw_store<range_value_type<Range>>{} &&
       std::is_constructible<vk::span<const range_value_type<Range>>, Range &&>{}
     >{},
-    std::is_same<std::result_of_t<Storer(const range_value_type<Range> &)>, void>{});
+    std::is_same<std::invoke_result_t<Storer, const range_value_type<Range> &>, void>{});
 }
 
 } // namespace detail

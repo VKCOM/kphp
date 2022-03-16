@@ -17,7 +17,7 @@ template<
   typename Iter, // RandomAccessIterator
   typename Proj, // value_type(Iter) -> T
   typename Cmp   // StrictWeakOrdering(T, T)
-  = std::less<std::result_of_t<Proj(typename std::iterator_traits<Iter>::reference)>>>
+  = std::less<std::invoke_result_t<Proj, typename std::iterator_traits<Iter>::reference>>>
 void sort(Iter f, Iter l, Proj projector, Cmp cmp = Cmp()) {
   return std::sort(f, l, [&](const auto &lhs, const auto &rhs) { return cmp(projector(lhs), projector(rhs)); });
 }
@@ -35,7 +35,7 @@ template<
   typename Rng,
   typename Proj, // value_type(Rng) -> T
   typename Cmp   // StrictWeakOrdering(T, T)
-  = std::less<std::result_of_t<Proj(vk::range_value_type<Rng>)>>>
+  = std::less<std::invoke_result_t<Proj, vk::range_value_type<Rng>>>>
 void sort(Rng &&rng, Proj projector, Cmp cmp = Cmp()) {
   return vk::sort(std::begin(rng), std::end(rng), projector, cmp);
 }
