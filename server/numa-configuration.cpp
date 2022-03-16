@@ -68,8 +68,8 @@ void NumaConfiguration::distribute_process([[maybe_unused]] int numa_node_id, [[
 #endif
 }
 
-void NumaConfiguration::distribute_worker([[maybe_unused]] int worker_index) const {
-  int numa_node_to_bind = numa_nodes[worker_index % numa_nodes.size()];
+void NumaConfiguration::distribute_worker(int worker_index) const {
+  int numa_node_to_bind = get_worker_numa_node(worker_index);
   const auto &cpu_mask_to_bind = numa_node_masks.at(numa_node_to_bind);
 
   distribute_process(numa_node_to_bind, cpu_mask_to_bind);
@@ -97,4 +97,8 @@ bool NumaConfiguration::enabled() const {
 
 void NumaConfiguration::set_numa_node_to_bind_master(int numa_node_id) {
   numa_node_to_bind_master = numa_node_id;
+}
+
+int NumaConfiguration::get_worker_numa_node(int worker_index) const {
+  return numa_nodes[worker_index % numa_nodes.size()];
 }

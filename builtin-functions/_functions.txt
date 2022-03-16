@@ -1373,3 +1373,5 @@ final class FFI {
 
   private function __construct();
 }
+
+function numa_get_bound_node(): int;
