@@ -2,12 +2,12 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "server/numa-configuration.h"
+
 #include <algorithm>
 #include <cassert>
-#include <sched.h>
 
 #include "common/kprintf.h"
-#include "server/numa-configuration.h"
 #include "common/dl-utils-lite.h"
 
 
@@ -34,7 +34,7 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
         kprintf("CPU #%d belongs to %d NUMA node, but %d is given\n", cpu, actual_numa_node, numa_node_id);
         return false;
       }
-      CPU_SET(cpu, &numa_node_masks[numa_node_id]);
+      CPU_SET(cpu, &numa_node_masks[numa_node_id]); // prepare cpu bitmask
     }
   }
 
