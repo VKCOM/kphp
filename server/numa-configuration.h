@@ -4,6 +4,7 @@
 
 #if defined(__APPLE__)
 struct bitmask {};
+struct cpu_set_t {};
 #else
 #include <numa.h>
 #endif
