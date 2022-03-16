@@ -9,7 +9,6 @@ struct cpu_set_t {};
 #include <numa.h>
 #endif
 
-#include <map>
 #include <sched.h>
 #include <vector>
 
@@ -27,6 +26,7 @@ public:
   void distribute_master_if_needed() const;
   void set_numa_node_to_bind_master(int numa_node_id);
   void set_memory_policy(MemoryPolicy policy);
+
 private:
   std::vector<int> numa_nodes;
   std::vector<cpu_set_t> numa_node_masks;
