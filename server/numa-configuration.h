@@ -21,6 +21,7 @@ public:
 
   bool add_numa_node(int numa_node_id, const bitmask *cpu_mask);
   bool enabled() const;
+  int get_worker_numa_node(int worker_index) const;
   void distribute_worker(int worker_index) const;
   void distribute_master_if_needed() const;
   void set_numa_node_to_bind_master(int numa_node_id);

@@ -186,3 +186,5 @@ extern bool is_json_log_on_timeout_enabled;
 inline void f$set_json_log_on_timeout_mode(bool enabled) {
   is_json_log_on_timeout_enabled = enabled;
 }
+
+int64_t f$numa_get_bound_node();
