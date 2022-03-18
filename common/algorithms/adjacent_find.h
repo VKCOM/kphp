@@ -17,7 +17,7 @@ template<
   typename Iter, // ForwardIterator
   typename Proj, // value_type(Iter) -> T
   typename Cmp
-  = std::equal_to<std::result_of_t<Proj(typename std::iterator_traits<Iter>::reference)>>>
+  = std::equal_to<std::invoke_result_t<Proj, typename std::iterator_traits<Iter>::reference>>>
 Iter adjacent_find(Iter f, Iter l, Proj projector, Cmp cmp = Cmp()) {
   return std::adjacent_find(f, l, [&](const auto &lhs, const auto &rhs) { return cmp(projector(lhs), projector(rhs)); });
 }
@@ -35,7 +35,7 @@ template<
   typename Rng,
   typename Proj, // value_type(Rng) -> T
   typename Cmp
-  = std::equal_to<std::result_of_t<Proj(vk::range_value_type<Rng>)>>>
+  = std::equal_to<std::invoke_result_t<Proj, vk::range_value_type<Rng>>>>
 auto adjacent_find(Rng &&rng, Proj projector, Cmp cmp = Cmp()) {
   return vk::adjacent_find(std::begin(rng), std::end(rng), projector, cmp);
 }

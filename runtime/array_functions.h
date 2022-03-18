@@ -659,7 +659,7 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
 }
 
 
-template<class T, class CallbackT, class R = typename std::result_of<std::decay_t<CallbackT>(T)>::type>
+template<class T, class CallbackT, class R = typename std::invoke_result_t<std::decay_t<CallbackT>, T>>
 array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
   array<R> result(a.size());
   for (const auto &it : a) {
@@ -838,7 +838,7 @@ template<class T, class T1, class Proj>
 array<T> array_diff_impl(const array<T> &a1, const array<T1> &a2, const Proj &projector) {
   array<T> result(a1.size());
 
-  constexpr bool is_int_keys = std::is_same<std::result_of_t<Proj(T1)>, int64_t>::value;
+  constexpr bool is_int_keys = std::is_same<std::invoke_result_t<Proj, T1>, int64_t>::value;
   array<int64_t> values(array_size(is_int_keys * a2.count(), (!is_int_keys) * a2.count(), false));
 
   for (const auto &it : a2) {
