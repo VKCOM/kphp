@@ -19,7 +19,7 @@ private:
 public:
   using iterator_category = typename std::iterator_traits<Iterator>::iterator_category;
   using difference_type   = typename std::iterator_traits<Iterator>::difference_type;
-  using reference         = typename std::result_of<Mapper(typename std::iterator_traits<Iterator>::reference)>::type;
+  using reference         = typename std::invoke_result_t<Mapper, typename std::iterator_traits<Iterator>::reference>;
   using value_type        = typename std::remove_cv<typename std::remove_reference<reference>::type>::type;
   using pointer           = value_type *;
 

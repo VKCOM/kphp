@@ -56,7 +56,7 @@ public:
   }
 
   iterator_range<std::reverse_iterator<iterator >> get_reversed_range() const {
-    return {m_end, m_begin};
+    return {std::make_reverse_iterator(m_end), std::make_reverse_iterator(m_begin)};
   }
 
   difference_type size() const {

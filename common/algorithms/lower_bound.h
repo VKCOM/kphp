@@ -18,7 +18,7 @@ template<
   typename Proj, // value_type(Iter) -> U
   typename T,
   typename Cmp   // StrictWeakOrdering(U, U)
-  = std::less<typename std::result_of<Proj(typename std::iterator_traits<Iter>::reference)>::type>>
+  = std::less<typename std::invoke_result_t<Proj, typename std::iterator_traits<Iter>::reference>>>
 Iter lower_bound(Iter f, Iter l, const T &val, Proj projector, Cmp cmp = Cmp()) {
   return std::lower_bound(f, l, val, [&](const auto &lhs, const T &rhs) { return cmp(projector(lhs), rhs); });
 }
@@ -38,7 +38,7 @@ template<
   typename T,
   typename Proj, // value_type(Rng) -> T
   typename Cmp   // StrictWeakOrdering(T, T)
-  = std::less<typename std::result_of<Proj(vk::range_value_type<Rng>)>::type>>
+  = std::less<typename std::invoke_result_t<Proj, vk::range_value_type<Rng>>>>
 auto lower_bound(Rng &&rng, const T &val, Proj projector, Cmp cmp = Cmp()) -> decltype(std::begin(rng)) {
   return vk::lower_bound(std::begin(rng), std::end(rng), val, projector, cmp);
 }
