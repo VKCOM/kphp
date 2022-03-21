@@ -279,8 +279,13 @@ void check_ffi_call(VertexAdaptor<op_func_call> call) {
     // of the function if it's not a `char*` or `const char*`;
     // we'll try to give that error at the compile-time
     const auto *type = tinf::get_type(call->args()[0]);
+    int indirection = type->get_indirection();
+    if (const auto *elem_type = type->lookup_at_any_key()) {
+      type = elem_type;
+      indirection = 1;
+    }
     const auto *ffi_type = FFIRoot::get_ffi_type(type->class_type());
-    kphp_error(type->get_indirection() == 1 && ffi_type->kind == FFITypeKind::Char,
+    kphp_error(indirection == 1 && ffi_type->kind == FFITypeKind::Char,
                fmt_format("$ptr argument is {}, expected a C string compatible type",
                           type->as_human_readable()));
     return;
@@ -290,7 +295,11 @@ void check_ffi_call(VertexAdaptor<op_func_call> call) {
 bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_type, const TypeData *php_type) {
   auto php_expr = conv->expr();
 
-  if (ffi_type->is_cstring()) {
+  if (php_type->use_or_false()) {
+    return false;
+  }
+
+  if (ffi_type->is_cstring() && !php_type->use_or_null()) {
     // auto casting from PHP string to `const char*` is allowed in simple contexts
     if (conv->simple_dst && php_type->ptype() == tp_string) {
       return true;
@@ -309,7 +318,7 @@ bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_ty
       return php_type->ptype() == tp_int;
 
     case FFITypeKind::Char:
-      return php_type->ptype() == tp_string;
+      return php_type->ptype() == tp_string && !php_type->use_or_null();
 
     case FFITypeKind::Bool:
       return vk::any_of_equal(php_expr->type(), op_false, op_true) || php_type->ptype() == tp_bool;
@@ -399,6 +408,16 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_ffi_php2c_conv) {
     check_php2c_conv(vertex.as<op_ffi_php2c_conv>());
   }
+  if (auto array_get = vertex.try_as<op_ffi_array_get>()) {
+    const auto *key_type = tinf::get_type(array_get->key());
+    kphp_error(key_type->ptype() == tp_int,
+               fmt_format("ffi_array_get index type must be int, {} used instead", key_type->as_human_readable()));
+  }if (auto array_set = vertex.try_as<op_ffi_array_set>()) {
+    const auto *key_type = tinf::get_type(array_set->key());
+    kphp_error(key_type->ptype() == tp_int,
+               fmt_format("ffi_array_set index type must be int, {} used instead", key_type->as_human_readable()));
+  }
+
   if (vertex->type() == op_eq3) {
     check_eq3(vertex.as<meta_op_binary>()->lhs(), vertex.as<meta_op_binary>()->rhs());
   }

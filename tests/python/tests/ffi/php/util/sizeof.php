@@ -19,6 +19,11 @@ function test() {
     struct Qux {
       struct Baz baz;
     };
+
+    struct WithArrays {
+      struct Qux qux_arr[3];
+      uint8_t data[100];
+    };
   ');
 
   $foo = $cdef->new('struct Foo');
@@ -64,6 +69,17 @@ function test() {
   var_dump(FFI::sizeof($unsigned_long));
   var_dump(FFI::sizeof($unsigned_long_long));
   var_dump(FFI::sizeof($short));
+
+  // tests for arrays
+  $with_arrays = $cdef->new('struct WithArrays');
+  $arr = FFI::new('int[14]');
+  $arr2_size = 21;
+  $arr2 = FFI::new('double[' . $arr2_size . ']');
+  var_dump(FFI::sizeof($arr));
+  var_dump(FFI::sizeof($arr2));
+  var_dump(FFI::sizeof($with_arrays));
+  var_dump(FFI::sizeof($with_arrays->qux_arr));
+  var_dump(FFI::sizeof($with_arrays->data));
 }
 
 test();

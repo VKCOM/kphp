@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../include/common.php';
+
 function test_with_len_uint8ptr() {
   $v = FFI::new('uint32_t');
   $v->cdata = 0x78787861;
@@ -40,12 +42,20 @@ function test_without_len() {
   $ptr = FFI::cast('char*', FFI::addr($v));
   $s = FFI::string($ptr);
   var_dump($s);
-  var_dump($s == 'axa');
+  var_dump($s === 'axa');
+}
 
-  // TODO: add tests with `const char*` when #357 is resolved.
+function test_arrays() {
+  $fixed_array = FFI::new('uint8_t[3]');
+  ffi_array_set($fixed_array, 0, ord('a'));
+  ffi_array_set($fixed_array, 1, ord('z'));
+  $as_ptr = FFI::cast('char*', FFI::addr($fixed_array));
+  $s = FFI::string($as_ptr);
+  var_dump($s);
 }
 
 test_with_len_uint8ptr();
 test_with_len_int16ptr();
 test_with_len_structptr();
 test_without_len();
+test_arrays();

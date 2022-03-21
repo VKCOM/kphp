@@ -268,18 +268,6 @@ FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const I
   return result;
 }
 
-FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const AbstractDeclarator &declarator) {
-  if (declarator.type->kind == FFITypeKind::Pointer) {
-    FFIType *ptr_declarator = alloc.new_type(FFITypeKind::_pointerDeclarator);
-    ptr_declarator->num = declarator.type->num;
-    FFIType *name = alloc.new_type(FFITypeKind::Name);
-    ptr_declarator->members.emplace_back(name);
-    return combine(decl_specs, Declarator{ptr_declarator});
-  }
-
-  return nullptr;
-}
-
 FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const Declarator &declarator) {
   if (declarator.type->kind == FFITypeKind::Name) {
     FFIType *result = alloc.new_type(FFITypeKind::Var);
@@ -326,6 +314,22 @@ FFIType *ParsingDriver::combine(const Pointer &pointer, const DirectDeclarator &
   return result;
 }
 
+FFIType *ParsingDriver::combine(const Pointer &pointer, const DirectAbstractDeclarator &declarator) {
+  return combine(pointer, DirectDeclarator{declarator.type});
+}
+
+FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const AbstractDeclarator &declarator) {
+  if (declarator.type->kind == FFITypeKind::Pointer) {
+    FFIType *ptr_declarator = alloc.new_type(FFITypeKind::_pointerDeclarator);
+    ptr_declarator->num = declarator.type->num;
+    FFIType *name = alloc.new_type(FFITypeKind::Name);
+    ptr_declarator->members.emplace_back(name);
+    return combine(decl_specs, Declarator{ptr_declarator});
+  }
+
+  return combine(decl_specs, Declarator{declarator.type});;
+}
+
 FFIType *ParsingDriver::combine_array_type(FFIType *dst, FFIType *elem_type, FFIType *current) {
   dst->num = current->num;
   if (current->members[0]->kind != FFITypeKind::_arrayDeclarator) {
@@ -342,6 +346,14 @@ FFIType *ParsingDriver::make_enum_member(string_span name, int value) {
   FFIType *result = alloc.new_type(FFITypeKind::_enumMember);
   result->str = name.to_string();
   result->num = value;
+  return result;
+}
+
+FFIType *ParsingDriver::make_abstract_array_declarator(string_span size_str) {
+  FFIType *result = alloc.new_type(FFITypeKind::_arrayDeclarator);
+  result->num = parse_string_span(size_str);
+  FFIType *name = alloc.new_type(FFITypeKind::Name);
+  result->members.emplace_back(name);
   return result;
 }
 

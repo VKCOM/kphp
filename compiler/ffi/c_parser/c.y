@@ -101,6 +101,7 @@
 %type < type_ > declarator;
 %type < type_ > direct_declarator;
 %type < type_ > abstract_declarator;
+%type < type_ > direct_abstract_declarator;
 %type < type_ > parameter_type_list;
 %type < type_ > parameter_list;
 %type < type_ > parameter_declaration;
@@ -217,7 +218,7 @@ type_qualifier_list
 direct_declarator
   : IDENTIFIER { $$ = driver.make_simple_type(FFITypeKind::Name); $$->str = $1.to_string(); }
   | LPAREN declarator RPAREN { $$ = $2; }
-  | direct_declarator LBRACKET RBRACKET { $$ = driver.make_pointer(); $$ = driver.combine(Pointer{$$}, DirectDeclarator{$1}); }
+  | direct_declarator LBRACKET RBRACKET { $$ = driver.make_array_declarator($1, "-1"); }
   | direct_declarator LBRACKET INT_CONSTANT RBRACKET { $$ = driver.make_array_declarator($1, $3); }
   | direct_declarator LPAREN parameter_type_list RPAREN { $$ = driver.make_function($1, $3); }
   | direct_declarator LPAREN RPAREN { $$ = driver.make_function($1, nullptr); }
@@ -240,7 +241,16 @@ parameter_declaration
   ;
 
 abstract_declarator
-  : pointer { $$ = $1; }
+  : pointer direct_abstract_declarator { $$ = driver.combine(Pointer{$1}, DirectAbstractDeclarator{$2}); }
+  | pointer { $$ = $1; }
+  | direct_abstract_declarator { $$ = $1; }
+  ;
+
+direct_abstract_declarator
+  : LBRACKET RBRACKET { $$ = driver.make_abstract_array_declarator("-1"); }
+  | LBRACKET INT_CONSTANT RBRACKET { $$ = driver.make_abstract_array_declarator($2); }
+  | direct_abstract_declarator LBRACKET RBRACKET { $$ = driver.make_array_declarator($1, "-1"); }
+  | direct_abstract_declarator LBRACKET INT_CONSTANT RBRACKET { $$ = driver.make_array_declarator($1, $3); }
   ;
 
 struct_or_union_specifier

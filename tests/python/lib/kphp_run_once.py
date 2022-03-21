@@ -142,5 +142,7 @@ class KphpRunOnce(KphpBuilder):
                 # just open and read the file - it's easier than messing with popen, etc.
                 with open(diff_artifact.file, 'r') as f:
                     print('diff: ' + f.read())
+        with open(diff_artifact.file, 'r') as f:
+            print(f.read())
 
         return False

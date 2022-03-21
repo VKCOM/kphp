@@ -1,8 +1,8 @@
-// A Bison parser, made by GNU Bison 3.7.
+// A Bison parser, made by GNU Bison 3.7.5.
 
 // Skeleton interface for Bison LALR(1) parsers in C++
 
-// Copyright (C) 2002-2015, 2018-2020 Free Software Foundation, Inc.
+// Copyright (C) 2002-2015, 2018-2021 Free Software Foundation, Inc.
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,9 +128,9 @@
 
 /* Suppress unused-variable warnings by "using" E.  */
 #if ! defined lint || defined __GNUC__
-# define YYUSE(E) ((void) (E))
+# define YY_USE(E) ((void) (E))
 #else
-# define YYUSE(E) /* empty */
+# define YY_USE(E) /* empty */
 #endif
 
 #if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
@@ -453,17 +453,18 @@ namespace ffi {
         S_parameter_list = 102,                  // parameter_list
         S_parameter_declaration = 103,           // parameter_declaration
         S_abstract_declarator = 104,             // abstract_declarator
-        S_struct_or_union_specifier = 105,       // struct_or_union_specifier
-        S_typedef_name_or_identifier = 106,      // typedef_name_or_identifier
-        S_struct_declaration_list = 107,         // struct_declaration_list
-        S_struct_declaration = 108,              // struct_declaration
-        S_specifier_qualifier_list = 109,        // specifier_qualifier_list
-        S_struct_declarator_list = 110,          // struct_declarator_list
-        S_struct_declarator = 111,               // struct_declarator
-        S_enum_specifier = 112,                  // enum_specifier
-        S_enumerator_list = 113,                 // enumerator_list
-        S_enumerator = 114,                      // enumerator
-        S_int_value = 115                        // int_value
+        S_direct_abstract_declarator = 105,      // direct_abstract_declarator
+        S_struct_or_union_specifier = 106,       // struct_or_union_specifier
+        S_typedef_name_or_identifier = 107,      // typedef_name_or_identifier
+        S_struct_declaration_list = 108,         // struct_declaration_list
+        S_struct_declaration = 109,              // struct_declaration
+        S_specifier_qualifier_list = 110,        // specifier_qualifier_list
+        S_struct_declarator_list = 111,          // struct_declarator_list
+        S_struct_declarator = 112,               // struct_declarator
+        S_enum_specifier = 113,                  // enum_specifier
+        S_enumerator_list = 114,                 // enumerator_list
+        S_enumerator = 115,                      // enumerator
+        S_int_value = 116                        // int_value
       };
     };
 
@@ -518,7 +519,7 @@ namespace ffi {
       }
 
       /// Destroy contents, and record that is empty.
-      void clear ()
+      void clear () YY_NOEXCEPT
       {
         Base::clear ();
       }
@@ -572,7 +573,7 @@ namespace ffi {
       by_kind (kind_type t);
 
       /// Record that this symbol is empty.
-      void clear ();
+      void clear () YY_NOEXCEPT;
 
       /// Steal the symbol kind from \a that.
       void move (by_kind& that);
@@ -647,9 +648,9 @@ namespace ffi {
     {
     public:
       context (const YYParser& yyparser, const symbol_type& yyla);
-      const symbol_type& lookahead () const { return yyla_; }
-      symbol_kind_type token () const { return yyla_.kind (); }
-      const location_type& location () const { return yyla_.location; }
+      const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
+      symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
+      const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
 
       /// Put in YYARG at most YYARGN of the expected tokens, and return the
       /// number of tokens stored in YYARG.  If YYARG is null, return the
@@ -722,7 +723,7 @@ namespace ffi {
     static const signed char yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
-    static const short yydefgoto_[];
+    static const unsigned char yydefgoto_[];
 
     // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
@@ -971,8 +972,8 @@ namespace ffi {
     /// Constants.
     enum
     {
-      yylast_ = 428,     ///< Last index in yytable_.
-      yynnts_ = 30,  ///< Number of nonterminal symbols.
+      yylast_ = 430,     ///< Last index in yytable_.
+      yynnts_ = 31,  ///< Number of nonterminal symbols.
       yyfinal_ = 56 ///< Termination state number.
     };
 
@@ -986,7 +987,7 @@ namespace ffi {
 
 #line 13 "c.y"
 } // ffi
-#line 990 "yy_parser_generated.hpp"
+#line 991 "yy_parser_generated.hpp"
 
 
 

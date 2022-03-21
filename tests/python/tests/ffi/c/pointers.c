@@ -69,3 +69,11 @@ int strlen_safe(const char *s) {
   }
   return strlen(s);
 }
+
+const char* nullptr_cstr() {
+  return NULL;
+}
+
+const char* empty_cstr() {
+  return "";
+}

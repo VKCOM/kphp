@@ -111,9 +111,59 @@ C sources don't contain a `FFI_SCOPE` directive, the scope name will be automati
 so it will be almost impossible to spell that `ffi_scope` type properly.
 For both PHP and KPHP it's preferable to use named scopes. 
 
+### Array types
+
+It is possible to allocate both fixed size and dynamic sized arrays in FFI:
+
+```php
+$fixed_arr = \FFI::new('int32_t[8]');
+
+$size = 15;
+$dynamic_arr = \FFI::new("int32_t[$size]");
+$dynamic_arr2 = \FFI::new('int32_t[' . $size . ']');
+```
+
+To specify that type in a type hint, use this notation:
+
+```php
+class Example {
+  /** @var ffi_cdata<C, int32_t[]> */
+  public $ffi_arr;
+
+  /**
+   * A PHP array of FFI arrays
+   * @var ffi_cdata<C, int32_t[]>[]
+   */
+  public $array_of_ffi_arrays;
+}
+```
+
+Note that you can pass fixed size arrays as dynamic size array types.
+
+It is possible to cast a `T[]` array to a `T*` pointer.
+Unlike the pointers acquired from `FFI::cast()`, arrays retain data ownership.
+So while it is usually safe to pass `T[]` as `T*` as a function argument,
+it is better to return these values as `T[]` to avoid dangling pointers.
+
+Some operations require kphp polyfills due to the different syntax.
+
+```php
+// get element of an array (or dereference a pointer at given offset)
+// identical to $arr[$index];
+$result = ffi_array_get($arr, $index);
+
+// set element of an array (or write at the pointer at given offset)
+// identical to $arr[$index] = $value;
+ffi_array_set($arr, $index, $value);
+
+// like FFI::memcpy, but the source argument is a string, not FFI\CData
+// identical to FFI::memcpy($cdata, $php_string, $size);
+ffi_memcpy_string($cdata, $php_string, $size);
+```
+
 ### Auto conversions
 
-If PHP would apply an auto conversion, KPHP would do it too.
+If PHP applies an auto conversion, KPHP would do it too.
 
 There are 2 kinds of auto conversions:
 
@@ -139,6 +189,10 @@ When a `php2c` can happen:
 | `ffi_cdata<$scope, T*>` | `T*` | Alloc-free. |
 
 > (*) Only for function arguments, but not struct/union fields write.
+
+For int, float and bool it's also possible to use a nullable type.
+`?int` can be used as any compatible C numeric type (int8_t, etc.) with null being interpreted as 0.
+For bool types, false is used for null values.
 
 When a `c2php` can happen:
 

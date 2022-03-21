@@ -17,6 +17,9 @@ private:
   VertexPtr on_ffi_static_cast(VertexAdaptor<op_func_call> call);
   VertexPtr on_ffi_scope_cast(VertexAdaptor<op_func_call> call, ClassPtr scope_class);
 
+  VertexPtr on_ffi_array_get(VertexAdaptor<op_func_call> call);
+  VertexPtr on_ffi_array_set(VertexAdaptor<op_func_call> call);
+
   VertexPtr on_ffi_scope_call_custom(VertexAdaptor<op_func_call> call);
 
   VertexPtr on_cdata_instance_prop(ClassPtr root_class, VertexAdaptor<op_instance_prop> root);
@@ -38,4 +41,5 @@ public:
   static const TypeHint *infer_from_ffi_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class);
   static const TypeHint *infer_from_ffi_static_cast(FunctionPtr f, VertexAdaptor<op_func_call> call);
   static const TypeHint *infer_from_ffi_scope_cast(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr scope_class);
+  static const TypeHint *infer_from_ffi_array_get(FunctionPtr f, VertexAdaptor<op_func_call> call);
 };

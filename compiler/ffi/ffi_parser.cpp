@@ -124,5 +124,6 @@ std::pair<const FFIType*, FFIParseError> ffi_parse_type(const std::string &type_
   } catch (ffi::ParsingDriver::ParseError &e) {
     set_error(err, src, e);
   }
+
   return {result_type, err};
 }

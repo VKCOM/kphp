@@ -21,6 +21,10 @@ struct string_span {
 
   string_span() = default;
 
+  string_span(const char *data)
+    : data_{data}
+    , len_{std::strlen(data)} {}
+
   string_span(const char *data, const char *data_end)
     : data_{data}
     , len_{static_cast<size_t>(data_end - data)} {}
