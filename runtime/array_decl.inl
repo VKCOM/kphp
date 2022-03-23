@@ -176,7 +176,7 @@ private:
     template<class S>
     static inline auto &find_map_entry(S &self, int64_t int_key) noexcept;
     template<class S>
-    static inline auto &find_map_entry(S &self, const string &string_key, int64_t precomuted_hash) noexcept;
+    static inline auto &find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept;
 
     template<class ...Key>
     inline const T *find_map_value(Key &&... key) const noexcept;
@@ -185,7 +185,7 @@ private:
 
     inline const T &get_vector_value(int64_t int_key) const;//unsafe
     inline T &get_vector_value(int64_t int_key);//unsafe
-    inline T unset_map_value(const string &string_key, int64_t precomuted_hash);
+    inline T unset_map_value(const string &string_key, int64_t precomputed_hash);
 
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
 
@@ -284,8 +284,8 @@ public:
   void set_value(const string &string_key, T &&v) noexcept;
   void set_value(const string &string_key, const T &v) noexcept;
 
-  void set_value(const string &string_key, T &&v, int64_t precomuted_hash) noexcept;
-  void set_value(const string &string_key, const T &v, int64_t precomuted_hash) noexcept;
+  void set_value(const string &string_key, T &&v, int64_t precomputed_hash) noexcept;
+  void set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept;
 
   template<class ...Args>
   void emplace_value(const mixed &var_key, Args &&... args) noexcept;
@@ -310,7 +310,7 @@ public:
   const T *find_value(int64_t int_key) const noexcept;
   const T *find_value(int32_t key) const noexcept { return find_value(int64_t{key}); }
   const T *find_value(const string &s) const noexcept;
-  const T *find_value(const string &s, int64_t precomuted_hash) const noexcept;
+  const T *find_value(const string &s, int64_t precomputed_hash) const noexcept;
   const T *find_value(const mixed &v) const noexcept;
   const T *find_value(double double_key) const noexcept;
   const T *find_value(const const_iterator &it) const noexcept;
@@ -326,7 +326,7 @@ public:
 
   template<class K>
   const T get_value(const K &key) const;
-  const T get_value(const string &string_key, int64_t precomuted_hash) const;
+  const T get_value(const string &string_key, int64_t precomputed_hash) const;
 
   template<class ...Args>
   T &emplace_back(Args &&... args) noexcept;
