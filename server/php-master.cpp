@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <type_traits>
 #include <unistd.h>
 #include <vector>
 
@@ -53,6 +54,7 @@
 #include "runtime/instance-cache.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/http-server-context.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
@@ -79,6 +81,8 @@ extern const char *engine_tag;
 #define MAX_KILL 5
 
 #define PHP_MASTER_VERSION "0.1"
+
+DEFINE_VERBOSITY(graceful_restart)
 
 static int cpu_cnt;
 
@@ -350,9 +354,6 @@ worker_info_t *workers[WorkersControl::max_workers_count];
 Stats server_stats;
 unsigned long long dead_stime, dead_utime;
 
-int *http_fd;
-int http_fd_port;
-int (*try_get_http_fd)();
 master_state state;
 bool in_sigterm;
 
@@ -486,14 +487,10 @@ bool all_job_workers_killed() {
 
 } // namespace
 
-WorkerType start_master(int *new_http_fd, int (*new_try_get_http_fd)(), int new_http_fd_port) {
+WorkerType start_master() {
   initial_verbosity = verbosity;
 
   kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
-
-  http_fd = new_http_fd;
-  http_fd_port = new_http_fd_port;
-  try_get_http_fd = new_try_get_http_fd;
 
   vkprintf(1, "start master: begin\n");
 
@@ -582,6 +579,8 @@ int run_worker(WorkerType worker_type) {
     if (numa.enabled()) {
       numa.distribute_worker(worker_unique_id);
     }
+
+    vk::singleton<HttpServerContext>::get().dedicate_http_socket_to_worker(worker_unique_id);
 
     // TODO should we just use net_reset_after_fork()?
 
@@ -708,58 +707,59 @@ void init_sockaddr_un(sockaddr_un *unix_socket_addr, const char *name) {
 }
 
 static const sockaddr_un *get_socket_addr() {
-
   static sockaddr_un unix_socket_addr;
-  static int inited = 0;
+  static bool inited = false;
 
   if (!inited) {
     init_sockaddr_un(&unix_socket_addr, vk::singleton<ClusterName>::get().get_socket_name());
-    inited = 1;
+    inited = true;
   }
 
   return &unix_socket_addr;
 }
 
-static int send_fd_via_socket(int fd) {
+static void send_fds_via_socket(const std::vector<int> &fds) {
+  tvkprintf(graceful_restart, 1, "Graceful restart: sending http fds\n");
+
   int unix_socket_fd = socket(AF_LOCAL, SOCK_DGRAM, 0);
-  dl_passert (fd >= 0, "failed to create socket");
+  dl_passert(!fds.empty(), "failed to create socket");
 
-  msghdr msg;
-  char ccmsg[CMSG_SPACE(sizeof(fd))];
-  cmsghdr *cmsg;
-  iovec vec;  /* stupidity: must send/receive at least one byte */
-  const char *str = "x";
-  int rv;
+  const sockaddr_un *dest_addr = get_socket_addr();
 
-  msg.msg_name = (sockaddr *)get_socket_addr();
-  msg.msg_namelen = sizeof(*get_socket_addr());
+  int iov[1] = { static_cast<int>(fds.size()) }; // must send/receive at least one byte, send fds number here
+  iovec vec = {
+    .iov_base = static_cast<void *>(iov),
+    .iov_len = sizeof(int),
+  };
 
-  vec.iov_base = (void *)str;
-  vec.iov_len = 1;
-  msg.msg_iov = &vec;
-  msg.msg_iovlen = 1;
+  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_HTTP_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
 
-  /* old BSD implementations should use msg_accrights instead of
-   * msg_control; the interface is different. */
-  msg.msg_control = ccmsg;
-  msg.msg_controllen = sizeof(ccmsg);
-  cmsg = CMSG_FIRSTHDR (&msg);
+  msghdr msg = {
+    .msg_name = (void *)dest_addr,
+    .msg_namelen = sizeof(*dest_addr),
+    .msg_iov = &vec,
+    .msg_iovlen = 1,
+    .msg_control = &buf,
+    .msg_controllen = sizeof(buf),
+    .msg_flags = 0,
+  };
+
+  size_t payload_data_len = fds.size() * sizeof(int);
+
+  cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
-  cmsg->cmsg_len = CMSG_LEN (sizeof(fd));
-  *(int *)CMSG_DATA (cmsg) = fd;
+  cmsg->cmsg_len = CMSG_LEN(payload_data_len);
+  memcpy(CMSG_DATA(cmsg), fds.data(), payload_data_len);
+
   msg.msg_controllen = cmsg->cmsg_len;
 
-  msg.msg_flags = 0;
-
-  rv = (sendmsg(unix_socket_fd, &msg, 0) != -1);
-  if (rv) {
-    //why?
-    //close (fd);
+  int rv = sendmsg(unix_socket_fd, &msg, 0);
+  if (rv != -1) {
+    tvkprintf(graceful_restart, 1, "Graceful restart: http fds sent successfully\n");
   } else {
     perror("failed to send http_fd (sendmsg)");
   }
-  return rv;
 }
 
 static int sock_dgram(const char *path) {
@@ -774,41 +774,51 @@ static int sock_dgram(const char *path) {
   return fd;
 }
 
-/* receive a file descriptor over file descriptor fd */
-static int receive_fd(int fd) {
-  msghdr msg;
-  iovec iov;
-  char buf[1];
-  int rv;
-  int connfd = -1;
-  char ccmsg[CMSG_SPACE (sizeof(connfd))];
-  cmsghdr *cmsg;
+/* receive file descriptors over unix socket */
+static std::vector<int> receive_fds(int unix_socket_fd) {
+  tvkprintf(graceful_restart, 1, "Graceful restart: receiving http fds from old master\n");
 
-  iov.iov_base = buf;
-  iov.iov_len = 1;
+  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_HTTP_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
 
-  msg.msg_name = 0;
-  msg.msg_namelen = 0;
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-  /* old BSD implementations should use msg_accrights instead of
-   * msg_control; the interface is different. */
-  msg.msg_control = ccmsg;
-  msg.msg_controllen = sizeof(ccmsg); /* ? seems to work... */
+  int iobuf[1];
+  iovec iov = {
+    .iov_base = static_cast<void *>(iobuf),
+    .iov_len = sizeof(int),
+  };
 
-  rv = (int)recvmsg(fd, &msg, 0);
+  msghdr msg = {
+    .msg_name = nullptr,
+    .msg_namelen = 0,
+    .msg_iov = &iov,
+    .msg_iovlen = 1,
+    .msg_control = &buf,
+    .msg_controllen = sizeof(buf),
+    .msg_flags = 0,
+  };
+
+  int rv = recvmsg(unix_socket_fd, &msg, 0);
   if (rv == -1) {
     perror("recvmsg");
-    return -1;
+    return {};
   }
 
-  cmsg = CMSG_FIRSTHDR (&msg);
+  int http_fds_count = *static_cast<int *>(msg.msg_iov->iov_base);
+
+  tvkprintf(graceful_restart, 1, "Graceful restart: http fds received successfully, got %d fds from old master\n", http_fds_count);
+
+  cmsghdr *cmsg = CMSG_FIRSTHDR (&msg);
   if (cmsg->cmsg_type != SCM_RIGHTS) {
-    fprintf(stderr, "got control message of unknown type %d\n",
-            cmsg->cmsg_type);
-    return -1;
+    kprintf("Got control message of unknown type %d\n", cmsg->cmsg_type);
+    return {};
   }
-  return *(int *)CMSG_DATA (cmsg);
+  int *received_http_fds = reinterpret_cast<int *>(CMSG_DATA(cmsg));
+
+  std::vector<int> fds;
+  for (int i = 0; i < http_fds_count; ++i) {
+    tvkprintf(graceful_restart, 1, "Graceful restart: got http fd %d\n", received_http_fds[i]);
+    fds.emplace_back(received_http_fds[i]);
+  }
+  return fds;
 }
 
 
@@ -1162,11 +1172,10 @@ void run_master_off_in_graceful_restart() {
   assert (other->is_alive);
   vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
-  if (other->is_alive && other->ask_http_fd_generation > me->generation) {
-    vkprintf(1, "send http fd\n");
-    send_fd_via_socket(*http_fd);
+  if (other->is_alive && other->ask_http_fds_generation > me->generation) {
+    send_fds_via_socket(vk::singleton<HttpServerContext>::get().http_socket_fds());
     //TODO: process errors
-    me->sent_http_fd_generation = static_cast<int>(generation);
+    me->sent_http_fds_generation = static_cast<int>(generation);
     changed = 1;
   }
 
@@ -1184,6 +1193,58 @@ void run_master_off_in_graceful_restart() {
       job_workers_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::job_worker);
     }
   }
+}
+
+bool init_http_sockets_if_needed() {
+  static bool http_sockets_inited = false;
+
+  auto &http_ctx = vk::singleton<HttpServerContext>::get();
+
+  if (!http_ctx.http_server_enabled() || http_sockets_inited) {
+    return true;
+  }
+
+  bool can_ask_http_fds = other->is_alive && other->own_http_fds &&
+                          other->http_ports_count == me->http_ports_count && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
+  if (!can_ask_http_fds) {
+    vkprintf(1, "Create http sockets\n");
+
+    bool ok = http_ctx.master_create_http_sockets();
+    assert(ok && "failed to create HTTP sockets");
+    me->own_http_fds = 1;
+    http_sockets_inited = true;
+  } else {
+    tvkprintf(graceful_restart, 1, "Graceful restart: going to get http fds from old master\n");
+    if (me->ask_http_fds_generation != 0 && other->sent_http_fds_generation > me->generation) {
+      std::vector<int> open_http_sfds = receive_fds(socket_fd);
+
+      if (open_http_sfds.empty()) {
+        tvkprintf(graceful_restart, 1, "Graceful restart: failed to receive fds, wait for a second...\n");
+        sleep(1);
+        open_http_sfds = receive_fds(socket_fd);
+      }
+
+      if (!open_http_sfds.empty()) {
+        http_ctx.master_set_open_http_sockets(std::move(open_http_sfds));
+        me->own_http_fds = 1;
+        http_sockets_inited = true;
+      } else {
+        failed = 1;
+      }
+    } else {
+      dl_assert(receive_fd_attempts_cnt < 4, dl_pstr("failed to receive http_fd: %d attempts are done\n", receive_fd_attempts_cnt));
+      receive_fd_attempts_cnt++;
+
+      tvkprintf(graceful_restart, 1, "Graceful restart: asking for http fds, try#%d\n", receive_fd_attempts_cnt);
+      if (socket_fd != -1) {
+        close(socket_fd);
+      }
+      socket_fd = sock_dgram(vk::singleton<ClusterName>::get().get_socket_name());
+      me->ask_http_fds_generation = static_cast<int>(generation);
+      changed = 1;
+    }
+  }
+  return http_sockets_inited;
 }
 
 void run_master_on() {
@@ -1215,53 +1276,9 @@ void run_master_on() {
     vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_total_workers_count());
   }
 
-  bool need_http_fd = http_fd != nullptr && *http_fd == -1;
+  bool done = init_http_sockets_if_needed();
 
-  if (need_http_fd) {
-    int can_ask_http_fd = other->is_alive && other->own_http_fd && other->http_fd_port == me->http_fd_port;
-    if (!can_ask_http_fd) {
-      vkprintf(1, "Get http_fd via try_get_http_fd()\n");
-      assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
-      *http_fd = try_get_http_fd();
-      assert (*http_fd != -1 && "failed to get http_fd");
-      me->own_http_fd = 1;
-      need_http_fd = false;
-    } else {
-      if (me->ask_http_fd_generation != 0 && other->sent_http_fd_generation > me->generation) {
-        vkprintf(1, "read http fd\n");
-        *http_fd = receive_fd(socket_fd);
-        vkprintf(1, "http_fd = %d\n", *http_fd);
-
-        if (*http_fd == -1) {
-          vkprintf(1, "wait for a second...\n");
-          sleep(1);
-          *http_fd = receive_fd(socket_fd);
-          vkprintf(1, "http_fd = %d\n", *http_fd);
-        }
-
-
-        if (*http_fd != -1) {
-          me->own_http_fd = 1;
-          need_http_fd = false;
-        } else {
-          failed = 1;
-        }
-      } else {
-        dl_assert (receive_fd_attempts_cnt < 4, dl_pstr("failed to receive http_fd: %d attempts are done\n", receive_fd_attempts_cnt));
-        receive_fd_attempts_cnt++;
-
-        vkprintf(1, "ask for http_fd\n");
-        if (socket_fd != -1) {
-          close(socket_fd);
-        }
-        socket_fd = sock_dgram(vk::singleton<ClusterName>::get().get_socket_name());
-        me->ask_http_fd_generation = static_cast<int>(generation);
-        changed = 1;
-      }
-    }
-  }
-
-  if (!need_http_fd) {
+  if (done) {
     const auto &control = vk::singleton<WorkersControl>::get();
     const int total_workers = control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
     to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
@@ -1411,8 +1428,14 @@ static master_state master_change_state() {
 
 WorkerType run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
-  me->http_fd_port = http_fd_port;
-  me->own_http_fd = http_fd != nullptr && *http_fd != -1;
+  const auto &http_server_ports = vk::singleton<HttpServerContext>::get().http_ports();
+
+  me->http_ports_count = http_server_ports.size();
+  for (size_t i = 0; i < http_server_ports.size(); ++i) {
+    me->http_ports[i] = http_server_ports[i];
+  }
+
+  me->own_http_fds = 0;
 
   epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
   const int err = epoll_insert(signal_fd, EVT_READ);

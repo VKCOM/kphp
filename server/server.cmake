@@ -2,6 +2,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         cluster-name.cpp
         confdata-binlog-replay.cpp
         confdata-stats.cpp
+        http-server-context.cpp
         json-logger.cpp
         lease-config-parser.cpp
         lease-rpc-client.cpp

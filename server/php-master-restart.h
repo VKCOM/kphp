@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "server/http-server-context.h"
+
 //ATTENTION: do NOT change this structures without changing the magic
 #define SHARED_DATA_MAGIC 0x3b720002
 
@@ -26,14 +28,16 @@ struct master_data_t {
   int to_kill;
   long long to_kill_generation;
 
-  int own_http_fd;
-  int http_fd_port;
-  int ask_http_fd_generation;
-  int sent_http_fd_generation;
+  int own_http_fds;
+  int http_ports_count;
+  int ask_http_fds_generation;
+  int sent_http_fds_generation;
 
   uint32_t instance_cache_elements_cached;
 
-  int reserved[50 - 1];
+  uint16_t http_ports[HttpServerContext::MAX_HTTP_PORTS];
+
+  int reserved[50 - 1 - HttpServerContext::MAX_HTTP_PORTS / 2];
 };
 
 struct shared_data_t {
