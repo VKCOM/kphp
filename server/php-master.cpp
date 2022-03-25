@@ -577,6 +577,17 @@ int run_worker(WorkerType worker_type) {
       exit(123);
     }
 
+    if (extra_http_sfd != -1) {
+      assert(http_sfd != -1);
+      if (worker_unique_id % 2 == 0) {
+        close(extra_http_sfd);
+        // http_sfd unchanged
+      } else {
+        close(http_sfd);
+        http_sfd = extra_http_sfd;
+      }
+    }
+
     // TODO should we just use net_reset_after_fork()?
 
     //Epoll_close should clear internal structures but shouldn't change epoll_fd.
@@ -1216,7 +1227,11 @@ void run_master_on() {
     if (!can_ask_http_fd) {
       vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
-      *http_fd = try_get_http_fd();
+      *http_fd = try_get_http_fd(); // it's effectively the same as: http_sfd = server_socket(http_port, settings_addr, backlog, 0)
+      if (extra_http_port != -1) {
+        extra_http_sfd = server_socket(extra_http_port, settings_addr, backlog, 0);
+      }
+
       assert (*http_fd != -1 && "failed to get http_fd");
       me->own_http_fd = 1;
       need_http_fd = false;

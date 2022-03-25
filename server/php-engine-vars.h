@@ -44,6 +44,9 @@ extern int die_on_fail;
 extern int http_port;
 extern int http_sfd;
 
+extern int extra_http_port;
+extern int extra_http_sfd;
+
 /** rpc **/
 extern int rpc_port;
 extern int rpc_sfd;
