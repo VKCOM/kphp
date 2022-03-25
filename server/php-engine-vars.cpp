@@ -35,6 +35,9 @@ int die_on_fail = 0;
 int http_port = -1;
 int http_sfd = -1;
 
+int extra_http_port = -1;
+int extra_http_sfd = -1;
+
 /** rpc **/
 int rpc_port = -1;
 int rpc_sfd = -1;
