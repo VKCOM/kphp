@@ -246,6 +246,8 @@ if __name__ == "__main__":
     cc_compiler = args.compiler
     cxx_compiler = CC2CXX_MAP[cc_compiler]
 
+    use_clang_option = "--use-clang" if cc_compiler in {"clang", "clang-11"} else ""
+
     cmake_options = []
     env_vars = []
     if args.use_asan:
@@ -317,12 +319,13 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="kphp-tests",
-        description="run kphp tests in {} mode".format("gcc"),
+        description="run kphp tests in {} mode".format("clang" if use_clang_option else "gcc"),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-            "{kphp_runner} -j{{jobs}} {distcc_options}".format(
+            "{kphp_runner} -j{{jobs}} {distcc_options} {use_clang_option}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
-            distcc_options=distcc_options
+            distcc_options=distcc_options,
+            use_clang_option=use_clang_option
         ),
         skip=args.steps and "kphp-tests" not in args.steps
     )
@@ -331,11 +334,12 @@ if __name__ == "__main__":
         runner.add_test_group(
             name="zend-tests",
             description="run php tests from zend repo",
-            cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options}".format(
+            cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options} {use_clang_option}".format(
                 kphp_runner=kphp_test_runner,
                 zend_repo=args.zend_repo,
                 zend_tests=zend_test_list,
-                distcc_options=distcc_options
+                distcc_options=distcc_options,
+                use_clang_option=use_clang_option
             ),
             skip=args.steps and "zend-tests" not in args.steps
         )
@@ -359,16 +363,17 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="typed-tl-tests",
-        description="run typed tl tests in {} mode".format("gcc"),
+        description="run typed tl tests in {} mode".format("clang" if use_clang_option else "gcc"),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TL_SCHEMA={combined_tlo} "
             "KPHP_GEN_TL_INTERNALS=1 "
-            "{kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options}".format(
+            "{kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options} {use_clang_option}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,
-            distcc_options=distcc_options
+            distcc_options=distcc_options,
+            use_clang_option=use_clang_option
         ),
         skip=args.steps and "typed-tl-tests" not in args.steps
     )
