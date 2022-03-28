@@ -41,7 +41,7 @@ class TestFile:
     def is_php8(self):
         return "php8" in self.tags
 
-    def make_kphp_once_runner(self, distcc_hosts):
+    def make_kphp_once_runner(self, distcc_hosts, use_clang):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
         return KphpRunOnce(
             php_script_path=self.file_path,
@@ -50,7 +50,8 @@ class TestFile:
             php_bin=search_php_bin(php8_require=self.is_php8()),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
-            distcc_hosts=distcc_hosts
+            distcc_hosts=distcc_hosts,
+            use_clang=use_clang
         )
 
 
@@ -306,11 +307,11 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(distcc_hosts, test: TestFile):
+def run_test(distcc_hosts, use_clang, test: TestFile):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = test.make_kphp_once_runner(distcc_hosts)
+    runner = test.make_kphp_once_runner(distcc_hosts, use_clang)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
@@ -331,7 +332,7 @@ def run_test(distcc_hosts, test: TestFile):
     return test_result
 
 
-def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, distcc_hosts):
+def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, distcc_hosts, use_clang):
     hack_reference_exit = []
     signal.signal(signal.SIGINT, lambda sig, frame: hack_reference_exit.append(1))
 
@@ -345,7 +346,7 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, distcc_hosts), tests):
+        for test_result in pool.imap_unordered(partial(run_test, distcc_hosts, use_clang), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -438,6 +439,13 @@ def parse_args():
         default=None,
         help='list of available distcc hosts')
 
+    parser.add_argument(
+        "--use-clang",
+        action='store_true',
+        dest="use_clang",
+        default=False,
+        help="use clang compiler for build test scripts")
+
     return parser.parse_args()
 
 
@@ -463,7 +471,8 @@ def main():
                   no_report=args.no_report,
                   passed_list=args.passed_list,
                   test_list=args.test_list,
-                  distcc_hosts=distcc_hosts)
+                  distcc_hosts=distcc_hosts,
+                  use_clang=args.use_clang)
 
 
 if __name__ == "__main__":
