@@ -115,7 +115,7 @@ def make_relpath(file_dir, file_path):
     return rel_path
 
 
-CC2CXX_MAP = {"gcc": "g++", "clang": "clang++"}
+CC2CXX_MAP = {"gcc": "g++", "clang": "clang++", "clang-11": "clang++-11"}
 
 
 def parse_args():
@@ -285,7 +285,6 @@ if __name__ == "__main__":
             "cd {kphp_repo_root}/build && cpack".format(
                 kphp_repo_root=kphp_repo_root,
                 distcc_cmake_option=distcc_cmake_option,
-                cc=cc_compiler,
                 cxx=cxx_compiler,
                 cmake_options=cmake_options,
                 env_vars=env_vars
