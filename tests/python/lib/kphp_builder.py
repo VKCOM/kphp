@@ -14,7 +14,7 @@ class Artifact:
 
 
 class KphpBuilder:
-    def __init__(self, php_script_path, artifacts_dir, working_dir, distcc_hosts=None):
+    def __init__(self, php_script_path, artifacts_dir, working_dir, distcc_hosts=None, use_clang=None):
         self.artifacts = {}
         self._kphp_build_stderr_artifact = None
         self._kphp_build_sanitizer_log_artifact = None
@@ -28,6 +28,7 @@ class KphpBuilder:
         self._kphp_build_tmp_dir = os.path.join(self._working_dir, "kphp_build")
         self._kphp_runtime_bin = os.path.join(self._kphp_build_tmp_dir, "server")
         self._distcc_hosts = distcc_hosts or []
+        self._use_clang = use_clang
 
     @property
     def kphp_build_stderr_artifact(self):
@@ -131,8 +132,7 @@ class KphpBuilder:
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")
         if self._distcc_hosts:
             env.setdefault("KPHP_JOBS_COUNT", "8")
-            # TODO what about clang?
-            env.setdefault("KPHP_CXX", "distcc g++")
+            env.setdefault("KPHP_CXX", "distcc clang++-11" if self._use_clang else "distcc g++")
             env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
         else:
             env.setdefault("KPHP_JOBS_COUNT", "2")
