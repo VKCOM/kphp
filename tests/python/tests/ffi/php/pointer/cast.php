@@ -185,9 +185,86 @@ function test_cast_struct_non_pointer() {
   var_dump([$as_foo2->value, $foo->value, $single_int_wrapper->single_int->x]);
 }
 
+/**
+  * @param ffi_cdata<C, void*> $ptr
+  */
+function as_byte_ptr($ptr) {
+  return FFI::cast('uint8_t*', $ptr);
+}
+
+function test_cast_via_func() {
+  $lib = FFI::scope('pointers');
+
+  $int64 = FFI::new('int64_t');
+  $as_bytes = as_byte_ptr(FFI::addr($int64));
+  for ($i = 1; $i < 8; $i++) {
+    $lib->bytes_array_set($as_bytes, $i, $i * 4);
+    var_dump([
+      $lib->bytes_array_get($as_bytes, $i-1),
+      $lib->bytes_array_get($as_bytes, $i),
+    ]);
+  }
+
+  $int32 = FFI::new('int32_t');
+  $as_bytes = as_byte_ptr(FFI::addr($int32));
+  for ($i = 1; $i < 4; $i++) {
+    $lib->bytes_array_set($as_bytes, $i, $i * 4);
+    var_dump([
+      $lib->bytes_array_get($as_bytes, $i-1),
+      $lib->bytes_array_get($as_bytes, $i),
+    ]);
+  }
+}
+
+/**
+  * @param ffi_cdata<C, const void*> $ptr
+  */
+function as_const_byte_ptr($ptr) {
+  return FFI::cast('const uint8_t*', $ptr);
+}
+
+function test_string_to_void_pointer() {
+  $lib = FFI::scope('pointers');
+
+  $str = "hello";
+  $void_ptr = $lib->ptr_to_const_void($str);
+  var_dump($lib->void_strlen($void_ptr));
+  var_dump($lib->void_strlen($str));
+  var_dump($lib->void_strlen(as_const_byte_ptr($void_ptr)));
+}
+
+// This function is called with `int64_t*` and `const int64_t*`,
+// it infers `const int64_t*` as lca type and accepts them both
+function auto_infer_const_ptr($x) {}
+
+/** @param ffi_cdata<C, const int64_t*> $x */
+function accept_const_int64_ptr($x) {}
+
+function test_const_cast() {
+  $lib = FFI::scope('pointers');
+
+  $i64 = FFI::new('int64_t');
+  $intptr = FFI::addr($i64);
+  $const_intptr = FFI::cast('const int64_t*', $intptr);
+
+  accept_const_int64_ptr($const_intptr);
+  accept_const_int64_ptr($intptr);
+  var_dump($lib->read_int64($const_intptr));
+  var_dump($lib->read_int64($intptr));
+  $i64->cdata = 13;
+  var_dump($lib->read_int64($const_intptr));
+  var_dump($lib->read_int64($intptr));
+
+  auto_infer_const_ptr($const_intptr);
+  auto_infer_const_ptr($intptr);
+}
+
 test_cast_to_self();
 test_cast_void_pointer();
 test_cast_scalar_pointer();
 test_cast_scalar_non_pointer();
 test_cast_struct_pointer();
 test_cast_struct_non_pointer();
+test_cast_via_func();
+test_string_to_void_pointer();
+test_const_cast();

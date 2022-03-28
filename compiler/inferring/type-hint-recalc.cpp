@@ -111,8 +111,13 @@ void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
 
 static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const FFIType *type) {
   if (type->kind == FFITypeKind::Pointer) {
-    recalc_ffi_type(dst, scope_name, type->members[0]);
-    dst->set_indirection(type->num);
+    TypeData nested{*TypeData::get_type(tp_any)};
+    recalc_ffi_type(&nested, scope_name, type->members[0]);
+    nested.set_indirection(type->num); // turn it into a pointer
+    if (type->members[0]->is_const()) {
+      nested.set_ffi_const_flag();
+    }
+    dst->set_lca(&nested);
     return;
   }
 

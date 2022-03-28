@@ -257,6 +257,8 @@ const TypeHint *PhpDocTypeHintParser::parse_ffi_cdata() {
       cdef.append("int");
     } else if (tok == tok_times) {
       cdef.push_back('*');
+    } else if (tok == tok_const) {
+      cdef.append("const");
     } else {
       throw std::runtime_error("unexpected token, expected C type, '>' or ')'");
     }
