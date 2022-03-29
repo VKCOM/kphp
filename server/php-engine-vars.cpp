@@ -35,8 +35,8 @@ int die_on_fail = 0;
 int http_port = -1;
 int http_sfd = -1;
 
-int extra_http_port = -1;
-int extra_http_sfd = -1;
+std::vector<int> http_ports;
+std::vector<int> http_sfds;
 
 /** rpc **/
 int rpc_port = -1;

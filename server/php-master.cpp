@@ -577,15 +577,15 @@ int run_worker(WorkerType worker_type) {
       exit(123);
     }
 
-    if (extra_http_sfd != -1) {
-      assert(http_sfd != -1);
-      if (worker_unique_id % 2 == 0) {
-        close(extra_http_sfd);
-        // http_sfd unchanged
-      } else {
-        close(http_sfd);
-        http_sfd = extra_http_sfd;
+    if (!http_sfds.empty()) {
+      int socket_idx = worker_unique_id % http_sfds.size();
+      for (int i = 0; i < http_sfds.size(); ++i) {
+        if (i != socket_idx) {
+          close(http_sfds[i]);
+        }
       }
+      http_sfd = http_sfds[socket_idx];
+      http_port = http_ports[socket_idx];
     }
 
     // TODO should we just use net_reset_after_fork()?
@@ -1227,9 +1227,14 @@ void run_master_on() {
     if (!can_ask_http_fd) {
       vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
-      *http_fd = try_get_http_fd(); // it's effectively the same as: http_sfd = server_socket(http_port, settings_addr, backlog, 0)
-      if (extra_http_port != -1) {
-        extra_http_sfd = server_socket(extra_http_port, settings_addr, backlog, 0);
+
+      http_sfds.reserve(http_ports.size());
+      for (auto port: http_ports) {
+        int socket = server_socket(port, settings_addr, backlog, std::count(http_ports.begin(), http_ports.end(), port) > 1 ? SM_REUSEPORT : 0);
+        if (*http_fd == -1) {
+          *http_fd = socket;
+        }
+        http_sfds.emplace_back(socket);
       }
 
       assert (*http_fd != -1 && "failed to get http_fd");
