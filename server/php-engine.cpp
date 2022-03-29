@@ -1781,7 +1781,11 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 'H': {
-      http_port = atoi(optarg);
+      int port = atoi(optarg);
+      if (http_port == -1) {
+        http_port = port;
+      }
+      http_ports.emplace_back(port);
       return 0;
     }
     case 'r': {

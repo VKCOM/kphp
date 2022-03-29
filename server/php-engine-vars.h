@@ -6,6 +6,7 @@
 
 // for: struct in_addr
 #include <netinet/in.h>
+#include <vector>
 
 #include "common/version-string.h"
 
@@ -43,6 +44,9 @@ extern int die_on_fail;
 /** http **/
 extern int http_port;
 extern int http_sfd;
+
+extern std::vector<int> http_ports;
+extern std::vector<int> http_sfds;
 
 /** rpc **/
 extern int rpc_port;
