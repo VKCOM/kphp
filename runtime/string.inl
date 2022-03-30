@@ -345,12 +345,14 @@ bool string::ends_with(const string &other) const noexcept {
 }
 
 bool string::contains(const string &other) const noexcept {
-  if (other.size() > size())
+  if (other.size() > size()) {
     return false;
+  }
 
   for (size_type i = 0; i < (size() - other.size() + 1); i++) {
-    if (memcmp(c_str() + i, other.c_str(), other.size()) == 0)
+    if (memcmp(c_str() + i, other.c_str(), other.size()) == 0) {
       return true;
+    }
   }
 
   return false;
