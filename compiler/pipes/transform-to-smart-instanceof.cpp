@@ -6,6 +6,60 @@
 
 #include "compiler/name-gen.h"
 
+// InstanceCastInsertPass is a simple AST walker that will insert instance_cast($x, T)
+// for every variable $x; $x variable vertex as well as T type vertex are configured
+// by the user of this pass.
+//
+// This pass has configurable max depth limit: auto instance casts on expression
+// basis should be used with care, we don't want too many automatic instance casts
+// to be inserted without anyone noticing it.
+// If the expression is too complex for auto instance casts, it should be rewritten
+// in a more common way (like ternary expression -> if statement).
+struct InstanceCastInsertPass final : public FunctionPassBase {
+  InstanceCastInsertPass(int max_depth, VertexAdaptor<op_var> instance_var, VertexPtr derived_name)
+    : max_depth{max_depth}
+    , instance_var{instance_var}
+    , derived_name{derived_name} {}
+
+  std::string get_description() override {
+    return "Inject smart casts in simple expressions";
+  }
+
+  bool user_recursion(VertexPtr v __attribute__((unused))) override {
+    return depth >= max_depth;
+  }
+
+  VertexPtr on_enter_vertex(VertexPtr root) override {
+    depth++;
+    if (depth > max_depth) {
+      return root;
+    }
+    auto v = root.try_as<op_var>();
+    if (!v || v->str_val != instance_var->str_val) {
+      return root;
+    }
+    auto cast_to_derived = VertexAdaptor<op_func_call>::create(instance_var.clone(), derived_name).set_location(instance_var);
+    cast_to_derived->str_val = "instance_cast";
+    return cast_to_derived;
+  }
+
+  VertexPtr on_exit_vertex(VertexPtr v) override {
+    depth--;
+    return v;
+  }
+
+  int depth = 0;
+  int max_depth = 0;
+  VertexAdaptor<op_var> instance_var;
+  VertexPtr derived_name;
+};
+
+static VertexPtr unwrap_conv_bool(VertexPtr v) {
+  if (auto conv = v.try_as<op_conv_bool>()) {
+    return conv->expr();
+  }
+  return v;
+}
 
 bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
   if (v->type() == op_if) {
@@ -14,6 +68,10 @@ bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
     return on_catch_user_recursion(v.as<op_catch>());
   } else if (v->type() == op_lambda) {
     return on_lambda_user_recursion(v.as<op_lambda>());
+  } else if (v->type() == op_ternary) {
+    return on_ternary_user_recursion(v.as<op_ternary>());
+  } else if (v->type() == op_log_and) {
+    return on_log_and_user_recursion(v.as<op_log_and>());
   }
   
   return false;
@@ -21,7 +79,23 @@ bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
 
 // 1) handle `if ($x instanceof A)`, replace $x with a temp var inside its body
 // 2) handle `if (!($x instanceof A)) return`, replace $x with a temp var till the end of function
+//
+// as a special case, handle `if ($x instanceof A && ...$rest) { ... }` by transforming it into
+// `if ($x instanceof A) { if (...$rest) { ... } }`, so the 1st transformation rule can work from there
 bool TransformToSmartInstanceofPass::on_if_user_recursion(VertexAdaptor<op_if> v_if) {
+  // rewrite a single if into a nested one if we can recognize the condition
+  if (!v_if->has_false_cmd() && v_if->cond()->type() == op_conv_bool) {
+    auto condition = v_if->cond().as<op_conv_bool>();
+    if (auto as_and = condition->expr().try_as<op_log_and>()) {
+      auto lhs_instanceof = unwrap_conv_bool(as_and->lhs()).try_as<op_instanceof>();
+      if (lhs_instanceof && lhs_instanceof->lhs()->type() == op_var) {
+        condition->expr() = lhs_instanceof;
+        auto nested_if = VertexAdaptor<op_if>::create(as_and->rhs(), v_if->true_cmd()).set_location(v_if);
+        v_if->true_cmd_ref() = VertexAdaptor<op_seq>::create(nested_if).set_location(nested_if);
+      }
+    }
+  }
+
   auto v_instanceof = get_instanceof_from_if_condition(v_if->cond());
   if (!v_instanceof) {
     if (auto v_not_instanceof = get_instanceof_from_if_not_condition(v_if->cond())) {
@@ -68,6 +142,32 @@ bool TransformToSmartInstanceofPass::on_lambda_user_recursion(VertexAdaptor<op_l
   }
   run_function_pass(f_lambda->root, this);
 
+  return true;
+}
+
+// handle simple `$x instanceof A && $x->use_as_A()` expressions
+// it won't handle complicated cases with instanceof in the middle of the && chain,
+// there are also limitation on how deeply nested variable usage could be;
+// it will replace all $x inside rhs() with instance_cast($x, A)
+bool TransformToSmartInstanceofPass::on_log_and_user_recursion(VertexAdaptor<op_log_and> v_and) {
+  auto instanceof = unwrap_conv_bool(v_and->lhs()).try_as<op_instanceof>();
+  if (!instanceof || instanceof->lhs()->type() != op_var) {
+    return false;
+  }
+  InstanceCastInsertPass pass{6, instanceof->lhs().as<op_var>(), instanceof->rhs()};
+  run_function_pass(v_and->rhs(), &pass);
+  return true;
+}
+
+// handle simple `$x instanceof A ? $x->use_as_A() : $otherwise` expressions
+// it will replace all $x inside true_expr() with instance_cast($x, A)
+bool TransformToSmartInstanceofPass::on_ternary_user_recursion(VertexAdaptor<op_ternary> v_ternary) {
+  auto instanceof = unwrap_conv_bool(v_ternary->cond()).try_as<op_instanceof>();
+  if (!instanceof || instanceof->lhs()->type() != op_var) {
+    return false;
+  }
+  InstanceCastInsertPass pass{4, instanceof->lhs().as<op_var>(), instanceof->rhs()};
+  run_function_pass(v_ternary->true_expr(), &pass);
   return true;
 }
 

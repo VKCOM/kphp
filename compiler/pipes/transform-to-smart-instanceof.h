@@ -35,6 +35,8 @@ private:
   bool on_if_user_recursion(VertexAdaptor<op_if> v_if);
   bool on_catch_user_recursion(VertexAdaptor<op_catch> v_catch);
   bool on_lambda_user_recursion(VertexAdaptor<op_lambda> v_lambda);
+  bool on_ternary_user_recursion(VertexAdaptor<op_ternary> v_ternary);
+  bool on_log_and_user_recursion(VertexAdaptor<op_log_and> v_ternary);
 
   std::map<std::string, std::stack<std::string>> new_names_of_var;
 };
