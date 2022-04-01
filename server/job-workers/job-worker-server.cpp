@@ -232,6 +232,8 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   }
   ++vk::singleton<SharedMemoryManager>::get().get_stats().jobs_replied;
   reply_was_sent = true;
+  tvkprintf(job_workers, 2, "send job response: ready_job_id = %d, job_result_memory_ptr = %p\n", job_response->job_id, job_response);
+
   return nullptr;
 }
 
