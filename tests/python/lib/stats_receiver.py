@@ -32,7 +32,7 @@ class StatsReceiver:
         self._stats_file_write_fd = open(self._stats_file, 'wb')
         self._stats_file_read_fd = open(self._stats_file, 'r')
         self._stats_proc = psutil.Popen(
-            ["nc", "-l", "-p", str(self._port)],
+            ["nc", "-l", str(self._port)],
             stdout=self._stats_file_write_fd,
             stderr=subprocess.STDOUT,
             cwd=self._working_dir
