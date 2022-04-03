@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/calc-magic-const.h"
@@ -11,11 +11,11 @@ VertexPtr CalcMagicConstPass::on_enter_vertex(VertexPtr root) {
     auto cur_class = current_function->class_id;
     auto class_name = cur_class ? cur_class->name : "";
 
-    auto r = VertexAdaptor<op_string>::create();
-    r->location = root->get_location();
-    r->str_val = std::move(class_name);
+    auto trait_name = VertexAdaptor<op_string>::create();
+    trait_name->location = root->get_location();
+    trait_name->str_val = std::move(class_name);
 
-    return r;
+    return trait_name;
   }
 
   return root;
