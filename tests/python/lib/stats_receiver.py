@@ -3,6 +3,7 @@ import subprocess
 import signal
 import time
 import re
+from sys import platform
 
 import psutil
 
@@ -32,7 +33,7 @@ class StatsReceiver:
         self._stats_file_write_fd = open(self._stats_file, 'wb')
         self._stats_file_read_fd = open(self._stats_file, 'r')
         self._stats_proc = psutil.Popen(
-            ["nc", "-l", str(self._port)],
+            ["nc", "-l", "" if platform == "darwin" else "-p", str(self._port)],
             stdout=self._stats_file_write_fd,
             stderr=subprocess.STDOUT,
             cwd=self._working_dir

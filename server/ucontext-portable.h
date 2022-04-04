@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if !defined(__APPLE__)
+#if !(defined(__APPLE__) && defined(__arm64__))
 // for x86, we just use makecontext(), ucontext_t and other native functions
 #include <ucontext.h>
 
