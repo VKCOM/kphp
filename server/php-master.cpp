@@ -1220,7 +1220,7 @@ void run_master_on() {
     vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_total_workers_count());
   }
 
-  bool need_http_fd = http_fd != nullptr && *http_fd == -1;
+  bool need_http_fd = http_fd != nullptr && *http_fd == -1 && !reuseport_mode;
 
   if (need_http_fd) {
     int can_ask_http_fd = other->is_alive && other->own_http_fd && other->http_fd_port == me->http_fd_port;

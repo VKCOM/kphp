@@ -44,6 +44,7 @@ extern int die_on_fail;
 /** http **/
 extern int http_port;
 extern int http_sfd;
+extern bool reuseport_mode;
 
 extern std::vector<int> http_ports;
 extern std::vector<int> http_sfds;
