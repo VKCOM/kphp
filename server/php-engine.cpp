@@ -1472,15 +1472,19 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
       }
 
       if (http_port > 0 && http_sfd < 0) {
-        dl_assert (!master_flag, "failed to get http_fd\n");
-        if (master_flag) {
-          vkprintf(-1, "try_get_http_fd after start_master\n");
-          exit(1);
-        }
-        http_sfd = try_get_http_fd();
-        if (http_sfd < 0) {
-          vkprintf(-1, "cannot open http server socket at port %d: %m\n", http_port);
-          exit(1);
+        if (reuseport_mode) {
+          http_sfd = server_socket(http_port, settings_addr, backlog, SM_REUSEPORT);
+        } else {
+          dl_assert (!master_flag, "failed to get http_fd\n");
+          if (master_flag) {
+            vkprintf(-1, "try_get_http_fd after start_master\n");
+            exit(1);
+          }
+          http_sfd = try_get_http_fd();
+          if (http_sfd < 0) {
+            vkprintf(-1, "cannot open http server socket at port %d: %m\n", http_port);
+            exit(1);
+          }
         }
       }
 
@@ -1781,7 +1785,11 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 'H': {
-      http_port = atoi(optarg);
+      int port = atoi(optarg);
+      if (http_port == -1) {
+        http_port = port;
+      }
+      http_ports.emplace_back(port);
       return 0;
     }
     case 'r': {
@@ -2143,6 +2151,10 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
 #endif
     }
+    case 2030: {
+      reuseport_mode = true;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2233,6 +2245,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                               "'bind' - bind to the specified node, in case out of memory raise a fatal error");
   parse_option("numa-bind-master", required_argument, 2029, "NUMA node to bind master process to. Takes effect only if `numa-node-to-bind` option is used.");
 
+  parse_option("reuseport-mode", no_argument, 2030, "create listening socket in each worker with SO_REUSEPORT");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }

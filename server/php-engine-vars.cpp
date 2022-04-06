@@ -34,6 +34,10 @@ int die_on_fail = 0;
 /** http **/
 int http_port = -1;
 int http_sfd = -1;
+bool reuseport_mode = false;
+
+std::vector<int> http_ports;
+std::vector<int> http_sfds;
 
 /** rpc **/
 int rpc_port = -1;

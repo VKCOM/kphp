@@ -583,6 +583,17 @@ int run_worker(WorkerType worker_type) {
       numa.distribute_worker(worker_unique_id);
     }
 
+    if (!http_sfds.empty()) {
+      int socket_idx = worker_unique_id % http_sfds.size();
+      for (int i = 0; i < http_sfds.size(); ++i) {
+        if (i != socket_idx) {
+          close(http_sfds[i]);
+        }
+      }
+      http_sfd = http_sfds[socket_idx];
+      http_port = http_ports[socket_idx];
+    }
+
     // TODO should we just use net_reset_after_fork()?
 
     //Epoll_close should clear internal structures but shouldn't change epoll_fd.
@@ -1215,14 +1226,23 @@ void run_master_on() {
     vk::singleton<JobWorkersContext>::get().master_init_pipes(vk::singleton<WorkersControl>::get().get_total_workers_count());
   }
 
-  bool need_http_fd = http_fd != nullptr && *http_fd == -1;
+  bool need_http_fd = http_fd != nullptr && *http_fd == -1 && !reuseport_mode;
 
   if (need_http_fd) {
     int can_ask_http_fd = other->is_alive && other->own_http_fd && other->http_fd_port == me->http_fd_port;
     if (!can_ask_http_fd) {
       vkprintf(1, "Get http_fd via try_get_http_fd()\n");
       assert (try_get_http_fd != nullptr && "no pointer for try_get_http_fd found");
-      *http_fd = try_get_http_fd();
+
+      http_sfds.reserve(http_ports.size());
+      for (auto port: http_ports) {
+        int socket = server_socket(port, settings_addr, backlog, std::count(http_ports.begin(), http_ports.end(), port) > 1 ? SM_REUSEPORT : 0);
+        if (*http_fd == -1) {
+          *http_fd = socket;
+        }
+        http_sfds.emplace_back(socket);
+      }
+
       assert (*http_fd != -1 && "failed to get http_fd");
       me->own_http_fd = 1;
       need_http_fd = false;
