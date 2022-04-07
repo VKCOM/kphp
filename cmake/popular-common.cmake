@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
+        algorithms/simd-int-to-string.cpp
         server/limits.cpp
         server/signals.cpp
         server/relogin.cpp
