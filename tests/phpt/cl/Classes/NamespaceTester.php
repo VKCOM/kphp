@@ -22,4 +22,8 @@ class NamespaceTester {
     echo "__LINE__: |", __LINE__, "|\n";
     echo "__NAMESPACE__: |", __NAMESPACE__, "|\n";
   }
+
+  static public function test_loc_call_log_info() {
+    log_info("from NamespaceTester");
+  }
 }

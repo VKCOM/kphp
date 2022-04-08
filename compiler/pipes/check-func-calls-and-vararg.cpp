@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
+#include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
@@ -87,6 +88,71 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
   return new_call;
 }
 
+// when calling f($arg) like f() (without $arg), then maybe, this $arg is auto-filled
+VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAdaptor<op_func_call> call, [[maybe_unused]] FunctionPtr f_called, VertexAdaptor<op_func_param> param) {
+  if (param->type_hint == nullptr) {
+    return {};
+  }
+
+  // CompileTimeLocation is a built-in KPHP class
+  // in PHP, we declare f(CompileTimeLocation $loc = null) and just call f()
+  // in KPHP, we implicitly replace f() with f(new CompileTimeLocation(__FILE__, __METHOD__, __LINE__))
+  if (const auto *as_instance = param->type_hint->unwrap_optional()->try_as<TypeHintInstance>()) {
+    if (as_instance->resolve()->name == "CompileTimeLocation") {
+      return CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(call->location);
+    }
+  }
+
+  return {};
+}
+
+// create constructor call: new CompileTimeLocation(__RELATIVE_FILE__, __METHOD__, __LINE__)
+VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const Location &call_location) {
+  ClassPtr klass_CompileTimeLocation = G->get_class("CompileTimeLocation");
+  kphp_assert(klass_CompileTimeLocation);
+
+  auto v_file = VertexAdaptor<op_string>::create().set_location(call_location);
+  v_file->str_val = call_location.get_file()->relative_file_name;
+
+  auto v_function = VertexAdaptor<op_string>::create().set_location(call_location);
+  if (current_function->is_lambda()) {  // like tok_method_c in gentree (PHP polyfill also emits the same format)
+    v_function->str_val = "{closure}";
+  } else if (!current_function->is_main_function()) {
+    v_function->str_val = !current_function->modifiers.is_nonmember()
+                          ? current_function->class_id->name + "::" + current_function->local_name()
+                          : current_function->name;
+  }
+
+  auto v_line = GenTree::create_int_const(call_location.get_line());
+
+  auto v_alloc = VertexAdaptor<op_alloc>::create().set_location(call_location);
+  v_alloc->allocated_class = klass_CompileTimeLocation;
+
+  auto v_loc = VertexAdaptor<op_func_call>::create(v_alloc, v_file, v_function, v_line).set_location(call_location);
+  v_loc->func_id = klass_CompileTimeLocation->members.get_instance_method("__construct")->function;
+  v_loc->extra_type = op_ex_constructor_call;
+  return v_loc;
+}
+
+VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {
+  std::vector<VertexPtr> new_args;
+  new_args.reserve(call->args().size() + 1);
+  if (prepend) {
+    new_args.emplace_back(to_add);
+  }
+  for (auto arg : call->args()) {
+    new_args.emplace_back(arg);
+  }
+  if (!prepend) {
+    new_args.emplace_back(to_add);
+  }
+
+  auto new_call = VertexAdaptor<op_func_call>::create(new_args).set_location(call->location);
+  new_call->str_val = call->str_val;
+  new_call->func_id = call->func_id;
+  return new_call;
+}
+
 // check func call, that a call is valid (not abstract, etc) and provided a valid number of arguments
 // also, check the number of arguments passed as callbacks to extern functions
 VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> call) {
@@ -114,6 +180,16 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
 
   VertexRange func_params = f->get_params();
   VertexRange call_params = call->args();
+
+  if (call_params.size() < func_params.size()) {
+    for (int i = call_params.size(); i < func_params.size(); ++i) {
+      if (VertexPtr auto_added = maybe_autofill_missing_call_arg(call, f, func_params[i].as<op_func_param>())) {
+        call = add_call_arg(auto_added, call, false);
+        call_params = call->args();
+      }
+    }
+  }
+
   int call_n_params = call_params.size();
   int delta_this = f->has_implicit_this_arg() ? 1 : 0;    // not to count implicit $this on error output
 

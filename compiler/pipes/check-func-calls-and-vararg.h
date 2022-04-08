@@ -9,6 +9,10 @@
 
 class CheckFuncCallsAndVarargPass final : public FunctionPassBase {
   VertexAdaptor<op_func_call> process_varargs(VertexAdaptor<op_func_call> call, FunctionPtr f_called);
+  VertexPtr maybe_autofill_missing_call_arg(VertexAdaptor<op_func_call> call, FunctionPtr f_called, VertexAdaptor<op_func_param> param);
+  VertexAdaptor<op_func_call> add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend);
+
+  VertexPtr create_CompileTimeLocation_call_arg(const Location &call_location);
 
 public:
   std::string get_description() override {

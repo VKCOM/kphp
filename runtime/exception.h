@@ -94,9 +94,20 @@ struct C$Error : public C$Throwable {
   const char *get_class() const noexcept override { return "Error"; }
 };
 
+struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation> {
+  string $file;
+  string $function;
+  int64_t $line;
+
+  ~C$CompileTimeLocation() = default;
+
+  const char *get_class() const noexcept { return "CompileTimeLocation"; }
+};
+
 using Throwable = class_instance<C$Throwable>;
 using Exception = class_instance<C$Exception>;
 using Error = class_instance<C$Error>;
+using CompileTimeLocation = class_instance<C$CompileTimeLocation>;
 
 extern Throwable CurException;
 
@@ -129,6 +140,8 @@ void exception_initialize(const Throwable &e, const string &message, int64_t cod
 
 Exception f$Exception$$__construct(const Exception &v$this, const string &message = string(), int64_t code = 0);
 Error f$Error$$__construct(const Error &v$this, const string &message = string(), int64_t code = 0);
+CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation &v$this, const string &file, const string &function, int64_t line);
+CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &v$passed);
 
 template<typename T>
 T __exception_set_location(const T &e, const string &file, int64_t line) {
