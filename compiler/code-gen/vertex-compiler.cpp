@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include "common/wrappers/field_getter.h"
+#include "common/algorithms/switch_hash.h"
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
@@ -909,10 +910,11 @@ struct CaseInfo {
   size_t hash{0};
   bool is_default{false};
   std::string goto_name;
+  vk::string_view string_case_value;
   CaseInfo *next{nullptr};
   VertexPtr v;
   VertexPtr expr;
-  VertexPtr cmd;
+  VertexAdaptor<op_seq> cmd;
 
   CaseInfo() = default;
 
@@ -925,22 +927,15 @@ struct CaseInfo {
 
       VertexPtr val = GenTree::get_actual_value(expr);
       kphp_assert (val->type() == op_string);
-      const std::string &s = val.as<op_string>()->str_val;
-      hash = string_hash(s.c_str(), s.size());
+      string_case_value = val.as<op_string>()->str_val;
+      hash = string_hash(string_case_value.data(), string_case_value.size());
     } else {
       cmd = v.as<op_default>()->cmd();
     }
   }
 };
 
-void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  auto cases_vertices = root->cases();
-  std::vector<CaseInfo> cases(cases_vertices.size());
-  std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
-
-  auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
-  auto *default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
-
+void compile_switch_cases_str_hash(VertexAdaptor<op_switch> root, CaseInfo *default_case, std::vector<CaseInfo> &cases,CodeGenerator &W) {
   int n = static_cast<int>(cases.size());
   std::map<unsigned int, int> hash_to_last_id;
   for (int i = n - 1; i >= 0; --i) {
@@ -968,7 +963,6 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto temp_var_strval_of_condition = root->condition_on_switch();
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
 
-  W << BEGIN;
   W << temp_var_strval_of_condition << " = f$strval (" << root->condition() << ");" << NL;
   W << temp_var_matched_with_a_case << " = false;" << NL;
 
@@ -1005,7 +999,150 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     W << one_case.cmd << NL;
   }
   W << END << NL;
+}
 
+bool compile_switch_cases_str_perfect_hash(VertexAdaptor<op_switch> root, const std::vector<CaseInfo> &cases, int64_t max_len, vk::string_view prefix, CodeGenerator &W) {
+  std::vector<uint64_t> perfect_hashes(cases.size());
+  for (int i = 0; i < cases.size(); i++) {
+    const auto &c = cases[i];
+    if (c.is_default) {
+      continue;
+    }
+    const char *chars = c.string_case_value.data() + prefix.size();
+    int64_t chars_len = c.string_case_value.size() - prefix.size();
+    if (!vk::validate_case_hash8_string(chars, chars_len)) {
+      return false;
+    }
+    uint64_t h = vk::case_hash8(chars, chars_len);
+    if (h == 0) {
+      return false;
+    }
+    perfect_hashes[i] = h;
+  }
+
+  W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
+  W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL;
+  W << "switch (static_cast<uint64_t>(f$strval(" << root->condition() << ").case_hash8<" << max_len << ">(";
+  if (!prefix.empty()) {
+    W << RawString(prefix) << ", " << prefix.size();
+  }
+  W << "))) " << BEGIN;
+  for (int i = 0; i < cases.size(); i++) {
+    const auto &c = cases[i];
+    if (c.is_default) {
+      W << "default:" << NL;
+    } else {
+      W << "case " << perfect_hashes[i] << ":" << NL;
+    }
+    W << c.cmd << NL;
+  }
+  W << END << NL;
+
+  return true;
+}
+
+void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  auto cases_vertices = root->cases();
+  std::vector<CaseInfo> cases(cases_vertices.size());
+  std::transform(cases_vertices.begin(), cases_vertices.end(), cases.begin(), [](auto v) { return CaseInfo(v); });
+
+  auto default_case_it = std::find_if(cases.begin(), cases.end(), vk::make_field_getter(&CaseInfo::is_default));
+  auto *default_case = default_case_it != cases.end() ? &(*default_case_it) : nullptr;
+
+  // Compiling a string switch
+  //
+  // Since C++ has no efficient builtin switch over strings as it has for numerical types,
+  // we need to implement one ourselves.
+  //
+  // Our default (fallback) strategy is to take a string hash, switch over that and
+  // check whether the string value matches the case with equals().
+  // In some cases it's possible to outperform this approach.
+  //
+  // Some optimizations we try before falling back to the default hashing algorithm:
+  //
+  // 1. For switches where all strings are shorter than 9 bytes (so 8 is a limit), we can compute
+  //    a minimal perfect hash of all strings and do a switch over it.
+  //    No redundant equals() is required, so we generate less code and execute the matching faster;
+  //    The speed gain is 15-30% (depends on the case strings as well as the tag value)
+  //    48% (2694) of string switches from the corpus fall into this category.
+  //
+  // 2. If case strings don't fit into 8 bytes, we try to find the longest common prefix;
+  //    after this longest common prefix is removed, we check the longest case string length again
+  //    and if it fits in 8 bytes we apply mixed algorithm: a prefix check plus perfect hashing of a tail
+  //    Extra ~10% (522) string switches are covered by this category.
+  //
+  // Other const string switches will be compiled as before, with normal hashing and equals().
+
+  struct StringSwitchInfo {
+    vk::string_view longest_prefix = {};
+    int max_len = 0;
+    int min_len = std::numeric_limits<int>::max();
+    bool has_empty_string_case = false;
+  };
+
+  const auto collect_switch_info = [](const std::vector<CaseInfo> &cases) {
+    const auto longest_common_prefix = [](const std::vector<CaseInfo> &cases) -> vk::string_view {
+      auto first = std::find_if(cases.begin(), cases.end(), [](const CaseInfo &c) {
+        return !c.is_default;
+      });
+      if (first == cases.end()) {
+        return {};
+      }
+      int prefix_len = 0;
+      vk::string_view prefix = first->string_case_value;
+      for (int i = 0; i < prefix.size(); i++) {
+        bool ok = vk::all_of(cases, [=](const CaseInfo &c) {
+          return c.is_default || (c.string_case_value.size() > i && c.string_case_value[i] == prefix[i]);
+        });
+        if (!ok) {
+          break;
+        }
+        prefix_len++;
+      }
+      return prefix.substr(0, prefix_len);
+    };
+
+    StringSwitchInfo switch_info;
+    for (const auto &c : cases) {
+      if (c.is_default) {
+        continue;
+      }
+      int len = c.string_case_value.size();
+      switch_info.max_len = std::max(len, switch_info.max_len);
+      switch_info.min_len = std::min(len, switch_info.min_len);
+      if (len == 0) {
+        switch_info.has_empty_string_case = true;
+      }
+    }
+    switch_info.longest_prefix = longest_common_prefix(cases);
+    return switch_info;
+  };
+
+  const auto compile_switch_cases = [](StringSwitchInfo &switch_info, VertexAdaptor<op_switch> root, CaseInfo *default_case, std::vector<CaseInfo> &cases, CodeGenerator &W) {
+    if (!switch_info.has_empty_string_case) {
+      // the best case: can compile as a perfect hash switch without prefix operations
+      if (switch_info.max_len <= 8 && compile_switch_cases_str_perfect_hash(root, cases, switch_info.max_len, {}, W)) {
+        return;
+      }
+      // maybe can compile as a perfect hash switch if common prefix is compared separately?
+      auto prefix = switch_info.longest_prefix;
+      if (prefix.size() == switch_info.min_len) {
+        // we can't hash empty string, so if one of the strings is an entire common prefix,
+        // make it 1 char shorter, so we have something to hash
+        prefix = prefix.substr(0, prefix.size() - 1);
+      }
+      int max_len_without_prefix = switch_info.max_len - prefix.size();
+      if (max_len_without_prefix <= 8 && compile_switch_cases_str_perfect_hash(root, cases, max_len_without_prefix, prefix, W)) {
+        return;
+      }
+    }
+    compile_switch_cases_str_hash(root, default_case, cases, W);
+  };
+
+  auto switch_info = collect_switch_info(cases);
+
+  W << BEGIN;
+  compile_switch_cases(switch_info, root, default_case, cases, W);
   W << Label{root->continue_label_id} <<
     END <<
     Label{root->break_label_id};
@@ -1092,6 +1229,26 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   W << Label{root->break_label_id};
 }
 
+void compile_switch_no_cases(VertexAdaptor<op_switch> root, CodeGenerator &W) {
+  W << BEGIN;
+  {
+    // this is a switch with no cases except default, so we don't need to compute
+    // a hash of the tag expression (but we still need to evaluate it
+    // as it could contain side effects)
+    W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
+    W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL;
+    W << "static_cast<void>(" << root->condition() << ");" << NL;
+    if (!root->cases().empty()) {
+      W << "switch (0) " << BEGIN;
+      W << "case 0: " << root->cases()[0].as<op_default>()->cmd();
+      W << END << NL;
+    }
+  }
+
+  W << END;
+  W << Label{root->continue_label_id};
+  W << Label{root->break_label_id};
+}
 
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   kphp_assert(root->condition_on_switch()->type() == op_var && root->matched_with_one_case()->type() == op_var);
@@ -1119,7 +1276,12 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     }
   }
 
-  if (num_const_string_cases == num_value_cases) {
+  if (num_value_cases == 0) {
+    // this is a rare case that sometimes occurs in auto-generated code
+    // or in places where code was commented-out
+    // see issue #503
+    compile_switch_no_cases(root, W);
+  } else if (num_const_string_cases == num_value_cases) {
     compile_switch_str(root, W);
   } else if (all_cases_are_ints) {
     compile_switch_int(root, W);

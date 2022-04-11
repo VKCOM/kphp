@@ -174,6 +174,11 @@ public:
 
   inline int64_t hash() const;
 
+  template<int MaxLen>
+  uint64_t case_hash8() const noexcept;
+  template<int MaxLen>
+  uint64_t case_hash8(const char *prefix, int64_t prefix_len) const noexcept;
+
   inline int64_t compare(const string &str) const;
 
   inline int64_t get_correct_index(int64_t index) const;
