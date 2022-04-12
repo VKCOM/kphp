@@ -7,6 +7,8 @@
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
 
+#include <array>
+
 constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
 constexpr int64_t JSON_FORCE_OBJECT = 16;
 constexpr int64_t JSON_PRETTY_PRINT = 128; // TODO: add actual support
@@ -14,70 +16,110 @@ constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
 constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
 namespace impl_ {
+struct JsonPath {
+  constexpr static int MAX_DEPTH = 8;
+
+  std::array<const char*, MAX_DEPTH> arr;
+  unsigned depth = 0;
+
+  void enter(const char *key) noexcept {
+    if (depth < arr.size()) {
+      arr[depth] = key;
+    }
+    depth++;
+  }
+
+  void leave() noexcept {
+    depth--;
+  }
+
+  string to_string() const;
+};
 
 class JsonEncoder : vk::not_copyable {
 public:
   JsonEncoder(int64_t options, bool simple_encode) noexcept;
 
-  bool encode(bool b) const noexcept;
-  bool encode(int64_t i) const noexcept;
-  bool encode(double d) const noexcept;
-  bool encode(const string &s) const noexcept;
-  bool encode(const mixed &v) const noexcept;
+  bool encode(bool b) noexcept;
+  bool encode(int64_t i) noexcept;
+  bool encode(const string &s) noexcept;
+  bool encode(double d) noexcept;
+  bool encode(const mixed &v) noexcept;
 
   template<class T>
-  bool encode(const array<T> &arr) const noexcept;
+  bool encode(const array<T> &arr) noexcept;
 
   template<class T>
-  bool encode(const Optional<T> &opt) const noexcept;
+  bool encode(const Optional<T> &opt) noexcept;
 
 private:
   bool encode_null() const noexcept;
 
+  JsonPath json_path_;
   const int64_t options_{0};
   const bool simple_encode_{false};
 };
 
 template<class T>
-bool JsonEncoder::encode(const array<T> &arr) const noexcept {
+bool JsonEncoder::encode(const array<T> &arr) noexcept {
   bool is_vector = arr.is_vector();
   const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
   if (!force_object && !is_vector && arr.is_pseudo_vector()) {
     if (arr.get_next_key() == arr.count()) {
       is_vector = true;
     } else {
-      php_warning("Corner case in json conversion, [] could be easy transformed to {}");
+      php_warning("%s: Corner case in json conversion, [] could be easy transformed to {}", json_path_.to_string().c_str());
     }
   }
   is_vector &= !force_object;
 
   static_SB << "{["[is_vector];
 
-  bool first = true;
-  for (auto p : arr) {
-    if (!first) {
-      static_SB << ',';
+  if (is_vector) {
+    int i = 0;
+    json_path_.enter(nullptr); // similar key for all entries
+    for (auto p : arr) {
+      if (i != 0) {
+        static_SB << ',';
+      }
+      if (!encode(p.get_value())) {
+        if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+          return false;
+        }
+      }
+      i++;
     }
-    first = false;
-
-    if (!is_vector) {
+    json_path_.leave();
+  } else {
+    bool is_first = true;
+    for (auto p : arr) {
+      if (!is_first) {
+        static_SB << ',';
+      }
+      is_first = false;
+      const char *next_key = nullptr;
       const auto key = p.get_key();
       if (array<T>::is_int_key(key)) {
-        static_SB << '"' << key.to_int() << '"';
+        auto int_key = key.to_int();
+        next_key = nullptr;
+        static_SB << '"' << int_key << '"';
       } else {
-        if (!encode(key)) {
+        const auto &str_key = key.as_string();
+        next_key = str_key.c_str();
+        if (!encode(str_key)) {
           if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
             return false;
           }
         }
       }
       static_SB << ':';
-    }
-
-    if (!encode(p.get_value())) {
-      if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
-        return false;
+      json_path_.enter(next_key);
+      if (!encode(p.get_value())) {
+        if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
+          return false;
+        }
       }
+      json_path_.leave();
     }
   }
 
@@ -86,7 +128,7 @@ bool JsonEncoder::encode(const array<T> &arr) const noexcept {
 }
 
 template<class T>
-bool JsonEncoder::encode(const Optional<T> &opt) const noexcept {
+bool JsonEncoder::encode(const Optional<T> &opt) noexcept {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return encode(opt.val());
