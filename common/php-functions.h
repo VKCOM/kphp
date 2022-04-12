@@ -6,6 +6,7 @@
 
 #include <climits>
 #include <cstring>
+#include <cctype>
 #include <limits>
 #include <type_traits>
 
@@ -89,6 +90,50 @@ int64_t string_hash(const char *p, size_t l) {
   return (result != std::numeric_limits<int64_t>::min()) * result;
 }
 
+inline bool php_is_numeric(const char *s) {
+  while (isspace(*s)) {
+    s++;
+  }
+
+  if (*s == '+' || *s == '-') {
+    s++;
+  }
+
+  int l = 0;
+  while (*s >= '0' && *s <= '9') {
+    l++;
+    s++;
+  }
+
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9') {
+      l++;
+      s++;
+    }
+  }
+
+  if (l == 0) {
+    return false;
+  }
+
+  if (*s == 'e' || *s == 'E') {
+    s++;
+    if (*s == '+' || *s == '-') {
+      s++;
+    }
+
+    if (*s == '\0') {
+      return false;
+    }
+
+    while (*s >= '0' && *s <= '9') {
+      s++;
+    }
+  }
+
+  return *s == '\0';
+}
 
 inline bool php_is_int(const char *s, size_t l) __attribute__ ((always_inline));
 
