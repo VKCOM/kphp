@@ -168,11 +168,11 @@ void master_init(master_data_t *me, master_data_t *other) {
   me->dying_http_workers_n = 0;
   me->to_kill = 0;
 
-  me->own_http_fd = 0;
-  me->http_fd_port = -1;
+  me->own_http_fds = 0;
+  me->http_ports_count = -1;
 
-  me->ask_http_fd_generation = 0;
-  me->sent_http_fd_generation = 0;
+  me->ask_http_fds_generation = 0;
+  me->sent_http_fds_generation = 0;
 
   me->instance_cache_elements_cached = 0;
 

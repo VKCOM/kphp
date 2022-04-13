@@ -482,10 +482,10 @@ void hts_stop() {
   if (hts_stopped) {
     return;
   }
+  int http_sfd = vk::singleton<HttpServerContext>::get().worker_http_socket_fd();
   if (http_sfd != -1) {
     epoll_close(http_sfd);
     close(http_sfd);
-    http_sfd = -1;
   }
   sigterm_time = get_utime_monotonic() + SIGTERM_WAIT_TIMEOUT;
   hts_stopped = 1;
@@ -1413,10 +1413,6 @@ void cron() {
   vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
 
-int try_get_http_fd() {
-  return server_socket(http_port, settings_addr, backlog, 0);
-}
-
 void reopen_json_log() {
   if (logname) {
     char worker_json_log_file_name[PATH_MAX];
@@ -1433,11 +1429,19 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
     reopen_json_log();
   }
 
+  int http_port, http_sfd = -1;
   int prev_time = 0;
   double next_create_outbound = 0;
 
   switch (worker_type) {
     case WorkerType::general_worker: {
+      const auto &http_server_ctx = vk::singleton<HttpServerContext>::get();
+
+      if (http_server_ctx.http_server_enabled()) {
+        http_port = http_server_ctx.worker_http_port();
+        http_sfd = http_server_ctx.worker_http_socket_fd();
+      }
+
       if (init_and_listen_rpc_port) {
         if (rpc_port > 0 && rpc_sfd < 0) {
           rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
@@ -1468,19 +1472,6 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
             prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
             assert (write(write_fd, q, (size_t)qsize) == qsize);
           }
-        }
-      }
-
-      if (http_port > 0 && http_sfd < 0) {
-        dl_assert (!master_flag, "failed to get http_fd\n");
-        if (master_flag) {
-          vkprintf(-1, "try_get_http_fd after start_master\n");
-          exit(1);
-        }
-        http_sfd = try_get_http_fd();
-        if (http_sfd < 0) {
-          vkprintf(-1, "cannot open http server socket at port %d: %m\n", http_port);
-          exit(1);
         }
       }
 
@@ -1597,7 +1588,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
     vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
-  if (worker_type == WorkerType::general_worker && http_sfd >= 0) {
+  if (worker_type == WorkerType::general_worker && http_sfd >= 0 && !hts_stopped) {
     epoll_close(http_sfd);
     assert (close(http_sfd) >= 0);
   }
@@ -1625,7 +1616,7 @@ void start_server() {
   init_epoll();
   WorkerType worker_type = WorkerType::general_worker;
   if (master_flag) {
-    worker_type = start_master(http_port > 0 ? &http_sfd : nullptr, &try_get_http_fd, http_port);
+    worker_type = start_master();
   }
 
   generic_event_loop(worker_type, !master_flag);
@@ -1776,8 +1767,8 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 'H': {
-      http_port = atoi(optarg);
-      return 0;
+      bool ok = vk::singleton<HttpServerContext>::get().init_from_option(optarg);
+      return ok ? 0 : -1;
     }
     case 'r': {
       rpc_port = atoi(optarg);
@@ -2149,7 +2140,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
   parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");
-  parse_option("http-port", required_argument, 'H', "http port");
+  parse_option("http-port", required_argument, 'H', "Comma separated list of HTTP ports to listen. Master process will distribute each listening socket for each worker");
   parse_option("rpc-port", required_argument, 'r', "rpc port");
   parse_option("rpc-client", required_argument, 'w', "host and port for client mode (host:port)");
   parse_option("hard-memory-limit", required_argument, 'm', "maximal size of memory used by script");
@@ -2290,8 +2281,12 @@ int run_main(int argc, char **argv, php_mode mode) {
   if (run_once) {
     master_flag = 0;
     rpc_port = -1;
-    http_port = -1;
     setvbuf(stdout, nullptr, _IONBF, 0);
+  }
+
+  if (!master_flag && vk::singleton<HttpServerContext>::get().http_server_enabled()) {
+    kprintf("HTTP server mode is not supported without workers, see -f/--workers-num option\n");
+    return 1;
   }
 
   init_default();

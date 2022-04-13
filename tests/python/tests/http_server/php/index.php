@@ -46,6 +46,8 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
         $res = 0;
     }
     echo json_encode(['len' => $res]);
+} else if ($_SERVER["PHP_SELF"] === "/pid") {
+    echo "pid=" . posix_getpid();
 } else {
   echo "Hello world!";
 }

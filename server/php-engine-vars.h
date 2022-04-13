@@ -40,10 +40,6 @@ extern int run_once_return_code;
 
 extern int die_on_fail;
 
-/** http **/
-extern int http_port;
-extern int http_sfd;
-
 /** rpc **/
 extern int rpc_port;
 extern int rpc_sfd;
