@@ -26,6 +26,7 @@ class TestStoreFetchDelete(KphpServerAutoTestCase):
 
             stored_elements = i + 1
             if stored_elements % 300 == 0:
+                # todo this waits for 2 minutes, making this test too long; can we avoid this?
                 self.kphp_server.assert_stats(
                     initial_stats=stats_before,
                     timeout=120,

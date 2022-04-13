@@ -6,6 +6,10 @@ import re
 from python.lib.testcase import KphpCompilerAutoTestCase
 
 class TestFFI(KphpCompilerAutoTestCase):
+    def should_use_nocc(self):
+        # compiling FFI tests needs special libs to be installed, whey aren't installed on nocc agents
+        return False
+
     def is_shared_lib_installed(self, name):
         if 'GITHUB_ACTIONS' in os.environ:
             return False

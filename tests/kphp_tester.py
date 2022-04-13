@@ -10,7 +10,8 @@ from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 
 from python.lib.colors import red, green, yellow, blue
-from python.lib.file_utils import read_distcc_hosts, search_php_bin
+from python.lib.file_utils import search_php_bin
+from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
 
 
@@ -41,7 +42,7 @@ class TestFile:
     def is_php8(self):
         return "php8" in self.tags
 
-    def make_kphp_once_runner(self, distcc_hosts, use_clang):
+    def make_kphp_once_runner(self, use_nocc, cxx_name):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
         return KphpRunOnce(
             php_script_path=self.file_path,
@@ -50,8 +51,8 @@ class TestFile:
             php_bin=search_php_bin(php8_require=self.is_php8()),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
-            distcc_hosts=distcc_hosts,
-            use_clang=use_clang
+            use_nocc=use_nocc,
+            cxx_name=cxx_name,
         )
 
 
@@ -307,11 +308,11 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(distcc_hosts, use_clang, test: TestFile):
+def run_test(use_nocc, cxx_name, test: TestFile):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = test.make_kphp_once_runner(distcc_hosts, use_clang)
+    runner = test.make_kphp_once_runner(use_nocc, cxx_name)
     runner.remove_artifacts_dir()
 
     if test.is_kphp_should_fail():
@@ -332,7 +333,7 @@ def run_test(distcc_hosts, use_clang, test: TestFile):
     return test_result
 
 
-def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, distcc_hosts, use_clang):
+def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, use_nocc, cxx_name):
     hack_reference_exit = []
     signal.signal(signal.SIGINT, lambda sig, frame: hack_reference_exit.append(1))
 
@@ -346,7 +347,7 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, distcc_hosts, use_clang), tests):
+        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -390,7 +391,7 @@ def parse_args():
         "-j",
         type=int,
         dest="jobs",
-        default=(multiprocessing.cpu_count() // 2) or 1,
+        default=multiprocessing.cpu_count(),
         help="number of parallel jobs")
 
     this_dir = os.path.dirname(__file__)
@@ -432,19 +433,18 @@ def parse_args():
         help='run tests from list')
 
     parser.add_argument(
-        '--distcc-host-list',
-        metavar='FILE',
-        type=str,
-        dest='distcc_host_list',
-        default=None,
-        help='list of available distcc hosts')
+        '--use-nocc',
+        action='store_true',
+        dest='use_nocc',
+        default=False,
+        help='use nocc in KPHP_CXX; if true, env NOCC_SERVERS must be set')
 
     parser.add_argument(
-        "--use-clang",
-        action='store_true',
-        dest="use_clang",
-        default=False,
-        help="use clang compiler for build test scripts")
+        "--cxx-name",
+        type=str,
+        dest="cxx_name",
+        default="g++",
+        help="specify cxx compiler, default g++")
 
     return parser.parse_args()
 
@@ -460,7 +460,9 @@ def main():
         sys.exit(1)
 
     try:
-        distcc_hosts = read_distcc_hosts(args.distcc_host_list)
+        if args.use_nocc:
+            # see a comment above this function why we are doing it manually
+            nocc_start_daemon_in_background()
     except Exception as ex:
         print(str(ex))
         sys.exit(1)
@@ -471,8 +473,8 @@ def main():
                   no_report=args.no_report,
                   passed_list=args.passed_list,
                   test_list=args.test_list,
-                  distcc_hosts=distcc_hosts,
-                  use_clang=args.use_clang)
+                  use_nocc=args.use_nocc,
+                  cxx_name=args.cxx_name)
 
 
 if __name__ == "__main__":
