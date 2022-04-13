@@ -477,6 +477,8 @@ inline int64_t f$memory_get_total_usage();
 
 inline array<int64_t> f$memory_get_detailed_stats();
 
+inline std::tuple<int64_t, int64_t> f$memory_get_allocations();
+
 template<class T>
 inline int64_t f$get_reference_counter(const array<T> &v);
 
@@ -1365,6 +1367,11 @@ array<int64_t> f$memory_get_detailed_stats() {
       std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
       std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))
     });
+}
+
+std::tuple<int64_t, int64_t> f$memory_get_allocations() {
+  const auto &stats = dl::get_script_memory_stats();
+  return {stats.total_allocations, stats.total_memory_allocated};
 }
 
 
