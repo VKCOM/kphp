@@ -51,6 +51,7 @@
 #include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
+#include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
@@ -2335,4 +2336,12 @@ void f$raise_sigsegv() {
 
 void use_utf8() {
   is_utf8_enabled = true;
+}
+
+int64_t f$numa_get_bound_node() {
+  auto &numa = vk::singleton<NumaConfiguration>::get();
+  if (!numa.enabled()) {
+    return -1;
+  }
+  return numa.get_worker_numa_node(logname_id);
 }

@@ -5,6 +5,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         json-logger.cpp
         lease-config-parser.cpp
         lease-rpc-client.cpp
+        numa-configuration.cpp
         php-engine-vars.cpp
         php-engine.cpp
         php-lease.cpp

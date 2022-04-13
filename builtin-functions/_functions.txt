@@ -1373,3 +1373,6 @@ final class FFI {
 
   private function __construct();
 }
+
+// Get numa node number which current worker is bound to (see --numa-node-to-bind option) or -1 if no numa node is bound
+function numa_get_bound_node(): int;

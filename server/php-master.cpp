@@ -56,6 +56,7 @@
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
+#include "server/numa-configuration.h"
 #include "server/server-stats.h"
 #include "server/statshouse/add-metrics-batch.h"
 #include "server/statshouse/statshouse-client.h"
@@ -575,6 +576,11 @@ int run_worker(WorkerType worker_type) {
     if (getppid() != me->pid) {
       vkprintf(0, "parent is dead just after start\n");
       exit(123);
+    }
+
+    auto &numa = vk::singleton<NumaConfiguration>::get();
+    if (numa.enabled()) {
+      numa.distribute_worker(worker_unique_id);
     }
 
     // TODO should we just use net_reset_after_fork()?

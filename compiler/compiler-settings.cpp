@@ -333,6 +333,7 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
   external_libs.emplace_back("iconv");
 #else
+  external_static_libs.emplace_back("numa");
   external_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
   external_libs.emplace_back("rt");
