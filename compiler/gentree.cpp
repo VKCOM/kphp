@@ -444,11 +444,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       if (cur_function->is_lambda()) {
         fun_name = "{closure}";
       } else if (!cur_function->is_main_function()) {
-        if (cur_class) {
-          fun_name = cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1);
-        } else {
-          fun_name = cur_function->name;
-        }
+        fun_name = cur_class
+                   ? cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1)
+                   : cur_function->name;
       }
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, fun_name);
       next_cur();

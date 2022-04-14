@@ -1382,3 +1382,16 @@ final class FFI {
 
 // Get numa node number which current worker is bound to (see --numa-node-to-bind option) or -1 if no numa node is bound
 function numa_get_bound_node(): int;
+
+/**
+ * @kphp-immutable-class
+ */
+class CompileTimeLocation {
+  public string $file;
+  public string $function;
+  public int $line;
+
+  public function __construct($file, $function, $line) ::: CompileTimeLocation;
+
+  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
+}
