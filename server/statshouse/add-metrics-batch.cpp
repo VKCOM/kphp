@@ -43,7 +43,7 @@ void StatsHouseAddMetricsBatch::tl_store() const {
 
 StatsHouseMetric make_statshouse_value_metric(std::string &&name, double value, const std::vector<std::pair<std::string, std::string>> &tags) {
   constexpr int fields_mask = vk::tl::statshouse::metric_fields_mask::value;
-  return {.fields_mask = fields_mask, .name = std::move(name), .tags = tags, .value = {value}};
+  return {.fields_mask = fields_mask, .name = std::move(name), .tags = tags, .counter = 0, .t = 0, .value = {value}};
 }
 
 StatsHouseMetric make_statshouse_value_metrics(std::string &&name, std::vector<double> &&value, const std::vector<std::pair<std::string, std::string>> &tags) {
