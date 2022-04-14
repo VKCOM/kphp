@@ -557,7 +557,8 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
-  const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) || vk::any_of(klass->implements, [](InterfacePtr i) { return i->does_need_codegen(); });
+  const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
+    vk::any_of(klass->implements, [](InterfacePtr i) { return i->does_need_codegen() || i->is_builtin(); });
   const bool has_derived = !klass->derived_classes.empty();
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
