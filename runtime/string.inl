@@ -763,6 +763,10 @@ bool string::to_bool() const {
 }
 
 int64_t string::to_int(const char *s, size_type l) {
+  while (isspace(*s)) {
+    s++;
+  }
+
   int64_t mul = 1, cur = 0;
   if (l > 0 && (s[0] == '-' || s[0] == '+')) {
     if (s[0] == '-') {
@@ -873,49 +877,9 @@ bool string::is_numeric_as_php8() const {
 }
 
 bool string::is_numeric_as_php7() const {
-  const char *s = c_str();
-  while (isspace(*s)) {
-    s++;
-  }
-
-  if (*s == '+' || *s == '-') {
-    s++;
-  }
-
-  int l = 0;
-  while (*s >= '0' && *s <= '9') {
-    l++;
-    s++;
-  }
-
-  if (*s == '.') {
-    s++;
-    while (*s >= '0' && *s <= '9') {
-      l++;
-      s++;
-    }
-  }
-
-  if (l == 0) {
-    return false;
-  }
-
-  if (*s == 'e' || *s == 'E') {
-    s++;
-    if (*s == '+' || *s == '-') {
-      s++;
-    }
-
-    if (*s == '\0') {
-      return false;
-    }
-
-    while (*s >= '0' && *s <= '9') {
-      s++;
-    }
-  }
-
-  return *s == '\0';
+  // using default PHP7-based function;
+  // this function is also used by the compiler
+  return php_is_numeric(c_str());
 }
 
 bool string::is_numeric() const {

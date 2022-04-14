@@ -1096,7 +1096,8 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   kphp_assert(root->condition_on_switch()->type() == op_var && root->matched_with_one_case()->type() == op_var);
   bool all_cases_are_ints = true;
-  bool all_cases_are_strings = true;
+  int num_const_string_cases = 0;
+  int num_value_cases = 0;
   bool has_default = false;
 
   for (auto one_case : root->cases()) {
@@ -1108,10 +1109,17 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
     auto val = GenTree::get_actual_value(one_case.as<op_case>()->expr());
     all_cases_are_ints    &= is_const_int(val);
-    all_cases_are_strings &= (val->type() == op_string);
+    num_value_cases++;
+    if (auto as_string = val.try_as<op_string>()) {
+      // PHP would use a numerical comparison for strings that look like a number,
+      // we shouldn't rewrite these switches as a string-only switch
+      if (!php_is_numeric(as_string->str_val.data())) {
+        num_const_string_cases++;
+      }
+    }
   }
 
-  if (all_cases_are_strings) {
+  if (num_const_string_cases == num_value_cases) {
     compile_switch_str(root, W);
   } else if (all_cases_are_ints) {
     compile_switch_int(root, W);
