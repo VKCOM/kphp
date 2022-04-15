@@ -9,7 +9,7 @@ import sys
 from enum import Enum
 
 from python.lib.colors import red, green, yellow, cyan
-from python.lib.file_utils import make_distcc_env, read_distcc_hosts
+from python.lib.nocc_for_kphp_tester import nocc_env
 
 
 class TestStatus(Enum):
@@ -22,16 +22,12 @@ class TestGroup:
     def __init__(self, name, description, cmd, skip):
         self.name = name
         self.description = description
-        self.template_cmd = cmd
+        self.cmd = cmd
         self.status = TestStatus.SKIPPED
-        self.params = {}
         self.skip = skip
 
-    def setup(self, params):
-        self.params = params
-
     def get_cmd(self):
-        return self.template_cmd.format(**self.params)
+        return self.cmd
 
     def print_full_test_cmd(self):
         print(cyan(self.get_cmd()), flush=True)
@@ -77,9 +73,6 @@ class TestRunner:
         if not self.no_report and not self.show_stages:
             self._clear_screen()
 
-        for test in self.test_list:
-            test.setup(params={"jobs": params.jobs})
-
     def run_tests(self):
         if self.show_stages:
             return
@@ -115,20 +108,8 @@ def make_relpath(file_dir, file_path):
     return rel_path
 
 
-CC2CXX_MAP = {"gcc": "g++", "clang": "clang++", "clang-11": "clang++-11"}
-
-
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        dest="jobs",
-        default=multiprocessing.cpu_count(),
-        help="number of jobs to some tests"
-    )
 
     parser.add_argument(
         "--no-report",
@@ -184,14 +165,13 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--compiler",
+        "--cxx-name",
         metavar="MODE",
         type=str,
-        dest="compiler",
-        default="gcc",
-        choices=CC2CXX_MAP.keys(),
-        help="specify compiler for tests"
-
+        dest="cxx_name",
+        default="g++",
+        choices=["g++", "clang++", "clang++-11"],
+        help="specify cxx for compiling kphp and running tests"
     )
 
     parser.add_argument(
@@ -211,11 +191,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--use-distcc",
+        "--use-nocc",
         action='store_true',
-        dest="use_distcc",
+        dest="use_nocc",
         default=False,
-        help="use distcc for building kphp tests"
+        help="use nocc for compiling kphp/engine and running phpt"
     )
 
     parser.add_argument(
@@ -243,10 +223,8 @@ if __name__ == "__main__":
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
 
-    cc_compiler = args.compiler
-    cxx_compiler = CC2CXX_MAP[cc_compiler]
-
-    use_clang_option = "--use-clang" if cc_compiler in {"clang", "clang-11"} else ""
+    use_nocc_option = "--use-nocc" if args.use_nocc else ""
+    n_cpu = multiprocessing.cpu_count()
 
     cmake_options = []
     env_vars = []
@@ -256,22 +234,16 @@ if __name__ == "__main__":
     if args.use_ubsan:
         cmake_options.append("-DUNDEFINED_SANITIZER=ON")
         env_vars.append("UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1")
-    cmake_options = " ".join(cmake_options)
-    env_vars = " ".join(env_vars)
+    if args.use_nocc:
+        cmake_options.append("-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(nocc_env("NOCC_EXECUTABLE", "nocc")))
 
     kphp_polyfills_repo = args.kphp_polyfills_repo
     if kphp_polyfills_repo == "":
         print(red("empty --kphp-polyfills-repo argument"), flush=True)
     kphp_polyfills_repo = os.path.abspath(kphp_polyfills_repo)
 
-    distcc_options = ""
-    distcc_cmake_option = ""
-    distcc_hosts_file = ""
-    if args.use_distcc:
-        distcc_hosts_file = "/etc/distcc/hosts"
-        distcc_options = "--distcc-host-list {}".format(distcc_hosts_file)
-        os.environ.update(make_distcc_env(read_distcc_hosts(distcc_hosts_file), os.path.join(runner_dir, "tmp_distcc")))
-        distcc_cmake_option = "-DCMAKE_CXX_COMPILER_LAUNCHER=distcc "
+    cmake_options = " ".join(cmake_options)
+    env_vars = " ".join(env_vars)
 
     runner.add_test_group(
         name="make-kphp",
@@ -280,24 +252,23 @@ if __name__ == "__main__":
             "mkdir {kphp_repo_root}/build && "
             "cmake "
             "-S {kphp_repo_root} -B {kphp_repo_root}/build "
-            "{distcc_cmake_option}"
-            "-DCMAKE_CXX_COMPILER={cxx} {cmake_options} && "
-            "{env_vars} make -C {kphp_repo_root}/build -j{{jobs}} all test && "
+            "-DCMAKE_CXX_COMPILER={cxx_name} {cmake_options} && "
+            "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test && "
             "{env_vars} make -C {kphp_repo_root}/build vkext7.4 && "
             "cd {kphp_repo_root}/build && cpack".format(
+                jobs=n_cpu * 4 if args.use_nocc else n_cpu,
                 kphp_repo_root=kphp_repo_root,
-                distcc_cmake_option=distcc_cmake_option,
-                cxx=cxx_compiler,
+                cxx_name=args.cxx_name,
                 cmake_options=cmake_options,
-                env_vars=env_vars
+                env_vars=env_vars,
             ),
         skip=args.steps and "make-kphp" not in args.steps
     )
 
     if args.engine_repo:
         packages_dir = os.path.abspath(os.path.join(kphp_repo_root, "build/_CPack_Packages/Linux/DEB/kphp-1.0.1-Linux"))
-        engine_cc = "distcc gcc" if args.use_distcc else "gcc"
-        engine_cxx = "distcc g++" if args.use_distcc else "g++"
+        engine_cc = "gcc"
+        engine_cxx = "g++"  # don't use nocc, as engines build uses -MP -MMD options that are not supported yet
         # There is no way to pass extra options for engine Makefile, so pass them right via CXX
         engine_cxx += " -I{packages_dir}/TLO_PARSING_DEV/usr/include/ -L{packages_dir}/TLO_PARSING_DEV/lib/".format(packages_dir=packages_dir)
         runner.add_test_group(
@@ -305,8 +276,9 @@ if __name__ == "__main__":
             description="make engines",
             cmd="{env_vars} PATH=\"{packages_dir}/TL_TOOLS/bin:$PATH\" "
                 "CC='{engine_cc}' CXX='{engine_cxx}' "
-                "make asan={asan} -C {engine_repo_root} -j{{jobs}} "
+                "make asan={asan} -C {engine_repo_root} -j{jobs} "
                 "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached memcached".format(
+                    jobs=n_cpu,
                     env_vars=env_vars,
                     packages_dir=packages_dir,
                     engine_repo_root=args.engine_repo,
@@ -319,13 +291,14 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="kphp-tests",
-        description="run kphp tests in {} mode".format("clang" if use_clang_option else "gcc"),
+        description="run kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-            "{kphp_runner} -j{{jobs}} {distcc_options} {use_clang_option}".format(
+            "{kphp_runner} -j{jobs} --cxx-name {cxx_name} {use_nocc_option}".format(
+            jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
-            distcc_options=distcc_options,
-            use_clang_option=use_clang_option
+            cxx_name=args.cxx_name,
+            use_nocc_option=use_nocc_option,
         ),
         skip=args.steps and "kphp-tests" not in args.steps
     )
@@ -334,12 +307,13 @@ if __name__ == "__main__":
         runner.add_test_group(
             name="zend-tests",
             description="run php tests from zend repo",
-            cmd="{kphp_runner} -j{{jobs}} -d {zend_repo} --from-list {zend_tests} {distcc_options} {use_clang_option}".format(
+            cmd="{kphp_runner} -j{jobs} -d {zend_repo} --from-list {zend_tests} --cxx-name {cxx_name} {use_nocc_option}".format(
+                jobs=n_cpu,
                 kphp_runner=kphp_test_runner,
                 zend_repo=args.zend_repo,
                 zend_tests=zend_test_list,
-                distcc_options=distcc_options,
-                use_clang_option=use_clang_option
+                cxx_name=args.cxx_name,
+                use_nocc_option=use_nocc_option,
             ),
             skip=args.steps and "zend-tests" not in args.steps
         )
@@ -363,30 +337,31 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="typed-tl-tests",
-        description="run typed tl tests in {} mode".format("clang" if use_clang_option else "gcc"),
+        description="run typed tl tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TL_SCHEMA={combined_tlo} "
             "KPHP_GEN_TL_INTERNALS=1 "
-            "{kphp_runner} -j{{jobs}} -d {tl_tests_dir} {distcc_options} {use_clang_option}".format(
+            "{kphp_runner} -j{jobs} -d {tl_tests_dir} --cxx-name {cxx_name} {use_nocc_option}".format(
+            jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             combined_tlo=os.path.abspath(combined_tlo),
             kphp_runner=kphp_test_runner,
             tl_tests_dir=tl_tests_dir,
-            distcc_options=distcc_options,
-            use_clang_option=use_clang_option
+            cxx_name=args.cxx_name,
+            use_nocc_option=use_nocc_option,
         ),
         skip=args.steps and "typed-tl-tests" not in args.steps
     )
 
     runner.add_test_group(
         name="functional-tests",
-        description="run kphp functional tests in {} mode".format("gcc"),
-        cmd="KPHP_TESTS_DISTCC_FILE={distcc_hosts_file} "
-            "python3 -m pytest --basetemp={base_tempdir} --tb=native -n{{jobs}} {functional_tests_dir}".format(
+        description="run kphp functional tests with cxx={}".format("gcc"),
+        cmd="python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+            jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
-            distcc_hosts_file=distcc_hosts_file,
             base_tempdir=os.path.expanduser('~/_tmp')   # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
                                                         # 108 is Linux limit for some reason, see https://blog.8-p.info/en/2020/06/11/unix-domain-socket-length/
+            # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
         ),
         skip=args.steps and "functional-tests" not in args.steps
     )
@@ -394,17 +369,17 @@ if __name__ == "__main__":
     if args.engine_repo and args.kphp_tests_repo:
         runner.add_test_group(
             name="integration-tests",
-            description="run kphp integration tests in {} mode".format("gcc"),
+            description="run kphp integration tests with cxx={}".format("gcc"),
             cmd="PYTHONPATH={lib_dir} "
                 "KPHP_TESTS_ENGINE_REPO={engine_repo} "
                 "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
-                "KPHP_TESTS_DISTCC_FILE={distcc_hosts_file} "
-                "python3 -m pytest --tb=native -n{{jobs}} {tests_dir}".format(
+                "python3 -m pytest --tb=native -n{jobs} {tests_dir}".format(
+                jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
-                distcc_hosts_file=distcc_hosts_file,
                 tests_dir=os.path.join(args.kphp_tests_repo, "python/tests"),
+                # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
             ),
             skip=args.steps and "integration-tests" not in args.steps
         )

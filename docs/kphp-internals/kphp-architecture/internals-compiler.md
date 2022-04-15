@@ -304,7 +304,7 @@ Each C++ file has `//crc64` and `//crc64_with_comments` at the very beginning. C
 
 Unless `--no-make` option is set, the compiling and linking process starts. 
 
-For every file that has to be recompiled, KPHP launches `KPHP_CXX` compiler (*g++* by default) with `KPHP_CXX_FLAGS`. For really huge projects, *distcc* can be set up for parallel compilation.  
+For every file that has to be recompiled, KPHP launches `KPHP_CXX` compiler (*g++* by default) with `KPHP_CXX_FLAGS`. For really huge projects, *nocc* can be set up for parallel compilation.  
 To link resulting object files, `KPHP_CXX` is also executed unless `KPHP_DYNAMIC_INCREMENTAL_LINKAGE` is set.  
 See [command-line options](../../kphp-language/kphp-vs-php/compiler-cmd-options.md) for more details. 
 

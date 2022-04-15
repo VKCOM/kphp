@@ -4,7 +4,8 @@ import subprocess
 import shutil
 import sys
 
-from .file_utils import search_kphp2cpp, error_can_be_ignored, can_ignore_sanitizer_log, make_distcc_env
+from .file_utils import search_kphp2cpp, error_can_be_ignored, can_ignore_sanitizer_log
+from .nocc_for_kphp_tester import nocc_make_env, nocc_prepend_to_cxx
 
 
 class Artifact:
@@ -14,7 +15,7 @@ class Artifact:
 
 
 class KphpBuilder:
-    def __init__(self, php_script_path, artifacts_dir, working_dir, distcc_hosts=None, use_clang=None):
+    def __init__(self, php_script_path, artifacts_dir, working_dir, use_nocc=False, cxx_name="g++"):
         self.artifacts = {}
         self._kphp_build_stderr_artifact = None
         self._kphp_build_sanitizer_log_artifact = None
@@ -27,8 +28,8 @@ class KphpBuilder:
         self._include_dirs = [os.path.dirname(self._test_file_path)]
         self._kphp_build_tmp_dir = os.path.join(self._working_dir, "kphp_build")
         self._kphp_runtime_bin = os.path.join(self._kphp_build_tmp_dir, "server")
-        self._distcc_hosts = distcc_hosts or []
-        self._use_clang = use_clang
+        self._use_nocc = use_nocc
+        self._cxx_name = cxx_name
 
     @property
     def kphp_build_stderr_artifact(self):
@@ -130,10 +131,10 @@ class KphpBuilder:
         env["KPHP_INCLUDE_DIR"] = ":".join(self._include_dirs)
         env["KPHP_DEST_DIR"] = os.path.abspath(self._kphp_build_tmp_dir)
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")
-        if self._distcc_hosts:
-            env.setdefault("KPHP_JOBS_COUNT", "8")
-            env.setdefault("KPHP_CXX", "distcc clang++-11" if self._use_clang else "distcc g++")
-            env.update(make_distcc_env(self._distcc_hosts, os.path.join(self._working_dir, "distcc")))
+        if self._use_nocc:
+            env.setdefault("KPHP_JOBS_COUNT", "16")
+            env.setdefault("KPHP_CXX", nocc_prepend_to_cxx(self._cxx_name))
+            env.update(nocc_make_env())
         else:
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
@@ -156,6 +157,7 @@ class KphpBuilder:
                 "^Starting php to cpp transpiling\\.\\.\\.$",
                 "^Starting make\\.\\.\\.$",
                 "^Compiling pch stage started\\.\\.\\.$",
+                "^\\[nocc\\] saved pch file to .+$",
                 "^objs cnt = \\d+$",
                 "^Compiling stage started\\.\\.\\.$",
                 "^Linking stage started\\.\\.\\.$",

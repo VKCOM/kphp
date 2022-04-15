@@ -11,7 +11,8 @@ from unittest import TestCase
 from .kphp_server import KphpServer
 from .kphp_builder import KphpBuilder
 from .kphp_run_once import KphpRunOnce
-from .file_utils import search_combined_tlo, read_distcc_hosts, can_ignore_sanitizer_log, search_php_bin
+from .file_utils import search_combined_tlo, can_ignore_sanitizer_log, search_php_bin
+from .nocc_for_kphp_tester import nocc_env, nocc_start_daemon_in_background
 
 logging.disable(logging.DEBUG)
 
@@ -164,11 +165,14 @@ class KphpServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def custom_setup(cls):
+        if cls.should_use_nocc():
+            nocc_start_daemon_in_background()
+
         cls.kphp_builder = KphpBuilder(
             php_script_path=os.path.join(cls.test_dir, "php/index.php"),
             artifacts_dir=cls.artifacts_dir,
             working_dir=cls.kphp_build_working_dir,
-            distcc_hosts=read_distcc_hosts(os.environ.get("KPHP_TESTS_DISTCC_FILE", None))
+            use_nocc=cls.should_use_nocc(),
         )
 
         tl_schema_required = _check_if_tl_required(os.path.join(cls.test_dir, "php/"))
@@ -229,6 +233,10 @@ class KphpServerAutoTestCase(BaseTestCase):
         """
         pass
 
+    @classmethod
+    def should_use_nocc(cls):
+        return nocc_env("NOCC_SERVERS_FILENAME", None) is not None
+
     def assertKphpNoTerminatedRequests(self):
         """
         Проверяем что в статах kphp сервер нет terminated requests
@@ -283,13 +291,17 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         for once_runner in cls.once_runner_trash_bin:
             once_runner.try_remove_kphp_build_trash()
 
+    @classmethod
+    def should_use_nocc(cls):
+        return nocc_env("NOCC_SERVERS_FILENAME", None) is not None
+
     def make_kphp_once_runner(self, php_script_path):
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
             artifacts_dir=self.kphp_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php8_require=self.require_php8),
-            distcc_hosts=read_distcc_hosts(os.environ.get("KPHP_TESTS_DISTCC_FILE", None))
+            use_nocc=self.should_use_nocc(),
         )
         self.once_runner_trash_bin.append(once_runner)
         return once_runner

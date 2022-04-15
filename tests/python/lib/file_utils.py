@@ -68,17 +68,6 @@ def gen_random_aes_key_file(directory):
     return key_file
 
 
-def read_distcc_hosts(distcc_hosts_file):
-    distcc_hosts = []
-    if distcc_hosts_file:
-        if not os.path.exists(distcc_hosts_file):
-            raise RuntimeError("Can't find distcc host list file '{}'".format(distcc_hosts_file))
-
-        with open(distcc_hosts_file, "r") as f:
-            distcc_hosts = f.readlines()
-    return distcc_hosts
-
-
 def error_can_be_ignored(ignore_patterns, binary_error_text):
     if not binary_error_text:
         return True
@@ -112,15 +101,6 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
         os.remove(sanitizer_log_file)
 
     return ignore_sanitizer
-
-
-def make_distcc_env(distcc_hosts, distcc_dir):
-    os.makedirs(distcc_dir, exist_ok=True)
-    return {
-        "DISTCC_HOSTS": "--randomize localhost/1 {}".format(" ".join(distcc_hosts)),
-        "DISTCC_DIR": distcc_dir,
-        "DISTCC_LOG": os.path.join(distcc_dir, "distcc.log")
-    }
 
 
 def search_php_bin(php8_require=False):

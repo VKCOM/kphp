@@ -9,13 +9,13 @@ from .file_utils import error_can_be_ignored
 
 class KphpRunOnce(KphpBuilder):
     def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin,
-                 extra_include_dirs=None, vkext_dir=None, distcc_hosts=None,use_clang=None):
+                 extra_include_dirs=None, vkext_dir=None, use_nocc=False, cxx_name="g++"):
         super(KphpRunOnce, self).__init__(
             php_script_path=php_script_path,
             artifacts_dir=artifacts_dir,
             working_dir=working_dir,
-            distcc_hosts=distcc_hosts,
-            use_clang=use_clang
+            use_nocc=use_nocc,
+            cxx_name=cxx_name,
         )
 
         self._php_stdout = None
