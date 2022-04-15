@@ -570,6 +570,7 @@ struct rpc_request {
     char *answer;
     const char *error;
   };
+  uint32_t function_magic{0};
 };
 
 
@@ -671,9 +672,9 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const char *answer_begin = data_buf.c_str() + sizeof(RpcHeaders);
+  uint32_t function_magic = *reinterpret_cast<const uint32_t *>(data_buf.c_str() + sizeof(RpcHeaders));
   RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, *(int *)answer_begin, conn.get()->default_actor_id, ignore_answer);
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->default_actor_id, ignore_answer);
 
   const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
   char *p = static_cast<char *>(dl::allocate(request_size));
@@ -721,6 +722,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   rpc_request *cur = get_rpc_request(result);
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
+  cur->function_magic = function_magic;
   cur->timer = nullptr;
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;
@@ -767,6 +769,13 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
   return request_id;
 }
 
+uint32_t get_pending_rpc_tl_query_magic(int32_t request_id) {
+  rpc_request *request = get_rpc_request(request_id);
+  if (request->resumable_id < 0) {
+    return 0;
+  }
+  return request->function_magic;
+}
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __attribute__((unused))) {
   rpc_request *request = get_rpc_request(request_id);

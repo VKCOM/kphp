@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #pragma pack(push, 1)
 
@@ -43,4 +44,4 @@ struct RpcHeaders {
 
 #pragma pack(pop)
 
-size_t fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, int function_magic, int actor_id, bool ignore_answer);
+size_t fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, uint32_t function_magic, int actor_id, bool ignore_answer);
