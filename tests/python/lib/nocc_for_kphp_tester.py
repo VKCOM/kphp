@@ -1,5 +1,6 @@
 import subprocess
 import os
+import random
 
 
 def nocc_env(nocc_env_name, default):
@@ -18,7 +19,7 @@ def nocc_make_env():
     return {
         "NOCC_GO_EXECUTABLE": nocc_env('NOCC_GO_EXECUTABLE', "/usr/bin/nocc-daemon"),
         "NOCC_SERVERS_FILENAME": nocc_servers_filename,
-        "NOCC_CLIENT_ID": "kphp-tester",
+        "NOCC_CLIENT_ID": nocc_env("NOCC_CLIENT_ID", "kphp-tester-" + ''.join(random.choices('0123456789', k=6))),
         "NOCC_LOG_FILENAME": nocc_env('NOCC_LOG_FILENAME', "/tmp/nocc-kphp-tests.log"),
         "NOCC_LOG_VERBOSITY": "1",
         "NOCC_DISABLE_OBJ_CACHE": "1",
