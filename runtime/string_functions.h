@@ -415,3 +415,22 @@ extern double default_similar_text_percent_stub;
 int64_t f$similar_text(const string &first, const string &second, double &percent = impl_::default_similar_text_percent_stub);
 
 // similar_text ( string $first , string $second [, float &$percent ] ) : int
+
+// str_concat functions implement efficient string-typed `.` (concatenation) operator implementation;
+// apart from being machine-code size efficient (a function call is more compact), they're also
+// usually faster as runtime is compiled with -O3 which is almost never the case for translated C++ code
+// (it's either -O2 or -Os most of the time)
+//
+// we choose to have 4 functions (up to 5 arguments) because of the frequency distribution:
+//   37619: 2 args
+//   20616: 3 args
+//    4534: 5 args
+//    3791: 4 args
+//     935: 7 args
+//     565: 6 args
+//     350: 9 args
+// Both 6 and 7 argument combination already look infrequent enough to not bother
+string str_concat(const string &s1, const string &s2);
+string str_concat(const string &s1, const string &s2, const string &s3);
+string str_concat(const string &s1, const string &s2, const string &s3, const string &s4);
+string str_concat(const string &s1, const string &s2, const string &s3, const string &s4, const string &s5);

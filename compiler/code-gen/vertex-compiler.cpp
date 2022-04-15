@@ -1298,6 +1298,29 @@ static bool can_save_ref(VertexPtr v) {
 }
 
 void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
+  if (root->args().size() <= 5) {
+    bool all_string_args = true;
+    for (const auto &arg : root->args()) {
+      const auto *arg_type = tinf::get_type(arg);
+      if (arg_type->ptype() != tp_string || arg_type->use_optional()) {
+        all_string_args = false;
+        break;
+      }
+    }
+    // we generate a 1-argument string build for some optimized constructions
+    // like sprintf('foo') will become a string build of 'foo' argument;
+    // mostly to make the generated code prettier
+    if (all_string_args && root->args().size() == 1) {
+      W << root->args()[0];
+      return;
+    }
+    // we have specialized str_concat() routines for up to 5 arguments
+    if (all_string_args && root->args().size() <= 5) {
+      W << "str_concat(" << JoinValues(root->args(), ", ") << ")";
+      return;
+    }
+  }
+
   std::vector<StrlenInfo> info(root->size());
   bool ok = true;
   bool was_dynamic = false;
