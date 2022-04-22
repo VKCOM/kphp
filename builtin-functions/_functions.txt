@@ -321,7 +321,7 @@ function is_string ($v ::: mixed) ::: bool;
 function is_array ($v ::: any) ::: bool;
 function is_object ($v ::: any) ::: bool;
 function get_class ($v ::: any) ::: string;
-function get_hash_of_class ($klass ::: any) ::: int;
+function get_hash_of_class (object $klass) ::: int;
 function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
 function print ($v ::: string) ::: int;
@@ -1276,19 +1276,19 @@ function raise_sigsegv () ::: void;
 function make_clone ($x ::: any) ::: ^1;
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast($instance ::: any, $to_type ::: string) ::: instance<^2>;
+function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
 
-function instance_to_array($instance ::: any, $with_class_names ::: bool = false) ::: mixed[];
+function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
 
 /** Instance cache interface (like APC) **/
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
-function instance_cache_store(string $key, any $value, int $ttl = 0) ::: bool;
+function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
 function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
 function instance_cache_delete(string $key) ::: bool;
 
-function instance_serialize($instance ::: any) ::: string | null;
+function instance_serialize(object $instance) ::: string | null;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 

@@ -761,6 +761,7 @@ int type_strlen(const TypeData *type) {
     case tp_mixed:
       return STRLEN_VAR;
     case tp_Class:
+    case tp_object:
       return STRLEN_CLASS;
     case tp_void:
       return STRLEN_VOID;
@@ -885,6 +886,8 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
           }
         }
         break;
+      case tp_object:
+        return tp == tp_Class || tp == tp_object;
       default:
         break;
     }

@@ -212,3 +212,15 @@ void GenericsDeclarationMixin::make_function_generics_on_callable_arg(FunctionPt
   const TypeHint *extends_hint_callable = TypeHintCallable::create_untyped_callable();
   f->generics_declaration->add_itemT(nameT, extends_hint_callable);
 }
+
+void GenericsDeclarationMixin::make_function_generics_on_object_arg(FunctionPtr f, VertexPtr func_param) {
+  if (!f->generics_declaration) {
+    f->generics_declaration = new GenericsDeclarationMixin();
+  }
+
+  std::string nameT = "Object" + std::to_string(f->generics_declaration->size() + 1);
+  func_param.as<op_func_param>()->type_hint = TypeHintGenericsT::create(nameT);
+
+  // add a <Cb1: object> rule
+  f->generics_declaration->add_itemT(nameT, TypeHintObject::create());
+}

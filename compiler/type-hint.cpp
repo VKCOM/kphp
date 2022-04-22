@@ -335,6 +335,14 @@ const TypeHint *TypeHintPrimitive::create(PrimitiveType ptype) {
   );
 }
 
+const TypeHint *TypeHintObject::create() {
+  HasherOfTypeHintForOptimization hash(13255191682146639421ULL);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintObject()
+  );
+}
+
 const TypeHint *TypeHintShape::create(std::vector<std::pair<std::string, const TypeHint *>> &&items, bool is_vararg) {
   HasherOfTypeHintForOptimization hash(8163025479511413046ULL);
   for (const auto &item : items) {
@@ -442,6 +450,10 @@ std::string TypeHintPrimitive::as_human_readable() const {
   return ptype_name(ptype);
 }
 
+std::string TypeHintObject::as_human_readable() const {
+  return "object";
+}
+
 std::string TypeHintShape::as_human_readable() const {
   return "shape(" + vk::join(items, ", ", [](const auto &item) { return item.first + ":" + item.second->as_human_readable(); }) + (is_vararg ? ", ..." : "");
 }
@@ -531,6 +543,10 @@ void TypeHintPipe::traverse(const TraverserCallbackT &callback) const {
 }
 
 void TypeHintPrimitive::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+}
+
+void TypeHintObject::traverse(const TraverserCallbackT &callback) const {
   callback(this);
 }
 
@@ -625,6 +641,10 @@ const TypeHint *TypeHintPrimitive::replace_self_static_parent(FunctionPtr resolv
   return this;
 }
 
+const TypeHint *TypeHintObject::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+  return this;
+}
+
 const TypeHint *TypeHintShape::replace_self_static_parent(FunctionPtr resolve_context) const {
   auto mapper = vk::make_transform_iterator_range([resolve_context](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_self_static_parent(resolve_context)); }, items.begin(), items.end());
   return create({mapper.begin(), mapper.end()}, is_vararg);
@@ -710,6 +730,10 @@ const TypeHint *TypeHintPipe::replace_children_custom(const ReplacerCallbackT &c
 }
 
 const TypeHint *TypeHintPrimitive::replace_children_custom(const ReplacerCallbackT &callback) const {
+  return callback(this);
+}
+
+const TypeHint *TypeHintObject::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(this);
 }
 

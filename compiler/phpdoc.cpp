@@ -398,7 +398,7 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       return TypeHintOptional::create(parse_type_expression(), true, false);
     case tok_object:
       cur_tok++;
-      return TypeHintPrimitive::create(tp_any);
+      return TypeHintObject::create();
 
     case tok_static:
     case tok_func_name:
@@ -710,24 +710,8 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
   }
 
   if (type_hint->has_instances_inside()) {
-    // todo move below
     type_hint->traverse([&all_resolved](const TypeHint *child) {
-      if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
-      ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
-      kphp_error_return(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
-    }
-
-    if (const auto *as_ffi = child->try_as<TypeHintFFIType>()) {
-      if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
-        ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
-        kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
-        bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
-                       (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
-        kphp_error_return(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
-      }
-    }
-
-    if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+      if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
         ClassPtr klass = as_instance->resolve();
         if (!klass) {
           all_resolved = false;
@@ -736,8 +720,26 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
           kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
         }
 
+      } else if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
+        ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
+        kphp_error(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
+
+      } else if (const auto *as_ffi = child->try_as<TypeHintFFIType>()) {
+        if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
+          ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
+          kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+          bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
+                         (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
+          kphp_error(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+        }
       }
     });
+  }
+
+  if (type_hint->has_autogenerics_inside()) {
+    // 'callable' and 'object' are allowed only standalone; fire an error for 'callable[]' and other nested
+    kphp_error(type_hint->try_as<TypeHintCallable>() || type_hint->try_as<TypeHintObject>(),
+               "Keywords 'callable' and 'object' have special treatment, they are not real types.\nThey can be used for a parameter, implicitly converting a function into generics.\nThey can NOT be used inside arrays, tuples, etc. — only as a standalone keyword.\nConsider using typed callables instead of 'callable', and generics functions/classes instead of 'object'.");
   }
 
   if (type_hint->has_callables_inside()) {

@@ -54,6 +54,7 @@ protected:
     flag_contains_tp_any_inside = 1 << 3,
     flag_contains_callables_inside = 1 << 4,
     flag_contains_genericsT_inside = 1 << 5,
+    flag_contains_autogenerics_inside = 1 << 6,
     flag_potentially_casts_rhs = 1 << 10,
   };
 
@@ -73,6 +74,7 @@ public:
   bool has_tp_any_inside() const { return flags & flag_contains_tp_any_inside; }
   bool has_callables_inside() const { return flags & flag_contains_callables_inside; }
   bool has_genericsT_inside() const { return flags & flag_contains_genericsT_inside; }
+  bool has_autogenerics_inside() const { return flags & flag_contains_autogenerics_inside; }
   bool has_flag_maybe_casts_rhs() const { return flags & flag_potentially_casts_rhs; }
 
   bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericsT_inside(); }
@@ -227,7 +229,7 @@ public:
  */
 class TypeHintCallable : public TypeHint {
   explicit TypeHintCallable()
-    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs | flag_contains_tp_any_inside) {}
+    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs | flag_contains_autogenerics_inside | flag_contains_tp_any_inside) {}
   explicit TypeHintCallable(FunctionPtr f_bound_to)
     : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs)
     , f_bound_to(std::move(f_bound_to)) {}
@@ -438,6 +440,25 @@ public:
   PrimitiveType ptype;
 
   static const TypeHint *create(PrimitiveType ptype);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
+ * 'object' has a special treatment and a special type hint (it's not a primitive, it's not an instance of an exact class).
+ * 'object' parameters, like just 'callable', convert a function to a template one.
+ * 'object' also occurs in _functions.txt for parameters meaning "any instance, not a primitive".
+ */
+class TypeHintObject : public TypeHint {
+  explicit TypeHintObject()
+    : TypeHint(flag_contains_autogenerics_inside | flag_contains_tp_any_inside) {}
+
+public:
+  static const TypeHint *create();
 
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;

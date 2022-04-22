@@ -36,6 +36,7 @@ struct GenericsDeclarationMixin {
 
   static void apply_from_phpdoc(FunctionPtr f, const PhpDocComment *phpdoc);
   static void make_function_generics_on_callable_arg(FunctionPtr f, VertexPtr func_param);
+  static void make_function_generics_on_object_arg(FunctionPtr f, VertexPtr func_param);
 };
 
 // when we have `f<T1,T2>` and a call `f($o1,$o2)`, then it has call->instantiation_list set

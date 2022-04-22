@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Called instance_cache_store\(\) with a non-instance argument/
+/pass int\[]\ to argument \$value of instance_cache_store/
 <?php
 
 instance_cache_store("key", [1, 2]);

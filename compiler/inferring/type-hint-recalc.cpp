@@ -106,6 +106,8 @@ void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
     dst->set_lca(get_lambda_class()->type_data);
   } else {
     // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
+    // if used in param, like function f(callable $cb), f was auto-converted to generics, and 'callable' was dropped away
+    // this branch is reachable when 'callable' is used in @return or in @var, then it's treated like 'any' and replaced by an inferred lambda
   }
 }
 
@@ -195,6 +197,12 @@ void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr 
 
 void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
   dst->set_lca(TypeData::get_type(ptype));
+}
+
+void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
+  // 'object' keyword is allowed only in params of functions (it converts a function into a generics and is dropped away)
+//  kphp_error(0, "keyword 'object' is allowed only when declaring param of a function");
+  dst->set_lca(tp_object);
 }
 
 void TypeHintShape::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {

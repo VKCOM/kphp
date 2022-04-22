@@ -52,7 +52,7 @@ public:
     }
 
     // 'callable' or typed callable params act like @kphp-template
-    convert_to_template_function_if_callable_arg();
+    convert_to_template_function_if_has_autogenerics_arg();
 
     // now, parse @return tags
     if (phpdoc) {
@@ -147,13 +147,19 @@ private:
     return f_;
   }
 
-  void convert_to_template_function_if_callable_arg() {
+  void convert_to_template_function_if_has_autogenerics_arg() {
     for (auto p : func_params_) {
       auto cur_func_param = p.as<op_func_param>();
-      if (const auto *callable = cur_func_param->type_hint ? cur_func_param->type_hint->try_as<TypeHintCallable>() : nullptr) {
-        if (!callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
+      if (!cur_func_param->type_hint || !cur_func_param->type_hint->has_autogenerics_inside()) {
+        continue;
+      }
+
+      if (const auto *as_callable = cur_func_param->type_hint->try_as<TypeHintCallable>()) {
+        if (!as_callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
           GenericsDeclarationMixin::make_function_generics_on_callable_arg(f_, cur_func_param);
         }
+      } else if (!f_->is_extern() && cur_func_param->type_hint->try_as<TypeHintObject>()) {
+        GenericsDeclarationMixin::make_function_generics_on_object_arg(f_, cur_func_param);
       }
     }
   }
