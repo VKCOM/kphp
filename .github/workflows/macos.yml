@@ -1,0 +1,45 @@
+name: macos
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build-macos:
+    runs-on: ${{matrix.os}}-11
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            compiler: clang++
+            cpp: 17
+
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Environment
+      run: |
+        brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
+        brew link --overwrite php@7.4
+        pip3 install jsonschema
+        rm -rf /usr/local/opt/openssl
+        ln -sF /usr/local/Cellar/openssl@1.1/1.1.1o /usr/local/opt/openssl
+
+    - name: Run cmake
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+
+    - name: Build all
+      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+      
+    - name: Run unit tests
+      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+
+    - name: Compile dummy PHP script
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        echo 'hello world' > demo.php 
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+        kphp_out/server -o

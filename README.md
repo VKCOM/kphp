@@ -1,3 +1,7 @@
+[![macos](https://github.com/troy4eg/kphp/actions/workflows/macos.yml/badge.svg)](https://github.com/troy4eg/kphp/actions/workflows/macos.yml)
+[![debian](https://github.com/troy4eg/kphp/actions/workflows/debian.yml/badge.svg)](https://github.com/troy4eg/kphp/actions/workflows/debian.yml)
+[![ubuntu](https://github.com/troy4eg/kphp/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/troy4eg/kphp/actions/workflows/ubuntu.yml)
+
 # KPHP — a PHP compiler
 
 KPHP is a PHP compiler. It compiles a limited subset of PHP to a native binary running faster than PHP.
