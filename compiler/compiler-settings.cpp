@@ -331,14 +331,10 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-#if defined(__arm64__) || defined(__aarch64__)
-#if defined(__APPLE__)
+#if (defined(__arm64__) || defined(__aarch64__)) && defined(__APPLE__)
   // for development under M1, manual installation of libucontext is needed
   // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
-#else
-  ld_flags.value_ += " -lucontext";
-#endif
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
