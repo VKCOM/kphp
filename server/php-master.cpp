@@ -775,7 +775,7 @@ static int sock_dgram(const char *path) {
 }
 
 /* receive file descriptors over unix socket */
-static std::vector<int> receive_fds(int unix_socket_fd, bool receive_from_old_master = false) {
+static std::vector<int> receive_fds(int unix_socket_fd) {
   tvkprintf(graceful_restart, 1, "Graceful restart: receiving http fds from old master\n");
 
   std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_HTTP_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
@@ -783,7 +783,7 @@ static std::vector<int> receive_fds(int unix_socket_fd, bool receive_from_old_ma
   int iobuf[1];
   iovec iov = {
     .iov_base = static_cast<void *>(iobuf),
-    .iov_len = receive_from_old_master ? sizeof(char) : sizeof(int),
+    .iov_len = sizeof(int),
   };
 
   msghdr msg = {
@@ -802,14 +802,8 @@ static std::vector<int> receive_fds(int unix_socket_fd, bool receive_from_old_ma
     return {};
   }
 
-  int http_fds_count = -1;
+  int http_fds_count = *static_cast<int *>(msg.msg_iov->iov_base);
 
-  if (receive_from_old_master) {
-    assert(*static_cast<char *>(msg.msg_iov->iov_base) == 'x');
-    http_fds_count = 1;
-  } else {
-    http_fds_count = *static_cast<int *>(msg.msg_iov->iov_base);
-  }
   tvkprintf(graceful_restart, 1, "Graceful restart: http fds received successfully, got %d fds from old master\n", http_fds_count);
 
   cmsghdr *cmsg = CMSG_FIRSTHDR (&msg);
@@ -1210,17 +1204,8 @@ bool init_http_sockets_if_needed() {
     return true;
   }
 
-  bool ports_compatible = false;
-  bool other_master_is_old = other->http_ports_count > HttpServerContext::MAX_HTTP_PORTS; // old master stores http port instead of count in this memory
-  if (other_master_is_old) {
-    // trick for backward compatibility for successful graceful restart with master of old kphp version
-    // TODO: remove after full update
-    int old_master_http_port = other->http_ports_count;
-    ports_compatible = me->http_ports_count == 1 && me->http_ports[0] == old_master_http_port;
-  } else {
-    ports_compatible = other->http_ports_count == me->http_ports_count && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
-  }
-  bool can_ask_http_fds = other->is_alive && other->own_http_fds && ports_compatible;
+  bool can_ask_http_fds = other->is_alive && other->own_http_fds &&
+                          other->http_ports_count == me->http_ports_count && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
   if (!can_ask_http_fds) {
     vkprintf(1, "Create http sockets\n");
 
@@ -1231,12 +1216,12 @@ bool init_http_sockets_if_needed() {
   } else {
     tvkprintf(graceful_restart, 1, "Graceful restart: going to get http fds from old master\n");
     if (me->ask_http_fds_generation != 0 && other->sent_http_fds_generation > me->generation) {
-      std::vector<int> open_http_sfds = receive_fds(socket_fd, other_master_is_old);
+      std::vector<int> open_http_sfds = receive_fds(socket_fd);
 
       if (open_http_sfds.empty()) {
         tvkprintf(graceful_restart, 1, "Graceful restart: failed to receive fds, wait for a second...\n");
         sleep(1);
-        open_http_sfds = receive_fds(socket_fd, other_master_is_old);
+        open_http_sfds = receive_fds(socket_fd);
       }
 
       if (!open_http_sfds.empty()) {
