@@ -6,7 +6,7 @@
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
-size_t fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, int function_magic, int actor_id, bool ignore_answer) {
+size_t fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, uint32_t function_magic, int actor_id, bool ignore_answer) {
   size_t extra_headers_size = 0;
   bool need_actor = actor_id != 0 && vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_ACTOR_FLAGS);
   bool need_flags = ignore_answer && vk::none_of_equal(function_magic, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS);

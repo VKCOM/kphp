@@ -16,6 +16,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/rpc.h"
 
 #include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
@@ -1096,11 +1097,14 @@ void php_queries_finish() {
 const char *net_event_t::get_description() const noexcept {
   static std::array<char, 10000> BUF;
   std::visit(overloaded{
-    [](const net_events_data::rpc_answer &event) {
-      sprintf(BUF.data(), "RPC RESPONSE: TL magic = 0x%08x, bytes length = %d", event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
+    [this](const net_events_data::rpc_answer &event) {
+      sprintf(BUF.data(), "RPC RESPONSE: TL function magic = 0x%08x, response magic = 0x%08x, bytes length = %d",
+                           get_pending_rpc_tl_query_magic(slot_id),
+                           event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
-    [](const net_events_data::rpc_error &event) {
-      sprintf(BUF.data(), "RPC ERROR: error code = %d, error message = %s", event.error_code, event.error_message);
+    [this](const net_events_data::rpc_error &event) {
+      sprintf(BUF.data(), "RPC ERROR: TL function magic = 0x%08x, error code = %d, error message = %s",
+                           get_pending_rpc_tl_query_magic(slot_id), event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {

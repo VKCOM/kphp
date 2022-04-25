@@ -24,6 +24,8 @@ extern bool fail_rpc_on_int32_overflow;
 
 extern bool rpc_stored;
 
+uint32_t get_pending_rpc_tl_query_magic(int32_t request_id);
+
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
 void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message);
