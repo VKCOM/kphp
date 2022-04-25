@@ -2755,3 +2755,38 @@ int64_t f$similar_text(const string &first, const string &second, double &percen
   percent = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
   return static_cast<int64_t>(sim);
 }
+
+string str_concat(const string &s1, const string &s2) {
+  // for 2 argument concatenation it's not so uncommon to have at least one empty string argument;
+  // it happens in cases like `$prefix . $s` where $prefix could be empty depending on some condition
+  // real-world applications analysis shows that ~17.6% of all two arguments concatenations have
+  // at least one empty string argument
+  //
+  // checking both lengths for 0 is almost free, but when we step into those 17.6%, we get almost x10
+  // faster concatenation and no heap allocations
+  //
+  // this idea is borrowed from the Go runtime
+  if (s1.empty()) {
+    return s2;
+  }
+  if (s2.empty()) {
+    return s1;
+  }
+  auto new_size = s1.size() + s2.size();
+  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).finish_append();
+}
+
+string str_concat(const string &s1, const string &s2, const string &s3) {
+  auto new_size = s1.size() + s2.size() + s3.size();
+  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).finish_append();
+}
+
+string str_concat(const string &s1, const string &s2, const string &s3, const string &s4) {
+  auto new_size = s1.size() + s2.size() + s3.size() + s4.size();
+  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).append_unsafe(s4).finish_append();
+}
+
+string str_concat(const string &s1, const string &s2, const string &s3, const string &s4, const string &s5) {
+  auto new_size = s1.size() + s2.size() + s3.size() + s4.size() + s5.size();
+  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).append_unsafe(s4).append_unsafe(s5).finish_append();
+}
