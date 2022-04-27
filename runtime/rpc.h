@@ -6,8 +6,10 @@
 
 #include <memory>
 
+#include "common/algorithms/hashes.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
+#include "runtime/to-array-processor.h"
 
 extern long long rpc_tl_results_last_query_num;
 
@@ -104,7 +106,24 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection> 
 
   C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, long long default_actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
+  const char *get_class() const  noexcept {
+    return R"(RpcConnection)";
+  }
+
+  int get_hash() const noexcept {
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcConnection::get_class())));
+  }
+
   void accept(InstanceMemoryEstimateVisitor &) {}
+
+  void accept(ToArrayVisitor &visitor) {
+    visitor("host_num", host_num);
+    visitor("port", port);
+    visitor("timeout_ms", timeout_ms);
+    visitor("default_actor_id", default_actor_id);
+    visitor("connect_timeout", connect_timeout);
+    visitor("reconnect_timeout", reconnect_timeout);
+  }
 };
 
 class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
