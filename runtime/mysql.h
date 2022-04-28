@@ -4,11 +4,12 @@
 
 #pragma once
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 
-class C$mysqli : public refcountable_php_classes<C$mysqli> {
+class C$mysqli : public refcountable_php_classes<C$mysqli>, public DummyVisitorMethods {
 public:
   int32_t connection_id = -1;
   int32_t connected = 0; // K.O.T.: 1 = connected, -1 = error, -2 = down
@@ -22,6 +23,8 @@ public:
   array<int32_t> cur_pos;
   int32_t field_cnt = 0;
   array<string> field_names;
+
+  using DummyVisitorMethods::accept;
 
   void accept(InstanceMemoryEstimateVisitor &visitor) {
     visitor("", error);

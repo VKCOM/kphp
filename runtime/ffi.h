@@ -4,15 +4,15 @@
 
 #pragma once
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 
 template<class T>
-struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>> {
+struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, public DummyVisitorMethods {
   T c_value;
 
-  void accept(InstanceMemoryEstimateVisitor &visitor __attribute__((unused))) {}
   const char *get_class() const noexcept { return "FFI\\CData"; }
   int get_hash() const noexcept { return 1945543994; }
 };

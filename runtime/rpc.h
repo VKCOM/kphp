@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "common/algorithms/hashes.h"
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/resumable.h"
 #include "runtime/to-array-processor.h"
@@ -96,7 +97,7 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection> {
+struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, public DummyVisitorMethods {
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};
@@ -114,7 +115,7 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection> 
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcConnection::get_class())));
   }
 
-  void accept(InstanceMemoryEstimateVisitor &) {}
+  using DummyVisitorMethods::accept;
 
   void accept(ToArrayVisitor &visitor) {
     visitor("host_num", host_num);

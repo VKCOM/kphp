@@ -9,13 +9,14 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 #include "runtime/pdo/abstract_pdo_statement.h"
 
 
-struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface> {
+struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, public DummyVisitorMethods {
   std::unique_ptr<pdo::AbstractPdoStatement> statement;
   int64_t timeout_sec{-1};
 
@@ -28,8 +29,6 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_ref
   virtual int32_t get_hash() const noexcept {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDOStatement::get_class())));
   }
-
-  virtual void accept(InstanceMemoryEstimateVisitor &) {}
 };
 
 bool f$PDOStatement$$execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params = {}) noexcept;

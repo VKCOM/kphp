@@ -9,12 +9,13 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/pdo/abstract_pdo_driver.h"
 #include "runtime/refcountable_php_classes.h"
 
-struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface> {
+struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, public DummyVisitorMethods {
   static constexpr int ATTR_TIMEOUT = 2;
 
   std::unique_ptr<pdo::AbstractPdoDriver> driver;
@@ -29,8 +30,6 @@ struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable
   virtual int32_t get_hash() const noexcept {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDO::get_class())));
   }
-
-  virtual void accept(InstanceMemoryEstimateVisitor &) {}
 };
 
 class_instance<C$PDO> f$PDO$$__construct(class_instance<C$PDO> const &v$this, const string &dsn, const Optional<string> &username = {},

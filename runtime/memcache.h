@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
@@ -35,7 +36,7 @@ public:
   virtual int32_t get_hash() const = 0;
 };
 
-class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache> {
+class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache>, public DummyVisitorMethods {
 public:
   class host {
   public:
@@ -47,6 +48,8 @@ public:
     host();
     host(int32_t host_num, int32_t host_port, int32_t host_weight, int32_t timeout_ms);
   };
+
+  using DummyVisitorMethods::accept;
 
   void accept(InstanceMemoryEstimateVisitor &visitor) final {
     visitor("", hosts);
