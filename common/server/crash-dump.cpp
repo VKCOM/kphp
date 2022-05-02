@@ -4,10 +4,10 @@
 
 #include "common/server/crash-dump.h"
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <unistd.h>
 
 #include "common/kprintf.h"
@@ -17,7 +17,7 @@ struct crash_dump_buffer {
   char scratchpad[1024];
   size_t position;
 };
-typedef struct crash_dump_buffer crash_dump_buffer_t;
+using crash_dump_buffer_t = struct crash_dump_buffer;
 
 static inline char crash_dump_half_byte_char(uint8_t hb) {
   if (hb <= 9) {
@@ -45,8 +45,8 @@ static inline void crash_dump_write_uint32(uint32_t value, crash_dump_buffer_t *
 }
 
 static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t *buffer) {
-  crash_dump_write_uint32((uint32_t)(value >> 32), buffer);
-  crash_dump_write_uint32((uint32_t)(value & 0xFFFFFFFF), buffer);
+  crash_dump_write_uint32(static_cast<uint32_t>(value >> 32), buffer);
+  crash_dump_write_uint32(static_cast<uint32_t>(value & 0xFFFFFFFF), buffer);
 }
 
 static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
@@ -61,10 +61,49 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
 
 static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, void *ucontext) {
-#if defined(__arm64__)    // Apple M1
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("APPLE_M1_SUPPORTED="), 0, buffer);
+#if defined(__APPLE__)
+#ifdef __arm64__ // Apple M1
+  const auto *uc = static_cast<ucontext_t *>(ucontext);
 
-#elif defined(__APPLE__)
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext->__ss.__sp, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("PC=0x"), uc->uc_mcontext->__ss.__pc, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("LR=0x"), uc->uc_mcontext->__ss.__lr, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("FP=0x"), uc->uc_mcontext->__ss.__fp, buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("PSTATE=0x"), uc->uc_mcontext->__ss.__cpsr, buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X0=0x"), uc->uc_mcontext->__ss.__x[0], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X1=0x"), uc->uc_mcontext->__ss.__x[1], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X2=0x"), uc->uc_mcontext->__ss.__x[2], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X3=0x"), uc->uc_mcontext->__ss.__x[3], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X4=0x"), uc->uc_mcontext->__ss.__x[4], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X5=0x"), uc->uc_mcontext->__ss.__x[5], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X6=0x"), uc->uc_mcontext->__ss.__x[6], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X7=0x"), uc->uc_mcontext->__ss.__x[7], buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X8=0x"), uc->uc_mcontext->__ss.__x[8], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X9=0x"), uc->uc_mcontext->__ss.__x[9], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X10=0x"), uc->uc_mcontext->__ss.__x[10], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X11=0x"), uc->uc_mcontext->__ss.__x[11], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X12=0x"), uc->uc_mcontext->__ss.__x[12], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X13=0x"), uc->uc_mcontext->__ss.__x[13], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X14=0x"), uc->uc_mcontext->__ss.__x[14], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X15=0x"), uc->uc_mcontext->__ss.__x[15], buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X16=0x"), uc->uc_mcontext->__ss.__x[16], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X17=0x"), uc->uc_mcontext->__ss.__x[17], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X18=0x"), uc->uc_mcontext->__ss.__x[18], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X19=0x"), uc->uc_mcontext->__ss.__x[19], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X20=0x"), uc->uc_mcontext->__ss.__x[20], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X21=0x"), uc->uc_mcontext->__ss.__x[21], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X22=0x"), uc->uc_mcontext->__ss.__x[22], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X23=0x"), uc->uc_mcontext->__ss.__x[23], buffer);
+
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X24=0x"), uc->uc_mcontext->__ss.__x[24], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X25=0x"), uc->uc_mcontext->__ss.__x[25], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X26=0x"), uc->uc_mcontext->__ss.__x[26], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X27=0x"), uc->uc_mcontext->__ss.__x[27], buffer);
+  crash_dump_write_reg(LITERAL_WITH_LENGTH("X28=0x"), uc->uc_mcontext->__ss.__x[28], buffer);
+#else
   const auto *uc = static_cast<ucontext_t *>(ucontext);
   
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
@@ -87,7 +126,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext->__ss.__r13, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
-
+#endif
 #elif defined(__x86_64__)
   const auto *uc = static_cast<ucontext_t *>(ucontext);
 
@@ -114,7 +153,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext.gregs[REG_R14], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
   
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__arm64__)
   const auto *uc = static_cast<ucontext_t_portable *>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext.sp, buffer);
