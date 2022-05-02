@@ -26,7 +26,7 @@ static __inline__ void *get_bp() {
 #ifdef __x86_64__
   __asm__ volatile("movq %%rbp, %[r]" : [r] "=r"(result));
 #elif defined(__aarch64__)
-  __asm__ volatile("mov %0, sp" : "=r"(result));
+  __asm__ volatile("mov %0, fp" : "=r"(result));
 #else
 #error "Unsupported arch"
 #endif
@@ -42,7 +42,7 @@ int fast_backtrace(void **buffer, int size) {
 
   auto *bp = static_cast<stack_frame *>(get_bp());
   int i = 0;
-  while (i < size && !(reinterpret_cast<long>(bp) & (sizeof(long) - 1))) {
+  while (i < size && reinterpret_cast<char *>(bp) <= stack_end && !(reinterpret_cast<long>(bp) & (sizeof(long) - 1))) {
     void *ip = bp->ip;
     buffer[i++] = ip;
     stack_frame *p = bp->bp;
