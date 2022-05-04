@@ -569,6 +569,14 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
   return ok ? Optional<int64_t>(ts) : Optional<int64_t>(false);
 }
 
+array<mixed> f$date_parse(const string &time_str) {
+  return php_timelib_date_parse(time_str);
+}
+
+array<mixed> f$date_parse_from_format(const string &format, const string &time_str) {
+  return php_timelib_date_parse_from_format(format, time_str);
+}
+
 int64_t f$time() {
   return time(nullptr);
 }

@@ -1,8 +1,6 @@
 @ok
 <?php
 
-// why PHP7.4: 't0222 t0222' gives different results on some 7.2 builds
-
 $timezones = [
   'Etc/GMT-3',
   'Europe/Moscow',
@@ -32,6 +30,8 @@ $tests = [
   '2006167',
   'Jan-15-2006',
   '2006-Jan-15',
+  'Jan-2006-15',
+  '15-Feb-2009',
   '10/Oct/2000:13:55:36 +0100',
   '10/Oct/2000:13:55:36 +00100',
   '2006',
@@ -52,14 +52,42 @@ $tests = [
   'front of 7',
   'back of 19',
   'front of 19',
+  'Feb 2010',
+  '2010 Feb',
+  '6.1.2009 13:00+01:00',
+  '10 October 2018 19:30 pm',
+  '15',
+  '2009-02-15 15:16:17',
+  '2009-02-15',
+  '23h 15m 03s',
 ];
 
 $time = 0;
+
+$formats = [
+  'j.n.Y H:iP',
+  'j F Y G:i a',
+  'Y-m-d',
+  'j-M-Y',
+  'Y-m-d H:i:s',
+  'Y-m-!d H:i:s',
+  '!d',
+  'H\h i\m s\s',
+  'H i s',
+  'Hh im ss',
+  'Y-m-d H:i:s (T)',
+];
 
 foreach ($timezones as $tz) {
   date_default_timezone_set($tz);
   foreach ($tests as $i => $test) {
     var_dump(["$tz:$i:strtotime('$test', $time)" => strtotime($test, $time)]);
+    var_dump(["$tz:$i:date_parse('$test')" => date_parse($test)]);
+    foreach ($formats as $fmt) {
+      $date_parse_from_format_result = date_parse_from_format($fmt, $test);
+      unset($date_parse_from_format_result['zone']);
+      var_dump(["$tz:$i:date_parse_from_format('$fmt', '$test')" => $date_parse_from_format_result]);
+    }
     $time += $i;
   }
 }
