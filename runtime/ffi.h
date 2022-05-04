@@ -343,8 +343,14 @@ inline const void* ffi_php2c(const string &v, ffi_tag<const void*>) { return v.c
 template<class T>
 auto ffi_php2c(class_instance<C$FFI$CData<T>> v, ffi_tag<C$FFI$CData<T>>) { return v->c_value; }
 
+inline const char* ffi_php2c(CDataPtr<char> v, ffi_tag<const char*>) { return v.c_value; }
+inline const char* ffi_php2c(CDataPtr<const char> v, ffi_tag<const char*>) { return v.c_value; }
+
 template<class T>
 void *ffi_php2c(CDataPtr<T> v, ffi_tag<void*>) { return v.c_value; }
+
+template<class T>
+const void *ffi_php2c(CDataPtr<T> v, ffi_tag<const void*>) { return v.c_value; }
 
 template<class T>
 const void *ffi_php2c(CDataPtr<const T> v, ffi_tag<const void*>) { return v.c_value; }
@@ -354,6 +360,9 @@ T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<T*>>) { return v.c_value; }
 
 template<class T>
 const T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<const T*>>) { return v.c_value; }
+
+template<class T>
+const T* ffi_php2c(CDataPtr<const T> v, ffi_tag<C$FFI$CData<const T*>>) { return v.c_value; }
 
 // this is a special overloading for things like php2c(null);
 // note: we compile op_null as Optional<bool>{}

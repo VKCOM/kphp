@@ -27,6 +27,10 @@ int64_t read_int64(const int64_t *ptr) {
   return *ptr;
 }
 
+int64_t read_int64_from_void(const void *ptr) {
+  return *(const int64_t*)ptr;
+}
+
 int64_t* read_int64p(int64_t **ptr) {
   return *ptr;
 }
@@ -53,4 +57,15 @@ int void_strlen(const void *s) {
 
 void cstr_out_param(const char **out) {
   *out = "example result";
+}
+
+void set_void_ptr(void **dst, void *ptr) {
+  *dst = ptr;
+}
+
+int strlen_safe(const char *s) {
+  if (s == NULL) {
+    return 0;
+  }
+  return strlen(s);
 }

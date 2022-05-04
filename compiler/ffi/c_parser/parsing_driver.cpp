@@ -298,7 +298,15 @@ FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const D
   if (declarator.type->kind == FFITypeKind::_pointerDeclarator) {
     FFIType *ptr_type = alloc.new_type(FFITypeKind::Pointer);
     ptr_type->num = declarator.type->num;
-    ptr_type->members.emplace_back(decl_specs.type);
+    // when typedef over a pointer is combined with a pointer type, we want to
+    // merge it into a single pointer type with total indirection;
+    // in other words, we want pointer{Elem: T, Num: 2} instead of pointer{Elem: pointer{Elem: T, Num: 1}, Num: 1}
+    if (decl_specs.type->kind == FFITypeKind::Pointer) {
+      ptr_type->num += decl_specs.type->num;
+      ptr_type->members.emplace_back(decl_specs.type->members[0]);
+    } else {
+      ptr_type->members.emplace_back(decl_specs.type);
+    }
     return combine(DeclarationSpecifiers{ptr_type}, Declarator{declarator.type->members[0]});
   }
 

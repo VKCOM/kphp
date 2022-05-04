@@ -275,7 +275,10 @@ bool is_php2c_valid(VertexAdaptor<op_ffi_php2c_conv> conv, const FFIType *ffi_ty
   auto php_expr = conv->expr();
 
   if (ffi_type->is_cstring()) {
-    return conv->simple_dst && php_type->ptype() == tp_string;
+    // auto casting from PHP string to `const char*` is allowed in simple contexts
+    if (conv->simple_dst && php_type->ptype() == tp_string) {
+      return true;
+    }
   }
 
   switch (ffi_type->kind) {
