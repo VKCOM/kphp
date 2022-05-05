@@ -383,7 +383,7 @@ void set_result_header_values(tl_query_answer_header_t *header, int flags) {
   }
   if (flags & request_flag::return_binlog_time) {
     header->flags |= result_flag::binlog_time;
-    header->binlog_time = get_precise_time(1000000);
+    header->binlog_time = get_precise_time();
   }
   if (flags & request_flag::return_pid) {
     header->flags |= result_flag::engine_pid;
