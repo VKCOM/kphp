@@ -9,6 +9,60 @@
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 
+namespace {
+
+bool is_const_bool(VertexPtr expr, bool value) {
+  if (auto as_bool_conv = expr.try_as<op_conv_bool>()) {
+    expr = as_bool_conv->expr();
+  }
+  expr = GenTree::get_actual_value(expr);
+  auto target_op = value ? op_true : op_false;
+  return expr->type() == target_op;
+}
+
+VertexAdaptor<op_func_call> replace_call_func(VertexAdaptor<op_func_call> call, const std::string &func_name, std::vector<VertexPtr> args) {
+  auto new_call = VertexAdaptor<op_func_call>::create(std::move(args)).set_location(call);
+  new_call->set_string(func_name);
+  new_call->func_id = G->get_function(func_name);
+  return new_call;
+}
+
+VertexAdaptor<op_func_call> process_microtime(VertexAdaptor<op_func_call> call) {
+  const auto &args = call->args();
+
+  // microtime()      -> microtime_string()
+  // microtime(false) -> microtime_string()
+  if (args.empty() || is_const_bool(args[0], false)) {
+    return replace_call_func(call, "microtime_string", {});
+  }
+
+  // microtime(true) -> microtime_float()
+  if (!args.empty() && is_const_bool(args[0], true)) {
+    return replace_call_func(call, "microtime_float", {});
+  }
+
+  return call;
+}
+
+VertexAdaptor<op_func_call> process_hrtime(VertexAdaptor<op_func_call> call) {
+  const auto &args = call->args();
+
+  // hrtime()      -> hrtime_array()
+  // hrtime(false) -> hrtime_array()
+  if (args.empty() || is_const_bool(args[0], false)) {
+    return replace_call_func(call, "hrtime_array", {});
+  }
+
+  // hrtime(true) -> hrtime_int()
+  if (!args.empty() && is_const_bool(args[0], true)) {
+    return replace_call_func(call, "hrtime_int", {});
+  }
+
+  return call;
+}
+
+} // namespace
+
 /*
  * This pass checks that func calls are correct, i.e. provided necessary amount of arguments, etc.
  * Here we also replace ...variadic call arguments with a single array
@@ -134,6 +188,17 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
   return v_loc;
 }
 
+VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
+  vk::string_view local_name = f_called->name;
+  if (local_name == "hrtime") {
+    return process_hrtime(call);
+  }
+  if (local_name == "microtime") {
+    return process_microtime(call);
+  }
+  return call;
+}
+
 VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {
   std::vector<VertexPtr> new_args;
   new_args.reserve(call->args().size() + 1);
@@ -220,6 +285,10 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
     if (call_arg->type() == op_varg) {
       kphp_error(f->has_variadic_param, "Unpacking an argument to a non-variadic param");
     }
+  }
+
+  if (f->is_extern() && !stage::has_error()) {
+    call = maybe_replace_extern_func_call(call, call->func_id);
   }
 
   return call;
