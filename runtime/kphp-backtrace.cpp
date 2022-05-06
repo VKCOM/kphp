@@ -46,6 +46,8 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
   php_assert(name_buffer_.size() >= copy_name_len);
   memcpy(name_buffer_.data(), begin, end - begin);
   name_buffer_[copy_name_len - 1] = 0;
+
+  full_trace = false;
 #else
   for (const char *p = symbol; *p; ++p) {
     if (*p == '(') {
