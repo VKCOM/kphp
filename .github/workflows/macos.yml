@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-macos:
-    runs-on: ${{matrix.os}}-11
+    runs-on: ${{matrix.os}}-12
     strategy:
       matrix:
         include:
